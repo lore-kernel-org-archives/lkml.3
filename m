@@ -1,230 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932479AbbAFSNf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 13:13:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40809 "EHLO mx1.redhat.com"
+	id S932506AbbAFSN6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 13:13:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39538 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932306AbbAFSNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 13:13:32 -0500
-Date: Tue, 6 Jan 2015 13:13:23 -0500
-From: Brian Foster <bfoster@redhat.com>
-To: Namjae Jeon <namjae.jeon@samsung.com>
-Cc: Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ext4 <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
-        Ashish Sangwan <a.sangwan@samsung.com>
-Subject: Re: [PATCH v7 11/11] xfstests: fsx: Add fallocate insert range
- operation
-Message-ID: <20150106181323.GI5874@bfoster.bfoster>
-References: <004901d02670$835ac120$8a104360$@samsung.com>
+	id S932483AbbAFSNz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 13:13:55 -0500
+Date: Tue, 6 Jan 2015 16:13:31 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Paolo Bonzini <pbonzini@redhat.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kvm list <kvm@vger.kernel.org>, Gleb Natapov <gleb@kernel.org>
+Subject: Re: [RFC 2/2] x86, vdso, pvclock: Simplify and speed up the vdso
+ pvclock reader
+Message-ID: <20150106181331.GA24590@amt.cnet>
+References: <cover.1419295081.git.luto@amacapital.net>
+ <8d09c16eb39cbe264417cc66c4aca730af10b70b.1419295081.git.luto@amacapital.net>
+ <20150105152511.GA9172@amt.cnet>
+ <CALCETrXRs4NmhMvp+7kydrfyGCiNymkTe_sP6HFVvhMCC2Ei0Q@mail.gmail.com>
+ <20150105191756.GA31201@amt.cnet>
+ <CALCETrVWmbcv1w5a3N1VzyWEobP0qW+RQkhWO9yOkxzdKdJgeg@mail.gmail.com>
+ <20150105224858.GA6846@amt.cnet>
+ <54AB9FFD.6070309@redhat.com>
+ <54ABCE85.6070004@redhat.com>
+ <CALCETrWKgB7nj19zW_cQaa4RWjDojbN92_3+-27bHXbB-EEOnA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <004901d02670$835ac120$8a104360$@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CALCETrWKgB7nj19zW_cQaa4RWjDojbN92_3+-27bHXbB-EEOnA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 02, 2015 at 06:43:07PM +0900, Namjae Jeon wrote:
-> This commit adds fallocate FALLOC_FL_INSERT_RANGE support for fsx.
+On Tue, Jan 06, 2015 at 08:56:40AM -0800, Andy Lutomirski wrote:
+> On Jan 6, 2015 4:01 AM, "Paolo Bonzini" <pbonzini@redhat.com> wrote:
+> >
+> >
+> >
+> > On 06/01/2015 09:42, Paolo Bonzini wrote:
+> > > > > Still confused.  So we can freeze all vCPUs in the host, then update
+> > > > > pvti 1, then resume vCPU 1, then update pvti 0?  In that case, we have
+> > > > > a problem, because vCPU 1 can observe pvti 0 mid-update, and KVM
+> > > > > doesn't increment the version pre-update, and we can return completely
+> > > > > bogus results.
+> > > > Yes.
+> > > But then the getcpu test would fail (1->0).  Even if you have an ABA
+> > > situation (1->0->1), it's okay because the pvti that is fetched is the
+> > > one returned by the first getcpu.
+> >
+> > ... this case of partial update of pvti, which is caught by the version
+> > field, if of course different from the other (extremely unlikely) that
+> > Andy pointed out.  That is when the getcpus are done on the same vCPU,
+> > but the rdtsc is another.
+> >
+> > That one can be fixed by rdtscp, like
+> >
+> > do {
+> >     // get a consistent (pvti, v, tsc) tuple
+> >     do {
+> >         cpu = get_cpu();
+> >         pvti = get_pvti(cpu);
+> >         v = pvti->version & ~1;
+> >         // also acts as rmb();
+> >         rdtsc_barrier();
+> >         tsc = rdtscp(&cpu1);
 > 
-> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-> ---
->  ltp/fsx.c | 96 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
->  1 file changed, 94 insertions(+), 2 deletions(-)
+> Off-topic note: rdtscp doesn't need a barrier at all.  AIUI AMD
+> specified it that way and both AMD and Intel implement it correctly.
+> (rdtsc, on the other hand, definitely needs the barrier beforehand.)
 > 
-> diff --git a/ltp/fsx.c b/ltp/fsx.c
-> index 47d3ee8..9dc1655 100644
-> --- a/ltp/fsx.c
-> +++ b/ltp/fsx.c
-> @@ -95,7 +95,8 @@ int			logcount = 0;	/* total ops */
->  #define OP_PUNCH_HOLE		6
->  #define OP_ZERO_RANGE		7
->  #define OP_COLLAPSE_RANGE	8
-> -#define OP_MAX_FULL		9
-> +#define OP_INSERT_RANGE	9
-> +#define OP_MAX_FULL		10
->  
->  /* operation modifiers */
->  #define OP_CLOSEOPEN	100
-> @@ -145,6 +146,7 @@ int     fallocate_calls = 1;            /* -F flag disables */
->  int     punch_hole_calls = 1;           /* -H flag disables */
->  int     zero_range_calls = 1;           /* -z flag disables */
->  int	collapse_range_calls = 1;	/* -C flag disables */
-> +int	insert_range_calls = 1;		/* -i flag disables */
->  int 	mapped_reads = 1;		/* -R flag disables it */
->  int	fsxgoodfd = 0;
->  int	o_direct;			/* -Z */
-> @@ -339,6 +341,14 @@ logdump(void)
->  						     lp->args[0] + lp->args[1])
->  				prt("\t******CCCC");
->  			break;
-> +		case OP_INSERT_RANGE:
-> +			prt("INSERT 0x%x thru 0x%x\t(0x%x bytes)",
-> +			    lp->args[0], lp->args[0] + lp->args[1] - 1,
-> +			    lp->args[1]);
-> +			if (badoff >= lp->args[0] && badoff <
-> +						     lp->args[0] + lp->args[1])
-> +				prt("\t******CCCC");
-> +			break;
->  		case OP_SKIPPED:
->  			prt("SKIPPED (no operation)");
->  			break;
-> @@ -1012,6 +1022,59 @@ do_collapse_range(unsigned offset, unsigned length)
->  }
->  #endif
->  
-> +#ifdef FALLOC_FL_INSERT_RANGE
-> +void
-> +do_insert_range(unsigned offset, unsigned length)
-> +{
-> +	unsigned end_offset;
-> +	int mode = FALLOC_FL_INSERT_RANGE;
-> +
-> +	if (length == 0) {
-> +		if (!quiet && testcalls > simulatedopcount)
-> +			prt("skipping zero length insert range\n");
-> +		log4(OP_SKIPPED, OP_INSERT_RANGE, offset, length);
-> +		return;
-> +	}
-> +
-> +	if ((loff_t)offset >= file_size) {
-> +		if (!quiet && testcalls > simulatedopcount)
-> +			prt("skipping insert range behind EOF\n");
-> +		log4(OP_SKIPPED, OP_INSERT_RANGE, offset, length);
-> +		return;
-> +	}
-> +
-> +	log4(OP_INSERT_RANGE, offset, length, 0);
-> +
-> +	if (testcalls <= simulatedopcount)
-> +		return;
-> +
-> +	end_offset = offset + length;
-> +	if ((progressinterval && testcalls % progressinterval == 0) ||
-> +	    (debug && (monitorstart == -1 || monitorend == -1 ||
-> +		      end_offset <= monitorend))) {
-> +		prt("%lu insert\tfrom 0x%x to 0x%x, (0x%x bytes)\n", testcalls,
-> +			offset, offset+length, length);
-> +	}
-> +	if (fallocate(fd, mode, (loff_t)offset, (loff_t)length) == -1) {
-> +		prt("insert range: %x to %x\n", offset, length);
-> +		prterr("do_insert_range: fallocate");
-> +		report_failure(161);
-> +	}
-> +
-> +	memmove(good_buf + end_offset, good_buf + offset,
-> +		file_size - offset);
-> +	memset(good_buf + offset, '\0', length);
-> +	file_size += length;
-> +}
-> +
-> +#else
-> +void
-> +do_insert_range(unsigned offset, unsigned length)
-> +{
-> +	return;
-> +}
-> +#endif
-> +
->  #ifdef HAVE_LINUX_FALLOC_H
->  /* fallocate is basically a no-op unless extending, then a lot like a truncate */
->  void
-> @@ -1192,6 +1255,12 @@ test(void)
->  			goto out;
->  		}
->  		break;
-> +	case OP_INSERT_RANGE:
-> +		if (!insert_range_calls) {
-> +			log4(OP_SKIPPED, OP_INSERT_RANGE, offset, size);
-> +			goto out;
-> +		}
-> +		break;
->  	}
->  
->  	switch (op) {
-> @@ -1244,6 +1313,21 @@ test(void)
->  		}
->  		do_collapse_range(offset, size);
->  		break;
-> +	case OP_INSERT_RANGE:
-> +		TRIM_OFF_LEN(offset, size, (maxfilelen - 1) - file_size);
-
-I see a ton of "skipping insert beyond EOF" messages when I run fsx with
-this patch that boil down to that we trim against the max allowable file
-size increase rather than the current file size. I suspect the intent
-here is to not limit the insert length based on the file size. That
-makes sense, but that causes us to fail to mod the insert offset against
-the file size and thus generate a ton more noise.
-
-Could we either open code the trim to handle the offset/len correctly or
-break up the macro in a way that facilitates doing so? For example, a
-quick solution might be to create TRIM_OFF() and TRIM_LEN() based on the
-associated code in TRIM_OFF_LEN(), redefine TRIM_OFF_LEN() to use the
-new macros, and then the insert range code could do something like:
-
-	TRIM_OFF(offset, file_size - 1);
-	TRIM_LEN(offset, size, maxfilelen - file_size);
-	...
-
-Brian
-
-> +		offset = offset & ~(block_size - 1);
-> +		size = size & ~(block_size - 1);
-> +		if (size == 0) {
-> +			log4(OP_SKIPPED, OP_INSERT_RANGE, offset, size);
-> +			goto out;
-> +		}
-> +		if (file_size + size > maxfilelen) {
-> +			log4(OP_SKIPPED, OP_INSERT_RANGE, offset, size);
-> +			goto out;
-> +		}
-> +
-> +		do_insert_range(offset, size);
-> +		break;
->  	default:
->  		prterr("test: unknown operation");
->  		report_failure(42);
-> @@ -1307,6 +1391,9 @@ usage(void)
->  #ifdef FALLOC_FL_COLLAPSE_RANGE
->  "	-C: Do not use collapse range calls\n"
->  #endif
-> +#ifdef FALLOC_FL_INSERT_RANGE
-> +"	-i: Do not use insert range calls\n"
-> +#endif
->  "	-L: fsxLite - no file creations & no file size changes\n\
->  	-N numops: total # operations to do (default infinity)\n\
->  	-O: use oplen (see -o flag) for every op (default random)\n\
-> @@ -1493,7 +1580,7 @@ main(int argc, char **argv)
->  
->  	setvbuf(stdout, (char *)0, _IOLBF, 0); /* line buffered stdout */
->  
-> -	while ((ch = getopt(argc, argv, "b:c:dfl:m:no:p:qr:s:t:w:xyAD:FHzCLN:OP:RS:WZ"))
-> +	while ((ch = getopt(argc, argv, "b:c:dfl:m:no:p:qr:s:t:w:xyAD:FHzCiLN:OP:RS:WZ"))
->  	       != EOF)
->  		switch (ch) {
->  		case 'b':
-> @@ -1599,6 +1686,9 @@ main(int argc, char **argv)
->  		case 'C':
->  			collapse_range_calls = 0;
->  			break;
-> +		case 'i':
-> +			insert_range_calls = 0;
-> +			break;
->  		case 'L':
->  		        lite = 1;
->  			break;
-> @@ -1758,6 +1848,8 @@ main(int argc, char **argv)
->  		zero_range_calls = test_fallocate(FALLOC_FL_ZERO_RANGE);
->  	if (collapse_range_calls)
->  		collapse_range_calls = test_fallocate(FALLOC_FL_COLLAPSE_RANGE);
-> +	if (insert_range_calls)
-> +		insert_range_calls = test_fallocate(FALLOC_FL_INSERT_RANGE);
->  
->  	while (numops == -1 || numops--)
->  		test();
-> -- 
-> 1.7.11-rc0
+> >         // control dependency, no need for rdtsc_barrier?
+> >     } while(cpu != cpu1);
+> >
+> >     // ... compute nanoseconds from pvti and tsc ...
+> >     rmb();
+> > }   while(v != pvti->version);
 > 
+> Still no good.  We can migrate a bunch of times so we see the same CPU
+> all three times and *still* don't get a consistent read, unless we
+> play nasty games with lots of version checks (I have a patch for that,
+> but I don't like it very much).  The patch is here:
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/commit/?h=x86/vdso_paranoia&id=a69754dc5ff33f5187162b5338854ad23dd7be8d
+> 
+> but I don't like it.
+> 
+> Thus far, I've been told unambiguously that a guest can't observe pvti
+> while it's being written, and I think you're now telling me that this
+> isn't true and that a guest *can* observe pvti while it's being
+> written while the low bit of the version field is not set.  If so,
+> this is rather strongly incompatible with the spec in the KVM docs.
+> 
+> I don't suppose that you and Marcelo could agree on what the actual
+> semantics that KVM provides are and could write it down in a way that
+> people who haven't spent a long time staring at the request code
+> understand?  And maybe you could even fix the implementation while
+> you're at it if the implementation is, indeed, broken.  I have ugly
+> patches to fix it here:
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/commit/?h=x86/vdso_paranoia&id=3b718a050cba52563d831febc2e1ca184c02bac0
+> 
+> but I'm not thrilled with them.
+> 
+> --Andy
+
+I suppose that separating the version write from the rest of the pvclock
+structure is sufficient, as that would guarantee the writes are not
+reordered even with fast string REP MOVS.
+
+Thanks for catching this Andy!
+
