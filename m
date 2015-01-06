@@ -1,45 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842AbbAFJmw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 04:42:52 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:59170 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754511AbbAFJmr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 04:42:47 -0500
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20150106094039.GI29390@twins.programming.kicks-ass.net>
-References: <CA+icZUU4ALYvEq7SkUewnZytf62R0d9x+MVPvMrR0zzFf+-f3Q@mail.gmail.com>
-	<20150106094039.GI29390@twins.programming.kicks-ass.net>
-Date: Tue, 6 Jan 2015 10:42:46 +0100
-Message-ID: <CA+icZUUcgP=nUPCOfEJrbO9OAAPLgQd8RWO-BJe+W0wi3fWiOw@mail.gmail.com>
+	id S1754449AbbAFJpx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 04:45:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35197 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751546AbbAFJpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 04:45:49 -0500
+Date: Tue, 6 Jan 2015 10:45:43 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Dave Jones <davej@codemonkey.org.uk>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>
 Subject: Re: Linux 3.19-rc3
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dave Jones <davej@codemonkey.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20150106024634.GA26714@codemonkey.org.uk>
+Message-ID: <alpine.LRH.2.00.1501061044290.20601@twin.jikos.cz>
+References: <CA+55aFwsxoyLb9OWMSCL3doe_cz_EQtKsEFCyPUYn_T87pbz0A@mail.gmail.com> <20150106024634.GA26714@codemonkey.org.uk>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 6, 2015 at 10:40 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, Jan 06, 2015 at 05:49:11AM +0100, Sedat Dilek wrote:
->> This has been there since just before rc1. Is there a fix for this
->> stalled in someones git tree maybe ?
->>
->> [    7.952588] WARNING: CPU: 0 PID: 299 at kernel/sched/core.c:7303
->> __might_sleep+0x8d/0xa0()
->> [    7.952592] do not call blocking ops when !TASK_RUNNING; state=1 set at [<ffffffff910a0f7a>] prepare_to_wait+0x2a/0x90
->> [    7.952595] CPU: 0 PID: 299 Comm: systemd-readahe Not tainted 3.19.0-rc3+ #100
->
->> [    7.952620]  [<ffffffff911a63e0>] fanotify_read+0xe0/0x5b0
->
->
-> http://marc.info/?l=linux-kernel&m=141874374029791
+On Mon, 5 Jan 2015, Dave Jones wrote:
 
-Hehe, I created same fix... did not help here.
+>  > It's a day delayed - not because of any particular development issues,
+>  > but simply because I was tiling a bathroom yesterday. But rc3 is out
+>  > there now, and things have stayed reasonably calm. I really hope that
+>  > implies that 3.19 is looking good, but it's equally likely that it's
+>  > just that people are still recovering from the holiday season.
+>  > 
+>  > A bit over three quarters of the changes here are drivers - mostly
+>  > networking, thermal, input layer, sound, power management. The rest is
+>  > misc - filesystems, core networking, some arch fixes, etc. But all of
+>  > it is pretty small.
+>  > 
+>  > So go out and test,
+>  
+> This has been there since just before rc1. Is there a fix for this
+> stalled in someones git tree maybe ?
 
-- Sedat -
+This is an issue in fanotify code which has been there since ages, but 
+only now has scheduler started to warn about this.
+
+I've reported it to Eric here:
+
+	https://lkml.org/lkml/2014/12/30/95
+
+but no response so far. Adding Eric to CC here as well.
+
+> [    7.952588] WARNING: CPU: 0 PID: 299 at kernel/sched/core.c:7303 __might_sleep+0x8d/0xa0()
+> [    7.952592] do not call blocking ops when !TASK_RUNNING; state=1 set at [<ffffffff910a0f7a>] prepare_to_wait+0x2a/0x90
+> [    7.952595] CPU: 0 PID: 299 Comm: systemd-readahe Not tainted 3.19.0-rc3+ #100 
+> [    7.952597]  0000000000001c87 00000000720a2c76 ffff8800b2513c88 ffffffff915b47c7
+> [    7.952598]  ffffffff910a3648 ffff8800b2513ce0 ffff8800b2513cc8 ffffffff91062c30
+> [    7.952599]  0000000000000000 ffffffff91796fb2 000000000000026d 0000000000000000
+> [    7.952600] Call Trace:
+> [    7.952603]  [<ffffffff915b47c7>] dump_stack+0x4c/0x65
+> [    7.952604]  [<ffffffff910a3648>] ? down_trylock+0x28/0x40
+> [    7.952606]  [<ffffffff91062c30>] warn_slowpath_common+0x80/0xc0
+> [    7.952607]  [<ffffffff91062cc0>] warn_slowpath_fmt+0x50/0x70
+> [    7.952608]  [<ffffffff910a0f7a>] ? prepare_to_wait+0x2a/0x90
+> [    7.952610]  [<ffffffff910a0f7a>] ? prepare_to_wait+0x2a/0x90
+> [    7.952611]  [<ffffffff910867ed>] __might_sleep+0x8d/0xa0
+> [    7.952614]  [<ffffffff915b8ea9>] mutex_lock_nested+0x39/0x3e0
+> [    7.952616]  [<ffffffff910a77ad>] ? trace_hardirqs_on+0xd/0x10
+> [    7.952617]  [<ffffffff910a0fac>] ? prepare_to_wait+0x5c/0x90
+> [    7.952620]  [<ffffffff911a63e0>] fanotify_read+0xe0/0x5b0
+> [    7.952622]  [<ffffffff91090801>] ? sched_clock_cpu+0xc1/0xd0
+> [    7.952624]  [<ffffffff91242459>] ? selinux_file_permission+0xb9/0x130
+> [    7.952626]  [<ffffffff910a14d0>] ? prepare_to_wait_event+0xf0/0xf0
+> [    7.952628]  [<ffffffff91162513>] __vfs_read+0x13/0x50
+> [    7.952629]  [<ffffffff911625d8>] vfs_read+0x88/0x140
+> [    7.952631]  [<ffffffff911626e7>] SyS_read+0x57/0xd0
+> [    7.952633]  [<ffffffff915bd952>] system_call_fastpath+0x12/0x17
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+-- 
+Jiri Kosina
+SUSE Labs
+
