@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932709AbbAFToE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 14:44:04 -0500
-Received: from resqmta-ch2-07v.sys.comcast.net ([69.252.207.39]:45826 "EHLO
-	resqmta-ch2-07v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932692AbbAFToA (ORCPT
+	id S1756494AbbAFTuo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 14:50:44 -0500
+Received: from resqmta-ch2-04v.sys.comcast.net ([69.252.207.36]:49480 "EHLO
+	resqmta-ch2-04v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932698AbbAFToB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 14:44:00 -0500
+	Tue, 6 Jan 2015 14:44:01 -0500
 From: Shuah Khan <shuahkh@osg.samsung.com>
 To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
         rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
@@ -18,9 +18,9 @@ To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [PATCH v4 16/20] selftests/timers: add install target to enable test install
-Date: Tue,  6 Jan 2015 12:43:30 -0700
-Message-Id: <a7d59f0840589027970bec63241bcc084406744d.1420571615.git.shuahkh@osg.samsung.com>
+Subject: [PATCH v4 17/20] selftests/user: add install target to enable test install
+Date: Tue,  6 Jan 2015 12:43:31 -0700
+Message-Id: <d4b50b1de5f5f72337c019a49080a09d0269928a.1420571615.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <cover.1420571615.git.shuahkh@osg.samsung.com>
 References: <cover.1420571615.git.shuahkh@osg.samsung.com>
@@ -37,33 +37,32 @@ only from top level kernel source directory.
 
 Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- tools/testing/selftests/timers/Makefile | 12 +++++++++++-
+ tools/testing/selftests/user/Makefile | 12 +++++++++++-
  1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/tools/testing/selftests/timers/Makefile b/tools/testing/selftests/timers/Makefile
-index eb2859f..6c03e92 100644
---- a/tools/testing/selftests/timers/Makefile
-+++ b/tools/testing/selftests/timers/Makefile
-@@ -1,8 +1,18 @@
-+TEST_STR = ./posix_timers
+diff --git a/tools/testing/selftests/user/Makefile b/tools/testing/selftests/user/Makefile
+index 12c9d15..3d38308 100644
+--- a/tools/testing/selftests/user/Makefile
++++ b/tools/testing/selftests/user/Makefile
+@@ -1,7 +1,17 @@
+ # Makefile for user memory selftests
+ 
++TEST_STR = ./test_user_copy.sh
 +
+ # No binaries, but make sure arg-less "make" doesn't trigger "run_tests"
  all:
- 	gcc posix_timers.c -o posix_timers -lrt
  
 +install:
 +ifdef INSTALL_KSFT_PATH
-+	install ./posix_timers $(INSTALL_KSFT_PATH)
++	install ./test_user_copy.sh $(INSTALL_KSFT_PATH)
 +	@echo "$(TEST_STR)" >> $(KSELFTEST)
 +else
 +	@echo "Run make kselftest_install in top level source directory"
 +endif
 +
  run_tests: all
--	./posix_timers
+-	./test_user_copy.sh
 +	@$(TEST_STR)
- 
- clean:
- 	rm -f ./posix_timers
 -- 
 2.1.0
 
