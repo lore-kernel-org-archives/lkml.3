@@ -1,86 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283AbbAFIlo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 03:41:44 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:36790 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913AbbAFIln (ORCPT
+	id S1754523AbbAFImH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 03:42:07 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:62340 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754386AbbAFImF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 03:41:43 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-d6-54ab9fc06ad9
-From: Chao Yu <chao2.yu@samsung.com>
-To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [f2fs-dev][PATCH] f2fs: fix wrong memory footprint statistics in
- debugfs
-Date: Tue, 06 Jan 2015 16:40:49 +0800
-Message-id: <009c01d0298c$946435e0$bd2ca1a0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AdApjEmcdKFDe7euSRC3JkEhNpbnqg==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jAd0D81eHGOyapmFxbV8jk8WT9bOY
-	LS4tcre4vGsOmwOLx6ZVnWweuxd8ZvLo27KK0ePzJrkAligum5TUnMyy1CJ9uwSujI+NX5gK
-	PnNXnD/dzdbA+Jmzi5GTQ0LAROL7v9OMELaYxIV769m6GLk4hAQWMUr0zb3BAuH8YJTYv34p
-	M0gVm4CKxPKO/0wgtoiAl8Sk/SdYQGxmAQ+Jxo7vrCC2sECwxK9v29lAbBYBVYn1Pf/AenkF
-	LCV+3NvLAmELSvyYfA+qV0ti/c7jTBC2vMTmNW+ZIS5SkNhx9jUjxC49if9zetkgasQlNh65
-	xTKBUWAWklGzkIyahWTULCQtCxhZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIEB/UzqR2M
-	KxssDjEKcDAq8fB6dK0OEWJNLCuuzD3EKMHBrCTCu2M6UIg3JbGyKrUoP76oNCe1+BCjNAeL
-	kjivkn1biJBAemJJanZqakFqEUyWiYNTqoFR+1JC3T4LpTXvnJP6pCdLPvz96om2Ud+b1I4L
-	S79PkZU5OWP/8Yh4xql7E7bymmimOR/ftLqMwfyEVJTghHnXi3nvNypU6r/Iddu+tbNjzV6r
-	u7OXp3kLn3PlzAzb7+xb/ER+45m6rbt83A0W7zppE7iuPe2ajn6K2P0Jl9eUzgtZIOe35ECB
-	EktxRqKhFnNRcSIATA6K8GYCAAA=
+	Tue, 6 Jan 2015 03:42:05 -0500
+From: Howard Chen <howard.chen@linaro.org>
+To: matthias.bgg@gmail.com
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org (moderated list:ARM/Mediatek
+	SoC...),
+        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 1/2] Add sysirq device node for mt6592, also correct the timer interrupt.
+Date: Tue,  6 Jan 2015 16:42:30 +0800
+Message-Id: <1420533751-23999-1-git-send-email-howard.chen@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Our value of memory footprint statistics showed in debugfs is not calculated
-correctly. Fix it in this patch.
-
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+Signed-off-by: Howard Chen <howard.chen@linaro.org>
 ---
- fs/f2fs/debug.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ arch/arm/boot/dts/mt6592.dtsi | 21 +++++++++++++++++----
+ 1 file changed, 17 insertions(+), 4 deletions(-)
 
-diff --git a/fs/f2fs/debug.c b/fs/f2fs/debug.c
-index dd7835b..6aeaf46 100644
---- a/fs/f2fs/debug.c
-+++ b/fs/f2fs/debug.c
-@@ -125,7 +125,7 @@ static void update_mem_info(struct f2fs_sb_info *sbi)
- 	int i;
+diff --git a/arch/arm/boot/dts/mt6592.dtsi b/arch/arm/boot/dts/mt6592.dtsi
+index 31e5a09..1db453f 100644
+--- a/arch/arm/boot/dts/mt6592.dtsi
++++ b/arch/arm/boot/dts/mt6592.dtsi
+@@ -18,7 +18,7 @@
  
- 	if (si->base_mem)
--		goto get_cache;
-+		goto get_dynamic_cache;
+ / {
+ 	compatible = "mediatek,mt6592";
+-	interrupt-parent = <&gic>;
++	interrupt-parent = <&sysirq>;
  
- 	si->base_mem = sizeof(struct f2fs_sb_info) + sbi->sb->s_blocksize;
- 	si->base_mem += 2 * sizeof(struct f2fs_inode_info);
-@@ -161,13 +161,18 @@ static void update_mem_info(struct f2fs_sb_info *sbi)
- 	si->base_mem += sizeof(struct f2fs_nm_info);
- 	si->base_mem += __bitmap_size(sbi, NAT_BITMAP);
+ 	cpus {
+ 		#address-cells = <1>;
+@@ -78,21 +78,34 @@
+ 		#clock-cells = <0>;
+ 	};
  
-+get_dynamic_cache:
- 	/* build gc */
--	si->base_mem += sizeof(struct f2fs_gc_kthread);
-+	if (sbi->gc_thread)
-+		si->base_mem += sizeof(struct f2fs_gc_kthread);
++	uart_clk: uart_clk {
++		compatible = "fixed-clock";
++		clock-frequency = <26000000>;
++		#clock-cells = <0>;
++	};
 +
-+	/* build merge flush thread */
-+	if (SM_I(sbi)->cmd_control_info)
-+		si->base_mem += sizeof(struct flush_cmd_control);
+ 	timer: timer@10008000 {
+ 		compatible = "mediatek,mt6577-timer";
+ 		reg = <0x10008000 0x80>;
+-		interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_HIGH>;
++		interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_LOW>;
+ 		clocks = <&system_clk>, <&rtc_clk>;
+ 		clock-names = "system-clk", "rtc-clk";
+ 	};
  
--get_cache:
- 	/* free nids */
--	si->cache_mem = NM_I(sbi)->fcnt;
--	si->cache_mem += NM_I(sbi)->nat_cnt;
-+	si->cache_mem = NM_I(sbi)->fcnt * sizeof(struct free_nid);
-+	si->cache_mem += NM_I(sbi)->nat_cnt * sizeof(struct nat_entry);
- 	npages = NODE_MAPPING(sbi)->nrpages;
- 	si->cache_mem += npages << PAGE_CACHE_SHIFT;
- 	npages = META_MAPPING(sbi)->nrpages;
++	sysirq: interrupt-controller@10200220 {
++		compatible = "mediatek,mt6592-sysirq", "mediatek,mt6577-sysirq";
++		interrupt-controller;
++		#interrupt-cells = <3>;
++		interrupt-parent = <&gic>;
++		reg = <0x10200220 0x1c>;
++	};
++
+ 	gic: interrupt-controller@10211000 {
+ 		compatible = "arm,cortex-a7-gic";
+ 		interrupt-controller;
+ 		#interrupt-cells = <3>;
++		interrupt-parent = <&gic>;
+ 		reg = <0x10211000 0x1000>,
+ 		      <0x10212000 0x1000>;
+ 	};
+-
+ };
+-
 -- 
-2.2.1
-
+1.9.1
 
