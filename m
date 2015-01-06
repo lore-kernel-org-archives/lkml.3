@@ -1,84 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620AbbAFTkA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 14:40:00 -0500
-Received: from mga02.intel.com ([134.134.136.20]:26949 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756512AbbAFTj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 14:39:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,709,1413270000"; 
-   d="scan'208";a="665341102"
-Date: Tue, 6 Jan 2015 11:36:10 -0800
-From: "David E. Box" <david.e.box@linux.intel.com>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@acpica.org" <devel@acpica.org>
-Subject: Re: [Devel] [PATCH 3/3] ACPICA: Remove use of __DATE__ macro
-Message-ID: <20150106193610.GA7141@pathfinder>
-References: <1418381488-25123-1-git-send-email-linux@rasmusvillemoes.dk>
- <1418381488-25123-3-git-send-email-linux@rasmusvillemoes.dk>
- <1AE640813FDE7649BE1B193DEA596E88026AACD9@SHSMSX101.ccr.corp.intel.com>
- <87oaqdy13n.fsf@rasmusvillemoes.dk>
- <1AE640813FDE7649BE1B193DEA596E88026AB06A@SHSMSX101.ccr.corp.intel.com>
+	id S1756258AbbAFThh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 14:37:37 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:54097 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932440AbbAFThI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 14:37:08 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Heiko Stuebner <heiko@sntech.de>, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Subject: Re: [PATCH] mfd: syscon: fix syscon probing from dt
+Date: Tue, 06 Jan 2015 20:36:33 +0100
+Message-ID: <35536202.10QfWIDQqq@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1420558236-14063-1-git-send-email-p.zabel@pengutronix.de>
+References: <1420558236-14063-1-git-send-email-p.zabel@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88026AB06A@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:NRGc18yvTLdAa8vCET2yaFyWJj3WQ82fsEdf/sLNiJHciwFCIIw
+ RYJE6zweI3PtVP/OzU3yz5fURcsClgX5FXzU6aSlbmPYmk7/luXsstgUGFmMBvlbyJUTb3b
+ K34lWj3Q2AI2VCpMSUEWPRMV0Fxjy0z3tsbRbf1MThYj/TbKE3YUu9EjZ8UL+M3o02AdiZZ
+ M7hh0JVpGgxFNC5QYSjHg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 12:30:05AM +0000, Zheng, Lv wrote:
-> Hi,
+On Tuesday 06 January 2015 16:30:36 Philipp Zabel wrote:
+> Patch bdb0066df96e ("mfd: syscon: Decouple syscon interface from platform devices")
+> breaks probing pure syscon devices from device tree, such as anatop and
+> iomuxc-gpr on i.MX. This patch adds back the dt id table to match against
+> "syscon" compatible device tree nodes.
 > 
-> > From: Rasmus Villemoes [mailto:linux@rasmusvillemoes.dk]
-> > Sent: Monday, January 05, 2015 6:27 PM
-> > 
-> > On Mon, Jan 05 2015, "Zheng, Lv" <lv.zheng@intel.com> wrote:
-> > 
-> > > Hi,
-> > >
-> > >> From: Rasmus Villemoes [mailto:linux@rasmusvillemoes.dk]
-> > >> Sent: Friday, December 12, 2014 6:51 PM
-> > >> To: Zheng, Lv
-> > >> Cc: Rasmus Villemoes; linux-acpi@vger.kernel.org; devel@acpica.org; linux-kernel@vger.kernel.org
-> > >> Subject: [PATCH 3/3] ACPICA: Remove use of __DATE__ macro
-> > >>
-> > >> The macro __DATE__ and friends is not allowed in the kernel. Also,
-> > >> including the build time in output doesn't seem to provide any value.
-> > >>
-> > >
-> > > Could you confirm that it is not useful even for the user tools?
-> > > Please perform the following commands in the kernel source tree
-> > > 1. stay in tools folder
-> > > 2. type "make acpi"
-> > > 3. type "./power/acpi/acpidump -v"
-> > >
-> > 
-> > Yeah, it's part of the output, but for what reason? What can userspace
-> > possibly use that information for?
-> 
-> I also want to know.
-
-I don't see a reason for userspace to know the build date.
-
-> 
-> > I can see some utility in printing a
-> > version number, since that may tell something about the features
-> > present or absent. The compilation date, on the other hand, seems
-> > completely useless. Different distros may ship different versions which
-> > happened to be compiled on the same day, or older versions compiled later.
-> 
-> If the deletion was done for this reason, IMO, it's acceptable.
-> So let's wait to see others' feedback.
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 > 
 
-I'm okay with removing it (the build date) in Linux and ACPICA as well. However
-the version, which is essentially the release date, is important for the exact
-reasons already stated.
+I don't understand it. Why is this required?
 
-Dave
+	Arnd
