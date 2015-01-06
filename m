@@ -1,58 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793AbbAFKSJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 05:18:09 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:49849 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754764AbbAFKSG (ORCPT
+	id S1754798AbbAFKS6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 05:18:58 -0500
+Received: from casper.infradead.org ([85.118.1.10]:53202 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751698AbbAFKS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 05:18:06 -0500
+	Tue, 6 Jan 2015 05:18:57 -0500
+Date: Tue, 6 Jan 2015 11:18:39 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Shaohua Li <shli@fb.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Kernel-team@fb.com,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH v2 3/3] X86: Add a thread cpu time implementation to vDSO
+Message-ID: <20150106101839.GN29390@twins.programming.kicks-ass.net>
+References: <8559794d3a1924408a811a2881ab916fffb6015b.1418857018.git.shli@fb.com>
+ <95a7ba1a95a6251439d5ca2d3d56fe7f0778cb95.1418857018.git.shli@fb.com>
+ <CALCETrVyrOXNFk5OhPGukg+VmOEsHW93NLAd6LvkKFtV7H76kw@mail.gmail.com>
+ <CALCETrV2+qkuj3WinOW-Ro_PjtZBhLaXwSHCeWpMpTJnog83EQ@mail.gmail.com>
+ <20141219112350.GJ30905@twins.programming.kicks-ass.net>
+ <CALCETrXRs5mXYq8OPH-WYqWPoD=35WccnHh7Bcm-YZMjW3ADcw@mail.gmail.com>
+ <20141219170334.GM30905@twins.programming.kicks-ass.net>
+ <20150102025953.GA1253265@devbig257.prn2.facebook.com>
+ <CALCETrW=Z14X-TyOwsaMGKbY+w=JkUgjRFDsasBgWy83ZtkaeQ@mail.gmail.com>
+ <20150105232337.GA391887@devbig257.prn2.facebook.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20150106100621.GL29390@twins.programming.kicks-ass.net>
-References: <CA+icZUU4ALYvEq7SkUewnZytf62R0d9x+MVPvMrR0zzFf+-f3Q@mail.gmail.com>
-	<20150106094039.GI29390@twins.programming.kicks-ass.net>
-	<CA+icZUUcgP=nUPCOfEJrbO9OAAPLgQd8RWO-BJe+W0wi3fWiOw@mail.gmail.com>
-	<CA+icZUUThdtXkRztRxk+zEqvMwUmEQeSoR3WD3qqXW9QspBoVw@mail.gmail.com>
-	<20150106100621.GL29390@twins.programming.kicks-ass.net>
-Date: Tue, 6 Jan 2015 11:18:04 +0100
-Message-ID: <CA+icZUVy2rG3PwKhPTQojLEH2O8FD-0myO2sN8hQV4_+r9YNQQ@mail.gmail.com>
-Subject: Re: Linux 3.19-rc3
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dave Jones <davej@codemonkey.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Kent Overstreet <kmo@daterainc.com>, Chris Mason <clm@fb.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150105232337.GA391887@devbig257.prn2.facebook.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 6, 2015 at 11:06 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, Jan 06, 2015 at 10:57:19AM +0100, Sedat Dilek wrote:
->> [   88.028739]  [<ffffffff8124433f>] aio_read_events+0x4f/0x2d0
->>
->
-> Ah, that one. Chris Mason and Kent Overstreet were looking at that one.
-> I'm not touching the AIO code either ;-)
+On Mon, Jan 05, 2015 at 03:23:38PM -0800, Shaohua Li wrote:
+> Good, it works. But the timestamp (.time_running and friends) only gets
+> updated for real hardware event between context switches. For software
+> event, the timestamp is initialized once, then never updated. If I use
+> it to get time, I actually get CLOCK_MONOTONIC. Hardware events work
+> well here, but depending on hardware event is too tricky, which I'd like
+> to avoid.
 
-I know, I was so excited when I see nearly the same output.
+Hmm, that's an unfortunate difference in behaviour, does something like
+the below cure that for you?
 
-Can you tell me why people see "similiar" problems in different areas?
+---
+ kernel/events/core.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-[  181.397024] WARNING: CPU: 0 PID: 2872 at kernel/sched/core.c:7303
-__might_sleep+0xbd/0xd0()
-[  181.397028] do not call blocking ops when !TASK_RUNNING; state=1
-set at [<ffffffff810b83bd>] prepare_to_wait_event+0x5d/0x110
-
-With similiar buzzwords... namely...
-
-mutex_lock_nested
-prepare_to_wait(_event)
-__might_sleep
-
-I am asking myself... Where is the real root cause - in sched/core?
-Fix one single place VS. fix the impact at several other places?
-
-- Sedat -
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 4c1ee7f2bebc..0feb4e039359 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -5965,11 +5965,13 @@ static void perf_swevent_del(struct perf_event *event, int flags)
+ static void perf_swevent_start(struct perf_event *event, int flags)
+ {
+ 	event->hw.state = 0;
++	perf_event_update_userpage(event);
+ }
+ 
+ static void perf_swevent_stop(struct perf_event *event, int flags)
+ {
+ 	event->hw.state = PERF_HES_STOPPED;
++	perf_event_update_userpage(event);
+ }
+ 
+ /* Deref the hlist from the update side */
+@@ -6410,12 +6412,14 @@ static void cpu_clock_event_start(struct perf_event *event, int flags)
+ {
+ 	local64_set(&event->hw.prev_count, local_clock());
+ 	perf_swevent_start_hrtimer(event);
++	perf_event_update_userpage(event);
+ }
+ 
+ static void cpu_clock_event_stop(struct perf_event *event, int flags)
+ {
+ 	perf_swevent_cancel_hrtimer(event);
+ 	cpu_clock_event_update(event);
++	perf_event_update_userpage(event);
+ }
+ 
+ static int cpu_clock_event_add(struct perf_event *event, int flags)
+@@ -6484,12 +6488,14 @@ static void task_clock_event_start(struct perf_event *event, int flags)
+ {
+ 	local64_set(&event->hw.prev_count, event->ctx->time);
+ 	perf_swevent_start_hrtimer(event);
++	perf_event_update_userpage(event);
+ }
+ 
+ static void task_clock_event_stop(struct perf_event *event, int flags)
+ {
+ 	perf_swevent_cancel_hrtimer(event);
+ 	task_clock_event_update(event, event->ctx->time);
++	perf_event_update_userpage(event);
+ }
+ 
+ static int task_clock_event_add(struct perf_event *event, int flags)
