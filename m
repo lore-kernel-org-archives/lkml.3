@@ -1,603 +1,336 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472AbbAFOpt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 09:45:49 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:48212 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753432AbbAFOpr (ORCPT
+	id S1755196AbbAFOuy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 09:50:54 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56003 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751800AbbAFOux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 09:45:47 -0500
-Date: Tue, 6 Jan 2015 15:45:43 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Minchan Kim <minchan@kernel.org>, David Rientjes <rientjes@google.com>,
-        Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH V4 2/4] mm, page_alloc: reduce number of alloc_pages*
- functions' parameters
-Message-ID: <20150106144543.GB20860@dhcp22.suse.cz>
-References: <1420478263-25207-1-git-send-email-vbabka@suse.cz>
- <1420478263-25207-3-git-send-email-vbabka@suse.cz>
+	Tue, 6 Jan 2015 09:50:53 -0500
+Date: Tue, 6 Jan 2015 14:50:43 +0000
+From: Javi Merino <javi.merino@arm.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Punit Agrawal <Punit.Agrawal@arm.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [RFC PATCH v6 7/9] thermal: introduce the Power Allocator
+ governor
+Message-ID: <20150106145043.GI2885@e104805>
+References: <1417806260-9264-1-git-send-email-javi.merino@arm.com>
+ <1417806260-9264-8-git-send-email-javi.merino@arm.com>
+ <20150102154617.GB10683@developer>
+ <20150106132341.GF2885@e104805>
+ <20150106141830.GA6107@developer>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1420478263-25207-3-git-send-email-vbabka@suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20150106141830.GA6107@developer>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 05-01-15 18:17:41, Vlastimil Babka wrote:
-> Introduce struct alloc_context to accumulate the numerous parameters passed
-> between the alloc_pages* family of functions and get_page_from_freelist().
-> This excludes gfp_flags and alloc_info, which mutate too much along the way,
-> and allocation order, which is conceptually different.
-> 
-> The result is shorter function signatures, as well as overal code size and
-> stack usage reductions.
-> 
-> bloat-o-meter:
-> 
-> add/remove: 0/0 grow/shrink: 1/2 up/down: 127/-371 (-244)
-> function                                     old     new   delta
-> get_page_from_freelist                      2525    2652    +127
-> __alloc_pages_direct_compact                 329     283     -46
-> __alloc_pages_nodemask                      2507    2182    -325
-> 
-> checkstack.pl:
-> 
-> function                            old    new
-> __alloc_pages_nodemask              216    184
-> get_page_from_freelist              168    184
-> __alloc_pages_direct_compact         40     24
-> 
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
+Hi Eduardo,
 
-Looks good to me. I would just mention fields which might be reseted and
-where.
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  mm/page_alloc.c | 221 +++++++++++++++++++++++++-------------------------------
->  1 file changed, 100 insertions(+), 121 deletions(-)
+On Tue, Jan 06, 2015 at 02:18:36PM +0000, Eduardo Valentin wrote:
+> On Tue, Jan 06, 2015 at 01:23:42PM +0000, Javi Merino wrote:
+> > On Fri, Jan 02, 2015 at 03:46:24PM +0000, Eduardo Valentin wrote:
+> > > On Fri, Dec 05, 2014 at 07:04:18PM +0000, Javi Merino wrote:
+> > > > diff --git a/drivers/thermal/power_allocator.c b/drivers/thermal/power_allocator.c
+> > > > new file mode 100644
+> > > > index 000000000000..09e98991efbb
+> > > > --- /dev/null
+> > > > +++ b/drivers/thermal/power_allocator.c
+> > > > @@ -0,0 +1,511 @@
+> > > > +/*
+> > > > + * A power allocator to manage temperature
+> > > > + *
+> > > > + * Copyright (C) 2014 ARM Ltd.
+> > > > + *
+> > > > + * This program is free software; you can redistribute it and/or modify
+> > > > + * it under the terms of the GNU General Public License version 2 as
+> > > > + * published by the Free Software Foundation.
+> > > > + *
+> > > > + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+> > > > + * kind, whether express or implied; without even the implied warranty
+> > > > + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+> > > > + * GNU General Public License for more details.
+> > > > + */
+> > > > +
+> > > > +#define pr_fmt(fmt) "Power allocator: " fmt
+> > > > +
+> > > > +#include <linux/rculist.h>
+> > > > +#include <linux/slab.h>
+> > > > +#include <linux/thermal.h>
+> > > > +
+> > > > +#include "thermal_core.h"
+> > > > +
+> > > > +#define FRAC_BITS 10
+> > > > +#define int_to_frac(x) ((x) << FRAC_BITS)
+> > > > +#define frac_to_int(x) ((x) >> FRAC_BITS)
+> > > > +
+> > > > +/**
+> > > > + * mul_frac() - multiply two fixed-point numbers
+> > > > + * @x:	first multiplicand
+> > > > + * @y:	second multiplicand
+> > > > + *
+> > > 
+> > > If it is a kernel doc, needs a description.
+> > 
+> > Other parts of the kernel are more liberal in this regard,
+> > specially fro trivial functions like this.  Also, kernel-doc creates a
+> > documentation just fine:
+> > 
+> > $ scripts/kernel-doc -function mul_frac drivers/thermal/power_allocator.c | nroff -man
+> > mul_frac(9)                 Kernel Hacker's Manual                 mul_frac(9)
+> > 
+> > 
+> > 
+> > NAME
+> >        mul_frac - multiply two fixed-point numbers
+> > 
+> > SYNOPSIS
+> >        s64 mul_frac (s64 x, s64 y);
+> > 
+> > ARGUMENTS
+> >        x           first multiplicand
+> > 
+> >        y           second multiplicand
+> > 
+> > RETURN
+> >        the  result of multiplying two fixed-point numbers.  The result is also
+> >        a fixed-point number.
+> > 
+> > 
+> > 
+> > January 2015                       mul_frac                        mul_frac(9)
+> > 
+> > 
+> > I'll add the long description if you want to, but this is not a
+> > warning.
+> > 
 > 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 0c77a97..bf0359c 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -232,6 +232,19 @@ EXPORT_SYMBOL(nr_node_ids);
->  EXPORT_SYMBOL(nr_online_nodes);
->  #endif
->  
-> +/*
-> + * Structure for holding the mostly immutable allocation parameters passed
-> + * between alloc_pages* family of functions.
-> + */
-> +struct alloc_context {
-> +	struct zonelist *zonelist;
-> +	nodemask_t *nodemask;
-> +	struct zone *preferred_zone;
-> +	int classzone_idx;
-> +	int migratetype;
-> +	enum zone_type high_zoneidx;
-> +};
-> +
->  int page_group_by_mobility_disabled __read_mostly;
->  
->  void set_pageblock_migratetype(struct page *page, int migratetype)
-> @@ -2037,10 +2050,10 @@ static void reset_alloc_batches(struct zone *preferred_zone)
->   * a page.
->   */
->  static struct page *
-> -get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
-> -		struct zonelist *zonelist, int high_zoneidx, int alloc_flags,
-> -		struct zone *preferred_zone, int classzone_idx, int migratetype)
-> +get_page_from_freelist(gfp_t gfp_mask, unsigned int order, int alloc_flags,
-> +						const struct alloc_context *ac)
->  {
-> +	struct zonelist *zonelist = ac->zonelist;
->  	struct zoneref *z;
->  	struct page *page = NULL;
->  	struct zone *zone;
-> @@ -2059,8 +2072,8 @@ zonelist_scan:
->  	 * Scan zonelist, looking for a zone with enough free.
->  	 * See also __cpuset_node_allowed() comment in kernel/cpuset.c.
->  	 */
-> -	for_each_zone_zonelist_nodemask(zone, z, zonelist,
-> -						high_zoneidx, nodemask) {
-> +	for_each_zone_zonelist_nodemask(zone, z, zonelist, ac->high_zoneidx,
-> +								ac->nodemask) {
->  		unsigned long mark;
->  
->  		if (IS_ENABLED(CONFIG_NUMA) && zlc_active &&
-> @@ -2077,7 +2090,7 @@ zonelist_scan:
->  		 * time the page has in memory before being reclaimed.
->  		 */
->  		if (alloc_flags & ALLOC_FAIR) {
-> -			if (!zone_local(preferred_zone, zone))
-> +			if (!zone_local(ac->preferred_zone, zone))
->  				break;
->  			if (test_bit(ZONE_FAIR_DEPLETED, &zone->flags)) {
->  				nr_fair_skipped++;
-> @@ -2115,7 +2128,7 @@ zonelist_scan:
->  
->  		mark = zone->watermark[alloc_flags & ALLOC_WMARK_MASK];
->  		if (!zone_watermark_ok(zone, order, mark,
-> -				       classzone_idx, alloc_flags)) {
-> +				       ac->classzone_idx, alloc_flags)) {
->  			int ret;
->  
->  			/* Checked here to keep the fast path fast */
-> @@ -2136,7 +2149,7 @@ zonelist_scan:
->  			}
->  
->  			if (zone_reclaim_mode == 0 ||
-> -			    !zone_allows_reclaim(preferred_zone, zone))
-> +			    !zone_allows_reclaim(ac->preferred_zone, zone))
->  				goto this_zone_full;
->  
->  			/*
-> @@ -2158,7 +2171,7 @@ zonelist_scan:
->  			default:
->  				/* did we reclaim enough */
->  				if (zone_watermark_ok(zone, order, mark,
-> -						classzone_idx, alloc_flags))
-> +						ac->classzone_idx, alloc_flags))
->  					goto try_this_zone;
->  
->  				/*
-> @@ -2179,8 +2192,8 @@ zonelist_scan:
->  		}
->  
->  try_this_zone:
-> -		page = buffered_rmqueue(preferred_zone, zone, order,
-> -						gfp_mask, migratetype);
-> +		page = buffered_rmqueue(ac->preferred_zone, zone, order,
-> +						gfp_mask, ac->migratetype);
->  		if (page) {
->  			if (prep_new_page(page, order, gfp_mask, alloc_flags))
->  				goto try_this_zone;
-> @@ -2203,7 +2216,7 @@ this_zone_full:
->  		alloc_flags &= ~ALLOC_FAIR;
->  		if (nr_fair_skipped) {
->  			zonelist_rescan = true;
-> -			reset_alloc_batches(preferred_zone);
-> +			reset_alloc_batches(ac->preferred_zone);
->  		}
->  		if (nr_online_nodes > 1)
->  			zonelist_rescan = true;
-> @@ -2325,9 +2338,7 @@ should_alloc_retry(gfp_t gfp_mask, unsigned int order,
->  
->  static inline struct page *
->  __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
-> -	struct zonelist *zonelist, enum zone_type high_zoneidx,
-> -	nodemask_t *nodemask, struct zone *preferred_zone,
-> -	int classzone_idx, int migratetype, unsigned long *did_some_progress)
-> +	const struct alloc_context *ac, unsigned long *did_some_progress)
->  {
->  	struct page *page;
->  
-> @@ -2340,7 +2351,7 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
->  	 * Acquire the per-zone oom lock for each zone.  If that
->  	 * fails, somebody else is making progress for us.
->  	 */
-> -	if (!oom_zonelist_trylock(zonelist, gfp_mask)) {
-> +	if (!oom_zonelist_trylock(ac->zonelist, gfp_mask)) {
->  		*did_some_progress = 1;
->  		schedule_timeout_uninterruptible(1);
->  		return NULL;
-> @@ -2359,10 +2370,8 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
->  	 * here, this is only to catch a parallel oom killing, we must fail if
->  	 * we're still under heavy pressure.
->  	 */
-> -	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask,
-> -		order, zonelist, high_zoneidx,
-> -		ALLOC_WMARK_HIGH|ALLOC_CPUSET,
-> -		preferred_zone, classzone_idx, migratetype);
-> +	page = get_page_from_freelist(gfp_mask | __GFP_HARDWALL, order,
-> +					ALLOC_WMARK_HIGH|ALLOC_CPUSET, ac);
->  	if (page)
->  		goto out;
->  
-> @@ -2374,7 +2383,7 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
->  		if (order > PAGE_ALLOC_COSTLY_ORDER)
->  			goto out;
->  		/* The OOM killer does not needlessly kill tasks for lowmem */
-> -		if (high_zoneidx < ZONE_NORMAL)
-> +		if (ac->high_zoneidx < ZONE_NORMAL)
->  			goto out;
->  		/* The OOM killer does not compensate for light reclaim */
->  		if (!(gfp_mask & __GFP_FS))
-> @@ -2390,10 +2399,10 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
->  			goto out;
->  	}
->  	/* Exhausted what can be done so it's blamo time */
-> -	out_of_memory(zonelist, gfp_mask, order, nodemask, false);
-> +	out_of_memory(ac->zonelist, gfp_mask, order, ac->nodemask, false);
->  	*did_some_progress = 1;
->  out:
-> -	oom_zonelist_unlock(zonelist, gfp_mask);
-> +	oom_zonelist_unlock(ac->zonelist, gfp_mask);
->  	return page;
->  }
->  
-> @@ -2401,10 +2410,9 @@ out:
->  /* Try memory compaction for high-order allocations before reclaim */
->  static struct page *
->  __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
-> -	struct zonelist *zonelist, enum zone_type high_zoneidx,
-> -	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
-> -	int classzone_idx, int migratetype, enum migrate_mode mode,
-> -	int *contended_compaction, bool *deferred_compaction)
-> +		int alloc_flags, const struct alloc_context *ac,
-> +		enum migrate_mode mode, int *contended_compaction,
-> +		bool *deferred_compaction)
->  {
->  	unsigned long compact_result;
->  	struct page *page;
-> @@ -2413,10 +2421,10 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
->  		return NULL;
->  
->  	current->flags |= PF_MEMALLOC;
-> -	compact_result = try_to_compact_pages(zonelist, order, gfp_mask,
-> -						nodemask, mode,
-> +	compact_result = try_to_compact_pages(ac->zonelist, order, gfp_mask,
-> +						ac->nodemask, mode,
->  						contended_compaction,
-> -						alloc_flags, classzone_idx);
-> +						alloc_flags, ac->classzone_idx);
->  	current->flags &= ~PF_MEMALLOC;
->  
->  	switch (compact_result) {
-> @@ -2435,10 +2443,8 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
->  	 */
->  	count_vm_event(COMPACTSTALL);
->  
-> -	page = get_page_from_freelist(gfp_mask, nodemask,
-> -			order, zonelist, high_zoneidx,
-> -			alloc_flags & ~ALLOC_NO_WATERMARKS,
-> -			preferred_zone, classzone_idx, migratetype);
-> +	page = get_page_from_freelist(gfp_mask, order,
-> +					alloc_flags & ~ALLOC_NO_WATERMARKS, ac);
->  
->  	if (page) {
->  		struct zone *zone = page_zone(page);
-> @@ -2462,10 +2468,9 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
->  #else
->  static inline struct page *
->  __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
-> -	struct zonelist *zonelist, enum zone_type high_zoneidx,
-> -	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
-> -	int classzone_idx, int migratetype, enum migrate_mode mode,
-> -	int *contended_compaction, bool *deferred_compaction)
-> +		int alloc_flags, const struct alloc_context *ac,
-> +		enum migrate_mode mode, int *contended_compaction,
-> +		bool *deferred_compaction)
->  {
->  	return NULL;
->  }
-> @@ -2473,8 +2478,8 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
->  
->  /* Perform direct synchronous page reclaim */
->  static int
-> -__perform_reclaim(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist,
-> -		  nodemask_t *nodemask)
-> +__perform_reclaim(gfp_t gfp_mask, unsigned int order,
-> +					const struct alloc_context *ac)
->  {
->  	struct reclaim_state reclaim_state;
->  	int progress;
-> @@ -2488,7 +2493,8 @@ __perform_reclaim(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist,
->  	reclaim_state.reclaimed_slab = 0;
->  	current->reclaim_state = &reclaim_state;
->  
-> -	progress = try_to_free_pages(zonelist, order, gfp_mask, nodemask);
-> +	progress = try_to_free_pages(ac->zonelist, order, gfp_mask,
-> +								ac->nodemask);
->  
->  	current->reclaim_state = NULL;
->  	lockdep_clear_current_reclaim_state();
-> @@ -2502,28 +2508,23 @@ __perform_reclaim(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist,
->  /* The really slow allocator path where we enter direct reclaim */
->  static inline struct page *
->  __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
-> -	struct zonelist *zonelist, enum zone_type high_zoneidx,
-> -	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
-> -	int classzone_idx, int migratetype, unsigned long *did_some_progress)
-> +		int alloc_flags, const struct alloc_context *ac,
-> +		unsigned long *did_some_progress)
->  {
->  	struct page *page = NULL;
->  	bool drained = false;
->  
-> -	*did_some_progress = __perform_reclaim(gfp_mask, order, zonelist,
-> -					       nodemask);
-> +	*did_some_progress = __perform_reclaim(gfp_mask, order, ac);
->  	if (unlikely(!(*did_some_progress)))
->  		return NULL;
->  
->  	/* After successful reclaim, reconsider all zones for allocation */
->  	if (IS_ENABLED(CONFIG_NUMA))
-> -		zlc_clear_zones_full(zonelist);
-> +		zlc_clear_zones_full(ac->zonelist);
->  
->  retry:
-> -	page = get_page_from_freelist(gfp_mask, nodemask, order,
-> -					zonelist, high_zoneidx,
-> -					alloc_flags & ~ALLOC_NO_WATERMARKS,
-> -					preferred_zone, classzone_idx,
-> -					migratetype);
-> +	page = get_page_from_freelist(gfp_mask, order,
-> +					alloc_flags & ~ALLOC_NO_WATERMARKS, ac);
->  
->  	/*
->  	 * If an allocation failed after direct reclaim, it could be because
-> @@ -2544,36 +2545,30 @@ retry:
->   */
->  static inline struct page *
->  __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
-> -	struct zonelist *zonelist, enum zone_type high_zoneidx,
-> -	nodemask_t *nodemask, struct zone *preferred_zone,
-> -	int classzone_idx, int migratetype)
-> +				const struct alloc_context *ac)
->  {
->  	struct page *page;
->  
->  	do {
-> -		page = get_page_from_freelist(gfp_mask, nodemask, order,
-> -			zonelist, high_zoneidx, ALLOC_NO_WATERMARKS,
-> -			preferred_zone, classzone_idx, migratetype);
-> +		page = get_page_from_freelist(gfp_mask, order,
-> +						ALLOC_NO_WATERMARKS, ac);
->  
->  		if (!page && gfp_mask & __GFP_NOFAIL)
-> -			wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
-> +			wait_iff_congested(ac->preferred_zone, BLK_RW_ASYNC,
-> +									HZ/50);
->  	} while (!page && (gfp_mask & __GFP_NOFAIL));
->  
->  	return page;
->  }
->  
-> -static void wake_all_kswapds(unsigned int order,
-> -			     struct zonelist *zonelist,
-> -			     enum zone_type high_zoneidx,
-> -			     struct zone *preferred_zone,
-> -			     nodemask_t *nodemask)
-> +static void wake_all_kswapds(unsigned int order, const struct alloc_context *ac)
->  {
->  	struct zoneref *z;
->  	struct zone *zone;
->  
-> -	for_each_zone_zonelist_nodemask(zone, z, zonelist,
-> -						high_zoneidx, nodemask)
-> -		wakeup_kswapd(zone, order, zone_idx(preferred_zone));
-> +	for_each_zone_zonelist_nodemask(zone, z, ac->zonelist,
-> +						ac->high_zoneidx, ac->nodemask)
-> +		wakeup_kswapd(zone, order, zone_idx(ac->preferred_zone));
->  }
->  
->  static inline int
-> @@ -2632,9 +2627,7 @@ bool gfp_pfmemalloc_allowed(gfp_t gfp_mask)
->  
->  static inline struct page *
->  __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
-> -	struct zonelist *zonelist, enum zone_type high_zoneidx,
-> -	nodemask_t *nodemask, struct zone *preferred_zone,
-> -	int classzone_idx, int migratetype)
-> +						struct alloc_context *ac)
->  {
->  	const gfp_t wait = gfp_mask & __GFP_WAIT;
->  	struct page *page = NULL;
-> @@ -2669,8 +2662,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
->  		goto nopage;
->  
->  	if (!(gfp_mask & __GFP_NO_KSWAPD))
-> -		wake_all_kswapds(order, zonelist, high_zoneidx,
-> -				preferred_zone, nodemask);
-> +		wake_all_kswapds(order, ac);
->  
->  	/*
->  	 * OK, we're below the kswapd watermark and have kicked background
-> @@ -2683,18 +2675,17 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
->  	 * Find the true preferred zone if the allocation is unconstrained by
->  	 * cpusets.
->  	 */
-> -	if (!(alloc_flags & ALLOC_CPUSET) && !nodemask) {
-> +	if (!(alloc_flags & ALLOC_CPUSET) && !ac->nodemask) {
->  		struct zoneref *preferred_zoneref;
-> -		preferred_zoneref = first_zones_zonelist(zonelist, high_zoneidx,
-> -				NULL, &preferred_zone);
-> -		classzone_idx = zonelist_zone_idx(preferred_zoneref);
-> +		preferred_zoneref = first_zones_zonelist(ac->zonelist,
-> +				ac->high_zoneidx, NULL, &ac->preferred_zone);
-> +		ac->classzone_idx = zonelist_zone_idx(preferred_zoneref);
->  	}
->  
->  rebalance:
->  	/* This is the last chance, in general, before the goto nopage. */
-> -	page = get_page_from_freelist(gfp_mask, nodemask, order, zonelist,
-> -			high_zoneidx, alloc_flags & ~ALLOC_NO_WATERMARKS,
-> -			preferred_zone, classzone_idx, migratetype);
-> +	page = get_page_from_freelist(gfp_mask, order,
-> +				alloc_flags & ~ALLOC_NO_WATERMARKS, ac);
->  	if (page)
->  		goto got_pg;
->  
-> @@ -2705,11 +2696,10 @@ rebalance:
->  		 * the allocation is high priority and these type of
->  		 * allocations are system rather than user orientated
->  		 */
-> -		zonelist = node_zonelist(numa_node_id(), gfp_mask);
-> +		ac->zonelist = node_zonelist(numa_node_id(), gfp_mask);
-> +
-> +		page = __alloc_pages_high_priority(gfp_mask, order, ac);
->  
-> -		page = __alloc_pages_high_priority(gfp_mask, order,
-> -				zonelist, high_zoneidx, nodemask,
-> -				preferred_zone, classzone_idx, migratetype);
->  		if (page) {
->  			goto got_pg;
->  		}
-> @@ -2738,11 +2728,9 @@ rebalance:
->  	 * Try direct compaction. The first pass is asynchronous. Subsequent
->  	 * attempts after direct reclaim are synchronous
->  	 */
-> -	page = __alloc_pages_direct_compact(gfp_mask, order, zonelist,
-> -					high_zoneidx, nodemask, alloc_flags,
-> -					preferred_zone,
-> -					classzone_idx, migratetype,
-> -					migration_mode, &contended_compaction,
-> +	page = __alloc_pages_direct_compact(gfp_mask, order, alloc_flags, ac,
-> +					migration_mode,
-> +					&contended_compaction,
->  					&deferred_compaction);
->  	if (page)
->  		goto got_pg;
-> @@ -2788,12 +2776,8 @@ rebalance:
->  		migration_mode = MIGRATE_SYNC_LIGHT;
->  
->  	/* Try direct reclaim and then allocating */
-> -	page = __alloc_pages_direct_reclaim(gfp_mask, order,
-> -					zonelist, high_zoneidx,
-> -					nodemask,
-> -					alloc_flags, preferred_zone,
-> -					classzone_idx, migratetype,
-> -					&did_some_progress);
-> +	page = __alloc_pages_direct_reclaim(gfp_mask, order, alloc_flags, ac,
-> +							&did_some_progress);
->  	if (page)
->  		goto got_pg;
->  
-> @@ -2807,10 +2791,8 @@ rebalance:
->  		 * start OOM killing tasks.
->  		 */
->  		if (!did_some_progress) {
-> -			page = __alloc_pages_may_oom(gfp_mask, order, zonelist,
-> -						high_zoneidx, nodemask,
-> -						preferred_zone, classzone_idx,
-> -						migratetype,&did_some_progress);
-> +			page = __alloc_pages_may_oom(gfp_mask, order, ac,
-> +							&did_some_progress);
->  			if (page)
->  				goto got_pg;
->  			if (!did_some_progress) {
-> @@ -2819,7 +2801,7 @@ rebalance:
->  			}
->  		}
->  		/* Wait for some write requests to complete then retry */
-> -		wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
-> +		wait_iff_congested(ac->preferred_zone, BLK_RW_ASYNC, HZ/50);
->  		goto rebalance;
->  	} else {
->  		/*
-> @@ -2827,11 +2809,9 @@ rebalance:
->  		 * direct reclaim and reclaim/compaction depends on compaction
->  		 * being called after reclaim so call directly if necessary
->  		 */
-> -		page = __alloc_pages_direct_compact(gfp_mask, order, zonelist,
-> -					high_zoneidx, nodemask, alloc_flags,
-> -					preferred_zone,
-> -					classzone_idx, migratetype,
-> -					migration_mode, &contended_compaction,
-> +		page = __alloc_pages_direct_compact(gfp_mask, order,
-> +					alloc_flags, ac, migration_mode,
-> +					&contended_compaction,
->  					&deferred_compaction);
->  		if (page)
->  			goto got_pg;
-> @@ -2854,15 +2834,16 @@ struct page *
->  __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
->  			struct zonelist *zonelist, nodemask_t *nodemask)
->  {
-> -	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
-> -	struct zone *preferred_zone;
->  	struct zoneref *preferred_zoneref;
->  	struct page *page = NULL;
-> -	int migratetype = gfpflags_to_migratetype(gfp_mask);
->  	unsigned int cpuset_mems_cookie;
->  	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
-> -	int classzone_idx;
->  	gfp_t mask;
-> +	struct alloc_context ac = {
-> +		.high_zoneidx = gfp_zone(gfp_mask),
-> +		.nodemask = nodemask,
-> +		.migratetype = gfpflags_to_migratetype(gfp_mask),
-> +	};
->  
->  	gfp_mask &= gfp_allowed_mask;
->  
-> @@ -2881,25 +2862,25 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
->  	if (unlikely(!zonelist->_zonerefs->zone))
->  		return NULL;
->  
-> -	if (IS_ENABLED(CONFIG_CMA) && migratetype == MIGRATE_MOVABLE)
-> +	if (IS_ENABLED(CONFIG_CMA) && ac.migratetype == MIGRATE_MOVABLE)
->  		alloc_flags |= ALLOC_CMA;
->  
->  retry_cpuset:
->  	cpuset_mems_cookie = read_mems_allowed_begin();
->  
-> +	/* We set it here, as __alloc_pages_slowpath might have changed it */
-> +	ac.zonelist = zonelist;
->  	/* The preferred zone is used for statistics later */
-> -	preferred_zoneref = first_zones_zonelist(zonelist, high_zoneidx,
-> -				nodemask ? : &cpuset_current_mems_allowed,
-> -				&preferred_zone);
-> -	if (!preferred_zone)
-> +	preferred_zoneref = first_zones_zonelist(ac.zonelist, ac.high_zoneidx,
-> +				ac.nodemask ? : &cpuset_current_mems_allowed,
-> +				&ac.preferred_zone);
-> +	if (!ac.preferred_zone)
->  		goto out;
-> -	classzone_idx = zonelist_zone_idx(preferred_zoneref);
-> +	ac.classzone_idx = zonelist_zone_idx(preferred_zoneref);
->  
->  	/* First allocation attempt */
->  	mask = gfp_mask|__GFP_HARDWALL;
-> -	page = get_page_from_freelist(mask, nodemask, order, zonelist,
-> -			high_zoneidx, alloc_flags, preferred_zone,
-> -			classzone_idx, migratetype);
-> +	page = get_page_from_freelist(mask, order, alloc_flags, &ac);
->  	if (unlikely(!page)) {
->  		/*
->  		 * Runtime PM, block IO and its error handling path
-> @@ -2908,12 +2889,10 @@ retry_cpuset:
->  		 */
->  		mask = memalloc_noio_flags(gfp_mask);
->  
-> -		page = __alloc_pages_slowpath(mask, order,
-> -				zonelist, high_zoneidx, nodemask,
-> -				preferred_zone, classzone_idx, migratetype);
-> +		page = __alloc_pages_slowpath(mask, order, &ac);
->  	}
->  
-> -	trace_mm_page_alloc(page, order, mask, migratetype);
-> +	trace_mm_page_alloc(page, order, mask, ac.migratetype);
->  
->  out:
->  	/*
-> -- 
-> 2.1.2
 > 
+> As long as there is no kerneldoc warning/errors, I am fine taking it. I
+> must confess I haven't run kerneldoc script in your patch as I got it
+> with encoding scrambled, so I was just pointing the missing entries.
 
--- 
-Michal Hocko
-SUSE Labs
+Ok, I'll make sure kernel-doc doesn't scream.
+
+> > > > + * Return: the result of multiplying two fixed-point numbers.  The
+> > > > + * result is also a fixed-point number.
+> > > > + */
+> > > > +static inline s64 mul_frac(s64 x, s64 y)
+> > > > +{
+> > > > +	return (x * y) >> FRAC_BITS;
+> > > > +}
+> > > > +
+> > > > +enum power_allocator_trip_levels {
+> > > > +	TRIP_SWITCH_ON = 0,	/* Switch on PID controller */
+> > > > +	TRIP_MAX_DESIRED_TEMPERATURE, /* Temperature we are controlling for */
+> > > > +
+> > > > +	THERMAL_TRIP_NUM,
+> > > > +};
+> > > > +
+> > > > +/**
+> > > > + * struct power_allocator_params - parameters for the power allocator governor
+> > > > + * @k_po:	Proportional parameter of the PID controller when overshooting
+> > > > + *		(i.e., when temperature is below the target)
+> > > > + * @k_pu:	Proportional parameter of the PID controller when undershooting
+> > > > + * @k_i:	Integral parameter of the PID controller
+> > > > + * @k_d:	Derivative parameter of the PID controller
+> > > > + * @integral_cutoff:	threshold below which the error is no longer accumulated
+> > > > +			in the PID controller
+> > > > + * @err_integral:	accumulated error in the PID controller.
+> > > > + * @prev_err:	error in the previous iteration of the PID controller.
+> > > > + *		Used to calculate the derivative term.
+> > > > + */
+> > > > +struct power_allocator_params {
+> > > > +	s32 k_po;
+> > > > +	s32 k_pu;
+> > > > +	s32 k_i;
+> > > > +	s32 k_d;
+> > > > +	s32 integral_cutoff;
+> > > > +	s64 err_integral;
+> > > > +	s32 prev_err;
+> > > > +};
+> > > > +
+> > > > +/**
+> > > > + * get_actor_weight() - get the weight for the power actor
+> > > > + * @tz:		thermal zone we are operating in
+> > > > + * @actor:	the power actor
+> > > > + *
+> > > 
+> > > 
+> > > ditto
+> > > 
+> > > > + * Returns: The weight inside the thermal binding parameters of the
+> > > 
+> > > s/Returns:/Return:/g
+> > 
+> > Yep.
+> > 
+> > > Please run the kernel doc script on your patches and avoid adding
+> > > warnings / errors.
+> > 
+> > Actually, kernel-doc doesn't complain about Returns vs Return and it
+> > doesn't really care if there is no description in a function as I said
+> > before.
+> > 
+> > Is there a better way than running "scripts/kernel-doc -function
+> > $FUNCTION $FILE" ?  It would be great if scripts/check-patch.pl
+> > checked this as well.
+> 
+> I usually run 
+> $ ./scripts/kernel-doc -text -v drivers/thermal/thermal_core.c > /dev/null
+> 
+> to see what it complain.
+
+I'll do that from now on.
+
+> as for checkpatch.pl, well, I agree. But as it is not there, I have its
+> execution in my own internal scripts that I run on top of patches I
+> receive.
+> 
+> > 
+[...]
+> > > > +/**
+> > > > + * divvy_up_power() - divvy the allocated power between the actors
+> > > > + * @req_power:	each actor's requested power
+> > > > + * @max_power:	each actor's maximum available power
+> > > > + * @num_actors:	size of the @req_power, @max_power and @granted_power's array
+> > > > + * @total_req_power: sum of @req_power
+> > > > + * @power_range:	total allocated power
+> > > > + * @granted_power:	output array: each actor's granted power
+> > > > + *
+> > > > + * This function divides the total allocated power (@power_range)
+> > > > + * fairly between the actors.  It first tries to give each actor a
+> > > > + * share of the @power_range according to how much power it requested
+> > > > + * compared to the rest of the actors.  For example, if only one actor
+> > > > + * requests power, then it receives all the @power_range.  If
+> > > > + * three actors each requests 1mW, each receives a third of the
+> > > > + * @power_range.
+> > > > + *
+> > > > + * If any actor received more than their maximum power, then that
+> > > > + * surplus is re-divvied among the actors based on how far they are
+> > > > + * from their respective maximums.
+> > > > + *
+> > > > + * Granted power for each actor is written to @granted_power, which
+> > > > + * should've been allocated by the calling function.
+> > > > + */
+> > > > +static void divvy_up_power(u32 *req_power, u32 *max_power, int num_actors,
+> > > > +			u32 total_req_power, u32 power_range,
+> > > > +			u32 *granted_power)
+> > > > +{
+> > > > +	u32 extra_power, capped_extra_power, extra_actor_power[num_actors];
+> > > > +	int i;
+> > > > +
+> > > > +	if (!total_req_power) {
+> > > > +		/*
+> > > > +		 * Nobody requested anything, so just give everybody
+> > > > +		 * the maximum power
+> > > > +		 */
+> > > > +		for (i = 0; i < num_actors; i++)
+> > > > +			granted_power[i] = max_power[i];
+> > > > +
+> > > > +		return;
+> > > > +	}
+> > > > +
+> > > > +	capped_extra_power = 0;
+> > > > +	extra_power = 0;
+> > > > +	for (i = 0; i < num_actors; i++) {
+> > > > +		u64 req_range = req_power[i] * power_range;
+> > > > +
+> > > > +		granted_power[i] = div_u64(req_range, total_req_power);
+> > > > +
+> > > > +		if (granted_power[i] > max_power[i]) {
+> > > > +			extra_power += granted_power[i] - max_power[i];
+> > > > +			granted_power[i] = max_power[i];
+> > > 
+> > > shouldn't we continue here?
+> > 
+> > No, you would leave the extra_actor_power[i] uninitialized.
+> > 
+> > > > +		}
+> > > > +
+> > > > +		extra_actor_power[i] = max_power[i] - granted_power[i];
+> > > 
+> > > Do we care when max_power[i] < granted_power[i]?
+> > 
+> > That can't happen, the above "if" prevents it.
+> > 
+> > > What happens to (overflowed) extra_actor_power[i]?
+> > 
+> > extra_actor_power[i] can't overflow, it's a u32 and is asigned the
+> > result of substracting two u32s.  The code make sure that the minuend is
+> > bigger or equal than the sustraend.
+> > 
+> 
+> I see now. Maybe I need extra coffee :-)
+
+:)
+
+[...]
+> > > > diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> > > > index 1155457caf52..b23e019b1761 100644
+> > > > --- a/include/linux/thermal.h
+> > > > +++ b/include/linux/thermal.h
+> > > > @@ -61,6 +61,8 @@
+> > > >  #define DEFAULT_THERMAL_GOVERNOR       "fair_share"
+> > > >  #elif defined(CONFIG_THERMAL_DEFAULT_GOV_USER_SPACE)
+> > > >  #define DEFAULT_THERMAL_GOVERNOR       "user_space"
+> > > > +#elif defined(CONFIG_THERMAL_DEFAULT_GOV_POWER_ALLOCATOR)
+> > > > +#define DEFAULT_THERMAL_GOVERNOR       "power_allocator"
+> > > >  #endif
+> > > >  
+> > > >  struct thermal_zone_device;
+> > > > @@ -255,9 +257,14 @@ struct thermal_bind_params {
+> > > >  
+> > > >  	/*
+> > > >  	 * This is a measure of 'how effectively these devices can
+> > > > -	 * cool 'this' thermal zone. The shall be determined by platform
+> > > > -	 * characterization. This is on a 'percentage' scale.
+> > > > -	 * See Documentation/thermal/sysfs-api.txt for more information.
+> > > > +	 * cool 'this' thermal zone. The shall be determined by
+> > > > +	 * platform characterization. For the fair-share governor,
+> > > > +	 * this is on a 'percentage' scale.  See
+> > > > +	 * Documentation/thermal/sysfs-api.txt for more
+> > > > +	 * information. For the power_allocator governor, they are
+> > > > +	 * relative to each other, see
+> > > > +	 * Documentation/thermal/power_allocator.txt for more
+> > > > +	 * information.
+> > > 
+> > > What happens if we register a thermal zone with relative weights, at
+> > > fist the user uses power allocator, but then wants to, for some reason,
+> > > use fair share? (or vice-versa).
+> > > 
+> > > Can't power allocator use percentages too?
+> > 
+> > The problem with percentages is that they are hard to use as they
+> > depend on each other.  For example, you need to know how many cooling
+> > devices there are and that number needs to remain fixed.  You can't
+> > add a new cooling device without changing the weights of all the other
+> > existing cooling devices.  If the thermal zone is already created it's
+> > hard to change the weights so you really can't add or remove cooling
+> > devices.
+> > 
+> > We were talking in another thread of ignoring a cooling device on some
+> > error.  How do you do that if the percentages must add to a hundred?
+> > 
+> > I thought that we could reuse the "weight" parameter but if you think
+> > we are abusing by making it mean different things for different
+> > governors we can create a new one instead.
+> > 
+> 
+> yeah, I am concerned about the inconsistence. If you can make both
+> governor to use the data standardized with same unit (percentage or
+> relative values), then I am fine with that. Either way: (a) make power
+> allocator to use percentage; or (b) make fair share to use relative
+> values.
+
+Ok, I'll send a path for (b) then.
+
+Cheers,
+Javi
