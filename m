@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756474AbbAFUOV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 15:14:21 -0500
-Received: from mail-bn1on0092.outbound.protection.outlook.com ([157.56.110.92]:37750
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755629AbbAFUOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 15:14:18 -0500
-From: <atull@opensource.altera.com>
-To: <gregkh@linuxfoundation.org>, <jgunthorpe@obsidianresearch.com>,
-        <hpa@zytor.com>, <monstr@monstr.eu>, <michal.simek@xilinx.com>,
-        <rdunlap@infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <pantelis.antoniou@konsulko.com>, <robh+dt@kernel.org>,
-        <grant.likely@linaro.org>, <iws@ovro.caltech.edu>,
-        <linux-doc@vger.kernel.org>, <pavel@denx.de>, <broonie@kernel.org>,
-        <philip@balister.org>, <rubini@gnudd.com>, <s.trumtrar@pengutronix.de>,
-        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
-        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
-        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
-        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
-        <linus.walleij@linaro.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <galak@codeaurora.org>, <devel@driverdev.osuosl.org>,
-        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
-        <yvanderv@opensource.altera.com>,
-        Alan Tull <atull@opensource.altera.com>
-Subject: [PATCH v8 0/4] FPGA Manager Framework
-Date: Tue, 6 Jan 2015 14:13:35 -0600
-Message-ID: <1420575219-27061-1-git-send-email-atull@opensource.altera.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BY1PR00CA0017.namprd00.prod.outlook.com (25.160.102.27) To
- BY1PR0301MB1238.namprd03.prod.outlook.com (25.161.203.22)
-Authentication-Results: spf=none (sender IP is )
- smtp.mailfrom=atull@opensource.altera.com; 
-X-DmarcAction: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BY1PR0301MB1238;
-X-Forefront-PRVS: 0448A97BF2
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(164054003)(199003)(53416004)(87976001)(42186005)(62966003)(77156002)(81156004)(105586002)(106356001)(107046002)(69596002)(19580395003)(97736003)(122386002)(229853001)(21056001)(19580405001)(31966008)(48376002)(66066001)(4396001)(50466002)(50226001)(46102003)(50986999)(86152002)(92566001)(2201001)(120916001)(47776003)(64706001)(20776003)(99396003)(89996001)(33646002)(86362001)(68736005)(40100003)(101416001)(7059030);DIR:OUT;SFP:1101;SCL:1;SRVR:BY1PR0301MB1238;H:linuxheads99.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: opensource.altera.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 06 Jan 2015 20:14:04.1071 (UTC)
-X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY1PR0301MB1238
+	id S1755528AbbAFUNk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 15:13:40 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:60563 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751674AbbAFUNj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 15:13:39 -0500
+Message-ID: <1420575216.5947.12.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: TCP connection issues against Amazon S3
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Erik Grinaker <erik@bengler.no>
+Cc: Yuchung Cheng <ycheng@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Date: Tue, 06 Jan 2015 12:13:36 -0800
+In-Reply-To: <76DC89D1-CFCE-44B7-994E-4349FEEDEFA6@bengler.no>
+References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no>
+	 <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no>
+	 <1420564837.32621.30.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no>
+	 <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com>
+	 <03FC652E-AA01-42C7-BD52-019B6D922A9C@bengler.no>
+	 <CAK6E8=cP0BFUob5MVj9M0hC0efgRnUY=JMUPKee+v-4TLvHBgg@mail.gmail.com>
+	 <76DC89D1-CFCE-44B7-994E-4349FEEDEFA6@bengler.no>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Tull <atull@opensource.altera.com>
+On Tue, 2015-01-06 at 19:42 +0000, Erik Grinaker wrote:
 
-v8 changes the compatible string for SOCFPGA FPGA managers
-to be more chip specific.
+> The transfer on the functioning Netherlands server does indeed use SACKs, while the Norway servers do not.
+> 
+> For what it’s worth, I have made stripped down pcaps for a single failing transfer as well as a single functioning transfer in the Netherlands:
+> 
+> http://abstrakt.bengler.no/tcp-issues-s3-failure.pcap.bz2
+> http://abstrakt.bengler.no/tcp-issues-s3-success-netherlands.pcap.bz2
+> 
 
-"altr,fpga-mgr" becomes "altr,socfpga-fpga-mgr"
+Although sender seems to be reluctant to retransmit, this 'failure' is
+caused by receiver closing the connection too soon.
 
-Thanks,
-Alan
+Are you sure you do not ask curl to setup a very small completion
+timer ?
 
-Alan Tull (4):
-  doc: add bindings document for altera fpga manager
-  fpga manager: add sysfs interface document
-  staging: fpga manager: framework core
-  staging: fpga manager: add driver for socfpga fpga manager
+12:41:00.738336 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 767221:768681, ack 154, win 127, length 1460
+12:41:00.738346 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 736561, win 1877, length 0
+12:41:05.227150 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 736561:738021, ack 154, win 127, length 1460
+12:41:05.227250 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 745321, win 1882, length 0
+12:41:05.278287 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 768681:770141, ack 154, win 127, length 1460
+12:41:05.278354 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 745321, win 1888, length 0
+12:41:05.278421 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 770141:771601, ack 154, win 127, length 1460
+12:41:05.278429 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 745321, win 1894, length 0
+12:41:14.257102 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 745321:746781, ack 154, win 127, length 1460
+12:41:14.257154 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 746781, win 1900, length 0
+12:41:14.308117 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 771601:773061, ack 154, win 127, length 1460
+12:41:14.308227 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 746781, win 1905, length 0
+12:41:14.308387 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 773061:774521, ack 154, win 127, length 1460
+12:41:14.308397 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 746781, win 1911, length 0
 
- drivers/staging/Kconfig                            |    2 +
- drivers/staging/Makefile                           |    1 +
- .../Documentation/ABI/sysfs-class-fpga-manager     |   38 ++
- .../bindings/altera-socfpga-fpga-mgr.txt           |   17 +
- drivers/staging/fpga/Kconfig                       |   29 +
- drivers/staging/fpga/Makefile                      |    9 +
- drivers/staging/fpga/fpga-mgr.c                    |  551 ++++++++++++++++
- drivers/staging/fpga/socfpga.c                     |  694 ++++++++++++++++++++
- include/linux/fpga/fpga-mgr.h                      |  124 ++++
- 9 files changed, 1465 insertions(+)
- create mode 100644 drivers/staging/fpga/Documentation/ABI/sysfs-class-fpga-manager
- create mode 100644 drivers/staging/fpga/Documentation/bindings/altera-socfpga-fpga-mgr.txt
- create mode 100644 drivers/staging/fpga/Kconfig
- create mode 100644 drivers/staging/fpga/Makefile
- create mode 100644 drivers/staging/fpga/fpga-mgr.c
- create mode 100644 drivers/staging/fpga/socfpga.c
- create mode 100644 include/linux/fpga/fpga-mgr.h
+-> Here receiver sends a FIN, because application closed the socket (or died)
+12:41:23.237156 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [F.], seq 154, ack 746781, win 1911, length 0
+12:41:23.289805 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 746781:748241, ack 155, win 127, length 1460
+12:41:23.289882 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [R], seq 505782802, win 0, length 0
 
--- 
-1.7.9.5
+Anyway, getting decent speed without SACK is going to be hard.
+
+
 
