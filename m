@@ -1,50 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725AbbAFBri (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 20:47:38 -0500
-Received: from mta-out1.inet.fi ([62.71.2.203]:34973 "EHLO jenni1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754103AbbAFBrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 20:47:36 -0500
-Date: Tue, 6 Jan 2015 03:47:18 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Pavel Machek <pavel@ucw.cz>, Mark Seaborn <mseaborn@chromium.org>,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: DRAM unreliable under specific access patern
-Message-ID: <20150106014718.GA23775@node.dhcp.inet.fi>
-References: <CAL82V5NN8U4PyiSjLxgpTrgsgkbM7rRCbVF5P-HHyEqphLOy+g@mail.gmail.com>
- <20141224220818.GA17655@amd>
- <20150105192329.5f32c155@lxorguk.ukuu.org.uk>
- <CALCETrXby82sgbGTcSZFj54t=resYcwtPbcFRNh6Ksbr+Ow8HQ@mail.gmail.com>
+	id S1754744AbbAFBt3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 20:49:29 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:57541 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754175AbbAFBtZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 20:49:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrXby82sgbGTcSZFj54t=resYcwtPbcFRNh6Ksbr+Ow8HQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+In-Reply-To: <1420493533-11639-2-git-send-email-benjamin.tissoires@redhat.com>
+References: <1420493533-11639-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1420493533-11639-2-git-send-email-benjamin.tissoires@redhat.com>
+Date: Mon, 5 Jan 2015 17:49:23 -0800
+Message-ID: <CANRwn3QkYkcZdugx+7AybX=f-QucU0ezp_SFftL0Pc8RPkjn9A@mail.gmail.com>
+Subject: Re: [PATCH 2/2] HID: wacom: add support of the Pen of the Bamboo Pad
+From: Jason Gerecke <killertofu@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, josep.sanchez.ferreres@est.fib.upc.edu,
+        Ping Cheng <pinglinux@gmail.com>,
+        Linux Input <linux-input@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 05, 2015 at 11:50:04AM -0800, Andy Lutomirski wrote:
-> On Mon, Jan 5, 2015 at 11:23 AM, One Thousand Gnomes
-> <gnomes@lxorguk.ukuu.org.uk> wrote:
-> >> In the meantime, I created test that actually uses physical memory,
-> >> 8MB apart, as described in some footnote. It is attached. It should
-> >> work, but it needs boot with specific config options and specific
-> >> kernel parameters.
-> >
-> > Why not just use hugepages. You know the alignment guarantees for 1GB
-> > pages and that means you don't even need to be root
-> >
-> > In fact - should we be disabling 1GB huge page support by default at this
-> > point, at least on non ECC boxes ?
-> 
-> Can you actually damage anyone else's data using a 1 GB hugepage?
+On Mon, Jan 5, 2015 at 1:32 PM, Benjamin Tissoires
+<benjamin.tissoires@redhat.com> wrote:
+> Bamboo Pads are using the generic processing but their report descriptors
+> differ from the ISDv* line. The pen fields are marked with the .physical
+> as Digitizer_Pen, which makes also sense.
+>
+> Add this field to the checks and enable for free Bamboo Pads.
+>
+> Reported-by: Josep Sanchez Ferreres <josep.sanchez.ferreres@est.fib.upc.edu>
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> ---
+>
+> Hi Jason,
+>
+> I still did not managed to put in shape the regression tests for the Wacom
+> recordings we have. I do not think this will impact the current supported
+> devices (none that I have present the HID_DG_PEN application/logical/physical
+> tag).
+>
+> It would be good still if you could have a look and validate the patch series.
+>
+> Cheers,
+> Benjamin
+>
 
-hugetlbfs is a filesystem: the answer is yes. Although I don't see the
-issue as a big attach vector.
+None of the units I've collected descriptors for appear to have a
+HD_DG_PEN physical collection, so I also don't see any potential for
+regression. For both patches:
 
--- 
- Kirill A. Shutemov
+Reviewed-by: Jason Gerecke <killertofu@gmail.com>
+
+Jason
+---
+Now instead of four in the eights place /
+you’ve got three, ‘Cause you added one  /
+(That is to say, eight) to the two,     /
+But you can’t take seven from three,    /
+So you look at the sixty-fours....
+
+>  drivers/hid/wacom_wac.h | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/hid/wacom_wac.h b/drivers/hid/wacom_wac.h
+> index 7436f2b..7afd929 100644
+> --- a/drivers/hid/wacom_wac.h
+> +++ b/drivers/hid/wacom_wac.h
+> @@ -74,6 +74,7 @@
+>
+>  #define WACOM_PEN_FIELD(f)     (((f)->logical == HID_DG_STYLUS) || \
+>                                  ((f)->physical == HID_DG_STYLUS) || \
+> +                                ((f)->physical == HID_DG_PEN) || \
+>                                  ((f)->application == HID_DG_PEN))
+>  #define WACOM_FINGER_FIELD(f)  (((f)->logical == HID_DG_FINGER) || \
+>                                  ((f)->physical == HID_DG_FINGER) || \
+> --
+> 2.1.0
+>
