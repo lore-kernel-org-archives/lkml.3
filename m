@@ -1,56 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932257AbbAFOei (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 09:34:38 -0500
-Received: from mout.web.de ([212.227.15.14]:50360 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751877AbbAFOeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 09:34:36 -0500
-Message-ID: <54ABF260.9020904@users.sourceforge.net>
-Date: Tue, 06 Jan 2015 15:34:08 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1755476AbbAFOfc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 09:35:32 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:21159 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751877AbbAFOfa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 09:35:30 -0500
+Date: Tue, 6 Jan 2015 09:35:08 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kvm list <kvm@vger.kernel.org>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>
+Subject: Re: [Xen-devel] [RFC 2/2] x86, vdso, pvclock: Simplify and speed up
+ the vdso pvclock reader
+Message-ID: <20150106143508.GC7446@l.oracle.com>
+References: <cover.1419295081.git.luto@amacapital.net>
+ <8d09c16eb39cbe264417cc66c4aca730af10b70b.1419295081.git.luto@amacapital.net>
+ <20150105152511.GA9172@amt.cnet>
+ <CALCETrXRs4NmhMvp+7kydrfyGCiNymkTe_sP6HFVvhMCC2Ei0Q@mail.gmail.com>
 MIME-Version: 1.0
-To: Dominique Martinet <dominique.martinet@cea.fr>,
-        Julia Lawall <julia.lawall@lip6.fr>
-CC: Latchesar Ionkov <lucho@ionkov.net>,
-        Eric Van Hensbergen <ericvh@gmail.com>,
-        kernel-janitors@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Ron Minnich <rminnich@sandia.gov>,
-        v9fs-developer@lists.sourceforge.net,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [V9fs-developer] [PATCH 1/8] fs/9p: Deletion of unnecessary checks
- before the function call "p9_client_clunk"
-References: <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <54A01326.3050306@users.sourceforge.net> <54A06AB9.4020505@users.sourceforge.net> <20150105112206.GC15033@mwanda> <54AB02F3.5020308@users.sourceforge.net> <alpine.DEB.2.02.1501052239290.2025@localhost6.localdomain6> <54AB0844.5090405@users.sourceforge.net> <alpine.DEB.2.02.1501052257270.2025@localhost6.localdomain6> <20150106081253.GA22484@u-galfione> <20150106092719.GB22484@u-galfione>
-In-Reply-To: <20150106092719.GB22484@u-galfione>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:dk+xzCgTQuiOuCb76wdE+/nnZCbkUzKVVbHNxfUM2Fza4FGPivM
- FpjEZG63F4diLnyjAGPEq+OwSLKFGo0Z+Om5kOxJIViZ9zCsFRNvoNLzpxA2kdARdo/89xP
- RJSwItiyDVvoTd1e6wZMOzK1RE3RgA/LFP1oHsvO2ruP3OCkLj/N9Z2VR6lwaPdoXG2/U12
- FRd9UiROO4I9oaChYf1Kg==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrXRs4NmhMvp+7kydrfyGCiNymkTe_sP6HFVvhMCC2Ei0Q@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> jumping to label error from a failure in p9_client_fcreate (e.g. EPERM
->> or something perfectly valid) will, with your patch, call clunk with fid
->> == NULL and thus generate a stack trace, while it is a perfectly normal
->> code path that should only return to userspace with EPERM.
+On Mon, Jan 05, 2015 at 10:56:07AM -0800, Andy Lutomirski wrote:
+> On Mon, Jan 5, 2015 at 7:25 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> > On Mon, Dec 22, 2014 at 04:39:57PM -0800, Andy Lutomirski wrote:
+> >> The pvclock vdso code was too abstracted to understand easily and
+> >> excessively paranoid.  Simplify it for a huge speedup.
+> >>
+> >> This opens the door for additional simplifications, as the vdso no
+> >> longer accesses the pvti for any vcpu other than vcpu 0.
+> >>
+> >> Before, vclock_gettime using kvm-clock took about 64ns on my machine.
+> >> With this change, it takes 19ns, which is almost as fast as the pure TSC
+> >> implementation.
+> >>
+> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> >> ---
+> >>  arch/x86/vdso/vclock_gettime.c | 82 ++++++++++++++++++++++++------------------
+> >>  1 file changed, 47 insertions(+), 35 deletions(-)
+> >>
+> >> diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+> >> index 9793322751e0..f2e0396d5629 100644
+> >> --- a/arch/x86/vdso/vclock_gettime.c
+> >> +++ b/arch/x86/vdso/vclock_gettime.c
+> >> @@ -78,47 +78,59 @@ static notrace const struct pvclock_vsyscall_time_info *get_pvti(int cpu)
+> >>
+> >>  static notrace cycle_t vread_pvclock(int *mode)
+> >>  {
+> >> -     const struct pvclock_vsyscall_time_info *pvti;
+> >> +     const struct pvclock_vcpu_time_info *pvti = &get_pvti(0)->pvti;
+> >>       cycle_t ret;
+> >> -     u64 last;
+> >> -     u32 version;
+> >> -     u8 flags;
+> >> -     unsigned cpu, cpu1;
+> >> -
+> >> +     u64 tsc, pvti_tsc;
+> >> +     u64 last, delta, pvti_system_time;
+> >> +     u32 version, pvti_tsc_to_system_mul, pvti_tsc_shift;
+> >>
+> >>       /*
+> >> -      * Note: hypervisor must guarantee that:
+> >> -      * 1. cpu ID number maps 1:1 to per-CPU pvclock time info.
+> >> -      * 2. that per-CPU pvclock time info is updated if the
+> >> -      *    underlying CPU changes.
+> >> -      * 3. that version is increased whenever underlying CPU
+> >> -      *    changes.
+> >> +      * Note: The kernel and hypervisor must guarantee that cpu ID
+> >> +      * number maps 1:1 to per-CPU pvclock time info.
+> >> +      *
+> >> +      * Because the hypervisor is entirely unaware of guest userspace
+> >> +      * preemption, it cannot guarantee that per-CPU pvclock time
+> >> +      * info is updated if the underlying CPU changes or that that
+> >> +      * version is increased whenever underlying CPU changes.
+> >> +      *
+> >> +      * On KVM, we are guaranteed that pvti updates for any vCPU are
+> >> +      * atomic as seen by *all* vCPUs.  This is an even stronger
+> >> +      * guarantee than we get with a normal seqlock.
+> >>        *
+> >> +      * On Xen, we don't appear to have that guarantee, but Xen still
+> >> +      * supplies a valid seqlock using the version field.
+> >> +
+> >> +      * We only do pvclock vdso timing at all if
+> >> +      * PVCLOCK_TSC_STABLE_BIT is set, and we interpret that bit to
+> >> +      * mean that all vCPUs have matching pvti and that the TSC is
+> >> +      * synced, so we can just look at vCPU 0's pvti.
+> >>        */
+> >
+> > Can Xen guarantee that ?
 > 
-> Actually just seen that this precise example is fixed along with more
-> similar code paths in subsequents (!) patchs of the set.
+> I think so, vacuously.  Xen doesn't seem to set PVCLOCK_TSC_STABLE_BIT
+> at all.  I have no idea going forward, though.
+> 
+> Xen people?
 
-Do you refer to my update suggestions with a subject like "One function
-call less in v9fs_…" here?
+The person who would know of the top of his head is Dan Magenheimer, who
+is now enjoy retirement :-(
 
-
-> It could actually be interesting to see if we could get all such
-> paths "fixed".
-
-Would you like to see any more specific source code clean-up?
-Which kind of fine-tuning have you got in mind?
-
-Regards,
-Markus
+I will have to dig in the code to answer this - that will take a bit of time
+sadly (I am sick this week).
+> 
+> >
+> >> -     do {
+> >> -             cpu = __getcpu() & VGETCPU_CPU_MASK;
+> >> -             /* TODO: We can put vcpu id into higher bits of pvti.version.
+> >> -              * This will save a couple of cycles by getting rid of
+> >> -              * __getcpu() calls (Gleb).
+> >> -              */
+> >> -
+> >> -             pvti = get_pvti(cpu);
+> >> -
+> >> -             version = __pvclock_read_cycles(&pvti->pvti, &ret, &flags);
+> >> -
+> >> -             /*
+> >> -              * Test we're still on the cpu as well as the version.
+> >> -              * We could have been migrated just after the first
+> >> -              * vgetcpu but before fetching the version, so we
+> >> -              * wouldn't notice a version change.
+> >> -              */
+> >> -             cpu1 = __getcpu() & VGETCPU_CPU_MASK;
+> >> -     } while (unlikely(cpu != cpu1 ||
+> >> -                       (pvti->pvti.version & 1) ||
+> >> -                       pvti->pvti.version != version));
+> >> -
+> >> -     if (unlikely(!(flags & PVCLOCK_TSC_STABLE_BIT)))
+> >> +
+> >> +     if (unlikely(!(pvti->flags & PVCLOCK_TSC_STABLE_BIT))) {
+> >>               *mode = VCLOCK_NONE;
+> >> +             return 0;
+> >> +     }
+> >
+> > This check must be performed after reading a stable pvti.
+> >
+> 
+> We can even read it in the middle, guarded by the version checks.
+> I'll do that for v2.
+> 
+> >> +
+> >> +     do {
+> >> +             version = pvti->version;
+> >> +
+> >> +             /* This is also a read barrier, so we'll read version first. */
+> >> +             rdtsc_barrier();
+> >> +             tsc = __native_read_tsc();
+> >> +
+> >> +             pvti_tsc_to_system_mul = pvti->tsc_to_system_mul;
+> >> +             pvti_tsc_shift = pvti->tsc_shift;
+> >> +             pvti_system_time = pvti->system_time;
+> >> +             pvti_tsc = pvti->tsc_timestamp;
+> >> +
+> >> +             /* Make sure that the version double-check is last. */
+> >> +             smp_rmb();
+> >> +     } while (unlikely((version & 1) || version != pvti->version));
+> >> +
+> >> +     delta = tsc - pvti_tsc;
+> >> +     ret = pvti_system_time +
+> >> +             pvclock_scale_delta(delta, pvti_tsc_to_system_mul,
+> >> +                                 pvti_tsc_shift);
+> >
+> > The following is possible:
+> >
+> > 1) State: all pvtis marked as PVCLOCK_TSC_STABLE_BIT.
+> > 1) Update request for all vcpus, for a TSC_STABLE_BIT -> ~TSC_STABLE_BIT
+> > transition.
+> > 2) vCPU-1 updates its pvti with new values.
+> > 3) vCPU-0 still has not updated its pvti with new values.
+> > 4) vCPU-1 VM-enters, uses vCPU-0 values, even though it has been
+> > notified of a TSC_STABLE_BIT -> ~TSC_STABLE_BIT transition.
+> >
+> > The update is not actually atomic across all vCPUs, its atomic in
+> > the sense of not allowing visibility of distinct
+> > system_timestamp/tsc_timestamp values.
+> >
+> 
+> Hmm.  In step 4, is there a guarantee that vCPU-0 won't VM-enter until
+> it gets marked unstable?  Otherwise the vdso could could just as
+> easily be called from vCPU-1, migrated to vCPU-0, read the data
+> complete with stale stable bit, and get migrated back to vCPU-1.
+> 
+> But I thought that KVM currently froze all vCPUs when updating pvti
+> for any of them.  How can this happen?  I admit I don't really
+> understand the update request code.
+> 
+> --Andy
+> 
+> -- 
+> Andy Lutomirski
+> AMA Capital Management, LLC
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
