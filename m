@@ -1,130 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755667AbbAFPDj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 10:03:39 -0500
-Received: from mail-oi0-f53.google.com ([209.85.218.53]:46982 "EHLO
-	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755561AbbAFPDh (ORCPT
+	id S1755334AbbAFPHt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 10:07:49 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:8870 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753644AbbAFPHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 10:03:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <20150106145054.GO31830@ulmo.nvidia.com>
-References: <1419331204-26679-1-git-send-email-vinceh@nvidia.com>
-	<1419331204-26679-10-git-send-email-vinceh@nvidia.com>
-	<54A20F4D.4040100@gmail.com>
-	<54A2198A.4000707@nvidia.com>
-	<20150105153252.GI12010@ulmo.nvidia.com>
-	<CAAVeFuK-SgUbtHADX4-pXN5_ayzvEd+1KxJOBcRe2tmDfHaLEA@mail.gmail.com>
-	<20150106114953.GD31830@ulmo.nvidia.com>
-	<54ABD49A.6080501@nvidia.com>
-	<20150106143729.GN31830@ulmo.nvidia.com>
-	<CAKb7UvgomyQkiwfGTdyuU-muE-_pPxOSmeXh9uQ6-ri0HHxLrQ@mail.gmail.com>
-	<20150106145054.GO31830@ulmo.nvidia.com>
-Date: Tue, 6 Jan 2015 10:03:36 -0500
-X-Google-Sender-Auth: 2Q1lpuOksToap1en8XTocekvoDQ
-Message-ID: <CAKb7Uvh6ttvssYqe+3Qqq+RvckoBmYAKv2XY2w7hBFNwi93rew@mail.gmail.com>
-Subject: Re: [Nouveau] [PATCH nouveau 09/11] drm: export some variable and
- functions to resue the PM functions
-From: Ilia Mirkin <imirkin@alum.mit.edu>
+	Tue, 6 Jan 2015 10:07:48 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 06 Jan 2015 07:06:16 -0800
+Date: Tue, 6 Jan 2015 23:07:45 +0800
+From: Vince Hsu <vinceh@nvidia.com>
 To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Vince Hsu <vinceh@nvidia.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        Emil Velikov <emil.l.velikov@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Roy Spliet <seven@nimrod-online.com>
-Content-Type: text/plain; charset=UTF-8
+CC: <swarren@wwwdotorg.org>, <gnurou@gmail.com>, <bskeggs@redhat.com>,
+        <martin.peres@free.fr>, <seven@nimrod-online.com>,
+        <samuel.pitoiset@gmail.com>, <nouveau@lists.freedesktop.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/11] memory: tegra: add flush operation for Tegra124
+ memory clients
+Message-ID: <20150106150744.GB18598@nvidia.com>
+References: <1419331204-26679-1-git-send-email-vinceh@nvidia.com>
+ <1419331204-26679-4-git-send-email-vinceh@nvidia.com>
+ <20150106142958.GM31830@ulmo.nvidia.com>
+MIME-Version: 1.0
+In-Reply-To: <20150106142958.GM31830@ulmo.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 6, 2015 at 9:50 AM, Thierry Reding <thierry.reding@gmail.com> wrote:
-> On Tue, Jan 06, 2015 at 09:44:01AM -0500, Ilia Mirkin wrote:
->> On Tue, Jan 6, 2015 at 9:37 AM, Thierry Reding <thierry.reding@gmail.com> wrote:
->> > On Tue, Jan 06, 2015 at 08:27:06PM +0800, Vince Hsu wrote:
->> >>
->> >> On 01/06/2015 07:49 PM, Thierry Reding wrote:
->> >> >* PGP Signed by an unknown key
->> >> >
->> >> >On Mon, Jan 05, 2015 at 08:50:18PM +0100, Alexandre Courbot wrote:
->> >> >>On Mon, Jan 5, 2015 at 4:32 PM, Thierry Reding <thierry.reding@gmail.com> wrote:
->> >> >>>On Tue, Dec 30, 2014 at 11:18:34AM +0800, Vince Hsu wrote:
->> >> >>>>Hi Emil,
->> >> >>>>
->> >> >>>>On 12/30/2014 10:34 AM, Emil Velikov wrote:
->> >> >>>>>On 23/12/14 10:40, Vince Hsu wrote:
->> >> >>>>>>This patch adds some checks in the suspend/resume functions to distinguish
->> >> >>>>>>the dGPU and mobile GPU and exports some variables/functions so that the
->> >> >>>>>>nouveau platform device can reuse them.
->> >> >>>>>>
->> >> >>>>>Hi Vince,
->> >> >>>>>
->> >> >>>>>Afaiu one needs to export a symbol as it's used by another module or
->> >> >>>>>subsystem. With the follow up two patches you are not doing either one,
->> >> >>>>>so I'd assume that you can just omit the EXPORT_* changes.
->> >> >>>>The nouveau platform device driver is built as another module -
->> >> >>>>nouveau_platform.ko. :)
->> >> >>>I'd like to hear the opinion of the nouveau people and Alex, but I'd
->> >> >>>very much prefer if nouveau_platform.o was simply linked into the
->> >> >>>nouveau.ko module. I don't see any good reason to keep it separate.
->> >> >>Yep, I agree. The decision to host platform support in a separate
->> >> >>module looks misleaded if it results in additional exports that we
->> >> >>would otherwise avoid. IIUC I did this to be able to use the module
->> >> >>convenience macros to register the platform driver.
->> >> >>
->> >> >>>Something like the attached patch (untested) ought to do it.
->> >> >>This patch alone won't be enough for the reason I mentioned above.
->> >> >>However, if Vince doesn't mind handling the platform driver
->> >> >>registration manually in nouveau_drm_init/nouveau_drm_exit, I agree
->> >> >>this would be the way to go.
->> >> >If we do the conversion to generic power domains, the only Tegra-
->> >> >specific API remaining will be the access to the fuse registers for the
->> >> >speedo value. At that point we wouldn't need the ARCH_TEGRA dependency
->> >> >any longer and could always build the platform driver along with the PCI
->> >> >driver.
->> >> Do we really want the platform driver always built with the PCI driver even
->> >> there is no dependency between them. Actually I have some patches to
->> >> build the platform driver with !CONFIG_PCI and would like to post them maybe
->> >> later.
->> >
->> > I do see some advantage in making Nouveau build with !CONFIG_PCI because
->> > it allows building the driver for an SoC without PCI. But I think always
->> > compiling whatever is available won't hurt. Nouveau itself is rather big
->> > (~1 MiB of text and ~120 KiB of data) whereas the platform code weighs
->> > in at around 1.5 KiB of text and 108 B of data. I suspect that the PCI
->> > glue is equally negligible.
->>
->> The much bigger reductions in size would be from getting rid of all
->> the stuff that's not used at all on a GK20A, like all the firmware,
->> and a whole bunch of logic. I had a series that split things up into
->> nv04/nv50/nvc0 categories. I believe it was considered undesirable due
->> to increased build complexity. (It wasn't a nice modularized
->> separation but rather just a compile-time setting.) Shouldn't be too
->> hard to regenerate though.
->
-> Would you happen to remember the amount of savings for enabling only
-> nvc0? I'm not overly concerned with the module being 1 MiB on Tegra,
-> though. Most boards tend to have 2 GiB+ of memory these days and the
-> kernel footprint is pretty big without Nouveau anyway.
+On 03:30:00PM Jan 06, Thierry Reding wrote:
+> * PGP Signed by an unknown key
+> 
+> On Tue, Dec 23, 2014 at 06:39:56PM +0800, Vince Hsu wrote:
+> > Signed-off-by: Vince Hsu <vinceh@nvidia.com>
+> > ---
+> >  drivers/memory/tegra/tegra124.c | 82 +++++++++++++++++++++++++++++++++++++++++
+> >  1 file changed, 82 insertions(+)
+> > 
+> > diff --git a/drivers/memory/tegra/tegra124.c b/drivers/memory/tegra/tegra124.c
+> > index 278d40b854c1..036935743a0a 100644
+> > --- a/drivers/memory/tegra/tegra124.c
+> > +++ b/drivers/memory/tegra/tegra124.c
+> > @@ -6,6 +6,7 @@
+> >   * published by the Free Software Foundation.
+> >   */
+> >  
+> > +#include <linux/delay.h>
+> >  #include <linux/of.h>
+> >  #include <linux/mm.h>
+> >  
+> > @@ -959,7 +960,85 @@ static const struct tegra_smmu_swgroup tegra124_swgroups[] = {
+> >  	{ .swgroup = TEGRA_SWGROUP_VI,        .reg = 0x280 },
+> >  };
+> >  
+> > +static const struct tegra_mc_hr tegra124_mc_hr[] = {
+> > +	{TEGRA_SWGROUP_AFI,        0x200, 0x200,  0},
+> > +	{TEGRA_SWGROUP_AVPC,       0x200, 0x200,  1},
+> > +	{TEGRA_SWGROUP_DC,         0x200, 0x200,  2},
+> > +	{TEGRA_SWGROUP_DCB,        0x200, 0x200,  3},
+> > +	{TEGRA_SWGROUP_HC,         0x200, 0x200,  6},
+> > +	{TEGRA_SWGROUP_HDA,        0x200, 0x200,  7},
+> > +	{TEGRA_SWGROUP_ISP2,       0x200, 0x200,  8},
+> > +	{TEGRA_SWGROUP_MPCORE,     0x200, 0x200,  9},
+> > +	{TEGRA_SWGROUP_MPCORELP,   0x200, 0x200, 10},
+> > +	{TEGRA_SWGROUP_MSENC,      0x200, 0x200, 11},
+> > +	{TEGRA_SWGROUP_PPCS,       0x200, 0x200, 14},
+> > +	{TEGRA_SWGROUP_SATA,       0x200, 0x200, 15},
+> > +	{TEGRA_SWGROUP_VDE,        0x200, 0x200, 16},
+> > +	{TEGRA_SWGROUP_VI,         0x200, 0x200, 17},
+> > +	{TEGRA_SWGROUP_VIC,        0x200, 0x200, 18},
+> > +	{TEGRA_SWGROUP_XUSB_HOST,  0x200, 0x200, 19},
+> > +	{TEGRA_SWGROUP_XUSB_DEV,   0x200, 0x200, 20},
+> > +	{TEGRA_SWGROUP_TSEC,       0x200, 0x200, 22},
+> > +	{TEGRA_SWGROUP_SDMMC1A,    0x200, 0x200, 29},
+> > +	{TEGRA_SWGROUP_SDMMC2A,    0x200, 0x200, 30},
+> > +	{TEGRA_SWGROUP_SDMMC3A,    0x200, 0x200, 31},
+> 
+> The documentation that I have says that the status register for these is
+> 0x204.
+Oops. Thanks for catching this. Will fix.
 
-Well, nvc0 is a big one since that's where all the firmware lives,
-which is a big chunk of it, and you don't actually end up using any of
-it. (And even if you did, it'd be just one of the firmware files, not
-all of them).
+> 
+> > +	{TEGRA_SWGROUP_SDMMC4A,    0x970, 0x974,  0},
+> > +	{TEGRA_SWGROUP_ISP2B,      0x970, 0x974,  1},
+> > +	{TEGRA_SWGROUP_GPU,        0x970, 0x974,  2},
+> > +};
+> > +
+> >  #ifdef CONFIG_ARCH_TEGRA_124_SOC
+> > +
+> > +static bool tegra124_stable_hotreset_check(struct tegra_mc *mc,
+> > +		u32 reg, u32 *stat)
+> > +{
+> > +	int i;
+> > +	u32 cur_stat;
+> > +	u32 prv_stat;
+> > +
+> > +	prv_stat = mc_readl(mc, reg);
+> > +	for (i = 0; i < 5; i++) {
+> > +		cur_stat = mc_readl(mc, reg);
+> > +		if (cur_stat != prv_stat)
+> > +			return false;
+> > +	}
+> 
+> Why this loop? The function is already called in a polling loop below.
+> Also why compare to the previous value of the register? Isn't the only
+> thing we're interested in the value of the specific bit?
+I recall it's due to a HW bug that there might be a gitch if we program
+the ctrl reg and then read the status reg in a short window. This function
+is to make sure we have a stable status.
 
-Here was the patch: http://permalink.gmane.org/gmane.comp.video.dri.devel/102457
+> 
+> > +	*stat = cur_stat;
+> > +	return true;
+> > +}
+> > +
+> > +static int tegra124_mc_flush(struct tegra_mc *mc,
+> > +		const struct tegra_mc_hr *hr_client, bool enable)
+> > +{
+> > +	u32 val;
+> > +
+> > +	if (!mc || !hr_client)
+> > +		return -EINVAL;
+> > +
+> > +	val = mc_readl(mc, hr_client->ctrl);
+> > +	if (enable)
+> > +		val |= BIT(hr_client->bit);
+> > +	else
+> > +		val &= ~BIT(hr_client->bit);
+> > +	mc_writel(mc, val, hr_client->ctrl);
+> > +	mc_readl(mc, hr_client->ctrl);
+> > +
+> > +	/* poll till the flush is done */
+> > +	if (enable) {
+> > +		do {
+> > +			udelay(10);
+> 
+> This should probably be usleep_range(10, 20) or something.
+Maybe no. We might need some spin lock here to ensure only one flushing
+operation requested and no race could happen.
 
-Looks like nvc0 only was:
+> 
+> Would it be difficult to implement this for Tegra30 and Tegra114?
+No. But I have to check the detail in Tegra30 and Tegra114. And the biggest
+problem is I don't have the boards to test.
 
-NVC0: 878726 bytes
-   text    data     bss     dec     hex filename
- 360593  140327      80  501000   7a508 drivers/gpu/drm/nouveau/nouveau.ko
+Thanks,
+Vince
 
-compared to the combo package:
-
-NV04 + NV50 + NVC0: 1343482 bytes
-   text    data     bss     dec     hex filename
- 579171  184264     480  763915   ba80b drivers/gpu/drm/nouveau/nouveau.ko
-
-  -ilia
