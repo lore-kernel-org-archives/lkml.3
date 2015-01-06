@@ -1,177 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756000AbbAFRRb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 12:17:31 -0500
-Received: from casper.infradead.org ([85.118.1.10]:55556 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828AbbAFRR3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 12:17:29 -0500
-Date: Tue, 6 Jan 2015 18:17:12 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Kanaka Juvva <kanaka.d.juvva@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH v4 10/11] perf/x86/intel: Perform rotation on Intel CQM
- RMIDs
-Message-ID: <20150106171712.GH3337@twins.programming.kicks-ass.net>
-References: <1415999712-5850-1-git-send-email-matt@console-pimps.org>
- <1415999712-5850-11-git-send-email-matt@console-pimps.org>
+	id S932313AbbAFRTV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 12:19:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46858 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751436AbbAFRTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 12:19:18 -0500
+Date: Tue, 6 Jan 2015 19:19:02 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        sparclinux@vger.kernel.org
+Subject: Re: [PATCH v2 26/40] arch/sparc: uaccess_64 macro whitespace fixes
+Message-ID: <20150106171902.GA11577@redhat.com>
+References: <1420558883-10131-1-git-send-email-mst@redhat.com>
+ <1420558883-10131-27-git-send-email-mst@redhat.com>
+ <20150106165339.GA11270@ravnborg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415999712-5850-11-git-send-email-matt@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20150106165339.GA11270@ravnborg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 09:15:11PM +0000, Matt Fleming wrote:
-> +/*
-> + * intel_cqm_rmid_stabilize - move RMIDs from limbo to free list
-> + * @available: are there freeable RMIDs on the limbo list?
-> + *
-> + * Quiescent state; wait for all 'freed' RMIDs to become unused, i.e. no
-> + * cachelines are tagged with those RMIDs. After this we can reuse them
-> + * and know that the current set of active RMIDs is stable.
-> + *
-> + * Return %true or %false depending on whether we were able to stabilize
-> + * an RMID for intel_cqm_rotation_rmid.
-> + *
-> + * If we return %false then @available is updated to indicate the reason
-> + * we couldn't stabilize any RMIDs. @available is %false if no suitable
-> + * RMIDs were found on the limbo list to recycle, i.e. no RMIDs had been
-> + * on the list for the minimum queue time. If @available is %true then,
-> + * we found suitable RMIDs to recycle but none had an associated
-> + * occupancy value below __intel_cqm_threshold and the threshold should
-> + * be increased and stabilization reattempted.
-> + */
-> +static bool intel_cqm_rmid_stabilize(bool *available)
+On Tue, Jan 06, 2015 at 05:53:39PM +0100, Sam Ravnborg wrote:
+> On Tue, Jan 06, 2015 at 05:44:56PM +0200, Michael S. Tsirkin wrote:
+> > Macros within arch/sparc/include/asm/uaccess_64.h are made harder to
+> > read because they violate a bunch of coding style rules.
+> > 
+> > Fix it up.
+> As per Davem's earlier mail please prefix using sparc32/sparc64.
 
-slightly excessive quoting, bear with me, see below:
+I did put in uaccess_64 - insufficient?
 
-> +/*
-> + * Attempt to rotate the groups and assign new RMIDs.
-> + *
-> + * Rotating RMIDs is complicated because the hardware doesn't give us
-> + * any clues.
-> + *
-> + * There's problems with the hardware interface; when you change the
-> + * task:RMID map cachelines retain their 'old' tags, giving a skewed
-> + * picture. In order to work around this, we must always keep one free
-> + * RMID - intel_cqm_rotation_rmid.
-> + *
-> + * Rotation works by taking away an RMID from a group (the old RMID),
-> + * and assigning the free RMID to another group (the new RMID). We must
-> + * then wait for the old RMID to not be used (no cachelines tagged).
-> + * This ensure that all cachelines are tagged with 'active' RMIDs. At
-> + * this point we can start reading values for the new RMID and treat the
-> + * old RMID as the free RMID for the next rotation.
-> + *
-> + * Return %true or %false depending on whether we did any rotating.
-> + */
-> +static bool __intel_cqm_rmid_rotate(void)
-> +{
-> +	struct perf_event *group, *rotor, *start = NULL;
-> +	unsigned int nr_needed = 0;
-> +	unsigned int rmid;
-> +	bool rotated = false;
-> +	bool available;
-> +
-> +	mutex_lock(&cache_mutex);
-> +
-> +again:
-> +	/*
-> +	 * Fast path through this function if there are no groups and no
-> +	 * RMIDs that need cleaning.
-> +	 */
-> +	if (list_empty(&cache_groups) && list_empty(&cqm_rmid_limbo_lru))
-> +		goto out;
-> +
-> +	list_for_each_entry(group, &cache_groups, hw.cqm_groups_entry) {
-> +		if (!__rmid_valid(group->hw.cqm_rmid)) {
-> +			if (!start)
-> +				start = group;
-> +			nr_needed++;
-> +		}
-> +	}
-> +
-> +	/*
-> +	 * We have some event groups, but they all have RMIDs assigned
-> +	 * and no RMIDs need cleaning.
-> +	 */
-> +	if (!nr_needed && list_empty(&cqm_rmid_limbo_lru))
-> +		goto out;
-> +
-> +	if (!nr_needed)
-> +		goto stabilize;
-> +
-> +	/*
-> +	 * We have more event groups without RMIDs than available RMIDs.
-> +	 *
-> +	 * We force deallocate the rmid of the group at the head of
-> +	 * cache_groups. The first event group without an RMID then gets
-> +	 * assigned intel_cqm_rotation_rmid. This ensures we always make
-> +	 * forward progress.
-> +	 *
-> +	 * Rotate the cache_groups list so the previous head is now the
-> +	 * tail.
-> +	 */
-> +	rotor = __intel_cqm_pick_and_rotate();
-> +	rmid = intel_cqm_xchg_rmid(rotor, INVALID_RMID);
-> +
-> +	/*
-> +	 * The group at the front of the list should always have a valid
-> +	 * RMID. If it doesn't then no groups have RMIDs assigned.
-> +	 */
-> +	if (!__rmid_valid(rmid))
-> +		goto stabilize;
-> +
-> +	/*
-> +	 * If the rotation is going to succeed, reduce the threshold so
-> +	 * that we don't needlessly reuse dirty RMIDs.
-> +	 */
-> +	if (__rmid_valid(intel_cqm_rotation_rmid)) {
-> +		intel_cqm_xchg_rmid(start, intel_cqm_rotation_rmid);
-> +		intel_cqm_rotation_rmid = INVALID_RMID;
-> +
-> +		if (__intel_cqm_threshold)
-> +			__intel_cqm_threshold--;
-> +	}
-> +
-> +	__put_rmid(rmid);
-> +
-> +	rotated = true;
-> +
-> +stabilize:
-> +	/*
-> +	 * We now need to stablize the RMID we freed above (if any) to
-> +	 * ensure that the next time we rotate we have an RMID with zero
-> +	 * occupancy value.
-> +	 *
-> +	 * Alternatively, if we didn't need to perform any rotation,
-> +	 * we'll have a bunch of RMIDs in limbo that need stabilizing.
-> +	 */
-> +	if (!intel_cqm_rmid_stabilize(&available)) {
-> +		unsigned int limit;
-> +
-> +		limit = __intel_cqm_max_threshold / cqm_l3_scale;
-> +		if (available && __intel_cqm_threshold < limit) {
-> +			__intel_cqm_threshold++;
-> +			goto again;
+> > -#define __put_user_nocheck(data,addr,size) ({ \
+> > -register int __pu_ret; \
+> > -switch (size) { \
+> > -case 1: __put_user_asm(data,b,addr,__pu_ret); break; \
+> > -case 2: __put_user_asm(data,h,addr,__pu_ret); break; \
+> > -case 4: __put_user_asm(data,w,addr,__pu_ret); break; \
+> > -case 8: __put_user_asm(data,x,addr,__pu_ret); break; \
+> > -default: __pu_ret = __put_user_bad(); break; \
+> > -} __pu_ret; })
+> > -
+> > -#define __put_user_asm(x,size,addr,ret)					\
+> > +#define __put_user_nocheck(data, addr, size) ({ \
+> > +	register int __pu_ret; \
+> > +	switch (size) { \
+> > +	case 1: \
+> > +		__put_user_asm(data, b, addr, __pu_ret); \
+> > +		break; \
+> > +	case 2: \
+> > +		__put_user_asm(data, h, addr, __pu_ret); \
+> > +		break; \
+> > +	case 4: \
+> > +		__put_user_asm(data, w, addr, __pu_ret); \
+> > +		break; \
+> > +	case 8: \
+> > +		__put_user_asm(data, x, addr, __pu_ret); \
+> > +		break; \
+> > +	default: \
+> > +		__pu_ret = __put_user_bad(); \
+> > +		break; \
+> > +	} \
+> > +	__pu_ret; \
+> > +})
+> 
+> No matter what coding style says - the above is much less readable than the
+> original version.
+> 
+> 
+I guess you approve the rest of the changes then?
 
-afaict the again label will try and steal yet another rmid, if rmids
-don't decay fast enough, we could end up with all rmids on the limbo
-list and none active. Or am I missing something here?
 
-> +		}
-> +	}
-> +
-> +out:
-> +	mutex_unlock(&cache_mutex);
-> +	return rotated;
-> +}
+I get it you like it that 
+	case 1: __get_user_asm(__gu_val,ub,addr,__gu_ret); break;
+has the whole case on the same line?
+Is that the issue?
+
+
+> 
+> > -#define __get_user_nocheck(data,addr,size,type) ({ \
+> > -register int __gu_ret; \
+> > -register unsigned long __gu_val; \
+> > -switch (size) { \
+> > -case 1: __get_user_asm(__gu_val,ub,addr,__gu_ret); break; \
+> > -case 2: __get_user_asm(__gu_val,uh,addr,__gu_ret); break; \
+> > -case 4: __get_user_asm(__gu_val,uw,addr,__gu_ret); break; \
+> > -case 8: __get_user_asm(__gu_val,x,addr,__gu_ret); break; \
+> > -default: __gu_val = 0; __gu_ret = __get_user_bad(); break; \
+> > -} data = (__force type) __gu_val; __gu_ret; })
+> > -
+> > -#define __get_user_nocheck_ret(data,addr,size,type,retval) ({ \
+> > -register unsigned long __gu_val __asm__ ("l1"); \
+> > -switch (size) { \
+> > -case 1: __get_user_asm_ret(__gu_val,ub,addr,retval); break; \
+> > -case 2: __get_user_asm_ret(__gu_val,uh,addr,retval); break; \
+> > -case 4: __get_user_asm_ret(__gu_val,uw,addr,retval); break; \
+> > -case 8: __get_user_asm_ret(__gu_val,x,addr,retval); break; \
+> > -default: if (__get_user_bad()) return retval; \
+> > -} data = (__force type) __gu_val; })
+> > -
+> > -#define __get_user_asm(x,size,addr,ret)					\
+> > +#define __get_user_nocheck(data, addr, size, type) ({ \
+> > +	register int __gu_ret; \
+> > +	register unsigned long __gu_val; \
+> > +	switch (size) { \
+> > +		case 1: \
+> > +			__get_user_asm(__gu_val, ub, addr, __gu_ret); \
+> > +			break; \
+> > +		case 2: \
+> > +			__get_user_asm(__gu_val, uh, addr, __gu_ret); \
+> > +			break; \
+> > +		case 4: \
+> > +			__get_user_asm(__gu_val, uw, addr, __gu_ret); \
+> > +			break; \
+> > +		case 8: \
+> > +			__get_user_asm(__gu_val, x, addr, __gu_ret); \
+> > +			break; \
+> > +		default: \
+> > +			__gu_val = 0; \
+> > +			__gu_ret = __get_user_bad(); \
+> > +			break; \
+> > +	} data = (__force type) __gu_val; __gu_ret; \
+> > +})
+> > +
+> > +#define __get_user_nocheck_ret(data, addr, size, type, retval) ({ \
+> > +	register unsigned long __gu_val __asm__ ("l1"); \
+> > +	switch (size) { \
+> > +	case 1: \
+> > +		__get_user_asm_ret(__gu_val, ub, addr, retval); \
+> > +		break; \
+> > +	case 2: \
+> > +		__get_user_asm_ret(__gu_val, uh, addr, retval); \
+> > +		break; \
+> > +	case 4: \
+> > +		__get_user_asm_ret(__gu_val, uw, addr, retval); \
+> > +		break; \
+> > +	case 8: \
+> > +		__get_user_asm_ret(__gu_val, x, addr, retval); \
+> > +		break; \
+> > +	default: \
+> > +		if (__get_user_bad()) \
+> > +			return retval; \
+> > +	} \
+> > +	data = (__force type) __gu_val; \
+> > +})
+> > +
+> 
+> Same comment for this code chunk.
+> 
+> 	Sam
+
+Well I donnu.  When I had to fix bugs there, it was pretty confusing to
+me, conding style is no a holy book but it's there for a reason.
+
+Lack of spaces after comma makes it so much harder
+to count parameters.
+
+Also:
+
+> > -default: if (__get_user_bad()) return retval; \
+> > -} data = (__force type) __gu_val; })
+
+return on same line with if and code after the closing {}
+makes it look confusingly like the more conventional:
+
+ if (__get_user_bad())
+ 	data = (__force type) __gu_val;
+
+-- 
+MST
