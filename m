@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932088AbbAFKjA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 05:39:00 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:62139 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754698AbbAFKiS (ORCPT
+	id S1754909AbbAFKi1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 05:38:27 -0500
+Received: from mail-we0-f179.google.com ([74.125.82.179]:53336 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754879AbbAFKiV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 05:38:18 -0500
+	Tue, 6 Jan 2015 05:38:21 -0500
 From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 To: linux-tegra@vger.kernel.org
 Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
@@ -20,9 +20,9 @@ Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Thierry Reding <thierry.reding@gmail.com>,
         Alexandre Courbot <gnurou@gmail.com>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] ARM: tegra: Add DTS for the nyan-blaze board
-Date: Tue,  6 Jan 2015 11:37:28 +0100
-Message-Id: <1420540653-14816-4-git-send-email-tomeu.vizoso@collabora.com>
+Subject: [PATCH 4/4] ARM: tegra: remove wp-gpios from the generic nyan dtsi
+Date: Tue,  6 Jan 2015 11:37:29 +0100
+Message-Id: <1420540653-14816-5-git-send-email-tomeu.vizoso@collabora.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1420540653-14816-1-git-send-email-tomeu.vizoso@collabora.com>
 References: <1420540653-14816-1-git-send-email-tomeu.vizoso@collabora.com>
@@ -30,46 +30,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's commercial name is HP Chromebook 14 and is substantially similar to
-the Acer Chromebook 13 (nyan-big).
+As the nyan-blaze has a micro-sd slot, as opposed to nyan-big, which has a full SD
+slot.
 
 Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 ---
- arch/arm/boot/dts/Makefile                |  1 +
- arch/arm/boot/dts/tegra124-nyan-blaze.dts | 12 ++++++++++++
- 2 files changed, 13 insertions(+)
- create mode 100644 arch/arm/boot/dts/tegra124-nyan-blaze.dts
+ arch/arm/boot/dts/tegra124-nyan-big.dts | 4 ++++
+ arch/arm/boot/dts/tegra124-nyan.dtsi    | 1 -
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 91bd5bd..7c9d83b 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -497,6 +497,7 @@ dtb-$(CONFIG_ARCH_TEGRA) += tegra20-harmony.dtb \
- 	tegra114-tn7.dtb \
- 	tegra124-jetson-tk1.dtb \
- 	tegra124-nyan-big.dtb \
-+	tegra124-nyan-blaze.dtb \
- 	tegra124-venice2.dtb
- dtb-$(CONFIG_ARCH_U300) += ste-u300.dtb
- dtb-$(CONFIG_ARCH_U8500) += ste-snowball.dtb \
-diff --git a/arch/arm/boot/dts/tegra124-nyan-blaze.dts b/arch/arm/boot/dts/tegra124-nyan-blaze.dts
-new file mode 100644
-index 0000000..69fe66f
---- /dev/null
-+++ b/arch/arm/boot/dts/tegra124-nyan-blaze.dts
-@@ -0,0 +1,12 @@
-+/dts-v1/;
-+
-+#include "tegra124-nyan.dtsi"
-+
-+/ {
-+	model = "HP Chromebook 14";
-+	compatible = "google,nyan-blaze", "google,nyan", "nvidia,tegra124";
-+
-+	sound {
-+		nvidia,model = "HP Chromebook 14";
+diff --git a/arch/arm/boot/dts/tegra124-nyan-big.dts b/arch/arm/boot/dts/tegra124-nyan-big.dts
+index 2041077..598c090 100644
+--- a/arch/arm/boot/dts/tegra124-nyan-big.dts
++++ b/arch/arm/boot/dts/tegra124-nyan-big.dts
+@@ -6,6 +6,10 @@
+ 	model = "Acer Chromebook 13 CB5-311";
+ 	compatible = "google,nyan-big", "google,nyan", "nvidia,tegra124";
+ 
++	sdhci@0,700b0400 { /* SD Card on this bus */
++		wp-gpios = <&gpio TEGRA_GPIO(Q, 4) GPIO_ACTIVE_LOW>;
 +	};
-+};
++
+ 	sound {
+ 		nvidia,model = "Acer Chromebook 13 CB5-311";
+ 	};
+diff --git a/arch/arm/boot/dts/tegra124-nyan.dtsi b/arch/arm/boot/dts/tegra124-nyan.dtsi
+index 4c68658..12d757e 100644
+--- a/arch/arm/boot/dts/tegra124-nyan.dtsi
++++ b/arch/arm/boot/dts/tegra124-nyan.dtsi
+@@ -820,7 +820,6 @@
+ 		status = "okay";
+ 		cd-gpios = <&gpio TEGRA_GPIO(V, 2) GPIO_ACTIVE_LOW>;
+ 		power-gpios = <&gpio TEGRA_GPIO(R, 0) GPIO_ACTIVE_HIGH>;
+-		wp-gpios = <&gpio TEGRA_GPIO(Q, 4) GPIO_ACTIVE_LOW>;
+ 		bus-width = <4>;
+ 		no-1-8-v;
+ 		vqmmc-supply = <&vddio_sdmmc3>;
 -- 
 1.9.3
 
