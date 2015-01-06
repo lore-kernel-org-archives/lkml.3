@@ -1,93 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330AbbAFMD3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 07:03:29 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:15397 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754711AbbAFMD1 (ORCPT
+	id S1755303AbbAFNGf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 08:06:35 -0500
+Received: from smtp-out6.electric.net ([192.162.217.186]:58957 "EHLO
+	smtp-out6.electric.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753071AbbAFNGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 07:03:27 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 06 Jan 2015 03:56:18 -0800
-Message-ID: <54ABCEF7.5080909@nvidia.com>
-Date: Tue, 6 Jan 2015 20:03:03 +0800
-From: Vince Hsu <vinceh@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 6 Jan 2015 08:06:33 -0500
+X-Greylist: delayed 3444 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Jan 2015 08:06:33 EST
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Joakim Tjernlund'" <Joakim.Tjernlund@transmode.se>,
+        "christophe.leroy@c-s.fr" <christophe.leroy@c-s.fr>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "scottwood@freescale.com" <scottwood@freescale.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Subject: RE: [PATCH 05/11] powerpc/8xx: Optimise access to swapper_pg_dir
+Thread-Topic: [PATCH 05/11] powerpc/8xx: Optimise access to swapper_pg_dir
+Thread-Index: AQHQGUF+EnF0bbuoVUWd2Dp/RmzK9Zyx6QEAgAE2+WA=
+Date: Tue, 6 Jan 2015 12:08:09 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1CAC1765@AcuExch.aculab.com>
+References: <20141216150338.D4F0A1A5E0A@localhost.localdomain>
+ <1420482826.25047.26.camel@transmode.se>
+In-Reply-To: <1420482826.25047.26.camel@transmode.se>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Peter De Schrijver <pdeschrijver@nvidia.com>, Lucas Stach <dev@lynxeye.de>,
-        <swarren@wwwdotorg.org>, <gnurou@gmail.com>, <bskeggs@redhat.com>,
-        <martin.peres@free.fr>, <seven@nimrod-online.com>,
-        <samuel.pitoiset@gmail.com>, <nouveau@lists.freedesktop.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/11] ARM: tegra: add function to control the GPU rail
- clamp
-References: <1419331204-26679-1-git-send-email-vinceh@nvidia.com> <1419331204-26679-2-git-send-email-vinceh@nvidia.com> <1419426990.2179.7.camel@lynxeye.de> <549B7638.2010405@nvidia.com> <20150105150932.GG12010@ulmo.nvidia.com> <54AB445D.7010303@nvidia.com> <20150106111538.GB31830@ulmo.nvidia.com>
-In-Reply-To: <20150106111538.GB31830@ulmo.nvidia.com>
-X-Originating-IP: [10.19.108.126]
-X-ClientProxiedBy: HKMAIL104.nvidia.com (10.18.16.13) To
- HKMAIL101.nvidia.com (10.18.16.10)
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Outbound-IP: 213.249.233.130
+X-Env-From: David.Laight@ACULAB.COM
+X-PolicySMART: 3396946, 3397078
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t06D6e0t012565
 
-On 01/06/2015 07:15 PM, Thierry Reding wrote:
-> * PGP Signed by an unknown key
->
-> On Tue, Jan 06, 2015 at 10:11:41AM +0800, Vince Hsu wrote:
->> On 01/05/2015 11:09 PM, Thierry Reding wrote:
->>>> Old Signed by an unknown key
->>> On Thu, Dec 25, 2014 at 10:28:08AM +0800, Vince Hsu wrote:
->>>> On 12/24/2014 09:16 PM, Lucas Stach wrote:
->>>>> Am Dienstag, den 23.12.2014, 18:39 +0800 schrieb Vince Hsu:
->>>>>> The Tegra124 and later Tegra SoCs have a sepatate rail gating register
->>>>>> to enable/disable the clamp. The original function
->>>>>> tegra_powergate_remove_clamping() is not sufficient for the enable
->>>>>> function. So add a new function which is dedicated to the GPU rail
->>>>>> gating. Also don't refer to the powergate ID since the GPU ID makes no
->>>>>> sense here.
->>>>>>
->>>>>> Signed-off-by: Vince Hsu <vinceh@nvidia.com>
->>>>> To be honest I don't see the point of this patch.
->>>>> You are bloating the PMC interface by introducing another exported
->>>>> function that does nothing different than what the current function
->>>>> already does.
->>>>>
->>>>> If you need a way to assert the clamp I would have expected you to
->>>>> introduce a common function to do this for all power partitions.
->>>> I thought about adding an tegra_powergate_assert_clamping(), but that
->>>> doesn't make sense to all the power partitions except GPU. Note the
->>>> difference in TRM. Any suggestion for the common function?
->>> I don't think extending the powergate API is useful at this point. We've
->>> long had an open TODO item to replace this with a generic API. I did
->>> some prototyping a while ago to use generic power domains for this, that
->>> way all the details and dependencies between the partitions could be
->>> properly modeled.
->>>
->>> Can you take a look at my staging/powergate branch here:
->>>
->>> 	https://github.com/thierryreding/linux/commits/staging/powergate
->>>
->>> and see if you can use that instead? The idea is to completely hide the
->>> details of power partitions from drivers and use runtime PM instead.
->> You generic power domains work is exactly what we want for powergate
->> eventually. :) I recall we used your prototyping in somewhere internal tree.
->> We have to add more to complete it though, e.g. power domain dependency, mc
->> flush, and clamping register difference like this patch does.
->>
->> But I have a question here. Since the GK20A is not powered on/off by the PMC
->> except the clamping control, and GK20A has its own power rail, do we really
->> want to hide the power sequence in the generic powergate code? We still have
->> to control the voltage level in the GK20A driver through the regulator
->> framework. It seems weird to me if we put the regulator_{enable|disable}
->> somewhere other than the GK20A driver.
-> I think we want both. The power domain to control the power partition
-> and the regulator in the gk20a driver for the voltage control.
-Do you mean excluding the power sequence of GK20A from the generic power 
-domain?
+> On Tue, 2014-12-16 at 16:03 +0100, Christophe Leroy wrote:
+> > All accessed to PGD entries are done via 0(r11).
+> > By using lower part of swapper_pg_dir as load index to r11, we can remove the
+> > ori instruction.
+> >
+> > Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+> 
+> Nice :)
+> Acked-by: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+> 
+> >
+> > ---
+> >  arch/powerpc/kernel/head_8xx.S | 22 ++++++++++------------
+> >  1 file changed, 10 insertions(+), 12 deletions(-)
+> >
+> > diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
+> > index ae05f28..aa45225 100644
+> > --- a/arch/powerpc/kernel/head_8xx.S
+> > +++ b/arch/powerpc/kernel/head_8xx.S
+> > @@ -322,13 +322,12 @@ InstructionTLBMiss:
+> >         mfspr   r11, SPRN_M_TW/* Get level 1 table base address */
+> >  #ifdef CONFIG_MODULES
+> >         beq     3f
+> > -       lis     r11, (swapper_pg_dir-PAGE_OFFSET)@h
+> > -       ori     r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
+> > +       lis     r11, (swapper_pg_dir-PAGE_OFFSET)@ha
+> >  3:
+> >  #endif
+> >         /* Insert level 1 index */
+> >         rlwimi  r11, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
+> > -       lwz     r11, 0(r11)/* Get the level 1 entry */
+> > +       lwz     r11, (swapper_pg_dir-PAGE_OFFSET)@l(r11)/* Get the level 1 entry */
+> >
 
-Thanks,
-Vince
+On the face of it that fragment doesn't look right when CONFIG_MODULES is undefined.
 
+	David
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
