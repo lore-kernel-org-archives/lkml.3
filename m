@@ -1,96 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932423AbbAFSqa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 13:46:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53804 "EHLO mx1.redhat.com"
+	id S932320AbbAFSpf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 13:45:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51527 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932342AbbAFSq2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 13:46:28 -0500
-Date: Tue, 6 Jan 2015 19:44:27 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Stijn Volckaert <Stijn.Volckaert@elis.ugent.be>,
-        Roland McGrath <roland@hack.frob.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        John Johansen <john.johansen@canonical.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Subject: Re: [PATCH RFC] Allow introspection to already attached ptracer in
-	__ptrace_may_access
-Message-ID: <20150106184427.GA18153@redhat.com>
-References: <549ABF87.8060905@elis.ugent.be> <CAGXu5jJWFKK1oJg0iyZtTKSSzXGyDD5B=iA3y7vvyayqhbOP5Q@mail.gmail.com>
+	id S1751159AbbAFSpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 13:45:33 -0500
+Date: Tue, 6 Jan 2015 16:45:12 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Paolo Bonzini <pbonzini@redhat.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kvm list <kvm@vger.kernel.org>, Gleb Natapov <gleb@kernel.org>
+Subject: Re: [RFC 2/2] x86, vdso, pvclock: Simplify and speed up the vdso
+ pvclock reader
+Message-ID: <20150106184512.GA31263@amt.cnet>
+References: <20150105152511.GA9172@amt.cnet>
+ <CALCETrXRs4NmhMvp+7kydrfyGCiNymkTe_sP6HFVvhMCC2Ei0Q@mail.gmail.com>
+ <20150105191756.GA31201@amt.cnet>
+ <CALCETrVWmbcv1w5a3N1VzyWEobP0qW+RQkhWO9yOkxzdKdJgeg@mail.gmail.com>
+ <20150105224858.GA6846@amt.cnet>
+ <54AB9FFD.6070309@redhat.com>
+ <54ABCE85.6070004@redhat.com>
+ <CALCETrWKgB7nj19zW_cQaa4RWjDojbN92_3+-27bHXbB-EEOnA@mail.gmail.com>
+ <20150106181331.GA24590@amt.cnet>
+ <CALCETrXzJkxbUsVgPbKNpBdp32yf=0M=RfseX=u7Mg2Mmsz2VQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jJWFKK1oJg0iyZtTKSSzXGyDD5B=iA3y7vvyayqhbOP5Q@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CALCETrXzJkxbUsVgPbKNpBdp32yf=0M=RfseX=u7Mg2Mmsz2VQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05, Kees Cook wrote:
->
-> I'm nervous to add this (or Oleg's suggestion) generally to
-> __ptrace_may_access, as it would mean other LSMs would stop seeing
-> access checks even when attached. It does seem silly to deny ptrace
-> checks when already attached, but it does change the behavior here.
+On Tue, Jan 06, 2015 at 10:26:22AM -0800, Andy Lutomirski wrote:
+> On Tue, Jan 6, 2015 at 10:13 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> > On Tue, Jan 06, 2015 at 08:56:40AM -0800, Andy Lutomirski wrote:
+> >> On Jan 6, 2015 4:01 AM, "Paolo Bonzini" <pbonzini@redhat.com> wrote:
+> >> >
+> >> >
+> >> >
+> >> > On 06/01/2015 09:42, Paolo Bonzini wrote:
+> >> > > > > Still confused.  So we can freeze all vCPUs in the host, then update
+> >> > > > > pvti 1, then resume vCPU 1, then update pvti 0?  In that case, we have
+> >> > > > > a problem, because vCPU 1 can observe pvti 0 mid-update, and KVM
+> >> > > > > doesn't increment the version pre-update, and we can return completely
+> >> > > > > bogus results.
+> >> > > > Yes.
+> >> > > But then the getcpu test would fail (1->0).  Even if you have an ABA
+> >> > > situation (1->0->1), it's okay because the pvti that is fetched is the
+> >> > > one returned by the first getcpu.
+> >> >
+> >> > ... this case of partial update of pvti, which is caught by the version
+> >> > field, if of course different from the other (extremely unlikely) that
+> >> > Andy pointed out.  That is when the getcpus are done on the same vCPU,
+> >> > but the rdtsc is another.
+> >> >
+> >> > That one can be fixed by rdtscp, like
+> >> >
+> >> > do {
+> >> >     // get a consistent (pvti, v, tsc) tuple
+> >> >     do {
+> >> >         cpu = get_cpu();
+> >> >         pvti = get_pvti(cpu);
+> >> >         v = pvti->version & ~1;
+> >> >         // also acts as rmb();
+> >> >         rdtsc_barrier();
+> >> >         tsc = rdtscp(&cpu1);
+> >>
+> >> Off-topic note: rdtscp doesn't need a barrier at all.  AIUI AMD
+> >> specified it that way and both AMD and Intel implement it correctly.
+> >> (rdtsc, on the other hand, definitely needs the barrier beforehand.)
+> >>
+> >> >         // control dependency, no need for rdtsc_barrier?
+> >> >     } while(cpu != cpu1);
+> >> >
+> >> >     // ... compute nanoseconds from pvti and tsc ...
+> >> >     rmb();
+> >> > }   while(v != pvti->version);
+> >>
+> >> Still no good.  We can migrate a bunch of times so we see the same CPU
+> >> all three times and *still* don't get a consistent read, unless we
+> >> play nasty games with lots of version checks (I have a patch for that,
+> >> but I don't like it very much).  The patch is here:
+> >>
+> >> https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/commit/?h=x86/vdso_paranoia&id=a69754dc5ff33f5187162b5338854ad23dd7be8d
+> >>
+> >> but I don't like it.
+> >>
+> >> Thus far, I've been told unambiguously that a guest can't observe pvti
+> >> while it's being written, and I think you're now telling me that this
+> >> isn't true and that a guest *can* observe pvti while it's being
+> >> written while the low bit of the version field is not set.  If so,
+> >> this is rather strongly incompatible with the spec in the KVM docs.
+> >>
+> >> I don't suppose that you and Marcelo could agree on what the actual
+> >> semantics that KVM provides are and could write it down in a way that
+> >> people who haven't spent a long time staring at the request code
+> >> understand?  And maybe you could even fix the implementation while
+> >> you're at it if the implementation is, indeed, broken.  I have ugly
+> >> patches to fix it here:
+> >>
+> >> https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/commit/?h=x86/vdso_paranoia&id=3b718a050cba52563d831febc2e1ca184c02bac0
+> >>
+> >> but I'm not thrilled with them.
+> >>
+> >> --Andy
+> >
+> > I suppose that separating the version write from the rest of the pvclock
+> > structure is sufficient, as that would guarantee the writes are not
+> > reordered even with fast string REP MOVS.
+> >
+> > Thanks for catching this Andy!
+> >
+> 
+> Don't you stil need:
+> 
+> version++;
+> write the rest;
+> version++;
+> 
+> with possible smp_wmb() in there to keep the compiler from messing around?
 
-Same here.
+Correct. Could just as well follow the protocol and use odd/even, which 
+is what your patch does.
 
-> If the other LSM folks don't see a problem here, then it should live
-> in the general case. Otherwise, I'm happy to add this check only in
-> Yama.
+What is the point with the new flags bit though?
 
-In this case this check should probably go into ptracer_exception_found().
+> Also, if you do this, can you also make setting and clearing
+> STABLE_BIT properly atomic across all vCPUs?  Or at least do something
+> like setting it last and clearing it first on vPCU 0?
 
-Btw it looks buggy... RCU protects ptrace_relation object, but not
-relation->tracer (the final __put_task_struct() calls yama_task_free()
-and frees task_struct without rcu gp).
+If the version "seqlock" works properly across vCPUs, why do you need
+STABLE_BIT "properly atomic" ?
 
-This means that task_is_descendant(parent, tracer) can dereference the
-already freed/unmapped parent, no?
+Please define what you mean by "properly atomic".
 
-
-And the usage of ->group_leader looks strange. tracee->group_leader can
-point to nowhere if the task is already dead. In this case
-"relation->tracee == tracee" can be false-positive (the same task_struct
-can be re-allocated), but probably this is not that bad exactly because
-the task is dead anyway.
-
-
-prctl(PR_SET_PTRACER) looks strange too wrt group_leader. What if the caller
-execs later? The comment says "we want process-level granularity of control",
-but this is only true if the main thread does exec.
-
-And get/out_task_struct(myself) look unneeded.
-
-
-And it seems that task_is_descendant() doesn't need ->group_leader at all,
-it could simply do
-
-	static int task_is_descendant(struct task_struct *parent,
-				      struct task_struct *child)
-	{
-		int rc = 0;
-		struct task_struct *walker = child;
-
-		if (!parent || !child)
-			return 0;
-
-		rcu_read_lock();
-		do {
-			if (same_thread_group(walker, parent)) {
-				rc = 1;
-				break;
-			}
-			walker = rcu_dereference(walker->real_parent);
-		} while (walker != &init_task);
-		rcu_read_unlock();
-
-		return rc;
-	}
-
-Oleg.
 
