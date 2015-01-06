@@ -1,48 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932524AbbAFTSJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 14:18:09 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:53131 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752187AbbAFTSH (ORCPT
+	id S1754571AbbAFTSe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 14:18:34 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:40389 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426AbbAFTSc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 14:18:07 -0500
-Date: Tue, 06 Jan 2015 14:18:05 -0500 (EST)
-Message-Id: <20150106.141805.2295183028829066436.davem@davemloft.net>
-To: Ian.Campbell@citrix.com
-Cc: imrep.amz@gmail.com, xen-devel@lists.xenproject.org,
-        netdev@vger.kernel.org, wei.liu2@citrix.com,
-        linux-kernel@vger.kernel.org, imrep@amazon.de, aliguori@amazon.com
-Subject: Re: [PATCH] xen-netback: fixing the propagation of the transmit
- shaper timeout
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1420559647.28863.174.camel@citrix.com>
-References: <1420559084-28370-1-git-send-email-imrep.amz@gmail.com>
-	<1420559647.28863.174.camel@citrix.com>
-X-Mailer: Mew version 6.6 on Emacs 24.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 06 Jan 2015 11:18:07 -0800 (PST)
+	Tue, 6 Jan 2015 14:18:32 -0500
+From: Mark Salyzyn <salyzyn@android.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Salyzyn <salyzyn@android.com>, Anton Vorontsov <anton@enomsg.org>,
+        Colin Cross <ccross@android.com>, Kees Cook <keescook@chromium.org>,
+        Tony Luck <tony.luck@intel.com>
+Subject: [PATCH v3 1/3] pstore: use scnprintf
+Date: Tue,  6 Jan 2015 11:18:24 -0800
+Message-Id: <1420571907-13162-1-git-send-email-salyzyn@android.com>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Campbell <Ian.Campbell@citrix.com>
-Date: Tue, 6 Jan 2015 15:54:07 +0000
+No guarantees that the names will not exceed the
+name buffer with future adjustments.
 
-> On Tue, 2015-01-06 at 16:44 +0100, Imre Palik wrote:
->> From: "Palik, Imre" <imrep@amazon.de>
->> 
->> Since e9ce7cb6b107 ("xen-netback: Factor queue-specific data into queue struct"),
->> the transimt shaper timeout is always set to 0.  The value the user sets via
->> xenbus is never propagated to the transmit shaper.
->> 
->> This patch fixes the issue.
->> 
->> Cc: Anthony Liguori <aliguori@amazon.com>
->> Signed-off-by: Imre Palik <imrep@amazon.de>
-> 
-> Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: Mark Salyzyn <salyzyn@android.com>
+---
+ fs/pstore/inode.c | 23 +++++++++++++----------
+ 1 file changed, 13 insertions(+), 10 deletions(-)
 
-Applied and queued up for -stable, thanks.
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index 5041660..d69586f 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -338,32 +338,35 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
+ 
+ 	switch (type) {
+ 	case PSTORE_TYPE_DMESG:
+-		sprintf(name, "dmesg-%s-%lld%s", psname, id,
+-						compressed ? ".enc.z" : "");
++		scnprintf(name, sizeof(name), "dmesg-%s-%lld%s",
++			  psname, id, compressed ? ".enc.z" : "");
+ 		break;
+ 	case PSTORE_TYPE_CONSOLE:
+-		sprintf(name, "console-%s-%lld", psname, id);
++		scnprintf(name, sizeof(name), "console-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_FTRACE:
+-		sprintf(name, "ftrace-%s-%lld", psname, id);
++		scnprintf(name, sizeof(name), "ftrace-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_MCE:
+-		sprintf(name, "mce-%s-%lld", psname, id);
++		scnprintf(name, sizeof(name), "mce-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_PPC_RTAS:
+-		sprintf(name, "rtas-%s-%lld", psname, id);
++		scnprintf(name, sizeof(name), "rtas-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_PPC_OF:
+-		sprintf(name, "powerpc-ofw-%s-%lld", psname, id);
++		scnprintf(name, sizeof(name), "powerpc-ofw-%s-%lld",
++			  psname, id);
+ 		break;
+ 	case PSTORE_TYPE_PPC_COMMON:
+-		sprintf(name, "powerpc-common-%s-%lld", psname, id);
++		scnprintf(name, sizeof(name), "powerpc-common-%s-%lld",
++			  psname, id);
+ 		break;
+ 	case PSTORE_TYPE_UNKNOWN:
+-		sprintf(name, "unknown-%s-%lld", psname, id);
++		scnprintf(name, sizeof(name), "unknown-%s-%lld", psname, id);
+ 		break;
+ 	default:
+-		sprintf(name, "type%d-%s-%lld", type, psname, id);
++		scnprintf(name, sizeof(name), "type%d-%s-%lld",
++			  type, psname, id);
+ 		break;
+ 	}
+ 
+-- 
+2.2.0.rc0.207.ga3a616c
+
