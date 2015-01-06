@@ -1,33 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932264AbbAFQB4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 11:01:56 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38653 "EHLO
+	id S1755846AbbAFQDn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 11:03:43 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38671 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755535AbbAFQBy (ORCPT
+	with ESMTP id S1755186AbbAFQDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 11:01:54 -0500
-Date: Tue, 6 Jan 2015 16:01:23 +0000
+	Tue, 6 Jan 2015 11:03:41 -0500
+Date: Tue, 6 Jan 2015 16:03:17 +0000
 From: Mark Brown <broonie@kernel.org>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Bo Shen <voice.shen@atmel.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>
-Message-ID: <20150106160123.GA2634@sirena.org.uk>
-References: <1420542872-10015-1-git-send-email-alexandre.belloni@free-electrons.com>
- <20150106120049.GX2634@sirena.org.uk>
- <20150106122751.GO4194@piout.net>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, linux-ide@vger.kernel.org
+Message-ID: <20150106160317.GB2634@sirena.org.uk>
+References: <1419614799-5770-1-git-send-email-gregory.clement@free-electrons.com>
+ <1419614799-5770-2-git-send-email-gregory.clement@free-electrons.com>
+ <20141229154030.GJ17800@sirena.org.uk>
+ <54ABC8A2.7090905@free-electrons.com>
+ <20150106120012.GW2634@sirena.org.uk>
+ <54ABD474.6060403@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BEfR2jmXRHrz4elx"
+	protocol="application/pgp-signature"; boundary="GhOjTe89cQfBPqWP"
 Content-Disposition: inline
-In-Reply-To: <20150106122751.GO4194@piout.net>
+In-Reply-To: <54ABD474.6060403@free-electrons.com>
 X-Cookie: What's so funny?
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 94.175.94.161
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: sam9g20_wm8731: drop machine_is_xxx
+Subject: Re: [PATCH 1/2] regulator: core: Add a sanity check on the
+ regulator_ enable/disable functions
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -35,41 +42,41 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---BEfR2jmXRHrz4elx
+--GhOjTe89cQfBPqWP
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Tue, Jan 06, 2015 at 01:27:51PM +0100, Alexandre Belloni wrote:
-> On 06/01/2015 at 12:00:49 +0000, Mark Brown wrote :
-> > On Tue, Jan 06, 2015 at 12:14:32PM +0100, Alexandre Belloni wrote:
+On Tue, Jan 06, 2015 at 01:26:28PM +0100, Gregory CLEMENT wrote:
+> On 06/01/2015 13:00, Mark Brown wrote:
 
-> > > Atmel based boards can now only be used with device tree. Drop non DT
-> > > initialization.
+> > This really only applies if it's likely that some thing that always gets
+> > used if it's there might be missing which isn't the case for regulators,
+> > it's not at all common to have power supplies that might be missing and
 
-> > This doesn't apply against current code, please check and resend.
+> Well the pattern the following pattern is very common in the drivers using
+> the regulator:
 
-> It should apply after "sound: soc: atmel sam9g20_wm8731: remove useless
-> include". I was based on 3.19-rc2.
+> if (!IS_ERR(regulator_pointer)
+> 	regulator_disable(regulator_pointer);
 
-So, one reason you should use subject lines matching the style for the
-subsystem is that this is a big part of how people find patches to
-review...  I'm not 100% sure I still have the patch, the volume is
-rather high right now.
+> So for me it was a good hint that we can factorize it.
 
---BEfR2jmXRHrz4elx
+It is?  It shouldn't be...
+
+--GhOjTe89cQfBPqWP
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQEcBAEBAgAGBQJUrAbSAAoJECTWi3JdVIfQYLIH/iXGi3OfHhlaLFOtrwN7sCnZ
-QW4fUwjuCMJN+Cn3wkfrq+YpWnCyfycQXvyHV/t6R2XsEarS+DF87bxuffWlcNL4
-nZFwaOjxVcRuRCGQB+7HsyQL2N8kMBWfpRJPpng4FZHzS1NsaxWC7Ijs9AHaZgsN
-0Bh63FUw6HeO++Wnw7M3bbzSuJvP6je7ncsIK0e9yCrMDC8SeDnSvGf1TBtYCTdA
-nBFnXwqUhGCyBiLEbjkHKzo9oF4AfBy+vzWN0YeTvdxbeEwUucQB+Tgc/pRs2BXT
-Zd1+mQxe9cwCdgYyLlCYhj0cm+aEIWgWYDnIOGaT3W/MQKkSPKu0j8yPLKuLgjY=
-=xw0i
+iQEcBAEBAgAGBQJUrAdEAAoJECTWi3JdVIfQ2j0H/27+wdMimsjGY/cahnajFqfg
+DJwWlqOPFScKPJnHvf0UoIabaVEcyDrJKGUJ57PbYyIBrXF4iu+YN9ySqO0RSWrR
+hBm4dJNqNVPs5entlnoYtpxCwmaTCuiaqJcFKToQan90vu5N+PfHgHB4uGRA85p+
+2Ya6zScnJWMQNBcoZFILCE/6wD1ziuSNmQHA/+fNXITUTW01/HnXiImN/eSrul3n
+yXLg25QujA5Gu/Qj9tzOcBJko8exceft5vn+O2b5JymVZ9NV/wZ5us94NGkVJzkS
+V7O5GQ2N1QY7lpU4D7wyAGlD1eW0cBsXWUeK6J8XEFtVzLDW+AWqCru9MLlwPmw=
+=r6/y
 -----END PGP SIGNATURE-----
 
---BEfR2jmXRHrz4elx--
+--GhOjTe89cQfBPqWP--
