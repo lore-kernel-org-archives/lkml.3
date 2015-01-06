@@ -1,79 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228AbbAFXA7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 18:00:59 -0500
-Received: from casper.infradead.org ([85.118.1.10]:57892 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770AbbAFXA5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 18:00:57 -0500
-Date: Tue, 6 Jan 2015 23:00:50 +0000
-From: Thomas Graf <tgraf@suug.ch>
-To: Stephen Hemminger <stephen@networkplumber.org>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        herbert@gondor.apana.org.au, paulmck@linux.vnet.ibm.com,
-        edumazet@google.com, john.r.fastabend@intel.com, josh@joshtriplett.org
-Subject: Re: [RFC] netlink: get rid of nl_table_lock
-Message-ID: <20150106230050.GA6870@casper.infradead.org>
-References: <cover.1420230585.git.tgraf@suug.ch>
- <daae84cd33bfde8518b849176e25dcf3eea8014b.1420230585.git.tgraf@suug.ch>
- <20150103110211.18b11f0f@urahara>
+	id S1751787AbbAFXFq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 18:05:46 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:45442 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750753AbbAFXFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 18:05:44 -0500
+Date: Tue, 6 Jan 2015 17:04:15 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Pavel Machek <pavel@ucw.cz>
+CC: Felipe Balbi <balbi@ti.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        <pali.rohar@gmail.com>, <sre@debian.org>, <sre@ring0.de>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <tony@atomide.com>, <khilman@kernel.org>,
+        <ivo.g.dimitrov.75@gmail.com>
+Subject: Re: 3.19 on Nokia n900: audio quality awful
+Message-ID: <20150106230415.GC13752@saruman>
+Reply-To: <balbi@ti.com>
+References: <20150106170433.GA5408@amd>
+ <20150106172545.GK6502@saruman>
+ <20150106175115.GA19487@amd>
+ <20150106202857.GB32308@saruman>
+ <20150106205000.GB13902@amd>
+ <20150106205730.GA6071@fuloong-minipc.musicnaut.iki.fi>
+ <20150106220805.GD13902@amd>
+ <20150106222717.GC6071@fuloong-minipc.musicnaut.iki.fi>
+ <20150106224622.GA13752@saruman>
+ <20150106225614.GA31990@amd>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FsscpQKzF/jJk6ya"
 Content-Disposition: inline
-In-Reply-To: <20150103110211.18b11f0f@urahara>
+In-Reply-To: <20150106225614.GA31990@amd>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/15 at 11:02am, Stephen Hemminger wrote:
-> As a follow on to Thomas's patch I think this would complete the
-> transistion to RCU for netlink.
-> Compile tested only.
-> 
-> 
-> 
-> This patch gets rid of the reader/writer nl_table_lock and replaces it
-> with exclusively using RCU for reading, and a mutex for writing.
-> 
-> Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
+--FsscpQKzF/jJk6ya
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I like it. One thing I noticed it that it leaves a mix of
-native mutex unlocks and unlocks via netlink_table_ungrab().
+Hi,
 
-The Open vSwitch upcall is a pretty good real world Netlink
-benchmark. I'll run the tests I have to see if this has any
-unexpected side effects.
+On Tue, Jan 06, 2015 at 11:56:14PM +0100, Pavel Machek wrote:
+> > > But I'm mounting it from userspace (using builtin initramfs inside
+> > > zImage), with a poll loop that waits for a device to appear. Maybe if=
+ you
+> > > do it from kernel you need to use root wait/delay etc. options?
+> >=20
+> > yeah, rootwait should do it.
+>=20
+> No, rootwait does not solve it. Try it. Tested many times. (And yes,
+> you need to actually fool the rear cover sensor or close the phone.)
 
->  void netlink_table_grab(void)
-> -	__acquires(nl_table_lock)
->  {
-> -	might_sleep();
-> -
-> -	write_lock_irq(&nl_table_lock);
-> -
-> -	if (atomic_read(&nl_table_users)) {
-> -		DECLARE_WAITQUEUE(wait, current);
-> -
-> -		add_wait_queue_exclusive(&nl_table_wait, &wait);
-> -		for (;;) {
-> -			set_current_state(TASK_UNINTERRUPTIBLE);
-> -			if (atomic_read(&nl_table_users) == 0)
-> -				break;
-> -			write_unlock_irq(&nl_table_lock);
-> -			schedule();
-> -			write_lock_irq(&nl_table_lock);
-> -		}
-> -
-> -		__set_current_state(TASK_RUNNING);
-> -		remove_wait_queue(&nl_table_wait, &wait);
-> -	}
-> +	mutex_lock(&nl_table_mutex);
->  }
+yeah, just put a magnet or, if you have spare back covers, cut one so
+that you "close" it, but still allow you to put the thing on a
+development jig.
 
-I left this untouched so far as I wasn't clear on what side effect
-it would have to remove this as it does explicitely relax writers
-right now.
+Also, if why doesn't rootwait work ? You never have a new mmc node or is
+the mmc node changing names ?
+
+--=20
+balbi
+
+--FsscpQKzF/jJk6ya
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUrGnvAAoJEIaOsuA1yqREA0cQAKUohXUU8k7HWFmYW2Tw+rCP
+YarhoiBNwyXGiL6mQKUEkz7dNz/8/Qxfx2ElQx/nsxikBybCT1czUIDM7ZTmHZci
+FjekuqR8WJOWpZfUkuvhRGE/WUJZsLa6jM+Q3TbTchS3tpQkKnarHoMFCMMUMAWi
+QbU9vZE8a3fOMkqUADPKoBLp3af+Pr01z3FJgEvkXw25BFn8Rhwx0aSkFZqfxCQo
+U0NG/VSORCG0soW3PoyRw0xbxNNOvodNf6NZZEabagp4/+KkSpZNBj+2EAqmyPqK
+KKFazOwIrigk4lC9Cb3YwKzzrth4ASj7cYEk6ZJwNLcTPqp27scJT8i2Leqk2qh5
+bVMhL+8tHDjaDDL5zRHOfL/oQHywcyWqd300k0EyiVO9Sa5p0TVLVJs4dXNGULul
+ahBg+r7MttztkMGTJxTlyMFU2uEwO7CS+vSbyuG2srsD3vF4ytg2VIymPPjryXJg
+ciuUs5z5n55VHyj1fs0ME0QWo0oMgFP5LNzR6R3uPrc2KIXjaMpXN943m7GaVypS
+j5XCCNaOoHGMDGc8GKOPBeSt61LT4h2CpmT0NGsvfaLxegeSTMFQXKvPbl6vHKu2
+LdvkNhGDgRiH0w60ENrc8mwuhUniZ2cNicpYJLTt9wU+NOlJg7Vkbc+lYTtY9WaC
+/+1vLFaEBVf9SuFjjibE
+=hwt3
+-----END PGP SIGNATURE-----
+
+--FsscpQKzF/jJk6ya--
