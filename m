@@ -1,194 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932AbbAFQy2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 11:54:28 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:61964 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753822AbbAFQyY (ORCPT
+	id S1755823AbbAFQyW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 11:54:22 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:39437 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753822AbbAFQyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 11:54:24 -0500
+	Tue, 6 Jan 2015 11:54:20 -0500
+Date: Tue, 6 Jan 2015 08:54:17 -0800
+From: Darren Hart <dvhart@infradead.org>
+To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Boon Leong Ong <boon.leong.ong@intel.com>
+Subject: Re: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
+Message-ID: <20150106165417.GB27956@vmdeb7>
+References: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie>
+ <1419873783-5161-2-git-send-email-pure.logic@nexus-software.ie>
+ <20150106073634.GB59754@vmdeb7>
+ <54ABE67B.1070706@nexus-software.ie>
 MIME-Version: 1.0
-In-Reply-To: <1420523117-6814-4-git-send-email-beomho.seo@samsung.com>
-References: <1420523117-6814-1-git-send-email-beomho.seo@samsung.com> <1420523117-6814-4-git-send-email-beomho.seo@samsung.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Tue, 6 Jan 2015 10:54:01 -0600
-Message-ID: <CAL_Jsq+Sz_iCkaDWzssA6DFeLX8fQ2hqKut0Gv6i5P706bmvpA@mail.gmail.com>
-Subject: Re: [PATCH RESEND 3/3] Documentation: Add documentation for rt5033
- multifunction device
-To: Beomho Seo <beomho.seo@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        lee.jone@linaro.org, Mark Brown <broonie@kernel.org>,
-        Sebastian Reichel <sre@kernel.org>, dbaryshkov@gmail.com,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>, InKi Dae <inki.dae@samsung.com>,
-        sw0312.kim@samsung.com, Lee Jones <lee.jones@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54ABE67B.1070706@nexus-software.ie>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 5, 2015 at 11:45 PM, Beomho Seo <beomho.seo@samsung.com> wrote:
-> This patch device tree binding documentation for rt5033 multifunction device.
->
-> Cc: Sebastian Reichel <sre@kernel.org>
-> Cc: Lee Jones <lee.jones@linaro.org>
-> Cc: Mark Brown <broonie@kernel.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Ian campbell <ijc+devicetree@hellion.org.uk>
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
-> Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
-> ---
->  Documentation/devicetree/bindings/mfd/rt5033.txt   |  108 ++++++++++++++++++++
->  .../devicetree/bindings/vendor-prefixes.txt        |    1 +
->  2 files changed, 109 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mfd/rt5033.txt
->
-> diff --git a/Documentation/devicetree/bindings/mfd/rt5033.txt b/Documentation/devicetree/bindings/mfd/rt5033.txt
-> new file mode 100644
-> index 0000000..52a6d33
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mfd/rt5033.txt
-> @@ -0,0 +1,108 @@
-> +Richtek RT5033 Power management Integrated Circuit
-> +
-> +RT5033 is a Multifunction device which includes battery charger, fuel gauge,
-> +flash LED current source, LDO and synchronous Buck converter for portable
-> +applications. It is interfaced to host controller using i2c interface.
-> +
-> +Required properties:
-> +- compatible : Must be "richtek,rt5033"
-> +- reg : Specifies the i2c slave address of general part.
-> +- interrupts : This i2c devices has an IRQ line connected to the main SoC.
-> +- interrupt-parent : The parent interrupt controller.
-> +
-> +Optional node:
-> +Regulators: The regulators of RT5033 have to be instantiated under sub-node
-> +named "regulators" usinge the following format.
+On Tue, Jan 06, 2015 at 01:43:23PM +0000, Bryan O'Donoghue wrote:
+> On 06/01/15 07:36, Darren Hart wrote:
+> 
+> >>Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+> >
+> >Since you have Intel (C) below and then your own, are you the sole author?
+> 
+> Yes, for the platform code.
+> 
+> Platform code tears-down IMRs and sets-up up a new one around the kernel.
+> Quark BSP does a similar thing in a different place.
+> 
+> To be safe I'm happy to add a Intel (C) to this file anyway.
 
-s/usinge/using/
+I was just checking if we needed to credit another individual with code
+authorship.
 
-> +
-> +       regulators {
-> +               regulator-name {
-> +                       regulator-name = LDO/BUCK
-> +                       regulator subnodes called X, Y and Z
-> +               };
-> +       };
-> +       refer Documentation/devicetree/bindings/regulator/regulator.txt
-> +
-> +
-> +Battery charger: There battery charger of RT5033 have to be instantiated under
-> +sub-node named "charger" using the following format.
-> +
-> +Required properties:
-> +- compatible : Must be "richtek,rt5033-charger".
-> +- richtek,pre-uamp : Current of pre-charge mode. The pre-charge current levels
-> +  are 350 mA to 650 mA programmed by I2C per 100 mA.
-> +- richtek,pre-threshold-uvolt : Voltage of threshold pre-charge mode. Battery
-> +  voltage is below pre-charge threshold voltage, the charger is in pre-charge
-> +  mode with pre-charge current. Its levels are 2.3 V  to 3.8 V programmed
-> +  by I2C per 0.1 V.
-> +- richtek,fast-uamp : Current of fast-charge mode. The fast-charge current
-> +  levels are 700 mA to 2000 mA programmed by I2C per 100 mA.
-> +- richtek,const-uvolt :  Battery regulation voltage of constant voltage mode.
-> +  This voltage level 3.65 V to 4.4 V bye I2C per 0.025 V.
-> +- richtek,eoc-uamp : This property is end of charge current. Its level 150 mA
-> +  to 200 mA.
+...
 
-Please align -uamp and -uvolt names with regulator binding suffixes.
+> >>+#define IMR_SHIFT	8
+> >>+#define imr_to_phys(x)	(x << IMR_SHIFT)
+> >>+#define phys_to_imr(x)	(x >> IMR_SHIFT)
+> >>+
+> >>+/**
+> >>+ * imr_enabled
+> >>+ * Determines if an IMR is enabled based on address range
+> >>+ *
+> >>+ * @imr:	Pointer to IMR descriptor
+> >>+ * @return	true if IMR enabled false if disabled
+> >>+ */
+> >>+static int imr_enabled(struct imr *imr)
+> >>+{
+> >>+	return (imr_to_phys(imr->addr_lo) && imr_to_phys(imr->addr_hi));
+> >
+> >What are testing here? You have bit 30 marked as "Enabled" above (but it isn't
+> >in the datasheet). With Reserved bits in each register, this test for non-zero
+> >doesn't seem robust.
+> 
+> Good question.
+> 
+> Bit 30 is not present in X1000 silicon, though is present in the BSP code.
+> Lets forget about all non-X1000 cases for now since X1000 is the only
+> processor currently available.
+> 
+> On X1000 the only means of determining if an IMR is enabled is if it's
+> address bits are set to some address everybody agrees means 'off', since the
+> enable bit doesn't exist. Everybody in this case is ROM, BIOS, 2nd stage
+> bootloader and kernel.
+> 
 
-> +       charger {
-> +               compatible = "richtek,rt5033-charger";
-> +               richtek,pre-uamp = <350000>;
-> +               richtek,pre-threshold-uvolt = <3400000>;
-> +               richtek,fast-uamp = <2000000>;
-> +               richtek,const-uvolt = <4350000>;
-> +               richtek,eoc-uamp = <250000>;
-> +       };
-> +
-> +
-> +Fuelgauge: There fuelgauge of RT5033 to be instantiated node named "fuelgauge"
-> +using the following format.
-> +
-> +Required properties:
-> +- compatible = Must be "richtek,rt5033-battery".
-> +
-> +       i2c_fuel: i2c@1 {
+OK, that's non-obvious, so let's add a comment.
 
-Drop the @1.
+> In the BSP code, that address is zero. So in lieu of bit 30 'enable' we have
+> address 0x00000000.
+> 
+> The kernel could define an alternative address to 0x00000000 but, then this
+> would break with the convention in BIOS etc.
+> 
+> Since BIOS and grub code both use 0x00000000 as the 'off' address I think it
+> makes sense for the kernel to continue to use that address.
 
-> +               compatible = "i2c-gpio";
-> +               standard i2c-gpio constraints...
-> +               fuelgauge {
-> +                       compatible = "richtek,rt5033-battery".
-> +               };
-> +       };
+So, both lo and hi don't need to be non-zero then, either one being non-zero
+would constitute "enabled"? Should the above test be an || then?
 
-I'm a bit confused by this. The fuelgauge is an i2c device hanging off
-the rt5033 or a 2nd i2c slave on the rt5033?
+> 
+> >>+	/* Error out if we have an overlap or no free IMR entries */
+> >
+> >According to the datasheet, overlapping ranges are valid, and access must be
+> >granted by all IMRs associated with a given address. Why declare an overlap as
+> >invalid here?
+> 
+> Simplicity.
+> 
+> It's more straight forward to define your IMR memory map if you don't allow
+> the address ranges to stomp all over each other.
+> 
+> None of the BSP reference code does overlap.
+> 
+> If there's an argument for an overlap use-case it can be supported pretty
+> simply by simply removing the overlap checks.
+> 
+> My own view is that it's not really desirable and easier to debug IMRs
+> generally on a platform if overlaps aren't allowed.
+> 
 
-> +
-> +
-> +Example:
-> +
-> +               rt5033@34 {
-> +                       compatible = "richtek,rt5033";
-> +                       reg = <0x34>;
-> +                       interrupt-parent = <&gpx1>;
-> +                       interrupts = <5 0>;
-> +
-> +                       regulators {
-> +                               buck_reg: BUCK {
-> +                                       regulator-name = "BUCK";
-> +                                       regulator-min-microvolt = <1200000>;
-> +                                       regulator-max-microvolt = <1200000>;
-> +                                       regulator-always-on;
-> +                               };
-> +                       };
-> +
-> +                       charger {
-> +                               compatible = "richtek,rt5033-charger";
-> +                               richtek,pre-uamp = <350000>;
-> +                               richtek,pre-threshold-uvolt = <3400000>;
-> +                               richtek,fast-uamp = <2000000>;
-> +                               richtek,const-uvolt = <4350000>;
-> +                               richtek,eoc-uamp = <250000>;
-> +                       };
-> +
-> +               };
-> +
-> +               i2c_fuel: i2c@10 {
-> +                       compatible = "i2c-gpio";
-> +                       gpios = <&gpm3 1 0
-> +                               &gpm3 0 0>;
-> +
-> +                       fuel: rt5033-battery@35 {
-> +                               compatible = "richtek,rt5033-battery";
-> +                               interrupt-parent = <&gpx2>;
-> +                               interrupts = <3 0>;
-> +                               reg = <0x35>;
-> +                       };
-> +               };
-> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> index 723999d..611b543 100644
-> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> @@ -124,6 +124,7 @@ ralink      Mediatek/Ralink Technology Corp.
->  ramtron        Ramtron International
->  realtek Realtek Semiconductor Corp.
->  renesas        Renesas Electronics Corporation
-> +richtek        Richtek Technology Corporation
->  ricoh  Ricoh Co. Ltd.
->  rockchip       Fuzhou Rockchip Electronics Co., Ltd
->  samsung        Samsung Semiconductor
-> --
-> 1.7.9.5
->
+OK, let's add a comment to that effect.
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
