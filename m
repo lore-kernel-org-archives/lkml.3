@@ -1,59 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530AbbAFOvZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 09:51:25 -0500
-Received: from 8bytes.org ([81.169.241.247]:37844 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755416AbbAFOvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 09:51:18 -0500
-From: Joerg Roedel <joro@8bytes.org>
-To: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Joerg Roedel <jroedel@suse.de>, Joerg Roedel <joro@8bytes.org>
-Subject: [PATCH 3/3] x86, crash: Allocate enough low-mem when crashkernel=high
-Date: Tue,  6 Jan 2015 15:51:14 +0100
-Message-Id: <1420555874-11506-4-git-send-email-joro@8bytes.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1420555874-11506-1-git-send-email-joro@8bytes.org>
-References: <1420555874-11506-1-git-send-email-joro@8bytes.org>
+	id S1755574AbbAFOwL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 09:52:11 -0500
+Received: from mail-we0-f177.google.com ([74.125.82.177]:42641 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753325AbbAFOwI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 09:52:08 -0500
+From: Imre Palik <imrep.amz@gmail.com>
+To: linux-audit@redhat.com
+Cc: Paul Moore <paul@paul-moore.com>, Eric Paris <eparis@redhat.com>,
+        linux-kernel@vger.kernel.org, "Palik, Imre" <imrep@amazon.de>,
+        Matt Wilson <msw@amazon.com>
+Subject: [PATCH RFC] audit: move the tree pruning to a dedicated thread
+Date: Tue,  6 Jan 2015 15:51:20 +0100
+Message-Id: <1420555880-4328-1-git-send-email-imrep.amz@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joerg Roedel <jroedel@suse.de>
+From: "Palik, Imre" <imrep@amazon.de>
 
-When the crashkernel is loaded above 4GiB in memory the
-first kernel only allocates 72MiB of low-memory for the DMA
-requirements of the second kernel. On systems with many
-devices this is not enough and causes device driver
-initialization errors and failed crash dumps. Set this
-default value to 256MiB to make sure there is enough memory
-available for DMA.
+When file auditing is enabled, during a low memory situation, a memory
+allocation with __GFP_FS can lead to pruning the inode cache.  Which can,
+in turn lead to audit_tree_freeing_mark() being called.  This can call
+audit_schedule_prune(), that tries to fork a pruning thread, and
+waits until the thread is created.  But forking needs memory, and the
+memory allocations there are done with __GFP_FS.
 
-Signed-off-by: Joerg Roedel <jroedel@suse.de>
+So we are waiting merrily for some __GFP_FS memory allocations to complete,
+while holding some filesystem locks.  This can take a while ...
+
+This patch creates a single thread for pruning the tree from
+audit_add_tree_rule(), and thus avoids the deadlock that the on-demand thread
+creation can cause.
+
+Reported-by: Matt Wilson <msw@amazon.com>
+Cc: Matt Wilson <msw@amazon.com>
+Signed-off-by: Imre Palik <imrep@amazon.de>
 ---
- arch/x86/kernel/setup.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ kernel/audit_tree.c |   91 +++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 63 insertions(+), 28 deletions(-)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index ab4734e..d6e6a6d 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -536,8 +536,11 @@ static void __init reserve_crashkernel_low(void)
- 		 *	swiotlb overflow buffer: now is hardcoded to 32k.
- 		 *		We round it to 8M for other buffers that
- 		 *		may need to stay low too.
-+		 *		Also make sure we allocate enough extra memory
-+		 *		low memory so that we don't run out of DMA
-+		 *		buffers for 32bit devices.
- 		 */
--		low_size = swiotlb_size_or_default() + (8UL<<20);
-+		low_size = max(swiotlb_size_or_default() + (8UL<<20), 256UL<<20);
- 		auto_set = true;
- 	} else {
- 		/* passed with crashkernel=0,low ? */
+diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
+index 0caf1f8..0ada577 100644
+--- a/kernel/audit_tree.c
++++ b/kernel/audit_tree.c
+@@ -37,6 +37,7 @@ struct audit_chunk {
+ 
+ static LIST_HEAD(tree_list);
+ static LIST_HEAD(prune_list);
++static struct task_struct *prune_thread;
+ 
+ /*
+  * One struct chunk is attached to each inode of interest.
+@@ -641,6 +642,55 @@ static int tag_mount(struct vfsmount *mnt, void *arg)
+ 	return tag_chunk(mnt->mnt_root->d_inode, arg);
+ }
+ 
++/*
++ * That gets run when evict_chunk() ends up needing to kill audit_tree.
++ * Runs from a separate thread.
++ */
++static int prune_tree_thread(void *unused)
++{
++	for (;;) {
++		set_current_state(TASK_INTERRUPTIBLE);
++		if (list_empty(&prune_list))
++			schedule();
++		__set_current_state(TASK_RUNNING);
++
++		mutex_lock(&audit_cmd_mutex);
++		mutex_lock(&audit_filter_mutex);
++
++		while (!list_empty(&prune_list)) {
++			struct audit_tree *victim;
++
++			victim = list_entry(prune_list.next,
++					struct audit_tree, list);
++			list_del_init(&victim->list);
++
++			mutex_unlock(&audit_filter_mutex);
++
++			prune_one(victim);
++
++			mutex_lock(&audit_filter_mutex);
++		}
++
++		mutex_unlock(&audit_filter_mutex);
++		mutex_unlock(&audit_cmd_mutex);
++	}
++	return 0;
++}
++
++static int launch_prune_thread(void)
++{
++	prune_thread = kthread_create(prune_tree_thread, NULL,
++				"audit_prune_tree");
++	if (IS_ERR(prune_thread)) {
++		audit_panic("cannot start thread audit_prune_tree");
++		prune_thread = NULL;
++		return -ENOSYS;
++	} else {
++		wake_up_process(prune_thread);
++		return 0;
++	}
++}
++
+ /* called with audit_filter_mutex */
+ int audit_add_tree_rule(struct audit_krule *rule)
+ {
+@@ -663,6 +713,12 @@ int audit_add_tree_rule(struct audit_krule *rule)
+ 	/* do not set rule->tree yet */
+ 	mutex_unlock(&audit_filter_mutex);
+ 
++	if (unlikely(!prune_thread)) {
++		err = launch_prune_thread();
++		if (err)
++			goto Err;
++	}
++
+ 	err = kern_path(tree->pathname, 0, &path);
+ 	if (err)
+ 		goto Err;
+@@ -713,6 +769,9 @@ int audit_tag_tree(char *old, char *new)
+ 	struct vfsmount *tagged;
+ 	int err;
+ 
++	if (!prune_thread)
++		return -ENOSYS;
++
+ 	err = kern_path(new, 0, &path2);
+ 	if (err)
+ 		return err;
+@@ -800,36 +859,11 @@ int audit_tag_tree(char *old, char *new)
+ 	return failed;
+ }
+ 
+-/*
+- * That gets run when evict_chunk() ends up needing to kill audit_tree.
+- * Runs from a separate thread.
+- */
+-static int prune_tree_thread(void *unused)
+-{
+-	mutex_lock(&audit_cmd_mutex);
+-	mutex_lock(&audit_filter_mutex);
+-
+-	while (!list_empty(&prune_list)) {
+-		struct audit_tree *victim;
+-
+-		victim = list_entry(prune_list.next, struct audit_tree, list);
+-		list_del_init(&victim->list);
+-
+-		mutex_unlock(&audit_filter_mutex);
+-
+-		prune_one(victim);
+-
+-		mutex_lock(&audit_filter_mutex);
+-	}
+-
+-	mutex_unlock(&audit_filter_mutex);
+-	mutex_unlock(&audit_cmd_mutex);
+-	return 0;
+-}
+ 
+ static void audit_schedule_prune(void)
+ {
+-	kthread_run(prune_tree_thread, NULL, "audit_prune_tree");
++	BUG_ON(!prune_thread);
++	wake_up_process(prune_thread);
+ }
+ 
+ /*
+@@ -896,9 +930,10 @@ static void evict_chunk(struct audit_chunk *chunk)
+ 	for (n = 0; n < chunk->count; n++)
+ 		list_del_init(&chunk->owners[n].list);
+ 	spin_unlock(&hash_lock);
++	mutex_unlock(&audit_filter_mutex);
+ 	if (need_prune)
+ 		audit_schedule_prune();
+-	mutex_unlock(&audit_filter_mutex);
++
+ }
+ 
+ static int audit_tree_handle_event(struct fsnotify_group *group,
 -- 
-1.9.1
+1.7.9.5
 
