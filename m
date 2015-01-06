@@ -1,61 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129AbbAFSGj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 13:06:39 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:63353 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755843AbbAFSGh (ORCPT
+	id S1756280AbbAFSI6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 13:08:58 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:53302 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754472AbbAFSI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 13:06:37 -0500
+	Tue, 6 Jan 2015 13:08:56 -0500
+Message-ID: <54AC2497.3050703@lwfinger.net>
+Date: Tue, 06 Jan 2015 12:08:23 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <54AC1FFB.7030504@linux.intel.com>
-References: <cover.1419900414.git.luto@amacapital.net> <d5efe02b133f6d9fb4cb9d03e0f0b9e17211c06f.1419900414.git.luto@amacapital.net>
- <54A64E6D.1020304@linux.intel.com> <87mw5x0xjz.fsf@tassilo.jf.intel.com>
- <54AAFFA3.6000901@linux.intel.com> <CALCETrUeMS7zwjXfSMN-6A8-gpLc68n7U5Y6SPdzgw6hSbYGNg@mail.gmail.com>
- <20150106040428.GR2915@two.firstfloor.org> <CALCETrU3oHO5Rjqp_DmJaOkEBOtZpQ+f99xXiY5=84JfJphZCA@mail.gmail.com>
- <54AC1FFB.7030504@linux.intel.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 6 Jan 2015 10:06:16 -0800
-Message-ID: <CALCETrVJyBR7NoZvC=A4htRtm-fLe5NUEGUdvJRL28adU4MhUg@mail.gmail.com>
-Subject: Re: [PATCH 3.19 3/3] x86, mpx: Change the MPX enable/disable API to arch_prctl
-To: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+CC: Kalle Valo <kvalo@adurom.com>, linux-wireless@vger.kernel.org,
+        b43-dev@lists.infradead.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] b43legacy: Remove unused function
+References: <1420567175-17323-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1420567175-17323-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 6, 2015 at 9:48 AM, Dave Hansen <dave.hansen@linux.intel.com> wrote:
-> On 01/05/2015 09:59 PM, Andy Lutomirski wrote:
->> But I decided to check whether libmpx links against glibc, and I can't
->> find sources for it at all.  Do they exist?  Is there any code with
->> source available that invokes this prctl?
->>
->> If not, I personally have very little sympathy for the argument that a
->> binary buried in the depths of the Intel SDE would need to change if
->> we switched to using arch_prctl.  And I think that it should issue the
->> syscall itself without using glibc, in which case the syscall wrapper
->> issue is moot.
+On 01/06/2015 11:59 AM, Rickard Strandqvist wrote:
+> Remove the function b43legacy_radio_set_tx_iq() that is not used anywhere.
 >
-> Andy, as I mentioned previously, there is code in a GCC branch that uses
-> the existing prctl().  It's also been posted for review to one of the
-> GCC mailing lists.  I've been told that it will be in gcc 5.0.
+> This was partially found by using a static code analysis program called cppcheck.
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>   drivers/net/wireless/b43legacy/radio.c |   19 -------------------
+>   drivers/net/wireless/b43legacy/radio.h |    1 -
+>   2 files changed, 20 deletions(-)
+
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
+
+Larry
+
+>
+> diff --git a/drivers/net/wireless/b43legacy/radio.c b/drivers/net/wireless/b43legacy/radio.c
+> index 8961776..9501420 100644
+> --- a/drivers/net/wireless/b43legacy/radio.c
+> +++ b/drivers/net/wireless/b43legacy/radio.c
+> @@ -1743,25 +1743,6 @@ u16 freq_r3A_value(u16 frequency)
+>   	return value;
+>   }
+>
+> -void b43legacy_radio_set_tx_iq(struct b43legacy_wldev *dev)
+> -{
+> -	static const u8 data_high[5] = { 0x00, 0x40, 0x80, 0x90, 0xD0 };
+> -	static const u8 data_low[5]  = { 0x00, 0x01, 0x05, 0x06, 0x0A };
+> -	u16 tmp = b43legacy_radio_read16(dev, 0x001E);
+> -	int i;
+> -	int j;
+> -
+> -	for (i = 0; i < 5; i++) {
+> -		for (j = 0; j < 5; j++) {
+> -			if (tmp == (data_high[i] | data_low[j])) {
+> -				b43legacy_phy_write(dev, 0x0069, (i - j) << 8 |
+> -						    0x00C0);
+> -				return;
+> -			}
+> -		}
+> -	}
+> -}
+> -
+>   int b43legacy_radio_selectchannel(struct b43legacy_wldev *dev,
+>   				  u8 channel,
+>   				  int synthetic_pu_workaround)
+> diff --git a/drivers/net/wireless/b43legacy/radio.h b/drivers/net/wireless/b43legacy/radio.h
+> index bccb3d7..dd2976d 100644
+> --- a/drivers/net/wireless/b43legacy/radio.h
+> +++ b/drivers/net/wireless/b43legacy/radio.h
+> @@ -92,7 +92,6 @@ void b43legacy_nrssi_hw_write(struct b43legacy_wldev *dev, u16 offset, s16 val);
+>   void b43legacy_nrssi_hw_update(struct b43legacy_wldev *dev, u16 val);
+>   void b43legacy_nrssi_mem_update(struct b43legacy_wldev *dev);
+>
+> -void b43legacy_radio_set_tx_iq(struct b43legacy_wldev *dev);
+>   u16 b43legacy_radio_calibrationvalue(struct b43legacy_wldev *dev);
+>
+>   #endif /* B43legacy_RADIO_H_ */
 >
 
-Can you point me to it?  I found the code generation stuff in the gcc
-branch, but I couldn't find the runtime.
-
-> The Intel SDE does not use the prctl() in any way that I know of.
-
-I found a couple references suggesting that libmpx lived in the SDE.
-For example:
-
-https://software.intel.com/en-us/articles/using-intel-mpx-with-the-intel-software-development-emulator
-
---Andy
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
