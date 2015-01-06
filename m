@@ -1,93 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756380AbbAFPy7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 10:54:59 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42616 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756341AbbAFPys (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 10:54:48 -0500
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Rob Herring <robh+dt@kernel.org>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Flora Fu <flora.fu@mediatek.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, kernel@pengutronix.de,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v3] mfd: syscon: add child device support
-Date: Tue,  6 Jan 2015 16:54:34 +0100
-Message-Id: <1420559674-9772-1-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 2.1.4
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1756459AbbAFP4d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 10:56:33 -0500
+Received: from mail.kapsi.fi ([217.30.184.167]:56324 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751986AbbAFP4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 10:56:31 -0500
+Message-ID: <54AC05A5.5040401@kapsi.fi>
+Date: Tue, 06 Jan 2015 17:56:21 +0200
+From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: swarren@wwwdotorg.org, gnurou@gmail.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        wni@nvidia.com, Mikko Perttunen <mperttunen@nvidia.com>
+Subject: Re: [PATCH v5 3/3] ARM: tegra: Add thermal reset (thermtrip) support
+ to PMC
+References: <1420541578-27968-1-git-send-email-mikko.perttunen@kapsi.fi> <1420541578-27968-4-git-send-email-mikko.perttunen@kapsi.fi> <20150106151427.GQ31830@ulmo.nvidia.com>
+In-Reply-To: <20150106151427.GQ31830@ulmo.nvidia.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
+X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For devices which have a complete register for themselves, it is possible to
-place them next to the syscon device with overlapping reg ranges. The same is
-not possible for devices which only occupy bitfields in registers shared with
-other users.
-For devices that are completely controlled by bitfields in the syscon address
-range, such as multiplexers or voltage regulators, allow to put child devices
-into the syscon device node.
+On 01/06/2015 05:14 PM, Thierry Reding wrote:
+> On Tue, Jan 06, 2015 at 12:52:58PM +0200, Mikko Perttunen wrote:
+>> From: Mikko Perttunen <mperttunen@nvidia.com>
+>>
+>> This adds a device tree controlled option to enable PMC-based
+>> thermal reset in overheating situations. Thermtrip is supported on
+>> Tegra30, Tegra114 and Tegra124. The thermal reset only works when
+>> the thermal sensors are calibrated, so a soctherm driver is also
+>> required.
+>>
+>> The thermtrip event is triggered by the soctherm block, and all
+>> soctherm sensors default to showing a temperature of zero Celsius
+>> before they are initialized. Because of this, it is safe to initialize
+>> thermtrip and soctherm in any order.
+>>
+>> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+>> ---
+>>   drivers/soc/tegra/pmc.c | 107 ++++++++++++++++++++++++++++++++++++++++++++++++
+>>   1 file changed, 107 insertions(+)
+>
+> This looks good to me. I'm not sure if I asked before, but can this be
+> tested? Can we somehow trick thermtrip into reporting a temperature that
+> would trigger this?
+>
+> Thierry
+>
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-Tested-by: Flora Fu <flora.fu@mediatek.com>
----
-Changes since v2:
- - Added Tested-by: Flora Fu
----
- Documentation/devicetree/bindings/mfd/syscon.txt | 13 +++++++++++++
- drivers/mfd/syscon.c                             |  3 +++
- 2 files changed, 16 insertions(+)
+Yep, you can find a program here: 
+https://gist.github.com/cyndis/66126c9c176b5f94a76f
 
-diff --git a/Documentation/devicetree/bindings/mfd/syscon.txt b/Documentation/devicetree/bindings/mfd/syscon.txt
-index fe8150b..0c6b497 100644
---- a/Documentation/devicetree/bindings/mfd/syscon.txt
-+++ b/Documentation/devicetree/bindings/mfd/syscon.txt
-@@ -9,12 +9,25 @@ using a specific compatible value), interrogate the node (or associated
- OS driver) to determine the location of the registers, and access the
- registers directly.
- 
-+Optionally, devices that are controlled exclusively through syscon registers,
-+or even bitfields in shared syscon registers, can also be added as child nodes
-+to the syscon device node. These devices can implicitly assume their parent
-+node is a syscon provider without referencing it explicitly via phandle.
-+In this case, the syscon node should have #address-cells = <1> and
-+#size-cells = <0> or <1> and no ranges property.
-+
- Required properties:
- - compatible: Should contain "syscon".
- - reg: the register region can be accessed from syscon
- 
-+Optional properties:
-+- #address-cells: Should be 1.
-+- #size-cells: Should be 0 or 1.
-+
- Examples:
- gpr: iomuxc-gpr@020e0000 {
-+	#address-cells = <1>;
-+	#size-cells = <0>;
- 	compatible = "fsl,imx6q-iomuxc-gpr", "syscon";
- 	reg = <0x020e0000 0x38>;
- };
-diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
-index 176bf0f..d2280d6 100644
---- a/drivers/mfd/syscon.c
-+++ b/drivers/mfd/syscon.c
-@@ -208,6 +208,9 @@ static int syscon_probe(struct platform_device *pdev)
- 
- 	dev_dbg(dev, "regmap %pR registered\n", res);
- 
-+	if (!of_device_is_compatible(pdev->dev.of_node, "simple-bus"))
-+		of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
-+
- 	return 0;
- }
- 
--- 
-2.1.4
+It sets the thermtrip threshold to zero degrees.
+
+Mikko
 
