@@ -1,102 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555AbbAFQpr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 11:45:47 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:62073 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751873AbbAFQpp (ORCPT
+	id S1755602AbbAFQsM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 11:48:12 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:60487 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751873AbbAFQsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 11:45:45 -0500
-From: mathieu.poirier@linaro.org
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mathieu.poirier@linaro.org
-Subject: [PATCH] ARM: vexpress: bindings: Add generic PD awareness to the spc controller
-Date: Tue,  6 Jan 2015 09:45:32 -0700
-Message-Id: <1420562732-4353-1-git-send-email-mathieu.poirier@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Tue, 6 Jan 2015 11:48:10 -0500
+Date: Tue, 6 Jan 2015 08:48:05 -0800
+From: Darren Hart <dvhart@infradead.org>
+To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] x86: Add IMR support to Quark/Galileo
+Message-ID: <20150106164805.GA27956@vmdeb7>
+References: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie>
+ <20150106055959.GA59754@vmdeb7>
+ <54ABE989.8060701@nexus-software.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54ABE989.8060701@nexus-software.ie>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
+On Tue, Jan 06, 2015 at 01:56:25PM +0000, Bryan O'Donoghue wrote:
+> On 06/01/15 06:00, Darren Hart wrote:
+> >>Galileo:
+> >>Intel's Arduino compatible Galileo boards boot to Linux with IMRs protecting
+> >>the compressed kernel image and boot params data structure. The memory that
+> >
+> >What is the motivation behind this?
+> 
+> The main motivation is to place an IMR around the kernel which if violated
+> by a wayward DMA transaction would immediately cause an IMR violation.
+> Secondary motivation is demonstration of usage of IMRs in a run-time context
+> and validation of the IMR enabling code for setup not just tear-down.
+> 
+> An IMR around the run-time kernel .text area, is what the BSP does and so I
+> thought it was worth maintaining.
+> 
+> To be clear though, the requirement is to sanitize boot time IMRs, the setup
+> of an IMR around the run-time kernel is optional, the system will run just
+> fine without it.
+> 
+> >>the compressed kernel and boot params data structure is in, is marked as
+> >>usable memory by the EFI memory map. As a result it is possible for memory
+> >
+> >Based on your response to the above, is marking this memory as usable a bad idea
+> >in general? Or just bad in certain situations?
+> 
+> The EFI memory map is 100% correct. The area of memory that grub places a
+> compressed kernel image should be reusable by kernel.
+> 
+> >>A DMA to a region of memory by a system agent which is not allowed access
+> >>this memory result in a system reset. Without tearing down the IMRs placed
+> >>around the compressed kernel image and boot params data structure there is a
+> >>high risk of triggering an inadvertent system reset when performing DMA
+> >>actions with any of the peripherals that support DMA in Quark such as the
+> >>MMC, Ethernet or USB host/device.
+> >>
+> >>Therefore Galileo specific platform code is the second component of this
+> >>patchset. The platform code tears-down every unlocked IMR to ensure no
+> >
+> >The firmware sets these IMRs, but does not lock them then, correct?
+> 
+> Correct. Firmware locks the IMRs around ACPI runtime data data.
+> 
+> In the patch here, we cycle though every unlocked IMR and zap it - which
+> will include tear-down of the IMRs placed around the compressed kernel image
+> and boot params data structure. Firmware puts those IMRs in place to ensure
+> no invalid DMA, SMM access to the compressed kernel image during boot can
+> take place.
 
-Among other things, the serial power controller (SPC) controls power to
-the A7 and A15 clusters.  Theses clusters also happen to contains the
-coresight tracers used for HW assisted tracing.
+Thanks Bryan, this clears these questions up for me.
 
-By modellling these to power domains in a way that is comprehensible to
-the generic power domain sub-system and using the runtime PM API in the
-coresight drivers, we can prevent power to the domains from being
-turned off while tracing related operations are still pending.
+Are we confident that the tear-down of the IMRs around the compressed kernel
+image happens early enough and deterministically, such that there is no race
+condition in which a driver could get DMA into this memory?
 
-Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
----
- .../bindings/arm/vexpress-power-controller.txt     | 54 ++++++++++++++++++++++
- 1 file changed, 54 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/vexpress-power-controller.txt
-
-diff --git a/Documentation/devicetree/bindings/arm/vexpress-power-controller.txt b/Documentation/devicetree/bindings/arm/vexpress-power-controller.txt
-new file mode 100644
-index 000000000000..3af5624dc5cb
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/vexpress-power-controller.txt
-@@ -0,0 +1,54 @@
-+ARM Versatile Express Power Controller
-+--------------------------------------
-+
-+This binding models the serial power controller (SPC) in a way that is
-+intelligible to the generic power domain subsystem and in accordance
-+with the guidelines from:
-+
-+Documentation/devicetree/bindings/power/power_domain.txt
-+
-+The binding doesn't have a '<reg>' property as the base address for HW
-+access is provided by the vexpress-scc sub-system.
-+
-+Required node properties:
-+- compatible value : = "arm,vexpress-power-controller";
-+- #power-domain-cells : = Number of cells in a PM domain specifier, as
-+  specified in "power_domain.txt" referenced above.
-+
-+Example:
-+	A7_A15_cluster_pd: A7-A15-cluster-pd {
-+		compatible = "arm,vexpress-power-controller";
-+		#power-domain-cells = <1>;
-+        };
-+
-+	....
-+
-+	ptm@0,2201d000 {
-+		compatible = "arm,coresight-etm3x", "arm,primecell";
-+		reg = <0 0x2201d000 0 0x1000>;
-+
-+		cpu = <&cpu1>;
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		power-domains = <&A7_A15_cluster_pd 0>;
-+		port {
-+			ptm1_out_port: endpoint {
-+				remote-endpoint = <&funnel_in_port1>;
-+			};
-+		};
-+	};
-+
-+	etm@0,2203c000 {
-+		compatible = "arm,coresight-etm3x", "arm,primecell";
-+		reg = <0 0x2203c000 0 0x1000>;
-+
-+		cpu = <&cpu2>;
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		power-domains = <&A7_A15_cluster_pd 1>;
-+		port {
-+			etm0_out_port: endpoint {
-+				remote-endpoint = <&funnel_in_port2>;
-+			};
-+		};
-+	};
 -- 
-1.9.1
-
+Darren Hart
+Intel Open Source Technology Center
