@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831AbbAFJmn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 04:42:43 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:53958 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754435AbbAFJmi (ORCPT
+	id S1754807AbbAFJm2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 04:42:28 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:55690 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754147AbbAFJmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 04:42:38 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t069gY0J010228, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net] r8152: support ndo_features_check
-Date: Tue, 6 Jan 2015 17:41:58 +0800
-Message-ID: <1394712342-15778-113-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
+	Tue, 6 Jan 2015 04:42:25 -0500
+Date: Tue, 6 Jan 2015 09:42:15 +0000
+From: Javi Merino <javi.merino@arm.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Punit Agrawal <Punit.Agrawal@arm.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [RFC PATCH v6 9/9] of: thermal: Introduce sustainable power for
+ a thermal zone
+Message-ID: <20150106094215.GB2885@e104805>
+References: <1417806260-9264-1-git-send-email-javi.merino@arm.com>
+ <1417806260-9264-10-git-send-email-javi.merino@arm.com>
+ <20150102155256.GD10683@developer>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.92]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20150102155256.GD10683@developer>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support ndo_features_check to avoid:
- - the transport offset is more than the hw limitation when using hw checksum.
- - the skb->len of a GSO packet is more than the limitation.
+On Fri, Jan 02, 2015 at 03:53:00PM +0000, Eduardo Valentin wrote:
+> On Fri, Dec 05, 2014 at 07:04:20PM +0000, Javi Merino wrote:
+> > From: Punit Agrawal <punit.agrawal@arm.com>
+> > 
+> > Introduce an optional property called, sustainable-power, which
+> > represents the power (in mW) which the thermal zone can safely
+> > dissipate.
+> > 
+> > If provided the property is parsed and associated with the thermal
+> > zone via the thermal zone parameters.
+> > 
+> > Cc: Zhang Rui <rui.zhang@intel.com>
+> > Cc: Eduardo Valentin <edubezval@gmail.com>
+> > Signed-off-by: Punit Agrawal <punit.agrawal@arm.com>
+> > ---
+> >  Documentation/devicetree/bindings/thermal/thermal.txt | 4 ++++
+> >  drivers/thermal/of-thermal.c                          | 4 ++++
+> >  2 files changed, 8 insertions(+)
+> > 
+> > diff --git a/Documentation/devicetree/bindings/thermal/thermal.txt b/Documentation/devicetree/bindings/thermal/thermal.txt
+> > index f5db6b72a36f..c6eb9a8d2aed 100644
+> > --- a/Documentation/devicetree/bindings/thermal/thermal.txt
+> > +++ b/Documentation/devicetree/bindings/thermal/thermal.txt
+> > @@ -167,6 +167,10 @@ Optional property:
+> >  			by means of sensor ID. Additional coefficients are
+> >  			interpreted as constant offset.
+> >  
+> > +- sustainable-power:	An estimate of the sustainable power (in mW) that the
+> > +  Type: unsigned	thermal zone can dissipate.
+> > +  Size: one cell
+> > +
+> 
+> Please, include examples of this property, as you mentioned in the
+> governor documentation.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
-
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 2d1c77e..57ec23e 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -1897,6 +1897,22 @@ static void _rtl8152_set_rx_mode(struct net_device *netdev)
- 	netif_wake_queue(netdev);
- }
- 
-+static netdev_features_t
-+rtl8152_features_check(struct sk_buff *skb, struct net_device *dev,
-+		       netdev_features_t features)
-+{
-+	u32 mss = skb_shinfo(skb)->gso_size;
-+	int max_offset = mss ? GTTCPHO_MAX : TCPHO_MAX;
-+	int offset = skb_transport_offset(skb);
-+
-+	if ((mss || skb->ip_summed == CHECKSUM_PARTIAL) && offset > max_offset)
-+		features &= ~(NETIF_F_ALL_CSUM | NETIF_F_GSO_MASK);
-+	else if ((skb->len + sizeof(struct tx_desc)) > agg_buf_sz)
-+		features &= ~NETIF_F_GSO_MASK;
-+
-+	return features;
-+}
-+
- static netdev_tx_t rtl8152_start_xmit(struct sk_buff *skb,
- 				      struct net_device *netdev)
- {
-@@ -3706,6 +3722,7 @@ static const struct net_device_ops rtl8152_netdev_ops = {
- 	.ndo_set_mac_address	= rtl8152_set_mac_address,
- 	.ndo_change_mtu		= rtl8152_change_mtu,
- 	.ndo_validate_addr	= eth_validate_addr,
-+	.ndo_features_check	= rtl8152_features_check,
- };
- 
- static void r8152b_get_version(struct r8152 *tp)
--- 
-2.1.0
-
+I'd rather put a pointer to the documentation instead of repeating the
+same thing here.  What do you think?
