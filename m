@@ -1,203 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651AbbAFKeo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 05:34:44 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:55713 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760AbbAFKek (ORCPT
+	id S1754802AbbAFKe4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 05:34:56 -0500
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:43841 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747AbbAFKel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 05:34:40 -0500
-Date: Tue, 6 Jan 2015 10:34:31 +0000
-From: Javi Merino <javi.merino@arm.com>
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Punit Agrawal <Punit.Agrawal@arm.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [RFC PATCH v6 5/9] thermal: extend the cooling device API to
- include power information
-Message-ID: <20150106103430.GD2885@e104805>
-References: <1417806260-9264-1-git-send-email-javi.merino@arm.com>
- <1417806260-9264-6-git-send-email-javi.merino@arm.com>
- <20141223151359.GB7350@developer>
- <20150105153710.GA3042@e104805>
- <20150105210403.GC31247@developer>
+	Tue, 6 Jan 2015 05:34:41 -0500
+Date: Tue, 6 Jan 2015 11:34:39 +0100
+From: Andreas Mohr <andi@lisas.de>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andreas Mohr <andi@lisas.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Jesper Dangaard Brouer <brouer@redhat.com>
+Subject: Re: [PATCH 6/6] mm/slab: allocation fastpath without disabling irq
+Message-ID: <20150106103439.GA8669@rhlx01.hs-esslingen.de>
+References: <1420421851-3281-7-git-send-email-iamjoonsoo.kim@lge.com>
+ <20150105172139.GA11201@rhlx01.hs-esslingen.de>
+ <20150106013122.GB17222@js1304-P5Q-DELUXE>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150105210403.GC31247@developer>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20150106013122.GB17222@js1304-P5Q-DELUXE>
+X-Priority: none
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eduardo,
-
-On Mon, Jan 05, 2015 at 09:04:09PM +0000, Eduardo Valentin wrote:
-> On Mon, Jan 05, 2015 at 03:37:10PM +0000, Javi Merino wrote:
-> > On Tue, Dec 23, 2014 at 03:14:11PM +0000, Eduardo Valentin wrote:
-> > > Hi Javi
-> > > 
-> > > On Fri, Dec 05, 2014 at 07:04:16PM +0000, Javi Merino wrote:
-> > > > Add three optional callbacks to the cooling device interface to allow
-> > > > them to express power.  In addition to the callbacks, add helpers to
-> > > > identify cooling devices that implement the power cooling device API.
-> > > > 
-> > > > Cc: Zhang Rui <rui.zhang@intel.com>
-> > > > Cc: Eduardo Valentin <edubezval@gmail.com>
-> > > > Signed-off-by: Javi Merino <javi.merino@arm.com>
-> > > > ---
-> > > >  Documentation/thermal/power_allocator.txt | 27 ++++++++++++++++++++++
-> > > >  drivers/thermal/thermal_core.c            | 38 +++++++++++++++++++++++++++++++
-> > > >  include/linux/thermal.h                   | 12 ++++++++++
-> > > >  3 files changed, 77 insertions(+)
-> > > >  create mode 100644 Documentation/thermal/power_allocator.txt
-> > > > 
-> > > > diff --git a/Documentation/thermal/power_allocator.txt b/Documentation/thermal/power_allocator.txt
-> > > > new file mode 100644
-> > > > index 000000000000..d3bb79050c27
-> > > > --- /dev/null
-> > > > +++ b/Documentation/thermal/power_allocator.txt
-> > > > @@ -0,0 +1,27 @@
-> > > > +Cooling device power API
-> > > > +========================
-> > > 
-> > > Readers of this file need extra context here, IMO.
-> > 
-> > Patch 7 adds text before and after this section that provides that
-> > context.
-> > 
-> > > > +
-> > > > +Cooling devices controlled by this governor must supply the additional
-> > > 
-> > > What governor? the files says power allocator, and the title says,
-> > > cooling device power API...
-> > 
-> > Correct, because that's added in the patch that introduces the power
-> > allocator governor.  Therefore, it's not a problem for the readers of
-> > this file but for the readers of the patches.  I can move this hunk to
-> > patch 7 and introduce all the documentation at once if you think
-> > that's clearer.
-> > 
+On Tue, Jan 06, 2015 at 10:31:22AM +0900, Joonsoo Kim wrote:
+> Hello,
 > 
-> Thinking of the atomicity of each patch/commit, I would prefer you to
-> move all documentation to a single patch then.
-
-Ok, I'll move it to the patch that introduces the power allocator.
-
-[...]
-> > > > diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-> > > > index 9021cb72a13a..c490f262ea7f 100644
-> > > > --- a/drivers/thermal/thermal_core.c
-> > > > +++ b/drivers/thermal/thermal_core.c
-> > > > @@ -866,6 +866,44 @@ emul_temp_store(struct device *dev, struct device_attribute *attr,
-> > > >  static DEVICE_ATTR(emul_temp, S_IWUSR, NULL, emul_temp_store);
-> > > >  #endif/*CONFIG_THERMAL_EMULATION*/
-> > > >  
-> > > > +/**
-> > > > + * power_actor_get_max_power() - get the maximum power that a cdev can consume
-> > > > + * @cdev:	pointer to &thermal_cooling_device
-> > > > + *
-> > > > + * Calculate the maximum power consumption in milliwats that the
-> > > > + * cooling device can currently consume.  If @cdev doesn't support the
-> > > > + * power_actor API, this function returns 0.
-> > > > + */
-> > > > +u32 power_actor_get_max_power(struct thermal_cooling_device *cdev)
-> > > > +{
-> > > > +	if (!cdev_is_power_actor(cdev))
-> > > > +		return 0;
-> > > > +
-> > > > +	return cdev->ops->state2power(cdev, 0);
-> > > > +}
-> > > > +
-> > > > +/**
-> > > > + * power_actor_set_power() - limit the maximum power that a cooling device can consume
-> > > > + * @cdev:	pointer to &thermal_cooling_device
-> > > > + * @power:	the power in milliwatts
-> > > > + *
-> > > > + * Set the cooling device to consume at most @power milliwatts.
-> > > > + *
-> > > > + * Returns: 0 on success, -EINVAL if the cooling device does not
-> > > > + * implement the power actor API or -E* for other failures.
-> > > > + */
-> > > > +int power_actor_set_power(struct thermal_cooling_device *cdev, u32 power)
-> > > > +{
-> > > > +	unsigned long state;
-> > > > +
-> > > > +	if (!cdev_is_power_actor(cdev))
-> > > > +		return -EINVAL;
-> > > > +
-> > > > +	state = cdev->ops->power2state(cdev, power);
-> > > > +
-> > > > +	return cdev->ops->set_cur_state(cdev, state);
-> > > > +}
-> > > > +
-> > > >  static DEVICE_ATTR(type, 0444, type_show, NULL);
-> > > >  static DEVICE_ATTR(temp, 0444, temp_show, NULL);
-> > > >  static DEVICE_ATTR(mode, 0644, mode_show, mode_store);
-> > > > diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> > > > index 2c14ab1f5c0d..1155457caf52 100644
-> > > > --- a/include/linux/thermal.h
-> > > > +++ b/include/linux/thermal.h
-> > > > @@ -142,6 +142,9 @@ struct thermal_cooling_device_ops {
-> > > >  	int (*get_max_state) (struct thermal_cooling_device *, unsigned long *);
-> > > >  	int (*get_cur_state) (struct thermal_cooling_device *, unsigned long *);
-> > > >  	int (*set_cur_state) (struct thermal_cooling_device *, unsigned long);
-> > > > +	u32 (*get_actual_power) (struct thermal_cooling_device *);
-> > > > +	u32 (*state2power) (struct thermal_cooling_device *, unsigned long);
-> > > > +	unsigned long (*power2state) (struct thermal_cooling_device *, u32);
-> > > >  };
-> > > >  
-> > > >  struct thermal_cooling_device {
-> > > > @@ -322,6 +325,15 @@ void thermal_zone_of_sensor_unregister(struct device *dev,
-> > > >  }
-> > > >  
-> > > >  #endif
-> > > > +
-> > > > +static inline bool cdev_is_power_actor(struct thermal_cooling_device *cdev)
-> > > > +{
-> > > 
-> > > What would happen if one pass cdev == NULL?
+> On Mon, Jan 05, 2015 at 06:21:39PM +0100, Andreas Mohr wrote:
+> > Hi,
 > > 
-> > Is it really worth checking it here instead of just making the caller
-> > pass a valid cdev?  There are a number of functions in the thermal
-> > framework that don't check for valid cdevs or thermal zone pointers
-> > and I don't see why this one is different.
-> 
-> I don't know, maybe we should fix those misbehaving functions then? Can
-> you please point them out?
-
-This is not an exhaustive list but a quick grep only in thermal_core.c
-yields:
-  - get_tz_trend() doesn't check tz
-  - get_thermal_instance() doesn't check tz or cdev
-  - thermal_zone_device_update() doesn't check tz
-  - thermal_zone_bind_cooling_device() doesn't check tz or cdev
-  - thermal_zone_unbind_cooling_device() doesn't check tz or cdev
-  - thermal_cdev_update() doesn't check cdev
-
-> > > > +	return cdev->ops->get_actual_power && cdev->ops->state2power &&
-> > > > +		cdev->ops->power2state;
-> > > > +}
-> > > > +
-> > > > +u32 power_actor_get_max_power(struct thermal_cooling_device *);
-> > > > +int power_actor_set_power(struct thermal_cooling_device *, u32);
-> > > >  struct thermal_zone_device *thermal_zone_device_register(const char *, int, int,
-> > > >  		void *, struct thermal_zone_device_ops *,
-> > > >  		const struct thermal_zone_params *, int, int);
-> > > 
-> > > I am assuming the above two new functions are expected to be used also
-> > > outside thermal core, right? If yes, I'd suggest exporting them. 
+> > Joonsoo Kim wrote:
+> > > +	ac->tid = next_tid(ac->tid);
+> > (and all others)
 > > 
-> > I don't expect it for the time being.  Wouldn't it be preferable to
-> > export them when its needed instead?
+> > object oriented:
+> > array_cache_next_tid(ac);
+> > (or perhaps rather: array_cache_start_transaction(ac);?).
 > 
-> I believe functions in this header are exported. For functions used
-> inside thermal core and code that goes builtin always, they go into
-> drivers/thermal/thermal_core.h, and are not exported.
+> Okay. Christoph request common transaction id management code. If
+> above object oriented design fit that, I will do it.
 
-Ok, I'll move them to drivers/thermal/thermal_core.h .
+Yeah, that may easily have been the same thing.
+This function would then obviously and simply do a
+    ac->tid = next_tid(ac->tid);
+dance internally
+(thereby likely introducing some nice instruction cache savings, too).
 
-Cheers,
-Javi
+
+> > General thoughts (maybe just rambling, but that's just my feelings vs.
+> > this mechanism, so maybe it's food for thought):
+> > To me, the existing implementation seems too fond of IRQ fumbling
+> > (i.e., affecting of oh so nicely *unrelated*
+> > outer global environment context stuff).
+> > A proper implementation wouldn't need *any* knowledge of this
+> > (i.e., modifying such "IRQ disable" side effects,
+> > to avoid having a scheduler hit and possibly ending up on another node).
+> > 
+> > Thus to me, the whole handling seems somewhat wrong and split
+> > (since there remains the need to deal with scheduler distortion/disruption).
+> > The bare-metal "inner" algorithm should not need to depend on such shenanigans
+> > but simply be able to carry out its task unaffected,
+> > where IRQs are simply always left enabled
+> > (or at least potentially disabled by other kernel components only)
+> > and the code then elegantly/inherently deals with IRQ complications.
+> 
+> I'm not sure I understand your opinion correctly. If my response is
+> wrong, please let me know your thought more correctly.
+
+I have to admit that I was talking general implementation guidelines
+rather than having a very close look at what can be done *here*.
+Put differently, my goal at this point was just to state weird questions,
+for people to then reason about the bigger picture
+and come to possibly brilliant conclusions ;)
+
+
+> IRQ manipulation is done for synchronization of array cache, not for
+> freezing allocation context. That is just side-effect. As Christoph
+> said, slab operation could be executed in interrupt context so we
+> should protect array cache even if we are in process context.
+
+Ah, that clarifies collision areas, thanks!
+
+In general the goal likely should be
+to attempt to do as many things "in parallel" (guaranteed-collision-free,
+via cleanly instance-separate data) as possible,
+and then once the result has been calculated,
+do quick/short updating (insertion/deletion)
+of the shared/contended resource (here: array cache)
+with the necessary protection (IRQs disabled, in this case).
+Via some layering tricks, one could manage to do all the calculation handling
+without even drawing in any "IRQ management" dependency
+to that inner code part ("code file"?),
+but the array cache management would then remain IRQ-affected
+(in those outer layers which know that they are unfortunately still drawn down
+by an annoying dependency on IRQ shenanigans).
+Or, in other words: achieve a clean separation of layers
+so that it's obvious which ones get hampered by annoying dependencies
+and which ones are able to carry out their job unaffected.
+
+
+And for the "disruption via interrupt context" part:
+we currently seem to have "synchronous" handling,
+where one needs to forcefully block access to a shared/contended resource
+(which would be done
+either via annoying mutex contention,
+or even via wholesale blocking of IRQ execution).
+To remove/reduce friction,
+one should either remove any additional foreign-context access to that resource,
+thereby making this implementation cleanly (if woefully)
+single-context only (as Christoph seems to be intending,
+by removing SLAB access from IRQ handlers?),
+or ideally implement fully parallel instance-separate data management
+(but I guess that's not what one would want
+for a global multi-sized-area and thus fragmentation-avoiding SL*B allocator,
+since that would mean splitting global memory resources
+into per-instance areas?).
+
+Alternatively, one could go for "asynchronous" handling,
+where SL*B updates of any foreign-context (but not main-context)
+are *delayed*,
+by merely queuing them into a simple submission queue
+which then will be delay-applied by main-context
+either once main-context enters a certain "quiet" state (e.g. context switch?),
+or once main-context needs to actively take into account
+these effects of foreign-context registrations.
+But for an allocator (memory manager),
+such "asynchronous" handling might be completely impossible anyway,
+since it might need to have a consistent global view,
+of all resources at all times
+(--> we're back to having a synchronous handling requirement,
+via lock contention).
+
+
+> > These thoughts also mean that I'm unsure (difficult to determine)
+> > of whether this change is good (i.e. a clean step in the right direction),
+> > or whether instead the implementation could easily directly be made
+> > fully independent from IRQ constraints.
+> 
+> Is there any issue that this change prevent further improvment?
+> I think that we can go right direction easily as soon as we find
+> a better solution even if this change is merged.
+
+Ah, I see you're skillfully asking the right forward progress question ;)
+
+To which I'm currently limited to saying
+that from my side there are no objections to be added to the list
+(other than the minor mechanical parts directly stated in my review).
+
+Thanks,
+
+Andreas Mohr
