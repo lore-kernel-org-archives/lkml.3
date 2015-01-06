@@ -1,77 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639AbbAFIXu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 03:23:50 -0500
-Received: from s3.sipsolutions.net ([5.9.151.49]:58075 "EHLO sipsolutions.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754241AbbAFIXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 03:23:44 -0500
-Message-ID: <1420532617.1966.2.camel@sipsolutions.net>
-Subject: Re: [PATCH] Revert "ipw2200: select CFG80211_WEXT"
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Arend van Spriel <arend@broadcom.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Stanislav Yakovlev <stas.yakovlev@gmail.com>,
-        Kalle Valo <kvalo@codeaurora.org>, Jiri Kosina <jkosina@suse.cz>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue, 06 Jan 2015 09:23:37 +0100
-In-Reply-To: <1420495519.14308.29.camel@x220>
-References: <1420297188.2397.3.camel@tiscali.nl>
-	 <CD467A59-F563-439B-BA82-954AB27AD9CC@holtmann.org>
-	 <CA+55aFzYSiUkntraMrHEhMzkt35Ft2p9E3cT7ejwQOBDwKvcOg@mail.gmail.com>
-	 <1420324124.9624.60.camel@x220> <54AA641C.7050307@broadcom.com>
-	 <1420479510.14308.23.camel@x220>
-	 (sfid-20150105_183907_807502_81C08416) <1420484224.9459.16.camel@sipsolutions.net>
-	 <1420495519.14308.29.camel@x220>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754675AbbAFIYK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 03:24:10 -0500
+Received: from mail-lb0-f202.google.com ([209.85.217.202]:35043 "EHLO
+	mail-lb0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754371AbbAFIYF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 03:24:05 -0500
+X-Greylist: delayed 75430 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Jan 2015 03:24:05 EST
+From: David Drysdale <drysdale@google.com>
+To: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
+        Shuah Khan <shuahkh@osg.samsung.com>
+Cc: Andreas Schwab <schwab@linux-m68k.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-m68k@vger.kernel.org,
+        linux-api@vger.kernel.org, David Drysdale <drysdale@google.com>
+Subject: [PATCHv2] selftests/exec: allow shell return code of 126
+Date: Tue,  6 Jan 2015 08:23:56 +0000
+Message-Id: <1420532636-7317-1-git-send-email-drysdale@google.com>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2015-01-05 at 23:05 +0100, Paul Bolle wrote:
-> On Mon, 2015-01-05 at 19:57 +0100, Johannes Berg wrote:
-> > Multiple other groups of ioctls could be converted in similar patches,
-> > until at the end you can completely remove ipw_wx_handlers and rely
-> > entirely on cfg80211's wext compatibility.
-> > 
-> > So far the theory - in practice nobody cared enough to start working on
-> > any of these drivers, let alone actually has the hardware today.
-> 
-> So my suggestion to make ipw2200 no longer use cfg80211_wext_giwname()
-> would actually be backwards. What's actually needed, in theory, is to
-> use more of what's provided under CFG80211_WEXT (and, I guess, less of
-> what's provided under WIRELESS_EXT). Did I get that right?
+When the shell fails to invoke a script because its path name
+is too long (ENAMETOOLONG), most shells return 127 to indicate
+command not found.  However, some systems report 126 (which POSIX
+suggests should indicate a non-executable file) for this case,
+so allow that too.
 
-Yes, though I'd argue there are multiple levels of truth here.
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: David Drysdale <drysdale@google.com>
+Tested-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ tools/testing/selftests/exec/execveat.c | 19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
 
-Yours is the theoretical, hopefully-forward-looking one where we still
-expect the driver to actually be modified to take advantage of the new
-frameworks (which is independent of wext support towards userspace). In
-that scenario, yes, it should use more until it uses all, and then it
-can stop concerning itself with wext (which would be a win because
-driver/wext interaction is always finicky) (*)
-
-Then there's the other level that you were looking at earlier - simply
-removing all of this again from this driver because nobody is going to
-work on it. That'd actually make sense and shrink the driver footprint
-(no need to load cfg80211 for using almost nothing of it) but this is no
-longer feasible since it would again break userspace API - as I said you
-can today discover the presence of this device/driver with nl80211 -
-that would be broken by removing cfg80211 from here.
-
-And then there's the practical third version that's likely to happen -
-i.e. nothing :-)
-
-johannes
-
-(*) FWIW, if done to all drivers it would allow shrinking cfg80211-wext
-by a lot because all the EXPORT_SYMBOL would no longer be needed - but
-come to think of it we can fix that differently.
+diff --git a/tools/testing/selftests/exec/execveat.c b/tools/testing/selftests/exec/execveat.c
+index d273624c93a6..e238c9559caf 100644
+--- a/tools/testing/selftests/exec/execveat.c
++++ b/tools/testing/selftests/exec/execveat.c
+@@ -62,7 +62,7 @@ static int _check_execveat_fail(int fd, const char *path, int flags,
+ }
+ 
+ static int check_execveat_invoked_rc(int fd, const char *path, int flags,
+-				     int expected_rc)
++				     int expected_rc, int expected_rc2)
+ {
+ 	int status;
+ 	int rc;
+@@ -98,9 +98,10 @@ static int check_execveat_invoked_rc(int fd, const char *path, int flags,
+ 			child, status);
+ 		return 1;
+ 	}
+-	if (WEXITSTATUS(status) != expected_rc) {
+-		printf("[FAIL] (child %d exited with %d not %d)\n",
+-			child, WEXITSTATUS(status), expected_rc);
++	if ((WEXITSTATUS(status) != expected_rc) &&
++	    (WEXITSTATUS(status) != expected_rc2)) {
++		printf("[FAIL] (child %d exited with %d not %d nor %d)\n",
++			child, WEXITSTATUS(status), expected_rc, expected_rc2);
+ 		return 1;
+ 	}
+ 	printf("[OK]\n");
+@@ -109,7 +110,7 @@ static int check_execveat_invoked_rc(int fd, const char *path, int flags,
+ 
+ static int check_execveat(int fd, const char *path, int flags)
+ {
+-	return check_execveat_invoked_rc(fd, path, flags, 99);
++	return check_execveat_invoked_rc(fd, path, flags, 99, 99);
+ }
+ 
+ static char *concat(const char *left, const char *right)
+@@ -192,9 +193,15 @@ static int check_execveat_pathmax(int dot_dfd, const char *src, int is_script)
+ 	 * Execute as a long pathname relative to ".".  If this is a script,
+ 	 * the interpreter will launch but fail to open the script because its
+ 	 * name ("/dev/fd/5/xxx....") is bigger than PATH_MAX.
++	 *
++	 * The failure code is usually 127 (POSIX: "If a command is not found,
++	 * the exit status shall be 127."), but some systems give 126 (POSIX:
++	 * "If the command name is found, but it is not an executable utility,
++	 * the exit status shall be 126."), so allow either.
+ 	 */
+ 	if (is_script)
+-		fail += check_execveat_invoked_rc(dot_dfd, longpath, 0, 127);
++		fail += check_execveat_invoked_rc(dot_dfd, longpath, 0,
++						  127, 126);
+ 	else
+ 		fail += check_execveat(dot_dfd, longpath, 0);
+ 
+-- 
+2.2.0.rc0.207.ga3a616c
 
