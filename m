@@ -1,50 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240AbbAFXg2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 18:36:28 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:52961 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085AbbAFXg0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 18:36:26 -0500
-From: Ani Sinha <ani@arista.com>
-To: corbet@lwn.net, davem@davemloft.net, edumazet@google.com,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ani@arista.com, P@draigbrady.com, netdev@vger.kernel.org,
-        fruggeri@arista.com
-Subject: [PATCH 1/1] update ip-sysctl.txt documentation
-Date: Tue,  6 Jan 2015 15:36:22 -0800
-Message-Id: <1420587382-24612-1-git-send-email-ani@arista.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1752278AbbAFXjM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 18:39:12 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65277 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751667AbbAFXjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 18:39:10 -0500
+Message-ID: <54AC7216.30001@nod.at>
+Date: Wed, 07 Jan 2015 00:39:02 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Aditya Kali <adityakali@google.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Rohit Jnagal <jnagal@google.com>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCHv3 8/8] cgroup: Add documentation for cgroup namespaces
+References: <1417744550-6461-1-git-send-email-adityakali@google.com> <1417744550-6461-9-git-send-email-adityakali@google.com> <548E17CE.8010704@nod.at> <CAGr1F2HA6mzFwgp5ngX8P7=198-5CmCjLmuCJ8j3eQ08J2d9Qw@mail.gmail.com> <54AB15BD.8020007@nod.at> <87lhlgpyxk.fsf@x220.int.ebiederm.org> <CAGr1F2HSi_D07r2c5CKOsjSR1+58k9G2MrtACsd+HV6XKvJ7cA@mail.gmail.com> <54AB2992.6060707@nod.at> <CAGr1F2EGOUSEd3-G4PS0mq=9kU1nWG4CwHUOQaNUATepc11_Sw@mail.gmail.com>
+In-Reply-To: <CAGr1F2EGOUSEd3-G4PS0mq=9kU1nWG4CwHUOQaNUATepc11_Sw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update documentation to reflect the fact that
-/proc/sys/net/ipv4/route/max_size is no longer used for ipv4.
+Am 07.01.2015 um 00:20 schrieb Aditya Kali:
+> I understand your point. But it will add some complexity to the code.
+> 
+> Before trying to make it work for non-unified hierarchy cases, I would
+> like to get a clearer idea.
+> What do you expect to be mounted when you run:
+>   container:/ # mount -t cgroup none /sys/fs/cgroup/
+> from inside the container?
 
-Signed-off-by: Ani Sinha <ani@arista.com>
----
- Documentation/networking/ip-sysctl.txt |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+I expect cgroupfs to behave exactly as it would in the initial namespace.
+Such that the container can do with it whatever it wants.
+systemd mounts and manages cgroups on its own.
+Like for CONFIG_DEVPTS_MULTIPLE_INSTANCES.
 
-diff --git a/Documentation/networking/ip-sysctl.txt b/Documentation/networking/ip-sysctl.txt
-index 9bffdfc..2a28261 100644
---- a/Documentation/networking/ip-sysctl.txt
-+++ b/Documentation/networking/ip-sysctl.txt
-@@ -64,8 +64,10 @@ fwmark_reflect - BOOLEAN
- 	Default: 0
- 
- route/max_size - INTEGER
--	Maximum number of routes allowed in the kernel.  Increase
--	this when using large numbers of interfaces and/or routes.
-+	Post linux kernel 3.6, this is deprecated for ipv4 as route cache is no
-+	longer used. For ipv6, this is used to limit the maximum number of ipv6
-+	routes allowed in the kernel.  Increase this when using large numbers of
-+	interfaces and/or routes.
- 
- neigh/default/gc_thresh1 - INTEGER
- 	Minimum number of entries to keep.  Garbage collector will not
--- 
-1.7.4.4
+If a new cgroup namespace cannot provide a clean and autonomous cgroupfs
+instance it is fundamentally flawed.
+You cannot provide a namespace mechanism which depends on the host side
+that much.
+This will also horrible break container migrations between hosts.
+i.e. Migrate a container from a Ubuntu host to a Fedora (systemd!) host.
 
+> Note that cgroup-namespace wont be able to change the way cgroups are
+> mounted .. i.e., if say cpu and cpuacct subsystems are mounted
+> together at a single mount-point, then we cannot mount them any other
+> way (inside a container or outside). This restriction exists today and
+> cgroup-namespaces won't change that.
+
+Why can't cgroup namespace change this?
+I think of cgroup namespace as a new and clean cgroupfs instance which inherits
+all limits from the outside.
+
+> So, If on the host we have:
+> root@adityakali-vm2:/sys/fs/cgroup# cat /proc/mounts | grep cgroup
+> tmpfs /sys/fs/cgroup tmpfs rw,relatime 0 0
+> cgroup /sys/fs/cgroup/cpu cgroup rw,relatime,cpuset,cpu,cpuacct 0 0
+> cgroup /sys/fs/cgroup/mem cgroup rw,relatime,memory,hugetlb 0 0
+> cgroup /sys/fs/cgroup/rest cgroup
+> rw,relatime,devices,freezer,net_cls,blkio,perf_event,net_prio 0 0
+> 
+> And inside the container we want each subsystem to be on its own
+> mount-point, then it will fail. Do you think even then its useful to
+> support virtualizing paths for non-unified hierarchies?
+
+As I've stated above I expect from cgroup namespaces a clean and sane
+cgroupfs instance no matter how the outer mounts are.
+
+Thanks,
+//richard
