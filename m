@@ -1,108 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146AbbAFLgC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 06:36:02 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:42990 "EHLO
+	id S1755255AbbAFLgV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 06:36:21 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:42997 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754617AbbAFLfy (ORCPT
+	with ESMTP id S1755105AbbAFLgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 06:35:54 -0500
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH v9 2/2] drm: add DT bindings documentation for atmel-hlcdc-dc driver
-Date: Tue,  6 Jan 2015 12:35:47 +0100
-Message-Id: <1420544147-18379-3-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1420544147-18379-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1420544147-18379-1-git-send-email-boris.brezillon@free-electrons.com>
+	Tue, 6 Jan 2015 06:36:17 -0500
+Message-ID: <54ABC8A2.7090905@free-electrons.com>
+Date: Tue, 06 Jan 2015 12:36:02 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>
+CC: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, linux-ide@vger.kernel.org
+Subject: Re: [PATCH 1/2] regulator: core: Add a sanity check on the regulator_
+ enable/disable functions
+References: <1419614799-5770-1-git-send-email-gregory.clement@free-electrons.com> <1419614799-5770-2-git-send-email-gregory.clement@free-electrons.com> <20141229154030.GJ17800@sirena.org.uk>
+In-Reply-To: <20141229154030.GJ17800@sirena.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Atmel HLCDC (HLCD Controller) IP available on some Atmel SoCs (i.e.
-at91sam9n12, at91sam9x5 family or sama5d3 family) provides a display
-controller device.
+Hi Mark,
 
-The HLCDC block provides a single RGB output port, and only supports LCD
-panels connection to LCD panels for now.
+On 29/12/2014 16:40, Mark Brown wrote:
+> On Fri, Dec 26, 2014 at 06:26:38PM +0100, Gregory CLEMENT wrote:
+>> These two functions use the pointer passed in parameter without any
+>> check. By adding a NULL pointer check, it allows using those functions
+>> from a driver in a more generic way. It is useful especially for the
+>> disable case if the regulator is optional.
+> 
+> No, especially in the case of regulator_enable() this is deliberate -
+> we're trying to ensure that if people are using regulators they're being
+> careful about it, checking error codes and so on.  I'd really want to
 
-The atmel,panel property link the HLCDC RGB output with the LCD panel
-connected on this port (note that the HLCDC RGB connector implementation
-makes use of the DRM panel framework).
+OK so at least we should check that the pointer is not NULL before using it
+and inform the user of it by using a WARNING() or even a BUG() instead of
+just let the kernel crash latter.
 
-Connection to other external devices (DRM bridges) might be added later by
-mean of a new atmel,xxx (atmel,bridge) property.
+> see some persuasive use case for this.  What you're saying here sounds
+> like the consumer shouldn't be treating the regulator as optional at
+> all but should instead be using a normal regulator.
+> 
 
-Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
----
- .../devicetree/bindings/drm/atmel/hlcdc-dc.txt     | 53 ++++++++++++++++++++++
- 1 file changed, 53 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/drm/atmel/hlcdc-dc.txt
+Being able to deal with NULL pointer in the disable function is convenient
+and is done in other similar subsystems such as phy or clk for example. Instead
+of having a check on the NULL pointer in each driver, it seems more logical to
+do it directly in the disable function.
 
-diff --git a/Documentation/devicetree/bindings/drm/atmel/hlcdc-dc.txt b/Documentation/devicetree/bindings/drm/atmel/hlcdc-dc.txt
-new file mode 100644
-index 0000000..ebc1a91
---- /dev/null
-+++ b/Documentation/devicetree/bindings/drm/atmel/hlcdc-dc.txt
-@@ -0,0 +1,53 @@
-+Device-Tree bindings for Atmel's HLCDC (High LCD Controller) DRM driver
-+
-+The Atmel HLCDC Display Controller is subdevice of the HLCDC MFD device.
-+See ../mfd/atmel-hlcdc.txt for more details.
-+
-+Required properties:
-+ - compatible: value should be "atmel,hlcdc-display-controller"
-+ - pinctrl-names: the pin control state names. Should contain "default".
-+ - pinctrl-0: should contain the default pinctrl states.
-+ - #address-cells: should be set to 1.
-+ - #size-cells: should be set to 0.
-+
-+Required children nodes:
-+ Children nodes are encoding available output ports and their connections
-+ to external devices using the OF graph reprensentation (see ../graph.txt).
-+ At least one port node is required.
-+
-+Example:
-+
-+	hlcdc: hlcdc@f0030000 {
-+		compatible = "atmel,sama5d3-hlcdc";
-+		reg = <0xf0030000 0x2000>;
-+		interrupts = <36 IRQ_TYPE_LEVEL_HIGH 0>;
-+		clocks = <&lcdc_clk>, <&lcdck>, <&clk32k>;
-+		clock-names = "periph_clk","sys_clk", "slow_clk";
-+		status = "disabled";
-+
-+		hlcdc-display-controller {
-+			compatible = "atmel,hlcdc-display-controller";
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&pinctrl_lcd_base &pinctrl_lcd_rgb888>;
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+
-+			port@0 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				reg = <0>;
-+
-+				hlcdc_panel_output: endpoint@0 {
-+					reg = <0>;
-+					remote-endpoint = <&panel_input>;
-+				};
-+			};
-+		};
-+
-+		hlcdc_pwm: hlcdc-pwm {
-+			compatible = "atmel,hlcdc-pwm";
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&pinctrl_lcd_pwm>;
-+			#pwm-cells = <3>;
-+		};
-+	};
+Thanks for you review,
+
+Gregory
+
+
 -- 
-1.9.1
-
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
