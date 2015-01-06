@@ -1,79 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751640AbbAFWrs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 17:47:48 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:45848 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755AbbAFWrq (ORCPT
+	id S1752101AbbAFWsv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 17:48:51 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:56676 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782AbbAFWsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 17:47:46 -0500
-Date: Tue, 6 Jan 2015 16:46:22 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-CC: Pavel Machek <pavel@ucw.cz>, Felipe Balbi <balbi@ti.com>,
-        <pali.rohar@gmail.com>, <sre@debian.org>, <sre@ring0.de>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <tony@atomide.com>, <khilman@kernel.org>,
-        <ivo.g.dimitrov.75@gmail.com>
-Subject: Re: 3.19 on Nokia n900: audio quality awful
-Message-ID: <20150106224622.GA13752@saruman>
-Reply-To: <balbi@ti.com>
-References: <20150106170433.GA5408@amd>
- <20150106172545.GK6502@saruman>
- <20150106175115.GA19487@amd>
- <20150106202857.GB32308@saruman>
- <20150106205000.GB13902@amd>
- <20150106205730.GA6071@fuloong-minipc.musicnaut.iki.fi>
- <20150106220805.GD13902@amd>
- <20150106222717.GC6071@fuloong-minipc.musicnaut.iki.fi>
+	Tue, 6 Jan 2015 17:48:50 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-4
+Message-ID: <54AC65C2.8000801@jp.fujitsu.com>
+Date: Wed, 7 Jan 2015 07:46:26 +0900
+From: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3MwIy2ne0vdjdPXF"
-Content-Disposition: inline
-In-Reply-To: <20150106222717.GC6071@fuloong-minipc.musicnaut.iki.fi>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Naohiro Aota <naota@elisp.net>, <linux-btrfs@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] btrfs: clear bio reference after submit_one_bio()
+References: <1420473663-9315-1-git-send-email-naota@elisp.net>
+In-Reply-To: <1420473663-9315-1-git-send-email-naota@elisp.net>
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---3MwIy2ne0vdjdPXF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Naota,
 
-Hi,
+On 2015/01/06 1:01, Naohiro Aota wrote:
+> After submit_one_bio(), `bio' can go away. However submit_extent_page()
+> leave `bio' referable if submit_one_bio() failed (e.g. -ENOMEM on OOM).
+> It will cause invalid paging request when submit_extent_page() is called
+> next time.
+> 
+> I reproduced ENOMEM case with the following script (need
+> CONFIG_FAIL_PAGE_ALLOC, and CONFIG_FAULT_INJECTION_DEBUG_FS).
 
-On Wed, Jan 07, 2015 at 12:27:17AM +0200, Aaro Koskinen wrote:
-> But I'm mounting it from userspace (using builtin initramfs inside
-> zImage), with a poll loop that waits for a device to appear. Maybe if you
-> do it from kernel you need to use root wait/delay etc. options?
+I confirmed that this problem reproduce with 3.19-rc3 and
+not reproduce with 3.19-rc3 with your patch.
 
-yeah, rootwait should do it.
+Tested-by: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
 
---=20
-balbi
+Thank you for reporting this problem with the reproducer
+and fixing it too.
 
---3MwIy2ne0vdjdPXF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+  NOTE:
+  I used v3.19-rc3's tools/testing/fault-injection/failcmd.sh
+  for the following "./failcmd.sh".
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+  >            ./failcmd.sh -p $percent -t $times -i $interval \
+  >                    --ignore-gfp-highmem=N --ignore-gfp-wait=N --min-order=0 \
+  >                    -- \
+  >                    cat $directory/file > /dev/null
 
-iQIcBAEBAgAGBQJUrGW+AAoJEIaOsuA1yqREA44P/1VsrUxVdUzjtF+OPMG4Rn6G
-nDQWodGoelCwTtSos2lJKqE1fK6cdqDxaYxfEW/6RHPyQKbVNFFqdFJ8qTsFPQK8
-QV8teGBj7PDkFkJ+DOIuWu3ZgSXSll2kmtvgCg6MW4IJ1sdKBvCj8yCWVl/oJVwB
-56M/jsbQk91nKGttwDddYPz2wFkV0z5pGOA/3Mc8vSN+VuGAOcIlvHDjjCvpOFyC
-N5EMyZ9HKeWe3YdMnrGaYARAlzP/fMFCe3BxdyXSOWVukg9xqVOIOovsEmOrRyOA
-GNZZB36asBtD0TB0NM5CmuckyiIPk4AADCqWscwqXdrh69wJ/wAii+MuOuIbRzgx
-U8skt2k1K603hl6W/ihQmfWsW3lVyW7azPquvYYOzgV0YUDk2DFBZjabqPl3qOC2
-f9NgcPrBedN3pe/Jd24SwYi+Rt36QpwwRSQVov9opjs85kY2kFVeVOP2CguIqMQv
-RvTWeSIR0lhZGUw11ddbwsTnxcwUh7vlRe1h78w0yFotlVotzM5vkZE0hpldEvUQ
-N08rZKNYat7Sz0QpZeP3MTjf1IJs6WZ1BPmInNoZhA/Rdo7v5TwOJzy+U+naP9EO
-Y/ek+Aet4MK5TheZVgJQ3zt1i2Uv6nQ2cZQQK+urhoYBtOgPjQJ2zZMXSln6GYJ8
-3ZHawDsPSpj6ZIPKkRCz
-=kyr0
------END PGP SIGNATURE-----
+* 3.19-rc1 + your patch
 
---3MwIy2ne0vdjdPXF--
+===============================================================================
+# ./run
+512+0 records in
+512+0 records out
+# 
+===============================================================================
+
+* 3.19-rc3
+
+===============================================================================
+# ./run
+512+0 records in
+512+0 records out
+[  188.433726] run (776): drop_caches: 1
+[  188.682372] FAULT_INJECTION: forcing a failure.
+name fail_page_alloc, interval 100, probability 111000, space 0, times 3
+[  188.689986] CPU: 0 PID: 954 Comm: cat Not tainted 3.19.0-rc3-ktest #1
+[  188.693834] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
+[  188.698466]  0000000000000064 ffff88007b343618 ffffffff816e5563 ffff88007fc0fc78
+[  188.702730]  ffffffff81c655c0 ffff88007b343638 ffffffff813851b5 0000000000000010
+[  188.707043]  0000000000000002 ffff88007b343768 ffffffff81188126 ffff88007b3435a8
+[  188.711283] Call Trace:
+[  188.712620]  [<ffffffff816e5563>] dump_stack+0x45/0x57
+[  188.715330]  [<ffffffff813851b5>] should_fail+0x135/0x140
+[  188.718218]  [<ffffffff81188126>] __alloc_pages_nodemask+0xd6/0xb30
+[  188.721567]  [<ffffffff81339075>] ? blk_rq_map_sg+0x35/0x170
+[  188.724558]  [<ffffffffa0010705>] ? virtio_queue_rq+0x145/0x2b0 [virtio_blk]
+[  188.728191]  [<ffffffffa01bd00f>] ? btrfs_submit_compressed_read+0xcf/0x4d0 [btrfs]
+[  188.732079]  [<ffffffff811d99fb>] ? kmem_cache_alloc+0x1cb/0x230
+[  188.735153]  [<ffffffff81181265>] ? mempool_alloc_slab+0x15/0x20
+[  188.738188]  [<ffffffff811cee1a>] alloc_pages_current+0x9a/0x120
+[  188.741153]  [<ffffffffa01bd0e9>] btrfs_submit_compressed_read+0x1a9/0x4d0 [btrfs]
+[  188.744835]  [<ffffffffa0178621>] btrfs_submit_bio_hook+0x1c1/0x1d0 [btrfs]
+[  188.748225]  [<ffffffffa018b7b3>] ? lookup_extent_mapping+0x13/0x20 [btrfs]
+[  188.751547]  [<ffffffffa0179c08>] ? btrfs_get_extent+0x98/0xad0 [btrfs]
+[  188.754656]  [<ffffffffa01901d7>] submit_one_bio+0x67/0xa0 [btrfs]
+[  188.757554]  [<ffffffffa0193f27>] submit_extent_page.isra.35+0xd7/0x1c0 [btrfs]
+[  188.760981]  [<ffffffffa019509d>] __do_readpage+0x31d/0x7b0 [btrfs]
+[  188.763920]  [<ffffffffa0195f10>] ? btrfs_create_repair_bio+0x110/0x110 [btrfs]
+[  188.767382]  [<ffffffffa0179b70>] ? btrfs_submit_direct+0x7b0/0x7b0 [btrfs]
+[  188.770671]  [<ffffffffa018f88d>] ? btrfs_lookup_ordered_range+0x13d/0x180 [btrfs]
+[  188.774366]  [<ffffffffa01958ca>] __extent_readpages.constprop.42+0x2ba/0x2d0 [btrfs]
+[  188.778031]  [<ffffffffa0179b70>] ? btrfs_submit_direct+0x7b0/0x7b0 [btrfs]
+[  188.781241]  [<ffffffffa01969b9>] extent_readpages+0x169/0x1b0 [btrfs]
+[  188.784322]  [<ffffffffa0179b70>] ? btrfs_submit_direct+0x7b0/0x7b0 [btrfs]
+[  188.789014]  [<ffffffffa0176b0f>] btrfs_readpages+0x1f/0x30 [btrfs]
+[  188.792028]  [<ffffffff8118bf5c>] __do_page_cache_readahead+0x18c/0x1f0
+[  188.795078]  [<ffffffff8118c09f>] ondemand_readahead+0xdf/0x260
+[  188.797702]  [<ffffffffa016c5df>] ? btrfs_congested_fn+0x5f/0xa0 [btrfs]
+[  188.800718]  [<ffffffff8118c291>] page_cache_async_readahead+0x71/0xa0
+[  188.803650]  [<ffffffff8118017f>] generic_file_read_iter+0x40f/0x5e0
+[  188.806480]  [<ffffffff811f43be>] new_sync_read+0x7e/0xb0
+[  188.808832]  [<ffffffff811f55d8>] __vfs_read+0x18/0x50
+[  188.811068]  [<ffffffff811f569a>] vfs_read+0x8a/0x140
+[  188.813298]  [<ffffffff811f5796>] SyS_read+0x46/0xb0
+[  188.815486]  [<ffffffff81125806>] ? __audit_syscall_exit+0x1f6/0x2a0
+[  188.818293]  [<ffffffff816eb8e9>] system_call_fastpath+0x12/0x17
+[  188.821005] BUG: unable to handle kernel paging request at 000000010000000c
+[  188.821984] IP: [<ffffffffa01901b3>] submit_one_bio+0x43/0xa0 [btrfs]
+[  188.821984] PGD 7bad3067 PUD 0 
+[  188.821984] Oops: 0000 [#1] SMP 
+[  188.821984] Modules linked in: ip6table_filter ip6_tables ebtable_nat ebtables bnep bluetooth rfkill btrfs xor raid6_pq microcode 8139too serio_raw virtio_balloon 8139cp mii nfsd auth_rpcgss nfs_acl lockd grace sunrpc virtio_blk ata_generic pata_acpi
+[  188.821984] CPU: 1 PID: 954 Comm: cat Not tainted 3.19.0-rc3-ktest #1
+[  188.821984] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
+[  188.821984] task: ffff880037665220 ti: ffff88007b340000 task.ti: ffff88007b340000
+[  188.821984] RIP: 0010:[<ffffffffa01901b3>]  [<ffffffffa01901b3>] submit_one_bio+0x43/0xa0 [btrfs]
+[  188.821984] RSP: 0018:ffff88007b3438c8  EFLAGS: 00010202
+[  188.821984] RAX: 0000000000000000 RBX: ffff88007c282ba8 RCX: 0000000000010001
+[  188.821984] RDX: 0000000000000000 RSI: 00000000fffffff4 RDI: 0000000000000000
+[  188.821984] RBP: ffff88007b3438d8 R08: ffffea0001e33100 R09: 00000000000027df
+[  188.821984] R10: ffff88007fd1c000 R11: 0000000000dbb000 R12: ffff88007b343b40
+[  188.821984] R13: ffff88007c282ba8 R14: 0000000000006dd8 R15: ffff880071584f80
+[  188.821984] FS:  00007fdf777c5740(0000) GS:ffff88007fd00000(0000) knlGS:0000000000000000
+[  188.821984] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  188.821984] CR2: 000000010000000c CR3: 000000007bf59000 CR4: 00000000000006e0
+[  188.821984] Stack:
+[  188.821984]  0000000000001000 ffff88007b343b40 ffff88007b343938 ffffffffa0193f27
+[  188.821984]  ffff88007b343938 0000000000000001 0000000000000000 ffffea0001e33180
+[  188.821984]  00000000027e0000 0000000000001000 ffff88007cc24680 ffff88007b343b50
+[  188.821984] Call Trace:
+[  188.821984]  [<ffffffffa0193f27>] submit_extent_page.isra.35+0xd7/0x1c0 [btrfs]
+[  188.821984]  [<ffffffffa019509d>] __do_readpage+0x31d/0x7b0 [btrfs]
+[  188.821984]  [<ffffffffa0195f10>] ? btrfs_create_repair_bio+0x110/0x110 [btrfs]
+[  188.821984]  [<ffffffffa0179b70>] ? btrfs_submit_direct+0x7b0/0x7b0 [btrfs]
+[  188.821984]  [<ffffffffa018f88d>] ? btrfs_lookup_ordered_range+0x13d/0x180 [btrfs]
+[  188.821984]  [<ffffffffa01958ca>] __extent_readpages.constprop.42+0x2ba/0x2d0 [btrfs]
+[  188.821984]  [<ffffffffa0179b70>] ? btrfs_submit_direct+0x7b0/0x7b0 [btrfs]
+[  188.821984]  [<ffffffffa01969b9>] extent_readpages+0x169/0x1b0 [btrfs]
+[  188.821984]  [<ffffffffa0179b70>] ? btrfs_submit_direct+0x7b0/0x7b0 [btrfs]
+[  188.821984]  [<ffffffffa0176b0f>] btrfs_readpages+0x1f/0x30 [btrfs]
+[  188.821984]  [<ffffffff8118bf5c>] __do_page_cache_readahead+0x18c/0x1f0
+[  188.821984]  [<ffffffff8118c09f>] ondemand_readahead+0xdf/0x260
+[  188.821984]  [<ffffffffa016c5df>] ? btrfs_congested_fn+0x5f/0xa0 [btrfs]
+[  188.821984]  [<ffffffff8118c291>] page_cache_async_readahead+0x71/0xa0
+[  188.821984]  [<ffffffff8118017f>] generic_file_read_iter+0x40f/0x5e0
+[  188.821984]  [<ffffffff811f43be>] new_sync_read+0x7e/0xb0
+[  188.821984]  [<ffffffff811f55d8>] __vfs_read+0x18/0x50
+[  188.821984]  [<ffffffff811f569a>] vfs_read+0x8a/0x140
+[  188.821984]  [<ffffffff811f5796>] SyS_read+0x46/0xb0
+[  188.821984]  [<ffffffff81125806>] ? __audit_syscall_exit+0x1f6/0x2a0
+[  188.821984]  [<ffffffff816eb8e9>] system_call_fastpath+0x12/0x17
+[  188.821984] Code: c1 e0 04 48 8d 44 06 f0 48 8b 73 50 4c 8b 00 8b 40 0c 4d 8b 48 10 48 c7 43 50 00 00 00 00 f0 ff 43 74 48 8b 76 20 48 85 f6 74 4d <4c> 8b 56 18 4d 85 d2 74 44 4d 8b 58 08 49 c1 e1 0c 49 89 c8 89 
+[  188.821984] RIP  [<ffffffffa01901b3>] submit_one_bio+0x43/0xa0 [btrfs]
+[  188.821984]  RSP <ffff88007b3438c8>
+[  188.821984] CR2: 000000010000000c
+[  188.953169] ---[ end trace 498f24be78e8baad ]---
+# 
+===============================================================================
+
+Thanks,
+Satoru
+
+> 
+>    #!/bin/bash
+> 
+>    dmesgout=dmesg.txt
+>    start=100000
+>    end=300000
+>    step=1000
+> 
+>    # btrfs options
+>    device=/dev/vdb1
+>    directory=/mnt/btrfs
+> 
+>    # fault-injection options
+>    percent=100
+>    times=3
+> 
+>    mkdir -p $directory || exit 1
+>    mount -o compress $device $directory || exit 1
+> 
+>    rm -f $directory/file || exit 1
+>    dd if=/dev/zero of=$directory/file bs=1M count=512 || exit 1
+> 
+>    for interval in `seq $start $step $end`; do
+>            dmesg -C
+>            echo 1 > /proc/sys/vm/drop_caches
+>            sync
+>            export FAILCMD_TYPE=fail_page_alloc
+>            ./failcmd.sh -p $percent -t $times -i $interval \
+>                    --ignore-gfp-highmem=N --ignore-gfp-wait=N --min-order=0 \
+>                    -- \
+>                    cat $directory/file > /dev/null
+>            dmesg > ${dmesgout}
+>            if grep -q BUG: ${dmesgout}; then
+>                    cat ${dmesgout}
+>                    exit 1
+>            fi
+>    done
+> 
+>    umount $directory
+>    exit 0
+> 
+> Signed-off-by: Naohiro Aota <naota@elisp.net>
+> ---
+>   fs/btrfs/extent_io.c | 4 +++-
+>   1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+> index 4ebabd2..4421161 100644
+> --- a/fs/btrfs/extent_io.c
+> +++ b/fs/btrfs/extent_io.c
+> @@ -2816,8 +2816,10 @@ static int submit_extent_page(int rw, struct extent_io_tree *tree,
+>   		    bio_add_page(bio, page, page_size, offset) < page_size) {
+>   			ret = submit_one_bio(rw, bio, mirror_num,
+>   					     prev_bio_flags);
+> -			if (ret < 0)
+> +			if (ret < 0) {
+> +				*bio_ret = NULL;
+>   				return ret;
+> +			}
+>   			bio = NULL;
+>   		} else {
+>   			return 0;
+> 
+
