@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755662AbbAFQtq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 11:49:46 -0500
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:45852 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753325AbbAFQto (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 11:49:44 -0500
-Message-ID: <54AC1225.7080804@hurleysoftware.com>
-Date: Tue, 06 Jan 2015 11:49:41 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
+	id S932182AbbAFQui (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 11:50:38 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755277AbbAFQuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 11:50:37 -0500
+Message-ID: <54AC1258.2070004@nod.at>
+Date: Tue, 06 Jan 2015 17:50:32 +0100
+From: Richard Weinberger <richard@nod.at>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Francesco Ruggeri <fruggeri@aristanetworks.com>,
-        Francesco Ruggeri <fruggeri@arista.com>
-Subject: Re: [PATCH] Revert "tty: Fix pty master poll() after slave closes
- v2"
-References: <1419941829-6536-1-git-send-email-peter@hurleysoftware.com> <54A29B0A.3060707@hurleysoftware.com> <54ABF221.7000305@suse.cz>
-In-Reply-To: <54ABF221.7000305@suse.cz>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+To: Mariusz Gorski <marius.gorski@gmail.com>
+CC: Evgeniy Polyakov <zbr@ioremap.net>, David Fries <David@fries.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] w1: slaves: w1_therm: Add sysfs entry for current
+ temperature
+References: <1420554596-10250-1-git-send-email-marius.gorski@gmail.com> <CAFLxGvwXN0XKQ_fX7pS=dpZf+SoysN_fH8iAgtyMYG9dX+6oAQ@mail.gmail.com> <20150106161205.GA2912@firebird>
+In-Reply-To: <20150106161205.GA2912@firebird>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2015 09:33 AM, Jiri Slaby wrote:
-> On 12/30/2014, 01:31 PM, Peter Hurley wrote:
->> On 12/30/2014 07:17 AM, Peter Hurley wrote:
->>> This reverts commit c4dc304677e8d566572c4738d95c48be150c6606.
->>> This fix is superseded by commit 52bce7f8d4fc633c9a9d0646eef58ba6ae9a3b73,
->>> 'pty, n_tty: Simplify input processing on final close'.
->>>
->>> The final close now waits for input processing to complete before
->>> destroying the pty, so poll() does not need to special case this
->>> condition.
+Am 06.01.2015 um 17:12 schrieb Mariusz Gorski:
+> On Tue, Jan 06, 2015 at 04:01:47PM +0100, Richard Weinberger wrote:
+>> On Tue, Jan 6, 2015 at 3:29 PM, Mariusz Gorski <marius.gorski@gmail.com> wrote:
+>>> DS18B20 and it's brothers are pretty popular in the RaspberryPi world
+>>> when it comes to temperature measurement. All tutorials on the Internet
+>>> use the same way of parsing the output of the w1_slave sysfs file.
+>>> These patches add a dedicated sysfs entry called 'temp' whose only job
+>>> is to output the current temperature.
 >>
->> Greg,
->>
->> As noted in this commit log, commit c4dc304677e8d566572c4738d95c48be150c6606,
->> 'tty: Fix pty master poll() after slave closes v2', is not required
->> after commit 52bce7f8d4fc633c9a9d0646eef58ba6ae9a3b73,
->> 'pty, n_tty: Simplify input processing on final close'
->>
->> However, 'tty: Fix pty master poll() after slave closes v2' is appropriate
->> for stable back to v3.12.
+>> And what is the benefit of this patches?
 > 
-> Now applied to 3.12. A backport was needed due to the later change of
-> the input_available_p 2nd parameter.
+> Well, instead of having to parse the output of w1_slave:
+> 
+> $ cat w1_slave 
+> 4d 01 55 00 7f ff 0c 10 fd : crc=fd YES
+> 4d 01 55 00 7f ff 0c 10 fd t=20812
+> 
+> the userspace program gets only the interesting information,
+> which usually is the current temparture:
 
-Thanks Jiri.
+A sane user would also check the CRC.
 
+IMHO it is up to the user to format the output for its needs.
+Some may want "20812", some "20.8", some else maybe "20.8°C".
+Let it up to the user.
+Any trivial awk/cut/etc... oneliner would do it.
+
+Thanks,
+//richard
