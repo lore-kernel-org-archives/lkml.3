@@ -1,40 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572AbbAFRJS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 12:09:18 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49337 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073AbbAFRJQ (ORCPT
+	id S932281AbbAFRPj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 12:15:39 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:20277 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932240AbbAFRPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 12:09:16 -0500
-Message-ID: <54AC16E8.6060304@wwwdotorg.org>
-Date: Tue, 06 Jan 2015 10:10:00 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 6 Jan 2015 12:15:37 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+AmBDLePyOtVwNE9TOX+N2
+Date: Tue, 6 Jan 2015 09:11:46 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH 11/14] mfd: tps65217: Constify struct regmap_config
+Message-ID: <20150106171146.GR4081@atomide.com>
+References: <1420448493-9355-1-git-send-email-k.kozlowski@samsung.com>
+ <1420448493-9355-11-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>, linux-tegra@vger.kernel.org
-CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] ARM: tegra: Move out nyan-generic parts out from
- the nyan-big DT
-References: <1420540653-14816-1-git-send-email-tomeu.vizoso@collabora.com> <1420540653-14816-3-git-send-email-tomeu.vizoso@collabora.com>
-In-Reply-To: <1420540653-14816-3-git-send-email-tomeu.vizoso@collabora.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420448493-9355-11-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2015 03:37 AM, Tomeu Vizoso wrote:
-> In preparation for adding the DT for the nyan-blaze board.
+* Krzysztof Kozlowski <k.kozlowski@samsung.com> [150105 01:04]:
+> The regmap_config struct may be const because it is not modified by the
+> driver and regmap_init() accepts pointer to const.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-"git format-patch -M" and/or "git format-patch -C" should make this 
-patch a lot easier to review, since it'll show the patch as a file 
-copy/rename rather than a full-file cut/paste.
+Acked-by: Tony Lindgren <tony@atomide.com>
+
+> Cc: linux-omap@vger.kernel.org
+> ---
+>  drivers/mfd/tps65217.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/mfd/tps65217.c b/drivers/mfd/tps65217.c
+> index 80a919a8ca97..7d1cfc1d3ce0 100644
+> --- a/drivers/mfd/tps65217.c
+> +++ b/drivers/mfd/tps65217.c
+> @@ -145,7 +145,7 @@ int tps65217_clear_bits(struct tps65217 *tps, unsigned int reg,
+>  }
+>  EXPORT_SYMBOL_GPL(tps65217_clear_bits);
+>  
+> -static struct regmap_config tps65217_regmap_config = {
+> +static const struct regmap_config tps65217_regmap_config = {
+>  	.reg_bits = 8,
+>  	.val_bits = 8,
+>  
+> -- 
+> 1.9.1
+> 
