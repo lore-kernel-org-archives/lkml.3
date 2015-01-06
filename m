@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754985AbbAFLUQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 06:20:16 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:55778 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528AbbAFLUN (ORCPT
+	id S1755072AbbAFLWY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 06:22:24 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:52261 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754776AbbAFLWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 06:20:13 -0500
-Date: Tue, 6 Jan 2015 11:20:01 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Al Stone <al.stone@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "jcm@redhat.com" <jcm@redhat.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v5 18/18] Documentation: ACPI for ARM64
-Message-ID: <20150106112000.GA8829@e104818-lin.cambridge.arm.com>
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>
- <54A28B22.7090305@linaro.org>
- <20150105131302.GB14967@e104818-lin.cambridge.arm.com>
- <1797489.PjmKzBFdQA@wuerfel>
+	Tue, 6 Jan 2015 06:22:22 -0500
+Message-ID: <54ABC551.3080005@linaro.org>
+Date: Tue, 06 Jan 2015 19:21:53 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1797489.PjmKzBFdQA@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: liyi 00215672 <phoenix.liyi@huawei.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Will Deacon <will.deacon@arm.com>
+CC: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Jon Masters <jcm@redhat.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh@kernel.org>, Robert Richter <rric@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Charles.Garcia-Tobin@arm.com" <Charles.Garcia-Tobin@arm.com>,
+        Timur Tabi <timur@codeaurora.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Al Stone <al.stone@linaro.org>
+Subject: Re: =?gbk?Q?=B4=F0=B8=B4=3A_=5BPATCH_v6_17/17=5D_Documen?=
+ =?gbk?Q?tation=3A_ACPI_for_ARM64?=
+References: <1420368918-5086-1-git-send-email-hanjun.guo@linaro.org> <1420368918-5086-18-git-send-email-hanjun.guo@linaro.org> <D0F5605BA99F0B4594FB1EEC24E785CC654879C3@SZXEMA510-MBX.china.huawei.com>
+In-Reply-To: <D0F5605BA99F0B4594FB1EEC24E785CC654879C3@SZXEMA510-MBX.china.huawei.com>
+Content-Type: text/plain; charset=gbk; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 05, 2015 at 08:16:30PM +0000, Arnd Bergmann wrote:
-> On Monday 05 January 2015 13:13:02 Catalin Marinas wrote:
-> > > since passing no DT tables to OS but
-> > > acpi=force is missing is a corner case, we can do a follow up patch to
-> > > fix that, does it make sense?
-> > 
-> > Not entirely. Why would no dtb and no acpi=force be a corner case? I
-> > thought this should be the default when only ACPI tables are passed, no
-> > need for an additional acpi=force argument.
-> 
-> We don't really support the case of only ACPI tables for now. The expectation
-> is that you always have working DT support, at least for the next few years
-> as ACPI features are ramping up, and without acpi=force it should not try
-> to use ACPI at all.
+Hi Yi,
 
-So if both DT and ACPI are present, just use DT unless acpi=force is
-passed. So far I think we agree but what I want to avoid is always
-mandating acpi=force even when the DT tables are missing (in the long
-run).
+On 2015Äê01ÔÂ06ÈÕ 17:52, liyi 00215672 wrote:
+> In traditional telecom market, what confused us(Huawei) was our software and
+> hardware coupling together oftentimes. So if we change some hardware then we
+> MUST modify our software, which was not our customer¡¯s expectation. In x86 world,
+> we have UEFI and ACPI technologies, they are suitable to solve this problem very
+> well, we just upgrade our hardware and don¡¯t need to upgrade their software,
+> in the meantime ACPI provides many methods on power management.
+>
+> In ARM64 world, we are aiming the same thing. Following the SBBR,SBSA specs
+> to implement our UEFI and ACPI code, we think the patch set and arm-acpi
+> documentation are fine , and consider it is going on the right direction, so
+>
+> Reviewed-by: Yi Li <phoenix.liyi@huawei.com>
 
-Now, what's preventing a vendor firmware from providing only ACPI
-tables? Do we enforce it in some way (arm-acpi.txt, kernel warning etc.)
-that both DT and ACPI are supported, or at least that dts files are
-merged in the kernel first?
+Thanks a lot!
 
--- 
-Catalin
+Regards,
+Hanjun
