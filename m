@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754344AbbAFAOO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 19:14:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60401 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753813AbbAFAON (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 19:14:13 -0500
-Date: Mon, 5 Jan 2015 16:14:12 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kiran Raparthy <kiran.kumar@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Colin Cross <ccross@android.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: Re: [RFC v4] debug: prevent entering debug mode on panic/exception.
-Message-Id: <20150105161412.44f53313e1d771dc9f968264@linux-foundation.org>
-In-Reply-To: <1419338309-16729-1-git-send-email-kiran.kumar@linaro.org>
-References: <1419338309-16729-1-git-send-email-kiran.kumar@linaro.org>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754643AbbAFAR3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 19:17:29 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753777AbbAFAR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 19:17:26 -0500
+Message-ID: <54AB2992.6060707@nod.at>
+Date: Tue, 06 Jan 2015 01:17:22 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Aditya Kali <adityakali@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Rohit Jnagal <jnagal@google.com>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCHv3 8/8] cgroup: Add documentation for cgroup namespaces
+References: <1417744550-6461-1-git-send-email-adityakali@google.com> <1417744550-6461-9-git-send-email-adityakali@google.com> <548E17CE.8010704@nod.at> <CAGr1F2HA6mzFwgp5ngX8P7=198-5CmCjLmuCJ8j3eQ08J2d9Qw@mail.gmail.com> <54AB15BD.8020007@nod.at> <87lhlgpyxk.fsf@x220.int.ebiederm.org> <CAGr1F2HSi_D07r2c5CKOsjSR1+58k9G2MrtACsd+HV6XKvJ7cA@mail.gmail.com>
+In-Reply-To: <CAGr1F2HSi_D07r2c5CKOsjSR1+58k9G2MrtACsd+HV6XKvJ7cA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Dec 2014 18:08:29 +0530 Kiran Raparthy <kiran.kumar@linaro.org> wrote:
+Am 06.01.2015 um 01:10 schrieb Aditya Kali:
+> Since the old/default behavior is on its way out, I didn't invest time
+> in fixing that. Also, some of the properties that make
+> cgroup-namespace simpler are only provided by unified hierarchy (for
+> example: a single root-cgroup per container).
 
-> From: Colin Cross <ccross@android.com>
-> 
-> debug: prevent entering debug mode on panic/exception.
-> 
-> On non-developer devices, kgdb prevents the device from rebooting
-> after a panic.
-> 
-> Incase of panics and exceptions, to allow the device to reboot, prevent
-> entering debug mode to avoid getting stuck waiting for the user to interact
-> with debugger.
-> 
-> To avoid entering the debugger on panic/exception without any extra
-> configuration, panic_timeout is being used which can be set via
-> /proc/sys/kernel/panic at run time and CONFIG_PANIC_TIMEOUT sets the default
-> value.
-> 
-> ...
->
+Does the new sane cgroupfs behavior even have a single real world user?
+I always thought it isn't stable yet.
 
-hm.  Why overload the meaning of panic_timeout in this fashion?  If
-someone is using kgdb and has panic_timeout set, they'll get quiet a
-surprise.
+Linux distros currently use systemd v210. They don't dare to use a newer one.
+Even *if* systemd would support the sane sane cgroupfs behavior in the most recent
+version it will take 1-2 years until it would hit a recent distro.
 
-Would it be cleaner/clearer to add some new standalone control for
-this?  One which is only present if CONFIG_KGDB.
+So please support also the old and nasty behavior such that one day we can run current
+systemd distros in Linux containers.
 
-
-We appear to have forgotten to document panic_timeout.  Sigh.
+Thanks,
+//richard
