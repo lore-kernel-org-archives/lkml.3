@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933300AbbAFVjK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 16:39:10 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:48064 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932611AbbAFVjH (ORCPT
+	id S933287AbbAFVjF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 16:39:05 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:57759 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932611AbbAFVjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 16:39:07 -0500
-Message-ID: <54AC557D.1080605@free-electrons.com>
-Date: Tue, 06 Jan 2015 18:37:01 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 6 Jan 2015 16:39:02 -0500
+Date: Tue, 6 Jan 2015 22:39:00 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        ilya.enkovich@intel.com
+Subject: Re: [PATCH 3.19 3/3] x86, mpx: Change the MPX enable/disable API
+ to arch_prctl
+Message-ID: <20150106213900.GX2915@two.firstfloor.org>
+References: <CALCETrU3oHO5Rjqp_DmJaOkEBOtZpQ+f99xXiY5=84JfJphZCA@mail.gmail.com>
+ <54AC1FFB.7030504@linux.intel.com>
+ <CALCETrVJyBR7NoZvC=A4htRtm-fLe5NUEGUdvJRL28adU4MhUg@mail.gmail.com>
+ <54AC29B1.70004@linux.intel.com>
+ <CALCETrUE+kZeC+vx1OnpYsuL-b0u3fFJe3QfjeZQ=hCiQRPrHg@mail.gmail.com>
+ <54AC2F62.40708@linux.intel.com>
+ <20150106191649.GU2915@two.firstfloor.org>
+ <CALCETrUNpi1Gc-Qpmu1bJ0BVcSH2xquaY_X+YYhLjbPaQcf0_w@mail.gmail.com>
+ <20150106212255.GV2915@two.firstfloor.org>
+ <CALCETrUpR6ZCBSXdbY232inK=LaXLK0LAssqUt+r8DAn9=xjJg@mail.gmail.com>
 MIME-Version: 1.0
-To: Ken Wilson <ken.wilson@opengear.com>, robh+dt@kernel.org
-CC: pawel.moll@arm.com, mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, linux@arm.linux.org.uk, broonie@kernel.org,
-        gerg@uclinux.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-spi@vger.kernel.org
-Subject: Re: [PATCH] spi: orion: Add multiple chip select support for Armada
- 370 and 375
-References: <1420579846-31962-1-git-send-email-ken.wilson@opengear.com>
-In-Reply-To: <1420579846-31962-1-git-send-email-ken.wilson@opengear.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrUpR6ZCBSXdbY232inK=LaXLK0LAssqUt+r8DAn9=xjJg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2015 06:30 PM, Ken Wilson wrote:
-> Create a new dt binding for the Armada 375 that supports up to
-> 3 chip selects but uses the same prescaler values and algorithm
-> as the basic orion binding.
+On Tue, Jan 06, 2015 at 01:34:56PM -0800, Andy Lutomirski wrote:
+> On Tue, Jan 6, 2015 at 1:22 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> >> Given that it doesn't seen to have been committed yet, I'm not too
+> >> worried about compatibility.  And "prctl (43)" doesn't actually seem a
+> >> whole lot better than "syscall(SYS_arch_prctl, ARCH_ENABLE_MPX, 0)"
+> >
+> > This would actually fail with the EINVAL change you requested.
+> >
 > 
-> Update the Armada 370 so that it supports up to 4 chip selects.
-> 
-> This has been tested on the Armada 375 with multiple SPI-NOR chips.
-> 
-> Signed-off-by: Ken Wilson <ken.wilson@opengear.com>
-> ---
->  .../devicetree/bindings/spi/spi-orion.txt          |  3 ++-
->  arch/arm/boot/dts/armada-375.dtsi                  |  4 +--
->  drivers/spi/spi-orion.c                            | 29 +++++++++++++++++++---
+> So the libmpx code needs to change anyway, then, right?  I really
+> don't think we should accept garbage in the extra prctl slots just
+> because uncommitted code somewhere fails to initialize them.
 
-You will have to split this changeset in three patches, given these
-three files carry different kind of changes:
+Yes it would.
 
-1. The driver change itself
-2. The devicetree binding documentation change
-3. The devicetree dtsi change
+I think that is why most prctls don't do it. After all if you need a new
+field you can just add another one. I usually added the checks in the
+ones I added, but I can see why not doing it.
 
-Regards,
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+-Andi
