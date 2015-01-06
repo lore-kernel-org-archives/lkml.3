@@ -1,108 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755556AbbAFNvj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 08:51:39 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:5519 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754501AbbAFNvg (ORCPT
+	id S1755540AbbAFNvb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 08:51:31 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:43079 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754982AbbAFNv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 08:51:36 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 06 Jan 2015 05:44:26 -0800
-Date: Tue, 6 Jan 2015 21:51:11 +0800
-From: Vince Hsu <vinceh@nvidia.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Peter De Schrijver <pdeschrijver@nvidia.com>, Lucas Stach <dev@lynxeye.de>,
-        <swarren@wwwdotorg.org>, <gnurou@gmail.com>, <bskeggs@redhat.com>,
-        <martin.peres@free.fr>, <seven@nimrod-online.com>,
-        <samuel.pitoiset@gmail.com>, <nouveau@lists.freedesktop.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/11] ARM: tegra: add function to control the GPU rail
- clamp
-Message-ID: <20150106135110.GA18076@nvidia.com>
-References: <1419331204-26679-1-git-send-email-vinceh@nvidia.com>
- <1419331204-26679-2-git-send-email-vinceh@nvidia.com>
- <1419426990.2179.7.camel@lynxeye.de> <549B7638.2010405@nvidia.com>
- <20150105150932.GG12010@ulmo.nvidia.com> <54AB445D.7010303@nvidia.com>
- <20150106111538.GB31830@ulmo.nvidia.com> <54ABCEF7.5080909@nvidia.com>
- <20150106132930.GH31830@ulmo.nvidia.com>
+	Tue, 6 Jan 2015 08:51:29 -0500
 MIME-Version: 1.0
-In-Reply-To: <20150106132930.GH31830@ulmo.nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
+In-Reply-To: <20150106112000.GA8829@e104818-lin.cambridge.arm.com>
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>
+	<54A28B22.7090305@linaro.org>
+	<20150105131302.GB14967@e104818-lin.cambridge.arm.com>
+	<1797489.PjmKzBFdQA@wuerfel>
+	<20150106112000.GA8829@e104818-lin.cambridge.arm.com>
+Date: Tue, 6 Jan 2015 13:51:27 +0000
+Message-ID: <CAGCh1+kYRPg8QJ57bamH7Ctb1vJKmn2rirMUpbXcrU=Qw_VF2A@mail.gmail.com>
+Subject: Re: [PATCH v5 18/18] Documentation: ACPI for ARM64
+From: G Gregory <graeme.gregory@linaro.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Al Stone <al.stone@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "jcm@redhat.com" <jcm@redhat.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02:29:32PM Jan 06, Thierry Reding wrote:
-> * PGP Signed by an unknown key
-> 
-> On Tue, Jan 06, 2015 at 08:03:03PM +0800, Vince Hsu wrote:
-> > On 01/06/2015 07:15 PM, Thierry Reding wrote:
-> > >> Old Signed by an unknown key
-> > >
-> > >On Tue, Jan 06, 2015 at 10:11:41AM +0800, Vince Hsu wrote:
-> > >>On 01/05/2015 11:09 PM, Thierry Reding wrote:
-> > >>>>Old Signed by an unknown key
-> > >>>On Thu, Dec 25, 2014 at 10:28:08AM +0800, Vince Hsu wrote:
-> > >>>>On 12/24/2014 09:16 PM, Lucas Stach wrote:
-> > >>>>>Am Dienstag, den 23.12.2014, 18:39 +0800 schrieb Vince Hsu:
-> > >>>>>>The Tegra124 and later Tegra SoCs have a sepatate rail gating register
-> > >>>>>>to enable/disable the clamp. The original function
-> > >>>>>>tegra_powergate_remove_clamping() is not sufficient for the enable
-> > >>>>>>function. So add a new function which is dedicated to the GPU rail
-> > >>>>>>gating. Also don't refer to the powergate ID since the GPU ID makes no
-> > >>>>>>sense here.
-> > >>>>>>
-> > >>>>>>Signed-off-by: Vince Hsu <vinceh@nvidia.com>
-> > >>>>>To be honest I don't see the point of this patch.
-> > >>>>>You are bloating the PMC interface by introducing another exported
-> > >>>>>function that does nothing different than what the current function
-> > >>>>>already does.
-> > >>>>>
-> > >>>>>If you need a way to assert the clamp I would have expected you to
-> > >>>>>introduce a common function to do this for all power partitions.
-> > >>>>I thought about adding an tegra_powergate_assert_clamping(), but that
-> > >>>>doesn't make sense to all the power partitions except GPU. Note the
-> > >>>>difference in TRM. Any suggestion for the common function?
-> > >>>I don't think extending the powergate API is useful at this point. We've
-> > >>>long had an open TODO item to replace this with a generic API. I did
-> > >>>some prototyping a while ago to use generic power domains for this, that
-> > >>>way all the details and dependencies between the partitions could be
-> > >>>properly modeled.
-> > >>>
-> > >>>Can you take a look at my staging/powergate branch here:
-> > >>>
-> > >>>	https://github.com/thierryreding/linux/commits/staging/powergate
-> > >>>
-> > >>>and see if you can use that instead? The idea is to completely hide the
-> > >>>details of power partitions from drivers and use runtime PM instead.
-> > >>You generic power domains work is exactly what we want for powergate
-> > >>eventually. :) I recall we used your prototyping in somewhere internal tree.
-> > >>We have to add more to complete it though, e.g. power domain dependency, mc
-> > >>flush, and clamping register difference like this patch does.
-> > >>
-> > >>But I have a question here. Since the GK20A is not powered on/off by the PMC
-> > >>except the clamping control, and GK20A has its own power rail, do we really
-> > >>want to hide the power sequence in the generic powergate code? We still have
-> > >>to control the voltage level in the GK20A driver through the regulator
-> > >>framework. It seems weird to me if we put the regulator_{enable|disable}
-> > >>somewhere other than the GK20A driver.
-> > >I think we want both. The power domain to control the power partition
-> > >and the regulator in the gk20a driver for the voltage control.
-> > Do you mean excluding the power sequence of GK20A from the generic power
-> > domain?
-> 
-> No, what I mean is move the power gating into the PMC driver as part of
-> the generic power domain implementation. At the same time, keep the
-> control of the regulator within the gk20a driver. That way we can use
-> runtime PM to control the powergating but we can still control the GPU
-> voltage within Nouveau.
-Okay. Do you insist to introduce the generic power domain at this moment?
-If so, I can try to continue your previous work and rebase this series on
-that. That might take some time though.
+On 6 January 2015 at 11:20, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> On Mon, Jan 05, 2015 at 08:16:30PM +0000, Arnd Bergmann wrote:
+>> On Monday 05 January 2015 13:13:02 Catalin Marinas wrote:
+>> > > since passing no DT tables to OS but
+>> > > acpi=force is missing is a corner case, we can do a follow up patch to
+>> > > fix that, does it make sense?
+>> >
+>> > Not entirely. Why would no dtb and no acpi=force be a corner case? I
+>> > thought this should be the default when only ACPI tables are passed, no
+>> > need for an additional acpi=force argument.
+>>
+>> We don't really support the case of only ACPI tables for now. The expectation
+>> is that you always have working DT support, at least for the next few years
+>> as ACPI features are ramping up, and without acpi=force it should not try
+>> to use ACPI at all.
+>
+> So if both DT and ACPI are present, just use DT unless acpi=force is
+> passed. So far I think we agree but what I want to avoid is always
+> mandating acpi=force even when the DT tables are missing (in the long
+> run).
+>
+> Now, what's preventing a vendor firmware from providing only ACPI
+> tables? Do we enforce it in some way (arm-acpi.txt, kernel warning etc.)
+> that both DT and ACPI are supported, or at least that dts files are
+> merged in the kernel first?
+>
+How do we tell the difference between a DT passed purely for booting purposes
+ie a skeleton DT. And one which actually has hardware description as this needs
+to be done before unpacking the DT.
 
-Thanks,
-Vince
-
+Graeme
