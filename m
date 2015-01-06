@@ -1,174 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784AbbAFKbg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 05:31:36 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:62054 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751098AbbAFKbf (ORCPT
+	id S1754651AbbAFKeo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 05:34:44 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:55713 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760AbbAFKek (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 05:31:35 -0500
+	Tue, 6 Jan 2015 05:34:40 -0500
+Date: Tue, 6 Jan 2015 10:34:31 +0000
+From: Javi Merino <javi.merino@arm.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Punit Agrawal <Punit.Agrawal@arm.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [RFC PATCH v6 5/9] thermal: extend the cooling device API to
+ include power information
+Message-ID: <20150106103430.GD2885@e104805>
+References: <1417806260-9264-1-git-send-email-javi.merino@arm.com>
+ <1417806260-9264-6-git-send-email-javi.merino@arm.com>
+ <20141223151359.GB7350@developer>
+ <20150105153710.GA3042@e104805>
+ <20150105210403.GC31247@developer>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <s5hr3v8dwym.wl-tiwai@suse.de>
-References: <CA+icZUU4ALYvEq7SkUewnZytf62R0d9x+MVPvMrR0zzFf+-f3Q@mail.gmail.com>
-	<CA+icZUXbbLE-z0SS=0rVnEYq5zFr1f4omOuSS7BL4OpAv0eagA@mail.gmail.com>
-	<s5hzj9wdygy.wl-tiwai@suse.de>
-	<CA+icZUVT45HmtSi=-XCnFZie-vJ3p8GwdvHMW46BH98Xd7GS6Q@mail.gmail.com>
-	<s5hr3v8dwym.wl-tiwai@suse.de>
-Date: Tue, 6 Jan 2015 11:31:34 +0100
-Message-ID: <CA+icZUVtvCRj+sm6-CTtB98CGZsXS7UyWyMcudc_GDPkyRJ_9Q@mail.gmail.com>
-Subject: Re: Linux 3.19-rc3
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Dave Jones <davej@codemonkey.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Peter Zijlstra (Intel)" <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20150105210403.GC31247@developer>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 6, 2015 at 11:28 AM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Tue, 6 Jan 2015 11:06:45 +0100,
-> Sedat Dilek wrote:
->>
->> On Tue, Jan 6, 2015 at 10:56 AM, Takashi Iwai <tiwai@suse.de> wrote:
->> > At Tue, 6 Jan 2015 10:34:30 +0100,
->> > Sedat Dilek wrote:
->> >>
->> >> On Tue, Jan 6, 2015 at 5:49 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> >> > [ Please CC me I am not subscribed to LKML ]
->> >> >
->> >> > [ QUOTE ]
->> >> >
->> >> > On Mon, Jan 05, 2015 at 05:46:15PM -0800, Linus Torvalds wrote:
->> >> >  > It's a day delayed - not because of any particular development issues,
->> >> >  > but simply because I was tiling a bathroom yesterday. But rc3 is out
->> >> >  > there now, and things have stayed reasonably calm. I really hope that
->> >> >  > implies that 3.19 is looking good, but it's equally likely that it's
->> >> >  > just that people are still recovering from the holiday season.
->> >> >  >
->> >> >  > A bit over three quarters of the changes here are drivers - mostly
->> >> >  > networking, thermal, input layer, sound, power management. The rest is
->> >> >  > misc - filesystems, core networking, some arch fixes, etc. But all of
->> >> >  > it is pretty small.
->> >> >  >
->> >> >  > So go out and test,
->> >> >
->> >> > This has been there since just before rc1. Is there a fix for this
->> >> > stalled in someones git tree maybe ?
->> >> >
->> >> > [    7.952588] WARNING: CPU: 0 PID: 299 at kernel/sched/core.c:7303
->> >> > __might_sleep+0x8d/0xa0()
->> >> > [    7.952592] do not call blocking ops when !TASK_RUNNING; state=1
->> >> > set at [<ffffffff910a0f7a>] prepare_to_wait+0x2a/0x90
->> >> > [    7.952595] CPU: 0 PID: 299 Comm: systemd-readahe Not tainted
->> >> > 3.19.0-rc3+ #100
->> >> > [    7.952597]  0000000000001c87 00000000720a2c76 ffff8800b2513c88
->> >> > ffffffff915b47c7
->> >> > [    7.952598]  ffffffff910a3648 ffff8800b2513ce0 ffff8800b2513cc8
->> >> > ffffffff91062c30
->> >> > [    7.952599]  0000000000000000 ffffffff91796fb2 000000000000026d
->> >> > 0000000000000000
->> >> > [    7.952600] Call Trace:
->> >> > [    7.952603]  [<ffffffff915b47c7>] dump_stack+0x4c/0x65
->> >> > [    7.952604]  [<ffffffff910a3648>] ? down_trylock+0x28/0x40
->> >> > [    7.952606]  [<ffffffff91062c30>] warn_slowpath_common+0x80/0xc0
->> >> > [    7.952607]  [<ffffffff91062cc0>] warn_slowpath_fmt+0x50/0x70
->> >> > [    7.952608]  [<ffffffff910a0f7a>] ? prepare_to_wait+0x2a/0x90
->> >> > [    7.952610]  [<ffffffff910a0f7a>] ? prepare_to_wait+0x2a/0x90
->> >> > [    7.952611]  [<ffffffff910867ed>] __might_sleep+0x8d/0xa0
->> >> > [    7.952614]  [<ffffffff915b8ea9>] mutex_lock_nested+0x39/0x3e0
->> >> > [    7.952616]  [<ffffffff910a77ad>] ? trace_hardirqs_on+0xd/0x10
->> >> > [    7.952617]  [<ffffffff910a0fac>] ? prepare_to_wait+0x5c/0x90
->> >> > [    7.952620]  [<ffffffff911a63e0>] fanotify_read+0xe0/0x5b0
->> >> > [    7.952622]  [<ffffffff91090801>] ? sched_clock_cpu+0xc1/0xd0
->> >> > [    7.952624]  [<ffffffff91242459>] ? selinux_file_permission+0xb9/0x130
->> >> > [    7.952626]  [<ffffffff910a14d0>] ? prepare_to_wait_event+0xf0/0xf0
->> >> > [    7.952628]  [<ffffffff91162513>] __vfs_read+0x13/0x50
->> >> > [    7.952629]  [<ffffffff911625d8>] vfs_read+0x88/0x140
->> >> > [    7.952631]  [<ffffffff911626e7>] SyS_read+0x57/0xd0
->> >> > [    7.952633]  [<ffffffff915bd952>] system_call_fastpath+0x12/0x17
->> >> >
->> >> > [ /QUOTE ]
->> >> >
->> >> > I am seeing a similiar call-trace/warning.
->> >> > It is reproducible when running fio (latest: v2.2.4) while my loop-mq
->> >> > tests (see block.git#for-next)
->> >> >
->> >> > Some people tend to say it's coming from the linux-aio area [1], but I
->> >> > am not sure.
->> >> > 1st I thought this is a Linux-next problem but I am seeing it also
->> >> > with my rc-kernels.
->> >> > For parts of aio there is a patch discussed in [2].
->> >> > The experimental patchset of Ken from [3] made the "aio" call-trace go
->> >> > away here.
->> >> >
->> >> > I tried also a patch pending in peterz/queue.git#sched/core from Eric Sandeen.
->> >> > It's "check for stack overflow in ___might_sleep".
->> >> > Unfortunately, it did not help in case of my loop-mq tests.
->> >> > ( BTW, this is touching ___might_sleep() (note: triple-underscore VS.
->> >> > affected __might_sleep() <--- double-underscrore). )
->> >> >
->> >> > Let me hear your feedback.
->> >> >
->> >> > Have more fun!
->> >> >
->> >> > - Sedat -
->> >> >
->> >> > [1] http://marc.info/?l=linux-aio&m=142033318411355&w=2
->> >> > [2] http://marc.info/?l=linux-aio&m=142035799514685&w=2
->> >> > [3] http://evilpiepirate.org/git/linux-bcache.git/log/?h=aio_ring_fix
->> >> > [4] http://git.kernel.org/cgit/linux/kernel/git/peterz/queue.git/patch/?id=48e615e4c3ebed488fecb6bfb40b372151f62db2
->> >>
->> >> [ CC Takashi ]
->> >>
->> >> >From [1]:
->> >> ...
->> >>
->> >> Just "me too" (but overlooked until recently).
->> >>
->> >> The cause is a mutex_lock() call right after prepare_to_wait() with
->> >> TASK_INTERRUPTIBLE in fanotify_read().
->> >>
->> >> static ssize_t fanotify_read(struct file *file, char __user *buf,
->> >>     size_t count, loff_t *pos)
->> >> {
->> >> ....
->> >> while (1) {
->> >> prepare_to_wait(&group->notification_waitq, &wait, TASK_INTERRUPTIBLE);
->> >> mutex_lock(&group->notification_mutex);
->> >>
->> >> I saw Peter already fixed a similar code in inotify_user.c by commit
->> >> e23738a7300a (but interestingly for a different reason, "Deal with
->> >> nested sleeps").  Supposedly a similar fix would be needed for
->> >> fanotify_user.c.
->> >> ...
->> >>
->> >> Can you explain why do you think the problem is in sched-fanotify?
->> >>
->> >> I tried to do such a "similiar" (quick) fix analog to the mentioned
->> >> "sched, inotify: Deal with nested sleeps" patch from Peter.
->> >> If I did correct... It does not make the call-trace go away here.
->> >
->> > Your code path is different from what Dave and I hit.  Take a closer
->> > look at the stack trace.
->> >
->>
->> Yeah, you are right.
->> I looked again into the code (see thread "Linux 3.19-rc3", I am
->> reading offline).
->>
->> As said aio_ring_fix patchset and especially [1] fixed the issue for me.
->>
->> Can you confirm Peter's new patch works-for-you?
->
-> Yes, it seems working for me at the last time I tried.
-> (BTW, you don't need to add #include <linux/wait.h>)
->
+Hi Eduardo,
 
-Just one minute ago, I asked about that?
-Can you explain that - included by another include?
+On Mon, Jan 05, 2015 at 09:04:09PM +0000, Eduardo Valentin wrote:
+> On Mon, Jan 05, 2015 at 03:37:10PM +0000, Javi Merino wrote:
+> > On Tue, Dec 23, 2014 at 03:14:11PM +0000, Eduardo Valentin wrote:
+> > > Hi Javi
+> > > 
+> > > On Fri, Dec 05, 2014 at 07:04:16PM +0000, Javi Merino wrote:
+> > > > Add three optional callbacks to the cooling device interface to allow
+> > > > them to express power.  In addition to the callbacks, add helpers to
+> > > > identify cooling devices that implement the power cooling device API.
+> > > > 
+> > > > Cc: Zhang Rui <rui.zhang@intel.com>
+> > > > Cc: Eduardo Valentin <edubezval@gmail.com>
+> > > > Signed-off-by: Javi Merino <javi.merino@arm.com>
+> > > > ---
+> > > >  Documentation/thermal/power_allocator.txt | 27 ++++++++++++++++++++++
+> > > >  drivers/thermal/thermal_core.c            | 38 +++++++++++++++++++++++++++++++
+> > > >  include/linux/thermal.h                   | 12 ++++++++++
+> > > >  3 files changed, 77 insertions(+)
+> > > >  create mode 100644 Documentation/thermal/power_allocator.txt
+> > > > 
+> > > > diff --git a/Documentation/thermal/power_allocator.txt b/Documentation/thermal/power_allocator.txt
+> > > > new file mode 100644
+> > > > index 000000000000..d3bb79050c27
+> > > > --- /dev/null
+> > > > +++ b/Documentation/thermal/power_allocator.txt
+> > > > @@ -0,0 +1,27 @@
+> > > > +Cooling device power API
+> > > > +========================
+> > > 
+> > > Readers of this file need extra context here, IMO.
+> > 
+> > Patch 7 adds text before and after this section that provides that
+> > context.
+> > 
+> > > > +
+> > > > +Cooling devices controlled by this governor must supply the additional
+> > > 
+> > > What governor? the files says power allocator, and the title says,
+> > > cooling device power API...
+> > 
+> > Correct, because that's added in the patch that introduces the power
+> > allocator governor.  Therefore, it's not a problem for the readers of
+> > this file but for the readers of the patches.  I can move this hunk to
+> > patch 7 and introduce all the documentation at once if you think
+> > that's clearer.
+> > 
+> 
+> Thinking of the atomicity of each patch/commit, I would prefer you to
+> move all documentation to a single patch then.
 
-- Sedat -
+Ok, I'll move it to the patch that introduces the power allocator.
+
+[...]
+> > > > diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+> > > > index 9021cb72a13a..c490f262ea7f 100644
+> > > > --- a/drivers/thermal/thermal_core.c
+> > > > +++ b/drivers/thermal/thermal_core.c
+> > > > @@ -866,6 +866,44 @@ emul_temp_store(struct device *dev, struct device_attribute *attr,
+> > > >  static DEVICE_ATTR(emul_temp, S_IWUSR, NULL, emul_temp_store);
+> > > >  #endif/*CONFIG_THERMAL_EMULATION*/
+> > > >  
+> > > > +/**
+> > > > + * power_actor_get_max_power() - get the maximum power that a cdev can consume
+> > > > + * @cdev:	pointer to &thermal_cooling_device
+> > > > + *
+> > > > + * Calculate the maximum power consumption in milliwats that the
+> > > > + * cooling device can currently consume.  If @cdev doesn't support the
+> > > > + * power_actor API, this function returns 0.
+> > > > + */
+> > > > +u32 power_actor_get_max_power(struct thermal_cooling_device *cdev)
+> > > > +{
+> > > > +	if (!cdev_is_power_actor(cdev))
+> > > > +		return 0;
+> > > > +
+> > > > +	return cdev->ops->state2power(cdev, 0);
+> > > > +}
+> > > > +
+> > > > +/**
+> > > > + * power_actor_set_power() - limit the maximum power that a cooling device can consume
+> > > > + * @cdev:	pointer to &thermal_cooling_device
+> > > > + * @power:	the power in milliwatts
+> > > > + *
+> > > > + * Set the cooling device to consume at most @power milliwatts.
+> > > > + *
+> > > > + * Returns: 0 on success, -EINVAL if the cooling device does not
+> > > > + * implement the power actor API or -E* for other failures.
+> > > > + */
+> > > > +int power_actor_set_power(struct thermal_cooling_device *cdev, u32 power)
+> > > > +{
+> > > > +	unsigned long state;
+> > > > +
+> > > > +	if (!cdev_is_power_actor(cdev))
+> > > > +		return -EINVAL;
+> > > > +
+> > > > +	state = cdev->ops->power2state(cdev, power);
+> > > > +
+> > > > +	return cdev->ops->set_cur_state(cdev, state);
+> > > > +}
+> > > > +
+> > > >  static DEVICE_ATTR(type, 0444, type_show, NULL);
+> > > >  static DEVICE_ATTR(temp, 0444, temp_show, NULL);
+> > > >  static DEVICE_ATTR(mode, 0644, mode_show, mode_store);
+> > > > diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> > > > index 2c14ab1f5c0d..1155457caf52 100644
+> > > > --- a/include/linux/thermal.h
+> > > > +++ b/include/linux/thermal.h
+> > > > @@ -142,6 +142,9 @@ struct thermal_cooling_device_ops {
+> > > >  	int (*get_max_state) (struct thermal_cooling_device *, unsigned long *);
+> > > >  	int (*get_cur_state) (struct thermal_cooling_device *, unsigned long *);
+> > > >  	int (*set_cur_state) (struct thermal_cooling_device *, unsigned long);
+> > > > +	u32 (*get_actual_power) (struct thermal_cooling_device *);
+> > > > +	u32 (*state2power) (struct thermal_cooling_device *, unsigned long);
+> > > > +	unsigned long (*power2state) (struct thermal_cooling_device *, u32);
+> > > >  };
+> > > >  
+> > > >  struct thermal_cooling_device {
+> > > > @@ -322,6 +325,15 @@ void thermal_zone_of_sensor_unregister(struct device *dev,
+> > > >  }
+> > > >  
+> > > >  #endif
+> > > > +
+> > > > +static inline bool cdev_is_power_actor(struct thermal_cooling_device *cdev)
+> > > > +{
+> > > 
+> > > What would happen if one pass cdev == NULL?
+> > 
+> > Is it really worth checking it here instead of just making the caller
+> > pass a valid cdev?  There are a number of functions in the thermal
+> > framework that don't check for valid cdevs or thermal zone pointers
+> > and I don't see why this one is different.
+> 
+> I don't know, maybe we should fix those misbehaving functions then? Can
+> you please point them out?
+
+This is not an exhaustive list but a quick grep only in thermal_core.c
+yields:
+  - get_tz_trend() doesn't check tz
+  - get_thermal_instance() doesn't check tz or cdev
+  - thermal_zone_device_update() doesn't check tz
+  - thermal_zone_bind_cooling_device() doesn't check tz or cdev
+  - thermal_zone_unbind_cooling_device() doesn't check tz or cdev
+  - thermal_cdev_update() doesn't check cdev
+
+> > > > +	return cdev->ops->get_actual_power && cdev->ops->state2power &&
+> > > > +		cdev->ops->power2state;
+> > > > +}
+> > > > +
+> > > > +u32 power_actor_get_max_power(struct thermal_cooling_device *);
+> > > > +int power_actor_set_power(struct thermal_cooling_device *, u32);
+> > > >  struct thermal_zone_device *thermal_zone_device_register(const char *, int, int,
+> > > >  		void *, struct thermal_zone_device_ops *,
+> > > >  		const struct thermal_zone_params *, int, int);
+> > > 
+> > > I am assuming the above two new functions are expected to be used also
+> > > outside thermal core, right? If yes, I'd suggest exporting them. 
+> > 
+> > I don't expect it for the time being.  Wouldn't it be preferable to
+> > export them when its needed instead?
+> 
+> I believe functions in this header are exported. For functions used
+> inside thermal core and code that goes builtin always, they go into
+> drivers/thermal/thermal_core.h, and are not exported.
+
+Ok, I'll move them to drivers/thermal/thermal_core.h .
+
+Cheers,
+Javi
