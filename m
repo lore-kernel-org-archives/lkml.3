@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195AbbAFLFA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 06:05:00 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:38494 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754583AbbAFLE7 (ORCPT
+	id S1755197AbbAFLI5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 06:08:57 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:42682 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752973AbbAFLI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 06:04:59 -0500
-Date: Tue, 6 Jan 2015 03:07:30 -0800
-From: Kent Overstreet <kmo@daterainc.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>, Dave Jones <davej@codemonkey.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Chris Mason <clm@fb.com>
-Subject: Re: Linux 3.19-rc3
-Message-ID: <20150106110730.GA25846@kmo-pixel>
-References: <CA+icZUU4ALYvEq7SkUewnZytf62R0d9x+MVPvMrR0zzFf+-f3Q@mail.gmail.com>
- <20150106094039.GI29390@twins.programming.kicks-ass.net>
- <CA+icZUUcgP=nUPCOfEJrbO9OAAPLgQd8RWO-BJe+W0wi3fWiOw@mail.gmail.com>
- <CA+icZUUThdtXkRztRxk+zEqvMwUmEQeSoR3WD3qqXW9QspBoVw@mail.gmail.com>
- <20150106100621.GL29390@twins.programming.kicks-ass.net>
- <CA+icZUVy2rG3PwKhPTQojLEH2O8FD-0myO2sN8hQV4_+r9YNQQ@mail.gmail.com>
- <20150106110112.GQ29390@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150106110112.GQ29390@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 6 Jan 2015 06:08:56 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        Thierry Reding <thierry.reding@gmail.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [RESEND PATCH v5 0/3] drm: describe display bus format
+Date: Tue,  6 Jan 2015 12:08:42 +0100
+Message-Id: <1420542525-13507-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 12:01:12PM +0100, Peter Zijlstra wrote:
-> On Tue, Jan 06, 2015 at 11:18:04AM +0100, Sedat Dilek wrote:
-> > On Tue, Jan 6, 2015 at 11:06 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > > On Tue, Jan 06, 2015 at 10:57:19AM +0100, Sedat Dilek wrote:
-> > >> [   88.028739]  [<ffffffff8124433f>] aio_read_events+0x4f/0x2d0
-> > >>
-> > >
-> > > Ah, that one. Chris Mason and Kent Overstreet were looking at that one.
-> > > I'm not touching the AIO code either ;-)
-> > 
-> > I know, I was so excited when I see nearly the same output.
-> > 
-> > Can you tell me why people see "similiar" problems in different areas?
-> 
-> Because the debug check is new :-) It's a pattern that should not be
-> used but mostly works most of the times.
-> 
-> > [  181.397024] WARNING: CPU: 0 PID: 2872 at kernel/sched/core.c:7303
-> > __might_sleep+0xbd/0xd0()
-> > [  181.397028] do not call blocking ops when !TASK_RUNNING; state=1
-> > set at [<ffffffff810b83bd>] prepare_to_wait_event+0x5d/0x110
-> > 
-> > With similiar buzzwords... namely...
-> > 
-> > mutex_lock_nested
-> > prepare_to_wait(_event)
-> > __might_sleep
-> > 
-> > I am asking myself... Where is the real root cause - in sched/core?
-> > Fix one single place VS. fix the impact at several other places?
-> 
-> No, the root cause is nesting sleep primitives, this is not fixable in
-> the one place, both prepare_to_wait and mutex_lock are using
-> task_struct::state, they have to, no way around it.
+Hello,
 
-No, it's completely possible to construct a prepare_to_wait() that doesn't
-require messing with the task state. Had it for years.
+Resending this series I depends on for the Atmel HLCDC driver which, BTW,
+I really expect to be merged in 3.20.
+Thierry, do you see any remaining issues that should be fixed ?
+If not, Dave, Thierry, could you take it for 3.20 (or, if you prefer, I
+could make it part of my PR for the atmel-hlcdc driver inclusion).
 
-http://evilpiepirate.org/git/linux-bcache.git/log/?h=aio_ring_fix
+Here follows the usual description:
+
+This series makes use of the MEDIA_BUS_FMT definition to describe how
+the data are transmitted to the display.
+
+This will allow drivers to configure their output display bus according
+to the display capabilities.
+For example some display controllers support DPI (or raw RGB) connectors
+and need to specify which format will be transmitted on the DPI bus
+(RGB444, RGB565, RGB888, ...).
+
+This series also adds a field to the panel_desc struct so that one
+can specify which format is natevely supported by a panel.
+
+Regards,
+
+Boris
+
+Changes since v4:
+ - fix typo
+ - fix 'line over 80 characters' warnings
+ - fix leak of formats array
+
+Changes since v3:
+ - store num_bus_formats on an unsigned int
+ - clearly state that fmts argument (in drm_display_info_set_bus_formats
+   function) should be an array of MEDIA_BUS_FMT_* values.
+
+Changes since v2:
+ - use the MEDIA_BUS_FMT macros
+
+Changes since v1:
+ - rename nformats into num_formats
+ - declare num_formats as an unsigned int
+
+
+Boris Brezillon (3):
+  drm: add bus_formats and num_bus_formats fields to drm_display_info
+  drm: panel: simple-panel: add support for bus_format retrieval
+  drm: panel: simple-panel: add bus format information for foxlink panel
+
+ drivers/gpu/drm/drm_crtc.c           | 35 +++++++++++++++++++++++++++++++++++
+ drivers/gpu/drm/panel/panel-simple.c |  6 ++++++
+ include/drm/drm_crtc.h               |  8 ++++++++
+ 3 files changed, 49 insertions(+)
+
+-- 
+1.9.1
+
