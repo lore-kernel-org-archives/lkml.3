@@ -1,111 +1,545 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754693AbbAFJfn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 04:35:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51543 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751609AbbAFJfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 04:35:41 -0500
-Date: Tue, 6 Jan 2015 11:35:32 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Fam Zheng <famz@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
-        Venkatesh Srinivas <venkateshs@google.com>
-Subject: Re: [PATCH v2] virtio-scsi: Fix the race condition in
- virtscsi_handle_event
-Message-ID: <20150106093532.GA29800@redhat.com>
-References: <1420529616-2757-1-git-send-email-famz@redhat.com>
+	id S1754729AbbAFJgf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 04:36:35 -0500
+Received: from albert.telenet-ops.be ([195.130.137.90]:49813 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754545AbbAFJgU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 04:36:20 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-kernel@vger.kernel.org
+Subject: Build regressions/improvements in v3.19-rc3
+Date: Tue,  6 Jan 2015 10:36:19 +0100
+Message-Id: <1420536979-31149-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420529616-2757-1-git-send-email-famz@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 03:33:36PM +0800, Fam Zheng wrote:
-> There is a race condition in virtscsi_handle_event, when many device
-> hotplug/unplug events flush in quickly.
-> 
-> The scsi_remove_device in virtscsi_handle_transport_reset may trigger
-> the BUG_ON in scsi_target_reap, because the state is altered behind it,
-> probably by scsi_scan_host of another event. I'm able to reproduce it by
-> repeatedly plugging and unplugging a scsi disk with the same lun number.
-> 
-> To make is safe, a single thread workqueue local to the module is added
-> which runs the scan work. With this change, the panic goes away.
-> 
-> Signed-off-by: Fam Zheng <famz@redhat.com>
-> ---
-> 
-> v2: Use a single threaded workqueue instead of mutex to serialize work
-> (Venkatesh)
-> ---
->  drivers/scsi/virtio_scsi.c | 14 +++++++++++++-
->  1 file changed, 13 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-> index c52bb5d..71b0091 100644
-> --- a/drivers/scsi/virtio_scsi.c
-> +++ b/drivers/scsi/virtio_scsi.c
-> @@ -120,6 +120,8 @@ struct virtio_scsi {
->  
->  static struct kmem_cache *virtscsi_cmd_cache;
->  static mempool_t *virtscsi_cmd_pool;
-> +static struct workqueue_struct *virtscsi_scan_wq;
-> +
->  
+Below is the list of build error/warning regressions/improvements in
+v3.19-rc3[1] compared to v3.18[2].
 
-Don't add two empty lines please.
+Summarized:
+  - build errors: +86/-19
+  - build warnings: +242/-127
 
->  static inline struct Scsi_Host *virtio_scsi_host(struct virtio_device *vdev)
->  {
-> @@ -404,7 +406,7 @@ static void virtscsi_complete_event(struct virtio_scsi *vscsi, void *buf)
->  	struct virtio_scsi_event_node *event_node = buf;
->  
->  	if (!vscsi->stop_events)
-> -		queue_work(system_freezable_wq, &event_node->work);
-> +		queue_work(virtscsi_scan_wq, &event_node->work);
->  }
->  
->  static void virtscsi_event_done(struct virtqueue *vq)
-> @@ -1119,6 +1121,12 @@ static int __init init(void)
->  		pr_err("mempool_create() for virtscsi_cmd_pool failed\n");
->  		goto error;
->  	}
-> +	virtscsi_scan_wq = create_singlethread_workqueue("virtscsi-scan");
-> +	if (!virtscsi_scan_wq) {
-> +		pr_err("create_singlethread_workqueue() for virtscsi_scan_wq failed\n");
-> +		goto error;
-> +	}
-> +
->  	ret = register_virtio_driver(&virtio_scsi_driver);
->  	if (ret < 0)
->  		goto error;
-> @@ -1126,6 +1134,9 @@ static int __init init(void)
->  	return 0;
->  
->  error:
-> +	if (virtscsi_scan_wq) {
-> +		destroy_workqueue(virtscsi_scan_wq);
-> +	}
->  	if (virtscsi_cmd_pool) {
->  		mempool_destroy(virtscsi_cmd_pool);
->  		virtscsi_cmd_pool = NULL;
-> @@ -1142,6 +1153,7 @@ static void __exit fini(void)
->  	unregister_virtio_driver(&virtio_scsi_driver);
->  	mempool_destroy(virtscsi_cmd_pool);
->  	kmem_cache_destroy(virtscsi_cmd_cache);
-> +	destroy_workqueue(virtscsi_scan_wq);
+JFYI, when comparing v3.19-rc3[1] to v3.19-rc2[3], the summaries are:
+  - build errors: +64/-9
+  - build warnings: +123/-75
+
+Note that there may be false regressions, as some logs are incomplete.
+Still, they're build errors/warnings.
+
+As I haven't mastered kup yet, there's no verbose summary at
+http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/v3.19-rc3.summary.gz
+
+Happy fixing! ;-)
+
+Thanks to the linux-next team for providing the build service.
+
+[1] http://kisskb.ellerman.id.au/kisskb/head/8277/ (255 out of 262 configs)
+[2] http://kisskb.ellerman.id.au/kisskb/head/8168/ (all 262 configs)
+[3] http://kisskb.ellerman.id.au/kisskb/head/8257/ (all 262 configs)
 
 
-Please destroy in reverse order of initialization:
-between unregister_virtio_driver and mempool_destroy.
+*** ERRORS ***
 
->  }
->  module_init(init);
->  module_exit(fini);
-> -- 
-> 1.9.3
+86 regressions:
+  + /home/kisskb/slave/src/arch/arm/mm/dma-mapping.c: error: 'VM_ARM_DMA_CONSISTENT' undeclared (first use in this function):  => 1281:29, 1410:4, 1200:4
+  + /home/kisskb/slave/src/arch/arm/mm/dma-mapping.c: error: 'atomic_pool' undeclared (first use in this function):  => 1264:31
+  + /home/kisskb/slave/src/arch/arm/mm/dma-mapping.c: error: implicit declaration of function '__in_atomic_pool' [-Werror=implicit-function-declaration]:  => 1274:2
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'L_PTE_MT_BUFFERABLE' undeclared here (not in a function):  => 81:10
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'L_PTE_MT_DEV_CACHED' undeclared here (not in a function):  => 117:10
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'L_PTE_MT_DEV_NONSHARED' undeclared here (not in a function):  => 108:10
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'L_PTE_MT_DEV_SHARED' undeclared here (not in a function):  => 103:10
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'L_PTE_MT_DEV_WC' undeclared here (not in a function):  => 113:10
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'L_PTE_MT_MASK' undeclared here (not in a function):  => 76:11
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'L_PTE_MT_MINICACHE' undeclared here (not in a function):  => 94:10
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'L_PTE_MT_UNCACHED' undeclared here (not in a function):  => 77:10
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'L_PTE_MT_WRITEALLOC' undeclared here (not in a function):  => 99:10
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'L_PTE_MT_WRITEBACK' undeclared here (not in a function):  => 89:10
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'L_PTE_MT_WRITETHROUGH' undeclared here (not in a function):  => 85:10
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'L_PTE_RDONLY' undeclared here (not in a function):  => 61:11
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'L_PTE_SHARED' undeclared here (not in a function):  => 71:11
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'L_PTE_USER' undeclared here (not in a function):  => 56:11
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'L_PTE_XN' undeclared here (not in a function):  => 66:11
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'PMD_SECT_AP_READ' undeclared here (not in a function):  => 153:13
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'PMD_SECT_AP_WRITE' undeclared here (not in a function):  => 153:32
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'PMD_SECT_S' undeclared here (not in a function):  => 175:11
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'PMD_SECT_XN' undeclared here (not in a function):  => 170:11
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'PMD_SIZE' undeclared (first use in this function):  => 279:22
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'PTRS_PER_PGD' undeclared (first use in this function):  => 319:23
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'PTRS_PER_PMD' undeclared (first use in this function):  => 278:18
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'PTRS_PER_PTE' undeclared (first use in this function):  => 266:18
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'SECTION_SIZE' undeclared (first use in this function):  => 285:7
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'USER_PGTABLES_CEILING' undeclared (first use in this function):  => 223:13, 311:23
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near initialization for 'section_bits[0].mask'):  => 153:3
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near initialization for 'section_bits[1].mask'):  => 157:3
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near initialization for 'section_bits[1].val'):  => 158:3
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near initialization for 'section_bits[2].mask'):  => 161:3
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near initialization for 'section_bits[2].val'):  => 162:3
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near initialization for 'section_bits[3].mask'):  => 165:3
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near initialization for 'section_bits[3].val'):  => 166:3
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near initialization for 'section_bits[4].mask'):  => 170:3
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near initialization for 'section_bits[4].val'):  => 171:3
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near initialization for 'section_bits[5].mask'):  => 175:3
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near initialization for 'section_bits[5].val'):  => 176:3
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: implicit declaration of function 'pmd_large' [-Werror=implicit-function-declaration]:  => 280:3
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: implicit declaration of function 'pmd_none' [-Werror=implicit-function-declaration]:  => 280:3
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: implicit declaration of function 'pmd_present' [-Werror=implicit-function-declaration]:  => 280:3
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: implicit declaration of function 'pte_offset_kernel' [-Werror=implicit-function-declaration]:  => 262:2
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: initializer element is not constant:  => 162:3, 166:3, 171:3, 165:3, 157:3, 176:3, 170:3, 161:3, 158:3, 175:3, 153:3
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: invalid operands to binary * (have 'unsigned int' and 'const struct prot_bits *'):  => 279:20
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: invalid operands to binary / (have 'const struct prot_bits *' and 'long unsigned int'):  => 311:45
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: invalid operands to binary | (have 'const struct prot_bits *' and 'const struct prot_bits *'):  => 157:30, 153:30, 161:30, 165:30, 166:30
+  + /home/kisskb/slave/src/arch/arm/mm/init.c: error: 'SECTION_SIZE' undeclared (first use in this function):  => 733:2
+  + /home/kisskb/slave/src/arch/arm/mm/init.c: error: 'pmdval_t' undeclared here (not in a function):  => 633:12
+  + /home/kisskb/slave/src/arch/arm/mm/init.c: error: expected declaration specifiers or '...' before 'pmdval_t':  => 678:7, 677:55
+  + /home/kisskb/slave/src/arch/arm/mm/init.c: error: implicit declaration of function 'section_update' [-Werror=implicit-function-declaration]:  => 733:2
+  + /home/kisskb/slave/src/arch/arm/mm/init.c: error: unknown type name 'pmdval_t':  => 624:2, 625:2, 623:2
+  + /home/kisskb/slave/src/arch/sh/boards/mach-se/7343/irq.c: error: too few arguments to function 'ioread16':  => 44:2
+  + /home/kisskb/slave/src/arch/sh/boards/mach-se/7343/irq.c: error: too few arguments to function 'iowrite16':  => 123:2
+  + /home/kisskb/slave/src/arch/sh/boards/mach-se/7722/irq.c: error: too few arguments to function 'ioread16':  => 43:2
+  + /home/kisskb/slave/src/arch/sh/boards/mach-se/7722/irq.c: error: too few arguments to function 'iowrite16':  => 116:2
+  + /home/kisskb/slave/src/arch/sh/mm/cache-sh4.c: error: 'cached_to_uncached' undeclared (first use in this function):  => 99:17
+  + /home/kisskb/slave/src/arch/sh/mm/cache-sh4.c: error: implicit declaration of function 'cpu_context' [-Werror=implicit-function-declaration]:  => 192:2
+  + /home/kisskb/slave/src/drivers/coresight/coresight-etb10.c: error: implicit declaration of function 'of_get_coresight_platform_data' [-Werror=implicit-function-declaration]:  => 430:3
+  + /home/kisskb/slave/src/drivers/coresight/coresight-funnel.c: error: implicit declaration of function 'of_get_coresight_platform_data' [-Werror=implicit-function-declaration]:  => 189:3
+  + /home/kisskb/slave/src/drivers/coresight/coresight-replicator.c: error: implicit declaration of function 'of_get_coresight_platform_data' [-Werror=implicit-function-declaration]:  => 72:3
+  + /home/kisskb/slave/src/drivers/coresight/coresight-tmc.c: error: implicit declaration of function 'of_get_coresight_platform_data' [-Werror=implicit-function-declaration]:  => 625:3
+  + /home/kisskb/slave/src/drivers/coresight/coresight-tpiu.c: error: implicit declaration of function 'of_get_coresight_platform_data' [-Werror=implicit-function-declaration]:  => 131:3
+  + /home/kisskb/slave/src/drivers/usb/musb/blackfin.c: error: 'bfin_writel' undeclared here (not in a function):  => 476:13
+  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error: 'MUSB_BABBLE_CTL' undeclared here (not in a function):  => 67:17
+  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error: 'MUSB_CONFIGDATA' undeclared here (not in a function):  => 62:18
+  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error: 'MUSB_EPINFO' undeclared here (not in a function):  => 74:14
+  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error: 'MUSB_RAMINFO' undeclared here (not in a function):  => 75:15
+  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error: 'MUSB_RXFIFOADD' undeclared here (not in a function):  => 71:17
+  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error: 'MUSB_RXFIFOSZ' undeclared here (not in a function):  => 69:16
+  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error: 'MUSB_TXFIFOADD' undeclared here (not in a function):  => 70:17
+  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error: 'MUSB_TXFIFOSZ' undeclared here (not in a function):  => 68:16
+  + /home/kisskb/slave/src/include/linux/irq.h: error: conflicting types for 'ioread16':  => 856:19
+  + /home/kisskb/slave/src/include/linux/irq.h: error: conflicting types for 'iowrite16':  => 847:20
+  + /home/kisskb/slave/src/kernel/bounds.c: error: -mcall-aixdesc must be big endian:  => 1:0
+  + /home/kisskb/slave/src/scripts/mod/devicetable-offsets.c: error: -mcall-aixdesc must be big endian:  => 1:0
+  + /home/kisskb/slave/src/scripts/mod/empty.c: error: -mcall-aixdesc must be big endian:  => 1:0
+  + <stdin>: error: -mcall-aixdesc must be big endian:  => 1:0
+  + error: "csum_partial_copy_nocheck" [net/ipv6/ipv6.ko] undefined!:  => N/A
+  + error: initramfs.c: undefined reference to `__stack_chk_guard':  => .init.text+0x15fe)
+  + error: skge.c: relocation truncated to fit: R_PPC64_REL24 against symbol `._mcount' defined in .text section in arch/powerpc/kernel/entry_64.o:  => (.text+0x1ff95c8), (.text+0x1ff9cf8), (.text+0x1ff963c), (.text+0x1ff94e0)
+  + error: skge.c: relocation truncated to fit: R_PPC64_REL24 against symbol `.bitrev32' defined in .text section in lib/built-in.o:  => (.text+0x1ff9d34)
+  + error: skge.c: relocation truncated to fit: R_PPC64_REL24 against symbol `.crc32_le' defined in .text section in lib/built-in.o:  => (.text+0x1ff9d20), (.text+0x1ff95f0)
+  + error: skge.c: relocation truncated to fit: R_PPC64_REL24 against symbol `_restgpr0_25' defined in .text.save.restore section in arch/powerpc/lib/built-in.o:  => (.text+0x1ff94c0)
+  + error: skge.c: relocation truncated to fit: R_PPC64_REL24 against symbol `_restgpr0_26' defined in .text.save.restore section in arch/powerpc/lib/built-in.o:  => (.text+0x1ff89d8)
+  + error: skge.c: relocation truncated to fit: R_PPC64_REL24 against symbol `_savegpr0_29' defined in .text.save.restore section in arch/powerpc/lib/built-in.o:  => (.text+0x1ff94c8)
+
+19 improvements:
+  - /home/kisskb/slave/src/Documentation/mic/mpssd/mpssd.c: error: (near initialization for ‘virtblk_dev_page.blk_config.capacity’): 152:3 => 
+  - /home/kisskb/slave/src/Documentation/mic/mpssd/mpssd.c: error: (near initialization for ‘virtblk_dev_page.blk_config.seg_max’): 151:3 => 
+  - /home/kisskb/slave/src/Documentation/mic/mpssd/mpssd.c: error: (near initialization for ‘virtblk_dev_page.host_features’): 149:3 => 
+  - /home/kisskb/slave/src/Documentation/mic/mpssd/mpssd.c: error: (near initialization for ‘virtnet_dev_page.host_features’): 119:3 => 
+  - /home/kisskb/slave/src/Documentation/mic/mpssd/mpssd.c: error: braced-group within expression allowed only inside a function: 116:10, 93:10, 113:10, 96:10, 146:10 => 
+  - /home/kisskb/slave/src/Documentation/mic/mpssd/mpssd.c: error: initializer element is not constant: 149:3, 152:3, 151:3, 119:3 => 
+  - /home/kisskb/slave/src/arch/powerpc/lib/sstep.c: error: 'do_lfd' undeclared (first use in this function): 1874:29 => 
+  - /home/kisskb/slave/src/arch/powerpc/lib/sstep.c: error: 'do_lfs' undeclared (first use in this function): 1872:29 => 
+  - /home/kisskb/slave/src/arch/powerpc/lib/sstep.c: error: 'do_stfd' undeclared (first use in this function): 1928:30 => 
+  - /home/kisskb/slave/src/arch/powerpc/lib/sstep.c: error: 'do_stfs' undeclared (first use in this function): 1926:30 => 
+  - /home/kisskb/slave/src/arch/powerpc/lib/sstep.c: error: implicit declaration of function 'do_fp_load' [-Werror=implicit-function-declaration]: 1872:4 => 
+  - /home/kisskb/slave/src/arch/powerpc/lib/sstep.c: error: implicit declaration of function 'do_fp_store' [-Werror=implicit-function-declaration]: 1926:4 => 
+  - /home/kisskb/slave/src/arch/powerpc/xmon/xmon.c: error: implicit declaration of function 'dump_tlb_44x' [-Werror=implicit-function-declaration]: 912:4 => 
+  - /home/kisskb/slave/src/fs/hostfs/hostfs_user.c: error: 'AT_FDCWD' undeclared (first use in this function): 378 => 
+  - /home/kisskb/slave/src/fs/hostfs/hostfs_user.c: error: (Each undeclared identifier is reported only once: 378 => 
+  - /home/kisskb/slave/src/fs/hostfs/hostfs_user.c: error: for each function it appears in.): 378 => 
+  - error: relocation truncated to fit: R_PPC64_REL24 against symbol `._mcount' defined in .text section in arch/powerpc/kernel/entry_64.o: (.text+0x1ff887c), (.text+0x1ff8714), (.text+0x1ff8a24), (.text+0x1ff8794), (.text+0x1ff858c), (.text+0x1ff880c) => 
+  - error: relocation truncated to fit: R_PPC64_REL24 against symbol `_restgpr0_26' defined in .text.save.restore section in arch/powerpc/lib/built-in.o: (.text+0x1ff8b0c) => 
+  - error: relocation truncated to fit: R_PPC64_REL24 against symbol `_savegpr0_28' defined in .text.save.restore section in arch/powerpc/lib/built-in.o: (.text+0x1ff8580), (.text+0x1ff886c), (.text+0x1ff8b14) => 
+
+
+*** WARNINGS ***
+
+242 regressions:
+  + /home/kisskb/slave/src/arch/arm/mach-ebsa110/core.c: warning: 'ebsa110_io_desc' defined but not used [-Wunused-variable]:  => 72:24
+  + /home/kisskb/slave/src/arch/arm/mm/dma-mapping.c: warning: control reaches end of non-void function [-Wreturn-type]:  => 1201:1
+  + /home/kisskb/slave/src/arch/arm/mm/dma-mapping.c: warning: statement with no effect [-Wunused-value]:  => 1303:2, 1311:2
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: warning: assignment makes integer from pointer without a cast [enabled by default]:  => 279:8
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: warning: comparison between pointer and integer [enabled by default]:  => 278:16, 266:16, 223:11, 319:21
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: warning: initialization makes integer from pointer without a cast [enabled by default]:  => 311:23
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: warning: initialization makes pointer from integer without a cast [enabled by default]:  => 262:15
+  + /home/kisskb/slave/src/arch/arm/mm/dump.c: warning: passing argument 2 of 'note_page' makes integer from pointer without a cast [enabled by default]:  => 286:4
+  + /home/kisskb/slave/src/arch/arm/mm/init.c: warning: assignment makes integer from pointer without a cast [enabled by default]:  => 733:2
+  + /home/kisskb/slave/src/arch/arm/mm/init.c: warning: format '%lx' expects argument of type 'long unsigned int', but argument 4 has type 'struct section_perm *' [-Wformat]:  => 733:2
+  + /home/kisskb/slave/src/arch/cris/arch-v32/kernel/time.c: warning: 'bite_in_progress' defined but not used [-Wunused-variable]:  => 111:12
+  + /home/kisskb/slave/src/arch/cris/arch-v32/mach-fs/pinmux.c: warning: control reaches end of non-void function [-Wreturn-type]:  => 49:1
+  + /home/kisskb/slave/src/arch/powerpc/net/bpf_jit_comp.c: warning: the frame size of 2144 bytes is larger than 2048 bytes [-Wframe-larger-than=]:  => 573:1
+  + /home/kisskb/slave/src/arch/s390/kernel/perf_cpum_sf.c: warning: 'perf_push_sample' uses dynamic stack allocation [enabled by default]:  => 1042:1
+  + /home/kisskb/slave/src/arch/sh/boards/mach-se/7343/irq.c: warning: passing argument 2 of 'iowrite16' makes integer from pointer without a cast [enabled by default]:  => 123:2
+  + /home/kisskb/slave/src/arch/sh/boards/mach-se/7722/irq.c: warning: passing argument 2 of 'iowrite16' makes integer from pointer without a cast [enabled by default]:  => 116:2
+  + /home/kisskb/slave/src/arch/sh/kernel/cpu/sh4/../sh3/../../entry-common.S: Warning: overflow in branch to syscall_call; converted into longer instruction sequence:  => 208
+  + /home/kisskb/slave/src/arch/sh/kernel/cpu/sh4/../sh3/../../entry-common.S: Warning: overflow in branch to syscall_exit_work; converted into longer instruction sequence  CC      mm/mmzone.o:  => 380
+  + /home/kisskb/slave/src/arch/sh/kernel/cpu/sh4/../sh3/../../entry-common.S: Warning: overflow in branch to syscall_trace_entry; converted into longer instruction sequence:  => 349, 347
+  + /home/kisskb/slave/src/arch/x86/include/asm/string_32.h: warning: array subscript is above array bounds [-Warray-bounds]:  => 74:21
+  + /home/kisskb/slave/src/arch/x86/kvm/emulate.c: warning: left shift count >= width of type [enabled by default]:  => 3552:4
+  + /home/kisskb/slave/src/arch/x86/mm/ioremap.c: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]:  => 344:10
+  + /home/kisskb/slave/src/drivers/android/binder.c: warning: 'buffer' may be used uninitialized in this function [-Wuninitialized]:  => 714:24
+  + /home/kisskb/slave/src/drivers/android/binder.c: warning: 'buffer_size' may be used uninitialized in this function [-Wuninitialized]:  => 714:37
+  + /home/kisskb/slave/src/drivers/atm/ambassador.c: warning: passing argument 1 of 'virt_to_bus' discards 'volatile' qualifier from pointer target type [enabled by default]:  => 1762:3
+  + /home/kisskb/slave/src/drivers/char/ipmi/ipmi_ssif.c: warning: format '%ld' expects argument of type 'long int', but argument 5 has type '__kernel_suseconds_t' [-Wformat]:  => 971:3
+  + /home/kisskb/slave/src/drivers/clocksource/timer-marco.c: warning: unused variable 'timer_div' [-Wunused-variable]:  => 260:6
+  + /home/kisskb/slave/src/drivers/coresight/coresight-etb10.c: warning: assignment makes pointer from integer without a cast [enabled by default]:  => 430:9
+  + /home/kisskb/slave/src/drivers/coresight/coresight-funnel.c: warning: assignment makes pointer from integer without a cast [enabled by default]:  => 189:9
+  + /home/kisskb/slave/src/drivers/coresight/coresight-replicator.c: warning: assignment makes pointer from integer without a cast [enabled by default]:  => 72:9
+  + /home/kisskb/slave/src/drivers/coresight/coresight-tmc.c: warning: assignment makes pointer from integer without a cast [enabled by default]:  => 625:9
+  + /home/kisskb/slave/src/drivers/coresight/coresight-tpiu.c: warning: assignment makes pointer from integer without a cast [enabled by default]:  => 131:9
+  + /home/kisskb/slave/src/drivers/gpio/gpio-74xx-mmio.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]:  => 132:16
+  + /home/kisskb/slave/src/drivers/gpu/drm/gma500/cdv_intel_dp.c: warning: 'i2c_dp_aux_add_bus' is deprecated (declared at /home/kisskb/slave/src/drivers/gpu/drm/gma500/cdv_intel_dp.c:224) [-Wdeprecated-declarations]:  => 869:2
+  + /home/kisskb/slave/src/drivers/gpu/drm/i915/intel_sprite.c: warning: 'src_h' may be used uninitialized in this function [-Wuninitialized]:  => 1232:26
+  + /home/kisskb/slave/src/drivers/gpu/drm/i915/intel_sprite.c: warning: 'src_w' may be used uninitialized in this function [-Wuninitialized]:  => 1232:13
+  + /home/kisskb/slave/src/drivers/gpu/drm/i915/intel_sprite.c: warning: 'src_x' may be used uninitialized in this function [-Wuninitialized]:  => 1235:25
+  + /home/kisskb/slave/src/drivers/gpu/drm/i915/intel_sprite.c: warning: 'src_y' may be used uninitialized in this function [-Wuninitialized]:  => 1249:19
+  + /home/kisskb/slave/src/drivers/gpu/drm/nouveau/core/subdev/i2c/gm204.c: warning: 'stat' may be used uninitialized in this function [-Wuninitialized]:  => 155:31
+  + /home/kisskb/slave/src/drivers/mailbox/pcc.c: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]:  => 210:3, 175:3
+  + /home/kisskb/slave/src/drivers/media/common/b2c2/flexcop-fe-tuner.c: warning: 'flexcop_set_voltage' defined but not used [-Wunused-function]:  => 31:12
+  + /home/kisskb/slave/src/drivers/media/common/b2c2/flexcop-fe-tuner.c: warning: 'flexcop_sleep' defined but not used [-Wunused-function]:  => 59:12
+  + /home/kisskb/slave/src/drivers/media/dvb-frontends/dib8000.h: warning: return makes integer from pointer without a cast [enabled by default]:  => 72:2
+  + /home/kisskb/slave/src/drivers/media/pci/cx88/cx88-video.c: warning: 'restart_video_queue' defined but not used [-Wunused-function]:  => 415:12
+  + /home/kisskb/slave/src/drivers/memstick/core/mspro_block.c: warning: control reaches end of non-void function [-Wreturn-type]/home/kisskb/slave/src/drivers/ide/ide-io.c:295:1: warning: control reaches end of non-void function [-Wreturn-type]:  => 663:1
+  + /home/kisskb/slave/src/drivers/mtd/chips/cfi_cmdset_0001.c: warning: the frame size of 1452 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 1835:1
+  + /home/kisskb/slave/src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1384 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 417:1
+  + /home/kisskb/slave/src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1452 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 417:1
+  + /home/kisskb/slave/src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1700 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 972:1
+  + /home/kisskb/slave/src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1792 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 972:1
+  + /home/kisskb/slave/src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 2156 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 651:1
+  + /home/kisskb/slave/src/drivers/net/ethernet/amd/xgbe/xgbe-main.c: warning: 'xgbe_resume' defined but not used [-Wunused-function]:  => 474:12
+  + /home/kisskb/slave/src/drivers/net/ethernet/amd/xgbe/xgbe-main.c: warning: 'xgbe_suspend' defined but not used [-Wunused-function]:  => 455:12
+  + /home/kisskb/slave/src/drivers/net/ethernet/mellanox/mlx4/alloc.c: warning: 'uid' may be used uninitialized in this function [-Wuninitialized]:  => 416:9
+  + /home/kisskb/slave/src/drivers/net/ethernet/rocker/rocker.c: warning: 'rocker_port_vlan_flood_group' uses dynamic stack allocation [enabled by default]:  => 2694:1
+  + /home/kisskb/slave/src/drivers/net/ethernet/rocker/rocker.c: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]:  => 809:9
+  + /home/kisskb/slave/src/drivers/net/ethernet/sfc/ef10.c: warning: 'efx_ef10_free_vis' uses dynamic stack allocation [enabled by default]  CC      net/sched/cls_basic.o:  => 296:1
+  + /home/kisskb/slave/src/drivers/net/ethernet/sfc/ptp.c: warning: 'efx_ptp_enable' uses dynamic stack allocation [enabled by default]  CC      sound/soc/codecs/ssm2602.o:  => 589:1
+  + /home/kisskb/slave/src/drivers/net/fddi/defxx.c: warning: 'bar_len[0]' may be used uninitialized in this function [-Wuninitialized]:  => 583:10, 3726:3
+  + /home/kisskb/slave/src/drivers/net/fddi/defxx.c: warning: 'bar_start[0]' may be used uninitialized in this function [-Wuninitialized]:  => 583:10, 3726:3
+  + /home/kisskb/slave/src/drivers/net/wan/lmc/lmc_main.c: warning: passing argument 1 of 'virt_to_bus' discards 'volatile' qualifier from pointer target type [enabled by default]  CC      sound/soc/codecs/cs42xx8-i2c.o:  => 1898:9
+  + /home/kisskb/slave/src/drivers/net/wan/lmc/lmc_main.c: warning: passing argument 1 of 'virt_to_bus' discards 'volatile' qualifier from pointer target type [enabled by default]:  => 1900:5, 1885:9, 1876:9, 1887:5, 1901:5, 1898:9
+  + /home/kisskb/slave/src/drivers/net/wireless/ath/carl9170/fwcmd.h: warning: 'packed' attribute ignored for field of type 'struct <anonymous>[]' [-Wattributes]  CC      drivers/media/rc/keymaps/rc-dvbsky.o:  => 123:2
+  + /home/kisskb/slave/src/drivers/net/wireless/ath/carl9170/fwcmd.h: warning: 'packed' attribute ignored for field of type 'struct <anonymous>[]' [-Wattributes]  CC      drivers/mtd/nand/nand_bch.o:  => 123:2
+  + /home/kisskb/slave/src/drivers/net/wireless/ath/carl9170/fwcmd.h: warning: 'packed' attribute ignored for field of type 'struct <anonymous>[]' [-Wattributes]  CC      drivers/usb/host/oxu210hp-hcd.o:  => 123:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43/b43.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]  CC      drivers/gpu/drm/drm_memory.o:  => 651:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43/b43.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]  CC      drivers/media/usb/dvb-usb/dvb-usb-remote.o:  => 651:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43/b43.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]  CC      drivers/media/usb/pwc/pwc-misc.o:  => 651:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43/b43.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]  CC      drivers/misc/fsa9480.o:  => 651:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43/b43.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]  CC      drivers/staging/iio/cdc/ad7150.o:  => 651:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43/b43.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]  CC      drivers/staging/iio/iio_simple_dummy_events.o:  => 651:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43/b43.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]  CC      drivers/usb/gadget/usbstring.o:  => 651:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43/b43.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]  CC      drivers/usb/storage/protocol.o:  => 651:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43/b43.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]  CC      drivers/usb/storage/transport.o:  => 651:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43/b43.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]  CC [M]  drivers/staging/comedi/drivers/dt2814.o:  => 651:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43/b43.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]  LD      drivers/media/usb/cx231xx/cx231xx-alsa.o:  => 651:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43/b43.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]  LD      drivers/thermal/thermal_sys.o:  => 651:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43/b43.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]/home/kisskb/slave/src/arch/cris/arch-v10/drivers/sync_serial.c: In function 'start_dma':In file included from /home/kisskb/slave/src/drivers/net/wireless/b43legacy/leds.c:29:0::  => 651:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43/b43.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]/home/kisskb/slave/src/drivers/staging/comedi/drivers/dmm32at.c:482:3: warning: statement with no effect [-Wunused-value]:  => 651:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43/b43.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]In file included from /home/kisskb/slave/src/drivers/net/wireless/b43/ppr.c:19:0::  => 651:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43/b43.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]In file included from /home/kisskb/slave/src/drivers/net/wireless/b43/rfkill.c:25:0::  => 651:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43/b43.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]In file included from /home/kisskb/slave/src/drivers/net/wireless/b43/tables.c:28:0::  => 651:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43/b43.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]In file included from /home/kisskb/slave/src/drivers/net/wireless/b43legacy/main.c:46:0::  => 651:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43/xmit.h: warning: 'packed' attribute ignored for field of type 'struct <anonymous>' [-Wattributes]  CC      drivers/staging/iio/iio_simple_dummy.o:  => 64:3
+  + /home/kisskb/slave/src/drivers/net/wireless/b43legacy/b43legacy.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]  CC      drivers/media/rc/keymaps/rc-cinergy-1400.o:  => 381:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43legacy/b43legacy.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]  CC      drivers/mtd/chips/cfi_probe.o:  => 381:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43legacy/b43legacy.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]  LD      drivers/misc/carma/built-in.o:  => 381:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43legacy/b43legacy.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]  LD      drivers/ssb/ssb.o:  => 381:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43legacy/b43legacy.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]  MK_FW   firmware/keyspan/usa49wlc.fw.gen.S:  => 381:2
+  + /home/kisskb/slave/src/drivers/net/wireless/b43legacy/b43legacy.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]In file included from /home/kisskb/slave/src/drivers/net/wireless/b43legacy/sysfs.c:27:0::  => 381:2
+  + /home/kisskb/slave/src/drivers/net/wireless/iwlwifi/mvm/d3.c: warning: 'fw_status' may be used uninitialized in this function [-Wuninitialized]:  => 1536:37
+  + /home/kisskb/slave/src/drivers/net/wireless/p54/lmac.h: warning: 'packed' attribute ignored for field of type 'struct <anonymous>[3]' [-Wattributes]  CC      drivers/misc/lattice-ecp3-config.o:  => 377:2
+  + /home/kisskb/slave/src/drivers/net/wireless/p54/lmac.h: warning: 'packed' attribute ignored for field of type 'struct <anonymous>[3]' [-Wattributes]  CC      drivers/usb/serial/aircable.o:  => 377:2
+  + /home/kisskb/slave/src/drivers/net/wireless/p54/lmac.h: warning: 'packed' attribute ignored for field of type 'struct <anonymous>[3]' [-Wattributes]In file included from /home/kisskb/slave/src/drivers/net/wireless/p54/fwio.c:28:0::  => 377:2
+  + /home/kisskb/slave/src/drivers/net/wireless/p54/lmac.h: warning: 'packed' attribute ignored for field of type 'struct <anonymous>[3]' [-Wattributes]In file included from /home/kisskb/slave/src/drivers/net/wireless/p54/main.c:27:0::  => 377:2
+  + /home/kisskb/slave/src/drivers/net/wireless/p54/lmac.h: warning: 'packed' attribute ignored for field of type 'struct <anonymous>[3]' [-Wattributes]In file included from /home/kisskb/slave/src/drivers/net/wireless/p54/p54spi.c:37:0::  => 377:2
+  + /home/kisskb/slave/src/drivers/pwm/pwm-atmel-hlcdc.c: warning: 'clk_period_ns' may be used uninitialized in this function [-Wuninitialized]:  => 72:55
+  + /home/kisskb/slave/src/drivers/scsi/advansys.c: warning: #warning this driver is still not properly converted to the DMA API [-Wcpp]  CC      drivers/acpi/acpica/uthex.o:  => 71:2
+  + /home/kisskb/slave/src/drivers/scsi/am53c974.c: warning: 'resid' may be used uninitialized in this function [-Wuninitialized]:  => 183:3
+  + /home/kisskb/slave/src/drivers/spi/spi-atmel.c: warning: 'atmel_spi_resume' defined but not used [-Wunused-function]:  => 1484:12
+  + /home/kisskb/slave/src/drivers/spi/spi-atmel.c: warning: 'atmel_spi_suspend' defined but not used [-Wunused-function]:  => 1466:12
+  + /home/kisskb/slave/src/drivers/staging/clocking-wizard/clk-xlnx-clock-wizard.c: warning: 'max' may be used uninitialized in this function [-Wuninitialized]:  => 99:6
+  + /home/kisskb/slave/src/drivers/staging/vt6656/mac.h: warning: 'packed' attribute ignored for field of type 'struct <anonymous>' [-Wattributes]  CC      drivers/scsi/libfc/fc_rport.o:  => 365:3
+  + /home/kisskb/slave/src/drivers/staging/vt6656/mac.h: warning: 'packed' attribute ignored for field of type 'struct <anonymous>' [-Wattributes]  CC      drivers/tty/serial/8250/8250_dma.o:  => 365:3
+  + /home/kisskb/slave/src/drivers/staging/vt6656/mac.h: warning: 'packed' attribute ignored for field of type 'struct <anonymous>' [-Wattributes]/home/kisskb/slave/src/drivers/net/wireless/ti/wlcore/spi.c: In function 'wl12xx_spi_raw_write':  CC      drivers/staging/rtl8188eu/hal/rtl8188e_cmd.o:  => 365:3
+  + /home/kisskb/slave/src/drivers/staging/vt6656/mac.h: warning: 'packed' attribute ignored for field of type 'struct <anonymous>' [-Wattributes]In file included from /home/kisskb/slave/src/drivers/staging/vt6656/card.c:45:0::  => 365:3
+  + /home/kisskb/slave/src/drivers/tty/serial/8250/8250_core.c: warning: 'flags' may be used uninitialized in this function:  => 3186:16
+  + /home/kisskb/slave/src/drivers/tty/serial/crisv10.c: warning: 'ser_interrupt' defined but not used [-Wunused-function]In file included from /home/kisskb/slave/src/drivers/staging/vt6656/power.c:37:0::  => 2506:1
+  + /home/kisskb/slave/src/drivers/tty/serial/mcf.c: warning: unused variable 'pp' [-Wunused-variable]:  => 444:19, 201:19
+  + /home/kisskb/slave/src/drivers/usb/musb/blackfin.c: warning: 'bfin_fifo_offset' defined but not used [-Wunused-function]:  => 36:12
+  + /home/kisskb/slave/src/drivers/usb/musb/blackfin.c: warning: 'binf_writel' defined but not used [-Wunused-function]:  => 66:13
+  + /home/kisskb/slave/src/drivers/video/backlight/adp8860_bl.c: warning: 'reg_val' may be used uninitialized in this function [-Wuninitialized]:  => 569:10, 625:11
+  + /home/kisskb/slave/src/drivers/video/backlight/adp8870_bl.c: warning: 'reg_val' may be used uninitialized in this function [-Wuninitialized]:  => 811:11
+  + /home/kisskb/slave/src/drivers/video/fbdev/sis/sis_main.c: warning: #warning Neither CONFIG_FB_SIS_300 nor CONFIG_FB_SIS_315 is set [-Wcpp]:  => 64:2
+  + /home/kisskb/slave/src/drivers/video/fbdev/sis/sis_main.c: warning: #warning sisfb will not work! [-Wcpp]:  => 65:2
+  + /home/kisskb/slave/src/drivers/video/fbdev/sis/sis_main.c: warning: 'sisfb_post_map_vram' defined but not used [-Wunused-function]:  => 4127:13
+  + /home/kisskb/slave/src/fs/btrfs/raid56.c: warning: 'finish_parity_scrub' uses dynamic stack allocation [enabled by default]:  => 2501:1
+  + /home/kisskb/slave/src/fs/buffer.c: warning: format '%zu' expects argument of type 'size_t', but argument 3 has type 'unsigned int' [-Wformat=]:  => 243:4
+  + /home/kisskb/slave/src/fs/ceph/addr.c: warning: format '%lu' expects argument of type 'long unsigned int', but argument 10 has type 'size_t' [-Wformat]:  => 1419:2
+  + /home/kisskb/slave/src/fs/ceph/locks.c: warning: 'lock_type' may be used uninitialized in this function [-Wuninitialized]:  => 140:40
+  + /home/kisskb/slave/src/fs/cifs/cifssmb.c: warning: format '%zu' expects argument of type 'size_t', but argument 3 has type 'unsigned int' [-Wformat=]:  => 1500:2
+  + /home/kisskb/slave/src/fs/cifs/cifssmb.c: warning: format '%zu' expects argument of type 'size_t', but argument 4 has type 'unsigned int' [-Wformat=]:  => 1458:3, 1500:2
+  + /home/kisskb/slave/src/fs/cifs/cifssmb.c: warning: format '%zu' expects argument of type 'size_t', but argument 5 has type 'unsigned int' [-Wformat=]:  => 1458:3
+  + /home/kisskb/slave/src/fs/cifs/connect.c: warning: format '%zd' expects argument of type 'signed size_t', but argument 2 has type 'ssize_t' [-Wformat=]:  => 2399:3, 2390:3, 2382:3, 2409:3
+  + /home/kisskb/slave/src/fs/cifs/connect.c: warning: format '%zd' expects argument of type 'signed size_t', but argument 3 has type 'ssize_t' [-Wformat=]:  => 2390:3, 2399:3, 2409:3, 2382:3
+  + /home/kisskb/slave/src/fs/cifs/file.c: warning: format '%zd' expects argument of type 'signed size_t', but argument 2 has type 'size_t' [-Wformat=]:  => 1653:2
+  + /home/kisskb/slave/src/fs/cifs/file.c: warning: format '%zd' expects argument of type 'signed size_t', but argument 3 has type 'size_t' [-Wformat=]:  => 1653:2
+  + /home/kisskb/slave/src/fs/cifs/file.c: warning: format '%zu' expects argument of type 'size_t', but argument 4 has type 'unsigned int' [-Wformat=]:  => 2893:4, 2900:4
+  + /home/kisskb/slave/src/fs/cifs/file.c: warning: format '%zu' expects argument of type 'size_t', but argument 5 has type 'unsigned int' [-Wformat=]:  => 3347:4, 2893:4, 2900:4, 3354:4
+  + /home/kisskb/slave/src/fs/cifs/file.c: warning: format '%zu' expects argument of type 'size_t', but argument 6 has type 'unsigned int' [-Wformat=]:  => 3354:4, 3347:4
+  + /home/kisskb/slave/src/fs/cifs/readdir.c: warning: format '%zd' expects argument of type 'signed size_t', but argument 2 has type 'size_t' [-Wformat=]:  => 700:3
+  + /home/kisskb/slave/src/fs/cifs/readdir.c: warning: format '%zd' expects argument of type 'signed size_t', but argument 3 has type 'size_t' [-Wformat=]:  => 700:3
+  + /home/kisskb/slave/src/fs/cifs/transport.c: warning: format '%zu' expects argument of type 'size_t', but argument 3 has type 'unsigned int' [-Wformat=]:  => 350:3
+  + /home/kisskb/slave/src/fs/cifs/transport.c: warning: format '%zu' expects argument of type 'size_t', but argument 4 has type 'unsigned int' [-Wformat=]:  => 350:3
+  + /home/kisskb/slave/src/fs/ext4/extents.c: warning: 'lblock' may be used uninitialized in this function [-Wuninitialized]:  => 2344:58
+  + /home/kisskb/slave/src/fs/ext4/extents.c: warning: 'len' may be used uninitialized in this function [-Wuninitialized]:  => 2344:58
+  + /home/kisskb/slave/src/fs/nfsd/nfs4xdr.c: warning: 'end' may be used uninitialized in this function [-Wuninitialized]:  => 1792:42, 1792:11
+  + /home/kisskb/slave/src/fs/nfsd/nfs4xdr.c: warning: 'str' may be used uninitialized in this function [-Wuninitialized]:  => 1787:9
+  + /home/kisskb/slave/src/include/asm-generic/atomic-long.h: warning: 'counter' may be used uninitialized in this function [-Wuninitialized]:  => 148:2
+  + /home/kisskb/slave/src/include/linux/kernel.h: warning: comparison of distinct pointer types lacks a cast [enabled by default]:  => 710:17
+  + /home/kisskb/slave/src/include/linux/page_counter.h: warning: 'counter' may be used uninitialized in this function [-Wuninitialized]:  => 48:21
+  + /home/kisskb/slave/src/include/linux/unaligned/le_byteshift.h: warning: array subscript is above array bounds [-Warray-bounds]:  => 25:7
+  + /home/kisskb/slave/src/include/net/ipx.h: warning: 'packed' attribute ignored for field of type '__be16' [-Wattributes]  CC      drivers/media/rc/keymaps/rc-tbs-nec.o:  => 30:2
+  + /home/kisskb/slave/src/ipc/shm.c: warning: 'file' may be used uninitialized in this function [-Wuninitialized]:  => 1310:59
+  + /home/kisskb/slave/src/ipc/shm.c: warning: 'file' may be used uninitialized in this function:  => 1233
+  + /home/kisskb/slave/src/kernel/events/core.c: warning: '__perf_sw_event' uses dynamic stack allocation [enabled by default]:  => 5926:1
+  + /home/kisskb/slave/src/kernel/events/core.c: warning: 'perf_event_comm_output' uses dynamic stack allocation [enabled by default]:  => 5278:1
+  + /home/kisskb/slave/src/kernel/events/core.c: warning: 'perf_event_mmap_output' uses dynamic stack allocation [enabled by default]:  => 5410:1
+  + /home/kisskb/slave/src/kernel/events/core.c: warning: 'perf_event_read_event' uses dynamic stack allocation [enabled by default]:  => 5070:1
+  + /home/kisskb/slave/src/kernel/events/core.c: warning: 'perf_event_task_output' uses dynamic stack allocation [enabled by default]:  => 5185:1
+  + /home/kisskb/slave/src/kernel/events/core.c: warning: 'perf_log_throttle' uses dynamic stack allocation [enabled by default]:  => 5605:1
+  + /home/kisskb/slave/src/kernel/events/core.c: warning: 'perf_swevent_hrtimer' uses dynamic stack allocation [enabled by default]:  => 6334:1
+  + /home/kisskb/slave/src/kernel/events/core.c: warning: 'perf_tp_event' uses dynamic stack allocation [enabled by default]:  => 6203:1
+  + /home/kisskb/slave/src/kernel/events/ring_buffer.c: warning: 'perf_output_begin' uses dynamic stack allocation [enabled by default]:  => 203:1
+  + /home/kisskb/slave/src/lib/assoc_array.c: warning: format '%zu' expects argument of type 'size_t', but argument 2 has type 'unsigned int' [-Wformat=]:  => 899:3, 799:2
+  + /home/kisskb/slave/src/lib/lz4/lz4defs.h: warning: "A32" redefined [enabled by default]:  => 46:0
+  + /home/kisskb/slave/src/mm/dmapool.c: warning: format '%Zu' expects argument of type 'size_t', but argument 6 has type 'unsigned int' [-Wformat=]:  => 99:6
+  + /home/kisskb/slave/src/mm/dmapool.c: warning: format '%Zu' expects argument of type 'size_t', but argument 7 has type 'unsigned int' [-Wformat=]:  => 99:6
+  + /home/kisskb/slave/src/mm/memcontrol.c: warning: 'mem_cgroup_move_account' defined but not used [-Wunused-function]:  => 2941:12
+  + /home/kisskb/slave/src/mm/percpu-km.c: warning: format '%zu' expects argument of type 'size_t', but argument 2 has type 'unsigned int' [-Wformat=]:  => 107:10
+  + /home/kisskb/slave/src/mm/percpu.c: warning: format '%zu' expects argument of type 'size_t', but argument 2 has type 'unsigned int' [-Wformat=]:  => 1040:3
+  + /home/kisskb/slave/src/mm/percpu.c: warning: format '%zu' expects argument of type 'size_t', but argument 3 has type 'unsigned int' [-Wformat=]:  => 1040:3, 1446:9
+  + /home/kisskb/slave/src/mm/percpu.c: warning: format '%zu' expects argument of type 'size_t', but argument 4 has type 'unsigned int' [-Wformat=]:  => 1446:9, 895:3
+  + /home/kisskb/slave/src/mm/percpu.c: warning: format '%zu' expects argument of type 'size_t', but argument 5 has type 'unsigned int' [-Wformat=]:  => 1446:9, 895:3
+  + /home/kisskb/slave/src/mm/percpu.c: warning: format '%zu' expects argument of type 'size_t', but argument 6 has type 'unsigned int' [-Wformat=]:  => 1446:9
+  + /home/kisskb/slave/src/mm/percpu.c: warning: format '%zu' expects argument of type 'size_t', but argument 7 has type 'unsigned int' [-Wformat=]:  => 1446:9
+  + /home/kisskb/slave/src/mm/percpu.c: warning: format '%zu' expects argument of type 'size_t', but argument 8 has type 'unsigned int' [-Wformat=]:  => 1446:9
+  + /home/kisskb/slave/src/mm/slab_common.c: warning: format '%zu' expects argument of type 'size_t', but argument 3 has type 'unsigned int' [-Wformat=]:  => 583:6
+  + /home/kisskb/slave/src/net/core/dev.c: warning: 'tail' may be used uninitialized in this function [-Wuninitialized]  CC      drivers/media/usb/pwc/pwc-ctrl.o:  => 2738:15
+  + /home/kisskb/slave/src/net/core/flow.c: warning: format '%zu' expects argument of type 'size_t', but argument 2 has type 'unsigned int' [-Wformat=]:  => 401:4
+  + /home/kisskb/slave/src/net/ipv4/raw.c: warning: passing argument 3 of 'raw_send_hdrinc' discards qualifiers from pointer target type:  => 629
+  + /home/kisskb/slave/src/net/ipv6/raw.c: warning: passing argument 2 of 'rawv6_send_hdrinc' discards qualifiers from pointer target type:  => 890
+  + /home/kisskb/slave/src/net/mac80211/tdls.c: warning: 'subband_start' may be used uninitialized in this function [-Wuninitialized]:  => 84:43
+  + /home/kisskb/slave/src/net/rds/iw_rdma.c: warning: the frame size of 1052 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 200:1
+  + /home/kisskb/slave/src/net/rds/iw_rdma.c: warning: the frame size of 1056 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 200:1
+  + /home/kisskb/slave/src/net/sunrpc/svc.c: warning: format '%Zd' expects argument of type 'signed size_t', but argument 3 has type 'size_t' [-Wformat=]:  => 1239:4
+  + /home/kisskb/slave/src/security/keys/keyctl.c: warning: format '%zu' expects argument of type 'size_t', but argument 4 has type 'unsigned int' [-Wformat=]:  => 1037:2
+  + /home/kisskb/slave/src/security/keys/keyring.c: warning: format '%zu' expects argument of type 'size_t', but argument 3 has type 'unsigned int' [-Wformat=]:  => 485:2
+  + /home/kisskb/slave/src/security/keys/keyring.c: warning: format '%zu' expects argument of type 'size_t', but argument 4 has type 'unsigned int' [-Wformat=]:  => 458:2
+  + /home/kisskb/slave/src/security/keys/keyring.c: warning: format '%zu' expects argument of type 'size_t', but argument 5 has type 'unsigned int' [-Wformat=]:  => 430:2
+  + /home/kisskb/slave/src/security/keys/keyring.c: warning: format '%zu' expects argument of type 'size_t', but argument 6 has type 'unsigned int' [-Wformat=]:  => 430:2
+  + /home/kisskb/slave/src/security/keys/request_key.c: warning: format '%zu' expects argument of type 'size_t', but argument 5 has type 'unsigned int' [-Wformat=]:  => 212:2
+  + /home/kisskb/slave/src/security/keys/request_key.c: warning: format '%zu' expects argument of type 'size_t', but argument 6 has type 'unsigned int' [-Wformat=]:  => 526:2
+  + /home/kisskb/slave/src/security/keys/request_key_auth.c: warning: format '%zu' expects argument of type 'size_t', but argument 4 has type 'unsigned int' [-Wformat=]:  => 77:3
+  + /home/kisskb/slave/src/sound/core/pcm_lib.c: warning: 'curr_tstamp.tv_nsec' may be used uninitialized in this function:  => 244
+  + /home/kisskb/slave/src/sound/core/pcm_lib.c: warning: 'curr_tstamp.tv_sec' may be used uninitialized in this function:  => 244
+  + /home/kisskb/slave/src/sound/drivers/serial-u16550.c: warning: 'uart' may be used uninitialized in this function [-Wuninitialized]:  => 963:6
+  + /home/kisskb/slave/src/sound/soc/codecs/cs35l32.c: warning: 'val' may be used uninitialized in this function [-Wuninitialized]:  => 314:2
+  + <stdin>: warning: #warning syscall execveat not implemented [-Wcpp]:  => 1250:2
+  + <stdin>: warning: #warning syscall execveat not implemented:  => 1250:2
+  + warning: (PPC_PSERIES && PM_SLEEP_SMP) selects HOTPLUG_CPU which has unmet direct dependencies (SMP && (PPC_PSERIES || PPC_PMAC || PPC_POWERNV || PPC_85xx && !PPC_E500MC)):  => N/A
+  + warning: (SND_SOC_INTEL_BYTCR_RT5640_MACH && SND_SOC_INTEL_CHT_BSW_RT5672_MACH) selects SND_SST_IPC_ACPI which has unmet direct dependencies (SOUND && !M68K && !UML && SND && SND_SOC && ACPI):  => N/A
+  + warning: (SPU_FS) selects MEMORY_HOTPLUG which has unmet direct dependencies ((SPARSEMEM || X86_64_ACPI_NUMA) && ARCH_ENABLE_MEMORY_HOTPLUG && (IA64 || X86 || PPC_BOOK3S_64 || SUPERH || S390)):  => N/A
+  + warning: (USB_OTG_FSM && FSL_USB2_OTG && USB_MV_OTG) selects USB_OTG which has unmet direct dependencies (USB_SUPPORT && USB && PM):  => N/A
+  + warning: drivers/built-in.o(.data+0x10a4): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe():  => N/A
+  + warning: drivers/built-in.o(.data+0xa78): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe():  => N/A
+  + warning: drivers/built-in.o(.data+0xb18): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe():  => N/A
+  + warning: drivers/built-in.o(.data+0xc84): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe():  => N/A
+  + warning: drivers/built-in.o(.data+0xd9c): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip():  => N/A
+  + warning: drivers/built-in.o(.data+0xdfc): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip():  => N/A
+  + warning: drivers/built-in.o(.data+0xe5c): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip():  => N/A
+  + warning: drivers/built-in.o(.data+0xecc): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe():  => N/A
+  + warning: drivers/built-in.o(.text+0x197467): Section mismatch in reference from the function dmar_walk_remapping_entries() to the function .init.text:dmar_table_print_dmar_entry():  => N/A
+  + warning: drivers/built-in.o(.text+0x237826): Section mismatch in reference from the function dmar_walk_remapping_entries() to the function .init.text:dmar_table_print_dmar_entry():  => N/A
+  + warning: drivers/built-in.o(.text+0x2f7bc4): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init():  => N/A
+  + warning: drivers/built-in.o(.text+0x57b1c): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init():  => N/A
+  + warning: drivers/iommu/built-in.o(.text+0x51c2): Section mismatch in reference from the function dmar_walk_remapping_entries() to the function .init.text:dmar_table_print_dmar_entry():  => N/A
+  + warning: drivers/iommu/built-in.o(.text+0xa83b): Section mismatch in reference from the function dmar_walk_remapping_entries() to the function .init.text:dmar_table_print_dmar_entry():  => N/A
+  + warning: drivers/net/built-in.o(.text+0x45e60): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init():  => N/A
+  + warning: drivers/parisc/built-in.o(.data+0x178): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe():  => N/A
+  + warning: drivers/parisc/built-in.o(.data+0x218): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe():  => N/A
+  + warning: drivers/parisc/built-in.o(.data+0x384): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe():  => N/A
+  + warning: drivers/parisc/built-in.o(.data+0x49c): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip():  => N/A
+  + warning: drivers/parisc/built-in.o(.data+0x4fc): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip():  => N/A
+  + warning: drivers/parisc/built-in.o(.data+0x55c): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip():  => N/A
+  + warning: drivers/parisc/built-in.o(.data+0x5cc): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe():  => N/A
+  + warning: drivers/parisc/built-in.o(.data+0x7a4): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe():  => N/A
+  + warning: vmlinux.o(.data+0x11e4): Section mismatch in reference from the variable sercons to the function .init.text:console_setup():  => N/A
+  + warning: vmlinux.o(.data+0x11ec): Section mismatch in reference from the variable sercons to the function .init.text:console_setup():  => N/A
+  + warning: vmlinux.o(.data+0x121c): Section mismatch in reference from the variable sercons0 to the function .init.text:console_setup():  => N/A
+  + warning: vmlinux.o(.data+0x1224): Section mismatch in reference from the variable sercons0 to the function .init.text:console_setup():  => N/A
+  + warning: vmlinux.o(.data+0x1254): Section mismatch in reference from the variable sercons1 to the function .init.text:console_setup():  => N/A
+  + warning: vmlinux.o(.data+0x125c): Section mismatch in reference from the variable sercons1 to the function .init.text:console_setup():  => N/A
+  + warning: vmlinux.o(.data+0x128c): Section mismatch in reference from the variable sercons2 to the function .init.text:console_setup():  => N/A
+  + warning: vmlinux.o(.data+0x1294): Section mismatch in reference from the variable sercons2 to the function .init.text:console_setup():  => N/A
+  + warning: vmlinux.o(.data+0x12c4): Section mismatch in reference from the variable sercons3 to the function .init.text:console_setup():  => N/A
+  + warning: vmlinux.o(.data+0x12cc): Section mismatch in reference from the variable sercons3 to the function .init.text:console_setup():  => N/A
+  + warning: vmlinux.o(.data+0x416b8): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe():  => N/A
+  + warning: vmlinux.o(.data+0x41758): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe():  => N/A
+  + warning: vmlinux.o(.data+0x418c4): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe():  => N/A
+  + warning: vmlinux.o(.data+0x419dc): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip():  => N/A
+  + warning: vmlinux.o(.data+0x41a3c): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip():  => N/A
+  + warning: vmlinux.o(.data+0x41a9c): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip():  => N/A
+  + warning: vmlinux.o(.data+0x41b0c): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe():  => N/A
+  + warning: vmlinux.o(.data+0x41ce4): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe():  => N/A
+  + warning: vmlinux.o(.text+0x1f6e30): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init():  => N/A
+  + warning: vmlinux.o(.text+0x42): Section mismatch in reference from the (unknown reference) (unknown) to the variable .init.text:_inram:  => N/A
+  + warning: vmlinux.o(.text+0x48): Section mismatch in reference from the variable _inflash0 to the variable .init.text:_inflash:  => N/A
+  + warning: vmlinux.o(.text+0x5e7c9f): Section mismatch in reference from the function dmar_walk_remapping_entries() to the function .init.text:dmar_table_print_dmar_entry():  => N/A
+  + warning: vmlinux.o(.text+0x74f83a): Section mismatch in reference from the function dmar_walk_remapping_entries() to the function .init.text:dmar_table_print_dmar_entry():  => N/A
+  + warning: vmlinux.o(.text+0x8daf3): Section mismatch in reference from the function intel_scu_devices_create() to the function .init.text:i2c_register_board_info():  => N/A
+  + warning: vmlinux.o(.text+0x9c41fc): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init():  => N/A
+
+127 improvements:
+  - /home/kisskb/slave/src/Documentation/networking/timestamping/txtimestamp.c: warning: format ‘%ld’ expects argument of type ‘long int’, but argument 3 has type ‘int64_t’ [-Wformat=]: 93:3 => 
+  - /home/kisskb/slave/src/arch/arm/include/asm/atomic.h: warning: 'undo_list' may be used uninitialized in this function [-Wuninitialized]: 194:1 => 
+  - /home/kisskb/slave/src/arch/arm/oprofile/../../../drivers/oprofile/buffer_sync.c: warning: 'code' may be used uninitialized in this function [-Wuninitialized]: 346:17 => 
+  - /home/kisskb/slave/src/arch/arm/oprofile/../../../drivers/oprofile/buffer_sync.c: warning: 'pc' may be used uninitialized in this function [-Wuninitialized]: 343:10 => 
+  - /home/kisskb/slave/src/arch/cris/arch-v32/kernel/debugport.c: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]: 122:2 => 
+  - /home/kisskb/slave/src/arch/powerpc/net/bpf_jit_comp.c: warning: the frame size of 2176 bytes is larger than 2048 bytes [-Wframe-larger-than=]: 570:1 => 
+  - /home/kisskb/slave/src/drivers/base/regmap/regmap.c: warning: 'ret' may be used uninitialized in this function [-Wuninitialized]: 2178:6 => 
+  - /home/kisskb/slave/src/drivers/block/nvme-core.c: warning: 'bvprv.bv_len' may be used uninitialized in this function [-Wuninitialized]: 587:17, 590:18 => 
+  - /home/kisskb/slave/src/drivers/block/nvme-core.c: warning: 'bvprv.bv_offset' may be used uninitialized in this function [-Wuninitialized]: 587:17, 590:18 => 
+  - /home/kisskb/slave/src/drivers/block/nvme-core.c: warning: 'bvprv.bv_page' may be used uninitialized in this function [-Wuninitialized]: 587:17 => 
+  - /home/kisskb/slave/src/drivers/char/tpm/tpm_atmel.c: warning: 'base' may be used uninitialized in this function [-Wuninitialized]: 204:3 => 
+  - /home/kisskb/slave/src/drivers/char/xillybus/xillybus_core.c: warning: 'idt_handle.chandesc' may be used uninitialized in this function [-Wuninitialized]: 2023:5 => 
+  - /home/kisskb/slave/src/drivers/char/xillybus/xillybus_core.c: warning: 'idt_handle.entries' may be used uninitialized in this function [-Wuninitialized]: 2023:5 => 
+  - /home/kisskb/slave/src/drivers/edac/ppc4xx_edac.c: warning: initialization from incompatible pointer type [enabled by default]: 924:28 => 
+  - /home/kisskb/slave/src/drivers/gpio/gpio-grgpio.c: warning: 'lirq' may be used uninitialized in this function [-Wuninitialized]: 326:27 => 
+  - /home/kisskb/slave/src/drivers/gpu/drm/armada/armada_drv.c: warning: 'fb' may be used uninitialized in this function [-Wuninitialized]: 69:30 => 
+  - /home/kisskb/slave/src/drivers/gpu/drm/armada/armada_drv.c: warning: 'ret' may be used uninitialized in this function [-Wuninitialized]: 99:6 => 
+  - /home/kisskb/slave/src/drivers/gpu/drm/drm_bufs.c: warning: 'master' may be used uninitialized in this function [-Wuninitialized]: 466:4 => 
+  - /home/kisskb/slave/src/drivers/gpu/drm/drm_dp_mst_topology.c: warning: 'hdrlen' may be used uninitialized in this function [-Wuninitialized]: 349:23 => 
+  - /home/kisskb/slave/src/drivers/gpu/drm/drm_dp_mst_topology.c: warning: control reaches end of non-void function [-Wreturn-type]: 1812:1 => 
+  - /home/kisskb/slave/src/drivers/gpu/drm/drm_edid.c: warning: 'clock2' may be used uninitialized in this function [-Wuninitialized]: 2575:3 => 
+  - /home/kisskb/slave/src/drivers/gpu/drm/drm_edid.c: warning: 'hdmi_len' may be used uninitialized in this function [-Wuninitialized]: 2808:2 => 
+  - /home/kisskb/slave/src/drivers/gpu/drm/drm_edid_load.c: warning: 'fwdata' may be used uninitialized in this function [-Wuninitialized]: 205:2 => 
+  - /home/kisskb/slave/src/drivers/gpu/drm/drm_lock.c: warning: passing argument 1 of '__cmpxchg' discards 'volatile' qualifier from pointer target type [enabled by default]: 272:3, 196:3, 358:5, 311:3, 239:3 => 
+  - /home/kisskb/slave/src/drivers/i2c/busses/i2c-gpio.c: warning: 'scl_pin' may be used uninitialized in this function [-Wuninitialized]: 172:18 => 
+  - /home/kisskb/slave/src/drivers/i2c/busses/i2c-gpio.c: warning: 'sda_pin' may be used uninitialized in this function [-Wuninitialized]: 150:6 => 
+  - /home/kisskb/slave/src/drivers/iio/light/lm3533-als.c: warning: 'enable' may be used uninitialized in this function [-Wuninitialized]: 424:2 => 
+  - /home/kisskb/slave/src/drivers/infiniband/ulp/iser/iser_verbs.c: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]: 1172:31, 1198:14, 1203:14, 1171:33 => 
+  - /home/kisskb/slave/src/drivers/leds/leds-max8997.c: warning: 'val' may be used uninitialized in this function [-Wuninitialized]: 92:7 => 
+  - /home/kisskb/slave/src/drivers/media/platform/exynos-gsc/gsc-core.c: warning: 'high_plane' may be used uninitialized in this function [-Wuninitialized]: 359:13, 371:31 => 
+  - /home/kisskb/slave/src/drivers/media/platform/exynos-gsc/gsc-core.c: warning: 'low_plane' may be used uninitialized in this function [-Wuninitialized]: 359:30 => 
+  - /home/kisskb/slave/src/drivers/media/tuners/max2165.c: warning: 'fraction' may be used uninitialized in this function [-Wuninitialized]: 206:11 => 
+  - /home/kisskb/slave/src/drivers/media/tuners/max2165.c: warning: 'quotient' may be used uninitialized in this function [-Wuninitialized]: 208:19 => 
+  - /home/kisskb/slave/src/drivers/misc/bmp085.c: warning: 'pressure' may be used uninitialized in this function [-Wuninitialized]: 363:3 => 
+  - /home/kisskb/slave/src/drivers/misc/pch_phub.c: warning: 'pch_phub_restore_reg_conf' defined but not used [-Wunused-function]: 223:13 => 
+  - /home/kisskb/slave/src/drivers/misc/pch_phub.c: warning: 'pch_phub_save_reg_conf' defined but not used [-Wunused-function]: 162:13 => 
+  - /home/kisskb/slave/src/drivers/mmc/host/omap_hsmmc.c: warning: 'rx_req' may be used uninitialized in this function [-Wuninitialized]: 2184:10 => 
+  - /home/kisskb/slave/src/drivers/mtd/chips/cfi_cmdset_0001.c: warning: the frame size of 1456 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 1835:1 => 
+  - /home/kisskb/slave/src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1392 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 417:1, 972:1 => 972:1
+  - /home/kisskb/slave/src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1448 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 417:1 => 
+  - /home/kisskb/slave/src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1712 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 972:1 => 
+  - /home/kisskb/slave/src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1788 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 972:1 => 
+  - /home/kisskb/slave/src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 2172 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 651:1 => 
+  - /home/kisskb/slave/src/drivers/mtd/maps/bfin-async-flash.c: warning: unused variable 'ret' [-Wunused-variable]: 129:6 => 
+  - /home/kisskb/slave/src/drivers/net/ethernet/intel/igb/igb_main.c: warning: 'igb_resume' defined but not used [-Wunused-function]: 7402:12 => 
+  - /home/kisskb/slave/src/drivers/net/ethernet/intel/igb/igb_main.c: warning: 'wake' may be used uninitialized in this function [-Wuninitialized]: 7500:19 => 
+  - /home/kisskb/slave/src/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c: warning: 'stmmac_pltfr_resume' defined but not used [-Wunused-function]: 387:12 => 
+  - /home/kisskb/slave/src/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c: warning: 'stmmac_pltfr_suspend' defined but not used [-Wunused-function]: 373:12 => 
+  - /home/kisskb/slave/src/drivers/of/platform.c: warning: 'addr' may be used uninitialized in this function [-Wuninitialized]: 85:16 => 
+  - /home/kisskb/slave/src/drivers/pci/pci-driver.c: warning: 'pci_restore_standard_config' defined but not used [-Wunused-function]: 477:12 => 
+  - /home/kisskb/slave/src/drivers/power/bq27x00_battery.c: warning: 'bq27x00_powersupply_init' defined but not used [-Wunused-function]: 732:12 => 
+  - /home/kisskb/slave/src/drivers/power/bq27x00_battery.c: warning: 'bq27x00_powersupply_unregister' defined but not used [-Wunused-function]: 766:13 => 
+  - /home/kisskb/slave/src/drivers/regulator/s2mps11.c: warning: 'ramp_shift' may be used uninitialized in this function [-Wuninitialized]: 227:56 => 
+  - /home/kisskb/slave/src/drivers/scsi/NCR5380.h: warning: 'NCR5380_write_info' declared 'static' but never defined [-Wunused-function]: 329:27 => 
+  - /home/kisskb/slave/src/drivers/scsi/osst.h: warning: 'packed' attribute ignored for field of type 'u32' [-Wattributes]  CC [M]  drivers/staging/comedi/drivers/mpc624.o: 96:2 => 
+  - /home/kisskb/slave/src/drivers/staging/android/binder.c: warning: 'buffer' may be used uninitialized in this function [-Wuninitialized]: 710:24 => 
+  - /home/kisskb/slave/src/drivers/staging/android/binder.c: warning: 'buffer_size' may be used uninitialized in this function [-Wuninitialized]: 710:37 => 
+  - /home/kisskb/slave/src/drivers/staging/android/sync_debug.c: warning: format '%ld' expects argument of type 'long int', but argument 4 has type '__kernel_suseconds_t' [-Wformat]: 100:3 => 
+  - /home/kisskb/slave/src/drivers/staging/bcm/CmHost.c: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]: 1503:3, 1564:3, 1546:3 => 
+  - /home/kisskb/slave/src/drivers/staging/dgnc/dgnc_tty.c: warning: format '%ld' expects argument of type 'long int', but argument 4 has type '__kernel_suseconds_t' [-Wformat]: 477:2 => 
+  - /home/kisskb/slave/src/drivers/staging/vt6655/device_main.c: warning: the frame size of 1280 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 2993:1 => 
+  - /home/kisskb/slave/src/drivers/staging/vt6655/device_main.c: warning: the frame size of 1296 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 2993:1 => 
+  - /home/kisskb/slave/src/drivers/staging/vt6655/device_main.c: warning: the frame size of 1304 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 2993:1 => 
+  - /home/kisskb/slave/src/drivers/tty/serial/crisv10.c: warning: 'ser_interrupt' defined but not used [-Wunused-function]  CC      drivers/staging/iio/meter/ade7854-spi.o: 2506:1 => 
+  - /home/kisskb/slave/src/drivers/usb/core/hcd-pci.c: warning: 'ehci_wait_for_companions' defined but not used [-Wunused-function]: 149:13 => 
+  - /home/kisskb/slave/src/fs/autofs4/waitq.c: warning: 'wq' may be used uninitialized in this function [-Wuninitialized]: 461:3 => 
+  - /home/kisskb/slave/src/fs/cifs/netmisc.c: warning: comparison of distinct pointer types lacks a cast [enabled by default]: 937:23, 941:22 => 
+  - /home/kisskb/slave/src/fs/cifs/netmisc.c: warning: comparison of distinct pointer types lacks a cast: 941, 937 => 
+  - /home/kisskb/slave/src/fs/f2fs/checkpoint.c: warning: control reaches end of non-void function [-Wreturn-type]: 105:1 => 
+  - /home/kisskb/slave/src/fs/ncpfs/dir.c: warning: unused variable 'sb' [-Wunused-variable]: 134:23 => 
+  - /home/kisskb/slave/src/fs/overlayfs/readdir.c: warning: 'err' may be used uninitialized in this function [-Wuninitialized]: 314:2 => 
+  - /home/kisskb/slave/src/include/asm-generic/div64.h: warning: comparison of distinct pointer types lacks a cast [enabled by default]: 43:28 => 
+  - /home/kisskb/slave/src/include/linux/file.h: warning: 'output.file' may be used uninitialized in this function [-Wuninitialized]: 39:7 => 
+  - /home/kisskb/slave/src/include/linux/file.h: warning: 'output.flags' may be used uninitialized in this function [-Wuninitialized]: 38:2 => 
+  - /home/kisskb/slave/src/include/linux/percpu-refcount.h: warning: 'percpu_count' may be used uninitialized in this function [-Wuninitialized]: 222:1, 249:1, 188:1, 164:1 => 
+  - /home/kisskb/slave/src/include/linux/scatterlist.h: warning: comparison of unsigned expression >= 0 is always true [-Wtype-limits]  CC [M]  drivers/usb/misc/usblcd.o: 115:2 => 
+  - /home/kisskb/slave/src/include/linux/time.h: warning: 'busy_until.tv_sec' may be used uninitialized in this function [-Wuninitialized]: 28:2 => 
+  - /home/kisskb/slave/src/ipc/sem.c: warning: 'ulp' may be used uninitialized in this function [-Wuninitialized]: 1734:11 => 
+  - /home/kisskb/slave/src/kernel/cgroup.c: warning: 'root' may be used uninitialized in this function: 1693 => 
+  - /home/kisskb/slave/src/kernel/sched/fair.c: warning: 'update_cfs_rq_blocked_load' declared inline after being called: 287 => 
+  - /home/kisskb/slave/src/kernel/sched/fair.c: warning: previous declaration of 'update_cfs_rq_blocked_load' was here: 287 => 
+  - /home/kisskb/slave/src/kernel/user_namespace.c: warning: 'first' may be used uninitialized in this function [-Wuninitialized]: 165:6, 188:6, 211:6 => 
+  - /home/kisskb/slave/src/lib/swiotlb.c: warning: 'dev_addr' may be used uninitialized in this function [-Wuninitialized]: 676:14 => 
+  - /home/kisskb/slave/src/mm/memory.c: warning: 'ptep' may be used uninitialized in this function [-Wuninitialized]: 3508:9 => 
+  - /home/kisskb/slave/src/mm/page_isolation.c: warning: 'order' may be used uninitialized in this function [-Wuninitialized]: 126:15 => 
+  - /home/kisskb/slave/src/mm/percpu.c: warning: 'err' may be used uninitialized in this function [-Wuninitialized]: 1040:3 => 
+  - /home/kisskb/slave/src/mm/slab.c: warning: passing argument 2 of '__cache_free' discards qualifiers from pointer target type: 3566 => 
+  - /home/kisskb/slave/src/net/rds/iw_rdma.c: warning: the frame size of 1040 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 200:1 => 
+  - /home/kisskb/slave/src/net/rds/iw_rdma.c: warning: the frame size of 1048 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 200:1 => 
+  - /home/kisskb/slave/src/scripts/kconfig/menu.c: warning: 'jump' may be used uninitialized in this function [-Wmaybe-uninitialized]: 590:18 => 
+  - /home/kisskb/slave/src/scripts/kconfig/menu.c: warning: ‘jump’ may be used uninitialized in this function [-Wmaybe-uninitialized]: 590:18 => 
+  - /home/kisskb/slave/src/security/integrity/iint.c: warning: 'iint' may be used uninitialized in this function [-Wuninitialized]: 35:31 => 
+  - /home/kisskb/slave/src/sound/soc/intel/sst-atom-controls.c: warning: 'sst_fill_and_send_cmd' defined but not used [-Wunused-function]: 70:12 => 
+  - /home/kisskb/slave/src/sound/soc/intel/sst-mfld-platform-pcm.c: warning: 'sst_media_dai_ops' defined but not used [-Wunused-variable]: 454:31 => 
+  - warning: (IA64) selects PM which has unmet direct dependencies (PM_SLEEP || PM_RUNTIME): N/A => 
+  - warning: (PPC_CELL_NATIVE && AKEBONO && 440EPX && 440GRX && 440GX && 440SPe && 460EX && 460SX && APM821xx && 405EX) selects IBM_EMAC_EMAC4 which has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM): N/A => 
+  - warning: (PPC_CELL_NATIVE && BLUESTONE && CANYONLANDS && GLACIER && EIGER && 440EPX && 440GRX && 440GX && 460SX && 405EX) selects IBM_EMAC_RGMII which has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM): N/A => 
+  - warning: (PPC_CELL_NATIVE && CANYONLANDS && GLACIER && 440EP && 440EPX && 440GRX && 440GP && 440GX && 460SX && 405GP) selects IBM_EMAC_ZMII which has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM): N/A => 
+  - warning: (USB_OTG_FSM && FSL_USB2_OTG && USB_MV_OTG) selects USB_OTG which has unmet direct dependencies (USB_SUPPORT && USB && PM_RUNTIME): N/A => 
+  - warning: drivers/built-in.o(.data+0x107c): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe(): N/A => 
+  - warning: drivers/built-in.o(.data+0xa70): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe(): N/A => 
+  - warning: drivers/built-in.o(.data+0xb10): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe(): N/A => 
+  - warning: drivers/built-in.o(.data+0xc74): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe(): N/A => 
+  - warning: drivers/built-in.o(.data+0xd84): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip(): N/A => 
+  - warning: drivers/built-in.o(.data+0xde4): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip(): N/A => 
+  - warning: drivers/built-in.o(.data+0xe44): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip(): N/A => 
+  - warning: drivers/built-in.o(.data+0xeac): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe(): N/A => 
+  - warning: drivers/built-in.o(.text+0x2e7e58): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init(): N/A => 
+  - warning: drivers/built-in.o(.text+0x56e4c): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init(): N/A => 
+  - warning: drivers/net/built-in.o(.text+0x43f1c): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init(): N/A => 
+  - warning: drivers/parisc/built-in.o(.data+0x170): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe(): N/A => 
+  - warning: drivers/parisc/built-in.o(.data+0x210): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe(): N/A => 
+  - warning: drivers/parisc/built-in.o(.data+0x374): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe(): N/A => 
+  - warning: drivers/parisc/built-in.o(.data+0x484): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip(): N/A => 
+  - warning: drivers/parisc/built-in.o(.data+0x4e4): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip(): N/A => 
+  - warning: drivers/parisc/built-in.o(.data+0x544): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip(): N/A => 
+  - warning: drivers/parisc/built-in.o(.data+0x5ac): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe(): N/A => 
+  - warning: drivers/parisc/built-in.o(.data+0x77c): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe(): N/A => 
+  - warning: vmlinux.o(.data+0x41650): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe(): N/A => 
+  - warning: vmlinux.o(.data+0x416f0): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe(): N/A => 
+  - warning: vmlinux.o(.data+0x41854): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe(): N/A => 
+  - warning: vmlinux.o(.data+0x41964): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip(): N/A => 
+  - warning: vmlinux.o(.data+0x419c4): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip(): N/A => 
+  - warning: vmlinux.o(.data+0x41a24): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip(): N/A => 
+  - warning: vmlinux.o(.data+0x41a8c): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe(): N/A => 
+  - warning: vmlinux.o(.data+0x41c5c): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe(): N/A => 
+  - warning: vmlinux.o(.text+0x8a6c7): Section mismatch in reference from the function intel_scu_devices_create() to the function .init.text:i2c_register_board_info(): N/A => 
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
