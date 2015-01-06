@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756427AbbAFSbs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 13:31:48 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:50669 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753364AbbAFSbq (ORCPT
+	id S932462AbbAFSdJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 13:33:09 -0500
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:50655 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047AbbAFSdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 13:31:46 -0500
-Message-ID: <54AC2A0B.3040807@cogentembedded.com>
-Date: Tue, 06 Jan 2015 21:31:39 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
-        Tony Prisk <linux@prisktech.co.nz>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-CC: linux-fbdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] video: vt8500lcdfb: remove unneeded continue
-References: <1420548302-11489-1-git-send-email-sudipm.mukherjee@gmail.com>
-In-Reply-To: <1420548302-11489-1-git-send-email-sudipm.mukherjee@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	Tue, 6 Jan 2015 13:33:07 -0500
+Message-ID: <1420569175.5947.4.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: TCP connection issues against Amazon S3
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Erik Grinaker <erik@bengler.no>
+Cc: linux-kernel@vger.kernel.org, Yuchung Cheng <ycheng@google.com>,
+        netdev <netdev@vger.kernel.org>
+Date: Tue, 06 Jan 2015 10:32:55 -0800
+In-Reply-To: <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no>
+References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no>
+	 <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no>
+	 <1420564837.32621.30.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Tue, 2015-01-06 at 18:17 +0000, Erik Grinaker wrote:
 
-On 01/06/2015 03:45 PM, Sudip Mukherjee wrote:
+> Yes, pcap was taken on receiver (195.159.221.106).
+> 
+> > If the sender is broken, changing the kernel on receiver wont help.
+> > 
+> > BTW not using sack (on 54.231.132.98) is terrible for performance in
+> > lossy environments.
+> 
+> It may well be that the sender is broken; however, the sender is
+> Amazon S3, so I do not have any control over it. And in any case, the
+> problem goes away with 3.11.10 on receiver, but persists with 3.12.0
+> (or later) on receiver, so there must be some change in 3.12.0 which
+> has caused this to trigger.
 
-> continue is not needed at the end of a for loop
+In fact I saw nothing obviously wrong in pcap (but I have not done a
+full analysis)
 
-> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> ---
->   drivers/video/fbdev/vt8500lcdfb.c | 1 -
->   1 file changed, 1 deletion(-)
+It might simply be an application bug, triggering a timeout too soon.
 
-> diff --git a/drivers/video/fbdev/vt8500lcdfb.c b/drivers/video/fbdev/vt8500lcdfb.c
-> index ffaf29e..6716bf5 100644
-> --- a/drivers/video/fbdev/vt8500lcdfb.c
-> +++ b/drivers/video/fbdev/vt8500lcdfb.c
-> @@ -115,7 +115,6 @@ static int vt8500lcd_set_par(struct fb_info *info)
->   	for (i = 0; i < 8; i++) {
->   		if (bpp_values[i] == info->var.bits_per_pixel) {
->   			reg_bpp = i;
-> -			continue;
->   		}
+A kernel change can be good, but by changing timings a bit, trigger
+application bugs.
 
-    {} are not needed any more either. ;-)
-
-[...]
-
-WBR, Sergei
 
