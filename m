@@ -1,68 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497AbbAFTXO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 14:23:14 -0500
-Received: from mout.kundenserver.de ([212.227.126.130]:51561 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939AbbAFTXL (ORCPT
+	id S1755140AbbAFT0J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 14:26:09 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:52800 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426AbbAFT0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 14:23:11 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linaro-acpi@lists.linaro.org
-Cc: Jon Masters <jcm@redhat.com>, Catalin Marinas <catalin.marinas@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Rob Herring <robh@kernel.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [Linaro-acpi] [PATCH v5 18/18] Documentation: ACPI for ARM64
-Date: Tue, 06 Jan 2015 20:21:35 +0100
-Message-ID: <1596791.jNp4rCPpnN@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <54AC0C4B.1000907@redhat.com>
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <20150106112000.GA8829@e104818-lin.cambridge.arm.com> <54AC0C4B.1000907@redhat.com>
+	Tue, 6 Jan 2015 14:26:07 -0500
+Date: Tue, 6 Jan 2015 11:25:59 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Kent Overstreet <kmo@daterainc.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Dave Jones <davej@codemonkey.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Chris Mason <clm@fb.com>
+Subject: Re: Linux 3.19-rc3
+Message-ID: <20150106192559.GF5280@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CA+icZUVy2rG3PwKhPTQojLEH2O8FD-0myO2sN8hQV4_+r9YNQQ@mail.gmail.com>
+ <20150106110112.GQ29390@twins.programming.kicks-ass.net>
+ <20150106110730.GA25846@kmo-pixel>
+ <20150106114215.GS29390@twins.programming.kicks-ass.net>
+ <20150106114842.GP10476@twins.programming.kicks-ass.net>
+ <20150106120121.GB26845@kmo-pixel>
+ <20150106122006.GW29390@twins.programming.kicks-ass.net>
+ <54ABDB4B.7070008@hurleysoftware.com>
+ <20150106173808.GB5280@linux.vnet.ibm.com>
+ <54AC224C.4030903@hurleysoftware.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:zOdFSCn9galJfVoyab5YqdkiRqJbDuamvIGmGzoxZyh8HNC4yp2
- Xe8MO9GuvMx5gKlH7IL2IAyimG+ASenIAQrOy9tPp8xIcaFEtsJXsktn35R8Z2uId2DuSeQ
- dzWqLzRpyBuYmIiScZYuiMlKjj26WBbxtocsxyRbTf35t7g9/TqjGBpeXZrZiUXgb/j1h0q
- oI4RUdBXXoF3dLYAD1vPw==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54AC224C.4030903@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15010619-0029-0000-0000-000006FD41DB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 06 January 2015 11:24:43 Jon Masters wrote:
-> On 01/06/2015 06:20 AM, Catalin Marinas wrote:
+On Tue, Jan 06, 2015 at 12:58:36PM -0500, Peter Hurley wrote:
+> On 01/06/2015 12:38 PM, Paul E. McKenney wrote:
+> > On Tue, Jan 06, 2015 at 07:55:39AM -0500, Peter Hurley wrote:
+> >> [ +cc Paul McKenney ]
+> >>
+> >> On 01/06/2015 07:20 AM, Peter Zijlstra wrote:
+> >>> On Tue, Jan 06, 2015 at 04:01:21AM -0800, Kent Overstreet wrote:
+> >>>> On Tue, Jan 06, 2015 at 12:48:42PM +0100, Peter Zijlstra wrote:
+> >>>>>
+> >>>>>
+> >>>>> Looking at that closure stuff, why is there an smp_mb() in
+> >>>>> closure_wake_up() ? Typically wakeup only needs to imply a wmb.
+> >>>>>
+> >>>>> Also note that __closure_wake_up() starts with a fully serializing
+> >>>>> instruction (xchg) and thereby already implies the full barrier.
+> >>>>
+> >>>> Probably no good reason, that code is pretty old :)
+> >>>>
+> >>>> If I was to hazard a guess, I had my own lockless linked lists before llist.h
+> >>>> existed and perhaps I did it with atomic_xchg() - which was at least documented
+> >>>> to not imply a barrier. I suppose it should just be dropped.
+> >>>
+> >>> We (probably me) should probably audit all the atomic_xchg()
+> >>> implementations and documentation and fix that. I was very much under
+> >>> the impression it should imply a full barrier (and it certainly does on
+> >>> x86), the documentation should state the rule that any atomic_ function
+> >>> that returns a result is fully serializing, therefore, because
+> >>> atomic_xchg() has a return value, it should too.
+> >>
+> >> memory-barriers.txt and atomic_ops.txt appear to contradict each other here,
+> >> but I think that's because atomic_ops.txt has drifted toward an
+> >> arch-implementer's POV:
+> >>
+> >> 260:atomic_xchg requires explicit memory barriers around the operation.
+> >>
+> >> All the serializing atomic operations have descriptions like this.
+> > 
+> > I am not seeing the contradiction.
+> > 
+> > You posted the relevant line from atomic_ops.txt.  The relevant passage
+> > from memory-barriers.txt is as follows:
+> > 
+> > 	Any atomic operation that modifies some state in memory and
+> > 	returns information about the state (old or new) implies an
+> > 	SMP-conditional general memory barrier (smp_mb()) on each side
+> > 	of the actual operation (with the exception of explicit lock
+> > 	operations, described later).  These include:
+> > 
+> > 		xchg();
+> > 		...
+> > 		atomic_xchg();			atomic_long_xchg();
+> > 
+> > So it appears to me that both documents require full barriers before and
+> > after any atomic exchange operation in SMP builds.  Therefore, any
+> > SMP-capable architecture that omits these barriers is buggy.
 > 
-> > Now, what's preventing a vendor firmware from providing only ACPI
-> > tables? Do we enforce it in some way (arm-acpi.txt, kernel warning etc.)
-> > that both DT and ACPI are supported, or at least that dts files are
-> > merged in the kernel first?
+> Sure, I understand that, but I think the atomic_ops.txt is easy to
+> misinterpret.
 > 
-> I know of some (server) firmware that will only provide ACPI in the
-> medium term, so this is coming.
+> > So, what am I missing here?
+> 
+> Well, it's a matter of the intended audience. There is a significant
+> difference between:
+> 
+> static inline int atomic_xchg(atomic_t *v, int new)
+> {
+> 	/* this arch doesn't have serializing xchg() */
+> 	smp_mb();
+> 	/* arch xchg */
+> 	smp_mb();
+> }
+> 
+> and
+> 
+> 	smp_mb();
+> 	atomic_xchg(&v, 1);
+> 	smp_mb();
+> 
+> but both have "explicit memory barriers around the operation."
 
-Medium term is fine, as long as they are not expecting their hardware
-to be supported by Linux before ACPI support is stable enough for
-general consumption. I have no idea how long that will take, but my
-guess is that we shouldn't plan on supporting ACPI-only platforms in
-Linux for the next couple of years and just demand that all drivers
-have DT support to let users add a valid DTB that can describe the
-hardware.
+The atomic_ops.txt file is pretty explicit about its intended audience
+right at the beginning of the document:
 
-That should always be possible using something like grub2 as an
-intermediate that boots using the UEFI interfaces and loads the
-kernel and DT from disk.
+	This document is intended to serve as a guide to Linux port
+	maintainers on how to implement atomic counter, bitops, and spinlock
+	interfaces properly.
 
-	Arnd
+It is intended for people implementing the atomic operations more than
+for people making use of them.
+
+							Thanx, Paul
+
