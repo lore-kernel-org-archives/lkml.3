@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456AbbAFAbu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 19:31:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60744 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060AbbAFAbs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 19:31:48 -0500
-Date: Mon, 5 Jan 2015 16:31:46 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, jweiner@redhat.com,
-        dave.hansen@linux.intel.com, rientjes@google.com, linux-mm@kvack.org
-Subject: Re: [PATCH v2] fs: proc: task_mmu: show page size in
- /proc/<pid>/numa_maps
-Message-Id: <20150105163146.c9576414bce83978278cb549@linux-foundation.org>
-In-Reply-To: <20150106002134.GC28105@t510.redhat.com>
-References: <734bca19b3a8f4e191ccc9055ad4740744b5b2b6.1420464466.git.aquini@redhat.com>
-	<20150105133500.e0ce4b090e6b378c3edc9c56@linux-foundation.org>
-	<20150105225504.GC1795@t510.redhat.com>
-	<20150105152037.5a33e34652db6b82fcfd46bf@linux-foundation.org>
-	<20150106002134.GC28105@t510.redhat.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753257AbbAEIiA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 03:38:00 -0500
+Received: from mga09.intel.com ([134.134.136.24]:16998 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751615AbbAEIh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 03:37:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,698,1413270000"; 
+   d="scan'208";a="664456559"
+From: xiaomin1 <xiaoming.wang@intel.com>
+To: arnd@arndb.de, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        chuansheng.liu@intel.com
+Cc: xiaomin1 <xiaoming.wang@intel.com>,
+        Zhang Dongxing <dongxing.zhang@intel.com>
+Subject: [PATCH] move file->f_op->open out of mutex (misc_mtx) in misc_open
+Date: Tue,  6 Jan 2015 08:34:07 +0800
+Message-Id: <1420504447-9670-1-git-send-email-xiaoming.wang@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 5 Jan 2015 19:21:35 -0500 Rafael Aquini <aquini@redhat.com> wrote:
+misc_mtx was used to mutex misc_list.
+But file->f_op->open may be blocked by downloading
+firmware in some devices' open.
+So move file->f_op->open out of mutex (misc_mtx)
+in misc_open to avoid this block.
+It also make code more efficiency.
 
-> > > > 
-> > > > 
-> > > > > +	seq_printf(m, " kernelpagesize_kB=%lu", vma_kernel_pagesize(vma) >> 10);
-> > > > 
-> > > > This changes the format of the numa_maps file and can potentially break
-> > > > existing parsers.  Please discuss.
-> > 
-> > ^^ ??
-> >
-> Sorry I overlooked it.
-> 
-> Parsers indeed would have to be adjusted to cope with an extra line element
-> (they already have to do so, similarly, for the conditional 'huge' hint).
-> Despite I don't think of it as a showstopper (as is), I think we can consider
-> moving it to EOL, if its actual printout position turns out to be an issue.
->  
-> 
-> For instance, with this patch a numa_maps line would look like the following:
-> 
->  7ff965200000 default file=/anon_hugepage\040(deleted) huge kernelpagesize_kB=2048 anon=5 dirty=5 N0=5
-> 
-> 
-> or it could look like this, if we decide to switch kernelpagesize_kB position to EOL,
-> for the sake of parsers:
-> 
->  7ff965200000 default file=/anon_hugepage\040(deleted) huge anon=5 dirty=5 N0=5 kernelpagesize_kB=2048
+Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
+Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
+---
+ drivers/char/misc.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-hm, OK, numa_maps is actually a pretty complex thing: it's a
-combination of `name' and `name=value'.  Some fields may be absent. 
-Parsers need to fully parse each field and can't make assumptions based
-on field number.
-
-So yes, I agree that any parser which actually works is unlikely to
-break due to this change.  However it's probably a bit safer to put the
-new field at the end of the line.
-
+diff --git a/drivers/char/misc.c b/drivers/char/misc.c
+index ffa97d2..289c59e 100644
+--- a/drivers/char/misc.c
++++ b/drivers/char/misc.c
+@@ -144,7 +144,8 @@ static int misc_open(struct inode * inode, struct file * file)
+ 	replace_fops(file, new_fops);
+ 	if (file->f_op->open) {
+ 		file->private_data = c;
+-		err = file->f_op->open(inode,file);
++		mutex_unlock(&misc_mtx);
++		return file->f_op->open(inode,file);
+ 	}
+ fail:
+ 	mutex_unlock(&misc_mtx);
+-- 
+1.7.9.5
 
