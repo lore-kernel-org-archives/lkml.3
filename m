@@ -1,114 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131AbbAFOaU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 09:30:20 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:38170 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800AbbAFOaQ (ORCPT
+	id S1754014AbbAFOcI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 09:32:08 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:46780 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753148AbbAFOcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 09:30:16 -0500
-Date: Tue, 6 Jan 2015 15:30:08 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Minchan Kim <minchan@kernel.org>, David Rientjes <rientjes@google.com>,
-        Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH V4 1/4] mm: set page->pfmemalloc in prep_new_page()
-Message-ID: <20150106143008.GA20860@dhcp22.suse.cz>
-References: <1420478263-25207-1-git-send-email-vbabka@suse.cz>
- <1420478263-25207-2-git-send-email-vbabka@suse.cz>
+	Tue, 6 Jan 2015 09:32:05 -0500
+Message-ID: <54ABF1E2.1010905@hurleysoftware.com>
+Date: Tue, 06 Jan 2015 09:32:02 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420478263-25207-2-git-send-email-vbabka@suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH] serial: 8250: Make ISA ports optional
+References: <1420513785-23660-1-git-send-email-peter@hurleysoftware.com> <9492211.AECobr3jIN@wuerfel>
+In-Reply-To: <9492211.AECobr3jIN@wuerfel>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 05-01-15 18:17:40, Vlastimil Babka wrote:
-> The function prep_new_page() sets almost everything in the struct page of the
-> page being allocated, except page->pfmemalloc. This is not obvious and has at
-> least once led to a bug where page->pfmemalloc was forgotten to be set
-> correctly, see commit 8fb74b9fb2b1 ("mm: compaction: partially revert capture
-> of suitable high-order page").
+On 01/06/2015 08:13 AM, Arnd Bergmann wrote:
+> On Monday 05 January 2015 22:09:45 Peter Hurley wrote:
+>> Some arches have no need to create unprobed 8250 ports; these phantom
+>> ports are primarily required for ISA ports which have no probe
+>> mechanism or to provide non-operational ports for userspace to
+>> configure (via TIOCSSERIAL and TIOCSERCONFIG ioctls).
+>>
+>> Provide CONFIG_SERIAL_8250_PHANTOM_UARTS knob to disable phantom port
+>> registration; ie., CONFIG_SERIAL_8250_PHANTOM_UARTS=N only registers
+>> probed ports (ACPI/PNP, "serial8250" platform devices, PCI, etc).
+>>
+>> Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+>> Cc: Tony Lindgren <tony@atomide.com>
+>> Cc: Grant Likely <grant.likely@linaro.org>
+>> Cc: Arnd Bergmann <arnd@arndb.de>
+>> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 > 
-> This patch moves the pfmemalloc setting to prep_new_page(), which means it
-> needs to gain alloc_flags parameter. The call to prep_new_page is moved from
-> buffered_rmqueue() to get_page_from_freelist(), which also leads to simpler
-> code. An obsolete comment for buffered_rmqueue() is replaced.
+> The intent is definitely right, but I think a better approach is
+> possible.
 > 
-> In addition to better maintainability there is a small reduction of code and
-> stack usage for get_page_from_freelist(), which inlines the other functions
-> involved.
-> 
-> add/remove: 0/0 grow/shrink: 0/1 up/down: 0/-145 (-145)
-> function                                     old     new   delta
-> get_page_from_freelist                      2670    2525    -145
-> 
-> Stack usage is reduced from 184 to 168 bytes.
-> 
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
+> I haven't tried it here, but how about moving the serial8250_init
+> function into a separate module, along with all the other parts
+> that are only used for ISA devices, but leaving the actual core
+> (all exported symbols) in this file?
 
-get_page_from_freelist has grown too hairy. I agree that it is tiny less
-confusing now because we are not breaking out of the loop in the
-successful case.
+Unfortunately, I don't see a way to remove the stacked initialization
+without risking tons of breakage.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Since later probes can "find" an already-existing port and
+re-initialize it, the probe order is crucial. For example, a PCI
+probe can "find" an existing "serial8250" platform device port,
+resulting in only one device node.
 
-[...]
-> @@ -2177,25 +2181,16 @@ zonelist_scan:
->  try_this_zone:
->  		page = buffered_rmqueue(preferred_zone, zone, order,
->  						gfp_mask, migratetype);
-> -		if (page)
-> -			break;
-> +		if (page) {
-> +			if (prep_new_page(page, order, gfp_mask, alloc_flags))
-> +				goto try_this_zone;
-> +			return page;
-> +		}
+And the configuration knob will be required on all arches anyway because
+that's how user-configurable device nodes are created.
 
-I would probably liked `do {} while ()' more because it wouldn't use the
-goto, but this is up to you:
+> At the same time, the serial8250_pnp_init/serial8250_pnp_exit calls
+> can be removed from the serial8250_init function and become
+> standalone initcalls.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 1bb65e6f48dd..1682d766cb8e 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2175,10 +2175,11 @@ zonelist_scan:
- 		}
- 
- try_this_zone:
--		page = buffered_rmqueue(preferred_zone, zone, order,
-+		do {
-+			page = buffered_rmqueue(preferred_zone, zone, order,
- 						gfp_mask, migratetype);
--		if (page)
--			break;
-+		} while (page && prep_new_page(page, order, gfp_mask,
-+					       alloc_flags));
- this_zone_full:
- 		if (IS_ENABLED(CONFIG_NUMA) && zlc_active)
- 			zlc_mark_zone_full(zonelist, z);
+PNP probe must occur before the phantom ports are registered.
+See commit 835d844d1a28efba81d5aca7385e24c29d3a6db2
+("8250_pnp: do pnp probe before legacy probe").
 
-[...]
--- 
-Michal Hocko
-SUSE Labs
+Regards,
+Peter Hurley
