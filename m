@@ -1,94 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529AbbAFXlc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 18:41:32 -0500
-Received: from mail-oi0-f43.google.com ([209.85.218.43]:57222 "EHLO
-	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751688AbbAFXlb (ORCPT
+	id S1752828AbbAFXlr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 18:41:47 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:65148 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752554AbbAFXlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 18:41:31 -0500
-Message-ID: <54AC72AF.5090609@landley.net>
-Date: Tue, 06 Jan 2015 17:41:35 -0600
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 6 Jan 2015 18:41:45 -0500
+Date: Tue, 6 Jan 2015 18:41:41 -0500
+From: Tejun Heo <tj@kernel.org>
+To: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: [PATCH libata/for-3.19-fixes] libata: clean up MAINTAINERS entries
+Message-ID: <20150106234141.GE24106@htj.dyndns.org>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] out out damn perl
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Landley <rob@landley.net>
+>From 32ac7cb262177f58c7c8846311599460e5e7e3c5 Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Tue, 6 Jan 2015 18:36:44 -0500
 
-Commit e6023367d779 added perl back to the kernel build in -rc6.
-Replace 39 lines of perl with 4 lines of shell script.
+Make all libata entries start with LIBATA and collect them in one
+place.  Driver specfic ones have the second SATA or PATA prefix.
 
-Signed-off-by: Rob Landley <rob@landley.net>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
+Applied to libata/for-3.19-fixes.
 
- arch/x86/boot/compressed/Makefile |    6 ++--
- arch/x86/tools/calc_run_size.pl   |   39 ----------------------------
- 2 files changed, 4 insertions(+), 41 deletions(-)
+Thanks.
 
-Commit e6023367d779 added perl back to the kernel build. KILL IT WITH FIRE.
+ MAINTAINERS | 66 +++++++++++++++++++++++++++++++------------------------------
+ 1 file changed, 34 insertions(+), 32 deletions(-)
 
---- linux/arch/x86/boot/compressed/Makefile
-+++ linux/arch/x86/boot/compressed/Makefile
-@@ -89,8 +76,10 @@
- suffix-$(CONFIG_KERNEL_LZO) 	:= lzo
- suffix-$(CONFIG_KERNEL_LZ4) 	:= lz4
+diff --git a/MAINTAINERS b/MAINTAINERS
+index ddb9ac8..c20aebe 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -754,13 +754,6 @@ L:	linux-media@vger.kernel.org
+ S:	Maintained
+ F:	drivers/media/i2c/aptina-pll.*
  
--RUN_SIZE = $(shell $(OBJDUMP) -h vmlinux | \
--	     perl $(srctree)/arch/x86/tools/calc_run_size.pl)
-+RUN_SIZE = $(shell NUM='\([0-9a-fA-F]*[ \t]*\)'; $(OBJDUMP) -h vmlinux | \
-+sed -n 's/^[ \t0-9]*.b[sr][sk][ \t]*'"$$NUM$$NUM$$NUM$$NUM"'.*/\1\4/p' | \
-+xargs | while read a b c d; do [ "$$b" != "$$d" ] && exit 1; \
-+expr $$(printf "%d + %d + %d" 0x$$a 0x$$b 0x$$c); done)
- quiet_cmd_mkpiggy = MKPIGGY $@
-       cmd_mkpiggy = $(obj)/mkpiggy $< $(RUN_SIZE) > $@ || ( rm -f $@ ; false )
+-ARASAN COMPACT FLASH PATA CONTROLLER
+-M:	Viresh Kumar <viresh.linux@gmail.com>
+-L:	linux-ide@vger.kernel.org
+-S:	Maintained
+-F:	include/linux/pata_arasan_cf_data.h
+-F:	drivers/ata/pata_arasan_cf.c
+-
+ ARC FRAMEBUFFER DRIVER
+ M:	Jaya Kumar <jayalk@intworks.biz>
+ S:	Maintained
+@@ -5693,6 +5686,40 @@ F:	drivers/lguest/
+ F:	include/linux/lguest*.h
+ F:	tools/lguest/
  
---- linux/arch/x86/tools/calc_run_size.pl
-+++ /dev/null
-@@ -1,39 +0,0 @@
--#!/usr/bin/perl
--#
--# Calculate the amount of space needed to run the kernel, including room for
--# the .bss and .brk sections.
--#
--# Usage:
--# objdump -h a.out | perl calc_run_size.pl
--use strict;
++LIBATA SUBSYSTEM (Serial and Parallel ATA drivers)
++M:	Tejun Heo <tj@kernel.org>
++L:	linux-ide@vger.kernel.org
++T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git
++S:	Maintained
++F:	drivers/ata/
++F:	include/linux/ata.h
++F:	include/linux/libata.h
++
++LIBATA PATA ARASAN COMPACT FLASH CONTROLLER
++M:	Viresh Kumar <viresh.linux@gmail.com>
++L:	linux-ide@vger.kernel.org
++T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git
++S:	Maintained
++F:	include/linux/pata_arasan_cf_data.h
++F:	drivers/ata/pata_arasan_cf.c
++
++LIBATA SATA AHCI PLATFORM devices support
++M:	Hans de Goede <hdegoede@redhat.com>
++M:	Tejun Heo <tj@kernel.org>
++L:	linux-ide@vger.kernel.org
++T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git
++S:	Maintained
++F:	drivers/ata/ahci_platform.c
++F:	drivers/ata/libahci_platform.c
++F:	include/linux/ahci_platform.h
++
++LIBATA SATA PROMISE TX2/TX4 CONTROLLER DRIVER
++M:	Mikael Pettersson <mikpelinux@gmail.com>
++L:	linux-ide@vger.kernel.org
++T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git
++S:	Maintained
++F:	drivers/ata/sata_promise.*
++
+ LIBLOCKDEP
+ M:	Sasha Levin <sasha.levin@oracle.com>
+ S:	Maintained
+@@ -7566,12 +7593,6 @@ W:	http://wireless.kernel.org/en/users/Drivers/p54
+ S:	Obsolete
+ F:	drivers/net/wireless/prism54/
+ 
+-PROMISE SATA TX2/TX4 CONTROLLER LIBATA DRIVER
+-M:	Mikael Pettersson <mikpelinux@gmail.com>
+-L:	linux-ide@vger.kernel.org
+-S:	Maintained
+-F:	drivers/ata/sata_promise.*
 -
--my $mem_size = 0;
--my $file_offset = 0;
+ PS3 NETWORK SUPPORT
+ M:	Geoff Levand <geoff@infradead.org>
+ L:	netdev@vger.kernel.org
+@@ -8546,25 +8567,6 @@ S:	Maintained
+ F:	drivers/misc/phantom.c
+ F:	include/uapi/linux/phantom.h
+ 
+-SERIAL ATA (SATA) SUBSYSTEM
+-M:	Tejun Heo <tj@kernel.org>
+-L:	linux-ide@vger.kernel.org
+-T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git
+-S:	Supported
+-F:	drivers/ata/
+-F:	include/linux/ata.h
+-F:	include/linux/libata.h
 -
--my $sections=" *[0-9]+ \.(?:bss|brk) +";
--while (<>) {
--	if (/^$sections([0-9a-f]+) +(?:[0-9a-f]+ +){2}([0-9a-f]+)/) {
--		my $size = hex($1);
--		my $offset = hex($2);
--		$mem_size += $size;
--		if ($file_offset == 0) {
--			$file_offset = $offset;
--		} elsif ($file_offset != $offset) {
--			# BFD linker shows the same file offset in ELF.
--			# Gold linker shows them as consecutive.
--			next if ($file_offset + $mem_size == $offset + $size);
+-SERIAL ATA AHCI PLATFORM devices support
+-M:	Hans de Goede <hdegoede@redhat.com>
+-M:	Tejun Heo <tj@kernel.org>
+-L:	linux-ide@vger.kernel.org
+-T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git
+-S:	Supported
+-F:	drivers/ata/ahci_platform.c
+-F:	drivers/ata/libahci_platform.c
+-F:	include/linux/ahci_platform.h
 -
--			printf STDERR "file_offset: 0x%lx\n", $file_offset;
--			printf STDERR "mem_size: 0x%lx\n", $mem_size;
--			printf STDERR "offset: 0x%lx\n", $offset;
--			printf STDERR "size: 0x%lx\n", $size;
--
--			die ".bss and .brk are non-contiguous\n";
--		}
--	}
--}
--
--if ($file_offset == 0) {
--	die "Never found .bss or .brk file offset\n";
--}
--printf("%d\n", $mem_size + $file_offset);
+ SERVER ENGINES 10Gbps iSCSI - BladeEngine 2 DRIVER
+ M:	Jayamohan Kallickal <jayamohan.kallickal@emulex.com>
+ L:	linux-scsi@vger.kernel.org
+-- 
+2.1.0
+
