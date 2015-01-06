@@ -1,91 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449AbbAFJpx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 04:45:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35197 "EHLO mx2.suse.de"
+	id S1754606AbbAFJtm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 04:49:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54349 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751546AbbAFJpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 04:45:49 -0500
-Date: Tue, 6 Jan 2015 10:45:43 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Dave Jones <davej@codemonkey.org.uk>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>
-Subject: Re: Linux 3.19-rc3
-In-Reply-To: <20150106024634.GA26714@codemonkey.org.uk>
-Message-ID: <alpine.LRH.2.00.1501061044290.20601@twin.jikos.cz>
-References: <CA+55aFwsxoyLb9OWMSCL3doe_cz_EQtKsEFCyPUYn_T87pbz0A@mail.gmail.com> <20150106024634.GA26714@codemonkey.org.uk>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1752753AbbAFJti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 04:49:38 -0500
+Date: Tue, 6 Jan 2015 11:49:12 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Pankaj Gupta <pagupta@redhat.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
+        jasowang@redhat.com, dgibson@redhat.com, vfalico@gmail.com,
+        edumazet@google.com, vyasevic@redhat.com, hkchu@google.com,
+        wuzhy@linux.vnet.ibm.com, xemul@parallels.com, therbert@google.com,
+        bhutchings@solarflare.com, xii@google.com, stephen@networkplumber.org,
+        jiri@resnulli.us, sergei.shtylyov@cogentembedded.com
+Subject: Re: [PATCH v4 net-next 2/2 tuntap: Increase the number of queues in
+ tun.
+Message-ID: <20150106094912.GA30222@redhat.com>
+References: <1420522756-15127-1-git-send-email-pagupta@redhat.com>
+ <1420522756-15127-3-git-send-email-pagupta@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420522756-15127-3-git-send-email-pagupta@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 5 Jan 2015, Dave Jones wrote:
-
->  > It's a day delayed - not because of any particular development issues,
->  > but simply because I was tiling a bathroom yesterday. But rc3 is out
->  > there now, and things have stayed reasonably calm. I really hope that
->  > implies that 3.19 is looking good, but it's equally likely that it's
->  > just that people are still recovering from the holiday season.
->  > 
->  > A bit over three quarters of the changes here are drivers - mostly
->  > networking, thermal, input layer, sound, power management. The rest is
->  > misc - filesystems, core networking, some arch fixes, etc. But all of
->  > it is pretty small.
->  > 
->  > So go out and test,
+On Tue, Jan 06, 2015 at 11:09:16AM +0530, Pankaj Gupta wrote:
+> Networking under kvm works best if we allocate a per-vCPU RX and TX
+> queue in a virtual NIC. This requires a per-vCPU queue on the host side.
+> 
+> It is now safe to increase the maximum number of queues.
+> Preceding patch: 'net: allow large number of rx queues'
+> made sure this won't cause failures due to high order memory
+> allocations. Increase it to 256: this is the max number of vCPUs
+> KVM supports.
+> 
+> Size of tun_struct changes from 8512 to 10496 after this patch. This keeps 
+> pages allocated for tun_struct before and after the patch to 3. 
+> 
+> Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
+> Reviewed-by: David Gibson <dgibson@redhat.com>
+> ---
+>  drivers/net/tun.c | 9 +++++----
+>  1 file changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index e3fa65a..a19dc5f8 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -113,10 +113,11 @@ struct tap_filter {
+>  	unsigned char	addr[FLT_EXACT_COUNT][ETH_ALEN];
+>  };
 >  
-> This has been there since just before rc1. Is there a fix for this
-> stalled in someones git tree maybe ?
+> -/* DEFAULT_MAX_NUM_RSS_QUEUES were chosen to let the rx/tx queues allocated for
+> - * the netdevice to be fit in one page. So we can make sure the success of
+> - * memory allocation. TODO: increase the limit. */
+> -#define MAX_TAP_QUEUES DEFAULT_MAX_NUM_RSS_QUEUES
+> +/* MAX_TAP_QUEUES 256 is chosen to allow rx/tx queues to be equal
+> + * to max number of vCPUS in guest.
 
-This is an issue in fanotify code which has been there since ages, but 
-only now has scheduler started to warn about this.
+VCPUs I think.
 
-I've reported it to Eric here:
+> Also, we are making sure here
+> + * queue memory allocation do not fail.
 
-	https://lkml.org/lkml/2014/12/30/95
+What does this mean? How are we making sure?
+I would drop this phrase really.
 
-but no response so far. Adding Eric to CC here as well.
-
-> [    7.952588] WARNING: CPU: 0 PID: 299 at kernel/sched/core.c:7303 __might_sleep+0x8d/0xa0()
-> [    7.952592] do not call blocking ops when !TASK_RUNNING; state=1 set at [<ffffffff910a0f7a>] prepare_to_wait+0x2a/0x90
-> [    7.952595] CPU: 0 PID: 299 Comm: systemd-readahe Not tainted 3.19.0-rc3+ #100 
-> [    7.952597]  0000000000001c87 00000000720a2c76 ffff8800b2513c88 ffffffff915b47c7
-> [    7.952598]  ffffffff910a3648 ffff8800b2513ce0 ffff8800b2513cc8 ffffffff91062c30
-> [    7.952599]  0000000000000000 ffffffff91796fb2 000000000000026d 0000000000000000
-> [    7.952600] Call Trace:
-> [    7.952603]  [<ffffffff915b47c7>] dump_stack+0x4c/0x65
-> [    7.952604]  [<ffffffff910a3648>] ? down_trylock+0x28/0x40
-> [    7.952606]  [<ffffffff91062c30>] warn_slowpath_common+0x80/0xc0
-> [    7.952607]  [<ffffffff91062cc0>] warn_slowpath_fmt+0x50/0x70
-> [    7.952608]  [<ffffffff910a0f7a>] ? prepare_to_wait+0x2a/0x90
-> [    7.952610]  [<ffffffff910a0f7a>] ? prepare_to_wait+0x2a/0x90
-> [    7.952611]  [<ffffffff910867ed>] __might_sleep+0x8d/0xa0
-> [    7.952614]  [<ffffffff915b8ea9>] mutex_lock_nested+0x39/0x3e0
-> [    7.952616]  [<ffffffff910a77ad>] ? trace_hardirqs_on+0xd/0x10
-> [    7.952617]  [<ffffffff910a0fac>] ? prepare_to_wait+0x5c/0x90
-> [    7.952620]  [<ffffffff911a63e0>] fanotify_read+0xe0/0x5b0
-> [    7.952622]  [<ffffffff91090801>] ? sched_clock_cpu+0xc1/0xd0
-> [    7.952624]  [<ffffffff91242459>] ? selinux_file_permission+0xb9/0x130
-> [    7.952626]  [<ffffffff910a14d0>] ? prepare_to_wait_event+0xf0/0xf0
-> [    7.952628]  [<ffffffff91162513>] __vfs_read+0x13/0x50
-> [    7.952629]  [<ffffffff911625d8>] vfs_read+0x88/0x140
-> [    7.952631]  [<ffffffff911626e7>] SyS_read+0x57/0xd0
-> [    7.952633]  [<ffffffff915bd952>] system_call_fastpath+0x12/0x17
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
--- 
-Jiri Kosina
-SUSE Labs
-
+> + */
+> +#define MAX_TAP_QUEUES 256
+>  #define MAX_TAP_FLOWS  4096
+>  
+>  #define TUN_FLOW_EXPIRE (3 * HZ)
+> -- 
+> 1.8.3.1
