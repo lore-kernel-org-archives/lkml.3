@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932836AbbAFTqB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 14:46:01 -0500
-Received: from smtp2.provo.novell.com ([137.65.250.81]:54770 "EHLO
+	id S932850AbbAFTqE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 14:46:04 -0500
+Received: from smtp2.provo.novell.com ([137.65.250.81]:44735 "EHLO
 	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932821AbbAFTp6 (ORCPT
+	with ESMTP id S1754079AbbAFTp5 (ORCPT
 	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Tue, 6 Jan 2015 14:45:58 -0500
+	Tue, 6 Jan 2015 14:45:57 -0500
 From: Davidlohr Bueso <dave@stgolabs.net>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
 Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Davidlohr Bueso <dave@stgolabs.net>, linux-kernel@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
         Davidlohr Bueso <dbueso@suse.de>
-Subject: [PATCH 5/6] locking: Use [READ,ASSIGN]_ONCE() for non-scalar types
-Date: Tue,  6 Jan 2015 11:45:08 -0800
-Message-Id: <1420573509-24774-6-git-send-email-dave@stgolabs.net>
+Subject: [PATCH 6/6] locking/osq: No need for load/acquire when acquire-polling
+Date: Tue,  6 Jan 2015 11:45:09 -0800
+Message-Id: <1420573509-24774-7-git-send-email-dave@stgolabs.net>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1420573509-24774-1-git-send-email-dave@stgolabs.net>
 References: <1420573509-24774-1-git-send-email-dave@stgolabs.net>
@@ -23,150 +22,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACCESS_ONCE does not work reliably on non-scalar types. For
-example gcc 4.6 and 4.7 might remove the volatile tag for such
-accesses during the SRA (scalar replacement of aggregates) step
-(https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145).
+Both mutexes and rwsems took a performance hit when we switched
+over from the original mcs code to the cancelable variant (osq).
+The reason being the use of smp_load_acquire() when polling for
+node->locked. This is not needed as reordering is not an issue,
+as such, relax the barrier semantics. Paul describes the scenario
+nicely: https://lkml.org/lkml/2013/11/19/405
 
-Change the generic locking code to replace ACCESS_ONCE with the
-new calls. I guess everyone will eventually have to update, so
-lets see what happens; we also become the first users of ASSIGN_ONCE.
+o If we start polling before the insertion is complete, all that
+happens is that the first few polls have no chance of seeing a lock
+grant.
+
+o Ordering the polling against the initialization -- the above
+ xchg() is already doing that for us.
+
+The smp_load_acquire() when unqueuing make sense. In addition,
+we don't need to worry about leaking the critical region as
+osq is only used internally.
+
+This impacts both regular and large levels of concurrency,
+ie on a 40 core system with a disk intensive workload:
+
+disk-1               804.83 (  0.00%)      828.16 (  2.90%)
+disk-61             8063.45 (  0.00%)    18181.82 (125.48%)
+disk-121            7187.41 (  0.00%)    20119.17 (179.92%)
+disk-181            6933.32 (  0.00%)    20509.91 (195.82%)
+disk-241            6850.81 (  0.00%)    20397.80 (197.74%)
+disk-301            6815.22 (  0.00%)    20287.58 (197.68%)
+disk-361            7080.40 (  0.00%)    20205.22 (185.37%)
+disk-421            7076.13 (  0.00%)    19957.33 (182.04%)
+disk-481            7083.25 (  0.00%)    19784.06 (179.31%)
+disk-541            7038.39 (  0.00%)    19610.92 (178.63%)
+disk-601            7072.04 (  0.00%)    19464.53 (175.23%)
+disk-661            7010.97 (  0.00%)    19348.23 (175.97%)
+disk-721            7069.44 (  0.00%)    19255.33 (172.37%)
+disk-781            7007.58 (  0.00%)    19103.14 (172.61%)
+disk-841            6981.18 (  0.00%)    18964.22 (171.65%)
+disk-901            6968.47 (  0.00%)    18826.72 (170.17%)
+disk-961            6964.61 (  0.00%)    18708.02 (168.62%)
 
 Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>
 ---
- kernel/locking/mcs_spinlock.h | 6 +++---
- kernel/locking/mutex.c        | 8 ++++----
- kernel/locking/osq_lock.c     | 8 ++++----
- kernel/locking/rwsem-xadd.c   | 4 ++--
- 4 files changed, 13 insertions(+), 13 deletions(-)
+ kernel/locking/osq_lock.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/locking/mcs_spinlock.h b/kernel/locking/mcs_spinlock.h
-index d1fe2ba..903009a 100644
---- a/kernel/locking/mcs_spinlock.h
-+++ b/kernel/locking/mcs_spinlock.h
-@@ -78,7 +78,7 @@ void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
- 		 */
- 		return;
- 	}
--	ACCESS_ONCE(prev->next) = node;
-+	ASSIGN_ONCE(node, prev->next);
- 
- 	/* Wait until the lock holder passes the lock down. */
- 	arch_mcs_spin_lock_contended(&node->locked);
-@@ -91,7 +91,7 @@ void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
- static inline
- void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
- {
--	struct mcs_spinlock *next = ACCESS_ONCE(node->next);
-+	struct mcs_spinlock *next = READ_ONCE(node->next);
- 
- 	if (likely(!next)) {
- 		/*
-@@ -100,7 +100,7 @@ void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
- 		if (likely(cmpxchg(lock, node, NULL) == node))
- 			return;
- 		/* Wait until the next pointer is set */
--		while (!(next = ACCESS_ONCE(node->next)))
-+		while (!(next = READ_ONCE(node->next)))
- 			cpu_relax_lowlatency();
- 	}
- 
-diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-index 2ac48e0..0082705 100644
---- a/kernel/locking/mutex.c
-+++ b/kernel/locking/mutex.c
-@@ -269,7 +269,7 @@ static inline int mutex_can_spin_on_owner(struct mutex *lock)
- 		return 0;
- 
- 	rcu_read_lock();
--	owner = ACCESS_ONCE(lock->owner);
-+	owner = READ_ONCE(lock->owner);
- 	if (owner)
- 		retval = owner->on_cpu;
- 	rcu_read_unlock();
-@@ -343,7 +343,7 @@ static bool mutex_optimistic_spin(struct mutex *lock,
- 			 * As such, when deadlock detection needs to be
- 			 * performed the optimistic spinning cannot be done.
- 			 */
--			if (ACCESS_ONCE(ww->ctx))
-+			if (READ_ONCE(ww->ctx))
- 				break;
- 		}
- 
-@@ -351,7 +351,7 @@ static bool mutex_optimistic_spin(struct mutex *lock,
- 		 * If there's an owner, wait for it to either
- 		 * release the lock or go to sleep.
- 		 */
--		owner = ACCESS_ONCE(lock->owner);
-+		owner = READ_ONCE(lock->owner);
- 		if (owner && !mutex_spin_on_owner(lock, owner))
- 			break;
- 
-@@ -490,7 +490,7 @@ static inline int __sched
- __ww_mutex_lock_check_stamp(struct mutex *lock, struct ww_acquire_ctx *ctx)
- {
- 	struct ww_mutex *ww = container_of(lock, struct ww_mutex, base);
--	struct ww_acquire_ctx *hold_ctx = ACCESS_ONCE(ww->ctx);
-+	struct ww_acquire_ctx *hold_ctx = READ_ONCE(ww->ctx);
- 
- 	if (!hold_ctx)
- 		return 0;
 diff --git a/kernel/locking/osq_lock.c b/kernel/locking/osq_lock.c
-index ec83d4d..9c6e251 100644
+index 9c6e251..aa56e3c 100644
 --- a/kernel/locking/osq_lock.c
 +++ b/kernel/locking/osq_lock.c
-@@ -98,7 +98,7 @@ bool osq_lock(struct optimistic_spin_queue *lock)
- 
- 	prev = decode_cpu(old);
- 	node->prev = prev;
--	ACCESS_ONCE(prev->next) = node;
-+	ASSIGN_ONCE(node, prev->next);
- 
- 	/*
- 	 * Normally @prev is untouchable after the above store; because at that
-@@ -148,7 +148,7 @@ unqueue:
- 		 * Or we race against a concurrent unqueue()'s step-B, in which
- 		 * case its step-C will write us a new @node->prev pointer.
- 		 */
--		prev = ACCESS_ONCE(node->prev);
-+		prev = READ_ONCE(node->prev);
- 	}
- 
- 	/*
-@@ -170,8 +170,8 @@ unqueue:
- 	 * it will wait in Step-A.
+@@ -109,7 +109,7 @@ bool osq_lock(struct optimistic_spin_queue *lock)
+ 	 * cmpxchg in an attempt to undo our queueing.
  	 */
  
--	ACCESS_ONCE(next->prev) = prev;
--	ACCESS_ONCE(prev->next) = next;
-+	ASSIGN_ONCE(prev, next->prev);
-+	ASSIGN_ONCE(next, prev->next);
- 
- 	return false;
- }
-diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-index 7628c3f..2e651f6 100644
---- a/kernel/locking/rwsem-xadd.c
-+++ b/kernel/locking/rwsem-xadd.c
-@@ -294,7 +294,7 @@ static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
- 		return false;
- 
- 	rcu_read_lock();
--	owner = ACCESS_ONCE(sem->owner);
-+	owner = READ_ONCE(sem->owner);
- 	if (owner)
- 		on_cpu = owner->on_cpu;
- 	rcu_read_unlock();
-@@ -359,7 +359,7 @@ static bool rwsem_optimistic_spin(struct rw_semaphore *sem)
- 		goto done;
- 
- 	while (true) {
--		owner = ACCESS_ONCE(sem->owner);
-+		owner = READ_ONCE(sem->owner);
- 		if (owner && !rwsem_spin_on_owner(sem, owner))
- 			break;
- 
+-	while (!smp_load_acquire(&node->locked)) {
++	while (!ACCESS_ONCE(node->locked)) {
+ 		/*
+ 		 * If we need to reschedule bail... so we can block.
+ 		 */
 -- 
 2.1.2
 
