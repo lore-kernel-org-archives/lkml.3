@@ -1,104 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487AbbAFNsw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 08:48:52 -0500
-Received: from mail-am1on0137.outbound.protection.outlook.com ([157.56.112.137]:24773
-	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755294AbbAFNsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 08:48:16 -0500
-X-Greylist: delayed 560 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Jan 2015 08:48:15 EST
-From: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <b45643@freescale.com>, <LW@KARO-electronics.de>, <Frank.Li@freescale.com>,
-        <B38611@freescale.com>, <davem@davemloft.net>, <stefan@agner.ch>,
-        Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
-Subject: [PATCH] net: fec: Fix dual ethernet issue in VFxx
-Date: Tue, 6 Jan 2015 19:17:32 +0530
-Message-ID: <1420552052-4697-1-git-send-email-bhuvanchandra.dv@toradex.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755465AbbAFNsd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 08:48:33 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:62137 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783AbbAFNsb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 08:48:31 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
+        dmaengine@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-mmc@vger.kernel.org, linux-mips@linux-mips.org
+Subject: Re: [PATCH, RFC] MIPS: jz4740: use dma filter function
+Date: Tue, 06 Jan 2015 14:48:27 +0100
+Message-ID: <2633187.PyovTNc8DC@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54ABBCE6.8060904@metafoo.de>
+References: <22569458.nE7JkNNnz3@wuerfel> <54ABBCE6.8060904@metafoo.de>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [122.166.214.162]
-X-ClientProxiedBy: HKNPR06CA0042.apcprd06.prod.outlook.com (10.141.16.32) To
- DB4PR05MB270.eurprd05.prod.outlook.com (10.242.158.24)
-Authentication-Results: spf=none (sender IP is )
- smtp.mailfrom=bhuvanchandra.dv@toradex.com; 
-X-DmarcAction: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:DB4PR05MB270;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DB4PR05MB270;
-X-Forefront-PRVS: 0448A97BF2
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(46102003)(50986999)(101416001)(77156002)(68736005)(31966008)(77096005)(66066001)(64706001)(47776003)(62966003)(89996001)(20776003)(87976001)(53416004)(229853001)(2351001)(107046002)(4396001)(42186005)(50226001)(105586002)(81156004)(33646002)(50466002)(106356001)(36756003)(120916001)(110136001)(92566001)(21056001)(48376002)(86362001)(19580395003)(97736003)(40100003)(99396003)(69596002)(122386002)(19580405001)(7059030);DIR:OUT;SFP:1102;SCL:1;SRVR:DB4PR05MB270;H:trdx.toradex.int;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DB4PR05MB270;
-X-OriginatorOrg: toradex.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 06 Jan 2015 13:48:00.2064 (UTC)
-X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: DB4PR05MB270
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:6KO/shECLyFlOur/H8vCJuPaJJ1sWYEuDBoJ3rEUOmH2kGrMAsK
+ GGEQfQ7tv4IvJ0Swe+CIIm7B2mKE9zsbEx/3yB9yeLa2TzYjCLfsVK4Yy5amOratMeofRdq
+ CZ3GIGzEweeRakLSvpb/2GZDamCbo7VGpGoG8026Fa1e5kgDhfY8F2plpjovC7Ls1/Clb2l
+ PrrReLyrERlR8ZnDT047w==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On i.MX28, the MDIO bus is shared between the
-two RMII interfaces. However, in newer designs,
-such as Vybrid, this is not the case. This patch
-adds a quirk for the single MDIO case. This allows
-to use both FEC interfaces working independently
-on Vybird.
+On Tuesday 06 January 2015 11:45:58 Lars-Peter Clausen wrote:
+> On 01/05/2015 11:39 PM, Arnd Bergmann wrote:
+> > As discussed on the topic of shmobile DMA today, jz4740 is the only
+> > user of the slave_id field in dma_slave_config besides shmobile. This
+> > use is really incompatible with the way that other drivers use the
+> > dmaengine API, so we should get rid of it.
+> 
+> Do you have a link to that discussion?
 
-Signed-off-by: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
----
- drivers/net/ethernet/freescale/fec.h      |    3 +++
- drivers/net/ethernet/freescale/fec_main.c |    7 ++++---
- 2 files changed, 7 insertions(+), 3 deletions(-)
+http://www.spinics.net/lists/linux-mmc/msg30069.html
 
-diff --git a/drivers/net/ethernet/freescale/fec.h b/drivers/net/ethernet/freescale/fec.h
-index 469691a..c9515bc 100644
---- a/drivers/net/ethernet/freescale/fec.h
-+++ b/drivers/net/ethernet/freescale/fec.h
-@@ -425,6 +425,9 @@ struct bufdesc_ex {
-  */
- #define FEC_QUIRK_BUG_CAPTURE		(1 << 10)
- 
-+/* Controller has only one MDIO bus for interfacing external PHY's */
-+#define FEC_QUIRK_SINGLE_MDIO		(1 << 11)
-+
- struct fec_enet_priv_tx_q {
- 	int index;
- 	unsigned char *tx_bounce[TX_RING_SIZE];
-diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
-index 5ebdf8d..22b7748 100644
---- a/drivers/net/ethernet/freescale/fec_main.c
-+++ b/drivers/net/ethernet/freescale/fec_main.c
-@@ -91,7 +91,8 @@ static struct platform_device_id fec_devtype[] = {
- 		.driver_data = 0,
- 	}, {
- 		.name = "imx28-fec",
--		.driver_data = FEC_QUIRK_ENET_MAC | FEC_QUIRK_SWAP_FRAME,
-+		.driver_data = FEC_QUIRK_ENET_MAC | FEC_QUIRK_SWAP_FRAME |
-+				FEC_QUIRK_SINGLE_MDIO,
- 	}, {
- 		.name = "imx6q-fec",
- 		.driver_data = FEC_QUIRK_ENET_MAC | FEC_QUIRK_HAS_GBIT |
-@@ -1952,7 +1953,7 @@ static int fec_enet_mii_init(struct platform_device *pdev)
- 	 * mdio interface in board design, and need to be configured by
- 	 * fec0 mii_bus.
- 	 */
--	if ((fep->quirks & FEC_QUIRK_ENET_MAC) && fep->dev_id > 0) {
-+	if ((fep->quirks & FEC_QUIRK_SINGLE_MDIO) && fep->dev_id > 0) {
- 		/* fec1 uses fec0 mii_bus */
- 		if (mii_cnt && fec0_mii_bus) {
- 			fep->mii_bus = fec0_mii_bus;
-@@ -2015,7 +2016,7 @@ static int fec_enet_mii_init(struct platform_device *pdev)
- 	mii_cnt++;
- 
- 	/* save fec0 mii_bus */
--	if (fep->quirks & FEC_QUIRK_ENET_MAC)
-+	if (fep->quirks & FEC_QUIRK_SINGLE_MDIO)
- 		fec0_mii_bus = fep->mii_bus;
- 
- 	return 0;
--- 
-1.7.9.5
+> > This adds a trivial filter function that uses the filter param to
+> > pass the dma type, and uses that in both drivers.
+> 
+> In my opinion that's just from bad to worse. Using filter functions isn't 
+> that great in the first place. And using them to pass data from the consumer 
+> to the DMA provider is just a horrible abuse of the API.
 
+I agree that it is quite horrible, but it is currently the only portable
+way to use the API without DT. The solution to this is to use the
+dma_request_slave_channel API, which was intentionally done in a way to allow
+extending it in a nice way by passing just "rx" and "tx" (or whichever
+string you choose) into the API and get back a channel that was connected
+to the device by the platform. This already works with all DT based systems
+and (to a limited extent) with ACPI, but nobody so far has implemented it
+for devices that are instantiated through board files.
+
+Anybody on ARM and PowerPC that is cleaning up their platform moves to DT,
+so there hasn't been a need for that so far. My patch is the simplest
+workaround, to make jz4740 work like all (legacy) ARM platforms. If you
+plan to use DT for jz4740 in the long run, that would solve it nicely,
+and as an alternative, one could implement the equivalent of
+clk_register_clkdevs/regulator_consumer_supplies/... and hook that
+up into dma_request_slave_channel_reason() as a third option.
+
+> The patch also adds a platform dependency, so the drivers won't built with 
+> COMPILE_TEST anymore.
+
+That would be fixed by using proper platform_data to pass the filter and
+arguments, which I hinted in my patch description. This is how drivers
+are normally connected to a DMA engine.
+
+	Arnd
