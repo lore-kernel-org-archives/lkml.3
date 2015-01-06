@@ -1,18 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118AbbAFAHO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 19:07:14 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65277 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753488AbbAFAHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 19:07:10 -0500
-Message-ID: <54AB2728.60403@nod.at>
-Date: Tue, 06 Jan 2015 01:07:04 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1754657AbbAFAKj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 19:10:39 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:40715 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753084AbbAFAKh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 19:10:37 -0500
 MIME-Version: 1.0
+In-Reply-To: <87lhlgpyxk.fsf@x220.int.ebiederm.org>
+References: <1417744550-6461-1-git-send-email-adityakali@google.com>
+ <1417744550-6461-9-git-send-email-adityakali@google.com> <548E17CE.8010704@nod.at>
+ <CAGr1F2HA6mzFwgp5ngX8P7=198-5CmCjLmuCJ8j3eQ08J2d9Qw@mail.gmail.com>
+ <54AB15BD.8020007@nod.at> <87lhlgpyxk.fsf@x220.int.ebiederm.org>
+From: Aditya Kali <adityakali@google.com>
+Date: Mon, 5 Jan 2015 16:10:16 -0800
+Message-ID: <CAGr1F2HSi_D07r2c5CKOsjSR1+58k9G2MrtACsd+HV6XKvJ7cA@mail.gmail.com>
+Subject: Re: [PATCHv3 8/8] cgroup: Add documentation for cgroup namespaces
 To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Aditya Kali <adityakali@google.com>, Tejun Heo <tj@kernel.org>,
+Cc: Richard Weinberger <richard@nod.at>, Tejun Heo <tj@kernel.org>,
         Li Zefan <lizefan@huawei.com>, Serge Hallyn <serge.hallyn@ubuntu.com>,
         Andy Lutomirski <luto@amacapital.net>,
         cgroups mailinglist <cgroups@vger.kernel.org>,
@@ -20,18 +26,14 @@ CC: Aditya Kali <adityakali@google.com>, Tejun Heo <tj@kernel.org>,
         Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
         Linux Containers <containers@lists.linux-foundation.org>,
         Rohit Jnagal <jnagal@google.com>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCHv3 8/8] cgroup: Add documentation for cgroup namespaces
-References: <1417744550-6461-1-git-send-email-adityakali@google.com>	<1417744550-6461-9-git-send-email-adityakali@google.com>	<548E17CE.8010704@nod.at>	<CAGr1F2HA6mzFwgp5ngX8P7=198-5CmCjLmuCJ8j3eQ08J2d9Qw@mail.gmail.com>	<54AB15BD.8020007@nod.at> <87lhlgpyxk.fsf@x220.int.ebiederm.org>
-In-Reply-To: <87lhlgpyxk.fsf@x220.int.ebiederm.org>
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 06.01.2015 um 00:53 schrieb Eric W. Biederman:
+On Mon, Jan 5, 2015 at 3:53 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
 > Richard Weinberger <richard@nod.at> writes:
-> 
+>
 >> Am 05.01.2015 um 23:48 schrieb Aditya Kali:
 >>> On Sun, Dec 14, 2014 at 3:05 PM, Richard Weinberger <richard@nod.at> wrote:
 >>>> Aditya,
@@ -174,32 +176,35 @@ Am 06.01.2015 um 00:53 schrieb Eric W. Biederman:
 >>
 >> Ohh, this renders the whole patch useless for me as systemd needs the "old/default" behavior of cgroups. :-(
 >> I really hoped that cgroup namespaces will help me running systemd in a sane way within Linux containers.
-> 
+>
 > Ugh.  It sounds like there is a real mess here.  At the very least there
 > is misunderstanding.
-> 
+>
 > I have a memory that systemd should have been able to use a unified
 > hierarchy.  As you could still mount the different controllers
 > independently (they just use the same directory structure on each
 > mount).
-
-Luckily systemd folks want to move to the unified but as of now it does not work.
-Please see this mail from Lennart:
-https://www.redhat.com/archives/libvir-list/2014-November/msg01090.html
-
-Maybe the porting is easy. Dunno.
-I had no time yet to look into that.
+>
+In theory, if you boot kernel with
+"cgroup__DEVEL__legacy_files_on_dfl" command-line parameter, and mount
+cgroups with sane-behavior flag, then it should be more-or-less
+similar to mounting all hierarchies together at the same mount-point
+(mount -t cgroup -o __DEVEL_sane_behavior none $mntpt). I haven't
+tried this, but systemd should be able to work with it and you can
+enable cgroup-namespace too.
 
 > That said from a practical standpoint I am not certain that a cgroup
 > namespace is viable if it can not support the behavior of cgroupsfs
 > that everyone is using.
+>
 
-Yep.
+Since the old/default behavior is on its way out, I didn't invest time
+in fixing that. Also, some of the properties that make
+cgroup-namespace simpler are only provided by unified hierarchy (for
+example: a single root-cgroup per container).
 
-systemd *really* wants to own cgroupfs, so it has to mount it within the container.
-Currently libvirt does nasty hacks using bind mounts which are also problematic.
-My hope was that with cgroup namespaces I can simply cheat systemd and give it
-a cgroupfs to mess with.
 
-Thanks,
-//richard
+> Eric
+
+-- 
+Aditya
