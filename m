@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255AbbAFPxZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 10:53:25 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:45694 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755383AbbAFPxW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 10:53:22 -0500
-From: Imre Palik <imrep.amz@gmail.com>
-To: xen-devel@lists.xenproject.org, netdev@vger.kernel.org
-Cc: Ian Campbell <ian.campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
-        linux-kernel@vger.kernel.org, "Palik, Imre" <imrep@amazon.de>,
-        Anthony Liguori <aliguori@amazon.com>
-Subject: [PATCH] xen-netback: fixing the propagation of the transmit shaper timeout
-Date: Tue,  6 Jan 2015 16:44:44 +0100
-Message-Id: <1420559084-28370-1-git-send-email-imrep.amz@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755925AbbAFPpA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 10:45:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51125 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755887AbbAFPo4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 10:44:56 -0500
+Date: Tue, 6 Jan 2015 17:44:47 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        Chris Metcalf <cmetcalf@ezchip.com>
+Subject: [PATCH v2 23/40] tile: enable sparse checks for get/put_user
+Message-ID: <1420558883-10131-24-git-send-email-mst@redhat.com>
+References: <1420558883-10131-1-git-send-email-mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420558883-10131-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Palik, Imre" <imrep@amazon.de>
+Tile currently does not trigger sparse warnings when get_user
+causes an illegal assignment across bitwise types.
 
-Since e9ce7cb6b107 ("xen-netback: Factor queue-specific data into queue struct"),
-the transimt shaper timeout is always set to 0.  The value the user sets via
-xenbus is never propagated to the transmit shaper.
+For example:
 
-This patch fixes the issue.
+__le32 __user *p;
+__u32 x;
+put_user(x, p);
 
-Cc: Anthony Liguori <aliguori@amazon.com>
-Signed-off-by: Imre Palik <imrep@amazon.de>
+violates endian-ness rules, but currently does not trigger sparse
+warning on tile.
+
+Fix this by adding some dead code.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/net/xen-netback/xenbus.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/tile/include/asm/uaccess.h | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/net/xen-netback/xenbus.c b/drivers/net/xen-netback/xenbus.c
-index efbaf2a..794204e 100644
---- a/drivers/net/xen-netback/xenbus.c
-+++ b/drivers/net/xen-netback/xenbus.c
-@@ -737,6 +737,7 @@ static void connect(struct backend_info *be)
- 		}
+diff --git a/arch/tile/include/asm/uaccess.h b/arch/tile/include/asm/uaccess.h
+index 22cffa1..03d905c 100644
+--- a/arch/tile/include/asm/uaccess.h
++++ b/arch/tile/include/asm/uaccess.h
+@@ -218,6 +218,8 @@ extern int __get_user_bad(void)
+ 		case 8: __get_user_8(x, ptr, __ret); break;		\
+ 		default: __ret = __get_user_bad(); break;		\
+ 		}							\
++		if (0)							\
++			x = *(__force typeof(*ptr) *)(ptr);		\
+ 		__ret;							\
+ 	})
  
- 		queue->remaining_credit = credit_bytes;
-+		queue->credit_usec = credit_usec;
+@@ -297,6 +299,8 @@ extern int __put_user_bad(void)
+ 	case 8: __put_user_8(x, ptr, __ret); break;			\
+ 	default: __ret = __put_user_bad(); break;			\
+ 	}								\
++	if (0)								\
++		*(__force typeof(*ptr) *)(ptr) = x;			\
+ 	__ret;								\
+ })
  
- 		err = connect_rings(be, queue);
- 		if (err) {
 -- 
-1.7.9.5
+MST
 
