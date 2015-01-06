@@ -1,124 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755986AbbAFQFa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 11:05:30 -0500
-Received: from mail-bn1bon0068.outbound.protection.outlook.com ([157.56.111.68]:63568
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755498AbbAFQF1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 11:05:27 -0500
-Date: Tue, 6 Jan 2015 10:04:49 -0600
-From: atull <atull@opensource.altera.com>
-X-X-Sender: atull@linuxheads99
-To: Rob Herring <robherring2@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Simek <monstr@monstr.eu>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, <iws@ovro.caltech.edu>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Pavel Machek <pavel@denx.de>, Mark Brown <broonie@kernel.org>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>, Kyle Teske <kyle.teske@ni.com>,
-        Nicolas Pitre <nico@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
-        David Miller <davem@davemloft.net>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, <devel@driverdev.osuosl.org>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>,
-        "yvanderv@opensource.altera.com" <yvanderv@opensource.altera.com>
-Subject: Re: [PATCH v7 1/4] doc: add bindings document for altera fpga
- manager
-In-Reply-To: <CAL_Jsq+bwnA14RALT9WWZ=wzt7akjPOJ8s5878CcgkU4EDRC4Q@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1501061001520.1089@linuxheads99>
-References: <1419007551-10040-1-git-send-email-atull@opensource.altera.com> <1419007551-10040-2-git-send-email-atull@opensource.altera.com> <CAL_Jsq+bwnA14RALT9WWZ=wzt7akjPOJ8s5878CcgkU4EDRC4Q@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BLUPR01CA060.prod.exchangelabs.com (25.160.23.50) To
- BY1PR0301MB1237.namprd03.prod.outlook.com (25.161.203.21)
-Authentication-Results: spf=none (sender IP is )
- smtp.mailfrom=atull@opensource.altera.com; 
-X-DmarcAction: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BY1PR0301MB1237;
-X-Forefront-PRVS: 0448A97BF2
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(24454002)(377454003)(189002)(199003)(51704005)(4396001)(47776003)(64706001)(20776003)(23726002)(97736003)(40100003)(122386002)(120916001)(99396003)(19580405001)(19580395003)(83506001)(69596002)(1411001)(46102003)(33716001)(86362001)(46406003)(87976001)(31966008)(21056001)(92566001)(66066001)(42186005)(86152002)(53416004)(54356999)(76176999)(50986999)(81156004)(50466002)(110136001)(68736005)(106356001)(77156002)(62966003)(105586002)(107046002)(2950100001)(7059030);DIR:OUT;SFP:1101;SCL:1;SRVR:BY1PR0301MB1237;H:linuxheads99.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: opensource.altera.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 06 Jan 2015 16:05:18.1949 (UTC)
-X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY1PR0301MB1237
+	id S1755636AbbAFQLb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 11:11:31 -0500
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:56267 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755344AbbAFQL3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 11:11:29 -0500
+X-Sasl-enc: u1X2d/NWI0DpnFO6wqgFsa+kaAHV0YktZ1/TSer8Q/I4 1420560688
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Subject: Re: TCP connection issues against Amazon S3
+From: Erik Grinaker <erik@bengler.no>
+In-Reply-To: <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com>
+Date: Tue, 6 Jan 2015 16:11:27 +0000
+Cc: linux-kernel@vger.kernel.org, Yuchung Cheng <ycheng@google.com>,
+        netdev <netdev@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no>
+References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no> <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Dec 2014, Rob Herring wrote:
 
-> On Fri, Dec 19, 2014 at 10:45 AM,  <atull@opensource.altera.com> wrote:
-> > From: Alan Tull <atull@opensource.altera.com>
-> >
-> > New bindings document for Altera fpga manager.
-> >
-> > Signed-off-by: Alan Tull <atull@opensource.altera.com>
-> > ---
-> > v5 : Move bindings to drivers/staging/fpga/Documentation/bindings
-> >
-> > v6 : No change in this patch for v6 of the patch set
-> >
-> > v7 : No change in this patch for v7 of the patch set
-> > ---
-> >  .../Documentation/bindings/altera-fpga-mgr.txt     |   17 +++++++++++++++++
-> >  1 file changed, 17 insertions(+)
-> >  create mode 100644 drivers/staging/fpga/Documentation/bindings/altera-fpga-mgr.txt
-> >
-> > diff --git a/drivers/staging/fpga/Documentation/bindings/altera-fpga-mgr.txt b/drivers/staging/fpga/Documentation/bindings/altera-fpga-mgr.txt
-> > new file mode 100644
-> > index 0000000..373af7b
-> > --- /dev/null
-> > +++ b/drivers/staging/fpga/Documentation/bindings/altera-fpga-mgr.txt
-> > @@ -0,0 +1,17 @@
-> > +Altera FPGA Manager
-> > +
-> > +Required properties:
-> > +- compatible : should contain "altr,fpga-mgr"
-> > +- reg        : base address and size for memory mapped io.
-> > +               - The first index is for FPGA manager register access.
-> > +               - The second index is for writing FPGA configuration data.
-> > +- interrupts : interrupt for the FPGA Manager device.
-> > +
-> > +Example:
-> > +
-> > +       hps_0_fpgamgr: fpgamgr@0xff706000 {
-> > +               compatible = "altr,fpga-mgr";
+> On 06 Jan 2015, at 16:04, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Tue, 2015-01-06 at 15:14 +0000, Erik Grinaker wrote:
+>> (CCing Yuchung, as his name comes up in the relevant commits)
+>> 
+>> After upgrading from Ubuntu 12.04.5 to 14.04.1 we have begun seeing
+>> intermittent TCP connection hangs for HTTP image requests against
+>> Amazon S3. 3-5% of requests will suddenly stall in the middle of the
+>> transfer before timing out. We see this problem across a range of
+>> servers, in several data centres and networks, all located in Norway.
+>> 
+>> A packet dump [1] shows repeated ACK retransmits for some of the
+>> requests. Using Ubuntu mainline kernels, we found the problem to have
+>> been introduced between 3.11.10 and 3.12.0, possibly in
+>> 0f7cc9a3c2bd89b15720dbf358e9b9e62af27126. The problem is also present
+>> in 3.18.1. Disabling tcp_window_scaling seems to solve it, but has
+>> obvious drawbacks for transfer speeds. Other sysctls do not seem to
+>> affect it.
+>> 
+>> I am not sure if this is fundamentally a kernel bug or a network
+>> issue, but we did not see this problem with older kernels.
+>> 
+>> [1] http://abstrakt.bengler.no/tcp-issues-s3.pcap.bz2
 > 
-> Is "FPGA Manager" what the block is called or the name for the Linux
-> subsystem?" The name should reflect the h/w block name. Also, is the
-> block the same in every chip?
+> 
+> CC netdev
+> 
+> This looks like the bug we fixed here :
+> 
+> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=39bb5e62867de82b269b07df900165029b928359
 
-I see what you are saying.  The subsystem is 'fpga manager'.
+Has that patch gone into a release? Because the problem persists with 3.18.1.
 
-I should change this to "altr,socfpga-fpga-mgr" so that it is the
-fpga manager block that is specific to SOCFPGA chips.  Also I should
-change the filename of the binding document accordingly.
+> Could you post output of 'nstat' command ?
 
-> 
-> This binding doesn't look complex or likely to change, so it can be
-> out of staging unless you expect it to change.
-> 
-> Rob
-> 
+Sure:
+
+#kernel
+IpInReceives                    1676194            0.0
+IpInDelivers                    1676115            0.0
+IpOutRequests                   1163105            0.0
+IcmpInErrors                    826                0.0
+IcmpInEchoReps                  826                0.0
+IcmpOutErrors                   824                0.0
+IcmpOutTimeExcds                10                 0.0
+IcmpOutTimestamps               814                0.0
+IcmpMsgInType8                  826                0.0
+IcmpMsgOutType0                 814                0.0
+IcmpMsgOutType3                 10                 0.0
+TcpActiveOpens                  2004               0.0
+TcpPassiveOpens                 1102               0.0
+TcpAttemptFails                 5                  0.0
+TcpEstabResets                  34                 0.0
+TcpInSegs                       1667699            0.0
+TcpOutSegs                      1159990            0.0
+TcpRetransSegs                  26                 0.0
+TcpOutRsts                      504                0.0
+UdpInDatagrams                  2002               0.0
+UdpOutDatagrams                 2087               0.0
+Ip6InReceives                   1                  0.0
+Ip6InNoRoutes                   1                  0.0
+Ip6OutRequests                  10                 0.0
+Ip6OutDiscards                  3                  0.0
+Ip6OutNoRoutes                  1                  0.0
+Ip6OutMcastPkts                 7                  0.0
+Ip6InOctets                     76                 0.0
+Ip6OutOctets                    728                0.0
+Ip6OutMcastOctets               520                0.0
+Ip6InNoECTPkts                  1                  0.0
+Icmp6OutMsgs                    4                  0.0
+Icmp6OutNeighborSolicits        1                  0.0
+Icmp6OutMLDv2Reports            3                  0.0
+Icmp6OutType135                 1                  0.0
+Icmp6OutType143                 3                  0.0
+TcpExtEmbryonicRsts             5                  0.0
+TcpExtPruneCalled               1                  0.0
+TcpExtTW                        1897               0.0
+TcpExtDelayedACKs               3058               0.0
+TcpExtDelayedACKLocked          13                 0.0
+TcpExtDelayedACKLost            2330               0.0
+TcpExtTCPPrequeued              3084               0.0
+TcpExtTCPDirectCopyFromPrequeue 10944              0.0
+TcpExtTCPHPHits                 1246417            0.0
+TcpExtTCPPureAcks               7512               0.0
+TcpExtTCPHPAcks                 3219               0.0
+TcpExtTCPSackRecovery           2                  0.0
+TcpExtTCPLossUndo               4                  0.0
+TcpExtTCPFastRetrans            2                  0.0
+TcpExtTCPTimeouts               18                 0.0
+TcpExtTCPLossProbes             145                0.0
+TcpExtTCPLossProbeRecovery      125                0.0
+TcpExtTCPSackRecoveryFail       1                  0.0
+TcpExtTCPRcvCollapsed           22                 0.0
+TcpExtTCPDSACKOldSent           43                 0.0
+TcpExtTCPDSACKRecv              3                  0.0
+TcpExtTCPAbortOnData            113                0.0
+TcpExtTCPDSACKIgnoredNoUndo     3                  0.0
+TcpExtTCPSpuriousRTOs           2                  0.0
+TcpExtTCPSackShiftFallback      3                  0.0
+TcpExtTCPRcvCoalesce            927994             0.0
+TcpExtTCPOFOQueue               300911             0.0
+TcpExtTCPOFOMerge               76                 0.0
+TcpExtTCPSpuriousRtxHostQueues  24                 0.0
+IpExtInBcastPkts                5588               0.0
+IpExtInOctets                   2454079082         0.0
+IpExtOutOctets                  56232776           0.0
+IpExtInBcastOctets              3218688            0.0
+IpExtInNoECTPkts                1676194            0.0
+
+
+
