@@ -1,57 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754452AbbAFIxW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 03:53:22 -0500
-Received: from mail.emea.novell.com ([130.57.118.101]:45632 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913AbbAFIxS (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Tue, 6 Jan 2015 03:53:18 -0500
-Message-Id: <54ABA27C02000078000C4D65@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.1 
-Date: Tue, 06 Jan 2015 08:53:16 +0000
-From: "Jan Beulich" <jbeulich@suse.com>
-To: <david.vrabel@citrix.com>, <boris.ostrovsky@oracle.com>,
-        <konrad.wilk@oracle.com>
-Cc: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: xen/x86: properly retrieve NMI reason
-References: <54945D760200007800051157@mail.emea.novell.com>
- <54AA68D8.7050400@citrix.com>
-In-Reply-To: <54AA68D8.7050400@citrix.com>
-Mime-Version: 1.0
+	id S1754434AbbAFJBk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 04:01:40 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:53248 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753951AbbAFJBh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 04:01:37 -0500
+MIME-Version: 1.0
+In-Reply-To: <1420529616-2757-1-git-send-email-famz@redhat.com>
+References: <1420529616-2757-1-git-send-email-famz@redhat.com>
+Date: Tue, 6 Jan 2015 01:01:35 -0800
+Message-ID: <CAHdzE-9Lm_HUUMqAQt1oh5p+0dBvE3RhRCNoKiQX62g+60hLHg@mail.gmail.com>
+Subject: Re: [PATCH v2] virtio-scsi: Fix the race condition in virtscsi_handle_event
+From: Venkatesh Srinivas <venkateshs@google.com>
+To: Fam Zheng <famz@redhat.com>
+Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
+        "Michael S. Tsirkin" <mst@redhat.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> David Vrabel <david.vrabel@citrix.com> 01/05/15 11:35 AM >>>
->On 19/12/14 16:16, Jan Beulich wrote:
->> Using the native code here can't work properly, as the hypervisor would
->> normally have cleared the two reason bits by the time Dom0 gets to see
->> the NMI (if passed to it at all). There's a shared info field for this,
->> and there's an existing hook to use - just fit the two together. Note
->> that the hook can (and should) be used irrespective of whether being in
->> Dom0, as accessing port 0x61 in a DomU would be even worse, while the
->> shared info field would just hold zero all the time.
->> 
->> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+On Mon, Jan 5, 2015 at 11:33 PM, Fam Zheng <famz@redhat.com> wrote:
+> There is a race condition in virtscsi_handle_event, when many device
+> hotplug/unplug events flush in quickly.
 >
->This doesn't build.
+> The scsi_remove_device in virtscsi_handle_transport_reset may trigger
+> the BUG_ON in scsi_target_reap, because the state is altered behind it,
+> probably by scsi_scan_host of another event. I'm able to reproduce it by
+> repeatedly plugging and unplugging a scsi disk with the same lun number.
 >
->In file included from
->/local/davidvr/work/k.org/tip/arch/x86/xen/enlighten.c:43:0:
->/local/davidvr/work/k.org/tip/include/xen/interface/nmi.h:44:1: warning:
->data definition has no type or storage class [enabled by default]
->/local/davidvr/work/k.org/tip/include/xen/interface/nmi.h:44:1: error:
->type defaults to ‘int’ in declaration of ‘DEFINE_XEN_GUEST_HANDLE’
->[-Werror=implicit-int]
->cc1: some warnings being treated as errors
+> To make is safe, a single thread workqueue local to the module is added
+> which runs the scan work. With this change, the panic goes away.
+>
+> Signed-off-by: Fam Zheng <famz@redhat.com>
+>
+> ---
+>
+> v2: Use a single threaded workqueue instead of mutex to serialize work
+> (Venkatesh)
+> ---
+>  drivers/scsi/virtio_scsi.c | 14 +++++++++++++-
+>  1 file changed, 13 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+> index c52bb5d..71b0091 100644
+> --- a/drivers/scsi/virtio_scsi.c
+> +++ b/drivers/scsi/virtio_scsi.c
+> @@ -120,6 +120,8 @@ struct virtio_scsi {
+>
+>  static struct kmem_cache *virtscsi_cmd_cache;
+>  static mempool_t *virtscsi_cmd_pool;
+> +static struct workqueue_struct *virtscsi_scan_wq;
+> +
+>
+>  static inline struct Scsi_Host *virtio_scsi_host(struct virtio_device *vdev)
+>  {
+> @@ -404,7 +406,7 @@ static void virtscsi_complete_event(struct virtio_scsi *vscsi, void *buf)
+>         struct virtio_scsi_event_node *event_node = buf;
+>
+>         if (!vscsi->stop_events)
+> -               queue_work(system_freezable_wq, &event_node->work);
+> +               queue_work(virtscsi_scan_wq, &event_node->work);
+>  }
+>
+>  static void virtscsi_event_done(struct virtqueue *vq)
+> @@ -1119,6 +1121,12 @@ static int __init init(void)
+>                 pr_err("mempool_create() for virtscsi_cmd_pool failed\n");
+>                 goto error;
+>         }
+> +       virtscsi_scan_wq = create_singlethread_workqueue("virtscsi-scan");
+> +       if (!virtscsi_scan_wq) {
+> +               pr_err("create_singlethread_workqueue() for virtscsi_scan_wq failed\n");
+> +               goto error;
+> +       }
+> +
+>         ret = register_virtio_driver(&virtio_scsi_driver);
+>         if (ret < 0)
+>                 goto error;
+> @@ -1126,6 +1134,9 @@ static int __init init(void)
+>         return 0;
+>
+>  error:
+> +       if (virtscsi_scan_wq) {
+> +               destroy_workqueue(virtscsi_scan_wq);
+> +       }
+>         if (virtscsi_cmd_pool) {
+>                 mempool_destroy(virtscsi_cmd_pool);
+>                 virtscsi_cmd_pool = NULL;
+> @@ -1142,6 +1153,7 @@ static void __exit fini(void)
+>         unregister_virtio_driver(&virtio_scsi_driver);
+>         mempool_destroy(virtscsi_cmd_pool);
+>         kmem_cache_destroy(virtscsi_cmd_cache);
+> +       destroy_workqueue(virtscsi_scan_wq);
+>  }
+>  module_init(init);
+>  module_exit(fini);
+> --
+> 1.9.3
 
-Hmm, I can see why this happens (Linux renaming the macro from what
-the canonical headers use), but I'll have to check why my build test didn't
-catch this...
+Reviewed-by: Venkatesh Srinivas <venkateshs@google.com>
 
-Jan
-
+-- vs;
