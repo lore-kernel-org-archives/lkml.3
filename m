@@ -1,36 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752299AbbAGKZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 05:25:26 -0500
-Received: from mga01.intel.com ([192.55.52.88]:5986 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751069AbbAGKZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 05:25:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,713,1413270000"; 
-   d="scan'208";a="647493210"
-Date: Wed, 7 Jan 2015 12:25:20 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] pinctrl: intel: Pass CONFIG_DEBUG_PINCTRL to drivers
-Message-ID: <20150107102520.GO1386@lahna.fi.intel.com>
-References: <1417689170-41627-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1752361AbbAGKZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 05:25:59 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56481 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224AbbAGKZ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 05:25:57 -0500
+Date: Wed, 7 Jan 2015 10:25:43 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: "Suzuki K. Poulose" <Suzuki.Poulose@arm.com>
+Cc: Leo Yan <leo.yan@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Xiaolong Ye <yexl@marvell.com>
+Subject: Re: [PATCH] arm64: mm: support instruction SETEND
+Message-ID: <20150107102543.GD7485@arm.com>
+References: <1420609930-1689-1-git-send-email-leo.yan@linaro.org>
+ <54AD061A.6090602@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1417689170-41627-1-git-send-email-mika.westerberg@linux.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <54AD061A.6090602@arm.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 12:32:49PM +0200, Mika Westerberg wrote:
-> If the user has selected CONFIG_DEBUG_PINCTRL=y make sure that Intel
-> pinctrl drivers will be compiled with that option as well.
+On Wed, Jan 07, 2015 at 10:10:34AM +0000, Suzuki K. Poulose wrote:
+> On 07/01/15 05:52, Leo Yan wrote:
+> > Currently kernel has set the bit SCTLR_EL1.SED, so the SETEND
+> > instruction will be treated as UNALLOCATED; this error can be
+> > reproduced when ARMv8 cpu runs with EL1/aarch64 and EL0/aarch32
+> > mode, finally kernel will trap the exception if the userspace
+> > libs use SETEND instruction.
+> >
+> > So this patch clears bit SCTLR_EL1.SED to support SETEND instruction.
+> >
+> The best way to do this, is via the instruction emulation framework 
+> added by Punit, which handles the armv8 deprecated/obsoleted 
+> instructions. This is now queued for 3.19.
+> I have a patchset which adds the 'SETEND' emulation support to the 
+> framework. This will enable better handling of the feature, including 
+> finding out the users of the deprecated instruction (when we switch to 
+> the emulation mode).
 > 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Btw, there is one open question that I am seeking answer for.
+> 
+> What should be the endianness of the signal handlers ? Should we leave 
+> it to the application ? Or restore the 'default' endianness for the 
+> signal handler ?
 
-Gentle ping on these two.
+I think we should restore the default endianness, otherwise you're
+essentially forcing signal handlers to do a setend as their first
+instruction to get into a consistent state. That also matches the endianness
+of the sigframe that we push onto the stack, right?
+
+setjmp/longjmp could be fun, but I think that an application would need
+to take care not to make endianness assumptions across those anyway.
+
+Will
