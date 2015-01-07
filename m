@@ -1,176 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571AbbAGUtA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 15:49:00 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:48747 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751785AbbAGUs6 (ORCPT
+	id S1754636AbbAGUwE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 15:52:04 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:53478 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752455AbbAGUwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 15:48:58 -0500
-MIME-Version: 1.0
-In-Reply-To: <1420627396.26870.36.camel@stressinduktion.org>
-References: <CAFB3abzYNYqtzd_n+Ym0Lo=DYbV0HPU=Tqw=stALNnu188hMKQ@mail.gmail.com>
-	<20150106224706.GA7416@salvia>
-	<CAFB3abwKpR1VqZXUrsexqveAZrA2LTSmTe8a=-H7z2HjAptjwA@mail.gmail.com>
-	<1420627396.26870.36.camel@stressinduktion.org>
-Date: Thu, 8 Jan 2015 02:18:57 +0530
-Message-ID: <CAFB3abz_-AbJsrBtwRX5t=TCCfzYsw82WDYH=A7jzA2N8UbAng@mail.gmail.com>
-Subject: Re: [PATCH net] ipv6: Prevent ipv6_find_hdr() from returning ENOENT
- for valid non-first fragments
-From: Rahul Sharma <rsharma@arista.com>
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 7 Jan 2015 15:52:03 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Corey Minyard <minyard@acm.org>,
+        openipmi-developer@lists.sourceforge.net,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 1/2][RFC] ipmi: Cleanup DEBUG_TIMING ifdef usage
+Date: Wed,  7 Jan 2015 12:51:49 -0800
+Message-Id: <1420663910-6406-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hannes,
+The driver uses #ifdef DEBUG_TIMING in order to conditionally print out
+timestamped debug messages. Unfortunately it adds the ifdefs all over the
+usage sites.
 
-On Wed, Jan 7, 2015 at 4:13 PM, Hannes Frederic Sowa
-<hannes@stressinduktion.org> wrote:
-> Hi,
->
-> On Mi, 2015-01-07 at 11:11 +0530, Rahul Sharma wrote:
->> On Wed, Jan 7, 2015 at 4:17 AM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
->> > On Wed, Jan 07, 2015 at 03:03:20AM +0530, Rahul Sharma wrote:
->> >> ipv6_find_hdr() currently assumes that the next-header field in the
->> >> fragment header of the non-first fragment is the "protocol number of
->> >> the last header" (here last header excludes any extension header
->> >> protocol numbers ) which is incorrect as per RFC2460. The next-header
->> >> value is the first header of the fragmentable part of the original
->> >> packet (which can be extension header as well).
->> >> This can create reassembly problems. For example: Fragmented
->> >> authenticated OSPFv3 packets (where AH header is inserted before the
->> >> protocol header). For the second fragment, the next header value in
->> >> the fragment header will be NEXTHDR_AUTH which is correct but
->> >> ipv6_find_hdr will return ENOENT since AH is an extension header
->> >> resulting in second fragment getting dropped. This check for the
->> >> presence of non-extension header needs to be removed.
->> >>
->> >> Signed-off-by: Rahul Sharma <rsharma@arista.com>
->> >> ---
->> >> --- linux-3.18.1/net/ipv6/exthdrs_core.c.orig   2015-01-06
->> >> 10:25:36.411419863 -0800
->> >> +++ linux-3.18.1/net/ipv6/exthdrs_core.c        2015-01-06
->> >> 10:51:45.819364986 -0800
->> >> @@ -171,10 +171,11 @@ EXPORT_SYMBOL_GPL(ipv6_find_tlv);
->> >>   * If the first fragment doesn't contain the final protocol header or
->> >>   * NEXTHDR_NONE it is considered invalid.
->> >>   *
->> >> - * Note that non-1st fragment is special case that "the protocol number
->> >> - * of last header" is "next header" field in Fragment header. In this case,
->> >> - * *offset is meaningless and fragment offset is stored in *fragoff if fragoff
->> >> - * isn't NULL.
->> >> + * Note that non-1st fragment is special case that "the protocol number of the
->> >> + * first header of the fragmentable part of the original packet" is
->> >> + * "next header" field in the Fragment header. In this case, *offset is
->> >> + * meaningless and fragment offset is stored in *fragoff if fragoff isn't
->> >> + * NULL.
->> >>   *
->> >>   * if flags is not NULL and it's a fragment, then the frag flag
->> >>   * IP6_FH_F_FRAG will be set. If it's an AH header, the
->> >> @@ -250,9 +251,7 @@ int ipv6_find_hdr(const struct sk_buff *
->> >>
->> >>                         _frag_off = ntohs(*fp) & ~0x7;
->> >>                         if (_frag_off) {
->> >> -                               if (target < 0 &&
->> >> -                                   ((!ipv6_ext_hdr(hp->nexthdr)) ||
->> >
->> > This check assumes that the following headers cannot show up in the
->> > fragmented part of the IPv6 packet:
->> >
->> >  12 bool ipv6_ext_hdr(u8 nexthdr)
->> >  13 {
->> >  14         /*
->> >  15          * find out if nexthdr is an extension header or a protocol
->> >  16          */
->> >  17         return   (nexthdr == NEXTHDR_HOP)       ||
->> >  18                  (nexthdr == NEXTHDR_ROUTING)   ||
->> >  19                  (nexthdr == NEXTHDR_FRAGMENT)  ||
->> >  20                  (nexthdr == NEXTHDR_AUTH)      ||
->> >  21                  (nexthdr == NEXTHDR_NONE)      ||
->> >  22                  (nexthdr == NEXTHDR_DEST);
->> >
->> >> -                                    hp->nexthdr == NEXTHDR_NONE)) {
->> >> +                               if (target < 0) {
->> >>                                         if (fragoff)
->> >>                                                 *fragoff = _frag_off;
->> >>                                         return hp->nexthdr;
->> >> --
->> >> To unsubscribe from this list: send the line "unsubscribe netdev" in
->> >> the body of a message to majordomo@vger.kernel.org
->> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->> I think this is incorrect. Authentication header shows up in the
->> fragmentable part of the original IPv6 packet. So, for the non-first
->> fragments the next-header field value can be NEXTHDR_AUTH.
->
-> Pablo's mail got me thinking again.
->
-> In general, IPv6 extension headers can appear in any order and stacks
-> must be process them. Fragmentation adds a limitation, that some
-> extension headers do not make sense and don't have any effect if they
-> appear after a fragmentation header (HbH and ROUTING).
->
-> Looking at the rest of the function we don't check for HBHHDR or RTHDR
-> following a fragmentation header either if we process the first fragment
-> (core stack only processes HBH if directly following the ipv6 header
-> anyway).
->
-> So, in my opinion, it is safe to completely remove this check and it
-> would align if the rest of the extension processing logic. The callers
-> all seem fine with that.
->
-> Pablo, what do you think?
->
-> Anyway, the patch does not apply cleanly, the patch header is mangled.
-> Could you check and send again?
->
-> Thanks,
-> Hannes
->
->
-I am not sure if replying on the thread with a patch is a good idea
-(or should I send a new email). Anyway, let me know if this is works.
+This patch cleans it up by adding a debug_timestamp() function which
+is compiled out if DEBUG_TIMING isn't present. This cleans up all
+the ugly ifdefs in the function logic.
 
-Signed-off-by: Rahul Sharma <rsharma@arista.com>
+Cc: Corey Minyard <minyard@acm.org>
+Cc: openipmi-developer@lists.sourceforge.net
+Cc: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- net/ipv6/exthdrs_core.c |   13 ++++++-------
- 1 files changed, 6 insertions(+), 7 deletions(-)
+ drivers/char/ipmi/ipmi_si_intf.c | 58 +++++++++++++++-------------------------
+ 1 file changed, 21 insertions(+), 37 deletions(-)
 
-diff --git a/net/ipv6/exthdrs_core.c b/net/ipv6/exthdrs_core.c
-index 8af3eb5..5949f87 100644
---- a/net/ipv6/exthdrs_core.c
-+++ b/net/ipv6/exthdrs_core.c
-@@ -171,10 +171,11 @@ EXPORT_SYMBOL_GPL(ipv6_find_tlv);
-  * If the first fragment doesn't contain the final protocol header or
-  * NEXTHDR_NONE it is considered invalid.
-  *
-- * Note that non-1st fragment is special case that "the protocol number
-- * of last header" is "next header" field in Fragment header. In this case,
-- * *offset is meaningless and fragment offset is stored in *fragoff if fragoff
-- * isn't NULL.
-+ * Note that non-1st fragment is special case that "the protocol number of the
-+ * first header of the fragmentable part of the original packet" is
-+ * "next header" field in the Fragment header. In this case, *offset is
-+ * meaningless and fragment offset is stored in *fragoff if fragoff isn't
-+ * NULL.
-  *
-  * if flags is not NULL and it's a fragment, then the frag flag
-  * IP6_FH_F_FRAG will be set. If it's an AH header, the
-@@ -250,9 +251,7 @@ int ipv6_find_hdr(const struct sk_buff *skb,
-unsigned int *offset,
-
-                        _frag_off = ntohs(*fp) & ~0x7;
-                        if (_frag_off) {
--                               if (target < 0 &&
--                                   ((!ipv6_ext_hdr(hp->nexthdr)) ||
--                                    hp->nexthdr == NEXTHDR_NONE)) {
-+                               if (target < 0) {
-                                        if (fragoff)
-                                                *fragoff = _frag_off;
-                                        return hp->nexthdr;
+diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+index 967b73a..cc3a07d 100644
+--- a/drivers/char/ipmi/ipmi_si_intf.c
++++ b/drivers/char/ipmi/ipmi_si_intf.c
+@@ -321,6 +321,18 @@ static int try_smi_init(struct smi_info *smi);
+ static void cleanup_one_si(struct smi_info *to_clean);
+ static void cleanup_ipmi_si(void);
+ 
++#ifdef DEBUG_TIMING
++void debug_timestamp(char *msg)
++{
++	struct timeval t;
++
++	do_gettimeofday(&t);
++	pr_debug("**%s: %d.%9.9d\n", msg, t.tv_sec, t.tv_usec);
++}
++#else
++#define debug_timestamp(x)
++#endif
++
+ static ATOMIC_NOTIFIER_HEAD(xaction_notifier_list);
+ static int register_xaction_notifier(struct notifier_block *nb)
+ {
+@@ -370,10 +382,7 @@ static enum si_sm_result start_next_msg(struct smi_info *smi_info)
+ 
+ 		smi_info->curr_msg = smi_info->waiting_msg;
+ 		smi_info->waiting_msg = NULL;
+-#ifdef DEBUG_TIMING
+-		do_gettimeofday(&t);
+-		printk(KERN_DEBUG "**Start2: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+-#endif
++		debug_timestamp("Start2");
+ 		err = atomic_notifier_call_chain(&xaction_notifier_list,
+ 				0, smi_info);
+ 		if (err & NOTIFY_STOP_MASK) {
+@@ -582,12 +591,8 @@ static void check_bt_irq(struct smi_info *smi_info, bool irq_on)
+ static void handle_transaction_done(struct smi_info *smi_info)
+ {
+ 	struct ipmi_smi_msg *msg;
+-#ifdef DEBUG_TIMING
+-	struct timeval t;
+ 
+-	do_gettimeofday(&t);
+-	printk(KERN_DEBUG "**Done: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+-#endif
++	debug_timestamp("Done");
+ 	switch (smi_info->si_state) {
+ 	case SI_NORMAL:
+ 		if (!smi_info->curr_msg)
+@@ -929,17 +934,11 @@ static void sender(void                *send_info,
+ 	struct smi_info   *smi_info = send_info;
+ 	enum si_sm_result result;
+ 	unsigned long     flags;
+-#ifdef DEBUG_TIMING
+-	struct timeval    t;
+-#endif
+ 
+ 	BUG_ON(smi_info->waiting_msg);
+ 	smi_info->waiting_msg = msg;
+ 
+-#ifdef DEBUG_TIMING
+-	do_gettimeofday(&t);
+-	printk("**Enqueue: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+-#endif
++	debug_timestamp("Enqueue");
+ 
+ 	if (smi_info->run_to_completion) {
+ 		/*
+@@ -1128,15 +1127,10 @@ static void smi_timeout(unsigned long data)
+ 	unsigned long     jiffies_now;
+ 	long              time_diff;
+ 	long		  timeout;
+-#ifdef DEBUG_TIMING
+-	struct timeval    t;
+-#endif
+ 
+ 	spin_lock_irqsave(&(smi_info->si_lock), flags);
+-#ifdef DEBUG_TIMING
+-	do_gettimeofday(&t);
+-	printk(KERN_DEBUG "**Timer: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+-#endif
++	debug_timestamp("Timer");
++
+ 	jiffies_now = jiffies;
+ 	time_diff = (((long)jiffies_now - (long)smi_info->last_timeout_jiffies)
+ 		     * SI_USEC_PER_JIFFY);
+@@ -1173,18 +1167,13 @@ static irqreturn_t si_irq_handler(int irq, void *data)
+ {
+ 	struct smi_info *smi_info = data;
+ 	unsigned long   flags;
+-#ifdef DEBUG_TIMING
+-	struct timeval  t;
+-#endif
+ 
+ 	spin_lock_irqsave(&(smi_info->si_lock), flags);
+ 
+ 	smi_inc_stat(smi_info, interrupts);
+ 
+-#ifdef DEBUG_TIMING
+-	do_gettimeofday(&t);
+-	printk(KERN_DEBUG "**Interrupt: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+-#endif
++	debug_timestamp("Interrupt");
++
+ 	smi_event_handler(smi_info, 0);
+ 	spin_unlock_irqrestore(&(smi_info->si_lock), flags);
+ 	return IRQ_HANDLED;
+@@ -2038,18 +2027,13 @@ static u32 ipmi_acpi_gpe(acpi_handle gpe_device,
+ {
+ 	struct smi_info *smi_info = context;
+ 	unsigned long   flags;
+-#ifdef DEBUG_TIMING
+-	struct timeval t;
+-#endif
+ 
+ 	spin_lock_irqsave(&(smi_info->si_lock), flags);
+ 
+ 	smi_inc_stat(smi_info, interrupts);
+ 
+-#ifdef DEBUG_TIMING
+-	do_gettimeofday(&t);
+-	printk("**ACPI_GPE: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+-#endif
++	debug_timestamp("ACPI_GPE");
++
+ 	smi_event_handler(smi_info, 0);
+ 	spin_unlock_irqrestore(&(smi_info->si_lock), flags);
+ 
 -- 
-1.7.4.4
+1.9.1
+
