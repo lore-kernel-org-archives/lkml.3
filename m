@@ -1,99 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592AbbAGTSl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 14:18:41 -0500
-Received: from khitomer.mortis.eu ([185.27.175.75]:19160 "EHLO
+	id S1754602AbbAGTUf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 14:20:35 -0500
+Received: from khitomer.mortis.eu ([185.27.175.75]:21845 "EHLO
 	khitomer.mortis.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754370AbbAGTSj (ORCPT
+	with ESMTP id S1751745AbbAGTUe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 14:18:39 -0500
-Date: Wed, 7 Jan 2015 20:18:36 +0100
+	Wed, 7 Jan 2015 14:20:34 -0500
 From: Giel van Schijndel <me@mortis.eu>
-To: Johannes Berg <johannes@sipsolutions.net>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Kalle Valo <kvalo@codeaurora.org>,
-        Eliad Peller <eliad@wizery.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Arik Nemtsov <arik@wizery.com>,
-        "open list:TI WILINK WIRELES..." <linux-wireless@vger.kernel.org>,
-        "open list:NETWORKING DRIVERS" <netdev@vger.kernel.org>
-Subject: Re: [PATCH 2/2] Fix copy-paste bug: assign from src struct not dest
-Message-ID: <20150107191836.GA18978@salidar.dom.custoft.eu>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="k1lZvvs/B4yU6o8G"
-Content-Disposition: inline
-In-Reply-To: <CAHp75Vetc+fgv=YrqPuW9YChez82h7N7VeX_5bW5tpXm2j=h7g@mail.gmail.com>
- <1420451671.9459.1.camel@sipsolutions.net>
-OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: linux-kernel@vger.kernel.org
+Cc: Giel van Schijndel <me@mortis.eu>, Brian King <brking@us.ibm.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org (open list:SCSI SUBSYSTEM)
+Subject: [PATCH RESEND] scsi: cleanup: snprintf() always NUL-terminates: depend on it
+Date: Wed,  7 Jan 2015 20:20:15 +0100
+Message-Id: <1420658416-20839-1-git-send-email-me@mortis.eu>
+X-Mailer: git-send-email 2.1.4
+In-Reply-To: <1420394759-20345-1-git-send-email-me@mortis.eu>
+References: <1420394759-20345-1-git-send-email-me@mortis.eu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Especially since one very strange piece of code seems to be written in
+such a way that a NUL needs to be placed where a NUL is present already.
+The author probably meant to fill the last byte of the buffer with a NUL
+instead. But regardless of that: that isn't necessary since snprintf()
+already guarantees NUL termination for buffers sizes > 0 and <= INT_MAX.
 
---k1lZvvs/B4yU6o8G
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Giel van Schijndel <me@mortis.eu>
+Reported-at: http://www.viva64.com/en/b/0299/
+---
+ drivers/scsi/ipr.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-On Mon, Jan 05, 2015 at 10:54:31 +0100, Johannes Berg wrote:
-> On Sun, 2015-01-04 at 19:00 +0100, Giel van Schijndel wrote:
->> ---
->>  drivers/net/wireless/ti/wlcore/acx.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>=20
->> diff --git a/drivers/net/wireless/ti/wlcore/acx.c b/drivers/net/wireless=
-/ti/wlcore/acx.c
->> index beb354c..93a2fa8 100644
->> --- a/drivers/net/wireless/ti/wlcore/acx.c
->> +++ b/drivers/net/wireless/ti/wlcore/acx.c
->> @@ -1725,7 +1725,7 @@ int wl12xx_acx_config_hangover(struct wl1271 *wl)
->>  	acx->decrease_delta             =3D conf->decrease_delta;
->>  	acx->quiet_time                 =3D conf->quiet_time;
->>  	acx->increase_time              =3D conf->increase_time;
->> -	acx->window_size                =3D acx->window_size;
->> +	acx->window_size                =3D conf->window_size;
->=20
-> It would be far better to fix the bug *first*, that way the bugfix can
-> be cherry-picked/applied to trees that don't have the alignment.
+diff --git a/drivers/scsi/ipr.c b/drivers/scsi/ipr.c
+index df4e27c..b49fe45 100644
+--- a/drivers/scsi/ipr.c
++++ b/drivers/scsi/ipr.c
+@@ -3990,7 +3990,6 @@ static ssize_t ipr_store_update_fw(struct device *dev,
+ 		return -EACCES;
+ 
+ 	len = snprintf(fname, 99, "%s", buf);
+-	fname[len-1] = '\0';
+ 
+ 	if (request_firmware(&fw_entry, fname, &ioa_cfg->pdev->dev)) {
+ 		dev_err(&ioa_cfg->pdev->dev, "Firmware file %s not found\n", fname);
+@@ -9358,13 +9357,12 @@ static int ipr_enable_msi(struct ipr_ioa_cfg *ioa_cfg)
+ 
+ static void name_msi_vectors(struct ipr_ioa_cfg *ioa_cfg)
+ {
+-	int vec_idx, n = sizeof(ioa_cfg->vectors_info[0].desc) - 1;
++	int vec_idx;
+ 
+ 	for (vec_idx = 0; vec_idx < ioa_cfg->nvectors; vec_idx++) {
+-		snprintf(ioa_cfg->vectors_info[vec_idx].desc, n,
++		snprintf(ioa_cfg->vectors_info[vec_idx].desc,
++			 sizeof(ioa_cfg->vectors_info[vec_idx].desc),
+ 			 "host%d-%d", ioa_cfg->host->host_no, vec_idx);
+-		ioa_cfg->vectors_info[vec_idx].
+-			desc[strlen(ioa_cfg->vectors_info[vec_idx].desc)] = 0;
+ 	}
+ }
+ 
+-- 
+2.1.4
 
-I agree on the ordering.
-
-As for:
-> (And anyway I question the value of the alignment - if you really want
-> to make this bug disappear you could perhaps use a macro)
-
-And:
-On Wed, Jan 07, 2015 at 20:40:57 +0200, Andy Shevchenko wrote:
-> On Sun, Jan 4, 2015 at 8:00 PM, Giel van Schijndel <me@mortis.eu> wrote:
-> > This highlights the differences (errors).
->=20
-> Seems like patch for the patch. Just fix an error like it's done here:
-> http://www.spinics.net/lists/linux-wireless/msg131667.html
-
-IMO the aligned block of code has the significant advantage of taking
-advantage of humans' ability to spot things that break a pattern. Which
-in this case becomes *very* visible when properly aligned, because
-without the alignment there is no (visual) pattern (or at least not one
-very suitable for my "visual processing system", I know the same applies
-to at least some others).
-
---=20
-Met vriendelijke groet,
-With kind regards,
-Giel van Schijndel
-
---k1lZvvs/B4yU6o8G
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iEYEARECAAYFAlSthooACgkQZBYm/87l50JySgCfQiL/iT3PzgOr3YqVE/ItFijE
-zlQAnibAUYKjA8xW2iN1tla/QuqWiGZW
-=6l9e
------END PGP SIGNATURE-----
-
---k1lZvvs/B4yU6o8G--
