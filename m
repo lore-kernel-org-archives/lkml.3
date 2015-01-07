@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757101AbbAGB7o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 20:59:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46250 "EHLO
+	id S932714AbbAGBw3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 20:52:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46417 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932221AbbAGBwP (ORCPT
+	with ESMTP id S932566AbbAGBwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:52:15 -0500
+	Tue, 6 Jan 2015 20:52:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Carl Henrik Lunde <chlunde@ping.uio.no>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.18 74/84] udf: Check path length when reading symlink
-Date: Tue,  6 Jan 2015 17:50:17 -0800
-Message-Id: <20150107014031.372183714@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.10 06/38] md/bitmap: always wait for writes on unplug.
+Date: Tue,  6 Jan 2015 17:50:18 -0800
+Message-Id: <20150107014953.489780441@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
-In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
-References: <20150107014029.012974975@linuxfoundation.org>
+In-Reply-To: <20150107014952.440109372@linuxfoundation.org>
+References: <20150107014952.440109372@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,232 +24,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: NeilBrown <neilb@suse.de>
 
-commit 0e5cc9a40ada6046e6bc3bdfcd0c0d7e4b706b14 upstream.
+commit 4b5060ddae2b03c5387321fafc089d242225697a upstream.
 
-Symlink reading code does not check whether the resulting path fits into
-the page provided by the generic code. This isn't as easy as just
-checking the symlink size because of various encoding conversions we
-perform on path. So we have to check whether there is still enough space
-in the buffer on the fly.
+If two threads call bitmap_unplug at the same time, then
+one might schedule all the writes, and the other might
+decide that it doesn't need to wait.  But really it does.
 
-Reported-by: Carl Henrik Lunde <chlunde@ping.uio.no>
-Signed-off-by: Jan Kara <jack@suse.cz>
+It rarely hurts to wait when it isn't absolutely necessary,
+and the current code doesn't really focus on 'absolutely necessary'
+anyway.  So just wait always.
+
+This can potentially lead to data corruption if a crash happens
+at an awkward time and data was written before the bitmap was
+updated.  It is very unlikely, but this should go to -stable
+just to be safe.  Appropriate for any -stable.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/udf/dir.c     |    3 ++-
- fs/udf/namei.c   |    3 ++-
- fs/udf/symlink.c |   31 ++++++++++++++++++++++++++-----
- fs/udf/udfdecl.h |    3 ++-
- fs/udf/unicode.c |   28 ++++++++++++++++------------
- 5 files changed, 48 insertions(+), 20 deletions(-)
+ drivers/md/bitmap.c |   16 ++++++----------
+ 1 file changed, 6 insertions(+), 10 deletions(-)
 
---- a/fs/udf/dir.c
-+++ b/fs/udf/dir.c
-@@ -167,7 +167,8 @@ static int udf_readdir(struct file *file
- 			continue;
+--- a/drivers/md/bitmap.c
++++ b/drivers/md/bitmap.c
+@@ -883,7 +883,6 @@ void bitmap_unplug(struct bitmap *bitmap
+ {
+ 	unsigned long i;
+ 	int dirty, need_write;
+-	int wait = 0;
+ 
+ 	if (!bitmap || !bitmap->storage.filemap ||
+ 	    test_bit(BITMAP_STALE, &bitmap->flags))
+@@ -901,16 +900,13 @@ void bitmap_unplug(struct bitmap *bitmap
+ 			clear_page_attr(bitmap, i, BITMAP_PAGE_PENDING);
+ 			write_page(bitmap, bitmap->storage.filemap[i], 0);
  		}
- 
--		flen = udf_get_filename(dir->i_sb, nameptr, fname, lfi);
-+		flen = udf_get_filename(dir->i_sb, nameptr, lfi, fname,
-+					UDF_NAME_LEN);
- 		if (!flen)
- 			continue;
- 
---- a/fs/udf/namei.c
-+++ b/fs/udf/namei.c
-@@ -233,7 +233,8 @@ static struct fileIdentDesc *udf_find_en
- 		if (!lfi)
- 			continue;
- 
--		flen = udf_get_filename(dir->i_sb, nameptr, fname, lfi);
-+		flen = udf_get_filename(dir->i_sb, nameptr, lfi, fname,
-+					UDF_NAME_LEN);
- 		if (flen && udf_match(flen, fname, child->len, child->name))
- 			goto out_ok;
+-		if (dirty)
+-			wait = 1;
+-	}
+-	if (wait) { /* if any writes were performed, we need to wait on them */
+-		if (bitmap->storage.file)
+-			wait_event(bitmap->write_wait,
+-				   atomic_read(&bitmap->pending_writes)==0);
+-		else
+-			md_super_wait(bitmap->mddev);
  	}
---- a/fs/udf/symlink.c
-+++ b/fs/udf/symlink.c
-@@ -30,13 +30,16 @@
- #include <linux/buffer_head.h>
- #include "udf_i.h"
- 
--static void udf_pc_to_char(struct super_block *sb, unsigned char *from,
--			   int fromlen, unsigned char *to)
-+static int udf_pc_to_char(struct super_block *sb, unsigned char *from,
-+			  int fromlen, unsigned char *to, int tolen)
- {
- 	struct pathComponent *pc;
- 	int elen = 0;
-+	int comp_len;
- 	unsigned char *p = to;
- 
-+	/* Reserve one byte for terminating \0 */
-+	tolen--;
- 	while (elen < fromlen) {
- 		pc = (struct pathComponent *)(from + elen);
- 		switch (pc->componentType) {
-@@ -49,22 +52,37 @@ static void udf_pc_to_char(struct super_
- 				break;
- 			/* Fall through */
- 		case 2:
-+			if (tolen == 0)
-+				return -ENAMETOOLONG;
- 			p = to;
- 			*p++ = '/';
-+			tolen--;
- 			break;
- 		case 3:
-+			if (tolen < 3)
-+				return -ENAMETOOLONG;
- 			memcpy(p, "../", 3);
- 			p += 3;
-+			tolen -= 3;
- 			break;
- 		case 4:
-+			if (tolen < 2)
-+				return -ENAMETOOLONG;
- 			memcpy(p, "./", 2);
- 			p += 2;
-+			tolen -= 2;
- 			/* that would be . - just ignore */
- 			break;
- 		case 5:
--			p += udf_get_filename(sb, pc->componentIdent, p,
--					      pc->lengthComponentIdent);
-+			comp_len = udf_get_filename(sb, pc->componentIdent,
-+						    pc->lengthComponentIdent,
-+						    p, tolen);
-+			p += comp_len;
-+			tolen -= comp_len;
-+			if (tolen == 0)
-+				return -ENAMETOOLONG;
- 			*p++ = '/';
-+			tolen--;
- 			break;
- 		}
- 		elen += sizeof(struct pathComponent) + pc->lengthComponentIdent;
-@@ -73,6 +91,7 @@ static void udf_pc_to_char(struct super_
- 		p[-1] = '\0';
- 	else
- 		p[0] = '\0';
-+	return 0;
++	if (bitmap->storage.file)
++		wait_event(bitmap->write_wait,
++			   atomic_read(&bitmap->pending_writes)==0);
++	else
++		md_super_wait(bitmap->mddev);
++
+ 	if (test_bit(BITMAP_WRITE_ERROR, &bitmap->flags))
+ 		bitmap_file_kick(bitmap);
  }
- 
- static int udf_symlink_filler(struct file *file, struct page *page)
-@@ -100,8 +119,10 @@ static int udf_symlink_filler(struct fil
- 		symlink = bh->b_data;
- 	}
- 
--	udf_pc_to_char(inode->i_sb, symlink, inode->i_size, p);
-+	err = udf_pc_to_char(inode->i_sb, symlink, inode->i_size, p, PAGE_SIZE);
- 	brelse(bh);
-+	if (err)
-+		goto out_unlock_inode;
- 
- 	up_read(&iinfo->i_data_sem);
- 	SetPageUptodate(page);
---- a/fs/udf/udfdecl.h
-+++ b/fs/udf/udfdecl.h
-@@ -211,7 +211,8 @@ udf_get_lb_pblock(struct super_block *sb
- }
- 
- /* unicode.c */
--extern int udf_get_filename(struct super_block *, uint8_t *, uint8_t *, int);
-+extern int udf_get_filename(struct super_block *, uint8_t *, int, uint8_t *,
-+			    int);
- extern int udf_put_filename(struct super_block *, const uint8_t *, uint8_t *,
- 			    int);
- extern int udf_build_ustr(struct ustr *, dstring *, int);
---- a/fs/udf/unicode.c
-+++ b/fs/udf/unicode.c
-@@ -28,7 +28,8 @@
- 
- #include "udf_sb.h"
- 
--static int udf_translate_to_linux(uint8_t *, uint8_t *, int, uint8_t *, int);
-+static int udf_translate_to_linux(uint8_t *, int, uint8_t *, int, uint8_t *,
-+				  int);
- 
- static int udf_char_to_ustr(struct ustr *dest, const uint8_t *src, int strlen)
- {
-@@ -333,8 +334,8 @@ try_again:
- 	return u_len + 1;
- }
- 
--int udf_get_filename(struct super_block *sb, uint8_t *sname, uint8_t *dname,
--		     int flen)
-+int udf_get_filename(struct super_block *sb, uint8_t *sname, int slen,
-+		     uint8_t *dname, int dlen)
- {
- 	struct ustr *filename, *unifilename;
- 	int len = 0;
-@@ -347,7 +348,7 @@ int udf_get_filename(struct super_block
- 	if (!unifilename)
- 		goto out1;
- 
--	if (udf_build_ustr_exact(unifilename, sname, flen))
-+	if (udf_build_ustr_exact(unifilename, sname, slen))
- 		goto out2;
- 
- 	if (UDF_QUERY_FLAG(sb, UDF_FLAG_UTF8)) {
-@@ -366,7 +367,8 @@ int udf_get_filename(struct super_block
- 	} else
- 		goto out2;
- 
--	len = udf_translate_to_linux(dname, filename->u_name, filename->u_len,
-+	len = udf_translate_to_linux(dname, dlen,
-+				     filename->u_name, filename->u_len,
- 				     unifilename->u_name, unifilename->u_len);
- out2:
- 	kfree(unifilename);
-@@ -403,10 +405,12 @@ int udf_put_filename(struct super_block
- #define EXT_MARK		'.'
- #define CRC_MARK		'#'
- #define EXT_SIZE 		5
-+/* Number of chars we need to store generated CRC to make filename unique */
-+#define CRC_LEN			5
- 
--static int udf_translate_to_linux(uint8_t *newName, uint8_t *udfName,
--				  int udfLen, uint8_t *fidName,
--				  int fidNameLen)
-+static int udf_translate_to_linux(uint8_t *newName, int newLen,
-+				  uint8_t *udfName, int udfLen,
-+				  uint8_t *fidName, int fidNameLen)
- {
- 	int index, newIndex = 0, needsCRC = 0;
- 	int extIndex = 0, newExtIndex = 0, hasExt = 0;
-@@ -439,7 +443,7 @@ static int udf_translate_to_linux(uint8_
- 					newExtIndex = newIndex;
- 				}
- 			}
--			if (newIndex < 256)
-+			if (newIndex < newLen)
- 				newName[newIndex++] = curr;
- 			else
- 				needsCRC = 1;
-@@ -467,13 +471,13 @@ static int udf_translate_to_linux(uint8_
- 				}
- 				ext[localExtIndex++] = curr;
- 			}
--			maxFilenameLen = 250 - localExtIndex;
-+			maxFilenameLen = newLen - CRC_LEN - localExtIndex;
- 			if (newIndex > maxFilenameLen)
- 				newIndex = maxFilenameLen;
- 			else
- 				newIndex = newExtIndex;
--		} else if (newIndex > 250)
--			newIndex = 250;
-+		} else if (newIndex > newLen - CRC_LEN)
-+			newIndex = newLen - CRC_LEN;
- 		newName[newIndex++] = CRC_MARK;
- 		valueCRC = crc_itu_t(0, fidName, fidNameLen);
- 		newName[newIndex++] = hex_asc_upper_hi(valueCRC >> 8);
 
 
