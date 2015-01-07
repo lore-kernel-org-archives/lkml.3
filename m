@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758178AbbAGCic (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:38:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46999 "EHLO
+	id S1757573AbbAGCQu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:16:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46974 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757526AbbAGCQp (ORCPT
+	with ESMTP id S1757529AbbAGCQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:16:45 -0500
+	Tue, 6 Jan 2015 21:16:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.17 22/73] dm cache: dirty flag was mistakenly being cleared when promoting via overwrite
-Date: Tue,  6 Jan 2015 18:15:43 -0800
-Message-Id: <20150107021558.195765272@linuxfoundation.org>
+Subject: [PATCH 3.17 23/73] dm cache: fix spurious cell_defer when dealing with partial block at end of device
+Date: Tue,  6 Jan 2015 18:15:44 -0800
+Message-Id: <20150107021558.224508317@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107021557.521276020@linuxfoundation.org>
 References: <20150107021557.521276020@linuxfoundation.org>
@@ -30,40 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Joe Thornber <ejt@redhat.com>
 
-commit 1e32134a5a404e80bfb47fad8a94e9bbfcbdacc5 upstream.
+commit f824a2af3dfbbb766c02e19df21f985bceadf0ee upstream.
 
-If the incoming bio is a WRITE and completely covers a block then we
-don't bother to do any copying for a promotion operation.  Once this is
-done the cache block and origin block will be different, so we need to
-set it to 'dirty'.
+We never bother caching a partial block that is at the back end of the
+origin device.  No cell ever gets locked, but the calling code was
+assuming it was and trying to release it.
+
+Now the code only releases if the cell has been set to a non NULL
+value.
 
 Signed-off-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-cache-target.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/md/dm-cache-target.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 --- a/drivers/md/dm-cache-target.c
 +++ b/drivers/md/dm-cache-target.c
-@@ -951,10 +951,14 @@ static void migration_success_post_commi
- 		}
+@@ -2554,11 +2554,11 @@ static int __cache_map(struct cache *cac
+ static int cache_map(struct dm_target *ti, struct bio *bio)
+ {
+ 	int r;
+-	struct dm_bio_prison_cell *cell;
++	struct dm_bio_prison_cell *cell = NULL;
+ 	struct cache *cache = ti->private;
  
- 	} else {
--		clear_dirty(cache, mg->new_oblock, mg->cblock);
--		if (mg->requeue_holder)
-+		if (mg->requeue_holder) {
-+			clear_dirty(cache, mg->new_oblock, mg->cblock);
- 			cell_defer(cache, mg->new_ocell, true);
--		else {
-+		} else {
-+			/*
-+			 * The block was promoted via an overwrite, so it's dirty.
-+			 */
-+			set_dirty(cache, mg->new_oblock, mg->cblock);
- 			bio_endio(mg->new_ocell->holder, 0);
- 			cell_defer(cache, mg->new_ocell, false);
- 		}
+ 	r = __cache_map(cache, bio, &cell);
+-	if (r == DM_MAPIO_REMAPPED) {
++	if (r == DM_MAPIO_REMAPPED && cell) {
+ 		inc_ds(cache, bio, cell);
+ 		cell_defer(cache, cell, false);
+ 	}
 
 
