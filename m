@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758766AbbAGDG5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 22:06:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46224 "EHLO
+	id S1758752AbbAGDGz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 22:06:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46242 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756755AbbAGBvx (ORCPT
+	with ESMTP id S1756760AbbAGBvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jan 2015 20:51:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sumit Saxena <sumit.saxena@avagotech.com>,
-        Kashyap Desai <kashyap.desai@avagotech.com>,
-        Tomas Henzl <thenzl@redhat.com>, Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.18 15/84] megaraid_sas: dndinaness related bug fixes
-Date: Tue,  6 Jan 2015 17:49:18 -0800
-Message-Id: <20150107014029.489663463@linuxfoundation.org>
+        Markus Pargmann <mpa@pengutronix.de>, Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.18 16/84] regulator: anatop: Set default voltage selector for vddpu
+Date: Tue,  6 Jan 2015 17:49:19 -0800
+Message-Id: <20150107014029.528558824@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
 References: <20150107014029.012974975@linuxfoundation.org>
@@ -30,144 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Sumit.Saxena@avagotech.com" <Sumit.Saxena@avagotech.com>
+From: Markus Pargmann <mpa@pengutronix.de>
 
-commit 6e755ddc2935d970574263db3eca547eb70e67d7 upstream.
+commit fe08be3ec8672ed92b3ed1b85810df9fa0f98931 upstream.
 
-This patch addresses few endianness related bug fixes.
+The code reads the default voltage selector from its register. If the
+bootloader disables the regulator, the default voltage selector will be
+0 which results in faulty behaviour of this regulator driver.
 
-Signed-off-by: Sumit Saxena <sumit.saxena@avagotech.com>
-Signed-off-by: Kashyap Desai <kashyap.desai@avagotech.com>
-Reviewed-by: Tomas Henzl <thenzl@redhat.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+This patch sets a default voltage selector for vddpu if it is not set in
+the register.
+
+Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/megaraid/megaraid_sas_fp.c     |   17 +++++++++--------
- drivers/scsi/megaraid/megaraid_sas_fusion.c |   13 +++++++------
- 2 files changed, 16 insertions(+), 14 deletions(-)
+ drivers/regulator/anatop-regulator.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/scsi/megaraid/megaraid_sas_fp.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_fp.c
-@@ -183,14 +183,15 @@ void MR_PopulateDrvRaidMap(struct megasa
- 		/* New Raid map will not set totalSize, so keep expected value
- 		 * for legacy code in ValidateMapInfo
- 		 */
--		pDrvRaidMap->totalSize = sizeof(struct MR_FW_RAID_MAP_EXT);
-+		pDrvRaidMap->totalSize =
-+			cpu_to_le32(sizeof(struct MR_FW_RAID_MAP_EXT));
+--- a/drivers/regulator/anatop-regulator.c
++++ b/drivers/regulator/anatop-regulator.c
+@@ -283,6 +283,14 @@ static int anatop_regulator_probe(struct
+ 			sreg->sel = 0;
+ 			sreg->bypass = true;
+ 		}
++
++		/*
++		 * In case vddpu was disabled by the bootloader, we need to set
++		 * a sane default until imx6-cpufreq was probed and changes the
++		 * voltage to the correct value. In this case we set 1.25V.
++		 */
++		if (!sreg->sel && !strcmp(sreg->name, "vddpu"))
++			sreg->sel = 22;
  	} else {
- 		fw_map_old = (struct MR_FW_RAID_MAP_ALL *)
- 			fusion->ld_map[(instance->map_id & 1)];
- 		pFwRaidMap = &fw_map_old->raidMap;
- 
- #if VD_EXT_DEBUG
--		for (i = 0; i < pFwRaidMap->ldCount; i++) {
-+		for (i = 0; i < le16_to_cpu(pFwRaidMap->ldCount); i++) {
- 			dev_dbg(&instance->pdev->dev, "(%d) :Index 0x%x "
- 				"Target Id 0x%x Seq Num 0x%x Size 0/%llx\n",
- 				instance->unique_id, i,
-@@ -202,12 +203,12 @@ void MR_PopulateDrvRaidMap(struct megasa
- 
- 		memset(drv_map, 0, fusion->drv_map_sz);
- 		pDrvRaidMap->totalSize = pFwRaidMap->totalSize;
--		pDrvRaidMap->ldCount = pFwRaidMap->ldCount;
-+		pDrvRaidMap->ldCount = (__le16)pFwRaidMap->ldCount;
- 		pDrvRaidMap->fpPdIoTimeoutSec = pFwRaidMap->fpPdIoTimeoutSec;
- 		for (i = 0; i < MAX_RAIDMAP_LOGICAL_DRIVES + MAX_RAIDMAP_VIEWS; i++)
- 			pDrvRaidMap->ldTgtIdToLd[i] =
- 				(u8)pFwRaidMap->ldTgtIdToLd[i];
--		for (i = 0; i < pDrvRaidMap->ldCount; i++) {
-+		for (i = 0; i < le16_to_cpu(pDrvRaidMap->ldCount); i++) {
- 			pDrvRaidMap->ldSpanMap[i] = pFwRaidMap->ldSpanMap[i];
- #if VD_EXT_DEBUG
- 			dev_dbg(&instance->pdev->dev,
-@@ -268,7 +269,7 @@ u8 MR_ValidateMapInfo(struct megasas_ins
- 	else
- 		expected_size =
- 			(sizeof(struct MR_FW_RAID_MAP) - sizeof(struct MR_LD_SPAN_MAP) +
--			(sizeof(struct MR_LD_SPAN_MAP) * le32_to_cpu(pDrvRaidMap->ldCount)));
-+			(sizeof(struct MR_LD_SPAN_MAP) * le16_to_cpu(pDrvRaidMap->ldCount)));
- 
- 	if (le32_to_cpu(pDrvRaidMap->totalSize) != expected_size) {
- 		dev_err(&instance->pdev->dev, "map info structure size 0x%x is not matching with ld count\n",
-@@ -284,7 +285,7 @@ u8 MR_ValidateMapInfo(struct megasas_ins
- 
- 	mr_update_load_balance_params(drv_map, lbInfo);
- 
--	num_lds = le32_to_cpu(drv_map->raidMap.ldCount);
-+	num_lds = le16_to_cpu(drv_map->raidMap.ldCount);
- 
- 	/*Convert Raid capability values to CPU arch */
- 	for (ldCount = 0; ldCount < num_lds; ldCount++) {
-@@ -457,7 +458,7 @@ u32 mr_spanset_get_span_block(struct meg
- 				quad = &map->raidMap.ldSpanMap[ld].
- 					spanBlock[span].
- 					block_span_info.quad[info];
--				if (le32_to_cpu(quad->diff == 0))
-+				if (le32_to_cpu(quad->diff) == 0)
- 					return SPAN_INVALID;
- 				if (le64_to_cpu(quad->logStart) <= row  &&
- 					row <= le64_to_cpu(quad->logEnd)  &&
-@@ -520,7 +521,7 @@ static u64  get_row_from_strip(struct me
- 				span_set->span_row_data_width) * span_set->diff;
- 		for (span = 0, span_offset = 0; span < raid->spanDepth; span++)
- 			if (le32_to_cpu(map->raidMap.ldSpanMap[ld].spanBlock[span].
--				block_span_info.noElements >= info+1)) {
-+				block_span_info.noElements) >= info+1) {
- 				if (strip_offset >=
- 					span_set->strip_offset[span])
- 					span_offset++;
---- a/drivers/scsi/megaraid/megaraid_sas_fusion.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_fusion.c
-@@ -880,7 +880,7 @@ megasas_sync_map_info(struct megasas_ins
- 
- 	map = fusion->ld_drv_map[instance->map_id & 1];
- 
--	num_lds = le32_to_cpu(map->raidMap.ldCount);
-+	num_lds = le16_to_cpu(map->raidMap.ldCount);
- 
- 	dcmd = &cmd->frame->dcmd;
- 
-@@ -1173,9 +1173,10 @@ megasas_fire_cmd_fusion(struct megasas_i
- 			struct megasas_register_set __iomem *regs)
- {
- #if defined(writeq) && defined(CONFIG_64BIT)
--	u64 req_data = (((u64)req_desc_hi << 32) | (u32)req_desc_lo);
-+	u64 req_data = (((u64)le32_to_cpu(req_desc_hi) << 32) |
-+			le32_to_cpu(req_desc_lo));
- 
--	writeq(le64_to_cpu(req_data), &(regs)->inbound_low_queue_port);
-+	writeq(req_data, &(regs)->inbound_low_queue_port);
- #else
- 	unsigned long flags;
- 
-@@ -1373,7 +1374,7 @@ megasas_set_pd_lba(struct MPI2_RAID_SCSI
- 		/* Logical block reference tag */
- 		io_request->CDB.EEDP32.PrimaryReferenceTag =
- 			cpu_to_be32(ref_tag);
--		io_request->CDB.EEDP32.PrimaryApplicationTagMask = 0xffff;
-+		io_request->CDB.EEDP32.PrimaryApplicationTagMask = cpu_to_be16(0xffff);
- 		io_request->IoFlags = cpu_to_le16(32); /* Specify 32-byte cdb */
- 
- 		/* Transfer length */
-@@ -1769,7 +1770,7 @@ megasas_build_dcdb_fusion(struct megasas
- 
- 		/* set RAID context values */
- 		pRAID_Context->regLockFlags     = REGION_TYPE_SHARED_READ;
--		pRAID_Context->timeoutValue     = raid->fpIoTimeoutForLd;
-+		pRAID_Context->timeoutValue     = cpu_to_le16(raid->fpIoTimeoutForLd);
- 		pRAID_Context->VirtualDiskTgtId = cpu_to_le16(device_id);
- 		pRAID_Context->regLockRowLBA    = 0;
- 		pRAID_Context->regLockLength    = 0;
-@@ -2254,7 +2255,7 @@ build_mpt_mfi_pass_thru(struct megasas_i
- 	 * megasas_complete_cmd
- 	 */
- 
--	if (frame_hdr->flags & MFI_FRAME_DONT_POST_IN_REPLY_QUEUE)
-+	if (frame_hdr->flags & cpu_to_le16(MFI_FRAME_DONT_POST_IN_REPLY_QUEUE))
- 		cmd->flags = MFI_FRAME_DONT_POST_IN_REPLY_QUEUE;
- 
- 	fusion = instance->ctrl_context;
+ 		rdesc->ops = &anatop_rops;
+ 	}
 
 
