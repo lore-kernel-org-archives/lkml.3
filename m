@@ -1,26 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758082AbbAGC0f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:26:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47126 "EHLO
+	id S1758099AbbAGC0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:26:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47131 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757687AbbAGCSC (ORCPT
+	with ESMTP id S1757688AbbAGCSC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jan 2015 21:18:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Aaron Tomlin <atomlin@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Sterling Alexander <stalexan@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.17 61/73] exit: pidns: alloc_pid() leaks pid_namespace if child_reaper is exiting
-Date: Tue,  6 Jan 2015 18:16:22 -0800
-Message-Id: <20150107021559.381787506@linuxfoundation.org>
+        Carl Henrik Lunde <chlunde@ping.uio.no>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.17 62/73] udf: Check path length when reading symlink
+Date: Tue,  6 Jan 2015 18:16:23 -0800
+Message-Id: <20150107021559.411338315@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107021557.521276020@linuxfoundation.org>
 References: <20150107021557.521276020@linuxfoundation.org>
@@ -35,41 +28,228 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 24c037ebf5723d4d9ab0996433cee4f96c292a4d upstream.
+commit 0e5cc9a40ada6046e6bc3bdfcd0c0d7e4b706b14 upstream.
 
-alloc_pid() does get_pid_ns() beforehand but forgets to put_pid_ns() if it
-fails because disable_pid_allocation() was called by the exiting
-child_reaper.
+Symlink reading code does not check whether the resulting path fits into
+the page provided by the generic code. This isn't as easy as just
+checking the symlink size because of various encoding conversions we
+perform on path. So we have to check whether there is still enough space
+in the buffer on the fly.
 
-We could simply move get_pid_ns() down to successful return, but this fix
-tries to be as trivial as possible.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Aaron Tomlin <atomlin@redhat.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: Sterling Alexander <stalexan@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Carl Henrik Lunde <chlunde@ping.uio.no>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/pid.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/udf/dir.c     |    3 ++-
+ fs/udf/namei.c   |    3 ++-
+ fs/udf/symlink.c |   31 ++++++++++++++++++++++++++-----
+ fs/udf/udfdecl.h |    3 ++-
+ fs/udf/unicode.c |   28 ++++++++++++++++------------
+ 5 files changed, 48 insertions(+), 20 deletions(-)
 
---- a/kernel/pid.c
-+++ b/kernel/pid.c
-@@ -341,6 +341,8 @@ out:
+--- a/fs/udf/dir.c
++++ b/fs/udf/dir.c
+@@ -167,7 +167,8 @@ static int udf_readdir(struct file *file
+ 			continue;
+ 		}
  
- out_unlock:
- 	spin_unlock_irq(&pidmap_lock);
-+	put_pid_ns(ns);
-+
- out_free:
- 	while (++i <= ns->level)
- 		free_pidmap(pid->numbers + i);
+-		flen = udf_get_filename(dir->i_sb, nameptr, fname, lfi);
++		flen = udf_get_filename(dir->i_sb, nameptr, lfi, fname,
++					UDF_NAME_LEN);
+ 		if (!flen)
+ 			continue;
+ 
+--- a/fs/udf/namei.c
++++ b/fs/udf/namei.c
+@@ -233,7 +233,8 @@ static struct fileIdentDesc *udf_find_en
+ 		if (!lfi)
+ 			continue;
+ 
+-		flen = udf_get_filename(dir->i_sb, nameptr, fname, lfi);
++		flen = udf_get_filename(dir->i_sb, nameptr, lfi, fname,
++					UDF_NAME_LEN);
+ 		if (flen && udf_match(flen, fname, child->len, child->name))
+ 			goto out_ok;
+ 	}
+--- a/fs/udf/symlink.c
++++ b/fs/udf/symlink.c
+@@ -30,13 +30,16 @@
+ #include <linux/buffer_head.h>
+ #include "udf_i.h"
+ 
+-static void udf_pc_to_char(struct super_block *sb, unsigned char *from,
+-			   int fromlen, unsigned char *to)
++static int udf_pc_to_char(struct super_block *sb, unsigned char *from,
++			  int fromlen, unsigned char *to, int tolen)
+ {
+ 	struct pathComponent *pc;
+ 	int elen = 0;
++	int comp_len;
+ 	unsigned char *p = to;
+ 
++	/* Reserve one byte for terminating \0 */
++	tolen--;
+ 	while (elen < fromlen) {
+ 		pc = (struct pathComponent *)(from + elen);
+ 		switch (pc->componentType) {
+@@ -49,22 +52,37 @@ static void udf_pc_to_char(struct super_
+ 				break;
+ 			/* Fall through */
+ 		case 2:
++			if (tolen == 0)
++				return -ENAMETOOLONG;
+ 			p = to;
+ 			*p++ = '/';
++			tolen--;
+ 			break;
+ 		case 3:
++			if (tolen < 3)
++				return -ENAMETOOLONG;
+ 			memcpy(p, "../", 3);
+ 			p += 3;
++			tolen -= 3;
+ 			break;
+ 		case 4:
++			if (tolen < 2)
++				return -ENAMETOOLONG;
+ 			memcpy(p, "./", 2);
+ 			p += 2;
++			tolen -= 2;
+ 			/* that would be . - just ignore */
+ 			break;
+ 		case 5:
+-			p += udf_get_filename(sb, pc->componentIdent, p,
+-					      pc->lengthComponentIdent);
++			comp_len = udf_get_filename(sb, pc->componentIdent,
++						    pc->lengthComponentIdent,
++						    p, tolen);
++			p += comp_len;
++			tolen -= comp_len;
++			if (tolen == 0)
++				return -ENAMETOOLONG;
+ 			*p++ = '/';
++			tolen--;
+ 			break;
+ 		}
+ 		elen += sizeof(struct pathComponent) + pc->lengthComponentIdent;
+@@ -73,6 +91,7 @@ static void udf_pc_to_char(struct super_
+ 		p[-1] = '\0';
+ 	else
+ 		p[0] = '\0';
++	return 0;
+ }
+ 
+ static int udf_symlink_filler(struct file *file, struct page *page)
+@@ -100,8 +119,10 @@ static int udf_symlink_filler(struct fil
+ 		symlink = bh->b_data;
+ 	}
+ 
+-	udf_pc_to_char(inode->i_sb, symlink, inode->i_size, p);
++	err = udf_pc_to_char(inode->i_sb, symlink, inode->i_size, p, PAGE_SIZE);
+ 	brelse(bh);
++	if (err)
++		goto out_unlock_inode;
+ 
+ 	up_read(&iinfo->i_data_sem);
+ 	SetPageUptodate(page);
+--- a/fs/udf/udfdecl.h
++++ b/fs/udf/udfdecl.h
+@@ -211,7 +211,8 @@ udf_get_lb_pblock(struct super_block *sb
+ }
+ 
+ /* unicode.c */
+-extern int udf_get_filename(struct super_block *, uint8_t *, uint8_t *, int);
++extern int udf_get_filename(struct super_block *, uint8_t *, int, uint8_t *,
++			    int);
+ extern int udf_put_filename(struct super_block *, const uint8_t *, uint8_t *,
+ 			    int);
+ extern int udf_build_ustr(struct ustr *, dstring *, int);
+--- a/fs/udf/unicode.c
++++ b/fs/udf/unicode.c
+@@ -28,7 +28,8 @@
+ 
+ #include "udf_sb.h"
+ 
+-static int udf_translate_to_linux(uint8_t *, uint8_t *, int, uint8_t *, int);
++static int udf_translate_to_linux(uint8_t *, int, uint8_t *, int, uint8_t *,
++				  int);
+ 
+ static int udf_char_to_ustr(struct ustr *dest, const uint8_t *src, int strlen)
+ {
+@@ -333,8 +334,8 @@ try_again:
+ 	return u_len + 1;
+ }
+ 
+-int udf_get_filename(struct super_block *sb, uint8_t *sname, uint8_t *dname,
+-		     int flen)
++int udf_get_filename(struct super_block *sb, uint8_t *sname, int slen,
++		     uint8_t *dname, int dlen)
+ {
+ 	struct ustr *filename, *unifilename;
+ 	int len = 0;
+@@ -347,7 +348,7 @@ int udf_get_filename(struct super_block
+ 	if (!unifilename)
+ 		goto out1;
+ 
+-	if (udf_build_ustr_exact(unifilename, sname, flen))
++	if (udf_build_ustr_exact(unifilename, sname, slen))
+ 		goto out2;
+ 
+ 	if (UDF_QUERY_FLAG(sb, UDF_FLAG_UTF8)) {
+@@ -366,7 +367,8 @@ int udf_get_filename(struct super_block
+ 	} else
+ 		goto out2;
+ 
+-	len = udf_translate_to_linux(dname, filename->u_name, filename->u_len,
++	len = udf_translate_to_linux(dname, dlen,
++				     filename->u_name, filename->u_len,
+ 				     unifilename->u_name, unifilename->u_len);
+ out2:
+ 	kfree(unifilename);
+@@ -403,10 +405,12 @@ int udf_put_filename(struct super_block
+ #define EXT_MARK		'.'
+ #define CRC_MARK		'#'
+ #define EXT_SIZE 		5
++/* Number of chars we need to store generated CRC to make filename unique */
++#define CRC_LEN			5
+ 
+-static int udf_translate_to_linux(uint8_t *newName, uint8_t *udfName,
+-				  int udfLen, uint8_t *fidName,
+-				  int fidNameLen)
++static int udf_translate_to_linux(uint8_t *newName, int newLen,
++				  uint8_t *udfName, int udfLen,
++				  uint8_t *fidName, int fidNameLen)
+ {
+ 	int index, newIndex = 0, needsCRC = 0;
+ 	int extIndex = 0, newExtIndex = 0, hasExt = 0;
+@@ -439,7 +443,7 @@ static int udf_translate_to_linux(uint8_
+ 					newExtIndex = newIndex;
+ 				}
+ 			}
+-			if (newIndex < 256)
++			if (newIndex < newLen)
+ 				newName[newIndex++] = curr;
+ 			else
+ 				needsCRC = 1;
+@@ -467,13 +471,13 @@ static int udf_translate_to_linux(uint8_
+ 				}
+ 				ext[localExtIndex++] = curr;
+ 			}
+-			maxFilenameLen = 250 - localExtIndex;
++			maxFilenameLen = newLen - CRC_LEN - localExtIndex;
+ 			if (newIndex > maxFilenameLen)
+ 				newIndex = maxFilenameLen;
+ 			else
+ 				newIndex = newExtIndex;
+-		} else if (newIndex > 250)
+-			newIndex = 250;
++		} else if (newIndex > newLen - CRC_LEN)
++			newIndex = newLen - CRC_LEN;
+ 		newName[newIndex++] = CRC_MARK;
+ 		valueCRC = crc_itu_t(0, fidName, fidNameLen);
+ 		newName[newIndex++] = hex_asc_upper_hi(valueCRC >> 8);
 
 
