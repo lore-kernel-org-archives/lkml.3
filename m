@@ -1,66 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757664AbbAGCRs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:17:48 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:60742 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757645AbbAGCRq (ORCPT
+	id S1757904AbbAGCTr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:19:47 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:50489 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752716AbbAGCTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:17:46 -0500
-Date: Wed, 7 Jan 2015 13:17:37 +1100
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Crypto Fixes for 3.19
-Message-ID: <20150107021737.GA25043@gondor.apana.org.au>
-References: <20110629235153.GA16559@gondor.apana.org.au>
- <20120126024342.GA12492@gondor.apana.org.au>
- <20120823083242.GA23102@gondor.apana.org.au>
- <20121109093005.GA25632@gondor.apana.org.au>
- <20130328082841.GA7425@gondor.apana.org.au>
- <20131203124129.GA12067@gondor.apana.org.au>
- <20131209115705.GA1361@gondor.apana.org.au>
- <20140101061016.GA22579@gondor.apana.org.au>
- <20140203125944.GA31446@gondor.apana.org.au>
- <20141231033217.GA27261@gondor.apana.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141231033217.GA27261@gondor.apana.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 6 Jan 2015 21:19:44 -0500
+From: gyungoh@gmail.com
+X-Google-Original-From: jack.yoo@skyworksinc.com
+To: sameo@linux.intel.com, lee.jones@linaro.org, grant.likely@linaro.org,
+        robh+dt@kernel.org, jg1.han@samsung.com, cooloney@gmail.com,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        trivial@kernel.org
+Cc: akpm@linux-foundation.org, jic23@kernel.org,
+        thomas.petazzoni@free-electrons.com, ktsai@capellamicro.com,
+        hs@denx.de, stwiss.opensource@diasemi.com, matti.vaittinen@nsn.com,
+        broonie@kernel.org, jason@lakedaemon.net, heiko@sntech.de,
+        shawn.guo@freescale.com, florian.vaussard@epfl.ch, andrew@lunn.ch,
+        antonynpavlov@gmail.com, hytszk@gmail.com, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, jack.yoo@skyworksinc.com,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATCH v10 0/6] Add Skyworks SKY81452 device drivers
+Date: Wed,  7 Jan 2015 11:19:21 +0900
+Message-Id: <1420597167-3188-1-git-send-email-jack.yoo@skyworksinc.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 
-This push fixes a build problem with sha-mb with old toolchains
-and an implementation bug in the ctr(aes)/by8 branch of aesni-intel
-that's enabled when AVX is available.
+This patch set includes regulator and backlight driver for SKY81452.
+Also it includes documents for device tree and module.
+sky81452-regulator was already applied. So this series doesn't
+include it.
 
-Please pull from
+v10:
+Removed trivial get_brightness implementations for sky81452-backlight
 
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+v9:
+Removed the change to remove MODULE_VERSION() for sky81452-regulator
 
-or
+v8:
+Renamed property names for backlight with vendor prefix
+Modified gpio-enable property to generic property for GPIO
+Made up the example for backlight DT
+Changed the DT parsing of regulator using regulator_node and of_match
 
-master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+v7:
+Modified licensing text to GPLv2
+Splitted Kconfig renaming from DT patch
 
- 
-Mathias Krause (1):
-      crypto: aesni - fix "by8" variant for 128 bit keys
+v6:
+Added new line character at the end of line of dev_err()
 
-Vinson Lee (1):
-      crypto: sha-mb - Add avx2_supported check.
+v5:
+Changed DT for regulator : 'lout' node should be defined under 'regulator'
+Removed compatible string from sky81452-regulator driver
+Modified sky81452-regulator to return EINVAL when of_node is NULL
+Move sky81452-backlight.h to include/linux/platform_data
 
- arch/x86/crypto/Makefile                |    2 +-
- arch/x86/crypto/aes_ctrby8_avx-x86_64.S |   46 +++++++++++++++++++++++--------
- 2 files changed, 36 insertions(+), 12 deletions(-)
+v4:
+Removed MODULE_VERSION()
+Modified license to GPLv2
+Removed calling to backlight_device_unregister() in sky81452-backlight
 
-Thanks,
+v3:
+Cleaned-up DBG messages
+Cleaned-up DT
+Fixed the backlight name from 'sky81452-bl' to 'sky81452-backlight'
+Assigned mfd_cell.of_compatible for binding device node
+Modified error messages
+Modified sky81452-regulator to return ENODATA when of_node is NULL
+
+v2:
+Split the patches for each sub-system
+Added 'reg' attribute for I2C address in device tree documents
+Added 'compatible' attribute in child drivers
+Renamed CONFIG_SKY81452 to CONFIG_MFD_SKY81452
+Changed the dependency from I2C=y to I2C, for CONFIG_MFD_SKY81452
+Added message for exception or errors.
+Added vendor prefix for Skyworks Solutions, Inc.
+Add SKY81452 to the Trivial Devices list
+
+Gyungoh Yoo (6):
+  mfd: Add support for Skyworks SKY81452 driver
+  backlight: Add support Skyworks SKY81452 backlight driver
+  devicetree: mfd: Add new SKY81452 mfd binding
+  devicetree: backlight: Add new SKY81452 backlight binding
+  devicetree: Add vendor prefix for Skyworks Solutions, Inc.
+  devicetree: i2c: Add SKY81452 to the Trivial Devices list
+
+ .../devicetree/bindings/i2c/trivial-devices.txt    |   1 +
+ Documentation/devicetree/bindings/mfd/sky81452.txt |  36 +++
+ .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+ .../video/backlight/sky81452-backlight.txt         |  29 ++
+ drivers/mfd/Kconfig                                |  12 +
+ drivers/mfd/Makefile                               |   1 +
+ drivers/mfd/sky81452.c                             | 108 +++++++
+ drivers/video/backlight/Kconfig                    |  10 +
+ drivers/video/backlight/Makefile                   |   1 +
+ drivers/video/backlight/sky81452-backlight.c       | 334 +++++++++++++++++++++
+ include/linux/mfd/sky81452.h                       |  31 ++
+ include/linux/platform_data/sky81452-backlight.h   |  46 +++
+ 12 files changed, 610 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/sky81452.txt
+ create mode 100644 Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+ create mode 100644 drivers/mfd/sky81452.c
+ create mode 100644 drivers/video/backlight/sky81452-backlight.c
+ create mode 100644 include/linux/mfd/sky81452.h
+ create mode 100644 include/linux/platform_data/sky81452-backlight.h
+
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.9.1
+
