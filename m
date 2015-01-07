@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087AbbAGLeu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 06:34:50 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:57606 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752249AbbAGLet (ORCPT
+	id S1752591AbbAGL3G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 06:29:06 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:63043 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751769AbbAGL3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 06:34:49 -0500
+	Wed, 7 Jan 2015 06:29:04 -0500
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: tglx@linutronix.de
 Cc: olof@lixom.net, magnus.damm@gmail.com, tjakobi@math.uni-bielefeld.de,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] clocksource: exynos_mct: Fix bitmask regression for exynos4_mct_write
-Date: Wed,  7 Jan 2015 12:28:56 +0100
-Message-Id: <1420630138-31443-1-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 2/3] clocksource: kona: fix __iomem annotation
+Date: Wed,  7 Jan 2015 12:28:57 +0100
+Message-Id: <1420630138-31443-2-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <54AD17F1.4010002@linaro.org>
+In-Reply-To: <1420630138-31443-1-git-send-email-daniel.lezcano@linaro.org>
 References: <54AD17F1.4010002@linaro.org>
+ <1420630138-31443-1-git-send-email-daniel.lezcano@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>
+From: Olof Johansson <olof@lixom.net>
 
-EXYNOS4_MCT_L_MASK is defined as 0xffffff00, so applying this bitmask
-produces a number outside the range 0x00 to 0xff, which always results
-in execution of the default switch statement.
+It makes no sense to hide the __iomem annotation from the function
+that uses it, especially since it causes a sparse warning:
 
-Obviously this is wrong and git history shows that the bitmask inversion
-was incorrectly set during a refactoring of the MCT code.
+drivers/clocksource/bcm_kona_timer.c:118:38: warning: incorrect type in argument 1 (different address spaces)
+drivers/clocksource/bcm_kona_timer.c:118:38:    expected void *timer_base
+drivers/clocksource/bcm_kona_timer.c:118:38:    got void [noderef] <asn:2>*static [toplevel] tmr_regs
 
-Fix this by putting the inversion at the correct position again.
-
-Cc: stable@vger.kernel.org
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-Reported-by: GP Orcullo <kinsamanka@gmail.com>
-Reviewed-by: Doug Anderson <dianders@chromium.org>
-Signed-off-by: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>
+Signed-off-by: Olof Johansson <olof@lixom.net>
+Acked-by: Florian Fainelli <f.fainelli@gmail.com>
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- drivers/clocksource/exynos_mct.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/clocksource/bcm_kona_timer.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
-index 9403061..83564c9 100644
---- a/drivers/clocksource/exynos_mct.c
-+++ b/drivers/clocksource/exynos_mct.c
-@@ -97,8 +97,8 @@ static void exynos4_mct_write(unsigned int value, unsigned long offset)
- 	writel_relaxed(value, reg_base + offset);
+diff --git a/drivers/clocksource/bcm_kona_timer.c b/drivers/clocksource/bcm_kona_timer.c
+index 0595dc6..f1e33d0 100644
+--- a/drivers/clocksource/bcm_kona_timer.c
++++ b/drivers/clocksource/bcm_kona_timer.c
+@@ -68,9 +68,8 @@ static void kona_timer_disable_and_clear(void __iomem *base)
+ }
  
- 	if (likely(offset >= EXYNOS4_MCT_L_BASE(0))) {
--		stat_addr = (offset & ~EXYNOS4_MCT_L_MASK) + MCT_L_WSTAT_OFFSET;
--		switch (offset & EXYNOS4_MCT_L_MASK) {
-+		stat_addr = (offset & EXYNOS4_MCT_L_MASK) + MCT_L_WSTAT_OFFSET;
-+		switch (offset & ~EXYNOS4_MCT_L_MASK) {
- 		case MCT_L_TCON_OFFSET:
- 			mask = 1 << 3;		/* L_TCON write status */
+ static void
+-kona_timer_get_counter(void *timer_base, uint32_t *msw, uint32_t *lsw)
++kona_timer_get_counter(void __iomem *timer_base, uint32_t *msw, uint32_t *lsw)
+ {
+-	void __iomem *base = IOMEM(timer_base);
+ 	int loop_limit = 4;
+ 
+ 	/*
+@@ -86,9 +85,9 @@ kona_timer_get_counter(void *timer_base, uint32_t *msw, uint32_t *lsw)
+ 	 */
+ 
+ 	while (--loop_limit) {
+-		*msw = readl(base + KONA_GPTIMER_STCHI_OFFSET);
+-		*lsw = readl(base + KONA_GPTIMER_STCLO_OFFSET);
+-		if (*msw == readl(base + KONA_GPTIMER_STCHI_OFFSET))
++		*msw = readl(timer_base + KONA_GPTIMER_STCHI_OFFSET);
++		*lsw = readl(timer_base + KONA_GPTIMER_STCLO_OFFSET);
++		if (*msw == readl(timer_base + KONA_GPTIMER_STCHI_OFFSET))
  			break;
+ 	}
+ 	if (!loop_limit) {
 -- 
 1.9.1
 
