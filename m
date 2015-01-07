@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757613AbbAGCR1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:17:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46956 "EHLO
+	id S1758048AbbAGCZn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:25:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47109 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933160AbbAGCQ4 (ORCPT
+	with ESMTP id S1757696AbbAGCSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:16:56 -0500
+	Tue, 6 Jan 2015 21:18:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.17 37/73] isofs: Fix unchecked printing of ER records
-Date: Tue,  6 Jan 2015 18:15:58 -0800
-Message-Id: <20150107021558.644351449@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>, Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: [PATCH 3.17 38/73] KEYS: Fix stale key registration at error path
+Date: Tue,  6 Jan 2015 18:15:59 -0800
+Message-Id: <20150107021558.673481755@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107021557.521276020@linuxfoundation.org>
 References: <20150107021557.521276020@linuxfoundation.org>
@@ -28,33 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 4e2024624e678f0ebb916e6192bd23c1f9fdf696 upstream.
+commit b26bdde5bb27f3f900e25a95e33a0c476c8c2c48 upstream.
 
-We didn't check length of rock ridge ER records before printing them.
-Thus corrupted isofs image can cause us to access and print some memory
-behind the buffer with obvious consequences.
+When loading encrypted-keys module, if the last check of
+aes_get_sizes() in init_encrypted() fails, the driver just returns an
+error without unregistering its key type.  This results in the stale
+entry in the list.  In addition to memory leaks, this leads to a kernel
+crash when registering a new key type later.
 
-Reported-and-tested-by: Carl Henrik Lunde <chlunde@ping.uio.no>
-Signed-off-by: Jan Kara <jack@suse.cz>
+This patch fixes the problem by swapping the calls of aes_get_sizes()
+and register_key_type(), and releasing resources properly at the error
+paths.
+
+Bugzilla: https://bugzilla.opensuse.org/show_bug.cgi?id=908163
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/isofs/rock.c |    3 +++
- 1 file changed, 3 insertions(+)
+ security/keys/encrypted-keys/encrypted.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/fs/isofs/rock.c
-+++ b/fs/isofs/rock.c
-@@ -362,6 +362,9 @@ repeat:
- 			rs.cont_size = isonum_733(rr->u.CE.size);
- 			break;
- 		case SIG('E', 'R'):
-+			/* Invalid length of ER tag id? */
-+			if (rr->u.ER.len_id + offsetof(struct rock_ridge, u.ER.data) > rr->len)
-+				goto out;
- 			ISOFS_SB(inode->i_sb)->s_rock = 1;
- 			printk(KERN_DEBUG "ISO 9660 Extensions: ");
- 			{
+--- a/security/keys/encrypted-keys/encrypted.c
++++ b/security/keys/encrypted-keys/encrypted.c
+@@ -1018,10 +1018,13 @@ static int __init init_encrypted(void)
+ 	ret = encrypted_shash_alloc();
+ 	if (ret < 0)
+ 		return ret;
++	ret = aes_get_sizes();
++	if (ret < 0)
++		goto out;
+ 	ret = register_key_type(&key_type_encrypted);
+ 	if (ret < 0)
+ 		goto out;
+-	return aes_get_sizes();
++	return 0;
+ out:
+ 	encrypted_shash_release();
+ 	return ret;
 
 
