@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269AbbAGASM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 19:18:12 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:26419 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751667AbbAGASJ (ORCPT
+	id S1754313AbbAGA3U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 19:29:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45403 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751974AbbAGA3Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 19:18:09 -0500
-To: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        "jejb\@kernel.org" <jejb@kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-scsi\@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Sathya Prakash <Sathya.Prakash@avagotech.com>,
-        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@avagotech.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/22] [SCSI] mpt2sas, mpt3sas: Removing uppper boundary restriction for the module parameter max_sgl_entries
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <1418131643-11568-1-git-send-email-Sreekanth.Reddy@avagotech.com>
-	<yq1wq5zcjmd.fsf@sermon.lab.mkp.net>
-	<CAK=zhgrr=9+3dynE6fuTikNwnBFKe5x=jA+UTzPKqfNAyXt_ow@mail.gmail.com>
-Date: Tue, 06 Jan 2015 19:17:32 -0500
-In-Reply-To: <CAK=zhgrr=9+3dynE6fuTikNwnBFKe5x=jA+UTzPKqfNAyXt_ow@mail.gmail.com>
-	(Sreekanth Reddy's message of "Thu, 11 Dec 2014 17:44:03 +0530")
-Message-ID: <yq1tx0378bn.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Tue, 6 Jan 2015 19:29:16 -0500
+Date: Tue, 6 Jan 2015 16:29:15 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Drysdale <drysdale@google.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        David Miller <davem@davemloft.net>,
+        Heinrich Schuchardt <xypron.glpk@gmx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Jan Kara <jack@suse.cz>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sparclinux@vger.kernel.org
+Subject: Re: [PATCHv2 1/1] vfs: renumber FMODE_NONOTIFY and add to
+ uniqueness check
+Message-Id: <20150106162915.7edb5620999641ebdc7a74e6@linux-foundation.org>
+In-Reply-To: <1416828199-3414-2-git-send-email-drysdale@google.com>
+References: <1416828199-3414-1-git-send-email-drysdale@google.com>
+	<1416828199-3414-2-git-send-email-drysdale@google.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Sreekanth" == Sreekanth Reddy <sreekanth.reddy@avagotech.com> writes:
+On Mon, 24 Nov 2014 11:23:19 +0000 David Drysdale <drysdale@google.com> wrote:
 
-Sreekanth> I though to warn the user that the module parameter
-Sreekanth> max_sgl_entries value what they provided is greater than the
-Sreekanth> kernel defined SCSI_MAX_SG_SEGMENTS, whether if this module
-Sreekanth> parameter value is greater than or less than the
-Sreekanth> SCSI_MAX_SG_CHAIN_SEGMENTS. Also I thought, user may confuse
-Sreekanth> if see observes SCSI_MAX_SG_CHAIN_SEGMENTS value instead of
-Sreekanth> max_sgl_entries value in the warning message.
+> Fix clashing values for O_PATH and FMODE_NONOTIFY on sparc.
+> The clashing O_PATH value was added in 5229645bdc35f1cc43eb ("vfs: add
+> nonconflicting values for O_PATH") but this can't be changed as it
+> is user-visible.
+> 
+> FMODE_NONOTIFY is only used internally in the kernel, but it is in
+> the same numbering space as the other O_* flags, as indicated by the
+> comment at the top of include/uapi/asm-generic/fcntl.h (and its use
+> in fs/notify/fanotify/fanotify_user.c).  So renumber it to avoid
+> the clash.
+> 
+> All of this has happened before (12ed2e36c98aec6c4155, "fanotify:
+> FMODE_NONOTIFY and __O_SYNC in sparc conflict"), and all of this
+> will happen again -- so update the uniqueness check in fcntl_init()
+> to include __FMODE_NONOTIFY.
 
-I would just prefer to see the value that is in effect. I know what I
-provided as override value.
+What are the user-visible runtime effects of the bug?
 
-At the very least print a warning if you subsequently clamp the value to
-MAX_SG_CHAIN_SEGMENTS. "Requested number of segments %u is bigger than
-kernel max %u".
+Please always include this info when fixing bugs, so people can work
+out which kernel version(s) need the fix.
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
