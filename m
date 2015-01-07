@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758264AbbAGCnc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:43:32 -0500
+	id S933607AbbAGCrB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:47:01 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:46770 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932980AbbAGCHj (ORCPT
+	with ESMTP id S932476AbbAGCHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:07:39 -0500
+	Tue, 6 Jan 2015 21:07:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sumit Saxena <sumit.saxena@avagotech.com>,
-        Kashyap Desai <kashyap.desai@avagotech.com>,
-        Tomas Henzl <thenzl@redhat.com>, Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.14 11/52] megaraid_sas: corrected return of wait_event from abort frame path
-Date: Tue,  6 Jan 2015 18:06:39 -0800
-Message-Id: <20150107020556.919486628@linuxfoundation.org>
+        Robert Elliott <elliott@hp.com>, Hannes Reinecke <hare@suse.de>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.14 12/52] scsi: correct return values for .eh_abort_handler implementations
+Date: Tue,  6 Jan 2015 18:06:40 -0800
+Message-Id: <20150107020557.049613487@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107020555.043793795@linuxfoundation.org>
 References: <20150107020555.043793795@linuxfoundation.org>
@@ -30,33 +29,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Sumit.Saxena@avagotech.com" <Sumit.Saxena@avagotech.com>
+From: Hannes Reinecke <hare@suse.de>
 
-commit 170c238701ec38b1829321b17c70671c101bac55 upstream.
+commit b6c92b7e0af575e2b8b05bdf33633cf9e1661cbf upstream.
 
-Corrected wait_event() call which was waiting for wrong completion
-status (0xFF).
+The .eh_abort_handler needs to return SUCCESS, FAILED, or
+FAST_IO_FAIL. So fixup all callers to adhere to this requirement.
 
-Signed-off-by: Sumit Saxena <sumit.saxena@avagotech.com>
-Signed-off-by: Kashyap Desai <kashyap.desai@avagotech.com>
-Reviewed-by: Tomas Henzl <thenzl@redhat.com>
+Reviewed-by: Robert Elliott <elliott@hp.com>
+Signed-off-by: Hannes Reinecke <hare@suse.de>
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/megaraid/megaraid_sas_base.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/NCR5380.c            |   12 ++++++------
+ drivers/scsi/aha1740.c            |    2 +-
+ drivers/scsi/atari_NCR5380.c      |    2 +-
+ drivers/scsi/esas2r/esas2r_main.c |    2 +-
+ drivers/scsi/megaraid.c           |    8 ++++----
+ drivers/scsi/sun3_NCR5380.c       |   10 +++++-----
+ 6 files changed, 18 insertions(+), 18 deletions(-)
 
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -953,7 +953,7 @@ megasas_issue_blocked_abort_cmd(struct m
- 		cpu_to_le32(upper_32_bits(cmd_to_abort->frame_phys_addr));
+--- a/drivers/scsi/NCR5380.c
++++ b/drivers/scsi/NCR5380.c
+@@ -2655,14 +2655,14 @@ static void NCR5380_dma_complete(NCR5380
+  *
+  * Purpose : abort a command
+  *
+- * Inputs : cmd - the Scsi_Cmnd to abort, code - code to set the 
+- *      host byte of the result field to, if zero DID_ABORTED is 
++ * Inputs : cmd - the Scsi_Cmnd to abort, code - code to set the
++ *      host byte of the result field to, if zero DID_ABORTED is
+  *      used.
+  *
+- * Returns : 0 - success, -1 on failure.
++ * Returns : SUCCESS - success, FAILED on failure.
+  *
+- *	XXX - there is no way to abort the command that is currently 
+- *	connected, you have to wait for it to complete.  If this is 
++ *	XXX - there is no way to abort the command that is currently
++ *	connected, you have to wait for it to complete.  If this is
+  *	a problem, we could implement longjmp() / setjmp(), setjmp()
+  *	called where the loop started in NCR5380_main().
+  *
+@@ -2712,7 +2712,7 @@ static int NCR5380_abort(Scsi_Cmnd * cmd
+  * aborted flag and get back into our main loop.
+  */
  
- 	cmd->sync_cmd = 1;
--	cmd->cmd_status = 0xFF;
-+	cmd->cmd_status = ENODATA;
+-		return 0;
++		return SUCCESS;
+ 	}
+ #endif
  
- 	instance->instancet->issue_dcmd(instance, cmd);
+--- a/drivers/scsi/aha1740.c
++++ b/drivers/scsi/aha1740.c
+@@ -531,7 +531,7 @@ static int aha1740_eh_abort_handler (Scs
+  * quiet as possible...
+  */
  
+-	return 0;
++	return SUCCESS;
+ }
+ 
+ static struct scsi_host_template aha1740_template = {
+--- a/drivers/scsi/atari_NCR5380.c
++++ b/drivers/scsi/atari_NCR5380.c
+@@ -2613,7 +2613,7 @@ static void NCR5380_reselect(struct Scsi
+  *	host byte of the result field to, if zero DID_ABORTED is
+  *	used.
+  *
+- * Returns : 0 - success, -1 on failure.
++ * Returns : SUCCESS - success, FAILED on failure.
+  *
+  * XXX - there is no way to abort the command that is currently
+  *	 connected, you have to wait for it to complete.  If this is
+--- a/drivers/scsi/esas2r/esas2r_main.c
++++ b/drivers/scsi/esas2r/esas2r_main.c
+@@ -1057,7 +1057,7 @@ int esas2r_eh_abort(struct scsi_cmnd *cm
+ 
+ 		cmd->scsi_done(cmd);
+ 
+-		return 0;
++		return SUCCESS;
+ 	}
+ 
+ 	spin_lock_irqsave(&a->queue_lock, flags);
+--- a/drivers/scsi/megaraid.c
++++ b/drivers/scsi/megaraid.c
+@@ -1967,7 +1967,7 @@ megaraid_abort_and_reset(adapter_t *adap
+ 	     cmd->device->id, cmd->device->lun);
+ 
+ 	if(list_empty(&adapter->pending_list))
+-		return FALSE;
++		return FAILED;
+ 
+ 	list_for_each_safe(pos, next, &adapter->pending_list) {
+ 
+@@ -1990,7 +1990,7 @@ megaraid_abort_and_reset(adapter_t *adap
+ 					(aor==SCB_ABORT) ? "ABORTING":"RESET",
+ 					scb->idx);
+ 
+-				return FALSE;
++				return FAILED;
+ 			}
+ 			else {
+ 
+@@ -2015,12 +2015,12 @@ megaraid_abort_and_reset(adapter_t *adap
+ 				list_add_tail(SCSI_LIST(cmd),
+ 						&adapter->completed_list);
+ 
+-				return TRUE;
++				return SUCCESS;
+ 			}
+ 		}
+ 	}
+ 
+-	return FALSE;
++	return FAILED;
+ }
+ 
+ static inline int
+--- a/drivers/scsi/sun3_NCR5380.c
++++ b/drivers/scsi/sun3_NCR5380.c
+@@ -2597,15 +2597,15 @@ static void NCR5380_reselect (struct Scs
+  * Purpose : abort a command
+  *
+  * Inputs : cmd - the struct scsi_cmnd to abort, code - code to set the
+- * 	host byte of the result field to, if zero DID_ABORTED is 
++ *	host byte of the result field to, if zero DID_ABORTED is
+  *	used.
+  *
+- * Returns : 0 - success, -1 on failure.
++ * Returns : SUCCESS - success, FAILED on failure.
+  *
+- * XXX - there is no way to abort the command that is currently 
+- * 	 connected, you have to wait for it to complete.  If this is 
++ * XXX - there is no way to abort the command that is currently
++ *	 connected, you have to wait for it to complete.  If this is
+  *	 a problem, we could implement longjmp() / setjmp(), setjmp()
+- * 	 called where the loop started in NCR5380_main().
++ *	 called where the loop started in NCR5380_main().
+  */
+ 
+ static int NCR5380_abort(struct scsi_cmnd *cmd)
 
 
