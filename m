@@ -1,36 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753729AbbAGPIP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 10:08:15 -0500
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:58159 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399AbbAGPIO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 10:08:14 -0500
-Date: Wed, 7 Jan 2015 10:08:09 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Nicholas Krause <xerofoify@gmail.com>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] libata: Remove FIXME comment in atapi_eh_request_sense
-Message-ID: <20150107150809.GA4395@htj.dyndns.org>
-References: <1420609492-19422-1-git-send-email-xerofoify@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420609492-19422-1-git-send-email-xerofoify@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753743AbbAGPJM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 10:09:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39572 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752233AbbAGPJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 10:09:10 -0500
+Message-ID: <1420643344.6345.7.camel@redhat.com>
+Subject: Re: [PATCH] vhost/net: length miscalculation
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Greg Kurz <gkurz@linux.vnet.ibm.com>,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org
+Date: Wed, 07 Jan 2015 08:09:04 -0700
+In-Reply-To: <1420620847-24477-1-git-send-email-mst@redhat.com>
+References: <1420620847-24477-1-git-send-email-mst@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 12:44:52AM -0500, Nicholas Krause wrote:
-> Remove the FIXME comment in  atapi_eh_request_sense () asking whether
-> memset of sense buffer is necessary.  The buffer may be partially or
-> fully filled by the device.  We want it to be cleared.
+On Wed, 2015-01-07 at 10:55 +0200, Michael S. Tsirkin wrote:
+> commit 8b38694a2dc8b18374310df50174f1e4376d6824
+>     vhost/net: virtio 1.0 byte swap
+> had this chunk:
+> -       heads[headcount - 1].len += datalen;
+> +       heads[headcount - 1].len = cpu_to_vhost32(vq, len - datalen);
 > 
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> This adds datalen with the wrong sign, causing guest panics.
+> 
+> Fixes: 8b38694a2dc8b18374310df50174f1e4376d6824
+> Reported-by: Alex Williamson <alex.williamson@redhat.com>
+> Suggested-by: Greg Kurz <gkurz@linux.vnet.ibm.com>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+> 
+> Alex, could you please confirm this fixes the crash for you?
 
-Applied to libata/for-3.20.  Thanks.
+Confirmed, this works.  Thanks,
 
--- 
-tejun
+Alex
+
+>  drivers/vhost/net.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index 14419a8..d415d69 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -538,7 +538,7 @@ static int get_rx_bufs(struct vhost_virtqueue *vq,
+>  		++headcount;
+>  		seg += in;
+>  	}
+> -	heads[headcount - 1].len = cpu_to_vhost32(vq, len - datalen);
+> +	heads[headcount - 1].len = cpu_to_vhost32(vq, len + datalen);
+>  	*iovcount = seg;
+>  	if (unlikely(log))
+>  		*log_num = nlogs;
+
+
+
