@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933761AbbAGCvP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:51:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46230 "EHLO
+	id S1757042AbbAGBwO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 20:52:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46250 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756986AbbAGBwM (ORCPT
+	with ESMTP id S1756955AbbAGBwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:52:12 -0500
+	Tue, 6 Jan 2015 20:52:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 3.18 57/84] groups: Consolidate the setgroups permission checks
-Date: Tue,  6 Jan 2015 17:50:00 -0800
-Message-Id: <20150107014030.835410204@linuxfoundation.org>
+Subject: [PATCH 3.18 58/84] userns: Document what the invariant required for safe unprivileged mappings.
+Date: Tue,  6 Jan 2015 17:50:01 -0800
+Message-Id: <20150107014030.865603801@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
 References: <20150107014029.012974975@linuxfoundation.org>
@@ -30,83 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 7ff4d90b4c24a03666f296c3d4878cd39001e81e upstream.
+commit 0542f17bf2c1f2430d368f44c8fcf2f82ec9e53e upstream.
 
-Today there are 3 instances of setgroups and due to an oversight their
-permission checking has diverged.  Add a common function so that
-they may all share the same permission checking code.
+The rule is simple.  Don't allow anything that wouldn't be allowed
+without unprivileged mappings.
 
-This corrects the current oversight in the current permission checks
-and adds a helper to avoid this in the future.
+It was previously overlooked that establishing gid mappings would
+allow dropping groups and potentially gaining permission to files and
+directories that had lesser permissions for a specific group than for
+all other users.
 
-A user namespace security fix will update this new helper, shortly.
+This is the rule needed to fix CVE-2014-8989 and prevent any other
+security issues with new_idmap_permitted.
+
+The reason for this rule is that the unix permission model is old and
+there are programs out there somewhere that take advantage of every
+little corner of it.  So allowing a uid or gid mapping to be
+established without privielge that would allow anything that would not
+be allowed without that mapping will result in expectations from some
+code somewhere being violated.  Violated expectations about the
+behavior of the OS is a long way to say a security issue.
 
 Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kernel/compat_linux.c |    2 +-
- include/linux/cred.h            |    1 +
- kernel/groups.c                 |    9 ++++++++-
- kernel/uid16.c                  |    2 +-
- 4 files changed, 11 insertions(+), 3 deletions(-)
+ kernel/user_namespace.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/s390/kernel/compat_linux.c
-+++ b/arch/s390/kernel/compat_linux.c
-@@ -249,7 +249,7 @@ COMPAT_SYSCALL_DEFINE2(s390_setgroups16,
- 	struct group_info *group_info;
- 	int retval;
- 
--	if (!capable(CAP_SETGID))
-+	if (!may_setgroups())
- 		return -EPERM;
- 	if ((unsigned)gidsetsize > NGROUPS_MAX)
- 		return -EINVAL;
---- a/include/linux/cred.h
-+++ b/include/linux/cred.h
-@@ -68,6 +68,7 @@ extern void groups_free(struct group_inf
- extern int set_current_groups(struct group_info *);
- extern void set_groups(struct cred *, struct group_info *);
- extern int groups_search(const struct group_info *, kgid_t);
-+extern bool may_setgroups(void);
- 
- /* access the groups "array" with this macro */
- #define GROUP_AT(gi, i) \
---- a/kernel/groups.c
-+++ b/kernel/groups.c
-@@ -213,6 +213,13 @@ out:
- 	return i;
- }
- 
-+bool may_setgroups(void)
-+{
-+	struct user_namespace *user_ns = current_user_ns();
-+
-+	return ns_capable(user_ns, CAP_SETGID);
-+}
-+
- /*
-  *	SMP: Our groups are copy-on-write. We can set them safely
-  *	without another task interfering.
-@@ -223,7 +230,7 @@ SYSCALL_DEFINE2(setgroups, int, gidsetsi
- 	struct group_info *group_info;
- 	int retval;
- 
--	if (!ns_capable(current_user_ns(), CAP_SETGID))
-+	if (!may_setgroups())
- 		return -EPERM;
- 	if ((unsigned)gidsetsize > NGROUPS_MAX)
- 		return -EINVAL;
---- a/kernel/uid16.c
-+++ b/kernel/uid16.c
-@@ -176,7 +176,7 @@ SYSCALL_DEFINE2(setgroups16, int, gidset
- 	struct group_info *group_info;
- 	int retval;
- 
--	if (!ns_capable(current_user_ns(), CAP_SETGID))
-+	if (!may_setgroups())
- 		return -EPERM;
- 	if ((unsigned)gidsetsize > NGROUPS_MAX)
- 		return -EINVAL;
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -812,7 +812,9 @@ static bool new_idmap_permitted(const st
+ 				struct user_namespace *ns, int cap_setid,
+ 				struct uid_gid_map *new_map)
+ {
+-	/* Allow mapping to your own filesystem ids */
++	/* Don't allow mappings that would allow anything that wouldn't
++	 * be allowed without the establishment of unprivileged mappings.
++	 */
+ 	if ((new_map->nr_extents == 1) && (new_map->extent[0].count == 1)) {
+ 		u32 id = new_map->extent[0].lower_first;
+ 		if (cap_setid == CAP_SETUID) {
 
 
