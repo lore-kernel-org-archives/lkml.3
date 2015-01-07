@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757138AbbAGCAe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:00:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46417 "EHLO
+	id S932661AbbAGBw0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 20:52:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46250 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757044AbbAGBwO (ORCPT
+	with ESMTP id S932561AbbAGBwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:52:14 -0500
+	Tue, 6 Jan 2015 20:52:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Ingo Molnar <mingo@kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.18 72/84] mm/CMA: fix boot regression due to physical address of high_memory
-Date: Tue,  6 Jan 2015 17:50:15 -0800
-Message-Id: <20150107014031.313067529@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>,
+        Andi Kleen <andi@firstfloor.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.10 04/38] x86_64, switch_to(): Load TLS descriptors before switching DS and ES
+Date: Tue,  6 Jan 2015 17:50:16 -0800
+Message-Id: <20150107014953.189717451@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
-In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
-References: <20150107014029.012974975@linuxfoundation.org>
+In-Reply-To: <20150107014952.440109372@linuxfoundation.org>
+References: <20150107014952.440109372@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -28,76 +27,313 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 6b101e2a3ce4d2a0312087598bd1ab4a1db2ac40 upstream.
+commit f647d7c155f069c1a068030255c300663516420e upstream.
 
-high_memory isn't direct mapped memory so retrieving it's physical address
-isn't appropriate.  But, it would be useful to check physical address of
-highmem boundary so it's justfiable to get physical address from it.  In
-x86, there is a validation check if CONFIG_DEBUG_VIRTUAL and it triggers
-following boot failure reported by Ingo.
+Otherwise, if buggy user code points DS or ES into the TLS
+array, they would be corrupted after a context switch.
 
-  ...
-  BUG: Int 6: CR2 00f06f53
-  ...
-  Call Trace:
-    dump_stack+0x41/0x52
-    early_idt_handler+0x6b/0x6b
-    cma_declare_contiguous+0x33/0x212
-    dma_contiguous_reserve_area+0x31/0x4e
-    dma_contiguous_reserve+0x11d/0x125
-    setup_arch+0x7b5/0xb63
-    start_kernel+0xb8/0x3e6
-    i386_start_kernel+0x79/0x7d
+This also significantly improves the comments and documents some
+gotchas in the code.
 
-To fix boot regression, this patch implements workaround to avoid
-validation check in x86 when retrieving physical address of high_memory.
-__pa_nodebug() used by this patch is implemented only in x86 so there is
-no choice but to use dirty #ifdef.
+Before this patch, the both tests below failed.  With this
+patch, the es test passes, although the gsbase test still fails.
 
-[akpm@linux-foundation.org: tweak comment]
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Reported-by: Ingo Molnar <mingo@kernel.org>
-Tested-by: Ingo Molnar <mingo@kernel.org>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Russell King <rmk@arm.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+ ----- begin es test -----
+
+/*
+ * Copyright (c) 2014 Andy Lutomirski
+ * GPL v2
+ */
+
+static unsigned short GDT3(int idx)
+{
+	return (idx << 3) | 3;
+}
+
+static int create_tls(int idx, unsigned int base)
+{
+	struct user_desc desc = {
+		.entry_number    = idx,
+		.base_addr       = base,
+		.limit           = 0xfffff,
+		.seg_32bit       = 1,
+		.contents        = 0, /* Data, grow-up */
+		.read_exec_only  = 0,
+		.limit_in_pages  = 1,
+		.seg_not_present = 0,
+		.useable         = 0,
+	};
+
+	if (syscall(SYS_set_thread_area, &desc) != 0)
+		err(1, "set_thread_area");
+
+	return desc.entry_number;
+}
+
+int main()
+{
+	int idx = create_tls(-1, 0);
+	printf("Allocated GDT index %d\n", idx);
+
+	unsigned short orig_es;
+	asm volatile ("mov %%es,%0" : "=rm" (orig_es));
+
+	int errors = 0;
+	int total = 1000;
+	for (int i = 0; i < total; i++) {
+		asm volatile ("mov %0,%%es" : : "rm" (GDT3(idx)));
+		usleep(100);
+
+		unsigned short es;
+		asm volatile ("mov %%es,%0" : "=rm" (es));
+		asm volatile ("mov %0,%%es" : : "rm" (orig_es));
+		if (es != GDT3(idx)) {
+			if (errors == 0)
+				printf("[FAIL]\tES changed from 0x%hx to 0x%hx\n",
+				       GDT3(idx), es);
+			errors++;
+		}
+	}
+
+	if (errors) {
+		printf("[FAIL]\tES was corrupted %d/%d times\n", errors, total);
+		return 1;
+	} else {
+		printf("[OK]\tES was preserved\n");
+		return 0;
+	}
+}
+
+ ----- end es test -----
+
+ ----- begin gsbase test -----
+
+/*
+ * gsbase.c, a gsbase test
+ * Copyright (c) 2014 Andy Lutomirski
+ * GPL v2
+ */
+
+static unsigned char *testptr, *testptr2;
+
+static unsigned char read_gs_testvals(void)
+{
+	unsigned char ret;
+	asm volatile ("movb %%gs:%1, %0" : "=r" (ret) : "m" (*testptr));
+	return ret;
+}
+
+int main()
+{
+	int errors = 0;
+
+	testptr = mmap((void *)0x200000000UL, 1, PROT_READ | PROT_WRITE,
+		       MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS, -1, 0);
+	if (testptr == MAP_FAILED)
+		err(1, "mmap");
+
+	testptr2 = mmap((void *)0x300000000UL, 1, PROT_READ | PROT_WRITE,
+		       MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS, -1, 0);
+	if (testptr2 == MAP_FAILED)
+		err(1, "mmap");
+
+	*testptr = 0;
+	*testptr2 = 1;
+
+	if (syscall(SYS_arch_prctl, ARCH_SET_GS,
+		    (unsigned long)testptr2 - (unsigned long)testptr) != 0)
+		err(1, "ARCH_SET_GS");
+
+	usleep(100);
+
+	if (read_gs_testvals() == 1) {
+		printf("[OK]\tARCH_SET_GS worked\n");
+	} else {
+		printf("[FAIL]\tARCH_SET_GS failed\n");
+		errors++;
+	}
+
+	asm volatile ("mov %0,%%gs" : : "r" (0));
+
+	if (read_gs_testvals() == 0) {
+		printf("[OK]\tWriting 0 to gs worked\n");
+	} else {
+		printf("[FAIL]\tWriting 0 to gs failed\n");
+		errors++;
+	}
+
+	usleep(100);
+
+	if (read_gs_testvals() == 0) {
+		printf("[OK]\tgsbase is still zero\n");
+	} else {
+		printf("[FAIL]\tgsbase was corrupted\n");
+		errors++;
+	}
+
+	return errors == 0 ? 0 : 1;
+}
+
+ ----- end gsbase test -----
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/509d27c9fec78217691c3dad91cec87e1006b34a.1418075657.git.luto@amacapital.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/cma.c |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ arch/x86/kernel/process_64.c |  101 +++++++++++++++++++++++++++++++------------
+ 1 file changed, 73 insertions(+), 28 deletions(-)
 
---- a/mm/cma.c
-+++ b/mm/cma.c
-@@ -215,9 +215,21 @@ int __init cma_declare_contiguous(phys_a
- 			bool fixed, struct cma **res_cma)
- {
- 	phys_addr_t memblock_end = memblock_end_of_DRAM();
--	phys_addr_t highmem_start = __pa(high_memory);
-+	phys_addr_t highmem_start;
- 	int ret = 0;
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -279,24 +279,9 @@ __switch_to(struct task_struct *prev_p,
  
-+#ifdef CONFIG_X86
+ 	fpu = switch_fpu_prepare(prev_p, next_p, cpu);
+ 
+-	/*
+-	 * Reload esp0, LDT and the page table pointer:
+-	 */
++	/* Reload esp0 and ss1. */
+ 	load_sp0(tss, next);
+ 
+-	/*
+-	 * Switch DS and ES.
+-	 * This won't pick up thread selector changes, but I guess that is ok.
+-	 */
+-	savesegment(es, prev->es);
+-	if (unlikely(next->es | prev->es))
+-		loadsegment(es, next->es);
+-
+-	savesegment(ds, prev->ds);
+-	if (unlikely(next->ds | prev->ds))
+-		loadsegment(ds, next->ds);
+-
+-
+ 	/* We must save %fs and %gs before load_TLS() because
+ 	 * %fs and %gs may be cleared by load_TLS().
+ 	 *
+@@ -305,41 +290,101 @@ __switch_to(struct task_struct *prev_p,
+ 	savesegment(fs, fsindex);
+ 	savesegment(gs, gsindex);
+ 
 +	/*
-+	 * high_memory isn't direct mapped memory so retrieving its physical
-+	 * address isn't appropriate.  But it would be useful to check the
-+	 * physical address of the highmem boundary so it's justfiable to get
-+	 * the physical address from it.  On x86 there is a validation check for
-+	 * this case, so the following workaround is needed to avoid it.
++	 * Load TLS before restoring any segments so that segment loads
++	 * reference the correct GDT entries.
 +	 */
-+	highmem_start = __pa_nodebug(high_memory);
-+#else
-+	highmem_start = __pa(high_memory);
-+#endif
- 	pr_debug("%s(size %pa, base %pa, limit %pa alignment %pa)\n",
- 		__func__, &size, &base, &limit, &alignment);
+ 	load_TLS(next, cpu);
  
+ 	/*
+-	 * Leave lazy mode, flushing any hypercalls made here.
+-	 * This must be done before restoring TLS segments so
+-	 * the GDT and LDT are properly updated, and must be
+-	 * done before math_state_restore, so the TS bit is up
+-	 * to date.
++	 * Leave lazy mode, flushing any hypercalls made here.  This
++	 * must be done after loading TLS entries in the GDT but before
++	 * loading segments that might reference them, and and it must
++	 * be done before math_state_restore, so the TS bit is up to
++	 * date.
+ 	 */
+ 	arch_end_context_switch(next_p);
+ 
++	/* Switch DS and ES.
++	 *
++	 * Reading them only returns the selectors, but writing them (if
++	 * nonzero) loads the full descriptor from the GDT or LDT.  The
++	 * LDT for next is loaded in switch_mm, and the GDT is loaded
++	 * above.
++	 *
++	 * We therefore need to write new values to the segment
++	 * registers on every context switch unless both the new and old
++	 * values are zero.
++	 *
++	 * Note that we don't need to do anything for CS and SS, as
++	 * those are saved and restored as part of pt_regs.
++	 */
++	savesegment(es, prev->es);
++	if (unlikely(next->es | prev->es))
++		loadsegment(es, next->es);
++
++	savesegment(ds, prev->ds);
++	if (unlikely(next->ds | prev->ds))
++		loadsegment(ds, next->ds);
++
+ 	/*
+ 	 * Switch FS and GS.
+ 	 *
+-	 * Segment register != 0 always requires a reload.  Also
+-	 * reload when it has changed.  When prev process used 64bit
+-	 * base always reload to avoid an information leak.
++	 * These are even more complicated than FS and GS: they have
++	 * 64-bit bases are that controlled by arch_prctl.  Those bases
++	 * only differ from the values in the GDT or LDT if the selector
++	 * is 0.
++	 *
++	 * Loading the segment register resets the hidden base part of
++	 * the register to 0 or the value from the GDT / LDT.  If the
++	 * next base address zero, writing 0 to the segment register is
++	 * much faster than using wrmsr to explicitly zero the base.
++	 *
++	 * The thread_struct.fs and thread_struct.gs values are 0
++	 * if the fs and gs bases respectively are not overridden
++	 * from the values implied by fsindex and gsindex.  They
++	 * are nonzero, and store the nonzero base addresses, if
++	 * the bases are overridden.
++	 *
++	 * (fs != 0 && fsindex != 0) || (gs != 0 && gsindex != 0) should
++	 * be impossible.
++	 *
++	 * Therefore we need to reload the segment registers if either
++	 * the old or new selector is nonzero, and we need to override
++	 * the base address if next thread expects it to be overridden.
++	 *
++	 * This code is unnecessarily slow in the case where the old and
++	 * new indexes are zero and the new base is nonzero -- it will
++	 * unnecessarily write 0 to the selector before writing the new
++	 * base address.
++	 *
++	 * Note: This all depends on arch_prctl being the only way that
++	 * user code can override the segment base.  Once wrfsbase and
++	 * wrgsbase are enabled, most of this code will need to change.
+ 	 */
+ 	if (unlikely(fsindex | next->fsindex | prev->fs)) {
+ 		loadsegment(fs, next->fsindex);
++
+ 		/*
+-		 * Check if the user used a selector != 0; if yes
+-		 *  clear 64bit base, since overloaded base is always
+-		 *  mapped to the Null selector
++		 * If user code wrote a nonzero value to FS, then it also
++		 * cleared the overridden base address.
++		 *
++		 * XXX: if user code wrote 0 to FS and cleared the base
++		 * address itself, we won't notice and we'll incorrectly
++		 * restore the prior base address next time we reschdule
++		 * the process.
+ 		 */
+ 		if (fsindex)
+ 			prev->fs = 0;
+ 	}
+-	/* when next process has a 64bit base use it */
+ 	if (next->fs)
+ 		wrmsrl(MSR_FS_BASE, next->fs);
+ 	prev->fsindex = fsindex;
+ 
+ 	if (unlikely(gsindex | next->gsindex | prev->gs)) {
+ 		load_gs_index(next->gsindex);
++
++		/* This works (and fails) the same way as fsindex above. */
+ 		if (gsindex)
+ 			prev->gs = 0;
+ 	}
 
 
