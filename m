@@ -1,112 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972AbbAGNMz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 08:12:55 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:49628 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820AbbAGNMx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 08:12:53 -0500
+	id S1753104AbbAGNOT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 08:14:19 -0500
+Received: from mail3.unitn.it ([193.205.206.24]:63583 "EHLO mail3.unitn.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752736AbbAGNOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 08:14:17 -0500
+Message-ID: <54AD3123.8030104@unitn.it>
+Date: Wed, 07 Jan 2015 14:14:11 +0100
+From: Luca Abeni <luca.abeni@unitn.it>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <1420533751-23999-1-git-send-email-howard.chen@linaro.org>
-References: <1420533751-23999-1-git-send-email-howard.chen@linaro.org>
-Date: Wed, 7 Jan 2015 14:12:51 +0100
-Message-ID: <CABuKBeJFa=70ZRKhq9_2dZRTPGsFBqNtUCSkUkUPYrZD8HTmYg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Add sysirq device node for mt6592, also correct the
- timer interrupt.
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: Howard Chen <howard.chen@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "moderated list:ARM/Mediatek SoC..." 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: tkhai@yandex.ru
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Another SCHED_DEADLINE bug (with bisection and possible fix)
+References: <20141230002738.6c12db31@utopia>		 <2629881420411885@web9m.yandex.ru> <54AAABFB.3060109@unitn.it>		 <1420499241.3361.14.camel@yandex.ru> <20150107080155.1d42d123@luca-1225C>	 <1420633741.12772.10.camel@yandex.ru> <54AD2A56.70307@unitn.it> <1420635879.14676.12.camel@yandex.ru>
+In-Reply-To: <1420635879.14676.12.camel@yandex.ru>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Howard,
-
-2015-01-06 9:42 GMT+01:00 Howard Chen <howard.chen@linaro.org>:
-> Signed-off-by: Howard Chen <howard.chen@linaro.org>
-> ---
->  arch/arm/boot/dts/mt6592.dtsi | 21 +++++++++++++++++----
->  1 file changed, 17 insertions(+), 4 deletions(-)
-
-Please use in the subject "ARM: mediatek: " prefix and please add a
-commit message to your patch. From my point of view it's OK if you
-explain in the commit message why we can/should change the timer
-interrupt, please do so.
-
+On 01/07/2015 02:04 PM, Kirill Tkhai wrote:
+[...]
+>>> and further enqueue_task() places it on the dl_rq.
+>> I was under the impression that no further enqueue_task() will happen (since
+>> the task is throttled, it is not on runqueue, so __sched_setscheduler() will
+>> not dequeue/enqueue it).
+>> But I am probably missing something else :)
 >
-> diff --git a/arch/arm/boot/dts/mt6592.dtsi b/arch/arm/boot/dts/mt6592.dtsi
-> index 31e5a09..1db453f 100644
-> --- a/arch/arm/boot/dts/mt6592.dtsi
-> +++ b/arch/arm/boot/dts/mt6592.dtsi
-> @@ -18,7 +18,7 @@
+> We have two concept of "on runqueue". The first one is rq->on_rq. It means
+> that a task is "queued". The second is on_dl_rq(dl_se).
 >
->  / {
->         compatible = "mediatek,mt6592";
-> -       interrupt-parent = <&gic>;
-> +       interrupt-parent = <&sysirq>;
+> When task is not "queued", it's always not on dl_rq.
 >
->         cpus {
->                 #address-cells = <1>;
-> @@ -78,21 +78,34 @@
->                 #clock-cells = <0>;
->         };
+> When task is "queued" it may be in two states:
+> 1)on_dl_rq() -- this means the task is not throttled;
+> 2)!on_dl_rq() -- is task as throttled.
 >
-> +       uart_clk: uart_clk {
-> +               compatible = "fixed-clock";
-> +               clock-frequency = <26000000>;
-> +               #clock-cells = <0>;
-> +       };
-> +
+> So when we are discussing about a throttled task, the task is "queued". If
+> you clear dl_throttled, __sched_setscheduler() places it back it the both
+> meaning: on_rq and on_dl_rq, and the task becomes available for picking
+> in __schedule().
+Ah, I see. Thanks for explaining! Now, everything is more clear and I agree
+with you.
 
-Please delete the uart clock, it has nothing to do with the sysirq in
-the first place.
-
-Thanks,
-Matthias
-
->         timer: timer@10008000 {
->                 compatible = "mediatek,mt6577-timer";
->                 reg = <0x10008000 0x80>;
-> -               interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_HIGH>;
-> +               interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_LOW>;
->                 clocks = <&system_clk>, <&rtc_clk>;
->                 clock-names = "system-clk", "rtc-clk";
->         };
->
-> +       sysirq: interrupt-controller@10200220 {
-> +               compatible = "mediatek,mt6592-sysirq", "mediatek,mt6577-sysirq";
-> +               interrupt-controller;
-> +               #interrupt-cells = <3>;
-> +               interrupt-parent = <&gic>;
-> +               reg = <0x10200220 0x1c>;
-> +       };
-> +
->         gic: interrupt-controller@10211000 {
->                 compatible = "arm,cortex-a7-gic";
->                 interrupt-controller;
->                 #interrupt-cells = <3>;
-> +               interrupt-parent = <&gic>;
->                 reg = <0x10211000 0x1000>,
->                       <0x10212000 0x1000>;
->         };
-> -
->  };
-> -
-> --
-> 1.9.1
->
+[...]
+> Does my patch help you? It helps me, but anyway I need your confirmation.
+I am just back from vacations, and I had no time to test it yet... I hope to
+test it before the end of the week, and I'll let you know (but now I am convinced
+that it should help).
 
 
 
--- 
-motzblog.wordpress.com
+			Thanks again,
+				Luca
+
