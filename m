@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758283AbbAGCnu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:43:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46763 "EHLO
+	id S933595AbbAGCqp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:46:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46775 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932970AbbAGCHj (ORCPT
+	with ESMTP id S932515AbbAGCHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:07:39 -0500
+	Tue, 6 Jan 2015 21:07:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.14 20/52] dm thin: fix missing out-of-data-space to write mode transition if blocks are released
-Date: Tue,  6 Jan 2015 18:06:48 -0800
-Message-Id: <20150107020558.426173824@linuxfoundation.org>
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH 3.14 21/52] arm64: Add COMPAT_HWCAP_LPAE
+Date: Tue,  6 Jan 2015 18:06:49 -0800
+Message-Id: <20150107020558.559588127@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107020555.043793795@linuxfoundation.org>
 References: <20150107020555.043793795@linuxfoundation.org>
@@ -28,71 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit 2c43fd26e46734430122b8d2ad3024bb532df3ef upstream.
+commit 7d57511d2dba03a8046c8b428dd9192a4bfc1e73 upstream.
 
-Discard bios and thin device deletion have the potential to release data
-blocks.  If the thin-pool is in out-of-data-space mode, and blocks were
-released, transition the thin-pool back to full write mode.
+Commit a469abd0f868 (ARM: elf: add new hwcap for identifying atomic
+ldrd/strd instructions) introduces HWCAP_ELF for 32-bit ARM
+applications. As LPAE is always present on arm64, report the
+corresponding compat HWCAP to user space.
 
-The correct time to do this is just after the thin-pool metadata commit.
-It cannot be done before the commit because the space maps will not
-allow immediate reuse of the data blocks in case there's a rollback
-following power failure.
-
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-thin.c |   22 ++++++++++++++++++++--
- 1 file changed, 20 insertions(+), 2 deletions(-)
+ arch/arm64/include/asm/hwcap.h |    1 +
+ arch/arm64/kernel/setup.c      |    3 ++-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -916,6 +916,24 @@ static void schedule_zero(struct thin_c
- 	}
- }
+--- a/arch/arm64/include/asm/hwcap.h
++++ b/arch/arm64/include/asm/hwcap.h
+@@ -30,6 +30,7 @@
+ #define COMPAT_HWCAP_IDIVA	(1 << 17)
+ #define COMPAT_HWCAP_IDIVT	(1 << 18)
+ #define COMPAT_HWCAP_IDIV	(COMPAT_HWCAP_IDIVA|COMPAT_HWCAP_IDIVT)
++#define COMPAT_HWCAP_LPAE	(1 << 20)
+ #define COMPAT_HWCAP_EVTSTRM	(1 << 21)
  
-+static void set_pool_mode(struct pool *pool, enum pool_mode new_mode);
-+
-+static void check_for_space(struct pool *pool)
-+{
-+	int r;
-+	dm_block_t nr_free;
-+
-+	if (get_pool_mode(pool) != PM_OUT_OF_DATA_SPACE)
-+		return;
-+
-+	r = dm_pool_get_free_block_count(pool->pmd, &nr_free);
-+	if (r)
-+		return;
-+
-+	if (nr_free)
-+		set_pool_mode(pool, PM_WRITE);
-+}
-+
- /*
-  * A non-zero return indicates read_only or fail_io mode.
-  * Many callers don't care about the return value.
-@@ -930,6 +948,8 @@ static int commit(struct pool *pool)
- 	r = dm_pool_commit_metadata(pool->pmd);
- 	if (r)
- 		metadata_operation_failed(pool, "dm_pool_commit_metadata", r);
-+	else
-+		check_for_space(pool);
+ #ifndef __ASSEMBLY__
+--- a/arch/arm64/kernel/setup.c
++++ b/arch/arm64/kernel/setup.c
+@@ -67,7 +67,8 @@ EXPORT_SYMBOL_GPL(elf_hwcap);
+ 				 COMPAT_HWCAP_FAST_MULT|COMPAT_HWCAP_EDSP|\
+ 				 COMPAT_HWCAP_TLS|COMPAT_HWCAP_VFP|\
+ 				 COMPAT_HWCAP_VFPv3|COMPAT_HWCAP_VFPv4|\
+-				 COMPAT_HWCAP_NEON|COMPAT_HWCAP_IDIV)
++				 COMPAT_HWCAP_NEON|COMPAT_HWCAP_IDIV|\
++				 COMPAT_HWCAP_LPAE)
+ unsigned int compat_elf_hwcap __read_mostly = COMPAT_ELF_HWCAP_DEFAULT;
+ #endif
  
- 	return r;
- }
-@@ -948,8 +968,6 @@ static void check_low_water_mark(struct
- 	}
- }
- 
--static void set_pool_mode(struct pool *pool, enum pool_mode new_mode);
--
- static int alloc_data_block(struct thin_c *tc, dm_block_t *result)
- {
- 	int r;
 
 
