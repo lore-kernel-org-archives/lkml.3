@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758571AbbAGC65 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:58:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46242 "EHLO
+	id S1758562AbbAGC6z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:58:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46230 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756928AbbAGBwC (ORCPT
+	with ESMTP id S1756929AbbAGBwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jan 2015 20:52:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.18 39/84] x86/asm/traps: Disable tracing and kprobes in fixup_bad_iret and sync_regs
-Date: Tue,  6 Jan 2015 17:49:42 -0800
-Message-Id: <20150107014030.292260881@linuxfoundation.org>
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.18 40/84] x86/tls: Dont validate lm in set_thread_area() after all
+Date: Tue,  6 Jan 2015 17:49:43 -0800
+Message-Id: <20150107014030.322760318@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
 References: <20150107014029.012974975@linuxfoundation.org>
@@ -32,50 +33,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andy Lutomirski <luto@amacapital.net>
 
-commit 7ddc6a2199f1da405a2fb68c40db8899b1a8cd87 upstream.
+commit 3fb2f4237bb452eb4e98f6a5dbd5a445b4fed9d0 upstream.
 
-These functions can be executed on the int3 stack, so kprobes
-are dangerous. Tracing is probably a bad idea, too.
+It turns out that there's a lurking ABI issue.  GCC, when
+compiling this in a 32-bit program:
 
-Fixes: b645af2d5905 ("x86_64, traps: Rework bad_iret")
+struct user_desc desc = {
+	.entry_number    = idx,
+	.base_addr       = base,
+	.limit           = 0xfffff,
+	.seg_32bit       = 1,
+	.contents        = 0, /* Data, grow-up */
+	.read_exec_only  = 0,
+	.limit_in_pages  = 1,
+	.seg_not_present = 0,
+	.useable         = 0,
+};
+
+will leave .lm uninitialized.  This means that anything in the
+kernel that reads user_desc.lm for 32-bit tasks is unreliable.
+
+Revert the .lm check in set_thread_area().  The value never did
+anything in the first place.
+
+Fixes: 0e58af4e1d21 ("x86/tls: Disallow unusual TLS segments")
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/50e33d26adca60816f3ba968875801652507d0c4.1416870125.git.luto@amacapital.net
+Link: http://lkml.kernel.org/r/d7875b60e28c512f6a6fc0baf5714d58e7eaadbb.1418856405.git.luto@amacapital.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/traps.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/x86/include/uapi/asm/ldt.h |    7 +++++++
+ arch/x86/kernel/tls.c           |    6 ------
+ 2 files changed, 7 insertions(+), 6 deletions(-)
 
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -387,7 +387,7 @@ NOKPROBE_SYMBOL(do_int3);
-  * for scheduling or signal handling. The actual stack switch is done in
-  * entry.S
-  */
--asmlinkage __visible struct pt_regs *sync_regs(struct pt_regs *eregs)
-+asmlinkage __visible notrace struct pt_regs *sync_regs(struct pt_regs *eregs)
- {
- 	struct pt_regs *regs = eregs;
- 	/* Did already sync */
-@@ -413,7 +413,7 @@ struct bad_iret_stack {
- 	struct pt_regs regs;
- };
- 
--asmlinkage __visible
-+asmlinkage __visible notrace
- struct bad_iret_stack *fixup_bad_iret(struct bad_iret_stack *s)
- {
- 	/*
-@@ -436,6 +436,7 @@ struct bad_iret_stack *fixup_bad_iret(st
- 	BUG_ON(!user_mode_vm(&new_stack->regs));
- 	return new_stack;
- }
-+NOKPROBE_SYMBOL(fixup_bad_iret);
+--- a/arch/x86/include/uapi/asm/ldt.h
++++ b/arch/x86/include/uapi/asm/ldt.h
+@@ -28,6 +28,13 @@ struct user_desc {
+ 	unsigned int  seg_not_present:1;
+ 	unsigned int  useable:1;
+ #ifdef __x86_64__
++	/*
++	 * Because this bit is not present in 32-bit user code, user
++	 * programs can pass uninitialized values here.  Therefore, in
++	 * any context in which a user_desc comes from a 32-bit program,
++	 * the kernel must act as though lm == 0, regardless of the
++	 * actual value.
++	 */
+ 	unsigned int  lm:1;
  #endif
+ };
+--- a/arch/x86/kernel/tls.c
++++ b/arch/x86/kernel/tls.c
+@@ -55,12 +55,6 @@ static bool tls_desc_okay(const struct u
+ 	if (info->seg_not_present)
+ 		return false;
  
- /*
+-#ifdef CONFIG_X86_64
+-	/* The L bit makes no sense for data. */
+-	if (info->lm)
+-		return false;
+-#endif
+-
+ 	return true;
+ }
+ 
 
 
