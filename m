@@ -1,196 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253AbbAGICH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 03:02:07 -0500
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:53063 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607AbbAGICF (ORCPT
+	id S1754380AbbAGIGx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 03:06:53 -0500
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:36761 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751161AbbAGIGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 03:02:05 -0500
-Date: Wed, 7 Jan 2015 00:01:59 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Walter Lozano <walter@vanguardiasur.com.ar>
-Cc: michael.hennerich@analog.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, devicetree@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Input: adxl34x - add OF support
-Message-ID: <20150107080159.GF5256@dtor-ws>
-References: <1420599537-28740-1-git-send-email-walter@vanguardiasur.com.ar>
+	Wed, 7 Jan 2015 03:06:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420599537-28740-1-git-send-email-walter@vanguardiasur.com.ar>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <54AC16B0.5050703@wwwdotorg.org>
+References: <1420540653-14816-1-git-send-email-tomeu.vizoso@collabora.com>
+ <1420540653-14816-2-git-send-email-tomeu.vizoso@collabora.com> <54AC16B0.5050703@wwwdotorg.org>
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Date: Wed, 7 Jan 2015 09:06:30 +0100
+X-Google-Sender-Auth: ZEY8huP9A47l-8mRl1gpQhtsmAU
+Message-ID: <CAAObsKB1gMcLZ=n8Mc6JSLQHn5-6VWOhERLgYTdi6nit6yCj5w@mail.gmail.com>
+Subject: Re: [PATCH 1/4] ARM: tegra: rely on bootloader pinmux programming on nyan-big
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Walter,
+On 6 January 2015 at 18:09, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 01/06/2015 03:37 AM, Tomeu Vizoso wrote:
+>>
+>> Following 6dbaff2b, the kernel expects that the bootloader has correctly
+>> programmed the Tegra pinmux.
+>>
+>> DTs for the Jetson and the Venice2 had been updated already but this one
+>> was left behind.
+>
+>
+> So this setup is true for NVIDIA-controlled development/reference boards
+> where we've ensured that the bootloader sets up 100% of the pinmux.
+>
+> However, I know that Coreboot on this board doesn't set up everything in the
+> pinmux, and since it's in r/o flash never will. As such, I'm not sure this
+> change is safe for this board. That is, unless you want to force upstream
+> kernels to be booted via a chain-loaded path: Coreboot (r/o) -> U-Boot (r/w
+> with full pinmux setup) -> kernel.
+>
+>> Have tested this with the stock vendor firmware (coreboot) and have found
+>> no
+>> issues.
+>
+>
+> There are presumably a bunch of features which aren't yet supported
+> upstream, and hence you couldn't test though? That means we might find that
+> parts of the pinmux aren't yet programmed but need to be to enable those
+> features.
 
-On Tue, Jan 06, 2015 at 11:58:56PM -0300, Walter Lozano wrote:
-> This patch adds the missing support for OF to the adxl34x digital
-> accelerometer. This is a basic version which supports the main
-> optional parameters. This implementation copies the default values
-> to the adxl34x_platform_data structure and overrides the values
-> that are passed from the device tree.
-> 
-> Signed-off-by: Walter Lozano <walter@vanguardiasur.com.ar>
-> ---
->  drivers/input/misc/adxl34x.c |  108 +++++++++++++++++++++++++++++++++++++++++-
->  1 file changed, 107 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/input/misc/adxl34x.c b/drivers/input/misc/adxl34x.c
-> index 2b2d02f..b3e06a3 100644
-> --- a/drivers/input/misc/adxl34x.c
-> +++ b/drivers/input/misc/adxl34x.c
-> @@ -16,6 +16,8 @@
->  #include <linux/workqueue.h>
->  #include <linux/input/adxl34x.h>
->  #include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_device.h>
->  
->  #include "adxl34x.h"
->  
-> @@ -688,13 +690,113 @@ static void adxl34x_input_close(struct input_dev *input)
->  	mutex_unlock(&ac->mutex);
->  }
->  
-> +void adxl34x_parse_dt(struct device *dev, struct adxl34x_platform_data *pdata){
-> +	if (!dev->of_node)
-> +		return;
-> +
-> +	pdata =  kzalloc(sizeof(*pdata), GFP_KERNEL);
-> +
-> +	memcpy(pdata, &adxl34x_default_init, sizeof(struct adxl34x_platform_data));
-> +
-> +	of_property_read_u8(dev->of_node, "adi,tap-axis-control",
-> +		 &pdata->tap_axis_control);
-> +
-> +	of_property_read_u8(dev->of_node, "adi,tap-threshold",
-> +		 &pdata->tap_threshold);
-> +
-> +	of_property_read_u8(dev->of_node, "adi,tap-duration",
-> +		 &pdata->tap_duration);
-> +
-> +	of_property_read_u8(dev->of_node, "adi,tap-latency",
-> +		 &pdata->tap_latency);
-> +
-> +	of_property_read_u8(dev->of_node, "adi,tap-window",
-> +		 &pdata->tap_window);
-> +
-> +	of_property_read_u8(dev->of_node, "adi,act-axis-control",
-> +		 &pdata->act_axis_control);
-> +
-> +	of_property_read_u8(dev->of_node, "adi,activity-threshold",
-> +		 &pdata->activity_threshold);
-> +
-> +	of_property_read_u8(dev->of_node, "adi,inactivity-threshold",
-> +		 &pdata->inactivity_threshold);
-> +
-> +	of_property_read_u8(dev->of_node, "adi,inactivity-time",
-> +		 &pdata->inactivity_time);
-> +
-> +	of_property_read_u8(dev->of_node, "adi,free-fall-threshold",
-> +		 &pdata->free_fall_threshold);
-> +
-> +	of_property_read_u8(dev->of_node, "adi,free-fall-time",
-> +		 &pdata->free_fall_time);
-> +
-> +	of_property_read_u8(dev->of_node, "adi,data-rate",
-> +		 &pdata->data_rate);
-> +
-> +	of_property_read_u8(dev->of_node, "adi,data-range",
-> +		 &pdata->data_range);
-> +
-> +	of_property_read_u8(dev->of_node, "adi,low-power-mode",
-> +		 &pdata->low_power_mode);
-> +
-> +	of_property_read_u8(dev->of_node, "adi,power-mode",
-> +		 &pdata->power_mode);
-> +
-> +	of_property_read_u8(dev->of_node, "adi,fifo-mode",
-> +		 &pdata->fifo_mode);
-> +
-> +	of_property_read_u8(dev->of_node, "adi,watermark",
-> +		 &pdata->watermark);
-> +
-> +	of_property_read_u8(dev->of_node, "adi,use-int2",
-> +		 &pdata->use_int2);
-> +
-> +	of_property_read_u8(dev->of_node, "adi,orientation-enable",
-> +		 &pdata->orientation_enable);
-> +
-> +	of_property_read_u8(dev->of_node, "adi,deadzone-angle",
-> +		 &pdata->deadzone_angle);
-> +
-> +	of_property_read_u8(dev->of_node, "adi,divisor-length",
-> +		 &pdata->divisor_length);
-> +
-> +	of_property_read_u32(dev->of_node, "adi,ev-type",
-> +		 &pdata->ev_type);
+Sure, there's no chance that my testing could have been extensive enough.
 
-All these ev* properties are Linux-specific so should have linux prefix
-and not adi.
+Following Andrew's feedback, I will be looking at getting the pinmux
+programming right in the DTs.
 
-> +
-> +	of_property_read_u32(dev->of_node, "adi,ev-code-x",
-> +		 &pdata->ev_code_x);
-> +
-> +	of_property_read_u32(dev->of_node, "adi,ev-code-y",
-> +		 &pdata->ev_code_y);
-> +
-> +	of_property_read_u32(dev->of_node, "adi,ev-code-z",
-> +		 &pdata->ev_code_z);
-> +
-> +	of_property_read_u32_array(dev->of_node, "adi,ev-code-tap",
-> +		 pdata->ev_code_tap, 3);
-> +
-> +	of_property_read_u32(dev->of_node, "adi,ev-code-ff",
-> +		 &pdata->ev_code_ff);
-> +
-> +	of_property_read_u32(dev->of_node, "adi,ev-code-act-inactivity",
-> +		 &pdata->ev_code_act_inactivity);
-> +
-> +	of_property_read_u32_array(dev->of_node, "adi,ev-codes-orient-2d",
-> +		 pdata->ev_codes_orient_2d, 4);
-> +
-> +	of_property_read_u32_array(dev->of_node, "adi,ev-codes-orient-3d",
-> +		 pdata->ev_codes_orient_3d, 6);
-> +
-> +}
-> +
->  struct adxl34x *adxl34x_probe(struct device *dev, int irq,
->  			      bool fifo_delay_default,
->  			      const struct adxl34x_bus_ops *bops)
->  {
->  	struct adxl34x *ac;
->  	struct input_dev *input_dev;
-> -	const struct adxl34x_platform_data *pdata;
-> +	struct adxl34x_platform_data *pdata;
->  	int err, range, i;
->  	unsigned char revid;
->  
-> @@ -714,6 +816,10 @@ struct adxl34x *adxl34x_probe(struct device *dev, int irq,
->  	ac->fifo_delay = fifo_delay_default;
->  
->  	pdata = dev_get_platdata(dev);
-> +
-> +	if (!pdata && dev->of_node)
-> +		adxl34x_parse_dt(dev, pdata);
-> +
->  	if (!pdata) {
+Thanks,
 
-Umm, what's changing data pointer? Was this tested?
+Tomeu
 
->  		dev_dbg(dev,
->  			"No platform data: Using default initialization\n");
-> -- 
-> 1.7.10.4
-> 
-
-Thanks.
-
--- 
-Dmitry
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
