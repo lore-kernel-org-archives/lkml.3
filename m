@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757981AbbAGCYT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:24:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47115 "EHLO
+	id S1757965AbbAGCX5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:23:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47126 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757723AbbAGCSG (ORCPT
+	with ESMTP id S1757726AbbAGCSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:18:06 -0500
+	Tue, 6 Jan 2015 21:18:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Liu Bo <bo.li.liu@oracle.com>, Chris Mason <clm@fb.com>,
-        "Alexander E. Patrakov" <patrakov@gmail.com>
-Subject: [PATCH 3.17 72/73] Btrfs: fix loop writing of async reclaim
-Date: Tue,  6 Jan 2015 18:16:33 -0800
-Message-Id: <20150107021559.724807638@linuxfoundation.org>
+        Filipe Manana <fdmanana@suse.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.17 73/73] Btrfs: fix fs corruption on transaction abort if device supports discard
+Date: Tue,  6 Jan 2015 18:16:34 -0800
+Message-Id: <20150107021559.755034943@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107021557.521276020@linuxfoundation.org>
 References: <20150107021557.521276020@linuxfoundation.org>
@@ -29,67 +28,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liu Bo <bo.li.liu@oracle.com>
+From: Filipe Manana <fdmanana@suse.com>
 
-commit 25ce459c1af138f95a3fd318461193397ebb825b upstream.
+commit 678886bdc6378c1cbd5072da2c5a3035000214e3 upstream.
 
-One of my tests shows that when we really don't have space to reclaim via
-flush_space and also run out of space, this async reclaim work loops on adding
-itself into the workqueue and keeps writing something to disk according to
-iostat's results, and these writes mainly comes from commit_transaction which
-writes super_block.  This's unacceptable as it can be bad to disks, especially
-memeory storages.
+When we abort a transaction we iterate over all the ranges marked as dirty
+in fs_info->freed_extents[0] and fs_info->freed_extents[1], clear them
+from those trees, add them back (unpin) to the free space caches and, if
+the fs was mounted with "-o discard", perform a discard on those regions.
+Also, after adding the regions to the free space caches, a fitrim ioctl call
+can see those ranges in a block group's free space cache and perform a discard
+on the ranges, so the same issue can happen without "-o discard" as well.
 
-This adds a check to avoid the above situation.
+This causes corruption, affecting one or multiple btree nodes (in the worst
+case leaving the fs unmountable) because some of those ranges (the ones in
+the fs_info->pinned_extents tree) correspond to btree nodes/leafs that are
+referred by the last committed super block - breaking the rule that anything
+that was committed by a transaction is untouched until the next transaction
+commits successfully.
 
-Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
+I ran into this while running in a loop (for several hours) the fstest that
+I recently submitted:
+
+  [PATCH] fstests: add btrfs test to stress chunk allocation/removal and fstrim
+
+The corruption always happened when a transaction aborted and then fsck complained
+like this:
+
+   _check_btrfs_filesystem: filesystem on /dev/sdc is inconsistent
+   *** fsck.btrfs output ***
+   Check tree block failed, want=94945280, have=0
+   Check tree block failed, want=94945280, have=0
+   Check tree block failed, want=94945280, have=0
+   Check tree block failed, want=94945280, have=0
+   Check tree block failed, want=94945280, have=0
+   read block failed check_tree_block
+   Couldn't open file system
+
+In this case 94945280 corresponded to the root of a tree.
+Using frace what I observed was the following sequence of steps happened:
+
+   1) transaction N started, fs_info->pinned_extents pointed to
+      fs_info->freed_extents[0];
+
+   2) node/eb 94945280 is created;
+
+   3) eb is persisted to disk;
+
+   4) transaction N commit starts, fs_info->pinned_extents now points to
+      fs_info->freed_extents[1], and transaction N completes;
+
+   5) transaction N + 1 starts;
+
+   6) eb is COWed, and btrfs_free_tree_block() called for this eb;
+
+   7) eb range (94945280 to 94945280 + 16Kb) is added to
+      fs_info->pinned_extents (fs_info->freed_extents[1]);
+
+   8) Something goes wrong in transaction N + 1, like hitting ENOSPC
+      for example, and the transaction is aborted, turning the fs into
+      readonly mode. The stack trace I got for example:
+
+      [112065.253935]  [<ffffffff8140c7b6>] dump_stack+0x4d/0x66
+      [112065.254271]  [<ffffffff81042984>] warn_slowpath_common+0x7f/0x98
+      [112065.254567]  [<ffffffffa0325990>] ? __btrfs_abort_transaction+0x50/0x10b [btrfs]
+      [112065.261674]  [<ffffffff810429e5>] warn_slowpath_fmt+0x48/0x50
+      [112065.261922]  [<ffffffffa032949e>] ? btrfs_free_path+0x26/0x29 [btrfs]
+      [112065.262211]  [<ffffffffa0325990>] __btrfs_abort_transaction+0x50/0x10b [btrfs]
+      [112065.262545]  [<ffffffffa036b1d6>] btrfs_remove_chunk+0x537/0x58b [btrfs]
+      [112065.262771]  [<ffffffffa033840f>] btrfs_delete_unused_bgs+0x1de/0x21b [btrfs]
+      [112065.263105]  [<ffffffffa0343106>] cleaner_kthread+0x100/0x12f [btrfs]
+      (...)
+      [112065.264493] ---[ end trace dd7903a975a31a08 ]---
+      [112065.264673] BTRFS: error (device sdc) in btrfs_remove_chunk:2625: errno=-28 No space left
+      [112065.264997] BTRFS info (device sdc): forced readonly
+
+   9) The clear kthread sees that the BTRFS_FS_STATE_ERROR bit is set in
+      fs_info->fs_state and calls btrfs_cleanup_transaction(), which in
+      turn calls btrfs_destroy_pinned_extent();
+
+   10) Then btrfs_destroy_pinned_extent() iterates over all the ranges
+       marked as dirty in fs_info->freed_extents[], and for each one
+       it calls discard, if the fs was mounted with "-o discard", and
+       adds the range to the free space cache of the respective block
+       group;
+
+   11) btrfs_trim_block_group(), invoked from the fitrim ioctl code path,
+       sees the free space entries and performs a discard;
+
+   12) After an umount and mount (or fsck), our eb's location on disk was full
+       of zeroes, and it should have been untouched, because it was marked as
+       dirty in the fs_info->pinned_extents tree, and therefore used by the
+       trees that the last committed superblock points to.
+
+Fix this by not performing a discard and not adding the ranges to the free space
+caches - it's useless from this point since the fs is now in readonly mode and
+we won't write free space caches to disk anymore (otherwise we would leak space)
+nor any new superblock. By not adding the ranges to the free space caches, it
+prevents other code paths from allocating that space and write to it as well,
+therefore being safer and simpler.
+
+This isn't a new problem, as it's been present since 2011 (git commit
+acce952b0263825da32cf10489413dec78053347).
+
+Signed-off-by: Filipe Manana <fdmanana@suse.com>
 Signed-off-by: Chris Mason <clm@fb.com>
-Cc: "Alexander E. Patrakov" <patrakov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/extent-tree.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ fs/btrfs/disk-io.c     |    6 ------
+ fs/btrfs/extent-tree.c |   10 ++++++----
+ 2 files changed, 6 insertions(+), 10 deletions(-)
 
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -4043,12 +4043,6 @@ again:
+ 		if (ret)
+ 			break;
+ 
+-		/* opt_discard */
+-		if (btrfs_test_opt(root, DISCARD))
+-			ret = btrfs_error_discard_extent(root, start,
+-							 end + 1 - start,
+-							 NULL);
+-
+ 		clear_extent_dirty(unpin, start, end, GFP_NOFS);
+ 		btrfs_error_unpin_extent_range(root, start, end);
+ 		cond_resched();
 --- a/fs/btrfs/extent-tree.c
 +++ b/fs/btrfs/extent-tree.c
-@@ -4343,11 +4343,21 @@ static inline int need_do_async_reclaim(
+@@ -5715,7 +5715,8 @@ void btrfs_prepare_extent_commit(struct
+ 	update_global_block_rsv(fs_info);
  }
  
- static int btrfs_need_do_async_reclaim(struct btrfs_space_info *space_info,
--				       struct btrfs_fs_info *fs_info)
-+				       struct btrfs_fs_info *fs_info,
-+				       int flush_state)
+-static int unpin_extent_range(struct btrfs_root *root, u64 start, u64 end)
++static int unpin_extent_range(struct btrfs_root *root, u64 start, u64 end,
++			      const bool return_free_space)
  {
- 	u64 used;
+ 	struct btrfs_fs_info *fs_info = root->fs_info;
+ 	struct btrfs_block_group_cache *cache = NULL;
+@@ -5739,7 +5740,8 @@ static int unpin_extent_range(struct btr
  
- 	spin_lock(&space_info->lock);
-+	/*
-+	 * We run out of space and have not got any free space via flush_space,
-+	 * so don't bother doing async reclaim.
-+	 */
-+	if (flush_state > COMMIT_TRANS && space_info->full) {
-+		spin_unlock(&space_info->lock);
-+		return 0;
-+	}
-+
- 	used = space_info->bytes_used + space_info->bytes_reserved +
- 	       space_info->bytes_pinned + space_info->bytes_readonly +
- 	       space_info->bytes_may_use;
-@@ -4380,11 +4390,12 @@ static void btrfs_async_reclaim_metadata
- 		flush_space(fs_info->fs_root, space_info, to_reclaim,
- 			    to_reclaim, flush_state);
- 		flush_state++;
--		if (!btrfs_need_do_async_reclaim(space_info, fs_info))
-+		if (!btrfs_need_do_async_reclaim(space_info, fs_info,
-+						 flush_state))
- 			return;
- 	} while (flush_state <= COMMIT_TRANS);
+ 		if (start < cache->last_byte_to_unpin) {
+ 			len = min(len, cache->last_byte_to_unpin - start);
+-			btrfs_add_free_space(cache, start, len);
++			if (return_free_space)
++				btrfs_add_free_space(cache, start, len);
+ 		}
  
--	if (btrfs_need_do_async_reclaim(space_info, fs_info))
-+	if (btrfs_need_do_async_reclaim(space_info, fs_info, flush_state))
- 		queue_work(system_unbound_wq, work);
+ 		start += len;
+@@ -5803,7 +5805,7 @@ int btrfs_finish_extent_commit(struct bt
+ 						   end + 1 - start, NULL);
+ 
+ 		clear_extent_dirty(unpin, start, end, GFP_NOFS);
+-		unpin_extent_range(root, start, end);
++		unpin_extent_range(root, start, end, true);
+ 		cond_resched();
+ 	}
+ 
+@@ -9487,7 +9489,7 @@ out:
+ 
+ int btrfs_error_unpin_extent_range(struct btrfs_root *root, u64 start, u64 end)
+ {
+-	return unpin_extent_range(root, start, end);
++	return unpin_extent_range(root, start, end, false);
  }
  
+ int btrfs_error_discard_extent(struct btrfs_root *root, u64 bytenr,
 
 
