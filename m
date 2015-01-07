@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933396AbbAGDAI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 22:00:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46250 "EHLO
+	id S1758571AbbAGC65 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:58:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46242 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756711AbbAGBwB (ORCPT
+	with ESMTP id S1756928AbbAGBwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:52:01 -0500
+	Tue, 6 Jan 2015 20:52:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.18 37/84] ARM: mvebu: remove conflicting muxing on Armada 370 DB
-Date: Tue,  6 Jan 2015 17:49:40 -0800
-Message-Id: <20150107014030.229521927@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.18 39/84] x86/asm/traps: Disable tracing and kprobes in fixup_bad_iret and sync_regs
+Date: Tue,  6 Jan 2015 17:49:42 -0800
+Message-Id: <20150107014030.292260881@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
 References: <20150107014029.012974975@linuxfoundation.org>
@@ -30,66 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit b4607572ef86b288a856b9df410ea593c5371dec upstream.
+commit 7ddc6a2199f1da405a2fb68c40db8899b1a8cd87 upstream.
 
-Back when audio was enabled, the muxing of some MPP pins was causing
-problems. However, since commit fea038ed55ae ("ARM: mvebu: Add proper
-pin muxing on the Armada 370 DB board"), those problematic MPP pins
-have been assigned a proper muxing for the Ethernet interfaces. This
-proper muxing is now conflicting with the hog pins muxing that had
-been added as part of 249f3822509b ("ARM: mvebu: add audio support to
-Armada 370 DB").
+These functions can be executed on the int3 stack, so kprobes
+are dangerous. Tracing is probably a bad idea, too.
 
-Therefore, this commit simply removes the hog pins muxing, which
-solves a warning a boot time due to the conflicting muxing
-requirements.
-
-Fixes: fea038ed55ae ("ARM: mvebu: Add proper pin muxing on the Armada 370 DB board")
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Acked-by: Andrew Lunn <andrew@lunn.ch>
-Link: https://lkml.kernel.org/r/1414512524-24466-5-git-send-email-thomas.petazzoni@free-electrons.com
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Fixes: b645af2d5905 ("x86_64, traps: Rework bad_iret")
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/50e33d26adca60816f3ba968875801652507d0c4.1416870125.git.luto@amacapital.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/armada-370-db.dts |   24 ------------------------
- 1 file changed, 24 deletions(-)
+ arch/x86/kernel/traps.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/arm/boot/dts/armada-370-db.dts
-+++ b/arch/arm/boot/dts/armada-370-db.dts
-@@ -102,30 +102,6 @@
- 				broken-cd;
- 			};
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -387,7 +387,7 @@ NOKPROBE_SYMBOL(do_int3);
+  * for scheduling or signal handling. The actual stack switch is done in
+  * entry.S
+  */
+-asmlinkage __visible struct pt_regs *sync_regs(struct pt_regs *eregs)
++asmlinkage __visible notrace struct pt_regs *sync_regs(struct pt_regs *eregs)
+ {
+ 	struct pt_regs *regs = eregs;
+ 	/* Did already sync */
+@@ -413,7 +413,7 @@ struct bad_iret_stack {
+ 	struct pt_regs regs;
+ };
  
--			pinctrl {
--				/*
--				 * These pins might be muxed as I2S by
--				 * the bootloader, but it conflicts
--				 * with the real I2S pins that are
--				 * muxed using i2s_pins. We must mux
--				 * those pins to a function other than
--				 * I2S.
--				 */
--				pinctrl-0 = <&hog_pins1 &hog_pins2>;
--				pinctrl-names = "default";
--
--				hog_pins1: hog-pins1 {
--					marvell,pins = "mpp6",  "mpp8", "mpp10",
--						       "mpp12", "mpp13";
--					marvell,function = "gpio";
--				};
--
--				hog_pins2: hog-pins2 {
--					marvell,pins = "mpp5", "mpp7", "mpp9";
--					marvell,function = "gpo";
--				};
--			};
--
- 			usb@50000 {
- 				status = "okay";
- 			};
+-asmlinkage __visible
++asmlinkage __visible notrace
+ struct bad_iret_stack *fixup_bad_iret(struct bad_iret_stack *s)
+ {
+ 	/*
+@@ -436,6 +436,7 @@ struct bad_iret_stack *fixup_bad_iret(st
+ 	BUG_ON(!user_mode_vm(&new_stack->regs));
+ 	return new_stack;
+ }
++NOKPROBE_SYMBOL(fixup_bad_iret);
+ #endif
+ 
+ /*
 
 
