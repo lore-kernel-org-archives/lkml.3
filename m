@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493AbbAGRgr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 12:36:47 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:49054 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755164AbbAGRco (ORCPT
+	id S1754638AbbAGRgq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 12:36:46 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:56826 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755168AbbAGRco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 Jan 2015 12:32:44 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -15,62 +15,174 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 02/14] rcu: Rename "empty" to "empty_norm" in preparation for boost rework
-Date: Wed,  7 Jan 2015 09:32:21 -0800
-Message-Id: <1420651953-2651-2-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 03/14] rcu: Abstract rcu_cleanup_dead_rnp() from rcu_cleanup_dead_cpu()
+Date: Wed,  7 Jan 2015 09:32:22 -0800
+Message-Id: <1420651953-2651-3-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1420651953-2651-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20150107173215.GA897@linux.vnet.ibm.com>
  <1420651953-2651-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15010717-0021-0000-0000-0000079397F5
+x-cbid: 15010717-0029-0000-0000-00000703EED2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This commit undertakes a simple variable renaming to make way for
-some rework of RCU priority boosting.
+This commit abstracts rcu_cleanup_dead_rnp() from rcu_cleanup_dead_cpu()
+in preparation for the rework of RCU priority boosting.  This new function
+will be invoked from rcu_read_unlock_special() in the reworked scheme,
+which is why rcu_cleanup_dead_rnp() assumes that the leaf rcu_node
+structure's ->qsmaskinit field has already been updated.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcu/tree_plugin.h | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ kernel/rcu/tree.c        | 67 ++++++++++++++++++++++++++++++++++--------------
+ kernel/rcu/tree.h        |  1 +
+ kernel/rcu/tree_plugin.h | 17 ++++++++++++
+ 3 files changed, 66 insertions(+), 19 deletions(-)
 
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index 4c106fcc0d54..75c6b3301abb 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -2227,6 +2227,46 @@ static void rcu_cleanup_dying_cpu(struct rcu_state *rsp)
+ }
+ 
+ /*
++ * All CPUs for the specified rcu_node structure have gone offline,
++ * and all tasks that were preempted within an RCU read-side critical
++ * section while running on one of those CPUs have since exited their RCU
++ * read-side critical section.  Some other CPU is reporting this fact with
++ * the specified rcu_node structure's ->lock held and interrupts disabled.
++ * This function therefore goes up the tree of rcu_node structures,
++ * clearing the corresponding bits in the ->qsmaskinit fields.  Note that
++ * the leaf rcu_node structure's ->qsmaskinit field has already been
++ * updated
++ *
++ * This function does check that the specified rcu_node structure has
++ * all CPUs offline and no blocked tasks, so it is OK to invoke it
++ * prematurely.  That said, invoking it after the fact will cost you
++ * a needless lock acquisition.  So once it has done its work, don't
++ * invoke it again.
++ */
++static void rcu_cleanup_dead_rnp(struct rcu_node *rnp_leaf)
++{
++	long mask;
++	struct rcu_node *rnp = rnp_leaf;
++
++	if (rnp->qsmaskinit || rcu_preempt_has_tasks(rnp))
++		return;
++	for (;;) {
++		mask = rnp->grpmask;
++		rnp = rnp->parent;
++		if (!rnp)
++			break;
++		raw_spin_lock(&rnp->lock); /* irqs already disabled. */
++		smp_mb__after_unlock_lock(); /* GP memory ordering. */
++		rnp->qsmaskinit &= ~mask;
++		if (rnp->qsmaskinit) {
++			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
++			return;
++		}
++		raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
++	}
++}
++
++/*
+  * The CPU has been completely removed, and some other CPU is reporting
+  * this fact from process context.  Do the remainder of the cleanup,
+  * including orphaning the outgoing CPU's RCU callbacks, and also
+@@ -2236,7 +2276,6 @@ static void rcu_cleanup_dying_cpu(struct rcu_state *rsp)
+ static void rcu_cleanup_dead_cpu(int cpu, struct rcu_state *rsp)
+ {
+ 	unsigned long flags;
+-	unsigned long mask;
+ 	int need_report = 0;
+ 	struct rcu_data *rdp = per_cpu_ptr(rsp->rda, cpu);
+ 	struct rcu_node *rnp = rdp->mynode;  /* Outgoing CPU's rdp & rnp. */
+@@ -2252,24 +2291,14 @@ static void rcu_cleanup_dead_cpu(int cpu, struct rcu_state *rsp)
+ 	rcu_send_cbs_to_orphanage(cpu, rsp, rnp, rdp);
+ 	rcu_adopt_orphan_cbs(rsp, flags);
+ 
+-	/* Remove the outgoing CPU from the masks in the rcu_node hierarchy. */
+-	mask = rdp->grpmask;	/* rnp->grplo is constant. */
+-	do {
+-		raw_spin_lock(&rnp->lock);	/* irqs already disabled. */
+-		smp_mb__after_unlock_lock();
+-		rnp->qsmaskinit &= ~mask;
+-		if (rnp->qsmaskinit != 0) {
+-			if (rnp != rdp->mynode)
+-				raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
+-			break;
+-		}
+-		if (rnp == rdp->mynode)
+-			need_report = rcu_preempt_offline_tasks(rsp, rnp, rdp);
+-		else
+-			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
+-		mask = rnp->grpmask;
+-		rnp = rnp->parent;
+-	} while (rnp != NULL);
++	/* Remove outgoing CPU from mask in the leaf rcu_node structure. */
++	raw_spin_lock(&rnp->lock);	/* irqs already disabled. */
++	smp_mb__after_unlock_lock();	/* Enforce GP memory-order guarantee. */
++	rnp->qsmaskinit &= ~rdp->grpmask;
++	if (rnp->qsmaskinit == 0) {
++		need_report = rcu_preempt_offline_tasks(rsp, rnp, rdp);
++		rcu_cleanup_dead_rnp(rnp);
++	}
+ 
+ 	/*
+ 	 * We still hold the leaf rcu_node structure lock here, and
+diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
+index 8e7b1843896e..9315477b47d9 100644
+--- a/kernel/rcu/tree.h
++++ b/kernel/rcu/tree.h
+@@ -552,6 +552,7 @@ static int rcu_preempt_blocked_readers_cgp(struct rcu_node *rnp);
+ #ifdef CONFIG_HOTPLUG_CPU
+ static void rcu_report_unblock_qs_rnp(struct rcu_node *rnp,
+ 				      unsigned long flags);
++static bool rcu_preempt_has_tasks(struct rcu_node *rnp);
+ #endif /* #ifdef CONFIG_HOTPLUG_CPU */
+ static void rcu_print_detail_task_stall(struct rcu_state *rsp);
+ static int rcu_print_task_stall(struct rcu_node *rnp);
 diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index d59913ef8360..3d22f0b2dea9 100644
+index 3d22f0b2dea9..d044b9cbbd97 100644
 --- a/kernel/rcu/tree_plugin.h
 +++ b/kernel/rcu/tree_plugin.h
-@@ -313,8 +313,8 @@ static struct list_head *rcu_next_node_entry(struct task_struct *t,
-  */
- void rcu_read_unlock_special(struct task_struct *t)
- {
--	int empty;
- 	int empty_exp;
-+	int empty_norm;
- 	int empty_exp_now;
- 	unsigned long flags;
- 	struct list_head *np;
-@@ -367,7 +367,7 @@ void rcu_read_unlock_special(struct task_struct *t)
- 				break;
- 			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
- 		}
--		empty = !rcu_preempt_blocked_readers_cgp(rnp);
-+		empty_norm = !rcu_preempt_blocked_readers_cgp(rnp);
- 		empty_exp = !rcu_preempted_readers_exp(rnp);
- 		smp_mb(); /* ensure expedited fastpath sees end of RCU c-s. */
- 		np = rcu_next_node_entry(t, rnp);
-@@ -393,7 +393,7 @@ void rcu_read_unlock_special(struct task_struct *t)
- 		 * so we must take a snapshot of the expedited state.
- 		 */
- 		empty_exp_now = !rcu_preempted_readers_exp(rnp);
--		if (!empty && !rcu_preempt_blocked_readers_cgp(rnp)) {
-+		if (!empty_norm && !rcu_preempt_blocked_readers_cgp(rnp)) {
- 			trace_rcu_quiescent_state_report(TPS("preempt_rcu"),
- 							 rnp->gpnum,
- 							 0, rnp->qsmask,
+@@ -307,6 +307,15 @@ static struct list_head *rcu_next_node_entry(struct task_struct *t,
+ }
+ 
+ /*
++ * Return true if the specified rcu_node structure has tasks that were
++ * preempted within an RCU read-side critical section.
++ */
++static bool rcu_preempt_has_tasks(struct rcu_node *rnp)
++{
++	return !list_empty(&rnp->blkd_tasks);
++}
++
++/*
+  * Handle special cases during rcu_read_unlock(), such as needing to
+  * notify RCU core processing or task having blocked during the RCU
+  * read-side critical section.
+@@ -967,6 +976,14 @@ static void rcu_report_unblock_qs_rnp(struct rcu_node *rnp, unsigned long flags)
+ 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ }
+ 
++/*
++ * Because there is no preemptible RCU, there can be no readers blocked.
++ */
++static bool rcu_preempt_has_tasks(struct rcu_node *rnp)
++{
++	return false;
++}
++
+ #endif /* #ifdef CONFIG_HOTPLUG_CPU */
+ 
+ /*
 -- 
 1.8.1.5
 
