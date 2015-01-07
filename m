@@ -1,296 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290AbbAGUxy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 15:53:54 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:60127 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754224AbbAGUxu (ORCPT
+	id S1754974AbbAGUxJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 15:53:09 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:44753 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754675AbbAGUxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 15:53:50 -0500
-Date: Wed, 7 Jan 2015 12:52:33 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Nishanth Menon <nm@ti.com>
-Cc: Jean Delvare <jdelvare@suse.de>, Eduardo Valentin <edubezval@gmail.com>,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH] (gpio-fan): Add thermal control hooks
-Message-ID: <20150107205233.GA28564@roeck-us.net>
-References: <1420653674-23855-1-git-send-email-nm@ti.com>
+	Wed, 7 Jan 2015 15:53:07 -0500
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: initramfs <initramfs@vger.kernel.org>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        linux-ima-devel@lists.sourceforge.net,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [RFC][PATCH 0/9] extend initramfs archive format to support xattrs 
+Date: Wed,  7 Jan 2015 15:52:51 -0500
+Message-Id: <1420663980-20842-1-git-send-email-zohar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420653674-23855-1-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.50F5E516.0118,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 5
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15010720-0033-0000-0000-0000033DA39C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 12:01:14PM -0600, Nishanth Menon wrote:
-> Allow gpio-fan to be used as thermal cooling device for platforms that
-> use GPIO maps to control fans.
-> 
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> ---
-> 
-> Based on v3.19-rc3
-> 
->  .../devicetree/bindings/gpio/gpio-fan.txt          |   14 +++
->  drivers/hwmon/gpio-fan.c                           |   93 ++++++++++++++++++--
->  2 files changed, 100 insertions(+), 7 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/gpio/gpio-fan.txt b/Documentation/devicetree/bindings/gpio/gpio-fan.txt
-> index 2dd457a3469a..046f2f400dbb 100644
-> --- a/Documentation/devicetree/bindings/gpio/gpio-fan.txt
-> +++ b/Documentation/devicetree/bindings/gpio/gpio-fan.txt
-> @@ -11,6 +11,9 @@ Required properties:
->  Optional properties:
->  - alarm-gpios: This pin going active indicates something is wrong with
->    the fan, and a udev event will be fired.
-> +- cooling-cells: If used as a cooling device, must be <2>
-> +  Also see: Documentation/devicetree/bindings/thermal/thermal.txt
-> +  min and max states are derived from the speed-map of the fan.
->  
->  Examples:
->  
-> @@ -23,3 +26,14 @@ Examples:
->  				      6000 2>;
->  		alarm-gpios = <&gpio1 15 1>;
->  	};
-> +
+Many of the Linux security/integrity features are dependent on file
+metadata, stored as extended attributes (xattrs), for making decisions.
+These features need to be initialized during initcall and enabled as
+early as possible for complete security coverage. 
 
-Unnecessary second empty line.
+The linux kernel creates the rootfs file system and extracts the contents
+of the initramfs, a compressed CPIO archive, onto it. If CONFIG_TMPFS is
+enabled (and "root=" is not specified on the boot command line), rootfs
+will use tmpfs instead of ramfs by default.  Although the tmpfs filesystem
+supports xattrs, the CPIO archive specification does not define a method
+for including them in the archive.  Other archive formats have added xattr
+support (eg. tar).
 
-> +	gpio_fan_cool: gpio_fan {
-> +		compatible = "gpio-fan";
-> +		gpios = <&gpio2 14 1
-> +			 &gpio2 13 1>;
-> +		gpio-fan,speed-map = <0    0
-> +				      3000 1
-> +				      6000 2>;
-> +		alarm-gpios = <&gpio1 15 1>;
-> +		#cooling-cells = <2>; /* min followed by max */
-> +	};
-> diff --git a/drivers/hwmon/gpio-fan.c b/drivers/hwmon/gpio-fan.c
-> index 36abf814b8c7..089914c4f574 100644
-> --- a/drivers/hwmon/gpio-fan.c
-> +++ b/drivers/hwmon/gpio-fan.c
-> @@ -34,10 +34,14 @@
->  #include <linux/of.h>
->  #include <linux/of_platform.h>
->  #include <linux/of_gpio.h>
-> +#include <linux/thermal.h>
-> +
+There are a couple of ways to include and label the rootfs filesystem:
+- include a file manifest containing the xattrs in the initramfs
+- extend CPIO to support xattrs
+- add tar support
 
-Unnecessary additional empty line.
+This patch set extends the existing newc CPIO archive format to include
+xattrs in the initramfs.  The changes are limited to gen_init_cpio, the
+kernel build tree tool used to generate an initramfs, and init/initramfs.c,
+the parser, with minor changes to IMA and EVM.
 
->  
->  struct gpio_fan_data {
->  	struct platform_device	*pdev;
->  	struct device		*hwmon_dev;
-> +	/* Cooling device if any */
-> +	struct thermal_cooling_device *cdev;
->  	struct mutex		lock; /* lock GPIOs operations. */
->  	int			num_ctrl;
->  	unsigned		*ctrl;
-> @@ -387,12 +391,63 @@ static int fan_ctrl_init(struct gpio_fan_data *fan_data,
->  	return 0;
->  }
->  
-> +static int gpio_fan_get_max_state(struct thermal_cooling_device *cdev,
-> +				  unsigned long *state)
-> +{
-> +	struct gpio_fan_data *fan_data = cdev->devdata;
-> +
-> +	if (!fan_data)
-> +		return -EINVAL;
-> +
-> +	*state = fan_data->num_speed - 1;
-> +	return 0;
-> +}
-> +
-> +static int gpio_fan_get_cur_state(struct thermal_cooling_device *cdev,
-> +				  unsigned long *state)
-> +{
-> +	struct gpio_fan_data *fan_data = cdev->devdata;
-> +	int r;
-> +
-> +	if (!fan_data)
-> +		return -EINVAL;
-> +
-> +	r = get_fan_speed_index(fan_data);
-> +	if (r < 0)
-> +		return r;
-> +
-> +	*state = r;
-> +	return 0;
-> +
-Unnecessary empty line.
+Mimi
 
-> +}
-> +
-> +static int gpio_fan_set_cur_state(struct thermal_cooling_device *cdev,
-> +				  unsigned long state)
-> +{
-> +	struct gpio_fan_data *fan_data = cdev->devdata;
-> +
-> +	if (!fan_data)
-> +		return -EINVAL;
-> +
-> +	set_fan_speed(fan_data, state);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct thermal_cooling_device_ops gpio_fan_cooling_ops = {
-> +	.get_max_state = gpio_fan_get_max_state,
-> +	.get_cur_state = gpio_fan_get_cur_state,
-> +	.set_cur_state = gpio_fan_set_cur_state,
-> +
-Unnecessary empty line (checkpatch!!!)
 
-> +};
-> +
->  #ifdef CONFIG_OF_GPIO
->  /*
->   * Translate OpenFirmware node properties into platform_data
->   */
->  static int gpio_fan_get_of_pdata(struct device *dev,
-> -			    struct gpio_fan_platform_data *pdata)
-> +			         struct gpio_fan_platform_data *pdata,
-> +				 struct gpio_fan_data *fan_data)
->  {
->  	struct device_node *node;
->  	struct gpio_fan_speed *speed;
-> @@ -480,6 +535,12 @@ static int gpio_fan_get_of_pdata(struct device *dev,
->  		pdata->alarm = alarm;
->  	}
->  
-> +	fan_data->cdev = thermal_of_cooling_device_register(node, "gpio-fan",
-> +							    fan_data,
-> +						    &gpio_fan_cooling_ops);
+Mimi Zohar (9):
+  initramfs: separate reading cpio method from header
+  initramfs: add extended attribute support
+  gen_init_cpio: replace inline format string with common variable
+  gen_init_cpio: define new CPIO format to support xattrs
+  gen_init_cpio: include the file extended attributes
+  gen_initramfs_list.sh: include xattrs
+  evm: make rootfs a special case
+  ima: include tmpfs in ima_appraise_tcb policy
+  init: remove "root=" command line option test for tmpfs decision
 
-Just use one continuation line here, with no spaces up front but only tabs.
+ init/do_mounts.c                    |   2 +-
+ init/initramfs.c                    |  95 +++++++++++++++++++++---
+ scripts/gen_initramfs_list.sh       |   2 +-
+ security/integrity/evm/evm_main.c   |  12 ++-
+ security/integrity/ima/ima_policy.c |   2 +
+ usr/gen_init_cpio.c                 | 142 ++++++++++++++++++++++++++++++------
+ 6 files changed, 218 insertions(+), 37 deletions(-)
 
-> +	if (IS_ERR(fan_data->cdev))
-> +		dev_dbg(dev, "gpio-fan has no valid cooling DT property\n");
-> +
-The property is optional. Why does this warrant even a debug message ?
+-- 
+1.8.1.4
 
->  	return 0;
->  }
->  
-> @@ -495,6 +556,11 @@ static int gpio_fan_probe(struct platform_device *pdev)
->  	struct gpio_fan_data *fan_data;
->  	struct gpio_fan_platform_data *pdata = dev_get_platdata(&pdev->dev);
->  
-> +	fan_data = devm_kzalloc(&pdev->dev, sizeof(struct gpio_fan_data),
-> +				GFP_KERNEL);
-> +	if (!fan_data)
-> +		return -ENOMEM;
-> +
->  #ifdef CONFIG_OF_GPIO
->  	if (!pdata) {
->  		pdata = devm_kzalloc(&pdev->dev,
-> @@ -503,20 +569,19 @@ static int gpio_fan_probe(struct platform_device *pdev)
->  		if (!pdata)
->  			return -ENOMEM;
->  
-> -		err = gpio_fan_get_of_pdata(&pdev->dev, pdata);
-> +		err = gpio_fan_get_of_pdata(&pdev->dev, pdata, fan_data);
-
-It is inconsistent with the code below to call
-thermal_of_cooling_device_register in gpio_fan_get_of_pdata
-(and to pass fan_data just for that purpose). Please call it from here. 
-
->  		if (err)
->  			return err;
->  	}
->  #else /* CONFIG_OF_GPIO */
->  	if (!pdata)
->  		return -EINVAL;
-> +	/* Optional cooling device register for non Device tree platforms */
-> +	fan_data->cdev = thermal_cooling_device_register("gpio-fan",
-> +							 fan_data,
-> +							 &gpio_fan_cooling_ops);
->  #endif /* CONFIG_OF_GPIO */
->  
-> -	fan_data = devm_kzalloc(&pdev->dev, sizeof(struct gpio_fan_data),
-> -				GFP_KERNEL);
-> -	if (!fan_data)
-> -		return -ENOMEM;
-> -
->  	fan_data->pdev = pdev;
->  	platform_set_drvdata(pdev, fan_data);
->  	mutex_init(&fan_data->lock);
-> @@ -550,10 +615,23 @@ static int gpio_fan_probe(struct platform_device *pdev)
->  	return 0;
->  }
->  
-> +static int gpio_fan_remove(struct platform_device *pdev)
-> +{
-> +       struct gpio_fan_data *fan_data = platform_get_drvdata(pdev);
-
-Indentation is problematic. Actually, checkpatch shows several whitespace
-problems as well as an unnecessary empty line. Please ensure that your patch
-passes checkpatch --strict.
-
-> +
-> +	if (!IS_ERR(fan_data->cdev))
-> +		thermal_cooling_device_unregister(fan_data->cdev);
-> +
-> +       return 0;
-> +}
-> +
->  static void gpio_fan_shutdown(struct platform_device *pdev)
->  {
->  	struct gpio_fan_data *fan_data = dev_get_drvdata(&pdev->dev);
->  
-> +	if (!IS_ERR(fan_data->cdev))
-> +		thermal_cooling_device_unregister(fan_data->cdev);
-> +
-
-Instead of having this conditional call twice, you might as well call
-gpio_fan_remove() from here.
-
->  	if (fan_data->ctrl)
->  		set_fan_speed(fan_data, 0);
->  }
-> @@ -589,6 +667,7 @@ static SIMPLE_DEV_PM_OPS(gpio_fan_pm, gpio_fan_suspend, gpio_fan_resume);
->  
->  static struct platform_driver gpio_fan_driver = {
->  	.probe		= gpio_fan_probe,
-> +	.remove		= gpio_fan_remove,
->  	.shutdown	= gpio_fan_shutdown,
->  	.driver	= {
->  		.name	= "gpio-fan",
-> -- 
-> 1.7.9.5
-> 
