@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758142AbbAGC1z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:27:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47109 "EHLO
+	id S1755179AbbAGC1l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:27:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47112 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757680AbbAGCSB (ORCPT
+	with ESMTP id S1757681AbbAGCSB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jan 2015 21:18:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Guy Briggs <rgb@redhat.com>, Paul Moore <pmoore@redhat.com>,
-        Eric Paris <eparis@redhat.com>
-Subject: [PATCH 3.17 57/73] audit: dont attempt to lookup PIDs when changing PID filtering audit rules
-Date: Tue,  6 Jan 2015 18:16:18 -0800
-Message-Id: <20150107021559.265256072@linuxfoundation.org>
+        Richard Guy Briggs <rgb@redhat.com>, Paul Moore <pmoore@redhat.com>
+Subject: [PATCH 3.17 58/73] audit: restore AUDIT_LOGINUID unset ABI
+Date: Tue,  6 Jan 2015 18:16:19 -0800
+Message-Id: <20150107021559.293627132@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107021557.521276020@linuxfoundation.org>
 References: <20150107021557.521276020@linuxfoundation.org>
@@ -29,57 +28,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Moore <pmoore@redhat.com>
+From: Richard Guy Briggs <rgb@redhat.com>
 
-commit 3640dcfa4fd00cd91d88bb86250bdb496f7070c0 upstream.
+commit 041d7b98ffe59c59fdd639931dea7d74f9aa9a59 upstream.
 
-Commit f1dc4867 ("audit: anchor all pid references in the initial pid
-namespace") introduced a find_vpid() call when adding/removing audit
-rules with PID/PPID filters; unfortunately this is problematic as
-find_vpid() only works if there is a task with the associated PID
-alive on the system.  The following commands demonstrate a simple
-reproducer.
+A regression was caused by commit 780a7654cee8:
+	 audit: Make testing for a valid loginuid explicit.
+(which in turn attempted to fix a regression caused by e1760bd)
 
-	# auditctl -D
-	# auditctl -l
-	# autrace /bin/true
-	# auditctl -l
+When audit_krule_to_data() fills in the rules to get a listing, there was a
+missing clause to convert back from AUDIT_LOGINUID_SET to AUDIT_LOGINUID.
 
-This patch resolves the problem by simply using the PID provided by
-the user without any additional validation, e.g. no calls to check to
-see if the task/PID exists.
+This broke userspace by not returning the same information that was sent and
+expected.
 
-Cc: Richard Guy Briggs <rgb@redhat.com>
+The rule:
+	auditctl -a exit,never -F auid=-1
+gives:
+	auditctl -l
+		LIST_RULES: exit,never f24=0 syscall=all
+when it should give:
+		LIST_RULES: exit,never auid=-1 (0xffffffff) syscall=all
+
+Tag it so that it is reported the same way it was set.  Create a new
+private flags audit_krule field (pflags) to store it that won't interact with
+the public one from the API.
+
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
 Signed-off-by: Paul Moore <pmoore@redhat.com>
-Acked-by: Eric Paris <eparis@redhat.com>
-Reviewed-by: Richard Guy Briggs <rgb@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/auditfilter.c |   13 -------------
- 1 file changed, 13 deletions(-)
+ include/linux/audit.h |    4 ++++
+ kernel/auditfilter.c  |   10 ++++++++++
+ 2 files changed, 14 insertions(+)
 
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -47,6 +47,7 @@ struct sk_buff;
+ 
+ struct audit_krule {
+ 	int			vers_ops;
++	u32			pflags;
+ 	u32			flags;
+ 	u32			listnr;
+ 	u32			action;
+@@ -64,6 +65,9 @@ struct audit_krule {
+ 	u64			prio;
+ };
+ 
++/* Flag to indicate legacy AUDIT_LOGINUID unset usage */
++#define AUDIT_LOGINUID_LEGACY		0x1
++
+ struct audit_field {
+ 	u32				type;
+ 	u32				val;
 --- a/kernel/auditfilter.c
 +++ b/kernel/auditfilter.c
-@@ -433,19 +433,6 @@ static struct audit_entry *audit_data_to
+@@ -431,6 +431,7 @@ static struct audit_entry *audit_data_to
+ 		if ((f->type == AUDIT_LOGINUID) && (f->val == AUDIT_UID_UNSET)) {
+ 			f->type = AUDIT_LOGINUID_SET;
  			f->val = 0;
++			entry->rule.pflags |= AUDIT_LOGINUID_LEGACY;
  		}
  
--		if ((f->type == AUDIT_PID) || (f->type == AUDIT_PPID)) {
--			struct pid *pid;
--			rcu_read_lock();
--			pid = find_vpid(f->val);
--			if (!pid) {
--				rcu_read_unlock();
--				err = -ESRCH;
--				goto exit_free;
--			}
--			f->val = pid_nr(pid);
--			rcu_read_unlock();
--		}
--
  		err = audit_field_valid(entry, f);
- 		if (err)
- 			goto exit_free;
+@@ -606,6 +607,13 @@ static struct audit_rule_data *audit_kru
+ 			data->buflen += data->values[i] =
+ 				audit_pack_string(&bufp, krule->filterkey);
+ 			break;
++		case AUDIT_LOGINUID_SET:
++			if (krule->pflags & AUDIT_LOGINUID_LEGACY && !f->val) {
++				data->fields[i] = AUDIT_LOGINUID;
++				data->values[i] = AUDIT_UID_UNSET;
++				break;
++			}
++			/* fallthrough if set */
+ 		default:
+ 			data->values[i] = f->val;
+ 		}
+@@ -622,6 +630,7 @@ static int audit_compare_rule(struct aud
+ 	int i;
+ 
+ 	if (a->flags != b->flags ||
++	    a->pflags != b->pflags ||
+ 	    a->listnr != b->listnr ||
+ 	    a->action != b->action ||
+ 	    a->field_count != b->field_count)
+@@ -740,6 +749,7 @@ struct audit_entry *audit_dupe_rule(stru
+ 	new = &entry->rule;
+ 	new->vers_ops = old->vers_ops;
+ 	new->flags = old->flags;
++	new->pflags = old->pflags;
+ 	new->listnr = old->listnr;
+ 	new->action = old->action;
+ 	for (i = 0; i < AUDIT_BITMASK_SIZE; i++)
 
 
