@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758630AbbAGDCF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 22:02:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46230 "EHLO
+	id S1758596AbbAGDAi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 22:00:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46242 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756895AbbAGBv7 (ORCPT
+	with ESMTP id S1756916AbbAGBwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:51:59 -0500
+	Tue, 6 Jan 2015 20:52:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Dmitry Osipenko <digetx@gmail.com>,
-        Thierry Reding <treding@nvidia.com>
-Subject: [PATCH 3.18 34/84] ARM: tegra: Re-add removed SoC id macro to tegra_resume()
-Date: Tue,  6 Jan 2015 17:49:37 -0800
-Message-Id: <20150107014030.138061537@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.18 35/84] ARM: mvebu: make the coherency_ll.S functions work with no coherency fabric
+Date: Tue,  6 Jan 2015 17:49:38 -0800
+Message-Id: <20150107014030.171079303@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
 References: <20150107014029.012974975@linuxfoundation.org>
@@ -29,37 +30,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Osipenko <digetx@gmail.com>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit e4a680099a6e97ecdbb81081cff9e4a489a4dc44 upstream.
+commit 30cdef97107370a7f63ab5d80fd2de30540750c8 upstream.
 
-Commit d127e9c ("ARM: tegra: make tegra_resume can work with current and later
-chips") removed tegra_get_soc_id macro leaving used cpu register corrupted after
-branching to v7_invalidate_l1() and as result causing execution of unintended
-code on tegra20. Possibly it was expected that r6 would be SoC id func argument
-since common cpu reset handler is setting r6 before branching to tegra_resume(),
-but neither tegra20_lp1_reset() nor tegra30_lp1_reset() aren't setting r6
-register before jumping to resume function. Fix it by re-adding macro.
+The ll_add_cpu_to_smp_group(), ll_enable_coherency() and
+ll_disable_coherency() are used on Armada XP to control the coherency
+fabric. However, they make the assumption that the coherency fabric is
+always available, which is currently a correct assumption but will no
+longer be true with a followup commit that disables the usage of the
+coherency fabric when the conditions are not met to use it.
 
-Fixes: d127e9c (ARM: tegra: make tegra_resume can work with current and later chips)
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
-Signed-off-by: Thierry Reding <treding@nvidia.com>
+Therefore, this commit modifies those functions so that they check the
+return value of ll_get_coherency_base(), and if the return value is 0,
+they simply return without configuring anything in the coherency
+fabric.
+
+The ll_get_coherency_base() function is also modified to properly
+return 0 when the function is called with the MMU disabled. In this
+case, it normally returns the physical address of the coherency
+fabric, but we now check if the virtual address is 0, and if that's
+case, return a physical address of 0 to indicate that the coherency
+fabric is not enabled.
+
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Link: https://lkml.kernel.org/r/1415871540-20302-2-git-send-email-thomas.petazzoni@free-electrons.com
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-tegra/reset-handler.S |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/mach-mvebu/coherency_ll.S |   21 +++++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
 
---- a/arch/arm/mach-tegra/reset-handler.S
-+++ b/arch/arm/mach-tegra/reset-handler.S
-@@ -51,6 +51,7 @@ ENTRY(tegra_resume)
-  THUMB(	it	ne )
- 	bne	cpu_resume			@ no
+--- a/arch/arm/mach-mvebu/coherency_ll.S
++++ b/arch/arm/mach-mvebu/coherency_ll.S
+@@ -24,7 +24,10 @@
+ #include <asm/cp15.h>
  
-+	tegra_get_soc_id TEGRA_APB_MISC_BASE, r6
- 	/* Are we on Tegra20? */
- 	cmp	r6, #TEGRA20
- 	beq	1f				@ Yes
+ 	.text
+-/* Returns the coherency base address in r1 (r0 is untouched) */
++/*
++ * Returns the coherency base address in r1 (r0 is untouched), or 0 if
++ * the coherency fabric is not enabled.
++ */
+ ENTRY(ll_get_coherency_base)
+ 	mrc	p15, 0, r1, c1, c0, 0
+ 	tst	r1, #CR_M @ Check MMU bit enabled
+@@ -32,8 +35,13 @@ ENTRY(ll_get_coherency_base)
+ 
+ 	/*
+ 	 * MMU is disabled, use the physical address of the coherency
+-	 * base address.
++	 * base address. However, if the coherency fabric isn't mapped
++	 * (i.e its virtual address is zero), it means coherency is
++	 * not enabled, so we return 0.
+ 	 */
++	ldr	r1, =coherency_base
++	cmp	r1, #0
++	beq	2f
+ 	adr	r1, 3f
+ 	ldr	r3, [r1]
+ 	ldr	r1, [r1, r3]
+@@ -85,6 +93,9 @@ ENTRY(ll_add_cpu_to_smp_group)
+ 	 */
+ 	mov 	r0, lr
+ 	bl	ll_get_coherency_base
++	/* Bail out if the coherency is not enabled */
++	cmp	r1, #0
++	reteq	r0
+ 	bl	ll_get_coherency_cpumask
+ 	mov 	lr, r0
+ 	add	r0, r1, #ARMADA_XP_CFB_CFG_REG_OFFSET
+@@ -107,6 +118,9 @@ ENTRY(ll_enable_coherency)
+ 	 */
+ 	mov r0, lr
+ 	bl	ll_get_coherency_base
++	/* Bail out if the coherency is not enabled */
++	cmp	r1, #0
++	reteq	r0
+ 	bl	ll_get_coherency_cpumask
+ 	mov lr, r0
+ 	add	r0, r1, #ARMADA_XP_CFB_CTL_REG_OFFSET
+@@ -131,6 +145,9 @@ ENTRY(ll_disable_coherency)
+ 	 */
+ 	mov 	r0, lr
+ 	bl	ll_get_coherency_base
++	/* Bail out if the coherency is not enabled */
++	cmp	r1, #0
++	reteq	r0
+ 	bl	ll_get_coherency_cpumask
+ 	mov 	lr, r0
+ 	add	r0, r1, #ARMADA_XP_CFB_CTL_REG_OFFSET
 
 
