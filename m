@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208AbbAGInP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 03:43:15 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:34355 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787AbbAGInM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 03:43:12 -0500
-Message-ID: <54ACF198.4050605@gmail.com>
-Date: Wed, 07 Jan 2015 09:43:04 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: mtk.manpages@gmail.com, linux-api@vger.kernel.org,
+	id S1755260AbbAGIpI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 03:45:08 -0500
+Received: from 7of9.schinagl.nl ([88.159.158.68]:42762 "EHLO 7of9.schinagl.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752302AbbAGIpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 03:45:07 -0500
+From: Olliver Schinagl <oliver+list@schinagl.nl>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Cc: Olliver Schinagl <oliver@schinagl.nl>, linux-gpio@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] prctl.2: document SECCOMP_MODE_FILTER vs EFAULT
-References: <1411685267-27949-1-git-send-email-keescook@chromium.org> <1411685267-27949-3-git-send-email-keescook@chromium.org>
-In-Reply-To: <1411685267-27949-3-git-send-email-keescook@chromium.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH v1] gpio: Make the vararg hacks not pass magic values
+Date: Wed,  7 Jan 2015 09:44:57 +0100
+Message-Id: <1420620297-7329-1-git-send-email-oliver+list@schinagl.nl>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2014 12:47 AM, Kees Cook wrote:
-> This notes the distinction made between EINVAL and EFAULT when attempting
-> to use SECCOMP_MODE_FILTER with PR_SET_SECCOMP.
+From: Olliver Schinagl <oliver@schinagl.nl>
 
-Thanks, Kees. Applied.
+Right now, in consumer.h, there's some vararg hacks that pass 0 as the
+flags. What actually is passed however is GPIOD_ASIS, which naturally is
+also 0. Using the define/enum rather then the magic 0 makes it the
+define more readable to a passer by.
 
-Cheers,
+Signed-off-by: Olliver Schinagl <oliver@schinagl.nl>
+---
+ include/linux/gpio/consumer.h | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
-Michael
-
-
-> Suggested-by: Andy Lutomirski <luto@amacapital.net>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  man2/prctl.2 | 23 +++++++++++++++++++++++
->  1 file changed, 23 insertions(+)
-> 
-> diff --git a/man2/prctl.2 b/man2/prctl.2
-> index 1199891..b7ddaac 100644
-> --- a/man2/prctl.2
-> +++ b/man2/prctl.2
-> @@ -825,6 +825,19 @@ is set appropriately.
->  .I arg2
->  is an invalid address.
->  .TP
-> +.B EFAULT
-> +.I option
-> +is
-> +.BR PR_SET_SECCOMP ,
-> +.I arg2
-> +is
-> +.BR SECCOMP_MODE_FILTER ,
-> +the system was built with
-> +.BR CONFIG_SECCOMP_FILTER
-> +and
-> +.I arg3
-> +is an invalid address.
-> +.TP
->  .B EINVAL
->  The value of
->  .I option
-> @@ -859,6 +872,16 @@ and the kernel was not configured with
->  .B EINVAL
->  .I option
->  is
-> +.BR PR_SET_SECCOMP ,
-> +.I arg2
-> +is
-> +.BR SECCOMP_MODE_FILTER ,
-> +and the kernel was not configured with
-> +.BR CONFIG_SECCOMP_FILTER .
-> +.TP
-> +.B EINVAL
-> +.I option
-> +is
->  .BR PR_SET_MM ,
->  and one of the following is true
->  .RS
-> 
-
-
+diff --git a/include/linux/gpio/consumer.h b/include/linux/gpio/consumer.h
+index fd85cb1..45afc2d 100644
+--- a/include/linux/gpio/consumer.h
++++ b/include/linux/gpio/consumer.h
+@@ -340,31 +340,32 @@ static inline int desc_to_gpio(const struct gpio_desc *desc)
+  * etc.
+  */
+ #define __gpiod_get(dev, con_id, flags, ...) __gpiod_get(dev, con_id, flags)
+-#define gpiod_get(varargs...) __gpiod_get(varargs, 0)
++#define gpiod_get(varargs...) __gpiod_get(varargs, GPIOD_ASIS)
+ #define __gpiod_get_index(dev, con_id, index, flags, ...)		\
+ 	__gpiod_get_index(dev, con_id, index, flags)
+-#define gpiod_get_index(varargs...) __gpiod_get_index(varargs, 0)
++#define gpiod_get_index(varargs...) __gpiod_get_index(varargs, GPIOD_ASIS)
+ #define __gpiod_get_optional(dev, con_id, flags, ...)			\
+ 	__gpiod_get_optional(dev, con_id, flags)
+-#define gpiod_get_optional(varargs...) __gpiod_get_optional(varargs, 0)
++#define gpiod_get_optional(varargs...) __gpiod_get_optional(varargs, GPIOD_ASIS)
+ #define __gpiod_get_index_optional(dev, con_id, index, flags, ...)	\
+ 	__gpiod_get_index_optional(dev, con_id, index, flags)
+ #define gpiod_get_index_optional(varargs...)				\
+-	__gpiod_get_index_optional(varargs, 0)
++	__gpiod_get_index_optional(varargs, GPIOD_ASIS)
+ #define __devm_gpiod_get(dev, con_id, flags, ...)			\
+ 	__devm_gpiod_get(dev, con_id, flags)
+-#define devm_gpiod_get(varargs...) __devm_gpiod_get(varargs, 0)
++#define devm_gpiod_get(varargs...) __devm_gpiod_get(varargs, GPIOD_ASIS)
+ #define __devm_gpiod_get_index(dev, con_id, index, flags, ...)		\
+ 	__devm_gpiod_get_index(dev, con_id, index, flags)
+-#define devm_gpiod_get_index(varargs...) __devm_gpiod_get_index(varargs, 0)
++#define devm_gpiod_get_index(varargs...)				\
++	__devm_gpiod_get_index(varargs, GPIOD_ASIS)
+ #define __devm_gpiod_get_optional(dev, con_id, flags, ...)		\
+ 	__devm_gpiod_get_optional(dev, con_id, flags)
+ #define devm_gpiod_get_optional(varargs...)				\
+-	__devm_gpiod_get_optional(varargs, 0)
++	__devm_gpiod_get_optional(varargs, GPIOD_ASIS)
+ #define __devm_gpiod_get_index_optional(dev, con_id, index, flags, ...)	\
+ 	__devm_gpiod_get_index_optional(dev, con_id, index, flags)
+ #define devm_gpiod_get_index_optional(varargs...)			\
+-	__devm_gpiod_get_index_optional(varargs, 0)
++	__devm_gpiod_get_index_optional(varargs, GPIOD_ASIS)
+ 
+ #if IS_ENABLED(CONFIG_GPIOLIB) && IS_ENABLED(CONFIG_GPIO_SYSFS)
+ 
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+2.1.4
+
