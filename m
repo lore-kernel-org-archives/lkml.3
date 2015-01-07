@@ -1,106 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498AbbAGUQS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 15:16:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50108 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753377AbbAGUQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 15:16:16 -0500
-Message-ID: <54AD93BA.3020904@redhat.com>
-Date: Wed, 07 Jan 2015 15:14:50 -0500
-From: Jon Masters <jcm@redhat.com>
-Organization: Red Hat, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>, Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Herring <robh@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Will Deacon <Will.Deacon@arm.com>,
+	id S1754542AbbAGU0e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 15:26:34 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:35756 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751919AbbAGU0d convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 15:26:33 -0500
+References: <201501070334.EgwC5iey%fengguang.wu@intel.com> <1420584282.6927.62.camel@haakon3.risingtidesystems.com> <54ACF516.4080602@dev.mellanox.co.il> <1420654943.12144.38.camel@haakon3.risingtidesystems.com>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <1420654943.12144.38.camel@haakon3.risingtidesystems.com>
+Content-Type: text/plain;
+	charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Message-Id: <8F6AF977-2BD7-46FF-A38D-108AF3C05809@dev.mellanox.co.il>
+Cc: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "target-devel@vger.kernel.org" <target-devel@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Lv Zheng <lv.zheng@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [Linaro-acpi] [PATCH v5 18/18] Documentation: ACPI for ARM64
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <20150107172741.GY2634@sirena.org.uk> <54AD7098.5010700@redhat.com> <1610983.9vqJdsL27R@wuerfel> <20150107200530.GK2634@sirena.org.uk>
-In-Reply-To: <20150107200530.GK2634@sirena.org.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+        "Patil, Kiran" <kiran.patil@intel.com>,
+        "Minturn, Dave B" <dave.b.minturn@intel.com>
+X-Mailer: iPhone Mail (11D257)
+From: Sagi Grimberg <sagig@dev.mellanox.co.il>
+Subject: Re: [target:nvme_of 3/3] drivers/target/nvme_of/nvme_of_configfs.c:25:31: sparse: symbol 'nvme_of_fabric_configfs' was not declared. Should it be static?
+Date: Wed, 7 Jan 2015 22:26:26 +0200
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2015 03:05 PM, Mark Brown wrote:
-> On Wed, Jan 07, 2015 at 08:48:48PM +0100, Arnd Bergmann wrote:
->> On Wednesday 07 January 2015 12:44:56 Jon Masters wrote:
->>> On 01/07/2015 12:27 PM, Mark Brown wrote:
-> 
->>>> That level of hardware compatibility does partly come from the need to
->>>> run existing software.  I'd expect that similar effects will start to
->>>> come into play with ARMv8 ACPI systems if they become successful; people
->>>> will do things like ensure compatibility with common IPs that have
->>>> existing Linux drivers that distros tend to include as standard.
-> 
->>> Agreed.
-> 
->> There are two problems I see in trying to do the same thing on ARM:
-> 
->> * we don't have a single vendor that makes de-facto standards that
->>   everyone else has to copy in the way that the few remaining x86
->>   vendors copy everything that Intel does. In fact, we prefer to
->>   have a large number of independent vendors.
-> 
-> Right, I'd guess that (modulo any standards being defined and becoming
-> successful) it'll more be a case of vendors keeping compatibility with
-> their own stuff.  We *are* seeing greater reliance on off the shelf IPs
-> for more boring things like DMA and basic bus controllers but there's
-> plenty of other areas that still affect servers.
 
-I expect to see a greater level of standardization. SBBR is the
-beginning, but it is far from the end. There will be a lot more as the
-vendors come together and agree on common platform components. I've
-spent a lot of time over the past few years with a large number of
-vendors going over lots of these issues in lieu of more of a Windows
-Hardware Qualification style guide. I intend to have one this year that
-captures what Red Hat think an ARM server looks like, and to circulate
-that among the broader ecosystem of vendors to feed into SBBR++.
-
->> * There is a general mindset about deprecating unwanted features
->>   early. ARMv8 aarch32 bit mode removes support for older instructions
->>   or makes them optional. Even the virtualization mode doesn't allow
->>   to trap on architecture version specific differences, so you can't
->>   completely emulate an older architecture level.
->>   This is nice for implementers but not so much for users that rely
->>   on old (mis-)features. It's also not just the CPU core, other
->>   components also get easily replaced, like a GICv3 that is not
->>   a strict superset of GICv2.
+>> On Wed, 2015-01-07 at 10:57 +0200, Sagi Grimberg wrote:
+>>> On 1/7/2015 12:44 AM, Nicholas A. Bellinger wrote:
+>>>> On Wed, 2015-01-07 at 03:35 +0800, kbuild test robot wrote:
+>>>> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git nvme_of
+>>>> head:   40d8c11927282d59855d645b35798edd97828da5
+>>>> commit: 40d8c11927282d59855d645b35798edd97828da5 [3/3] nvme_of: Initial skeleton commit
+>>>> reproduce:
+>>>>   # apt-get install sparse
+>>>>   git checkout 40d8c11927282d59855d645b35798edd97828da5
+>>>>   make ARCH=x86_64 allmodconfig
+>>>>   make C=1 CF=-D__CHECK_ENDIAN__
+>>>> 
+>>>> 
+>>>> sparse warnings: (new ones prefixed by >>)
+>>>> 
+>>>>>> drivers/target/nvme_of/nvme_of_configfs.c:25:31: sparse: symbol 'nvme_of_fabric_configfs' was not declared. Should it be static?
+>>>> 
+>>>> Please review and possibly fold the followup patch.
+>>> 
+>>> Fixed.  Thanks Fengguang!
+>> 
+>> Hey Nic,
+>> 
+>> Hope all is well.
+>> 
+>> So this skeleton is interesting to me. As this is a fabric module I
+>> assume this would be the NVMEoFabrics target mode driver for upstream 
+>> which would be able to talk to NVMEoFabrics initiator (which by
+>> the way makes LIO something more than a SCSI target - will this be 
+>> accepted?).
 > 
-> This is indeed worrying, though hopefully the fact that we're already
-> seeing negative impacts in the app ecosystem for Android will have
-> focused some minds - once you're talking about full system images it
-> gets even more fun.
+> That is currently the plan.
+> 
+> It's still unclear how this will work wrt to existing target code, but
+> given the amount of logic that NVMe is borrowing from SCSI on the
+> command set side (PR, ALUA, VAAI, DIF), I'm sure there is an opportunity
+> for code sharing between NVMe and SCSI based fabrics.
 
-GICv2/3 was something a bunch of us discussed years ago. At the time we
-debated whether there was a need to compel the superset option. It was
-deemed early enough not to be a critical issue. But there have already
-been other cases where we've pushed to ensure backward compatibility for
-all time. And there will be more of those as the ecosystem develops out
-into a world of existing Operating System images and apps that need to
-run on these emerging platforms. Deprecating instructions and
-formalizing other behaviors is an area where it's ephemeral - what made
-sense in the past might not make sense in the future, and ARM know that.
-Their architecture team features some of the smartest minds.
+Right, but I assume there will be a different method to provision this stuff given that the target exposes NVME SQs.
 
-(on architecture revisions, Red Hat has stated in the past that we only
-care about AArch64, not even running 32-bit code on 64-bit processors,
-which is one reason I have pushed for some silicon designs not to
-implement the 32-bit compatibility when it comes to servers)
+> 
+>> I'm currently participating in nvmexpress working group defining the
+>> standard of protocol, specifically in the context of RDMA (naturally).
+> 
+> Glad to hear that your involved.  ;)
 
-Jon.
+Should say passively involved, at the moment I'm just following this stuff.
 
+> 
+>> I'm interested in taking an active role in this project, It is
+>> important to build this layered from day one - separating the fabric 
+>> logic (RDMA or FCoE) from the core layer.
+>> 
+>> Moreover, I know that Mellanox has some plans on accelerating this
+>> area in future devices and we are currently looking into ways to
+>> do that. I want to see that the SW will be able to support that.
+>> 
+>> So, Thoughts?
+> 
+> FYI, Kiran and Dave (CC'ed) from Intel will be driving upstream NVME-OF
+> target development.
+> 
+> I'll be primarily focused on figuring out how NVMe and SCSI can play
+> nicely in target-core, and helping out on the NVMe-OF side where
+> necessary.
+
+Is there something open that I can start playing around with? What is the status here? I imagine that the initiator is developed as well...
+
+Cheers,
+Sagi.
