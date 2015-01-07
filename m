@@ -1,90 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451AbbAGKyx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 05:54:53 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:43431 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752324AbbAGKyt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 05:54:49 -0500
-Date: Wed, 7 Jan 2015 11:54:45 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Minchan Kim <minchan@kernel.org>, David Rientjes <rientjes@google.com>,
-        Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH V4 1/4] mm: set page->pfmemalloc in prep_new_page()
-Message-ID: <20150107105445.GB16553@dhcp22.suse.cz>
-References: <1420478263-25207-1-git-send-email-vbabka@suse.cz>
- <1420478263-25207-2-git-send-email-vbabka@suse.cz>
- <20150106143008.GA20860@dhcp22.suse.cz>
- <54AC4F5F.90306@suse.cz>
- <20150106214416.GA8391@dhcp22.suse.cz>
- <54ACFE3A.4070502@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54ACFE3A.4070502@suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752472AbbAGK4b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 05:56:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57958 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751275AbbAGK43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 05:56:29 -0500
+From: WANG Chao <chaowang@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org (maintainer:X86 ARCHITECTURE...),
+        Matt Fleming <matt.fleming@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "Bryan O'Donoghue" <pure.logic@nexus-software.ie>,
+        linux-kernel@vger.kernel.org (open list:X86 ARCHITECTURE...)
+Subject: [PATCH 1/2] x86: early_memremap exact size of struct setup_data
+Date: Wed,  7 Jan 2015 18:55:48 +0800
+Message-Id: <1420628150-16872-1-git-send-email-chaowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 07-01-15 10:36:58, Vlastimil Babka wrote:
-> On 01/06/2015 10:44 PM, Michal Hocko wrote:
-> > On Tue 06-01-15 22:10:55, Vlastimil Babka wrote:
-> >> On 01/06/2015 03:30 PM, Michal Hocko wrote:
-> > [...]
-> >> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> >> > index 1bb65e6f48dd..1682d766cb8e 100644
-> >> > --- a/mm/page_alloc.c
-> >> > +++ b/mm/page_alloc.c
-> >> > @@ -2175,10 +2175,11 @@ zonelist_scan:
-> >> >  		}
-> >> >  
-> >> >  try_this_zone:
-> >> > -		page = buffered_rmqueue(preferred_zone, zone, order,
-> >> > +		do {
-> >> > +			page = buffered_rmqueue(preferred_zone, zone, order,
-> >> >  						gfp_mask, migratetype);
-> >> > -		if (page)
-> >> > -			break;
-> >> > +		} while (page && prep_new_page(page, order, gfp_mask,
-> >> > +					       alloc_flags));
-> >> 
-> >> Hm but here we wouldn't return page on success.
-> > 
-> > Right.
-> > 
-> >> I wonder if you overlooked the return, hence your "not breaking out of
-> >> the loop" remark?
-> > 
-> > This was merely to show the intention. Sorry for not being clear enough.
-> 
-> OK, but I don't see other way than to follow this do-while with another
-> 
-> if (page)
->     return page;
-> 
-> So I think it would be more complicated than now. We wouldn't even be able to
-> remove the 'try_this_zone' label, since it's used for goto from elsewhere as well.
+When early remapping setup_data, we can remap the structure alone, use
+sizeof(struct setup_data). No need to remap a larger area, we never
+access setup_data->data at that point.
 
-Getting rid of the label wasn't the intention. I just found the
-allocation retry easier to follow this way. I have no objection if you
-keep the code as is.
+Signed-off-by: WANG Chao <chaowang@redhat.com>
+---
+ arch/x86/kernel/setup.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-> Now that I'm thinking of it, maybe we should have a "goto zonelist_scan" there
-> instead. We discard a bad page and might come below the watermarks. But the
-> chances of this mattering are tiny I guess.
-
-If anything this would be worth a separate patch.
-
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index ab4734e..c4648ada 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -431,15 +431,13 @@ static void __init parse_setup_data(void)
+ 
+ 	pa_data = boot_params.hdr.setup_data;
+ 	while (pa_data) {
+-		u32 data_len, map_len, data_type;
++		u32 data_len, data_type;
+ 
+-		map_len = max(PAGE_SIZE - (pa_data & ~PAGE_MASK),
+-			      (u64)sizeof(struct setup_data));
+-		data = early_memremap(pa_data, map_len);
++		data = early_memremap(pa_data, sizeof(*data));
+ 		data_len = data->len + sizeof(struct setup_data);
+ 		data_type = data->type;
+ 		pa_next = data->next;
+-		early_iounmap(data, map_len);
++		early_iounmap(data, sizeof(*data));
+ 
+ 		switch (data_type) {
+ 		case SETUP_E820_EXT:
 -- 
-Michal Hocko
-SUSE Labs
+2.1.0
+
