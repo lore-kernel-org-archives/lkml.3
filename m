@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368AbbAGRdA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 12:33:00 -0500
-Received: from exprod5og119.obsmtp.com ([64.18.0.189]:39817 "EHLO
-	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755343AbbAGRc5 (ORCPT
+	id S1755407AbbAGRdc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 12:33:32 -0500
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:11508 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753909AbbAGRd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 12:32:57 -0500
+	Wed, 7 Jan 2015 12:33:29 -0500
+X-IronPort-AV: E=Sophos;i="5.07,715,1413270000"; 
+   d="scan'208";a="54496224"
+Message-ID: <54AD6DE5.20601@broadcom.com>
+Date: Wed, 7 Jan 2015 09:33:25 -0800
+From: Ray Jui <rjui@broadcom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <1418337070-17644-1-git-send-email-fkan@apm.com>
-References: <1418337070-17644-1-git-send-email-fkan@apm.com>
-Date: Wed, 7 Jan 2015 09:32:56 -0800
-Message-ID: <CAL85gmAHLk9XCbr-1+USmOKxd5O7iCxWX0vqSRf74Brn2pzESg@mail.gmail.com>
-Subject: Re: [PATCH] sata: xgene: add ACPI support for APM X-Gene SATA ports
-From: Feng Kan <fkan@apm.com>
-To: patches <patches@apm.com>, linux-ide@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Mark Salter <msalter@redhat.com>, tj@kernel.org, hdegoede@redhat.com
-Cc: Feng Kan <fkan@apm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, Matt Porter <mporter@linaro.org>,
+        Alex Elder <elder@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
+        "Scott Branden" <sbranden@broadcom.com>,
+        <linux-kernel@vger.kernel.org>,
+        <bcm-kernel-feedback-list@broadcom.com>
+Subject: Re: [PATCH v2 4/5] clk: cygnus: add clock support for Broadcom Cygnus
+References: <1420500076-18302-5-git-send-email-rjui@broadcom.com> <2048376.BFrtW5tszK@wuerfel> <54AC99F3.8040703@broadcom.com> <2938966.fY2WjearG6@wuerfel>
+In-Reply-To: <2938966.fY2WjearG6@wuerfel>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just want to ping this again.
 
-Happy new year
 
-On Thu, Dec 11, 2014 at 2:31 PM, Feng Kan <fkan@apm.com> wrote:
-> This adds ACPI support for the APM X-Gene SATA ports. When the system
-> boots using ACPI table, the SATA ports are able to configure using the
-> values supplied by the ACPI table rather than the DTS.
->
-> Signed-off-by: Feng Kan <fkan@apm.com>
-> ---
->  drivers/ata/ahci_xgene.c | 10 ++++++++++
->  1 file changed, 10 insertions(+)
->
-> diff --git a/drivers/ata/ahci_xgene.c b/drivers/ata/ahci_xgene.c
-> index d0c851a..4951392 100644
-> --- a/drivers/ata/ahci_xgene.c
-> +++ b/drivers/ata/ahci_xgene.c
-> @@ -22,6 +22,7 @@
->   * NOTE: PM support is not currently available.
->   *
->   */
-> +#include <linux/acpi.h>
->  #include <linux/module.h>
->  #include <linux/platform_device.h>
->  #include <linux/ahci_platform.h>
-> @@ -521,6 +522,14 @@ disable_resources:
->         return rc;
->  }
->
-> +#ifdef CONFIG_ACPI
-> +static const struct acpi_device_id xgene_ahci_acpi_match[] = {
-> +       { "APMC0D0D", },
-> +       { }
-> +};
-> +MODULE_DEVICE_TABLE(acpi, xgene_ahci_acpi_match);
-> +#endif
-> +
->  static const struct of_device_id xgene_ahci_of_match[] = {
->         {.compatible = "apm,xgene-ahci"},
->         {},
-> @@ -534,6 +543,7 @@ static struct platform_driver xgene_ahci_driver = {
->                 .name = "xgene-ahci",
->                 .owner = THIS_MODULE,
->                 .of_match_table = xgene_ahci_of_match,
-> +               .acpi_match_table = ACPI_PTR(xgene_ahci_acpi_match),
->         },
->  };
->
-> --
-> 1.9.1
->
+On 1/7/2015 1:11 AM, Arnd Bergmann wrote:
+> On Tuesday 06 January 2015 18:29:07 Ray Jui wrote:
+>> On 1/6/2015 12:21 PM, Arnd Bergmann wrote:
+>>> On Monday 05 January 2015 15:21:15 Ray Jui wrote:
+>>>> +static const struct iproc_asiu_gate asiu_gate[BCM_CYGNUS_NUM_ASIU_CLKS] = {
+>>>> +	[BCM_CYGNUS_ASIU_KEYPAD_CLK] =
+>>>> +		asiu_gate_val(0x0, 7),
+>>>> +	[BCM_CYGNUS_ASIU_ADC_CLK] =
+>>>> +		asiu_gate_val(0x0, 9),
+>>>> +	[BCM_CYGNUS_ASIU_PWM_CLK] =
+>>>> +		asiu_gate_val(IPROC_CLK_INVALID_OFFSET, 0),
+>>>> +};
+>>>
+>>> Here I think a better binding would be to pass the gate value in the
+>>> clock specifier, rather than an artificial index. That would let
+>>> you get rid of the BCM_CYGNUS_ASIU_KEYPAD_CLK/BCM_CYGNUS_ASIU_ADC_CLK
+>>> macros.
+>>>
+>> You meant to pass in both the gate register offset and its bit shift
+>> through the clock specifier? But isn't the current ASIU clock code much
+>> more consistent with the rest of the iProc clock code?
+> 
+> For simple devices that don't need an index macro, I would always
+> prefer not defining them, because they are a pain to maintain.
+> For a simple gate clock controller, we could compute both the offset
+> and bit number from a single integer.
+> 
+> However, I now saw upon taking a closer look that the asiu has both
+> a gate and a divider, and the latter one is not as simple, so
+> my comment doesn't apply here.
+> 
+> 	Arnd
+> 
+Okay. I'll leave this as it is and make other changes based on the
+review. Thanks!
