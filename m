@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758125AbbAGC0j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:26:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47115 "EHLO
+	id S1758112AbbAGC0i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:26:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47109 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757683AbbAGCSB (ORCPT
+	with ESMTP id S1757685AbbAGCSC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:18:01 -0500
+	Tue, 6 Jan 2015 21:18:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rabin Vincent <rabin.vincent@axis.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.17 59/73] crypto: af_alg - fix backlog handling
-Date: Tue,  6 Jan 2015 18:16:20 -0800
-Message-Id: <20150107021559.323243483@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Petr Vandrovec <petr@vandrovec.name>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.17 60/73] ncpfs: return proper error from NCP_IOC_SETROOT ioctl
+Date: Tue,  6 Jan 2015 18:16:21 -0800
+Message-Id: <20150107021559.352953926@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107021557.521276020@linuxfoundation.org>
 References: <20150107021557.521276020@linuxfoundation.org>
@@ -29,48 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rabin Vincent <rabin.vincent@axis.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 7e77bdebff5cb1e9876c561f69710b9ab8fa1f7e upstream.
+commit a682e9c28cac152e6e54c39efcf046e0c8cfcf63 upstream.
 
-If a request is backlogged, it's complete() handler will get called
-twice: once with -EINPROGRESS, and once with the final error code.
+If some error happens in NCP_IOC_SETROOT ioctl, the appropriate error
+return value is then (in most cases) just overwritten before we return.
+This can result in reporting success to userspace although error happened.
 
-af_alg's complete handler, unlike other users, does not handle the
--EINPROGRESS but instead always completes the completion that recvmsg()
-is waiting on.  This can lead to a return to user space while the
-request is still pending in the driver.  If userspace closes the sockets
-before the requests are handled by the driver, this will lead to
-use-after-frees (and potential crashes) in the kernel due to the tfm
-having been freed.
+This bug was introduced by commit 2e54eb96e2c8 ("BKL: Remove BKL from
+ncpfs").  Propagate the errors correctly.
 
-The crashes can be easily reproduced (for example) by reducing the max
-queue length in cryptod.c and running the following (from
-http://www.chronox.de/libkcapi.html) on AES-NI capable hardware:
+Coverity id: 1226925.
 
- $ while true; do kcapi -x 1 -e -c '__ecb-aes-aesni' \
-    -k 00000000000000000000000000000000 \
-    -p 00000000000000000000000000000000 >/dev/null & done
-
-Signed-off-by: Rabin Vincent <rabin.vincent@axis.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Fixes: 2e54eb96e2c80 ("BKL: Remove BKL from ncpfs")
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Petr Vandrovec <petr@vandrovec.name>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/af_alg.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/ncpfs/ioctl.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/crypto/af_alg.c
-+++ b/crypto/af_alg.c
-@@ -449,6 +449,9 @@ void af_alg_complete(struct crypto_async
- {
- 	struct af_alg_completion *completion = req->data;
+--- a/fs/ncpfs/ioctl.c
++++ b/fs/ncpfs/ioctl.c
+@@ -447,7 +447,6 @@ static long __ncp_ioctl(struct inode *in
+ 						result = -EIO;
+ 					}
+ 				}
+-				result = 0;
+ 			}
+ 			mutex_unlock(&server->root_setup_lock);
  
-+	if (err == -EINPROGRESS)
-+		return;
-+
- 	completion->err = err;
- 	complete(&completion->completion);
- }
 
 
