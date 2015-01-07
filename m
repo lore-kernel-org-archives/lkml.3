@@ -1,478 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026AbbAGMxx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 07:53:53 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:50987 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752048AbbAGMxv (ORCPT
+	id S1753084AbbAGMyp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 07:54:45 -0500
+Received: from exprod7og110.obsmtp.com ([64.18.2.173]:54963 "EHLO
+	exprod7og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752983AbbAGMyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 07:53:51 -0500
-Message-ID: <54AD2C56.10700@gmail.com>
-Date: Wed, 07 Jan 2015 13:53:42 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-CC: mtk.manpages@gmail.com, lkml <linux-kernel@vger.kernel.org>,
-        Petr Gajdos <PGajdos@suse.cz>,
-        Laurent Georget <laurent.georget@supelec.fr>,
-        John Stultz <john.stultz@linaro.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Jeff Epler <jepler@unpythonic.net>
-Subject: Request for review of adjtimex(2) man page
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 7 Jan 2015 07:54:44 -0500
+From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+X-Google-Original-From: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
+To: martin.petersen@oracle.com, jejb@kernel.org, hch@infradead.org
+Cc: linux-scsi@vger.kernel.org, JBottomley@Parallels.com,
+        Sathya.Prakash@avagotech.com, Nagalakshmi.Nandigama@avagotech.com,
+        linux-kernel@vger.kernel.org,
+        Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
+Subject: RE: [PATCH 06/22] [SCSI] mpt2sas, mpt3sas: Removing uppper boundary restriction for the module parameter max_sgl_entries
+Date: Wed,  7 Jan 2015 18:23:55 +0530
+Message-Id: <1420635235-2222-1-git-send-email-Sreekanth.Reddy@avagotech.com>
+X-Mailer: git-send-email 2.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
+Hi Martin,
 
-Recently, I made made a number of changes to the adjtimex(2)
-man page, to try and add a bit more detail, since the page
-was formerly in a very sorry state.
+As per your suggestion I have modified the Warning message. Please review the change.
+ 
+Change Set:
 
-I would be happy if some NTP/time-knowledgeable folk (John, Richard,
-I'm kind of hoping you) would review the page to see if I've injected 
-any errors. Furthermore, notwithstanding my attempt to improve the page, 
-there remain many gaps in details in the page. I've added a large number
-of FIXMEs in the draft below, and would be happy if anyone can supply
-some content to fill any of the gaps.
+1. Extended the upper boundary restriction for the module parameter max_sgl_entries.
+   Earlier, the max_sgl_entries was capped at the SCSI_MAX_SG_SEGMENTS kernel definition.
+   With this change, the user would be able to set the max_sgl_entries to
+   any value which is greater than SCSI_MAX_SG_SEGMENTS and less than the minimum of
+   SCSI_MAX_SG_CHAIN_SEGMENTS & hardware limit(Calculated using IOCFacts's MaxChainDepth).
 
-Cheers,
+2. Added a print for the message log whenever the user sets the max_sgl_entries to a value
+   greater than SCSI_MAX_SG_SEGMENTS to warn about the kernel definition overriding.
 
-Michael
+Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
+---
+ drivers/scsi/mpt2sas/mpt2sas_base.c | 10 +++++++---
+ drivers/scsi/mpt3sas/mpt3sas_base.c | 10 ++++++++--
+ 2 files changed, 15 insertions(+), 5 deletions(-)
 
-.\" Copyright (c) 1995 Michael Chastain (mec@shell.portal.com), 15 April 1995.
-.\" and Copyright (C) 2014 Michael Kerrisk <mtk.manpages@gmail.com>
-.\"
-.\" %%%LICENSE_START(GPLv2+_DOC_FULL)
-.\" This is free documentation; you can redistribute it and/or
-.\" modify it under the terms of the GNU General Public License as
-.\" published by the Free Software Foundation; either version 2 of
-.\" the License, or (at your option) any later version.
-.\"
-.\" The GNU General Public License's references to "object code"
-.\" and "executables" are to be interpreted as the output of any
-.\" document formatting or typesetting system, including
-.\" intermediate and printed output.
-.\"
-.\" This manual is distributed in the hope that it will be useful,
-.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
-.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-.\" GNU General Public License for more details.
-.\"
-.\" You should have received a copy of the GNU General Public
-.\" License along with this manual; if not, see
-.\" <http://www.gnu.org/licenses/>.
-.\" %%%LICENSE_END
-.\"
-.\" Modified 1997-01-31 by Eric S. Raymond <esr@thyrsus.com>
-.\" Modified 1997-07-30 by Paul Slootman <paul@wurtel.demon.nl>
-.\" Modified 2004-05-27 by Michael Kerrisk <mtk.manpages@gmail.com>
-.\"
-.TH ADJTIMEX 2 2014-12-31 "Linux" "Linux Programmer's Manual"
-.SH NAME
-adjtimex \- tune kernel clock
-.SH SYNOPSIS
-.nf
-.BR "#define _BSD_SOURCE" "      /* See feature_test_macros(7) */"
-.B #include <sys/timex.h>
-
-.BI "int adjtimex(struct timex *" "buf" );
-.fi
-.SH DESCRIPTION
-Linux uses David L. Mills' clock adjustment algorithm (see RFC\ 5905).
-The system call
-.BR adjtimex ()
-reads and optionally sets adjustment parameters for this algorithm.
-It takes a pointer to a
-.I timex
-structure, updates kernel parameters from field values,
-and returns the same structure with current kernel values.
-This structure is declared as follows:
-.PP
-.in +4n
-.nf
-struct timex {
-    int  modes;      /* Mode selector */
-    long offset;     /* Time offset; nanoseconds, if STA_NANO
-                        status flag is set, otherwise microseconds */
-    long freq;       /* Frequency offset, in units of 2^-16 ppm
-                        (parts per million, see NOTES below) */
-    long maxerror;   /* Maximum error (microseconds) */
-    long esterror;   /* Estimated error (microseconds) */
-    int  status;     /* Clock command/status */
-    long constant;   /* PLL (phase-locked loop) time constant */
-    long precision;  /* Clock precision (microseconds, read-only) */
-    long tolerance;  /* Clock frequency tolerance (ppm, read-only) */
-    struct timeval time;
-                     /* Current time (read-only, except for
-                        ADJ_SETOFFSET); upon return, time.tv_usec
-                        contains nanoseconds, if STA_NANO status
-                        flag is set, otherwise microseconds */
-    long tick;       /* Microseconds between clock ticks */
-    long ppsfreq;    /* PPS (pulse per second) frequency (in units
-                        of 2^-16 ppm\-\-see NOTES, read-only) */
-    long jitter;     /* PPS jitter (read-only); nanoseconds, if
-                        STA_NANO status flag is set, otherwise
-                        microseconds */
-    int  shift;      /* PPS interval duration (seconds, read-only) */
-    long stabil;     /* PPS stability (2^-16 ppm\-\-see NOTES,
-                        read-only) */
-    long jitcnt;     /* PPS jitter limit exceeded (read-only) */
-    long calcnt;     /* PPS calibration intervals (read-only) */
-    long errcnt;     /* PPS calibration errors (read-only) */
-    long stbcnt;     /* PPS stability limit exceeded (read-only) */
-    int tai;         /* TAI offset, as set by previous ADJ_TAI
-                        operation (seconds, read-only,
-                        since Linux 2.6.26) */
-    /* Further padding bytes to allow for future expansion */
-};
-.fi
-.in
-.PP
-The
-.I modes
-field determines which parameters, if any, to set.
-It is a bit mask containing a
-.RI bitwise- or
-combination of zero or more of the following bits:
-.TP
-.BR ADJ_OFFSET
-Set time offset from
-.IR buf.offset .
-.TP
-.BR ADJ_FREQUENCY
-Set frequency offset from
-.IR buf.freq .
-.TP
-.BR ADJ_MAXERROR
-Set maximum time error from
-.IR buf.maxerror .
-.TP
-.BR ADJ_ESTERROR
-Set estimated time error from
-.IR buf.esterror .
-.TP
-.BR ADJ_STATUS
-Set clock status from
-.IR buf.status .
-.TP
-.BR ADJ_TIMECONST
-Set PLL time constant from
-.IR buf.constant .
-If the
-.B STA_NANO
-status flag (see below) is clear, the kernel adds 4 to this value.
-.TP
-.BR ADJ_SETOFFSET " (since Linux 2.6.29)"
-.\" commit 094aa1881fdc1b8889b442eb3511b31f3ec2b762
-.\" Author: Richard Cochran <richardcochran@gmail.com>
-Add
-.I buf.time
-to the current time.
-If
-.I buf.status
-includes the
-.B ADJ_NANO
-flag, then
-.I buf.time.tv_usec
-is interpreted as a nanosecond value;
-otherwise it is interpreted as microseconds.
-.TP
-.BR ADJ_MICRO " (since Linux 2.6.36)"
-.\" commit eea83d896e318bda54be2d2770d2c5d6668d11db
-.\" Author: Roman Zippel <zippel@linux-m68k.org>
-Select microsecond resolution.
-.TP
-.BR ADJ_NANO " (since Linux 2.6.36)"
-.\" commit eea83d896e318bda54be2d2770d2c5d6668d11db
-.\" Author: Roman Zippel <zippel@linux-m68k.org>
-Select nanosecond resolution.
-Only one of
-.BR ADJ_MICRO
-and
-.BR ADJ_NANO
-should be specified.
-.TP
-.BR ADJ_TAI " (since Linux 2.6.26)"
-.\" commit 153b5d054ac2d98ea0d86504884326b6777f683d
-Set TAI (Atomic International Time) offset from
-.IR buf->constant .
-
-.BR ADJ_TAI
-should not be used in conjunction with
-.BR ADJ_TIMECONST ,
-since the latter mode also employs the
-.IR buf->constant
-field.
-
-For a complete explanation of TAI
-and the difference between TAI and UTC, see
-.UR http://www.bipm.org/en/bipm/tai/tai.html
-.I BIPM
-.UE
-.TP
-.BR ADJ_TICK
-Set tick value from
-.IR buf.tick .
-.PP
-Alternatively,
-.I modes
-can be specified as either of the following (multibit mask) values,
-in which case other bits should not be specified in
-.IR modes :
-.\" In general, the other bits are ignored, but ADJ_OFFSET_SINGLESHOT 0x8001
-.\" ORed with ADJ_NANO (0x2000) gives 0xa0001 == ADJ_OFFSET_SS_READ!!
-.TP
-.BR ADJ_OFFSET_SINGLESHOT
-.\" In user space, ADJ_OFFSET_SINGLESHOT is 0x8001
-.\" In kernel space it is 0x0001, and must be ANDed with ADJ_ADJTIME (0x8000)
-Old-fashioned
-.BR adjtime ():
-(gradually) adjust time by value specified in
-.IR buf.offset ,
-which specifies an adjustment in microseconds.
-.TP
-.BR ADJ_OFFSET_SS_READ " (functional since Linux 2.6.28)"
-.\" In user space, ADJ_OFFSET_SS_READ is 0xa001
-.\" In kernel space there is ADJ_OFFSET_READONLY (0x2000) anded with
-.\" ADJ_ADJTIME (0x8000) and ADJ_OFFSET_SINGLESHOT (0x0001) to give 0xa001)
-Return (in
-.BR buf.offset )
-the remaining amount of time to be adjusted after an earlier
-.BR ADJ_OFFSET_SINGLESHOT
-operation.
-This feature was added in Linux 2.6.24,
-.\" commit 52bfb36050c8529d9031d2c2513b281a360922ec
-but did not work correctly
-.\" commit 916c7a855174e3b53d182b97a26b2e27a29726a1
-until Linux 2.6.28.
-.PP
-Ordinary users are restricted to a value of either 0 or
-.B ADJ_OFFSET_SS_READ
-for
-.IR modes .
-Only the superuser may set any parameters.
-
-The
-.I buf.status
-field is a bit mask that is used to set and/or retrieve status
-bits associated with the NTP implementation.
-Some bits in the mask are both readable and settable,
-while others are read-only.
-.TP
-.BR STA_PLL
-Enable phase-locked loop (PLL) updates (read-write) via
-.\" FIXME Any pointer to further information about what this means?
-.\"       (It was not immediately obvious from a scan of the RFC, whether
-.\"       this is described in the RFC.)
-.BR ADJ_OFFSET .
-.TP
-.BR STA_PPSFREQ
-Enable PPS freq discipline (read-write).
-.\" FIXME Any pointer to further information about what this means?
-.\"       (It was not immediately obvious from a scan of the RFC, whether
-.\"       this is described in the RFC.)
-.TP
-.BR STA_PPSTIME
-Enable PPS time discipline (read-write).
-.\" FIXME Any pointer to further information about what this means?
-.\"       (It was not immediately obvious from a scan of the RFC, whether
-.\"       this is described in the RFC.)
-.TP
-.BR STA_FLL
-Select frequency-locked loop (FLL) mode (read-write).
-.\" FIXME Any pointer to further information about what this means?
-.\"       (It was not immediately obvious from a scan of the RFC, whether
-.\"       this is described in the RFC.)
-.TP
-.BR STA_INS
-Insert leap second (read-write).
-.\" FIXME Is the following correct?
-.\"     Insert a leap second after the last second of the day.
-.\"     That is, at 24:00:00, set the clock 1 second back, thus extending
-.\"     the last  minute of the day by one second.
-.\"     Leap second insertion will occur each day, so long as this flag
-.\"     remains set.
-.TP
-.BR STA_DEL
-Delete leap second (read-write).
-.\" FIXME Is the following correct?
-.\"     Delete a leap second at the last second of the leap day.
-.\"     That is, at 23:5:59, add one extra second to the clock.
-.\"     Leap second deletion will occur each day, so long as this flag
-.\"     remains set.
-.\" FIXME Does there need to be a statement that it is nonsensical to set
-.\"     to set both STA_INS and STA_DEL?
-.TP
-.BR STA_UNSYNC
-Clock unsynchronized (read-write).
-.TP
-.BR STA_FREQHOLD
-Hold frequency (read-write).
-.\" FIXME Any pointer to further information about what this means?
-.\"       (It was not immediately obvious from a scan of the RFC, whether
-.\"       this is described in the RFC.)
-.TP
-.BR STA_PPSSIGNAL
-PPS signal present (read-only).
-.\" FIXME Any pointer to further information about what this means?
-.\"       (It was not immediately obvious from a scan of the RFC, whether
-.\"       this is described in the RFC.)
-.TP
-.BR STA_PPSJITTER
-PPS signal jitter exceeded (read-only).
-.\" FIXME Any pointer to further information about what this means?
-.\"       (It was not immediately obvious from a scan of the RFC, whether
-.\"       this is described in the RFC.)
-.TP
-.BR STA_PPSWANDER
-PPS signal wander exceeded (read-only).
-.\" FIXME Any pointer to further information about what this means?
-.\"       (It was not immediately obvious from a scan of the RFC, whether
-.\"       this is described in the RFC.)
-.TP
-.BR STA_PPSERROR
-PPS signal calibration error (read-only).
-.\" FIXME Any pointer to further information about what this means?
-.\"       (It was not immediately obvious from a scan of the RFC, whether
-.\"       this is described in the RFC.)
-.TP
-.BR STA_CLOCKERR
-Clock hardware fault (read-only).
-.\" FIXME Any pointer to further information about what this means?
-.\"       (It was not immediately obvious from a scan of the RFC, whether
-.\"       this is described in the RFC.)
-.TP
-.BR STA_NANO " (since Linux 2.6.26)"
-.\" commit eea83d896e318bda54be2d2770d2c5d6668d11db
-.\" Author: Roman Zippel <zippel@linux-m68k.org>
-Resolution (0 = microsecond, 1 = nanoseconds; read-only).
-Set via
-.BR ADJ_NANO ,
-cleared via
-.BR ADJ_MICRO .
-.TP
-.BR STA_MODE " (since Linux 2.6.26)"
-.\" commit eea83d896e318bda54be2d2770d2c5d6668d11db
-.\" Author: Roman Zippel <zippel@linux-m68k.org>
-Mode (0 = Phase Locked Loop, 1 = Frequency Locked Loop; read-only).
-.TP
-.BR STA_CLK " (since Linux 2.6.26)"
-.\" commit eea83d896e318bda54be2d2770d2c5d6668d11db
-.\" Author: Roman Zippel <zippel@linux-m68k.org>
-Clock source (0 = A, 1 = B; read-only).
-.\" FIXME It would be helpful to have some explanation of what
-.\"       "Clock source" is.
-.PP
-Attempts to set read-only
-.I status
-bits are silently ignored.
-.SH RETURN VALUE
-On success,
-.BR adjtimex ()
-returns the clock state; that is, one of the following values:
-.TP 12
-.BR TIME_OK
-Clock synchronized.
-.TP
-.BR TIME_INS
-Insert leap second.
-.\" FIXME Is the following correct:
-.\"       Indicates that a leap second will be added at the end of the day
-.TP
-.BR TIME_DEL
-Delete leap second.
-.\" FIXME Is the following correct:
-.\"       Indicates that a leap second will be deleted at the end of the day
-.TP
-.BR TIME_OOP
-Leap second in progress.
-.\" FIXME Is the following correct:
-.\"       Indicates that we are currently in the middle of the leap second
-.\"       that is being added at the end of the day (as a result of STA_INS)
-.TP
-.BR TIME_WAIT
-Leap second has occurred.
-.\" FIXME Is the following correct:
-.\"       Indicates that a leap second has just been added or deleted
-.\"       during the previous second
-.TP
-.BR TIME_ERROR
-Clock not synchronized.
-.\" FIXME Should more be said about how the TIME_ERROR state can occur?
-The symbolic name
-.B TIME_BAD
-is a synonym for
-.BR TIME_ERROR ,
-provided for backward compatibility.
-.PP
-On failure,
-.BR adjtimex ()
-returns \-1 and sets
-.IR errno .
-.SH ERRORS
-.TP
-.B EFAULT
-.I buf
-does not point to writable memory.
-.TP
-.B EINVAL
-An attempt was made to set
-.I buf.offset
-to a value outside the range \-131071 to +131071,
-or to set
-.I buf.status
-to a value other than those listed above,
-or to set
-.I buf.tick
-to a value outside the range
-.RB 900000/ HZ
-to
-.RB 1100000/ HZ ,
-where
-.B HZ
-is the system timer interrupt frequency.
-.TP
-.B EPERM
-.I buf.modes
-is neither 0 nor
-.BR ADJ_OFFSET_SS_READ ,
-and the caller does not have sufficient privilege.
-Under Linux, the
-.B CAP_SYS_TIME
-capability is required.
-.SH NOTES
-In struct
-.IR timex ,
-.IR freq ,
-.IR ppsfreq ,
-and
-.I stabil
-are ppm (parts per million) with a 16-bit fractional part,
-which means that a value of 1 in one of those fields
-actually means 2^-16 ppm, and 2^16=65536 is 1 ppm.
-This is the case for both input values (in the case of
-.IR freq )
-and output values.
-.SH CONFORMING TO
-.BR adjtimex ()
-is Linux-specific and should not be used in programs
-intended to be portable.
-See
-.BR adjtime (3)
-for a more portable, but less flexible,
-method of adjusting the system clock.
-.SH SEE ALSO
-.BR settimeofday (2),
-.BR adjtime (3),
-.BR capabilities (7),
-.BR time (7),
-.BR adjtimex (8)
-
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
+index 13d1d5b..dc088ac 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -2492,9 +2492,13 @@ _base_allocate_memory_pools(struct MPT2SAS_ADAPTER *ioc,  int sleep_flag)
+ 
+ 	/* command line tunables  for max sgl entries */
+ 	if (max_sgl_entries != -1) {
+-		ioc->shost->sg_tablesize = (max_sgl_entries <
+-		    MPT2SAS_SG_DEPTH) ? max_sgl_entries :
+-		    MPT2SAS_SG_DEPTH;
++		ioc->shost->sg_tablesize =  min_t(unsigned short,
++			     max_sgl_entries, SCSI_MAX_SG_CHAIN_SEGMENTS);
++		if (ioc->shost->sg_tablesize > MPT2SAS_SG_DEPTH)
++			printk(MPT2SAS_WARN_FMT
++			 "sg_tablesize(%u) is bigger than kernel defined"
++			 " SCSI_MAX_SG_SEGMENTS(%u)\n", ioc->name,
++			  ioc->shost->sg_tablesize, MPT2SAS_SG_DEPTH);
+ 	} else {
+ 		ioc->shost->sg_tablesize = MPT2SAS_SG_DEPTH;
+ 	}
+diff --git a/drivers/scsi/mpt3sas/mpt3sas_base.c b/drivers/scsi/mpt3sas/mpt3sas_base.c
+index f1918cf..0b8210b 100644
+--- a/drivers/scsi/mpt3sas/mpt3sas_base.c
++++ b/drivers/scsi/mpt3sas/mpt3sas_base.c
+@@ -2666,8 +2666,14 @@ _base_allocate_memory_pools(struct MPT3SAS_ADAPTER *ioc,  int sleep_flag)
+ 
+ 	if (sg_tablesize < MPT3SAS_MIN_PHYS_SEGMENTS)
+ 		sg_tablesize = MPT3SAS_MIN_PHYS_SEGMENTS;
+-	else if (sg_tablesize > MPT3SAS_MAX_PHYS_SEGMENTS)
+-		sg_tablesize = MPT3SAS_MAX_PHYS_SEGMENTS;
++	else if (sg_tablesize > MPT3SAS_MAX_PHYS_SEGMENTS) {
++		sg_tablesize = min_t(unsigned short, sg_tablesize,
++				      SCSI_MAX_SG_CHAIN_SEGMENTS);
++		pr_warn(MPT3SAS_FMT
++		 "sg_tablesize(%u) is bigger than kernel"
++		 " defined SCSI_MAX_SG_SEGMENTS(%u)\n", ioc->name,
++		 sg_tablesize, MPT3SAS_MAX_PHYS_SEGMENTS);
++	}
+ 	ioc->shost->sg_tablesize = sg_tablesize;
+ 
+ 	ioc->hi_priority_depth = facts->HighPriorityCredit;
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+2.0.2
+
