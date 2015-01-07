@@ -1,40 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563AbbAGXmo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 18:42:44 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:50325 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755391AbbAGXmm (ORCPT
+	id S1755889AbbAGXs3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 18:48:29 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:50833 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755387AbbAGXs1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 18:42:42 -0500
-To: "Sam Bradshaw \(sbradshaw\)" <sbradshaw@micron.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        "axboe\@kernel.dk" <axboe@kernel.dk>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] block: pass correct seed to integrity metadata generation function
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <54936D1E.3020700@micron.com> <54ADBC6E.50301@micron.com>
-	<yq14ms25g21.fsf@sermon.lab.mkp.net>
-	<80B89753B40C5141A3E2D53FE7A2A8A994634D2A@NTXBOIMBX02.micron.com>
-Date: Wed, 07 Jan 2015 18:42:35 -0500
-In-Reply-To: <80B89753B40C5141A3E2D53FE7A2A8A994634D2A@NTXBOIMBX02.micron.com>
-	(Sam Bradshaw's message of "Wed, 7 Jan 2015 23:30:05 +0000")
-Message-ID: <yq1r3v640pg.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 7 Jan 2015 18:48:27 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/LSCCIXUrr1tLA+mKdChxp
+Date: Wed, 7 Jan 2015 15:44:42 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-omap@vger.kernel.org, balbi@ti.com
+Subject: Re: [PATCH V2] ARM: dts: am57xx-beagle-x15: Add GPIO controlled fan
+ node
+Message-ID: <20150107234442.GI13010@atomide.com>
+References: <1417800739-13146-1-git-send-email-nm@ti.com>
+ <1417801732-24620-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417801732-24620-1-git-send-email-nm@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Sam" == Sam Bradshaw (sbradshaw) <sbradshaw@micron.com> writes:
+* Nishanth Menon <nm@ti.com> [141205 09:51]:
+> TPS gpio now controls a 5v 500mA TL5209 regulator which may be supply
+> a fan (such as AFB02505HHB) over J1 connector for various purposes.
+> Provide device tree node to enable the same.
+> 
+> Signed-off-by: Nishanth Menon <nm@ti.com>
 
-Sam> Yes, you were CC: on the original.  Could you take a peek at the
-Sam> patch and give me feedback?  https://lkml.org/lkml/2014/12/18/521
+Applying into omap-for-v3.20/dt thanks.
 
-Is the target an NVMe device?
+Tony
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+> ---
+> 
+> V2: review comment updates
+> 	review comments update
+> 		- Sanitized outlook-ified name back to normal ;) 
+> 		- removed unnecessary pinctrl-names property.
+> V1: https://patchwork.kernel.org/patch/5444911/
+> 
+> 
+> Depends on the following:
+> https://patchwork.kernel.org/patch/5439201/
+> https://patchwork.kernel.org/patch/5439191/
+> 
+> enable and disable can be controlled by (post the RPM, it finds
+> closest match - even a 1 will do)
+> 
+> echo '13000' > /sys/class/hwmon/hwmon0/fan1_target
+> and
+> echo '0' > /sys/class/hwmon/hwmon0/fan1_target
+> 
+> Test log: http://slexy.org/view/s2T0ajh46z
+> 
+> requires CONFIG_GPIO_PALMAS and CONFIG_SENSORS_GPIO_FAN to be operational
+> Applies on 
+> https://git.kernel.org/cgit/linux/kernel/git/tmlind/linux-omap.git/log/?h=omap-for-v3.19/dt-v2
+> 
+>  arch/arm/boot/dts/am57xx-beagle-x15.dts |   14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/am57xx-beagle-x15.dts b/arch/arm/boot/dts/am57xx-beagle-x15.dts
+> index 49edbda..4e55e94 100644
+> --- a/arch/arm/boot/dts/am57xx-beagle-x15.dts
+> +++ b/arch/arm/boot/dts/am57xx-beagle-x15.dts
+> @@ -80,6 +80,14 @@
+>  			default-state = "off";
+>  		};
+>  	};
+> +
+> +	gpio_fan {
+> +		/* Based on 5v 500mA AFB02505HHB */
+> +		compatible = "gpio-fan";
+> +		gpios =  <&tps659038_gpio 1 GPIO_ACTIVE_HIGH>;
+> +		gpio-fan,speed-map = <0    0
+> +				      13000 1>;
+> +	};
+>  };
+>  
+>  &dra7_pmx_core {
+> @@ -314,6 +322,12 @@
+>  			wakeup-source;
+>  			ti,palmas-long-press-seconds = <12>;
+>  		};
+> +
+> +		tps659038_gpio: tps659038_gpio {
+> +			compatible = "ti,palmas-gpio";
+> +			gpio-controller;
+> +			#gpio-cells = <2>;
+> +		};
+>  	};
+>  
+>  	tmp102: tmp102@48 {
+> -- 
+> 1.7.9.5
+> 
