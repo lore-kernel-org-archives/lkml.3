@@ -1,64 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396AbbAGRzt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 12:55:49 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:43059 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754243AbbAGRzr (ORCPT
+	id S1755489AbbAGR4p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 12:56:45 -0500
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:42361 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754127AbbAGR4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 12:55:47 -0500
-Message-ID: <54AD731F.3080408@codeaurora.org>
-Date: Wed, 07 Jan 2015 09:55:43 -0800
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>, Jungseung Lee <js07.lee@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] kernel/module.c: Mark module state before set RO and
- NX regions
-References: <1420535256-6091-1-git-send-email-js07.lee@gmail.com> <878uhf4457.fsf@rustcorp.com.au>
-In-Reply-To: <878uhf4457.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Jan 2015 12:56:42 -0500
+From: Shrikrishna Khare <skhare@vmware.com>
+To: sbhatewara@vmware.com, pv-drivers@vmware.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Shrikrishna Khare <skhare@vmware.com>,
+        Srividya Murali <smurali@vmware.com>
+Subject: [PATCH net-next] Driver: Vmxnet3: Reinitialize vmxnet3 backend on wakeup from hibernate
+Date: Wed,  7 Jan 2015 09:56:33 -0800
+Message-Id: <1420653393-27657-1-git-send-email-skhare@vmware.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/6/2015 8:16 PM, Rusty Russell wrote:
-> Jungseung Lee <js07.lee@gmail.com> writes:
->> In some architectures like arm/arm64, set_memory_*() check module address
->> and state as well. Mark module state before set RO and NX regions for
->> the routine is passed.
->>
->> It will fix wrong RO/NX protection for loadable kernel modules on arm/arm64.
->
-> This partially reverts commit 4982223e51e8ea9d09bb33c8323b5ec1877b2b51
-> Author: Rusty Russell <rusty@rustcorp.com.au>
-> Date:   Wed May 14 10:54:19 2014 +0930
->
->      module: set nx before marking module MODULE_STATE_COMING.
->
-> Laura Abbott (CC'd) was looking at an alternative fix for this.  Laura?
->
-> Thanks,
-> Rusty.
->
+Failing to reinitialize on wakeup results in loss of network connectivity for
+vmxnet3 interface.
 
-Yes, my proposal was to stop using is_module_address and just bounds
-check against the module ranges[1]. I got bogged down with other
-tasks and hadn't submitted a patch for review yet.
+Signed-off-by: Srividya Murali <smurali@vmware.com>
+Signed-off-by: Shrikrishna Khare <skhare@vmware.com>
+Reviewed-by: Shreyas N Bhatewara <sbhatewara@vmware.com>
+---
+ drivers/net/vmxnet3/vmxnet3_drv.c |   50 +++++++++++++++++++++---------------
+ drivers/net/vmxnet3/vmxnet3_int.h |    4 +-
+ 2 files changed, 31 insertions(+), 23 deletions(-)
 
-Thanks,
-Laura
-
-[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-December/311574.html
-
-
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index 7af1f5c..124cb9f 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -3290,51 +3290,59 @@ skip_arp:
+ static int
+ vmxnet3_resume(struct device *device)
+ {
+-	int err, i = 0;
++	int err;
+ 	unsigned long flags;
+ 	struct pci_dev *pdev = to_pci_dev(device);
+ 	struct net_device *netdev = pci_get_drvdata(pdev);
+ 	struct vmxnet3_adapter *adapter = netdev_priv(netdev);
+-	struct Vmxnet3_PMConf *pmConf;
+ 
+ 	if (!netif_running(netdev))
+ 		return 0;
+ 
+-	/* Destroy wake-up filters. */
+-	pmConf = adapter->pm_conf;
+-	memset(pmConf, 0, sizeof(*pmConf));
+-
+-	adapter->shared->devRead.pmConfDesc.confVer = cpu_to_le32(1);
+-	adapter->shared->devRead.pmConfDesc.confLen = cpu_to_le32(sizeof(
+-								  *pmConf));
+-	adapter->shared->devRead.pmConfDesc.confPA =
+-		cpu_to_le64(adapter->pm_conf_pa);
+-
+-	netif_device_attach(netdev);
+ 	pci_set_power_state(pdev, PCI_D0);
+ 	pci_restore_state(pdev);
+ 	err = pci_enable_device_mem(pdev);
+ 	if (err != 0)
+-		return err;
++		goto err;
+ 
+ 	pci_enable_wake(pdev, PCI_D0, 0);
+ 
++	vmxnet3_alloc_intr_resources(adapter);
++
++	/* During hibernate and suspend, device has to be reinitialized as the
++	 * device state need not be preserved.
++	 */
++
++	/* Need not check adapter state as other reset tasks cannot run during
++	 * device resume.
++	 */
+ 	spin_lock_irqsave(&adapter->cmd_lock, flags);
+ 	VMXNET3_WRITE_BAR1_REG(adapter, VMXNET3_REG_CMD,
+-			       VMXNET3_CMD_UPDATE_PMCFG);
++			       VMXNET3_CMD_QUIESCE_DEV);
+ 	spin_unlock_irqrestore(&adapter->cmd_lock, flags);
+-	vmxnet3_alloc_intr_resources(adapter);
+-	vmxnet3_request_irqs(adapter);
+-	for (i = 0; i < adapter->num_rx_queues; i++)
+-		napi_enable(&adapter->rx_queue[i].napi);
+-	vmxnet3_enable_all_intrs(adapter);
++	vmxnet3_tq_cleanup_all(adapter);
++	vmxnet3_rq_cleanup_all(adapter);
+ 
+-	return 0;
++	vmxnet3_reset_dev(adapter);
++	err = vmxnet3_activate_dev(adapter);
++	if (err) {
++		netdev_err(adapter->netdev,
++			   "%s: failed to re-activate on resume, error: %d",
++		    netdev->name, err);
++		vmxnet3_force_close(adapter);
++		goto err;
++	}
++	netif_device_attach(netdev);
++
++err:
++	return err;
+ }
+ 
+ static const struct dev_pm_ops vmxnet3_pm_ops = {
+ 	.suspend = vmxnet3_suspend,
+ 	.resume = vmxnet3_resume,
++	.freeze = vmxnet3_suspend,
++	.restore = vmxnet3_resume,
+ };
+ #endif
+ 
+diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
+index 048f020..6297d9f 100644
+--- a/drivers/net/vmxnet3/vmxnet3_int.h
++++ b/drivers/net/vmxnet3/vmxnet3_int.h
+@@ -69,10 +69,10 @@
+ /*
+  * Version numbers
+  */
+-#define VMXNET3_DRIVER_VERSION_STRING   "1.3.1.0-k"
++#define VMXNET3_DRIVER_VERSION_STRING   "1.3.2.0-k"
+ 
+ /* a 32-bit int, each byte encode a verion number in VMXNET3_DRIVER_VERSION */
+-#define VMXNET3_DRIVER_VERSION_NUM      0x01030100
++#define VMXNET3_DRIVER_VERSION_NUM      0x01030200
+ 
+ #if defined(CONFIG_PCI_MSI)
+ 	/* RSS only makes sense if MSI-X is supported. */
 -- 
-Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
+1.7.4.1
+
