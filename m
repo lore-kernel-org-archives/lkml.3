@@ -1,98 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343AbbAGRqM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 12:46:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47328 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753557AbbAGRqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 12:46:10 -0500
-Message-ID: <54AD7098.5010700@redhat.com>
-Date: Wed, 07 Jan 2015 12:44:56 -0500
-From: Jon Masters <jcm@redhat.com>
-Organization: Red Hat, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>, Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Herring <robh@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Lv Zheng <lv.zheng@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [Linaro-acpi] [PATCH v5 18/18] Documentation: ACPI for ARM64
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <2161376.07iV9ANMSk@wuerfel> <20150107115039.GA2199@e104818-lin.cambridge.arm.com> <1520439.Y1rXzXY1eS@wuerfel> <20150107172741.GY2634@sirena.org.uk>
-In-Reply-To: <20150107172741.GY2634@sirena.org.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1754667AbbAGRvs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 12:51:48 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:57282 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754385AbbAGRvR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 12:51:17 -0500
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, Phong Vo <pvo@apm.com>,
+        Linus Walleij <linus.walleij@linaro.org>, Tin Huynh <tnhuynh@apm.com>,
+        Y Vo <yvo@apm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Toan Le <toanle@apm.com>, Bjorn Andersson <bjorn@kryo.se>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v3 0/3] genirq: Saving/restoring the irqchip state of an irq line
+Date: Wed,  7 Jan 2015 17:50:59 +0000
+Message-Id: <1420653062-23361-1-git-send-email-marc.zyngier@arm.com>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2015 12:27 PM, Mark Brown wrote:
-> On Wed, Jan 07, 2015 at 02:06:28PM +0100, Arnd Bergmann wrote:
->> On Wednesday 07 January 2015 11:50:39 Catalin Marinas wrote:
-> 
->>> From what I gathered so far, the main reason for _some_ vendors is not
->>> support for "other" OS but actually features that ACPI has and DT
->>> doesn't (like AML; I deliberately ignore statements like "industry
->>> standard"). _If_ such reasons are sound, maybe they have a case for
->>> ACPI-only machines targeted primarily at Linux.
-> 
->> What I got from the replies from HP, Huawei and from earlier discussions
->> with Jon is that they all hope to get to the point of relying on AML
->> alone to bridge the differences between SoC families.
+Despite Linux offering a rather fine grained control over the life
+cycle of an interrupt, there is a few cases where it would be very
+useful to snapshot (or even set) the internal state of the interrupt
+controller for a given interrupt line:
 
-I'm expecting to need new drivers for SoC IP blocks that are net new,
-but generational differences between iterations of the same SoC should
-be abstracted behind the firmware (and we are already seeing this with
-at least one platform). Platform wise, it's nice to already see e.g.
-mmconfig working to handle the specific ways a platform wires PCI.
+- With KVM, a device shared between VMs must have its whole context
+  switched, and that includes the interrupt line state. KVM/arm is
+  moving to using this.
+- Some GPIO controllers seem to require peeking into the interrupt
+  controller they are connected to to report their internal state.
 
-> I tend to agree with you that it's an overreach to think that this is
-> going to completely abstract away the differences between SoCs from
-> different vendors without substantial further standardization work.
+Instead of letting people facing this situation doing horrible
+(controller specific) hacks in their code, let's offer a couple of new
+entry points that allow a few attributes to be read and set.
 
-(which we plan to do - I intend ultimately for us to have an answer to
-the Windows Hardware Qualification guides for ARM server systems)
+Of course, this is a very dangerous thing to do if you don't know what
+you doing, and I wouldn't expect most drivers to use this. But this
+can also be a life saver at times.
 
-> However it does seem reasonable to expect that features like AML are
-> going to be more successful in handling board differences and
-> incremental revisions of SoCs - things like interactions with system
-> power controllers for example.  That seems like a useful win in and of
-> itself, and one that's worth supporting.
+This patch series implement said API, and adds support for this to the
+two main ARM interrupt controllers (GIC and GICv3). Available at:
 
-Indeed.
+git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git irq/irqchip_state
 
->> The main problem here is that can AML only cover part of the problem:
->> it can talk to a clock controller e.g. over I2C, SPI, GPIO, UART
->> or IPMI, but you still need a device driver in the kernel to talk to
->> those, and SBSA doesn't mandate a specific implementation so you can
->> expect every other SoC that is coming out to have a different one.
-> 
->> Similarly, SBSA is rather vague about some peripherals it mandates,
->> and if a new SoC has a slightly different AHCI variation, there is
->> nothing you can do about it in AML.
-> 
->> x86 gets around this problem by having an extreme level of hardware
->> backwards compatibility, so you don't even need AML for this and
->> can generally boot a (almost) full-featured Linux kernel with
->> acpi=off on the command line.
-> 
-> That level of hardware compatibility does partly come from the need to
-> run existing software.  I'd expect that similar effects will start to
-> come into play with ARMv8 ACPI systems if they become successful; people
-> will do things like ensure compatibility with common IPs that have
-> existing Linux drivers that distros tend to include as standard.
+>From v2 [2]:
+- Rebased on top of 3.19-rc3
+- Fixed irq_set_irqchip_state return value
 
-Agreed.
+>From v1 [1]:
+- Rebased on top of 3.18-rc7 + tip/irq/irqdomain-arm
+- Now deals with stacked domains
+- Changed the API to be less ambiguous (after review by tglx)
+- Added IRQCHIP_STATE_LINE_LEVEL (as requested by Bjorn Anderson)
 
-Jon.
+[1] https://lkml.org/lkml/2014/10/25/134
+[2] https://lkml.org/lkml/2014/12/3/612
+
+Marc Zyngier (3):
+  genirq: Allow the irqchip state of an IRQ to be save/restored
+  irqchip: GIC: Add support for irq_{get,set}_irqchip_state
+  irqchip: GICv3: Add support for irq_{get,set}_irqchip_state
+
+ drivers/irqchip/irq-gic-v3.c | 83 +++++++++++++++++++++++++++++++++-------
+ drivers/irqchip/irq-gic.c    | 69 ++++++++++++++++++++++++++++++---
+ include/linux/interrupt.h    | 14 +++++++
+ include/linux/irq.h          |  6 +++
+ kernel/irq/manage.c          | 91 ++++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 245 insertions(+), 18 deletions(-)
+
+-- 
+2.1.4
 
