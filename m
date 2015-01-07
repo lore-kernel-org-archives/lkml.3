@@ -1,364 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406AbbAGP0n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 10:26:43 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:59751 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752288AbbAGP0l (ORCPT
+	id S1753453AbbAGP1o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 10:27:44 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:39702 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752362AbbAGP1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 10:26:41 -0500
-Message-ID: <54AD502D.7070107@suse.cz>
-Date: Wed, 07 Jan 2015 16:26:37 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 7 Jan 2015 10:27:42 -0500
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: stable@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 3.18 04/84] x86_64, switch_to(): Load TLS descriptors
- before switching DS and ES
-References: <20150107014029.012974975@linuxfoundation.org> <20150107014029.158919470@linuxfoundation.org>
-In-Reply-To: <20150107014029.158919470@linuxfoundation.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1420623066-56812-1-git-send-email-xiakaixu@huawei.com>
+References: <1420623066-56812-1-git-send-email-xiakaixu@huawei.com>
+Date: Wed, 7 Jan 2015 08:27:42 -0700
+Message-ID: <CANLsYkxRfSAmevU3dqQVXvQAJVrChYVdG=+vKTtUo84e+SLG7A@mail.gmail.com>
+Subject: Re: [PATCH] coresight: fix return value judgement in of_coresight.c
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
+To: Kaixu Xia <xiakaixu@huawei.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kaixu Xia <kaixu.xia@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2015, 02:49 AM, Greg Kroah-Hartman wrote:
-> 3.18-stable review patch.  If anyone has any objections, please let me know.
-
-Greg, Andi raised an objection against this one for 3.12 which still
-holds here and for other trees:
-https://www.mail-archive.com/stable@vger.kernel.org/msg106471.html
-
-Quoting:
-On 01/06/2015, 07:53 PM, Andi Kleen wrote:
-> IMHO this is not stable material. Significant risk you broke
-> something obscure, and it's not clear it fixes any real problem.
+On 7 January 2015 at 02:31, Kaixu Xia <xiakaixu@huawei.com> wrote:
+> The right return value is rdev, so we should judge it.
 >
-> At least wait some more time first.
-
-Thanks.
-
-> ------------------
-> 
-> From: Andy Lutomirski <luto@amacapital.net>
-> 
-> commit f647d7c155f069c1a068030255c300663516420e upstream.
-> 
-> Otherwise, if buggy user code points DS or ES into the TLS
-> array, they would be corrupted after a context switch.
-> 
-> This also significantly improves the comments and documents some
-> gotchas in the code.
-> 
-> Before this patch, the both tests below failed.  With this
-> patch, the es test passes, although the gsbase test still fails.
-> 
->  ----- begin es test -----
-> 
-> /*
->  * Copyright (c) 2014 Andy Lutomirski
->  * GPL v2
->  */
-> 
-> static unsigned short GDT3(int idx)
-> {
-> 	return (idx << 3) | 3;
-> }
-> 
-> static int create_tls(int idx, unsigned int base)
-> {
-> 	struct user_desc desc = {
-> 		.entry_number    = idx,
-> 		.base_addr       = base,
-> 		.limit           = 0xfffff,
-> 		.seg_32bit       = 1,
-> 		.contents        = 0, /* Data, grow-up */
-> 		.read_exec_only  = 0,
-> 		.limit_in_pages  = 1,
-> 		.seg_not_present = 0,
-> 		.useable         = 0,
-> 	};
-> 
-> 	if (syscall(SYS_set_thread_area, &desc) != 0)
-> 		err(1, "set_thread_area");
-> 
-> 	return desc.entry_number;
-> }
-> 
-> int main()
-> {
-> 	int idx = create_tls(-1, 0);
-> 	printf("Allocated GDT index %d\n", idx);
-> 
-> 	unsigned short orig_es;
-> 	asm volatile ("mov %%es,%0" : "=rm" (orig_es));
-> 
-> 	int errors = 0;
-> 	int total = 1000;
-> 	for (int i = 0; i < total; i++) {
-> 		asm volatile ("mov %0,%%es" : : "rm" (GDT3(idx)));
-> 		usleep(100);
-> 
-> 		unsigned short es;
-> 		asm volatile ("mov %%es,%0" : "=rm" (es));
-> 		asm volatile ("mov %0,%%es" : : "rm" (orig_es));
-> 		if (es != GDT3(idx)) {
-> 			if (errors == 0)
-> 				printf("[FAIL]\tES changed from 0x%hx to 0x%hx\n",
-> 				       GDT3(idx), es);
-> 			errors++;
-> 		}
-> 	}
-> 
-> 	if (errors) {
-> 		printf("[FAIL]\tES was corrupted %d/%d times\n", errors, total);
-> 		return 1;
-> 	} else {
-> 		printf("[OK]\tES was preserved\n");
-> 		return 0;
-> 	}
-> }
-> 
->  ----- end es test -----
-> 
->  ----- begin gsbase test -----
-> 
-> /*
->  * gsbase.c, a gsbase test
->  * Copyright (c) 2014 Andy Lutomirski
->  * GPL v2
->  */
-> 
-> static unsigned char *testptr, *testptr2;
-> 
-> static unsigned char read_gs_testvals(void)
-> {
-> 	unsigned char ret;
-> 	asm volatile ("movb %%gs:%1, %0" : "=r" (ret) : "m" (*testptr));
-> 	return ret;
-> }
-> 
-> int main()
-> {
-> 	int errors = 0;
-> 
-> 	testptr = mmap((void *)0x200000000UL, 1, PROT_READ | PROT_WRITE,
-> 		       MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS, -1, 0);
-> 	if (testptr == MAP_FAILED)
-> 		err(1, "mmap");
-> 
-> 	testptr2 = mmap((void *)0x300000000UL, 1, PROT_READ | PROT_WRITE,
-> 		       MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS, -1, 0);
-> 	if (testptr2 == MAP_FAILED)
-> 		err(1, "mmap");
-> 
-> 	*testptr = 0;
-> 	*testptr2 = 1;
-> 
-> 	if (syscall(SYS_arch_prctl, ARCH_SET_GS,
-> 		    (unsigned long)testptr2 - (unsigned long)testptr) != 0)
-> 		err(1, "ARCH_SET_GS");
-> 
-> 	usleep(100);
-> 
-> 	if (read_gs_testvals() == 1) {
-> 		printf("[OK]\tARCH_SET_GS worked\n");
-> 	} else {
-> 		printf("[FAIL]\tARCH_SET_GS failed\n");
-> 		errors++;
-> 	}
-> 
-> 	asm volatile ("mov %0,%%gs" : : "r" (0));
-> 
-> 	if (read_gs_testvals() == 0) {
-> 		printf("[OK]\tWriting 0 to gs worked\n");
-> 	} else {
-> 		printf("[FAIL]\tWriting 0 to gs failed\n");
-> 		errors++;
-> 	}
-> 
-> 	usleep(100);
-> 
-> 	if (read_gs_testvals() == 0) {
-> 		printf("[OK]\tgsbase is still zero\n");
-> 	} else {
-> 		printf("[FAIL]\tgsbase was corrupted\n");
-> 		errors++;
-> 	}
-> 
-> 	return errors == 0 ? 0 : 1;
-> }
-> 
->  ----- end gsbase test -----
-> 
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> Cc: Andi Kleen <andi@firstfloor.org>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Link: http://lkml.kernel.org/r/509d27c9fec78217691c3dad91cec87e1006b34a.1418075657.git.luto@amacapital.net
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
+> Signed-off-by: Kaixu Xia <xiakaixu@huawei.com>
 > ---
->  arch/x86/kernel/process_64.c |  101 +++++++++++++++++++++++++++++++------------
->  1 file changed, 73 insertions(+), 28 deletions(-)
-> 
-> --- a/arch/x86/kernel/process_64.c
-> +++ b/arch/x86/kernel/process_64.c
-> @@ -283,24 +283,9 @@ __switch_to(struct task_struct *prev_p,
->  
->  	fpu = switch_fpu_prepare(prev_p, next_p, cpu);
->  
-> -	/*
-> -	 * Reload esp0, LDT and the page table pointer:
-> -	 */
-> +	/* Reload esp0 and ss1. */
->  	load_sp0(tss, next);
->  
-> -	/*
-> -	 * Switch DS and ES.
-> -	 * This won't pick up thread selector changes, but I guess that is ok.
-> -	 */
-> -	savesegment(es, prev->es);
-> -	if (unlikely(next->es | prev->es))
-> -		loadsegment(es, next->es);
-> -
-> -	savesegment(ds, prev->ds);
-> -	if (unlikely(next->ds | prev->ds))
-> -		loadsegment(ds, next->ds);
-> -
-> -
->  	/* We must save %fs and %gs before load_TLS() because
->  	 * %fs and %gs may be cleared by load_TLS().
->  	 *
-> @@ -309,41 +294,101 @@ __switch_to(struct task_struct *prev_p,
->  	savesegment(fs, fsindex);
->  	savesegment(gs, gsindex);
->  
-> +	/*
-> +	 * Load TLS before restoring any segments so that segment loads
-> +	 * reference the correct GDT entries.
-> +	 */
->  	load_TLS(next, cpu);
->  
->  	/*
-> -	 * Leave lazy mode, flushing any hypercalls made here.
-> -	 * This must be done before restoring TLS segments so
-> -	 * the GDT and LDT are properly updated, and must be
-> -	 * done before math_state_restore, so the TS bit is up
-> -	 * to date.
-> +	 * Leave lazy mode, flushing any hypercalls made here.  This
-> +	 * must be done after loading TLS entries in the GDT but before
-> +	 * loading segments that might reference them, and and it must
-> +	 * be done before math_state_restore, so the TS bit is up to
-> +	 * date.
->  	 */
->  	arch_end_context_switch(next_p);
->  
-> +	/* Switch DS and ES.
-> +	 *
-> +	 * Reading them only returns the selectors, but writing them (if
-> +	 * nonzero) loads the full descriptor from the GDT or LDT.  The
-> +	 * LDT for next is loaded in switch_mm, and the GDT is loaded
-> +	 * above.
-> +	 *
-> +	 * We therefore need to write new values to the segment
-> +	 * registers on every context switch unless both the new and old
-> +	 * values are zero.
-> +	 *
-> +	 * Note that we don't need to do anything for CS and SS, as
-> +	 * those are saved and restored as part of pt_regs.
-> +	 */
-> +	savesegment(es, prev->es);
-> +	if (unlikely(next->es | prev->es))
-> +		loadsegment(es, next->es);
-> +
-> +	savesegment(ds, prev->ds);
-> +	if (unlikely(next->ds | prev->ds))
-> +		loadsegment(ds, next->ds);
-> +
->  	/*
->  	 * Switch FS and GS.
->  	 *
-> -	 * Segment register != 0 always requires a reload.  Also
-> -	 * reload when it has changed.  When prev process used 64bit
-> -	 * base always reload to avoid an information leak.
-> +	 * These are even more complicated than FS and GS: they have
-> +	 * 64-bit bases are that controlled by arch_prctl.  Those bases
-> +	 * only differ from the values in the GDT or LDT if the selector
-> +	 * is 0.
-> +	 *
-> +	 * Loading the segment register resets the hidden base part of
-> +	 * the register to 0 or the value from the GDT / LDT.  If the
-> +	 * next base address zero, writing 0 to the segment register is
-> +	 * much faster than using wrmsr to explicitly zero the base.
-> +	 *
-> +	 * The thread_struct.fs and thread_struct.gs values are 0
-> +	 * if the fs and gs bases respectively are not overridden
-> +	 * from the values implied by fsindex and gsindex.  They
-> +	 * are nonzero, and store the nonzero base addresses, if
-> +	 * the bases are overridden.
-> +	 *
-> +	 * (fs != 0 && fsindex != 0) || (gs != 0 && gsindex != 0) should
-> +	 * be impossible.
-> +	 *
-> +	 * Therefore we need to reload the segment registers if either
-> +	 * the old or new selector is nonzero, and we need to override
-> +	 * the base address if next thread expects it to be overridden.
-> +	 *
-> +	 * This code is unnecessarily slow in the case where the old and
-> +	 * new indexes are zero and the new base is nonzero -- it will
-> +	 * unnecessarily write 0 to the selector before writing the new
-> +	 * base address.
-> +	 *
-> +	 * Note: This all depends on arch_prctl being the only way that
-> +	 * user code can override the segment base.  Once wrfsbase and
-> +	 * wrgsbase are enabled, most of this code will need to change.
->  	 */
->  	if (unlikely(fsindex | next->fsindex | prev->fs)) {
->  		loadsegment(fs, next->fsindex);
-> +
->  		/*
-> -		 * Check if the user used a selector != 0; if yes
-> -		 *  clear 64bit base, since overloaded base is always
-> -		 *  mapped to the Null selector
-> +		 * If user code wrote a nonzero value to FS, then it also
-> +		 * cleared the overridden base address.
-> +		 *
-> +		 * XXX: if user code wrote 0 to FS and cleared the base
-> +		 * address itself, we won't notice and we'll incorrectly
-> +		 * restore the prior base address next time we reschdule
-> +		 * the process.
->  		 */
->  		if (fsindex)
->  			prev->fs = 0;
->  	}
-> -	/* when next process has a 64bit base use it */
->  	if (next->fs)
->  		wrmsrl(MSR_FS_BASE, next->fs);
->  	prev->fsindex = fsindex;
->  
->  	if (unlikely(gsindex | next->gsindex | prev->gs)) {
->  		load_gs_index(next->gsindex);
-> +
-> +		/* This works (and fails) the same way as fsindex above. */
->  		if (gsindex)
->  			prev->gs = 0;
->  	}
-> 
-> 
+>  drivers/coresight/of_coresight.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/coresight/of_coresight.c b/drivers/coresight/of_coresight.c
+> index 5030c07..5b5f188 100644
+> --- a/drivers/coresight/of_coresight.c
+> +++ b/drivers/coresight/of_coresight.c
+> @@ -174,7 +174,7 @@ struct coresight_platform_data *of_get_coresight_platform_data(
+>                                 continue;
+>
+>                         rdev = of_coresight_get_endpoint_device(rparent);
+> -                       if (!dev)
+> +                       if (!rdev)
+>                                 continue;
+>
+>                         pdata->child_names[i] = dev_name(rdev);
 > --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> 1.8.5.5
+>
 
-
--- 
-js
-suse labs
+Applied with re-factoring of the commit subject line and log message.  Thanks.
