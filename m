@@ -1,104 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755523AbbAGFlU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 00:41:20 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:35709 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752891AbbAGFlS (ORCPT
+	id S1755706AbbAGFmN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 00:42:13 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:40327 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528AbbAGFmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 00:41:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <20150106224706.GA7416@salvia>
-References: <CAFB3abzYNYqtzd_n+Ym0Lo=DYbV0HPU=Tqw=stALNnu188hMKQ@mail.gmail.com>
-	<20150106224706.GA7416@salvia>
-Date: Wed, 7 Jan 2015 11:11:17 +0530
-Message-ID: <CAFB3abwKpR1VqZXUrsexqveAZrA2LTSmTe8a=-H7z2HjAptjwA@mail.gmail.com>
-Subject: Re: [PATCH net] ipv6: Prevent ipv6_find_hdr() from returning ENOENT
- for valid non-first fragments
-From: Rahul Sharma <rsharma@arista.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        netfilter-devel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 7 Jan 2015 00:42:08 -0500
+From: "Ian Munsie" <imunsie@au1.ibm.com>
+To: mpe <mpe@ellerman.id.au>
+Cc: benh <benh@kernel.crashing.org>, mikey <mikey@neuling.org>,
+        anton <anton@samba.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        linuxppc-dev <linuxppc-dev@ozlabs.org>, jk <jk@ozlabs.org>,
+        imunsie <imunsie@au1.ibm.com>,
+        cbe-oss-dev <cbe-oss-dev@lists.ozlabs.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ryan Grimm <grimm@linux.vnet.ibm.com>
+Subject: [PATCH] CXL: Fix device_node reference counting
+Date: Wed,  7 Jan 2015 16:41:18 +1100
+Message-Id: <1420609278-15338-1-git-send-email-imunsie@au.ibm.com>
+X-Mailer: git-send-email 2.1.4
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15010705-0025-0000-0000-000000E19B78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pablo,
+From: Ryan Grimm <grimm@linux.vnet.ibm.com>
 
-On Wed, Jan 7, 2015 at 4:17 AM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
-> On Wed, Jan 07, 2015 at 03:03:20AM +0530, Rahul Sharma wrote:
->> ipv6_find_hdr() currently assumes that the next-header field in the
->> fragment header of the non-first fragment is the "protocol number of
->> the last header" (here last header excludes any extension header
->> protocol numbers ) which is incorrect as per RFC2460. The next-header
->> value is the first header of the fragmentable part of the original
->> packet (which can be extension header as well).
->> This can create reassembly problems. For example: Fragmented
->> authenticated OSPFv3 packets (where AH header is inserted before the
->> protocol header). For the second fragment, the next header value in
->> the fragment header will be NEXTHDR_AUTH which is correct but
->> ipv6_find_hdr will return ENOENT since AH is an extension header
->> resulting in second fragment getting dropped. This check for the
->> presence of non-extension header needs to be removed.
->>
->> Signed-off-by: Rahul Sharma <rsharma@arista.com>
->> ---
->> --- linux-3.18.1/net/ipv6/exthdrs_core.c.orig   2015-01-06
->> 10:25:36.411419863 -0800
->> +++ linux-3.18.1/net/ipv6/exthdrs_core.c        2015-01-06
->> 10:51:45.819364986 -0800
->> @@ -171,10 +171,11 @@ EXPORT_SYMBOL_GPL(ipv6_find_tlv);
->>   * If the first fragment doesn't contain the final protocol header or
->>   * NEXTHDR_NONE it is considered invalid.
->>   *
->> - * Note that non-1st fragment is special case that "the protocol number
->> - * of last header" is "next header" field in Fragment header. In this case,
->> - * *offset is meaningless and fragment offset is stored in *fragoff if fragoff
->> - * isn't NULL.
->> + * Note that non-1st fragment is special case that "the protocol number of the
->> + * first header of the fragmentable part of the original packet" is
->> + * "next header" field in the Fragment header. In this case, *offset is
->> + * meaningless and fragment offset is stored in *fragoff if fragoff isn't
->> + * NULL.
->>   *
->>   * if flags is not NULL and it's a fragment, then the frag flag
->>   * IP6_FH_F_FRAG will be set. If it's an AH header, the
->> @@ -250,9 +251,7 @@ int ipv6_find_hdr(const struct sk_buff *
->>
->>                         _frag_off = ntohs(*fp) & ~0x7;
->>                         if (_frag_off) {
->> -                               if (target < 0 &&
->> -                                   ((!ipv6_ext_hdr(hp->nexthdr)) ||
->
-> This check assumes that the following headers cannot show up in the
-> fragmented part of the IPv6 packet:
->
->  12 bool ipv6_ext_hdr(u8 nexthdr)
->  13 {
->  14         /*
->  15          * find out if nexthdr is an extension header or a protocol
->  16          */
->  17         return   (nexthdr == NEXTHDR_HOP)       ||
->  18                  (nexthdr == NEXTHDR_ROUTING)   ||
->  19                  (nexthdr == NEXTHDR_FRAGMENT)  ||
->  20                  (nexthdr == NEXTHDR_AUTH)      ||
->  21                  (nexthdr == NEXTHDR_NONE)      ||
->  22                  (nexthdr == NEXTHDR_DEST);
->
->> -                                    hp->nexthdr == NEXTHDR_NONE)) {
->> +                               if (target < 0) {
->>                                         if (fragoff)
->>                                                 *fragoff = _frag_off;
->>                                         return hp->nexthdr;
->> --
->> To unsubscribe from this list: send the line "unsubscribe netdev" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+When unbinding and rebinding the driver on a system with a card in PHB0, this
+error condition is reached after a few attempts:
 
-I think this is incorrect. Authentication header shows up in the
-fragmentable part of the original IPv6 packet. So, for the non-first
-fragments the next-header field value can be NEXTHDR_AUTH.
+ERROR: Bad of_node_put() on /pciex@3fffe40000000
+CPU: 0 PID: 3040 Comm: bash Not tainted 3.18.0-rc3-12545-g3627ffe #152
+Call Trace:
+[c000000721acb5c0] [c00000000086ef94] .dump_stack+0x84/0xb0 (unreliable)
+[c000000721acb640] [c00000000073a0a8] .of_node_release+0xd8/0xe0
+[c000000721acb6d0] [c00000000044bc44] .kobject_release+0x74/0xe0
+[c000000721acb760] [c0000000007394fc] .of_node_put+0x1c/0x30
+[c000000721acb7d0] [c000000000545cd8] .cxl_probe+0x1a98/0x1d50
+[c000000721acb900] [c0000000004845a0] .local_pci_probe+0x40/0xc0
+[c000000721acb980] [c000000000484998] .pci_device_probe+0x128/0x170
+[c000000721acba30] [c00000000052400c] .driver_probe_device+0xac/0x2a0
+[c000000721acbad0] [c000000000522468] .bind_store+0x108/0x160
+[c000000721acbb70] [c000000000521448] .drv_attr_store+0x38/0x60
+[c000000721acbbe0] [c000000000293840] .sysfs_kf_write+0x60/0xa0
+[c000000721acbc50] [c000000000292500] .kernfs_fop_write+0x140/0x1d0
+[c000000721acbcf0] [c000000000208648] .vfs_write+0xd8/0x260
+[c000000721acbd90] [c000000000208b18] .SyS_write+0x58/0x100
+[c000000721acbe30] [c000000000009258] syscall_exit+0x0/0x98
 
-Thanks
+of_get_next_parent decrements parent's refcount and we need to call of_node_put
+after the iteration.  But, if while loop is not entered, of_node_put get called
+on np without an of_node_get.  So, call it before the while loop.
+
+Signed-off-by: Ryan Grimm <grimm@linux.vnet.ibm.com>
+Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+---
+ drivers/misc/cxl/pci.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/misc/cxl/pci.c b/drivers/misc/cxl/pci.c
+index 2ccd0a9..f801c28 100644
+--- a/drivers/misc/cxl/pci.c
++++ b/drivers/misc/cxl/pci.c
+@@ -319,6 +319,7 @@ static int init_implementation_adapter_regs(struct cxl *adapter, struct pci_dev
+ 	if (!(np = pnv_pci_to_phb_node(dev)))
+ 		return -ENODEV;
+ 
++	of_node_get(np);
+ 	while (np && !(prop = of_get_property(np, "ibm,chip-id", NULL)))
+ 		np = of_get_next_parent(np);
+ 	if (!np)
+-- 
+2.1.4
+
