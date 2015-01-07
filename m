@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933590AbbAGCqL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:46:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46788 "EHLO
+	id S1756788AbbAGCNn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:13:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46775 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932585AbbAGCHf (ORCPT
+	with ESMTP id S932373AbbAGCHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:07:35 -0500
+	Tue, 6 Jan 2015 21:07:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Dmitry Osipenko <digetx@gmail.com>,
-        Thierry Reding <treding@nvidia.com>
-Subject: [PATCH 3.14 22/52] ARM: tegra: Re-add removed SoC id macro to tegra_resume()
-Date: Tue,  6 Jan 2015 18:06:50 -0800
-Message-Id: <20150107020558.743011023@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.14 24/52] x86/tls: Dont validate lm in set_thread_area() after all
+Date: Tue,  6 Jan 2015 18:06:52 -0800
+Message-Id: <20150107020559.096727452@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107020555.043793795@linuxfoundation.org>
 References: <20150107020555.043793795@linuxfoundation.org>
@@ -29,37 +31,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Osipenko <digetx@gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit e4a680099a6e97ecdbb81081cff9e4a489a4dc44 upstream.
+commit 3fb2f4237bb452eb4e98f6a5dbd5a445b4fed9d0 upstream.
 
-Commit d127e9c ("ARM: tegra: make tegra_resume can work with current and later
-chips") removed tegra_get_soc_id macro leaving used cpu register corrupted after
-branching to v7_invalidate_l1() and as result causing execution of unintended
-code on tegra20. Possibly it was expected that r6 would be SoC id func argument
-since common cpu reset handler is setting r6 before branching to tegra_resume(),
-but neither tegra20_lp1_reset() nor tegra30_lp1_reset() aren't setting r6
-register before jumping to resume function. Fix it by re-adding macro.
+It turns out that there's a lurking ABI issue.  GCC, when
+compiling this in a 32-bit program:
 
-Fixes: d127e9c (ARM: tegra: make tegra_resume can work with current and later chips)
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
-Signed-off-by: Thierry Reding <treding@nvidia.com>
+struct user_desc desc = {
+	.entry_number    = idx,
+	.base_addr       = base,
+	.limit           = 0xfffff,
+	.seg_32bit       = 1,
+	.contents        = 0, /* Data, grow-up */
+	.read_exec_only  = 0,
+	.limit_in_pages  = 1,
+	.seg_not_present = 0,
+	.useable         = 0,
+};
+
+will leave .lm uninitialized.  This means that anything in the
+kernel that reads user_desc.lm for 32-bit tasks is unreliable.
+
+Revert the .lm check in set_thread_area().  The value never did
+anything in the first place.
+
+Fixes: 0e58af4e1d21 ("x86/tls: Disallow unusual TLS segments")
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/d7875b60e28c512f6a6fc0baf5714d58e7eaadbb.1418856405.git.luto@amacapital.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-tegra/reset-handler.S |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/include/uapi/asm/ldt.h |    7 +++++++
+ arch/x86/kernel/tls.c           |    6 ------
+ 2 files changed, 7 insertions(+), 6 deletions(-)
 
---- a/arch/arm/mach-tegra/reset-handler.S
-+++ b/arch/arm/mach-tegra/reset-handler.S
-@@ -51,6 +51,7 @@ ENTRY(tegra_resume)
-  THUMB(	it	ne )
- 	bne	cpu_resume			@ no
+--- a/arch/x86/include/uapi/asm/ldt.h
++++ b/arch/x86/include/uapi/asm/ldt.h
+@@ -28,6 +28,13 @@ struct user_desc {
+ 	unsigned int  seg_not_present:1;
+ 	unsigned int  useable:1;
+ #ifdef __x86_64__
++	/*
++	 * Because this bit is not present in 32-bit user code, user
++	 * programs can pass uninitialized values here.  Therefore, in
++	 * any context in which a user_desc comes from a 32-bit program,
++	 * the kernel must act as though lm == 0, regardless of the
++	 * actual value.
++	 */
+ 	unsigned int  lm:1;
+ #endif
+ };
+--- a/arch/x86/kernel/tls.c
++++ b/arch/x86/kernel/tls.c
+@@ -55,12 +55,6 @@ static bool tls_desc_okay(const struct u
+ 	if (info->seg_not_present)
+ 		return false;
  
-+	tegra_get_soc_id TEGRA_APB_MISC_BASE, r6
- 	/* Are we on Tegra20? */
- 	cmp	r6, #TEGRA20
- 	beq	1f				@ Yes
+-#ifdef CONFIG_X86_64
+-	/* The L bit makes no sense for data. */
+-	if (info->lm)
+-		return false;
+-#endif
+-
+ 	return true;
+ }
+ 
 
 
