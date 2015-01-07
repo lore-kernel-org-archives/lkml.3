@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757198AbbAGCBe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:01:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46421 "EHLO
+	id S932823AbbAGBwe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 20:52:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46250 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757025AbbAGBwN (ORCPT
+	with ESMTP id S932549AbbAGBwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:52:13 -0500
+	Tue, 6 Jan 2015 20:52:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Halcrow <mhalcrow@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Kees Cook <keescook@chromium.org>, Tyler Hicks <tyhicks@canonical.com>
-Subject: [PATCH 3.18 79/84] eCryptfs: Remove buggy and unnecessary write in file name decode routine
-Date: Tue,  6 Jan 2015 17:50:22 -0800
-Message-Id: <20150107014031.521544274@linuxfoundation.org>
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.10 11/38] dm bufio: fix memleak when using a dm_buffers inline bio
+Date: Tue,  6 Jan 2015 17:50:23 -0800
+Message-Id: <20150107014954.289427330@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
-In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
-References: <20150107014029.012974975@linuxfoundation.org>
+In-Reply-To: <20150107014952.440109372@linuxfoundation.org>
+References: <20150107014952.440109372@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,38 +26,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Michael Halcrow <mhalcrow@google.com>
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
 
-commit 942080643bce061c3dd9d5718d3b745dcb39a8bc upstream.
+commit 445559cdcb98a141f5de415b94fd6eaccab87e6d upstream.
 
-Dmitry Chernenkov used KASAN to discover that eCryptfs writes past the
-end of the allocated buffer during encrypted filename decoding. This
-fix corrects the issue by getting rid of the unnecessary 0 write when
-the current bit offset is 2.
+When dm-bufio sets out to use the bio built into a struct dm_buffer to
+issue an IO, it needs to call bio_reset after it's done with the bio
+so that we can free things attached to the bio such as the integrity
+payload.  Therefore, inject our own endio callback to take care of
+the bio_reset after calling submit_io's end_io callback.
 
-Signed-off-by: Michael Halcrow <mhalcrow@google.com>
-Reported-by: Dmitry Chernenkov <dmitryc@google.com>
-Suggested-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Test case:
+1. modprobe scsi_debug delay=0 dif=1 dix=199 ato=1 dev_size_mb=300
+2. Set up a dm-bufio client, e.g. dm-verity, on the scsi_debug device
+3. Repeatedly read metadata and watch kmalloc-192 leak!
+
+Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ecryptfs/crypto.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/md/dm-bufio.c |   20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
---- a/fs/ecryptfs/crypto.c
-+++ b/fs/ecryptfs/crypto.c
-@@ -1917,7 +1917,6 @@ ecryptfs_decode_from_filename(unsigned c
- 			break;
- 		case 2:
- 			dst[dst_byte_offset++] |= (src_byte);
--			dst[dst_byte_offset] = 0;
- 			current_bit_offset = 0;
- 			break;
- 		}
+--- a/drivers/md/dm-bufio.c
++++ b/drivers/md/dm-bufio.c
+@@ -529,6 +529,19 @@ static void use_dmio(struct dm_buffer *b
+ 		end_io(&b->bio, r);
+ }
+ 
++static void inline_endio(struct bio *bio, int error)
++{
++	bio_end_io_t *end_fn = bio->bi_private;
++
++	/*
++	 * Reset the bio to free any attached resources
++	 * (e.g. bio integrity profiles).
++	 */
++	bio_reset(bio);
++
++	end_fn(bio, error);
++}
++
+ static void use_inline_bio(struct dm_buffer *b, int rw, sector_t block,
+ 			   bio_end_io_t *end_io)
+ {
+@@ -540,7 +553,12 @@ static void use_inline_bio(struct dm_buf
+ 	b->bio.bi_max_vecs = DM_BUFIO_INLINE_VECS;
+ 	b->bio.bi_sector = block << b->c->sectors_per_block_bits;
+ 	b->bio.bi_bdev = b->c->bdev;
+-	b->bio.bi_end_io = end_io;
++	b->bio.bi_end_io = inline_endio;
++	/*
++	 * Use of .bi_private isn't a problem here because
++	 * the dm_buffer's inline bio is local to bufio.
++	 */
++	b->bio.bi_private = end_io;
+ 
+ 	/*
+ 	 * We assume that if len >= PAGE_SIZE ptr is page-aligned.
 
 
