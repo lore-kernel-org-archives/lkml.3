@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757064AbbAGCdS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:33:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46956 "EHLO
+	id S933562AbbAGClz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:41:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46948 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757585AbbAGCQw (ORCPT
+	with ESMTP id S1757497AbbAGCQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:16:52 -0500
+	Tue, 6 Jan 2015 21:16:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Hogan <james.hogan@imgtec.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
         Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH 3.17 09/73] mmc: dw_mmc: avoid write to CDTHRCTL on older versions
-Date: Tue,  6 Jan 2015 18:15:30 -0800
-Message-Id: <20150107021557.810246760@linuxfoundation.org>
+Subject: [PATCH 3.17 10/73] mmc: omap_hsmmc: Fix UHS card with DDR50 support
+Date: Tue,  6 Jan 2015 18:15:31 -0800
+Message-Id: <20150107021557.840737192@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107021557.521276020@linuxfoundation.org>
 References: <20150107021557.521276020@linuxfoundation.org>
@@ -30,44 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Hogan <james.hogan@imgtec.com>
+From: Ulf Hansson <ulf.hansson@linaro.org>
 
-commit 66dfd10173159cafa9cb0d39936b8daeaab8e3e0 upstream.
+commit 903101a83949d6fc77c092cef07e9c1e10c07e46 upstream.
 
-Commit f1d2736c8156 (mmc: dw_mmc: control card read threshold) added
-dw_mci_ctrl_rd_thld() with an unconditional write to the CDTHRCTL
-register at offset 0x100. However before version 240a, the FIFO region
-started at 0x100, so the write messes with the FIFO and completely
-breaks the driver.
+The commit, mmc: omap: clarify DDR timing mode between SD-UHS and eMMC,
+switched omap_hsmmc to support MMC DDR mode instead of UHS DDR50 mode.
 
-If the version id < 240A, return early from dw_mci_ctl_rd_thld() so as
-not to hit this problem.
+Add UHS DDR50 mode again and this time let's also keep the MMC DDR mode.
 
-Fixes: f1d2736c8156 (mmc: dw_mmc: control card read threshold)
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
+Fixes: 5438ad95a57c (mmc: omap: clarify DDR timing mode between SD-UHS and eMMC)
+Reported-by: Kishon Vijay Abraham I <kishon@ti.com>
 Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/dw_mmc.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/mmc/host/omap_hsmmc.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -624,6 +624,13 @@ static void dw_mci_ctrl_rd_thld(struct d
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -609,6 +609,7 @@ static void omap_hsmmc_set_clock(struct
+ 	 */
+ 	if ((mmc_slot(host).features & HSMMC_HAS_HSPE_SUPPORT) &&
+ 	    (ios->timing != MMC_TIMING_MMC_DDR52) &&
++	    (ios->timing != MMC_TIMING_UHS_DDR50) &&
+ 	    ((OMAP_HSMMC_READ(host->base, CAPA) & HSS) == HSS)) {
+ 		regval = OMAP_HSMMC_READ(host->base, HCTL);
+ 		if (clkdiv && (clk_get_rate(host->fclk)/clkdiv) > 25000000)
+@@ -628,7 +629,8 @@ static void omap_hsmmc_set_bus_width(str
+ 	u32 con;
  
- 	WARN_ON(!(data->flags & MMC_DATA_READ));
- 
-+	/*
-+	 * CDTHRCTL doesn't exist prior to 240A (in fact that register offset is
-+	 * in the FIFO region, so we really shouldn't access it).
-+	 */
-+	if (host->verid < DW_MMC_240A)
-+		return;
-+
- 	if (host->timing != MMC_TIMING_MMC_HS200 &&
- 	    host->timing != MMC_TIMING_UHS_SDR104)
- 		goto disable;
+ 	con = OMAP_HSMMC_READ(host->base, CON);
+-	if (ios->timing == MMC_TIMING_MMC_DDR52)
++	if (ios->timing == MMC_TIMING_MMC_DDR52 ||
++	    ios->timing == MMC_TIMING_UHS_DDR50)
+ 		con |= DDR;	/* configure in DDR mode */
+ 	else
+ 		con &= ~DDR;
 
 
