@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551AbbAGQqF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 11:46:05 -0500
-Received: from mail-we0-f170.google.com ([74.125.82.170]:64065 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753516AbbAGQpF (ORCPT
+	id S1754468AbbAGQpK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 11:45:10 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:45149 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754508AbbAGQpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 11:45:05 -0500
+	Wed, 7 Jan 2015 11:45:07 -0500
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
         kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -19,10 +19,10 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>,
         kernel-team@android.com, patches@linaro.org,
         linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
         Sumit Semwal <sumit.semwal@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: [RESEND PATCH v5 3.19-rc2 6/8] kdb: Categorize kdb commands (similar to SysRq categorization)
-Date: Wed,  7 Jan 2015 16:34:56 +0000
-Message-Id: <1420648498-17428-7-git-send-email-daniel.thompson@linaro.org>
+        Daniel Thompson <daniel.thompson@linaro.org>
+Subject: [RESEND PATCH v5 3.19-rc2 7/8] kdb: Add enable mask for groups of commands
+Date: Wed,  7 Jan 2015 16:34:57 +0000
+Message-Id: <1420648498-17428-8-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1420648498-17428-1-git-send-email-daniel.thompson@linaro.org>
 References: <1399381429-16194-1-git-send-email-daniel.thompson@linaro.org>
@@ -31,334 +31,188 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces several new flags to collect kdb commands into
-groups (later allowing them to be optionally disabled).
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
 
-This follows similar prior art to enable/disable magic sysrq
-commands.
+Currently all kdb commands are enabled whenever kdb is deployed. This
+makes it difficult to deploy kdb to help debug certain types of
+systems.
 
-The commands have been categorized as follows:
+Android phones provide one example; the FIQ debugger found on some
+Android devices has a deliberately weak set of commands to allow the
+debugger to enabled very late in the production cycle.
 
-Always on:  go (w/o args), env, set, help, ?, cpu (w/o args), sr,
-            dmesg, disable_nmi, defcmd, summary, grephelp
-Mem read:   md, mdr, mdp, mds, ef, bt (with args), per_cpu
-Mem write:  mm
-Reg read:   rd
-Reg write:  go (with args), rm
-Inspect:    bt (w/o args), btp, bta, btc, btt, ps, pid, lsmod
-Flow ctrl:  bp, bl, bph, bc, be, bd, ss
-Signal:     kill
-Reboot:     reboot
-All:        cpu, kgdb, (and all of the above), nmi_console
+Certain kiosk environments offer another interesting case where an
+engineer might wish to probe the system state using passive inspection
+commands without providing sufficient power for a passer by to root it.
 
+Without any restrictions, obtaining the root rights via KDB is a matter of
+a few commands, and works everywhere. For example, log in as a normal
+user:
+
+cbou:~$ id
+uid=1001(cbou) gid=1001(cbou) groups=1001(cbou)
+
+Now enter KDB (for example via sysrq):
+
+Entering kdb (current=0xffff8800065bc740, pid 920) due to Keyboard Entry
+kdb> ps
+23 sleeping system daemon (state M) processes suppressed,
+use 'ps A' to see all.
+Task Addr               Pid   Parent [*] cpu State Thread             Command
+0xffff8800065bc740      920      919  1    0   R  0xffff8800065bca20 *bash
+
+0xffff880007078000        1        0  0    0   S  0xffff8800070782e0  init
+[...snip...]
+0xffff8800065be3c0      918        1  0    0   S  0xffff8800065be6a0  getty
+0xffff8800065b9c80      919        1  0    0   S  0xffff8800065b9f60  login
+0xffff8800065bc740      920      919  1    0   R  0xffff8800065bca20 *bash
+
+All we need is the offset of cred pointers. We can look up the offset in
+the distro's kernel source, but it is unnecessary. We can just start
+dumping init's task_struct, until we see the process name:
+
+kdb> md 0xffff880007078000
+0xffff880007078000 0000000000000001 ffff88000703c000   ................
+0xffff880007078010 0040210000000002 0000000000000000   .....!@.........
+[...snip...]
+0xffff8800070782b0 ffff8800073e0580 ffff8800073e0580   ..>.......>.....
+0xffff8800070782c0 0000000074696e69 0000000000000000   init............
+
+^ Here, 'init'. Creds are just above it, so the offset is 0x02b0.
+
+Now we set up init's creds for our non-privileged shell:
+
+kdb> mm 0xffff8800065bc740+0x02b0 0xffff8800073e0580
+0xffff8800065bc9f0 = 0xffff8800073e0580
+kdb> mm 0xffff8800065bc740+0x02b8 0xffff8800073e0580
+0xffff8800065bc9f8 = 0xffff8800073e0580
+
+And thus gaining the root:
+
+kdb> go
+cbou:~$ id
+uid=0(root) gid=0(root) groups=0(root)
+cbou:~$ bash
+root:~#
+
+p.s. No distro enables kdb by default (although, with a nice KDB-over-KMS
+feature availability, I would expect at least some would enable it), so
+it's not actually some kind of a major issue.
+
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 Cc: Jason Wessel <jason.wessel@windriver.com>
 ---
- include/linux/kdb.h         |  48 +++++++++++++++++-
- kernel/debug/kdb/kdb_bp.c   |  21 +++++---
- kernel/debug/kdb/kdb_main.c | 120 ++++++++++++++++++++++++++++++++------------
- kernel/trace/trace_kdb.c    |   2 +-
- 4 files changed, 148 insertions(+), 43 deletions(-)
+ include/linux/kdb.h         |  1 +
+ kernel/debug/kdb/kdb_main.c | 30 +++++++++++++++++++++++++++++-
+ 2 files changed, 30 insertions(+), 1 deletion(-)
 
 diff --git a/include/linux/kdb.h b/include/linux/kdb.h
-index 39b44b37c8dc..f1fe36185c17 100644
+index f1fe36185c17..75ae2e2631fc 100644
 --- a/include/linux/kdb.h
 +++ b/include/linux/kdb.h
-@@ -13,9 +13,53 @@
-  * Copyright (C) 2009 Jason Wessel <jason.wessel@windriver.com>
-  */
- 
-+/* Shifted versions of the command enable bits are be used if the command
-+ * has no arguments (see kdb_check_flags). This allows commands, such as
-+ * go, to have different permissions depending upon whether it is called
-+ * with an argument.
-+ */
-+#define KDB_ENABLE_NO_ARGS_SHIFT 10
-+
- typedef enum {
--	KDB_REPEAT_NO_ARGS	= 0x1, /* Repeat the command w/o arguments */
--	KDB_REPEAT_WITH_ARGS	= 0x2, /* Repeat the command w/ its arguments */
-+	KDB_ENABLE_ALL = (1 << 0), /* Enable everything */
-+	KDB_ENABLE_MEM_READ = (1 << 1),
-+	KDB_ENABLE_MEM_WRITE = (1 << 2),
-+	KDB_ENABLE_REG_READ = (1 << 3),
-+	KDB_ENABLE_REG_WRITE = (1 << 4),
-+	KDB_ENABLE_INSPECT = (1 << 5),
-+	KDB_ENABLE_FLOW_CTRL = (1 << 6),
-+	KDB_ENABLE_SIGNAL = (1 << 7),
-+	KDB_ENABLE_REBOOT = (1 << 8),
-+	/* User exposed values stop here, all remaining flags are
-+	 * exclusively used to describe a commands behaviour.
-+	 */
-+
-+	KDB_ENABLE_ALWAYS_SAFE = (1 << 9),
-+	KDB_ENABLE_MASK = (1 << KDB_ENABLE_NO_ARGS_SHIFT) - 1,
-+
-+	KDB_ENABLE_ALL_NO_ARGS = KDB_ENABLE_ALL << KDB_ENABLE_NO_ARGS_SHIFT,
-+	KDB_ENABLE_MEM_READ_NO_ARGS = KDB_ENABLE_MEM_READ
-+				      << KDB_ENABLE_NO_ARGS_SHIFT,
-+	KDB_ENABLE_MEM_WRITE_NO_ARGS = KDB_ENABLE_MEM_WRITE
-+				       << KDB_ENABLE_NO_ARGS_SHIFT,
-+	KDB_ENABLE_REG_READ_NO_ARGS = KDB_ENABLE_REG_READ
-+				      << KDB_ENABLE_NO_ARGS_SHIFT,
-+	KDB_ENABLE_REG_WRITE_NO_ARGS = KDB_ENABLE_REG_WRITE
-+				       << KDB_ENABLE_NO_ARGS_SHIFT,
-+	KDB_ENABLE_INSPECT_NO_ARGS = KDB_ENABLE_INSPECT
-+				     << KDB_ENABLE_NO_ARGS_SHIFT,
-+	KDB_ENABLE_FLOW_CTRL_NO_ARGS = KDB_ENABLE_FLOW_CTRL
-+				       << KDB_ENABLE_NO_ARGS_SHIFT,
-+	KDB_ENABLE_SIGNAL_NO_ARGS = KDB_ENABLE_SIGNAL
-+				    << KDB_ENABLE_NO_ARGS_SHIFT,
-+	KDB_ENABLE_REBOOT_NO_ARGS = KDB_ENABLE_REBOOT
-+				    << KDB_ENABLE_NO_ARGS_SHIFT,
-+	KDB_ENABLE_ALWAYS_SAFE_NO_ARGS = KDB_ENABLE_ALWAYS_SAFE
-+					 << KDB_ENABLE_NO_ARGS_SHIFT,
-+	KDB_ENABLE_MASK_NO_ARGS = KDB_ENABLE_MASK << KDB_ENABLE_NO_ARGS_SHIFT,
-+
-+	KDB_REPEAT_NO_ARGS = 0x40000000, /* Repeat the command w/o arguments */
-+	KDB_REPEAT_WITH_ARGS = 0x80000000, /* Repeat the command with args */
- } kdb_cmdflags_t;
- 
- typedef int (*kdb_func_t)(int, const char **);
-diff --git a/kernel/debug/kdb/kdb_bp.c b/kernel/debug/kdb/kdb_bp.c
-index f8844fb55311..e1dbf4a2c69e 100644
---- a/kernel/debug/kdb/kdb_bp.c
-+++ b/kernel/debug/kdb/kdb_bp.c
-@@ -532,21 +532,28 @@ void __init kdb_initbptab(void)
- 		bp->bp_free = 1;
- 
- 	kdb_register_flags("bp", kdb_bp, "[<vaddr>]",
--		"Set/Display breakpoints", 0, KDB_REPEAT_NO_ARGS);
-+		"Set/Display breakpoints", 0,
-+		KDB_ENABLE_FLOW_CTRL | KDB_REPEAT_NO_ARGS);
- 	kdb_register_flags("bl", kdb_bp, "[<vaddr>]",
--		"Display breakpoints", 0, KDB_REPEAT_NO_ARGS);
-+		"Display breakpoints", 0,
-+		KDB_ENABLE_FLOW_CTRL | KDB_REPEAT_NO_ARGS);
- 	if (arch_kgdb_ops.flags & KGDB_HW_BREAKPOINT)
- 		kdb_register_flags("bph", kdb_bp, "[<vaddr>]",
--		"[datar [length]|dataw [length]]   Set hw brk", 0, KDB_REPEAT_NO_ARGS);
-+		"[datar [length]|dataw [length]]   Set hw brk", 0,
-+		KDB_ENABLE_FLOW_CTRL | KDB_REPEAT_NO_ARGS);
- 	kdb_register_flags("bc", kdb_bc, "<bpnum>",
--		"Clear Breakpoint", 0, 0);
-+		"Clear Breakpoint", 0,
-+		KDB_ENABLE_FLOW_CTRL);
- 	kdb_register_flags("be", kdb_bc, "<bpnum>",
--		"Enable Breakpoint", 0, 0);
-+		"Enable Breakpoint", 0,
-+		KDB_ENABLE_FLOW_CTRL);
- 	kdb_register_flags("bd", kdb_bc, "<bpnum>",
--		"Disable Breakpoint", 0, 0);
-+		"Disable Breakpoint", 0,
-+		KDB_ENABLE_FLOW_CTRL);
- 
- 	kdb_register_flags("ss", kdb_ss, "",
--		"Single Step", 1, KDB_REPEAT_NO_ARGS);
-+		"Single Step", 1,
-+		KDB_ENABLE_FLOW_CTRL | KDB_REPEAT_NO_ARGS);
- 	/*
- 	 * Architecture dependent initialization.
- 	 */
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 538bf1dce26a..fae1fc3962f8 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -188,6 +188,26 @@ struct task_struct *kdb_curr_task(int cpu)
- }
+@@ -105,6 +105,7 @@ extern atomic_t kdb_event;
+ #define KDB_BADLENGTH	(-19)
+ #define KDB_NOBP	(-20)
+ #define KDB_BADADDR	(-21)
++#define KDB_NOPERM	(-22)
  
  /*
-+ * Check whether the flags of the current command and the permissions
-+ * of the kdb console has allow a command to be run.
-+ */
-+static inline bool kdb_check_flags(kdb_cmdflags_t flags, int permissions,
-+				   bool no_args)
-+{
-+	/* permissions comes from userspace so needs massaging slightly */
-+	permissions &= KDB_ENABLE_MASK;
-+	permissions |= KDB_ENABLE_ALWAYS_SAFE;
-+
-+	/* some commands change group when launched with no arguments */
-+	if (no_args)
-+		permissions |= permissions << KDB_ENABLE_NO_ARGS_SHIFT;
-+
-+	flags |= KDB_ENABLE_ALL;
-+
-+	return permissions & flags;
-+}
-+
-+/*
-  * kdbgetenv - This function will return the character string value of
-  *	an environment variable.
-  * Parameters:
-@@ -641,8 +661,13 @@ static int kdb_defcmd2(const char *cmdstr, const char *argv0)
- 		if (!s->count)
- 			s->usable = 0;
- 		if (s->usable)
--			kdb_register(s->name, kdb_exec_defcmd,
--				     s->usage, s->help, 0);
-+			/* macros are always safe because when executed each
-+			 * internal command re-enters kdb_parse() and is
-+			 * safety checked individually.
-+			 */
-+			kdb_register_flags(s->name, kdb_exec_defcmd, s->usage,
-+					   s->help, 0,
-+					   KDB_ENABLE_ALWAYS_SAFE);
- 		return 0;
- 	}
- 	if (!s->usable)
-@@ -2757,78 +2782,107 @@ static void __init kdb_inittab(void)
+  * kdb_diemsg
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index fae1fc3962f8..fe1ac56b62e9 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -12,6 +12,7 @@
+  */
  
- 	kdb_register_flags("md", kdb_md, "<vaddr>",
- 	  "Display Memory Contents, also mdWcN, e.g. md8c1", 1,
--			    KDB_REPEAT_NO_ARGS);
-+	  KDB_ENABLE_MEM_READ | KDB_REPEAT_NO_ARGS);
- 	kdb_register_flags("mdr", kdb_md, "<vaddr> <bytes>",
--	  "Display Raw Memory", 0, KDB_REPEAT_NO_ARGS);
-+	  "Display Raw Memory", 0,
-+	  KDB_ENABLE_MEM_READ | KDB_REPEAT_NO_ARGS);
- 	kdb_register_flags("mdp", kdb_md, "<paddr> <bytes>",
--	  "Display Physical Memory", 0, KDB_REPEAT_NO_ARGS);
-+	  "Display Physical Memory", 0,
-+	  KDB_ENABLE_MEM_READ | KDB_REPEAT_NO_ARGS);
- 	kdb_register_flags("mds", kdb_md, "<vaddr>",
--	  "Display Memory Symbolically", 0, KDB_REPEAT_NO_ARGS);
-+	  "Display Memory Symbolically", 0,
-+	  KDB_ENABLE_MEM_READ | KDB_REPEAT_NO_ARGS);
- 	kdb_register_flags("mm", kdb_mm, "<vaddr> <contents>",
--	  "Modify Memory Contents", 0, KDB_REPEAT_NO_ARGS);
-+	  "Modify Memory Contents", 0,
-+	  KDB_ENABLE_MEM_WRITE | KDB_REPEAT_NO_ARGS);
- 	kdb_register_flags("go", kdb_go, "[<vaddr>]",
--	  "Continue Execution", 1, 0);
-+	  "Continue Execution", 1,
-+	  KDB_ENABLE_REG_WRITE | KDB_ENABLE_ALWAYS_SAFE_NO_ARGS);
- 	kdb_register_flags("rd", kdb_rd, "",
--	  "Display Registers", 0, 0);
-+	  "Display Registers", 0,
-+	  KDB_ENABLE_REG_READ);
- 	kdb_register_flags("rm", kdb_rm, "<reg> <contents>",
--	  "Modify Registers", 0, 0);
-+	  "Modify Registers", 0,
-+	  KDB_ENABLE_REG_WRITE);
- 	kdb_register_flags("ef", kdb_ef, "<vaddr>",
--	  "Display exception frame", 0, 0);
-+	  "Display exception frame", 0,
-+	  KDB_ENABLE_MEM_READ);
- 	kdb_register_flags("bt", kdb_bt, "[<vaddr>]",
--	  "Stack traceback", 1, 0);
-+	  "Stack traceback", 1,
-+	  KDB_ENABLE_MEM_READ | KDB_ENABLE_INSPECT_NO_ARGS);
- 	kdb_register_flags("btp", kdb_bt, "<pid>",
--	  "Display stack for process <pid>", 0, 0);
-+	  "Display stack for process <pid>", 0,
-+	  KDB_ENABLE_INSPECT);
- 	kdb_register_flags("bta", kdb_bt, "[D|R|S|T|C|Z|E|U|I|M|A]",
--	  "Backtrace all processes matching state flag", 0, 0);
-+	  "Backtrace all processes matching state flag", 0,
-+	  KDB_ENABLE_INSPECT);
- 	kdb_register_flags("btc", kdb_bt, "",
--	  "Backtrace current process on each cpu", 0, 0);
-+	  "Backtrace current process on each cpu", 0,
-+	  KDB_ENABLE_INSPECT);
- 	kdb_register_flags("btt", kdb_bt, "<vaddr>",
- 	  "Backtrace process given its struct task address", 0,
--			    0);
-+	  KDB_ENABLE_MEM_READ | KDB_ENABLE_INSPECT_NO_ARGS);
- 	kdb_register_flags("env", kdb_env, "",
--	  "Show environment variables", 0, 0);
-+	  "Show environment variables", 0,
-+	  KDB_ENABLE_ALWAYS_SAFE);
- 	kdb_register_flags("set", kdb_set, "",
--	  "Set environment variables", 0, 0);
-+	  "Set environment variables", 0,
-+	  KDB_ENABLE_ALWAYS_SAFE);
- 	kdb_register_flags("help", kdb_help, "",
--	  "Display Help Message", 1, 0);
-+	  "Display Help Message", 1,
-+	  KDB_ENABLE_ALWAYS_SAFE);
- 	kdb_register_flags("?", kdb_help, "",
--	  "Display Help Message", 0, 0);
-+	  "Display Help Message", 0,
-+	  KDB_ENABLE_ALWAYS_SAFE);
- 	kdb_register_flags("cpu", kdb_cpu, "<cpunum>",
--	  "Switch to new cpu", 0, 0);
-+	  "Switch to new cpu", 0,
-+	  KDB_ENABLE_ALWAYS_SAFE_NO_ARGS);
- 	kdb_register_flags("kgdb", kdb_kgdb, "",
- 	  "Enter kgdb mode", 0, 0);
- 	kdb_register_flags("ps", kdb_ps, "[<flags>|A]",
--	  "Display active task list", 0, 0);
-+	  "Display active task list", 0,
-+	  KDB_ENABLE_INSPECT);
- 	kdb_register_flags("pid", kdb_pid, "<pidnum>",
--	  "Switch to another task", 0, 0);
-+	  "Switch to another task", 0,
-+	  KDB_ENABLE_INSPECT);
- 	kdb_register_flags("reboot", kdb_reboot, "",
--	  "Reboot the machine immediately", 0, 0);
-+	  "Reboot the machine immediately", 0,
-+	  KDB_ENABLE_REBOOT);
- #if defined(CONFIG_MODULES)
- 	kdb_register_flags("lsmod", kdb_lsmod, "",
--	  "List loaded kernel modules", 0, 0);
-+	  "List loaded kernel modules", 0,
-+	  KDB_ENABLE_INSPECT);
- #endif
- #if defined(CONFIG_MAGIC_SYSRQ)
- 	kdb_register_flags("sr", kdb_sr, "<key>",
--	  "Magic SysRq key", 0, 0);
-+	  "Magic SysRq key", 0,
-+	  KDB_ENABLE_ALWAYS_SAFE);
- #endif
- #if defined(CONFIG_PRINTK)
- 	kdb_register_flags("dmesg", kdb_dmesg, "[lines]",
--	  "Display syslog buffer", 0, 0);
-+	  "Display syslog buffer", 0,
-+	  KDB_ENABLE_ALWAYS_SAFE);
- #endif
- 	if (arch_kgdb_ops.enable_nmi) {
- 		kdb_register_flags("disable_nmi", kdb_disable_nmi, "",
--		  "Disable NMI entry to KDB", 0, 0);
-+		  "Disable NMI entry to KDB", 0,
-+		  KDB_ENABLE_ALWAYS_SAFE);
- 	}
- 	kdb_register_flags("defcmd", kdb_defcmd, "name \"usage\" \"help\"",
--	  "Define a set of commands, down to endefcmd", 0, 0);
-+	  "Define a set of commands, down to endefcmd", 0,
-+	  KDB_ENABLE_ALWAYS_SAFE);
- 	kdb_register_flags("kill", kdb_kill, "<-signal> <pid>",
--	  "Send a signal to a process", 0, 0);
-+	  "Send a signal to a process", 0,
-+	  KDB_ENABLE_SIGNAL);
- 	kdb_register_flags("summary", kdb_summary, "",
--	  "Summarize the system", 4, 0);
-+	  "Summarize the system", 4,
-+	  KDB_ENABLE_ALWAYS_SAFE);
- 	kdb_register_flags("per_cpu", kdb_per_cpu, "<sym> [<bytes>] [<cpu>]",
--	  "Display per_cpu variables", 3, 0);
-+	  "Display per_cpu variables", 3,
-+	  KDB_ENABLE_MEM_READ);
- 	kdb_register_flags("grephelp", kdb_grep_help, "",
--	  "Display help on | grep", 0, 0);
-+	  "Display help on | grep", 0,
-+	  KDB_ENABLE_ALWAYS_SAFE);
- }
+ #include <linux/ctype.h>
++#include <linux/types.h>
+ #include <linux/string.h>
+ #include <linux/kernel.h>
+ #include <linux/kmsg_dump.h>
+@@ -23,6 +24,7 @@
+ #include <linux/vmalloc.h>
+ #include <linux/atomic.h>
+ #include <linux/module.h>
++#include <linux/moduleparam.h>
+ #include <linux/mm.h>
+ #include <linux/init.h>
+ #include <linux/kallsyms.h>
+@@ -42,6 +44,12 @@
+ #include <linux/slab.h>
+ #include "kdb_private.h"
  
- /* Execute any commands defined in kdb_cmds.  */
-diff --git a/kernel/trace/trace_kdb.c b/kernel/trace/trace_kdb.c
-index 70fbf315bc9f..3ccf5c2c1320 100644
---- a/kernel/trace/trace_kdb.c
-+++ b/kernel/trace/trace_kdb.c
-@@ -133,7 +133,7 @@ static int kdb_ftdump(int argc, const char **argv)
- static __init int kdb_ftrace_register(void)
++#undef	MODULE_PARAM_PREFIX
++#define	MODULE_PARAM_PREFIX "kdb."
++
++static int kdb_cmd_enabled;
++module_param_named(cmd_enable, kdb_cmd_enabled, int, 0600);
++
+ #define GREP_LEN 256
+ char kdb_grep_string[GREP_LEN];
+ int kdb_grepping_flag;
+@@ -121,6 +129,7 @@ static kdbmsg_t kdbmsgs[] = {
+ 	KDBMSG(BADLENGTH, "Invalid length field"),
+ 	KDBMSG(NOBP, "No Breakpoint exists"),
+ 	KDBMSG(BADADDR, "Invalid address"),
++	KDBMSG(NOPERM, "Permission denied"),
+ };
+ #undef KDBMSG
+ 
+@@ -496,6 +505,15 @@ int kdbgetaddrarg(int argc, const char **argv, int *nextarg,
+ 	kdb_symtab_t symtab;
+ 
+ 	/*
++	 * If the enable flags prohibit both arbitrary memory access
++	 * and flow control then there are no reasonable grounds to
++	 * provide symbol lookup.
++	 */
++	if (!kdb_check_flags(KDB_ENABLE_MEM_READ | KDB_ENABLE_FLOW_CTRL,
++			     kdb_cmd_enabled, false))
++		return KDB_NOPERM;
++
++	/*
+ 	 * Process arguments which follow the following syntax:
+ 	 *
+ 	 *  symbol | numeric-address [+/- numeric-offset]
+@@ -1028,6 +1046,10 @@ int kdb_parse(const char *cmdstr)
+ 
+ 	if (i < kdb_max_commands) {
+ 		int result;
++
++		if (!kdb_check_flags(tp->cmd_flags, kdb_cmd_enabled, argc <= 1))
++			return KDB_NOPERM;
++
+ 		KDB_STATE_SET(CMD);
+ 		result = (*tp->cmd_func)(argc-1, (const char **)argv);
+ 		if (result && ignore_errors && result > KDB_CMD_GO)
+@@ -1939,10 +1961,14 @@ static int kdb_rm(int argc, const char **argv)
+  */
+ static int kdb_sr(int argc, const char **argv)
  {
- 	kdb_register_flags("ftdump", kdb_ftdump, "[skip_#lines] [cpu]",
--			    "Dump ftrace log", 0, 0);
-+			    "Dump ftrace log", 0, KDB_ENABLE_ALWAYS_SAFE);
- 	return 0;
- }
++	bool check_mask =
++	    !kdb_check_flags(KDB_ENABLE_ALL, kdb_cmd_enabled, false);
++
+ 	if (argc != 1)
+ 		return KDB_ARGCOUNT;
++
+ 	kdb_trap_printk++;
+-	__handle_sysrq(*argv[1], false);
++	__handle_sysrq(*argv[1], check_mask);
+ 	kdb_trap_printk--;
  
+ 	return 0;
+@@ -2393,6 +2419,8 @@ static int kdb_help(int argc, const char **argv)
+ 			return 0;
+ 		if (!kt->cmd_name)
+ 			continue;
++		if (!kdb_check_flags(kt->cmd_flags, kdb_cmd_enabled, true))
++			continue;
+ 		if (strlen(kt->cmd_usage) > 20)
+ 			space = "\n                                    ";
+ 		kdb_printf("%-15.15s %-20s%s%s\n", kt->cmd_name,
 -- 
 1.9.3
 
