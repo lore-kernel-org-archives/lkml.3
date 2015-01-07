@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434AbbAGDAf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 22:00:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46230 "EHLO
+	id S933396AbbAGDAI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 22:00:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46250 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756463AbbAGBwB (ORCPT
+	with ESMTP id S1756711AbbAGBwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jan 2015 20:52:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.18 36/84] ARM: mvebu: disable I/O coherency on non-SMP situations on Armada 370/375/38x/XP
-Date: Tue,  6 Jan 2015 17:49:39 -0800
-Message-Id: <20150107014030.200297319@linuxfoundation.org>
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.18 37/84] ARM: mvebu: remove conflicting muxing on Armada 370 DB
+Date: Tue,  6 Jan 2015 17:49:40 -0800
+Message-Id: <20150107014030.229521927@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
 References: <20150107014029.012974975@linuxfoundation.org>
@@ -32,114 +32,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit e55355453600a33bb5ca4f71f2d7214875f3b061 upstream.
+commit b4607572ef86b288a856b9df410ea593c5371dec upstream.
 
-Enabling the hardware I/O coherency on Armada 370, Armada 375, Armada
-38x and Armada XP requires a certain number of conditions:
+Back when audio was enabled, the muxing of some MPP pins was causing
+problems. However, since commit fea038ed55ae ("ARM: mvebu: Add proper
+pin muxing on the Armada 370 DB board"), those problematic MPP pins
+have been assigned a proper muxing for the Ethernet interfaces. This
+proper muxing is now conflicting with the hog pins muxing that had
+been added as part of 249f3822509b ("ARM: mvebu: add audio support to
+Armada 370 DB").
 
- - On Armada 370, the cache policy must be set to write-allocate.
+Therefore, this commit simply removes the hog pins muxing, which
+solves a warning a boot time due to the conflicting muxing
+requirements.
 
- - On Armada 375, 38x and XP, the cache policy must be set to
-   write-allocate, the pages must be mapped with the shareable
-   attribute, and the SMP bit must be set
-
-Currently, on Armada XP, when CONFIG_SMP is enabled, those conditions
-are met. However, when Armada XP is used in a !CONFIG_SMP kernel, none
-of these conditions are met. With Armada 370, the situation is worse:
-since the processor is single core, regardless of whether CONFIG_SMP
-or !CONFIG_SMP is used, the cache policy will be set to write-back by
-the kernel and not write-allocate.
-
-Since solving this problem turns out to be quite complicated, and we
-don't want to let users with a mainline kernel known to have
-infrequent but existing data corruptions, this commit proposes to
-simply disable hardware I/O coherency in situations where it is known
-not to work.
-
-And basically, the is_smp() function of the kernel tells us whether it
-is OK to enable hardware I/O coherency or not, so this commit slightly
-refactors the coherency_type() function to return
-COHERENCY_FABRIC_TYPE_NONE when is_smp() is false, or the appropriate
-type of the coherency fabric in the other case.
-
-Thanks to this, the I/O coherency fabric will no longer be used at all
-in !CONFIG_SMP configurations. It will continue to be used in
-CONFIG_SMP configurations on Armada XP, Armada 375 and Armada 38x
-(which are multiple cores processors), but will no longer be used on
-Armada 370 (which is a single core processor).
-
-In the process, it simplifies the implementation of the
-coherency_type() function, and adds a missing call to of_node_put().
-
+Fixes: fea038ed55ae ("ARM: mvebu: Add proper pin muxing on the Armada 370 DB board")
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Fixes: e60304f8cb7bb545e79fe62d9b9762460c254ec2 ("arm: mvebu: Add hardware I/O Coherency support")
-Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Link: https://lkml.kernel.org/r/1415871540-20302-3-git-send-email-thomas.petazzoni@free-electrons.com
+Acked-by: Andrew Lunn <andrew@lunn.ch>
+Link: https://lkml.kernel.org/r/1414512524-24466-5-git-send-email-thomas.petazzoni@free-electrons.com
 Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-mvebu/coherency.c |   46 ++++++++++++++++++++++++++--------------
- 1 file changed, 31 insertions(+), 15 deletions(-)
+ arch/arm/boot/dts/armada-370-db.dts |   24 ------------------------
+ 1 file changed, 24 deletions(-)
 
---- a/arch/arm/mach-mvebu/coherency.c
-+++ b/arch/arm/mach-mvebu/coherency.c
-@@ -361,25 +361,41 @@ static int coherency_type(void)
- {
- 	struct device_node *np;
- 	const struct of_device_id *match;
-+	int type;
-+
-+	/*
-+	 * The coherency fabric is needed:
-+	 * - For coherency between processors on Armada XP, so only
-+	 *   when SMP is enabled.
-+	 * - For coherency between the processor and I/O devices, but
-+	 *   this coherency requires many pre-requisites (write
-+	 *   allocate cache policy, shareable pages, SMP bit set) that
-+	 *   are only meant in SMP situations.
-+	 *
-+	 * Note that this means that on Armada 370, there is currently
-+	 * no way to use hardware I/O coherency, because even when
-+	 * CONFIG_SMP is enabled, is_smp() returns false due to the
-+	 * Armada 370 being a single-core processor. To lift this
-+	 * limitation, we would have to find a way to make the cache
-+	 * policy set to write-allocate (on all Armada SoCs), and to
-+	 * set the shareable attribute in page tables (on all Armada
-+	 * SoCs except the Armada 370). Unfortunately, such decisions
-+	 * are taken very early in the kernel boot process, at a point
-+	 * where we don't know yet on which SoC we are running.
-+
-+	 */
-+	if (!is_smp())
-+		return COHERENCY_FABRIC_TYPE_NONE;
+--- a/arch/arm/boot/dts/armada-370-db.dts
++++ b/arch/arm/boot/dts/armada-370-db.dts
+@@ -102,30 +102,6 @@
+ 				broken-cd;
+ 			};
  
- 	np = of_find_matching_node_and_match(NULL, of_coherency_table, &match);
--	if (np) {
--		int type = (int) match->data;
-+	if (!np)
-+		return COHERENCY_FABRIC_TYPE_NONE;
-+
-+	type = (int) match->data;
- 
--		/* Armada 370/XP coherency works in both UP and SMP */
--		if (type == COHERENCY_FABRIC_TYPE_ARMADA_370_XP)
--			return type;
+-			pinctrl {
+-				/*
+-				 * These pins might be muxed as I2S by
+-				 * the bootloader, but it conflicts
+-				 * with the real I2S pins that are
+-				 * muxed using i2s_pins. We must mux
+-				 * those pins to a function other than
+-				 * I2S.
+-				 */
+-				pinctrl-0 = <&hog_pins1 &hog_pins2>;
+-				pinctrl-names = "default";
 -
--		/* Armada 375 coherency works only on SMP */
--		else if (type == COHERENCY_FABRIC_TYPE_ARMADA_375 && is_smp())
--			return type;
+-				hog_pins1: hog-pins1 {
+-					marvell,pins = "mpp6",  "mpp8", "mpp10",
+-						       "mpp12", "mpp13";
+-					marvell,function = "gpio";
+-				};
 -
--		/* Armada 380 coherency works only on SMP */
--		else if (type == COHERENCY_FABRIC_TYPE_ARMADA_380 && is_smp())
--			return type;
--	}
-+	of_node_put(np);
- 
--	return COHERENCY_FABRIC_TYPE_NONE;
-+	return type;
- }
- 
- int coherency_available(void)
+-				hog_pins2: hog-pins2 {
+-					marvell,pins = "mpp5", "mpp7", "mpp9";
+-					marvell,function = "gpo";
+-				};
+-			};
+-
+ 			usb@50000 {
+ 				status = "okay";
+ 			};
 
 
