@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575AbbAGPwk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 10:52:40 -0500
-Received: from mail.eperm.de ([89.247.134.16]:59391 "EHLO mail.eperm.de"
+	id S1753758AbbAGPzI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 10:55:08 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:58851 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752635AbbAGPwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 10:52:37 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: "'Herbert Xu'" <herbert@gondor.apana.org.au>
-Cc: "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
-        Daniel Borkmann <dborkman@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: [PATCH v8 2/2] crypto: AF_ALG: enable AEAD interface compilation
-Date: Wed, 07 Jan 2015 16:52:07 +0100
-Message-ID: <36429266.hrOKJSv1Ob@tachyon.chronox.de>
-User-Agent: KMail/4.14.3 (Linux/3.17.7-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <33040723.pAXIT3fl8h@tachyon.chronox.de>
-References: <33040723.pAXIT3fl8h@tachyon.chronox.de>
+	id S1752584AbbAGPzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 10:55:06 -0500
+Date: Wed, 7 Jan 2015 16:55:00 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, kvm list <kvm@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH 1/3] x86_64,entry: Fix RCX for traced syscalls
+Message-ID: <20150107155500.GE3984@pd.tnic>
+References: <cover.1415403984.git.luto@amacapital.net>
+ <20059f41189ac95da62cc8b23709c0eaba168186.1415403984.git.luto@amacapital.net>
+ <20150105125943.GC19655@pd.tnic>
+ <CALCETrVEnVV5gibE++gj=eudqEBFTckDasqcY2zZDC9Y+NMUrQ@mail.gmail.com>
+ <20150106153429.GB32560@pd.tnic>
+ <CALCETrXGmDOo-4aT3Zh2UzCHNK_Rkyw=y0sKMVBo=7Vjb9O1BA@mail.gmail.com>
+ <20150106190041.GG32560@pd.tnic>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20150106190041.GG32560@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable compilation of the AEAD AF_ALG support and provide a Kconfig
-option to compile the AEAD AF_ALG support.
+On Tue, Jan 06, 2015 at 08:00:41PM +0100, Borislav Petkov wrote:
+> I'll redo the whole games tomorrow.
 
-Signed-off-by: Stephan Mueller <smueller@chronox.de>
----
- crypto/Kconfig  | 9 +++++++++
- crypto/Makefile | 1 +
- 2 files changed, 10 insertions(+)
+Ok I can't reproduce today either. Let's ascribe it to this particular
+test box being funny or something in 3.19-rcs.
 
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index 50f4da4..41a3fc5 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -1523,6 +1523,15 @@ config CRYPTO_USER_API_RNG
- 	  This option enables the user-spaces interface for random
- 	  number generator algorithms.
- 
-+config CRYPTO_USER_API_AEAD
-+	tristate "User-space interface for AEAD cipher algorithms"
-+	depends on NET
-+	select CRYPTO_AEAD
-+	select CRYPTO_USER_API
-+	help
-+	  This option enables the user-spaces interface for AEAD
-+	  cipher algorithms.
-+
- config CRYPTO_HASH_INFO
- 	bool
- 
-diff --git a/crypto/Makefile b/crypto/Makefile
-index ba19465..97b7d3a 100644
---- a/crypto/Makefile
-+++ b/crypto/Makefile
-@@ -100,6 +100,7 @@ obj-$(CONFIG_CRYPTO_USER_API) += af_alg.o
- obj-$(CONFIG_CRYPTO_USER_API_HASH) += algif_hash.o
- obj-$(CONFIG_CRYPTO_USER_API_SKCIPHER) += algif_skcipher.o
- obj-$(CONFIG_CRYPTO_USER_API_RNG) += algif_rng.o
-+obj-$(CONFIG_CRYPTO_USER_API_AEAD) += algif_aead.o
- 
- #
- # generic algorithms and the async_tx api
+We can look at it if it happens again.
+
+Thanks.
+
 -- 
-2.1.0
+Regards/Gruss,
+    Boris.
 
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
