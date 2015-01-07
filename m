@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357AbbAGCE3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:04:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46593 "EHLO
+	id S1757344AbbAGCE2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:04:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46603 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757260AbbAGCBz (ORCPT
+	with ESMTP id S1757228AbbAGCB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:01:55 -0500
+	Tue, 6 Jan 2015 21:01:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 3.10 30/38] userns: Unbreak the unprivileged remount tests
-Date: Tue,  6 Jan 2015 17:50:42 -0800
-Message-Id: <20150107014957.259751818@linuxfoundation.org>
+        Rabin Vincent <rabin.vincent@axis.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.10 31/38] crypto: af_alg - fix backlog handling
+Date: Tue,  6 Jan 2015 17:50:43 -0800
+Message-Id: <20150107014957.409621850@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107014952.440109372@linuxfoundation.org>
 References: <20150107014952.440109372@linuxfoundation.org>
@@ -28,92 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Rabin Vincent <rabin.vincent@axis.com>
 
-commit db86da7cb76f797a1a8b445166a15cb922c6ff85 upstream.
+commit 7e77bdebff5cb1e9876c561f69710b9ab8fa1f7e upstream.
 
-A security fix in caused the way the unprivileged remount tests were
-using user namespaces to break.  Tweak the way user namespaces are
-being used so the test works again.
+If a request is backlogged, it's complete() handler will get called
+twice: once with -EINPROGRESS, and once with the final error code.
 
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+af_alg's complete handler, unlike other users, does not handle the
+-EINPROGRESS but instead always completes the completion that recvmsg()
+is waiting on.  This can lead to a return to user space while the
+request is still pending in the driver.  If userspace closes the sockets
+before the requests are handled by the driver, this will lead to
+use-after-frees (and potential crashes) in the kernel due to the tfm
+having been freed.
+
+The crashes can be easily reproduced (for example) by reducing the max
+queue length in cryptod.c and running the following (from
+http://www.chronox.de/libkcapi.html) on AES-NI capable hardware:
+
+ $ while true; do kcapi -x 1 -e -c '__ecb-aes-aesni' \
+    -k 00000000000000000000000000000000 \
+    -p 00000000000000000000000000000000 >/dev/null & done
+
+Signed-off-by: Rabin Vincent <rabin.vincent@axis.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/testing/selftests/mount/unprivileged-remount-test.c |   32 ++++++++++----
- 1 file changed, 24 insertions(+), 8 deletions(-)
+ crypto/af_alg.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/tools/testing/selftests/mount/unprivileged-remount-test.c
-+++ b/tools/testing/selftests/mount/unprivileged-remount-test.c
-@@ -53,17 +53,14 @@ static void die(char *fmt, ...)
- 	exit(EXIT_FAILURE);
- }
- 
--static void write_file(char *filename, char *fmt, ...)
-+static void vmaybe_write_file(bool enoent_ok, char *filename, char *fmt, va_list ap)
+--- a/crypto/af_alg.c
++++ b/crypto/af_alg.c
+@@ -449,6 +449,9 @@ void af_alg_complete(struct crypto_async
  {
- 	char buf[4096];
- 	int fd;
- 	ssize_t written;
- 	int buf_len;
--	va_list ap;
+ 	struct af_alg_completion *completion = req->data;
  
--	va_start(ap, fmt);
- 	buf_len = vsnprintf(buf, sizeof(buf), fmt, ap);
--	va_end(ap);
- 	if (buf_len < 0) {
- 		die("vsnprintf failed: %s\n",
- 		    strerror(errno));
-@@ -74,6 +71,8 @@ static void write_file(char *filename, c
- 
- 	fd = open(filename, O_WRONLY);
- 	if (fd < 0) {
-+		if ((errno == ENOENT) && enoent_ok)
-+			return;
- 		die("open of %s failed: %s\n",
- 		    filename, strerror(errno));
- 	}
-@@ -92,6 +91,26 @@ static void write_file(char *filename, c
- 	}
++	if (err == -EINPROGRESS)
++		return;
++
+ 	completion->err = err;
+ 	complete(&completion->completion);
  }
- 
-+static void maybe_write_file(char *filename, char *fmt, ...)
-+{
-+	va_list ap;
-+
-+	va_start(ap, fmt);
-+	vmaybe_write_file(true, filename, fmt, ap);
-+	va_end(ap);
-+
-+}
-+
-+static void write_file(char *filename, char *fmt, ...)
-+{
-+	va_list ap;
-+
-+	va_start(ap, fmt);
-+	vmaybe_write_file(false, filename, fmt, ap);
-+	va_end(ap);
-+
-+}
-+
- static int read_mnt_flags(const char *path)
- {
- 	int ret;
-@@ -144,13 +163,10 @@ static void create_and_enter_userns(void
- 			strerror(errno));
- 	}
- 
-+	maybe_write_file("/proc/self/setgroups", "deny");
- 	write_file("/proc/self/uid_map", "0 %d 1", uid);
- 	write_file("/proc/self/gid_map", "0 %d 1", gid);
- 
--	if (setgroups(0, NULL) != 0) {
--		die("setgroups failed: %s\n",
--			strerror(errno));
--	}
- 	if (setgid(0) != 0) {
- 		die ("setgid(0) failed %s\n",
- 			strerror(errno));
 
 
