@@ -1,71 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147AbbAGO0J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 09:26:09 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:54386 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843AbbAGO0F (ORCPT
+	id S1753245AbbAGO1I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 09:27:08 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:51206 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753166AbbAGO1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 09:26:05 -0500
-Date: Wed, 7 Jan 2015 15:26:05 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: Johan Hovold <johan@kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Subject: Re: [PATCH v2 4/4] mfd: dln2: add suspend/resume functionality
-Message-ID: <20150107142605.GG22905@localhost>
-References: <1418745435-2851-1-git-send-email-octavian.purdila@intel.com>
- <1418745435-2851-5-git-send-email-octavian.purdila@intel.com>
- <20150107102637.GD22905@localhost>
- <CAE1zotJ8RcSing2cQWPFzHoEiH1FH1-NsYZrShuQ=hVEwextug@mail.gmail.com>
+	Wed, 7 Jan 2015 09:27:06 -0500
+Date: Wed, 7 Jan 2015 06:26:56 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-sh@vger.kernel.org
+Subject: Re: linux-next: Tree for Jan 7
+Message-ID: <20150107142656.GA5666@roeck-us.net>
+References: <20150107151618.7cb9d574@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE1zotJ8RcSing2cQWPFzHoEiH1FH1-NsYZrShuQ=hVEwextug@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20150107151618.7cb9d574@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020203.54AD423A.0095,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 3
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 08, 2015 at 02:16:15AM +1300, Octavian Purdila wrote:
-> On Wed, Jan 7, 2015 at 11:26 PM, Johan Hovold <johan@kernel.org> wrote:
-> > On Tue, Dec 16, 2014 at 05:57:15PM +0200, Octavian Purdila wrote:
-> >> Without suspend/resume functionality in the USB driver the USB core
-> >> will disconnect and reconnect the DLN2 port and because the GPIO
-> >> framework does not yet support removal of an in-use controller a
-> >> suspend/resume operation will result in a crash.
-> >>
-> >> This patch provides suspend and resume functions for the DLN2 driver
-> >> so that the above scenario is avoided.
-> >>
-> >> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
-> >
-> > This patch looks good now, but how did you say this device was powered?
-> >
-> > If powered by vbus you cannot assume that the device maintains it's
-> > state over a suspend cycle, something which would complicate matters
-> > quite a bit...
+On Wed, Jan 07, 2015 at 03:16:18PM +1100, Stephen Rothwell wrote:
+> Hi all,
 > 
-> Yes, the device is powered by VBUS. During my tests, depending on the
-> host and USB port, VBUS is sometimes preserved - and this is the case
-> this patch addresses, and sometimes is not, but in that case because
-> no reset_resume routine is implemented the resume path will go through
-> the disconnect/reconnect process.
+> Changes since 20150106:
+> 
+> *crickets*
+> 
+> Non-merge commits (relative to Linus' tree): 1350
+>  1543 files changed, 41856 insertions(+), 24250 deletions(-)
+> 
+> ----------------------------------------------------------------------------
+> 
 
-Yes, it depends on the host controller and I believe the common case is
-to drop VBUS.
+New build failure for sh:dreamcast_defconfig:
 
-> This second case is not addressed by
-> the patch, as I think in this second case fixing the GPIO framework to
-> support the removal of an in-use device is the best way to go.
+arch/sh/mm/gup.c: In function 'gup_get_pte':
+arch/sh/mm/gup.c:20:2: error: invalid initializer
+make[1]: *** [arch/sh/mm/gup.o] Error 1
 
-I agree.
+bisect log:
 
-But please do mention that this case is not handled in the commit
-message.
+# bad: [7e3619a6de57f0257a2f6480182d2287ee05e314] Add linux-next specific files for 20150107
+# good: [b1940cd21c0f4abdce101253e860feff547291b0] Linux 3.19-rc3
+git bisect start 'HEAD' 'v3.19-rc3'
+# good: [c48667c5659248ff2b2fbff5cd23c43b5768e81b] Merge remote-tracking branch 'net-next/master'
+git bisect good c48667c5659248ff2b2fbff5cd23c43b5768e81b
+# good: [b8cf629ce7d554711dd7ab256b00e6110355e1d7] Merge remote-tracking branch 'mmc-uh/next'
+git bisect good b8cf629ce7d554711dd7ab256b00e6110355e1d7
+# good: [cc52ff032bc2d91c78d7cf9aefcfa9e266ace816] Merge remote-tracking branch 'rcu/rcu/next'
+git bisect good cc52ff032bc2d91c78d7cf9aefcfa9e266ace816
+# bad: [9634277bcdab7b9d6a91409dc11d85502aa2e74b] Merge remote-tracking branch 'access_once/linux-next'
+git bisect bad 9634277bcdab7b9d6a91409dc11d85502aa2e74b
+# good: [261379560ee6aa65b4869c94eda0d3d60773aca3] Merge remote-tracking branch 'scsi/for-next'
+git bisect good 261379560ee6aa65b4869c94eda0d3d60773aca3
+# good: [38d45afa56bfca714780e45532760d64cd53b65b] Merge remote-tracking branch 'llvmlinux/for-next'
+git bisect good 38d45afa56bfca714780e45532760d64cd53b65b
+# good: [9afbe1ce2403c7d097bfaafcc5b27950040f7608] Merge remote-tracking branch 'y2038/y2038'
+git bisect good 9afbe1ce2403c7d097bfaafcc5b27950040f7608
+# bad: [a91ed664749cbec0325ef9da7d12619d9bb72e2d] kernel: tighten rules for ACCESS ONCE
+git bisect bad a91ed664749cbec0325ef9da7d12619d9bb72e2d
+# good: [e3865cc4a17e979e6b2f26af026686fae5567096] x86/xen/p2m: Replace ACCESS_ONCE with READ_ONCE
+git bisect good e3865cc4a17e979e6b2f26af026686fae5567096
+# good: [e2579c6f22ee0a43394d603cef6989dca98c5610] mm/gup: Replace ACCESS_ONCE with READ_ONCE
+git bisect good e2579c6f22ee0a43394d603cef6989dca98c5610
+# first bad commit: [a91ed664749cbec0325ef9da7d12619d9bb72e2d] kernel: tighten rules for ACCESS ONCE
 
-Thanks,
-Johan
+Maybe the ACCESS_ONCE in the affected file should be replaced with READ_ONCE ?
+
+Guenter
