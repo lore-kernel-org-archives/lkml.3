@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757132AbbAGCiM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:38:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46953 "EHLO
+	id S1758167AbbAGChj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:37:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46994 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757532AbbAGCQr (ORCPT
+	with ESMTP id S1757535AbbAGCQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jan 2015 21:16:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.17 27/73] dm thin: fix a race in thin_dtr
-Date: Tue,  6 Jan 2015 18:15:48 -0800
-Message-Id: <20150107021558.340865094@linuxfoundation.org>
+        Arend Van Spriel <arend@broadcom.com>,
+        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.17 28/73] brcmfmac: Fix bitmap malloc bug in msgbuf.
+Date: Tue,  6 Jan 2015 18:15:49 -0800
+Message-Id: <20150107021558.370665860@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107021557.521276020@linuxfoundation.org>
 References: <20150107021557.521276020@linuxfoundation.org>
@@ -29,41 +31,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Hante Meuleman <meuleman@broadcom.com>
 
-commit 17181fb7a0c3a279196c0eeb2caba65a1519614b upstream.
+commit 333c2aa029b847051a2db76a6ca59f699a520030 upstream.
 
-As long as struct thin_c is in the list, anyone can grab a reference of
-it.  Consequently, we must wait for the reference count to drop to zero
-*after* we remove the structure from the list, not before.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Reviewed-by: Arend Van Spriel <arend@broadcom.com>
+Reviewed-by: Pieter-Paul Giesberts <pieterpg@broadcom.com>
+Signed-off-by: Hante Meuleman <meuleman@broadcom.com>
+Signed-off-by: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-thin.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -3266,14 +3266,14 @@ static void thin_dtr(struct dm_target *t
- 	struct thin_c *tc = ti->private;
- 	unsigned long flags;
- 
--	thin_put(tc);
--	wait_for_completion(&tc->can_destroy);
--
- 	spin_lock_irqsave(&tc->pool->lock, flags);
- 	list_del_rcu(&tc->list);
- 	spin_unlock_irqrestore(&tc->pool->lock, flags);
- 	synchronize_rcu();
- 
-+	thin_put(tc);
-+	wait_for_completion(&tc->can_destroy);
-+
- 	mutex_lock(&dm_thin_pool_table.mutex);
- 
- 	__pool_dec(tc->pool);
+--- a/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c
+@@ -1282,6 +1282,7 @@ int brcmf_proto_msgbuf_attach(struct brc
+ 	}
+ 	INIT_WORK(&msgbuf->txflow_work, brcmf_msgbuf_txflow_worker);
+ 	count = BITS_TO_LONGS(if_msgbuf->nrof_flowrings);
++	count = count * sizeof(unsigned long);
+ 	msgbuf->flow_map = kzalloc(count, GFP_ATOMIC);
+ 	if (!msgbuf->flow_map)
+ 		goto fail;
 
 
