@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590AbbAGDhK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 22:37:10 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:65309 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755158AbbAGDhG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 22:37:06 -0500
-MIME-Version: 1.0
-In-Reply-To: <54AC16B0.5050703@wwwdotorg.org>
-References: <1420540653-14816-1-git-send-email-tomeu.vizoso@collabora.com>
-	<1420540653-14816-2-git-send-email-tomeu.vizoso@collabora.com>
-	<54AC16B0.5050703@wwwdotorg.org>
-Date: Tue, 6 Jan 2015 19:37:04 -0800
-X-Google-Sender-Auth: GTMgkf1mCEVk2XNJrA9rfmRnGLw
-Message-ID: <CAL1qeaG4S89Ndgd6QpD+PMj7p5iWhamyoznN1avs9uPjUmzT4A@mail.gmail.com>
-Subject: Re: [PATCH 1/4] ARM: tegra: rely on bootloader pinmux programming on nyan-big
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1755718AbbAGDjq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 22:39:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47117 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751790AbbAGDjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 22:39:45 -0500
+From: WANG Chao <chaowang@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org (maintainer:X86 ARCHITECTURE...),
+        Andrew Morton <akpm@linux-foundation.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Pavel Machek <pavel@ucw.cz>, David Rientjes <rientjes@google.com>,
+        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
+        Xishi Qiu <qiuxishi@huawei.com>,
+        linux-kernel@vger.kernel.org (open list:X86 ARCHITECTURE...)
+Subject: [PATCH] x86, e820: clean up around sanitize_e820_map()
+Date: Wed,  7 Jan 2015 11:37:38 +0800
+Message-Id: <1420601859-18439-1-git-send-email-chaowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 6, 2015 at 9:09 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 01/06/2015 03:37 AM, Tomeu Vizoso wrote:
->>
->> Following 6dbaff2b, the kernel expects that the bootloader has correctly
->> programmed the Tegra pinmux.
->>
->> DTs for the Jetson and the Venice2 had been updated already but this one
->> was left behind.
->
->
-> So this setup is true for NVIDIA-controlled development/reference boards
-> where we've ensured that the bootloader sets up 100% of the pinmux.
->
-> However, I know that Coreboot on this board doesn't set up everything in the
-> pinmux, and since it's in r/o flash never will. As such, I'm not sure this
-> change is safe for this board. That is, unless you want to force upstream
-> kernels to be booted via a chain-loaded path: Coreboot (r/o) -> U-Boot (r/w
-> with full pinmux setup) -> kernel.
+The argument 3 of sanitize_e820_map() will only update upon a successful
+sanitization. Some of the callers may not be aware of this in the past.
+Now clean up these callers.
 
-That's correct.  We did have a patch floating around to configure all
-the pinmux settings in coreboot, but that never made it in.  While we
-could issue a R/W firmware update to apply the pinmux settings
-(unlikely to happen), it would still result in pinmux settings being
-applied in two separate locations - which, IIRC, was exactly what
-Stephen was trying to avoid by moving pinmux out of the device-trees.
-So I'd agree that pulling the pinmux settings out of the nyan*
-device-trees is not a good idea.
+Signed-off-by: WANG Chao <chaowang@redhat.com>
+---
+ arch/x86/kernel/e820.c | 22 ++++++----------------
+ 1 file changed, 6 insertions(+), 16 deletions(-)
+
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index dd2f07a..ae70de8 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -185,7 +185,7 @@ void __init e820_print_map(char *who)
+  *
+  * The integer pointed to by pnr_map must be valid on entry (the
+  * current number of valid entries located at biosmap) and will
+- * be updated on return, with the new number of valid entries
++ * only be updated on return 0, with the new number of valid entries
+  * (something no more than max_nr_map.)
+  *
+  * The return value from sanitize_e820_map() is zero if it
+@@ -561,23 +561,15 @@ u64 __init e820_remove_range(u64 start, u64 size, unsigned old_type,
+ 
+ void __init update_e820(void)
+ {
+-	u32 nr_map;
+-
+-	nr_map = e820.nr_map;
+-	if (sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr_map))
++	if (sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map))
+ 		return;
+-	e820.nr_map = nr_map;
+ 	printk(KERN_INFO "e820: modified physical RAM map:\n");
+ 	e820_print_map("modified");
+ }
+ static void __init update_e820_saved(void)
+ {
+-	u32 nr_map;
+-
+-	nr_map = e820_saved.nr_map;
+-	if (sanitize_e820_map(e820_saved.map, ARRAY_SIZE(e820_saved.map), &nr_map))
+-		return;
+-	e820_saved.nr_map = nr_map;
++	sanitize_e820_map(e820_saved.map, ARRAY_SIZE(e820_saved.map),
++				&e820_saved.nr_map);
+ }
+ #define MAX_GAP_END 0x100000000ull
+ /*
+@@ -898,11 +890,9 @@ early_param("memmap", parse_memmap_opt);
+ void __init finish_e820_parsing(void)
+ {
+ 	if (userdef) {
+-		u32 nr = e820.nr_map;
+-
+-		if (sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr) < 0)
++		if (sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map),
++					&e820.nr_map) < 0)
+ 			early_panic("Invalid user supplied memory map");
+-		e820.nr_map = nr;
+ 
+ 		printk(KERN_INFO "e820: user-defined physical RAM map:\n");
+ 		e820_print_map("user");
+-- 
+2.1.0
+
