@@ -1,168 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683AbbAGLwY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 06:52:24 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:5997 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750998AbbAGLwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 06:52:22 -0500
-X-Mailbox-Line: From 0084acea5a3475a77531d6a77483f36d3469111a Mon Sep 17 00:00:00 2001
-Message-Id: <0084acea5a3475a77531d6a77483f36d3469111a.1420628786.git.moinejf@free.fr>
-In-Reply-To: <cover.1420628786.git.moinejf@free.fr>
-References: <cover.1420628786.git.moinejf@free.fr>
-From: Jean-Francois Moine <moinejf@free.fr>
-Date: Wed, 7 Jan 2015 10:10:49 +0100
-Subject: [PATCH v9 1/4] drm/i2c: tda998x: Add DT support for audio
-To: Mark Brown <broonie@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Dave Airlie <airlied@gmail.com>, Andrew Jackson <Andrew.Jackson@arm.com>,
-        Jyri Sarha <jsarha@ti.com>, alsa-devel@alsa-project.org,
-        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
+	id S1756768AbbAGJMH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 04:12:07 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:63821 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755913AbbAGJMB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 04:12:01 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ray Jui <rjui@broadcom.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, Matt Porter <mporter@linaro.org>,
+        Alex Elder <elder@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        Scott Branden <sbranden@broadcom.com>, linux-kernel@vger.kernel.org,
+        bcm-kernel-feedback-list@broadcom.com
+Subject: Re: [PATCH v2 4/5] clk: cygnus: add clock support for Broadcom Cygnus
+Date: Wed, 07 Jan 2015 10:11:38 +0100
+Message-ID: <2938966.fY2WjearG6@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54AC99F3.8040703@broadcom.com>
+References: <1420500076-18302-5-git-send-email-rjui@broadcom.com> <2048376.BFrtW5tszK@wuerfel> <54AC99F3.8040703@broadcom.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:IaKutGd4qvQ8R+Ff/mK7oMKJ1ImTC4vDTcCD9NyDmc7X4oaFPKM
+ 0lHsE65t1jap8wP4O1tM1YnXeG/YTd9c7fj1vTeYeZPXT2r3wP/LCUrwXXqsJfG1ywqSqEM
+ RlgE++QShPA9/TXYEbIofY5Wj1UEQ799tY/t9ZlRLQgvSeRhwNhwMaENJVNLXahn51D9SFN
+ 4NJcgbReb+nE4VoFh1uvA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch permits the definition of the audio ports from the device tree.
+On Tuesday 06 January 2015 18:29:07 Ray Jui wrote:
+> On 1/6/2015 12:21 PM, Arnd Bergmann wrote:
+> > On Monday 05 January 2015 15:21:15 Ray Jui wrote:
+> > 
+> > The tables look fairly regular. Is it possible that it's common
+> > to all iproc variants with a standard way to derive all other
+> > values from the channel index?
+> > 
+> Ah no. Not only it's different between different iproc variants, it's
+> also different between plls on the same soc.
 
-Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
----
- .../devicetree/bindings/drm/i2c/tda998x.txt        | 18 +++++++
- drivers/gpu/drm/i2c/tda998x_drv.c                  | 60 ++++++++++++++++++----
- 2 files changed, 69 insertions(+), 9 deletions(-)
+Ok, I see.
+ 
+> >> +static const struct iproc_asiu_gate asiu_gate[BCM_CYGNUS_NUM_ASIU_CLKS] = {
+> >> +	[BCM_CYGNUS_ASIU_KEYPAD_CLK] =
+> >> +		asiu_gate_val(0x0, 7),
+> >> +	[BCM_CYGNUS_ASIU_ADC_CLK] =
+> >> +		asiu_gate_val(0x0, 9),
+> >> +	[BCM_CYGNUS_ASIU_PWM_CLK] =
+> >> +		asiu_gate_val(IPROC_CLK_INVALID_OFFSET, 0),
+> >> +};
+> > 
+> > Here I think a better binding would be to pass the gate value in the
+> > clock specifier, rather than an artificial index. That would let
+> > you get rid of the BCM_CYGNUS_ASIU_KEYPAD_CLK/BCM_CYGNUS_ASIU_ADC_CLK
+> > macros.
+> > 
+> You meant to pass in both the gate register offset and its bit shift
+> through the clock specifier? But isn't the current ASIU clock code much
+> more consistent with the rest of the iProc clock code?
 
-diff --git a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
-index e9e4bce..e50e7cd 100644
---- a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
-+++ b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
-@@ -17,6 +17,20 @@ Optional properties:
-   - video-ports: 24 bits value which defines how the video controller
- 	output is wired to the TDA998x input - default: <0x230145>
- 
-+  - audio-ports: must contain one or two values selecting the source
-+	in the audio port.
-+	The source type is given by the corresponding entry in
-+	the audio-port-names property.
-+
-+  - audio-port-names: must contain entries matching the entries in
-+	the audio-ports property.
-+	Each value may be "i2s" or "spdif", giving the type of
-+	the audio source.
-+
-+  - #sound-dai-cells: must be set to <1> for use with the simple-card.
-+	The TDA998x audio CODEC always defines two DAIs.
-+	The DAI 0 is the S/PDIF input and the DAI 1 is the I2S input.
-+
- Example:
- 
- 	tda998x: hdmi-encoder {
-@@ -26,4 +40,8 @@ Example:
- 		interrupts = <27 2>;		/* falling edge */
- 		pinctrl-0 = <&pmx_camera>;
- 		pinctrl-names = "default";
-+
-+		audio-ports = <0x04>, <0x03>;
-+		audio-port-names = "spdif", "i2s";
-+		#sound-dai-cells = <1>;
- 	};
-diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-index 70658af..9d9b072 100644
---- a/drivers/gpu/drm/i2c/tda998x_drv.c
-+++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-@@ -20,6 +20,7 @@
- #include <linux/module.h>
- #include <linux/irq.h>
- #include <sound/asoundef.h>
-+#include <linux/platform_device.h>
- 
- #include <drm/drmP.h>
- #include <drm/drm_crtc_helper.h>
-@@ -44,6 +45,8 @@ struct tda998x_priv {
- 	wait_queue_head_t wq_edid;
- 	volatile int wq_edid_wait;
- 	struct drm_encoder *encoder;
-+
-+	u8 audio_ports[2];
- };
- 
- #define to_tda998x_priv(x)  ((struct tda998x_priv *)to_encoder_slave(x)->slave_priv)
-@@ -1254,12 +1257,16 @@ static int tda998x_create(struct i2c_client *client, struct tda998x_priv *priv)
- {
- 	struct device_node *np = client->dev.of_node;
- 	u32 video;
--	int rev_lo, rev_hi, ret;
-+	int i, rev_lo, rev_hi, ret;
-+	const char *p;
- 
- 	priv->vip_cntrl_0 = VIP_CNTRL_0_SWAP_A(2) | VIP_CNTRL_0_SWAP_B(3);
- 	priv->vip_cntrl_1 = VIP_CNTRL_1_SWAP_C(0) | VIP_CNTRL_1_SWAP_D(1);
- 	priv->vip_cntrl_2 = VIP_CNTRL_2_SWAP_E(4) | VIP_CNTRL_2_SWAP_F(5);
- 
-+	priv->params.audio_frame[1] = 1;		/* channels - 1 */
-+	priv->params.audio_sample_rate = 48000;		/* 48kHz */
-+
- 	priv->current_page = 0xff;
- 	priv->hdmi = client;
- 	priv->cec = i2c_new_dummy(client->adapter, 0x34);
-@@ -1351,15 +1358,50 @@ static int tda998x_create(struct i2c_client *client, struct tda998x_priv *priv)
- 	/* enable EDID read irq: */
- 	reg_set(priv, REG_INT_FLAGS_2, INT_FLAGS_2_EDID_BLK_RD);
- 
--	if (!np)
--		return 0;		/* non-DT */
-+	/* get the device tree parameters */
-+	if (np) {
-+
-+		/* optional video properties */
-+		ret = of_property_read_u32(np, "video-ports", &video);
-+		if (ret == 0) {
-+			priv->vip_cntrl_0 = video >> 16;
-+			priv->vip_cntrl_1 = video >> 8;
-+			priv->vip_cntrl_2 = video;
-+		}
-+
-+		/* optional audio properties */
-+		for (i = 0; i < 2; i++) {
-+			u32 port;
- 
--	/* get the optional video properties */
--	ret = of_property_read_u32(np, "video-ports", &video);
--	if (ret == 0) {
--		priv->vip_cntrl_0 = video >> 16;
--		priv->vip_cntrl_1 = video >> 8;
--		priv->vip_cntrl_2 = video;
-+			ret = of_property_read_u32_index(np, "audio-ports", i, &port);
-+			if (ret)
-+				break;
-+			ret = of_property_read_string_index(np, "audio-port-names",
-+							i, &p);
-+			if (ret) {
-+				dev_err(&client->dev,
-+					"missing audio-port-names[%d]\n", i);
-+				break;
-+			}
-+			if (strcmp(p, "spdif") == 0) {
-+				priv->audio_ports[0] = port;
-+			} else if (strcmp(p, "i2s") == 0) {
-+				priv->audio_ports[1] = port;
-+			} else {
-+				dev_err(&client->dev,
-+					"bad audio-port-names '%s'\n", p);
-+				break;
-+			}
-+		}
-+		if (priv->audio_ports[0]) {
-+			priv->params.audio_cfg = priv->audio_ports[0];
-+			priv->params.audio_format = AFMT_SPDIF;
-+			priv->params.audio_clk_cfg = 0;
-+		} else {
-+			priv->params.audio_cfg = priv->audio_ports[1];
-+			priv->params.audio_format = AFMT_I2S;
-+			priv->params.audio_clk_cfg = 1;
-+		}
- 	}
- 
- 	return 0;
--- 
-2.1.4
+For simple devices that don't need an index macro, I would always
+prefer not defining them, because they are a pain to maintain.
+For a simple gate clock controller, we could compute both the offset
+and bit number from a single integer.
 
+However, I now saw upon taking a closer look that the asiu has both
+a gate and a divider, and the latter one is not as simple, so
+my comment doesn't apply here.
+
+	Arnd
