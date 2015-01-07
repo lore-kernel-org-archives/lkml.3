@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667AbbAGRvs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 12:51:48 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:57282 "EHLO
+	id S1754336AbbAGRvP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 12:51:15 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:57267 "EHLO
 	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754385AbbAGRvR (ORCPT
+	with ESMTP id S1752716AbbAGRvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 12:51:17 -0500
+	Wed, 7 Jan 2015 12:51:13 -0500
 From: Marc Zyngier <marc.zyngier@arm.com>
 To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
         Stephen Boyd <sboyd@codeaurora.org>, Phong Vo <pvo@apm.com>,
@@ -14,65 +14,205 @@ To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
         Y Vo <yvo@apm.com>, Thomas Gleixner <tglx@linutronix.de>,
         Toan Le <toanle@apm.com>, Bjorn Andersson <bjorn@kryo.se>,
         Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v3 0/3] genirq: Saving/restoring the irqchip state of an irq line
-Date: Wed,  7 Jan 2015 17:50:59 +0000
-Message-Id: <1420653062-23361-1-git-send-email-marc.zyngier@arm.com>
+Subject: [PATCH v3 1/3] genirq: Allow the irqchip state of an IRQ to be save/restored
+Date: Wed,  7 Jan 2015 17:51:00 +0000
+Message-Id: <1420653062-23361-2-git-send-email-marc.zyngier@arm.com>
 X-Mailer: git-send-email 2.1.4
+In-Reply-To: <1420653062-23361-1-git-send-email-marc.zyngier@arm.com>
+References: <1420653062-23361-1-git-send-email-marc.zyngier@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Despite Linux offering a rather fine grained control over the life
-cycle of an interrupt, there is a few cases where it would be very
-useful to snapshot (or even set) the internal state of the interrupt
-controller for a given interrupt line:
+There is a number of cases where a kernel subsystem may want to
+introspect the state of an interrupt at the irqchip level:
 
-- With KVM, a device shared between VMs must have its whole context
-  switched, and that includes the interrupt line state. KVM/arm is
-  moving to using this.
-- Some GPIO controllers seem to require peeking into the interrupt
-  controller they are connected to to report their internal state.
+- When a peripheral is shared between virtual machines,
+  its interrupt state becomes part of the guest's state,
+  and must be switched accordingly. KVM on arm/arm64 requires
+  this for its guest-visible timer
+- Some GPIO controllers seem to require peeking into the
+  interrupt controller they are connected to to report
+  their internal state
 
-Instead of letting people facing this situation doing horrible
-(controller specific) hacks in their code, let's offer a couple of new
-entry points that allow a few attributes to be read and set.
+This seem to be a pattern that is common enough for the core code
+to try and support this without too many horrible hacks. Introduce
+a pair of accessors (irq_get_irqchip_state/irq_set_irqchip_state)
+to retrieve the bits that can be of interest to another subsystem:
+pending, active, and masked.
 
-Of course, this is a very dangerous thing to do if you don't know what
-you doing, and I wouldn't expect most drivers to use this. But this
-can also be a life saver at times.
+- irq_get_irqchip_state returns the state of the interrupt according
+  to a parameter set to IRQCHIP_STATE_PENDING, IRQCHIP_STATE_ACTIVE,
+  IRQCHIP_STATE_MASKED or IRQCHIP_STATE_LINE_LEVEL.
+- irq_set_irqchip_state similarly sets the state of the interrupt.
 
-This patch series implement said API, and adds support for this to the
-two main ARM interrupt controllers (GIC and GICv3). Available at:
+Reviewed-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Tested-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+---
+ include/linux/interrupt.h | 14 ++++++++
+ include/linux/irq.h       |  6 ++++
+ kernel/irq/manage.c       | 91 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 111 insertions(+)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git irq/irqchip_state
-
->From v2 [2]:
-- Rebased on top of 3.19-rc3
-- Fixed irq_set_irqchip_state return value
-
->From v1 [1]:
-- Rebased on top of 3.18-rc7 + tip/irq/irqdomain-arm
-- Now deals with stacked domains
-- Changed the API to be less ambiguous (after review by tglx)
-- Added IRQCHIP_STATE_LINE_LEVEL (as requested by Bjorn Anderson)
-
-[1] https://lkml.org/lkml/2014/10/25/134
-[2] https://lkml.org/lkml/2014/12/3/612
-
-Marc Zyngier (3):
-  genirq: Allow the irqchip state of an IRQ to be save/restored
-  irqchip: GIC: Add support for irq_{get,set}_irqchip_state
-  irqchip: GICv3: Add support for irq_{get,set}_irqchip_state
-
- drivers/irqchip/irq-gic-v3.c | 83 +++++++++++++++++++++++++++++++++-------
- drivers/irqchip/irq-gic.c    | 69 ++++++++++++++++++++++++++++++---
- include/linux/interrupt.h    | 14 +++++++
- include/linux/irq.h          |  6 +++
- kernel/irq/manage.c          | 91 ++++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 245 insertions(+), 18 deletions(-)
-
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index d9b05b5..fa7040e 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -356,6 +356,20 @@ static inline int disable_irq_wake(unsigned int irq)
+ 	return irq_set_irq_wake(irq, 0);
+ }
+ 
++/*
++ * irq_get_irqchip_state/irq_set_irqchip_state specific flags
++ */
++enum irqchip_irq_state {
++	IRQCHIP_STATE_PENDING,		/* Is interrupt pending? */
++	IRQCHIP_STATE_ACTIVE,		/* Is interrupt in progress? */
++	IRQCHIP_STATE_MASKED,		/* Is interrupt masked? */
++	IRQCHIP_STATE_LINE_LEVEL,	/* Is IRQ line high? */
++};
++
++extern int irq_get_irqchip_state(unsigned int irq, enum irqchip_irq_state which,
++				 bool *state);
++extern int irq_set_irqchip_state(unsigned int irq, enum irqchip_irq_state which,
++				 bool state);
+ 
+ #ifdef CONFIG_IRQ_FORCED_THREADING
+ extern bool force_irqthreads;
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index d09ec7a..77dd2e7 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -30,6 +30,7 @@
+ struct seq_file;
+ struct module;
+ struct msi_msg;
++enum irqchip_irq_state;
+ 
+ /*
+  * IRQ line status.
+@@ -324,6 +325,8 @@ static inline irq_hw_number_t irqd_to_hwirq(struct irq_data *d)
+  *				irq_request_resources
+  * @irq_compose_msi_msg:	optional to compose message content for MSI
+  * @irq_write_msi_msg:	optional to write message content for MSI
++ * @irq_get_irqchip_state:	return the internal state of an interrupt
++ * @irq_set_irqchip_state:	set the internal state of a interrupt
+  * @flags:		chip specific flags
+  */
+ struct irq_chip {
+@@ -363,6 +366,9 @@ struct irq_chip {
+ 	void		(*irq_compose_msi_msg)(struct irq_data *data, struct msi_msg *msg);
+ 	void		(*irq_write_msi_msg)(struct irq_data *data, struct msi_msg *msg);
+ 
++	int		(*irq_get_irqchip_state)(struct irq_data *data, enum irqchip_irq_state which, bool *state);
++	int		(*irq_set_irqchip_state)(struct irq_data *data, enum irqchip_irq_state which, bool state);
++
+ 	unsigned long	flags;
+ };
+ 
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 8069237..acb401f5 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -1758,3 +1758,94 @@ int request_percpu_irq(unsigned int irq, irq_handler_t handler,
+ 
+ 	return retval;
+ }
++
++/**
++ *	irq_get_irqchip_state - returns the irqchip state of a interrupt.
++ *	@irq: Interrupt line that is forwarded to a VM
++ *	@which: One of IRQCHIP_STATE_* the caller wants to know about
++ *	@state: a pointer to a boolean where the state is to be storeed
++ *
++ *	This call snapshots the internal irqchip state of an
++ *	interrupt, returning into @state the bit corresponding to
++ *	stage @which
++ *
++ *	This function should be called with preemption disabled if the
++ *	interrupt controller has per-cpu registers.
++ */
++int irq_get_irqchip_state(unsigned int irq, enum irqchip_irq_state which,
++			  bool *state)
++{
++	struct irq_desc *desc;
++	struct irq_data *data;
++	struct irq_chip *chip;
++	unsigned long flags;
++	int err = -EINVAL;
++
++	desc = irq_get_desc_buslock(irq, &flags, 0);
++	if (!desc)
++		return err;
++
++	data = irq_desc_get_irq_data(desc);
++
++	do {
++		chip = irq_data_get_irq_chip(data);
++		if (chip->irq_get_irqchip_state)
++			break;
++#ifdef CONFIG_IRQ_DOMAIN_HIERARCHY
++		data = data->parent_data;
++#else
++		data = NULL;
++#endif
++	} while (data);
++
++	if (data)
++		err = chip->irq_get_irqchip_state(data, which, state);
++
++	irq_put_desc_busunlock(desc, flags);
++	return err;
++}
++
++/**
++ *	irq_set_irqchip_state - set the state of a forwarded interrupt.
++ *	@irq: Interrupt line that is forwarded to a VM
++ *	@which: State to be restored (one of IRQCHIP_STATE_*)
++ *	@val: Value corresponding to @which
++ *
++ *	This call sets the internal irqchip state of an interrupt,
++ *	depending on the value of @which.
++ *
++ *	This function should be called with preemption disabled if the
++ *	interrupt controller has per-cpu registers.
++ */
++int irq_set_irqchip_state(unsigned int irq, enum irqchip_irq_state which,
++			  bool val)
++{
++	struct irq_desc *desc;
++	struct irq_data *data;
++	struct irq_chip *chip;
++	unsigned long flags;
++	int err = -EINVAL;
++
++	desc = irq_get_desc_buslock(irq, &flags, 0);
++	if (!desc)
++		return err;
++
++	data = irq_desc_get_irq_data(desc);
++
++	do {
++		chip = irq_data_get_irq_chip(data);
++		if (chip->irq_set_irqchip_state)
++			break;
++#ifdef CONFIG_IRQ_DOMAIN_HIERARCHY
++		data = data->parent_data;
++#else
++		data = NULL;
++#endif
++	} while (data);
++
++	if (data)
++		err = chip->irq_set_irqchip_state(data, which, val);
++
++	irq_put_desc_busunlock(desc, flags);
++	return err;
++}
 -- 
 2.1.4
 
