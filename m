@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757708AbbAGCSE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:18:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47102 "EHLO
+	id S932523AbbAGC14 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:27:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47105 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757675AbbAGCSA (ORCPT
+	with ESMTP id S1757676AbbAGCSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jan 2015 21:18:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 3.17 55/73] userns: Unbreak the unprivileged remount tests
-Date: Tue,  6 Jan 2015 18:16:16 -0800
-Message-Id: <20150107021559.206793939@linuxfoundation.org>
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Richard Guy Briggs <rgb@redhat.com>, Paul Moore <pmoore@redhat.com>
+Subject: [PATCH 3.17 56/73] audit: use supplied gfp_mask from audit_buffer in kauditd_send_multicast_skb
+Date: Tue,  6 Jan 2015 18:16:17 -0800
+Message-Id: <20150107021559.236733972@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107021557.521276020@linuxfoundation.org>
 References: <20150107021557.521276020@linuxfoundation.org>
@@ -28,92 +29,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Richard Guy Briggs <rgb@redhat.com>
 
-commit db86da7cb76f797a1a8b445166a15cb922c6ff85 upstream.
+commit 54dc77d974a50147d6639dac6f59cb2c29207161 upstream.
 
-A security fix in caused the way the unprivileged remount tests were
-using user namespaces to break.  Tweak the way user namespaces are
-being used so the test works again.
+Eric Paris explains: Since kauditd_send_multicast_skb() gets called in
+audit_log_end(), which can come from any context (aka even a sleeping context)
+GFP_KERNEL can't be used.  Since the audit_buffer knows what context it should
+use, pass that down and use that.
 
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+See: https://lkml.org/lkml/2014/12/16/542
+
+BUG: sleeping function called from invalid context at mm/slab.c:2849
+in_atomic(): 1, irqs_disabled(): 0, pid: 885, name: sulogin
+2 locks held by sulogin/885:
+  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff91152e30>] prepare_bprm_creds+0x28/0x8b
+  #1:  (tty_files_lock){+.+.+.}, at: [<ffffffff9123e787>] selinux_bprm_committing_creds+0x55/0x22b
+CPU: 1 PID: 885 Comm: sulogin Not tainted 3.18.0-next-20141216 #30
+Hardware name: Dell Inc. Latitude E6530/07Y85M, BIOS A15 06/20/2014
+  ffff880223744f10 ffff88022410f9b8 ffffffff916ba529 0000000000000375
+  ffff880223744f10 ffff88022410f9e8 ffffffff91063185 0000000000000006
+  0000000000000000 0000000000000000 0000000000000000 ffff88022410fa38
+Call Trace:
+  [<ffffffff916ba529>] dump_stack+0x50/0xa8
+  [<ffffffff91063185>] ___might_sleep+0x1b6/0x1be
+  [<ffffffff910632a6>] __might_sleep+0x119/0x128
+  [<ffffffff91140720>] cache_alloc_debugcheck_before.isra.45+0x1d/0x1f
+  [<ffffffff91141d81>] kmem_cache_alloc+0x43/0x1c9
+  [<ffffffff914e148d>] __alloc_skb+0x42/0x1a3
+  [<ffffffff914e2b62>] skb_copy+0x3e/0xa3
+  [<ffffffff910c263e>] audit_log_end+0x83/0x100
+  [<ffffffff9123b8d3>] ? avc_audit_pre_callback+0x103/0x103
+  [<ffffffff91252a73>] common_lsm_audit+0x441/0x450
+  [<ffffffff9123c163>] slow_avc_audit+0x63/0x67
+  [<ffffffff9123c42c>] avc_has_perm+0xca/0xe3
+  [<ffffffff9123dc2d>] inode_has_perm+0x5a/0x65
+  [<ffffffff9123e7ca>] selinux_bprm_committing_creds+0x98/0x22b
+  [<ffffffff91239e64>] security_bprm_committing_creds+0xe/0x10
+  [<ffffffff911515e6>] install_exec_creds+0xe/0x79
+  [<ffffffff911974cf>] load_elf_binary+0xe36/0x10d7
+  [<ffffffff9115198e>] search_binary_handler+0x81/0x18c
+  [<ffffffff91153376>] do_execveat_common.isra.31+0x4e3/0x7b7
+  [<ffffffff91153669>] do_execve+0x1f/0x21
+  [<ffffffff91153967>] SyS_execve+0x25/0x29
+  [<ffffffff916c61a9>] stub_execve+0x69/0xa0
+
+Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Tested-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/testing/selftests/mount/unprivileged-remount-test.c |   32 ++++++++++----
- 1 file changed, 24 insertions(+), 8 deletions(-)
+ kernel/audit.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/tools/testing/selftests/mount/unprivileged-remount-test.c
-+++ b/tools/testing/selftests/mount/unprivileged-remount-test.c
-@@ -53,17 +53,14 @@ static void die(char *fmt, ...)
- 	exit(EXIT_FAILURE);
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -429,7 +429,7 @@ static void kauditd_send_skb(struct sk_b
+  * This function doesn't consume an skb as might be expected since it has to
+  * copy it anyways.
+  */
+-static void kauditd_send_multicast_skb(struct sk_buff *skb)
++static void kauditd_send_multicast_skb(struct sk_buff *skb, gfp_t gfp_mask)
+ {
+ 	struct sk_buff		*copy;
+ 	struct audit_net	*aunet = net_generic(&init_net, audit_net_id);
+@@ -448,11 +448,11 @@ static void kauditd_send_multicast_skb(s
+ 	 * no reason for new multicast clients to continue with this
+ 	 * non-compliance.
+ 	 */
+-	copy = skb_copy(skb, GFP_KERNEL);
++	copy = skb_copy(skb, gfp_mask);
+ 	if (!copy)
+ 		return;
+ 
+-	nlmsg_multicast(sock, copy, 0, AUDIT_NLGRP_READLOG, GFP_KERNEL);
++	nlmsg_multicast(sock, copy, 0, AUDIT_NLGRP_READLOG, gfp_mask);
  }
  
--static void write_file(char *filename, char *fmt, ...)
-+static void vmaybe_write_file(bool enoent_ok, char *filename, char *fmt, va_list ap)
- {
- 	char buf[4096];
- 	int fd;
- 	ssize_t written;
- 	int buf_len;
--	va_list ap;
+ /*
+@@ -1959,7 +1959,7 @@ void audit_log_end(struct audit_buffer *
+ 	} else {
+ 		struct nlmsghdr *nlh = nlmsg_hdr(ab->skb);
  
--	va_start(ap, fmt);
- 	buf_len = vsnprintf(buf, sizeof(buf), fmt, ap);
--	va_end(ap);
- 	if (buf_len < 0) {
- 		die("vsnprintf failed: %s\n",
- 		    strerror(errno));
-@@ -74,6 +71,8 @@ static void write_file(char *filename, c
+-		kauditd_send_multicast_skb(ab->skb);
++		kauditd_send_multicast_skb(ab->skb, ab->gfp_mask);
  
- 	fd = open(filename, O_WRONLY);
- 	if (fd < 0) {
-+		if ((errno == ENOENT) && enoent_ok)
-+			return;
- 		die("open of %s failed: %s\n",
- 		    filename, strerror(errno));
- 	}
-@@ -92,6 +91,26 @@ static void write_file(char *filename, c
- 	}
- }
- 
-+static void maybe_write_file(char *filename, char *fmt, ...)
-+{
-+	va_list ap;
-+
-+	va_start(ap, fmt);
-+	vmaybe_write_file(true, filename, fmt, ap);
-+	va_end(ap);
-+
-+}
-+
-+static void write_file(char *filename, char *fmt, ...)
-+{
-+	va_list ap;
-+
-+	va_start(ap, fmt);
-+	vmaybe_write_file(false, filename, fmt, ap);
-+	va_end(ap);
-+
-+}
-+
- static int read_mnt_flags(const char *path)
- {
- 	int ret;
-@@ -144,13 +163,10 @@ static void create_and_enter_userns(void
- 			strerror(errno));
- 	}
- 
-+	maybe_write_file("/proc/self/setgroups", "deny");
- 	write_file("/proc/self/uid_map", "0 %d 1", uid);
- 	write_file("/proc/self/gid_map", "0 %d 1", gid);
- 
--	if (setgroups(0, NULL) != 0) {
--		die("setgroups failed: %s\n",
--			strerror(errno));
--	}
- 	if (setgid(0) != 0) {
- 		die ("setgid(0) failed %s\n",
- 			strerror(errno));
+ 		/*
+ 		 * The original kaudit unicast socket sends up messages with
 
 
