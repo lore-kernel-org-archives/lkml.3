@@ -1,71 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933827AbbAGCxa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:53:30 -0500
-Received: from mail-bl2on0125.outbound.protection.outlook.com ([65.55.169.125]:42898
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933793AbbAGCwz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:52:55 -0500
-Message-ID: <1420599166.4961.47.camel@freescale.com>
-Subject: Re: [PATCH] powerpc/8xx: reduce pressure on TLB due to context
- switches
-From: Scott Wood <scottwood@freescale.com>
-To: Christophe Leroy <christophe.leroy@c-s.fr>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>,
-        "Joakim Tjernlund" <joakim.tjernlund@transmode.se>
-Date: Tue, 6 Jan 2015 20:52:46 -0600
-In-Reply-To: <20150105151453.E32BD1A4CF3@localhost.localdomain>
-References: <20150105151453.E32BD1A4CF3@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
+	id S1758251AbbAGCzA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:55:00 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:25353 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757328AbbAGCyn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 21:54:43 -0500
+Message-ID: <54AC9FC0.7050902@huawei.com>
+Date: Wed, 7 Jan 2015 10:53:52 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>
+CC: <mingo@redhat.com>, <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>,
+        <acme@kernel.org>, <jolsa@kernel.org>
+Subject: Re: [PATCH] perf: fix building error in x86_64 when dwarf unwind
+ is on
+References: <1419643571-62764-1-git-send-email-wangnan0@huawei.com> <20141229075607.GC6081@sejong> <54A10D53.2010800@huawei.com>
+In-Reply-To: <54A10D53.2010800@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
-X-ClientProxiedBy: BLUPR05CA0062.namprd05.prod.outlook.com (10.141.20.32) To
- BY2PR0301MB0728.namprd03.prod.outlook.com (25.160.63.18)
-Authentication-Results: spf=none (sender IP is )
- smtp.mailfrom=scottwood@freescale.com; 
-X-DmarcAction: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BY2PR0301MB0728;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0728;
-X-Forefront-PRVS: 044968D9E1
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(377424004)(24454002)(46102003)(50466002)(120916001)(99396003)(122386002)(47776003)(64706001)(23676002)(20776003)(50226001)(89996001)(68736005)(36756003)(31966008)(87976001)(101416001)(40100003)(97736003)(106356001)(62966003)(107046002)(103116003)(33646002)(110136001)(105586002)(4396001)(76176999)(2950100001)(77156002)(21056001)(42186005)(92566001)(50986999)(86362001)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0728;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0728;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 07 Jan 2015 02:52:52.6337 (UTC)
-X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0728
+X-Originating-IP: [10.111.69.90]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020203.54AC9FE1.00AB,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 8cbf9f3b983a38873662d12c99e987b4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2015-01-05 at 16:14 +0100, Christophe Leroy wrote:
-> +		}
-> +		__clear_bit(id, stale_map[cpu]);
-> +
-> +	}
+Ping...
 
-Whitespace
+On 2014/12/29 16:14, Wang Nan wrote:
+> On 2014/12/29 15:56, Namhyung Kim wrote:
+>> Hi Wang,
+>>
+>> (Adding Arnaldo and Jiri to CC)
+>>
+>> On Sat, Dec 27, 2014 at 09:26:11AM +0800, Wang Nan wrote:
+>>> When build with 'make ARCH=x86' and dwarf unwind is on, there is a
+>>> compiling error:
+>>>
+>>>    CC       /home/wn/perf/arch/x86/util/unwind-libdw.o
+>>>    CC       /home/wn/perf/arch/x86/tests/regs_load.o
+>>>  arch/x86/tests/regs_load.S: Assembler messages:
+>>>  arch/x86/tests/regs_load.S:65: Error: operand type mismatch for `push'
+>>>  arch/x86/tests/regs_load.S:72: Error: operand type mismatch for `pop'
+>>>  make[1]: *** [/home/wn/perf/arch/x86/tests/regs_load.o] Error 1
+>>>  make[1]: INTERNAL: Exiting with 25 jobserver tokens available; should be 24!
+>>>  make: *** [all] Error 2
+>>>  ...
+>>>
+>>> Which is caused by incorrectly undefine macro HAVE_ARCH_X86_64_SUPPORT.
+>>> 'config/Makefile.arch' tests __x86_64__ only when 'ARCH=x86_64'. However,
+>>> with 'ARCH=x86', the underlying compile may also be x86_64, which causes
+>>> mismatching.
+>>
+>> Hmm.. how did you compile this?  I guess ARCH=x86 requires -m32 flag
+>> to the gcc, did you pass it (like via EXTRA_CFLAGS=-m32)?
+>>
+>> I'm confused by 'underlying compile may also be x86_64' part..
+>>
+> 
+> I hit this problem when building perf with Yocto (https://www.yoctoproject.org/), which
+> is a famous building system for embeded system.
+> 
+> When building kernel, we can simply use 'make ARCH=x86' and select 'CONFIG_64BIT'
+> in menuconfig to get a x86_64 kernel. As a result, there building framework
+> like Yocto doesn't ever consider 'x86_64' as a valid ARCH option. See:
+> https://git.yoctoproject.org/cgit/cgit.cgi/poky/tree/meta/classes/kernel-arch.bbclass
+> Therefore, when building with such framework, it uses a x86_64 compiler and ARCH=x86.
+> 
+>> Thanks,
+>> Namhyung
+>>
+>>
+>>>
+>>> This patch fixes it by checking __x86_64__ in both case of
+>>> 'ARCH=x86_64' and 'ARCH=x86'.
+>>>
+>>> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+>>> ---
+>>>  tools/perf/config/Makefile.arch | 2 ++
+>>>  1 file changed, 2 insertions(+)
+>>>
+>>> diff --git a/tools/perf/config/Makefile.arch b/tools/perf/config/Makefile.arch
+>>> index 851cd01..303a096 100644
+>>> --- a/tools/perf/config/Makefile.arch
+>>> +++ b/tools/perf/config/Makefile.arch
+>>> @@ -15,6 +15,8 @@ endif
+>>>  
+>>>  ifeq ($(ARCH),x86_64)
+>>>    override ARCH := x86
+>>> +endif
+>>> +ifeq ($(ARCH),x86)
+>>>    IS_X86_64 := 0
+>>>    ifeq (, $(findstring m32,$(CFLAGS)))
+>>>      IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
+>>> -- 
+>>> 1.8.4
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-> +
-> +	/* Flush the TLB for all contexts */
-> +	_tlbil_all();
-
-Can you put a comment in here pointing out that for this to work on SMP,
-it needs to be a global invalidation, or at least some indication on
-this function that it's not SMP-safe?  I realize there's no SMP 8xx, and
-this is only called in place of steal_context_up(), but in case others
-think of reusing this elsewhere[1]...
-
--Scott
-
-[1] It might be helpful on e500 derivatives in virtualized environments
-where invalidate-by-PID is expensive, depending on how often stealing
-happens there.
 
