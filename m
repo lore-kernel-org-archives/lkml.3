@@ -1,158 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753762AbbAGPwv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 10:52:51 -0500
-Received: from mail.eperm.de ([89.247.134.16]:59403 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753595AbbAGPwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 10:52:42 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: "'Herbert Xu'" <herbert@gondor.apana.org.au>
-Cc: "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
-        Daniel Borkmann <dborkman@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: [PATCH v8 0/2] crypto: AF_ALG: add AEAD and RNG support
-Date: Wed, 07 Jan 2015 16:51:05 +0100
-Message-ID: <33040723.pAXIT3fl8h@tachyon.chronox.de>
-User-Agent: KMail/4.14.3 (Linux/3.17.7-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
+	id S1753430AbbAGPvu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 10:51:50 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:40180 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752474AbbAGPvt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 10:51:49 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <20150107121340.GB3984@pd.tnic>
+References: <CALCETrV6=aWoAckieQkPJ4BCr9VzU=9080EmLfeL4ZWm+Hr55g@mail.gmail.com>
+ <54ab2ffa301102cd6e@agluck-desk.sc.intel.com> <CALCETrV+mchcQ5SgBO8+xLvw9rrHm4yvq+wZtQsD1EMMGzAMEw@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3299127A@ORSMSX114.amr.corp.intel.com> <20150107121340.GB3984@pd.tnic>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 7 Jan 2015 07:51:26 -0800
+Message-ID: <CALCETrW9N8Dw7r3m=r4rec4GKo18arFgOBxA+WnnLdw+AVb1BQ@mail.gmail.com>
+Subject: Re: [PATCH] x86, mce: Get rid of TIF_MCE_NOTIFY and associated mce tricks
+To: Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>, X86 ML <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jan 7, 2015 at 4:13 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Tue, Jan 06, 2015 at 06:00:08PM +0000, Luck, Tony wrote:
+>> That's fine with me.  Boris ... any comments?
+>
+> Same here:
+>
+> Acked-by: Borislav Petkov <bp@suse.de>
+>
+> I like negative diffstats:
+>
+>  include/asm/mce.h         |    1
+>  include/asm/thread_info.h |    4 -
+>  kernel/cpu/mcheck/mce.c   |  109 ++++++++++------------------------------------
+>  kernel/signal.c           |    6 --
+>  4 files changed, 26 insertions(+), 94 deletions(-)
+>
+> Procedural question: so this is going in, in the next merge window,
+> aimed at 3.20, right?
 
-This patch set adds AEAD and RNG support to the AF_ALG interface
-exported by the kernel crypto API. By extending AF_ALG with AEAD and RNG
-support, all cipher types the kernel crypto API allows access to are
-now accessible from userspace.
+Yes, assuming that Ingo and Thomas agree.
 
-Both, AEAD and RNG implementations are stand-alone and do not depend
-other AF_ALG interfaces (like hash or skcipher).
+When does Paul usually send the rcu pull request?  I can send these as
+a pull request or an emailed series after that happens.
 
-The AEAD implementation uses the same approach as provided with
-skcipher by offering the following interfaces:
+--Andy
 
-	* sendmsg and recvmsg interfaces allowing multiple
-	  invocations supporting a threaded user space. To support
-	  multi-threaded user space, kernel-side buffering
-	  is implemented similarly to skcipher.
+>
+> IMO that is a good plan as we have max time to deal with fallout, should
+> there be any.
+>
+> Thanks.
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
 
-	* splice / vmsplice interfaces allowing a zero-copy
-	  invocation
 
-The RNG interface only implements the recvmsg interface as
-zero-copy is not applicable.
-
-The new AEAD and RNG interfaces are fully tested with the test application
-provided at [1]. That test application exercises all newly added user space
-interfaces. The testing covers:
-
-	* use of the sendmsg/recvmsg interface
-
-	* use of the splice / vmsplice interface
-
-	* invocation of all AF_ALG types (aead, rng, skcipher, hash)
-
-	* using all types of operation (encryption, decryption, keyed MD,
-	  MD, random numbers, AEAD decryption with positive and negative
-	  authentication verification)
-
-	* stress testing by running all tests for 30 minutes in an
-	  endless loop
-
-	* test execution on 64 bit and 32 bit
-
-[1] http://www.chronox.de/libkcapi.html
-
-Changes v2:
-* rebase to current cryptodev-2.6 tree
-* use memzero_explicit to zeroize AEAD associated data
-* use sizeof for determining length of AEAD associated data
-* update algif_rng.c covering all suggestions from Daniel Borkmann
-  <dborkman@redhat.com>
-* addition of patch 9: add digestsize interface for hashes
-* addition of patch to update documentation covering the userspace interface
-* change numbers of getsockopt options: separate them from sendmsg interface
-  definitions
-
-Changes v3:
-* remove getsockopt interface
-* AEAD: associated data is set prepended to the plain/ciphertext
-* AEAD: allowing arbitrary associated data lengths
-* remove setkey patch as protection was already in the existing code
-
-Changes v4:
-* stand-alone implementation of AEAD
-* testing of all interfaces offered by AEAD
-* stress testing of AEAD and RNG
-
-Changes v5:
-* AEAD: add outer while(size) loop in aead_sendmsg to ensure all data is
-  copied into the kernel (reporter Herbert Xu)
-* AEAD: aead_sendmsg bug fix: change size -= len; to size -= plen;
-* AF_ALG / AEAD: add aead_setauthsize and associated extension to
-  struct af_alg_type as well as alg_setsockopt (reporter Herbert Xu)
-* RNG: rng_recvmsg: use 128 byte stack variable for output of RNG instead
-  of ctx->result (reporter Herbert Xu)
-* RNG / AF_ALG: allow user space to seed RNG via setsockopt
-* RNG: rng_recvmsg bug fix: use genlen as result variable for
-  crypto_rng_get_bytes as previously no negative errors were obtained
-* AF_ALG: alg_setop: zeroize buffer before free
-
-Changes v6:
-* AEAD/RNG: port to 3.19-rc1 with the iov_iter handling
-* RNG: use the setkey interface to obtain the seed and drop the patch adding
-  a separate reseeding interface
-* extract the zeroization patch for alg_setkey into a stand-alone patch
-  submission
-* fix bug in aead_sufficient_data (reporter Herbert Xu)
-* testing of all interfaces with test application provided with libkcapi version
-  0.6.2
-
-Changes v7:
-* AEAD: aead_recvmsg: change error code from ENOMEM to EINVAL
-* AEAD: drop aead_readable/aead_sufficient_data and only use ctx->more to decide
-  whether the read side shall become active. This change requires that the
-  patch for crypto_aead_decrypt ensuring that the ciphertext contains the
-  authentication tag was added -- see https://lkml.org/lkml/2014/12/30/200.
-  Otherwise, user space can trigger a kernel crash.
-* RNG: patch dropped as it was applied
-* AEAD: port Kconfig/Makefile patch forward to current code base
-
-Changes v8:
-* Removed check for aead_assoclen in aead_sendmsg
-* Fix endless loop bug in aead_sendmsg (check for sgl->cur > ALG_MAX_PAGES in
-  while condition removed -- this condition is checked within the loop already)
-* Resurrect aead_sufficient_data and call it in aead_sendmsg, aead_sendpage to
-  notify caller about wrong invocation
-* Re-add aead_sufficient_data to aead_recvmsg to verify user input data before
-  using them to ensure the kernel protects against malicious parameters
-* Allow arbitrary size of AD (i.e. up to the maximum buffer size of
-  ALG_MAX_PAGES)
-* When aead_recvmsg receives an error from decryption, release all pages if the
-  error is EBADMSG -- this error implies that a proper decryption was performed
-  but the integrity of the message is lost. This error is considered to be a
-  valid decryption result.
-* Add test cases for sendmsg and splice interface to test large AD sizes (in
-  case of sendmsg, use 65504 bytes AD and 32 bytes plaintext; in case of splice
-  use 15 pages AD and 32 bytes in the 16th page for plaintext). See [1] for
-  updated test case.
-
-Stephan Mueller (2):
-  crypto: AF_ALG: add AEAD support
-  crypto: AF_ALG: enable AEAD interface compilation
-
- crypto/Kconfig      |   9 +
- crypto/Makefile     |   1 +
- crypto/algif_aead.c | 666 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 676 insertions(+)
- create mode 100644 crypto/algif_aead.c
 
 -- 
-2.1.0
-
-
+Andy Lutomirski
+AMA Capital Management, LLC
