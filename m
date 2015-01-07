@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754978AbbAGITw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 03:19:52 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:37170 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754824AbbAGITu (ORCPT
+	id S1753256AbbAGIY1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 03:24:27 -0500
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:42233 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749AbbAGIYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 03:19:50 -0500
+	Wed, 7 Jan 2015 03:24:25 -0500
+Date: Wed, 7 Jan 2015 09:24:14 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Chen Gang <gang.chen@sunrus.com.cn>
+Cc: herbert@gondor.apana.org.au, davem@davemloft.net, schwidefsky@de.ibm.com,
+        linux390@de.ibm.com, linux-crypto@vger.kernel.org,
+        linux-s390@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] s390: crypto: aes_s390: Remove 'const' to avoid compiler
+ warnings
+Message-ID: <20150107082414.GA4365@osiris>
+References: <54A56002.3000301@sunrus.com.cn>
 MIME-Version: 1.0
-In-Reply-To: <355163371.fkynKV0U5x@wasted.cogentembedded.com>
-References: <355163371.fkynKV0U5x@wasted.cogentembedded.com>
-Date: Wed, 7 Jan 2015 09:19:48 +0100
-X-Google-Sender-Auth: ms2eJfSIa4ER8C2y1VSpeU7wX2o
-Message-ID: <CAMuHMdUui=Ucjo-dxtjkBF2faF4mbvV4EAAT+CyZ_2ix9Nxp+Q@mail.gmail.com>
-Subject: Re: [PATCH v3 resend] clk-rcar-gen2: ADSP clock support
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54A56002.3000301@sunrus.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15010708-0021-0000-0000-000002720C1A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 6, 2015 at 11:39 PM, Sergei Shtylyov
-<sergei.shtylyov@cogentembedded.com> wrote:
-> Add the ADSP clock support to the R-Car generation 2 CPG driver.  This clock
-> gets derived from  PLL1.  The layout of the ADSPCKCR register is  similar to
-> those of the clocks supported by the 'clk-div6' driver but the divider encoding
-> is non-linear, so can't be supported by that driver...
->
-> Based on the original patch by Konstantin Kozhevnikov
-> <konstantin.kozhevnikov@cogentembedded.com>.
->
-> Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+On Thu, Jan 01, 2015 at 10:56:02PM +0800, Chen Gang wrote:
+> In aes_encrypt() and aes_decrypt(), need let 'sctx->key' be modified,
+> so remove 'const' for it. The related warnings:
+...
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> ---
+>  arch/s390/crypto/aes_s390.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/s390/crypto/aes_s390.c b/arch/s390/crypto/aes_s390.c
+> index 1f272b2..5566ce8 100644
+> --- a/arch/s390/crypto/aes_s390.c
+> +++ b/arch/s390/crypto/aes_s390.c
+> @@ -134,7 +134,7 @@ static int aes_set_key(struct crypto_tfm *tfm, const u8 *in_key,
+> 
+>  static void aes_encrypt(struct crypto_tfm *tfm, u8 *out, const u8 *in)
+>  {
+> -	const struct s390_aes_ctx *sctx = crypto_tfm_ctx(tfm);
+> +	struct s390_aes_ctx *sctx = crypto_tfm_ctx(tfm);
+> 
+>  	if (unlikely(need_fallback(sctx->key_len))) {
+>  		crypto_cipher_encrypt_one(sctx->fallback.cip, out, in);
+> @@ -159,7 +159,7 @@ static void aes_encrypt(struct crypto_tfm *tfm, u8 *out, const u8 *in)
+> 
+>  static void aes_decrypt(struct crypto_tfm *tfm, u8 *out, const u8 *in)
+>  {
+> -	const struct s390_aes_ctx *sctx = crypto_tfm_ctx(tfm);
+> +	struct s390_aes_ctx *sctx = crypto_tfm_ctx(tfm);
+> 
+>  	if (unlikely(need_fallback(sctx->key_len))) {
+>  		crypto_cipher_decrypt_one(sctx->fallback.cip, out, in);
 
-Acked-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Applied, thanks.
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
