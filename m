@@ -1,97 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650AbbAGXqG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 18:46:06 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:36625 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752315AbbAGXqA (ORCPT
+	id S1752229AbbAGXpx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 18:45:53 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:51079 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015AbbAGXpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 18:46:00 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMKAMzErVR5LLLkPGdsb2JhbABcgwaBKoI3sQwBAQEBAQEGmCgEAgKBD0QBAQEBAQYBAQEBODuEDAEBAQMBJxMcIwULCAMOCgklDwUlAwcaE4gkB8N9AQEBAQYCAR8YhWyJdAeDFoETBYUvkX6RZYQkKjGCQwEBAQ
-Date: Thu, 8 Jan 2015 10:45:32 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, jack@suse.cz,
-        hch@infradead.org, hannes@cmpxchg.org, linux-fsdevel@vger.kernel.org,
-        vgoyal@redhat.com, lizefan@huawei.com, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, mhocko@suse.cz, clm@fb.com, fengguang.wu@intel.com
-Subject: Re: [PATCHSET RFC block/for-next] writeback: cgroup writeback support
-Message-ID: <20150107234532.GD25000@dastard>
-References: <1420579582-8516-1-git-send-email-tj@kernel.org>
- <20150106214426.GA24106@htj.dyndns.org>
+	Wed, 7 Jan 2015 18:45:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150106214426.GA24106@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Thu, 8 Jan 2015 00:45:49 +0100
+X-Google-Sender-Auth: 0DrsfJMC3csUkH7BZ4anROsiXcM
+Message-ID: <CAJZ5v0jz4zNbTNO2NGPvK8D__zEm9MB6Ar_NQ5-yOXaNhtFxSQ@mail.gmail.com>
+Subject: [GIT PULL] Power management and ACPI material for 3.19-rc4
+From: "Rafael J. Wysocki" <rafael@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 04:44:26PM -0500, Tejun Heo wrote:
-> Hello, again.  A bit of addition.
-> 
-> On Tue, Jan 06, 2015 at 04:25:37PM -0500, Tejun Heo wrote:
-> ...
-> > Overall design
-> > --------------
-> 
-> What's going on in this patchset is fairly straight forward.  The main
-> thing which is happening is that a bdi is being split into multiple
-> per-cgroup pieces.  Each split bdi, represented by bdi_writeback,
-> behaves mostly identically with how bdi behaved before.
+Hi Linus,
 
-I like the overall direction you've taken, Tejun, but I have
-a couple of questions...
+Please pull from
 
-> Complications mostly arise from filesystems and inodes having to deal
-> with multiple split bdi's instead of one, but those are mostly
-> straight-forward 1:N mapping issues.  It does get tedious here and
-> there but doesn't complicate the overall picture.
+ git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git \
+ pm+acpi-3.19-rc4
 
-Some filesystems don't track metadata-dirty inode state in the bdi
-lists, and instead track that in their own lists (usually deep
-inside the journalling subsystem). i.e. I_DIRTY_PAGES are the only
-dirty state that is tracked in the VFS. i.e. inode metadata
-writeback will still be considered global, but pages won't be. Hence
-you might get pages written back quickly, but the inodes are going
-to remain dirty and unreclaimable until the filesystem flushes some
-time in the future after the journal is committed and the inode
-written...
+to receive power management and ACPI material for v3.19-rc4 with
+top-most commit 794c3a0a9380d46cebff14b0d9b409ecb7687480
 
-There has also been talk of allowing filesystems to directly track
-dirty page state as well - the discussion came out of the way tux3
-was tracking and committing delta changes to file data. Now that
-hasn't gone anywhere, but I'm wondering what impact this patch set
-would have on such proposals?
+ Merge branches 'acpi-pm', 'acpi-processor' and 'acpi-video'
 
-Similarly, I'm concerned about additional overhead in the writeback
-path - we can easily drive the flusher thread to be CPU bound on IO
-subsystems that have decent bandwidth (low GB/s), so adding more
-overhead to every page we have to flush is going to reduce
-performance on these systems. Do you have any idea what impact
-just enabling the memcg/blkcg tracking has on writeback performance
-and CPU consumption?
+on top of commit b1940cd21c0f4abdce101253e860feff547291b0
 
-A further complication for data writeback is that some filesystems
-do their own adjacent page write clustering own inside their own
-->writepages/->writepage implementations. Both ext4 and XFS do this,
-and it makes no sense from a system and filesystem performance
-perspective to turn sequential ranges of dirty pages into much
-slower, semi-random IO just because the pages belong to different
-memcgs. It's not a good idea to compromise bulk writeback
-throughput under memory pressure just because a different memcgs
-write to the same files, so what is going to be the impact of
-filesystems ignoring memcg ownership during writeback clustering?
+ Linux 3.19-rc3
 
-Finally, distros are going to ship with this always enabled, so what
-is the overall increase in the size of the struct inode on a 64
-bit system with it enabled?
+These are an ACPI device power management initialization fix (-stable
+material), two commits renaming stuff in the ACPI processor driver
+to make it more suitable for ARM64 processors and a new ACPI
+backlight blacklist entry.
 
-Cheers,
+Specifics:
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+ - Fix ACPI power management intialization for device objects
+   corresponding to devices that are not present at the init time
+   (the _STA control method returns 0 for them) and therefore should
+   not be regarded as power manageable (Rafael J Wysocki).
+
+ - Rename a structure field and two functions used by the ACPI
+   processor driver to make them less tied to architectures that
+   use APICs (both x86 and ia64) and more suitable for ARM64
+   processors (Hanjun Guo).
+
+ - Add a disable_native_backlight quirk for Dell XPS15 L521X
+   designed in an unusual way preventing native backlight from
+   working on that machine (Hans de Goede).
+
+Thanks!
+
+
+---------------
+
+Hanjun Guo (2):
+      ACPI / processor: Convert apic_id to phys_id to make it arch agnostic
+      ACPI / processor: Rename acpi_(un)map_lsapic() to acpi_(un)map_cpu()
+
+Hans de Goede (1):
+      ACPI / video: Add disable_native_backlight quirk for Dell XPS15 L521X
+
+Rafael J. Wysocki (1):
+      ACPI / PM: Fix PM initialization for devices that are not present
+
+---------------
+
+ arch/ia64/kernel/acpi.c       |  9 ++++---
+ arch/x86/kernel/acpi/boot.c   |  9 ++++---
+ drivers/acpi/acpi_processor.c | 25 ++++++++++---------
+ drivers/acpi/device_pm.c      |  2 +-
+ drivers/acpi/processor_core.c | 56 +++++++++++++++++++++----------------------
+ drivers/acpi/scan.c           | 13 ++++++----
+ drivers/acpi/video.c          | 10 ++++++++
+ include/acpi/processor.h      |  8 +++----
+ include/linux/acpi.h          |  4 ++--
+ 9 files changed, 75 insertions(+), 61 deletions(-)
