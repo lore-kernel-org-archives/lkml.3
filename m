@@ -1,93 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532AbbAGKgG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 05:36:06 -0500
-Received: from ozlabs.org ([103.22.144.67]:33599 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752328AbbAGKgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 05:36:04 -0500
-From: Anton Blanchard <anton@samba.org>
-To: benh@kernel.crashing.org, paulus@samba.org, mpe@ellerman.id.au,
-        mmarek@suse.cz, akpm@linux-foundation.org, jbaron@akamai.com,
-        peterz@infradead.org, liuj97@gmail.com, mingo@kernel.org,
-        mgorman@suse.de, linux@arm.linux.org.uk, catalin.marinas@arm.com,
-        will.deacon@arm.com, ralf@linux-mips.org, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, davem@davemloft.net, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, rostedt@goodmis.org
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] powerpc: Include linux/jump_label.h to get HAVE_JUMP_LABEL define
-Date: Wed,  7 Jan 2015 21:35:58 +1100
-Message-Id: <1420626958-31254-3-git-send-email-anton@samba.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1420626958-31254-1-git-send-email-anton@samba.org>
-References: <1420626958-31254-1-git-send-email-anton@samba.org>
+	id S1752571AbbAGKhP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 05:37:15 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:65312 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330AbbAGKhK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 05:37:10 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jon Masters <jcm@redhat.com>
+Cc: linaro-acpi@lists.linaro.org, Catalin Marinas <catalin.marinas@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Rob Herring <robh@kernel.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Will Deacon <Will.Deacon@arm.com>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [Linaro-acpi] [PATCH v5 18/18] Documentation: ACPI for ARM64
+Date: Wed, 07 Jan 2015 11:36:13 +0100
+Message-ID: <2161376.07iV9ANMSk@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54ACBC5E.3040905@redhat.com>
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <54AC5C57.7050504@redhat.com> <54ACBC5E.3040905@redhat.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:wi0TJ3EilKfjAf6ZDlIMa+xkegFla9/KtoJD7+PXFlVXQAF6niE
+ Nr4EzCm53kjSb8Uf7uqNtAnNBBHj/U4WEwMWiqhOWqx7yJA9HciQE7k5IsbeCvVSCd9Tpp+
+ tYGwX77P3yoPUxtI27T3vauSAH1xAYSEHCoI2pIjs+2BB38JbM+jQJpJqKdrQi48Nxuhl1p
+ Rg9UgmCZcUpscc27Ko3mQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 1bc9e47aa8e4 ("powerpc/jump_label: Use HAVE_JUMP_LABEL")
-converted uses of CONFIG_JUMP_LABEL to HAVE_JUMP_LABEL in
-some assembly files.
+On Tuesday 06 January 2015 23:55:58 Jon Masters wrote:
+> On 01/06/2015 05:06 PM, Jon Masters wrote:
+> > Hi Arnd,
+> > 
+> > Happy New Year!
+> > 
+> > On 01/06/2015 02:21 PM, Arnd Bergmann wrote:
+> >> On Tuesday 06 January 2015 11:24:43 Jon Masters wrote:
+> >>> On 01/06/2015 06:20 AM, Catalin Marinas wrote:
+> >>>
+> >>>> Now, what's preventing a vendor firmware from providing only ACPI
+> >>>> tables? Do we enforce it in some way (arm-acpi.txt, kernel warning etc.)
+> >>>> that both DT and ACPI are supported, or at least that dts files are
+> >>>> merged in the kernel first?
+> >>>
+> >>> I know of some (server) firmware that will only provide ACPI in the
+> >>> medium term, so this is coming.
+> >>
+> >> Medium term is fine, as long as they are not expecting their hardware
+> >> to be supported by Linux before ACPI support is stable enough for
+> >> general consumption.
+> > 
+> > To be clear, I think that's reasonable for upstream. I may love ACPI,
+> > but vendors can always ship kernels with a config supporting ACPI only
+> > platforms in the interim period if they have a commercial justification
+> > and that doesn't have to be supported in terms of the upstream default.
 
-HAVE_JUMP_LABEL is defined in linux/jump_label.h, so we need to
-include this or we always get the non jump label fallback code.
+I would hope that none of the ACPI-only machines are meant to run Linux
+as a primary operating system, that would be very sad.
 
-Fixes: 1bc9e47aa8e4 ("powerpc/jump_label: Use HAVE_JUMP_LABEL")
-Signed-off-by: Anton Blanchard <anton@samba.org>
----
- arch/powerpc/platforms/powernv/opal-wrappers.S | 2 +-
- arch/powerpc/platforms/pseries/hvCall.S        | 2 +-
- arch/powerpc/platforms/pseries/lpar.c          | 1 +
- 3 files changed, 3 insertions(+), 2 deletions(-)
+Vendors that are interested in Linux support should instead work on getting
+their hardware supported upstream so they don't need a private kernel to
+match their private firmware.
 
-diff --git a/arch/powerpc/platforms/powernv/opal-wrappers.S b/arch/powerpc/platforms/powernv/opal-wrappers.S
-index 0509bca..fcbe899 100644
---- a/arch/powerpc/platforms/powernv/opal-wrappers.S
-+++ b/arch/powerpc/platforms/powernv/opal-wrappers.S
-@@ -9,11 +9,11 @@
-  * 2 of the License, or (at your option) any later version.
-  */
- 
-+#include <linux/jump_label.h>
- #include <asm/ppc_asm.h>
- #include <asm/hvcall.h>
- #include <asm/asm-offsets.h>
- #include <asm/opal.h>
--#include <asm/jump_label.h>
- 
- 	.section	".text"
- 
-diff --git a/arch/powerpc/platforms/pseries/hvCall.S b/arch/powerpc/platforms/pseries/hvCall.S
-index ccd53f9..74b5b8e 100644
---- a/arch/powerpc/platforms/pseries/hvCall.S
-+++ b/arch/powerpc/platforms/pseries/hvCall.S
-@@ -7,12 +7,12 @@
-  * as published by the Free Software Foundation; either version
-  * 2 of the License, or (at your option) any later version.
-  */
-+#include <linux/jump_label.h>
- #include <asm/hvcall.h>
- #include <asm/processor.h>
- #include <asm/ppc_asm.h>
- #include <asm/asm-offsets.h>
- #include <asm/ptrace.h>
--#include <asm/jump_label.h>
- 
- 	.section	".text"
- 	
-diff --git a/arch/powerpc/platforms/pseries/lpar.c b/arch/powerpc/platforms/pseries/lpar.c
-index 469751d..14ac1ad 100644
---- a/arch/powerpc/platforms/pseries/lpar.c
-+++ b/arch/powerpc/platforms/pseries/lpar.c
-@@ -27,6 +27,7 @@
- #include <linux/console.h>
- #include <linux/export.h>
- #include <linux/static_key.h>
-+#include <linux/jump_label.h>
- #include <asm/processor.h>
- #include <asm/mmu.h>
- #include <asm/page.h>
--- 
-2.1.0
+> > But, perhaps there's a way to have it both ways, you could consider also
+> > a CONFIG_EXPERT option that would allow you to build a kernel with ACPI
+> > only support in the medium term. That way, if someone is running a
+> > vendor kernel, but wants to track upstream development more closely,
+> > they can do so on such hardware by enabling the expert config bit.
 
+I don't see how this helps. The main point of requiring users to add
+the option is to ensure that everyone understands the support is
+experimental and not guaranteed to work across firmware releases or
+kernel versions, until we have stopped making incompatible changes.
+
+If someone is tracking the upstream kernel, they should know that they
+have to get working DT support in first, and test both ways with the
+same kernel anyway.
+
+> Clarification: I'm suggesting that in the medium term the dependency
+> upon CONFIG_EXPERT either goes away or is replaced with requiring ACPI
+> and DTB in the non "expert" case
+
+Sure, no debate on that.
+
+> and requiring "expert" selected to allow a kernel that will boot with
+> ACPI only. But only a suggestion.
+
+This is a separate issue. I personally think we shouldn't bother with
+this, as such a configuration would just break a lot of assumptions
+we make today and removes hardware support, but it's something we
+can discuss after we get to the point of having ACPI enabled by default.
+
+	Arnd
