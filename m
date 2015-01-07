@@ -1,101 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306AbbAGSrN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 13:47:13 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:37334 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753931AbbAGSrK (ORCPT
+	id S1754581AbbAGTNm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 14:13:42 -0500
+Received: from mail-am1hn0251.outbound.protection.outlook.com ([157.56.112.251]:6415
+	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751528AbbAGTNk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 13:47:10 -0500
+	Wed, 7 Jan 2015 14:13:40 -0500
+X-Greylist: delayed 1814 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Jan 2015 14:13:38 EST
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-In-Reply-To: <CAHkRjk6Vg_AR8rFNYzPcnPwfKZqaVuaCoG67CEVPRgp1-bDetA@mail.gmail.com>
-References: <20150104190123.GA20153@amd>
-	<alpine.LFD.2.11.1501041438130.18844@knanqh.ubzr>
-	<20150104201026.GA23427@amd>
-	<alpine.LFD.2.11.1501041512440.18844@knanqh.ubzr>
-	<20150104203724.GA16372@amd>
-	<alpine.LFD.2.11.1501041547050.18844@knanqh.ubzr>
-	<CA+55aFy5yB2d-1iXEUtU+puua4TAmV0kZF_7TBhXO1Y4Khqb9Q@mail.gmail.com>
-	<alpine.LFD.2.11.1501041609290.18844@knanqh.ubzr>
-	<20150104212659.GC12302@n2100.arm.linux.org.uk>
-	<alpine.LFD.2.11.1501042343240.18844@knanqh.ubzr>
-	<CAHkRjk6Vg_AR8rFNYzPcnPwfKZqaVuaCoG67CEVPRgp1-bDetA@mail.gmail.com>
-Date: Wed, 7 Jan 2015 10:47:09 -0800
-X-Google-Sender-Auth: SqElq-0zzVRZQNpkP7ium2Py7D0
-Message-ID: <CA+55aFypmZExpCvD699TQOs1NDK_mT-_rR3UWOdxdzkOKvbdoA@mail.gmail.com>
-Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
- pyaudio (and probably more)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pavel Machek <pavel@ucw.cz>, Marc Zyngier <marc.zyngier@arm.com>,
-        kernel list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Greetings From China
+To: Recipients <chiang9@chinalee.onmicrosoft.com>
+From: "Mr. Chiang" <chiang9@chinalee.onmicrosoft.com>
+Date: Wed, 7 Jan 2015 19:47:36 +0100
+Reply-To: <chiang.mr@aim.com>
+Message-ID: <DB4PR02MB035117EABB9FEB20059B5D94DC460@DB4PR02MB0351.eurprd02.prod.outlook.com>
+X-Originating-IP: [2.137.206.183]
+X-ClientProxiedBy: AMXPR07CA0045.eurprd07.prod.outlook.com (10.242.64.45) To
+ DB4PR02MB0351.eurprd02.prod.outlook.com (10.242.221.144)
+Authentication-Results: spf=none (sender IP is )
+ smtp.mailfrom=chiang9@chinalee.onmicrosoft.com; 
+X-DmarcAction: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:DB4PR02MB0351;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DB4PR02MB0351;
+X-Forefront-PRVS: 044968D9E1
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(10019020)(6009001)(199003)(189002)(74316001)(558084003)(42186005)(54356999)(53806999)(110136001)(50986999)(53256004)(64706001)(101416001)(33656002)(43066003)(20776003)(47776003)(50466002)(87976001)(23756003)(97736003)(66066001)(54206007)(122386002)(46102003)(86362001)(99396003)(107046002)(107886001)(229853001)(77156002)(62966003)(106356001)(77096005)(68736005)(86442001)(76576001)(21056001)(120916001)(86902001)(89136004)(553524004)(4396001)(250100001)(40100003)(64872006)(224903001)(86632001)(105586002)(62346011);DIR:OUT;SFP:1501;SCL:5;SRVR:DB4PR02MB0351;H:PC-4.homestation;FPR:;SPF:None;MLV:spm;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DB4PR02MB0351;
+X-OriginatorOrg: chinalee.onmicrosoft.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 07 Jan 2015 18:43:16.6191
+ (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: DB4PR02MB0351
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 7, 2015 at 10:11 AM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
->
-> I think this makes sense since __delay() expects the number of loops
-> as argument rather than a duration scaled by some factor (based on the
-> generic timer frequency).
-
-Gaah. You guys make no sense at all.
-
-No, __delay() does not expect "number of loops".
-
-It doesn't do that on x86, and it doesn't even do it on arm.
-
-It *literally* does exactly the reverse of what you say it does.
-
-__delay() very much expects a "duration scaled by some factor". The
-factor being "loops_per_jiffy" (ok, so it's a "reverse factor", but
-you get the idea).
-
-And this is very much exactly why bogomips is that "2 *
-loops_per_jiffy * HZ / 1000000".
-
-Let's break it down:
-
- - "loops_per_jiffy" is just the scale factor for __udelay(). Ignore
-the "loops" part of the name, since it's purely historical. It comes
-from the original "decrement and jump" implementation, but that hasn't
-been true on x86 for over 15 years.
-
- - the "2x" factor is also purely historical, and comes from the same
-"decrement and jump" thing - it used to be two instructions. But
-again, it hasn't been true for a *looong* time,  but it is part of the
-bogosity of bogomips.
-
- - the "*HZ" is the "per jiffy" part.
-
- - the "1000000" is the "MHz" part. The clock had better tick at a
-megahertz or more, since the whole point of this is to do "udelay()".
-
-Really. The original commit that removed bogomips from ARM was
-*wrong*. Because that
-
-    per_cpu(cpu_data, i).loops_per_jiffy / (500000UL/HZ
-
-calculation is in fact  the very DEFINITION of bogomips (it's just
-written in a way to not overflow).
-
-Seriously.
-
-The reason I reverted that commit is because it was crap. When Pavel
-made the report, I looked at the code, and immediately reverted it.
-For good reason. Exactly because that original patch was WRONG.
-
-The old bogomips computation in arch/arm/kernel/setup.c is exactly the
-right thing to do.
-
-And every time somebody thinks it has to be about "loops" or about
-"cpu frequency", I can only say "STOP IT". It hasn't been about loops
-or CPU frequency for ages. I don't know when we switched it to "wait
-for the timer", because it predates my history that starts in early
-2002. So it's at *least* 13 years old.
-
-                                Linus
+Good day and how do you do? I'm Mr.Chiang, and I work with Bank of China. I need your assistance in moving a sum of $28 Million USDollars. Kindly get back if interested.
