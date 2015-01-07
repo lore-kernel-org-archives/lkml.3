@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768AbbAGLak (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 06:30:40 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:60135 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703AbbAGLag (ORCPT
+	id S1752831AbbAGLbM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 06:31:12 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:10344 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752725AbbAGLai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 06:30:36 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-ec-54ad18db21c0
+	Wed, 7 Jan 2015 06:30:38 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-f0-54ad18dc77b1
 From: Marek Szyprowski <m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
@@ -20,141 +20,119 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         linus.walleij@linaro.org, tony@atomide.com, drake@endlessm.com,
         loeliger@gmail.com, Mark Rutland <mark.rutland@arm.com>, nm@ti.com,
         khilman@linaro.org
-Subject: [PATCH v12 6/9] ARM: l2c: Add support for overriding prefetch settings
-Date: Wed, 07 Jan 2015 12:30:21 +0100
-Message-id: <1420630224-8887-7-git-send-email-m.szyprowski@samsung.com>
+Subject: [PATCH v12 7/9] ARM: EXYNOS: Add .write_sec outer cache callback for
+ L2C-310
+Date: Wed, 07 Jan 2015 12:30:22 +0100
+Message-id: <1420630224-8887-8-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.9.2
 In-reply-to: <1420630224-8887-1-git-send-email-m.szyprowski@samsung.com>
 References: <1420630224-8887-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsVy+t/xq7q3JdaGGJybaGbxd9IxdotH8x8z
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t/xq7p3JNaGGHw7pGnxd9IxdotH8x8z
 	W/QuuMpm8fXwCkaLs01v2C22d85gt5jyZzmTxabH11gtLu+aw2Yxe0k/i8WM8/uYLG5f5rU4
 	t30Li8XaI3fZLZZev8hk8ebHWSaLU9c/s1ms2vWH0WL/FS8HYY8189YwerQ097B5/P41idHj
 	29dJLB6X+3qZPBZ9z/LYOesuu8eda3vYPDYvqfe4cqKJ1aNvyypGj+M3tjN5fN4kF8AbxWWT
-	kpqTWZZapG+XwJXx6VkHU8FaxYo/yx6xNDDuk+5i5OSQEDCRWPb2JxuELSZx4d56IJuLQ0hg
-	KaPEge/LWCCcPiaJJTOWs4BUsQkYSnS97QLrEBFwk/i37hBYB7PANBaJTUfOM4MkhAX8JWY9
-	ncsIYrMIqEpc7PkA1swr4C7xbeFGqHVyEv9frmACsTkFPCTunF8GZgsB1SyYuJJtAiPvAkaG
-	VYyiqaXJBcVJ6blGesWJucWleel6yfm5mxghkfF1B+PSY1aHGAU4GJV4eBUmrwkRYk0sK67M
-	PcQowcGsJML75hdQiDclsbIqtSg/vqg0J7X4ECMTB6dUAyP7LLOlpWfCglv5azbcmaj+ia+x
-	w9/O+mS8zCrO2KkcrO/WNFyZ+OMus7Rz/cvqiZl61dyJxXmH70uEd8/bcX6+bQlnMN+3bpMd
-	c1f999636OVrOxX5ktl1ijyTX5dtDChOYOeO+s6Uu33i3UjJ7zxK6j9XrU6V/n5ZUHludnjD
-	t70+Fj/5TyuxFGckGmoxFxUnAgAApKW6agIAAA==
+	kpqTWZZapG+XwJXRuFOlYK94RdOC1ewNjOuEuxg5OSQETCS2vHjECmGLSVy4t56ti5GLQ0hg
+	KaNEz45+dginj0nifOcnFpAqNgFDia63XWwgtoiAm8S/dYfAOpgFprFIbDpynhkkISwQLnF8
+	5mR2EJtFQFViUf9NsBW8Au4SO862MUKsk5P4/3IFE4jNKeAhcef8MjBbCKhmwcSVbBMYeRcw
+	MqxiFE0tTS4oTkrPNdIrTswtLs1L10vOz93ECImLrzsYlx6zOsQowMGoxMOrMHlNiBBrYllx
+	Ze4hRgkOZiUR3je/gEK8KYmVValF+fFFpTmpxYcYmTg4pRoYt/g17g9afCJj6eaozo4HK/k6
+	JBz2l32sX59et+v3trQf24V2XBP7VtW11/J/d5/WfF/lsg0/94oe5/n+XtlMWH4235PlmewB
+	78J41k5Nunsg/B/XJeGVszwyWo7NaVG5uivvtuXPtxFJrk4pX0InB+7gPKa8VO3rNoO1vh8E
+	grUFu7Ofdzt/UWIpzkg01GIuKk4EAM7M9ztpAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tomasz Figa <t.figa@samsung.com>
 
-Firmware on certain boards (e.g. ODROID-U3) can leave incorrect L2C prefetch
-settings configured in registers leading to crashes if L2C is enabled
-without overriding them. This patch introduces bindings to enable
-prefetch settings to be specified from DT and necessary support in the
-driver.
+Exynos4 SoCs equipped with an L2C-310 cache controller and running under
+secure firmware require certain registers of aforementioned IP to be
+accessed only from secure mode. This means that SMC calls are required
+for certain register writes. To handle this, an implementation of
+.write_sec and .configure callbacks is provided by this patch.
 
 Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-[mszyprow: rebased onto v3.18-rc1, added error message when prefetch related
- dt property has been provided without any value]
+[added comment and reworked unconditional call to SMC_CMD_L2X0INVALL]
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Tested-by: Nishanth Menon <nm@ti.com>
-Acked-by: Nishanth Menon <nm@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 ---
- Documentation/devicetree/bindings/arm/l2cc.txt | 10 +++++
- arch/arm/mm/cache-l2x0.c                       | 54 ++++++++++++++++++++++++++
- 2 files changed, 64 insertions(+)
+ arch/arm/mach-exynos/firmware.c | 50 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 50 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/arm/l2cc.txt b/Documentation/devicetree/bindings/arm/l2cc.txt
-index 292ef7ca3058..0dbabe9a6b0a 100644
---- a/Documentation/devicetree/bindings/arm/l2cc.txt
-+++ b/Documentation/devicetree/bindings/arm/l2cc.txt
-@@ -57,6 +57,16 @@ Optional properties:
- - cache-id-part: cache id part number to be used if it is not present
-   on hardware
- - wt-override: If present then L2 is forced to Write through mode
-+- arm,double-linefill : Override double linefill enable setting. Enable if
-+  non-zero, disable if zero.
-+- arm,double-linefill-incr : Override double linefill on INCR read. Enable
-+  if non-zero, disable if zero.
-+- arm,double-linefill-wrap : Override double linefill on WRAP read. Enable
-+  if non-zero, disable if zero.
-+- arm,prefetch-drop : Override prefetch drop enable setting. Enable if non-zero,
-+  disable if zero.
-+- arm,prefetch-offset : Override prefetch offset value. Valid values are
-+  0-7, 15, 23, and 31.
+diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
+index 766f57d2f029..4791a3cc00f9 100644
+--- a/arch/arm/mach-exynos/firmware.c
++++ b/arch/arm/mach-exynos/firmware.c
+@@ -17,6 +17,7 @@
+ #include <asm/cacheflush.h>
+ #include <asm/cputype.h>
+ #include <asm/firmware.h>
++#include <asm/hardware/cache-l2x0.h>
+ #include <asm/suspend.h>
  
- Example:
+ #include <mach/map.h>
+@@ -136,6 +137,43 @@ static const struct firmware_ops exynos_firmware_ops = {
+ 	.resume			= IS_ENABLED(CONFIG_EXYNOS_CPU_SUSPEND) ? exynos_resume : NULL,
+ };
  
-diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-index 5288153f28b8..01de13809454 100644
---- a/arch/arm/mm/cache-l2x0.c
-+++ b/arch/arm/mm/cache-l2x0.c
-@@ -1169,6 +1169,8 @@ static void __init l2c310_of_parse(const struct device_node *np,
- 	u32 tag[3] = { 0, 0, 0 };
- 	u32 filter[2] = { 0, 0 };
- 	u32 assoc;
-+	u32 prefetch;
-+	u32 val;
- 	int ret;
++static void exynos_l2_write_sec(unsigned long val, unsigned reg)
++{
++	static int l2cache_enabled;
++
++	switch (reg) {
++	case L2X0_CTRL:
++		if (val & L2X0_CTRL_EN) {
++			/*
++			 * Before the cache can be enabled, due to firmware
++			 * design, SMC_CMD_L2X0INVALL must be called.
++			 */
++			if (!l2cache_enabled) {
++				exynos_smc(SMC_CMD_L2X0INVALL, 0, 0, 0);
++				l2cache_enabled = 1;
++			}
++		} else {
++			l2cache_enabled = 0;
++		}
++		exynos_smc(SMC_CMD_L2X0CTRL, val, 0, 0);
++		break;
++
++	case L2X0_DEBUG_CTRL:
++		exynos_smc(SMC_CMD_L2X0DEBUG, val, 0, 0);
++		break;
++
++	default:
++		WARN_ONCE(1, "%s: ignoring write to reg 0x%x\n", __func__, reg);
++	}
++}
++
++static void exynos_l2_configure(const struct l2x0_regs *regs)
++{
++	exynos_smc(SMC_CMD_L2X0SETUP1, regs->tag_latency, regs->data_latency,
++		   regs->prefetch_ctrl);
++	exynos_smc(SMC_CMD_L2X0SETUP2, regs->pwr_ctrl, regs->aux_ctrl, 0);
++}
++
+ void __init exynos_firmware_init(void)
+ {
+ 	struct device_node *nd;
+@@ -155,4 +193,16 @@ void __init exynos_firmware_init(void)
+ 	pr_info("Running under secure firmware.\n");
  
- 	of_property_read_u32_array(np, "arm,tag-latency", tag, ARRAY_SIZE(tag));
-@@ -1214,6 +1216,58 @@ static void __init l2c310_of_parse(const struct device_node *np,
- 		       assoc);
- 		break;
- 	}
+ 	register_firmware_ops(&exynos_firmware_ops);
 +
-+	prefetch = l2x0_saved_regs.prefetch_ctrl;
-+
-+	ret = of_property_read_u32(np, "arm,double-linefill", &val);
-+	if (ret == 0) {
-+		if (val)
-+			prefetch |= L310_PREFETCH_CTRL_DBL_LINEFILL;
-+		else
-+			prefetch &= ~L310_PREFETCH_CTRL_DBL_LINEFILL;
-+	} else if (ret != -EINVAL) {
-+		pr_err("L2C-310 OF arm,double-linefill property value is missing\n");
++	/*
++	 * Exynos 4 SoCs (based on Cortex A9 and equipped with L2C-310),
++	 * running under secure firmware, require certain registers of L2
++	 * cache controller to be written in secure mode. Here .write_sec
++	 * callback is provided to perform necessary SMC calls.
++	 */
++	if (IS_ENABLED(CONFIG_CACHE_L2X0) &&
++	    read_cpuid_part() == ARM_CPU_PART_CORTEX_A9) {
++		outer_cache.write_sec = exynos_l2_write_sec;
++		outer_cache.configure = exynos_l2_configure;
 +	}
-+
-+	ret = of_property_read_u32(np, "arm,double-linefill-incr", &val);
-+	if (ret == 0) {
-+		if (val)
-+			prefetch |= L310_PREFETCH_CTRL_DBL_LINEFILL_INCR;
-+		else
-+			prefetch &= ~L310_PREFETCH_CTRL_DBL_LINEFILL_INCR;
-+	} else if (ret != -EINVAL) {
-+		pr_err("L2C-310 OF arm,double-linefill-incr property value is missing\n");
-+	}
-+
-+	ret = of_property_read_u32(np, "arm,double-linefill-wrap", &val);
-+	if (ret == 0) {
-+		if (!val)
-+			prefetch |= L310_PREFETCH_CTRL_DBL_LINEFILL_WRAP;
-+		else
-+			prefetch &= ~L310_PREFETCH_CTRL_DBL_LINEFILL_WRAP;
-+	} else if (ret != -EINVAL) {
-+		pr_err("L2C-310 OF arm,double-linefill-wrap property value is missing\n");
-+	}
-+
-+	ret = of_property_read_u32(np, "arm,prefetch-drop", &val);
-+	if (ret == 0) {
-+		if (val)
-+			prefetch |= L310_PREFETCH_CTRL_PREFETCH_DROP;
-+		else
-+			prefetch &= ~L310_PREFETCH_CTRL_PREFETCH_DROP;
-+	} else if (ret != -EINVAL) {
-+		pr_err("L2C-310 OF arm,prefetch-drop property value is missing\n");
-+	}
-+
-+	ret = of_property_read_u32(np, "arm,prefetch-offset", &val);
-+	if (ret == 0) {
-+		prefetch &= ~L310_PREFETCH_CTRL_OFFSET_MASK;
-+		prefetch |= val & L310_PREFETCH_CTRL_OFFSET_MASK;
-+	} else if (ret != -EINVAL) {
-+		pr_err("L2C-310 OF arm,prefetch-offset property value is missing\n");
-+	}
-+
-+	l2x0_saved_regs.prefetch_ctrl = prefetch;
  }
- 
- static const struct l2c_init_data of_l2c310_data __initconst = {
 -- 
 1.9.2
 
