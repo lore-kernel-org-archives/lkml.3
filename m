@@ -1,91 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248AbbAGBtn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 20:49:43 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:37351 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751845AbbAGBtm (ORCPT
+	id S1758873AbbAGDKV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 22:10:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46224 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756483AbbAGBvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:49:42 -0500
-Date: Tue, 6 Jan 2015 17:49:06 -0800
-From: Calvin Owens <calvinowens@fb.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <kernel-team@fb.com>, <calvinowens@fb.com>
-Subject: [PATCH v2] ksoftirqd: Enable IRQs and call cond_resched() before
- poking RCU
-Message-ID: <20150107014906.GA27996@mail.thefacebook.com>
-References: <1420594659-16996-1-git-send-email-calvinowens@fb.com>
+	Tue, 6 Jan 2015 20:51:48 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Willy Tarreau <w@1wt.eu>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.18 03/84] x86/tls: Disallow unusual TLS segments
+Date: Tue,  6 Jan 2015 17:49:06 -0800
+Message-Id: <20150107014029.128832878@linuxfoundation.org>
+X-Mailer: git-send-email 2.2.1
+In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
+References: <20150107014029.012974975@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <1420594659-16996-1-git-send-email-calvinowens@fb.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-07_01:2015-01-06,2015-01-07,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=1.72667093458211
- compositescore=0.928746566069775 urlsuspect_oldscore=0.928746566069775
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.928746566069775 spamscore=0
- recipient_to_sender_domain_totalscore=12 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1501070019
-X-FB-Internal: deliver
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While debugging an issue with excessive softirq usage, I encountered the
-following note in commit 3e339b5dae24a706 ("softirq: Use hotplug thread
-infrastructure"):
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
-    [ paulmck: Call rcu_note_context_switch() with interrupts enabled. ]
+------------------
 
-...but despite this note, the patch still calls RCU with IRQs disabled.
+From: Andy Lutomirski <luto@amacapital.net>
 
-This seemingly innocuous change caused a significant regression in softirq
-CPU usage on the sending side of a large TCP transfer (~1 GB/s): when
-introducing 0.01% packet loss, the softirq usage would jump to around 25%,
-spiking as high as 50%. Before the change, the usage would never exceed 5%.
+commit 0e58af4e1d2166e9e33375a0f121e4867010d4f8 upstream.
 
-Moving the call to rcu_note_context_switch() after the cond_sched() call,
-as it was originally before the hotplug patch, completely eliminated this
-problem.
+Users have no business installing custom code segments into the
+GDT, and segments that are not present but are otherwise valid
+are a historical source of interesting attacks.
 
-Signed-off-by: Calvin Owens <calvinowens@fb.com>
+For completeness, block attempts to set the L bit.  (Prior to
+this patch, the L bit would have been silently dropped.)
+
+This is an ABI break.  I've checked glibc, musl, and Wine, and
+none of them look like they'll have any trouble.
+
+Note to stable maintainers: this is a hardening patch that fixes
+no known bugs.  Given the possibility of ABI issues, this
+probably shouldn't be backported quickly.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
-Changes since v1:
-	I mixed up the kernel versions I was patching against, sorry!
+ arch/x86/kernel/tls.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
- kernel/softirq.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+--- a/arch/x86/kernel/tls.c
++++ b/arch/x86/kernel/tls.c
+@@ -39,6 +39,28 @@ static bool tls_desc_okay(const struct u
+ 	if (!info->seg_32bit)
+ 		return false;
+ 
++	/* Only allow data segments in the TLS array. */
++	if (info->contents > 1)
++		return false;
++
++	/*
++	 * Non-present segments with DPL 3 present an interesting attack
++	 * surface.  The kernel should handle such segments correctly,
++	 * but TLS is very difficult to protect in a sandbox, so prevent
++	 * such segments from being created.
++	 *
++	 * If userspace needs to remove a TLS entry, it can still delete
++	 * it outright.
++	 */
++	if (info->seg_not_present)
++		return false;
++
++#ifdef CONFIG_X86_64
++	/* The L bit makes no sense for data. */
++	if (info->lm)
++		return false;
++#endif
++
+ 	return true;
+ }
+ 
 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 501baa9..9e787d8 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -656,9 +656,13 @@ static void run_ksoftirqd(unsigned int cpu)
- 		 * in the task stack here.
- 		 */
- 		__do_softirq();
--		rcu_note_context_switch();
- 		local_irq_enable();
- 		cond_resched();
-+
-+		preempt_disable();
-+		rcu_note_context_switch();
-+		preempt_enable();
-+
- 		return;
- 	}
- 	local_irq_enable();
--- 
-2.1.1
 
