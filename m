@@ -1,76 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344AbbAGCE2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:04:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46603 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757228AbbAGCB4 (ORCPT
+	id S1755691AbbAGBur (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 20:50:47 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:46294 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453AbbAGBup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:01:56 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rabin Vincent <rabin.vincent@axis.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.10 31/38] crypto: af_alg - fix backlog handling
-Date: Tue,  6 Jan 2015 17:50:43 -0800
-Message-Id: <20150107014957.409621850@linuxfoundation.org>
-X-Mailer: git-send-email 2.2.1
-In-Reply-To: <20150107014952.440109372@linuxfoundation.org>
-References: <20150107014952.440109372@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 6 Jan 2015 20:50:45 -0500
 MIME-Version: 1.0
+In-Reply-To: <CAF8JNh+gzA_m-mMjjAdBz6WyyFemTU26VDOLufOJXJ5DMkK2yg@mail.gmail.com>
+References: <1419782872-2991-1-git-send-email-aniroop.mathur@gmail.com>
+	<alpine.LNX.2.00.1412291302470.1680@pobox.suse.cz>
+	<CADYu308MmdGeajFTDt38zZSy7K2VKbDppuqmiJn=1ZwL5d1vmw@mail.gmail.com>
+	<CAF8JNh+gzA_m-mMjjAdBz6WyyFemTU26VDOLufOJXJ5DMkK2yg@mail.gmail.com>
+Date: Tue, 6 Jan 2015 20:50:44 -0500
+Message-ID: <CAN+gG=GqwUHqv-7YAt++N-xmuxjV+C8mPkbX8ZfHiqqkWvnu+Q@mail.gmail.com>
+Subject: Re: [PATCH] hid: Initialize battery_no to -1 & correct its format string
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Ping Cheng <pinglinux@gmail.com>
+Cc: Aniroop Mathur <aniroop.mathur@gmail.com>,
+        Jason Gerecke <killertofu@gmail.com>, Ping Cheng <pingc@wacom.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Aniroop Mathur <a.mathur@samsung.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jan 6, 2015 at 7:50 PM, Ping Cheng <pinglinux@gmail.com> wrote:
+> Hi Benjamin,
+>
+> The relevant code was introduced by
+> d70420b914c98a3758674c6e9858810e0ab4ea30. Can you take a look and let
+> us know if Aniroop's patch fits your original thought or not?
 
-------------------
+Hehe, indeed, that's my code.
 
-From: Rabin Vincent <rabin.vincent@axis.com>
+I would agree with Jiri, I really do not care. This code is called
+only once at initialization and I am pretty sure it will not change
+the time to initialize the device (I am confident the compiler will do
+something better than blindly following the code).
 
-commit 7e77bdebff5cb1e9876c561f69710b9ab8fa1f7e upstream.
+So either way it is good. But I have a slight preference to initialize
+the variable to 0 and keep the unsigned in the name.
 
-If a request is backlogged, it's complete() handler will get called
-twice: once with -EINPROGRESS, and once with the final error code.
+Cheers,
+Benjamin
 
-af_alg's complete handler, unlike other users, does not handle the
--EINPROGRESS but instead always completes the completion that recvmsg()
-is waiting on.  This can lead to a return to user space while the
-request is still pending in the driver.  If userspace closes the sockets
-before the requests are handled by the driver, this will lead to
-use-after-frees (and potential crashes) in the kernel due to the tfm
-having been freed.
-
-The crashes can be easily reproduced (for example) by reducing the max
-queue length in cryptod.c and running the following (from
-http://www.chronox.de/libkcapi.html) on AES-NI capable hardware:
-
- $ while true; do kcapi -x 1 -e -c '__ecb-aes-aesni' \
-    -k 00000000000000000000000000000000 \
-    -p 00000000000000000000000000000000 >/dev/null & done
-
-Signed-off-by: Rabin Vincent <rabin.vincent@axis.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- crypto/af_alg.c |    3 +++
- 1 file changed, 3 insertions(+)
-
---- a/crypto/af_alg.c
-+++ b/crypto/af_alg.c
-@@ -449,6 +449,9 @@ void af_alg_complete(struct crypto_async
- {
- 	struct af_alg_completion *completion = req->data;
- 
-+	if (err == -EINPROGRESS)
-+		return;
-+
- 	completion->err = err;
- 	complete(&completion->completion);
- }
-
-
+>
+> Thanks,
+>
+> Ping
+>
+> On Tue, Jan 6, 2015 at 6:32 AM, Aniroop Mathur <aniroop.mathur@gmail.com> wrote:
+>> Dear Mr. Jason and Mr. Ping,
+>>
+>> Please update about below patch.
+>> Except avoiding subtraction, there is also a need to avoid negative
+>> battery name which may come due to %ld, so need to change to %lu.
+>>
+>> Thanks,
+>> Aniroop
+>>
+>> On Mon, Dec 29, 2014 at 5:33 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+>>> On Sun, 28 Dec 2014, Aniroop Mathur wrote:
+>>>
+>>>> From: Aniroop Mathur <a.mathur@samsung.com>
+>>>>
+>>>> This patch initializes battery_no to -1 to avoid extra subtraction
+>>>> operation performed everytime wacom battery is initialized
+>>>
+>>> This is so femto-optimization, that I don't really care deeply. Adding
+>>> Jason and Ping to CC. If they want this, I'll apply the patch.
+>>>
+>>>> and correct format string of unsigned long from %ld to %lu.
+>>>>
+>>>> Signed-off-by: Aniroop Mathur <a.mathur@samsung.com>
+>>>> ---
+>>>>  drivers/hid/wacom_sys.c | 8 ++++----
+>>>>  1 file changed, 4 insertions(+), 4 deletions(-)
+>>>>
+>>>> diff --git a/drivers/hid/wacom_sys.c b/drivers/hid/wacom_sys.c
+>>>> index 129fd33..4b5ff84 100644
+>>>> --- a/drivers/hid/wacom_sys.c
+>>>> +++ b/drivers/hid/wacom_sys.c
+>>>> @@ -919,17 +919,17 @@ static int wacom_ac_get_property(struct power_supply *psy,
+>>>>
+>>>>  static int wacom_initialize_battery(struct wacom *wacom)
+>>>>  {
+>>>> -     static atomic_t battery_no = ATOMIC_INIT(0);
+>>>> +     static atomic_t battery_no = ATOMIC_INIT(-1);
+>>>>       int error;
+>>>>       unsigned long n;
+>>>>
+>>>>       if (wacom->wacom_wac.features.quirks & WACOM_QUIRK_BATTERY) {
+>>>> -             n = atomic_inc_return(&battery_no) - 1;
+>>>> +             n = atomic_inc_return(&battery_no);
+>>>>
+>>>>               wacom->battery.properties = wacom_battery_props;
+>>>>               wacom->battery.num_properties = ARRAY_SIZE(wacom_battery_props);
+>>>>               wacom->battery.get_property = wacom_battery_get_property;
+>>>> -             sprintf(wacom->wacom_wac.bat_name, "wacom_battery_%ld", n);
+>>>> +             sprintf(wacom->wacom_wac.bat_name, "wacom_battery_%lu", n);
+>>>>               wacom->battery.name = wacom->wacom_wac.bat_name;
+>>>>               wacom->battery.type = POWER_SUPPLY_TYPE_BATTERY;
+>>>>               wacom->battery.use_for_apm = 0;
+>>>> @@ -937,7 +937,7 @@ static int wacom_initialize_battery(struct wacom *wacom)
+>>>>               wacom->ac.properties = wacom_ac_props;
+>>>>               wacom->ac.num_properties = ARRAY_SIZE(wacom_ac_props);
+>>>>               wacom->ac.get_property = wacom_ac_get_property;
+>>>> -             sprintf(wacom->wacom_wac.ac_name, "wacom_ac_%ld", n);
+>>>> +             sprintf(wacom->wacom_wac.ac_name, "wacom_ac_%lu", n);
+>>>>               wacom->ac.name = wacom->wacom_wac.ac_name;
+>>>>               wacom->ac.type = POWER_SUPPLY_TYPE_MAINS;
+>>>>               wacom->ac.use_for_apm = 0;
+>>>> --
+>>>> 1.9.1
+>>>>
+>>>
+>>> --
+>>> Jiri Kosina
+>>> SUSE Labs
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
