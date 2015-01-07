@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485AbbAGXaK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 18:30:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33784 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055AbbAGXaI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 18:30:08 -0500
-Date: Wed, 7 Jan 2015 15:30:06 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Josh Poimboeuf <jpoimboe@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        live-patching@vger.kernel.org, linux-next@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: livepatching tree for linux-next
-Message-Id: <20150107153006.60ed354e3458f402e6819b9e@linux-foundation.org>
-In-Reply-To: <alpine.LNX.2.00.1501072346400.15299@pobox.suse.cz>
-References: <alpine.LNX.2.00.1412221412360.1680@pobox.suse.cz>
-	<20141223094607.GA16445@infradead.org>
-	<20141223151056.GA4789@treble.redhat.com>
-	<20141226155613.36dd95b9@canb.auug.org.au>
-	<20150107144317.61ab2080877a4d8227990551@linux-foundation.org>
-	<alpine.LNX.2.00.1501072346400.15299@pobox.suse.cz>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755439AbbAGXdR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 18:33:17 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:43093 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751945AbbAGXdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 18:33:15 -0500
+Message-ID: <54ADC239.90403@osg.samsung.com>
+Date: Wed, 07 Jan 2015 16:33:13 -0700
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.18 00/84] 3.18.2-stable review
+References: <20150107014029.012974975@linuxfoundation.org>
+In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Jan 2015 00:01:02 +0100 (CET) Jiri Kosina <jkosina@suse.cz> wrote:
+On 01/06/2015 06:49 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.18.2 release.
+> There are 84 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+> 
+> Responses should be made by Fri Jan  9 01:40:07 UTC 2015.
+> Anything received after that time might be too late.
+> 
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.18.2-rc1.gz
+> and the diffstat can be found below.
+> 
+> thanks,
+> 
+> greg k-h
+> 
 
-> On Wed, 7 Jan 2015, Andrew Morton wrote:
-> 
-> > > OK, I have added this from today
-> > 
-> > My x86_64 allmodconfig broke.
-> > 
-> > In file included from include/linux/livepatch.h:29,
-> >                  from kernel/livepatch/core.c:30:
-> > ./arch/x86/include/asm/livepatch.h:29:2: error: #error Your compiler must support -mfentry for live patching to work
-> 
-> [ adding Steven and Masami to CC, as this in some sense is related in 
->   both to ftrace regs caller, and to IPMODIFY users in general ]
-> 
-> Well, if your gcc is too old (which is a fact detemined during build time, 
-> so there is no way to express this in Kconfig language in form of 
-> dependencies), we have to introduce build-time failure, as there is no way 
-> for this to work on compilers that don't support fentry on x86_64.
-> 
-> The only remaining option is to let the code build, pretend that 
-> everything is working, but do something like
-> 
-> #ifndef CC_USING_FENTRY
-> 	printk("The compiler you used to compile your kernel was ancient "
-> 		"there is no way for you to make use of this feature\n");
-> 	return -EINVAL;
-> #endif
-> 
-> or so ... which I personally detest even more.
+Compiled and booted on my test system. No dmesg regressions.
 
-um, what's so special about this patchset that it gets to be the first
-code in the history of the kernel which breaks allmodconfig?
+-- Shuah
 
-Please find a way to fix it.  Copying CONFIG_CC_STACKPROTECTOR is one way.
 
+-- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Open Source Innovation Group
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
