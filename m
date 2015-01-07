@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449AbbAGODL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 09:03:11 -0500
-Received: from mail-oi0-f49.google.com ([209.85.218.49]:48105 "EHLO
-	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753293AbbAGODK (ORCPT
+	id S1753466AbbAGOFF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 09:05:05 -0500
+Received: from fortimail.online.lv ([81.198.164.220]:51095 "EHLO
+	fortimail.online.lv" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753117AbbAGOFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 09:03:10 -0500
+	Wed, 7 Jan 2015 09:05:03 -0500
+Message-ID: <54AD3D0B.6060501@apollo.lv>
+Date: Wed, 07 Jan 2015 16:04:59 +0200
+From: Raimonds Cicans <ray@apollo.lv>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0)
+ Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <20150104164754.GD22707@krava.brq.redhat.com>
-References: <1419656793-32756-1-git-send-email-namhyung@kernel.org>
- <1419656793-32756-3-git-send-email-namhyung@kernel.org> <20150104164754.GD22707@krava.brq.redhat.com>
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Wed, 7 Jan 2015 23:02:49 +0900
-X-Google-Sender-Auth: FG8BZcWbV1C4jgWfrWE3iVF6EiM
-Message-ID: <CAM9d7cjQ=SW6nMoT3t-2JUvcxXta2B=imRXU6SvdM21joyfwMQ@mail.gmail.com>
-Subject: Re: [PATCH 3/5] perf diff: Print diff result more precisely
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=UTF-8
+To: Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org
+Subject: Re: Questions about IOMMU & PCIe switch
+References: <54ACB0D4.3000008@apollo.lv> <54AD21E2.2020100@ladisch.de>
+In-Reply-To: <54AD21E2.2020100@ladisch.de>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+DomainKey-Status: no signature
+DKIM-Status: no signature
+X-AXIGEN-DK-Result: No records
+X-AXIGEN-DKIM-Result: No records
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 5, 2015 at 1:47 AM, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Sat, Dec 27, 2014 at 02:06:31PM +0900, Namhyung Kim wrote:
->> Current perf diff result is somewhat confusing since it sometimes hide
->> small result and sometimes there's no result.  So do not hide small
->> result (less than 0.01%) and print "N/A" if baseline is not
->> recorded (for ratio and wdiff only).  Blank means the baseline is
->> available but its pairs are not.
+On 07.01.2015 14:09, Clemens Ladisch wrote:
+> Raimonds Cicans wrote:
+>> We have two kinds of PCIe cards:
+>> A1 - based on chip B
+>> A2 - based on same chip B but behind PCIe switch
+>>
+>> Card A1 work flawlessly in any configuration,
+>> but card A2 work flawlessly only if system
+>> lack IOMMU or have disabled IOMMU
+> In theory, such a switch should be transparent.
 >
-> I think we should document this, especialy when diff has different
-> behaviour from the rest of the computation.. :-\
-
-Well, probably I'm missing something but I don't know what needs to be
-documented.  Currently perf diff doesn't show small result so it's
-hard to distinguish entries that have small result and no result.  But
-to sort the output properly, it needs to show the results and I think
-it's natural to not hide the result to user.
-
-
+>> Do we have to treat card with PCIe switch in special way?
+> No.  But the switch has to work correctly, and driver must be
+> written correctly.
 >
-> anyway for the change itself:
->
-> Acked-by: Jiri Olsa <jolsa@kernel.org>
+> Which switch?  Which driver?
 
-Thanks,
-Namhyung
+We talk about TBS 6285 Quad DVB-T PCIe receiver card.
+Starting from version V20 manufacturer added Pericom
+PCIe switch PI7C9X2G304SL.
+
+Card have 2 out of kernel drivers:
+1) Semi open from TBS:
+http://www.tbsdtv.com/download/document/common/tbs-linux-drivers_v141225.zip
+
+2) Open from: https://github.com/ljalves/linux_media
+
+If you want more information you can look at open ticket:
+https://github.com/ljalves/linux_media/issues/66
+
+
+Raimonds Cicans
+
