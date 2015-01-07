@@ -1,42 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755103AbbAGU7c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 15:59:32 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:41971 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751785AbbAGU7a (ORCPT
+	id S1755197AbbAGVBo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 16:01:44 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:44555 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752044AbbAGVBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 15:59:30 -0500
-Date: Wed, 7 Jan 2015 12:59:26 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCH 1/3] mtd:mtdblock: remove the needless mtdblks_lock
-Message-ID: <20150107205926.GO9759@ld-irv-0074>
-References: <547E7348.5020204@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <547E7348.5020204@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 7 Jan 2015 16:01:42 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-ide@vger.kernel.org
+Subject: [PATCH][RFC] ide: pdc202xxx_new: Remove do_gettimeofday() usage for ktime_get
+Date: Wed,  7 Jan 2015 13:01:33 -0800
+Message-Id: <1420664493-7041-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 10:19:52AM +0800, Gu Zheng wrote:
-> The global lock mtdblks_lock was used to protect the original mtdblks
-> array to avoid race conditions. As the mtdblks array was already gone,
-> but the mtdblks_lock is left, and it causes latency when open/release dev.
-> So we need to remove it here.
-> 
-> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+As part of the y2038 cleanups, this patch removes the do_gettimeofday
+usage replacing it with ktime_get.
 
-Pushed this first patch to l2-mtd.git. Thanks!
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-ide@vger.kernel.org
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ drivers/ide/pdc202xx_new.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-I'm kinda ambivalent about the next two. They don't seem like necessary
-cleanups, really. With the third patch, I think it's actually pretty
-important that the caller understand that it's using container_of(). I
-could be convinced otherwise though...
+diff --git a/drivers/ide/pdc202xx_new.c b/drivers/ide/pdc202xx_new.c
+index df73cbd..94bd05f 100644
+--- a/drivers/ide/pdc202xx_new.c
++++ b/drivers/ide/pdc202xx_new.c
+@@ -18,6 +18,7 @@
+ #include <linux/module.h>
+ #include <linux/types.h>
+ #include <linux/kernel.h>
++#include <linux/ktime.h>
+ #include <linux/delay.h>
+ #include <linux/pci.h>
+ #include <linux/init.h>
+@@ -243,13 +244,13 @@ static long read_counter(u32 dma_base)
+  */
+ static long detect_pll_input_clock(unsigned long dma_base)
+ {
+-	struct timeval start_time, end_time;
++	ktime_t start_time, end_time;
+ 	long start_count, end_count;
+ 	long pll_input, usec_elapsed;
+ 	u8 scr1;
+ 
+ 	start_count = read_counter(dma_base);
+-	do_gettimeofday(&start_time);
++	start_time = ktime_get();
+ 
+ 	/* Start the test mode */
+ 	outb(0x01, dma_base + 0x01);
+@@ -261,7 +262,7 @@ static long detect_pll_input_clock(unsigned long dma_base)
+ 	mdelay(10);
+ 
+ 	end_count = read_counter(dma_base);
+-	do_gettimeofday(&end_time);
++	end_time = ktime_get();
+ 
+ 	/* Stop the test mode */
+ 	outb(0x01, dma_base + 0x01);
+@@ -273,8 +274,7 @@ static long detect_pll_input_clock(unsigned long dma_base)
+ 	 * Calculate the input clock in Hz
+ 	 * (the clock counter is 30 bit wide and counts down)
+ 	 */
+-	usec_elapsed = (end_time.tv_sec - start_time.tv_sec) * 1000000 +
+-		(end_time.tv_usec - start_time.tv_usec);
++	usec_elapsed = (long)ktime_to_ns(ktime_sub(end_time, start_time))/1000;
+ 	pll_input = ((start_count - end_count) & 0x3fffffff) / 10 *
+ 		(10000000 / usec_elapsed);
+ 
+-- 
+1.9.1
 
-Brian
