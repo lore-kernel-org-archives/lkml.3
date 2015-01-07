@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758713AbbAGDFq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 22:05:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46236 "EHLO
+	id S1757722AbbAGDFT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 22:05:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46224 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756832AbbAGBvz (ORCPT
+	with ESMTP id S1756837AbbAGBvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jan 2015 20:51:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.18 30/84] dm thin: fix a race in thin_dtr
-Date: Tue,  6 Jan 2015 17:49:33 -0800
-Message-Id: <20150107014030.017800392@linuxfoundation.org>
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH 3.18 31/84] arm64: Add COMPAT_HWCAP_LPAE
+Date: Tue,  6 Jan 2015 17:49:34 -0800
+Message-Id: <20150107014030.048645777@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
 References: <20150107014029.012974975@linuxfoundation.org>
@@ -29,41 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit 17181fb7a0c3a279196c0eeb2caba65a1519614b upstream.
+commit 7d57511d2dba03a8046c8b428dd9192a4bfc1e73 upstream.
 
-As long as struct thin_c is in the list, anyone can grab a reference of
-it.  Consequently, we must wait for the reference count to drop to zero
-*after* we remove the structure from the list, not before.
+Commit a469abd0f868 (ARM: elf: add new hwcap for identifying atomic
+ldrd/strd instructions) introduces HWCAP_ELF for 32-bit ARM
+applications. As LPAE is always present on arm64, report the
+corresponding compat HWCAP to user space.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-thin.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/arm64/include/asm/hwcap.h |    1 +
+ arch/arm64/kernel/setup.c      |    3 ++-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -3266,14 +3266,14 @@ static void thin_dtr(struct dm_target *t
- 	struct thin_c *tc = ti->private;
- 	unsigned long flags;
+--- a/arch/arm64/include/asm/hwcap.h
++++ b/arch/arm64/include/asm/hwcap.h
+@@ -30,6 +30,7 @@
+ #define COMPAT_HWCAP_IDIVA	(1 << 17)
+ #define COMPAT_HWCAP_IDIVT	(1 << 18)
+ #define COMPAT_HWCAP_IDIV	(COMPAT_HWCAP_IDIVA|COMPAT_HWCAP_IDIVT)
++#define COMPAT_HWCAP_LPAE	(1 << 20)
+ #define COMPAT_HWCAP_EVTSTRM	(1 << 21)
  
--	thin_put(tc);
--	wait_for_completion(&tc->can_destroy);
--
- 	spin_lock_irqsave(&tc->pool->lock, flags);
- 	list_del_rcu(&tc->list);
- 	spin_unlock_irqrestore(&tc->pool->lock, flags);
- 	synchronize_rcu();
- 
-+	thin_put(tc);
-+	wait_for_completion(&tc->can_destroy);
-+
- 	mutex_lock(&dm_thin_pool_table.mutex);
- 
- 	__pool_dec(tc->pool);
+ #define COMPAT_HWCAP2_AES	(1 << 0)
+--- a/arch/arm64/kernel/setup.c
++++ b/arch/arm64/kernel/setup.c
+@@ -72,7 +72,8 @@ EXPORT_SYMBOL_GPL(elf_hwcap);
+ 				 COMPAT_HWCAP_FAST_MULT|COMPAT_HWCAP_EDSP|\
+ 				 COMPAT_HWCAP_TLS|COMPAT_HWCAP_VFP|\
+ 				 COMPAT_HWCAP_VFPv3|COMPAT_HWCAP_VFPv4|\
+-				 COMPAT_HWCAP_NEON|COMPAT_HWCAP_IDIV)
++				 COMPAT_HWCAP_NEON|COMPAT_HWCAP_IDIV|\
++				 COMPAT_HWCAP_LPAE)
+ unsigned int compat_elf_hwcap __read_mostly = COMPAT_ELF_HWCAP_DEFAULT;
+ unsigned int compat_elf_hwcap2 __read_mostly;
+ #endif
 
 
