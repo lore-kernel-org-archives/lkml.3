@@ -1,59 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673AbbAGJmg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 04:42:36 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:61578 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575AbbAGJmd (ORCPT
+	id S1756724AbbAGJoN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 04:44:13 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:26473 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755062AbbAGJoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 04:42:33 -0500
+	Wed, 7 Jan 2015 04:44:10 -0500
+Message-ID: <54ACFFB6.3040102@huawei.com>
+Date: Wed, 7 Jan 2015 17:43:18 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-In-Reply-To: <1420599537-28740-2-git-send-email-walter@vanguardiasur.com.ar>
-References: <1420599537-28740-1-git-send-email-walter@vanguardiasur.com.ar>
-	<1420599537-28740-2-git-send-email-walter@vanguardiasur.com.ar>
-Date: Wed, 7 Jan 2015 10:42:31 +0100
-X-Google-Sender-Auth: xXXC82k68MJsqncbtEZrrtLx1VQ
-Message-ID: <CAMuHMdVfqzTf034vyDPEYrnZ7+3iE+h2H+7Cs-ifJrePDrw-rg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Input: adxl34x - add device tree documentation
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Walter Lozano <walter@vanguardiasur.com.ar>
-Cc: michael.hennerich@analog.com, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Hillf Danton <hillf.zj@alibaba-inc.com>
+CC: <linux@arm.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
+        <masami.hiramatsu.pt@hitachi.com>, <anil.s.keshavamurthy@intel.com>,
+        <davem@davemloft.net>, <ananth@in.ibm.com>, <dave.long@linaro.org>,
+        <tixy@linaro.org>, <lizefan@huawei.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 09/11] kprobes: core logic of eraly kprobes
+References: <043a01d02a5b$44ec45f0$cec4d1d0$@alibaba-inc.com>
+In-Reply-To: <043a01d02a5b$44ec45f0$cec4d1d0$@alibaba-inc.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.90]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 7, 2015 at 3:58 AM, Walter Lozano
-<walter@vanguardiasur.com.ar> wrote:
-> diff --git a/Documentation/devicetree/bindings/input/adxl34x.txt b/Documentation/devicetree/bindings/input/adxl34x.txt
-> new file mode 100644
-> index 0000000..0774f7e
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/input/adxl34x.txt
-> @@ -0,0 +1,53 @@
-> +Device Tree bindings for adxl34x digital accelerometer, both spi and i2c.
-> +
-> +Depending on the interface this node should be a child of a spi or i2c bus.
-> +
-> +Required properties:
-> +- compatible: "adxl34x"
+On 2015/1/7 17:21, Hillf Danton wrote:
+>>
+>> +struct early_kprobe_slot {
+>> +	struct optimized_kprobe op;
+>> +};
+>> +
+> [...]
+>>
+>>  /* Free optimized instructions and optimized_kprobe */
+>> +static int ek_free_early_kprobe(struct early_kprobe_slot *slot);
+> 
+> [2] How is it implemented? In subsequent patches?
+> 
 
-"adi,adxl34x"?
+It is implemented using macro. Please see patch 7/11 and
 
-Gr{oetje,eeting}s,
+DEFINE_EKPROBE_ALLOC_OPS(struct early_kprobe_slot, early_kprobe, static);
 
-                        Geert
+following.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>>  static void free_aggr_kprobe(struct kprobe *p)
+>>  {
+>>  	struct optimized_kprobe *op;
+>> +	struct early_kprobe_slot *ep;
+>>
+>>  	op = container_of(p, struct optimized_kprobe, kp);
+>>  	arch_remove_optimized_kprobe(op);
+>>  	arch_remove_kprobe(p);
+>> -	kfree(op);
+>> +	ep = container_of(op, struct early_kprobe_slot, op);
+>> +	if (likely(!ek_free_early_kprobe(ep)))
+>> +		kfree(op);
+> 
+> [1] s/op/ep/   yes?
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Which one? Do you mean kfree(op) --> kfree(ep)?
+
+If ek_free_early_kprobe(ep) fail (not in early_kprobe area defined by
+DEFINE_EKPROBE_ALLOC_OPS), then this is a normal aggr probe, allocated
+using kzalloc() as struct optimized_kprobe, see alloc_aggr_kprobe().
+So kfree corresponding op structure.
+
+If ek_free_early_kprobe(ep) success, then this is an struct early_kprobe_slot
+and allocated statically.
+
+>>  }
+>>
+> [...]
+>> +#else
+>> +static int register_early_kprobe(struct kprobe *p) { return -ENOSYS; }
+>> +static int ek_free_early_kprobe(struct early_kprobe_slot *slot) { return 0; }
+> 
+> [3] Compile-able with CONFIG_EARLY_KPROBES enabled?
+
+These empty functions are for CONFIG_EARLY_KPROBES disabled. They won't be compiled
+when CONFIG_EARLY_KPROBES=y. I have tested both cases on x86 and ARM.
+
+> 
+>> +static void convert_early_kprobes(void) {};
+>> +#endif
+>> --
+>> 1.8.4
+> 
+
+Thanks.
+
+
