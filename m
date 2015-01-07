@@ -1,133 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856AbbAGVpl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 16:45:41 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:41548 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752303AbbAGVpk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 16:45:40 -0500
-Date: Wed, 7 Jan 2015 13:45:30 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Simek <michal.simek@xilinx.com>
-Subject: Re: linux-next: Tree for Jan 7 (microblaze qemu problems)
-Message-ID: <20150107214530.GA27620@roeck-us.net>
-References: <20150107151618.7cb9d574@canb.auug.org.au>
+	id S1755071AbbAGVsO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 16:48:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55733 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753097AbbAGVsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 16:48:13 -0500
+Message-ID: <54ADA99A.90501@suse.cz>
+Date: Wed, 07 Jan 2015 22:48:10 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150107151618.7cb9d574@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020205.54ADA90B.02AA,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 3
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+To: Simon Kirby <sim@hostway.ca>,
+        Holger Hoffst?tte <holger.hoffstaette@googlemail.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: Dirty pages underflow on 3.14.23
+References: <alpine.LRH.2.02.1501051744020.5119@file01.intranet.prod.int.rdu2.redhat.com> <20150106150250.GA26895@phnom.home.cmpxchg.org> <alpine.LRH.2.02.1501061246400.16437@file01.intranet.prod.int.rdu2.redhat.com> <pan.2015.01.07.10.57.46@googlemail.com> <20150107212858.GA6664@hostway.ca>
+In-Reply-To: <20150107212858.GA6664@hostway.ca>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 03:16:18PM +1100, Stephen Rothwell wrote:
-> Hi all,
+On 01/07/2015 10:28 PM, Simon Kirby wrote:
+> On Wed, Jan 07, 2015 at 10:57:46AM +0000, Holger Hoffst?tte wrote:
 > 
-> Changes since 20150106:
+>> On Tue, 06 Jan 2015 12:54:43 -0500, Mikulas Patocka wrote:
+>> 
+>> > I can't reprodce it. It happened just once.
+>> > 
+>> > That patch is supposed to fix an occasional underflow by a single page -
+>> > while my meminfo showed underflow by 22952KiB (5738 pages).
+>> 
+>> You are probably looking for:
+>> commit 835f252c6debd204fcd607c79975089b1ecd3472
+>> "aio: fix uncorrent dirty pages accouting when truncating AIO ring buffer"
+>> 
+>> It definitely went into 3.14.26, don't know about 3.16.x.
 > 
-> *crickets*
+> I can confirm that a MySQL shutdown/restart triggers it for me, even
+> immediately following a fresh boot:
 > 
-> Non-merge commits (relative to Linus' tree): 1350
->  1543 files changed, 41856 insertions(+), 24250 deletions(-)
+> # uname -a ; grep '^nr_dirty ' /proc/vmstat; /etc/init.d/mysql restart; \
+>              grep '^nr_dirty ' /proc/vmstat
+> Linux blue 3.16.6-blue #51 Mon Oct 20 14:00:47 PDT 2014 i686 GNU/Linux
+> nr_dirty 13
+> [ ok ] Stopping MySQL database server: mysqld.
+> [ ok ] Starting MySQL database server: mysqld . ..
+> [info] Checking for tables which need an upgrade, are corrupt or were not closed cleanly..
+> nr_dirty 4294967245
+> 
+> Hmm...A possibly-related issue...Before trying this, after a fresh boot,
+> /proc/vmstat showed:
+> 
+> nr_alloc_batch 4294541205
+
+This can happen, and not be a problem in general. However, there was a fix
+abe5f972912d086c080be4bde67750630b6fb38b in 3.17 for a potential performance
+issue if this counter overflows on single processor configuration. It was marked
+stable, but the 3.16 series was discontinued before the fix could be backported.
+So if you are on single-core, you might hit the performance issue.
+
+> and after the restart, it shows:
+> 
+> nr_alloc_batch 161
+> 
+> ...anyway, git cherry-pick ce4b66be6cd964e84363afd4a603633dd061b3b8 on
+> 3.16.6 tree does seem to fix nr_dirty from underflowing...Yay!
+
+Great!
+
+> Still, nr_alloc_batch reads as 4294254379 after MySQL restart, and now
+> seems to stay up there.
+
+Hm if it stays there, then you are probably hitting the performance issue. Look
+at /proc/zoneinfo, which zone has the underflow. It means this zone will get
+unfair amount of allocations, while others may contain stale data and would be
+better candidates.
+
+> Simon-
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 > 
 
-With this kernel I get the following WARNINGs (lots of htem) when running
-microblaze images (both big and little endian) with qemu.
-
-WARNING: CPU: 0 PID: 1 at arch/microblaze/kernel/cpu/cache.c:432
-__invalidate_dcache_range_msr_irq_wt+0xcc/0xd8()
-Modules linked in:
-CPU: 0 PID: 1 Comm: swapper Not tainted 3.19.0-rc3-next-20150107 #1
-...
-(sample) Call Trace:
-[<c0004080>] microblaze_unwind+0x5c/0x78
-[<c0003d64>] show_stack+0xe0/0x164
-[<c02e2224>] dump_stack+0x20/0x38
-[<c000adbc>] warn_slowpath_common+0x90/0xec
-[<c000aea0>] warn_slowpath_null+0xc/0x24
-[<c000493c>] __invalidate_dcache_range_msr_irq_wt+0xc0/0xd8
-[<c00c59c4>] simple_write_begin+0xf8/0x170
-[<c005d18c>] generic_perform_write+0xa8/0x2ac
-[<c005f1f8>] __generic_file_write_iter+0x1a8/0x478
-[<c005f504>] generic_file_write_iter+0x3c/0x128
-[<c009b0c4>] new_sync_write+0x84/0xcc
-[<c009ba88>] vfs_write+0xe8/0x224
-[<c009c314>] SyS_write+0x4c/0xf4
-[<c03d5200>] xwrite+0x48/0xb8
-[<c03d52a0>] do_copy+0x30/0x1ac
-[<c03d47b4>] write_buffer+0x34/0x60
-[<c03d4810>] flush_buffer+0x30/0xd0
-[<c03e4c70>] gunzip+0x2c0/0x3ac
-[<c03d4c20>] unpack_to_rootfs+0x1b8/0x368
-[<c03d56e8>] populate_rootfs+0x28/0x2d8
-[<c000044c>] do_one_initcall+0xa0/0x24c
-[<c03d2d9c>] kernel_init_freeable+0x150/0x238
-[<c02dedf0>] kernel_init+0x8/0x14c
-[<c0005d78>] ret_from_kernel_thread+0x8/0x20
-
-Detailed logs are available at http://server.roeck-us.net:8010/builders.
-
-bisect results:
-
-# bad: [7e3619a6de57f0257a2f6480182d2287ee05e314] Add linux-next specific files for 20150107
-# good: [b1940cd21c0f4abdce101253e860feff547291b0] Linux 3.19-rc3
-git bisect start 'HEAD' 'v3.19-rc3'
-# bad: [c48667c5659248ff2b2fbff5cd23c43b5768e81b] Merge remote-tracking branch 'net-next/master'
-git bisect bad c48667c5659248ff2b2fbff5cd23c43b5768e81b
-# bad: [5aa2843082a0ce9b710549bdc7ae8d54140edc70] Merge remote-tracking branch 'pci/next'
-git bisect bad 5aa2843082a0ce9b710549bdc7ae8d54140edc70
-# good: [11339e9e3d575c1486ff57dc49c83b6154918305] Merge remote-tracking branch 'samsung/for-next'
-git bisect good 11339e9e3d575c1486ff57dc49c83b6154918305
-# bad: [50d16e144b253542d89830c0ace8573a67ce4b16] Merge remote-tracking branch 'powerpc-mpe/next'
-git bisect bad 50d16e144b253542d89830c0ace8573a67ce4b16
-# good: [3fda5c0dda2eafe244898809a74831209cdb69b7] Merge remote-tracking branch 'cris/for-next'
-git bisect good 3fda5c0dda2eafe244898809a74831209cdb69b7
-# bad: [8b772494fda25dd998ade5621cc0684a5c897179] Merge remote-tracking branch 'microblaze/next'
-git bisect bad 8b772494fda25dd998ade5621cc0684a5c897179
-# bad: [cd2b00db005541d15ea9fbb474b5e5e98b993d8e] microblaze: Fix variable types to remove W=1 warning
-git bisect bad cd2b00db005541d15ea9fbb474b5e5e98b993d8e
-# good: [8543e6c96762fcc930af5725088c2b9e4865c3aa] microblaze: Use unsigned return type in do_syscall_trace_enter
-git bisect good 8543e6c96762fcc930af5725088c2b9e4865c3aa
-# good: [e76fdb324844cc0367f8c6ea5d13278a81568ccb] microblaze: Use unsigned type for "for" loop because of comparison-kgdb.c
-git bisect good e76fdb324844cc0367f8c6ea5d13278a81568ccb
-# bad: [b343c7d621bf801b502cba812c3dcb4320942b93] microblaze: Use unsigned type for limit comparison in cache.c
-git bisect bad b343c7d621bf801b502cba812c3dcb4320942b93
-# good: [bdb96e3cad21f5973c95f0e6687db4a57eff7c53] microblaze: Use unsigned type for proper comparison in cpuinfo*.c
-git bisect good bdb96e3cad21f5973c95f0e6687db4a57eff7c53
-# first bad commit: [b343c7d621bf801b502cba812c3dcb4320942b93] microblaze: Use unsigned type for limit comparison in cache.c
-
-Reverting the offending commit fixes the problem.
-
-Guenter
