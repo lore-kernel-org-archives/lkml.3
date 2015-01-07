@@ -1,86 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235AbbAGWzK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 17:55:10 -0500
-Received: from skprod3.natinst.com ([130.164.80.24]:37134 "EHLO ni.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752050AbbAGWzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 17:55:07 -0500
-In-Reply-To: <1419953965-16494-1-git-send-email-peter@hurleysoftware.com>
-References: <1419942873-6779-1-git-send-email-peter@hurleysoftware.com> <1419953965-16494-1-git-send-email-peter@hurleysoftware.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
+	id S1755334AbbAGW7q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 17:59:46 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:38464 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755285AbbAGW7n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 17:59:43 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18wtCYmYx9l0opv658lIXmrL3tgqHvzX4w=
+X-DKIM: OpenDKIM Filter v2.0.1 titan B12566403D4
+Date: Wed, 7 Jan 2015 17:59:04 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Jon Masters <jcm@redhat.com>
+Cc: Mark Brown <broonie@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Herring <robh@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
+        Robert Richter <rric@kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Lv Zheng <lv.zheng@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [Linaro-acpi] [PATCH v5 18/18] Documentation: ACPI for ARM64
+Message-ID: <20150107225904.GQ24989@titan.lakedaemon.net>
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>
+ <2161376.07iV9ANMSk@wuerfel>
+ <20150107115039.GA2199@e104818-lin.cambridge.arm.com>
+ <1520439.Y1rXzXY1eS@wuerfel>
+ <20150107172741.GY2634@sirena.org.uk>
+ <20150107184158.GO24989@titan.lakedaemon.net>
+ <54AD8FF2.60407@redhat.com>
+ <54AD917A.2040307@redhat.com>
 MIME-Version: 1.0
-Subject: Re: [PATCH v2] tty: Prevent hw state corruption in exclusive mode reopen
-X-KeepSent: E11B8E2C:C7D29A8E-86257DC6:007DA974;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 8.5.3FP3 November 16, 2012
-From: Shreyas Bethur <shreyas.bethur@ni.com>
-Message-ID: <OFE11B8E2C.C7D29A8E-ON86257DC6.007DA974-86257DC6.007DE311@ni.com>
-Date: Wed, 7 Jan 2015 16:55:01 -0600
-X-MIMETrack: Serialize by Router on US-AUS-MAIL4/AUS/M/NIC(Release 8.5.3FP6|November 21, 2013) at
- 01/07/2015 04:55:01 PM,
-	Serialize complete at 01/07/2015 04:55:01 PM
-Content-Type: text/plain; charset="US-ASCII"
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-07_09:2015-01-07,2015-01-07,1970-01-01 signatures=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54AD917A.2040307@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Hurley <peter@hurleysoftware.com> wrote on 12/30/2014 09:39:25 AM:
+On Wed, Jan 07, 2015 at 03:05:14PM -0500, Jon Masters wrote:
+> On 01/07/2015 02:58 PM, Jon Masters wrote:
+> > On 01/07/2015 01:41 PM, Jason Cooper wrote:
+> 
+> >> One of the reasons I've really enjoyed working with ARM platforms and DT
+> >> is the absence of this type of 'feature'.  I honestly don't care whether
+> >> the kernel gets the board configuration info from DT or ACPI or FOO, as
+> >> long as we can avoid the security mistakes of the past:
+> >>
+> >>   http://www.spiegel.de/international/world/catalog-reveals-nsa-has-back-doors-for-numerous-devices-a-940994.html
+> > 
+> > ACPI is not the great satan. I'm aware certain others in the community
+> > have written missinformed blog posts and G+ rants equating ACPI with SMI
+> > and even with various other system firmware. I can't force someone to
+> > become informed on a topic, especially if it's politically useful to
+> > them to hate on ACPI and use the security paranoia handwavy argument.
+> 
+> To clarify, and this is not directed at you Jason, it is politically
+> useful to some who have written rants those business models are built
+> upon being paid to enable platforms. For those folks, standardized
+> platforms which allow a common OS approach are seen as threatening.
 
-> From: Peter Hurley <peter@hurleysoftware.com>
-> To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, 
-> Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org, 
-> linux-serial@vger.kernel.org, Shreyas Bethur 
-> <shreyas.bethur@ni.com>, Peter Hurley <peter@hurleysoftware.com>
-> Date: 12/30/2014 09:39 AM
-> Subject: [PATCH v2] tty: Prevent hw state corruption in exclusive mode 
-reopen
-> 
-> Exclusive mode ttys (TTY_EXCLUSIVE) do not allow further reopens;
-> fail the condition before associating the file pointer and calling
-> the driver open() method.
-> 
-> Prevents DTR programming when the tty is already in exclusive mode.
-> 
-> Reported-by: Shreyas Bethur <shreyas.bethur@ni.com>
-> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-> ---
->  drivers/tty/tty_io.c | 7 +++----
->  1 file changed, 3 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-> index 4f35b43..51f066a 100644
-> --- a/drivers/tty/tty_io.c
-> +++ b/drivers/tty/tty_io.c
-> @@ -1464,6 +1464,9 @@ static int tty_reopen(struct tty_struct *tty)
->         driver->subtype == PTY_TYPE_MASTER)
->        return -EIO;
-> 
-> +   if (test_bit(TTY_EXCLUSIVE, &tty->flags) && !capable(CAP_SYS_ADMIN))
-> +      return -EBUSY;
-> +
->     tty->count++;
-> 
->     WARN_ON(!tty->ldisc);
-> @@ -2106,10 +2109,6 @@ retry_open:
->        retval = -ENODEV;
->     filp->f_flags = saved_flags;
-> 
-> -   if (!retval && test_bit(TTY_EXCLUSIVE, &tty->flags) &&
-> -                  !capable(CAP_SYS_ADMIN))
-> -      retval = -EBUSY;
-> -
->     if (retval) {
->  #ifdef TTY_DEBUG_HANGUP
->        printk(KERN_DEBUG "%s: error %d in opening %s...\n", __func__,
-> -- 
-> 2.2.1
-> 
+Ahh, thanks for clarifying.
 
-Acked-by: Shreyas Bethur <shreyas.bethur@ni.com>
+> In the previous rants (which were really instigated as a result of the
+> above) ACPI was equated with SMM (System Management Mode), which is a
+> bit like the Secure/Trusted world on AArch64 in which you might run
+> another "Trusted" OS. These are the places where you want to watch out
+> to malware of the kind cited in your link, not in ACPI tables.
 
+fwiw, I *am* concerned about those spaces.  It seems we agree on their
+vulnerability to attack (plus being meaty targets).
+
+To more concisely state my other reply to you, wrt to AML, I'm primarily
+concerned about a malicious update to the ACPI tables.  The ACPI tables
+in the update would be otherwise normal, except for the AML blob that
+contains some extra code.  The malicious payload.  Then, a routine call
+into an AML (for pinctrl, say) executes the malicious code.
+
+The plausibility and preventability of that style of attack is what I'm
+hoping to nail down with this discussion.
+
+thx,
+
+Jason.
