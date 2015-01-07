@@ -1,206 +1,323 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486AbbAGRUo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 12:20:44 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:20408 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754144AbbAGRUj (ORCPT
+	id S1754608AbbAGRVP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 12:21:15 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:40837 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754493AbbAGRVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 12:20:39 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18OtqTQ9/B/Fdp5I0yvk6feYH1VlVrrqTY=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 7E0DC63FDD4
-Date: Wed, 7 Jan 2015 12:20:34 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org, horms@verge.net.au,
-        tglx@linutronix.de
-Subject: Re: [PATCH] irqchip: renesas-intc-irqpin: r8a7779 IRLM setup
- support
-Message-ID: <20150107172034.GN24989@titan.lakedaemon.net>
-References: <20141215050920.533.20169.sendpatchset@w520>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141215050920.533.20169.sendpatchset@w520>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 7 Jan 2015 12:21:08 -0500
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 01/10] rcu: Make rcu_nmi_enter() handle nesting
+Date: Wed,  7 Jan 2015 09:20:48 -0800
+Message-Id: <1420651257-553-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <20150107172030.GA31571@linux.vnet.ibm.com>
+References: <20150107172030.GA31571@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15010717-0021-0000-0000-000007937763
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 02:09:20PM +0900, Magnus Damm wrote:
-> From: Magnus Damm <damm+renesas@opensource.se>
-> 
-> Add r8a7779 specific support for IRLM bit configuration
-> in the INTC-IRQPIN driver. Without this code we need
-> special workaround code in arch/arm/mach-shmobile.
-> 
-> The IRLM bit for the INTC hardware exists on various
-> older SH-based SoCs and is used to select between two
-> modes for the external interrupt pins IRQ0 to IRQ3:
-> 
-> IRLM = 0: (default from reset on r8a7779)
-> In this mode the pins IRQ0 to IRQ3 are used together
-> to give a value between 0 and 15 to the SoC. External
-> logic is required for masking. This mode is not
-> supported by the INTC-IRQPIN driver.
-> 
-> IRLM = 1: (needs this patch or configuration elsewhere)
-> In this mode IRQ0 to IRQ3 operate as 4 individual
-> external interrupt pins. In this mode the SMSC ethernet
-> chip can be used via IRQ1 on r8a7779 Marzen. This mode
-> is the only supported mode by the INTC-IRQPIN driver.
-> 
-> For this patch to work the r8a7779 DTS needs to pass
-> the ICR0 register as the last register bank.
-> 
-> Signed-off-by: Magnus Damm <damm+renesas@opensource.se>
-> ---
-> 
->  Same version as sent on December 3rd.
-> 
->  Written against renesas-devel-20141202-v3.18-rc7 which is
->  basically v3.18-rc7 plus latest arch/arm/mach-shmobile code.
->  
->  Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqpin.txt |    5 +
->  drivers/irqchip/irq-renesas-intc-irqpin.c                                      |   50 ++++++++--
->  2 files changed, 46 insertions(+), 9 deletions(-)
-> 
-> --- 0001/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqpin.txt
-> +++ work/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqpin.txt	2014-12-03 20:25:13.000000000 +0900
-> @@ -9,6 +9,11 @@ Required properties:
->      - "renesas,intc-irqpin-r8a7778" (R-Car M1A)
->      - "renesas,intc-irqpin-r8a7779" (R-Car H1)
->      - "renesas,intc-irqpin-sh73a0" (SH-Mobile AG5)
-> +
-> +- reg: Base address and length of each register bank used by the external
-> +  IRQ pins driven by the interrupt controller hardware module. The base
-> +  addresses, length and number of required register banks varies with soctype.
-> +
->  - #interrupt-cells: has to be <2>: an interrupt index and flags, as defined in
->    interrupts.txt in this directory
->  
-> --- 0001/drivers/irqchip/irq-renesas-intc-irqpin.c
-> +++ work/drivers/irqchip/irq-renesas-intc-irqpin.c	2014-12-03 20:32:59.000000000 +0900
-> @@ -30,6 +30,7 @@
->  #include <linux/err.h>
->  #include <linux/slab.h>
->  #include <linux/module.h>
-> +#include <linux/of_device.h>
->  #include <linux/platform_data/irq-renesas-intc-irqpin.h>
->  #include <linux/pm_runtime.h>
->  
-> @@ -40,7 +41,9 @@
->  #define INTC_IRQPIN_REG_SOURCE 2 /* INTREQnn */
->  #define INTC_IRQPIN_REG_MASK 3 /* INTMSKnn */
->  #define INTC_IRQPIN_REG_CLEAR 4 /* INTMSKCLRnn */
-> -#define INTC_IRQPIN_REG_NR 5
-> +#define INTC_IRQPIN_REG_NR_MANDATORY 5
-> +#define INTC_IRQPIN_REG_IRLM 5 /* ICR0 with IRLM bit (optional) */
-> +#define INTC_IRQPIN_REG_NR 6
->  
->  /* INTC external IRQ PIN hardware register access:
->   *
-> @@ -82,6 +85,10 @@ struct intc_irqpin_priv {
->  	u8 shared_irq_mask;
->  };
->  
-> +struct intc_irqpin_irlm_config {
-> +	unsigned int irlm_bit;
-> +};
-> +
->  static unsigned long intc_irqpin_read32(void __iomem *iomem)
->  {
->  	return ioread32(iomem);
-> @@ -345,10 +352,23 @@ static struct irq_domain_ops intc_irqpin
->  	.xlate  = irq_domain_xlate_twocell,
->  };
->  
-> +static const struct intc_irqpin_irlm_config intc_irqpin_irlm_r8a7779 = {
-> +	.irlm_bit = 23, /* ICR0.IRLM0 */
-> +};
-> +
-> +static const struct of_device_id intc_irqpin_dt_ids[] = {
-> +	{ .compatible = "renesas,intc-irqpin", },
-> +	{ .compatible = "renesas,intc-irqpin-r8a7779",
-> +	  .data = &intc_irqpin_irlm_r8a7779 },
-> +	{},
-> +};
-> +MODULE_DEVICE_TABLE(of, intc_irqpin_dt_ids);
-> +
->  static int intc_irqpin_probe(struct platform_device *pdev)
->  {
->  	struct device *dev = &pdev->dev;
->  	struct renesas_intc_irqpin_config *pdata = dev->platform_data;
-> +	const struct of_device_id *of_id;
->  	struct intc_irqpin_priv *p;
->  	struct intc_irqpin_iomem *i;
->  	struct resource *io[INTC_IRQPIN_REG_NR];
-> @@ -391,10 +411,11 @@ static int intc_irqpin_probe(struct plat
->  	pm_runtime_enable(dev);
->  	pm_runtime_get_sync(dev);
->  
-> -	/* get hold of manadatory IOMEM */
-> +	/* get hold of register banks */
-> +	memset(io, 0, sizeof(io));
->  	for (k = 0; k < INTC_IRQPIN_REG_NR; k++) {
->  		io[k] = platform_get_resource(pdev, IORESOURCE_MEM, k);
-> -		if (!io[k]) {
-> +		if (!io[k] && k < INTC_IRQPIN_REG_NR_MANDATORY) {
->  			dev_err(dev, "not enough IOMEM resources\n");
->  			ret = -EINVAL;
->  			goto err0;
-> @@ -422,6 +443,10 @@ static int intc_irqpin_probe(struct plat
->  	for (k = 0; k < INTC_IRQPIN_REG_NR; k++) {
->  		i = &p->iomem[k];
->  
-> +		/* handle optional registers */
-> +		if (!io[k])
-> +			continue;
-> +
->  		switch (resource_size(io[k])) {
->  		case 1:
->  			i->width = 8;
-> @@ -448,6 +473,19 @@ static int intc_irqpin_probe(struct plat
->  		}
->  	}
->  
-> +	/* configure "individual IRQ mode" where needed */
-> +	of_id = of_match_device(intc_irqpin_dt_ids, dev);
-> +	if (of_id && of_id->data) {
-> +		const struct intc_irqpin_irlm_config *irlm_config = of_id->data;
-> +
-> +		if (io[INTC_IRQPIN_REG_IRLM])
-> +			intc_irqpin_read_modify_write(p, INTC_IRQPIN_REG_IRLM,
-> +						      irlm_config->irlm_bit,
-> +						      1, 1);
-> +		else
-> +			dev_warn(dev, "unable to select IRLM mode\n");
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-What was the default behavior of the arch code before the DT binding
-change?  Should that action be performed here?
+The x86 architecture has multiple types of NMI-like interrupts: real
+NMIs, machine checks, and, for some values of NMI-like, debugging
+and breakpoint interrupts.  These interrupts can nest inside each
+other.  Andy Lutomirski is adding RCU support to these interrupts,
+so rcu_nmi_enter() and rcu_nmi_exit() must now correctly handle nesting.
 
-thx,
+This commit therefore introduces nesting, using a clever NMI-coordination
+algorithm suggested by Andy.  The trick is to atomically increment
+->dynticks (if needed) before manipulating ->dynticks_nmi_nesting on entry
+(and, accordingly, after on exit).  In addition, ->dynticks_nmi_nesting
+is incremented by one if ->dynticks was incremented and by two otherwise.
+This means that when rcu_nmi_exit() sees ->dynticks_nmi_nesting equal
+to one, it knows that ->dynticks must be atomically incremented.
 
-Jason.
+This NMI-coordination algorithms has been validated by the following
+Promela model:
 
-> +	}
-> +
->  	/* mask all interrupts using priority */
->  	for (k = 0; k < p->number_of_irqs; k++)
->  		intc_irqpin_mask_unmask_prio(p, k, 1);
-> @@ -550,12 +588,6 @@ static int intc_irqpin_remove(struct pla
->  	return 0;
->  }
->  
-> -static const struct of_device_id intc_irqpin_dt_ids[] = {
-> -	{ .compatible = "renesas,intc-irqpin", },
-> -	{},
-> -};
-> -MODULE_DEVICE_TABLE(of, intc_irqpin_dt_ids);
-> -
->  static struct platform_driver intc_irqpin_device_driver = {
->  	.probe		= intc_irqpin_probe,
->  	.remove		= intc_irqpin_remove,
+------------------------------------------------------------------------
+
+/*
+ * Promela model for Andy Lutomirski's suggested change to rcu_nmi_enter()
+ * that allows nesting.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, you can access it online at
+ * http://www.gnu.org/licenses/gpl-2.0.html.
+ *
+ * Copyright IBM Corporation, 2014
+ *
+ * Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+ */
+
+byte dynticks_nmi_nesting = 0;
+byte dynticks = 0;
+
+/*
+ * Promela verision of rcu_nmi_enter().
+ */
+inline rcu_nmi_enter()
+{
+	byte incby;
+	byte tmp;
+
+	incby = BUSY_INCBY;
+	assert(dynticks_nmi_nesting >= 0);
+	if
+	:: (dynticks & 1) == 0 ->
+		atomic {
+			dynticks = dynticks + 1;
+		}
+		assert((dynticks & 1) == 1);
+		incby = 1;
+	:: else ->
+		skip;
+	fi;
+	tmp = dynticks_nmi_nesting;
+	tmp = tmp + incby;
+	dynticks_nmi_nesting = tmp;
+	assert(dynticks_nmi_nesting >= 1);
+}
+
+/*
+ * Promela verision of rcu_nmi_exit().
+ */
+inline rcu_nmi_exit()
+{
+	byte tmp;
+
+	assert(dynticks_nmi_nesting > 0);
+	assert((dynticks & 1) != 0);
+	if
+	:: dynticks_nmi_nesting != 1 ->
+		tmp = dynticks_nmi_nesting;
+		tmp = tmp - BUSY_INCBY;
+		dynticks_nmi_nesting = tmp;
+	:: else ->
+		dynticks_nmi_nesting = 0;
+		atomic {
+			dynticks = dynticks + 1;
+		}
+		assert((dynticks & 1) == 0);
+	fi;
+}
+
+/*
+ * Base-level NMI runs non-atomically.  Crudely emulates process-level
+ * dynticks-idle entry/exit.
+ */
+proctype base_NMI()
+{
+	byte busy;
+
+	busy = 0;
+	do
+	::	/* Emulate base-level dynticks and not. */
+		if
+		:: 1 ->	atomic {
+				dynticks = dynticks + 1;
+			}
+			busy = 1;
+		:: 1 ->	skip;
+		fi;
+
+		/* Verify that we only sometimes have base-level dynticks. */
+		if
+		:: busy == 0 -> skip;
+		:: busy == 1 -> skip;
+		fi;
+
+		/* Model RCU's NMI entry and exit actions. */
+		rcu_nmi_enter();
+		assert((dynticks & 1) == 1);
+		rcu_nmi_exit();
+
+		/* Emulated re-entering base-level dynticks and not. */
+		if
+		:: !busy -> skip;
+		:: busy ->
+			atomic {
+				dynticks = dynticks + 1;
+			}
+			busy = 0;
+		fi;
+
+		/* We had better now be in dyntick-idle mode. */
+		assert((dynticks & 1) == 0);
+	od;
+}
+
+/*
+ * Nested NMI runs atomically to emulate interrupting base_level().
+ */
+proctype nested_NMI()
+{
+	do
+	::	/*
+		 * Use an atomic section to model a nested NMI.  This is
+		 * guaranteed to interleave into base_NMI() between a pair
+		 * of base_NMI() statements, just as a nested NMI would.
+		 */
+		atomic {
+			/* Verify that we only sometimes are in dynticks. */
+			if
+			:: (dynticks & 1) == 0 -> skip;
+			:: (dynticks & 1) == 1 -> skip;
+			fi;
+
+			/* Model RCU's NMI entry and exit actions. */
+			rcu_nmi_enter();
+			assert((dynticks & 1) == 1);
+			rcu_nmi_exit();
+		}
+	od;
+}
+
+init {
+	run base_NMI();
+	run nested_NMI();
+}
+
+------------------------------------------------------------------------
+
+The following script can be used to run this model if placed in
+rcu_nmi.spin:
+
+------------------------------------------------------------------------
+
+if ! spin -a rcu_nmi.spin
+then
+	echo Spin errors!!!
+	exit 1
+fi
+if ! cc -DSAFETY -o pan pan.c
+then
+	echo Compilation errors!!!
+	exit 1
+fi
+./pan -m100000
+
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ kernel/rcu/tree.c | 66 +++++++++++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 49 insertions(+), 17 deletions(-)
+
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index 7680fc275036..4c106fcc0d54 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -759,39 +759,71 @@ void rcu_irq_enter(void)
+ /**
+  * rcu_nmi_enter - inform RCU of entry to NMI context
+  *
+- * If the CPU was idle with dynamic ticks active, and there is no
+- * irq handler running, this updates rdtp->dynticks_nmi to let the
+- * RCU grace-period handling know that the CPU is active.
++ * If the CPU was idle from RCU's viewpoint, update rdtp->dynticks and
++ * rdtp->dynticks_nmi_nesting to let the RCU grace-period handling know
++ * that the CPU is active.  This implementation permits nested NMIs, as
++ * long as the nesting level does not overflow an int.  (You will probably
++ * run out of stack space first.)
+  */
+ void rcu_nmi_enter(void)
+ {
+ 	struct rcu_dynticks *rdtp = this_cpu_ptr(&rcu_dynticks);
++	int incby = 2;
+ 
+-	if (rdtp->dynticks_nmi_nesting == 0 &&
+-	    (atomic_read(&rdtp->dynticks) & 0x1))
+-		return;
+-	rdtp->dynticks_nmi_nesting++;
+-	smp_mb__before_atomic();  /* Force delay from prior write. */
+-	atomic_inc(&rdtp->dynticks);
+-	/* CPUs seeing atomic_inc() must see later RCU read-side crit sects */
+-	smp_mb__after_atomic();  /* See above. */
+-	WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks) & 0x1));
++	/* Complain about underflow. */
++	WARN_ON_ONCE(rdtp->dynticks_nmi_nesting < 0);
++
++	/*
++	 * If idle from RCU viewpoint, atomically increment ->dynticks
++	 * to mark non-idle and increment ->dynticks_nmi_nesting by one.
++	 * Otherwise, increment ->dynticks_nmi_nesting by two.  This means
++	 * if ->dynticks_nmi_nesting is equal to one, we are guaranteed
++	 * to be in the outermost NMI handler that interrupted an RCU-idle
++	 * period (observation due to Andy Lutomirski).
++	 */
++	if (!(atomic_read(&rdtp->dynticks) & 0x1)) {
++		smp_mb__before_atomic();  /* Force delay from prior write. */
++		atomic_inc(&rdtp->dynticks);
++		/* atomic_inc() before later RCU read-side crit sects */
++		smp_mb__after_atomic();  /* See above. */
++		WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks) & 0x1));
++		incby = 1;
++	}
++	rdtp->dynticks_nmi_nesting += incby;
++	barrier();
+ }
+ 
+ /**
+  * rcu_nmi_exit - inform RCU of exit from NMI context
+  *
+- * If the CPU was idle with dynamic ticks active, and there is no
+- * irq handler running, this updates rdtp->dynticks_nmi to let the
+- * RCU grace-period handling know that the CPU is no longer active.
++ * If we are returning from the outermost NMI handler that interrupted an
++ * RCU-idle period, update rdtp->dynticks and rdtp->dynticks_nmi_nesting
++ * to let the RCU grace-period handling know that the CPU is back to
++ * being RCU-idle.
+  */
+ void rcu_nmi_exit(void)
+ {
+ 	struct rcu_dynticks *rdtp = this_cpu_ptr(&rcu_dynticks);
+ 
+-	if (rdtp->dynticks_nmi_nesting == 0 ||
+-	    --rdtp->dynticks_nmi_nesting != 0)
++	/*
++	 * Check for ->dynticks_nmi_nesting underflow and bad ->dynticks.
++	 * (We are exiting an NMI handler, so RCU better be paying attention
++	 * to us!)
++	 */
++	WARN_ON_ONCE(rdtp->dynticks_nmi_nesting <= 0);
++	WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks) & 0x1));
++
++	/*
++	 * If the nesting level is not 1, the CPU wasn't RCU-idle, so
++	 * leave it in non-RCU-idle state.
++	 */
++	if (rdtp->dynticks_nmi_nesting != 1) {
++		rdtp->dynticks_nmi_nesting -= 2;
+ 		return;
++	}
++
++	/* This NMI interrupted an RCU-idle CPU, restore RCU-idleness. */
++	rdtp->dynticks_nmi_nesting = 0;
+ 	/* CPUs seeing atomic_inc() must see prior RCU read-side crit sects */
+ 	smp_mb__before_atomic();  /* See above. */
+ 	atomic_inc(&rdtp->dynticks);
+-- 
+1.8.1.5
+
