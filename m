@@ -1,92 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557AbbAGLLW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 06:11:22 -0500
-Received: from denmail01-v4020.amcc.com ([192.195.68.30]:54750 "EHLO
-	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751769AbbAGLLU (ORCPT
+	id S1752623AbbAGLL7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 06:11:59 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56534 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752604AbbAGLL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 06:11:20 -0500
-From: Rameshwar Prasad Sahu <rsahu@apm.com>
-To: vinod.koul@intel.com, dan.j.williams@intel.com
-Cc: dmaengine@vger.kernel.org, arnd@arndb.de, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        ddutile@redhat.com, jcm@redhat.com, patches@apm.com,
-        Rameshwar Prasad Sahu <rsahu@apm.com>, Loc Ho <lho@apm.com>
-Subject: [PATCH v2 3/3] Documentation: dma: Add APM X-Gene SoC DMA engine driver documentation
-Date: Wed,  7 Jan 2015 16:39:41 +0530
-Message-Id: <1420628981-22774-4-git-send-email-rsahu@apm.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1420628981-22774-1-git-send-email-rsahu@apm.com>
-References: <1420628981-22774-1-git-send-email-rsahu@apm.com>
+	Wed, 7 Jan 2015 06:11:57 -0500
+Date: Wed, 7 Jan 2015 11:11:48 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Leo Yan <leo.yan@linaro.org>
+Cc: Suzuki Poulose <Suzuki.Poulose@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Xiaolong Ye <yexl@marvell.com>
+Subject: Re: [PATCH] arm64: mm: support instruction SETEND
+Message-ID: <20150107111148.GH7485@arm.com>
+References: <1420609930-1689-1-git-send-email-leo.yan@linaro.org>
+ <54AD061A.6090602@arm.com>
+ <20150107105824.GA13620@leoy.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150107105824.GA13620@leoy.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device tree binding for APM X-Gene SoC DMA engine driver.
+On Wed, Jan 07, 2015 at 10:58:24AM +0000, Leo Yan wrote:
+> On Wed, Jan 07, 2015 at 10:10:34AM +0000, Suzuki K. Poulose wrote:
+> > On 07/01/15 05:52, Leo Yan wrote:
+> > >Currently kernel has set the bit SCTLR_EL1.SED, so the SETEND
+> > >instruction will be treated as UNALLOCATED; this error can be
+> > >reproduced when ARMv8 cpu runs with EL1/aarch64 and EL0/aarch32
+> > >mode, finally kernel will trap the exception if the userspace
+> > >libs use SETEND instruction.
+> > >
+> > >So this patch clears bit SCTLR_EL1.SED to support SETEND instruction.
+> > >
+> > The best way to do this, is via the instruction emulation framework
+> > added by Punit, which handles the armv8 deprecated/obsoleted
+> > instructions. This is now queued for 3.19.
+> > I have a patchset which adds the 'SETEND' emulation support to the
+> > framework. This will enable better handling of the feature,
+> > including finding out the users of the deprecated instruction (when
+> > we switch to the emulation mode).
+> > 
+> 
+> i'm a little confuse for this point:
+> 
+> if the deprecated instructions cannot be supported by CPU, then only
+> can use emulation; on the other hand, if CPU can natively support the
+> deprecated instruction, why we cannot directly enable this h/w feature?
+> if use the emulation mode, suppose here will have performance penalty.
+> 
+> how about u think for this? :-)
 
-Signed-off-by: Rameshwar Prasad Sahu <rsahu@apm.com>
-Signed-off-by: Loc Ho <lho@apm.com>
----
- .../devicetree/bindings/dma/apm-xgene-dma.txt      | 49 ++++++++++++++++++++++
- 1 file changed, 49 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/dma/apm-xgene-dma.txt
+A *huge* advantage of emulation is that we can print a diagnostic to dmesg
+warning the user that they are making use of a CPU feature that is likely to
+disappear from future revisions of the hardware. We've not been great at
+doing this in the past, which led to all the fun around SWP emulation that
+you can find in the list archives.
 
-diff --git a/Documentation/devicetree/bindings/dma/apm-xgene-dma.txt b/Documentation/devicetree/bindings/dma/apm-xgene-dma.txt
-new file mode 100644
-index 0000000..e2cf0bb
---- /dev/null
-+++ b/Documentation/devicetree/bindings/dma/apm-xgene-dma.txt
-@@ -0,0 +1,49 @@
-+Applied Micro X-Gene SoC DMA nodes
-+
-+DMA nodes are defined to describe on-chip DMA interfaces in
-+APM X-Gene SoC.
-+
-+Required properties for DMA interfaces:
-+- compatible: Should be "apm,xgene-dma".
-+- device_type: set to "dma".
-+- reg: Address and length of the register set for the device.
-+  It contains the information of registers in the same order
-+  as described by reg-names.
-+- reg-names: Should contain the register set names.
-+  - "dma_csr": DMA control and status register address space.
-+  - "ring_csr": Descriptor ring control and status register
-+                address space.
-+  - "ring_cmd": Descriptor ring command register address space.
-+- interrupts: DMA has 5 interrupts sources. 1st interrupt is
-+  DMA error reporting interrupt. 2nd, 3rd, 4th and 5th interrupts
-+  are completion interrupts for each DMA channels.
-+- clocks: Reference to the clock entry.
-+
-+Optional properties:
-+- dma-coherent : Present if dma operations are coherent
-+
-+Example:
-+	dmaclk: dmaclk@1f27c000 {
-+		compatible = "apm,xgene-device-clock";
-+		#clock-cells = <1>;
-+		clocks = <&socplldiv2 0>;
-+		reg = <0x0 0x1f27c000 0x0 0x1000>;
-+		reg-names = "csr-reg";
-+		clock-output-names = "dmaclk";
-+	};
-+
-+	dma: dma@1f270000 {
-+		compatible = "apm,xgene-dma";
-+		device_type = "dma";
-+		reg = <0x0 0x1f270000 0x0 0x10000>,
-+		      <0x0 0x1f200000 0x0 0x10000>,
-+		      <0x0 0x1b008000 0x0 0x2000>;
-+		reg-names = "dma_csr", "ring_csr", "ring_cmd";
-+		interrupts = <0x0 0xb8 0x4>,
-+			     <0x0 0xb9 0x4>,
-+			     <0x0 0xba 0x4>,
-+			     <0x0 0xbb 0x4>,
-+			     <0x0 0x82 0x4>;
-+		dma-coherent;
-+		clocks = <&dmaclk 0>;
-+	};
---
-1.8.2.1
+Furthermore, I think the emulation framework does allow the hardware support
+to be enabled, it just doesn't make that the default behaviour.
 
+In other words; use the emulation to find out where SETEND is being used
+and fix those applications wherever you can. In the cases where you're
+stuck with a legacy binary, you can enable CPU support if it is available
+but that's not a longterm solution.
+
+Will
