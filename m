@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070AbbAGXwf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 18:52:35 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:14015 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755985AbbAGXv0 (ORCPT
+	id S932130AbbAGXyS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 18:54:18 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:14581 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752358AbbAGXvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 18:51:26 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-b8-54adc67807b4
+	Wed, 7 Jan 2015 18:51:22 -0500
+X-AuditID: cbfee691-f79b86d000004a5a-89-54adc678db05
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: myungjoo.ham@samsung.com, kgene@kernel.org
 Cc: kyungmin.park@samsung.com, rafael.j.wysocki@intel.com,
@@ -16,39 +16,38 @@ Cc: kyungmin.park@samsung.com, rafael.j.wysocki@intel.com,
         cw00.choi@samsung.com, inki.dae@samsung.com, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-samsung-soc@vger.kernel.org
-Subject: [PATCHv7 05/10] devfreq: event: Add documentation for exynos-ppmu
- devfreq-event driver
-Date: Thu, 08 Jan 2015 08:51:12 +0900
-Message-id: <1420674677-3077-6-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCHv7 06/10] ARM: dts: Add PPMU dt node for Exynos3250 SoC
+Date: Thu, 08 Jan 2015 08:51:13 +0900
+Message-id: <1420674677-3077-7-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1420674677-3077-1-git-send-email-cw00.choi@samsung.com>
 References: <1420674677-3077-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIIsWRmVeSWpSXmKPExsWyRsSkSLfi2NoQgzMP2S0er1nMZLFxxnpW
-	i+tfnrNaTLo/gcXi9QtDi/7Hr5ktzja9YbfY9Pgaq8XlXXPYLD73HmG0mHF+H5PF0usXmSxu
-	N65gs3i84i27ReveI+wWq3b9YXQQ8Fgzbw2jx85Zd9k9Fu95yeSxaVUnm8fmJfUefVtWMXp8
-	3iQXwB7FZZOSmpNZllqkb5fAlbF20nOmgp8yFWt/zmZvYOwR72Lk5JAQMJF49nseG4QtJnHh
-	3nogm4tDSGApo8S/KT/YYYrmrX/OApFYxChx8sBldginiUli6uIZYFVsAloS+1/cABslIqAn
-	0XlsD1icWeAPk0TTJhYQW1ggUWJJ90awOIuAqsSCxklgNq+Ai8Tek2+YIbYpSCxbPpMVxOYU
-	cJVYunkhWFwIqOZlzy9GkMUSAo/YJX4fnw01SEDi2+RDQAs4gBKyEpsOQM2RlDi44gbLBEbh
-	BYwMqxhFUwuSC4qT0ouM9IoTc4tL89L1kvNzNzECY+r0v2d9OxhvHrA+xCjAwajEw1vYtyZE
-	iDWxrLgy9xCjKdCGicxSosn5wMjNK4k3NDYzsjA1MTU2Mrc0UxLnTZD6GSwkkJ5YkpqdmlqQ
-	WhRfVJqTWnyIkYmDU6qBUdX2W4bwklx9TYGoz2+i57zvu7m5Lffm9QNtPBMfilyxXMHvE/1x
-	Xg9XPM+zSX8k1isdesqVe1iGX//CvUmVE9ndUxcfmXFbqlXk5j7WRblzLaQPaDe0bzQ68/rr
-	1rOcwb0pMw23xaq9Pliq/1lLRSyzYuFHl+CYy4uXan8tVPUJVyhXP8wfqMRSnJFoqMVcVJwI
-	ACSDQF6kAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t9jAd3yY2tDDJ5ut7Z4vGYxk8XGGetZ
-	La5/ec5qMen+BBaL1y8MLfofv2a2ONv0ht1i0+NrrBaXd81hs/jce4TRYsb5fUwWS69fZLK4
-	3biCzeLxirfsFq17j7BbrNr1h9FBwGPNvDWMHjtn3WX3WLznJZPHplWdbB6bl9R79G1Zxejx
-	eZNcAHtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+Arltm
-	DtDxSgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaMtZOeMxX8lKlY+3M2
-	ewNjj3gXIyeHhICJxLz1z1kgbDGJC/fWs3UxcnEICSxilDh54DI7hNPEJDF18Qx2kCo2AS2J
-	/S9usIHYIgJ6Ep3H9oDFmQX+MEk0bQKbJCyQKLGkeyNYnEVAVWJB4yQwm1fARWLvyTfMENsU
-	JJYtn8kKYnMKuEos3bwQLC4EVPOy5xfjBEbeBYwMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNz
-	NzGCI/aZ9A7GVQ0WhxgFOBiVeHgL+taECLEmlhVX5h5ilOBgVhLhXdu2NkSINyWxsiq1KD++
-	qDQntfgQoynQVROZpUST84HJJK8k3tDYxMzI0sjc0MLI2FxJnFfJvi1ESCA9sSQ1OzW1ILUI
-	po+Jg1OqgZG7qEQz1/PNcousmxWd82Ml1xm8V95kfq1pz8mexU/mdEzP3ZbhoMTkcse0ZdWT
-	6SmLz/3+y2FXYuOVvf6EVFiZt9wdE5vsS88deksF5s/vlTpyb7GdklmOzGShdvWvsYfzJ7mf
-	clc09lHzqqz5t9P0c3Ri+C7nX0+ncGfYiDNMO6ZfeCdHQomlOCPRUIu5qDgRAAa5ma3uAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42JZI2JSqFtxbG2IwakpfBaP1yxmstg4Yz2r
+	xfUvz1ktJt2fwGLx+oWhRf/j18wWZ5vesFtsenyN1eLyrjlsFp97jzBazDi/j8li6fWLTBa3
+	G1ewWTxe8ZbdonXvEXaLVbv+MDoIeKyZt4bRY+esu+wei/e8ZPLYtKqTzWPzknqPvi2rGD0+
+	b5ILYI/isklJzcksSy3St0vgyth5tYOxYKF4xbL3lg2Mk4S6GDk5JARMJF50vWOFsMUkLtxb
+	zwZiCwksZZTY8aAYpuZYx3bGLkYuoPgiRoktE1+yQDhNTBJTF89gB6liE9CS2P/iBli3iICe
+	ROexPWBxZoE/TBJNm1hAbGEBN4kX1w6C2SwCqhLr554GquHg4BVwkZjSB3WEgsSy5TPBbE4B
+	V4mlmxcyQxzkIvGy5xfYERICL9klru+cwwQxR0Di2+RDLCBzJARkJTYdYIaYIylxcMUNlgmM
+	wgsYGVYxiqYWJBcUJ6UXmeoVJ+YWl+al6yXn525iBEbT6X/PJu5gvH/A+hCjAAejEg9vQd+a
+	ECHWxLLiytxDjKZAGyYyS4km5wNjNq8k3tDYzMjC1MTU2Mjc0kxJnFdH+mewkEB6Yklqdmpq
+	QWpRfFFpTmrxIUYmDk6pBkbXZ3bvPysmmfhcZZS7lPme9XtVzY7f8Y3sK1U5mKTSrFex3PfW
+	OlITuWzVfgOBnXqb5jfI5i3+XrU95vummj/hCjuy97OH1OZFfInSWrTmxuMQ7tKDZt/s4lq6
+	tc6EvN1/8qZcqWLGQ4/Ha206351ZOnn2X62qG59y2Q4VTzQpavZqvndY8aUSS3FGoqEWc1Fx
+	IgAumFx/oQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJIsWRmVeSWpSXmKPExsVy+t9jAd2KY2tDDG72s1o8XrOYyWLjjPWs
+	Fte/PGe1mHR/AovF6xeGFv2PXzNbnG16w26x6fE1VovLu+awWXzuPcJoMeP8PiaLpdcvMlnc
+	blzBZvF4xVt2i9a9R9gtVu36w+gg4LFm3hpGj52z7rJ7LN7zkslj06pONo/NS+o9+rasYvT4
+	vEkugD2qgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE31VbJxSdA1y0z
+	B+h4JYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYGaCBhDWPGzqsdjAULxSuWvbds
+	YJwk1MXIySEhYCJxrGM7I4QtJnHh3nq2LkYuDiGBRYwSWya+ZIFwmpgkpi6ewQ5SxSagJbH/
+	xQ02EFtEQE+i89gesDizwB8miaZNLCC2sICbxItrB8FsFgFVifVzTwPVcHDwCrhITOljhVim
+	ILFs+Uwwm1PAVWLp5oXMILYQUMnLnl+MExh5FzAyrGIUTS1ILihOSs811CtOzC0uzUvXS87P
+	3cQIjtZnUjsYVzZYHGIU4GBU4uEt6FsTIsSaWFZcmXuIUYKDWUmEd23b2hAh3pTEyqrUovz4
+	otKc1OJDjKZAR01klhJNzgcmkrySeENjEzMjSyNzQwsjY3MlcV4l+7YQIYH0xJLU7NTUgtQi
+	mD4mDk6pBkb+NVtmv1EP6PR1ZM5RMKloCMn47x1fdGuKeAz3quRvIo37zwbI3Vc6VS+/0e3I
+	Do1N696y/db88FrS+dHfxVoF/r0fxfsevhTasf5nXv6Rf/fveiW/+Xq+Y1L9gSDjpluHWpyK
+	uXm6Ft8zE81JuR2T/3Wvl8bD31cvzfne12qySWbNtYaAzHtKLMUZiYZazEXFiQBWeOnq7AIA	AA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,45 +55,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the documentation for Exynos PPMU (Platform Performance
-Monitoring Unit) devfreq-event driver.
+This patch add PPMU (Platform Performance Monitoring Unit) dt node
+to estimate the utilization of each IP in Exynos SoC throught DEVFREQ Event
+subsystem.
 
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
+This patch adds following PPMU dt nodes:
+- PPMU_DMC0     0x106a0000
+- PPMU_DMC1     0x106b0000
+- PPMU_RIGHTBUS 0x112A0000
+- PPMU_LEFTBUS  0x116A0000
+- PPMU_CAMIF    0x11AC0000
+- PPMU_LCD0     0x11E40000
+- PPMU_FSYS     0x12630000
+- PPMU_3D       0x13220000
+- PPMU_MFC      0x13660000
+- PPMU_CPU      0x106c0000
+
+Cc: Kukjin Kim <kgene@kernel.org>
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- .../bindings/devfreq/event/exynos-ppmu.txt         | 110 +++++++++++++++++++++
- 1 file changed, 110 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/devfreq/event/exynos-ppmu.txt
+ arch/arm/boot/dts/exynos3250.dtsi | 74 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 74 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/devfreq/event/exynos-ppmu.txt b/Documentation/devicetree/bindings/devfreq/event/exynos-ppmu.txt
-new file mode 100644
-index 0000000..e665d30
---- /dev/null
-+++ b/Documentation/devicetree/bindings/devfreq/event/exynos-ppmu.txt
-@@ -0,0 +1,110 @@
-+
-+* Samsung Exynos PPMU (Performance Profiling Monitoring Unit) device
-+
-+The Samsung Exynos SoC have PPMU (Performance Profiling Monitoring Unit) for
-+each IPs. PPMU provides the primitive values to get performance data. These
-+events provide useful information about the behavior of the SoC that you can
-+use when analyzing system performance, and made visible and can be counted
-+using login in each IP (DMC, CPU, RIGHTBUS, LEFTBUS, CAM interface, LCD, G3D,
-+MFC). The Exynos PPMU driver use the devfreq-event class to provide event data
-+to various devfreq device. The devfreq device would use the event data when
-+derterming the current state of each IP.
-+
-+Required properties:
-+- compatible: Should be "samsung,exynos-ppmu".
-+- reg: physical base address of each PPMU and length of memory mapped region.
-+
-+Optional properties:
-+- clock-names : the name of clock used by the PPMU, "ppmu"
-+- clocks : phandles for clock specified in "clock-names" property
-+- #clock-cells: should be 1.
-+
-+Example1 : PPMU nodes in exynos3250.dtsi are listed below.
+diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
+index 2246549..9ed1260 100644
+--- a/arch/arm/boot/dts/exynos3250.dtsi
++++ b/arch/arm/boot/dts/exynos3250.dtsi
+@@ -515,6 +515,80 @@
+ 			compatible = "arm,cortex-a7-pmu";
+ 			interrupts = <0 18 0>, <0 19 0>;
+ 		};
 +
 +		ppmu_dmc0: ppmu_dmc0@106a0000 {
 +			compatible = "samsung,exynos-ppmu";
@@ -130,59 +121,48 @@ index 0000000..e665d30
 +			status = "disabled";
 +		};
 +
-+Example2 : Events of each PPMU node in exynos3250-rinato.dts are listed below.
-+
-+	&ppmu_dmc0 {
-+		status = "okay";
-+
-+		events {
-+			ppmu_dmc0_3: ppmu-event3-dmc0 {
-+				event-name = "ppmu-event3-dmc0";
-+			};
-+
-+			ppmu_dmc0_2: ppmu-event2-dmc0 {
-+				event-name = "ppmu-event2-dmc0";
-+			};
-+
-+			ppmu_dmc0_1: ppmu-event1-dmc0 {
-+				event-name = "ppmu-event1-dmc0";
-+			};
-+
-+			ppmu_dmc0_0: ppmu-event0-dmc0 {
-+				event-name = "ppmu-event0-dmc0";
-+			};
++		ppmu_camif: ppmu_camif@11ac0000 {
++			compatible = "samsung,exynos-ppmu";
++			reg = <0x11ac0000 0x2000>;
++			clocks = <&cmu CLK_PPMUCAMIF>;
++			clock-names = "ppmu";
++			status = "disabled";
 +		};
-+	};
 +
-+	&ppmu_dmc1 {
-+		status = "okay";
-+
-+		events {
-+			ppmu_dmc1_3: ppmu-event3-dmc1 {
-+				event-name = "ppmu-event3-dmc1";
-+			};
++		ppmu_lcd0: ppmu_lcd0@11e40000 {
++			compatible = "samsung,exynos-ppmu";
++			reg = <0x11e40000 0x2000>;
++			clocks = <&cmu CLK_PPMULCD0>;
++			clock-names = "ppmu";
++			status = "disabled";
 +		};
-+	};
 +
-+	&ppmu_leftbus {
-+		status = "okay";
-+
-+		events {
-+			ppmu_leftbus_3: ppmu-event3-leftbus {
-+				event-name = "ppmu-event3-leftbus";
-+			};
++		ppmu_fsys: ppmu_fsys@12630000 {
++			compatible = "samsung,exynos-ppmu";
++			reg = <0x12630000 0x2000>;
++			clocks = <&cmu CLK_PPMUFILE>;
++			clock-names = "ppmu";
++			status = "disabled";
 +		};
-+	};
 +
-+	&ppmu_rightbus {
-+		status = "okay";
-+
-+		events {
-+			ppmu_rightbus_3: ppmu-event3-rightbus {
-+				event-name = "ppmu-event3-rightbus";
-+			};
++		ppmu_g3d: ppmu_g3d@13220000 {
++			compatible = "samsung,exynos-ppmu";
++			reg = <0x13220000 0x2000>;
++			clocks = <&cmu CLK_PPMUG3D>;
++			clock-names = "ppmu";
++			status = "disabled";
 +		};
-+	};
++
++		ppmu_mfc: ppmu_mfc@13660000 {
++			compatible = "samsung,exynos-ppmu";
++			reg = <0x13660000 0x2000>;
++			clocks = <&cmu CLK_PPMUMFC_L>;
++			clock-names = "ppmu";
++			status = "disabled";
++		};
+ 	};
+ };
+ 
 -- 
 1.8.5.5
 
