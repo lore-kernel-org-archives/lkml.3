@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932899AbbAGB4b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 20:56:31 -0500
+	id S933749AbbAGCvM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:51:12 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:46417 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932505AbbAGBwS (ORCPT
+	with ESMTP id S1757023AbbAGBwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:52:18 -0500
+	Tue, 6 Jan 2015 20:52:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        P J P <ppandit@redhat.com>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.10 01/38] isofs: Fix infinite looping over CE entries
+        Rabin Vincent <rabin.vincent@axis.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.18 70/84] crypto: af_alg - fix backlog handling
 Date: Tue,  6 Jan 2015 17:50:13 -0800
-Message-Id: <20150107014952.733004449@linuxfoundation.org>
+Message-Id: <20150107014031.246741827@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
-In-Reply-To: <20150107014952.440109372@linuxfoundation.org>
-References: <20150107014952.440109372@linuxfoundation.org>
+In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
+References: <20150107014029.012974975@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,59 +25,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Rabin Vincent <rabin.vincent@axis.com>
 
-commit f54e18f1b831c92f6512d2eedb224cd63d607d3d upstream.
+commit 7e77bdebff5cb1e9876c561f69710b9ab8fa1f7e upstream.
 
-Rock Ridge extensions define so called Continuation Entries (CE) which
-define where is further space with Rock Ridge data. Corrupted isofs
-image can contain arbitrarily long chain of these, including a one
-containing loop and thus causing kernel to end in an infinite loop when
-traversing these entries.
+If a request is backlogged, it's complete() handler will get called
+twice: once with -EINPROGRESS, and once with the final error code.
 
-Limit the traversal to 32 entries which should be more than enough space
-to store all the Rock Ridge data.
+af_alg's complete handler, unlike other users, does not handle the
+-EINPROGRESS but instead always completes the completion that recvmsg()
+is waiting on.  This can lead to a return to user space while the
+request is still pending in the driver.  If userspace closes the sockets
+before the requests are handled by the driver, this will lead to
+use-after-frees (and potential crashes) in the kernel due to the tfm
+having been freed.
 
-Reported-by: P J P <ppandit@redhat.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+The crashes can be easily reproduced (for example) by reducing the max
+queue length in cryptod.c and running the following (from
+http://www.chronox.de/libkcapi.html) on AES-NI capable hardware:
+
+ $ while true; do kcapi -x 1 -e -c '__ecb-aes-aesni' \
+    -k 00000000000000000000000000000000 \
+    -p 00000000000000000000000000000000 >/dev/null & done
+
+Signed-off-by: Rabin Vincent <rabin.vincent@axis.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/isofs/rock.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ crypto/af_alg.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/fs/isofs/rock.c
-+++ b/fs/isofs/rock.c
-@@ -30,6 +30,7 @@ struct rock_state {
- 	int cont_size;
- 	int cont_extent;
- 	int cont_offset;
-+	int cont_loops;
- 	struct inode *inode;
- };
+--- a/crypto/af_alg.c
++++ b/crypto/af_alg.c
+@@ -449,6 +449,9 @@ void af_alg_complete(struct crypto_async
+ {
+ 	struct af_alg_completion *completion = req->data;
  
-@@ -73,6 +74,9 @@ static void init_rock_state(struct rock_
- 	rs->inode = inode;
- }
- 
-+/* Maximum number of Rock Ridge continuation entries */
-+#define RR_MAX_CE_ENTRIES 32
++	if (err == -EINPROGRESS)
++		return;
 +
- /*
-  * Returns 0 if the caller should continue scanning, 1 if the scan must end
-  * and -ve on error.
-@@ -105,6 +109,8 @@ static int rock_continue(struct rock_sta
- 			goto out;
- 		}
- 		ret = -EIO;
-+		if (++rs->cont_loops >= RR_MAX_CE_ENTRIES)
-+			goto out;
- 		bh = sb_bread(rs->inode->i_sb, rs->cont_extent);
- 		if (bh) {
- 			memcpy(rs->buffer, bh->b_data + rs->cont_offset,
+ 	completion->err = err;
+ 	complete(&completion->completion);
+ }
 
 
