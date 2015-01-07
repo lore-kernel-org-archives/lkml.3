@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242AbbAGQks (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 11:40:48 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:41859 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200AbbAGQkq (ORCPT
+	id S1754137AbbAGQrH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 11:47:07 -0500
+Received: from smtp-out4.electric.net ([192.162.216.184]:51680 "EHLO
+	smtp-out4.electric.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752872AbbAGQrF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 11:40:46 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t07GeiHU024055, This message is accepted by code: ctloc85258
-From: Chunhao Lin <hau@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        Chunhao Lin <hau@realtek.com>
-Subject: [PATCH net-next 11/11] r8169:update rtl8168f rev.b pcie ephy parameter
-Date: Thu, 8 Jan 2015 00:40:26 +0800
-Message-ID: <1420648826-12972-12-git-send-email-hau@realtek.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1420648826-12972-1-git-send-email-hau@realtek.com>
+	Wed, 7 Jan 2015 11:47:05 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Chunhao Lin'" <hau@realtek.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "nic_swsd@realtek.com" <nic_swsd@realtek.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH net-next 07/11] r8169:update rtl8168f pcie ephy parameter
+Thread-Topic: [PATCH net-next 07/11] r8169:update rtl8168f pcie ephy
+ parameter
+Thread-Index: AQHQKpkXBSN0Whg7rk6++TnEEWwctJy03Wgw
+Date: Wed, 7 Jan 2015 16:45:58 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1CAC2C99@AcuExch.aculab.com>
 References: <1420648826-12972-1-git-send-email-hau@realtek.com>
+ <1420648826-12972-8-git-send-email-hau@realtek.com>
+In-Reply-To: <1420648826-12972-8-git-send-email-hau@realtek.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.94]
+X-Outbound-IP: 213.249.233.130
+X-Env-From: David.Laight@ACULAB.COM
+X-PolicySMART: 3396946, 3397078
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RTL8168F rev.B does not have to set following two ephy parameters.
-{ 0x06, 0x00c0,	0x0020 }
-{ 0x08, 0x0001,	0x0002 }
+From: Chunhao Lin
+> rtl8168f may return to PCIe L0 from PCIe L0s low power mode too slow.
+> The following ephy parameters are for this issue.
+> { 0x00, 0x0000,	0x0008 }
+> { 0x0c, 0x3df0,	0x0200 }
+> 
+> Signed-off-by: Chunhao Lin <hau@realtek.com>
+> ---
+>  drivers/net/ethernet/realtek/r8169.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+> index 1874583..bafa132 100644
+> --- a/drivers/net/ethernet/realtek/r8169.c
+> +++ b/drivers/net/ethernet/realtek/r8169.c
+> @@ -5852,7 +5852,9 @@ static void rtl_hw_start_8168f_1(struct rtl8169_private *tp)
+>  		{ 0x06, 0x00c0,	0x0020 },
+>  		{ 0x08, 0x0001,	0x0002 },
+>  		{ 0x09, 0x0000,	0x0080 },
+> -		{ 0x19, 0x0000,	0x0224 }
+> +		{ 0x19, 0x0000,	0x0224 },
+> +		{ 0x00, 0x0000,	0x0008 },
+> +		{ 0x0c, 0x3df0,	0x0200 }
 
-Add function rtl_hw_start_8168f_2 to set RTL8168F rev.B ephy parameters,
-instead of using function rtl_hw_start_8168f_1.
+I can't help feeling these lines all require short comments.
 
-Signed-off-by: Chunhao Lin <hau@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c | 24 +++++++++++++++++++++++-
- 1 file changed, 23 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index b8a097c..d62f8d8 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -5867,6 +5867,26 @@ static void rtl_hw_start_8168f_1(struct rtl8169_private *tp)
- 	RTL_W8(EEE_LED, RTL_R8(EEE_LED) & ~0x07);
- }
- 
-+static void rtl_hw_start_8168f_2(struct rtl8169_private *tp)
-+{
-+	void __iomem *ioaddr = tp->mmio_addr;
-+	static const struct ephy_info e_info_8168f_2[] = {
-+		{ 0x09, 0x0000,	0x0080 },
-+		{ 0x19, 0x0000,	0x0224 },
-+		{ 0x00, 0x0000,	0x0008 },
-+		{ 0x0c, 0x3df0,	0x0200 }
-+	};
-+
-+	rtl_hw_start_8168f(tp);
-+
-+	rtl_ephy_init(tp, e_info_8168f_2, ARRAY_SIZE(e_info_8168f_2));
-+
-+	rtl_w0w1_eri(tp, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0xff00, ERIAR_EXGMAC);
-+
-+	/* Adjust EEE LED frequency */
-+	RTL_W8(EEE_LED, RTL_R8(EEE_LED) & ~0x07);
-+}
-+
- static void rtl_hw_start_8411(struct rtl8169_private *tp)
- {
- 	static const struct ephy_info e_info_8411[] = {
-@@ -6276,9 +6296,11 @@ static void rtl_hw_start_8168(struct net_device *dev)
- 		break;
- 
- 	case RTL_GIGA_MAC_VER_35:
--	case RTL_GIGA_MAC_VER_36:
- 		rtl_hw_start_8168f_1(tp);
- 		break;
-+	case RTL_GIGA_MAC_VER_36:
-+		rtl_hw_start_8168f_2(tp);
-+		break;
- 
- 	case RTL_GIGA_MAC_VER_38:
- 		rtl_hw_start_8411(tp);
--- 
-1.9.1
+	David
 
