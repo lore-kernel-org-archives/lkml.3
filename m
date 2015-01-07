@@ -1,235 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961AbbAGSCe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 13:02:34 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46465 "EHLO arroyo.ext.ti.com"
+	id S1753710AbbAGSAi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 13:00:38 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:42669 "EHLO smtp6-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752207AbbAGSCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 13:02:31 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
-        Eduardo Valentin <edubezval@gmail.com>
-CC: <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>
-Subject: [PATCH] (gpio-fan): Add thermal control hooks
-Date: Wed, 7 Jan 2015 12:01:14 -0600
-Message-ID: <1420653674-23855-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754175AbbAGSAg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 13:00:36 -0500
+Date: Wed, 7 Jan 2015 19:02:41 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Andrew Jackson <Andrew.Jackson@arm.com>, Mark Brown <broonie@kernel.org>,
+        Dave Airlie <airlied@gmail.com>, Jyri Sarha <jsarha@ti.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v9 3/4] ASoC: tda998x: add a codec to the HDMI
+ transmitter
+Message-ID: <20150107190241.27ebac8b@armhf>
+In-Reply-To: <20150107154138.GL12302@n2100.arm.linux.org.uk>
+References: <cover.1420628786.git.moinejf@free.fr>
+	<23b36acc1f769418a06f3e929eba288b5911da12.1420628786.git.moinejf@free.fr>
+	<54AD4C77.5000401@arm.com>
+	<20150107154138.GL12302@n2100.arm.linux.org.uk>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow gpio-fan to be used as thermal cooling device for platforms that
-use GPIO maps to control fans.
+On Wed, 7 Jan 2015 15:41:38 +0000
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
+> On Wed, Jan 07, 2015 at 03:10:47PM +0000, Andrew Jackson wrote:
+> > On 01/07/15 10:51, Jean-Francois Moine wrote:
+> > > diff --git a/drivers/gpu/drm/i2c/Kconfig b/drivers/gpu/drm/i2c/Kconfig
+> > > index 22c7ed6..24fc975 100644
+> > > --- a/drivers/gpu/drm/i2c/Kconfig
+> > > +++ b/drivers/gpu/drm/i2c/Kconfig
+> > > @@ -28,6 +28,7 @@ config DRM_I2C_SIL164
+> > >  config DRM_I2C_NXP_TDA998X
+> > >         tristate "NXP Semiconductors TDA998X HDMI encoder"
+> > >         default m if DRM_TILCDC
+> > > +       select SND_SOC_TDA998X
+> > 
+> > Do you need this since sound/soc/codecs/Kconfig conditionally brings in the
+> > CODEC driver?
 
-Based on v3.19-rc3
+For SND_SOC_ALL_CODECS only.
 
- .../devicetree/bindings/gpio/gpio-fan.txt          |   14 +++
- drivers/hwmon/gpio-fan.c                           |   93 ++++++++++++++++++--
- 2 files changed, 100 insertions(+), 7 deletions(-)
+> More importantly, it's broken, because it'll cause Kconfig to complain
+> if you enable DRM_I2C_NXP_TDA998X, but have ASoC disabled.
+> 
+> Moreover, if you decide you want the sound and ASoC built as a module,
+> but want to build in DRM and TDA998x support (so you can get video
+> output working on boot before initramfs/rootfs), Kconfig may well
+> complain.
 
-diff --git a/Documentation/devicetree/bindings/gpio/gpio-fan.txt b/Documentation/devicetree/bindings/gpio/gpio-fan.txt
-index 2dd457a3469a..046f2f400dbb 100644
---- a/Documentation/devicetree/bindings/gpio/gpio-fan.txt
-+++ b/Documentation/devicetree/bindings/gpio/gpio-fan.txt
-@@ -11,6 +11,9 @@ Required properties:
- Optional properties:
- - alarm-gpios: This pin going active indicates something is wrong with
-   the fan, and a udev event will be fired.
-+- cooling-cells: If used as a cooling device, must be <2>
-+  Also see: Documentation/devicetree/bindings/thermal/thermal.txt
-+  min and max states are derived from the speed-map of the fan.
- 
- Examples:
- 
-@@ -23,3 +26,14 @@ Examples:
- 				      6000 2>;
- 		alarm-gpios = <&gpio1 15 1>;
- 	};
-+
-+	gpio_fan_cool: gpio_fan {
-+		compatible = "gpio-fan";
-+		gpios = <&gpio2 14 1
-+			 &gpio2 13 1>;
-+		gpio-fan,speed-map = <0    0
-+				      3000 1
-+				      6000 2>;
-+		alarm-gpios = <&gpio1 15 1>;
-+		#cooling-cells = <2>; /* min followed by max */
-+	};
-diff --git a/drivers/hwmon/gpio-fan.c b/drivers/hwmon/gpio-fan.c
-index 36abf814b8c7..089914c4f574 100644
---- a/drivers/hwmon/gpio-fan.c
-+++ b/drivers/hwmon/gpio-fan.c
-@@ -34,10 +34,14 @@
- #include <linux/of.h>
- #include <linux/of_platform.h>
- #include <linux/of_gpio.h>
-+#include <linux/thermal.h>
-+
- 
- struct gpio_fan_data {
- 	struct platform_device	*pdev;
- 	struct device		*hwmon_dev;
-+	/* Cooling device if any */
-+	struct thermal_cooling_device *cdev;
- 	struct mutex		lock; /* lock GPIOs operations. */
- 	int			num_ctrl;
- 	unsigned		*ctrl;
-@@ -387,12 +391,63 @@ static int fan_ctrl_init(struct gpio_fan_data *fan_data,
- 	return 0;
- }
- 
-+static int gpio_fan_get_max_state(struct thermal_cooling_device *cdev,
-+				  unsigned long *state)
-+{
-+	struct gpio_fan_data *fan_data = cdev->devdata;
-+
-+	if (!fan_data)
-+		return -EINVAL;
-+
-+	*state = fan_data->num_speed - 1;
-+	return 0;
-+}
-+
-+static int gpio_fan_get_cur_state(struct thermal_cooling_device *cdev,
-+				  unsigned long *state)
-+{
-+	struct gpio_fan_data *fan_data = cdev->devdata;
-+	int r;
-+
-+	if (!fan_data)
-+		return -EINVAL;
-+
-+	r = get_fan_speed_index(fan_data);
-+	if (r < 0)
-+		return r;
-+
-+	*state = r;
-+	return 0;
-+
-+}
-+
-+static int gpio_fan_set_cur_state(struct thermal_cooling_device *cdev,
-+				  unsigned long state)
-+{
-+	struct gpio_fan_data *fan_data = cdev->devdata;
-+
-+	if (!fan_data)
-+		return -EINVAL;
-+
-+	set_fan_speed(fan_data, state);
-+
-+	return 0;
-+}
-+
-+static const struct thermal_cooling_device_ops gpio_fan_cooling_ops = {
-+	.get_max_state = gpio_fan_get_max_state,
-+	.get_cur_state = gpio_fan_get_cur_state,
-+	.set_cur_state = gpio_fan_set_cur_state,
-+
-+};
-+
- #ifdef CONFIG_OF_GPIO
- /*
-  * Translate OpenFirmware node properties into platform_data
-  */
- static int gpio_fan_get_of_pdata(struct device *dev,
--			    struct gpio_fan_platform_data *pdata)
-+			         struct gpio_fan_platform_data *pdata,
-+				 struct gpio_fan_data *fan_data)
- {
- 	struct device_node *node;
- 	struct gpio_fan_speed *speed;
-@@ -480,6 +535,12 @@ static int gpio_fan_get_of_pdata(struct device *dev,
- 		pdata->alarm = alarm;
- 	}
- 
-+	fan_data->cdev = thermal_of_cooling_device_register(node, "gpio-fan",
-+							    fan_data,
-+						    &gpio_fan_cooling_ops);
-+	if (IS_ERR(fan_data->cdev))
-+		dev_dbg(dev, "gpio-fan has no valid cooling DT property\n");
-+
- 	return 0;
- }
- 
-@@ -495,6 +556,11 @@ static int gpio_fan_probe(struct platform_device *pdev)
- 	struct gpio_fan_data *fan_data;
- 	struct gpio_fan_platform_data *pdata = dev_get_platdata(&pdev->dev);
- 
-+	fan_data = devm_kzalloc(&pdev->dev, sizeof(struct gpio_fan_data),
-+				GFP_KERNEL);
-+	if (!fan_data)
-+		return -ENOMEM;
-+
- #ifdef CONFIG_OF_GPIO
- 	if (!pdata) {
- 		pdata = devm_kzalloc(&pdev->dev,
-@@ -503,20 +569,19 @@ static int gpio_fan_probe(struct platform_device *pdev)
- 		if (!pdata)
- 			return -ENOMEM;
- 
--		err = gpio_fan_get_of_pdata(&pdev->dev, pdata);
-+		err = gpio_fan_get_of_pdata(&pdev->dev, pdata, fan_data);
- 		if (err)
- 			return err;
- 	}
- #else /* CONFIG_OF_GPIO */
- 	if (!pdata)
- 		return -EINVAL;
-+	/* Optional cooling device register for non Device tree platforms */
-+	fan_data->cdev = thermal_cooling_device_register("gpio-fan",
-+							 fan_data,
-+							 &gpio_fan_cooling_ops);
- #endif /* CONFIG_OF_GPIO */
- 
--	fan_data = devm_kzalloc(&pdev->dev, sizeof(struct gpio_fan_data),
--				GFP_KERNEL);
--	if (!fan_data)
--		return -ENOMEM;
--
- 	fan_data->pdev = pdev;
- 	platform_set_drvdata(pdev, fan_data);
- 	mutex_init(&fan_data->lock);
-@@ -550,10 +615,23 @@ static int gpio_fan_probe(struct platform_device *pdev)
- 	return 0;
- }
- 
-+static int gpio_fan_remove(struct platform_device *pdev)
-+{
-+       struct gpio_fan_data *fan_data = platform_get_drvdata(pdev);
-+
-+	if (!IS_ERR(fan_data->cdev))
-+		thermal_cooling_device_unregister(fan_data->cdev);
-+
-+       return 0;
-+}
-+
- static void gpio_fan_shutdown(struct platform_device *pdev)
- {
- 	struct gpio_fan_data *fan_data = dev_get_drvdata(&pdev->dev);
- 
-+	if (!IS_ERR(fan_data->cdev))
-+		thermal_cooling_device_unregister(fan_data->cdev);
-+
- 	if (fan_data->ctrl)
- 		set_fan_speed(fan_data, 0);
- }
-@@ -589,6 +667,7 @@ static SIMPLE_DEV_PM_OPS(gpio_fan_pm, gpio_fan_suspend, gpio_fan_resume);
- 
- static struct platform_driver gpio_fan_driver = {
- 	.probe		= gpio_fan_probe,
-+	.remove		= gpio_fan_remove,
- 	.shutdown	= gpio_fan_shutdown,
- 	.driver	= {
- 		.name	= "gpio-fan",
+	select SND_SOC_TDA998X if SND_SOC
+
+should work in all cases.
+
+> > > +static int __init tda998x_codec_init(void)
+> > > +{
+> > > +       return 0;
+> > > +}
+> > > +static void __exit tda998x_codec_exit(void)
+> > > +{
+> > > +}
+> > > +module_init(tda998x_codec_init);
+> > > +module_exit(tda998x_codec_exit);
+> 
+> There's no need for these if they remain as the above.  Modules can have
+> both init/exit functions, or neither, and they are still unloadable.
+> Only modules which provide only an init function get locked in on load.
+
+Thanks.
+
 -- 
-1.7.9.5
-
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
