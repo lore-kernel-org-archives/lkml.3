@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755027AbbAGUgR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 15:36:17 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:38090 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754214AbbAGUgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 15:36:15 -0500
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: mimi.e.zohar@gmail.com
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-ima-devel@lists.sourceforge.net,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [RFC][PATCH 0/9] extend initramfs archive format to support xattrs 
-Date: Wed,  7 Jan 2015 15:36:07 -0500
-Message-Id: <1420662967-18257-1-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=y
-Content-Transfer-Encoding: 8bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15010720-0037-0000-0000-00000049AED1
+	id S1755049AbbAGUhX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 15:37:23 -0500
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:44547 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752603AbbAGUhV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 15:37:21 -0500
+X-Sasl-enc: MXu1cKnj7qRXiyvllVTyvbKqaYV3J8d5cl83gcws8cwi 1420663040
+Content-Type: text/plain; charset=utf-8
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Subject: Re: TCP connection issues against Amazon S3
+From: Erik Grinaker <erik@bengler.no>
+In-Reply-To: <1420646284.5947.19.camel@edumazet-glaptop2.roam.corp.google.com>
+Date: Wed, 7 Jan 2015 20:37:19 +0000
+Cc: Yuchung Cheng <ycheng@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A58F8257-97F8-4662-98FC-7AC57F35A3A4@bengler.no>
+References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no> <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com> <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no> <1420564837.32621.30.camel@edumazet-glaptop2.roam.corp.google.com> <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no> <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com> <03FC652E-AA01-42C7-BD52-019B6D922A9C@bengler.no> <CAK6E8=cP0BFUob5MVj9M0hC0efgRnUY=JMUPKee+v-4TLvHBgg@mail.gmail.com> <76DC89D1-CFCE-44B7-994E-4349FEEDEFA6@bengler.no> <1420575216.5947.12.camel@edumazet-glaptop2.roam.corp.google.com> <4DA8529D-4EEC-42DA-89B0-DC7746DB2B10@bengler.no> <3F608393-E5F1-4647-81BF-C6C740100934@bengler.no> <CAK6E8=cf7cROQ0SON0BihkbOsBB+-sLAbexxgt4_xD+Auqev3Q@mail.gmail.com> <34CE0233-F881-4F40-B119-AA9D8F7D500F@bengler.no> <1420646284.5947.19.camel@edumazet-glaptop2.roam.corp.google.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many of the Linux security/integrity features are dependent on file
-metadata, stored as extended attributes (xattrs), for making decisions.
-These features need to be initialized during initcall and enabled as
-early as possible for complete security coverage. 
+On 07 Jan 2015, at 15:58, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Wed, 2015-01-07 at 13:31 +0000, Erik Grinaker wrote:
+>> On 06 Jan 2015, at 22:00, Yuchung Cheng <ycheng@google.com> wrote:
+>>> On Tue, Jan 6, 2015 at 1:04 PM, Erik Grinaker <erik@bengler.no> wrote:
+>>>> 
+>>>>> On 06 Jan 2015, at 20:26, Erik Grinaker <erik@bengler.no> wrote:
+>>>> This still doesn’t explain why it works with older kernels, but not newer ones. I’m thinking it’s
+>>> probably some minor change, which gets amplified by the lack of SACKs
+>>> on the loadbalancer. Anyway, I’ll bring it up with Amazon.
+>>> can you post traces with the older kernels?
+>> 
+>> Here is a dump using 3.11.10 against a non-SACK-enabled loadbalancer:
+>> 
+>> http://abstrakt.bengler.no/tcp-issues-s3-nosack-3.11.10.pcap.bz2
+>> 
+>> The transfer shows lots of DUPACKs and retransmits, but this does not
+>> seem to have as bad an effect as it did with the failing transfer we
+>> saw on newer kernels:
+>> 
+>> http://abstrakt.bengler.no/tcp-issues-s3-failure.pcap.bz2
+>> 
+>> One big difference, which Rick touched on earlier, is that the newer
+>> kernels keep sending TCP window updates as it’s going through the
+>> retransmits. The older kernel does not do this.
+> 
+> The new kernel is the receiver : It does no retransmits.
+> 
+> Increasing window in ACK packets should not prevent sender into
+> retransmitting missing packets.
+> 
+> Sender is not a linux host and is very buggy IMO : If receiver
+> advertises a too big window, sender decides to not retransmit in some
+> cases.
 
-The linux kernel creates the rootfs file system and extracts the contents
-of the initramfs, a compressed CPIO archive, onto it. If CONFIG_TMPFS is
-enabled (and "root=" is not specified on the boot command line), rootfs
-will use tmpfs instead of ramfs by default.  Although the tmpfs filesystem
-supports xattrs, the CPIO archive specification does not define a method
-for including them in the archive.  Other archive formats have added xattr
-support (eg. tar).
+I agree. I have contacted Amazon about this, but am not too hopeful for a quick fix; they have been promising SACK-support on their loadbalancers since 2006, for example.
 
-There are a couple of ways to include and label the rootfs filesystem:
-- include a file manifest containing the xattrs in the initramfs
-- extend CPIO to support xattrs
-- add tar support
+That said, since this change breaks a service as popular as S3, it might be worth reconsidering.
 
-This patch set extends the existing newc CPIO archive format to include
-xattrs in the initramfs.  The changes are limited to gen_init_cpio, the
-kernel build tree tool used to generate an initramfs, and init/initramfs.c,
-the parser, with minor changes to IMA and EVM.
+> You can play with /proc/sys/net/ipv4/tcp_rmem and adopt very low values
+> to work around the sender bug.
+> 
+> ( Or use SO_RCVBUF in receiver application)
 
-Mimi
-
-
-Mimi Zohar (9):
-  initramfs: separate reading cpio method from header
-  initramfs: add extended attribute support
-  gen_init_cpio: replace inline format string with common variable
-  gen_init_cpio: define new CPIO format to support xattrs
-  gen_init_cpio: include the file extended attributes
-  gen_initramfs_list.sh: include xattrs
-  evm: make rootfs a special case
-  ima: include tmpfs in ima_appraise_tcb policy
-  init: remove "root=" command line option test for tmpfs decision
-
- init/do_mounts.c                    |   2 +-
- init/initramfs.c                    |  95 +++++++++++++++++++++---
- scripts/gen_initramfs_list.sh       |   2 +-
- security/integrity/evm/evm_main.c   |  12 ++-
- security/integrity/ima/ima_policy.c |   2 +
- usr/gen_init_cpio.c                 | 142 ++++++++++++++++++++++++++++++------
- 6 files changed, 218 insertions(+), 37 deletions(-)
-
--- 
-1.8.1.4
-
+Thanks, setting SO_RCVBUF seems like a reasonable workaround.
