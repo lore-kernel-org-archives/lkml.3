@@ -1,106 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755393AbbAGVdy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 16:33:54 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:55165 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755138AbbAGVdw (ORCPT
+	id S1755398AbbAGVee (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 16:34:34 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:46788 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755078AbbAGVec convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 16:33:52 -0500
-Message-ID: <1420666431.12144.71.camel@haakon3.risingtidesystems.com>
-Subject: Re: [target:nvme_of 3/3]
- drivers/target/nvme_of/nvme_of_configfs.c:25:31: sparse: symbol
- 'nvme_of_fabric_configfs' was not declared. Should it be static?
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Sagi Grimberg <sagig@dev.mellanox.co.il>
-Cc: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "target-devel@vger.kernel.org" <target-devel@vger.kernel.org>,
+	Wed, 7 Jan 2015 16:34:32 -0500
+MIME-Version: 1.0
+In-Reply-To: <A58F8257-97F8-4662-98FC-7AC57F35A3A4@bengler.no>
+References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no>
+ <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com>
+ <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no> <1420564837.32621.30.camel@edumazet-glaptop2.roam.corp.google.com>
+ <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no> <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com>
+ <03FC652E-AA01-42C7-BD52-019B6D922A9C@bengler.no> <CAK6E8=cP0BFUob5MVj9M0hC0efgRnUY=JMUPKee+v-4TLvHBgg@mail.gmail.com>
+ <76DC89D1-CFCE-44B7-994E-4349FEEDEFA6@bengler.no> <1420575216.5947.12.camel@edumazet-glaptop2.roam.corp.google.com>
+ <4DA8529D-4EEC-42DA-89B0-DC7746DB2B10@bengler.no> <3F608393-E5F1-4647-81BF-C6C740100934@bengler.no>
+ <CAK6E8=cf7cROQ0SON0BihkbOsBB+-sLAbexxgt4_xD+Auqev3Q@mail.gmail.com>
+ <34CE0233-F881-4F40-B119-AA9D8F7D500F@bengler.no> <1420646284.5947.19.camel@edumazet-glaptop2.roam.corp.google.com>
+ <A58F8257-97F8-4662-98FC-7AC57F35A3A4@bengler.no>
+From: Yuchung Cheng <ycheng@google.com>
+Date: Wed, 7 Jan 2015 13:33:51 -0800
+Message-ID: <CAK6E8=cXJWGdc6be==5B4mA+xU7JuOnvUMpsEGJ=9RTj8YDwsA@mail.gmail.com>
+Subject: Re: TCP connection issues against Amazon S3
+To: Erik Grinaker <erik@bengler.no>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Patil, Kiran" <kiran.patil@intel.com>,
-        "Minturn, Dave B" <dave.b.minturn@intel.com>
-Date: Wed, 07 Jan 2015 13:33:51 -0800
-In-Reply-To: <8F6AF977-2BD7-46FF-A38D-108AF3C05809@dev.mellanox.co.il>
-References: <201501070334.EgwC5iey%fengguang.wu@intel.com>
-	 <1420584282.6927.62.camel@haakon3.risingtidesystems.com>
-	 <54ACF516.4080602@dev.mellanox.co.il>
-	 <1420654943.12144.38.camel@haakon3.risingtidesystems.com>
-	 <8F6AF977-2BD7-46FF-A38D-108AF3C05809@dev.mellanox.co.il>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-07 at 22:26 +0200, Sagi Grimberg wrote:
-> >> On Wed, 2015-01-07 at 10:57 +0200, Sagi Grimberg wrote:
-> >>> On 1/7/2015 12:44 AM, Nicholas A. Bellinger wrote:
+On Wed, Jan 7, 2015 at 12:37 PM, Erik Grinaker <erik@bengler.no> wrote:
+> On 07 Jan 2015, at 15:58, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>> On Wed, 2015-01-07 at 13:31 +0000, Erik Grinaker wrote:
+>>> On 06 Jan 2015, at 22:00, Yuchung Cheng <ycheng@google.com> wrote:
+>>>> On Tue, Jan 6, 2015 at 1:04 PM, Erik Grinaker <erik@bengler.no> wrote:
+>>>>>
+>>>>>> On 06 Jan 2015, at 20:26, Erik Grinaker <erik@bengler.no> wrote:
+>>>>> This still doesn’t explain why it works with older kernels, but not newer ones. I’m thinking it’s
+>>>> probably some minor change, which gets amplified by the lack of SACKs
+>>>> on the loadbalancer. Anyway, I’ll bring it up with Amazon.
+>>>> can you post traces with the older kernels?
+>>>
+>>> Here is a dump using 3.11.10 against a non-SACK-enabled loadbalancer:
+>>>
+>>> http://abstrakt.bengler.no/tcp-issues-s3-nosack-3.11.10.pcap.bz2
+>>>
+>>> The transfer shows lots of DUPACKs and retransmits, but this does not
+>>> seem to have as bad an effect as it did with the failing transfer we
+>>> saw on newer kernels:
+>>>
+>>> http://abstrakt.bengler.no/tcp-issues-s3-failure.pcap.bz2
+>>>
+>>> One big difference, which Rick touched on earlier, is that the newer
+>>> kernels keep sending TCP window updates as it’s going through the
+>>> retransmits. The older kernel does not do this.
+>>
+>> The new kernel is the receiver : It does no retransmits.
+>>
+>> Increasing window in ACK packets should not prevent sender into
+>> retransmitting missing packets.
+>>
+>> Sender is not a linux host and is very buggy IMO : If receiver
+>> advertises a too big window, sender decides to not retransmit in some
+>> cases.
+>
+> I agree. I have contacted Amazon about this, but am not too hopeful for a quick fix; they have been promising SACK-support on their loadbalancers since 2006, for example.
+>
+> That said, since this change breaks a service as popular as S3, it might be worth reconsidering.
+With the newer kernel and bigger receive window, the sender skips (the
+already slow NewReno) fast recovery and falls back to (exp backoff)
+timeout recovery. Reducing rwin to accommodate the sender's bug seems
+backward to me.
 
-<SNIP>
 
-> >> Hey Nic,
-> >> 
-> >> Hope all is well.
-> >> 
-> >> So this skeleton is interesting to me. As this is a fabric module I
-> >> assume this would be the NVMEoFabrics target mode driver for upstream 
-> >> which would be able to talk to NVMEoFabrics initiator (which by
-> >> the way makes LIO something more than a SCSI target - will this be 
-> >> accepted?).
-> > 
-> > That is currently the plan.
-> > 
-> > It's still unclear how this will work wrt to existing target code, but
-> > given the amount of logic that NVMe is borrowing from SCSI on the
-> > command set side (PR, ALUA, VAAI, DIF), I'm sure there is an opportunity
-> > for code sharing between NVMe and SCSI based fabrics.
-> 
-> Right, but I assume there will be a different method to provision this
-> stuff given that the target exposes NVME SQs.
-> 
-
-Yeah, it's not clear how this is going to work yet, but I'd expect a new
-backend driver will be required for exposing NVMe hardware queues into
-target -> fabric driver code.
-
-> > 
-> >> I'm currently participating in nvmexpress working group defining the
-> >> standard of protocol, specifically in the context of RDMA (naturally).
-> > 
-> > Glad to hear that your involved.  ;)
-> 
-> Should say passively involved, at the moment I'm just following this
-> stuff.
-> 
-> > 
-> >> I'm interested in taking an active role in this project, It is
-> >> important to build this layered from day one - separating the fabric 
-> >> logic (RDMA or FCoE) from the core layer.
-> >> 
-> >> Moreover, I know that Mellanox has some plans on accelerating this
-> >> area in future devices and we are currently looking into ways to
-> >> do that. I want to see that the SW will be able to support that.
-> >> 
-> >> So, Thoughts?
-> > 
-> > FYI, Kiran and Dave (CC'ed) from Intel will be driving upstream NVME-OF
-> > target development.
-> > 
-> > I'll be primarily focused on figuring out how NVMe and SCSI can play
-> > nicely in target-core, and helping out on the NVMe-OF side where
-> > necessary.
-> 
-> Is there something open that I can start playing around with? What is
-> the status here? I imagine that the initiator is developed as well...
-> 
-
-I don't believe any public code is available yet, and considering the
-draft spec is only available to members of the NVMe consortium, it's
-likely going to be a while before that happens.
-
-However, Dave mentioned off-list that sharing early code amongst NVMe
-consortium members should not be an issue.
-
---nab 
-
+>
+>> You can play with /proc/sys/net/ipv4/tcp_rmem and adopt very low values
+>> to work around the sender bug.
+>>
+>> ( Or use SO_RCVBUF in receiver application)
+>
+> Thanks, setting SO_RCVBUF seems like a reasonable workaround.
