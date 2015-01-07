@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755750AbbAGXq2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 18:46:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34248 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755705AbbAGXq0 (ORCPT
+	id S1755845AbbAGXrV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 18:47:21 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:39366 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755813AbbAGXrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 18:46:26 -0500
-Date: Wed, 7 Jan 2015 15:46:25 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.17 00/73] 3.17.8-stable review
-Message-ID: <20150107234625.GB19926@kroah.com>
-References: <20150107021557.521276020@linuxfoundation.org>
- <54AD389A.5000808@roeck-us.net>
+	Wed, 7 Jan 2015 18:47:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54AD389A.5000808@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1CAC2762@AcuExch.aculab.com>
+References: <1420587382-24612-1-git-send-email-ani@arista.com> <063D6719AE5E284EB5DD2968C1650D6D1CAC2762@AcuExch.aculab.com>
+From: Ani Sinha <ani@arista.com>
+Date: Wed, 7 Jan 2015 15:46:55 -0800
+Message-ID: <CAOxq_8NN1xi7Y1kiN-un+usU0Nz_CX8bkvhM50VSTsFXNJnGaA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] update ip-sysctl.txt documentation
+To: David Laight <David.Laight@aculab.com>
+Cc: "corbet@lwn.net" <corbet@lwn.net>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "edumazet@google.com" <edumazet@google.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "P@draigbrady.com" <P@draigbrady.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "fruggeri@arista.com" <fruggeri@arista.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 05:46:02AM -0800, Guenter Roeck wrote:
-> On 01/06/2015 06:15 PM, Greg Kroah-Hartman wrote:
-> >NOTE, this is the LAST 3.17-stable kernel to be released, you should
-> >move to 3.18 by now, as 3.17 is end-of-life after this release.
-> >
-> >
-> >
-> >This is the start of the stable review cycle for the 3.17.8 release.
-> >There are 73 patches in this series, all will be posted as a response
-> >to this one.  If anyone has any issues with these being applied, please
-> >let me know.
-> >
-> 
-> Build results:
-> 	total: 133 pass: 132 fail: 1
-> Failed builds:
-> 	avr32:atngw100mkii_evklcd101_defconfig
-> 
-> Qemu tests:
-> 	total: 30 pass: 30 fail: 0
-> 
-> Details are available at http://server.roeck-us.net:8010/builders.
-> 
-> It looks like you didn't apply the patch needed to address
-> the avr32 build problem, so results are as expected.
+On Wed, Jan 7, 2015 at 2:11 AM, David Laight <David.Laight@aculab.com> wrote:
+> From: Ani Sinha
+>> Update documentation to reflect the fact that
+>> /proc/sys/net/ipv4/route/max_size is no longer used for ipv4.
+>>
+>> Signed-off-by: Ani Sinha <ani@arista.com>
+>> ---
+>>  Documentation/networking/ip-sysctl.txt |    6 ++++--
+>>  1 files changed, 4 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/Documentation/networking/ip-sysctl.txt b/Documentation/networking/ip-sysctl.txt
+>> index 9bffdfc..2a28261 100644
+>> --- a/Documentation/networking/ip-sysctl.txt
+>> +++ b/Documentation/networking/ip-sysctl.txt
+>> @@ -64,8 +64,10 @@ fwmark_reflect - BOOLEAN
+>>       Default: 0
+>>
+>>  route/max_size - INTEGER
+>> -     Maximum number of routes allowed in the kernel.  Increase
+>> -     this when using large numbers of interfaces and/or routes.
+>> +     Post linux kernel 3.6, this is deprecated for ipv4 as route cache is no
+>> +     longer used. For ipv6, this is used to limit the maximum number of ipv6
+>> +     routes allowed in the kernel.  Increase this when using large numbers of
+>> +     interfaces and/or routes.
+>
+> Now imagine you are reading ip-sysctl.txt, the new text is all wrong.
+> Something like:
+>         Limit on the size of the ip route caches.
+>         Ignored for ipv4 after kernel 3.6 because the ipv4 route cache was removed.
+>         Increase this when using large numbers of interfaces and/or routes.
+> would read better.
 
-Yeah, I didn't get to that one, oh well, no one seemed to really care :)
-
-Thanks for testing all 4 of these and letting me know.
-
-greg k-h
+Ok please take a look at my patch v2.
