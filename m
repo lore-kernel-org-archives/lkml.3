@@ -1,109 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755AbbAGRWy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 12:22:54 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:32726 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753655AbbAGRWw (ORCPT
+	id S1754354AbbAGRUk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 12:20:40 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:40872 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753595AbbAGRUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 12:22:52 -0500
-From: Ezequiel Garcia <ezequiel.garcia@imgtec.com>
-To: Andrew Bresticker <abrestic@chromium.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        James Hartley <james.hartley@imgtec.com>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pwm@vger.kernel.org>,
-        Naidu Tellapati <Naidu.Tellapati@imgtec.com>,
-        Arul Ramasamy <Arul.Ramasamy@imgtec.com>,
-        Ezequiel Garcia <ezequiel.garcia@imgtec.com>
-Subject: [PATCH v7 4/4] DT: pdm: Add binding document for IMG PDM DAC
-Date: Wed, 7 Jan 2015 14:20:15 -0300
-Message-ID: <1420651215-3836-5-git-send-email-ezequiel.garcia@imgtec.com>
-X-Mailer: git-send-email 2.2.1
-In-Reply-To: <1420651215-3836-1-git-send-email-ezequiel.garcia@imgtec.com>
-References: <1420651215-3836-1-git-send-email-ezequiel.garcia@imgtec.com>
+	Wed, 7 Jan 2015 12:20:38 -0500
+Date: Wed, 7 Jan 2015 09:20:30 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        bobby.prani@gmail.com
+Subject: [PATCH tip/core/rcu 0/10] Miscellaneous fixes for 3.20
+Message-ID: <20150107172030.GA31571@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.100.200.91]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15010717-0017-0000-0000-000007BD521F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Naidu Tellapati <Naidu.Tellapati@imgtec.com>
+Hello!
 
-Add binding document for the Pulse Density Modulator (PDM) DAC present on the
-Pistachio SOC.
+This series contains miscellaneous fixes for 3.20:
 
-Signed-off-by: Naidu Tellapati <Naidu.Tellapati@imgtec.com>
-Signed-off-by: Arul Ramasamy <Arul.Ramasamy@imgtec.com>
-Signed-off-by: Ezequiel Garcia <ezequiel.garcia@imgtec.com>
----
- Documentation/devicetree/bindings/misc/img-pdm.txt | 54 ++++++++++++++++++++++
- 1 file changed, 54 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/misc/img-pdm.txt
+1.	Make rcu_nmi_enter() handle nesting, as there are now some
+	architectures that use RCU read-side critical sections in
+	NMI-like constructs that can nest in one another.  Algorithm
+	courtesy of Andy Lutomirski.
 
-diff --git a/Documentation/devicetree/bindings/misc/img-pdm.txt b/Documentation/devicetree/bindings/misc/img-pdm.txt
-new file mode 100644
-index 0000000..96fde23
---- /dev/null
-+++ b/Documentation/devicetree/bindings/misc/img-pdm.txt
-@@ -0,0 +1,54 @@
-+Imagination Technologies Pulse Density Modulator (PDM) DAC.
-+
-+Required properties:
-+- compatible: Must be "img,pistachio-pdm"
-+- clocks: phandle to input PDM clock
-+- clock-names: Must include the following entry:
-+  - pdm: input clock to pdm block.
-+- img,cr-periph: Must contain a phandle to the peripheral control
-+  syscon node which contains PDM control registers.
-+- #pdm-cells: Must be 2.
-+- The first cell is the PDM channel number (valid values: 0, 1, 2, 3)
-+- The second cell is 12-bit pulse-in value
-+
-+Specifying PDM information for devices
-+======================================
-+
-+1. PDM User nodes
-+
-+PDM properties should be named "pdms". The exact meaning of each pdms property
-+is described above.
-+
-+	pdm-specifier : array of #pdm-cells specifying the given PDM
-+						(controller specific)
-+
-+The following example could be used to describe a PDM-based backlight device:
-+
-+	pdm: pdm {
-+		#pdm-cells = <2>;
-+	};
-+
-+	[...]
-+
-+	bl: backlight {
-+		pdms = <&pdm 2 0>;
-+	};
-+
-+pdm-specifier typically encodes the chip-relative PDM channel number and the
-+12-bit pulse-in value.
-+
-+2. PDM Controller nodes
-+
-+PDM controller nodes must specify the number of cells used for the specifier
-+using the '#pdm-cells' property.
-+
-+An example PDM controller might look like this:
-+
-+Example:
-+	pdm: pdm@18148000 {
-+		compatible = "img,pistachio-pdm";
-+		clocks = <&pdm_clk>;
-+		clk-names = "pdm";
-+		img,cr-periph = <&cr_periph>;
-+		#pdm-cells = <2>;
-+	};
--- 
-2.2.1
+2.	Remove redundant rcu_is_cpu_rrupt_from_idle() from tiny RCU,
+	courtesy of Alexander Gordeev.
+
+3.	Fix invoke_rcu_callbacks() comment to correctly reflect
+	required calling environment.
+
+4.	Allow 1- and 2-byte smp_load_acquire() and smp_store_release(),
+	given that the C11 standard requires that compilers support this.
+
+5.	Replace smp_read_barrier_depends() with lockless_dereference(),
+	courtesy of Pranith Kumar.
+
+6.	Directly force QS when call_rcu_[bh|sched]() on idle_task for
+	tiny RCU, courtesy of Lai Jiangshan.  Saves more than 1KB.
+
+7.	Fix sparse warning from hlist_for_each_entry_continue_rcu_bh(),
+	courtesy of Ying Xue.
+
+8.	Fix hang in CPU hotplug code, courtesy of David Hildenbrand.
+
+9.	Fix rcu_barrier() race that could result in too-short wait.
+
+10.	Remove obsolete "select IRQ_WORK" from config TREE_RCU, courtesy
+	of Lai Jiangshan.
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+ b/include/linux/compiler.h |    2 
+ b/include/linux/rculist.h  |   16 +++---
+ b/include/linux/rcupdate.h |   10 ++--
+ b/init/Kconfig             |    2 
+ b/kernel/cpu.c             |   56 +++++++++-------------
+ b/kernel/rcu/rcu.h         |    6 ++
+ b/kernel/rcu/tiny.c        |  111 +++------------------------------------------
+ b/kernel/rcu/tiny_plugin.h |    2 
+ b/kernel/rcu/tree.c        |   75 ++++++++++++++++++++----------
+ b/kernel/rcu/tree.h        |   30 ++----------
+ b/kernel/rcu/tree_plugin.h |   45 +++++++++++-------
+ 11 files changed, 138 insertions(+), 217 deletions(-)
 
