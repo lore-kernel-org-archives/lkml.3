@@ -1,50 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043AbbAGT1U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 14:27:20 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:60891 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754308AbbAGT1R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 14:27:17 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ray Jui <rjui@broadcom.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Matt Porter <mporter@linaro.org>,
-        Alex Elder <elder@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Scott Branden <sbranden@broadcom.com>, linux-kernel@vger.kernel.org,
-        bcm-kernel-feedback-list@broadcom.com
-Subject: Re: [PATCH v3 0/5] Add common clock support for Broadcom iProc architecture
-Date: Wed, 07 Jan 2015 20:26:22 +0100
-Message-ID: <3144204.or2m7FRv17@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1420658568-22879-1-git-send-email-rjui@broadcom.com>
-References: <1420658568-22879-1-git-send-email-rjui@broadcom.com>
+	id S1754564AbbAGTbF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 14:31:05 -0500
+Received: from hetzner.hallyn.com ([176.9.5.92]:33888 "EHLO hetzner.hallyn.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751833AbbAGTbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 14:31:03 -0500
+Date: Wed, 7 Jan 2015 20:30:59 +0100
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Richard Weinberger <richard@nod.at>, Linux API <linux-api@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Tejun Heo <tj@kernel.org>,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCHv3 8/8] cgroup: Add documentation for cgroup namespaces
+Message-ID: <20150107193059.GA1857@mail.hallyn.com>
+References: <1417744550-6461-9-git-send-email-adityakali@google.com>
+ <548E17CE.8010704@nod.at>
+ <CAGr1F2HA6mzFwgp5ngX8P7=198-5CmCjLmuCJ8j3eQ08J2d9Qw@mail.gmail.com>
+ <54AB15BD.8020007@nod.at>
+ <87lhlgpyxk.fsf@x220.int.ebiederm.org>
+ <CAGr1F2HSi_D07r2c5CKOsjSR1+58k9G2MrtACsd+HV6XKvJ7cA@mail.gmail.com>
+ <54AB2992.6060707@nod.at>
+ <CAGr1F2EGOUSEd3-G4PS0mq=9kU1nWG4CwHUOQaNUATepc11_Sw@mail.gmail.com>
+ <54ACFC38.5070007@nod.at>
+ <87fvbmir9q.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:jl8hMuN8JEFuJBa8TRY/Jg/5Ci4dvUOfROXaS+1XqjtvQik/fCw
- 90ozNia1GogxQFgyxvcno4T/Nhhl1Q9cJ8cwkGyk98UlotOh89PlmMXLf8/v6pqLvb9qIDV
- 8FxbkxAt2B2+8yMnVfdQFfSzSuRH5xw+vbQE4Qnlc9q4pPnFjLPLxW6jn8GVIJuLM6QWI5J
- dkq6Jzo5/xlSKiAmzFRbQ==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87fvbmir9q.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 07 January 2015 11:22:43 Ray Jui wrote:
-> This patchset contains the initial common clock support for Broadcom's iProc
-> family of SoCs. The iProc clock architecture comprises of various PLLs, e.g.,
-> ARMPLL, GENPLL, LCPLL0, MIPIPLL, and etc. An onboard crystal serves as the
-> basic reference clock for these PLLs. Each PLL may have several leaf clocks.
-> One special group of clocks is the ASIU clocks, which are dervied directly
-> from the crystal reference clock.
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> Richard Weinberger <richard@nod.at> writes:
 > 
+> > Am 07.01.2015 um 00:20 schrieb Aditya Kali:
+> >> I understand your point. But it will add some complexity to the code.
+> >> 
+> >> Before trying to make it work for non-unified hierarchy cases, I would
+> >> like to get a clearer idea.
+> >> What do you expect to be mounted when you run:
+> >>   container:/ # mount -t cgroup none /sys/fs/cgroup/
+> >> from inside the container?
+> >> 
+> >> Note that cgroup-namespace wont be able to change the way cgroups are
+> >> mounted .. i.e., if say cpu and cpuacct subsystems are mounted
+> >> together at a single mount-point, then we cannot mount them any other
+> >> way (inside a container or outside). This restriction exists today and
+> >> cgroup-namespaces won't change that.
+> >
+> > I wondered why cgroup namespaces won't change that and looked at your patches
+> > in more detail.
+> > What you propose as cgroup namespace is much more a cgroup chroot() than
+> > a namespace.
+> > As you pass relative paths into the namespace you depend on the mount structure
+> > of the host side.
+> > Hence, the abstraction between namespaces happens on the mount paths of the initial
+> > cgroupfs. But we really want a new cgroupfs instance within a container and not just
+> > a cut out of the initial cgroupfs mount.
+> >
+> > I fear you approach is over simplified and won't work for all cases. It may work
+> > for your specific use case at Google but we really want something generic.
+> > Eric, what do you think?
+> 
+> I think I probably need to go back upthread and read the patches.
+> 
+> I think it is a reasonable practical requirement that a widely used long
+> term supported distribution like RHEL 7 needs to be able to run in a linux
+> container bizarre init system and all.  And that we the abstractions
+> should be that that we should be able to migrate such a beast.
 
-Looks good to me now.
+Userspace should be able to deal with however cgroups are mounted for
+it.  The only case I've heard of where it really made a meaningful
+difference was google's advanced grid usage.  In fact, the whole
+justification of the unified cgroup stuff was that it was claimed (and
+argued against by google) that that sufficed for any users.
 
-	Arnd
+Now yes, until now userspace could cache its info on how cgroups were
+mounted and assume that wouldn't change (because the kernel wouldn't
+let it), and migration will break that.  But if the cgroup roadmap
+is to obsolete anything but unified hierarchy, then this was going
+to happen regardless of what the cgroupns patchset did.
+
+I agree with Aditya.  So long as the proclaimed direction of cgroups is
+to only support unified cgroup hierarchy, there's no point in having
+cgroupns do anything more than the chrooting.
+
+> There are a couple of issues in play and I think we need actual testing
+> rather than reports that something shouldn't work before we reject a set
+> of patches.    Aditya in one of his replies to me has reported a
+> configuration that he expects will work.  So I think that configuration
+> needs to be tested.
+> 
+> cgroups is a weird beast and the problems tend not to lie where a person
+> would first expect.
+> 
+> I suspect no one strongly cares if the cgroup hierarchy is unified or
+> not.
+
+Well, google does.  There are cases that were either much more complicated
+or impossible to represent with unified hierarchy.  But complicating cgroupns
+to support something which Tejun has said is explicitly not going to be
+supported in the future would be ill-advised.
+
+>   By unified hierarchy I mean that  every mount of cgroupfs has the
+> same directories with the same processes in each directory.
+
+No, my reading of Documentation/cgroups/unified-hierarchy.txt is that
+unified hierarchy means that all (sane) controllers are co-mounted into
+one hierarchy.
+
+> I do think people will care which controllers will show up in differ
+> mounts of cgroupfs, and I think that is relevant to process migration.
+> 
+> 
+> 
+> 
+> I am going to segway into scope of what is achievable with a cgroup namespace.
+> 
+> - If there are files in cgroupfs that are not safe to delegate we can
+>   not support those files in a container. 
+> 
+>   Last I looked there were such files and systemd used them.
+> 
+> - Which controllers share hierarchies of processes to track resources is
+>   a core cgroup issue and not a cgroup namespace issue.
+> 
+>   If we find problems with using a unified hierarchy support we need to
+>   go fix cgroups in general not cgroupfs.
+> 
+> Eric
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/containers
