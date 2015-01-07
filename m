@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757034AbbAGCQt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:16:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46977 "EHLO
+	id S932901AbbAGCQw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:16:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46962 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757496AbbAGCQq (ORCPT
+	with ESMTP id S1757530AbbAGCQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jan 2015 21:16:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.17 24/73] dm space map metadata: fix sm_bootstrap_get_nr_blocks()
-Date: Tue,  6 Jan 2015 18:15:45 -0800
-Message-Id: <20150107021558.254165159@linuxfoundation.org>
+        Eric Sandeen <sandeen@redhat.com>, Joe Thornber <ejt@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.17 25/73] dm thin: fix inability to discard blocks when in out-of-data-space mode
+Date: Tue,  6 Jan 2015 18:15:46 -0800
+Message-Id: <20150107021558.283159415@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107021557.521276020@linuxfoundation.org>
 References: <20150107021557.521276020@linuxfoundation.org>
@@ -29,40 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Joe Thornber <ejt@redhat.com>
 
-commit c1c6156fe4d4577444b769d7edd5dd503e57bbc9 upstream.
+commit 45ec9bd0fd7abf8705e7cf12205ff69fe9d51181 upstream.
 
-This function isn't right and it causes a static checker warning:
+When the pool was in PM_OUT_OF_SPACE mode its process_prepared_discard
+function pointer was incorrectly being set to
+process_prepared_discard_passdown rather than process_prepared_discard.
 
-	drivers/md/dm-thin.c:3016 maybe_resize_data_dev()
-	error: potentially using uninitialized 'sb_data_size'.
+This incorrect function pointer meant the discard was being passed down,
+but not effecting the mapping.  As such any discard that was issued, in
+an attempt to reclaim blocks, would not successfully free data space.
 
-It should set "*count" and return zero on success the same as the
-sm_metadata_get_nr_blocks() function does earlier.
-
-Fixes: 3241b1d3e0aa ('dm: add persistent data library')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
+Reported-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/persistent-data/dm-space-map-metadata.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/md/dm-thin.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/persistent-data/dm-space-map-metadata.c
-+++ b/drivers/md/persistent-data/dm-space-map-metadata.c
-@@ -564,7 +564,9 @@ static int sm_bootstrap_get_nr_blocks(st
- {
- 	struct sm_metadata *smm = container_of(sm, struct sm_metadata, sm);
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -1824,7 +1824,7 @@ static void set_pool_mode(struct pool *p
+ 		pool->process_bio = process_bio_read_only;
+ 		pool->process_discard = process_discard;
+ 		pool->process_prepared_mapping = process_prepared_mapping;
+-		pool->process_prepared_discard = process_prepared_discard_passdown;
++		pool->process_prepared_discard = process_prepared_discard;
  
--	return smm->ll.nr_blocks;
-+	*count = smm->ll.nr_blocks;
-+
-+	return 0;
- }
- 
- static int sm_bootstrap_get_nr_free(struct dm_space_map *sm, dm_block_t *count)
+ 		if (!pool->pf.error_if_no_space && no_space_timeout)
+ 			queue_delayed_work(pool->wq, &pool->no_space_timeout, no_space_timeout);
 
 
