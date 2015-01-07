@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456AbbAGSsw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 13:48:52 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:46665 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428AbbAGSsu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 13:48:50 -0500
-Date: Wed, 7 Jan 2015 19:48:47 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        "\\\"Rafael J. Wysocki\\\"" <rjw@rjwysocki.net>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Oleg Nesterov <oleg@redhat.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH -v2 5/5] OOM, PM: make OOM detection in the freezer path
- raceless
-Message-ID: <20150107184847.GH16553@dhcp22.suse.cz>
-References: <20141110163055.GC18373@dhcp22.suse.cz>
- <1417797707-31699-1-git-send-email-mhocko@suse.cz>
- <1417797707-31699-6-git-send-email-mhocko@suse.cz>
- <20150107184124.GI4395@htj.dyndns.org>
+	id S1754666AbbAGSus (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 13:50:48 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47893 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752112AbbAGSuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 13:50:46 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+To: <joro@8bytes.org>, <grant.likely@linaro.org>, <robh+dt@kernel.org>,
+        <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <bhelgaas@google.com>,
+        <linux-pci@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <will.deacon@arm.com>, <linux@arm.linux.org.uk>, <arnd@arndb.de>
+CC: Murali Karicheri <m-karicheri2@ti.com>
+Subject: [PATCH v3 0/4] PCI: get DMA configuration from parent device
+Date: Wed, 7 Jan 2015 13:49:50 -0500
+Message-ID: <1420656594-8908-1-git-send-email-m-karicheri2@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150107184124.GI4395@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 07-01-15 13:41:24, Tejun Heo wrote:
-> Hello, Michal.  Sorry about the long delay.
-> 
-> On Fri, Dec 05, 2014 at 05:41:47PM +0100, Michal Hocko wrote:
-> ...
-> > @@ -252,6 +220,8 @@ void thaw_kernel_threads(void)
-> >  {
-> >  	struct task_struct *g, *p;
-> >  
-> > +	oom_killer_enable();
-> > +
-> 
-> Wouldn't it be more symmetrical and make more sense to enable oom
-> killer after kernel threads are thawed?  Until kernel threads are
-> thawed, it isn't guaranteed that oom killer would be able to make
-> forward progress, right?
+PCI devices on Keystone doesn't have correct dma_pfn_offset set. This patch
+add capability to set the dma configuration such as dma-mask, dma_pfn_offset,
+and dma ops etc using the information from DT. The prior RFCs and discussions
+are available at [1] and [2] below.
 
-Makes sense, fixed.
+[2] : https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg790244.html
+[1] : http://www.gossamer-threads.com/lists/linux/kernel/2024591
 
-> Other than that, looks good to me.
+Change history:
+	v3 - addressed comments to re-use of_dma_configure() for PCI
+	   - To help re-use, change of_iommu_configure() function argument
+		- Move of_dma_configure to of/device.c
+		- Limit the of_iommu_configure to non pci devices
+	v2 - update size to coherent_dma_mask + 1 if dma-range info is missing
+	   - also check the np for null.
+	v1 - updates based on the comments against initial RFC.
+	   - Added a helper function to get the OF node of the parent
+	   - Added an API in of_pci.c to update DMA configuration of the pci
+	     device.
 
-Thanks! Btw. I plan to repost after Andrew releases new mmotm as there
-are some dependencies in oom area.
+Murali Karicheri (4):
+  of: iommu: add ptr to OF node arg to of_iommu_configure()
+  of: move of_dma_configure() to device,c to help re-use
+  of/pci: add of_pci_dma_configure() update dma configuration
+  PCI: update dma configuration from DT
+
+ drivers/iommu/of_iommu.c  |   10 ++++++--
+ drivers/of/device.c       |   58 +++++++++++++++++++++++++++++++++++++++++++++
+ drivers/of/of_pci.c       |   39 ++++++++++++++++++++++++++++++
+ drivers/of/platform.c     |   58 ++-------------------------------------------
+ drivers/pci/probe.c       |    2 ++
+ include/linux/of_device.h |    2 ++
+ include/linux/of_iommu.h  |    6 +++--
+ include/linux/of_pci.h    |   12 ++++++++++
+ 8 files changed, 127 insertions(+), 60 deletions(-)
+
 -- 
-Michal Hocko
-SUSE Labs
+1.7.9.5
+
