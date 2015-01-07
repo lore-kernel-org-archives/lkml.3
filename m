@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755271AbbAGWnU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 17:43:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60824 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755189AbbAGWnS (ORCPT
+	id S1755303AbbAGWpS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 17:45:18 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:48886 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754587AbbAGWpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 17:43:18 -0500
-Date: Wed, 7 Jan 2015 14:43:17 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jiri Kosina <jkosina@suse.cz>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        live-patching@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: livepatching tree for linux-next
-Message-Id: <20150107144317.61ab2080877a4d8227990551@linux-foundation.org>
-In-Reply-To: <20141226155613.36dd95b9@canb.auug.org.au>
-References: <alpine.LNX.2.00.1412221412360.1680@pobox.suse.cz>
-	<20141223094607.GA16445@infradead.org>
-	<20141223151056.GA4789@treble.redhat.com>
-	<20141226155613.36dd95b9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Jan 2015 17:45:15 -0500
+Date: Wed, 7 Jan 2015 17:45:11 -0500
+From: Tejun Heo <tj@kernel.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, Richard Weinberger <richard@nod.at>,
+        Linux API <linux-api@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCHv3 8/8] cgroup: Add documentation for cgroup namespaces
+Message-ID: <20150107224430.GA28414@htj.dyndns.org>
+References: <CAGr1F2HA6mzFwgp5ngX8P7=198-5CmCjLmuCJ8j3eQ08J2d9Qw@mail.gmail.com>
+ <54AB15BD.8020007@nod.at>
+ <87lhlgpyxk.fsf@x220.int.ebiederm.org>
+ <CAGr1F2HSi_D07r2c5CKOsjSR1+58k9G2MrtACsd+HV6XKvJ7cA@mail.gmail.com>
+ <54AB2992.6060707@nod.at>
+ <CAGr1F2EGOUSEd3-G4PS0mq=9kU1nWG4CwHUOQaNUATepc11_Sw@mail.gmail.com>
+ <54ACFC38.5070007@nod.at>
+ <87fvbmir9q.fsf@x220.int.ebiederm.org>
+ <20150107193059.GA1857@mail.hallyn.com>
+ <87bnma6xwv.fsf@x220.int.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87bnma6xwv.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Dec 2014 15:56:13 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Wed, Jan 07, 2015 at 04:14:40PM -0600, Eric W. Biederman wrote:
+> I see what you mean.  If it is indeed the case than a mount of cgroupfs
+> using the unified hiearchy and can not specify which controllers are
+> present under that mount that very significant bug and presents a very
+> significant regression in user space flexibility.
 
-> OK, I have added this from today
+The parent always controls which controllers are made available at the
+children level.  Only if the parent enables a controller, its
+children, whether they're namespaces or not, can choose to further
+distribute resources using that controller.  It's a straight-forward
+top-down thing.
 
-My x86_64 allmodconfig broke.
-
-In file included from include/linux/livepatch.h:29,
-                 from kernel/livepatch/core.c:30:
-./arch/x86/include/asm/livepatch.h:29:2: error: #error Your compiler must support -mfentry for live patching to work
-
+-- 
+tejun
