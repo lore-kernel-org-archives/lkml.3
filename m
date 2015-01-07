@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933670AbbAGCsV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:48:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46763 "EHLO
+	id S933656AbbAGCsU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:48:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46770 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932389AbbAGCHc (ORCPT
+	with ESMTP id S932393AbbAGCHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:07:32 -0500
+	Tue, 6 Jan 2015 21:07:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.14 06/52] md/bitmap: always wait for writes on unplug.
-Date: Tue,  6 Jan 2015 18:06:34 -0800
-Message-Id: <20150107020556.066284991@linuxfoundation.org>
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 3.14 07/52] mfd: tc6393xb: Fail ohci suspend if full state restore is required
+Date: Tue,  6 Jan 2015 18:06:35 -0800
+Message-Id: <20150107020556.249504433@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107020555.043793795@linuxfoundation.org>
 References: <20150107020555.043793795@linuxfoundation.org>
@@ -28,62 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 
-commit 4b5060ddae2b03c5387321fafc089d242225697a upstream.
+commit 1a5fb99de4850cba710d91becfa2c65653048589 upstream.
 
-If two threads call bitmap_unplug at the same time, then
-one might schedule all the writes, and the other might
-decide that it doesn't need to wait.  But really it does.
+Some boards with TC6393XB chip require full state restore during system
+resume thanks to chip's VCC being cut off during suspend (Sharp SL-6000
+tosa is one of them). Failing to do so would result in ohci Oops on
+resume due to internal memory contentes being changed. Fail ohci suspend
+on tc6393xb is full state restore is required.
 
-It rarely hurts to wait when it isn't absolutely necessary,
-and the current code doesn't really focus on 'absolutely necessary'
-anyway.  So just wait always.
+Recommended workaround is to unbind tmio-ohci driver before suspend and
+rebind it after resume.
 
-This can potentially lead to data corruption if a crash happens
-at an awkward time and data was written before the bitmap was
-updated.  It is very unlikely, but this should go to -stable
-just to be safe.  Appropriate for any -stable.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/bitmap.c |   16 ++++++----------
- 1 file changed, 6 insertions(+), 10 deletions(-)
+ drivers/mfd/tc6393xb.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
---- a/drivers/md/bitmap.c
-+++ b/drivers/md/bitmap.c
-@@ -883,7 +883,6 @@ void bitmap_unplug(struct bitmap *bitmap
- {
- 	unsigned long i;
- 	int dirty, need_write;
--	int wait = 0;
- 
- 	if (!bitmap || !bitmap->storage.filemap ||
- 	    test_bit(BITMAP_STALE, &bitmap->flags))
-@@ -901,16 +900,13 @@ void bitmap_unplug(struct bitmap *bitmap
- 			clear_page_attr(bitmap, i, BITMAP_PAGE_PENDING);
- 			write_page(bitmap, bitmap->storage.filemap[i], 0);
- 		}
--		if (dirty)
--			wait = 1;
--	}
--	if (wait) { /* if any writes were performed, we need to wait on them */
--		if (bitmap->storage.file)
--			wait_event(bitmap->write_wait,
--				   atomic_read(&bitmap->pending_writes)==0);
--		else
--			md_super_wait(bitmap->mddev);
- 	}
-+	if (bitmap->storage.file)
-+		wait_event(bitmap->write_wait,
-+			   atomic_read(&bitmap->pending_writes)==0);
-+	else
-+		md_super_wait(bitmap->mddev);
-+
- 	if (test_bit(BITMAP_WRITE_ERROR, &bitmap->flags))
- 		bitmap_file_kick(bitmap);
+--- a/drivers/mfd/tc6393xb.c
++++ b/drivers/mfd/tc6393xb.c
+@@ -263,6 +263,17 @@ static int tc6393xb_ohci_disable(struct
+ 	return 0;
  }
+ 
++static int tc6393xb_ohci_suspend(struct platform_device *dev)
++{
++	struct tc6393xb_platform_data *tcpd = dev_get_platdata(dev->dev.parent);
++
++	/* We can't properly store/restore OHCI state, so fail here */
++	if (tcpd->resume_restore)
++		return -EBUSY;
++
++	return tc6393xb_ohci_disable(dev);
++}
++
+ static int tc6393xb_fb_enable(struct platform_device *dev)
+ {
+ 	struct tc6393xb *tc6393xb = dev_get_drvdata(dev->dev.parent);
+@@ -403,7 +414,7 @@ static struct mfd_cell tc6393xb_cells[]
+ 		.num_resources = ARRAY_SIZE(tc6393xb_ohci_resources),
+ 		.resources = tc6393xb_ohci_resources,
+ 		.enable = tc6393xb_ohci_enable,
+-		.suspend = tc6393xb_ohci_disable,
++		.suspend = tc6393xb_ohci_suspend,
+ 		.resume = tc6393xb_ohci_enable,
+ 		.disable = tc6393xb_ohci_disable,
+ 	},
 
 
