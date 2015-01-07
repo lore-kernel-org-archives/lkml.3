@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933562AbbAGClz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:41:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46948 "EHLO
+	id S1758243AbbAGClx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:41:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46953 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757497AbbAGCQl (ORCPT
+	with ESMTP id S1757498AbbAGCQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:16:41 -0500
+	Tue, 6 Jan 2015 21:16:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH 3.17 10/73] mmc: omap_hsmmc: Fix UHS card with DDR50 support
-Date: Tue,  6 Jan 2015 18:15:31 -0800
-Message-Id: <20150107021557.840737192@linuxfoundation.org>
+        Andrei Warkentin <andrey.warkentin@gmail.com>,
+        Baruch Siach <baruch@tkos.co.il>, Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH 3.17 11/73] mmc: block: add newline to sysfs display of force_ro
+Date: Tue,  6 Jan 2015 18:15:32 -0800
+Message-Id: <20150107021557.869588738@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107021557.521276020@linuxfoundation.org>
 References: <20150107021557.521276020@linuxfoundation.org>
@@ -29,43 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ulf Hansson <ulf.hansson@linaro.org>
+From: Baruch Siach <baruch@tkos.co.il>
 
-commit 903101a83949d6fc77c092cef07e9c1e10c07e46 upstream.
+commit 0031a98a85e9fca282624bfc887f9531b2768396 upstream.
 
-The commit, mmc: omap: clarify DDR timing mode between SD-UHS and eMMC,
-switched omap_hsmmc to support MMC DDR mode instead of UHS DDR50 mode.
+Make force_ro consistent with other sysfs entries.
 
-Add UHS DDR50 mode again and this time let's also keep the MMC DDR mode.
-
-Fixes: 5438ad95a57c (mmc: omap: clarify DDR timing mode between SD-UHS and eMMC)
-Reported-by: Kishon Vijay Abraham I <kishon@ti.com>
+Fixes: 371a689f64b0d ('mmc: MMC boot partitions support')
+Cc: Andrei Warkentin <andrey.warkentin@gmail.com>
+Signed-off-by: Baruch Siach <baruch@tkos.co.il>
 Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/omap_hsmmc.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/mmc/card/block.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -609,6 +609,7 @@ static void omap_hsmmc_set_clock(struct
- 	 */
- 	if ((mmc_slot(host).features & HSMMC_HAS_HSPE_SUPPORT) &&
- 	    (ios->timing != MMC_TIMING_MMC_DDR52) &&
-+	    (ios->timing != MMC_TIMING_UHS_DDR50) &&
- 	    ((OMAP_HSMMC_READ(host->base, CAPA) & HSS) == HSS)) {
- 		regval = OMAP_HSMMC_READ(host->base, HCTL);
- 		if (clkdiv && (clk_get_rate(host->fclk)/clkdiv) > 25000000)
-@@ -628,7 +629,8 @@ static void omap_hsmmc_set_bus_width(str
- 	u32 con;
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -260,7 +260,7 @@ static ssize_t force_ro_show(struct devi
+ 	int ret;
+ 	struct mmc_blk_data *md = mmc_blk_get(dev_to_disk(dev));
  
- 	con = OMAP_HSMMC_READ(host->base, CON);
--	if (ios->timing == MMC_TIMING_MMC_DDR52)
-+	if (ios->timing == MMC_TIMING_MMC_DDR52 ||
-+	    ios->timing == MMC_TIMING_UHS_DDR50)
- 		con |= DDR;	/* configure in DDR mode */
- 	else
- 		con &= ~DDR;
+-	ret = snprintf(buf, PAGE_SIZE, "%d",
++	ret = snprintf(buf, PAGE_SIZE, "%d\n",
+ 		       get_disk_ro(dev_to_disk(dev)) ^
+ 		       md->read_only);
+ 	mmc_blk_put(md);
 
 
