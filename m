@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849AbbAGRYT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 12:24:19 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:33280 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754529AbbAGRVK (ORCPT
+	id S1754882AbbAGRZd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 12:25:33 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:34124 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754504AbbAGRVJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 12:21:10 -0500
+	Wed, 7 Jan 2015 12:21:09 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,188 +14,220 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com, David Hildenbrand <dahi@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 08/10] hotplugcpu: Avoid deadlocks by waking active_writer
-Date: Wed,  7 Jan 2015 09:20:55 -0800
-Message-Id: <1420651257-553-8-git-send-email-paulmck@linux.vnet.ibm.com>
+        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 09/10] rcu: Fix rcu_barrier() race that could result in too-short wait
+Date: Wed,  7 Jan 2015 09:20:56 -0800
+Message-Id: <1420651257-553-9-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1420651257-553-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20150107172030.GA31571@linux.vnet.ibm.com>
  <1420651257-553-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15010717-0033-0000-0000-0000033D036F
+x-cbid: 15010717-0009-0000-0000-000007C5FA4F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Commit b2c4623dcd07 ("rcu: More on deadlock between CPU hotplug and expedited
-grace periods") introduced another problem that can easily be reproduced by
-starting/stopping cpus in a loop.
+The rcu_barrier() no-callbacks check for no-CBs CPUs has race conditions.
+It checks a given CPU's lists of callbacks, and if all three no-CBs lists
+are empty, ignores that CPU.  However, these three lists could potentially
+be empty even when callbacks are present if the check executed just as
+the callbacks were being moved from one list to another.  It turns out
+that recent versions of rcutorture can spot this race.
 
-E.g.:
-  for i in `seq 5000`; do
-      echo 1 > /sys/devices/system/cpu/cpu1/online
-      echo 0 > /sys/devices/system/cpu/cpu1/online
-  done
+This commit plugs this hole by consolidating the per-list counts of
+no-CBs callbacks into a single count, which is incremented before
+the corresponding callback is posted and after it is invoked.  Then
+rcu_barrier() checks this single count to reliably determine whether
+the corresponding CPU has no-CBs callbacks.
 
-Will result in:
-  INFO: task /cpu_start_stop:1 blocked for more than 120 seconds.
-  Call Trace:
-  ([<00000000006a028e>] __schedule+0x406/0x91c)
-   [<0000000000130f60>] cpu_hotplug_begin+0xd0/0xd4
-   [<0000000000130ff6>] _cpu_up+0x3e/0x1c4
-   [<0000000000131232>] cpu_up+0xb6/0xd4
-   [<00000000004a5720>] device_online+0x80/0xc0
-   [<00000000004a57f0>] online_store+0x90/0xb0
-  ...
-
-And a deadlock.
-
-Problem is that if the last ref in put_online_cpus() can't get the
-cpu_hotplug.lock the puts_pending count is incremented, but a sleeping
-active_writer might never be woken up, therefore never exiting the loop in
-cpu_hotplug_begin().
-
-This fix removes puts_pending and turns refcount into an atomic variable. We
-also introduce a wait queue for the active_writer, to avoid possible races and
-use-after-free. There is no need to take the lock in put_online_cpus() anymore.
-
-Can't reproduce it with this fix.
-
-Signed-off-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/cpu.c | 56 +++++++++++++++++++++++---------------------------------
- 1 file changed, 23 insertions(+), 33 deletions(-)
+ kernel/rcu/tree.c        |  1 +
+ kernel/rcu/tree.h        | 29 +++++++----------------------
+ kernel/rcu/tree_plugin.h | 45 ++++++++++++++++++++++++++++-----------------
+ 3 files changed, 36 insertions(+), 39 deletions(-)
 
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 5d220234b3ca..1972b161c61e 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -58,22 +58,23 @@ static int cpu_hotplug_disabled;
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index 203b50d7ecbd..5b9f3b972a79 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -3344,6 +3344,7 @@ static void _rcu_barrier(struct rcu_state *rsp)
+ 			} else {
+ 				_rcu_barrier_trace(rsp, "OnlineNoCB", cpu,
+ 						   rsp->n_barrier_done);
++				smp_mb__before_atomic();
+ 				atomic_inc(&rsp->barrier_cpu_count);
+ 				__call_rcu(&rdp->barrier_head,
+ 					   rcu_barrier_callback, rsp, cpu, 0);
+diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
+index 8e7b1843896e..cb5908672f11 100644
+--- a/kernel/rcu/tree.h
++++ b/kernel/rcu/tree.h
+@@ -340,14 +340,10 @@ struct rcu_data {
+ #ifdef CONFIG_RCU_NOCB_CPU
+ 	struct rcu_head *nocb_head;	/* CBs waiting for kthread. */
+ 	struct rcu_head **nocb_tail;
+-	atomic_long_t nocb_q_count;	/* # CBs waiting for kthread */
+-	atomic_long_t nocb_q_count_lazy; /*  (approximate). */
++	atomic_long_t nocb_q_count;	/* # CBs waiting for nocb */
++	atomic_long_t nocb_q_count_lazy; /*  invocation (all stages). */
+ 	struct rcu_head *nocb_follower_head; /* CBs ready to invoke. */
+ 	struct rcu_head **nocb_follower_tail;
+-	atomic_long_t nocb_follower_count; /* # CBs ready to invoke. */
+-	atomic_long_t nocb_follower_count_lazy; /*  (approximate). */
+-	int nocb_p_count;		/* # CBs being invoked by kthread */
+-	int nocb_p_count_lazy;		/*  (approximate). */
+ 	wait_queue_head_t nocb_wq;	/* For nocb kthreads to sleep on. */
+ 	struct task_struct *nocb_kthread;
+ 	int nocb_defer_wakeup;		/* Defer wakeup of nocb_kthread. */
+@@ -356,8 +352,6 @@ struct rcu_data {
+ 	struct rcu_head *nocb_gp_head ____cacheline_internodealigned_in_smp;
+ 					/* CBs waiting for GP. */
+ 	struct rcu_head **nocb_gp_tail;
+-	long nocb_gp_count;
+-	long nocb_gp_count_lazy;
+ 	bool nocb_leader_sleep;		/* Is the nocb leader thread asleep? */
+ 	struct rcu_data *nocb_next_follower;
+ 					/* Next follower in wakeup chain. */
+@@ -622,24 +616,15 @@ static void rcu_dynticks_task_exit(void);
+ #endif /* #ifndef RCU_TREE_NONCORE */
  
- static struct {
- 	struct task_struct *active_writer;
--	struct mutex lock; /* Synchronizes accesses to refcount, */
-+	/* wait queue to wake up the active_writer */
-+	wait_queue_head_t wq;
-+	/* verifies that no writer will get active while readers are active */
-+	struct mutex lock;
- 	/*
- 	 * Also blocks the new readers during
- 	 * an ongoing cpu hotplug operation.
- 	 */
--	int refcount;
--	/* And allows lockless put_online_cpus(). */
--	atomic_t puts_pending;
-+	atomic_t refcount;
- 
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 	struct lockdep_map dep_map;
- #endif
- } cpu_hotplug = {
- 	.active_writer = NULL,
-+	.wq = __WAIT_QUEUE_HEAD_INITIALIZER(cpu_hotplug.wq),
- 	.lock = __MUTEX_INITIALIZER(cpu_hotplug.lock),
--	.refcount = 0,
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 	.dep_map = {.name = "cpu_hotplug.lock" },
- #endif
-@@ -86,15 +87,6 @@ static struct {
- #define cpuhp_lock_acquire()      lock_map_acquire(&cpu_hotplug.dep_map)
- #define cpuhp_lock_release()      lock_map_release(&cpu_hotplug.dep_map)
- 
--static void apply_puts_pending(int max)
--{
--	int delta;
--
--	if (atomic_read(&cpu_hotplug.puts_pending) >= max) {
--		delta = atomic_xchg(&cpu_hotplug.puts_pending, 0);
--		cpu_hotplug.refcount -= delta;
--	}
+ #ifdef CONFIG_RCU_TRACE
+-#ifdef CONFIG_RCU_NOCB_CPU
+-/* Sum up queue lengths for tracing. */
++/* Read out queue lengths for tracing. */
+ static inline void rcu_nocb_q_lengths(struct rcu_data *rdp, long *ql, long *qll)
+ {
+-	*ql = atomic_long_read(&rdp->nocb_q_count) +
+-	      rdp->nocb_p_count +
+-	      atomic_long_read(&rdp->nocb_follower_count) +
+-	      rdp->nocb_p_count + rdp->nocb_gp_count;
+-	*qll = atomic_long_read(&rdp->nocb_q_count_lazy) +
+-	       rdp->nocb_p_count_lazy +
+-	       atomic_long_read(&rdp->nocb_follower_count_lazy) +
+-	       rdp->nocb_p_count_lazy + rdp->nocb_gp_count_lazy;
 -}
- 
- void get_online_cpus(void)
++#ifdef CONFIG_RCU_NOCB_CPU
++	*ql = atomic_long_read(&rdp->nocb_q_count);
++	*qll = atomic_long_read(&rdp->nocb_q_count_lazy);
+ #else /* #ifdef CONFIG_RCU_NOCB_CPU */
+-static inline void rcu_nocb_q_lengths(struct rcu_data *rdp, long *ql, long *qll)
+-{
+ 	*ql = 0;
+ 	*qll = 0;
+-}
+ #endif /* #else #ifdef CONFIG_RCU_NOCB_CPU */
++}
+ #endif /* #ifdef CONFIG_RCU_TRACE */
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 3ec85cb5d544..e5c43b7f63f2 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -2056,9 +2056,26 @@ static void wake_nocb_leader(struct rcu_data *rdp, bool force)
+ static bool rcu_nocb_cpu_needs_barrier(struct rcu_state *rsp, int cpu)
  {
-@@ -103,8 +95,7 @@ void get_online_cpus(void)
- 		return;
- 	cpuhp_lock_acquire_read();
- 	mutex_lock(&cpu_hotplug.lock);
--	apply_puts_pending(65536);
--	cpu_hotplug.refcount++;
-+	atomic_inc(&cpu_hotplug.refcount);
- 	mutex_unlock(&cpu_hotplug.lock);
- }
- EXPORT_SYMBOL_GPL(get_online_cpus);
-@@ -116,8 +107,7 @@ bool try_get_online_cpus(void)
- 	if (!mutex_trylock(&cpu_hotplug.lock))
- 		return false;
- 	cpuhp_lock_acquire_tryread();
--	apply_puts_pending(65536);
--	cpu_hotplug.refcount++;
-+	atomic_inc(&cpu_hotplug.refcount);
- 	mutex_unlock(&cpu_hotplug.lock);
- 	return true;
- }
-@@ -125,20 +115,18 @@ EXPORT_SYMBOL_GPL(try_get_online_cpus);
- 
- void put_online_cpus(void)
- {
-+	int refcount;
+ 	struct rcu_data *rdp = per_cpu_ptr(rsp->rda, cpu);
++	unsigned long ret;
++#ifdef CONFIG_PROVE_RCU
+ 	struct rcu_head *rhp;
++#endif /* #ifdef CONFIG_PROVE_RCU */
 +
- 	if (cpu_hotplug.active_writer == current)
- 		return;
--	if (!mutex_trylock(&cpu_hotplug.lock)) {
--		atomic_inc(&cpu_hotplug.puts_pending);
--		cpuhp_lock_release();
--		return;
--	}
++	/*
++	 * Check count of all no-CBs callbacks awaiting invocation.
++	 * There needs to be a barrier before this function is called,
++	 * but associated with a prior determination that no more
++	 * callbacks would be posted.  In the worst case, the first
++	 * barrier in _rcu_barrier() suffices (but the caller cannot
++	 * necessarily rely on this, not a substitute for the caller
++	 * getting the concurrency design right!).  There must also be
++	 * a barrier between the following load an posting of a callback
++	 * (if a callback is in fact needed).  This is associated with an
++	 * atomic_inc() in the caller.
++	 */
++	ret = atomic_long_read(&rdp->nocb_q_count);
  
--	if (WARN_ON(!cpu_hotplug.refcount))
--		cpu_hotplug.refcount++; /* try to fix things up */
-+	refcount = atomic_dec_return(&cpu_hotplug.refcount);
-+	if (WARN_ON(refcount < 0)) /* try to fix things up */
-+		atomic_inc(&cpu_hotplug.refcount);
-+
-+	if (refcount <= 0 && waitqueue_active(&cpu_hotplug.wq))
-+		wake_up(&cpu_hotplug.wq);
- 
--	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
--		wake_up_process(cpu_hotplug.active_writer);
--	mutex_unlock(&cpu_hotplug.lock);
- 	cpuhp_lock_release();
- 
- }
-@@ -168,18 +156,20 @@ EXPORT_SYMBOL_GPL(put_online_cpus);
-  */
- void cpu_hotplug_begin(void)
- {
--	cpu_hotplug.active_writer = current;
-+	DEFINE_WAIT(wait);
- 
-+	cpu_hotplug.active_writer = current;
- 	cpuhp_lock_acquire();
-+
- 	for (;;) {
- 		mutex_lock(&cpu_hotplug.lock);
--		apply_puts_pending(1);
--		if (likely(!cpu_hotplug.refcount))
--			break;
--		__set_current_state(TASK_UNINTERRUPTIBLE);
-+		prepare_to_wait(&cpu_hotplug.wq, &wait, TASK_UNINTERRUPTIBLE);
-+		if (likely(!atomic_read(&cpu_hotplug.refcount)))
-+				break;
- 		mutex_unlock(&cpu_hotplug.lock);
- 		schedule();
+-	/* No-CBs CPUs might have callbacks on any of three lists. */
++#ifdef CONFIG_PROVE_RCU
+ 	rhp = ACCESS_ONCE(rdp->nocb_head);
+ 	if (!rhp)
+ 		rhp = ACCESS_ONCE(rdp->nocb_gp_head);
+@@ -2072,8 +2089,9 @@ static bool rcu_nocb_cpu_needs_barrier(struct rcu_state *rsp, int cpu)
+ 		       cpu, rhp->func);
+ 		WARN_ON_ONCE(1);
  	}
-+	finish_wait(&cpu_hotplug.wq, &wait);
++#endif /* #ifdef CONFIG_PROVE_RCU */
+ 
+-	return !!rhp;
++	return !!ret;
  }
  
- void cpu_hotplug_done(void)
+ /*
+@@ -2095,9 +2113,10 @@ static void __call_rcu_nocb_enqueue(struct rcu_data *rdp,
+ 	struct task_struct *t;
+ 
+ 	/* Enqueue the callback on the nocb list and update counts. */
++	atomic_long_add(rhcount, &rdp->nocb_q_count);
++	/* rcu_barrier() relies on ->nocb_q_count add before xchg. */
+ 	old_rhpp = xchg(&rdp->nocb_tail, rhtp);
+ 	ACCESS_ONCE(*old_rhpp) = rhp;
+-	atomic_long_add(rhcount, &rdp->nocb_q_count);
+ 	atomic_long_add(rhcount_lazy, &rdp->nocb_q_count_lazy);
+ 	smp_mb__after_atomic(); /* Store *old_rhpp before _wake test. */
+ 
+@@ -2288,9 +2307,6 @@ wait_again:
+ 		/* Move callbacks to wait-for-GP list, which is empty. */
+ 		ACCESS_ONCE(rdp->nocb_head) = NULL;
+ 		rdp->nocb_gp_tail = xchg(&rdp->nocb_tail, &rdp->nocb_head);
+-		rdp->nocb_gp_count = atomic_long_xchg(&rdp->nocb_q_count, 0);
+-		rdp->nocb_gp_count_lazy =
+-			atomic_long_xchg(&rdp->nocb_q_count_lazy, 0);
+ 		gotcbs = true;
+ 	}
+ 
+@@ -2338,9 +2354,6 @@ wait_again:
+ 		/* Append callbacks to follower's "done" list. */
+ 		tail = xchg(&rdp->nocb_follower_tail, rdp->nocb_gp_tail);
+ 		*tail = rdp->nocb_gp_head;
+-		atomic_long_add(rdp->nocb_gp_count, &rdp->nocb_follower_count);
+-		atomic_long_add(rdp->nocb_gp_count_lazy,
+-				&rdp->nocb_follower_count_lazy);
+ 		smp_mb__after_atomic(); /* Store *tail before wakeup. */
+ 		if (rdp != my_rdp && tail == &rdp->nocb_follower_head) {
+ 			/*
+@@ -2415,13 +2428,11 @@ static int rcu_nocb_kthread(void *arg)
+ 		trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, "WokeNonEmpty");
+ 		ACCESS_ONCE(rdp->nocb_follower_head) = NULL;
+ 		tail = xchg(&rdp->nocb_follower_tail, &rdp->nocb_follower_head);
+-		c = atomic_long_xchg(&rdp->nocb_follower_count, 0);
+-		cl = atomic_long_xchg(&rdp->nocb_follower_count_lazy, 0);
+-		rdp->nocb_p_count += c;
+-		rdp->nocb_p_count_lazy += cl;
+ 
+ 		/* Each pass through the following loop invokes a callback. */
+-		trace_rcu_batch_start(rdp->rsp->name, cl, c, -1);
++		trace_rcu_batch_start(rdp->rsp->name,
++				      atomic_long_read(&rdp->nocb_q_count_lazy),
++				      atomic_long_read(&rdp->nocb_q_count), -1);
+ 		c = cl = 0;
+ 		while (list) {
+ 			next = list->next;
+@@ -2443,9 +2454,9 @@ static int rcu_nocb_kthread(void *arg)
+ 			list = next;
+ 		}
+ 		trace_rcu_batch_end(rdp->rsp->name, c, !!list, 0, 0, 1);
+-		ACCESS_ONCE(rdp->nocb_p_count) = rdp->nocb_p_count - c;
+-		ACCESS_ONCE(rdp->nocb_p_count_lazy) =
+-						rdp->nocb_p_count_lazy - cl;
++		smp_mb__before_atomic();  /* _add after CB invocation. */
++		atomic_long_add(-c, &rdp->nocb_q_count);
++		atomic_long_add(-cl, &rdp->nocb_q_count_lazy);
+ 		rdp->n_nocbs_invoked += c;
+ 	}
+ 	return 0;
 -- 
 1.8.1.5
 
