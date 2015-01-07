@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932067AbbAGVDb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 16:03:31 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:55956 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754951AbbAGVD0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 16:03:26 -0500
-Date: Wed, 7 Jan 2015 22:03:13 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: Felipe Balbi <balbi@ti.com>,
+	id S1755234AbbAGVEF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 16:04:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60581 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754879AbbAGVEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 16:04:02 -0500
+Message-ID: <1420664631.6345.25.camel@redhat.com>
+Subject: Re: [PATCH v2] PCI/sysfs: off by two when checking the limit on
+ driver_override length
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Alexander Graf <agraf@suse.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Laight <David.Laight@ACULAB.COM>
-Subject: Re: [PATCH v2 0/5] usb: atmel_usba_udc: Rework errata handling
-Message-ID: <20150107210313.GC2447@piout.net>
-References: <1420552022-8422-1-git-send-email-boris.brezillon@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420552022-8422-1-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+        "open list:PCI SUBSYSTEM" <linux-pci@vger.kernel.org>
+Date: Wed, 07 Jan 2015 14:03:51 -0700
+In-Reply-To: <1420663977-30707-1-git-send-email-sasha.levin@oracle.com>
+References: <1420663977-30707-1-git-send-email-sasha.levin@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 2015-01-07 at 15:52 -0500, Sasha Levin wrote:
+> When printing the driver_override parameter when it is 4095 and 4094 bytes
+> long the printing code would access invalid memory because we need count+1
+> bytes for printing.
+> 
+> Cc: <stable@vger.kernel.org> # v3.16+
+> Fixes: 782a985d ("PCI: Introduce new device binding path using pci_dev.driver_override")
+> Cc: Alex Williamson <alex.williamson@redhat.com>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Alexander Graf <agraf@suse.de>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> ---
+>  drivers/pci/pci-sysfs.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+> index aa012fb..17459ed 100644
+> --- a/drivers/pci/pci-sysfs.c
+> +++ b/drivers/pci/pci-sysfs.c
+> @@ -521,7 +521,8 @@ static ssize_t driver_override_store(struct device *dev,
+>  	struct pci_dev *pdev = to_pci_dev(dev);
+>  	char *driver_override, *old = pdev->driver_override, *cp;
+>  
+> -	if (count > PATH_MAX)
+> +	/* We need to keep extra room for a newline */
+> +	if (count >= (PATH_MAX - 1))
+>  		return -EINVAL;
+>  
+>  	driver_override = kstrndup(buf, count, GFP_KERNEL);
 
-The whole series looks good to me, you can add my
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Thanks for posting this Sasha, it fell off my plate with other
+activities.
 
+Acked-by: Alex Williamson <alex.williamson@redhat.com>
 
-
-On 06/01/2015 at 14:46:57 +0100, Boris Brezillon wrote :
-> Hello,
-> 
-> Here is a set of patches porting existing at91sam9rl erratum handling to
-> DT and adding new code to handle at91sam9g45/9x5 erratum.
-> It also adds several compatible strings to differentiate those errata.
-> 
-> These patches should be backported to 3.17 and 3.18 stable releases but
-> they do not apply cleanly on those stable branches.
-> I'll send a backport of this series once it is merged in mainline.
-> 
-> Regards,
-> 
-> Boris
-> 
-> Changes since v1:
-> - cache INT_ENB value to speedup INT_ENB read operations
-> 
-> Boris Brezillon (5):
->   usb: atmel_usba_udc: Rework at91sam9rl errata handling
->   usb: atmel_usba_udc: Add at91sam9g45 and at91sam9x5 errata handling
->   ARM: at91/dt: update udc compatible strings
->   usb: atmel_usba_udc: Mask status with enabled irqs
->   usb: gadget: atmel_usba: Cache INT_ENB register value
-> 
->  .../devicetree/bindings/usb/atmel-usb.txt          |   5 +-
->  arch/arm/boot/dts/at91sam9g45.dtsi                 |   2 +-
->  arch/arm/boot/dts/at91sam9x5.dtsi                  |   2 +-
->  arch/arm/boot/dts/sama5d3.dtsi                     |   2 +-
->  arch/arm/boot/dts/sama5d4.dtsi                     |   2 +-
->  drivers/usb/gadget/udc/atmel_usba_udc.c            | 146 +++++++++++++--------
->  drivers/usb/gadget/udc/atmel_usba_udc.h            |   9 ++
->  7 files changed, 111 insertions(+), 57 deletions(-)
-> 
-> -- 
-> 1.9.1
-> 
-
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
