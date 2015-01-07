@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932951AbbAGB5Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 20:57:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46250 "EHLO
+	id S1757297AbbAGCB7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:01:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46587 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932483AbbAGBwS (ORCPT
+	with ESMTP id S1757218AbbAGCBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:52:18 -0500
+	Tue, 6 Jan 2015 21:01:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Filipe Manana <fdmanana@suse.com>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.18 84/84] Btrfs: fix fs corruption on transaction abort if device supports discard
+        Takashi Iwai <tiwai@suse.de>, Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: [PATCH 3.10 15/38] KEYS: Fix stale key registration at error path
 Date: Tue,  6 Jan 2015 17:50:27 -0800
-Message-Id: <20150107014031.670726051@linuxfoundation.org>
+Message-Id: <20150107014954.891138997@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
-In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
-References: <20150107014029.012974975@linuxfoundation.org>
+In-Reply-To: <20150107014952.440109372@linuxfoundation.org>
+References: <20150107014952.440109372@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,176 +24,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Filipe Manana <fdmanana@suse.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 678886bdc6378c1cbd5072da2c5a3035000214e3 upstream.
+commit b26bdde5bb27f3f900e25a95e33a0c476c8c2c48 upstream.
 
-When we abort a transaction we iterate over all the ranges marked as dirty
-in fs_info->freed_extents[0] and fs_info->freed_extents[1], clear them
-from those trees, add them back (unpin) to the free space caches and, if
-the fs was mounted with "-o discard", perform a discard on those regions.
-Also, after adding the regions to the free space caches, a fitrim ioctl call
-can see those ranges in a block group's free space cache and perform a discard
-on the ranges, so the same issue can happen without "-o discard" as well.
+When loading encrypted-keys module, if the last check of
+aes_get_sizes() in init_encrypted() fails, the driver just returns an
+error without unregistering its key type.  This results in the stale
+entry in the list.  In addition to memory leaks, this leads to a kernel
+crash when registering a new key type later.
 
-This causes corruption, affecting one or multiple btree nodes (in the worst
-case leaving the fs unmountable) because some of those ranges (the ones in
-the fs_info->pinned_extents tree) correspond to btree nodes/leafs that are
-referred by the last committed super block - breaking the rule that anything
-that was committed by a transaction is untouched until the next transaction
-commits successfully.
+This patch fixes the problem by swapping the calls of aes_get_sizes()
+and register_key_type(), and releasing resources properly at the error
+paths.
 
-I ran into this while running in a loop (for several hours) the fstest that
-I recently submitted:
-
-  [PATCH] fstests: add btrfs test to stress chunk allocation/removal and fstrim
-
-The corruption always happened when a transaction aborted and then fsck complained
-like this:
-
-   _check_btrfs_filesystem: filesystem on /dev/sdc is inconsistent
-   *** fsck.btrfs output ***
-   Check tree block failed, want=94945280, have=0
-   Check tree block failed, want=94945280, have=0
-   Check tree block failed, want=94945280, have=0
-   Check tree block failed, want=94945280, have=0
-   Check tree block failed, want=94945280, have=0
-   read block failed check_tree_block
-   Couldn't open file system
-
-In this case 94945280 corresponded to the root of a tree.
-Using frace what I observed was the following sequence of steps happened:
-
-   1) transaction N started, fs_info->pinned_extents pointed to
-      fs_info->freed_extents[0];
-
-   2) node/eb 94945280 is created;
-
-   3) eb is persisted to disk;
-
-   4) transaction N commit starts, fs_info->pinned_extents now points to
-      fs_info->freed_extents[1], and transaction N completes;
-
-   5) transaction N + 1 starts;
-
-   6) eb is COWed, and btrfs_free_tree_block() called for this eb;
-
-   7) eb range (94945280 to 94945280 + 16Kb) is added to
-      fs_info->pinned_extents (fs_info->freed_extents[1]);
-
-   8) Something goes wrong in transaction N + 1, like hitting ENOSPC
-      for example, and the transaction is aborted, turning the fs into
-      readonly mode. The stack trace I got for example:
-
-      [112065.253935]  [<ffffffff8140c7b6>] dump_stack+0x4d/0x66
-      [112065.254271]  [<ffffffff81042984>] warn_slowpath_common+0x7f/0x98
-      [112065.254567]  [<ffffffffa0325990>] ? __btrfs_abort_transaction+0x50/0x10b [btrfs]
-      [112065.261674]  [<ffffffff810429e5>] warn_slowpath_fmt+0x48/0x50
-      [112065.261922]  [<ffffffffa032949e>] ? btrfs_free_path+0x26/0x29 [btrfs]
-      [112065.262211]  [<ffffffffa0325990>] __btrfs_abort_transaction+0x50/0x10b [btrfs]
-      [112065.262545]  [<ffffffffa036b1d6>] btrfs_remove_chunk+0x537/0x58b [btrfs]
-      [112065.262771]  [<ffffffffa033840f>] btrfs_delete_unused_bgs+0x1de/0x21b [btrfs]
-      [112065.263105]  [<ffffffffa0343106>] cleaner_kthread+0x100/0x12f [btrfs]
-      (...)
-      [112065.264493] ---[ end trace dd7903a975a31a08 ]---
-      [112065.264673] BTRFS: error (device sdc) in btrfs_remove_chunk:2625: errno=-28 No space left
-      [112065.264997] BTRFS info (device sdc): forced readonly
-
-   9) The clear kthread sees that the BTRFS_FS_STATE_ERROR bit is set in
-      fs_info->fs_state and calls btrfs_cleanup_transaction(), which in
-      turn calls btrfs_destroy_pinned_extent();
-
-   10) Then btrfs_destroy_pinned_extent() iterates over all the ranges
-       marked as dirty in fs_info->freed_extents[], and for each one
-       it calls discard, if the fs was mounted with "-o discard", and
-       adds the range to the free space cache of the respective block
-       group;
-
-   11) btrfs_trim_block_group(), invoked from the fitrim ioctl code path,
-       sees the free space entries and performs a discard;
-
-   12) After an umount and mount (or fsck), our eb's location on disk was full
-       of zeroes, and it should have been untouched, because it was marked as
-       dirty in the fs_info->pinned_extents tree, and therefore used by the
-       trees that the last committed superblock points to.
-
-Fix this by not performing a discard and not adding the ranges to the free space
-caches - it's useless from this point since the fs is now in readonly mode and
-we won't write free space caches to disk anymore (otherwise we would leak space)
-nor any new superblock. By not adding the ranges to the free space caches, it
-prevents other code paths from allocating that space and write to it as well,
-therefore being safer and simpler.
-
-This isn't a new problem, as it's been present since 2011 (git commit
-acce952b0263825da32cf10489413dec78053347).
-
-Signed-off-by: Filipe Manana <fdmanana@suse.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+Bugzilla: https://bugzilla.opensuse.org/show_bug.cgi?id=908163
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/disk-io.c     |    6 ------
- fs/btrfs/extent-tree.c |   10 ++++++----
- 2 files changed, 6 insertions(+), 10 deletions(-)
+ security/keys/encrypted-keys/encrypted.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -4106,12 +4106,6 @@ again:
- 		if (ret)
- 			break;
- 
--		/* opt_discard */
--		if (btrfs_test_opt(root, DISCARD))
--			ret = btrfs_error_discard_extent(root, start,
--							 end + 1 - start,
--							 NULL);
--
- 		clear_extent_dirty(unpin, start, end, GFP_NOFS);
- 		btrfs_error_unpin_extent_range(root, start, end);
- 		cond_resched();
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -5715,7 +5715,8 @@ void btrfs_prepare_extent_commit(struct
- 	update_global_block_rsv(fs_info);
- }
- 
--static int unpin_extent_range(struct btrfs_root *root, u64 start, u64 end)
-+static int unpin_extent_range(struct btrfs_root *root, u64 start, u64 end,
-+			      const bool return_free_space)
- {
- 	struct btrfs_fs_info *fs_info = root->fs_info;
- 	struct btrfs_block_group_cache *cache = NULL;
-@@ -5739,7 +5740,8 @@ static int unpin_extent_range(struct btr
- 
- 		if (start < cache->last_byte_to_unpin) {
- 			len = min(len, cache->last_byte_to_unpin - start);
--			btrfs_add_free_space(cache, start, len);
-+			if (return_free_space)
-+				btrfs_add_free_space(cache, start, len);
- 		}
- 
- 		start += len;
-@@ -5803,7 +5805,7 @@ int btrfs_finish_extent_commit(struct bt
- 						   end + 1 - start, NULL);
- 
- 		clear_extent_dirty(unpin, start, end, GFP_NOFS);
--		unpin_extent_range(root, start, end);
-+		unpin_extent_range(root, start, end, true);
- 		cond_resched();
- 	}
- 
-@@ -9585,7 +9587,7 @@ out:
- 
- int btrfs_error_unpin_extent_range(struct btrfs_root *root, u64 start, u64 end)
- {
--	return unpin_extent_range(root, start, end);
-+	return unpin_extent_range(root, start, end, false);
- }
- 
- int btrfs_error_discard_extent(struct btrfs_root *root, u64 bytenr,
+--- a/security/keys/encrypted-keys/encrypted.c
++++ b/security/keys/encrypted-keys/encrypted.c
+@@ -1018,10 +1018,13 @@ static int __init init_encrypted(void)
+ 	ret = encrypted_shash_alloc();
+ 	if (ret < 0)
+ 		return ret;
++	ret = aes_get_sizes();
++	if (ret < 0)
++		goto out;
+ 	ret = register_key_type(&key_type_encrypted);
+ 	if (ret < 0)
+ 		goto out;
+-	return aes_get_sizes();
++	return 0;
+ out:
+ 	encrypted_shash_release();
+ 	return ret;
 
 
