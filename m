@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449AbbAGXQe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 18:16:34 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:38858 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333AbbAGXQb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 18:16:31 -0500
-Date: Wed, 7 Jan 2015 18:16:27 -0500
-From: Tejun Heo <tj@kernel.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Richard Weinberger <richard@nod.at>,
-        Linux API <linux-api@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCHv3 8/8] cgroup: Add documentation for cgroup namespaces
-Message-ID: <20150107231627.GB28630@htj.dyndns.org>
-References: <54AB2992.6060707@nod.at>
- <CAGr1F2EGOUSEd3-G4PS0mq=9kU1nWG4CwHUOQaNUATepc11_Sw@mail.gmail.com>
- <54ACFC38.5070007@nod.at>
- <87fvbmir9q.fsf@x220.int.ebiederm.org>
- <20150107193059.GA1857@mail.hallyn.com>
- <87bnma6xwv.fsf@x220.int.ebiederm.org>
- <20150107224430.GA28414@htj.dyndns.org>
- <878uhe42km.fsf@x220.int.ebiederm.org>
- <20150107230615.GA28630@htj.dyndns.org>
- <87fvbm2nni.fsf@x220.int.ebiederm.org>
+	id S1755201AbbAGXSL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 18:18:11 -0500
+Received: from mga02.intel.com ([134.134.136.20]:45750 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751333AbbAGXSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 18:18:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,717,1413270000"; 
+   d="scan'208";a="666104746"
+Message-ID: <54ADBEB1.7000902@linux.intel.com>
+Date: Wed, 07 Jan 2015 15:18:09 -0800
+From: Dave Hansen <dave.hansen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87fvbm2nni.fsf@x220.int.ebiederm.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 3.19 3/3] x86, mpx: Change the MPX enable/disable API
+ to arch_prctl
+References: <cover.1419900414.git.luto@amacapital.net> <d5efe02b133f6d9fb4cb9d03e0f0b9e17211c06f.1419900414.git.luto@amacapital.net> <54A64E6D.1020304@linux.intel.com> <87mw5x0xjz.fsf@tassilo.jf.intel.com> <54AAFFA3.6000901@linux.intel.com> <CALCETrUeMS7zwjXfSMN-6A8-gpLc68n7U5Y6SPdzgw6hSbYGNg@mail.gmail.com>
+In-Reply-To: <CALCETrUeMS7zwjXfSMN-6A8-gpLc68n7U5Y6SPdzgw6hSbYGNg@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 05:09:53PM -0600, Eric W. Biederman wrote:
-> I may have mistyped the manual command line configuration for specifying
-> which controllers appear on a mount point does not alter my point.
+On 01/05/2015 03:04 PM, Andy Lutomirski wrote:
+> Anyway, if it's actually a problem to change it, I have no real
+> problem keeping it, but I think we *really* need to validate the rest
+> of the arguments at the very least.
 
-Hmmm?  You were talking about the old hierarchies?
+If we "validate" the arguments like you suggested, then a call like this:
 
-> The old options to enable selecting controllers need to continue and
-> need to continue to work with a unified hierarchy.
-> 
-> Anything else is a gratuitious regression.
+	prctl(PR_MPX_DISABLE_MANAGEMENT);
 
-I have no idea what you're on about.  If the outer system uses unified
-hierarchy, the inner system should use that too.  If the outer system
-doesn't use unified hierarchy, namespace support has never existed,
-and even if it did, the inside could never pick and choose controllers
-independent from the outside.  If the outside is co-mounting cpu and
-cpuacct, the inside is either also doing that or not mounting either.
+ends up returning -EINVAL:
 
--- 
-tejun
+> prctl(0x2b /* PR_??? */, 0x7fffffd3, 0x7f360955e9e0, 0x2c, 0x7f3609314840) = -1 EINVAL (Invalid argument)
+
+A quick grep through ltp and some other source I have laying around does
+*not* show folks adding 0's to these calls for "empty" arguments.  Is
+this really something we want to do?
+
+	prctl(PR_MPX_DISABLE_MANAGEMENT, 0, 0, 0, 0);
