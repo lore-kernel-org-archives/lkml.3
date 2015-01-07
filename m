@@ -1,57 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807AbbAGQN5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 11:13:57 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:57013 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753700AbbAGQNz (ORCPT
+	id S1753605AbbAGQQR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 11:16:17 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:37621 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752474AbbAGQQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 11:13:55 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
-        dmaengine@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-mmc@vger.kernel.org, linux-mips@linux-mips.org
-Subject: Re: [PATCH, RFC] MIPS: jz4740: use dma filter function
-Date: Wed, 07 Jan 2015 17:13:44 +0100
-Message-ID: <10623722.YrKe6DgiSS@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <54AD42D0.4070402@metafoo.de>
-References: <22569458.nE7JkNNnz3@wuerfel> <2633187.PyovTNc8DC@wuerfel> <54AD42D0.4070402@metafoo.de>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:R72jSrV7jOR8h23Lfme0sYvOhIs33ClQWaY55LHODU3cUoB9qms
- 8C6BlY0VZvsPLILhmkUq4xy/axylS4yDe/5vCmgB9kvI72RmeBpLDIXlghNOwlmJIqpqGrr
- CoxyZa0f7ULQ3+7HgSaQlsD827YBGOBYE/OLQFPZfePLU9pMkcEbPM2QsJ0r2YMWwlvVrrD
- qD/4aYF3F+CC3bn5FZYGg==
-X-UI-Out-Filterresults: notjunk:1;
+	Wed, 7 Jan 2015 11:16:16 -0500
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>, Mike Travis <travis@sgi.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>, kgdb-bugreport@lists.sourceforge.net,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [RESEND PATCH v3 3.19-rc2] kgdb: Timeout if secondary CPUs ignore the roundup
+Date: Wed,  7 Jan 2015 16:15:58 +0000
+Message-Id: <1420647358-8901-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1415728232-9954-1-git-send-email-daniel.thompson@linaro.org>
+References: <1415728232-9954-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 07 January 2015 15:29:36 Lars-Peter Clausen wrote:
-> On 01/06/2015 02:48 PM, Arnd Bergmann wrote:
-> > On Tuesday 06 January 2015 11:45:58 Lars-Peter Clausen wrote:
-> >> On 01/05/2015 11:39 PM, Arnd Bergmann wrote:
-> >>> As discussed on the topic of shmobile DMA today, jz4740 is the only
-> >>> user of the slave_id field in dma_slave_config besides shmobile. This
-> >>> use is really incompatible with the way that other drivers use the
-> >>> dmaengine API, so we should get rid of it.
-> >>
-> >> Do you have a link to that discussion?
-> >
-> > http://www.spinics.net/lists/linux-mmc/msg30069.html
-> 
-> I'm really not comfortable with this patch, since it is a step back. But I 
-> guess the end justify the means. So if it helps to get rid of slave_id I'm 
-> ok with it, sooner or later jz4740 will be converted to DT so once that's 
-> done the filter function can be removed again. But please put the filter 
-> function in a non arch specific header so we can still compile test things. 
-> And maybe note in the commit message that this is meant as a temporary hack.
-> 
+Currently if an active CPU fails to respond to a roundup request the
+CPU that requested the roundup will become stuck. This needlessly
+reduces the robustness of the debugger.
 
-Do you have a timeline for DT support? Maybe it's easier to just
-wait for the problem to solve itself.
+This patch introduces a timeout allowing the system state to be examined
+even when the system contains unresponsive processors. It also modifies
+kdb's cpu command to make it censor attempts to switch to unresponsive
+processors and to report their state as (D)ead.
 
-	Arnd
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Jason Wessel <jason.wessel@windriver.com>
+Cc: Mike Travis <travis@sgi.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Dimitri Sivanich <sivanich@sgi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: kgdb-bugreport@lists.sourceforge.net
+Cc: Ingo Molnar <mingo@kernel.org>
+---
+
+Notes:
+    Jason:
+      v2 of this patch is already integrated into kgdb-next. It's probably
+      best to nuke v2 and replace it with this patch. However I can easily
+      provide a diff of v2 versus v3 if you prefer. Just ask...
+    
+    v3:
+    
+    * Fix an out-by-one error in kdb_cpu().
+    
+    * Replace NR_CPUS with CONFIG_NR_CPUS to tell checkpatch that we
+      really want a static limit (Jason Wessel).
+    
+    * Removed the "KGDB: " prefix from the pr_crit() in debug_core.c
+      (kgdb-next contains a patch which introduced pr_fmt() to this file
+      to the tag will now be applied automatically).
+    
+    v2:
+    
+    * Set CATASTROPHIC if the system contains unresponsive processors
+      (Jason Wessel)
+    
+
+ kernel/debug/debug_core.c       | 9 +++++++--
+ kernel/debug/kdb/kdb_debugger.c | 4 ++++
+ kernel/debug/kdb/kdb_main.c     | 4 +++-
+ 3 files changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
+index 1adf62b39b96..f21580b347cc 100644
+--- a/kernel/debug/debug_core.c
++++ b/kernel/debug/debug_core.c
+@@ -471,6 +471,7 @@ static int kgdb_cpu_enter(struct kgdb_state *ks, struct pt_regs *regs,
+ 	int cpu;
+ 	int trace_on = 0;
+ 	int online_cpus = num_online_cpus();
++	u64 time_left;
+
+ 	kgdb_info[ks->cpu].enter_kgdb++;
+ 	kgdb_info[ks->cpu].exception_state |= exception_state;
+@@ -595,9 +596,13 @@ return_normal:
+ 	/*
+ 	 * Wait for the other CPUs to be notified and be waiting for us:
+ 	 */
+-	while (kgdb_do_roundup && (atomic_read(&masters_in_kgdb) +
+-				atomic_read(&slaves_in_kgdb)) != online_cpus)
++	time_left = loops_per_jiffy * HZ;
++	while (kgdb_do_roundup && --time_left &&
++	       (atomic_read(&masters_in_kgdb) + atomic_read(&slaves_in_kgdb)) !=
++		   online_cpus)
+ 		cpu_relax();
++	if (!time_left)
++		pr_crit("Timed out waiting for secondary CPUs.\n");
+
+ 	/*
+ 	 * At this point the primary processor is completely
+diff --git a/kernel/debug/kdb/kdb_debugger.c b/kernel/debug/kdb/kdb_debugger.c
+index 8859ca34dcfe..15e1a7af5dd0 100644
+--- a/kernel/debug/kdb/kdb_debugger.c
++++ b/kernel/debug/kdb/kdb_debugger.c
+@@ -129,6 +129,10 @@ int kdb_stub(struct kgdb_state *ks)
+ 		ks->pass_exception = 1;
+ 		KDB_FLAG_SET(CATASTROPHIC);
+ 	}
++	/* set CATASTROPHIC if the system contains unresponsive processors */
++	for_each_online_cpu(i)
++		if (!kgdb_info[i].enter_kgdb)
++			KDB_FLAG_SET(CATASTROPHIC);
+ 	if (KDB_STATE(SSBPT) && reason == KDB_REASON_SSTEP) {
+ 		KDB_STATE_CLEAR(SSBPT);
+ 		KDB_STATE_CLEAR(DOING_SS);
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index 379650b984f8..0c1dc7fa2e58 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -2157,6 +2157,8 @@ static void kdb_cpu_status(void)
+ 	for (start_cpu = -1, i = 0; i < NR_CPUS; i++) {
+ 		if (!cpu_online(i)) {
+ 			state = 'F';	/* cpu is offline */
++		} else if (!kgdb_info[i].enter_kgdb) {
++			state = 'D';	/* cpu is online but unresponsive */
+ 		} else {
+ 			state = ' ';	/* cpu is responding to kdb */
+ 			if (kdb_task_state_char(KDB_TSK(i)) == 'I')
+@@ -2210,7 +2212,7 @@ static int kdb_cpu(int argc, const char **argv)
+ 	/*
+ 	 * Validate cpunum
+ 	 */
+-	if ((cpunum > NR_CPUS) || !cpu_online(cpunum))
++	if ((cpunum >= CONFIG_NR_CPUS) || !kgdb_info[cpunum].enter_kgdb)
+ 		return KDB_BADCPUNUM;
+
+ 	dbg_switch_cpu = cpunum;
+--
+1.9.3
+
