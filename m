@@ -1,86 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754AbbAGOtx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 09:49:53 -0500
-Received: from out114-136.biz.mail.alibaba.com ([205.204.114.136]:45311 "EHLO
-	out21.biz.mail.alibaba.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751800AbbAGOtv (ORCPT
+	id S1753511AbbAGOr6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 09:47:58 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:35055 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753172AbbAGOrx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 09:49:51 -0500
-X-Alimail-AntiSpam: AC=CONTINUE;BC=0.0742297|-1;FP=0|0|0|0|0|-1|-1|-1;HT=r41g03015;MF=gang.chen@sunrus.com.cn;PH=DS;RN=6;RT=6;SR=0;
-Message-ID: <54AD4677.6040009@sunrus.com.cn>
-Date: Wed, 07 Jan 2015 22:45:11 +0800
-From: Chen Gang S <gang.chen@sunrus.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 7 Jan 2015 09:47:53 -0500
+Date: Wed, 7 Jan 2015 15:47:50 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Vlastimil Babka <vbabka@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Minchan Kim <minchan@kernel.org>, David Rientjes <rientjes@google.com>,
+        Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH V4 4/4] mm: microoptimize zonelist operations
+Message-ID: <20150107144750.GF16553@dhcp22.suse.cz>
+References: <1420478263-25207-1-git-send-email-vbabka@suse.cz>
+ <1420478263-25207-5-git-send-email-vbabka@suse.cz>
+ <20150106150920.GE20860@dhcp22.suse.cz>
+ <54ACF93B.3060801@suse.cz>
+ <20150107105749.GC16553@dhcp22.suse.cz>
+ <20150107111706.GC2395@suse.de>
 MIME-Version: 1.0
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-CC: Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        holzheu@linux.vnet.ibm.com, linux-s390@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] s390: include: timex: Use macro CLOCK_STORE_SIZE instead
- of hard code number
-References: <54A55954.6000002@sunrus.com.cn> <20150102094625.GA4059@osiris> <54A76584.6020700@sunrus.com.cn> <20150105095948.0612e7bc@mschwide>
-In-Reply-To: <20150105095948.0612e7bc@mschwide>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150107111706.GC2395@suse.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2015 04:59 PM, Martin Schwidefsky wrote:
-> On Sat, 03 Jan 2015 11:44:04 +0800
-> Chen Gang <gang.chen@sunrus.com.cn> wrote:
+On Wed 07-01-15 11:17:07, Mel Gorman wrote:
+> On Wed, Jan 07, 2015 at 11:57:49AM +0100, Michal Hocko wrote:
+> > On Wed 07-01-15 10:15:39, Vlastimil Babka wrote:
+> > > On 01/06/2015 04:09 PM, Michal Hocko wrote:
+> > > > On Mon 05-01-15 18:17:43, Vlastimil Babka wrote:
+> > > >> The function next_zones_zonelist() returns zoneref pointer, as well as zone
+> > > >> pointer via extra parameter. Since the latter can be trivially obtained by
+> > > >> dereferencing the former, the overhead of the extra parameter is unjustified.
+> > > >> 
+> > > >> This patch thus removes the zone parameter from next_zones_zonelist(). Both
+> > > >> callers happen to be in the same header file, so it's simple to add the
+> > > >> zoneref dereference inline. We save some bytes of code size.
+> > > > 
+> > > > Dunno. It makes first_zones_zonelist and next_zones_zonelist look
+> > > > different which might be a bit confusing. It's not a big deal but
+> > > > I am not sure it is worth it.
+> > > 
+> > > Yeah I thought that nobody uses them directly anyway thanks to
+> > > for_each_zone_zonelist* so it's not a big deal.
+> > 
+> > OK, I have checked why we need the whole struct zoneref when it
+> > only caches zone_idx. dd1a239f6f2d (mm: have zonelist contains
+> > structs with both a zone pointer and zone_idx) claims this will
+> > reduce cache contention by reducing pointer chasing because we
+> > do not have to dereference pgdat so often in hot paths. Fair
+> > enough but I do not see any numbers in the changelog nor in the
+> > original discussion (https://lkml.org/lkml/2007/11/20/547 resp.
+> > https://lkml.org/lkml/2007/9/28/170). Maybe Mel remembers what was the
+> > benchmark which has shown the difference so that we can check whether
+> > this is still relevant and caching the index is still worth it.
+> > 
 > 
->>
->> Thank you for your work.
->>
->> In honest, originally, I was not sure whether it would cause bug (do not
->> know gcc would generic incorrect code for it). :-)
-> 
-> Even if the code happened to be correct it does not matter. The intention
-> of the sizeof() has been to get to the correct 16, not 8. The fix is
-> fine as it is.
-> 
+> IIRC, the difference was a few percent on instruction profiles and cache
+> profiles when driven from a systemtap microbenchmark but I no longer have
+> the data and besides it would have been based on an ancient machine by
+> todays standards. When zeroing of pages is taken into account it's going
+> to be marginal so a userspace test would probably show nothing. Still,
+> I see little motivation to replace a single deference with multiple
+> dereferences and pointer arithmetic when zonelist_zone_idx() is called.
 
-Excuse me, my English is not quite well, I am not quite sure about what
-you said (might misunderstand what you said), so I provide the related
-information below for confirmation, please check, thanks.
-
-sizeof(clk) is for a pointer, not for an array (for C language, it
-treats array parameter as a pointer), the related demo is below:
-
-  [root@localhost test]# cat ./test.c
-  #include <stdio.h>
-  
-  static inline void get_tod_clock_ext(char clk[16])
-  {
-  	typedef struct { char _[sizeof(clk)]; } addrtype;
-  
-  	printf("\nsize: %ld\n", sizeof(addrtype));
-  }
-  
-  int main()
-  {
-  	char clk[16];
-  
-  	get_tod_clock_ext(clk);
-  	return 0;
-  }
-  [root@localhost test]# cc -Wall -O2 -o test test.c
-  [root@localhost test]# ./test 
-  
-  size: 8
-  [root@localhost test]# cc -v
-  Using built-in specs.
-  COLLECT_GCC=cc
-  COLLECT_LTO_WRAPPER=/usr/libexec/gcc/x86_64-redhat-linux/4.8.3/lto-wrapper
-  Target: x86_64-redhat-linux
-  Configured with: ../configure --prefix=/usr --mandir=/usr/share/man --infodir=/usr/share/info --with-bugurl=http://bugzilla.redhat.com/bugzilla --enable-bootstrap --enable-shared --enable-threads=posix --enable-checking=release --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-linker-hash-style=gnu --enable-languages=c,c++,objc,obj-c++,java,fortran,ada,go,lto --enable-plugin --enable-initfini-array --enable-java-awt=gtk --disable-dssi --with-java-home=/usr/lib/jvm/java-1.5.0-gcj-1.5.0.0/jre --enable-libgcj-multifile --enable-java-maintainer-mode --with-ecj-jar=/usr/share/java/eclipse-ecj.jar --disable-libjava-multilib --with-isl=/builddir/build/BUILD/gcc-4.8.3-20140624/obj-x86_64-redhat-linux/isl-install --with-cloog=/builddir/build/BUILD/gcc-4.8.3-20140624/obj-x86_64-redhat-linux/cloog-install --with-tune=generic --with-arch_32=i686 --build=x86_64-redhat-linux
-  Thread model: posix
-  gcc version 4.8.3 20140624 (Red Hat 4.8.3-1) (GCC) 
-  [root@localhost test]# 
-
-
-Thanks.
+OK, fair enough. I have tried to convert back to simple zone * and it
+turned out we wouldn't save too much code so this is really not worth
+time and possible complications.
 -- 
-Open, share, and attitude like air, water, and life which God blessed.
+Michal Hocko
+SUSE Labs
