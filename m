@@ -1,73 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756473AbbAGI6I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 03:58:08 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:41617 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755776AbbAGI6E (ORCPT
+	id S932317AbbAGI6S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 03:58:18 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:8843 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756510AbbAGI6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 03:58:04 -0500
-Message-ID: <54ACF516.4080602@dev.mellanox.co.il>
-Date: Wed, 07 Jan 2015 10:57:58 +0200
-From: Sagi Grimberg <sagig@dev.mellanox.co.il>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 7 Jan 2015 03:58:15 -0500
+X-IronPort-AV: E=Sophos;i="5.07,713,1413270000"; 
+   d="scan'208";a="54161033"
+Message-ID: <54ACF523.2030706@broadcom.com>
+Date: Wed, 7 Jan 2015 09:58:11 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [target:nvme_of 3/3] drivers/target/nvme_of/nvme_of_configfs.c:25:31:
- sparse: symbol 'nvme_of_fabric_configfs' was not declared. Should it be static?
-References: <201501070334.EgwC5iey%fengguang.wu@intel.com> <1420584282.6927.62.camel@haakon3.risingtidesystems.com>
-In-Reply-To: <1420584282.6927.62.camel@haakon3.risingtidesystems.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Kalle Valo <kvalo@codeaurora.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "Brett Rudley" <brudley@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        Fabian Frederick <fabf@skynet.be>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        <brcm80211-dev-list@broadcom.com>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] brcm80211: brcmsmac: dma: Remove some unused functions
+References: <1420332469-5907-1-git-send-email-rickard_strandqvist@spectrumdigital.se> <54A8DBF4.4050202@lwfinger.net> <CAKXHbyN6LH_pFw1uoLXRzgJv-NcjbTLJvMZXfwYXDwuk9QDszA@mail.gmail.com> <871tn933jc.fsf@kamboji.qca.qualcomm.com> <54AA7042.50207@broadcom.com> <CAKXHbyNBV6=DPF4n0onzhEqAuS-PqLS5pwZj_OitRuYMvgpjvw@mail.gmail.com> <alpine.DEB.2.02.1501070726320.2058@localhost6.localdomain6>
+In-Reply-To: <alpine.DEB.2.02.1501070726320.2058@localhost6.localdomain6>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/7/2015 12:44 AM, Nicholas A. Bellinger wrote:
-> On Wed, 2015-01-07 at 03:35 +0800, kbuild test robot wrote:
->> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git nvme_of
->> head:   40d8c11927282d59855d645b35798edd97828da5
->> commit: 40d8c11927282d59855d645b35798edd97828da5 [3/3] nvme_of: Initial skeleton commit
->> reproduce:
->>    # apt-get install sparse
->>    git checkout 40d8c11927282d59855d645b35798edd97828da5
->>    make ARCH=x86_64 allmodconfig
->>    make C=1 CF=-D__CHECK_ENDIAN__
->>
->>
->> sparse warnings: (new ones prefixed by >>)
->>
->>>> drivers/target/nvme_of/nvme_of_configfs.c:25:31: sparse: symbol 'nvme_of_fabric_configfs' was not declared. Should it be static?
->>
->> Please review and possibly fold the followup patch.
->>
+On 01/07/15 07:29, Julia Lawall wrote:
 >
-> Fixed.  Thanks Fengguang!
 >
+> On Wed, 7 Jan 2015, Rickard Strandqvist wrote:
+>
+>> 2015-01-05 12:06 GMT+01:00 Arend van Spriel<arend@broadcom.com>:
+>>> On 01/05/15 11:49, Kalle Valo wrote:
+>>>>
+>>>> Rickard Strandqvist<rickard_strandqvist@spectrumdigital.se>   writes:
+>>>>
+>>>>> As I hope you can see I have made some changes regarding the
+>>>>> subject-line. Thought it was an advantage to be able to see which file
+>>>>> I actually removed something from. There seems to be a big focus on
+>>>>> getting right on subject-line right in recent weeks.
+>>>>>
+>>>>> I wonder why there is a script that takes a file name, and respond
+>>>>> with an appropriate subject line?
+>>>
+>>>
+>>> Is there a script for this? Anyway, I would say driver name is enough.
+>>> Enough about the subject line ;-) I would like to give some general remarks
+>>> as you seem to touch a lot of kernel code. First off, I think it is good to
+>>> remove unused stuff. However, I would like some more explanation on your
+>>> methodology apart from "partially found by using a static code analysis
+>>> program". So a cover-letter explaining that would have been nice (maybe
+>>> still is). Things like Kconfig option can affect whether function are used
+>>> or not so how did you cover that.
+>>>
+>>> Regards,
+>>> Arend
+>>>
+>>>
+>>>> I don't think you can really automate this as some drivers do this a bit
+>>>> differently. You always need to manually check the commit log.
+>>>>
+>>>>> But ok, I change my script accordingly. Should I submit the patch again?
+>>>>
+>>>>
+>>>> Yes, please resubmit.
+>>>>
+>>>
+>>
+>> Hi Arend
+>>
+>> Yes, a script that had been excellent, I think!
+>> I have one as part of my git send-email script, until a week ago, it
+>> was enough that I removed the "drivers/" and changed all "/" to ": "
+>> I have now been expanded my sed pipe a lot (tell me if anyone is interested)
+>> But now I've seen everything from uppercase and [DIR], etc.
+>> So I can not understand how anyone should be able to get the right
+>> name without a good help.
+>>
+>> Sure i like to share how I use cppcheck, but is very hesitant to write
+>> this with each patch mails I send though!
+>>
+>> I run:
+>> cppcheck --force --quiet --enable=all .
+>>
+>> Or a specific file instead of .
+>>
+>> This will include, among other things get a lot of error message such,
+>> +4000 for the kernel.
+>> (style) The function 'xxx' is never used
+>>
+>> For these I made a script that searched through all the files after
+>> the function name (cppcheck missed a few). And save the rest so I go
+>> through them and possibly send patches.
+>
+> I think that the question was about what methodology is cppcheck using to
+> find the given issue.  But probably cppcheck is a black box that does
+> whatever it does, so the user doesn't know what the rationale is.
 
-Hey Nic,
+That would have been nice, but I also wanted to know what his subsequent 
+steps were to validate the output from cppcheck. I went through some 
+cppcheck web pages, but they only elaborate on what is can do and not 
+the how. But hey, it is an open-source tool so there is always the code 
+to check.
 
-Hope all is well.
+> However, I think you mentioned that cppcheck found only some of the
+> issues.  You could thus describe what was the methodology for finding the
+> other ones.
 
-So this skeleton is interesting to me. As this is a fabric module I
-assume this would be the NVMEoFabrics target mode driver for upstream 
-which would be able to talk to NVMEoFabrics initiator (which by
-the way makes LIO something more than a SCSI target - will this be 
-accepted?).
+Maybe upon removing an unused function it had a ripple effect on others 
+becoming unused as well? Still this is speculating and with this kind of 
+cleanup effort all over the place it is better to review the methodology.
 
-I'm currently participating in nvmexpress working group defining the
-standard of protocol, specifically in the context of RDMA (naturally).
+Regards,
+Arend
 
-I'm interested in taking an active role in this project, It is
-important to build this layered from day one - separating the fabric 
-logic (RDMA or FCoE) from the core layer.
+> julia
 
-Moreover, I know that Mellanox has some plans on accelerating this
-area in future devices and we are currently looking into ways to
-do that. I want to see that the SW will be able to support that.
-
-So, Thoughts?
-
-Sagi.
