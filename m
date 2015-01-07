@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792AbbAGXuB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 18:50:01 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:53265 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755961AbbAGXt4 (ORCPT
+	id S1755697AbbAGXqV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 18:46:21 -0500
+Received: from mailout.micron.com ([137.201.242.129]:50077 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755662AbbAGXqS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 18:49:56 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/npnMKmb6FLD/Y9bYFy1eR
-Date: Wed, 7 Jan 2015 15:46:10 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: bcousson@baylibre.com, robh+dt@kernel.org, trivial@kernel.org,
-        kernel list <linux-kernel@vger.kernel.org>, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH] dts: omap3-n900: cleanup english
-Message-ID: <20150107234610.GJ13010@atomide.com>
-References: <20141207161147.GA18588@amd>
+	Wed, 7 Jan 2015 18:46:18 -0500
+From: "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: "axboe@kernel.dk" <axboe@kernel.dk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] block: pass correct seed to integrity metadata
+ generation function
+Thread-Topic: [PATCH] block: pass correct seed to integrity metadata
+ generation function
+Thread-Index: AdAbHdTOKR9VxT2kSG67KJv7w9th2QPtcy25AAAYpIA=
+Date: Wed, 7 Jan 2015 23:46:13 +0000
+Message-ID: <80B89753B40C5141A3E2D53FE7A2A8A994634DCA@NTXBOIMBX02.micron.com>
+References: <54936D1E.3020700@micron.com> <54ADBC6E.50301@micron.com>
+	<yq14ms25g21.fsf@sermon.lab.mkp.net>
+	<80B89753B40C5141A3E2D53FE7A2A8A994634D2A@NTXBOIMBX02.micron.com>
+ <yq1r3v640pg.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1r3v640pg.fsf@sermon.lab.mkp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.201.88.182]
+x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-21230.002
+x-tm-as-result: No--32.176200-0.000000-31
+x-tm-as-user-approved-sender: Yes
+x-tm-as-user-blocked-sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141207161147.GA18588@amd>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pavel Machek <pavel@ucw.cz> [141207 08:14]:
-> This fixes english in comments and removes extra empty newline.
-> 
-> Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
-Applying into omap-for-v3.20/dt thanks.
 
-Tony
- 
-> diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
-> index 11d8afd..9e0e5a2 100644
-> --- a/arch/arm/boot/dts/omap3-n900.dts
-> +++ b/arch/arm/boot/dts/omap3-n900.dts
-> @@ -287,7 +287,7 @@
->  	regulator-name = "V28";
->  	regulator-min-microvolt = <2800000>;
->  	regulator-max-microvolt = <2800000>;
-> -	regulator-always-on; /* due battery cover sensor */
-> +	regulator-always-on; /* due to battery cover sensor */
->  };
->  
->  &vaux2 {
-> @@ -345,7 +345,6 @@
->  	regulator-name = "VIO";
->  	regulator-min-microvolt = <1800000>;
->  	regulator-max-microvolt = <1800000>;
-> -
->  };
->  
->  &vintana1 {
+> -----Original Message-----
+> From: Martin K. Petersen [mailto:martin.petersen@oracle.com]
+> Sent: Wednesday, January 07, 2015 3:43 PM
+> To: Sam Bradshaw (sbradshaw)
+> Cc: Martin K. Petersen; axboe@kernel.dk; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] block: pass correct seed to integrity metadata
+> generation function
 > 
-> -- 
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> >>>>> "Sam" == Sam Bradshaw (sbradshaw) <sbradshaw@micron.com> writes:
 > 
+> Sam> Yes, you were CC: on the original.  Could you take a peek at the
+> Sam> patch and give me feedback?  https://lkml.org/lkml/2014/12/18/521
+> 
+> Is the target an NVMe device?
+
+Yes.
+
