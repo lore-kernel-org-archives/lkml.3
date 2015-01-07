@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861AbbAGSTZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 13:19:25 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:55607 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753293AbbAGSTY (ORCPT
+	id S1754174AbbAGSTu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 13:19:50 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:39475 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754052AbbAGSTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 13:19:24 -0500
-Date: Wed, 7 Jan 2015 10:19:15 -0800
+	Wed, 7 Jan 2015 13:19:48 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,76 +14,77 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com
-Subject: [PATCH tip/core/rcu 0/12] rcutorture changes for 3.20
-Message-ID: <20150107181915.GA7803@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 01/12] rcutorture: Issue warnings on close calls due to Reader Batch blows
+Date: Wed,  7 Jan 2015 10:19:27 -0800
+Message-Id: <1420654779-11213-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <20150107181915.GA7803@linux.vnet.ibm.com>
+References: <20150107181915.GA7803@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15010718-0033-0000-0000-0000033D3AF1
+x-cbid: 15010718-0009-0000-0000-000007C6931E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This series contains rcutorture updates for 3.20:
+Normal rcutorture checking overestimates grace periods somewhat due to
+the fact that there is a delay from a grace-period request until the
+start of the corresponding grace period and another delay from the end
+of that grace period to notification of the requestor.  This means that
+rcutorture's detection of RCU bugs is less sensitive than it might be.
 
-1.	Issue warnings on close calls due to Reader Batch blows.
-	This diagnostic would have spotted the ugly preemptible-RCU
-	CPU-hotplug bug some years back.
+It turns out that rcutorture also checks the underlying grace-period
+"completed" counter (displayed in Reader Batch output), which in theory
+allows rcutorture to do exact checks.  In practice, memory misordering
+(by both compiler and CPU) can result in false positives.  However,
+experience on x86 shows that these false positives are quite rare,
+occuring less than one time per 1,000 hours of testing.  This commit
+therefore does the exact checking, giving a warning if any Reader Batch
+blows happen, and flagging an error if they happen more often than
+once every three hours in long tests.
 
-2.	Make _batches_completed() functions return unsigned long to
-	avoid signed overflow issues.
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ .../selftests/rcutorture/bin/kvm-recheck-rcu.sh        | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-3.	Make build-output parsing correctly flag RCU's warnings.
-	These needed to be updated when the "rcu" directory was created
-	in "kernel."
-
-4.	Use unsigned long for Reader Batch computations, avoiding
-	signed overflow.
-
-5.	Provide rcu_batches_completed_sched() for TINY_RCU for new
-	rcutorture compatibility.
-
-6.	Drop rcu_torture_completed() and friends.  Now that the types
-	match, the wrappers aren't needed.
-
-7.	Remove redundant rcu_batches_completed() declaration.
-
-8.	Check from beginning to end of grace period instead of from
-	end of previous grace period to end of next one.  This makes
-	rcutorture more sensitive to RCU bugs that make the grace
-	period too short.
-
-9.	Handle different mpstat versions -- new versions added fields.
-
-10.	torture: Add "-enable-kvm -soundhw pcspk" to qemu command line,
-	as newer versions of qemu complain if they are missing.
-
-11.	Flag console.log file to prevent holdovers from earlier runs,
-	which could make a run look successful when it didn't even get
-	to the point of starting qemu.
-
-12.	Add more diagnostics in rcu_barrier() test failure case.
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
- b/include/linux/rcutiny.h                                   |   42 ++++++
- b/include/linux/rcutree.h                                   |    9 -
- b/kernel/rcu/rcutorture.c                                   |   74 ++++++------
- b/kernel/rcu/tree.c                                         |   44 ++++++-
- b/kernel/rcu/tree.h                                         |    3 
- b/kernel/rcu/tree_plugin.h                                  |   34 -----
- b/tools/testing/selftests/rcutorture/bin/cpus2use.sh        |    2 
- b/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh |   18 ++
- b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh  |    9 -
- b/tools/testing/selftests/rcutorture/bin/parse-build.sh     |   20 ++-
- 10 files changed, 166 insertions(+), 89 deletions(-)
+diff --git a/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh b/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh
+index d6cc07fc137f..559e01ac86be 100755
+--- a/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh
++++ b/tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh
+@@ -30,6 +30,7 @@ else
+ 	echo Unreadable results directory: $i
+ 	exit 1
+ fi
++. tools/testing/selftests/rcutorture/bin/functions.sh
+ 
+ configfile=`echo $i | sed -e 's/^.*\///'`
+ ngps=`grep ver: $i/console.log 2> /dev/null | tail -1 | sed -e 's/^.* ver: //' -e 's/ .*$//'`
+@@ -48,4 +49,21 @@ else
+ 		title="$title ($ngpsps per second)"
+ 	fi
+ 	echo $title
++	nclosecalls=`grep --binary-files=text 'torture: Reader Batch' $i/console.log | tail -1 | awk '{for (i=NF-8;i<=NF;i++) sum+=$i; } END {print sum}'`
++	if test -z "$nclosecalls"
++	then
++		exit 0
++	fi
++	if test "$nclosecalls" -eq 0
++	then
++		exit 0
++	fi
++	# Compute number of close calls per tenth of an hour
++	nclosecalls10=`awk -v nclosecalls=$nclosecalls -v dur=$dur 'BEGIN { print int(nclosecalls * 36000 / dur) }' < /dev/null`
++	if test $nclosecalls10 -gt 5 -a $nclosecalls -gt 1
++	then
++		print_bug $nclosecalls "Reader Batch close calls in" $(($dur/60)) minute run: $i
++	else
++		print_warning $nclosecalls "Reader Batch close calls in" $(($dur/60)) minute run: $i
++	fi
+ fi
+-- 
+1.8.1.5
 
