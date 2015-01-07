@@ -1,98 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824AbbAGSW3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 13:22:29 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:38183 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754774AbbAGSWY (ORCPT
+	id S1754995AbbAGSXm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 13:23:42 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:46693 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753943AbbAGSXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 13:22:24 -0500
-Message-ID: <1420654943.12144.38.camel@haakon3.risingtidesystems.com>
-Subject: Re: [target:nvme_of 3/3]
- drivers/target/nvme_of/nvme_of_configfs.c:25:31: sparse: symbol
- 'nvme_of_fabric_configfs' was not declared. Should it be static?
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Sagi Grimberg <sagig@dev.mellanox.co.il>
-Cc: linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Patil, Kiran" <kiran.patil@intel.com>,
-        "Minturn, Dave B" <dave.b.minturn@intel.com>
-Date: Wed, 07 Jan 2015 10:22:23 -0800
-In-Reply-To: <54ACF516.4080602@dev.mellanox.co.il>
-References: <201501070334.EgwC5iey%fengguang.wu@intel.com>
-	 <1420584282.6927.62.camel@haakon3.risingtidesystems.com>
-	 <54ACF516.4080602@dev.mellanox.co.il>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Jan 2015 13:23:40 -0500
+Date: Wed, 7 Jan 2015 19:23:35 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        "\\\"Rafael J. Wysocki\\\"" <rjw@rjwysocki.net>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Oleg Nesterov <oleg@redhat.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH -v2 1/5] oom: add helpers for setting and clearing
+ TIF_MEMDIE
+Message-ID: <20150107182335.GG16553@dhcp22.suse.cz>
+References: <20141110163055.GC18373@dhcp22.suse.cz>
+ <1417797707-31699-1-git-send-email-mhocko@suse.cz>
+ <1417797707-31699-2-git-send-email-mhocko@suse.cz>
+ <20150107175731.GG4395@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150107175731.GG4395@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-07 at 10:57 +0200, Sagi Grimberg wrote:
-> On 1/7/2015 12:44 AM, Nicholas A. Bellinger wrote:
-> > On Wed, 2015-01-07 at 03:35 +0800, kbuild test robot wrote:
-> >> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git nvme_of
-> >> head:   40d8c11927282d59855d645b35798edd97828da5
-> >> commit: 40d8c11927282d59855d645b35798edd97828da5 [3/3] nvme_of: Initial skeleton commit
-> >> reproduce:
-> >>    # apt-get install sparse
-> >>    git checkout 40d8c11927282d59855d645b35798edd97828da5
-> >>    make ARCH=x86_64 allmodconfig
-> >>    make C=1 CF=-D__CHECK_ENDIAN__
-> >>
-> >>
-> >> sparse warnings: (new ones prefixed by >>)
-> >>
-> >>>> drivers/target/nvme_of/nvme_of_configfs.c:25:31: sparse: symbol 'nvme_of_fabric_configfs' was not declared. Should it be static?
-> >>
-> >> Please review and possibly fold the followup patch.
-> >>
-> >
-> > Fixed.  Thanks Fengguang!
-> >
+On Wed 07-01-15 12:57:31, Tejun Heo wrote:
+> On Fri, Dec 05, 2014 at 05:41:43PM +0100, Michal Hocko wrote:
+> > +/**
+> > + * Unmarks the current task as OOM victim.
+> > + */
+> > +void unmark_tsk_oom_victim(void)
+> > +{
+> > +	clear_thread_flag(TIF_MEMDIE);
+> > +}
 > 
-> Hey Nic,
-> 
-> Hope all is well.
-> 
-> So this skeleton is interesting to me. As this is a fabric module I
-> assume this would be the NVMEoFabrics target mode driver for upstream 
-> which would be able to talk to NVMEoFabrics initiator (which by
-> the way makes LIO something more than a SCSI target - will this be 
-> accepted?).
-> 
+> This prolly should be unmark_current_oom_victim()?
 
-That is currently the plan.
+OK.
 
-It's still unclear how this will work wrt to existing target code, but
-given the amount of logic that NVMe is borrowing from SCSI on the
-command set side (PR, ALUA, VAAI, DIF), I'm sure there is an opportunity
-for code sharing between NVMe and SCSI based fabrics.
+> Also, can we
+> please use full "task" at least in global symbols?  I don't think tsk
+> abbreviation is that popular in function names.
 
-> I'm currently participating in nvmexpress working group defining the
-> standard of protocol, specifically in the context of RDMA (naturally).
-> 
+It is mimicking *_tsk_thread_flag() API.
 
-Glad to hear that your involved.  ;)
-
-> I'm interested in taking an active role in this project, It is
-> important to build this layered from day one - separating the fabric 
-> logic (RDMA or FCoE) from the core layer.
-> 
-> Moreover, I know that Mellanox has some plans on accelerating this
-> area in future devices and we are currently looking into ways to
-> do that. I want to see that the SW will be able to support that.
-> 
-> So, Thoughts?
-> 
-
-FYI, Kiran and Dave (CC'ed) from Intel will be driving upstream NVME-OF
-target development.
-
-I'll be primarily focused on figuring out how NVMe and SCSI can play
-nicely in target-core, and helping out on the NVMe-OF side where
-necessary.
-
---nab
-
+-- 
+Michal Hocko
+SUSE Labs
