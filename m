@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011AbbAGXv2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 18:51:28 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:44586 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752315AbbAGXvW (ORCPT
+	id S1756136AbbAGXx4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 18:53:56 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:14015 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755557AbbAGXvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 18:51:22 -0500
-X-AuditID: cbfee68f-f791c6d000004834-7e-54adc677ad29
+	Wed, 7 Jan 2015 18:51:23 -0500
+X-AuditID: cbfee691-f79b86d000004a5a-85-54adc67740d3
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: myungjoo.ham@samsung.com, kgene@kernel.org
 Cc: kyungmin.park@samsung.com, rafael.j.wysocki@intel.com,
@@ -16,39 +16,39 @@ Cc: kyungmin.park@samsung.com, rafael.j.wysocki@intel.com,
         cw00.choi@samsung.com, inki.dae@samsung.com, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-samsung-soc@vger.kernel.org
-Subject: [PATCHv7 02/10] devfreq: event: Add the list of supported
- devfreq-event type
-Date: Thu, 08 Jan 2015 08:51:09 +0900
-Message-id: <1420674677-3077-3-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCHv7 03/10] devfreq: event: Add resource-managed function for
+ devfreq-event device
+Date: Thu, 08 Jan 2015 08:51:10 +0900
+Message-id: <1420674677-3077-4-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1420674677-3077-1-git-send-email-cw00.choi@samsung.com>
 References: <1420674677-3077-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAIsWRmVeSWpSXmKPExsWyRsSkRLf82NoQg62/zCwer1nMZLFxxnpW
-	i+tfnrNaTLo/gcXi9QtDi/7Hr5ktzja9YbfY9Pgaq8XlXXPYLD73HmG0mHF+H5PF0usXmSxu
-	N65gs3i84i27ReveI+wWq3b9YXQQ8Fgzbw2jx85Zd9k9Fu95yeSxaVUnm8fmJfUefVtWMXp8
-	3iQXwB7FZZOSmpNZllqkb5fAlfFz/y72gv0mFUseBjQwntTuYuTkkBAwkVi2+A47hC0mceHe
-	erYuRi4OIYGljBL3181jhCm6//IyK0RiEaPE6qNXmSGcJiaJqYtngLWzCWhJ7H9xgw3EFhHQ
-	k+g8tgcszizwh0miaRMLiC0sEC7xZuJKJhCbRUBVom3RdDCbV8BFYvXG16wQ2xQkli2fCWZz
-	CrhKLN28kBnEFgKqednzixFksYTAS3aJc1cWM0IMEpD4NvkQ0AIOoISsxKYDzBBzJCUOrrjB
-	MoFReAEjwypG0dSC5ILipPQiY73ixNzi0rx0veT83E2MwIg6/e9Z/w7GuwesDzEKcDAq8fAW
-	9K0JEWJNLCuuzD3EaAq0YSKzlGhyPjBu80riDY3NjCxMTUyNjcwtzZTEeRdK/QwWEkhPLEnN
-	Tk0tSC2KLyrNSS0+xMjEwSnVwDix+O9609DLsno3m1Wut7/uucV3Zt2npHcaQc07a5RX6k9u
-	nP3mv3jyy9+NvBnXvWYWS+0ocIwLvttwdXrrKbt3Z+7NzxI2y9jAI7w5Qure3xOrkrTKjSaa
-	PA413m21e6Lsgr41rfnHpL142Y/ynjA/vkG/U+7uu6clHpvWn1c/3+Z/VqzqUrkSS3FGoqEW
-	c1FxIgA/jwAeowIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t9jAd3yY2tDDJY+07F4vGYxk8XGGetZ
-	La5/ec5qMen+BBaL1y8MLfofv2a2ONv0ht1i0+NrrBaXd81hs/jce4TRYsb5fUwWS69fZLK4
-	3biCzeLxirfsFq17j7BbrNr1h9FBwGPNvDWMHjtn3WX3WLznJZPHplWdbB6bl9R79G1Zxejx
-	eZNcAHtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+Arltm
-	DtDxSgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaMn/t3sRfsN6lY8jCg
-	gfGkdhcjJ4eEgInE/ZeXWSFsMYkL99azdTFycQgJLGKUWH30KjOE08QkMXXxDHaQKjYBLYn9
-	L26wgdgiAnoSncf2gMWZBf4wSTRtYgGxhQXCJd5MXMkEYrMIqEq0LZoOZvMKuEis3vgaapuC
-	xLLlM8FsTgFXiaWbFzKD2EJANS97fjFOYORdwMiwilE0tSC5oDgpPddIrzgxt7g0L10vOT93
-	EyM4Xp9J72Bc1WBxiFGAg1GJh7egb02IEGtiWXFl7iFGCQ5mJRHetW1rQ4R4UxIrq1KL8uOL
-	SnNSiw8xmgJdNZFZSjQ5H5hK8kriDY1NzIwsjcwNLYyMzZXEeZXs20KEBNITS1KzU1MLUotg
-	+pg4OKUaGJdctSoTrWSbP+uNSPiTo/GvylKt+2IucK+uO1qpvP3Z25SnswuTDlnFxz8L94k4
-	GWOSXrJBgK/V/lzen5fd4n+CJywV8DuyRmIe166IeUmcR73+HVyf9Hf7+n9WPxonC+xb+bpy
-	zqzrJR3+dUvMPybXF/IedP4/U3j30zcOIeHht7cVznKp/KfEUpyRaKjFXFScCAA1VFpj7QIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnkeLIzCtJLcpLzFFi42JZI2JSpFtxbG2IwQZvi8drFjNZbJyxntXi
+	+pfnrBaT7k9gsXj9wtCi//FrZouzTW/YLTY9vsZqcXnXHDaLz71HGC1mnN/HZLH0+kUmi9uN
+	K9gsHq94y27RuvcIu8WqXX8YHQQ81sxbw+ixc9Zddo/Fe14yeWxa1cnmsXlJvUffllWMHp83
+	yQWwR3HZpKTmZJalFunbJXBlbHhvX9CpWNGy8iVTA2ODTBcjJ4eEgInEtZ4rbBC2mMSFe+uB
+	bC4OIYGljBIz3n1nhClaunwvC0RiEaPEh393oJwmJompi2ewg1SxCWhJ7H9xA2yUiICeROex
+	PWBxZoE/TBJNm1hAbGGBRIkTf7aCTWURUJXYuqWbGcTmFXCR2Ha1kQlim4LEsuUzWUFsTgFX
+	iaWbF4LVCAHVvOz5xQiyWELgJbvEy/WP2CAGCUh8m3wIaAEHUEJWYtMBZog5khIHV9xgmcAo
+	vICRYRWjaGpBckFxUnqRqV5xYm5xaV66XnJ+7iZGYDyd/vds4g7G+wesDzEKcDAq8fAW9K0J
+	EWJNLCuuzD3EaAq0YSKzlGhyPjBq80riDY3NjCxMTUyNjcwtzZTEeXWkfwYLCaQnlqRmp6YW
+	pBbFF5XmpBYfYmTi4JRqYPQW9ueYcM70xeryKbnaTI1RTPdZX7DMOJW2dZe69t57d5o9rm1/
+	ePLpPu6Vtndfypatmb7BR97/xIuvVos6P6w4bfBOJ41vqvWHsI8z5i6s12v14fwh9aKz5N/r
+	e4I8Cu8yL9hzL9DqPMar9umbgpH808nX7Oe2PZEy6D1mb3+vNO/gnyNXqr2UWIozEg21mIuK
+	EwFGxTcWogIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t9jAd3yY2tDDDb3mFg8XrOYyWLjjPWs
+	Fte/PGe1mHR/AovF6xeGFv2PXzNbnG16w26x6fE1VovLu+awWXzuPcJoMeP8PiaLpdcvMlnc
+	blzBZvF4xVt2i9a9R9gtVu36w+gg4LFm3hpGj52z7rJ7LN7zkslj06pONo/NS+o9+rasYvT4
+	vEkugD2qgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE31VbJxSdA1y0z
+	B+h4JYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYGaCBhDWPGhvf2BZ2KFS0rXzI1
+	MDbIdDFyckgImEgsXb6XBcIWk7hwbz1bFyMXh5DAIkaJD//usEA4TUwSUxfPYAepYhPQktj/
+	4gYbiC0ioCfReWwPWJxZ4A+TRNMmsEnCAokSJ/5sZQSxWQRUJbZu6WYGsXkFXCS2XW1kgtim
+	ILFs+UxWEJtTwFVi6eaFYDVCQDUve34xTmDkXcDIsIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/
+	dxMjOF6fSe9gXNVgcYhRgINRiYe3oG9NiBBrYllxZe4hRgkOZiUR3rVta0OEeFMSK6tSi/Lj
+	i0pzUosPMZoCXTWRWUo0OR+YSvJK4g2NTcyMLI3MDS2MjM2VxHmV7NtChATSE0tSs1NTC1KL
+	YPqYODilGhhj99txrdrknvY0Z6fnkpPlRzykeoyjz61tfnzh1e/dribPl6Xz/vr7o2t3t2Zw
+	s8T6MMGtz7yY9sw9GiMc97AgW6F030tn43AeHt78qbyn3V989duh83HN6cdrSptUL+dVfr1T
+	4vk7t2D3zUr2+qkv2bbJrf98bi6Pzz/JQwxRonPclq+0kNVUYinOSDTUYi4qTgQAEnDspe0C	AAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,204 +56,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the list of supported devfreq-event type as following.
-Each devfreq-event device driver would support the various devfreq-event type
-for devfreq governor at the same time.
-- DEVFREQ_EVENT_TYPE_RAW_DATA
-- DEVFREQ_EVENT_TYPE_UTILIZATION
-- DEVFREQ_EVENT_TYPE_BANDWIDTH
-- DEVFREQ_EVENT_TYPE_LATENCY
+This patch add the resource-managed function for devfreq-event device as
+following functions. The devm_devfreq_event_add_edev() manages automatically
+the memory of devfreq-event device using resource management.
+- devm_devfreq_event_add_edev()
+- devm_devfreq_event_remove_edev()
 
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: Myungjoo Ham <myungjoo.ham@samsung.com>
 Cc: Kyungmin Park <kyungmin.park@samsung.com>
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 ---
- drivers/devfreq/devfreq-event.c | 58 ++++++++++++++++++++++++++++++++++++-----
- include/linux/devfreq-event.h   | 25 +++++++++++++++---
- 2 files changed, 73 insertions(+), 10 deletions(-)
+ drivers/devfreq/devfreq-event.c | 63 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/devfreq-event.h   | 16 +++++++++++
+ 2 files changed, 79 insertions(+)
 
 diff --git a/drivers/devfreq/devfreq-event.c b/drivers/devfreq/devfreq-event.c
-index 81448ba..64c1764 100644
+index 64c1764..5301e2b 100644
 --- a/drivers/devfreq/devfreq-event.c
 +++ b/drivers/devfreq/devfreq-event.c
-@@ -20,6 +20,9 @@
- #include <linux/list.h>
- #include <linux/of.h>
- 
-+#define EVENT_TYPE_RAW_DATA_MAX		ULONG_MAX
-+#define EVENT_TYPE_UTILIZATION_MAX	100
-+
- static struct class *devfreq_event_class;
- 
- /* The list of all devfreq event list */
-@@ -132,7 +135,8 @@ EXPORT_SYMBOL_GPL(devfreq_event_is_enabled);
-  * Note that this function set the event to the devfreq-event device to start
-  * for getting the event data which could be various event type.
-  */
--int devfreq_event_set_event(struct devfreq_event_dev *edev)
-+int devfreq_event_set_event(struct devfreq_event_dev *edev,
-+				enum devfreq_event_type type)
- {
- 	int ret;
- 
-@@ -146,7 +150,15 @@ int devfreq_event_set_event(struct devfreq_event_dev *edev)
- 		return -EPERM;
- 
- 	mutex_lock(&edev->lock);
--	ret = edev->desc->ops->set_event(edev);
-+
-+	if ((edev->desc->type & type) == 0) {
-+		dev_err(&edev->dev, "unsupported devfreq-event type\n");
-+		mutex_unlock(&edev->lock);
-+		return -EINVAL;
-+	}
-+
-+	ret = edev->desc->ops->set_event(edev, type);
-+
- 	mutex_unlock(&edev->lock);
- 
- 	return ret;
-@@ -162,6 +174,7 @@ EXPORT_SYMBOL_GPL(devfreq_event_set_event);
-  * after stoping the progress of whole sequence of devfreq-event dev.
-  */
- int devfreq_event_get_event(struct devfreq_event_dev *edev,
-+			    enum devfreq_event_type type,
- 			    struct devfreq_event_data *edata)
- {
- 	int ret;
-@@ -175,18 +188,49 @@ int devfreq_event_get_event(struct devfreq_event_dev *edev,
- 	if (!devfreq_event_is_enabled(edev))
- 		return -EINVAL;
- 
-+	mutex_lock(&edev->lock);
-+
-+	if ((edev->desc->type & type) == 0) {
-+		dev_err(&edev->dev, "unsupported devfreq-event type\n");
-+		return -EINVAL;
-+	}
-+
- 	edata->event = edata->total_event = 0;
-+	ret = edev->desc->ops->get_event(edev, type, edata);
-+	if (ret < 0
-+		|| edata->total_event <= 0
-+		|| edata->event > edata->total_event) {
-+		edata->event = edata->total_event = 0;
-+		mutex_unlock(&edev->lock);
-+		return -EINVAL;
-+	}
- 
--	mutex_lock(&edev->lock);
--	ret = edev->desc->ops->get_event(edev, edata);
--	mutex_unlock(&edev->lock);
-+	switch (type) {
-+	case DEVFREQ_EVENT_TYPE_RAW_DATA:
-+	case DEVFREQ_EVENT_TYPE_BANDWIDTH:
-+	case DEVFREQ_EVENT_TYPE_LATENCY:
-+		if ((edata->event > EVENT_TYPE_RAW_DATA_MAX) ||
-+			(edata->total_event > EVENT_TYPE_RAW_DATA_MAX)) {
-+			edata->event = edata->total_event = 0;
-+			ret = -EINVAL;
-+		}
-+		break;
-+	case DEVFREQ_EVENT_TYPE_UTILIZATION:
-+		edata->total_event = EVENT_TYPE_UTILIZATION_MAX;
- 
--	if ((edata->total_event <= 0)
--		|| (edata->event > edata->total_event)) {
-+		if (edata->event > EVENT_TYPE_UTILIZATION_MAX) {
-+			edata->event = edata->total_event = 0;
-+			ret = -EINVAL;
-+		}
-+		break;
-+	default:
- 		edata->event = edata->total_event = 0;
- 		ret = -EINVAL;
-+		break;
- 	}
- 
-+	mutex_unlock(&edev->lock);
-+
- 	return ret;
+@@ -451,6 +451,69 @@ int devfreq_event_remove_edev(struct devfreq_event_dev *edev)
  }
- EXPORT_SYMBOL_GPL(devfreq_event_get_event);
+ EXPORT_SYMBOL_GPL(devfreq_event_remove_edev);
+ 
++static int devm_devfreq_event_match(struct device *dev, void *res, void *data)
++{
++	struct devfreq_event_dev **r = res;
++
++	if (WARN_ON(!r || !*r))
++		return 0;
++
++	return *r == data;
++}
++
++static void devm_devfreq_event_release(struct device *dev, void *res)
++{
++	devfreq_event_remove_edev(*(struct devfreq_event_dev **)res);
++}
++
++/**
++ * devm_devfreq_event_add_edev() - Resource-managed devfreq_event_add_edev()
++ * @dev		: the device owning the devfreq-event device being created
++ * @desc	: the devfreq-event device's decriptor which include essential
++ *		  data for devfreq-event device.
++ *
++ * Note that this function manages automatically the memory of devfreq-event
++ * device using device resource management and simplify the free operation
++ * for memory of devfreq-event device.
++ */
++struct devfreq_event_dev *devm_devfreq_event_add_edev(struct device *dev,
++						struct devfreq_event_desc *desc)
++{
++	struct devfreq_event_dev **ptr, *edev;
++
++	ptr = devres_alloc(devm_devfreq_event_release, sizeof(*ptr), GFP_KERNEL);
++	if (!ptr)
++		return ERR_PTR(-ENOMEM);
++
++	edev = devfreq_event_add_edev(dev, desc);
++	if (IS_ERR(edev)) {
++		devres_free(ptr);
++		return ERR_PTR(-ENOMEM);
++	}
++
++	*ptr = edev;
++	devres_add(dev, ptr);
++
++	return edev;
++}
++EXPORT_SYMBOL(devm_devfreq_event_add_edev);
++
++/**
++ * devm_devfreq_event_remove_edev()- Resource-managed devfreq_event_remove_edev()
++ * @dev		: the device owning the devfreq-event device being created
++ * @edev	: the devfreq-event device
++ *
++ * Note that this function manages automatically the memory of devfreq-event
++ * device using device resource management.
++ */
++void devm_devfreq_event_remove_edev(struct device *dev,
++				struct devfreq_event_dev *edev)
++{
++	WARN_ON(devres_release(dev, devm_devfreq_event_release,
++			       devm_devfreq_event_match, edev));
++}
++EXPORT_SYMBOL(devm_devfreq_event_remove_edev);
++
+ /*
+  * Device attributes for devfreq-event class.
+  */
 diff --git a/include/linux/devfreq-event.h b/include/linux/devfreq-event.h
-index b7363f5..13a5703 100644
+index 13a5703..3c44ad1 100644
 --- a/include/linux/devfreq-event.h
 +++ b/include/linux/devfreq-event.h
-@@ -36,6 +36,14 @@ struct devfreq_event_dev {
- 	const struct devfreq_event_desc *desc;
- };
+@@ -123,6 +123,10 @@ extern int devfreq_event_get_edev_count(struct device *dev);
+ extern struct devfreq_event_dev *devfreq_event_add_edev(struct device *dev,
+ 				struct devfreq_event_desc *desc);
+ extern int devfreq_event_remove_edev(struct devfreq_event_dev *edev);
++extern struct devfreq_event_dev *devm_devfreq_event_add_edev(struct device *dev,
++				struct devfreq_event_desc *desc);
++extern void devm_devfreq_event_remove_edev(struct device *dev,
++				struct devfreq_event_dev *edev);
  
-+/* The supported type by devfreq-event device */
-+enum devfreq_event_type {
-+	DEVFREQ_EVENT_TYPE_RAW_DATA	= BIT(0),
-+	DEVFREQ_EVENT_TYPE_UTILIZATION	= BIT(1),
-+	DEVFREQ_EVENT_TYPE_BANDWIDTH	= BIT(2),
-+	DEVFREQ_EVENT_TYPE_LATENCY	= BIT(3),
-+};
+ #else
+ static inline int devfreq_event_enable_edev(struct devfreq_event_dev *edev)
+@@ -184,6 +188,18 @@ static inline int devfreq_event_remove_edev(struct devfreq_event_dev *edev)
+ {
+ 	return -EINVAL;
+ }
 +
- /**
-  * struct devfreq_event_data - the devfreq-event data
-  *
-@@ -69,8 +77,10 @@ struct devfreq_event_ops {
- 	int (*reset)(struct devfreq_event_dev *edev);
++static inline struct devfreq_event_dev *devm_devfreq_event_add_edev(
++					struct device *dev,
++					struct devfreq_event_desc *desc)
++{
++	return ERR_PTR(-EINVAL);
++}
++
++static inline void devm_devfreq_event_remove_edev(struct device *dev,
++					struct devfreq_event_dev *edev)
++{
++}
+ #endif /* CONFIG_PM_DEVFREQ_EVENT */
  
- 	/* Mandatory functions */
--	int (*set_event)(struct devfreq_event_dev *edev);
-+	int (*set_event)(struct devfreq_event_dev *edev,
-+			 enum devfreq_event_type type);
- 	int (*get_event)(struct devfreq_event_dev *edev,
-+			 enum devfreq_event_type type,
- 			 struct devfreq_event_data *edata);
- };
- 
-@@ -79,6 +89,10 @@ struct devfreq_event_ops {
-  *
-  * @name	: the name of devfreq-event device.
-  * @driver_data	: the private data for devfreq-event driver.
-+ * @event_type	: the supported devfreq-event type among as following
-+ *		  - DEVFREQ_EVENT_TYPE_UTILIZATION
-+ *		  - DEVFREQ_EVENT_TYPE_BANDWIDTH
-+ *		  - DEVFREQ_EVENT_TYPE_LATENCY
-  * @ops		: the operation to control devfreq-event device.
-  *
-  * Each devfreq-event device is described with a this structure.
-@@ -87,6 +101,7 @@ struct devfreq_event_ops {
- struct devfreq_event_desc {
- 	const char *name;
- 	void *driver_data;
-+	enum devfreq_event_type type;
- 
- 	struct devfreq_event_ops *ops;
- };
-@@ -95,8 +110,10 @@ struct devfreq_event_desc {
- extern int devfreq_event_enable_edev(struct devfreq_event_dev *edev);
- extern int devfreq_event_disable_edev(struct devfreq_event_dev *edev);
- extern bool devfreq_event_is_enabled(struct devfreq_event_dev *edev);
--extern int devfreq_event_set_event(struct devfreq_event_dev *edev);
-+extern int devfreq_event_set_event(struct devfreq_event_dev *edev,
-+				enum devfreq_event_type type);
- extern int devfreq_event_get_event(struct devfreq_event_dev *edev,
-+				enum devfreq_event_type type,
- 				struct devfreq_event_data *edata);
- extern int devfreq_event_reset_event(struct devfreq_event_dev *edev);
- extern void *devfreq_event_get_drvdata(struct devfreq_event_dev *edev);
-@@ -123,12 +140,14 @@ static inline bool devfreq_event_is_enabled(struct devfreq_event_dev *edev)
- 	return false;
- }
- 
--static inline int devfreq_event_set_event(struct devfreq_event_dev *edev)
-+static inline int devfreq_event_set_event(struct devfreq_event_dev *edev,
-+					enum devfreq_event_type type)
- {
- 	return -EINVAL;
- }
- 
- static inline int devfreq_event_get_event(struct devfreq_event_dev *edev,
-+					enum devfreq_event_type type,
- 					struct devfreq_event_data *edata)
- {
- 	return -EINVAL;
+ #endif /* __LINUX_DEVFREQ_EVENT_H__ */
 -- 
 1.8.5.5
 
