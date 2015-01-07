@@ -1,105 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245AbbAGO1I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 09:27:08 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:51206 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753166AbbAGO1G (ORCPT
+	id S1753272AbbAGO2c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 09:28:32 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:8714 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752575AbbAGO2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 09:27:06 -0500
-Date: Wed, 7 Jan 2015 06:26:56 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-sh@vger.kernel.org
-Subject: Re: linux-next: Tree for Jan 7
-Message-ID: <20150107142656.GA5666@roeck-us.net>
-References: <20150107151618.7cb9d574@canb.auug.org.au>
+	Wed, 7 Jan 2015 09:28:30 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 07 Jan 2015 06:27:00 -0800
+Date: Wed, 7 Jan 2015 22:28:29 +0800
+From: Vince Hsu <vinceh@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Thierry Reding <thierry.reding@gmail.com>, Lucas Stach <dev@lynxeye.de>,
+        <swarren@wwwdotorg.org>, <gnurou@gmail.com>, <bskeggs@redhat.com>,
+        <martin.peres@free.fr>, <seven@nimrod-online.com>,
+        <samuel.pitoiset@gmail.com>, <nouveau@lists.freedesktop.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/11] ARM: tegra: add function to control the GPU rail
+ clamp
+Message-ID: <20150107142828.GB7392@nvidia.com>
+References: <1419331204-26679-1-git-send-email-vinceh@nvidia.com>
+ <1419331204-26679-2-git-send-email-vinceh@nvidia.com>
+ <1419426990.2179.7.camel@lynxeye.de> <549B7638.2010405@nvidia.com>
+ <20150105150932.GG12010@ulmo.nvidia.com>
+ <20150107101900.GP10073@tbergstrom-lnx.Nvidia.com>
+ <54AD0F37.5080609@nvidia.com> <20150107132709.GA6988@ulmo>
+ <20150107140852.GR10073@tbergstrom-lnx.Nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20150107140852.GR10073@tbergstrom-lnx.Nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20150107151618.7cb9d574@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020203.54AD423A.0095,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 3
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 03:16:18PM +1100, Stephen Rothwell wrote:
-> Hi all,
+On 04:08:52PM Jan 07, Peter De Schrijver wrote:
+> On Wed, Jan 07, 2015 at 02:27:10PM +0100, Thierry Reding wrote:
 > 
-> Changes since 20150106:
+> > > Yeah. I plan to have the information of all the clock client of the
+> > > partitions and
+> > > the memory clients be defined statically in c source, e.g. pmc-tegra124.c.
+> > > All modules can declare which domain they belong to in DT. One domain can
+> > > be really power gated only when no module is awake. Note the clock clients
+> > > of
+> > > one domain might not equal to the clocks of the module. The reset is not
+> > > either.
+> > > So I don't get the clock and reset from module. How do you think?
+> > 
+> > This whole situation is quite messy. The above sequence basically means
+> > that drivers can't reset hardware modules because otherwise they might
+> > race with the power domain code. It also means that we can't powergate
 > 
-> *crickets*
+> The powerdomain framework won't call any powergating method as long as a
+> module in the domain is still active. So as long as drivers don't try to
+> reset the hw without having done a pm_runtime_get(), we shouldn't have such
+> a race?
+Agree. And as long as the driver has the correct reset procedure, that should
+be fine to occur between power ungating and gating sequences.
+
 > 
-> Non-merge commits (relative to Linus' tree): 1350
->  1543 files changed, 41856 insertions(+), 24250 deletions(-)
+> > modules on demand because they might be in the same power domain as one
+> > other module that's still busy.
+> > 
 > 
-> ----------------------------------------------------------------------------
+> The powerdomain framework keeps track of which modules are active (by hooking
+> into runtime pm) and won't try to shutdown a domain unless all modules are
+> inactive.
+Yeah. By the way, that means we should start supporting runtime pm for all
+the modules to use generic power domain.
+
+Thanks,
+Vince
+
 > 
-
-New build failure for sh:dreamcast_defconfig:
-
-arch/sh/mm/gup.c: In function 'gup_get_pte':
-arch/sh/mm/gup.c:20:2: error: invalid initializer
-make[1]: *** [arch/sh/mm/gup.o] Error 1
-
-bisect log:
-
-# bad: [7e3619a6de57f0257a2f6480182d2287ee05e314] Add linux-next specific files for 20150107
-# good: [b1940cd21c0f4abdce101253e860feff547291b0] Linux 3.19-rc3
-git bisect start 'HEAD' 'v3.19-rc3'
-# good: [c48667c5659248ff2b2fbff5cd23c43b5768e81b] Merge remote-tracking branch 'net-next/master'
-git bisect good c48667c5659248ff2b2fbff5cd23c43b5768e81b
-# good: [b8cf629ce7d554711dd7ab256b00e6110355e1d7] Merge remote-tracking branch 'mmc-uh/next'
-git bisect good b8cf629ce7d554711dd7ab256b00e6110355e1d7
-# good: [cc52ff032bc2d91c78d7cf9aefcfa9e266ace816] Merge remote-tracking branch 'rcu/rcu/next'
-git bisect good cc52ff032bc2d91c78d7cf9aefcfa9e266ace816
-# bad: [9634277bcdab7b9d6a91409dc11d85502aa2e74b] Merge remote-tracking branch 'access_once/linux-next'
-git bisect bad 9634277bcdab7b9d6a91409dc11d85502aa2e74b
-# good: [261379560ee6aa65b4869c94eda0d3d60773aca3] Merge remote-tracking branch 'scsi/for-next'
-git bisect good 261379560ee6aa65b4869c94eda0d3d60773aca3
-# good: [38d45afa56bfca714780e45532760d64cd53b65b] Merge remote-tracking branch 'llvmlinux/for-next'
-git bisect good 38d45afa56bfca714780e45532760d64cd53b65b
-# good: [9afbe1ce2403c7d097bfaafcc5b27950040f7608] Merge remote-tracking branch 'y2038/y2038'
-git bisect good 9afbe1ce2403c7d097bfaafcc5b27950040f7608
-# bad: [a91ed664749cbec0325ef9da7d12619d9bb72e2d] kernel: tighten rules for ACCESS ONCE
-git bisect bad a91ed664749cbec0325ef9da7d12619d9bb72e2d
-# good: [e3865cc4a17e979e6b2f26af026686fae5567096] x86/xen/p2m: Replace ACCESS_ONCE with READ_ONCE
-git bisect good e3865cc4a17e979e6b2f26af026686fae5567096
-# good: [e2579c6f22ee0a43394d603cef6989dca98c5610] mm/gup: Replace ACCESS_ONCE with READ_ONCE
-git bisect good e2579c6f22ee0a43394d603cef6989dca98c5610
-# first bad commit: [a91ed664749cbec0325ef9da7d12619d9bb72e2d] kernel: tighten rules for ACCESS ONCE
-
-Maybe the ACCESS_ONCE in the affected file should be replaced with READ_ONCE ?
-
-Guenter
+> > How would we handle a situation where a hardware module hangs and we can
+> > only get it back via a reset?
+> > 
+> 
+> Cheers,
+> 
+> Peter.
