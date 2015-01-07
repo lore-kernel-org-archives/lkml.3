@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757327AbbAGCCs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:02:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46597 "EHLO
+	id S1757388AbbAGCGe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:06:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46603 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757216AbbAGCB5 (ORCPT
+	with ESMTP id S1757254AbbAGCBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:01:57 -0500
+	Tue, 6 Jan 2015 21:01:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Halcrow <mhalcrow@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Kees Cook <keescook@chromium.org>, Tyler Hicks <tyhicks@canonical.com>
-Subject: [PATCH 3.10 36/38] eCryptfs: Remove buggy and unnecessary write in file name decode routine
-Date: Tue,  6 Jan 2015 17:50:48 -0800
-Message-Id: <20150107014958.163280059@linuxfoundation.org>
+        Josef Bacik <jbacik@fb.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.10 37/38] Btrfs: do not move em to modified list when unpinning
+Date: Tue,  6 Jan 2015 17:50:49 -0800
+Message-Id: <20150107014958.306491263@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107014952.440109372@linuxfoundation.org>
 References: <20150107014952.440109372@linuxfoundation.org>
@@ -30,34 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Halcrow <mhalcrow@google.com>
+From: Josef Bacik <jbacik@fb.com>
 
-commit 942080643bce061c3dd9d5718d3b745dcb39a8bc upstream.
+commit a28046956c71985046474283fa3bcd256915fb72 upstream.
 
-Dmitry Chernenkov used KASAN to discover that eCryptfs writes past the
-end of the allocated buffer during encrypted filename decoding. This
-fix corrects the issue by getting rid of the unnecessary 0 write when
-the current bit offset is 2.
+We use the modified list to keep track of which extents have been modified so we
+know which ones are candidates for logging at fsync() time.  Newly modified
+extents are added to the list at modification time, around the same time the
+ordered extent is created.  We do this so that we don't have to wait for ordered
+extents to complete before we know what we need to log.  The problem is when
+something like this happens
 
-Signed-off-by: Michael Halcrow <mhalcrow@google.com>
-Reported-by: Dmitry Chernenkov <dmitryc@google.com>
-Suggested-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+log extent 0-4k on inode 1
+copy csum for 0-4k from ordered extent into log
+sync log
+commit transaction
+log some other extent on inode 1
+ordered extent for 0-4k completes and adds itself onto modified list again
+log changed extents
+see ordered extent for 0-4k has already been logged
+	at this point we assume the csum has been copied
+sync log
+crash
+
+On replay we will see the extent 0-4k in the log, drop the original 0-4k extent
+which is the same one that we are replaying which also drops the csum, and then
+we won't find the csum in the log for that bytenr.  This of course causes us to
+have errors about not having csums for certain ranges of our inode.  So remove
+the modified list manipulation in unpin_extent_cache, any modified extents
+should have been added well before now, and we don't want them re-logged.  This
+fixes my test that I could reliably reproduce this problem with.  Thanks,
+
+Signed-off-by: Josef Bacik <jbacik@fb.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ecryptfs/crypto.c |    1 -
- 1 file changed, 1 deletion(-)
+ fs/btrfs/extent_map.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/fs/ecryptfs/crypto.c
-+++ b/fs/ecryptfs/crypto.c
-@@ -2102,7 +2102,6 @@ ecryptfs_decode_from_filename(unsigned c
- 			break;
- 		case 2:
- 			dst[dst_byte_offset++] |= (src_byte);
--			dst[dst_byte_offset] = 0;
- 			current_bit_offset = 0;
- 			break;
- 		}
+--- a/fs/btrfs/extent_map.c
++++ b/fs/btrfs/extent_map.c
+@@ -263,8 +263,6 @@ int unpin_extent_cache(struct extent_map
+ 	if (!em)
+ 		goto out;
+ 
+-	if (!test_bit(EXTENT_FLAG_LOGGING, &em->flags))
+-		list_move(&em->list, &tree->modified_extents);
+ 	em->generation = gen;
+ 	clear_bit(EXTENT_FLAG_PINNED, &em->flags);
+ 	em->mod_start = em->start;
 
 
