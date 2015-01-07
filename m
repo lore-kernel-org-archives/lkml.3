@@ -1,110 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932342AbbAGI7z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 03:59:55 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:50363 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908AbbAGI7x (ORCPT
+	id S1756663AbbAGJAP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 04:00:15 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:46600 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752228AbbAGJAK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 03:59:53 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chunyan Zhang <zhang.chunyan@linaro.org>
-Cc: samuel@sortiz.org, zhang.lyra@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] driver/net/irda: Replace timeval with ktime_t in vlsi_ir
-Date: Wed, 07 Jan 2015 09:59:21 +0100
-Message-ID: <25851353.A4KvfMplxB@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1420601978-15866-7-git-send-email-zhang.chunyan@linaro.org>
-References: <1420601978-15866-7-git-send-email-zhang.chunyan@linaro.org>
+	Wed, 7 Jan 2015 04:00:10 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:4RLiitml42tQp738MDWOG6vrr9mHS9CrspSqe0icflWMBK0mufP
- ylhPDtLnoiGV8hd26u+bKnisHbEVaMqA62Uf1aJA8cXLR8HYtP7kFgV3dGnrXi/gew7j7ob
- Ueq139slVPorvl8UZWyRQDyBd4YPE2aQ1O60qj5yGq3ce5x9ReoQNgHfCdEJuxUKidHyBlu
- MYBTMF4RRM1fIePcFPBTw==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <54ACF45E.4020100@synopsys.com>
+References: <1420536979-31149-1-git-send-email-geert@linux-m68k.org>
+	<54ACF45E.4020100@synopsys.com>
+Date: Wed, 7 Jan 2015 10:00:09 +0100
+X-Google-Sender-Auth: PBQrDeDmTxmsyiBgGxwYhkL51RQ
+Message-ID: <CAMuHMdX69XjUUjjXNNZcT21brszg9vv8Q+1zDY4jhbKeivKUjg@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.19-rc3
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Michael Ellerman <michael@ellerman.id.au>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 07 January 2015 11:39:38 Chunyan Zhang wrote:
-> This patch changes the 32-bit time type (timeval) to the 64-bit one
-> (ktime_t), since 32-bit time types will break in the year 2038.
-> So, I use ktime_t instead of all uses of timeval.
-> 
-> This patch also changes do_gettimeofday() to ktime_get() accordingly,
-> since ktime_get returns a ktime_t, but do_gettimeofday returns a
-> struct timeval, and the other reason is that ktime_get() uses
-> the monotonic clock.
-> 
-> This patch uses ktime_us_delta to get the elapsed time of microsecond,
-> and uses div_s64_rem to get what seconds & microseconds time elapsed
-> for printing.
-> 
-> This patch also changes the code of function 'vlsi_hard_start_xmit' to
-> do the same things as the others drivers, that is passing the remaining
-> time into udelay() instead of looping until enough time has passed.
-> 
-> Signed-off-by: Chunyan Zhang <zhang.chunyan@linaro.org>
+Hi Vineet,
 
-All six patches look correct to me now, nice work!
+On Wed, Jan 7, 2015 at 9:54 AM, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
+>> [1] http://kisskb.ellerman.id.au/kisskb/head/8277/ (255 out of 262 configs)
+>> [2] http://kisskb.ellerman.id.au/kisskb/head/8168/ (all 262 configs)
+>> [3] http://kisskb.ellerman.id.au/kisskb/head/8257/ (all 262 configs)
+>
+> How can I get the ARC tools / config added to test setup.
+> AFAIKR linux-next already has ARC setup as I got a build failure report from them
+> once [1]
+>
+> [1] https://lkml.org/lkml/2014/9/25/767
 
-I have a few very minor comments still, some of which apply to the
-other patches as well:
+That's Günter's service.
 
-* Your patch changelog starts each paragraph with 'This patch', which is
-  correct but is a little strange to read. You could start the first paragraph
-  explaining what the driver currently does and why we want to change it,
-  like "The vlsi ir driver uses 'timeval', which we try to remove in the
-  kernel because all 32-bit time types will break in the year 2038".
+Kisskb doesn't build ARC yet. Stephen, Michael?
 
-* It would also be good to explain that none of these drivers are actually
-  broken regarding y2038 at the moment and that the change is only done to
-  remove the need for auditing this fact again.
+Gr{oetje,eeting}s,
 
-> @@ -180,8 +181,8 @@ static void vlsi_proc_ndev(struct seq_file *seq, struct net_device *ndev)
->  	vlsi_irda_dev_t *idev = netdev_priv(ndev);
->  	u8 byte;
->  	u16 word;
-> -	unsigned delta1, delta2;
-> -	struct timeval now;
-> +	ktime_t now;
-> +	s32 sec, usec;
->  	unsigned iobase = ndev->base_addr;
+                        Geert
 
-* you now have a local variable that is only used to be passed into ktime_us_delta.
-  While there is no difference to the compiler, I would probably shorten this
-  and avoid the local variable by passing the result of ktime_get() directly
-  into ktime_us_delta().
-  For the drivers that store the 'now' variable in a data structure, doing the
-  same change shrinks the driver specific data structure, which is an added
-  benefit.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-> -		for(;;) {
-> -			do_gettimeofday(&now);
-> -			if (now.tv_sec > ready.tv_sec ||
-> -			    (now.tv_sec==ready.tv_sec && now.tv_usec>=ready.tv_usec))
-> -			    	break;
-> -			udelay(100);
-> -			/* must not sleep here - called under netif_tx_lock! */
-> -		}
-> +		now = ktime_get();
-> +		diff = ktime_us_delta(now, idev->last_rx);
-> +		if (mtt > diff)
-> +			udelay(mtt - diff);
->  	}
-
-The change looks good, but you remove a useful comment about sleeping inside of
-netif_tx_lock. I would not bother adding the same comment to the other drivers,
-but it still applies to the udelay call here so I would move it there.
-Note that generally we try hard to avoid the use of long 'udelay' calls, but
-I wouldn't expect you to change the drivers for this.
-
-When you submit the next version and you have addressed my last comments,
-please add
-
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-
-	Arnd
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
