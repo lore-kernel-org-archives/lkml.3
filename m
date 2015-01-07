@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755047AbbAGB5t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 20:57:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46417 "EHLO
+	id S932360AbbAGCHJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:07:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46591 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932442AbbAGBwR (ORCPT
+	with ESMTP id S1757243AbbAGCBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:52:17 -0500
+	Tue, 6 Jan 2015 21:01:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josef Bacik <jbacik@fb.com>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.18 82/84] Btrfs: do not move em to modified list when unpinning
+        Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.10 13/38] x86/tls: Dont validate lm in set_thread_area() after all
 Date: Tue,  6 Jan 2015 17:50:25 -0800
-Message-Id: <20150107014031.611621822@linuxfoundation.org>
+Message-Id: <20150107014954.581704966@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
-In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
-References: <20150107014029.012974975@linuxfoundation.org>
+In-Reply-To: <20150107014952.440109372@linuxfoundation.org>
+References: <20150107014952.440109372@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,59 +27,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Josef Bacik <jbacik@fb.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit a28046956c71985046474283fa3bcd256915fb72 upstream.
+commit 3fb2f4237bb452eb4e98f6a5dbd5a445b4fed9d0 upstream.
 
-We use the modified list to keep track of which extents have been modified so we
-know which ones are candidates for logging at fsync() time.  Newly modified
-extents are added to the list at modification time, around the same time the
-ordered extent is created.  We do this so that we don't have to wait for ordered
-extents to complete before we know what we need to log.  The problem is when
-something like this happens
+It turns out that there's a lurking ABI issue.  GCC, when
+compiling this in a 32-bit program:
 
-log extent 0-4k on inode 1
-copy csum for 0-4k from ordered extent into log
-sync log
-commit transaction
-log some other extent on inode 1
-ordered extent for 0-4k completes and adds itself onto modified list again
-log changed extents
-see ordered extent for 0-4k has already been logged
-	at this point we assume the csum has been copied
-sync log
-crash
+struct user_desc desc = {
+	.entry_number    = idx,
+	.base_addr       = base,
+	.limit           = 0xfffff,
+	.seg_32bit       = 1,
+	.contents        = 0, /* Data, grow-up */
+	.read_exec_only  = 0,
+	.limit_in_pages  = 1,
+	.seg_not_present = 0,
+	.useable         = 0,
+};
 
-On replay we will see the extent 0-4k in the log, drop the original 0-4k extent
-which is the same one that we are replaying which also drops the csum, and then
-we won't find the csum in the log for that bytenr.  This of course causes us to
-have errors about not having csums for certain ranges of our inode.  So remove
-the modified list manipulation in unpin_extent_cache, any modified extents
-should have been added well before now, and we don't want them re-logged.  This
-fixes my test that I could reliably reproduce this problem with.  Thanks,
+will leave .lm uninitialized.  This means that anything in the
+kernel that reads user_desc.lm for 32-bit tasks is unreliable.
 
-Signed-off-by: Josef Bacik <jbacik@fb.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+Revert the .lm check in set_thread_area().  The value never did
+anything in the first place.
+
+Fixes: 0e58af4e1d21 ("x86/tls: Disallow unusual TLS segments")
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/d7875b60e28c512f6a6fc0baf5714d58e7eaadbb.1418856405.git.luto@amacapital.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/extent_map.c |    2 --
- 1 file changed, 2 deletions(-)
+ arch/x86/include/uapi/asm/ldt.h |    7 +++++++
+ arch/x86/kernel/tls.c           |    6 ------
+ 2 files changed, 7 insertions(+), 6 deletions(-)
 
---- a/fs/btrfs/extent_map.c
-+++ b/fs/btrfs/extent_map.c
-@@ -287,8 +287,6 @@ int unpin_extent_cache(struct extent_map
- 	if (!em)
- 		goto out;
+--- a/arch/x86/include/uapi/asm/ldt.h
++++ b/arch/x86/include/uapi/asm/ldt.h
+@@ -28,6 +28,13 @@ struct user_desc {
+ 	unsigned int  seg_not_present:1;
+ 	unsigned int  useable:1;
+ #ifdef __x86_64__
++	/*
++	 * Because this bit is not present in 32-bit user code, user
++	 * programs can pass uninitialized values here.  Therefore, in
++	 * any context in which a user_desc comes from a 32-bit program,
++	 * the kernel must act as though lm == 0, regardless of the
++	 * actual value.
++	 */
+ 	unsigned int  lm:1;
+ #endif
+ };
+--- a/arch/x86/kernel/tls.c
++++ b/arch/x86/kernel/tls.c
+@@ -55,12 +55,6 @@ static bool tls_desc_okay(const struct u
+ 	if (info->seg_not_present)
+ 		return false;
  
--	if (!test_bit(EXTENT_FLAG_LOGGING, &em->flags))
--		list_move(&em->list, &tree->modified_extents);
- 	em->generation = gen;
- 	clear_bit(EXTENT_FLAG_PINNED, &em->flags);
- 	em->mod_start = em->start;
+-#ifdef CONFIG_X86_64
+-	/* The L bit makes no sense for data. */
+-	if (info->lm)
+-		return false;
+-#endif
+-
+ 	return true;
+ }
+ 
 
 
