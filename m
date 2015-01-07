@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755125AbbAGFj7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 00:39:59 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:13956 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754834AbbAGFjU (ORCPT
+	id S1754727AbbAGFjN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 00:39:13 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:9208 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751446AbbAGFjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 00:39:20 -0500
-X-AuditID: cbfee68f-f791c6d000004834-5c-54acc679a28c
+	Wed, 7 Jan 2015 00:39:11 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-f4-54acc67cab2d
 From: Pankaj Dubey <pankaj.dubey@samsung.com>
 To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: kgene@kernel.org, linux@arm.linux.org.uk, b.zolnierkie@samsung.com,
         amit.daniel@samsung.com, arnd@arndb.de, thomas.ab@samsung.com,
         Pankaj Dubey <pankaj.dubey@samsung.com>
-Subject: [PATCH v2 0/6] samsung: pmu: split up SoC specific PMU data
-Date: Wed, 07 Jan 2015 11:01:22 +0530
-Message-id: <1420608688-10459-1-git-send-email-pankaj.dubey@samsung.com>
+Subject: [PATCH v2 1/6] ARM: EXYNOS: Move pmu specific headers under
+ "linux/soc/samsung"
+Date: Wed, 07 Jan 2015 11:01:23 +0530
+Message-id: <1420608688-10459-2-git-send-email-pankaj.dubey@samsung.com>
 X-Mailer: git-send-email 2.2.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsWyRsSkTrfy2JoQgxnL9C0aroZY/J10jN1i
+In-reply-to: <1420608688-10459-1-git-send-email-pankaj.dubey@samsung.com>
+References: <1420608688-10459-1-git-send-email-pankaj.dubey@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsWyRsSkWrfm2JoQgxf/NC0aroZY/J10jN1i
 	44z1rBb9j18zW2x6fI3V4vKuOWwWM87vY7K4fZnXYtHWL+wWHcsYHbg8Wpp72Dx+/5rE6LFp
-	VSebx+Yl9R59W1YxenzeJBfAFsVlk5Kak1mWWqRvl8CVsfBJG1PBcZWKVS9uMzYwvpTuYuTk
-	kBAwkZi67xMrhC0mceHeerYuRi4OIYGljBJdy+awwBRNPrOVBSIxnVHi4YIVzBDOBCaJ7Z+O
-	s4NUsQnoSjx5P5cZxBYRyJbov70arINZYBOjxOvuU2A7hAVcJO6/bwdrYBFQlej4BjKWg4NX
-	wEOi66IrxDY5iS23HrGD9EoITGeX+Nl0DqpeQOLb5ENg9RICshKbDjBD1EtKHFxxg2UCo+AC
-	RoZVjKKpBckFxUnpRcZ6xYm5xaV56XrJ+bmbGIGBffrfs/4djHcPWB9iFOBgVOLhLehbEyLE
-	mlhWXJl7iNEUaMNEZinR5Hxg/OSVxBsamxlZmJqYGhuZW5opifMulPoZLCSQnliSmp2aWpBa
-	FF9UmpNafIiRiYNTqoFx0x4OIdGpT87UT3pSP2NrQOZ8rgQThgM3igvvfxb/21deJn1v84+o
-	3RfWrvyzqGvqpd/XlHbP2uLEt527Z0N/jdr1Vg0xxUWTApI5dmdVrb7zTvWIlcvvE1xdKXIV
-	1QYPGJvtmRvreO0uTI88FfE8tKav78ADvtDE0O69+U/XMrzedHh5a6a3EktxRqKhFnNRcSIA
-	A7HqbWcCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHIsWRmVeSWpSXmKPExsVy+t9jQd3KY2tCDP41qFo0XA2x+DvpGLvF
-	xhnrWS36H79mttj0+BqrxeVdc9gsZpzfx2Rx+zKvxaKtX9gtOpYxOnB5tDT3sHn8/jWJ0WPT
-	qk42j81L6j36tqxi9Pi8SS6ALaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJc
-	SSEvMTfVVsnFJ0DXLTMH6C4lhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEN
-	Y8bCJ21MBcdVKla9uM3YwPhSuouRk0NCwERi8pmtLBC2mMSFe+vZuhi5OIQEpjNKPFywghnC
-	mcAksf3TcXaQKjYBXYkn7+cyg9giAtkS/bdXs4AUMQtsYpR43X2KFSQhLOAicf99O1gDi4Cq
-	RMc3kBUcHLwCHhJdF10htslJbLn1iH0CI/cCRoZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmb
-	GMFx80xqB+PKBotDjAIcjEo8vAV9a0KEWBPLiitzDzFKcDArifBadQKFeFMSK6tSi/Lji0pz
-	UosPMZoCLZ/ILCWanA+M6bySeENjE3NTY1NLEwsTM0slcV4l+7YQIYH0xJLU7NTUgtQimD4m
-	Dk6pBsb0xNcXTK6fWXFuwe62jVWs07XdbhlphVu+6hETrb0yS8jTchdD9L1JljvUFG9PfrB/
-	UuaqT9Ny35odq44U5nBvflZ0lo1hd0B4+IYrzhbfn6Z8f97zyuzO6hdLq/5u81p7bpPRrBbJ
-	1J7yOdfD1dhYOnLv2djvnPV1n9LKydpyGt9mXZSd8/eXEktxRqKhFnNRcSIAPdJ1VLECAAA=
+	VSebx+Yl9R59W1YxenzeJBfAFsVlk5Kak1mWWqRvl8CVcbBrLkvBabWKxwt2sjUw/pXvYuTg
+	kBAwkTjzX6SLkRPIFJO4cG89WxcjF4eQwFJGiTctd1ghEiYSh79cZIdITGeUuPl6KyOEM4FJ
+	Yv7MV2BVbAK6Ek/ez2UGsUUEsiX6b69mASliFtjEKPG6+xRYkbBAlMTrzzOYQGwWAVWJDwd7
+	2UBsXgEPiaVPrkGtk5PYcusRO4jNKeAp8Wzqf7C4EFDN74YPYJslBLaxS1x+sIIRYpCAxLfJ
+	h1gg/pGV2HSAGWKOpMTBFTdYJjAKL2BkWMUomlqQXFCclF5kolecmFtcmpeul5yfu4kRGAmn
+	/z2bsIPx3gHrQ4wCHIxKPLwFfWtChFgTy4orcw8xmgJtmMgsJZqcD4y3vJJ4Q2MzIwtTE1Nj
+	I3NLMyVx3tdSP4OFBNITS1KzU1MLUovii0pzUosPMTJxcEo1MBqkH7B6qnfqrLvq8v0LV95+
+	vM/NxbFk5ZRfC9jTjHbMMX6uOFfiQuLsE9cOzPwzc+3u3plOWTY5149MbEyzyDv9ZatNy978
+	p9LP7vsc/Nj06v71WrvvRdUW33axp5vd36S3Kmj11Jk1T/7M6fxS+frLqVqjJUeLJWqOSx5a
+	6tq3/YbKTHW1jOpCJZbijERDLeai4kQAx3QKUn8CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsVy+t9jQd2aY2tCDPbekbVouBpi8XfSMXaL
+	jTPWs1r0P37NbLHp8TVWi8u75rBZzDi/j8ni9mVei0Vbv7BbdCxjdODyaGnuYfP4/WsSo8em
+	VZ1sHpuX1Hv0bVnF6PF5k1wAW1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5
+	kkJeYm6qrZKLT4CuW2YO0F1KCmWJOaVAoYDE4mIlfTtME0JD3HQtYBojdH1DguB6jAzQQMIa
+	xoyDXXNZCk6rVTxesJOtgfGvfBcjJ4eEgInE4S8X2SFsMYkL99azdTFycQgJTGeUuPl6KyOE
+	M4FJYv7MV6wgVWwCuhJP3s9lBrFFBLIl+m+vZgEpYhbYxCjxuvsUWJGwQJTE688zmEBsFgFV
+	iQ8He9lAbF4BD4mlT66xQqyTk9hy6xHYak4BT4lnU/+DxYWAan43fGCcwMi7gJFhFaNoakFy
+	QXFSeq6RXnFibnFpXrpecn7uJkZwpD2T3sG4qsHiEKMAB6MSD29B35oQIdbEsuLK3EOMEhzM
+	SiK8Vp1AId6UxMqq1KL8+KLSnNTiQ4ymQFdNZJYSTc4HJoG8knhDYxNzU2NTSxMLEzNLJXFe
+	Jfu2ECGB9MSS1OzU1ILUIpg+Jg5OqQZG1mX9ehXnw7WYUnw23i0yDH9jukgx1GdXv8JsXouZ
+	q/Su8n1smPTmY+yj0w8K2+7s+OJ4+tR5rq+/FyfK63xunnZv7fOPf+WkpsqYKz0+rL5bQP31
+	venP180tenvNw9Excvq/I3d7D9sIL/6V9kw0bjKf7wfmzf875h9c8rXl9gKhl/vrrZUtVyux
+	FGckGmoxFxUnAgCP5MvgygIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -49,93 +53,154 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series is a part of continuation work from following series
-[1] and [2].
+From: Amit Daniel Kachhap <amit.daniel@samsung.com>
 
-1: exynos: Move pmu driver to driver/soc folder and add exynos7 support
-   http://www.spinics.net/lists/linux-samsung-soc/msg39797.html from Amit Daniel Kacchap
-2: soc: samsung: pmu: split up SoC specific PMU data
-   https://lkml.org/lkml/2014/11/30/175 from me
+Moving Exynos PMU specific header file into "include/linux/soc/samsung"
+thus updated affected files under "mach-exynos" to use new location of
+these header files.
 
-As there were concerns ([3] and [4]) for moving PMU implementation into
-"drivers/soc/samsung/" and using it for ARM64 samsung SoCs
-
-3: https://lkml.org/lkml/2014/11/24/322 from Bartlomiej Zolnierkiewicz
-4: http://www.spinics.net/lists/linux-samsung-soc/msg39809.html from Kukjin Kim
-
-To address these concerns I posted patch [5] and splitted up SoC specific PMU
-configuration data from exynos-pmu driver, since all changes had been
-in single patch, size of patch was too large and it failed to appear on
-samsung and arm-linux mailing list, but somehow it appeared on LKML.
-
-5: soc: samsung: pmu: split up SoC specific PMU data
-   https://lkml.org/lkml/2014/11/30/175
-
-Here is second attempt for the same, in this series I am splitting up SoC specific
-PMU configuration data into mach-exynos folder itself, before moving all of them
-under drivers/soc/samsung/. Also instead of making all changes in single patch it has been
-broken into SoC specific patches to avoid large size of patch. With this approach there will
-not be unwanted big churns just after adding exynos-pmu under drivers/soc/samsung.
-
-All these patches are just refactoring to keep minimal changes while moving
-exynos-pmu driver under drivers/soc/samsung/. Support for exynos7 PMU can be added
-on top of it, in such a manner that for ARM64 build, ARM related SoC's PMU will not
-get compiled and thus unnecessary increasing kernel image size.
-
-I have tested it for normal system booting on Exynos3250 and SMDK5250 boards.
-I have verified S2R on SMDK5250 after these patches and it's working fine.
-
-These patches have been prepared on top of Kukjin Kim's for-next
-having SHA-ID as 1eeec807bf644a0e691026b2fd and on top of my following accepted patch [6],
-to avoid conflict in future.
-
-6: ARM: EXYNOS: Remove i2c sys configuration related code
-     http://www.spinics.net/lists/linux-samsung-soc/msg40671.html
-
-
-Amit Daniel Kachhap (1):
-  ARM: EXYNOS: Move pmu specific headers under "linux/soc/samsung"
-
-Pankaj Dubey (5):
-  ARCH: EXYNOS: split up exynos3250 SoC specific PMU data
-  ARCH: EXYNOS: split up exynos4 SoC specific PMU data
-  ARCH: EXYNOS: split up exynos5250 SoC specific PMU data
-  ARCH: EXYNOS: split up exynos5420 SoC specific PMU data
-  drivers: soc: Add support for Exynos PMU driver
-
- arch/arm/mach-exynos/Kconfig                       |    1 +
- arch/arm/mach-exynos/Makefile                      |    2 +-
- arch/arm/mach-exynos/exynos.c                      |    2 +-
- arch/arm/mach-exynos/mcpm-exynos.c                 |    2 +-
- arch/arm/mach-exynos/platsmp.c                     |    2 +-
- arch/arm/mach-exynos/pm.c                          |    4 +-
- arch/arm/mach-exynos/pmu.c                         | 1005 --------------------
- arch/arm/mach-exynos/suspend.c                     |    4 +-
- drivers/soc/Kconfig                                |    1 +
- drivers/soc/Makefile                               |    1 +
- drivers/soc/samsung/Kconfig                        |   20 +
- drivers/soc/samsung/Makefile                       |    4 +
- drivers/soc/samsung/exynos-pmu.c                   |  148 +++
- drivers/soc/samsung/exynos-pmu.h                   |   52 +
- drivers/soc/samsung/exynos3250-pmu.c               |  175 ++++
- drivers/soc/samsung/exynos4-pmu.c                  |  223 +++++
- drivers/soc/samsung/exynos5250-pmu.c               |  196 ++++
- drivers/soc/samsung/exynos5420-pmu.c               |  297 ++++++
- .../linux/soc/samsung}/exynos-pmu.h                |    0
- .../linux/soc/samsung/exynos-regs-pmu.h            |    0
- 20 files changed, 1126 insertions(+), 1013 deletions(-)
- delete mode 100644 arch/arm/mach-exynos/pmu.c
- create mode 100644 drivers/soc/samsung/Kconfig
- create mode 100644 drivers/soc/samsung/Makefile
- create mode 100644 drivers/soc/samsung/exynos-pmu.c
- create mode 100644 drivers/soc/samsung/exynos-pmu.h
- create mode 100644 drivers/soc/samsung/exynos3250-pmu.c
- create mode 100644 drivers/soc/samsung/exynos4-pmu.c
- create mode 100644 drivers/soc/samsung/exynos5250-pmu.c
- create mode 100644 drivers/soc/samsung/exynos5420-pmu.c
+Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+---
+ arch/arm/mach-exynos/exynos.c                                       | 2 +-
+ arch/arm/mach-exynos/mcpm-exynos.c                                  | 2 +-
+ arch/arm/mach-exynos/platsmp.c                                      | 2 +-
+ arch/arm/mach-exynos/pm.c                                           | 4 ++--
+ arch/arm/mach-exynos/pmu.c                                          | 6 ++----
+ arch/arm/mach-exynos/suspend.c                                      | 4 ++--
+ {arch/arm/mach-exynos => include/linux/soc/samsung}/exynos-pmu.h    | 0
+ .../regs-pmu.h => include/linux/soc/samsung/exynos-regs-pmu.h       | 0
+ 8 files changed, 9 insertions(+), 11 deletions(-)
  rename {arch/arm/mach-exynos => include/linux/soc/samsung}/exynos-pmu.h (100%)
  rename arch/arm/mach-exynos/regs-pmu.h => include/linux/soc/samsung/exynos-regs-pmu.h (100%)
 
+diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
+index 2c84439..bb5c5ce 100644
+--- a/arch/arm/mach-exynos/exynos.c
++++ b/arch/arm/mach-exynos/exynos.c
+@@ -20,6 +20,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/pm_domain.h>
+ #include <linux/irqchip.h>
++#include <linux/soc/samsung/exynos-regs-pmu.h>
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/hardware/cache-l2x0.h>
+@@ -31,7 +32,6 @@
+ 
+ #include "common.h"
+ #include "mfc.h"
+-#include "regs-pmu.h"
+ 
+ void __iomem *pmu_base_addr;
+ 
+diff --git a/arch/arm/mach-exynos/mcpm-exynos.c b/arch/arm/mach-exynos/mcpm-exynos.c
+index b0d3c2e..c5e17b0 100644
+--- a/arch/arm/mach-exynos/mcpm-exynos.c
++++ b/arch/arm/mach-exynos/mcpm-exynos.c
+@@ -16,12 +16,12 @@
+ #include <linux/io.h>
+ #include <linux/of_address.h>
+ #include <linux/syscore_ops.h>
++#include <linux/soc/samsung/exynos-regs-pmu.h>
+ 
+ #include <asm/cputype.h>
+ #include <asm/cp15.h>
+ #include <asm/mcpm.h>
+ 
+-#include "regs-pmu.h"
+ #include "common.h"
+ 
+ #define EXYNOS5420_CPUS_PER_CLUSTER	4
+diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
+index 7a1ebfe..d6e7f49 100644
+--- a/arch/arm/mach-exynos/platsmp.c
++++ b/arch/arm/mach-exynos/platsmp.c
+@@ -20,6 +20,7 @@
+ #include <linux/smp.h>
+ #include <linux/io.h>
+ #include <linux/of_address.h>
++#include <linux/soc/samsung/exynos-regs-pmu.h>
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/cp15.h>
+@@ -30,7 +31,6 @@
+ #include <mach/map.h>
+ 
+ #include "common.h"
+-#include "regs-pmu.h"
+ 
+ extern void exynos4_secondary_startup(void);
+ 
+diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
+index dfc8594..6acc97c 100644
+--- a/arch/arm/mach-exynos/pm.c
++++ b/arch/arm/mach-exynos/pm.c
+@@ -18,6 +18,8 @@
+ #include <linux/cpu_pm.h>
+ #include <linux/io.h>
+ #include <linux/err.h>
++#include <linux/soc/samsung/exynos-regs-pmu.h>
++#include <linux/soc/samsung/exynos-pmu.h>
+ 
+ #include <asm/firmware.h>
+ #include <asm/smp_scu.h>
+@@ -28,8 +30,6 @@
+ #include <plat/pm-common.h>
+ 
+ #include "common.h"
+-#include "exynos-pmu.h"
+-#include "regs-pmu.h"
+ 
+ static inline void __iomem *exynos_boot_vector_addr(void)
+ {
+diff --git a/arch/arm/mach-exynos/pmu.c b/arch/arm/mach-exynos/pmu.c
+index c15761c..7eb5b0b 100644
+--- a/arch/arm/mach-exynos/pmu.c
++++ b/arch/arm/mach-exynos/pmu.c
+@@ -16,10 +16,8 @@
+ #include <linux/delay.h>
+ #include <linux/notifier.h>
+ #include <linux/reboot.h>
+-
+-
+-#include "exynos-pmu.h"
+-#include "regs-pmu.h"
++#include <linux/soc/samsung/exynos-regs-pmu.h>
++#include <linux/soc/samsung/exynos-pmu.h>
+ 
+ #define PMU_TABLE_END	(-1U)
+ 
+diff --git a/arch/arm/mach-exynos/suspend.c b/arch/arm/mach-exynos/suspend.c
+index 342797b..310b89d 100644
+--- a/arch/arm/mach-exynos/suspend.c
++++ b/arch/arm/mach-exynos/suspend.c
+@@ -21,6 +21,8 @@
+ #include <linux/irqchip/arm-gic.h>
+ #include <linux/err.h>
+ #include <linux/regulator/machine.h>
++#include <linux/soc/samsung/exynos-pmu.h>
++#include <linux/soc/samsung/exynos-regs-pmu.h>
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/hardware/cache-l2x0.h>
+@@ -33,8 +35,6 @@
+ #include <plat/regs-srom.h>
+ 
+ #include "common.h"
+-#include "regs-pmu.h"
+-#include "exynos-pmu.h"
+ 
+ #define S5P_CHECK_SLEEP 0x00000BAD
+ 
+diff --git a/arch/arm/mach-exynos/exynos-pmu.h b/include/linux/soc/samsung/exynos-pmu.h
+similarity index 100%
+rename from arch/arm/mach-exynos/exynos-pmu.h
+rename to include/linux/soc/samsung/exynos-pmu.h
+diff --git a/arch/arm/mach-exynos/regs-pmu.h b/include/linux/soc/samsung/exynos-regs-pmu.h
+similarity index 100%
+rename from arch/arm/mach-exynos/regs-pmu.h
+rename to include/linux/soc/samsung/exynos-regs-pmu.h
 -- 
 2.2.0
 
