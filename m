@@ -1,37 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700AbbAGMvR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 07:51:17 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:43550 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190AbbAGMvQ (ORCPT
+	id S1752956AbbAGMvs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 07:51:48 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:15266 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752754AbbAGMvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 07:51:16 -0500
+	Wed, 7 Jan 2015 07:51:47 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19/iT0+Mz8fxSmxjJZ9wjpIMsXkjMtVONk=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 99CDD63F98A
+Date: Wed, 7 Jan 2015 07:51:34 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: gavinli@thegavinli.com
+Cc: tglx@linutronix.de, linux@maxim.org.za, nicolas.ferre@atmel.com,
+        plagnioj@jcrosoft.com, Gavin Li <git@thegavinli.com>,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] irqchip: atmel-aic-common: prevent clobbering of
+ priority when changing IRQ type
+Message-ID: <20150107125134.GI24989@titan.lakedaemon.net>
+References: <1420598843-8409-1-git-send-email-gavinli@thegavinli.com>
 MIME-Version: 1.0
-In-Reply-To: <CALnsgKz7_zp76yTqp3J+ZT_bgd5s_NnDKR=oyvjurDbNkfXHBg@mail.gmail.com>
-References: <CALnsgKz7_zp76yTqp3J+ZT_bgd5s_NnDKR=oyvjurDbNkfXHBg@mail.gmail.com>
-Date: Wed, 7 Jan 2015 13:51:15 +0100
-Message-ID: <CAFLxGvwY3PqkL=OFTccm7tiouSci23hXn4bqAHM6_uRQNuPbyw@mail.gmail.com>
-Subject: Re: [Bugs] PVS-Studio dives into Linux insides (3.18.1)
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Vladimir <quickcracktime@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420598843-8409-1-git-send-email-gavinli@thegavinli.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 7, 2015 at 1:42 PM, Vladimir <quickcracktime@gmail.com> wrote:
-> PVS-Studio detected a bunch of bugs at Linux kernel !
-> You may want to check it out and fix those bugs.
-> To get more information, search for
-> " PVS-Studio dives into Linux insides (3.18.1) "
-> in the Internet, or use shortened l :
-> bit [dot] ly/1BHsxeN
+Gavin,
 
-Instead of writing fancy marketing blogs the better report the found issues
-in a sane way.
+On Tue, Jan 06, 2015 at 06:47:23PM -0800, gavinli@thegavinli.com wrote:
+> From: Gavin Li <git@thegavinli.com>
+> 
+> This patch makes the bitmask for AIC_SRCTYPE consistent
+> with that of its valid values, and prevents the priority
+> field at bits 2:0 from being clobbered by an incorrect
+> AND with the AIC_SRCTYPE mask.
+> 
+> Signed-off-by: Gavin Li <gavinli@thegavinli.com>
+> ---
+>  drivers/irqchip/irq-atmel-aic-common.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 
--- 
-Thanks,
-//richard
+Well done.  For a first patch this is really good.  The only thing you
+missed was who/which MLs to Cc.  In the future, you can use
+./scripts/get_maintainer.pl to find this info.
+
+Applied to irqchip/urgent with Acks from the atmel maintainers and Cc'd
+to stable for v3.17+
+
+This will be in linux-next tonight if Stephen builds one.
+
+thx,
+
+Jason.
