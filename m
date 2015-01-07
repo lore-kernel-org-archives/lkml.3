@@ -1,86 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239AbbAGAnn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 19:43:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45520 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994AbbAGAnm (ORCPT
+	id S1754529AbbAGAuh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 19:50:37 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:42436 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539AbbAGAuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 19:43:42 -0500
-Date: Tue, 6 Jan 2015 16:43:40 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "'minchan@kernel.org'" <minchan@kernel.org>,
-        "'Konstantin Khlebnikov'" <koct9i@gmail.com>,
-        "'Kirill A. Shutemov'" <kirill@shutemov.name>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'n-horiguchi@ah.jp.nec.com'" <n-horiguchi@ah.jp.nec.com>,
-        "'pintu.k@samsung.com'" <pintu.k@samsung.com>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org
-Subject: Re: [RFC] mm:change meminfo cached calculation
-Message-Id: <20150106164340.55e83f742d6f57c19e6500ff@linux-foundation.org>
-In-Reply-To: <35FD53F367049845BC99AC72306C23D103EDAF89E160@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103E688B313EE@CNBJMBX05.corpusers.net>
-	<CALYGNiOuBKz8shHSrFCp0BT5AV6XkNOCHj+LJedQQ-2YdZtM7w@mail.gmail.com>
-	<35FD53F367049845BC99AC72306C23D103E688B313F2@CNBJMBX05.corpusers.net>
-	<20141205143134.37139da2208c654a0d3cd942@linux-foundation.org>
-	<35FD53F367049845BC99AC72306C23D103E688B313F4@CNBJMBX05.corpusers.net>
-	<20141208114601.GA28846@node.dhcp.inet.fi>
-	<35FD53F367049845BC99AC72306C23D103E688B313FB@CNBJMBX05.corpusers.net>
-	<CALYGNiMEytHuND37f+hNdMKqCPzN0k_uha6CaeL_fyzrj-obNQ@mail.gmail.com>
-	<35FD53F367049845BC99AC72306C23D103E688B31408@CNBJMBX05.corpusers.net>
-	<35FD53F367049845BC99AC72306C23D103EDAF89E14C@CNBJMBX05.corpusers.net>
-	<35FD53F367049845BC99AC72306C23D103EDAF89E160@CNBJMBX05.corpusers.net>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Jan 2015 19:50:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <CADYu308MmdGeajFTDt38zZSy7K2VKbDppuqmiJn=1ZwL5d1vmw@mail.gmail.com>
+References: <1419782872-2991-1-git-send-email-aniroop.mathur@gmail.com>
+	<alpine.LNX.2.00.1412291302470.1680@pobox.suse.cz>
+	<CADYu308MmdGeajFTDt38zZSy7K2VKbDppuqmiJn=1ZwL5d1vmw@mail.gmail.com>
+Date: Tue, 6 Jan 2015 16:50:34 -0800
+Message-ID: <CAF8JNh+gzA_m-mMjjAdBz6WyyFemTU26VDOLufOJXJ5DMkK2yg@mail.gmail.com>
+Subject: Re: [PATCH] hid: Initialize battery_no to -1 & correct its format string
+From: Ping Cheng <pinglinux@gmail.com>
+To: Aniroop Mathur <aniroop.mathur@gmail.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Jason Gerecke <killertofu@gmail.com>, Ping Cheng <pingc@wacom.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        a.mathur@samsung.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Dec 2014 19:56:49 +0800 "Wang, Yalin" <Yalin.Wang@sonymobile.com> wrote:
+Hi Benjamin,
 
-> This patch subtract sharedram from cached,
-> sharedram can only be swap into swap partitions,
-> they should be treated as swap pages, not as cached pages.
-> 
-> ...
+The relevant code was introduced by
+d70420b914c98a3758674c6e9858810e0ab4ea30. Can you take a look and let
+us know if Aniroop's patch fits your original thought or not?
+
+Thanks,
+
+Ping
+
+On Tue, Jan 6, 2015 at 6:32 AM, Aniroop Mathur <aniroop.mathur@gmail.com> wrote:
+> Dear Mr. Jason and Mr. Ping,
 >
-> --- a/fs/proc/meminfo.c
-> +++ b/fs/proc/meminfo.c
-> @@ -45,7 +45,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
->  	committed = percpu_counter_read_positive(&vm_committed_as);
->  
->  	cached = global_page_state(NR_FILE_PAGES) -
-> -			total_swapcache_pages() - i.bufferram;
-> +			total_swapcache_pages() - i.bufferram - i.sharedram;
->  	if (cached < 0)
->  		cached = 0;
-
-Documentation/filesystems/proc.txt says
-
-:      Cached: in-memory cache for files read from the disk (the
-:              pagecache).  Doesn't include SwapCached
-
-So yes, I guess it should not include shmem.
-
-And why not do this as well?
-
-
---- a/Documentation/filesystems/proc.txt~mm-change-meminfo-cached-calculation-fix
-+++ a/Documentation/filesystems/proc.txt
-@@ -811,7 +811,7 @@ MemAvailable: An estimate of how much me
-      Buffers: Relatively temporary storage for raw disk blocks
-               shouldn't get tremendously large (20MB or so)
-       Cached: in-memory cache for files read from the disk (the
--              pagecache).  Doesn't include SwapCached
-+              pagecache).  Doesn't include SwapCached or Shmem.
-   SwapCached: Memory that once was swapped out, is swapped back in but
-               still also is in the swapfile (if memory is needed it
-               doesn't need to be swapped out AGAIN because it is already
-_
-
+> Please update about below patch.
+> Except avoiding subtraction, there is also a need to avoid negative
+> battery name which may come due to %ld, so need to change to %lu.
+>
+> Thanks,
+> Aniroop
+>
+> On Mon, Dec 29, 2014 at 5:33 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+>> On Sun, 28 Dec 2014, Aniroop Mathur wrote:
+>>
+>>> From: Aniroop Mathur <a.mathur@samsung.com>
+>>>
+>>> This patch initializes battery_no to -1 to avoid extra subtraction
+>>> operation performed everytime wacom battery is initialized
+>>
+>> This is so femto-optimization, that I don't really care deeply. Adding
+>> Jason and Ping to CC. If they want this, I'll apply the patch.
+>>
+>>> and correct format string of unsigned long from %ld to %lu.
+>>>
+>>> Signed-off-by: Aniroop Mathur <a.mathur@samsung.com>
+>>> ---
+>>>  drivers/hid/wacom_sys.c | 8 ++++----
+>>>  1 file changed, 4 insertions(+), 4 deletions(-)
+>>>
+>>> diff --git a/drivers/hid/wacom_sys.c b/drivers/hid/wacom_sys.c
+>>> index 129fd33..4b5ff84 100644
+>>> --- a/drivers/hid/wacom_sys.c
+>>> +++ b/drivers/hid/wacom_sys.c
+>>> @@ -919,17 +919,17 @@ static int wacom_ac_get_property(struct power_supply *psy,
+>>>
+>>>  static int wacom_initialize_battery(struct wacom *wacom)
+>>>  {
+>>> -     static atomic_t battery_no = ATOMIC_INIT(0);
+>>> +     static atomic_t battery_no = ATOMIC_INIT(-1);
+>>>       int error;
+>>>       unsigned long n;
+>>>
+>>>       if (wacom->wacom_wac.features.quirks & WACOM_QUIRK_BATTERY) {
+>>> -             n = atomic_inc_return(&battery_no) - 1;
+>>> +             n = atomic_inc_return(&battery_no);
+>>>
+>>>               wacom->battery.properties = wacom_battery_props;
+>>>               wacom->battery.num_properties = ARRAY_SIZE(wacom_battery_props);
+>>>               wacom->battery.get_property = wacom_battery_get_property;
+>>> -             sprintf(wacom->wacom_wac.bat_name, "wacom_battery_%ld", n);
+>>> +             sprintf(wacom->wacom_wac.bat_name, "wacom_battery_%lu", n);
+>>>               wacom->battery.name = wacom->wacom_wac.bat_name;
+>>>               wacom->battery.type = POWER_SUPPLY_TYPE_BATTERY;
+>>>               wacom->battery.use_for_apm = 0;
+>>> @@ -937,7 +937,7 @@ static int wacom_initialize_battery(struct wacom *wacom)
+>>>               wacom->ac.properties = wacom_ac_props;
+>>>               wacom->ac.num_properties = ARRAY_SIZE(wacom_ac_props);
+>>>               wacom->ac.get_property = wacom_ac_get_property;
+>>> -             sprintf(wacom->wacom_wac.ac_name, "wacom_ac_%ld", n);
+>>> +             sprintf(wacom->wacom_wac.ac_name, "wacom_ac_%lu", n);
+>>>               wacom->ac.name = wacom->wacom_wac.ac_name;
+>>>               wacom->ac.type = POWER_SUPPLY_TYPE_MAINS;
+>>>               wacom->ac.use_for_apm = 0;
+>>> --
+>>> 1.9.1
+>>>
+>>
+>> --
+>> Jiri Kosina
+>> SUSE Labs
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
