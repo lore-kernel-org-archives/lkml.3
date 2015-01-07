@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757261AbbAGCBz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:01:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46573 "EHLO
+	id S1757281AbbAGCB5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:01:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46577 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757228AbbAGCBt (ORCPT
+	with ESMTP id S1757230AbbAGCBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:01:49 -0500
+	Tue, 6 Jan 2015 21:01:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Andy Lutomirski <luto@amacapital.net>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 3.10 24/38] userns: Dont allow unprivileged creation of gid mappings
-Date: Tue,  6 Jan 2015 17:50:36 -0800
-Message-Id: <20150107014956.346342209@linuxfoundation.org>
+Subject: [PATCH 3.10 25/38] userns: Check euid no fsuid when establishing an unprivileged uid mapping
+Date: Tue,  6 Jan 2015 17:50:37 -0800
+Message-Id: <20150107014956.503010991@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107014952.440109372@linuxfoundation.org>
 References: <20150107014952.440109372@linuxfoundation.org>
@@ -31,22 +31,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit be7c6dba2332cef0677fbabb606e279ae76652c3 upstream.
+commit 80dd00a23784b384ccea049bfb3f259d3f973b9d upstream.
 
-As any gid mapping will allow and must allow for backwards
-compatibility dropping groups don't allow any gid mappings to be
-established without CAP_SETGID in the parent user namespace.
+setresuid allows the euid to be set to any of uid, euid, suid, and
+fsuid.  Therefor it is safe to allow an unprivileged user to map
+their euid and use CAP_SETUID privileged with exactly that uid,
+as no new credentials can be obtained.
 
-For a small class of applications this change breaks userspace
-and removes useful functionality.  This small class of applications
-includes tools/testing/selftests/mount/unprivilged-remount-test.c
-
-Most of the removed functionality will be added back with the addition
-of a one way knob to disable setgroups.  Once setgroups is disabled
-setting the gid_map becomes as safe as setting the uid_map.
-
-For more common applications that set the uid_map and the gid_map
-with privilege this change will have no affect.
+I can not find a combination of existing system calls that allows setting
+uid, euid, suid, and fsuid from the fsuid making the previous use
+of fsuid for allowing unprivileged mappings a bug.
 
 This is part of a fix for CVE-2014-8989.
 
@@ -55,22 +49,19 @@ Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/user_namespace.c |    5 -----
- 1 file changed, 5 deletions(-)
+ kernel/user_namespace.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 --- a/kernel/user_namespace.c
 +++ b/kernel/user_namespace.c
-@@ -810,11 +810,6 @@ static bool new_idmap_permitted(const st
- 			if (uid_eq(uid, file->f_cred->fsuid))
+@@ -807,7 +807,7 @@ static bool new_idmap_permitted(const st
+ 		u32 id = new_map->extent[0].lower_first;
+ 		if (cap_setid == CAP_SETUID) {
+ 			kuid_t uid = make_kuid(ns->parent, id);
+-			if (uid_eq(uid, file->f_cred->fsuid))
++			if (uid_eq(uid, file->f_cred->euid))
  				return true;
  		}
--		else if (cap_setid == CAP_SETGID) {
--			kgid_t gid = make_kgid(ns->parent, id);
--			if (gid_eq(gid, file->f_cred->fsgid))
--				return true;
--		}
  	}
- 
- 	/* Allow anyone to set a mapping that doesn't require privilege */
 
 
