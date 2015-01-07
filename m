@@ -1,82 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753644AbbAGPO6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 10:14:58 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:56907 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112AbbAGPO4 (ORCPT
+	id S1753442AbbAGPSv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 10:18:51 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:48818 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751842AbbAGPSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 10:14:56 -0500
+	Wed, 7 Jan 2015 10:18:50 -0500
+Message-ID: <54AD4E58.10209@oracle.com>
+Date: Wed, 07 Jan 2015 10:18:48 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <20150107071323.GC849@sejong>
-References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
-	<20150105184811.GQ2915@two.firstfloor.org>
-	<CABPqkBQ_mcMr=mfaFoECm6YFWvgz3JWudQ4wdT2Q61yJZOok1w@mail.gmail.com>
-	<20150107071323.GC849@sejong>
-Date: Wed, 7 Jan 2015 10:14:56 -0500
-Message-ID: <CABPqkBTamwaC_rueabTkuYpwZNycvejrULSFGQ7npna2gNQwLg@mail.gmail.com>
-Subject: Re: [RFC/PATCHSET 00/37] perf tools: Speed-up perf report by using
- multi thread (v1)
-From: Stephane Eranian <eranian@google.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: David Vrabel <david.vrabel@citrix.com>, konrad.wilk@oracle.com,
+        jgross@suse.com
+CC: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] x86/xen: Free bootmem in free_p2m_page()
+ during early boot
+References: <1420639734-24808-1-git-send-email-boris.ostrovsky@oracle.com> <54AD4C62.6030301@citrix.com>
+In-Reply-To: <54AD4C62.6030301@citrix.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 7, 2015 at 2:13 AM, Namhyung Kim <namhyung@kernel.org> wrote:
-> Hi Stephane,
->
-> On Tue, Jan 06, 2015 at 10:50:44AM -0500, Stephane Eranian wrote:
->> On Mon, Jan 5, 2015 at 1:48 PM, Andi Kleen <andi@firstfloor.org> wrote:
->> > > This also requires to handle multiple files and to find a
->> > > corresponding machine state when processing samples.  On a large
->> > > profiling session, many tasks were created and exited so pid might be
->> > > recycled (even more than once!).  To deal with it, I managed to have
->> > > thread, map_groups and comm in time sorted.  The only remaining thing
->> > > is symbol loading as it's done lazily when sample requires it.
->> >
->> > FWIW there's often a lot of unnecessary information in this
->> > (e.g. mmaps that are not used). The Quipper page
->> > claims large saving in data files by avoided redundancies.
->> >
->> > It would be probably better if perf record avoided writing redundant
->> > information better (I realize that's not easy)
->> > >
->> > > With that being done, the stage 2 can be done by multiple threads.  I
->> > > also save each sample data (per-cpu or per-thread) in separate files
->> > > during record.  On perf report time, each file will be processed by
->> > > each thread.  And symbol loading is protected by a mutex lock.
->> >
->> > I really don't like the multiple files. See above. Also it could easily
->> > cause additional seeking on spinning disks.
->> >
->> having to manage two separate files is a major change which I don't
->> particularly like. It will cause problems. I don't see why this cannot
->> be appended to the perf.data file with a index at the beginning. There
->> is already an index for sections in file mode.
->
-> I just thought it's easier to handle with multiple thread.  Maybe we
-> can concatenate the files after recording.
->
->
+On 01/07/2015 10:10 AM, David Vrabel wrote:
+> On 07/01/15 14:08, Boris Ostrovsky wrote:
+>> With recent changes in p2m we now have legitimate cases when
+>> p2m memory needs to be freed during early boot (i.e. before
+>> slab is initialized).
 >>
->> We use the pipe mode a lot and this would not work there. So no,
->> I don't like the 2 files solution. But I like the idea of using multiple
->> threads to speed up processing.
+>> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> Applied to to stable/for-linus-3.19, thanks.
 >
-> Actually it's not 2 files, it's 1 + N files. :)  Anyway, I think the
-> single file + index approach requires seeking to process them, is it
-> ok for pipe-mode?
->
-There is no seek possible in pipe mode.
+> If I understand correctly this didn't fully fix your 32-bit dom0 crashes?
 
-The way this is done (as I remember) is by creating pseudo-record types
-and injecting them in the stream.
+No, this only allowed me to be alive for a few more microseconds ;-)
+
+-boris
