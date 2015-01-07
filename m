@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428AbbAGBEm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 20:04:42 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:50610 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085AbbAGBEl (ORCPT
+	id S1753317AbbAGBUM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 20:20:12 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:40978 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719AbbAGBUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:04:41 -0500
-Date: Tue, 6 Jan 2015 17:04:33 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
-        "minchan@kernel.org" <minchan@kernel.org>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "n-horiguchi@ah.jp.nec.com" <n-horiguchi@ah.jp.nec.com>,
-        "pintu.k@samsung.com" <pintu.k@samsung.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [RFC] mm:change meminfo cached calculation
-In-Reply-To: <20150106164340.55e83f742d6f57c19e6500ff@linux-foundation.org>
-Message-ID: <alpine.LSU.2.11.1501061654340.1497@eggly.anvils>
-References: <35FD53F367049845BC99AC72306C23D103E688B313EE@CNBJMBX05.corpusers.net> <CALYGNiOuBKz8shHSrFCp0BT5AV6XkNOCHj+LJedQQ-2YdZtM7w@mail.gmail.com> <35FD53F367049845BC99AC72306C23D103E688B313F2@CNBJMBX05.corpusers.net> <20141205143134.37139da2208c654a0d3cd942@linux-foundation.org>
- <35FD53F367049845BC99AC72306C23D103E688B313F4@CNBJMBX05.corpusers.net> <20141208114601.GA28846@node.dhcp.inet.fi> <35FD53F367049845BC99AC72306C23D103E688B313FB@CNBJMBX05.corpusers.net> <CALYGNiMEytHuND37f+hNdMKqCPzN0k_uha6CaeL_fyzrj-obNQ@mail.gmail.com>
- <35FD53F367049845BC99AC72306C23D103E688B31408@CNBJMBX05.corpusers.net> <35FD53F367049845BC99AC72306C23D103EDAF89E14C@CNBJMBX05.corpusers.net> <35FD53F367049845BC99AC72306C23D103EDAF89E160@CNBJMBX05.corpusers.net>
- <20150106164340.55e83f742d6f57c19e6500ff@linux-foundation.org>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Tue, 6 Jan 2015 20:20:07 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAHkRjk4SLvjRtAv6+kP6uUgA7KWk=_PacqxbT1_7LB-QX4=AGQ@mail.gmail.com>
+References: <20150104190123.GA20153@amd>
+	<alpine.LFD.2.11.1501041438130.18844@knanqh.ubzr>
+	<CA+55aFxMbicJZXzzHc8=vdwCzhz4kdrmZEKjLadZXr7aySZ4zg@mail.gmail.com>
+	<alpine.LFD.2.11.1501041526390.18844@knanqh.ubzr>
+	<CA+55aFxRRcSJ5i=EcQ-qqMrz0icn28JKjQuH3xGU65hjpVm9hw@mail.gmail.com>
+	<20150104211555.GB12302@n2100.arm.linux.org.uk>
+	<20150105142206.76ca2e18@lxorguk.ukuu.org.uk>
+	<CAHkRjk5EAUvdR5ED_M=dB+5yu3RtZLgo_aighUrozovHKnOp=w@mail.gmail.com>
+	<CA+55aFwfnT2M1OXzYiy74WCdoRHpKgMby20eqCBe-pEoS6ds-w@mail.gmail.com>
+	<CAHkRjk4SLvjRtAv6+kP6uUgA7KWk=_PacqxbT1_7LB-QX4=AGQ@mail.gmail.com>
+Date: Tue, 6 Jan 2015 17:20:06 -0800
+X-Google-Sender-Auth: Z4fooZbHjrRpAuNkVtwrbKtusGU
+Message-ID: <CA+55aFw8x01fBKczTSNkAZ06rwULVp0A=pASJACs8S1SB_Orew@mail.gmail.com>
+Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
+ pyaudio (and probably more)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, Pavel Machek <pavel@ucw.cz>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        kernel list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Jan 2015, Andrew Morton wrote:
-> On Fri, 26 Dec 2014 19:56:49 +0800 "Wang, Yalin" <Yalin.Wang@sonymobile.com> wrote:
-> 
-> > This patch subtract sharedram from cached,
-> > sharedram can only be swap into swap partitions,
-> > they should be treated as swap pages, not as cached pages.
-> > 
-> > ...
-> >
-> > --- a/fs/proc/meminfo.c
-> > +++ b/fs/proc/meminfo.c
-> > @@ -45,7 +45,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
-> >  	committed = percpu_counter_read_positive(&vm_committed_as);
-> >  
-> >  	cached = global_page_state(NR_FILE_PAGES) -
-> > -			total_swapcache_pages() - i.bufferram;
-> > +			total_swapcache_pages() - i.bufferram - i.sharedram;
-> >  	if (cached < 0)
-> >  		cached = 0;
-> 
-> Documentation/filesystems/proc.txt says
-> 
-> :      Cached: in-memory cache for files read from the disk (the
-> :              pagecache).  Doesn't include SwapCached
-> 
-> So yes, I guess it should not include shmem.
-> 
-> And why not do this as well?
-> 
-> 
-> --- a/Documentation/filesystems/proc.txt~mm-change-meminfo-cached-calculation-fix
-> +++ a/Documentation/filesystems/proc.txt
-> @@ -811,7 +811,7 @@ MemAvailable: An estimate of how much me
->       Buffers: Relatively temporary storage for raw disk blocks
->                shouldn't get tremendously large (20MB or so)
->        Cached: in-memory cache for files read from the disk (the
-> -              pagecache).  Doesn't include SwapCached
-> +              pagecache).  Doesn't include SwapCached or Shmem.
->    SwapCached: Memory that once was swapped out, is swapped back in but
->                still also is in the swapfile (if memory is needed it
->                doesn't need to be swapped out AGAIN because it is already
+On Tue, Jan 6, 2015 at 3:42 PM, Catalin Marinas <catalin.marinas@arm.com> wrote:
+>>
+>> That's what bogomips *is*, for chrissake! It's a bogus measure of how
+>> many times you go through the delay loop.
+>
+> I think that's where the misunderstanding is. We don't have any idea
+> how many times we go through the delay loop. We just go through the
+> delay loop until the counter (driven by an independent frequency)
+> changes X times.
 
-Whoa.  Changes of this kind would have made good sense about 14 years ago.
-And there's plenty more which would benefit from having anon/shmem/file
-properly distinguished.  But how can we make such a change now,
-breaking everything that has made its own sense of these counts?
+.. and that's exactly what we do on x86 too with the TSC. It's fine.
 
-Hugh
+> With the current arm timer-based (and arm64) implementation, the
+> reported BogoMIPS has nothing to do with the CPU benchmark. It just
+> tells you that a X MHz counter needs X*1000000/HZ ticks per jiffy.
+
+Yes. And that's a valid bogomips. We've done that for ages on x86.
+
+Really, the "problem" that people wonder why some bogomips value is
+lower or higher isn't a problem. Just explain it to them. Or ignore
+them when they ask.
+
+Bogomips is a delay value for the micro-second delay loop. Nothing
+less, nothing more.
+
+                     Linus
