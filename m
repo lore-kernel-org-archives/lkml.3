@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757603AbbAGCQz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:16:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46994 "EHLO
+	id S933253AbbAGCQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:16:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46996 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757529AbbAGCQv (ORCPT
+	with ESMTP id S1757577AbbAGCQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jan 2015 21:16:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.17 06/73] md/bitmap: always wait for writes on unplug.
-Date: Tue,  6 Jan 2015 18:15:27 -0800
-Message-Id: <20150107021557.722391222@linuxfoundation.org>
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
+        Tony Lindgren <tony@atomide.com>, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 3.17 07/73] mfd: twl4030-power: Fix regression with missing compatible flag
+Date: Tue,  6 Jan 2015 18:15:28 -0800
+Message-Id: <20150107021557.750788879@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107021557.521276020@linuxfoundation.org>
 References: <20150107021557.521276020@linuxfoundation.org>
@@ -28,62 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Tony Lindgren <tony@atomide.com>
 
-commit 4b5060ddae2b03c5387321fafc089d242225697a upstream.
+commit 1b9b46d05f887aec418b3a5f4f55abf79316fcda upstream.
 
-If two threads call bitmap_unplug at the same time, then
-one might schedule all the writes, and the other might
-decide that it doesn't need to wait.  But really it does.
+Commit e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset
+configuration") accidentally removed the compatible flag for
+"ti,twl4030-power" that should be there as documented in the
+binding.
 
-It rarely hurts to wait when it isn't absolutely necessary,
-and the current code doesn't really focus on 'absolutely necessary'
-anyway.  So just wait always.
+If "ti,twl4030-power" only the poweroff configuration is done
+by the driver.
 
-This can potentially lead to data corruption if a crash happens
-at an awkward time and data was written before the bitmap was
-updated.  It is very unlikely, but this should go to -stable
-just to be safe.  Appropriate for any -stable.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
+Fixes: e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset configuration")
+Reported-by: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/bitmap.c |   16 ++++++----------
- 1 file changed, 6 insertions(+), 10 deletions(-)
+ drivers/mfd/twl4030-power.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/md/bitmap.c
-+++ b/drivers/md/bitmap.c
-@@ -879,7 +879,6 @@ void bitmap_unplug(struct bitmap *bitmap
- {
- 	unsigned long i;
- 	int dirty, need_write;
--	int wait = 0;
+--- a/drivers/mfd/twl4030-power.c
++++ b/drivers/mfd/twl4030-power.c
+@@ -828,6 +828,9 @@ static struct twl4030_power_data osc_off
  
- 	if (!bitmap || !bitmap->storage.filemap ||
- 	    test_bit(BITMAP_STALE, &bitmap->flags))
-@@ -897,16 +896,13 @@ void bitmap_unplug(struct bitmap *bitmap
- 			clear_page_attr(bitmap, i, BITMAP_PAGE_PENDING);
- 			write_page(bitmap, bitmap->storage.filemap[i], 0);
- 		}
--		if (dirty)
--			wait = 1;
--	}
--	if (wait) { /* if any writes were performed, we need to wait on them */
--		if (bitmap->storage.file)
--			wait_event(bitmap->write_wait,
--				   atomic_read(&bitmap->pending_writes)==0);
--		else
--			md_super_wait(bitmap->mddev);
- 	}
-+	if (bitmap->storage.file)
-+		wait_event(bitmap->write_wait,
-+			   atomic_read(&bitmap->pending_writes)==0);
-+	else
-+		md_super_wait(bitmap->mddev);
-+
- 	if (test_bit(BITMAP_WRITE_ERROR, &bitmap->flags))
- 		bitmap_file_kick(bitmap);
- }
+ static struct of_device_id twl4030_power_of_match[] = {
+ 	{
++		.compatible = "ti,twl4030-power",
++	},
++	{
+ 		.compatible = "ti,twl4030-power-reset",
+ 		.data = &omap3_reset,
+ 	},
 
 
