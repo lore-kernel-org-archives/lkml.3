@@ -1,65 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933239AbbAGCIn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:08:43 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:43834 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932308AbbAGCIl (ORCPT
+	id S933261AbbAGCJM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:09:12 -0500
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:43559 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755790AbbAGCJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:08:41 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/CycLtQqpuf26A+BgD4Fp+whAlQAKBZ7I=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 07B6F63EE6B
-Date: Tue, 6 Jan 2015 21:08:14 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Yingjoe Chen <yingjoe.chen@mediatek.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Beniamino Galvani <b.galvani@gmail.com>,
-        Marc Zyngier <marc.zyngier@arm.com>, srv_heupstream@mediatek.com,
-        hc.yen@mediatek.com, yh.chen@mediatek.com,
-        linux-kernel@vger.kernel.org,
-        Matthias Brugger <matthias.bgg@gmail.com>, nathan.chung@mediatek.com,
-        Sascha Hauer <kernel@pengutronix.de>, eddie.huang@mediatek.com,
-        yingjoe.chen@gmail.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] irqchip: mediatek: Use IS_ERR() instead of NULL
- pointer check
-Message-ID: <20150107020814.GA24989@titan.lakedaemon.net>
-References: <1418050989-21411-1-git-send-email-yingjoe.chen@mediatek.com>
- <1418205302-22531-1-git-send-email-yingjoe.chen@mediatek.com>
+	Tue, 6 Jan 2015 21:09:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418205302-22531-1-git-send-email-yingjoe.chen@mediatek.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20150106.174039.783537681001060022.davem@davemloft.net>
+References: <1420583625-32414-1-git-send-email-ani@arista.com> <20150106.174039.783537681001060022.davem@davemloft.net>
+From: Ani Sinha <ani@arista.com>
+Date: Tue, 6 Jan 2015 18:08:46 -0800
+Message-ID: <CAOxq_8N4NBzvP_JBfnj3v=o9C3tPyA0X_0q3V0sm3CQiJHPTqA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] update ip-sysctl.txt documentation
+To: David Miller <davem@davemloft.net>
+Cc: corbet <corbet@lwn.net>, Eric Dumazet <edumazet@google.com>,
+        linux-doc <linux-doc@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        =?UTF-8?Q?P=C3=A1draig_Brady?= <P@draigbrady.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        fruggeri <fruggeri@arista.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yingjoe,
+On Tue, Jan 6, 2015 at 2:40 PM, David Miller <davem@davemloft.net> wrote:
+> From: Ani Sinha <ani@arista.com>
+> Date: Tue,  6 Jan 2015 14:33:45 -0800
+>
+>> @@ -64,8 +64,10 @@ fwmark_reflect - BOOLEAN
+>>       Default: 0
+>>
+>>  route/max_size - INTEGER
+>> -     Maximum number of routes allowed in the kernel.  Increase
+>> -     this when using large numbers of interfaces and/or routes.
+>> +        Post linux kernel 3.6, this is depricated for ipv4 as route cache is no
+>> +        longer used. For ipv6, this is used to limit the maximum number of ipv6
+>> +        routes allowed in the kernel.  Increase this when using large numbers of
+>> +        interfaces and/or routes.
+>
+> Please do not change the TABs into sequenes of space characters.
 
-On Wed, Dec 10, 2014 at 05:55:02PM +0800, Yingjoe Chen wrote:
-> Beniamino reported a kernel oops caused by an invalid DT file for the
-> mediatek interrupt polarity extension.
-> 
-> The reason is that the interrupt polarity support for mediatek chips
-> merely checks for NULL pointer instead of a casted error return
-> value in mtk_sysirq_of_init() so any other casted error value passes
-> the NULL pointer check and causes a kernel panic when dereferenced.
-> 
-> Use IS_ERR() and return the error value via PTR_ERR().
-> 
-> Reported-and-tested-by: Beniamino Galvani <b.galvani@gmail.com>
-> Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
-> ---
->  drivers/irqchip/irq-mtk-sysirq.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-
-I applied V2 to irqchip/urgent, and hand-added the changes from V3
-because the email formatting was wrong.  I also tweaked the subject
-line.
-
-thx,
-
-Jason.
+Fixed in the latest patch.
