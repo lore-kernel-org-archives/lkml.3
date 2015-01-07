@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758354AbbAGCoc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:44:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46770 "EHLO
+	id S1758337AbbAGCoa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:44:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46775 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932965AbbAGCHi (ORCPT
+	with ESMTP id S932386AbbAGCHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jan 2015 21:07:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dan Carpenter <dan.carpenter@oracle.com>,
         Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.14 17/52] dm cache: dirty flag was mistakenly being cleared when promoting via overwrite
-Date: Tue,  6 Jan 2015 18:06:45 -0800
-Message-Id: <20150107020557.946310606@linuxfoundation.org>
+Subject: [PATCH 3.14 18/52] dm space map metadata: fix sm_bootstrap_get_nr_blocks()
+Date: Tue,  6 Jan 2015 18:06:46 -0800
+Message-Id: <20150107020558.108307787@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107020555.043793795@linuxfoundation.org>
 References: <20150107020555.043793795@linuxfoundation.org>
@@ -28,42 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 1e32134a5a404e80bfb47fad8a94e9bbfcbdacc5 upstream.
+commit c1c6156fe4d4577444b769d7edd5dd503e57bbc9 upstream.
 
-If the incoming bio is a WRITE and completely covers a block then we
-don't bother to do any copying for a promotion operation.  Once this is
-done the cache block and origin block will be different, so we need to
-set it to 'dirty'.
+This function isn't right and it causes a static checker warning:
 
-Signed-off-by: Joe Thornber <ejt@redhat.com>
+	drivers/md/dm-thin.c:3016 maybe_resize_data_dev()
+	error: potentially using uninitialized 'sb_data_size'.
+
+It should set "*count" and return zero on success the same as the
+sm_metadata_get_nr_blocks() function does earlier.
+
+Fixes: 3241b1d3e0aa ('dm: add persistent data library')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-cache-target.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/md/persistent-data/dm-space-map-metadata.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -946,10 +946,14 @@ static void migration_success_post_commi
- 		}
+--- a/drivers/md/persistent-data/dm-space-map-metadata.c
++++ b/drivers/md/persistent-data/dm-space-map-metadata.c
+@@ -564,7 +564,9 @@ static int sm_bootstrap_get_nr_blocks(st
+ {
+ 	struct sm_metadata *smm = container_of(sm, struct sm_metadata, sm);
  
- 	} else {
--		clear_dirty(cache, mg->new_oblock, mg->cblock);
--		if (mg->requeue_holder)
-+		if (mg->requeue_holder) {
-+			clear_dirty(cache, mg->new_oblock, mg->cblock);
- 			cell_defer(cache, mg->new_ocell, true);
--		else {
-+		} else {
-+			/*
-+			 * The block was promoted via an overwrite, so it's dirty.
-+			 */
-+			set_dirty(cache, mg->new_oblock, mg->cblock);
- 			bio_endio(mg->new_ocell->holder, 0);
- 			cell_defer(cache, mg->new_ocell, false);
- 		}
+-	return smm->ll.nr_blocks;
++	*count = smm->ll.nr_blocks;
++
++	return 0;
+ }
+ 
+ static int sm_bootstrap_get_nr_free(struct dm_space_map *sm, dm_block_t *count)
 
 
