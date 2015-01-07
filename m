@@ -1,99 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572AbbAGXat (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 18:30:49 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:38065 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755378AbbAGXa2 (ORCPT
+	id S1755550AbbAGXaa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 18:30:30 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:33429 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752055AbbAGXa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 18:30:28 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Tejun Heo <tj@kernel.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Richard Weinberger <richard@nod.at>,
-        Linux API <linux-api@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
-References: <87lhlgpyxk.fsf@x220.int.ebiederm.org>
-	<CAGr1F2HSi_D07r2c5CKOsjSR1+58k9G2MrtACsd+HV6XKvJ7cA@mail.gmail.com>
-	<54AB2992.6060707@nod.at>
-	<CAGr1F2EGOUSEd3-G4PS0mq=9kU1nWG4CwHUOQaNUATepc11_Sw@mail.gmail.com>
-	<54ACFC38.5070007@nod.at> <87fvbmir9q.fsf@x220.int.ebiederm.org>
-	<20150107193059.GA1857@mail.hallyn.com>
-	<87bnma6xwv.fsf@x220.int.ebiederm.org>
-	<20150107224430.GA28414@htj.dyndns.org>
-	<878uhe42km.fsf@x220.int.ebiederm.org>
-	<20150107230615.GA28630@htj.dyndns.org>
-	<87fvbm2nni.fsf@x220.int.ebiederm.org>
-Date: Wed, 07 Jan 2015 17:27:38 -0600
-In-Reply-To: <87fvbm2nni.fsf@x220.int.ebiederm.org> (Eric W. Biederman's
-	message of "Wed, 07 Jan 2015 17:09:53 -0600")
-Message-ID: <87y4peyxw5.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 7 Jan 2015 18:30:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18UVVCxBVlu/XQaZbzVw0VtxRirzFjU8Mg=
-X-SA-Exim-Connect-IP: 97.121.85.189
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 TVD_RCVD_IP Message was received from an IP address
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.5000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.5 XM_Body_Dirty_Words Contains a dirty word
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;Tejun Heo <tj@kernel.org>
-X-Spam-Relay-Country: 
-X-Spam-Timing: total 167 ms - load_scoreonly_sql: 0.04 (0.0%),
-	signal_user_changed: 2.7 (1.6%), b_tie_ro: 1.99 (1.2%), parse: 0.58 (0.3%),
-	extract_message_metadata: 9 (5.5%), get_uri_detail_list: 0.83 (0.5%),
-	tests_pri_-1000: 4.7 (2.8%), tests_pri_-950: 1.01 (0.6%), tests_pri_-900:
-	0.83 (0.5%), tests_pri_-400: 18 (10.6%), check_bayes: 17 (10.0%), b_tokenize:
-	4.7 (2.8%), b_tok_get_all: 6 (3.7%), b_comp_prob: 1.70 (1.0%),
-	b_tok_touch_all: 2.4 (1.4%), b_finish: 0.59 (0.4%), tests_pri_0: 123 (73.8%),
-	tests_pri_500: 4.7 (2.8%), rewrite_mail: 0.00 (0.0%)
-Subject: Re: [PATCHv3 8/8] cgroup: Add documentation for cgroup namespaces
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+In-Reply-To: <1420656594-8908-2-git-send-email-m-karicheri2@ti.com>
+References: <1420656594-8908-1-git-send-email-m-karicheri2@ti.com> <1420656594-8908-2-git-send-email-m-karicheri2@ti.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Wed, 7 Jan 2015 17:30:04 -0600
+Message-ID: <CAL_JsqJ5tDQb+SzzhGQTs48tSG=T_QZu3LW5TDyugxFw1V7LoA@mail.gmail.com>
+Subject: Re: [PATCH v3 1/4] of: iommu: add ptr to OF node arg to of_iommu_configure()
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: Joerg Roedel <joro@8bytes.org>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ebiederm@xmission.com (Eric W. Biederman) writes:
-
-> Tejun Heo <tj@kernel.org> writes:
+On Wed, Jan 7, 2015 at 12:49 PM, Murali Karicheri <m-karicheri2@ti.com> wrote:
+> Function of_iommu_configure() is called from of_dma_configure() to
+> setup iommu ops using DT property. This API is currently used for
+> platform devices for which DMA configuration (including iommu ops)
+> may come from device's parent. To extend this functionality for PCI
+> devices, this API need to take a parent node ptr as an argument
+> instead of assuming device's parent. This is needed since for PCI, the
+> dma configuration may be defined in the DT node of the root bus bridge's
+> parent device. Currently only dma-range is used for PCI and iommu is not
+> supported. So return error if the device is PCI.
 >
->> On Wed, Jan 07, 2015 at 05:02:17PM -0600, Eric W. Biederman wrote:
->>> Ignoring namespace details for a moment. The following should be
->>> possible with a unified hierarchy.  If it is not it is a show stopper
->>> of a regression.
->>
->> The -o SUBSYS option doesn't exist.  Jesus, at least get yourself
->> familiar with the basics before claiming random stuff.
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> ---
+>  drivers/iommu/of_iommu.c |   10 ++++++++--
+>  drivers/of/platform.c    |    2 +-
+>  include/linux/of_iommu.h |    6 ++++--
+>  3 files changed, 13 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/iommu/of_iommu.c b/drivers/iommu/of_iommu.c
+> index af1dc6a..396bc77 100644
+> --- a/drivers/iommu/of_iommu.c
+> +++ b/drivers/iommu/of_iommu.c
+> @@ -133,19 +133,25 @@ struct iommu_ops *of_iommu_get_ops(struct device_node *np)
+>         return ops;
+>  }
+>
+> -struct iommu_ops *of_iommu_configure(struct device *dev)
+> +struct iommu_ops *of_iommu_configure(struct device *dev,
+> +                                    struct device_node *node)
 
-Oh let's see I got that command line option out of /proc/mounts and yes
-it works.  Perhaps it doesn't if I invoke unified hiearchies but the
-option does in fact exist and work.
+You use node here, but np in the declaration. However...
 
-Now I really do need to test report regressions, and send probably send
-regression fixes.  If I understand your strange ranting I think you just
-told me that option that -o SUBSYS does work with unified hierarchies.
+>  {
+>         struct of_phandle_args iommu_spec;
+>         struct device_node *np;
 
-Tejun.  I asked you specifically about this case 2 years ago at plumbers
-and you personally told me this would continue to work.  I am going to
-hold you to that.
+We also have np here. I would suggest we rename this to iommu_node or
+iommu_np to be clear which one this is for.
 
-Fixing bugs is one thing.  Gratuitious regressions that make supporting
-existing user space applications insane is another.
-
-Eric
-
-
-
+>         struct iommu_ops *ops = NULL;
+>         int idx = 0;
+>
+> +       if (dev_is_pci(dev)) {
+> +               dev_err(dev, "iommu is currently not supported for PCI\n");
+> +               return NULL;
+> +       }
+> +
+>         /*
+>          * We don't currently walk up the tree looking for a parent IOMMU.
+>          * See the `Notes:' section of
+>          * Documentation/devicetree/bindings/iommu/iommu.txt
+>          */
+> -       while (!of_parse_phandle_with_args(dev->of_node, "iommus",
+> +       while (!of_parse_phandle_with_args(node, "iommus",
+>                                            "#iommu-cells", idx,
+>                                            &iommu_spec)) {
+>                 np = iommu_spec.np;
+> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> index a54ec10..7675b79 100644
+> --- a/drivers/of/platform.c
+> +++ b/drivers/of/platform.c
+> @@ -196,7 +196,7 @@ static void of_dma_configure(struct device *dev)
+>         dev_dbg(dev, "device is%sdma coherent\n",
+>                 coherent ? " " : " not ");
+>
+> -       iommu = of_iommu_configure(dev);
+> +       iommu = of_iommu_configure(dev, dev->of_node);
+>         dev_dbg(dev, "device is%sbehind an iommu\n",
+>                 iommu ? " " : " not ");
+>
+> diff --git a/include/linux/of_iommu.h b/include/linux/of_iommu.h
+> index 16c7554..3258cbb 100644
+> --- a/include/linux/of_iommu.h
+> +++ b/include/linux/of_iommu.h
+> @@ -12,7 +12,8 @@ extern int of_get_dma_window(struct device_node *dn, const char *prefix,
+>                              size_t *size);
+>
+>  extern void of_iommu_init(void);
+> -extern struct iommu_ops *of_iommu_configure(struct device *dev);
+> +extern struct iommu_ops *of_iommu_configure(struct device *dev,
+> +                                       struct device_node *np);
+>
+>  #else
+>
+> @@ -24,7 +25,8 @@ static inline int of_get_dma_window(struct device_node *dn, const char *prefix,
+>  }
+>
+>  static inline void of_iommu_init(void) { }
+> -static inline struct iommu_ops *of_iommu_configure(struct device *dev)
+> +static inline struct iommu_ops *of_iommu_configure(struct device *dev,
+> +                                        struct device_node *np)
+>  {
+>         return NULL;
+>  }
+> --
+> 1.7.9.5
+>
