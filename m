@@ -1,137 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835AbbAGV55 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 16:57:57 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:41907 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754132AbbAGV5z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 16:57:55 -0500
-Message-ID: <54ADABDE.6030008@cogentembedded.com>
-Date: Thu, 08 Jan 2015 00:57:50 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Shrikrishna Khare <skhare@vmware.com>, sbhatewara@vmware.com,
-        pv-drivers@vmware.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: Srividya Murali <smurali@vmware.com>
-Subject: Re: [PATCH net-next] Driver: Vmxnet3: Reinitialize vmxnet3 backend
- on wakeup from hibernate
-References: <1420653393-27657-1-git-send-email-skhare@vmware.com>
-In-Reply-To: <1420653393-27657-1-git-send-email-skhare@vmware.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755097AbbAGWCm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 17:02:42 -0500
+Received: from mga14.intel.com ([192.55.52.115]:17696 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752978AbbAGWCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 17:02:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="asc'?scan'208";a="437733358"
+Message-ID: <1420668146.2491.75.camel@jtkirshe-mobl>
+Subject: Re: [linux-nics] [PATCH] e1000: fix time comparison
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: Asaf Vertz <asaf.vertz@tandemg.com>
+Cc: linux.nics@intel.com, e1000-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, matthew.vick@intel.com,
+        netdev@vger.kernel.org, carolyn.wyborny@intel.com
+Date: Wed, 07 Jan 2015 14:02:26 -0800
+In-Reply-To: <20150107124145.GA15954@ubuntu>
+References: <20150107124145.GA15954@ubuntu>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-+oxtYsOxydXCAh4ixckw"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-On 01/07/2015 08:56 PM, Shrikrishna Khare wrote:
+--=-+oxtYsOxydXCAh4ixckw
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> Failing to reinitialize on wakeup results in loss of network connectivity for
-> vmxnet3 interface.
-
-> Signed-off-by: Srividya Murali <smurali@vmware.com>
-> Signed-off-by: Shrikrishna Khare <skhare@vmware.com>
-> Reviewed-by: Shreyas N Bhatewara <sbhatewara@vmware.com>
+On Wed, 2015-01-07 at 14:41 +0200, Asaf Vertz wrote:
+> To be future-proof and for better readability the time comparisons are
+> modified to use time_after_eq() instead of plain, error-prone math.
+>=20
+> Signed-off-by: Asaf Vertz <asaf.vertz@tandemg.com>
 > ---
->   drivers/net/vmxnet3/vmxnet3_drv.c |   50 +++++++++++++++++++++---------------
->   drivers/net/vmxnet3/vmxnet3_int.h |    4 +-
->   2 files changed, 31 insertions(+), 23 deletions(-)
+>  drivers/net/ethernet/intel/e1000/e1000_ethtool.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
 
-> diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
-> index 7af1f5c..124cb9f 100644
-> --- a/drivers/net/vmxnet3/vmxnet3_drv.c
-> +++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-> @@ -3290,51 +3290,59 @@ skip_arp:
->   static int
->   vmxnet3_resume(struct device *device)
->   {
-> -	int err, i = 0;
-> +	int err;
->   	unsigned long flags;
->   	struct pci_dev *pdev = to_pci_dev(device);
->   	struct net_device *netdev = pci_get_drvdata(pdev);
->   	struct vmxnet3_adapter *adapter = netdev_priv(netdev);
-> -	struct Vmxnet3_PMConf *pmConf;
->
->   	if (!netif_running(netdev))
->   		return 0;
->
-> -	/* Destroy wake-up filters. */
-> -	pmConf = adapter->pm_conf;
-> -	memset(pmConf, 0, sizeof(*pmConf));
-> -
-> -	adapter->shared->devRead.pmConfDesc.confVer = cpu_to_le32(1);
-> -	adapter->shared->devRead.pmConfDesc.confLen = cpu_to_le32(sizeof(
-> -								  *pmConf));
-> -	adapter->shared->devRead.pmConfDesc.confPA =
-> -		cpu_to_le64(adapter->pm_conf_pa);
-> -
-> -	netif_device_attach(netdev);
->   	pci_set_power_state(pdev, PCI_D0);
->   	pci_restore_state(pdev);
->   	err = pci_enable_device_mem(pdev);
->   	if (err != 0)
-> -		return err;
-> +		goto err;
+Thanks Asaf, I will add your patch to my queue.
 
-    Why?
+--=-+oxtYsOxydXCAh4ixckw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
->
->   	pci_enable_wake(pdev, PCI_D0, 0);
->
-> +	vmxnet3_alloc_intr_resources(adapter);
-> +
-> +	/* During hibernate and suspend, device has to be reinitialized as the
-> +	 * device state need not be preserved.
-> +	 */
-> +
-> +	/* Need not check adapter state as other reset tasks cannot run during
-> +	 * device resume.
-> +	 */
->   	spin_lock_irqsave(&adapter->cmd_lock, flags);
->   	VMXNET3_WRITE_BAR1_REG(adapter, VMXNET3_REG_CMD,
-> -			       VMXNET3_CMD_UPDATE_PMCFG);
-> +			       VMXNET3_CMD_QUIESCE_DEV);
->   	spin_unlock_irqrestore(&adapter->cmd_lock, flags);
-> -	vmxnet3_alloc_intr_resources(adapter);
-> -	vmxnet3_request_irqs(adapter);
-> -	for (i = 0; i < adapter->num_rx_queues; i++)
-> -		napi_enable(&adapter->rx_queue[i].napi);
-> -	vmxnet3_enable_all_intrs(adapter);
-> +	vmxnet3_tq_cleanup_all(adapter);
-> +	vmxnet3_rq_cleanup_all(adapter);
->
-> -	return 0;
-> +	vmxnet3_reset_dev(adapter);
-> +	err = vmxnet3_activate_dev(adapter);
-> +	if (err) {
-> +		netdev_err(adapter->netdev,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-    Not just 'netdev'?
+iQIcBAABCgAGBQJUrazyAAoJEOVv75VaS+3OFZIP/i9VM3l9tUGCA9Esmdy9NU7c
+ZJ+JLgYrrmIld8MUJmb1UEX+AMM2hSKWqWOOeo3PIjeaMkkBoJhX0KzvPauzYSrm
+PwPOlAZZNQjJTUfKC1a1pK74Fgc9UGY3k49UmpidWQnZ4F80ux3A/b7QK6UB6IK3
+2bnEo2d115nGI365AyT/XFZCU0j45nzjPZUvzf/Qmo7Gszng06UD1QzMJ/P03ZYD
+k3mMbiNWONpIZojn2qselsqWkyqufkkLPG6p1GsJbd7/e8JBEmsnHxWSCUYNQtNZ
+tir29Rn75CmoS+KRrRZtex2XByrsU/eoOv9BXyiJzMKkq0ViJeRCqPVQa8hED4la
++ETRHBhYHO+xrKepBXOy2lTPB37zP1d0/k0vGSCgg3wHmG1uNtU4jo/waKhhSr7o
+6rwzbgA1EUqu3IROwz9DJB7q3+H2DJTWV0MIBSR0nFFM612dBJUPSPq9AlPs+HmA
+inwrS4HnQZ0V7surGERdPKkE0xnx9dl3Py1JATKVJDOAsKJ6zuvJKTSEOBDF+wiM
+8bNayEjEWj8LzQu4N9gY4mFFW9OqdmaHsT8X9ErgZ88B3qML4HBzTKMAsL9ZNDVu
+XW7e1Isrzpg4828VDYN7H80Ls2ylT9CedV6U6BaOXGFKIePvHnjcDJAhU8rcVD2f
+t/KGVjP+u8aTU8eakVzw
+=H+5k
+-----END PGP SIGNATURE-----
 
-> +			   "%s: failed to re-activate on resume, error: %d",
-> +		    netdev->name, err);
-
-    Should have been aligned with the line right above. And isn't netdev->name 
-printed by netdev_err() already?
-
-> +		vmxnet3_force_close(adapter);
-> +		goto err;
-
-    Why not just *return*?
-
-> +	}
-> +	netif_device_attach(netdev);
-> +
-> +err:
-> +	return err;
->   }
-[...]
-
-WBR, Sergei
+--=-+oxtYsOxydXCAh4ixckw--
 
