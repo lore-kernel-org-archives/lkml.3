@@ -1,101 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092AbbAGQgR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 11:36:17 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39879 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753180AbbAGQgP (ORCPT
+	id S1753797AbbAGQkB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 11:40:01 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:54300 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753628AbbAGQj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 11:36:15 -0500
-Message-ID: <54AD6078.80506@pengutronix.de>
-Date: Wed, 07 Jan 2015 17:36:08 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Wed, 7 Jan 2015 11:39:59 -0500
+Message-ID: <54AD612B.6030906@ti.com>
+Date: Wed, 7 Jan 2015 10:39:07 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: Kedareswara rao Appana <appana.durga.rao@xilinx.com>, wg@grandegger.com,
-        michal.simek@xilinx.com, grant.likely@linaro.org,
-        linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kedareswara rao Appana <appanad@xilinx.com>
-Subject: Re: [PATCH v4] can: Convert to runtime_pm
-References: <58f37b6fd9104ce185c413c473fe047b@BY2FFO11FD050.protection.gbl> <54AD267C.4060004@pengutronix.de> <a868331b44ce4b2a80b572399530f1f9@BN1BFFO11FD043.protection.gbl> <54AD5F13.1020107@pengutronix.de> <1d3216d75e9d494fb68ce9a3b24e7ca3@BL2FFO11FD017.protection.gbl>
-In-Reply-To: <1d3216d75e9d494fb68ce9a3b24e7ca3@BL2FFO11FD017.protection.gbl>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="R95cRwpVO2ie2gjCTulG8FpOL2W3F089U"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Marek Szyprowski <m.szyprowski@samsung.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+CC: Tomasz Figa <tomasz.figa@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, <lauraa@codeaurora.org>,
+        <linus.walleij@linaro.org>, <tony@atomide.com>, <drake@endlessm.com>,
+        <loeliger@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
+        <khilman@linaro.org>
+Subject: Re: [PATCH v12 0/9] Enable L2 cache support on Exynos4210/4x12 SoCs
+References: <1420630224-8887-1-git-send-email-m.szyprowski@samsung.com>
+In-Reply-To: <1420630224-8887-1-git-send-email-m.szyprowski@samsung.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---R95cRwpVO2ie2gjCTulG8FpOL2W3F089U
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On 01/07/2015 05:30 AM, Marek Szyprowski wrote:
+> This is an updated patchset, which intends to add support for L2 cache
+> on Exynos4 SoCs on boards running under secure firmware, which requires
+> certain initialization steps to be done with help of firmware, as
+> selected registers are writable only from secure mode.
+> 
+> First patch updates Omap2+ platforms by moving l2cache initialization to
+> common code. This will resolve too early call to l2cache init, what might
+> cause kmalloc failure in code added in next patches.
+> 
+> Next patch fixes access method to latency and filter settings in l2cache
+> driver.
+> 
+> Next four patches extend existing support for secure write in L2C driver
+> to account for design of secure firmware running on Exynos. Namely:
+>  1) direct read access to certain registers is needed on Exynos, because
+>     secure firmware calls set several registers at once,
+>  2) not all boards are running secure firmware, so .write_sec callback
+>     needs to be installed in Exynos firmware ops initialization code,
+>  3) write access to {DATA,TAG}_LATENCY_CTRL registers fron non-secure world
+>     is not allowed and so must use l2c_write_sec as well,
+>  4) on certain boards, default value of prefetch register is incorrect
+>     and must be overridden at L2C initialization.
+> For boards running with firmware that provides access to individual
+> L2C registers this series should introduce no functional changes. However
+> since the driver is widely used on other platforms I'd like to kindly ask
+> any interested people for testing.
+> 
+> Further three patches add implementation of .write_sec and .configure
+> callbacks for Exynos secure firmware and necessary DT nodes to enable
+> L2 cache.
+> 
+> Changes in this version tested on Exynos4412-based TRATS2 and OdroidU3+
+> boards (both with secure firmware). There should be no functional change
+> for Exynos boards running without secure firmware. OMAP based platforms
+> were tested by Nishanth Menon and Tony Lindgren.
+> 
+> Depends on:
+> - v3.19-rc2
+> 
+> Changelog:
+> 
+> Changes since v11:
+> (https://lkml.org/lkml/2015/1/5/254)
+> - Added changes suggested by Nishanth to 'ARM: l2c: use l2c_write_sec()
+>   for restoring latency and filter regs' patch
+> - Fixed 'checkpatch --strict' issues
+> - Added Nishanth's and Tony's acked/tested tags
+> 
+> Changes since v10:
+> (https://lkml.org/lkml/2014/12/23/151)
+> - Added patch, which fixes access method to latency and filter settings
+>   in l2cache
+> 
+> Changes since v9:
+> (https://lkml.org/lkml/2014/11/17/217)
+> - Rebased onto vanilla v3.19-rc1
+> - Added patch for Omap2+ (move l2cache initialization to common code), what
+>   fixes too early initialization (kmalloc failure)
+> 
+> Changes since v8:
+> (http://lkml.org/lkml/2014/11/13/263)
+> - Rebased onto vanilla v3.18-rc3 and added required includes, which were
+>   previously added by other patches
+> - Added Acked-by tags for Exynos part
+> 
+> Changes since v7:
+> (https://lkml.org/lkml/2014/10/29/158)
+> - rebased onto arm-soc/for-next kernel tree (depends on patches merged to
+>   v3.18-rc3 and arm-soc/samsung/pm2 branch)
+> - removed 'ARM: l2c: unify L2C-310 OF initialization error messages' patch
+>   (no longer needed)
+> 
+> Changes since v6:
+> (https://lkml.org/lkml/2014/10/27/233)
+> - changed PL310 to L2C-310 prefix in error messages
+> - added patch shortening the error message about incorrect associativity
+> 
+> Changes since v5:
+> (https://lkml.org/lkml/2014/9/24/364)
+> - rebased onto v3.18-rc2
+> - added error message about missing properties values
+> 
+> Changes since v4:
+> (https://lkml.org/lkml/2014/8/26/461)
+>  - rewrote the code accessing l2x0_saved_regs from assembly code
+>  - added comment and reworked unconditional call to SMC_CMD_L2X0INVALL
+> 
+> 
+> Patch summary:
+> 
+> Marek Szyprowski (2):
+>   ARM: OMAP2+: use common l2cache initialization code
+>   ARM: l2c: use l2c_write_sec() for restoring latency and filter regs
+> 
+> Tomasz Figa (7):
+>   ARM: l2c: Refactor the driver to use commit-like interface
+>   ARM: l2c: Add interface to ask hypervisor to configure L2C
+>   ARM: l2c: Get outer cache .write_sec callback from mach_desc only if
+>     not NULL
+>   ARM: l2c: Add support for overriding prefetch settings
+>   ARM: EXYNOS: Add .write_sec outer cache callback for L2C-310
+>   ARM: EXYNOS: Add support for non-secure L2X0 resume
+>   ARM: dts: exynos4: Add nodes for L2 cache controller
+> 
+>  Documentation/devicetree/bindings/arm/l2cc.txt |  10 +
+>  arch/arm/boot/dts/exynos4210.dtsi              |   9 +
+>  arch/arm/boot/dts/exynos4x12.dtsi              |  14 ++
+>  arch/arm/include/asm/outercache.h              |   3 +
+>  arch/arm/kernel/irq.c                          |   3 +-
+>  arch/arm/mach-exynos/firmware.c                |  50 +++++
+>  arch/arm/mach-exynos/sleep.S                   |  46 +++++
+>  arch/arm/mach-omap2/board-generic.c            |   6 +
+>  arch/arm/mach-omap2/common.h                   |   8 +
+>  arch/arm/mach-omap2/omap4-common.c             |  16 +-
+>  arch/arm/mm/cache-l2x0.c                       | 272 ++++++++++++++++---------
+>  11 files changed, 325 insertions(+), 112 deletions(-)
+> 
 
-On 01/07/2015 05:32 PM, S=C3=B6ren Brinkmann wrote:
-> On Wed, 2015-01-07 at 05:30PM +0100, Marc Kleine-Budde wrote:
->> On 01/07/2015 04:58 PM, S=C3=B6ren Brinkmann wrote:
->>>> I think you have to convert the _remove() function, too. Have a look=
- at
->>>> the gpio-zynq.c driver:
->>>>
->>>>> static int zynq_gpio_remove(struct platform_device *pdev)
->>>>> {
->>>>> 	struct zynq_gpio *gpio =3D platform_get_drvdata(pdev);
->>>>>
->>>>> 	pm_runtime_get_sync(&pdev->dev);
->>>>
->>>> However I don't understand why the get_sync() is here. Maybe S=C3=B6=
-ren can help?
->>>
->>> IIRC, the concern was that the remove function may be called while th=
-e device is
->>> runtime suspended. Hence the remove function needs to resume the devi=
-ce since the
->>> remove function may access the HW.
->>
->> What about the corresponding runtime_put()? Would some counter be
->> unbalanced upon device removal?
->=20
-> Aren't those counters destroyed with module unloading?
+Did a re-run of the tests - and all look good on TI platforms that I
+have access to.
 
-I don't know.
-
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+ 1: am335x-evm: BOOT: PASS: http://slexy.org/raw/s21ndr0q1k
+ 2: am335x-sk: BOOT: PASS: http://slexy.org/raw/s2r1UKeFPt
+ 3: am3517-evm: BOOT: PASS: http://slexy.org/raw/s2uUU4iBSa
+ 4: am37x-evm: BOOT: PASS: http://slexy.org/raw/s215NYMPek
+ 5: am437x-sk: BOOT: PASS: http://slexy.org/raw/s20uQ9Ap5y
+ 6: am43xx-epos: BOOT: PASS: http://slexy.org/raw/s21d1tVstA
+ 7: am43xx-gpevm: BOOT: PASS: http://slexy.org/raw/s212pvpS5M
+ 8: BeagleBoard-X15(am57xx-evm): BOOT: PASS:
+http://slexy.org/raw/s21SmDLOXT
+ 9: BeagleBoard-XM: BOOT: PASS: http://slexy.org/raw/s221NFJt7X
+10: beagleboard-vanilla: BOOT: PASS: http://slexy.org/raw/s2Ux1Uhb6t
+11: beaglebone-black: BOOT: PASS: http://slexy.org/raw/s2yYU3pfDX
+12: beaglebone: BOOT: PASS: http://slexy.org/raw/s29bwGVFZ3
+13: craneboard: BOOT: PASS: http://slexy.org/raw/s2SvbHHARF
+14: dra72x-evm: BOOT: PASS: http://slexy.org/raw/s20SDUtrIk
+15: dra7xx-evm: BOOT: PASS: http://slexy.org/raw/s2mJ0BkX13
+16: OMAP3430-Labrador(LDP): BOOT: PASS: http://slexy.org/raw/s22VlwObok
+17: omap5-evm: BOOT: PASS: http://slexy.org/raw/s2iI8KthlS
+18: pandaboard-es: BOOT: PASS: http://slexy.org/raw/s20bFdCiYz
+19: pandaboard-vanilla: BOOT: PASS: http://slexy.org/raw/s21DucPhWr
+20: sdp2430: BOOT: PASS: http://slexy.org/raw/s21nOPfnQ7
+21: sdp3430: BOOT: PASS: http://slexy.org/raw/s2lUCkOWuU
+22: sdp4430: BOOT: PASS: http://slexy.org/raw/s21cNNKpNL
+TOTAL = 22 boards, Booted Boards = 22, No Boot boards = 0
 
 
---R95cRwpVO2ie2gjCTulG8FpOL2W3F089U
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUrWB4AAoJECte4hHFiupU90oP/RO4Afg8tuWj6Z4WpiVbiUuB
-DzCdhK+otWYLqyPqVRkCezA5Q2Q8RfDSuQOTaqhzYljqv70h1/DFwWMmyeUfhc8X
-067m+aXmgXJPD7G4Xr4K6/zgBqE1oI1zQmbBg57Ze2pRgkkZrNw5P/N7rncxnMvr
-nFKKmuDmaDpOPz0Ap0R8tbwpiMchbAZcXJNJwum/3TRttDUPdMAK9Hq/EzZfZk4F
-91jyKGaXew3sSskgr1HIEbIH8R/k1mFU5EZOh+xMuw5QFYQ+tak+N7lOEOPOYte9
-+yvOS5/I58EqOwLFjZnOAMTffncPyU6iTota6NzXJClbGvUcpOKXV+IDW3a8CFt/
-U6diBVRK9bU6uW25SEllc+OXvkOgHCCu3B0/oMCK/R8BaKgfnOzz7EISJB2vYce8
-MvMDQqvFXkBkEVxdmv8HaBwAFTFUP5KmPIh4FfzFLLZ+LkjZZ/oZSe3PzvLxLBbj
-amclgdCQApmGu59Cvi+wy+u74928Q3Ql2Q+jNCHtfWGf2Ao1MpDPyZ23cxMyOrrN
-5PF/TgPXSyxrNtsQwRy8QkgO9i+eW3AQsixama/HoC2zOxvusqH3DuKij9soZDNa
-kQ2i8HLDuZvD0FFOZVLMwl/oPTArQJzBfbKM8cmL5lHdwIdHXzp4x40VmDUYciX3
-yK9pcttT976Jr5VSlXAa
-=7KiB
------END PGP SIGNATURE-----
-
---R95cRwpVO2ie2gjCTulG8FpOL2W3F089U--
+-- 
+Regards,
+Nishanth Menon
