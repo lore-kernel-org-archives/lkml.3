@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935AbbAGJPo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 04:15:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33096 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752091AbbAGJPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 04:15:41 -0500
-Message-ID: <54ACF93B.3060801@suse.cz>
-Date: Wed, 07 Jan 2015 10:15:39 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+	id S1754465AbbAGJSU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 04:18:20 -0500
+Received: from mail-we0-f180.google.com ([74.125.82.180]:53683 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751754AbbAGJSR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 04:18:17 -0500
+X-Greylist: delayed 170819 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Jan 2015 04:18:17 EST
+Date: Wed, 7 Jan 2015 10:18:13 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
         Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
         Minchan Kim <minchan@kernel.org>, David Rientjes <rientjes@google.com>,
@@ -21,28 +20,49 @@ CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
         Johannes Weiner <hannes@cmpxchg.org>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH V4 4/4] mm: microoptimize zonelist operations
-References: <1420478263-25207-1-git-send-email-vbabka@suse.cz> <1420478263-25207-5-git-send-email-vbabka@suse.cz> <20150106150920.GE20860@dhcp22.suse.cz>
-In-Reply-To: <20150106150920.GE20860@dhcp22.suse.cz>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH V4 3/4] mm: reduce try_to_compact_pages parameters
+Message-ID: <20150107091813.GA16553@dhcp22.suse.cz>
+References: <1420478263-25207-1-git-send-email-vbabka@suse.cz>
+ <1420478263-25207-4-git-send-email-vbabka@suse.cz>
+ <20150106145710.GD20860@dhcp22.suse.cz>
+ <54ACF851.3040002@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54ACF851.3040002@suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2015 04:09 PM, Michal Hocko wrote:
-> On Mon 05-01-15 18:17:43, Vlastimil Babka wrote:
->> The function next_zones_zonelist() returns zoneref pointer, as well as zone
->> pointer via extra parameter. Since the latter can be trivially obtained by
->> dereferencing the former, the overhead of the extra parameter is unjustified.
->> 
->> This patch thus removes the zone parameter from next_zones_zonelist(). Both
->> callers happen to be in the same header file, so it's simple to add the
->> zoneref dereference inline. We save some bytes of code size.
+On Wed 07-01-15 10:11:45, Vlastimil Babka wrote:
+> On 01/06/2015 03:57 PM, Michal Hocko wrote:
+> > Hmm, wait a minute
+> > 
+> > On Mon 05-01-15 18:17:42, Vlastimil Babka wrote:
+> > [...]
+> >> -unsigned long try_to_compact_pages(struct zonelist *zonelist,
+> >> -			int order, gfp_t gfp_mask, nodemask_t *nodemask,
+> >> -			enum migrate_mode mode, int *contended,
+> >> -			int alloc_flags, int classzone_idx)
+> >> +unsigned long try_to_compact_pages(gfp_t gfp_mask, unsigned int order,
+> >> +			int alloc_flags, const struct alloc_context *ac,
+> >> +			enum migrate_mode mode, int *contended)
+> >>  {
+> >> -	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
+> >>  	int may_enter_fs = gfp_mask & __GFP_FS;
+> >>  	int may_perform_io = gfp_mask & __GFP_IO;
+> >>  	struct zoneref *z;
+> > 
+> > gfp_mask might change since the high_zoneidx was set up in the call
+> > chain. I guess this shouldn't change to the gfp_zone output but it is
+> > worth double checking.
 > 
-> Dunno. It makes first_zones_zonelist and next_zones_zonelist look
-> different which might be a bit confusing. It's not a big deal but
-> I am not sure it is worth it.
+> Yeah I checked that. gfp_zone() operates just on GFP_ZONEMASK part of the flags,
+> and we don't change that.
 
-Yeah I thought that nobody uses them directly anyway thanks to
-for_each_zone_zonelist* so it's not a big deal.
+That was my understanding as well. Maybe we want
+VM_BUG_ON(gfp_zone(gfp_mask) != ac->high_zoneidx);
+-- 
+Michal Hocko
+SUSE Labs
