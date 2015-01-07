@@ -1,146 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605AbbAGQQR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 11:16:17 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:37621 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752474AbbAGQQQ (ORCPT
+	id S1753983AbbAGQQo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 11:16:44 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:41260 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751929AbbAGQQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 11:16:16 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>, Mike Travis <travis@sgi.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@suse.de>, kgdb-bugreport@lists.sourceforge.net,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [RESEND PATCH v3 3.19-rc2] kgdb: Timeout if secondary CPUs ignore the roundup
-Date: Wed,  7 Jan 2015 16:15:58 +0000
-Message-Id: <1420647358-8901-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1415728232-9954-1-git-send-email-daniel.thompson@linaro.org>
-References: <1415728232-9954-1-git-send-email-daniel.thompson@linaro.org>
+	Wed, 7 Jan 2015 11:16:43 -0500
+Date: Wed, 7 Jan 2015 08:16:38 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Bartosz Golaszewski <bgolaszewski@baylibre.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Patrick Titiano <ptitiano@baylibre.com>,
+        LM Sensors <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH] hwmon: ina2xx: allow to change the averaging rate at
+ run-time
+Message-ID: <20150107161638.GA9012@roeck-us.net>
+References: <1420634769-11246-1-git-send-email-bgolaszewski@baylibre.com>
+ <54AD3325.6030301@roeck-us.net>
+ <CAMpxmJUgXyML4o3ya6ofogjf8KMrdPV-Y6SD=ZfUCjt=xLfGiA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMpxmJUgXyML4o3ya6ofogjf8KMrdPV-Y6SD=ZfUCjt=xLfGiA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020204.50F5A422.0293,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently if an active CPU fails to respond to a roundup request the
-CPU that requested the roundup will become stuck. This needlessly
-reduces the robustness of the debugger.
+On Wed, Jan 07, 2015 at 04:41:35PM +0100, Bartosz Golaszewski wrote:
+> 2015-01-07 14:22 GMT+01:00 Guenter Roeck <linux@roeck-us.net>:
+> > I think I know what to do here. Can you look into the ina209 driver ?
+> > It uses update_interval and calculates the number of samples to use from it.
+> > The ina226 datasheet suggests that we can do the same, combined with the
+> > conversion time configuration. We would have to use the default conversion
+> > time of 1.1ms for that to make sense, but that is what it is today,
+> > so it would be ok. This way we are in line with the ABI and can still
+> > configure the number of averages.
+> >
+> 
+> Just to make sure I understood you correctly: I should add
+> update_interval attribute instead of avg_rate, accept the desired
+> interval (as time) instead of the number of averages and - already
+> having the conversion time hardcoded to 1.1 ms - calculate the
+> averaging rate? Isn't this an overkill for what we're trying to
+> implement? I know it's for the sake of staying uniform with already
+> existing interface of ina209 but on the other hand these devices
+> aren't quite the same.
+> 
+INA219 uses the same mechanism and timing as used by INA209. This way
+it is easily possible to extend the driver to support the attribute
+for every chip. But overall this uses the existing ABI (update_interval
+is part of the hwmon ABI) instead of creating a new driver specific
+attribute. Yes, that is quite important.
 
-This patch introduces a timeout allowing the system state to be examined
-even when the system contains unresponsive processors. It also modifies
-kdb's cpu command to make it censor attempts to switch to unresponsive
-processors and to report their state as (D)ead.
+The additional "overhead" is just to use different numbers and a
+different attribute name, so I don't really understand your concern.
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: Mike Travis <travis@sgi.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Dimitri Sivanich <sivanich@sgi.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: kgdb-bugreport@lists.sourceforge.net
-Cc: Ingo Molnar <mingo@kernel.org>
----
-
-Notes:
-    Jason:
-      v2 of this patch is already integrated into kgdb-next. It's probably
-      best to nuke v2 and replace it with this patch. However I can easily
-      provide a diff of v2 versus v3 if you prefer. Just ask...
-    
-    v3:
-    
-    * Fix an out-by-one error in kdb_cpu().
-    
-    * Replace NR_CPUS with CONFIG_NR_CPUS to tell checkpatch that we
-      really want a static limit (Jason Wessel).
-    
-    * Removed the "KGDB: " prefix from the pr_crit() in debug_core.c
-      (kgdb-next contains a patch which introduced pr_fmt() to this file
-      to the tag will now be applied automatically).
-    
-    v2:
-    
-    * Set CATASTROPHIC if the system contains unresponsive processors
-      (Jason Wessel)
-    
-
- kernel/debug/debug_core.c       | 9 +++++++--
- kernel/debug/kdb/kdb_debugger.c | 4 ++++
- kernel/debug/kdb/kdb_main.c     | 4 +++-
- 3 files changed, 14 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
-index 1adf62b39b96..f21580b347cc 100644
---- a/kernel/debug/debug_core.c
-+++ b/kernel/debug/debug_core.c
-@@ -471,6 +471,7 @@ static int kgdb_cpu_enter(struct kgdb_state *ks, struct pt_regs *regs,
- 	int cpu;
- 	int trace_on = 0;
- 	int online_cpus = num_online_cpus();
-+	u64 time_left;
-
- 	kgdb_info[ks->cpu].enter_kgdb++;
- 	kgdb_info[ks->cpu].exception_state |= exception_state;
-@@ -595,9 +596,13 @@ return_normal:
- 	/*
- 	 * Wait for the other CPUs to be notified and be waiting for us:
- 	 */
--	while (kgdb_do_roundup && (atomic_read(&masters_in_kgdb) +
--				atomic_read(&slaves_in_kgdb)) != online_cpus)
-+	time_left = loops_per_jiffy * HZ;
-+	while (kgdb_do_roundup && --time_left &&
-+	       (atomic_read(&masters_in_kgdb) + atomic_read(&slaves_in_kgdb)) !=
-+		   online_cpus)
- 		cpu_relax();
-+	if (!time_left)
-+		pr_crit("Timed out waiting for secondary CPUs.\n");
-
- 	/*
- 	 * At this point the primary processor is completely
-diff --git a/kernel/debug/kdb/kdb_debugger.c b/kernel/debug/kdb/kdb_debugger.c
-index 8859ca34dcfe..15e1a7af5dd0 100644
---- a/kernel/debug/kdb/kdb_debugger.c
-+++ b/kernel/debug/kdb/kdb_debugger.c
-@@ -129,6 +129,10 @@ int kdb_stub(struct kgdb_state *ks)
- 		ks->pass_exception = 1;
- 		KDB_FLAG_SET(CATASTROPHIC);
- 	}
-+	/* set CATASTROPHIC if the system contains unresponsive processors */
-+	for_each_online_cpu(i)
-+		if (!kgdb_info[i].enter_kgdb)
-+			KDB_FLAG_SET(CATASTROPHIC);
- 	if (KDB_STATE(SSBPT) && reason == KDB_REASON_SSTEP) {
- 		KDB_STATE_CLEAR(SSBPT);
- 		KDB_STATE_CLEAR(DOING_SS);
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 379650b984f8..0c1dc7fa2e58 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -2157,6 +2157,8 @@ static void kdb_cpu_status(void)
- 	for (start_cpu = -1, i = 0; i < NR_CPUS; i++) {
- 		if (!cpu_online(i)) {
- 			state = 'F';	/* cpu is offline */
-+		} else if (!kgdb_info[i].enter_kgdb) {
-+			state = 'D';	/* cpu is online but unresponsive */
- 		} else {
- 			state = ' ';	/* cpu is responding to kdb */
- 			if (kdb_task_state_char(KDB_TSK(i)) == 'I')
-@@ -2210,7 +2212,7 @@ static int kdb_cpu(int argc, const char **argv)
- 	/*
- 	 * Validate cpunum
- 	 */
--	if ((cpunum > NR_CPUS) || !cpu_online(cpunum))
-+	if ((cpunum >= CONFIG_NR_CPUS) || !kgdb_info[cpunum].enter_kgdb)
- 		return KDB_BADCPUNUM;
-
- 	dbg_switch_cpu = cpunum;
---
-1.9.3
-
+Guenter
