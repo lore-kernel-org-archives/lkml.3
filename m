@@ -1,133 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883AbbAGQKG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 11:10:06 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56882 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753602AbbAGQKE (ORCPT
+	id S1753902AbbAGQK1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 11:10:27 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:64446 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753602AbbAGQKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 11:10:04 -0500
-Message-ID: <54AD5A52.4090608@arm.com>
-Date: Wed, 07 Jan 2015 16:09:54 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
-MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: Bjorn Andersson <bjorn@kryo.se>,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Phong Vo <pvo@apm.com>,
-        Linus Walleij <linus.walleij@linaro.org>, Tin Huynh <tnhuynh@apm.com>,
-        Y Vo <yvo@apm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Toan Le <toanle@apm.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 1/3] genirq: Allow the irqchip state of an IRQ to be
- save/restored
-References: <1417623503-30261-1-git-send-email-marc.zyngier@arm.com> <1417623503-30261-2-git-send-email-marc.zyngier@arm.com> <CAJAp7OijMW4_VMp29K1UxtURJT-WgwwsN-O1x3Lqi-gHrAj6Sw@mail.gmail.com> <5486C2D6.6020006@arm.com> <20150107160502.GJ24989@titan.lakedaemon.net>
-In-Reply-To: <20150107160502.GJ24989@titan.lakedaemon.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Jan 2015 11:10:23 -0500
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+        kgdb-bugreport@lists.sourceforge.net,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: [RESEND PATCH 3.19-rc2 0/3] kdb: Improve command output searching
+Date: Wed,  7 Jan 2015 16:10:11 +0000
+Message-Id: <1420647014-4897-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1410438579-7839-1-git-send-email-daniel.thompson@linaro.org>
+References: <1410438579-7839-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/15 16:05, Jason Cooper wrote:
-> Marc,
-> 
-> On Tue, Dec 09, 2014 at 09:37:26AM +0000, Marc Zyngier wrote:
->> On 08/12/14 22:42, Bjorn Andersson wrote:
->>> On Wed, Dec 3, 2014 at 8:18 AM, Marc Zyngier <marc.zyngier@arm.com> wrote:
->>>> There is a number of cases where a kernel subsystem may want to
->>>> introspect the state of an interrupt at the irqchip level:
->>>>
->>>> - When a peripheral is shared between virtual machines,
->>>>   its interrupt state becomes part of the guest's state,
->>>>   and must be switched accordingly. KVM on arm/arm64 requires
->>>>   this for its guest-visible timer
->>>> - Some GPIO controllers seem to require peeking into the
->>>>   interrupt controller they are connected to to report
->>>>   their internal state
->>>>
->>>> This seem to be a pattern that is common enough for the core code
->>>> to try and support this without too many horrible hacks. Introduce
->>>> a pair of accessors (irq_get_irqchip_state/irq_set_irqchip_state)
->>>> to retrieve the bits that can be of interest to another subsystem:
->>>> pending, active, and masked.
->>>>
->>>> - irq_get_irqchip_state returns the state of the interrupt according
->>>>   to a parameter set to IRQCHIP_STATE_PENDING, IRQCHIP_STATE_ACTIVE,
->>>>   IRQCHIP_STATE_MASKED or IRQCHIP_STATE_LINE_LEVEL.
->>>> - irq_set_irqchip_state similarly sets the state of the interrupt.
->>>>
->>>> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
->>>
->>> With the addition of actually assigning err to something useful in the
->>> setter below:
->>>
->>> Reviewed-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
->>> Tested-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
->>>
->>>> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
->>>
->>> [..]
->>>
->>>> +/**
->>>> + *     irq_set_irqchip_state - set the state of a forwarded interrupt.
->>>> + *     @irq: Interrupt line that is forwarded to a VM
->>>> + *     @which: State to be restored (one of IRQCHIP_STATE_*)
->>>> + *     @val: Value corresponding to @which
->>>> + *
->>>> + *     This call sets the internal irqchip state of an interrupt,
->>>> + *     depending on the value of @which.
->>>> + *
->>>> + *     This function should be called with preemption disabled if the
->>>> + *     interrupt controller has per-cpu registers.
->>>> + */
->>>> +int irq_set_irqchip_state(unsigned int irq, enum irqchip_irq_state which,
->>>> +                         bool val)
->>>> +{
->>>> +       struct irq_desc *desc;
->>>> +       struct irq_data *data;
->>>> +       struct irq_chip *chip;
->>>> +       unsigned long flags;
->>>> +       int err = -EINVAL;
->>>> +
->>>> +       desc = irq_get_desc_buslock(irq, &flags, 0);
->>>> +       if (!desc)
->>>> +               return err;
->>>> +
->>>> +       data = irq_desc_get_irq_data(desc);
->>>> +
->>>> +       do {
->>>> +               chip = irq_data_get_irq_chip(data);
->>>> +               if (chip->irq_set_irqchip_state)
->>>> +                       break;
->>>> +#ifdef CONFIG_IRQ_DOMAIN_HIERARCHY
->>>> +               data = data->parent_data;
->>>> +#else
->>>> +               data = NULL;
->>>> +#endif
->>>> +       } while (data);
->>>> +
->>>> +       if (data)
->>>> +               chip->irq_set_irqchip_state(data, which, val);
->>>
->>> err =
->>
->> Ah, that will teach me to write test code that actually checks the
->> return value! :-)
->>
->> Thanks for the fix and the tags.
-> 
-> Did I miss the new version of this?
+This patchset improves kdb's capabilities to search the output of
+commands.
 
-I'm rebasing all my stuff at the moment. Expect something later today
-(or tomorrow morning worse case).
+Specifically it fixes a bug in the prompt management when '| grep' is
+used and adds a new feature to search command output interactively from
+the more prompt. Finally there is a trivial bit of const clean up that I
+spotted when implementing the other two patches.
 
-Thanks,
 
-	M.
--- 
-Jazz is not dead. It just smells funny...
+Daniel Thompson (3):
+  kdb: Fix a prompt management bug when using | grep
+  kdb: Provide forward search at more prompt
+  kdb: Const qualifier for kdb_getstr's prompt argument
+
+ kernel/debug/kdb/kdb_io.c      | 24 +++++++++++++++++++++---
+ kernel/debug/kdb/kdb_main.c    | 11 ++++++-----
+ kernel/debug/kdb/kdb_private.h |  4 +++-
+ 3 files changed, 30 insertions(+), 9 deletions(-)
+
+--
+1.9.3
+
