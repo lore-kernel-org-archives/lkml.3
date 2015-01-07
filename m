@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932823AbbAGBwe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 20:52:34 -0500
+	id S1757189AbbAGCBR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:01:17 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:46250 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932549AbbAGBwT (ORCPT
+	with ESMTP id S1757031AbbAGBwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:52:19 -0500
+	Tue, 6 Jan 2015 20:52:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.10 11/38] dm bufio: fix memleak when using a dm_buffers inline bio
+        Josef Bacik <jbacik@fb.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.18 80/84] Btrfs: make sure we wait on logged extents when fsycning two subvols
 Date: Tue,  6 Jan 2015 17:50:23 -0800
-Message-Id: <20150107014954.289427330@linuxfoundation.org>
+Message-Id: <20150107014031.552710806@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
-In-Reply-To: <20150107014952.440109372@linuxfoundation.org>
-References: <20150107014952.440109372@linuxfoundation.org>
+In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
+References: <20150107014029.012974975@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,69 +24,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
+From: Josef Bacik <jbacik@fb.com>
 
-commit 445559cdcb98a141f5de415b94fd6eaccab87e6d upstream.
+commit 9dba8cf128ef98257ca719722280c9634e7e9dc7 upstream.
 
-When dm-bufio sets out to use the bio built into a struct dm_buffer to
-issue an IO, it needs to call bio_reset after it's done with the bio
-so that we can free things attached to the bio such as the integrity
-payload.  Therefore, inject our own endio callback to take care of
-the bio_reset after calling submit_io's end_io callback.
+If we have two fsync()'s race on different subvols one will do all of its work
+to get into the log_tree, wait on it's outstanding IO, and then allow the
+log_tree to finish it's commit.  The problem is we were just free'ing that
+subvols logged extents instead of waiting on them, so whoever lost the race
+wouldn't really have their data on disk.  Fix this by waiting properly instead
+of freeing the logged extents.  Thanks,
 
-Test case:
-1. modprobe scsi_debug delay=0 dif=1 dix=199 ato=1 dev_size_mb=300
-2. Set up a dm-bufio client, e.g. dm-verity, on the scsi_debug device
-3. Repeatedly read metadata and watch kmalloc-192 leak!
-
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Josef Bacik <jbacik@fb.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-bufio.c |   20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+ fs/btrfs/tree-log.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -529,6 +529,19 @@ static void use_dmio(struct dm_buffer *b
- 		end_io(&b->bio, r);
- }
- 
-+static void inline_endio(struct bio *bio, int error)
-+{
-+	bio_end_io_t *end_fn = bio->bi_private;
-+
-+	/*
-+	 * Reset the bio to free any attached resources
-+	 * (e.g. bio integrity profiles).
-+	 */
-+	bio_reset(bio);
-+
-+	end_fn(bio, error);
-+}
-+
- static void use_inline_bio(struct dm_buffer *b, int rw, sector_t block,
- 			   bio_end_io_t *end_io)
- {
-@@ -540,7 +553,12 @@ static void use_inline_bio(struct dm_buf
- 	b->bio.bi_max_vecs = DM_BUFIO_INLINE_VECS;
- 	b->bio.bi_sector = block << b->c->sectors_per_block_bits;
- 	b->bio.bi_bdev = b->c->bdev;
--	b->bio.bi_end_io = end_io;
-+	b->bio.bi_end_io = inline_endio;
-+	/*
-+	 * Use of .bi_private isn't a problem here because
-+	 * the dm_buffer's inline bio is local to bufio.
-+	 */
-+	b->bio.bi_private = end_io;
- 
- 	/*
- 	 * We assume that if len >= PAGE_SIZE ptr is page-aligned.
+--- a/fs/btrfs/tree-log.c
++++ b/fs/btrfs/tree-log.c
+@@ -2600,9 +2600,9 @@ int btrfs_sync_log(struct btrfs_trans_ha
+ 	if (atomic_read(&log_root_tree->log_commit[index2])) {
+ 		blk_finish_plug(&plug);
+ 		btrfs_wait_marked_extents(log, &log->dirty_log_pages, mark);
++		btrfs_wait_logged_extents(log, log_transid);
+ 		wait_log_commit(trans, log_root_tree,
+ 				root_log_ctx.log_transid);
+-		btrfs_free_logged_extents(log, log_transid);
+ 		mutex_unlock(&log_root_tree->log_mutex);
+ 		ret = root_log_ctx.log_ret;
+ 		goto out;
 
 
