@@ -1,203 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934AbbAGIE4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 03:04:56 -0500
-Received: from mail-bn1on0119.outbound.protection.outlook.com ([157.56.110.119]:37996
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752290AbbAGIEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 03:04:54 -0500
-From: Zidan Wang <zidan.wang@freescale.com>
-To: <broonie@kernel.org>
-CC: <lgirdwood@gmail.com>, <perex@perex.cz>, <tiwai@suse.de>,
-        <lars@metafoo.de>, <ckeepax@opensource.wolfsonmicro.com>,
-        <patches@opensource.wolfsonmicro.com>, <alsa-devel@alsa-project.org>,
-        <linux-kernel@vger.kernel.org>, Zidan Wang <b50113@freescale.com>
-Subject: [alsa-devel][PATCH v2 2/2] ASoC: wm8960: Let wm8960 driver configure its bit clock and frame clock
-Date: Wed, 7 Jan 2015 15:31:45 +0800
-Message-ID: <1420615905-4078-2-git-send-email-zidan.wang@freescale.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1420615905-4078-1-git-send-email-zidan.wang@freescale.com>
-References: <1420615905-4078-1-git-send-email-zidan.wang@freescale.com>
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=zidan.wang@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(92566001)(68736005)(77096005)(4396001)(2950100001)(50226001)(48376002)(20776003)(85426001)(31966008)(89996001)(47776003)(36756003)(50466002)(120916001)(105606002)(21056001)(2351001)(107046002)(229853001)(97736003)(104016003)(62966003)(77156002)(76176999)(50986999)(110136001)(19580395003)(84676001)(19580405001)(86362001)(87936001)(6806004)(33646002)(69596002)(106466001)(81156004)(46102003)(99396003);DIR:OUT;SFP:1102;SCL:1;SRVR:BN3PR0301MB1250;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+	id S1753379AbbAGHee (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 02:34:34 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:63257 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978AbbAGHec (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 02:34:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DmarcAction: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BN3PR0301MB1250;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:(601004);SRVR:BN3PR0301MB1250;
-X-Forefront-PRVS: 044968D9E1
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1250;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 07 Jan 2015 07:30:48.4282
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.158.2]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN3PR0301MB1250
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20150107151618.7cb9d574@canb.auug.org.au>
+References: <20150107151618.7cb9d574@canb.auug.org.au>
+Date: Wed, 7 Jan 2015 08:34:30 +0100
+Message-ID: <CA+icZUWr8gv3vZWdgBT7ovVxHt-kGimgzLhc4=CZLVYoAwJc3g@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jan 7
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=047d7bb0394645cd0d050c0af429
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zidan Wang <b50113@freescale.com>
+--047d7bb0394645cd0d050c0af429
+Content-Type: text/plain; charset=UTF-8
 
-wm8960 codec driver missing configure its bit clock and frame clock, so add
-support for it. It will calculate a appropriate frequency dividing ratio
-according to the system clock, bit clock and frame clock, then set the
-corresponding registers.
+On Wed, Jan 7, 2015 at 5:16 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> Changes since 20150106:
+>
+> *crickets*
+>
+> Non-merge commits (relative to Linus' tree): 1350
+>  1543 files changed, 41856 insertions(+), 24250 deletions(-)
+>
 
-Signed-off-by: Zidan Wang <b50113@freescale.com>
----
- sound/soc/codecs/wm8960.c | 97 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 97 insertions(+)
+Happy new year,
 
-diff --git a/sound/soc/codecs/wm8960.c b/sound/soc/codecs/wm8960.c
-index fd25973..aba6bbf 100644
---- a/sound/soc/codecs/wm8960.c
-+++ b/sound/soc/codecs/wm8960.c
-@@ -127,6 +127,8 @@ struct wm8960_priv {
- 	struct snd_soc_dapm_widget *out3;
- 	bool deemph;
- 	int playback_fs;
-+	int bclk;
-+	int sysclk;
- 	struct wm8960_data pdata;
- };
- 
-@@ -563,6 +565,68 @@ static struct {
- 	{  8000, 5 },
- };
- 
-+/* Multiply 256 for internal 256 div */
-+static const int dac_divs[] = { 256, 384, 512, 768, 1024, 1408, 1536 };
-+
-+/* Multiply 10 to eliminate decimials */
-+static const int bclk_divs[] = {
-+	10, 15, 20, 30, 40, 55, 60, 80, 110,
-+	120, 160, 220, 240, 320, 320, 320
-+};
-+
-+static void wm8960_configure_clocking(struct snd_soc_codec *codec,
-+		int stream, int lrclk)
-+{
-+	struct wm8960_priv *wm8960 = snd_soc_codec_get_drvdata(codec);
-+	u16 iface1 = snd_soc_read(codec, WM8960_IFACE1);
-+	u16 iface2 = snd_soc_read(codec, WM8960_IFACE2);
-+	int i, j;
-+
-+	if (!(iface1 & (1<<6))) {
-+		dev_dbg(codec->dev,
-+			"Codec is slave mode, no need to configure clock\n");
-+		return;
-+	}
-+
-+	if (!wm8960->sysclk) {
-+		dev_dbg(codec->dev, "No SYSCLK configured\n");
-+		return;
-+	}
-+
-+	if (!wm8960->bclk || !lrclk) {
-+		dev_dbg(codec->dev, "No audio clocks configured\n");
-+		return;
-+	}
-+
-+	for (i = 0; i < ARRAY_SIZE(dac_divs); ++i) {
-+		if (wm8960->sysclk == lrclk * dac_divs[i]) {
-+			for (j = 0; j < ARRAY_SIZE(bclk_divs); ++j) {
-+				if (wm8960->sysclk ==  wm8960->bclk *
-+						bclk_divs[j] / 10) {
-+					goto config_clock;
-+				}
-+			}
-+		}
-+	}
-+
-+	dev_err(codec->dev, "Unsupported sysclk %d\n", wm8960->sysclk);
-+	return;
-+
-+config_clock:
-+	/* configure frame clock. If ADCLRC configure as GPIO pin, DACLRC
-+	 * pin is used as a frame clock for ADCs and DACs.
-+	 */
-+	if (iface2 & (1<<6))
-+		snd_soc_update_bits(codec, WM8960_CLOCK1, 0x7 << 3, i << 3);
-+	else if (SNDRV_PCM_STREAM_PLAYBACK == stream)
-+		snd_soc_update_bits(codec, WM8960_CLOCK1, 0x7 << 3, i << 3);
-+	else if (SNDRV_PCM_STREAM_CAPTURE == stream)
-+		snd_soc_update_bits(codec, WM8960_CLOCK1, 0x7 << 6, i << 6);
-+
-+	/* configure bit clock */
-+	snd_soc_update_bits(codec, WM8960_CLOCK2, 0xf, j);
-+}
-+
- static int wm8960_hw_params(struct snd_pcm_substream *substream,
- 			    struct snd_pcm_hw_params *params,
- 			    struct snd_soc_dai *dai)
-@@ -572,6 +636,10 @@ static int wm8960_hw_params(struct snd_pcm_substream *substream,
- 	u16 iface = snd_soc_read(codec, WM8960_IFACE1) & 0xfff3;
- 	int i;
- 
-+	wm8960->bclk = snd_soc_params_to_bclk(params);
-+	if (params_channels(params) == 1)
-+		wm8960->bclk *= 2;
-+
- 	/* bit size */
- 	switch (params_width(params)) {
- 	case 16:
-@@ -602,6 +670,10 @@ static int wm8960_hw_params(struct snd_pcm_substream *substream,
- 
- 	/* set iface */
- 	snd_soc_write(codec, WM8960_IFACE1, iface);
-+
-+	wm8960_configure_clocking(codec, substream->stream,
-+			params_rate(params));
-+
- 	return 0;
- }
- 
-@@ -950,6 +1022,30 @@ static int wm8960_set_bias_level(struct snd_soc_codec *codec,
- 	return wm8960->set_bias_level(codec, level);
- }
- 
-+static int wm8960_set_dai_sysclk(struct snd_soc_dai *dai, int clk_id,
-+					unsigned int freq, int dir)
-+{
-+	struct snd_soc_codec *codec = dai->codec;
-+	struct wm8960_priv *wm8960 = snd_soc_codec_get_drvdata(codec);
-+
-+	switch (clk_id) {
-+	case WM8960_SYSCLK_MCLK:
-+		snd_soc_update_bits(codec, WM8960_CLOCK1,
-+					0x1, WM8960_SYSCLK_MCLK);
-+		break;
-+	case WM8960_SYSCLK_PLL:
-+		snd_soc_update_bits(codec, WM8960_CLOCK1,
-+					0x1, WM8960_SYSCLK_PLL);
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	wm8960->sysclk = freq;
-+
-+	return 0;
-+}
-+
- #define WM8960_RATES SNDRV_PCM_RATE_8000_48000
- 
- #define WM8960_FORMATS \
-@@ -962,6 +1058,7 @@ static const struct snd_soc_dai_ops wm8960_dai_ops = {
- 	.set_fmt = wm8960_set_dai_fmt,
- 	.set_clkdiv = wm8960_set_dai_clkdiv,
- 	.set_pll = wm8960_set_dai_pll,
-+	.set_sysclk = wm8960_set_dai_sysclk,
- };
- 
- static struct snd_soc_dai_driver wm8960_dai = {
--- 
-1.9.1
+this release is a very special for me.
+I had to apply zero null nada patches of mine or others :-).
 
+The calm days between Xmas and new year, I started again to build and
+test Linux-next (aka v3.20) kernels .
+
+This was primarily to play with loop-mq from block-next tree.
+As a sidenote I reported some bugs in fio, now we have v2.2.4.
+
+En plus, I refreshed my build-script for -next (see attached file).
+And I am really happy to see my builddeb patches in kbuild-next.
+
+Thanks to all involved people.
+
+Regards,
+- Sedat -
+
+> ----------------------------------------------------------------------------
+>
+> I have created today's linux-next tree at
+> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> (patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
+> are tracking the linux-next tree using git, you should not use "git pull"
+> to do so as that will try to merge the new linux-next release with the
+> old one.  You should use "git fetch" and checkout or reset to the new
+> master.
+>
+> You can see which trees have been included by looking in the Next/Trees
+> file in the source.  There are also quilt-import.log and merge.log files
+> in the Next directory.  Between each merge, the tree was built with
+> a ppc64_defconfig for powerpc and an allmodconfig for x86_64 and a
+> multi_v7_defconfig for arm. After the final fixups (if any), it is also
+> built with powerpc allnoconfig (32 and 64 bit), ppc44x_defconfig and
+> allyesconfig (this fails its final link) and i386, sparc, sparc64 and arm
+> defconfig.
+>
+> Below is a summary of the state of the merge.
+>
+> I am currently merging 234 trees (counting Linus' and 32 trees of patches
+> pending for Linus' tree).
+>
+> Stats about the size of the tree over time can be seen at
+> http://neuling.org/linux-next-size.html .
+>
+> Status of my local build tests will be at
+> http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+> advice about cross compilers/configs that work, we are always open to add
+> more builds.
+>
+> Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
+> Gortmaker for triage and bug fixes.
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>
+
+--047d7bb0394645cd0d050c0af429
+Content-Type: application/x-sh; name="build_linux-next.sh"
+Content-Disposition: attachment; filename="build_linux-next.sh"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i4mdz4nl1
+
+IyEvYmluL3NoCgojIyMgTEFTVCBNT0RJRklFRDogMDctSkFOLTIwMTUgKFNlZGF0IERpbGVrIDxz
+ZWRhdC5kaWxla0BnbWFpbC5jb20+KQoKIyMjIEhFTFAKIyAxLiBtYWtlIGRlYi1wa2cgKG9wdGlv
+bnMpOiAgPGZpbGU6IHNjcmlwdHMvcGFja2FnZS9idWlsZGRlYj4KIyAyLiBsb2NhbHZlcnNpb24g
+aGFuZGxpbmc6ICAgPGZpbGU6IHNjcmlwdHMvc2V0bG9jYWx2ZXJzaW9uPgojIDMuIEtCVUlMRF9V
+U0VSXyogdmFyaWFibGVzOiA8ZmlsZTogc2NyaXB0cy9ta2NvbXBpbGVfaD4KIyA0LiBQcmVyZXFz
+L1ByZXBhcmF0aW9uOiAgICAgPGh0dHA6Ly9rZXJuZWwtaGFuZGJvb2suYWxpb3RoLmRlYmlhbi5v
+cmcvY2gtY29tbW9uLXRhc2tzLmh0bWwjczQuMi4xPgoKIyMjIFBSRVJFUVM6IEluc3RhbGwgYnVp
+bGQtZXNzZW50aWFsLCBmYWtlcm9vdCwgZHBrZy1kZXYgYW5kIGdpdCBwYWNrYWdlcwojYXB0LWdl
+dCB1cGRhdGUKI2FwdC1nZXQgaW5zdGFsbCBidWlsZC1lc3NlbnRpYWwgZmFrZXJvb3QgZHBrZy1k
+ZXYgZ2l0CgojIyMgTGFuZ3VhZ2Ugc2V0dGluZ3MKZXhwb3J0IExBTkc9QwpleHBvcnQgTENfQUxM
+PUMKCiMjIyBCYXNlIGlzIExpbnV4LW5leHQgc291cmNlIGRpcmVjdG9yeQpCQVNFX0RJUj0kKHB3
+ZCkKU1JDX0RJUj0iJHtCQVNFX0RJUn0vbGludXgtbmV4dCIKCiMjIyBDbG9uZSBMaW51eC1uZXh0
+IHJlbW90ZSBHSVQgdHJlZQojR0lUX1VSTD0iZ2l0Oi8vZ2l0Lmtlcm5lbC5vcmcvcHViL3NjbS9s
+aW51eC9rZXJuZWwvZ2l0L25leHQvbGludXgtbmV4dC5naXQiCiNnaXQgY2xvbmUgJHtHSVRfVVJM
+fQoKIyMjIENoYW5nZSB0byBidWlsZCBkaXJlY3RvcnkKY2QgJHtTUkNfRElSfQoKIyMjIE1ha2Ug
+YW5kIGNvbXBpbGVyIHNldHRpbmdzCk1BS0U9Im1ha2UiCk1BS0VfSk9CUz0kKCgkKGdldGNvbmYg
+X05QUk9DRVNTT1JTX09OTE4pKzEpKQpDQ19GT1JfQlVJTEQ9ImdjYy00LjkiCgojIyMgRXh0cmFj
+dCB2ZXJzaW9uLXRhZ3MgYW5kIHJlbGVhc2UtZGF0ZSBmcm9tIGxvY2FsIEdJVCB0cmVlCkxBVEVT
+VF9VUFNUUkVBTV9WRVJfVEFHPSQoZ2l0IGZvci1lYWNoLXJlZiAtLXNvcnQ9dGFnZ2VyZGF0ZSAt
+LWZvcm1hdD0iJShyZWZuYW1lOnNob3J0KSIgcmVmcy90YWdzIHwgZ3JlcCBeJ3ZbMC05XS5bMC05
+XSonIHwgdGFpbCAtMSkKTEFURVNUX05FWFRfVkVSX1RBRz0kKGdpdCBmb3ItZWFjaC1yZWYgLS1z
+b3J0PXRhZ2dlcmRhdGUgLS1mb3JtYXQ9IiUocmVmbmFtZTpzaG9ydCkiIHJlZnMvdGFncyB8IGdy
+ZXAgXiduZXh0LVswLTldXHs4XH0nIHwgdGFpbCAtMSkKbmV4dF9kYXRlPSQoZWNobyAkTEFURVNU
+X05FWFRfVkVSX1RBRyB8IGN1dCAtZCctJyAtZjIpCgojIyMgRGlzdHJpYnV0aW9uIHNldHRpbmdz
+CiMgTk9URTogJGRpc3RyaWJ1dGlvbiBpcyB1c2VkIGluICRkZWJpYW5fcmV2aXNpb24KZGlzdHJp
+YnV0aW9uPSQobHNiX3JlbGVhc2UgLS1jb2RlbmFtZSAtLXNob3J0KQoKIyMjIFVwbG9hZGVyIHNl
+dHRpbmdzCiMgTk9URTogJHVwbG9hZGVyIGlzIHVzZWQgaW4gJGRlYmlhbl9yZXZpc2lvbgpleHBv
+cnQgREVCRlVMTE5BTUU9IlNlZGF0IERpbGVrIgpleHBvcnQgREVCRU1BSUw9InNlZGF0LmRpbGVr
+QGdtYWlsLmNvbSIKdXBsb2FkZXI9ImRpbGVrcyIKCiMjIyBEZWJpYW4gdXBzdHJlYW0gdmVyc2lv
+biBzZXR0aW5ncyAKIyBOT1RFLTE6ICR1cHN0cmVhbV92ZXJzaW9uIGlzIGV4dHJhY3RlZCBmcm9t
+IE1ha2VmaWxlCiMgTk9URS0yOiAkZGViaWFuX3Vwc3RyZWFtX3ZlcnNpb24gaXMgdXNlZCBpbiBk
+ZWItcGtnIG9wdGlvbnMKIyBOT1RFLTM6IENvbnZlcnQgJy1yY1gnIGluICR1cHN0cmVhbV92ZXJz
+aW9uIHRvICd+cmNYJyAoc2VlICRleHRyYXZlcnNpb24pCiMgRVhBTVBMRS0xOiBkZWJpYW5fdXBz
+dHJlYW1fdmVyc2lvbj0iMy4xOS4wfnJjMiIKIyBFWEFNUExFLTI6IGRlYmlhbl91cHN0cmVhbV92
+ZXJzaW9uPSIzLjE5LjB+cmMyfm5leHQiCnZlcnNpb249JChhd2sgJy9eVkVSU0lPTiA9IC8ge3By
+aW50ICQzfScgTWFrZWZpbGUpCnBhdGNobGV2ZWw9JChhd2sgJy9eUEFUQ0hMRVZFTCA9IC8ge3By
+aW50ICQzfScgTWFrZWZpbGUpCnN1YmxldmVsPSQoYXdrICcvXlNVQkxFVkVMID0gLyB7cHJpbnQg
+JDN9JyBNYWtlZmlsZSkKZXh0cmF2ZXJzaW9uPSQoYXdrICcvXkVYVFJBVkVSU0lPTiA9IC8ge3By
+aW50ICQzfScgTWFrZWZpbGUpCnVwc3RyZWFtX3ZlcnNpb249IiR7dmVyc2lvbn0uJHtwYXRjaGxl
+dmVsfS4ke3N1YmxldmVsfSR7ZXh0cmF2ZXJzaW9ufSIKZGViaWFuX3Vwc3RyZWFtX3ZlcnNpb249
+JChlY2hvICR1cHN0cmVhbV92ZXJzaW9uIHwgdHIgJy0nICd+JykKZGViaWFuX3Vwc3RyZWFtX3Zl
+cnNpb249IiR7ZGViaWFuX3Vwc3RyZWFtX3ZlcnNpb259fm5leHQiCgojIyMgRGViaWFuIHJldmlz
+aW9uIHNldHRpbmdzCiMgTk9URS0xOiAkZGViaWFuX3JldmlzaW9uIGlzIHVzZWQgaW4gZGViLXBr
+ZyBvcHRpb25zCiMgTk9URS0yOiAkcmV2aXNpb24gaXMgdXNlZCBpbiAkZGViaWFuX3JldmlzaW9u
+IGFuZCAkbXlsb2NhbHZlcnNpb24KIyBFWEFNUExFLTE6IGRlYmlhbl9yZXZpc2lvbj0iMX5wcmVj
+aXNlK2RpbGVrczEiCiMgRVhBTVBMRS0yOiBkZWJpYW5fcmV2aXNpb249IjIwMTQxMjMxLjF+cHJl
+Y2lzZStkaWxla3MxIgpyZXZpc2lvbj0iMSIKdXBsb2FkZXJfcmV2aXNpb249IjEiCmRlYmlhbl9y
+ZXZpc2lvbj0iJHtyZXZpc2lvbn1+JHtkaXN0cmlidXRpb259KyR7dXBsb2FkZXJ9JHt1cGxvYWRl
+cl9yZXZpc2lvbn0iCmRlYmlhbl9yZXZpc2lvbj0iJHtuZXh0X2RhdGV9LiR7ZGViaWFuX3Jldmlz
+aW9ufSIKCiMjIyBNeSBrZXJuZWwtZmVhdHVyZXNldCBzZXR0aW5ncwojIEVYQU1QTEUtMTogVXNl
+IG93biAiaW5pemEiIGZlYXR1cmVzZXQKIyBFWEFNUExFLTI6IFRlc3QgYmxvY2stbG9vcC1tcSAo
+djMpIGFzICJsb29wbXEiIGZlYXR1cmVzZXQKbXlmZWF0dXJlc2V0PSJsb29wbXEiCgojIyMgTXkg
+a2VybmVsLWZsYXZvdXIgc2V0dGluZ3MKIyBFWEFNUExFOiBVc2Ugb3duICJzbWFsbCIga2VybmVs
+LWZsYXZvdXIgKGxvY2FsbW9kY29uZmlnLWVkIHBsdXMgc29tZSBkZWJ1Zy1vcHRpb25zIGVuYWJs
+ZWQpIApteWtlcm5lbGZsYXZvdXI9InNtYWxsIgoKIyMjIEN1c3RvbWl6ZWQgTE9DQUxWRVJTSU9O
+IHNldHRpbmdzCiMgTk9URS0xOiAkbXlsb2NhbHZlcnNpb24gaXMgYXR0YWNoZWQgYXMgc3VmZml4
+IHRvICJpbmNsdWRlL2dlbmVyYXRlZC91dHNyZWxlYXNlLmgiIGZpbGUKIyBOT1RFLTI6IFVzYWdl
+IG9mIExPQ0FMVkVSU0lPTj0kbXlsb2NhbHZlcnNpb24gc3VwcHJlc3NlcyAiKyIgc3VmZml4CiMg
+Tk9URS0zOiBTZWUgYWxzbyAiI2RlZmluZSBVVFNfUkVMRUFTRSIgaW4gdXRzcmVsZWFzZS5oIGZp
+bGUuCiMgV0FSTklORzogRG8gTk9UIHVzZSB1bmRlcnNjb3JlICgiXyIpIGluICRteWxvY2FsdmVy
+c2lvbiAoc2VlIDxodHRwOi8vYnVncy5kZWJpYW4ub3JnLzIyMjQ2Nz4pLgojIEVSUi1NU0c6IGRw
+a2ctZ2VuY29udHJvbDogZXJyb3I6IElsbGVnYWwgcGFja2FnZSBuYW1lIC4uLgojIEVYQU1QTEUt
+MTogbXlsb2NhbHZlcnNpb249IjEtaW5pemEtc21hbGwiCiMgRVhBTVBMRS0yOiBteWxvY2FsdmVy
+c2lvbj0iMS1pbml6YS14ODZfNjQiICgieDg2XzY0IiBub3QgYWxsb3dlZCwgdXNlICJhbWQ2NCIg
+aW5zdGVhZCkKIyBFWEFNUExFLTM6IG15bG9jYWx2ZXJzaW9uPSJuZXh0LTIwMTQxMjMxLjEtaW5p
+emEtc21hbGwiCm15bG9jYWx2ZXJzaW9uPSIke3JldmlzaW9ufS0ke215ZmVhdHVyZXNldH0tJHtt
+eWtlcm5lbGZsYXZvdXJ9IgpteWxvY2FsdmVyc2lvbj0ibmV4dC0ke25leHRfZGF0ZX0uJHtteWxv
+Y2FsdmVyc2lvbn0iCgojIyMgQnVpbGQtbG9nIGZpbGUKS1ZFUj0iJHt1cHN0cmVhbV92ZXJzaW9u
+fS0ke215bG9jYWx2ZXJzaW9ufSIKQlVJTERfTE9HX0ZJTEU9ImJ1aWxkLWxvZ18ke0tWRVJ9LnR4
+dCIKCiMjIyBtYWtlIG9wdGlvbnMKTUFLRV9PUFRTPSJDQz0ke0NDX0ZPUl9CVUlMRH0gLWoke01B
+S0VfSk9CU30gS0JVSUxEX0JVSUxEX1VTRVI9JHtERUJFTUFJTH0gTE9DQUxWRVJTSU9OPS0ke215
+bG9jYWx2ZXJzaW9ufSIKCiMjIyBkZWItcGtnIG9wdGlvbnMKIyBFWEFNUExFLTE6IEtERUJfUEtH
+VkVSU0lPTj0iMy4xOS4wfnJjMi0xfnByZWNpc2UrZGlsZWtzMSIKIyBFWEFNUExFLTI6IEtERUJf
+Q0hBTkdFTE9HX0RJU1Q9InByZWNpc2UiIChzZXQgZGlzdHJpYnV0aW9uIG5hbWUgZXhwbGljaXRs
+eSkKIyBFWEFNUExFLTM6IEtERUJfUEtHVkVSU0lPTj0iMy4xOS4wfnJjMn5uZXh0LTIwMTQxMjMx
+LjF+cHJlY2lzZStkaWxla3MxIgpERUJfUEtHX09QVFM9IktERUJfUEtHVkVSU0lPTj0ke2RlYmlh
+bl91cHN0cmVhbV92ZXJzaW9ufS0ke2RlYmlhbl9yZXZpc2lvbn0iCiMjREVCX1BLR19PUFRTPSIk
+REVCX1BLR19PUFRTIEtERUJfQ0hBTkdFTE9HX0RJU1Q9JGRpc3RyaWJ1dGlvbiIKCiMjIyBMaXN0
+IHNvbWUgdmVyc2lvbiBhbmQgb3B0aW9uIHNldHRpbmdzCmVjaG8gIkxpbnV4IHVwc3RyZWFtIHZl
+cnNpb24gLi4uLiAke0xBVEVTVF9VUFNUUkVBTV9WRVJfVEFHfSIKZWNobyAiTGludXggbmV4dCB2
+ZXJzaW9uIC4uLi4uLi4uICR7TEFURVNUX05FWFRfVkVSX1RBR30iCmVjaG8gIkRlYmlhbiB1cHN0
+cmVhbSB2ZXJzaW9uIC4uLiAke2RlYmlhbl91cHN0cmVhbV92ZXJzaW9ufSIKZWNobyAiRGViaWFu
+IHJldmlzaW9uIC4uLi4uLi4uLi4uICR7ZGViaWFuX3JldmlzaW9ufSIKZWNobyAibWFrZSBvcHRp
+b25zIC4uLi4uLi4uLi4uLi4uICR7TUFLRV9PUFRTfSIKZWNobyAiZGVwLXBrZyBvcHRpb25zIC4u
+Li4uLi4uLi4uICR7REVCX1BLR19PUFRTfSIKZWNobyAiIgoKIyMjIFJlbW92ZSBhbnkgZXhpc3Rp
+bmcgbG9jYWx2ZXJzaW9uKiBmaWxlKHMpIGFzIGN1c3RvbWl6ZWQgTE9DQUxWRVJTSU9OIGlzIHVz
+ZWQKIyBFWEFNUExFOiBMaW51eC1uZXh0IHNoaXBzIGEgImxvY2FsdmVyc2lvbi1uZXh0IiBmaWxl
+LgpybSAtZiBsb2NhbHZlcnNpb24qCgojIyMgU3RhcnQgYnVpbGQKZWNobyAiIyMjIyMgU3RhcnRp
+bmcgTGludXgta2VybmVsIGJ1aWxkIC4uLiIKZmFrZXJvb3QgJHtNQUtFfSAke01BS0VfT1BUU30g
+ZGViLXBrZyAke0RFQl9QS0dfT1BUU30gMj4mMSB8IHRlZSAuLi8ke0JVSUxEX0xPR19GSUxFfQpl
+Y2hvICIjIyMjIyBGaW5pc2hlZCEiCg==
+--047d7bb0394645cd0d050c0af429--
