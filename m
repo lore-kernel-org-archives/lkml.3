@@ -1,131 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550AbbAGXaa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 18:30:30 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:33429 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055AbbAGXa0 (ORCPT
+	id S1755518AbbAGXaN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 18:30:13 -0500
+Received: from mailout.micron.com ([137.201.242.129]:39454 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752055AbbAGXaK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 18:30:26 -0500
+	Wed, 7 Jan 2015 18:30:10 -0500
+From: "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: "axboe@kernel.dk" <axboe@kernel.dk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] block: pass correct seed to integrity metadata
+ generation function
+Thread-Topic: [PATCH] block: pass correct seed to integrity metadata
+ generation function
+Thread-Index: AdAbHdTOKR9VxT2kSG67KJv7w9th2QPqKNAAAAK0LeoAABYRQA==
+Date: Wed, 7 Jan 2015 23:30:05 +0000
+Message-ID: <80B89753B40C5141A3E2D53FE7A2A8A994634D2A@NTXBOIMBX02.micron.com>
+References: <54936D1E.3020700@micron.com> <54ADBC6E.50301@micron.com>
+ <yq14ms25g21.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq14ms25g21.fsf@sermon.lab.mkp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.201.88.182]
+x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-21230.002
+x-tm-as-result: No--29.002000-0.000000-31
+x-tm-as-user-approved-sender: Yes
+x-tm-as-user-blocked-sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1420656594-8908-2-git-send-email-m-karicheri2@ti.com>
-References: <1420656594-8908-1-git-send-email-m-karicheri2@ti.com> <1420656594-8908-2-git-send-email-m-karicheri2@ti.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Wed, 7 Jan 2015 17:30:04 -0600
-Message-ID: <CAL_JsqJ5tDQb+SzzhGQTs48tSG=T_QZu3LW5TDyugxFw1V7LoA@mail.gmail.com>
-Subject: Re: [PATCH v3 1/4] of: iommu: add ptr to OF node arg to of_iommu_configure()
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: Joerg Roedel <joro@8bytes.org>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 7, 2015 at 12:49 PM, Murali Karicheri <m-karicheri2@ti.com> wrote:
-> Function of_iommu_configure() is called from of_dma_configure() to
-> setup iommu ops using DT property. This API is currently used for
-> platform devices for which DMA configuration (including iommu ops)
-> may come from device's parent. To extend this functionality for PCI
-> devices, this API need to take a parent node ptr as an argument
-> instead of assuming device's parent. This is needed since for PCI, the
-> dma configuration may be defined in the DT node of the root bus bridge's
-> parent device. Currently only dma-range is used for PCI and iommu is not
-> supported. So return error if the device is PCI.
->
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> ---
->  drivers/iommu/of_iommu.c |   10 ++++++++--
->  drivers/of/platform.c    |    2 +-
->  include/linux/of_iommu.h |    6 ++++--
->  3 files changed, 13 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/iommu/of_iommu.c b/drivers/iommu/of_iommu.c
-> index af1dc6a..396bc77 100644
-> --- a/drivers/iommu/of_iommu.c
-> +++ b/drivers/iommu/of_iommu.c
-> @@ -133,19 +133,25 @@ struct iommu_ops *of_iommu_get_ops(struct device_node *np)
->         return ops;
->  }
->
-> -struct iommu_ops *of_iommu_configure(struct device *dev)
-> +struct iommu_ops *of_iommu_configure(struct device *dev,
-> +                                    struct device_node *node)
 
-You use node here, but np in the declaration. However...
 
->  {
->         struct of_phandle_args iommu_spec;
->         struct device_node *np;
+> Sam> Any particular objection to this patch?  It would be nice if the
+> Sam> kernel supported PI on block sizes other than just 512 bytes.
+> 
+> I never saw the patch. Did you CC: me on it?
 
-We also have np here. I would suggest we rename this to iommu_node or
-iommu_np to be clear which one this is for.
+Yes, you were CC: on the original.  Could you take a peek at the patch 
+and give me feedback?
+https://lkml.org/lkml/2014/12/18/521
 
->         struct iommu_ops *ops = NULL;
->         int idx = 0;
->
-> +       if (dev_is_pci(dev)) {
-> +               dev_err(dev, "iommu is currently not supported for PCI\n");
-> +               return NULL;
-> +       }
-> +
->         /*
->          * We don't currently walk up the tree looking for a parent IOMMU.
->          * See the `Notes:' section of
->          * Documentation/devicetree/bindings/iommu/iommu.txt
->          */
-> -       while (!of_parse_phandle_with_args(dev->of_node, "iommus",
-> +       while (!of_parse_phandle_with_args(node, "iommus",
->                                            "#iommu-cells", idx,
->                                            &iommu_spec)) {
->                 np = iommu_spec.np;
-> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> index a54ec10..7675b79 100644
-> --- a/drivers/of/platform.c
-> +++ b/drivers/of/platform.c
-> @@ -196,7 +196,7 @@ static void of_dma_configure(struct device *dev)
->         dev_dbg(dev, "device is%sdma coherent\n",
->                 coherent ? " " : " not ");
->
-> -       iommu = of_iommu_configure(dev);
-> +       iommu = of_iommu_configure(dev, dev->of_node);
->         dev_dbg(dev, "device is%sbehind an iommu\n",
->                 iommu ? " " : " not ");
->
-> diff --git a/include/linux/of_iommu.h b/include/linux/of_iommu.h
-> index 16c7554..3258cbb 100644
-> --- a/include/linux/of_iommu.h
-> +++ b/include/linux/of_iommu.h
-> @@ -12,7 +12,8 @@ extern int of_get_dma_window(struct device_node *dn, const char *prefix,
->                              size_t *size);
->
->  extern void of_iommu_init(void);
-> -extern struct iommu_ops *of_iommu_configure(struct device *dev);
-> +extern struct iommu_ops *of_iommu_configure(struct device *dev,
-> +                                       struct device_node *np);
->
->  #else
->
-> @@ -24,7 +25,8 @@ static inline int of_get_dma_window(struct device_node *dn, const char *prefix,
->  }
->
->  static inline void of_iommu_init(void) { }
-> -static inline struct iommu_ops *of_iommu_configure(struct device *dev)
-> +static inline struct iommu_ops *of_iommu_configure(struct device *dev,
-> +                                        struct device_node *np)
->  {
->         return NULL;
->  }
-> --
-> 1.7.9.5
->
+
+
