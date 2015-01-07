@@ -1,52 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948AbbAGWvg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 17:51:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57855 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781AbbAGWvf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 17:51:35 -0500
-Message-ID: <54ADB86B.10105@canonical.com>
-Date: Wed, 07 Jan 2015 17:51:23 -0500
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1755235AbbAGWzK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 17:55:10 -0500
+Received: from skprod3.natinst.com ([130.164.80.24]:37134 "EHLO ni.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752050AbbAGWzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 17:55:07 -0500
+In-Reply-To: <1419953965-16494-1-git-send-email-peter@hurleysoftware.com>
+References: <1419942873-6779-1-git-send-email-peter@hurleysoftware.com> <1419953965-16494-1-git-send-email-peter@hurleysoftware.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
 MIME-Version: 1.0
-To: alexander.deucher@amd.com
-CC: "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, christian.koenig@amd.com,
-        David Airlie <airlied@linux.ie>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Subject: [Regression][v3.17][3.18][3.19-rc3] drm/radeon: re-enable dpm by
- default on BTC
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH v2] tty: Prevent hw state corruption in exclusive mode reopen
+X-KeepSent: E11B8E2C:C7D29A8E-86257DC6:007DA974;
+ type=4; name=$KeepSent
+X-Mailer: Lotus Notes Release 8.5.3FP3 November 16, 2012
+From: Shreyas Bethur <shreyas.bethur@ni.com>
+Message-ID: <OFE11B8E2C.C7D29A8E-ON86257DC6.007DA974-86257DC6.007DE311@ni.com>
+Date: Wed, 7 Jan 2015 16:55:01 -0600
+X-MIMETrack: Serialize by Router on US-AUS-MAIL4/AUS/M/NIC(Release 8.5.3FP6|November 21, 2013) at
+ 01/07/2015 04:55:01 PM,
+	Serialize complete at 01/07/2015 04:55:01 PM
+Content-Type: text/plain; charset="US-ASCII"
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-07_09:2015-01-07,2015-01-07,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexander,
+Peter Hurley <peter@hurleysoftware.com> wrote on 12/30/2014 09:39:25 AM:
 
-A kernel bug report was opened against Ubuntu [0].  After a kernel
-bisect, it was found that reverting the following commit resolved this bug:
+> From: Peter Hurley <peter@hurleysoftware.com>
+> To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, 
+> Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org, 
+> linux-serial@vger.kernel.org, Shreyas Bethur 
+> <shreyas.bethur@ni.com>, Peter Hurley <peter@hurleysoftware.com>
+> Date: 12/30/2014 09:39 AM
+> Subject: [PATCH v2] tty: Prevent hw state corruption in exclusive mode 
+reopen
+> 
+> Exclusive mode ttys (TTY_EXCLUSIVE) do not allow further reopens;
+> fail the condition before associating the file pointer and calling
+> the driver open() method.
+> 
+> Prevents DTR programming when the tty is already in exclusive mode.
+> 
+> Reported-by: Shreyas Bethur <shreyas.bethur@ni.com>
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> ---
+>  drivers/tty/tty_io.c | 7 +++----
+>  1 file changed, 3 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+> index 4f35b43..51f066a 100644
+> --- a/drivers/tty/tty_io.c
+> +++ b/drivers/tty/tty_io.c
+> @@ -1464,6 +1464,9 @@ static int tty_reopen(struct tty_struct *tty)
+>         driver->subtype == PTY_TYPE_MASTER)
+>        return -EIO;
+> 
+> +   if (test_bit(TTY_EXCLUSIVE, &tty->flags) && !capable(CAP_SYS_ADMIN))
+> +      return -EBUSY;
+> +
+>     tty->count++;
+> 
+>     WARN_ON(!tty->ldisc);
+> @@ -2106,10 +2109,6 @@ retry_open:
+>        retval = -ENODEV;
+>     filp->f_flags = saved_flags;
+> 
+> -   if (!retval && test_bit(TTY_EXCLUSIVE, &tty->flags) &&
+> -                  !capable(CAP_SYS_ADMIN))
+> -      retval = -EBUSY;
+> -
+>     if (retval) {
+>  #ifdef TTY_DEBUG_HANGUP
+>        printk(KERN_DEBUG "%s: error %d in opening %s...\n", __func__,
+> -- 
+> 2.2.1
+> 
 
-commit c08abf11900e19b14dd3a0cc3d105bd74519cd18
-Author: Alex Deucher <alexander.deucher@amd.com>
-Date:   Mon Jul 14 12:01:40 2014 -0400
-
-    drm/radeon: re-enable dpm by default on BTC
-
-The regression was introduced as of v3.17-rc1 and still exists in
-current mainline.  It has also made it's way into the stable releases.
-
-I was hoping to get your feedback, since you are the patch author.  Do
-you think gathering any additional data will help diagnose this issue,
-or would it be best to submit a revert request?
-    
-    
-Thanks,
-
-Joe
-
-[0] http://pad.lv/1386534
+Acked-by: Shreyas Bethur <shreyas.bethur@ni.com>
 
