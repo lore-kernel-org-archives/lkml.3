@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933630AbbAGCro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:47:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46788 "EHLO
+	id S933064AbbAGCHn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:07:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46747 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932408AbbAGCHe (ORCPT
+	with ESMTP id S932373AbbAGCHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:07:34 -0500
+	Tue, 6 Jan 2015 21:07:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrei Warkentin <andrey.warkentin@gmail.com>,
-        Baruch Siach <baruch@tkos.co.il>, Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH 3.14 09/52] mmc: block: add newline to sysfs display of force_ro
-Date: Tue,  6 Jan 2015 18:06:37 -0800
-Message-Id: <20150107020556.569641549@linuxfoundation.org>
+        Peter Guo <peter.guo@bayhubtech.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH 3.14 10/52] mmc: sdhci-pci-o2micro: Fix Dell E5440 issue
+Date: Tue,  6 Jan 2015 18:06:38 -0800
+Message-Id: <20150107020556.748169982@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107020555.043793795@linuxfoundation.org>
 References: <20150107020555.043793795@linuxfoundation.org>
@@ -29,32 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Baruch Siach <baruch@tkos.co.il>
+From: Peter Guo <peter.guo@bayhubtech.com>
 
-commit 0031a98a85e9fca282624bfc887f9531b2768396 upstream.
+commit 6380ea099cdd46d7377b6fbec0291cf2aa387bad upstream.
 
-Make force_ro consistent with other sysfs entries.
+Fix Dell E5440 when reboot Linux, can't find o2micro sd host chip issue.
 
-Fixes: 371a689f64b0d ('mmc: MMC boot partitions support')
-Cc: Andrei Warkentin <andrey.warkentin@gmail.com>
-Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+Fixes: 01acf6917aed (mmc: sdhci-pci: add support of O2Micro/BayHubTech SD hosts)
+Signed-off-by: Peter Guo <peter.guo@bayhubtech.com>
 Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/card/block.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mmc/host/sdhci-pci-o2micro.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -260,7 +260,7 @@ static ssize_t force_ro_show(struct devi
- 	int ret;
- 	struct mmc_blk_data *md = mmc_blk_get(dev_to_disk(dev));
+--- a/drivers/mmc/host/sdhci-pci-o2micro.c
++++ b/drivers/mmc/host/sdhci-pci-o2micro.c
+@@ -88,8 +88,6 @@ void sdhci_pci_o2_fujin2_pci_init(struct
+ 		return;
+ 	scratch_32 &= ~((1 << 21) | (1 << 30));
  
--	ret = snprintf(buf, PAGE_SIZE, "%d",
-+	ret = snprintf(buf, PAGE_SIZE, "%d\n",
- 		       get_disk_ro(dev_to_disk(dev)) ^
- 		       md->read_only);
- 	mmc_blk_put(md);
+-	/* Set RTD3 function disabled */
+-	scratch_32 |= ((1 << 29) | (1 << 28));
+ 	pci_write_config_dword(chip->pdev, O2_SD_FUNC_REG3, scratch_32);
+ 
+ 	/* Set L1 Entrance Timer */
 
 
