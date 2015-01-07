@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933685AbbAGCsX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:48:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46744 "EHLO
+	id S933030AbbAGCHl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:07:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46755 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932370AbbAGCHa (ORCPT
+	with ESMTP id S932374AbbAGCHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:07:30 -0500
+	Tue, 6 Jan 2015 21:07:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        P J P <ppandit@redhat.com>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.14 01/52] isofs: Fix infinite looping over CE entries
-Date: Tue,  6 Jan 2015 18:06:29 -0800
-Message-Id: <20150107020555.312943073@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Willy Tarreau <w@1wt.eu>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.14 02/52] x86/tls: Validate TLS entries to protect espfix
+Date: Tue,  6 Jan 2015 18:06:30 -0800
+Message-Id: <20150107020555.479675098@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107020555.043793795@linuxfoundation.org>
 References: <20150107020555.043793795@linuxfoundation.org>
@@ -28,55 +32,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit f54e18f1b831c92f6512d2eedb224cd63d607d3d upstream.
+commit 41bdc78544b8a93a9c6814b8bbbfef966272abbe upstream.
 
-Rock Ridge extensions define so called Continuation Entries (CE) which
-define where is further space with Rock Ridge data. Corrupted isofs
-image can contain arbitrarily long chain of these, including a one
-containing loop and thus causing kernel to end in an infinite loop when
-traversing these entries.
+Installing a 16-bit RW data segment into the GDT defeats espfix.
+AFAICT this will not affect glibc, Wine, or dosemu at all.
 
-Limit the traversal to 32 entries which should be more than enough space
-to store all the Rock Ridge data.
-
-Reported-by: P J P <ppandit@redhat.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/isofs/rock.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/x86/kernel/tls.c |   23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
---- a/fs/isofs/rock.c
-+++ b/fs/isofs/rock.c
-@@ -30,6 +30,7 @@ struct rock_state {
- 	int cont_size;
- 	int cont_extent;
- 	int cont_offset;
-+	int cont_loops;
- 	struct inode *inode;
- };
- 
-@@ -73,6 +74,9 @@ static void init_rock_state(struct rock_
- 	rs->inode = inode;
+--- a/arch/x86/kernel/tls.c
++++ b/arch/x86/kernel/tls.c
+@@ -27,6 +27,21 @@ static int get_free_idx(void)
+ 	return -ESRCH;
  }
  
-+/* Maximum number of Rock Ridge continuation entries */
-+#define RR_MAX_CE_ENTRIES 32
++static bool tls_desc_okay(const struct user_desc *info)
++{
++	if (LDT_empty(info))
++		return true;
 +
- /*
-  * Returns 0 if the caller should continue scanning, 1 if the scan must end
-  * and -ve on error.
-@@ -105,6 +109,8 @@ static int rock_continue(struct rock_sta
- 			goto out;
- 		}
- 		ret = -EIO;
-+		if (++rs->cont_loops >= RR_MAX_CE_ENTRIES)
-+			goto out;
- 		bh = sb_bread(rs->inode->i_sb, rs->cont_extent);
- 		if (bh) {
- 			memcpy(rs->buffer, bh->b_data + rs->cont_offset,
++	/*
++	 * espfix is required for 16-bit data segments, but espfix
++	 * only works for LDT segments.
++	 */
++	if (!info->seg_32bit)
++		return false;
++
++	return true;
++}
++
+ static void set_tls_desc(struct task_struct *p, int idx,
+ 			 const struct user_desc *info, int n)
+ {
+@@ -66,6 +81,9 @@ int do_set_thread_area(struct task_struc
+ 	if (copy_from_user(&info, u_info, sizeof(info)))
+ 		return -EFAULT;
+ 
++	if (!tls_desc_okay(&info))
++		return -EINVAL;
++
+ 	if (idx == -1)
+ 		idx = info.entry_number;
+ 
+@@ -192,6 +210,7 @@ int regset_tls_set(struct task_struct *t
+ {
+ 	struct user_desc infobuf[GDT_ENTRY_TLS_ENTRIES];
+ 	const struct user_desc *info;
++	int i;
+ 
+ 	if (pos >= GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
+ 	    (pos % sizeof(struct user_desc)) != 0 ||
+@@ -205,6 +224,10 @@ int regset_tls_set(struct task_struct *t
+ 	else
+ 		info = infobuf;
+ 
++	for (i = 0; i < count / sizeof(struct user_desc); i++)
++		if (!tls_desc_okay(info + i))
++			return -EINVAL;
++
+ 	set_tls_desc(target,
+ 		     GDT_ENTRY_TLS_MIN + (pos / sizeof(struct user_desc)),
+ 		     info, count / sizeof(struct user_desc));
 
 
