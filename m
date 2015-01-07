@@ -1,111 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477AbbAGG3V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 01:29:21 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:24687 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751105AbbAGG3U (ORCPT
+	id S1754874AbbAGGgV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 01:36:21 -0500
+Received: from us01smtprelay-2.synopsys.com ([198.182.47.9]:39016 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753825AbbAGGgT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 01:29:20 -0500
-X-IronPort-AV: E=Sophos;i="5.07,712,1413237600"; 
-   d="scan'208";a="115958832"
-Date: Wed, 7 Jan 2015 07:29:17 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-cc: Arend van Spriel <arend@broadcom.com>, Kalle Valo <kvalo@codeaurora.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Brett Rudley <brudley@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        Fabian Frederick <fabf@skynet.be>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        brcm80211-dev-list@broadcom.com,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] brcm80211: brcmsmac: dma: Remove some unused functions
-In-Reply-To: <CAKXHbyNBV6=DPF4n0onzhEqAuS-PqLS5pwZj_OitRuYMvgpjvw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1501070726320.2058@localhost6.localdomain6>
-References: <1420332469-5907-1-git-send-email-rickard_strandqvist@spectrumdigital.se> <54A8DBF4.4050202@lwfinger.net> <CAKXHbyN6LH_pFw1uoLXRzgJv-NcjbTLJvMZXfwYXDwuk9QDszA@mail.gmail.com> <871tn933jc.fsf@kamboji.qca.qualcomm.com> <54AA7042.50207@broadcom.com>
- <CAKXHbyNBV6=DPF4n0onzhEqAuS-PqLS5pwZj_OitRuYMvgpjvw@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 7 Jan 2015 01:36:19 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Rob Herring <robh@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Hurley <peter@hurleysoftware.com>, Jiri Slaby <jslaby@suse.cz>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [Patch v4] ARC: Dynamically determine BASE_BAUD from DeviceTree
+Thread-Topic: [Patch v4] ARC: Dynamically determine BASE_BAUD from DeviceTree
+Thread-Index: AQHQKb5sqAKFbNqbsk6hKI28o0KuIQ==
+Date: Wed, 7 Jan 2015 06:36:14 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA2307565BCA499@IN01WEMBXA.internal.synopsys.com>
+References: <54ABD526.9020907@hurleysoftware.com>
+ <1420552747-27544-1-git-send-email-vgupta@synopsys.com>
+ <CAL_JsqLzzLajoQAT3nYd5zi4=+zchXfVVPnYNriAZZi4tpa6yA@mail.gmail.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.196.223]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 06 January 2015 08:08 PM, Rob Herring wrote:
+> On Tue, Jan 6, 2015 at 7:59 AM, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
+>> 8250 earlycon is broken on multi-platform ARC because the UART clk
+>> value (BASE_BAUD) is fixed at build time.
+> Note that it should only be broken if you rely on the kernel to init
+> the uart. It should work if the boot loader configured the UART and
+> you don't specify the baudrate.
+
+But even if uboot set it up right - when the early 8250 is enabled in kernel, it
+will try to apply BASE_BAUD to re init it again.
+So if that doesn't match platform expectations, early prints will be garbled. Am I
+missing something here?
+
+>>  #include <asm/mach_desc.h>
+>>
+>> +#ifdef CONFIG_SERIAL_8250_CONSOLE
+>> +
+>> +static unsigned int arc_base_baud;
+> This can be initdata.
+
+OK !
+
+>
+>> +unsigned int __init arc_early_base_baud(void)
+>> +{
+>> +       return arc_base_baud/16;
+>> +}
+>> +
+>> +static void __init arc_set_early_base_baud(unsigned long dt_root)
+>> +{
+>> +       unsigned int core_clk = arc_get_core_freq();
+>> +
+>> +       if (of_flat_dt_is_compatible(dt_root, "abilis,arc-tb10x"))
+>> +               arc_base_baud = core_clk/3;
+> How many platforms do you expect this to be? This scales to maybe 10,
+> but not to 100 platforms. It certainly would not scale for ARM.
+
+The need for this came from our internal development of 2 new platform based on
+new ARCv2 ISA.
+They are slated to hit mainline sometime this year. Hence this is in a sense prep
+patch and converts the
+only existing upstream user of BASE_BAUD for ARC (tb10x). For ARC atleast I don't
+expect the scalability issue - yet :-)
+ARM doesn't seem define asm/serial.h (BASE_BAUD) and it probably works OK with the
+stub value in asm-generic ?
 
 
-On Wed, 7 Jan 2015, Rickard Strandqvist wrote:
+> If it
+> is a lot, then we need to find a generic way to describe this in DT.
+> For example, perhaps we require the uart node to have a
+> clock-frequency property or add a chosen property. 
 
-> 2015-01-05 12:06 GMT+01:00 Arend van Spriel <arend@broadcom.com>:
-> > On 01/05/15 11:49, Kalle Valo wrote:
-> >>
-> >> Rickard Strandqvist<rickard_strandqvist@spectrumdigital.se>  writes:
-> >>
-> >>> As I hope you can see I have made some changes regarding the
-> >>> subject-line. Thought it was an advantage to be able to see which file
-> >>> I actually removed something from. There seems to be a big focus on
-> >>> getting right on subject-line right in recent weeks.
-> >>>
-> >>> I wonder why there is a script that takes a file name, and respond
-> >>> with an appropriate subject line?
-> >
-> >
-> > Is there a script for this? Anyway, I would say driver name is enough.
-> > Enough about the subject line ;-) I would like to give some general remarks
-> > as you seem to touch a lot of kernel code. First off, I think it is good to
-> > remove unused stuff. However, I would like some more explanation on your
-> > methodology apart from "partially found by using a static code analysis
-> > program". So a cover-letter explaining that would have been nice (maybe
-> > still is). Things like Kconfig option can affect whether function are used
-> > or not so how did you cover that.
-> >
-> > Regards,
-> > Arend
-> >
-> >
-> >> I don't think you can really automate this as some drivers do this a bit
-> >> differently. You always need to manually check the commit log.
-> >>
-> >>> But ok, I change my script accordingly. Should I submit the patch again?
-> >>
-> >>
-> >> Yes, please resubmit.
-> >>
-> >
-> 
-> Hi Arend
-> 
-> Yes, a script that had been excellent, I think!
-> I have one as part of my git send-email script, until a week ago, it
-> was enough that I removed the "drivers/" and changed all "/" to ": "
-> I have now been expanded my sed pipe a lot (tell me if anyone is interested)
-> But now I've seen everything from uppercase and [DIR], etc.
-> So I can not understand how anyone should be able to get the right
-> name without a good help.
-> 
-> Sure i like to share how I use cppcheck, but is very hesitant to write
-> this with each patch mails I send though!
-> 
-> I run:
-> cppcheck --force --quiet --enable=all .
-> 
-> Or a specific file instead of .
-> 
-> This will include, among other things get a lot of error message such,
-> +4000 for the kernel.
-> (style) The function 'xxx' is never used
-> 
-> For these I made a script that searched through all the files after
-> the function name (cppcheck missed a few). And save the rest so I go
-> through them and possibly send patches.
+Yeah that would indeed be cleanest way. But I think we shd be ok for now.
 
-I think that the question was about what methodology is cppcheck using to 
-find the given issue.  But probably cppcheck is a black box that does 
-whatever it does, so the user doesn't know what the rationale is.  
-However, I think you mentioned that cppcheck found only some of the 
-issues.  You could thus describe what was the methodology for finding the 
-other ones.
+> You could make this
+> part of the machine descriptor instead, but that wouldn't be my first
+> choice.
 
-julia
+Me neither !
+
+Thx,
+-Vineet
+
+>
+> Rob
+>
+
