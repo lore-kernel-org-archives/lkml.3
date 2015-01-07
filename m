@@ -1,93 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752161AbbAGKTN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 05:19:13 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:17776 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884AbbAGKTJ (ORCPT
+	id S1751736AbbAGKTI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 05:19:08 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56481 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884AbbAGKTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 05:19:09 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 07 Jan 2015 02:17:38 -0800
-Date: Wed, 7 Jan 2015 12:19:00 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Vince Hsu <vinceh@nvidia.com>, Lucas Stach <dev@lynxeye.de>,
-        <swarren@wwwdotorg.org>, <gnurou@gmail.com>, <bskeggs@redhat.com>,
-        <martin.peres@free.fr>, <seven@nimrod-online.com>,
-        <samuel.pitoiset@gmail.com>, <nouveau@lists.freedesktop.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/11] ARM: tegra: add function to control the GPU rail
- clamp
-Message-ID: <20150107101900.GP10073@tbergstrom-lnx.Nvidia.com>
-References: <1419331204-26679-1-git-send-email-vinceh@nvidia.com>
- <1419331204-26679-2-git-send-email-vinceh@nvidia.com>
- <1419426990.2179.7.camel@lynxeye.de>
- <549B7638.2010405@nvidia.com>
- <20150105150932.GG12010@ulmo.nvidia.com>
+	Wed, 7 Jan 2015 05:19:05 -0500
+Date: Wed, 7 Jan 2015 11:19:03 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: jikos@suse.cz, kernel list <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: johannes@sipsolutions.net, davem@davemloft.net,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH] wireless extensions should default to Y
+Message-ID: <20150107101903.GA6563@amd>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150105150932.GG12010@ulmo.nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [10.21.24.170]
-X-ClientProxiedBy: UKMAIL101.nvidia.com (10.26.138.13) To
- UKMAIL101.nvidia.com (10.26.138.13)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 05, 2015 at 04:09:33PM +0100, Thierry Reding wrote:
-> * PGP Signed by an unknown key
-> 
-> On Thu, Dec 25, 2014 at 10:28:08AM +0800, Vince Hsu wrote:
-> > On 12/24/2014 09:16 PM, Lucas Stach wrote:
-> > >Am Dienstag, den 23.12.2014, 18:39 +0800 schrieb Vince Hsu:
-> > >>The Tegra124 and later Tegra SoCs have a sepatate rail gating register
-> > >>to enable/disable the clamp. The original function
-> > >>tegra_powergate_remove_clamping() is not sufficient for the enable
-> > >>function. So add a new function which is dedicated to the GPU rail
-> > >>gating. Also don't refer to the powergate ID since the GPU ID makes no
-> > >>sense here.
-> > >>
-> > >>Signed-off-by: Vince Hsu <vinceh@nvidia.com>
-> > >To be honest I don't see the point of this patch.
-> > >You are bloating the PMC interface by introducing another exported
-> > >function that does nothing different than what the current function
-> > >already does.
-> > >
-> > >If you need a way to assert the clamp I would have expected you to
-> > >introduce a common function to do this for all power partitions.
-> > I thought about adding an tegra_powergate_assert_clamping(), but that
-> > doesn't make sense to all the power partitions except GPU. Note the
-> > difference in TRM. Any suggestion for the common function?
-> 
-> I don't think extending the powergate API is useful at this point. We've
-> long had an open TODO item to replace this with a generic API. I did
-> some prototyping a while ago to use generic power domains for this, that
-> way all the details and dependencies between the partitions could be
-> properly modeled.
-> 
-> Can you take a look at my staging/powergate branch here:
-> 
-> 	https://github.com/thierryreding/linux/commits/staging/powergate
-> 
-> and see if you can use that instead? The idea is to completely hide the
-> details of power partitions from drivers and use runtime PM instead.
-> 
-> Also adding Peter whom I had discussed this with earlier. Can we finally
-> get this converted? I'd rather not keep complicating this custom API to
-> avoid making the conversion even more difficult.
+Do we need following patch on top of
+24a0aa212ee2dbe44360288684478d76a8e20a0a revert?
 
-Conceptually I fully agree that we should use runtime PM and powerdomains.
-However I don't think the implementation you mentioned is correct. The resets 
-of all modules in a domain need to be asserted and the memory clients need to
-be flushed. All this needs to be done with module clocks enabled (resets are
-synchronous).  Then all module clocks need to be disabled and then the
-partition can be powergated. After ungating, the module resets need to be
-deasserted and the FLUSH bit cleared with clocks enabled.
+I updated kernel today, and (probably because extensions were not
+selectable before), the default choice was "N", which is wrong:
+oldconfig should result in compatible choices being made, for example
+to help bisect.
 
-Cheers,
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
-Peter.
+diff --git a/net/wireless/Kconfig b/net/wireless/Kconfig
+index 29c8675..8951dba 100644
+--- a/net/wireless/Kconfig
++++ b/net/wireless/Kconfig
+@@ -177,6 +177,7 @@ config CFG80211_INTERNAL_REGDB
+ config CFG80211_WEXT
+ 	bool "cfg80211 wireless extensions compatibility"
+ 	depends on CFG80211
++	default y
+ 	select WEXT_CORE
+ 	help
+ 	  Enable this option if you need old userspace for wireless
+
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
