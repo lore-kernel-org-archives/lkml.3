@@ -1,96 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536AbbAGQpk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 11:45:40 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:65449 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754078AbbAGQpJ (ORCPT
+	id S1754092AbbAGQgR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 11:36:17 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:39879 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753180AbbAGQgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 11:45:09 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Colin Cross <ccross@android.com>,
-        kernel-team@android.com, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: [RESEND PATCH v5 3.19-rc2 8/8] kdb: Allow access to sensitive commands to be restricted by default
-Date: Wed,  7 Jan 2015 16:34:58 +0000
-Message-Id: <1420648498-17428-9-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1420648498-17428-1-git-send-email-daniel.thompson@linaro.org>
-References: <1399381429-16194-1-git-send-email-daniel.thompson@linaro.org>
- <1420648498-17428-1-git-send-email-daniel.thompson@linaro.org>
+	Wed, 7 Jan 2015 11:36:15 -0500
+Message-ID: <54AD6078.80506@pengutronix.de>
+Date: Wed, 07 Jan 2015 17:36:08 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: Kedareswara rao Appana <appana.durga.rao@xilinx.com>, wg@grandegger.com,
+        michal.simek@xilinx.com, grant.likely@linaro.org,
+        linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Kedareswara rao Appana <appanad@xilinx.com>
+Subject: Re: [PATCH v4] can: Convert to runtime_pm
+References: <58f37b6fd9104ce185c413c473fe047b@BY2FFO11FD050.protection.gbl> <54AD267C.4060004@pengutronix.de> <a868331b44ce4b2a80b572399530f1f9@BN1BFFO11FD043.protection.gbl> <54AD5F13.1020107@pengutronix.de> <1d3216d75e9d494fb68ce9a3b24e7ca3@BL2FFO11FD017.protection.gbl>
+In-Reply-To: <1d3216d75e9d494fb68ce9a3b24e7ca3@BL2FFO11FD017.protection.gbl>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="R95cRwpVO2ie2gjCTulG8FpOL2W3F089U"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently kiosk mode must be explicitly requested by the bootloader or
-userspace. It is convenient to be able to change the default value in a
-similar manner to CONFIG_MAGIC_SYSRQ_DEFAULT_MASK.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--R95cRwpVO2ie2gjCTulG8FpOL2W3F089U
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>
----
- kernel/debug/kdb/kdb_main.c |  2 +-
- lib/Kconfig.kgdb            | 25 +++++++++++++++++++++++++
- 2 files changed, 26 insertions(+), 1 deletion(-)
+On 01/07/2015 05:32 PM, S=C3=B6ren Brinkmann wrote:
+> On Wed, 2015-01-07 at 05:30PM +0100, Marc Kleine-Budde wrote:
+>> On 01/07/2015 04:58 PM, S=C3=B6ren Brinkmann wrote:
+>>>> I think you have to convert the _remove() function, too. Have a look=
+ at
+>>>> the gpio-zynq.c driver:
+>>>>
+>>>>> static int zynq_gpio_remove(struct platform_device *pdev)
+>>>>> {
+>>>>> 	struct zynq_gpio *gpio =3D platform_get_drvdata(pdev);
+>>>>>
+>>>>> 	pm_runtime_get_sync(&pdev->dev);
+>>>>
+>>>> However I don't understand why the get_sync() is here. Maybe S=C3=B6=
+ren can help?
+>>>
+>>> IIRC, the concern was that the remove function may be called while th=
+e device is
+>>> runtime suspended. Hence the remove function needs to resume the devi=
+ce since the
+>>> remove function may access the HW.
+>>
+>> What about the corresponding runtime_put()? Would some counter be
+>> unbalanced upon device removal?
+>=20
+> Aren't those counters destroyed with module unloading?
 
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index fe1ac56b62e9..8d84979cbe05 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -47,7 +47,7 @@
- #undef	MODULE_PARAM_PREFIX
- #define	MODULE_PARAM_PREFIX "kdb."
- 
--static int kdb_cmd_enabled;
-+static int kdb_cmd_enabled = CONFIG_KDB_DEFAULT_ENABLE;
- module_param_named(cmd_enable, kdb_cmd_enabled, int, 0600);
- 
- #define GREP_LEN 256
-diff --git a/lib/Kconfig.kgdb b/lib/Kconfig.kgdb
-index 358eb81fa28d..c635a107a7de 100644
---- a/lib/Kconfig.kgdb
-+++ b/lib/Kconfig.kgdb
-@@ -73,6 +73,31 @@ config KGDB_KDB
- 	help
- 	  KDB frontend for kernel
- 
-+config KDB_DEFAULT_ENABLE
-+	hex "KDB: Select kdb command functions to be enabled by default"
-+	depends on KGDB_KDB
-+	default 0x1
-+	help
-+	  Specifiers which kdb commands are enabled by default. This may
-+	  be set to 1 or 0 to enable all commands or disable almost all
-+	  commands.
-+
-+	  Alternatively the following bitmask applies:
-+
-+	    0x0002 - allow arbitrary reads from memory and symbol lookup
-+	    0x0004 - allow arbitrary writes to memory
-+	    0x0008 - allow current register state to be inspected
-+	    0x0010 - allow current register state to be modified
-+	    0x0020 - allow passive inspection (backtrace, process list, lsmod)
-+	    0x0040 - allow flow control management (breakpoint, single step)
-+	    0x0080 - enable signalling of processes
-+	    0x0100 - allow machine to be rebooted
-+
-+	  The config option merely sets the default at boot time. Both
-+	  issuing 'echo X > /sys/module/kdb/parameters/cmd_enable' or
-+          setting with kdb.cmd_enable=X kernel command line option will
-+	  override the default settings.
-+
- config KDB_KEYBOARD
- 	bool "KGDB_KDB: keyboard as input device"
- 	depends on VT && KGDB_KDB
--- 
-1.9.3
+I don't know.
 
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--R95cRwpVO2ie2gjCTulG8FpOL2W3F089U
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUrWB4AAoJECte4hHFiupU90oP/RO4Afg8tuWj6Z4WpiVbiUuB
+DzCdhK+otWYLqyPqVRkCezA5Q2Q8RfDSuQOTaqhzYljqv70h1/DFwWMmyeUfhc8X
+067m+aXmgXJPD7G4Xr4K6/zgBqE1oI1zQmbBg57Ze2pRgkkZrNw5P/N7rncxnMvr
+nFKKmuDmaDpOPz0Ap0R8tbwpiMchbAZcXJNJwum/3TRttDUPdMAK9Hq/EzZfZk4F
+91jyKGaXew3sSskgr1HIEbIH8R/k1mFU5EZOh+xMuw5QFYQ+tak+N7lOEOPOYte9
++yvOS5/I58EqOwLFjZnOAMTffncPyU6iTota6NzXJClbGvUcpOKXV+IDW3a8CFt/
+U6diBVRK9bU6uW25SEllc+OXvkOgHCCu3B0/oMCK/R8BaKgfnOzz7EISJB2vYce8
+MvMDQqvFXkBkEVxdmv8HaBwAFTFUP5KmPIh4FfzFLLZ+LkjZZ/oZSe3PzvLxLBbj
+amclgdCQApmGu59Cvi+wy+u74928Q3Ql2Q+jNCHtfWGf2Ao1MpDPyZ23cxMyOrrN
+5PF/TgPXSyxrNtsQwRy8QkgO9i+eW3AQsixama/HoC2zOxvusqH3DuKij9soZDNa
+kQ2i8HLDuZvD0FFOZVLMwl/oPTArQJzBfbKM8cmL5lHdwIdHXzp4x40VmDUYciX3
+yK9pcttT976Jr5VSlXAa
+=7KiB
+-----END PGP SIGNATURE-----
+
+--R95cRwpVO2ie2gjCTulG8FpOL2W3F089U--
