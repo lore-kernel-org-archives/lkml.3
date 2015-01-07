@@ -1,76 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887AbbAGQc7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 11:32:59 -0500
-Received: from mail-bl2on0096.outbound.protection.outlook.com ([65.55.169.96]:52672
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753520AbbAGQc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 11:32:58 -0500
-Date: Wed, 7 Jan 2015 08:32:48 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-CC: Kedareswara rao Appana <appana.durga.rao@xilinx.com>, <wg@grandegger.com>,
-        <michal.simek@xilinx.com>, <grant.likely@linaro.org>,
-        <linux-can@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Kedareswara rao Appana <appanad@xilinx.com>
-Subject: Re: [PATCH v4] can: Convert to runtime_pm
-References: <58f37b6fd9104ce185c413c473fe047b@BY2FFO11FD050.protection.gbl>
- <54AD267C.4060004@pengutronix.de>
- <a868331b44ce4b2a80b572399530f1f9@BN1BFFO11FD043.protection.gbl>
- <54AD5F13.1020107@pengutronix.de>
+	id S1753950AbbAGQdV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 11:33:21 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:37296 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753895AbbAGQdS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 11:33:18 -0500
+Date: Wed, 7 Jan 2015 08:33:10 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        linux-sh@vger.kernel.org
+Subject: Re: linux-next: Tree for Jan 7
+Message-ID: <20150107163310.GZ5280@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20150107151618.7cb9d574@canb.auug.org.au>
+ <20150107142656.GA5666@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54AD5F13.1020107@pengutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21232.000
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <1d3216d75e9d494fb68ce9a3b24e7ca3@BL2FFO11FD017.protection.gbl>
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(189002)(377454003)(479174004)(24454002)(199003)(377424004)(51704005)(62966003)(76176999)(50986999)(77156002)(54356999)(93886004)(92566001)(23676002)(2950100001)(108616004)(106466001)(92726002)(85202003)(107046002)(4396001)(104016003)(64706001)(53416004)(50466002)(74316001)(6806004)(99396003)(120916001)(86362001)(47776003)(31966008)(46102003)(21056001)(20776003)(85182001)(83506001)(87936001)(110136001)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB036;H:xsj-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB036;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:(601004);SRVR:BL2FFO11HUB036;
-X-Forefront-PRVS: 044968D9E1
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB036;
-X-OriginatorOrg: xilinx.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 07 Jan 2015 16:32:55.5351
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 657af505-d5df-48d0-8300-c31994686c5c
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=657af505-d5df-48d0-8300-c31994686c5c;Ip=[149.199.60.83]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BL2FFO11HUB036
+In-Reply-To: <20150107142656.GA5666@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15010716-0017-0000-0000-000007BCD64F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-07 at 05:30PM +0100, Marc Kleine-Budde wrote:
-> On 01/07/2015 04:58 PM, Sören Brinkmann wrote:
-> >> I think you have to convert the _remove() function, too. Have a look at
-> >> the gpio-zynq.c driver:
-> >>
-> >>> static int zynq_gpio_remove(struct platform_device *pdev)
-> >>> {
-> >>> 	struct zynq_gpio *gpio = platform_get_drvdata(pdev);
-> >>>
-> >>> 	pm_runtime_get_sync(&pdev->dev);
-> >>
-> >> However I don't understand why the get_sync() is here. Maybe Sören can help?
+On Wed, Jan 07, 2015 at 06:26:56AM -0800, Guenter Roeck wrote:
+> On Wed, Jan 07, 2015 at 03:16:18PM +1100, Stephen Rothwell wrote:
+> > Hi all,
 > > 
-> > IIRC, the concern was that the remove function may be called while the device is
-> > runtime suspended. Hence the remove function needs to resume the device since the
-> > remove function may access the HW.
+> > Changes since 20150106:
+> > 
+> > *crickets*
+> > 
+> > Non-merge commits (relative to Linus' tree): 1350
+> >  1543 files changed, 41856 insertions(+), 24250 deletions(-)
+> > 
+> > ----------------------------------------------------------------------------
+> > 
 > 
-> What about the corresponding runtime_put()? Would some counter be
-> unbalanced upon device removal?
+> New build failure for sh:dreamcast_defconfig:
+> 
+> arch/sh/mm/gup.c: In function 'gup_get_pte':
+> arch/sh/mm/gup.c:20:2: error: invalid initializer
+> make[1]: *** [arch/sh/mm/gup.o] Error 1
+> 
+> bisect log:
+> 
+> # bad: [7e3619a6de57f0257a2f6480182d2287ee05e314] Add linux-next specific files for 20150107
+> # good: [b1940cd21c0f4abdce101253e860feff547291b0] Linux 3.19-rc3
+> git bisect start 'HEAD' 'v3.19-rc3'
+> # good: [c48667c5659248ff2b2fbff5cd23c43b5768e81b] Merge remote-tracking branch 'net-next/master'
+> git bisect good c48667c5659248ff2b2fbff5cd23c43b5768e81b
+> # good: [b8cf629ce7d554711dd7ab256b00e6110355e1d7] Merge remote-tracking branch 'mmc-uh/next'
+> git bisect good b8cf629ce7d554711dd7ab256b00e6110355e1d7
+> # good: [cc52ff032bc2d91c78d7cf9aefcfa9e266ace816] Merge remote-tracking branch 'rcu/rcu/next'
+> git bisect good cc52ff032bc2d91c78d7cf9aefcfa9e266ace816
+> # bad: [9634277bcdab7b9d6a91409dc11d85502aa2e74b] Merge remote-tracking branch 'access_once/linux-next'
+> git bisect bad 9634277bcdab7b9d6a91409dc11d85502aa2e74b
+> # good: [261379560ee6aa65b4869c94eda0d3d60773aca3] Merge remote-tracking branch 'scsi/for-next'
+> git bisect good 261379560ee6aa65b4869c94eda0d3d60773aca3
+> # good: [38d45afa56bfca714780e45532760d64cd53b65b] Merge remote-tracking branch 'llvmlinux/for-next'
+> git bisect good 38d45afa56bfca714780e45532760d64cd53b65b
+> # good: [9afbe1ce2403c7d097bfaafcc5b27950040f7608] Merge remote-tracking branch 'y2038/y2038'
+> git bisect good 9afbe1ce2403c7d097bfaafcc5b27950040f7608
+> # bad: [a91ed664749cbec0325ef9da7d12619d9bb72e2d] kernel: tighten rules for ACCESS ONCE
+> git bisect bad a91ed664749cbec0325ef9da7d12619d9bb72e2d
+> # good: [e3865cc4a17e979e6b2f26af026686fae5567096] x86/xen/p2m: Replace ACCESS_ONCE with READ_ONCE
+> git bisect good e3865cc4a17e979e6b2f26af026686fae5567096
+> # good: [e2579c6f22ee0a43394d603cef6989dca98c5610] mm/gup: Replace ACCESS_ONCE with READ_ONCE
+> git bisect good e2579c6f22ee0a43394d603cef6989dca98c5610
+> # first bad commit: [a91ed664749cbec0325ef9da7d12619d9bb72e2d] kernel: tighten rules for ACCESS ONCE
+> 
+> Maybe the ACCESS_ONCE in the affected file should be replaced with READ_ONCE ?
 
-Aren't those counters destroyed with module unloading?
+That is my belief.  What happens when you try it?
 
-	Sören
+							Thanx, Paul
+
