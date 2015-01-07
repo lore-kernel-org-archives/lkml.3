@@ -1,68 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324AbbAGLBO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 06:01:14 -0500
-Received: from andre.telenet-ops.be ([195.130.132.53]:33119 "EHLO
-	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121AbbAGLBL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 06:01:11 -0500
-From: Bart Tanghe <bart.tanghe@thomasmore.be>
-To: swarren@wwwdotorg.org, lee@kernel.org
-Cc: thierry.reding@gmail.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, linux@arm.linux.org.uk,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-rpi-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Bart Tanghe <bart.tanghe@thomasmore.be>
-Subject: [PATCH v2] ARM: dts: add bcm2835-pwm bindings
-Date: Wed,  7 Jan 2015 12:00:58 +0100
-Message-Id: <1420628458-11459-1-git-send-email-bart.tanghe@thomasmore.be>
-X-Mailer: git-send-email 1.9.1
+	id S1752841AbbAGLwv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 06:52:51 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:7462 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751950AbbAGLws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 06:52:48 -0500
+X-Mailbox-Line: From 3b99496107b6653ef27b86d8cdf516a4815910cf Mon Sep 17 00:00:00 2001
+Message-Id: <3b99496107b6653ef27b86d8cdf516a4815910cf.1420628786.git.moinejf@free.fr>
+In-Reply-To: <cover.1420628786.git.moinejf@free.fr>
+References: <cover.1420628786.git.moinejf@free.fr>
+From: Jean-Francois Moine <moinejf@free.fr>
+Date: Wed, 7 Jan 2015 12:01:23 +0100
+Subject: [PATCH v9 4/4] drm/i2c: tda998x: set cts_n according to the sample
+ width
+To: Mark Brown <broonie@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Dave Airlie <airlied@gmail.com>, Andrew Jackson <Andrew.Jackson@arm.com>,
+        Jyri Sarha <jsarha@ti.com>, alsa-devel@alsa-project.org,
+        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To probe the bcm2835-pwm driver properly, this dts bindings has to be added 
-to the bcm2835 dtsi file.
-In expectation of a bcm2835 clock driver, I've added fixed-clock clock binding.
+With I2S input, the CTS_N predivider depends on the sample width.
+
+Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 ---
-Changes in v2:
- - status set to disabled
- - follow the clock naming convention
+ drivers/gpu/drm/i2c/tda998x_drv.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
-Signed-off-by: Bart Tanghe <bart.tanghe@thomasmore.be>
-
-diff --git a/arch/arm/boot/dts/bcm2835.dtsi b/arch/arm/boot/dts/bcm2835.dtsi
-index 3342cb1..ba76bb4 100644
---- a/arch/arm/boot/dts/bcm2835.dtsi
-+++ b/arch/arm/boot/dts/bcm2835.dtsi
-@@ -146,6 +147,14 @@
- 			interrupts = <1 9>;
- 		};
+diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
+index a26a516..8af84cd 100644
+--- a/drivers/gpu/drm/i2c/tda998x_drv.c
++++ b/drivers/gpu/drm/i2c/tda998x_drv.c
+@@ -50,6 +50,7 @@ struct tda998x_priv {
+ 	wait_queue_head_t wq_edid;
+ 	volatile int wq_edid_wait;
+ 	struct drm_encoder *encoder;
  
-+		pwm: pwm@7e20e000 {
-+			compatible = "brcm,bcm2835-pwm";
-+			reg = <0x7e20c000 0x28>;
-+			clocks = <&clk_pwm>;
-+			#pwm-cells = <2>;
-+			status = "disabled";
-+		};
++	int audio_sample_format;
+ 	u8 audio_ports[2];
+ #ifdef WITH_CODEC
+@@ -671,7 +672,17 @@ tda998x_configure_audio(struct tda998x_priv *priv,
+ 		reg_write(priv, REG_MUX_AP, MUX_AP_SELECT_I2S);
+ 		clksel_aip = AIP_CLKSEL_AIP_I2S;
+ 		clksel_fs = AIP_CLKSEL_FS_ACLK;
+-		cts_n = CTS_N_M(3) | CTS_N_K(3);
 +
- 		arm-pmu {
- 			compatible = "arm,arm1176-pmu";
- 		};
-@@ -179,5 +188,13 @@
- 			clock-output-names = "spi";
- 			clock-frequency = <250000000>;
- 		};
-+
-+		clk_pwm: clock@3 {
-+			compatible = "fixed-clock";
-+			reg = <3>;
-+			#clock-cells = <0>;
-+			clock-output-names = "pwm";
-+			clock-frequency = <9200000>;
-+		};
- 	};
- };
++		/* with I2S input, the CTS_N predivider depends on
++		 * the sample width */
++		switch (priv->audio_sample_format) {
++		case SNDRV_PCM_FORMAT_S16_LE:
++			cts_n = CTS_N_M(3) | CTS_N_K(1);
++			break;
++		default:
++			cts_n = CTS_N_M(3) | CTS_N_K(3);
++			break;
++		}
+ 		break;
+ 
+ 	default:
+@@ -778,7 +789,8 @@ static int tda998x_set_audio_input(struct device *dev,
+ 
+ 	/* if same audio parameters, just enable the audio port */
+ 	if (p->audio_cfg == priv->audio_ports[port_index] &&
+-	    p->audio_sample_rate == sample_rate) {
++	    p->audio_sample_rate == sample_rate &&
++	    priv->audio_sample_format == sample_format) {
+ 		reg_write(priv, REG_ENA_AP, p->audio_cfg);
+ 		return 0;
+ 	}
+@@ -787,6 +799,7 @@ static int tda998x_set_audio_input(struct device *dev,
+ 	p->audio_clk_cfg = port_index == PORT_SPDIF ? 0 : 1;
+ 	p->audio_cfg = priv->audio_ports[port_index];
+ 	p->audio_sample_rate = sample_rate;
++	priv->audio_sample_format = sample_format;
+ 	tda998x_configure_audio(priv, &priv->encoder->crtc->hwmode, p);
+ 	return 0;
+ }
+@@ -1388,6 +1401,7 @@ static int tda998x_create(struct i2c_client *client, struct tda998x_priv *priv)
+ 
+ 	priv->params.audio_frame[1] = 1;		/* channels - 1 */
+ 	priv->params.audio_sample_rate = 48000;		/* 48kHz */
++	priv->audio_sample_format = SNDRV_PCM_FORMAT_S24_LE;
+ 
+ 	priv->current_page = 0xff;
+ 	priv->hdmi = client;
+-- 
+2.1.4
+
