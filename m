@@ -1,114 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932213AbbAGCD6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:03:58 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:38721 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756039AbbAGCDz (ORCPT
+	id S933618AbbAGCrZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:47:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46763 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932416AbbAGCHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:03:55 -0500
-Date: Tue, 6 Jan 2015 18:03:47 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Jerome Marchand <jmarchan@redhat.com>, Hugh Dickins <hughd@google.com>,
-        "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
-        "minchan@kernel.org" <minchan@kernel.org>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "n-horiguchi@ah.jp.nec.com" <n-horiguchi@ah.jp.nec.com>,
-        "pintu.k@samsung.com" <pintu.k@samsung.com>
-Subject: Re: [RFC] mm:change meminfo cached calculation
-In-Reply-To: <20150106172518.8f84bffdfa0d35336b233d07@linux-foundation.org>
-Message-ID: <alpine.LSU.2.11.1501061747540.2041@eggly.anvils>
-References: <35FD53F367049845BC99AC72306C23D103E688B313EE@CNBJMBX05.corpusers.net> <CALYGNiOuBKz8shHSrFCp0BT5AV6XkNOCHj+LJedQQ-2YdZtM7w@mail.gmail.com> <35FD53F367049845BC99AC72306C23D103E688B313F2@CNBJMBX05.corpusers.net> <20141205143134.37139da2208c654a0d3cd942@linux-foundation.org>
- <35FD53F367049845BC99AC72306C23D103E688B313F4@CNBJMBX05.corpusers.net> <20141208114601.GA28846@node.dhcp.inet.fi> <35FD53F367049845BC99AC72306C23D103E688B313FB@CNBJMBX05.corpusers.net> <CALYGNiMEytHuND37f+hNdMKqCPzN0k_uha6CaeL_fyzrj-obNQ@mail.gmail.com>
- <35FD53F367049845BC99AC72306C23D103E688B31408@CNBJMBX05.corpusers.net> <35FD53F367049845BC99AC72306C23D103EDAF89E14C@CNBJMBX05.corpusers.net> <35FD53F367049845BC99AC72306C23D103EDAF89E160@CNBJMBX05.corpusers.net> <20150106164340.55e83f742d6f57c19e6500ff@linux-foundation.org>
- <alpine.LSU.2.11.1501061654340.1497@eggly.anvils> <20150106172518.8f84bffdfa0d35336b233d07@linux-foundation.org>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Tue, 6 Jan 2015 21:07:34 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: [PATCH 3.14 00/52] 3.14.28-stable review
+Date: Tue,  6 Jan 2015 18:06:28 -0800
+Message-Id: <20150107020555.043793795@linuxfoundation.org>
+X-Mailer: git-send-email 2.2.1
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Jan 2015, Andrew Morton wrote:
-> On Tue, 6 Jan 2015 17:04:33 -0800 (PST) Hugh Dickins <hughd@google.com> wrote:
-> > On Tue, 6 Jan 2015, Andrew Morton wrote:
-> > > On Fri, 26 Dec 2014 19:56:49 +0800 "Wang, Yalin" <Yalin.Wang@sonymobile.com> wrote:
-> > > 
-> > > > This patch subtract sharedram from cached,
-> > > > sharedram can only be swap into swap partitions,
-> > > > they should be treated as swap pages, not as cached pages.
-> > > > 
-> > > > ...
-> > > >
-> > > > --- a/fs/proc/meminfo.c
-> > > > +++ b/fs/proc/meminfo.c
-> > > > @@ -45,7 +45,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
-> > > >  	committed = percpu_counter_read_positive(&vm_committed_as);
-> > > >  
-> > > >  	cached = global_page_state(NR_FILE_PAGES) -
-> > > > -			total_swapcache_pages() - i.bufferram;
-> > > > +			total_swapcache_pages() - i.bufferram - i.sharedram;
-> > > >  	if (cached < 0)
-> > > >  		cached = 0;
-> > > 
-> > > Documentation/filesystems/proc.txt says
-> > > 
-> > > :      Cached: in-memory cache for files read from the disk (the
-> > > :              pagecache).  Doesn't include SwapCached
-> > > 
-> > > So yes, I guess it should not include shmem.
-> > > 
-> > > And why not do this as well?
-> > > 
-> > > 
-> > > --- a/Documentation/filesystems/proc.txt~mm-change-meminfo-cached-calculation-fix
-> > > +++ a/Documentation/filesystems/proc.txt
-> > > @@ -811,7 +811,7 @@ MemAvailable: An estimate of how much me
-> > >       Buffers: Relatively temporary storage for raw disk blocks
-> > >                shouldn't get tremendously large (20MB or so)
-> > >        Cached: in-memory cache for files read from the disk (the
-> > > -              pagecache).  Doesn't include SwapCached
-> > > +              pagecache).  Doesn't include SwapCached or Shmem.
-> > >    SwapCached: Memory that once was swapped out, is swapped back in but
-> > >                still also is in the swapfile (if memory is needed it
-> > >                doesn't need to be swapped out AGAIN because it is already
-> > 
-> > Whoa.  Changes of this kind would have made good sense about 14 years ago.
-> > And there's plenty more which would benefit from having anon/shmem/file
-> > properly distinguished.  But how can we make such a change now,
-> > breaking everything that has made its own sense of these counts?
-> 
-> That's what I was wondering, but I was having some trouble picking a
-> situation where it mattered much.
+This is the start of the stable review cycle for the 3.14.28 release.
+There are 52 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-If it doesn't matter, then we don't need to change it.
+Responses should be made by Fri Jan  9 02:05:23 UTC 2015.
+Anything received after that time might be too late.
 
-> What's the problematic scenario
-> here?  Userspace that is taking Cached, saying "that was silly" and
-> subtracting Shmem from it by hand?
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.28-rc1.gz
+and the diffstat can be found below.
 
-Someone a long time ago saw "that was silly", worked out it was because
-of Shmem, adjusted their scripts or whatever accordingly, and has run
-happily ever since.
+thanks,
 
-> 
-> I suppose that as nobody knows we should err on the side of caution and
-> leave this alone.  But the situation is pretty sad - it would be nice
-> to make the code agree with the documentation at least.
+greg k-h
 
-By all means fix the documentation.  And work on a /proc/meminfo.2015
-which has sensibly differentiated counts (and probably omits that
-wonderful Linux 2.2-compatible "Buffers").
+-------------
+Pseudo-Shortlog of commits:
 
-But there's more to do than I can think of.  Cc'ing Jerome who has a
-particular interest in this (no, I haven't forgotten his patches,
-but nor have I had a moment to reconsider them).
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.14.28-rc1
 
-Hugh
+Filipe Manana <fdmanana@suse.com>
+    Btrfs: fix fs corruption on transaction abort if device supports discard
+
+Josef Bacik <jbacik@fb.com>
+    Btrfs: do not move em to modified list when unpinning
+
+Michael Halcrow <mhalcrow@google.com>
+    eCryptfs: Remove buggy and unnecessary write in file name decode routine
+
+Tyler Hicks <tyhicks@canonical.com>
+    eCryptfs: Force RO mount when encrypted view is enabled
+
+Jan Kara <jack@suse.cz>
+    udf: Verify symlink size before loading it
+
+Oleg Nesterov <oleg@redhat.com>
+    exit: pidns: alloc_pid() leaks pid_namespace if child_reaper is exiting
+
+Jan Kara <jack@suse.cz>
+    ncpfs: return proper error from NCP_IOC_SETROOT ioctl
+
+Rabin Vincent <rabin.vincent@axis.com>
+    crypto: af_alg - fix backlog handling
+
+Richard Guy Briggs <rgb@redhat.com>
+    audit: restore AUDIT_LOGINUID unset ABI
+
+Eric W. Biederman <ebiederm@xmission.com>
+    userns: Unbreak the unprivileged remount tests
+
+Eric W. Biederman <ebiederm@xmission.com>
+    userns: Allow setting gid_maps without privilege when setgroups is disabled
+
+Eric W. Biederman <ebiederm@xmission.com>
+    userns: Add a knob to disable setgroups on a per user namespace basis
+
+Eric W. Biederman <ebiederm@xmission.com>
+    userns: Rename id_map_mutex to userns_state_mutex
+
+Eric W. Biederman <ebiederm@xmission.com>
+    userns: Only allow the creator of the userns unprivileged mappings
+
+Eric W. Biederman <ebiederm@xmission.com>
+    userns: Check euid no fsuid when establishing an unprivileged uid mapping
+
+Eric W. Biederman <ebiederm@xmission.com>
+    userns: Don't allow unprivileged creation of gid mappings
+
+Eric W. Biederman <ebiederm@xmission.com>
+    userns: Don't allow setgroups until a gid mapping has been setablished
+
+Eric W. Biederman <ebiederm@xmission.com>
+    userns: Document what the invariant required for safe unprivileged mappings.
+
+Eric W. Biederman <ebiederm@xmission.com>
+    groups: Consolidate the setgroups permission checks
+
+Eric W. Biederman <ebiederm@xmission.com>
+    umount: Disallow unprivileged mount force
+
+Eric W. Biederman <ebiederm@xmission.com>
+    mnt: Update unprivileged remount test
+
+Eric W. Biederman <ebiederm@xmission.com>
+    mnt: Implicitly add MNT_NODEV on remount when it was implicitly added by mount
+
+Luis Henriques <luis.henriques@canonical.com>
+    thermal: Fix error path in thermal_init()
+
+Eric W. Biederman <ebiederm@xmission.com>
+    mnt: Fix a memory stomp in umount
+
+Johannes Berg <johannes.berg@intel.com>
+    mac80211: free management frame keys when removing station
+
+Andreas Müller <goo@stapelspeicher.org>
+    mac80211: fix multicast LED blinking and counter
+
+Takashi Iwai <tiwai@suse.de>
+    KEYS: Fix stale key registration at error path
+
+Jan Kara <jack@suse.cz>
+    isofs: Fix unchecked printing of ER records
+
+Andy Lutomirski <luto@amacapital.net>
+    x86/tls: Don't validate lm in set_thread_area() after all
+
+Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+    ARM: mvebu: fix ordering in Armada 370 .dtsi
+
+Dmitry Osipenko <digetx@gmail.com>
+    ARM: tegra: Re-add removed SoC id macro to tegra_resume()
+
+Catalin Marinas <catalin.marinas@arm.com>
+    arm64: Add COMPAT_HWCAP_LPAE
+
+Joe Thornber <ejt@redhat.com>
+    dm thin: fix missing out-of-data-space to write mode transition if blocks are released
+
+Joe Thornber <ejt@redhat.com>
+    dm thin: fix inability to discard blocks when in out-of-data-space mode
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    dm space map metadata: fix sm_bootstrap_get_nr_blocks()
+
+Joe Thornber <ejt@redhat.com>
+    dm cache: dirty flag was mistakenly being cleared when promoting via overwrite
+
+Joe Thornber <ejt@redhat.com>
+    dm cache: only use overwrite optimisation for promotion when in writeback mode
+
+Milan Broz <gmazyland@gmail.com>
+    dm crypt: use memzero_explicit for on-stack buffer
+
+Darrick J. Wong <darrick.wong@oracle.com>
+    dm bufio: fix memleak when using a dm_buffer's inline bio
+
+Peng Tao <tao.peng@primarydata.com>
+    nfs41: fix nfs4_proc_layoutget error handling
+
+Hannes Reinecke <hare@suse.de>
+    scsi: correct return values for .eh_abort_handler implementations
+
+Sumit.Saxena@avagotech.com <Sumit.Saxena@avagotech.com>
+    megaraid_sas: corrected return of wait_event from abort frame path
+
+Peter Guo <peter.guo@bayhubtech.com>
+    mmc: sdhci-pci-o2micro: Fix Dell E5440 issue
+
+Baruch Siach <baruch@tkos.co.il>
+    mmc: block: add newline to sysfs display of force_ro
+
+James Hogan <james.hogan@imgtec.com>
+    mmc: dw_mmc: avoid write to CDTHRCTL on older versions
+
+Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+    mfd: tc6393xb: Fail ohci suspend if full state restore is required
+
+NeilBrown <neilb@suse.de>
+    md/bitmap: always wait for writes on unplug.
+
+Andy Lutomirski <luto@amacapital.net>
+    x86, kvm: Clear paravirt_enabled on KVM guests for espfix32's benefit
+
+Andy Lutomirski <luto@amacapital.net>
+    x86_64, switch_to(): Load TLS descriptors before switching DS and ES
+
+Andy Lutomirski <luto@amacapital.net>
+    x86/tls: Disallow unusual TLS segments
+
+Andy Lutomirski <luto@amacapital.net>
+    x86/tls: Validate TLS entries to protect espfix
+
+Jan Kara <jack@suse.cz>
+    isofs: Fix infinite looping over CE entries
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                           |   4 +-
+ arch/arm/boot/dts/armada-370.dtsi                  |  10 +-
+ arch/arm/mach-tegra/reset-handler.S                |   1 +
+ arch/arm64/include/asm/hwcap.h                     |   1 +
+ arch/arm64/kernel/setup.c                          |   3 +-
+ arch/s390/kernel/compat_linux.c                    |   2 +-
+ arch/x86/include/uapi/asm/ldt.h                    |   7 +
+ arch/x86/kernel/kvm.c                              |   9 +-
+ arch/x86/kernel/kvmclock.c                         |   1 -
+ arch/x86/kernel/process_64.c                       | 101 +++++++---
+ arch/x86/kernel/tls.c                              |  39 ++++
+ crypto/af_alg.c                                    |   3 +
+ drivers/md/bitmap.c                                |  16 +-
+ drivers/md/dm-bufio.c                              |  20 +-
+ drivers/md/dm-cache-target.c                       |  13 +-
+ drivers/md/dm-crypt.c                              |   2 +-
+ drivers/md/dm-thin.c                               |  24 ++-
+ drivers/md/persistent-data/dm-space-map-metadata.c |   4 +-
+ drivers/mfd/tc6393xb.c                             |  13 +-
+ drivers/mmc/card/block.c                           |   2 +-
+ drivers/mmc/host/dw_mmc.c                          |   7 +
+ drivers/mmc/host/sdhci-pci-o2micro.c               |   2 -
+ drivers/scsi/NCR5380.c                             |  12 +-
+ drivers/scsi/aha1740.c                             |   2 +-
+ drivers/scsi/atari_NCR5380.c                       |   2 +-
+ drivers/scsi/esas2r/esas2r_main.c                  |   2 +-
+ drivers/scsi/megaraid.c                            |   8 +-
+ drivers/scsi/megaraid/megaraid_sas_base.c          |   2 +-
+ drivers/scsi/sun3_NCR5380.c                        |  10 +-
+ drivers/thermal/thermal_core.c                     |   4 +-
+ fs/btrfs/disk-io.c                                 |   6 -
+ fs/btrfs/extent-tree.c                             |  10 +-
+ fs/btrfs/extent_map.c                              |   2 -
+ fs/ecryptfs/crypto.c                               |   1 -
+ fs/ecryptfs/file.c                                 |  12 --
+ fs/ecryptfs/main.c                                 |  16 +-
+ fs/isofs/rock.c                                    |   9 +
+ fs/namespace.c                                     |  13 +-
+ fs/ncpfs/ioctl.c                                   |   1 -
+ fs/nfs/nfs4proc.c                                  |   6 +-
+ fs/proc/base.c                                     |  53 ++++++
+ fs/udf/symlink.c                                   |  17 +-
+ include/linux/audit.h                              |   4 +
+ include/linux/cred.h                               |   1 +
+ include/linux/user_namespace.h                     |  12 ++
+ kernel/auditfilter.c                               |  10 +
+ kernel/groups.c                                    |  11 +-
+ kernel/pid.c                                       |   2 +
+ kernel/uid16.c                                     |   2 +-
+ kernel/user.c                                      |   1 +
+ kernel/user_namespace.c                            | 125 +++++++++++--
+ net/mac80211/key.c                                 |   2 +-
+ net/mac80211/rx.c                                  |  11 +-
+ security/keys/encrypted-keys/encrypted.c           |   5 +-
+ .../selftests/mount/unprivileged-remount-test.c    | 204 +++++++++++++++++----
+ 55 files changed, 682 insertions(+), 180 deletions(-)
+
+
