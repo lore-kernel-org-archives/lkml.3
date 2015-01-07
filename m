@@ -1,58 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756505AbbAGB2K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 20:28:10 -0500
-Received: from dub004-omc3s27.hotmail.com ([157.55.2.36]:58153 "EHLO
-	DUB004-OMC3S27.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751862AbbAGB2F convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:28:05 -0500
-X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Jan 2015 20:28:05 EST
-X-TMN: [/Zdt48ydqWGioTq/aBNwKY95RUYCk7Wl]
-X-Originating-Email: [luky-37@hotmail.com]
-Message-ID: <DUB123-W1008C526C7E0FA115A87EED460@phx.gbl>
-From: Lukas Tribus <luky-37@hotmail.com>
-To: Erik Grinaker <erik@bengler.no>, Eric Dumazet <eric.dumazet@gmail.com>
-CC: Yuchung Cheng <ycheng@google.com>,
+	id S1756858AbbAGBZW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 20:25:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45861 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756836AbbAGBZU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 20:25:20 -0500
+Date: Tue, 6 Jan 2015 17:25:18 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
+        "minchan@kernel.org" <minchan@kernel.org>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: RE: TCP connection issues against Amazon S3
-Date: Wed, 7 Jan 2015 02:23:00 +0100
-Importance: Normal
-In-Reply-To: <3F608393-E5F1-4647-81BF-C6C740100934@bengler.no>
-References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no>
- <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com>
- <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no>
- <1420564837.32621.30.camel@edumazet-glaptop2.roam.corp.google.com>
- <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no>
- <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com>
- <03FC652E-AA01-42C7-BD52-019B6D922A9C@bengler.no>
- <CAK6E8=cP0BFUob5MVj9M0hC0efgRnUY=JMUPKee+v-4TLvHBgg@mail.gmail.com>
- <76DC89D1-CFCE-44B7-994E-4349FEEDEFA6@bengler.no>
- <1420575216.5947.12.camel@edumazet-glaptop2.roam.corp.google.com>
- <4DA8529D-4EEC-42DA-89B0-DC7746DB2B10@bengler.no>,<3F608393-E5F1-4647-81BF-C6C740100934@bengler.no>
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginalArrivalTime: 07 Jan 2015 01:23:00.0854 (UTC) FILETIME=[7A060160:01D02A18]
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "n-horiguchi@ah.jp.nec.com" <n-horiguchi@ah.jp.nec.com>,
+        "pintu.k@samsung.com" <pintu.k@samsung.com>
+Subject: Re: [RFC] mm:change meminfo cached calculation
+Message-Id: <20150106172518.8f84bffdfa0d35336b233d07@linux-foundation.org>
+In-Reply-To: <alpine.LSU.2.11.1501061654340.1497@eggly.anvils>
+References: <35FD53F367049845BC99AC72306C23D103E688B313EE@CNBJMBX05.corpusers.net>
+	<CALYGNiOuBKz8shHSrFCp0BT5AV6XkNOCHj+LJedQQ-2YdZtM7w@mail.gmail.com>
+	<35FD53F367049845BC99AC72306C23D103E688B313F2@CNBJMBX05.corpusers.net>
+	<20141205143134.37139da2208c654a0d3cd942@linux-foundation.org>
+	<35FD53F367049845BC99AC72306C23D103E688B313F4@CNBJMBX05.corpusers.net>
+	<20141208114601.GA28846@node.dhcp.inet.fi>
+	<35FD53F367049845BC99AC72306C23D103E688B313FB@CNBJMBX05.corpusers.net>
+	<CALYGNiMEytHuND37f+hNdMKqCPzN0k_uha6CaeL_fyzrj-obNQ@mail.gmail.com>
+	<35FD53F367049845BC99AC72306C23D103E688B31408@CNBJMBX05.corpusers.net>
+	<35FD53F367049845BC99AC72306C23D103EDAF89E14C@CNBJMBX05.corpusers.net>
+	<35FD53F367049845BC99AC72306C23D103EDAF89E160@CNBJMBX05.corpusers.net>
+	<20150106164340.55e83f742d6f57c19e6500ff@linux-foundation.org>
+	<alpine.LSU.2.11.1501061654340.1497@eggly.anvils>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This still doesn’t explain why it works with older kernels, but not newer ones.
+On Tue, 6 Jan 2015 17:04:33 -0800 (PST) Hugh Dickins <hughd@google.com> wrote:
 
-Can you try the different 3.12-rc kernels? The information that this was
-introduced in 3.12-rc1 as opposed to a specific -rc>1 releases may help
-the guys here to pinpoint what exactly caused the behavior change on the
-receiver side.
+> On Tue, 6 Jan 2015, Andrew Morton wrote:
+> > On Fri, 26 Dec 2014 19:56:49 +0800 "Wang, Yalin" <Yalin.Wang@sonymobile.com> wrote:
+> > 
+> > > This patch subtract sharedram from cached,
+> > > sharedram can only be swap into swap partitions,
+> > > they should be treated as swap pages, not as cached pages.
+> > > 
+> > > ...
+> > >
+> > > --- a/fs/proc/meminfo.c
+> > > +++ b/fs/proc/meminfo.c
+> > > @@ -45,7 +45,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+> > >  	committed = percpu_counter_read_positive(&vm_committed_as);
+> > >  
+> > >  	cached = global_page_state(NR_FILE_PAGES) -
+> > > -			total_swapcache_pages() - i.bufferram;
+> > > +			total_swapcache_pages() - i.bufferram - i.sharedram;
+> > >  	if (cached < 0)
+> > >  		cached = 0;
+> > 
+> > Documentation/filesystems/proc.txt says
+> > 
+> > :      Cached: in-memory cache for files read from the disk (the
+> > :              pagecache).  Doesn't include SwapCached
+> > 
+> > So yes, I guess it should not include shmem.
+> > 
+> > And why not do this as well?
+> > 
+> > 
+> > --- a/Documentation/filesystems/proc.txt~mm-change-meminfo-cached-calculation-fix
+> > +++ a/Documentation/filesystems/proc.txt
+> > @@ -811,7 +811,7 @@ MemAvailable: An estimate of how much me
+> >       Buffers: Relatively temporary storage for raw disk blocks
+> >                shouldn't get tremendously large (20MB or so)
+> >        Cached: in-memory cache for files read from the disk (the
+> > -              pagecache).  Doesn't include SwapCached
+> > +              pagecache).  Doesn't include SwapCached or Shmem.
+> >    SwapCached: Memory that once was swapped out, is swapped back in but
+> >                still also is in the swapfile (if memory is needed it
+> >                doesn't need to be swapped out AGAIN because it is already
+> 
+> Whoa.  Changes of this kind would have made good sense about 14 years ago.
+> And there's plenty more which would benefit from having anon/shmem/file
+> properly distinguished.  But how can we make such a change now,
+> breaking everything that has made its own sense of these counts?
 
-v3.12-rc1 to -rc7 is available as prebuild package on the ubuntu mainline kernel
-archive [1] aswell.
+That's what I was wondering, but I was having some trouble picking a
+situation where it mattered much.  What's the problematic scenario
+here?  Userspace that is taking Cached, saying "that was silly" and
+subtracting Shmem from it by hand?
 
-
--Lukas
-
-
-[1] http://kernel.ubuntu.com/~kernel-ppa/mainline/
-
- 		 	   		  
+I suppose that as nobody knows we should err on the side of caution and
+leave this alone.  But the situation is pretty sad - it would be nice
+to make the code agree with the documentation at least.
