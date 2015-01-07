@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753857AbbAGQFk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 11:05:40 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:51281 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753212AbbAGQFh (ORCPT
+	id S1753753AbbAGQIB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 11:08:01 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:39264 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753159AbbAGQH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 11:05:37 -0500
-Message-ID: <54AD594E.4030207@plexistor.com>
-Date: Wed, 07 Jan 2015 18:05:34 +0200
+	Wed, 7 Jan 2015 11:07:59 -0500
+Message-ID: <54AD59DC.4020703@plexistor.com>
+Date: Wed, 07 Jan 2015 18:07:56 +0200
 From: Boaz Harrosh <boaz@plexistor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
@@ -17,7 +17,7 @@ To: Jens Axboe <axboe@fb.com>, Matthew Wilcox <willy@linux.intel.com>,
 CC: linux-kernel <linux-kernel@vger.kernel.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: [PATCH 2/4 v4] block: Change direct_access calling convention
+Subject: [PATCH 3/4 v4] brd: Fix all partitions BUGs
 References: <54AD5893.9040701@plexistor.com>
 In-Reply-To: <54AD5893.9040701@plexistor.com>
 Content-Type: text/plain; charset=utf-8
@@ -26,315 +26,252 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthew Wilcox <matthew.r.wilcox@intel.com>
+From: Boaz Harrosh <boaz@plexistor.com>
 
-In order to support accesses to larger chunks of memory, pass in a
-'size' parameter (counted in bytes), and return the amount available at
-that address.
+This patch fixes up brd's partitions scheme, now enjoying all worlds.
 
-Add a new helper function, bdev_direct_access(), to handle common
-functionality including partition handling, checking the length requested
-is positive, checking for the sector being page-aligned, and checking
-the length of the request does not pass the end of the partition.
+The MAIN fix here is that currently, if one fdisks some partitions,
+a BAD bug will make all partitions point to the same start-end sector
+ie: 0 - brd_size And an mkfs of any partition would trash the partition
+table and the other partition.
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Reviewed-by: Boaz Harrosh <boaz@plexistor.com>
+Another fix is that "mount -U uuid" will not work if show_part was not
+specified, because of the GENHD_FL_SUPPRESS_PARTITION_INFO flag.
+We now always load without it and remove the show_part parameter.
+
+[We remove Dmitry's new module-param part_show it is now always
+ show]
+
+So NOW the logic goes like this:
+* max_part - Just says how many minors to reserve between ramX
+  devices. In any way, there can be as many partition as requested.
+  If minors between devices ends, then dynamic 259-major ids will
+  be allocated on the fly.
+  The default is now max_part=1, which means all partitions devt(s)
+  will be from the dynamic (259) major-range.
+  (If persistent partition minors is needed use max_part=X)
+  For example with /dev/sdX max_part is hard coded 16.
+
+* Creation of new devices on the fly still/always work:
+  mknod /path/devnod b 1 X
+  fdisk -l /path/devnod
+  Will create a new device if [X / max_part] was not already
+  created before. (Just as before)
+
+  partitions on the dynamically created device will work as well
+  Same logic applies with minors as with the pre-created ones.
+
+TODO: dynamic grow of device size. So each device can have it's
+      own size.
+
+CC: Dmitry Monakhov <dmonakhov@openvz.org>
+Tested-by: Ross Zwisler <ross.zwisler@linux.intel.com>
+Signed-off-by: Boaz Harrosh <boaz@plexistor.com>
 ---
- Documentation/filesystems/xip.txt | 15 +++++++++------
- arch/powerpc/sysdev/axonram.c     | 17 ++++-------------
- drivers/block/brd.c               | 14 +++++++-------
- drivers/s390/block/dcssblk.c      | 21 +++++++++-----------
- fs/block_dev.c                    | 40 +++++++++++++++++++++++++++++++++++++++
- fs/ext2/xip.c                     | 31 +++++++++++++-----------------
- include/linux/blkdev.h            |  6 ++++--
- 7 files changed, 86 insertions(+), 58 deletions(-)
+ drivers/block/brd.c | 100 ++++++++++++++++++++--------------------------------
+ 1 file changed, 38 insertions(+), 62 deletions(-)
 
-diff --git a/Documentation/filesystems/xip.txt b/Documentation/filesystems/xip.txt
-index 0466ee5..b774729 100644
---- a/Documentation/filesystems/xip.txt
-+++ b/Documentation/filesystems/xip.txt
-@@ -28,12 +28,15 @@ Implementation
- Execute-in-place is implemented in three steps: block device operation,
- address space operation, and file operations.
- 
--A block device operation named direct_access is used to retrieve a
--reference (pointer) to a block on-disk. The reference is supposed to be
--cpu-addressable, physical address and remain valid until the release operation
--is performed. A struct block_device reference is used to address the device,
--and a sector_t argument is used to identify the individual block. As an
--alternative, memory technology devices can be used for this.
-+A block device operation named direct_access is used to translate the
-+block device sector number to a page frame number (pfn) that identifies
-+the physical page for the memory.  It also returns a kernel virtual
-+address that can be used to access the memory.
-+
-+The direct_access method takes a 'size' parameter that indicates the
-+number of bytes being requested.  The function should return the number
-+of bytes that can be contiguously accessed at that offset.  It may also
-+return a negative errno if an error occurs.
- 
- The block device operation is optional, these block devices support it as of
- today:
-diff --git a/arch/powerpc/sysdev/axonram.c b/arch/powerpc/sysdev/axonram.c
-index 367533b..ee90db1 100644
---- a/arch/powerpc/sysdev/axonram.c
-+++ b/arch/powerpc/sysdev/axonram.c
-@@ -139,26 +139,17 @@ axon_ram_make_request(struct request_queue *queue, struct bio *bio)
-  * axon_ram_direct_access - direct_access() method for block device
-  * @device, @sector, @data: see block_device_operations method
-  */
--static int
-+static long
- axon_ram_direct_access(struct block_device *device, sector_t sector,
--		       void **kaddr, unsigned long *pfn)
-+		       void **kaddr, unsigned long *pfn, long size)
- {
- 	struct axon_ram_bank *bank = device->bd_disk->private_data;
--	loff_t offset;
--
--	offset = sector;
--	if (device->bd_part != NULL)
--		offset += device->bd_part->start_sect;
--	offset <<= AXON_RAM_SECTOR_SHIFT;
--	if (offset >= bank->size) {
--		dev_err(&bank->device->dev, "Access outside of address space\n");
--		return -ERANGE;
--	}
-+	loff_t offset = (loff_t)sector << AXON_RAM_SECTOR_SHIFT;
- 
- 	*kaddr = (void *)(bank->ph_addr + offset);
- 	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
- 
--	return 0;
-+	return bank->size - offset;
- }
- 
- static const struct block_device_operations axon_ram_devops = {
 diff --git a/drivers/block/brd.c b/drivers/block/brd.c
-index 3598110..89e90ec 100644
+index 89e90ec..a7463c959 100644
 --- a/drivers/block/brd.c
 +++ b/drivers/block/brd.c
-@@ -370,25 +370,25 @@ static int brd_rw_page(struct block_device *bdev, sector_t sector,
- }
- 
- #ifdef CONFIG_BLK_DEV_XIP
--static int brd_direct_access(struct block_device *bdev, sector_t sector,
--			void **kaddr, unsigned long *pfn)
-+static long brd_direct_access(struct block_device *bdev, sector_t sector,
-+			void **kaddr, unsigned long *pfn, long size)
- {
- 	struct brd_device *brd = bdev->bd_disk->private_data;
- 	struct page *page;
- 
- 	if (!brd)
- 		return -ENODEV;
--	if (sector & (PAGE_SECTORS-1))
--		return -EINVAL;
--	if (sector + PAGE_SECTORS > get_capacity(bdev->bd_disk))
--		return -ERANGE;
- 	page = brd_insert_page(brd, sector);
- 	if (!page)
- 		return -ENOSPC;
- 	*kaddr = page_address(page);
- 	*pfn = page_to_pfn(page);
- 
--	return 0;
-+	/*
-+	 * TODO: If size > PAGE_SIZE, we could look to see if the next page in
-+	 * the file happens to be mapped to the next page of physical RAM.
-+	 */
-+	return PAGE_SIZE;
- }
- #endif
- 
-diff --git a/drivers/s390/block/dcssblk.c b/drivers/s390/block/dcssblk.c
-index b550c8c..31d6884 100644
---- a/drivers/s390/block/dcssblk.c
-+++ b/drivers/s390/block/dcssblk.c
-@@ -28,8 +28,8 @@
- static int dcssblk_open(struct block_device *bdev, fmode_t mode);
- static void dcssblk_release(struct gendisk *disk, fmode_t mode);
- static void dcssblk_make_request(struct request_queue *q, struct bio *bio);
--static int dcssblk_direct_access(struct block_device *bdev, sector_t secnum,
--				 void **kaddr, unsigned long *pfn);
-+static long dcssblk_direct_access(struct block_device *bdev, sector_t secnum,
-+				 void **kaddr, unsigned long *pfn, long size);
- 
- static char dcssblk_segments[DCSSBLK_PARM_LEN] = "\0";
- 
-@@ -866,25 +866,22 @@ fail:
- 	bio_io_error(bio);
- }
- 
--static int
-+static long
- dcssblk_direct_access (struct block_device *bdev, sector_t secnum,
--			void **kaddr, unsigned long *pfn)
-+			void **kaddr, unsigned long *pfn, long size)
- {
- 	struct dcssblk_dev_info *dev_info;
--	unsigned long pgoff;
-+	unsigned long offset, dev_sz;
- 
- 	dev_info = bdev->bd_disk->private_data;
- 	if (!dev_info)
- 		return -ENODEV;
--	if (secnum % (PAGE_SIZE/512))
--		return -EINVAL;
--	pgoff = secnum / (PAGE_SIZE / 512);
--	if ((pgoff+1)*PAGE_SIZE-1 > dev_info->end - dev_info->start)
--		return -ERANGE;
--	*kaddr = (void *) (dev_info->start+pgoff*PAGE_SIZE);
-+	dev_sz = dev_info->end - dev_info->start;
-+	offset = secnum * 512;
-+	*kaddr = (void *) (dev_info->start + offset);
- 	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
- 
--	return 0;
-+	return dev_sz - offset;
- }
- 
- static void
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index b48c41b..f314c2c 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -429,6 +429,46 @@ int bdev_write_page(struct block_device *bdev, sector_t sector,
- }
- EXPORT_SYMBOL_GPL(bdev_write_page);
- 
-+/**
-+ * bdev_direct_access() - Get the address for directly-accessibly memory
-+ * @bdev: The device containing the memory
-+ * @sector: The offset within the device
-+ * @addr: Where to put the address of the memory
-+ * @pfn: The Page Frame Number for the memory
-+ * @size: The number of bytes requested
-+ *
-+ * If a block device is made up of directly addressable memory, this function
-+ * will tell the caller the PFN and the address of the memory.  The address
-+ * may be directly dereferenced within the kernel without the need to call
-+ * ioremap(), kmap() or similar.  The PFN is suitable for inserting into
-+ * page tables.
-+ *
-+ * Return: negative errno if an error occurs, otherwise the number of bytes
-+ * accessible at this address.
-+ */
-+long bdev_direct_access(struct block_device *bdev, sector_t sector,
-+			void **addr, unsigned long *pfn, long size)
-+{
-+	long avail;
-+	const struct block_device_operations *ops = bdev->bd_disk->fops;
-+
-+	if (size < 0)
-+		return size;
-+	if (!ops->direct_access)
-+		return -EOPNOTSUPP;
-+	if ((sector + DIV_ROUND_UP(size, 512)) >
-+					part_nr_sects_read(bdev->bd_part))
-+		return -ERANGE;
-+	sector += get_start_sect(bdev);
-+	if (sector % (PAGE_SIZE / 512))
-+		return -EINVAL;
-+	avail = ops->direct_access(bdev, sector, addr, pfn, size);
-+	if (!avail)
-+		return -ERANGE;
-+	return min(avail, size);
-+}
-+EXPORT_SYMBOL_GPL(bdev_direct_access);
-+
+@@ -438,19 +438,18 @@ static const struct block_device_operations brd_fops = {
  /*
-  * pseudo-fs
+  * And now the modules code and kernel interface.
   */
-diff --git a/fs/ext2/xip.c b/fs/ext2/xip.c
-index e98171a..bbc5fec 100644
---- a/fs/ext2/xip.c
-+++ b/fs/ext2/xip.c
-@@ -13,18 +13,12 @@
- #include "ext2.h"
- #include "xip.h"
+-static int rd_nr;
+-int rd_size = CONFIG_BLK_DEV_RAM_SIZE;
+-static int max_part;
+-static int part_shift;
+-static int part_show = 0;
++static int rd_nr = CONFIG_BLK_DEV_RAM_COUNT;
+ module_param(rd_nr, int, S_IRUGO);
+ MODULE_PARM_DESC(rd_nr, "Maximum number of brd devices");
++
++int rd_size = CONFIG_BLK_DEV_RAM_SIZE;
+ module_param(rd_size, int, S_IRUGO);
+ MODULE_PARM_DESC(rd_size, "Size of each RAM disk in kbytes.");
++
++static int max_part = 1;
+ module_param(max_part, int, S_IRUGO);
+-MODULE_PARM_DESC(max_part, "Maximum number of partitions per RAM disk");
+-module_param(part_show, int, S_IRUGO);
+-MODULE_PARM_DESC(part_show, "Control RAM disk visibility in /proc/partitions");
++MODULE_PARM_DESC(max_part, "Num Minors to reserve between devices");
++
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS_BLOCKDEV_MAJOR(RAMDISK_MAJOR);
+ MODULE_ALIAS("rd");
+@@ -496,16 +495,15 @@ static struct brd_device *brd_alloc(int i)
+ 	brd->brd_queue->limits.discard_zeroes_data = 1;
+ 	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, brd->brd_queue);
  
--static inline int
--__inode_direct_access(struct inode *inode, sector_t block,
--		      void **kaddr, unsigned long *pfn)
-+static inline long __inode_direct_access(struct inode *inode, sector_t block,
-+				void **kaddr, unsigned long *pfn, long size)
+-	disk = brd->brd_disk = alloc_disk(1 << part_shift);
++	disk = brd->brd_disk = alloc_disk(max_part);
+ 	if (!disk)
+ 		goto out_free_queue;
+ 	disk->major		= RAMDISK_MAJOR;
+-	disk->first_minor	= i << part_shift;
++	disk->first_minor	= i * max_part;
+ 	disk->fops		= &brd_fops;
+ 	disk->private_data	= brd;
+ 	disk->queue		= brd->brd_queue;
+-	if (!part_show)
+-		disk->flags |= GENHD_FL_SUPPRESS_PARTITION_INFO;
++	disk->flags		= GENHD_FL_EXT_DEVT;
+ 	sprintf(disk->disk_name, "ram%d", i);
+ 	set_capacity(disk, rd_size * 2);
+ 
+@@ -527,10 +525,11 @@ static void brd_free(struct brd_device *brd)
+ 	kfree(brd);
+ }
+ 
+-static struct brd_device *brd_init_one(int i)
++static struct brd_device *brd_init_one(int i, bool *new)
  {
- 	struct block_device *bdev = inode->i_sb->s_bdev;
--	const struct block_device_operations *ops = bdev->bd_disk->fops;
--	sector_t sector;
+ 	struct brd_device *brd;
+ 
++	*new = false;
+ 	list_for_each_entry(brd, &brd_devices, brd_list) {
+ 		if (brd->brd_number == i)
+ 			goto out;
+@@ -541,6 +540,7 @@ static struct brd_device *brd_init_one(int i)
+ 		add_disk(brd->brd_disk);
+ 		list_add_tail(&brd->brd_list, &brd_devices);
+ 	}
++	*new = true;
+ out:
+ 	return brd;
+ }
+@@ -556,70 +556,46 @@ static struct kobject *brd_probe(dev_t dev, int *part, void *data)
+ {
+ 	struct brd_device *brd;
+ 	struct kobject *kobj;
++	bool new;
+ 
+ 	mutex_lock(&brd_devices_mutex);
+-	brd = brd_init_one(MINOR(dev) >> part_shift);
++	brd = brd_init_one(MINOR(dev) / max_part, &new);
+ 	kobj = brd ? get_disk(brd->brd_disk) : NULL;
+ 	mutex_unlock(&brd_devices_mutex);
+ 
+-	*part = 0;
++	if (new)
++		*part = 0;
++
+ 	return kobj;
+ }
+ 
+ static int __init brd_init(void)
+ {
+-	int i, nr;
+-	unsigned long range;
+ 	struct brd_device *brd, *next;
++	int i;
+ 
+ 	/*
+ 	 * brd module now has a feature to instantiate underlying device
+ 	 * structure on-demand, provided that there is an access dev node.
+-	 * However, this will not work well with user space tool that doesn't
+-	 * know about such "feature".  In order to not break any existing
+-	 * tool, we do the following:
+ 	 *
+-	 * (1) if rd_nr is specified, create that many upfront, and this
+-	 *     also becomes a hard limit.
+-	 * (2) if rd_nr is not specified, create CONFIG_BLK_DEV_RAM_COUNT
+-	 *     (default 16) rd device on module load, user can further
+-	 *     extend brd device by create dev node themselves and have
+-	 *     kernel automatically instantiate actual device on-demand.
++	 * (1) if rd_nr is specified, create that many upfront. else
++	 *     it defaults to CONFIG_BLK_DEV_RAM_COUNT
++	 * (2) User can further extend brd devices by create dev node themselves
++	 *     and have kernel automatically instantiate actual device
++	 *     on-demand. Example:
++	 *		mknod /path/devnod_name b 1 X	# 1 is the rd major
++	 *		fdisk -l /path/devnod_name
++	 *	If (X / max_part) was not already created it will be created
++	 *	dynamically.
+ 	 */
+ 
+-	part_shift = 0;
+-	if (max_part > 0) {
+-		part_shift = fls(max_part);
 -
--	sector = block * (PAGE_SIZE / 512); /* ext2 block to bdev sector */
+-		/*
+-		 * Adjust max_part according to part_shift as it is exported
+-		 * to user space so that user can decide correct minor number
+-		 * if [s]he want to create more devices.
+-		 *
+-		 * Note that -1 is required because partition 0 is reserved
+-		 * for the whole disk.
+-		 */
+-		max_part = (1UL << part_shift) - 1;
+-	}
 -
--	BUG_ON(!ops->direct_access);
--	return ops->direct_access(bdev, sector, kaddr, pfn);
-+	sector_t sector = block * (PAGE_SIZE / 512);
-+	return bdev_direct_access(bdev, sector, kaddr, pfn, size);
+-	if ((1UL << part_shift) > DISK_MAX_PARTS)
+-		return -EINVAL;
+-
+-	if (rd_nr > 1UL << (MINORBITS - part_shift))
+-		return -EINVAL;
+-
+-	if (rd_nr) {
+-		nr = rd_nr;
+-		range = rd_nr << part_shift;
+-	} else {
+-		nr = CONFIG_BLK_DEV_RAM_COUNT;
+-		range = 1UL << MINORBITS;
+-	}
+-
+ 	if (register_blkdev(RAMDISK_MAJOR, "ramdisk"))
+ 		return -EIO;
+ 
+-	for (i = 0; i < nr; i++) {
++	if (unlikely(!max_part))
++		max_part = 1;
++
++	for (i = 0; i < rd_nr; i++) {
+ 		brd = brd_alloc(i);
+ 		if (!brd)
+ 			goto out_free;
+@@ -631,10 +607,10 @@ static int __init brd_init(void)
+ 	list_for_each_entry(brd, &brd_devices, brd_list)
+ 		add_disk(brd->brd_disk);
+ 
+-	blk_register_region(MKDEV(RAMDISK_MAJOR, 0), range,
++	blk_register_region(MKDEV(RAMDISK_MAJOR, 0), 1UL << MINORBITS,
+ 				  THIS_MODULE, brd_probe, NULL, NULL);
+ 
+-	printk(KERN_INFO "brd: module loaded\n");
++	pr_info("brd: module loaded\n");
+ 	return 0;
+ 
+ out_free:
+@@ -644,21 +620,21 @@ out_free:
+ 	}
+ 	unregister_blkdev(RAMDISK_MAJOR, "ramdisk");
+ 
++	pr_info("brd: module NOT loaded !!!\n");
+ 	return -ENOMEM;
  }
  
- static inline int
-@@ -53,12 +47,13 @@ ext2_clear_xip_target(struct inode *inode, sector_t block)
+ static void __exit brd_exit(void)
  {
- 	void *kaddr;
- 	unsigned long pfn;
--	int rc;
-+	long size;
+-	unsigned long range;
+ 	struct brd_device *brd, *next;
  
--	rc = __inode_direct_access(inode, block, &kaddr, &pfn);
--	if (!rc)
--		clear_page(kaddr);
--	return rc;
-+	size = __inode_direct_access(inode, block, &kaddr, &pfn, PAGE_SIZE);
-+	if (size < 0)
-+		return size;
-+	clear_page(kaddr);
-+	return 0;
+-	range = rd_nr ? rd_nr << part_shift : 1UL << MINORBITS;
+-
+ 	list_for_each_entry_safe(brd, next, &brd_devices, brd_list)
+ 		brd_del_one(brd);
+ 
+-	blk_unregister_region(MKDEV(RAMDISK_MAJOR, 0), range);
++	blk_unregister_region(MKDEV(RAMDISK_MAJOR, 0), 1UL << MINORBITS);
+ 	unregister_blkdev(RAMDISK_MAJOR, "ramdisk");
++
++	pr_info("brd: module unloaded\n");
  }
  
- void ext2_xip_verify_sb(struct super_block *sb)
-@@ -77,7 +72,7 @@ void ext2_xip_verify_sb(struct super_block *sb)
- int ext2_get_xip_mem(struct address_space *mapping, pgoff_t pgoff, int create,
- 				void **kmem, unsigned long *pfn)
- {
--	int rc;
-+	long rc;
- 	sector_t block;
- 
- 	/* first, retrieve the sector number */
-@@ -86,6 +81,6 @@ int ext2_get_xip_mem(struct address_space *mapping, pgoff_t pgoff, int create,
- 		return rc;
- 
- 	/* retrieve address of the target data */
--	rc = __inode_direct_access(mapping->host, block, kmem, pfn);
--	return rc;
-+	rc = __inode_direct_access(mapping->host, block, kmem, pfn, PAGE_SIZE);
-+	return (rc < 0) ? rc : 0;
- }
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 92f4b4b..e9086be 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -1601,8 +1601,8 @@ struct block_device_operations {
- 	int (*rw_page)(struct block_device *, sector_t, struct page *, int rw);
- 	int (*ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
- 	int (*compat_ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
--	int (*direct_access) (struct block_device *, sector_t,
--						void **, unsigned long *);
-+	long (*direct_access)(struct block_device *, sector_t,
-+					void **, unsigned long *pfn, long size);
- 	unsigned int (*check_events) (struct gendisk *disk,
- 				      unsigned int clearing);
- 	/* ->media_changed() is DEPRECATED, use ->check_events() instead */
-@@ -1620,6 +1620,8 @@ extern int __blkdev_driver_ioctl(struct block_device *, fmode_t, unsigned int,
- extern int bdev_read_page(struct block_device *, sector_t, struct page *);
- extern int bdev_write_page(struct block_device *, sector_t, struct page *,
- 						struct writeback_control *);
-+extern long bdev_direct_access(struct block_device *, sector_t, void **addr,
-+						unsigned long *pfn, long size);
- #else /* CONFIG_BLOCK */
- 
- struct block_device;
+ module_init(brd_init);
 -- 
 1.9.3
 
