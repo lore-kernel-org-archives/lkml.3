@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314AbbAGTJa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 14:09:30 -0500
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:36769 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753672AbbAGTJ2 (ORCPT
+	id S1754518AbbAGTMB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 14:12:01 -0500
+Received: from khitomer.mortis.eu ([185.27.175.75]:44960 "EHLO
+	khitomer.mortis.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753386AbbAGTMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 14:09:28 -0500
-X-Sasl-enc: RBKNo1DuG+DWIsA1hhaswugtT5rIUGJlZ47uxDZ0VcGh 1420657767
-Date: Wed, 7 Jan 2015 11:09:26 -0800
-From: Greg KH <greg@kroah.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Sasha Levin <sasha.levin@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        stable <stable@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>
-Subject: Re: [PATCH 1/2] time: settimeofday: Validate the values of tv from
- user
-Message-ID: <20150107190926.GA4364@kroah.com>
-References: <1420654340-3009-1-git-send-email-john.stultz@linaro.org>
- <1420654340-3009-2-git-send-email-john.stultz@linaro.org>
- <20150107182845.GA7699@kroah.com>
- <CALAqxLUSzc8yePiQS=5=C6q73eWm87yPfp_ZjXh8Nh=ydE592Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALAqxLUSzc8yePiQS=5=C6q73eWm87yPfp_ZjXh8Nh=ydE592Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 7 Jan 2015 14:12:00 -0500
+From: Giel van Schijndel <me@mortis.eu>
+To: linux-kernel@vger.kernel.org
+Cc: David Sterba <dsterba@suse.cz>, Giel van Schijndel <me@mortis.eu>,
+        Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
+        netdev@vger.kernel.org (open list:ISDN SUBSYSTEM)
+Subject: [PATCH RESEND] isdn: fix NUL (\0 or \x00) specification in string
+Date: Wed,  7 Jan 2015 20:10:12 +0100
+Message-Id: <1420657812-19445-1-git-send-email-me@mortis.eu>
+X-Mailer: git-send-email 2.1.4
+In-Reply-To: <1420394722-20197-1-git-send-email-me@mortis.eu>
+References: <1420394722-20197-1-git-send-email-me@mortis.eu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 11:02:01AM -0800, John Stultz wrote:
-> On Wed, Jan 7, 2015 at 10:28 AM, Greg KH <greg@kroah.com> wrote:
-> > On Wed, Jan 07, 2015 at 10:12:19AM -0800, John Stultz wrote:
-> >> From: Sasha Levin <sasha.levin@oracle.com>
-> >>
-> >> An unvalidated user input is multiplied by a constant, which can result in
-> >> an undefined behaviour for large values. While this is validated later,
-> >> we should avoid triggering undefined behaviour.
-> >>
-> >> Cc: Thomas Gleixner <tglx@linutronix.de>
-> >> Cc: Ingo Molnar <mingo@kernel.org>
-> >> Cc: stable <stable@vger.kernel.org>
-> >> Cc: Andy Lutomirski <luto@amacapital.net>
-> >> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> >> [jstultz: include trivial milisecond->microsecond correction noticed
-> >> by Andy]
-> >> Signed-off-by: John Stultz <john.stultz@linaro.org>
-> >> ---
-> >>  include/linux/time.h | 13 +++++++++++++
-> >>  kernel/time/time.c   |  4 ++++
-> >>  2 files changed, 17 insertions(+)
-> >
-> > <formletter>
-> >
-> > This is not the correct way to submit patches for inclusion in the
-> > stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-> > for how to do this properly.
-> >
-> > </formletter>
-> 
-> Hrm. I'm not quite sure which rule I'm running afoul here.
-> 
-> Does this seem too much like a theoretical issue and not like enough
-> of a "oh, that's not good" issue?
+In C one can either use '\0' or '\x00' (or '\000') to add a NUL byte to
+a string. '\0x00' isn't part of these and will in fact result in a
+single NUL followed by "x00". This fixes that.
 
-No, crap, my fault, I messed up on these, you are doing this just fine,
-I'm not awake this morning...
+Signed-off-by: Giel van Schijndel <me@mortis.eu>
+Reported-at: http://www.viva64.com/en/b/0299/
+---
+ drivers/isdn/hardware/eicon/message.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-/me goes off to get more coffee.
+diff --git a/drivers/isdn/hardware/eicon/message.c b/drivers/isdn/hardware/eicon/message.c
+index a82e542..0b38060 100644
+--- a/drivers/isdn/hardware/eicon/message.c
++++ b/drivers/isdn/hardware/eicon/message.c
+@@ -4880,7 +4880,7 @@ static void sig_ind(PLCI *plci)
+ 	byte SS_Ind[] = "\x05\x02\x00\x02\x00\x00"; /* Hold_Ind struct*/
+ 	byte CF_Ind[] = "\x09\x02\x00\x06\x00\x00\x00\x00\x00\x00";
+ 	byte Interr_Err_Ind[] = "\x0a\x02\x00\x07\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
+-	byte CONF_Ind[] = "\x09\x16\x00\x06\x00\x00\0x00\0x00\0x00\0x00";
++	byte CONF_Ind[] = "\x09\x16\x00\x06\x00\x00\x00\x00\x00\x00";
+ 	byte force_mt_info = false;
+ 	byte dir;
+ 	dword d;
+-- 
+2.1.4
 
-greg k-h
