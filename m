@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518AbbAGXaN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 18:30:13 -0500
-Received: from mailout.micron.com ([137.201.242.129]:39454 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055AbbAGXaK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755485AbbAGXaK (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 7 Jan 2015 18:30:10 -0500
-From: "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: "axboe@kernel.dk" <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] block: pass correct seed to integrity metadata
- generation function
-Thread-Topic: [PATCH] block: pass correct seed to integrity metadata
- generation function
-Thread-Index: AdAbHdTOKR9VxT2kSG67KJv7w9th2QPqKNAAAAK0LeoAABYRQA==
-Date: Wed, 7 Jan 2015 23:30:05 +0000
-Message-ID: <80B89753B40C5141A3E2D53FE7A2A8A994634D2A@NTXBOIMBX02.micron.com>
-References: <54936D1E.3020700@micron.com> <54ADBC6E.50301@micron.com>
- <yq14ms25g21.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq14ms25g21.fsf@sermon.lab.mkp.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [137.201.88.182]
-x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-21230.002
-x-tm-as-result: No--29.002000-0.000000-31
-x-tm-as-user-approved-sender: Yes
-x-tm-as-user-blocked-sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33784 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752055AbbAGXaI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 18:30:08 -0500
+Date: Wed, 7 Jan 2015 15:30:06 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Josh Poimboeuf <jpoimboe@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        live-patching@vger.kernel.org, linux-next@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: Re: livepatching tree for linux-next
+Message-Id: <20150107153006.60ed354e3458f402e6819b9e@linux-foundation.org>
+In-Reply-To: <alpine.LNX.2.00.1501072346400.15299@pobox.suse.cz>
+References: <alpine.LNX.2.00.1412221412360.1680@pobox.suse.cz>
+	<20141223094607.GA16445@infradead.org>
+	<20141223151056.GA4789@treble.redhat.com>
+	<20141226155613.36dd95b9@canb.auug.org.au>
+	<20150107144317.61ab2080877a4d8227990551@linux-foundation.org>
+	<alpine.LNX.2.00.1501072346400.15299@pobox.suse.cz>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 8 Jan 2015 00:01:02 +0100 (CET) Jiri Kosina <jkosina@suse.cz> wrote:
 
-
-> Sam> Any particular objection to this patch?  It would be nice if the
-> Sam> kernel supported PI on block sizes other than just 512 bytes.
+> On Wed, 7 Jan 2015, Andrew Morton wrote:
 > 
-> I never saw the patch. Did you CC: me on it?
+> > > OK, I have added this from today
+> > 
+> > My x86_64 allmodconfig broke.
+> > 
+> > In file included from include/linux/livepatch.h:29,
+> >                  from kernel/livepatch/core.c:30:
+> > ./arch/x86/include/asm/livepatch.h:29:2: error: #error Your compiler must support -mfentry for live patching to work
+> 
+> [ adding Steven and Masami to CC, as this in some sense is related in 
+>   both to ftrace regs caller, and to IPMODIFY users in general ]
+> 
+> Well, if your gcc is too old (which is a fact detemined during build time, 
+> so there is no way to express this in Kconfig language in form of 
+> dependencies), we have to introduce build-time failure, as there is no way 
+> for this to work on compilers that don't support fentry on x86_64.
+> 
+> The only remaining option is to let the code build, pretend that 
+> everything is working, but do something like
+> 
+> #ifndef CC_USING_FENTRY
+> 	printk("The compiler you used to compile your kernel was ancient "
+> 		"there is no way for you to make use of this feature\n");
+> 	return -EINVAL;
+> #endif
+> 
+> or so ... which I personally detest even more.
 
-Yes, you were CC: on the original.  Could you take a peek at the patch 
-and give me feedback?
-https://lkml.org/lkml/2014/12/18/521
+um, what's so special about this patchset that it gets to be the first
+code in the history of the kernel which breaks allmodconfig?
 
-
+Please find a way to fix it.  Copying CONFIG_CC_STACKPROTECTOR is one way.
 
