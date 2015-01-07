@@ -1,213 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974AbbAGFja (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 00:39:30 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:9597 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446AbbAGFjW (ORCPT
+	id S1751788AbbAGFdj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 00:33:39 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:34126 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842AbbAGFdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 00:39:22 -0500
-X-AuditID: cbfee68d-f79296d000004278-db-54acc688506e
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: kgene@kernel.org, linux@arm.linux.org.uk, b.zolnierkie@samsung.com,
-        amit.daniel@samsung.com, arnd@arndb.de, thomas.ab@samsung.com,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Andy Gross <agross@codeaurora.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCH v2 6/6] drivers: soc: Add support for Exynos PMU driver
-Date: Wed, 07 Jan 2015 11:01:28 +0530
-Message-id: <1420608688-10459-7-git-send-email-pankaj.dubey@samsung.com>
-X-Mailer: git-send-email 2.2.0
-In-reply-to: <1420608688-10459-1-git-send-email-pankaj.dubey@samsung.com>
-References: <1420608688-10459-1-git-send-email-pankaj.dubey@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsWyRsSkRrfj2JoQg8WPOSx2fuhmsmi4GmLx
-	d9IxdouNM9azWvQ/fs1sMeXPciaLTY+vsVpc3jWHzWLG+X1MFrcv81os2vqF3eJ13xpmixvT
-	W1gtOpYxOvB5tDT3sHn8/jWJ0eNyXy+Tx6ZVnWwed67tYfPYvKTeo7f5HZtH35ZVjB7Hb2xn
-	8vi8SS6AK4rLJiU1J7MstUjfLoEr49efpcwFawwq5h+cydTAOEWji5GTQ0LARKJx5TV2CFtM
-	4sK99WxdjFwcQgJLGSWenNnGAlPUcPM4I0RiOqPE+kVXmSGcCUwSh/79ZgapYhPQlXjyfi6Y
-	LSKQLdF/ezULSBGzwE0mictHnwHN5eAQFnCXmHFIAMRkEVCVmN7EClLOK+Ahcf3BOVaIZXIS
-	W249AruIU8BT4tnU/2BxIaCa3w0fGCFq3rJLvP8iCWKzCAhIfJt8iAVkpISArMSmA8wQJZIS
-	B1fcYJnAKLyAkWEVo2hqQXJBcVJ6kaFecWJucWleul5yfu4mRmBUnf73rHcH4+0D1ocYBTgY
-	lXh4C/rWhAixJpYVV+YeYjQF2jCRWUo0OR8Yu3kl8YbGZkYWpiamxkbmlmZK4ryKUj+DhQTS
-	E0tSs1NTC1KL4otKc1KLDzEycXBKNTA6nPG7+cnFS+Xiz2d3ddayMMW8TDyTXtB99U3Y556L
-	WnqJKumMsVMZiw+e2rXY5LJikttmp8Z0I3eDvxtFpqa8/unvf33PntBjZu+ub9zpo3Ll2gqD
-	BSW7ZnD6MZqt5LjN4aXwR6a0JaOnpWyXB9PXU5/Vg79uf67WkuV2ekek9KpZFhOuLspVYinO
-	SDTUYi4qTgQAwl0D56UCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t9jQd2OY2tCDFbrW+z80M1k0XA1xOLv
-	pGPsFhtnrGe16H/8mtliyp/lTBabHl9jtbi8aw6bxYzz+5gsbl/mtVi09Qu7xeu+NcwWN6a3
-	sFp0LGN04PNoae5h8/j9axKjx+W+XiaPTas62TzuXNvD5rF5Sb1Hb/M7No++LasYPY7f2M7k
-	8XmTXABXVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5b
-	Zg7Q+UoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwhrGjF9/ljIXrDGomH9w
-	JlMD4xSNLkZODgkBE4mGm8cZIWwxiQv31rN1MXJxCAlMZ5RYv+gqM4QzgUni0L/fzCBVbAK6
-	Ek/ezwWzRQSyJfpvr2YBKWIWuMkkcfnoM6B2Dg5hAXeJGYcEQEwWAVWJ6U2sIOW8Ah4S1x+c
-	Y4VYJiex5dYjdhCbU8BT4tnU/2BxIaCa3w0fGCcw8i5gZFjFKJpakFxQnJSea6RXnJhbXJqX
-	rpecn7uJERyzz6R3MK5qsDjEKMDBqMTDW9C3JkSINbGsuDL3EKMEB7OSCK9VJ1CINyWxsiq1
-	KD++qDQntfgQoynQUROZpUST84HpJK8k3tDYxNzU2NTSxMLEzFJJnFfJvi1ESCA9sSQ1OzW1
-	ILUIpo+Jg1OqgXFu+G7/vWEPNXoqVt0V6V02+eilzES5nu8r92TwrEk9pLeq2ikggX9baO5q
-	Bf8g1tQr+TbvDlRN/j85fVKqB5PLmV7lGsOixTm7H5UyesVbMe6xNTnAY5T/7X9/J/vsbN7V
-	Ww5PD+c58k7JrOD2ux8bF0XtM925We3CaT6ucI412WtMVjed9VBiKc5INNRiLipOBABGv0Wa
-	7wIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 7 Jan 2015 00:33:37 -0500
+From: "Ian Munsie" <imunsie@au1.ibm.com>
+To: mpe <mpe@ellerman.id.au>
+Cc: benh <benh@kernel.crashing.org>, mikey <mikey@neuling.org>,
+        anton <anton@samba.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        linuxppc-dev <linuxppc-dev@ozlabs.org>, jk <jk@ozlabs.org>,
+        imunsie <imunsie@au1.ibm.com>,
+        cbe-oss-dev <cbe-oss-dev@lists.ozlabs.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Philippe Bergheaud <philippe.bergheaud@fr.ibm.com>
+Subject: [PATCH] cxl: Fix issues when unmapping contexts
+Date: Wed,  7 Jan 2015 16:33:04 +1100
+Message-Id: <1420608784-13049-1-git-send-email-imunsie@au.ibm.com>
+X-Mailer: git-send-email 2.1.4
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15010705-0009-0000-0000-000000C36131
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves Exynos PMU driver implementation from "arm/mach-exynos"
-to "drivers/soc/samsung". This driver is mainly used for setting misc
-bits of register from PMU IP of Exynos SoC which will be required to
-configure before Suspend/Resume. Currently all these settings are done
-in "arch/arm/mach-exynos/pmu.c" but moving ahead for ARM64 based SoC
-support, there is a need of this PMU driver in driver/* folder.
+From: Ian Munsie <imunsie@au1.ibm.com>
 
-This driver uses existing DT binding information and there should
-be no functionality change in the supported platforms.
+An issue was introduced with "cxl: Unmap MMIO regions when detaching a
+context" (b123429e6a9e8d03aacf888d23262835f0081448) where closing a
+context normally could also unmap the problem state area of other
+contexts currently using the AFU.
 
-CC: Linus Walleij <linus.walleij@linaro.org>
-CC: Stephen Warren <swarren@nvidia.com>
-CC: Andy Gross <agross@codeaurora.org>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+It was also discovered that after a context's MMIO space had been
+unmapped it would read 0s when accessing it, whereas the expected
+behaviour was for the access to fail altogether.
+
+In order to address these issues, this patch does two things:
+
+- Forced mmap unmapping is only done when we are forcefully detaching
+  all contexts, and not in the normal detach path. Since the normal
+  context close path is tied to the file release any mmaps must have
+  already been released so we don't need to worry in that case.
+
+- The mmap path now uses a vm_operations_struct with a fault handler.
+  The fault handler ensures that the context is in started state,
+  otherwise it fails the access attempt with a SIGBUS.
+
+Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 ---
- arch/arm/mach-exynos/Kconfig                         |  1 +
- arch/arm/mach-exynos/Makefile                        |  4 +---
- drivers/soc/Kconfig                                  |  1 +
- drivers/soc/Makefile                                 |  1 +
- drivers/soc/samsung/Kconfig                          | 20 ++++++++++++++++++++
- drivers/soc/samsung/Makefile                         |  4 ++++
- .../pmu.c => drivers/soc/samsung/exynos-pmu.c        |  0
- .../mach-exynos => drivers/soc/samsung}/exynos-pmu.h |  0
- .../soc/samsung}/exynos3250-pmu.c                    |  0
- .../soc/samsung}/exynos4-pmu.c                       |  0
- .../soc/samsung}/exynos5250-pmu.c                    |  0
- .../soc/samsung}/exynos5420-pmu.c                    |  0
- 12 files changed, 28 insertions(+), 3 deletions(-)
- create mode 100644 drivers/soc/samsung/Kconfig
- create mode 100644 drivers/soc/samsung/Makefile
- rename arch/arm/mach-exynos/pmu.c => drivers/soc/samsung/exynos-pmu.c (100%)
- rename {arch/arm/mach-exynos => drivers/soc/samsung}/exynos-pmu.h (100%)
- rename {arch/arm/mach-exynos => drivers/soc/samsung}/exynos3250-pmu.c (100%)
- rename {arch/arm/mach-exynos => drivers/soc/samsung}/exynos4-pmu.c (100%)
- rename {arch/arm/mach-exynos => drivers/soc/samsung}/exynos5250-pmu.c (100%)
- rename {arch/arm/mach-exynos => drivers/soc/samsung}/exynos5420-pmu.c (100%)
+ drivers/misc/cxl/context.c | 82 +++++++++++++++++++++++++++++++++++-----------
+ drivers/misc/cxl/file.c    | 14 ++++----
+ 2 files changed, 71 insertions(+), 25 deletions(-)
 
-diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
-index 603820e..2e00b75 100644
---- a/arch/arm/mach-exynos/Kconfig
-+++ b/arch/arm/mach-exynos/Kconfig
-@@ -25,6 +25,7 @@ menuconfig ARCH_EXYNOS
- 	select S5P_DEV_MFC
- 	select SRAM
- 	select MFD_SYSCON
-+	select SOC_SAMSUNG
- 	help
- 	  Support for SAMSUNG EXYNOS SoCs (EXYNOS4/5)
+diff --git a/drivers/misc/cxl/context.c b/drivers/misc/cxl/context.c
+index 51fd6b5..d1b55fe 100644
+--- a/drivers/misc/cxl/context.c
++++ b/drivers/misc/cxl/context.c
+@@ -100,6 +100,46 @@ int cxl_context_init(struct cxl_context *ctx, struct cxl_afu *afu, bool master,
+ 	return 0;
+ }
  
-diff --git a/arch/arm/mach-exynos/Makefile b/arch/arm/mach-exynos/Makefile
-index 462df1b..b91b382 100644
---- a/arch/arm/mach-exynos/Makefile
-+++ b/arch/arm/mach-exynos/Makefile
-@@ -9,9 +9,7 @@ ccflags-$(CONFIG_ARCH_MULTIPLATFORM) += -I$(srctree)/$(src)/include -I$(srctree)
- 
- # Core
- 
--obj-$(CONFIG_ARCH_EXYNOS)	+= exynos.o pmu.o exynos-smc.o firmware.o \
--					exynos3250-pmu.o exynos4-pmu.o \
--					exynos5250-pmu.o exynos5420-pmu.o
-+obj-$(CONFIG_ARCH_EXYNOS)	+= exynos.o exynos-smc.o firmware.o
- 
- obj-$(CONFIG_EXYNOS_CPU_SUSPEND) += pm.o sleep.o
- obj-$(CONFIG_PM_SLEEP)		+= suspend.o
-diff --git a/drivers/soc/Kconfig b/drivers/soc/Kconfig
-index 76d6bd4..c3abfbe 100644
---- a/drivers/soc/Kconfig
-+++ b/drivers/soc/Kconfig
-@@ -1,6 +1,7 @@
- menu "SOC (System On Chip) specific Drivers"
- 
- source "drivers/soc/qcom/Kconfig"
-+source "drivers/soc/samsung/Kconfig"
- source "drivers/soc/ti/Kconfig"
- source "drivers/soc/versatile/Kconfig"
- 
-diff --git a/drivers/soc/Makefile b/drivers/soc/Makefile
-index 063113d..620366f 100644
---- a/drivers/soc/Makefile
-+++ b/drivers/soc/Makefile
-@@ -3,6 +3,7 @@
- #
- 
- obj-$(CONFIG_ARCH_QCOM)		+= qcom/
-+obj-$(CONFIG_SOC_SAMSUNG)	+= samsung/
- obj-$(CONFIG_ARCH_TEGRA)	+= tegra/
- obj-$(CONFIG_SOC_TI)		+= ti/
- obj-$(CONFIG_PLAT_VERSATILE)	+= versatile/
-diff --git a/drivers/soc/samsung/Kconfig b/drivers/soc/samsung/Kconfig
-new file mode 100644
-index 0000000..6855cc4
---- /dev/null
-+++ b/drivers/soc/samsung/Kconfig
-@@ -0,0 +1,20 @@
-+#
-+# SAMSUNG SOC drivers
-+#
-+menu "Samsung SOC drivers support"
++static int cxl_mmap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
++{
++	struct cxl_context *ctx = vma->vm_file->private_data;
++	unsigned long address = (unsigned long)vmf->virtual_address;
++	u64 area, offset;
 +
-+config SOC_SAMSUNG
-+	bool
++	offset = vmf->pgoff << PAGE_SHIFT;
 +
-+config EXYNOS_PMU
-+	bool "Support Exynos Power Management Unit"
-+	depends on ARCH_EXYNOS
-+	default y
-+	help
-+	  Exynos SoC have Power Management Unit (PMU) which controls power and
-+	  operation state of various components in Exynos SoC. This driver
-+	  provides implementation of PMU driver and provides various
-+	  functionality like initialisation and transition to various low power
-+	  states.
++	pr_devel("%s: pe: %i address: 0x%lx offset: 0x%llx\n",
++			__func__, ctx->pe, address, offset);
 +
-+endmenu
-diff --git a/drivers/soc/samsung/Makefile b/drivers/soc/samsung/Makefile
-new file mode 100644
-index 0000000..d746a1d
---- /dev/null
-+++ b/drivers/soc/samsung/Makefile
-@@ -0,0 +1,4 @@
-+ifdef CONFIG_ARM
-+obj-$(CONFIG_EXYNOS_PMU)	+= exynos-pmu.o exynos3250-pmu.o exynos4-pmu.o \
-+					exynos5250-pmu.o exynos5420-pmu.o
-+endif
-diff --git a/arch/arm/mach-exynos/pmu.c b/drivers/soc/samsung/exynos-pmu.c
-similarity index 100%
-rename from arch/arm/mach-exynos/pmu.c
-rename to drivers/soc/samsung/exynos-pmu.c
-diff --git a/arch/arm/mach-exynos/exynos-pmu.h b/drivers/soc/samsung/exynos-pmu.h
-similarity index 100%
-rename from arch/arm/mach-exynos/exynos-pmu.h
-rename to drivers/soc/samsung/exynos-pmu.h
-diff --git a/arch/arm/mach-exynos/exynos3250-pmu.c b/drivers/soc/samsung/exynos3250-pmu.c
-similarity index 100%
-rename from arch/arm/mach-exynos/exynos3250-pmu.c
-rename to drivers/soc/samsung/exynos3250-pmu.c
-diff --git a/arch/arm/mach-exynos/exynos4-pmu.c b/drivers/soc/samsung/exynos4-pmu.c
-similarity index 100%
-rename from arch/arm/mach-exynos/exynos4-pmu.c
-rename to drivers/soc/samsung/exynos4-pmu.c
-diff --git a/arch/arm/mach-exynos/exynos5250-pmu.c b/drivers/soc/samsung/exynos5250-pmu.c
-similarity index 100%
-rename from arch/arm/mach-exynos/exynos5250-pmu.c
-rename to drivers/soc/samsung/exynos5250-pmu.c
-diff --git a/arch/arm/mach-exynos/exynos5420-pmu.c b/drivers/soc/samsung/exynos5420-pmu.c
-similarity index 100%
-rename from arch/arm/mach-exynos/exynos5420-pmu.c
-rename to drivers/soc/samsung/exynos5420-pmu.c
++	if (ctx->afu->current_mode == CXL_MODE_DEDICATED) {
++		area = ctx->afu->psn_phys;
++		if (offset > ctx->afu->adapter->ps_size)
++			return VM_FAULT_SIGBUS;
++	} else {
++		area = ctx->psn_phys;
++		if (offset > ctx->psn_size)
++			return VM_FAULT_SIGBUS;
++	}
++
++	mutex_lock(&ctx->status_mutex);
++
++	if (ctx->status != STARTED) {
++		mutex_unlock(&ctx->status_mutex);
++		pr_devel("%s: Context not started, failing problem state access\n", __func__);
++		return VM_FAULT_SIGBUS;
++	}
++
++	vm_insert_pfn(vma, address, (area + offset) >> PAGE_SHIFT);
++
++	mutex_unlock(&ctx->status_mutex);
++
++	return VM_FAULT_NOPAGE;
++}
++
++static const struct vm_operations_struct cxl_mmap_vmops = {
++	.fault = cxl_mmap_fault,
++};
++
+ /*
+  * Map a per-context mmio space into the given vma.
+  */
+@@ -108,26 +148,25 @@ int cxl_context_iomap(struct cxl_context *ctx, struct vm_area_struct *vma)
+ 	u64 len = vma->vm_end - vma->vm_start;
+ 	len = min(len, ctx->psn_size);
+ 
+-	if (ctx->afu->current_mode == CXL_MODE_DEDICATED) {
+-		vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+-		return vm_iomap_memory(vma, ctx->afu->psn_phys, ctx->afu->adapter->ps_size);
+-	}
++	if (ctx->afu->current_mode != CXL_MODE_DEDICATED) {
++		/* make sure there is a valid per process space for this AFU */
++		if ((ctx->master && !ctx->afu->psa) || (!ctx->afu->pp_psa)) {
++			pr_devel("AFU doesn't support mmio space\n");
++			return -EINVAL;
++		}
+ 
+-	/* make sure there is a valid per process space for this AFU */
+-	if ((ctx->master && !ctx->afu->psa) || (!ctx->afu->pp_psa)) {
+-		pr_devel("AFU doesn't support mmio space\n");
+-		return -EINVAL;
++		/* Can't mmap until the AFU is enabled */
++		if (!ctx->afu->enabled)
++			return -EBUSY;
+ 	}
+ 
+-	/* Can't mmap until the AFU is enabled */
+-	if (!ctx->afu->enabled)
+-		return -EBUSY;
+-
+ 	pr_devel("%s: mmio physical: %llx pe: %i master:%i\n", __func__,
+ 		 ctx->psn_phys, ctx->pe , ctx->master);
+ 
++	vma->vm_flags |= VM_IO | VM_PFNMAP;
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+-	return vm_iomap_memory(vma, ctx->psn_phys, len);
++	vma->vm_ops = &cxl_mmap_vmops;
++	return 0;
+ }
+ 
+ /*
+@@ -150,12 +189,6 @@ static void __detach_context(struct cxl_context *ctx)
+ 	afu_release_irqs(ctx);
+ 	flush_work(&ctx->fault_work); /* Only needed for dedicated process */
+ 	wake_up_all(&ctx->wq);
+-
+-	/* Release Problem State Area mapping */
+-	mutex_lock(&ctx->mapping_lock);
+-	if (ctx->mapping)
+-		unmap_mapping_range(ctx->mapping, 0, 0, 1);
+-	mutex_unlock(&ctx->mapping_lock);
+ }
+ 
+ /*
+@@ -184,6 +217,17 @@ void cxl_context_detach_all(struct cxl_afu *afu)
+ 		 * created and torn down after the IDR removed
+ 		 */
+ 		__detach_context(ctx);
++
++		/*
++		 * We are force detaching - remove any active PSA mappings so
++		 * userspace cannot interfere with the card if it comes back.
++		 * Easiest way to exercise this is to unbind and rebind the
++		 * driver via sysfs while it is in use.
++		 */
++		mutex_lock(&ctx->mapping_lock);
++		if (ctx->mapping)
++			unmap_mapping_range(ctx->mapping, 0, 0, 1);
++		mutex_unlock(&ctx->mapping_lock);
+ 	}
+ 	mutex_unlock(&afu->contexts_lock);
+ }
+diff --git a/drivers/misc/cxl/file.c b/drivers/misc/cxl/file.c
+index b09be44..4e85028 100644
+--- a/drivers/misc/cxl/file.c
++++ b/drivers/misc/cxl/file.c
+@@ -140,18 +140,20 @@ static long afu_ioctl_start_work(struct cxl_context *ctx,
+ 
+ 	pr_devel("%s: pe: %i\n", __func__, ctx->pe);
+ 
+-	mutex_lock(&ctx->status_mutex);
+-	if (ctx->status != OPENED) {
+-		rc = -EIO;
+-		goto out;
+-	}
+-
++	/* Do this outside the status_mutex to avoid a circular dependency with
++	 * the locking in cxl_mmap_fault() */
+ 	if (copy_from_user(&work, uwork,
+ 			   sizeof(struct cxl_ioctl_start_work))) {
+ 		rc = -EFAULT;
+ 		goto out;
+ 	}
+ 
++	mutex_lock(&ctx->status_mutex);
++	if (ctx->status != OPENED) {
++		rc = -EIO;
++		goto out;
++	}
++
+ 	/*
+ 	 * if any of the reserved fields are set or any of the unused
+ 	 * flags are set it's invalid
 -- 
-2.2.0
+2.1.4
 
