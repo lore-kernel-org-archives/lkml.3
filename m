@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018AbbAGTAw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 14:00:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42308 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751528AbbAGTAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 14:00:50 -0500
-Message-ID: <1420657243.6345.22.camel@redhat.com>
-Subject: Re: [PATCH V2] vfio-pci: Fix the check on pci device type in
- vfio_pci_probe()
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-Cc: bhelgaas@google.com, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Date: Wed, 07 Jan 2015 12:00:43 -0700
-In-Reply-To: <1419303487-9077-1-git-send-email-weiyang@linux.vnet.ibm.com>
-References: <20141223011622.GA6035@richard>
-	 <1419303487-9077-1-git-send-email-weiyang@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754183AbbAGTA6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 14:00:58 -0500
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:44802 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753566AbbAGTAv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 14:00:51 -0500
+Date: Wed, 7 Jan 2015 14:00:48 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pavel Machek <pavel@ucw.cz>, Marc Zyngier <marc.zyngier@arm.com>,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
+ pyaudio (and probably more)
+In-Reply-To: <CA+55aFypmZExpCvD699TQOs1NDK_mT-_rR3UWOdxdzkOKvbdoA@mail.gmail.com>
+Message-ID: <alpine.LFD.2.11.1501071354130.1322@knanqh.ubzr>
+References: <20150104190123.GA20153@amd> <alpine.LFD.2.11.1501041438130.18844@knanqh.ubzr> <20150104201026.GA23427@amd> <alpine.LFD.2.11.1501041512440.18844@knanqh.ubzr> <20150104203724.GA16372@amd> <alpine.LFD.2.11.1501041547050.18844@knanqh.ubzr>
+ <CA+55aFy5yB2d-1iXEUtU+puua4TAmV0kZF_7TBhXO1Y4Khqb9Q@mail.gmail.com> <alpine.LFD.2.11.1501041609290.18844@knanqh.ubzr> <20150104212659.GC12302@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1501042343240.18844@knanqh.ubzr> <CAHkRjk6Vg_AR8rFNYzPcnPwfKZqaVuaCoG67CEVPRgp1-bDetA@mail.gmail.com>
+ <CA+55aFypmZExpCvD699TQOs1NDK_mT-_rR3UWOdxdzkOKvbdoA@mail.gmail.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-12-23 at 10:58 +0800, Wei Yang wrote:
-> Current vfio-pci just supports normal pci device, so vfio_pci_probe() will
-> return if the pci device is not a normal device. While current code makes a
-> mistake. PCI_HEADER_TYPE is the offset in configuration space of the device
-> type, but we use this value to mask the type value.
+On Wed, 7 Jan 2015, Linus Torvalds wrote:
+
+> On Wed, Jan 7, 2015 at 10:11 AM, Catalin Marinas
+> <catalin.marinas@arm.com> wrote:
+> >
+> > I think this makes sense since __delay() expects the number of loops
+> > as argument rather than a duration scaled by some factor (based on the
+> > generic timer frequency).
 > 
-> This patch fixs this by do the check directly on the pci_dev->hdr_type.
+> Gaah. You guys make no sense at all.
 > 
-> Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
+> No, __delay() does not expect "number of loops".
 > 
-> V2:
->    * Fix the problem by checking pci_dev->hdr_type
+> It doesn't do that on x86, and it doesn't even do it on arm.
 > 
-> ---
->  drivers/vfio/pci/vfio_pci.c |    4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
+> It *literally* does exactly the reverse of what you say it does.
+> 
+> __delay() very much expects a "duration scaled by some factor". The
+> factor being "loops_per_jiffy" (ok, so it's a "reverse factor", but
+> you get the idea).
+> 
+> And this is very much exactly why bogomips is that "2 *
+> loops_per_jiffy * HZ / 1000000".
 
-Applied to my for-linus branch for v3.19.  I've also tagged it for
-stable.  Thanks,
+I think we're all saying more or less the same thing.
 
-Alex
+The bogomips *reporting* is back on ARM so user space won't break.
 
-> diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
-> index 9558da3..2f8a055 100644
-> --- a/drivers/vfio/pci/vfio_pci.c
-> +++ b/drivers/vfio/pci/vfio_pci.c
-> @@ -839,13 +839,11 @@ static const struct vfio_device_ops vfio_pci_ops = {
->  
->  static int vfio_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
->  {
-> -	u8 type;
->  	struct vfio_pci_device *vdev;
->  	struct iommu_group *group;
->  	int ret;
->  
-> -	pci_read_config_byte(pdev, PCI_HEADER_TYPE, &type);
-> -	if ((type & PCI_HEADER_TYPE) != PCI_HEADER_TYPE_NORMAL)
-> +	if (pdev->hdr_type != PCI_HEADER_TYPE_NORMAL)
->  		return -EINVAL;
->  
->  	group = iommu_group_get(&pdev->dev);
+We'll make sure it is scaled properly so not to have orders of magnitude 
+discrepancy whether the timer based or the CPU based loop is used for 
+the purpose of making people feel good.
+
+Any disagreement?
 
 
-
+Nicolas
