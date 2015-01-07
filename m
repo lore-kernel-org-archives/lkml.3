@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933656AbbAGCsU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:48:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46770 "EHLO
+	id S933645AbbAGCrp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:47:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46775 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932393AbbAGCHd (ORCPT
+	with ESMTP id S932395AbbAGCHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jan 2015 21:07:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 3.14 07/52] mfd: tc6393xb: Fail ohci suspend if full state restore is required
-Date: Tue,  6 Jan 2015 18:06:35 -0800
-Message-Id: <20150107020556.249504433@linuxfoundation.org>
+        James Hogan <james.hogan@imgtec.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH 3.14 08/52] mmc: dw_mmc: avoid write to CDTHRCTL on older versions
+Date: Tue,  6 Jan 2015 18:06:36 -0800
+Message-Id: <20150107020556.403045915@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107020555.043793795@linuxfoundation.org>
 References: <20150107020555.043793795@linuxfoundation.org>
@@ -29,55 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+From: James Hogan <james.hogan@imgtec.com>
 
-commit 1a5fb99de4850cba710d91becfa2c65653048589 upstream.
+commit 66dfd10173159cafa9cb0d39936b8daeaab8e3e0 upstream.
 
-Some boards with TC6393XB chip require full state restore during system
-resume thanks to chip's VCC being cut off during suspend (Sharp SL-6000
-tosa is one of them). Failing to do so would result in ohci Oops on
-resume due to internal memory contentes being changed. Fail ohci suspend
-on tc6393xb is full state restore is required.
+Commit f1d2736c8156 (mmc: dw_mmc: control card read threshold) added
+dw_mci_ctrl_rd_thld() with an unconditional write to the CDTHRCTL
+register at offset 0x100. However before version 240a, the FIFO region
+started at 0x100, so the write messes with the FIFO and completely
+breaks the driver.
 
-Recommended workaround is to unbind tmio-ohci driver before suspend and
-rebind it after resume.
+If the version id < 240A, return early from dw_mci_ctl_rd_thld() so as
+not to hit this problem.
 
-Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Fixes: f1d2736c8156 (mmc: dw_mmc: control card read threshold)
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/tc6393xb.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/mmc/host/dw_mmc.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/mfd/tc6393xb.c
-+++ b/drivers/mfd/tc6393xb.c
-@@ -263,6 +263,17 @@ static int tc6393xb_ohci_disable(struct
- 	return 0;
- }
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -632,6 +632,13 @@ static void dw_mci_ctrl_rd_thld(struct d
  
-+static int tc6393xb_ohci_suspend(struct platform_device *dev)
-+{
-+	struct tc6393xb_platform_data *tcpd = dev_get_platdata(dev->dev.parent);
+ 	WARN_ON(!(data->flags & MMC_DATA_READ));
+ 
++	/*
++	 * CDTHRCTL doesn't exist prior to 240A (in fact that register offset is
++	 * in the FIFO region, so we really shouldn't access it).
++	 */
++	if (host->verid < DW_MMC_240A)
++		return;
 +
-+	/* We can't properly store/restore OHCI state, so fail here */
-+	if (tcpd->resume_restore)
-+		return -EBUSY;
-+
-+	return tc6393xb_ohci_disable(dev);
-+}
-+
- static int tc6393xb_fb_enable(struct platform_device *dev)
- {
- 	struct tc6393xb *tc6393xb = dev_get_drvdata(dev->dev.parent);
-@@ -403,7 +414,7 @@ static struct mfd_cell tc6393xb_cells[]
- 		.num_resources = ARRAY_SIZE(tc6393xb_ohci_resources),
- 		.resources = tc6393xb_ohci_resources,
- 		.enable = tc6393xb_ohci_enable,
--		.suspend = tc6393xb_ohci_disable,
-+		.suspend = tc6393xb_ohci_suspend,
- 		.resume = tc6393xb_ohci_enable,
- 		.disable = tc6393xb_ohci_disable,
- 	},
+ 	if (host->timing != MMC_TIMING_MMC_HS200 &&
+ 	    host->timing != MMC_TIMING_UHS_SDR104)
+ 		goto disable;
 
 
