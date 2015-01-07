@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234AbbAGVEF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 16:04:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60581 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754879AbbAGVEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 16:04:02 -0500
-Message-ID: <1420664631.6345.25.camel@redhat.com>
-Subject: Re: [PATCH v2] PCI/sysfs: off by two when checking the limit on
- driver_override length
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Alexander Graf <agraf@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "open list:PCI SUBSYSTEM" <linux-pci@vger.kernel.org>
-Date: Wed, 07 Jan 2015 14:03:51 -0700
-In-Reply-To: <1420663977-30707-1-git-send-email-sasha.levin@oracle.com>
-References: <1420663977-30707-1-git-send-email-sasha.levin@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932118AbbAGVE1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 16:04:27 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:34728 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754768AbbAGVEZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 16:04:25 -0500
+Date: Wed, 7 Jan 2015 13:04:19 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christian Borntraeger <borntraeger@de.ibm.com>
+Subject: Re: [PATCH] next: sh: Fix compile error
+Message-ID: <20150107210419.GH5280@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1420662748-28129-1-git-send-email-linux@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420662748-28129-1-git-send-email-linux@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15010721-0005-0000-0000-000007D429C0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-07 at 15:52 -0500, Sasha Levin wrote:
-> When printing the driver_override parameter when it is 4095 and 4094 bytes
-> long the printing code would access invalid memory because we need count+1
-> bytes for printing.
+On Wed, Jan 07, 2015 at 12:32:28PM -0800, Guenter Roeck wrote:
+> Commit a91ed664749c ("kernel: tighten rules for ACCESS ONCE") results in a
+> compile failure for sh builds with CONFIG_X2TLB enabled.
 > 
-> Cc: <stable@vger.kernel.org> # v3.16+
-> Fixes: 782a985d ("PCI: Introduce new device binding path using pci_dev.driver_override")
-> Cc: Alex Williamson <alex.williamson@redhat.com>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Cc: Alexander Graf <agraf@suse.de>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> arch/sh/mm/gup.c: In function 'gup_get_pte':
+> arch/sh/mm/gup.c:20:2: error: invalid initializer
+> make[1]: *** [arch/sh/mm/gup.o] Error 1
+> 
+> Replace ACCESS_ONCE with READ_ONCE to fix the problem.
+> 
+> Fixes: a91ed664749c ("kernel: tighten rules for ACCESS ONCE")
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+> Cc: Christian Borntraeger <borntraeger@de.ibm.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 > ---
->  drivers/pci/pci-sysfs.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+> Compile tested only.
 > 
-> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-> index aa012fb..17459ed 100644
-> --- a/drivers/pci/pci-sysfs.c
-> +++ b/drivers/pci/pci-sysfs.c
-> @@ -521,7 +521,8 @@ static ssize_t driver_override_store(struct device *dev,
->  	struct pci_dev *pdev = to_pci_dev(dev);
->  	char *driver_override, *old = pdev->driver_override, *cp;
->  
-> -	if (count > PATH_MAX)
-> +	/* We need to keep extra room for a newline */
-> +	if (count >= (PATH_MAX - 1))
->  		return -EINVAL;
->  
->  	driver_override = kstrndup(buf, count, GFP_KERNEL);
-
-Thanks for posting this Sasha, it fell off my plate with other
-activities.
-
-Acked-by: Alex Williamson <alex.williamson@redhat.com>
+>  arch/sh/mm/gup.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/sh/mm/gup.c b/arch/sh/mm/gup.c
+> index 37458f3..e113bb4 100644
+> --- a/arch/sh/mm/gup.c
+> +++ b/arch/sh/mm/gup.c
+> @@ -17,7 +17,7 @@
+>  static inline pte_t gup_get_pte(pte_t *ptep)
+>  {
+>  #ifndef CONFIG_X2TLB
+> -	return ACCESS_ONCE(*ptep);
+> +	return READ_ONCE(*ptep);
+>  #else
+>  	/*
+>  	 * With get_user_pages_fast, we walk down the pagetables without
+> -- 
+> 2.1.0
+> 
 
