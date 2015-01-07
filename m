@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933192AbbAGCHx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:07:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46770 "EHLO
+	id S933092AbbAGCNY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:13:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46763 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933115AbbAGCHs (ORCPT
+	with ESMTP id S933074AbbAGCHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:07:48 -0500
+	Tue, 6 Jan 2015 21:07:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Petr Vandrovec <petr@vandrovec.name>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Aaron Tomlin <atomlin@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Sterling Alexander <stalexan@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 46/52] ncpfs: return proper error from NCP_IOC_SETROOT ioctl
-Date: Tue,  6 Jan 2015 18:07:14 -0800
-Message-Id: <20150107020602.499521556@linuxfoundation.org>
+Subject: [PATCH 3.14 47/52] exit: pidns: alloc_pid() leaks pid_namespace if child_reaper is exiting
+Date: Tue,  6 Jan 2015 18:07:15 -0800
+Message-Id: <20150107020602.596629613@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107020555.043793795@linuxfoundation.org>
 References: <20150107020555.043793795@linuxfoundation.org>
@@ -30,39 +35,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit a682e9c28cac152e6e54c39efcf046e0c8cfcf63 upstream.
+commit 24c037ebf5723d4d9ab0996433cee4f96c292a4d upstream.
 
-If some error happens in NCP_IOC_SETROOT ioctl, the appropriate error
-return value is then (in most cases) just overwritten before we return.
-This can result in reporting success to userspace although error happened.
+alloc_pid() does get_pid_ns() beforehand but forgets to put_pid_ns() if it
+fails because disable_pid_allocation() was called by the exiting
+child_reaper.
 
-This bug was introduced by commit 2e54eb96e2c8 ("BKL: Remove BKL from
-ncpfs").  Propagate the errors correctly.
+We could simply move get_pid_ns() down to successful return, but this fix
+tries to be as trivial as possible.
 
-Coverity id: 1226925.
-
-Fixes: 2e54eb96e2c80 ("BKL: Remove BKL from ncpfs")
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Petr Vandrovec <petr@vandrovec.name>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Aaron Tomlin <atomlin@redhat.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: Sterling Alexander <stalexan@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ncpfs/ioctl.c |    1 -
- 1 file changed, 1 deletion(-)
+ kernel/pid.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/ncpfs/ioctl.c
-+++ b/fs/ncpfs/ioctl.c
-@@ -448,7 +448,6 @@ static long __ncp_ioctl(struct inode *in
- 						result = -EIO;
- 					}
- 				}
--				result = 0;
- 			}
- 			mutex_unlock(&server->root_setup_lock);
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -341,6 +341,8 @@ out:
  
+ out_unlock:
+ 	spin_unlock_irq(&pidmap_lock);
++	put_pid_ns(ns);
++
+ out_free:
+ 	while (++i <= ns->level)
+ 		free_pidmap(pid->numbers + i);
 
 
