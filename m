@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754272AbbAGSju (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 13:39:50 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:47020 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448AbbAGSjt convert rfc822-to-8bit (ORCPT
+	id S1754390AbbAGSk7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 13:40:59 -0500
+Received: from mail-yk0-f174.google.com ([209.85.160.174]:64205 "EHLO
+	mail-yk0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751451AbbAGSk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 13:39:49 -0500
-From: Kalle Valo <kvalo@codeaurora.org>
-To: =?utf-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
-Cc: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>,
-        "linux-wireless\@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] bcma: fix two coding style issues, more than 80 characters per line.
-References: <1419766622-10911-1-git-send-email-oscar.forner.martinez@gmail.com>
-	<87bnmaqxvs.fsf@kamboji.qca.qualcomm.com>
-	<CACna6rzWaHg=M15q=swf+yqMEB3smRRANuLHkSK1dU1MtG8jgg@mail.gmail.com>
-Date: Wed, 07 Jan 2015 20:39:44 +0200
-In-Reply-To: <CACna6rzWaHg=M15q=swf+yqMEB3smRRANuLHkSK1dU1MtG8jgg@mail.gmail.com>
-	(=?utf-8?Q?=22Rafa=C5=82_Mi=C5=82ecki=22's?= message of "Wed, 7 Jan 2015
- 19:12:30 +0100")
-Message-ID: <87y4peo2of.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Wed, 7 Jan 2015 13:40:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1420394427-19509-1-git-send-email-me@mortis.eu>
+References: <1420394427-19509-1-git-send-email-me@mortis.eu>
+Date: Wed, 7 Jan 2015 20:40:57 +0200
+Message-ID: <CAHp75Vetc+fgv=YrqPuW9YChez82h7N7VeX_5bW5tpXm2j=h7g@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Align member-assigns in a structure-copy block
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Giel van Schijndel <me@mortis.eu>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kalle Valo <kvalo@codeaurora.org>, Eliad Peller <eliad@wizery.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Arik Nemtsov <arik@wizery.com>,
+        "open list:TI WILINK WIRELES..." <linux-wireless@vger.kernel.org>,
+        "open list:NETWORKING DRIVERS" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafał Miłecki <zajec5@gmail.com> writes:
+On Sun, Jan 4, 2015 at 8:00 PM, Giel van Schijndel <me@mortis.eu> wrote:
+> This highlights the differences (errors).
 
-> On 7 January 2015 at 18:55, Kalle Valo <kvalo@codeaurora.org> wrote:
->> Oscar Forner Martinez <oscar.forner.martinez@gmail.com> writes:
->>
->>> Two lines with more than 80 characters per line have been split in several lines.
->>>
->>> Signed-off-by: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>
->>
->> Thanks, applied to wireless-drivers-next.git.
+Seems like patch for the patch. Just fix an error like it's done here:
+http://www.spinics.net/lists/linux-wireless/msg131667.html
+
+
+> ---
+>  drivers/net/wireless/ti/wlcore/acx.c | 22 +++++++++++-----------
+>  1 file changed, 11 insertions(+), 11 deletions(-)
 >
-> Could you still replace it (V4) with an older version (V3)? Before I
-> explained V3 was OK Oscar already sent this (worse) V4.
+> diff --git a/drivers/net/wireless/ti/wlcore/acx.c b/drivers/net/wireless/ti/wlcore/acx.c
+> index b924cea..beb354c 100644
+> --- a/drivers/net/wireless/ti/wlcore/acx.c
+> +++ b/drivers/net/wireless/ti/wlcore/acx.c
+> @@ -1715,17 +1715,17 @@ int wl12xx_acx_config_hangover(struct wl1271 *wl)
+>                 goto out;
+>         }
+>
+> -       acx->recover_time = cpu_to_le32(conf->recover_time);
+> -       acx->hangover_period = conf->hangover_period;
+> -       acx->dynamic_mode = conf->dynamic_mode;
+> -       acx->early_termination_mode = conf->early_termination_mode;
+> -       acx->max_period = conf->max_period;
+> -       acx->min_period = conf->min_period;
+> -       acx->increase_delta = conf->increase_delta;
+> -       acx->decrease_delta = conf->decrease_delta;
+> -       acx->quiet_time = conf->quiet_time;
+> -       acx->increase_time = conf->increase_time;
+> -       acx->window_size = acx->window_size;
+> +       acx->recover_time               = cpu_to_le32(conf->recover_time);
+> +       acx->hangover_period            = conf->hangover_period;
+> +       acx->dynamic_mode               = conf->dynamic_mode;
+> +       acx->early_termination_mode     = conf->early_termination_mode;
+> +       acx->max_period                 = conf->max_period;
+> +       acx->min_period                 = conf->min_period;
+> +       acx->increase_delta             = conf->increase_delta;
+> +       acx->decrease_delta             = conf->decrease_delta;
+> +       acx->quiet_time                 = conf->quiet_time;
+> +       acx->increase_time              = conf->increase_time;
+> +       acx->window_size                = acx->window_size;
+>
+>         ret = wl1271_cmd_configure(wl, ACX_CONFIG_HANGOVER, acx,
+>                                    sizeof(*acx));
+> --
+> 2.1.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-No. I'm not going to rebase a public git tree unless there's a huge
-disaster.
 
-But if I see V4 I'm going to assume that's the one I need to apply, not
-some older version. If V4 is not good for some reason, make it
-ABSOLUTELY clear that I should not apply it. I do not want to start
-guessing what patch I should apply.
-
-> This is not critical though, we can always send separated patch for
-> one more line > 80 chars.
-
-Please send a followup patch if you want to fix something.
 
 -- 
-Kalle Valo
+With Best Regards,
+Andy Shevchenko
