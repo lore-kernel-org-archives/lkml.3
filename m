@@ -1,84 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272AbbAGO2c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 09:28:32 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:8714 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575AbbAGO2a (ORCPT
+	id S1753291AbbAGO3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 09:29:33 -0500
+Received: from mail-we0-f175.google.com ([74.125.82.175]:38325 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693AbbAGO3b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 09:28:30 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 07 Jan 2015 06:27:00 -0800
-Date: Wed, 7 Jan 2015 22:28:29 +0800
-From: Vince Hsu <vinceh@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Thierry Reding <thierry.reding@gmail.com>, Lucas Stach <dev@lynxeye.de>,
-        <swarren@wwwdotorg.org>, <gnurou@gmail.com>, <bskeggs@redhat.com>,
-        <martin.peres@free.fr>, <seven@nimrod-online.com>,
-        <samuel.pitoiset@gmail.com>, <nouveau@lists.freedesktop.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/11] ARM: tegra: add function to control the GPU rail
- clamp
-Message-ID: <20150107142828.GB7392@nvidia.com>
-References: <1419331204-26679-1-git-send-email-vinceh@nvidia.com>
- <1419331204-26679-2-git-send-email-vinceh@nvidia.com>
- <1419426990.2179.7.camel@lynxeye.de> <549B7638.2010405@nvidia.com>
- <20150105150932.GG12010@ulmo.nvidia.com>
- <20150107101900.GP10073@tbergstrom-lnx.Nvidia.com>
- <54AD0F37.5080609@nvidia.com> <20150107132709.GA6988@ulmo>
- <20150107140852.GR10073@tbergstrom-lnx.Nvidia.com>
+	Wed, 7 Jan 2015 09:29:31 -0500
+Date: Wed, 7 Jan 2015 15:29:26 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Paul Walmsley <paul@pwsan.com>, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, Allen Martin <amartin@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <treding@nvidia.com>,
+        Alexandre Courbot <gnurou@gmail.com>
+Subject: Re: [PATCH] clocksource: tegra: wrap arch/arm-specific sections in
+ CONFIG_ARM
+Message-ID: <20150107142923.GC1621@ulmo>
+References: <alpine.DEB.2.02.1412092201200.31750@utopia.booyaka.com>
 MIME-Version: 1.0
-In-Reply-To: <20150107140852.GR10073@tbergstrom-lnx.Nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tqI+Z3u+9OQ7kwn0"
 Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1412092201200.31750@utopia.booyaka.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04:08:52PM Jan 07, Peter De Schrijver wrote:
-> On Wed, Jan 07, 2015 at 02:27:10PM +0100, Thierry Reding wrote:
-> 
-> > > Yeah. I plan to have the information of all the clock client of the
-> > > partitions and
-> > > the memory clients be defined statically in c source, e.g. pmc-tegra124.c.
-> > > All modules can declare which domain they belong to in DT. One domain can
-> > > be really power gated only when no module is awake. Note the clock clients
-> > > of
-> > > one domain might not equal to the clocks of the module. The reset is not
-> > > either.
-> > > So I don't get the clock and reset from module. How do you think?
-> > 
-> > This whole situation is quite messy. The above sequence basically means
-> > that drivers can't reset hardware modules because otherwise they might
-> > race with the power domain code. It also means that we can't powergate
-> 
-> The powerdomain framework won't call any powergating method as long as a
-> module in the domain is still active. So as long as drivers don't try to
-> reset the hw without having done a pm_runtime_get(), we shouldn't have such
-> a race?
-Agree. And as long as the driver has the correct reset procedure, that should
-be fine to occur between power ungating and gating sequences.
 
-> 
-> > modules on demand because they might be in the same power domain as one
-> > other module that's still busy.
-> > 
-> 
-> The powerdomain framework keeps track of which modules are active (by hooking
-> into runtime pm) and won't try to shutdown a domain unless all modules are
-> inactive.
-Yeah. By the way, that means we should start supporting runtime pm for all
-the modules to use generic power domain.
+--tqI+Z3u+9OQ7kwn0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, Dec 09, 2014 at 10:07:18PM +0000, Paul Walmsley wrote:
+>=20
+> Like several of the other files in drivers/clocksource,
+> tegra20_timer.c contains code that can only compile when CONFIG_ARM is
+> enabled.  This causes obvious problems when trying to compile this
+> code for NVIDIA ARM64-based SoCs, such as Tegra132.  The same timer IP
+> blocks exist, so it seems appropriate to provide support for them.
+>=20
+> So until we figure out a better way to partition this code, wrap the
+> delay_timer and persistent_clock support code with preprocessor tests
+> for CONFIG_ARM.  (The delay_timer code should not be needed at all on
+> ARM64 due to the presence of the ARMv8 architected timer.  The
+> persistent_clock support code could become important once power
+> management modes are implemented that turn off the CPU complex.)
+>=20
+> Signed-off-by: Paul Walmsley <paul@pwsan.com>
+> Signed-off-by: Paul Walmsley <pwalmsley@nvidia.com>
+> Cc: Allen Martin <amartin@nvidia.com>
+> Cc: Stephen Warren <swarren@nvidia.com>
+> Cc: Thierry Reding <treding@nvidia.com>
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Alexandre Courbot <gnurou@gmail.com>
+> ---
+> Applies against next-20141209.
+> Intended for v3.20.
+> Boot-tested on Tegra124 Jetson TK1 on next-20141209.
+> Also boot-tested on Tegra132 Norrin FFD on next-20141209 + extra,=20
+> unrelated patches.
+>=20
+>  drivers/clocksource/tegra20_timer.c | 11 +++++++++++
+>  1 file changed, 11 insertions(+)
+
+Daniel, Thomas,
+
+This patch is a build dependency for 64-bit Tegra support that I'd like
+to merge for v3.20. Would you be willing to give your Acked-by on this
+so that I can take it into the same tree along with some other
+dependencies and the patches that enable the 64-bit build?
 
 Thanks,
-Vince
+Thierry
 
-> 
-> > How would we handle a situation where a hardware module hangs and we can
-> > only get it back via a reset?
-> > 
-> 
-> Cheers,
-> 
-> Peter.
+--tqI+Z3u+9OQ7kwn0
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUrULDAAoJEN0jrNd/PrOhtNQP/RMd3e3U8SxcubIYD4Sg6Psq
++1/RQoi7V+TOeEP+Xvj0TviwDJ8MvdB1pUYA7y9UaVPm8VlL6pI6eLETGJXkJjA5
+SPwU5LUb6yM9ORD9fNE2kXQSI3Qghb3XNxmgabeu9yIrZgZtQgpwRw4nVOFOPezh
+u4lTu7yuwjZoehox/bydU/Uj1bTWOHmUu9w7TaSp9ee2FBjJ5iPTBQMe3riHF66a
+tUE/iZ/+5FIVpz1IaB2tleiWlx9yBAG+Aq5Rvoj5yqGIkD1SAfQspG/0hl2m9jhm
+9BTDp0ICJZIzifUCIi9/mujcSEM6In81zj82cKBYRTechzUbgrdcSklfFGb34RwK
+1lrjI8VdStx4z6TfiFL9k6TOqkyBvgeB0hjo7AzG7xFljGlU1rBAl2b4e8BV5VdP
+9/eNK/RxLrRRqs0vr2S63sWsHNkA8S49bA+j7J1p1W3OQNy1PGKW7gCVl3n/EY4B
+/wvEGSpPBd3Osp06TrbjGDXP2k5oz6cc5IxrcPuVDv/IMEIC2XToM2QAvxWdsZhi
+03zIkXFz9JbZonlx105VQectk102iel9xwmKhJILaytu12RCva//8wRqhLHxv7kT
+ACBd/Gq9FuELcui0tx/aou43FjbdLma+gE6CRk9CCzZzN2p6RVALTRpZBfeiDw5z
+L+1paZDCqDZWY1VPqHVD
+=lWvM
+-----END PGP SIGNATURE-----
+
+--tqI+Z3u+9OQ7kwn0--
