@@ -1,43 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954AbbAGQZw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 11:25:52 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:35049 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381AbbAGQZu (ORCPT
+	id S1754017AbbAGQZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 11:25:58 -0500
+Received: from mail-oi0-f50.google.com ([209.85.218.50]:41706 "EHLO
+	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753961AbbAGQZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 11:25:50 -0500
+	Wed, 7 Jan 2015 11:25:55 -0500
 MIME-Version: 1.0
-In-Reply-To: <20150107161638.GA9012@roeck-us.net>
-References: <1420634769-11246-1-git-send-email-bgolaszewski@baylibre.com>
-	<54AD3325.6030301@roeck-us.net>
-	<CAMpxmJUgXyML4o3ya6ofogjf8KMrdPV-Y6SD=ZfUCjt=xLfGiA@mail.gmail.com>
-	<20150107161638.GA9012@roeck-us.net>
-Date: Wed, 7 Jan 2015 17:25:49 +0100
-Message-ID: <CAMpxmJVrbOnjF3me-qyjKqWSxTkQ1=eHdxxsOd7KixVdDGzGoA@mail.gmail.com>
-Subject: Re: [PATCH] hwmon: ina2xx: allow to change the averaging rate at run-time
-From: Bartosz Golaszewski <bgolaszewski@baylibre.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Patrick Titiano <ptitiano@baylibre.com>,
-        LM Sensors <lm-sensors@lm-sensors.org>
+In-Reply-To: <20150107080159.GF5256@dtor-ws>
+References: <1420599537-28740-1-git-send-email-walter@vanguardiasur.com.ar>
+	<20150107080159.GF5256@dtor-ws>
+Date: Wed, 7 Jan 2015 13:25:54 -0300
+Message-ID: <CABxpGwAKZp728gL5DFkuBA4nU_5fGRvxu_-vROpw5BfVuxjoDA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Input: adxl34x - add OF support
+From: Walter Lozano <walter@vanguardiasur.com.ar>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: michael.hennerich@analog.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-07 17:16 GMT+01:00 Guenter Roeck <linux@roeck-us.net>:
-> INA219 uses the same mechanism and timing as used by INA209. This way
-> it is easily possible to extend the driver to support the attribute
-> for every chip. But overall this uses the existing ABI (update_interval
-> is part of the hwmon ABI) instead of creating a new driver specific
-> attribute. Yes, that is quite important.
+Hi Dimitry,
+
+First of all, thanks for your feedback
+
+On Wed, Jan 7, 2015 at 5:01 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> Hi Walter,
 >
-> The additional "overhead" is just to use different numbers and a
-> different attribute name, so I don't really understand your concern.
+> On Tue, Jan 06, 2015 at 11:58:56PM -0300, Walter Lozano wrote:
+>> This patch adds the missing support for OF to the adxl34x digital
+>> accelerometer. This is a basic version which supports the main
+>> optional parameters. This implementation copies the default values
+>> to the adxl34x_platform_data structure and overrides the values
+>> that are passed from the device tree.
+>>
+>> Signed-off-by: Walter Lozano <walter@vanguardiasur.com.ar>
+>> ---
+>>  drivers/input/misc/adxl34x.c |  108 +++++++++++++++++++++++++++++++++++++++++-
+>>  1 file changed, 107 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/input/misc/adxl34x.c b/drivers/input/misc/adxl34x.c
+>> index 2b2d02f..b3e06a3 100644
+>> --- a/drivers/input/misc/adxl34x.c
+>> +++ b/drivers/input/misc/adxl34x.c
+>> @@ -16,6 +16,8 @@
+>>  #include <linux/workqueue.h>
+>>  #include <linux/input/adxl34x.h>
+>>  #include <linux/module.h>
+>> +#include <linux/of.h>
+>> +#include <linux/of_device.h>
+>>
+>>  #include "adxl34x.h"
+>>
+>> @@ -688,13 +690,113 @@ static void adxl34x_input_close(struct input_dev *input)
+>>       mutex_unlock(&ac->mutex);
+>>  }
+>>
+>> +void adxl34x_parse_dt(struct device *dev, struct adxl34x_platform_data *pdata){
+>> +     if (!dev->of_node)
+>> +             return;
+>> +
+>> +     pdata =  kzalloc(sizeof(*pdata), GFP_KERNEL);
+>> +
+>> +     memcpy(pdata, &adxl34x_default_init, sizeof(struct adxl34x_platform_data));
+>> +
+>> +     of_property_read_u8(dev->of_node, "adi,tap-axis-control",
+>> +              &pdata->tap_axis_control);
+>> +
+>> +     of_property_read_u8(dev->of_node, "adi,tap-threshold",
+>> +              &pdata->tap_threshold);
+>> +
+>> +     of_property_read_u8(dev->of_node, "adi,tap-duration",
+>> +              &pdata->tap_duration);
+>> +
+>> +     of_property_read_u8(dev->of_node, "adi,tap-latency",
+>> +              &pdata->tap_latency);
+>> +
+>> +     of_property_read_u8(dev->of_node, "adi,tap-window",
+>> +              &pdata->tap_window);
+>> +
+>> +     of_property_read_u8(dev->of_node, "adi,act-axis-control",
+>> +              &pdata->act_axis_control);
+>> +
+>> +     of_property_read_u8(dev->of_node, "adi,activity-threshold",
+>> +              &pdata->activity_threshold);
+>> +
+>> +     of_property_read_u8(dev->of_node, "adi,inactivity-threshold",
+>> +              &pdata->inactivity_threshold);
+>> +
+>> +     of_property_read_u8(dev->of_node, "adi,inactivity-time",
+>> +              &pdata->inactivity_time);
+>> +
+>> +     of_property_read_u8(dev->of_node, "adi,free-fall-threshold",
+>> +              &pdata->free_fall_threshold);
+>> +
+>> +     of_property_read_u8(dev->of_node, "adi,free-fall-time",
+>> +              &pdata->free_fall_time);
+>> +
+>> +     of_property_read_u8(dev->of_node, "adi,data-rate",
+>> +              &pdata->data_rate);
+>> +
+>> +     of_property_read_u8(dev->of_node, "adi,data-range",
+>> +              &pdata->data_range);
+>> +
+>> +     of_property_read_u8(dev->of_node, "adi,low-power-mode",
+>> +              &pdata->low_power_mode);
+>> +
+>> +     of_property_read_u8(dev->of_node, "adi,power-mode",
+>> +              &pdata->power_mode);
+>> +
+>> +     of_property_read_u8(dev->of_node, "adi,fifo-mode",
+>> +              &pdata->fifo_mode);
+>> +
+>> +     of_property_read_u8(dev->of_node, "adi,watermark",
+>> +              &pdata->watermark);
+>> +
+>> +     of_property_read_u8(dev->of_node, "adi,use-int2",
+>> +              &pdata->use_int2);
+>> +
+>> +     of_property_read_u8(dev->of_node, "adi,orientation-enable",
+>> +              &pdata->orientation_enable);
+>> +
+>> +     of_property_read_u8(dev->of_node, "adi,deadzone-angle",
+>> +              &pdata->deadzone_angle);
+>> +
+>> +     of_property_read_u8(dev->of_node, "adi,divisor-length",
+>> +              &pdata->divisor_length);
+>> +
+>> +     of_property_read_u32(dev->of_node, "adi,ev-type",
+>> +              &pdata->ev_type);
+>
+> All these ev* properties are Linux-specific so should have linux prefix
+> and not adi.
 
-My concern is that it seems less clear this way, but I understand the
-priorities. Ok, I'll get back to it tomorrow.
+Yes, I have many doubts about these parameters. First I'm not sure if anybody
+will need to change them as the accelerometer reports absolute values.
+I was thinking
+about omitting them but I would like someone else opinion.
 
-Bart
+The default values for these parameters are
+
+    .ev_type = EV_ABS,
+    .ev_code_x = ABS_X, /* EV_REL */
+    .ev_code_y = ABS_Y, /* EV_REL */
+    .ev_code_z = ABS_Z, /* EV_REL */
+
+    .ev_code_tap = {BTN_TOUCH, BTN_TOUCH, BTN_TOUCH}, /* EV_KEY {x,y,z} */
+
+In case if it is worthy should I add nodes for each different event?
+
+For example
+
+       axisx{
+            label = "Axis X";
+            linux,code = <0>;
+        }
+
+>> +
+>> +     of_property_read_u32(dev->of_node, "adi,ev-code-x",
+>> +              &pdata->ev_code_x);
+>> +
+>> +     of_property_read_u32(dev->of_node, "adi,ev-code-y",
+>> +              &pdata->ev_code_y);
+>> +
+>> +     of_property_read_u32(dev->of_node, "adi,ev-code-z",
+>> +              &pdata->ev_code_z);
+>> +
+>> +     of_property_read_u32_array(dev->of_node, "adi,ev-code-tap",
+>> +              pdata->ev_code_tap, 3);
+>> +
+>> +     of_property_read_u32(dev->of_node, "adi,ev-code-ff",
+>> +              &pdata->ev_code_ff);
+>> +
+>> +     of_property_read_u32(dev->of_node, "adi,ev-code-act-inactivity",
+>> +              &pdata->ev_code_act_inactivity);
+>> +
+>> +     of_property_read_u32_array(dev->of_node, "adi,ev-codes-orient-2d",
+>> +              pdata->ev_codes_orient_2d, 4);
+>> +
+>> +     of_property_read_u32_array(dev->of_node, "adi,ev-codes-orient-3d",
+>> +              pdata->ev_codes_orient_3d, 6);
+>> +
+>> +}
+>> +
+>>  struct adxl34x *adxl34x_probe(struct device *dev, int irq,
+>>                             bool fifo_delay_default,
+>>                             const struct adxl34x_bus_ops *bops)
+>>  {
+>>       struct adxl34x *ac;
+>>       struct input_dev *input_dev;
+>> -     const struct adxl34x_platform_data *pdata;
+>> +     struct adxl34x_platform_data *pdata;
+>>       int err, range, i;
+>>       unsigned char revid;
+>>
+>> @@ -714,6 +816,10 @@ struct adxl34x *adxl34x_probe(struct device *dev, int irq,
+>>       ac->fifo_delay = fifo_delay_default;
+>>
+>>       pdata = dev_get_platdata(dev);
+>> +
+>> +     if (!pdata && dev->of_node)
+>> +             adxl34x_parse_dt(dev, pdata);
+>> +
+>>       if (!pdata) {
+>
+> Umm, what's changing data pointer? Was this tested?
+>
+
+You are right. I've tested a previous version, but then I make some changes as
+I have some doubts about how is the better way to handle the compatibility
+with board files.
+
+My initial intention was to keep the original code as much as I can, so in case
+of using board files the pdata is set to adxl34x_default_init, but if
+DT is used,
+memory is allocated and the default parameters are copied. Then in the remove,
+only if DT is used free the memory (not included in this patch).
+
+So as I wasn't quite sure if this was the best approach I send this patch to get
+some comments. Probably I should send a RFC...
+
+>>               dev_dbg(dev,
+>>                       "No platform data: Using default initialization\n");
+>> --
+>> 1.7.10.4
+>>
+
+Thanks again for your time and comments.
+
+Regards,
+
+Walter
+
+-- 
+Walter Lozano, VanguardiaSur
+www.vanguardiasur.com.ar
