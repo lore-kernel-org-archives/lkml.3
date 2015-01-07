@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757470AbbAGCP6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:15:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46775 "EHLO
+	id S1757456AbbAGCPo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:15:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46763 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933022AbbAGCHl (ORCPT
+	with ESMTP id S932374AbbAGCHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:07:41 -0500
+	Tue, 6 Jan 2015 21:07:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: [PATCH 3.14 26/52] KEYS: Fix stale key registration at error path
-Date: Tue,  6 Jan 2015 18:06:54 -0800
-Message-Id: <20150107020559.392976786@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.14 28/52] mac80211: free management frame keys when removing station
+Date: Tue,  6 Jan 2015 18:06:56 -0800
+Message-Id: <20150107020559.719617160@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107020555.043793795@linuxfoundation.org>
 References: <20150107020555.043793795@linuxfoundation.org>
@@ -28,45 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit b26bdde5bb27f3f900e25a95e33a0c476c8c2c48 upstream.
+commit 28a9bc68124c319b2b3dc861e80828a8865fd1ba upstream.
 
-When loading encrypted-keys module, if the last check of
-aes_get_sizes() in init_encrypted() fails, the driver just returns an
-error without unregistering its key type.  This results in the stale
-entry in the list.  In addition to memory leaks, this leads to a kernel
-crash when registering a new key type later.
+When writing the code to allow per-station GTKs, I neglected to
+take into account the management frame keys (index 4 and 5) when
+freeing the station and only added code to free the first four
+data frame keys.
 
-This patch fixes the problem by swapping the calls of aes_get_sizes()
-and register_key_type(), and releasing resources properly at the error
-paths.
+Fix this by iterating the array of keys over the right length.
 
-Bugzilla: https://bugzilla.opensuse.org/show_bug.cgi?id=908163
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Fixes: e31b82136d1a ("cfg80211/mac80211: allow per-station GTKs")
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/keys/encrypted-keys/encrypted.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ net/mac80211/key.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/security/keys/encrypted-keys/encrypted.c
-+++ b/security/keys/encrypted-keys/encrypted.c
-@@ -1018,10 +1018,13 @@ static int __init init_encrypted(void)
- 	ret = encrypted_shash_alloc();
- 	if (ret < 0)
- 		return ret;
-+	ret = aes_get_sizes();
-+	if (ret < 0)
-+		goto out;
- 	ret = register_key_type(&key_type_encrypted);
- 	if (ret < 0)
- 		goto out;
--	return aes_get_sizes();
-+	return 0;
- out:
- 	encrypted_shash_release();
- 	return ret;
+--- a/net/mac80211/key.c
++++ b/net/mac80211/key.c
+@@ -652,7 +652,7 @@ void ieee80211_free_sta_keys(struct ieee
+ 	int i;
+ 
+ 	mutex_lock(&local->key_mtx);
+-	for (i = 0; i < NUM_DEFAULT_KEYS; i++) {
++	for (i = 0; i < ARRAY_SIZE(sta->gtk); i++) {
+ 		key = key_mtx_dereference(local, sta->gtk[i]);
+ 		if (!key)
+ 			continue;
 
 
