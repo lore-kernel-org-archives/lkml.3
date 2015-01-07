@@ -1,154 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779AbbAGRvZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 12:51:25 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:57292 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383AbbAGRvW (ORCPT
+	id S1754917AbbAGRwe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 12:52:34 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:59548 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753805AbbAGRwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 12:51:22 -0500
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Phong Vo <pvo@apm.com>,
-        Linus Walleij <linus.walleij@linaro.org>, Tin Huynh <tnhuynh@apm.com>,
-        Y Vo <yvo@apm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Toan Le <toanle@apm.com>, Bjorn Andersson <bjorn@kryo.se>,
-        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v3 3/3] irqchip: GICv3: Add support for irq_{get,set}_irqchip_state
-Date: Wed,  7 Jan 2015 17:51:02 +0000
-Message-Id: <1420653062-23361-4-git-send-email-marc.zyngier@arm.com>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <1420653062-23361-1-git-send-email-marc.zyngier@arm.com>
-References: <1420653062-23361-1-git-send-email-marc.zyngier@arm.com>
+	Wed, 7 Jan 2015 12:52:32 -0500
+Date: Wed, 7 Jan 2015 09:52:25 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        bobby.prani@gmail.com
+Subject: [PATCH tip/core/rcu 0/9] Stall-warning changes for 3.20
+Message-ID: <20150107175225.GA4237@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15010717-0021-0000-0000-00000793C72D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the required hooks for the internal state of an interrupt
-to be exposed to other subsystems.
+Hello!
 
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
----
- drivers/irqchip/irq-gic-v3.c | 83 +++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 70 insertions(+), 13 deletions(-)
+This series contains stall-warning changes, mostly inspired by the
+long-running "frequent lockups in 3.18rc4" LKML thread, which may
+be found at https://lkml.org/lkml/2014/11/14/656.  Those who denigrate
+testing clearly have not been up against trinity.  ;-)
 
-diff --git a/drivers/irqchip/irq-gic-v3.c b/drivers/irqchip/irq-gic-v3.c
-index 1a146cc..6e73846 100644
---- a/drivers/irqchip/irq-gic-v3.c
-+++ b/drivers/irqchip/irq-gic-v3.c
-@@ -195,6 +195,19 @@ static void gic_enable_redist(bool enable)
- /*
-  * Routines to disable, enable, EOI and route interrupts
-  */
-+static int gic_peek_irq(struct irq_data *d, u32 offset)
-+{
-+	u32 mask = 1 << (gic_irq(d) % 32);
-+	void __iomem *base;
-+
-+	if (gic_irq_in_rdist(d))
-+		base = gic_data_rdist_sgi_base();
-+	else
-+		base = gic_data.dist_base;
-+
-+	return !!(readl_relaxed(base + offset + (gic_irq(d) / 32) * 4) & mask);
-+}
-+
- static void gic_poke_irq(struct irq_data *d, u32 offset)
- {
- 	u32 mask = 1 << (gic_irq(d) % 32);
-@@ -223,6 +236,61 @@ static void gic_unmask_irq(struct irq_data *d)
- 	gic_poke_irq(d, GICD_ISENABLER);
- }
- 
-+static int gic_irq_set_irqchip_state(struct irq_data *d,
-+				     enum irqchip_irq_state which, bool val)
-+{
-+	u32 reg;
-+
-+	if (d->hwirq >= gic_data.irq_nr) /* PPI/SPI only */
-+		return -EINVAL;
-+
-+	switch (which) {
-+	case IRQCHIP_STATE_PENDING:
-+		reg = val ? GICD_ISPENDR : GICD_ICPENDR;
-+		break;
-+
-+	case IRQCHIP_STATE_ACTIVE:
-+		reg = val ? GICD_ISACTIVER : GICD_ICACTIVER;
-+		break;
-+
-+	case IRQCHIP_STATE_MASKED:
-+		reg = val ? GICD_ICENABLER : GICD_ISENABLER;
-+		break;
-+
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	gic_poke_irq(d, reg);
-+	return 0;
-+}
-+
-+static int gic_irq_get_irqchip_state(struct irq_data *d,
-+				     enum irqchip_irq_state which, bool *val)
-+{
-+	if (d->hwirq >= gic_data.irq_nr) /* PPI/SPI only */
-+		return -EINVAL;
-+
-+	switch (which) {
-+	case IRQCHIP_STATE_PENDING:
-+		*val = gic_peek_irq(d, GICD_ISPENDR);
-+		break;
-+
-+	case IRQCHIP_STATE_ACTIVE:
-+		*val = gic_peek_irq(d, GICD_ISACTIVER);
-+		break;
-+
-+	case IRQCHIP_STATE_MASKED:
-+		*val = !gic_peek_irq(d, GICD_ISENABLER);
-+		break;
-+
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
- static void gic_eoi_irq(struct irq_data *d)
- {
- 	gic_write_eoir(gic_irq(d));
-@@ -418,19 +486,6 @@ static void gic_cpu_init(void)
- }
- 
- #ifdef CONFIG_SMP
--static int gic_peek_irq(struct irq_data *d, u32 offset)
--{
--	u32 mask = 1 << (gic_irq(d) % 32);
--	void __iomem *base;
--
--	if (gic_irq_in_rdist(d))
--		base = gic_data_rdist_sgi_base();
--	else
--		base = gic_data.dist_base;
--
--	return !!(readl_relaxed(base + offset + (gic_irq(d) / 32) * 4) & mask);
--}
--
- static int gic_secondary_init(struct notifier_block *nfb,
- 			      unsigned long action, void *hcpu)
- {
-@@ -597,6 +652,8 @@ static struct irq_chip gic_chip = {
- 	.irq_eoi		= gic_eoi_irq,
- 	.irq_set_type		= gic_set_type,
- 	.irq_set_affinity	= gic_set_affinity,
-+	.irq_get_irqchip_state	= gic_irq_get_irqchip_state,
-+	.irq_set_irqchip_state	= gic_irq_set_irqchip_state,
- };
- 
- #define GIC_ID_NR		(1U << gic_data.rdists.id_bits)
--- 
-2.1.4
+1.	Set default to RCU_CPU_STALL_INFO=y.  This is in preparation for
+	eliminating this Kconfig variable entirely in a release or two.
+
+2.	Add rcutorture scripting checks for stall ending before dump start.
+
+3.	Make RCU_CPU_STALL_INFO include number of attempts to force
+	quiescent states (which mostly identifies idle CPUs).
+
+4.	Improve diagnostics for spurious RCU CPU stall warnings, for
+	example, identifying when RCU's grace-period kthreads have
+	been prevented from running.
+
+5.	Handle gpnum/completed wrap while dyntick idle.  This is a
+	long-standing known bug, but one that requires a CPU to remain
+	idle for 4,294,967,296 grace periods on 32-bit systems, and
+	lots more on 64-bit systems.  However, with the advent of
+	NO_HZ_FULL, this sort of thing becomes more likely, so time
+	to fix it.
+
+6.	Run grace-period kthreads at real-time priority.  Not yet ready
+	for mainline, but the 0day test robot reports that it greatly
+	reduces the number of hangs seen in testing, so something sort
+	of like it is needed.  This patch also reduced the number of
+	stalls in the 3.18-rc4 efforts.
+
+7.	Make cond_resched_rcu_qs() apply to normal RCU flavors, allowing
+	it to be placed in long-running loops that would otherwise result
+	in RCU CPU stall warnings.
+
+8.	Add GP-kthread-starvation checks to CPU stall warnings, making
+	previous encoded warnings more human-readable.
+
+9.	Fix RCU CPU stall detection in tiny implementation, courtesy of
+	Miroslav Benes.
+
+10.	Initialize tiny RCU stall-warning timeouts at boot.
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+ b/Documentation/RCU/stallwarn.txt                         |   14 +
+ b/Documentation/RCU/trace.txt                             |   32 +--
+ b/include/linux/rcupdate.h                                |    3 
+ b/include/linux/rcutiny.h                                 |    5 
+ b/include/linux/rcutree.h                                 |    2 
+ b/init/Kconfig                                            |    1 
+ b/kernel/rcu/tiny.c                                       |    2 
+ b/kernel/rcu/tiny_plugin.h                                |    7 
+ b/kernel/rcu/tree.c                                       |  119 ++++++++++++--
+ b/kernel/rcu/tree.h                                       |    7 
+ b/kernel/rcu/tree_plugin.h                                |   10 -
+ b/kernel/rcu/tree_trace.c                                 |    8 
+ b/lib/Kconfig.debug                                       |    2 
+ b/tools/testing/selftests/rcutorture/bin/parse-console.sh |    2 
+ 14 files changed, 164 insertions(+), 50 deletions(-)
 
