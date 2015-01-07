@@ -1,71 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752957AbbAGMq4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 07:46:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48802 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751437AbbAGMqz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 07:46:55 -0500
-Message-ID: <54AD2AB3.9030801@redhat.com>
-Date: Wed, 07 Jan 2015 07:46:43 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
+	id S1753008AbbAGMsm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 07:48:42 -0500
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:63813 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950AbbAGMsl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 07:48:41 -0500
 MIME-Version: 1.0
-To: "Jiang, Dave" <dave.jiang@intel.com>
-CC: "der.herr@hofr.at" <der.herr@hofr.at>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rashika.kheria@gmail.com" <rashika.kheria@gmail.com>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        "josh@joshtriplett.org" <josh@joshtriplett.org>
-Subject: Re: [PATCH] ioat: fail self-test if wait_for_completion times out
-References: <1419763047-15414-1-git-send-email-der.herr@hofr.at>  <1420476711.7745.2.camel@djiang5-desk2.amr.corp.intel.com>  <20150106004246.GA31803@opentech.at> <1420558682.62574.2.camel@djiang5-desk2.amr.corp.intel.com>
-In-Reply-To: <1420558682.62574.2.camel@djiang5-desk2.amr.corp.intel.com>
+In-Reply-To: <20150106181842.GA618@roeck-us.net>
+References: <1420467656-6112-6-git-send-email-bgolaszewski@baylibre.com>
+	<20150106181842.GA618@roeck-us.net>
+Date: Wed, 7 Jan 2015 13:48:40 +0100
+Message-ID: <CAMpxmJUeX1J+wHW_c0NLeOgPcUyv82s9fH+xo8aisdwBYH2hUg@mail.gmail.com>
+Subject: Re: [v8, 5/5] hwmon: ina2xx: allow to change the averaging rate at run-time
+From: Bartosz Golaszewski <bgolaszewski@baylibre.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Patrick Titiano <ptitiano@baylibre.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        LM Sensors <lm-sensors@lm-sensors.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2015-01-06 19:18 GMT+01:00 Guenter Roeck <linux@roeck-us.net>:
+> ina226_avg_val() calculates the average value from ina226_avg_tab
+> and then you loop through ina226_avg_tab to find the index into ina226_avg_tab
+> again, only to use the thus calculated index for accessing ina226_avg_tab[]
+> once more. Think about it. A simple
+>         avg = ina226_avg_tab[INA226_READ_AVG(data->regs[INA2XX_CONFIG])];
+>         return snprintf(buf, PAGE_SIZE, "%d\n", avg);
+> or even
+>         return snprintf(buf, PAGE_SIZE, "%d\n",
+>                         ina226_avg_tab[INA226_READ_AVG(data->regs[INA2XX_CONFIG])]);
+>
+> would accomplish exactly the same.
 
+This was stupid, I admit. Fixed in the new version. Hope it's ok now.
 
-On 01/06/2015 10:38 AM, Jiang, Dave wrote:
->>>> -	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
->>>> +	if (tmo == 0 || dma->device_tx_status(dma_chan, cookie, NULL)
->>>> +			!= DMA_COMPLETE) {
->>>
->>> Can you please do: 
->>> +	if (tmo == 0 ||
->>> +	    dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
->>
->> Documentation/CodingStyle:Chapter 2
->>
->> "Statements longer than 80 columns will be broken into sensible chunks, unless
->> exceeding 80 columns significantly increases readability and does not hide
->> information. Descendants are always substantially shorter than the parent and
->> are placed substantially to the right. The same applies to function headers..."
->>
->> am I misreading the CodingStyle here ?
-> 
-> I'm not sure what the issue is here.... What I proposed is still the
-> same length as the original code. And what I suggested complies with the
-> existing coding style that's already there.
+> I kind of dislike that attribute name. I don't have a better idea though, so
+> I'll let it pass unless you have a better idea.
 
-Ugh ... I missed this obvious CodingStyle error.
+I don't really. What's wrong with this one?
 
-What Dave is trying to say is that he (and I'm pretty sure everyone else
-for that matter) disagree with you style change because you have not broken
-the columns into "sensible chunks".
-
-IOW ... this,
-
-	if (tmo == 0 ||
-	    dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
-
-is much easier to comprehend than this,
-
-	if (tmo == 0 || dma->device_tx_status(dma_chan, cookie, NULL)
-			!= DMA_COMPLETE) {
-
-P.
+Bart
