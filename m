@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391AbbAGJEk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 04:04:40 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:52703 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691AbbAGJEf (ORCPT
+	id S1755242AbbAGJEy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 04:04:54 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:53295 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752101AbbAGJEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 04:04:35 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-f3-54acf6a10ad7
-Message-id: <1420621470.3893.6.camel@AMDC1943>
-Subject: Re: [PATCH] ARM: exynos_defconfig: Enable CONFIG_LOCKUP_DETECTOR
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Anand Moon <moon.linux@yahoo.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene@kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Doug Anderson <dianders@chromium.org>,
-        Sachin Kamat <sachin.kamat@samsung.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Tushar Behera <tushar.behera@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 07 Jan 2015 10:04:30 +0100
-In-reply-to: <1420566151-7136-1-git-send-email-moon.linux@yahoo.com>
-References: <1420566151-7136-1-git-send-email-moon.linux@yahoo.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNLMWRmVeSWpSXmKPExsVy+t/xy7oLv60JMTh6U8Li7LKDbBZtVw6y
-	Wxz9XWDR//g1s8Wmx9dYLS7vmsNmMeP8PiaL25d5La7fn8Zs8XjFW3aLK5dOsVm0/93L5sDj
-	0dLcw+Yxu+Eii8ff59dZPBbvecnksWlVJ5vHnWt72Dw2L6n36NuyitHj8yY5j1mzDjMFcEVx
-	2aSk5mSWpRbp2yVwZWy7/oa94ChnxdGOU4wNjN/Zuxg5OSQETCRuf1rLBGGLSVy4t56ti5GL
-	Q0hgKaPE3PW3oJzPjBJ9C/exgFTxCuhJ9N67CJTg4BAW8JQ4vIwXJMwmYCyxefkSNhBbREBV
-	4kHrVVYQm1ngArPEys8VIDYLUHzJ1EmMIDangIvEvBMXmEFsIQFnifOXPkDVq0tMmreIGWS8
-	hICyRGO/G8RWQYkfk++xQJTIS2xe85Z5AqPALCQds5CUzUJStoCReRWjaGppckFxUnqukV5x
-	Ym5xaV66XnJ+7iZGSAR93cG49JjVIUYBDkYlHl6FyWtChFgTy4orcw8xSnAwK4nwWnUChXhT
-	EiurUovy44tKc1KLDzEycXBKNTDuCqgJ+B915OIudkam4tn5cwz95kZohLf0Ry898O5hemOT
-	JZfCwT36yT/XS23hM1JPmid4WPj6rPf8K7KL96wrL9e2OsnEpuAnFnn0mxCv3NKpF3auvPvn
-	c+a+atnMvKUng56IvdpiuVfA4XfRTf2tH9PZJs3f7S+QsO0167tlf5e43X0ue6BAiaU4I9FQ
-	i7moOBEAHgGd/n4CAAA=
+	Wed, 7 Jan 2015 04:04:46 -0500
+Date: Wed, 7 Jan 2015 10:04:41 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH/resend] softirq/preempt: add missing
+ current->preempt_disable_ip update
+Message-ID: <20150107090441.GC4365@osiris>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15010709-0041-0000-0000-000002C5EB9E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On wto, 2015-01-06 at 23:12 +0530, Anand Moon wrote:
-> ARM Enable CONFIG_LOCKUP_DETECTOR to validaion of kernel locks
-s/validaion/validation/
+While debugging some "sleeping function called from invalid context" bug I
+realized that the debugging message "Preemption disabled at:" pointed to
+an incorrect function.
+In particular if the last function/action that disabled preemption was
+spin_lock_bh() then current->preempt_disable_ip won't be updated.
 
-This config item helps getting some useful information when lockup
-happens. If you want to validate locks then probably you want
-PROVE_LOCKING... but its overhead is larger.
+The reason for this is that __local_bh_disable_ip() will increase
+preempt_count manually instead of calling preempt_count_add(), which
+would handle the update correctly.
+It look like the manual handling was done to work around some lockdep issue.
 
-Anyway the overhead of LOCKUP_DETECTOR is small and multi_v7_defconfig
-has it enabled so I guess exynos may do it as well.
+So add the missing update of current->preempt_disable_ip to
+__local_bh_disable_ip() as well.
 
-Could you only fix up the commit msg?
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+---
+ kernel/softirq.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-
-
-Best regards,
-Krzysztof
-
-> 
-> Tested on Exynos5422 ODROID XU3 board.
-> 
-> Signed-off-by: Anand Moon <moon.linux@yahoo.com>
-> ---
->  arch/arm/configs/exynos_defconfig | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/arm/configs/exynos_defconfig b/arch/arm/configs/exynos_defconfig
-> index 5ef14de..ecd9987 100644
-> --- a/arch/arm/configs/exynos_defconfig
-> +++ b/arch/arm/configs/exynos_defconfig
-> @@ -178,6 +178,7 @@ CONFIG_PRINTK_TIME=y
->  CONFIG_DEBUG_FS=y
->  CONFIG_MAGIC_SYSRQ=y
->  CONFIG_DEBUG_KERNEL=y
-> +CONFIG_LOCKUP_DETECTOR=y
->  CONFIG_DETECT_HUNG_TASK=y
->  CONFIG_DEBUG_RT_MUTEXES=y
->  CONFIG_DEBUG_SPINLOCK=y
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 501baa9ac1be..edd51027e3ab 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -114,8 +114,13 @@ void __local_bh_disable_ip(unsigned long ip, unsigned int cnt)
+ 		trace_softirqs_off(ip);
+ 	raw_local_irq_restore(flags);
+ 
+-	if (preempt_count() == cnt)
+-		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
++	if (preempt_count() == cnt) {
++		unsigned long ip = get_parent_ip(CALLER_ADDR1);
++#ifdef CONFIG_DEBUG_PREEMPT
++		current->preempt_disable_ip = ip;
++#endif
++		trace_preempt_off(CALLER_ADDR0, ip);
++	}
+ }
+ EXPORT_SYMBOL(__local_bh_disable_ip);
+ #endif /* CONFIG_TRACE_IRQFLAGS */
+-- 
+1.8.5.5
 
