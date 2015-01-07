@@ -1,103 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756858AbbAGBZW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 20:25:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45861 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756836AbbAGBZU (ORCPT
+	id S1756398AbbAGBfr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 20:35:47 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:58951 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574AbbAGBfq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:25:20 -0500
-Date: Tue, 6 Jan 2015 17:25:18 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
-        "minchan@kernel.org" <minchan@kernel.org>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "n-horiguchi@ah.jp.nec.com" <n-horiguchi@ah.jp.nec.com>,
-        "pintu.k@samsung.com" <pintu.k@samsung.com>
-Subject: Re: [RFC] mm:change meminfo cached calculation
-Message-Id: <20150106172518.8f84bffdfa0d35336b233d07@linux-foundation.org>
-In-Reply-To: <alpine.LSU.2.11.1501061654340.1497@eggly.anvils>
-References: <35FD53F367049845BC99AC72306C23D103E688B313EE@CNBJMBX05.corpusers.net>
-	<CALYGNiOuBKz8shHSrFCp0BT5AV6XkNOCHj+LJedQQ-2YdZtM7w@mail.gmail.com>
-	<35FD53F367049845BC99AC72306C23D103E688B313F2@CNBJMBX05.corpusers.net>
-	<20141205143134.37139da2208c654a0d3cd942@linux-foundation.org>
-	<35FD53F367049845BC99AC72306C23D103E688B313F4@CNBJMBX05.corpusers.net>
-	<20141208114601.GA28846@node.dhcp.inet.fi>
-	<35FD53F367049845BC99AC72306C23D103E688B313FB@CNBJMBX05.corpusers.net>
-	<CALYGNiMEytHuND37f+hNdMKqCPzN0k_uha6CaeL_fyzrj-obNQ@mail.gmail.com>
-	<35FD53F367049845BC99AC72306C23D103E688B31408@CNBJMBX05.corpusers.net>
-	<35FD53F367049845BC99AC72306C23D103EDAF89E14C@CNBJMBX05.corpusers.net>
-	<35FD53F367049845BC99AC72306C23D103EDAF89E160@CNBJMBX05.corpusers.net>
-	<20150106164340.55e83f742d6f57c19e6500ff@linux-foundation.org>
-	<alpine.LSU.2.11.1501061654340.1497@eggly.anvils>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 6 Jan 2015 20:35:46 -0500
+Date: Tue, 06 Jan 2015 20:35:42 -0500 (EST)
+Message-Id: <20150106.203542.1515714670133944465.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.6 on Emacs 24.4 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 06 Jan 2015 17:35:45 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Jan 2015 17:04:33 -0800 (PST) Hugh Dickins <hughd@google.com> wrote:
 
-> On Tue, 6 Jan 2015, Andrew Morton wrote:
-> > On Fri, 26 Dec 2014 19:56:49 +0800 "Wang, Yalin" <Yalin.Wang@sonymobile.com> wrote:
-> > 
-> > > This patch subtract sharedram from cached,
-> > > sharedram can only be swap into swap partitions,
-> > > they should be treated as swap pages, not as cached pages.
-> > > 
-> > > ...
-> > >
-> > > --- a/fs/proc/meminfo.c
-> > > +++ b/fs/proc/meminfo.c
-> > > @@ -45,7 +45,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
-> > >  	committed = percpu_counter_read_positive(&vm_committed_as);
-> > >  
-> > >  	cached = global_page_state(NR_FILE_PAGES) -
-> > > -			total_swapcache_pages() - i.bufferram;
-> > > +			total_swapcache_pages() - i.bufferram - i.sharedram;
-> > >  	if (cached < 0)
-> > >  		cached = 0;
-> > 
-> > Documentation/filesystems/proc.txt says
-> > 
-> > :      Cached: in-memory cache for files read from the disk (the
-> > :              pagecache).  Doesn't include SwapCached
-> > 
-> > So yes, I guess it should not include shmem.
-> > 
-> > And why not do this as well?
-> > 
-> > 
-> > --- a/Documentation/filesystems/proc.txt~mm-change-meminfo-cached-calculation-fix
-> > +++ a/Documentation/filesystems/proc.txt
-> > @@ -811,7 +811,7 @@ MemAvailable: An estimate of how much me
-> >       Buffers: Relatively temporary storage for raw disk blocks
-> >                shouldn't get tremendously large (20MB or so)
-> >        Cached: in-memory cache for files read from the disk (the
-> > -              pagecache).  Doesn't include SwapCached
-> > +              pagecache).  Doesn't include SwapCached or Shmem.
-> >    SwapCached: Memory that once was swapped out, is swapped back in but
-> >                still also is in the swapfile (if memory is needed it
-> >                doesn't need to be swapped out AGAIN because it is already
-> 
-> Whoa.  Changes of this kind would have made good sense about 14 years ago.
-> And there's plenty more which would benefit from having anon/shmem/file
-> properly distinguished.  But how can we make such a change now,
-> breaking everything that has made its own sense of these counts?
+Just a pile of random fixes, including:
 
-That's what I was wondering, but I was having some trouble picking a
-situation where it mattered much.  What's the problematic scenario
-here?  Userspace that is taking Cached, saying "that was silly" and
-subtracting Shmem from it by hand?
+1) Do not apply TSO limits to non-TSO packets, fix from Herbert
+   Xu.
 
-I suppose that as nobody knows we should err on the side of caution and
-leave this alone.  But the situation is pretty sad - it would be nice
-to make the code agree with the documentation at least.
+2) MDI{,X} eeprom check in e100 driver is reversed, from
+   John W. Linville.
+
+3) Missing error return assignments in several ethernet drivers,
+   from Julia Lawall.
+
+4) Altera TSE device doesn't come back up after ifconfig down/up
+   sequence, fix from Kostya Belezko.
+
+5) Add more cases to the check for whether the qmi_wwan device has
+   a bogus MAC address and needs to be assigned a random one.  From
+   Kristian Evensen.
+
+6) Fix interrupt hangs in CPSW, from Felipe Balbi.
+
+7) Implement ndo_features_check in r8152 so that the stack doesn't
+   feed GSO packets which are outside of the chip's capabilities.
+   From Hayes Wang.
+
+Please pull, thanks a lot!
+
+The following changes since commit 2c90331cf5ed1d648a711b9483e173aaaf2c4a9b:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2014-12-30 10:45:47 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git 
+
+for you to fetch changes up to 2abad79afa700e837cb4feed170141292e0720c0:
+
+  qla3xxx: don't allow never end busy loop (2015-01-06 17:41:36 -0500)
+
+----------------------------------------------------------------
+Andy Shevchenko (1):
+      qla3xxx: don't allow never end busy loop
+
+Ben Pfaff (1):
+      openvswitch: Consistently include VLAN header in flow and port stats.
+
+David S. Miller (4):
+      Merge branch 'master' of git://git.kernel.org/.../jkirsher/net
+      Merge branch 'mlx4-net'
+      Merge tag 'mac80211-for-davem-2015-01-06' of git://git.kernel.org/.../jberg/mac80211
+      Merge tag 'batman-adv-fix-for-davem' of git://git.open-mesh.org/linux-merge
+
+Felipe Balbi (1):
+      net: ethernet: cpsw: fix hangs with interrupts
+
+Govindarajulu Varadarajan (1):
+      enic: free all rq buffs when allocation fails
+
+Herbert Xu (1):
+      tcp: Do not apply TSO segment limit to non-TSO packets
+
+Jack Morgenstein (1):
+      net/mlx4_core: Fix error flow in mlx4_init_hca()
+
+Joe Perches (1):
+      i40e: Fix possible memory leak in i40e_dbg_dump_desc
+
+Johannes Berg (1):
+      Revert "mac80211: Fix accounting of the tailroom-needed counter"
+
+John W. Linville (1):
+      e100: fix typo in MDI/MDI-X eeprom check in e100_phy_init
+
+Julia Lawall (4):
+      net: Xilinx: fix error return code
+      myri10ge: fix error return code
+      net: sun4i-emac: fix error return code
+      net: axienet: fix error return code
+
+Kostya Belezko (1):
+      Altera TSE: Add missing phydev
+
+Kristian Evensen (1):
+      qmi_wwan: Set random MAC on devices with buggy fw
+
+Linus Lüssing (4):
+      batman-adv: fix delayed foreign originator recognition
+      batman-adv: fix counter for multicast supporting nodes
+      batman-adv: fix multicast counter when purging originators
+      batman-adv: fix potential TT client + orig-node memory leak
+
+Maor Gottlieb (1):
+      net/mlx4_core: Correcly update the mtt's offset in the MR re-reg flow
+
+Martin Hundebøll (1):
+      batman-adv: fix lock class for decoding hash in network-coding.c
+
+Palik, Imre (1):
+      xen-netback: fixing the propagation of the transmit shaper timeout
+
+Simon Wunderlich (1):
+      batman-adv: fix and simplify condition when bonding should be used
+
+Todd Fujinaka (1):
+      igb: Remove unneeded FIXME
+
+Yongjian Xu (1):
+      qlcnic: Fix return value in qlcnic_probe()
+
+hayeswang (1):
+      r8152: support ndo_features_check
+
+ drivers/net/ethernet/allwinner/sun4i-emac.c       |  4 +++-
+ drivers/net/ethernet/altera/altera_tse_main.c     | 15 ++++++---------
+ drivers/net/ethernet/cisco/enic/enic_main.c       |  6 ++++--
+ drivers/net/ethernet/intel/e100.c                 |  2 +-
+ drivers/net/ethernet/intel/i40e/i40e_debugfs.c    |  4 +++-
+ drivers/net/ethernet/intel/igb/e1000_82575.c      |  2 +-
+ drivers/net/ethernet/mellanox/mlx4/main.c         | 13 ++++---------
+ drivers/net/ethernet/mellanox/mlx4/mr.c           |  9 +++++----
+ drivers/net/ethernet/myricom/myri10ge/myri10ge.c  |  4 +++-
+ drivers/net/ethernet/qlogic/qla3xxx.c             |  8 +++-----
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c  |  1 +
+ drivers/net/ethernet/ti/cpsw.c                    | 19 ++++++++-----------
+ drivers/net/ethernet/xilinx/ll_temac_main.c       |  2 ++
+ drivers/net/ethernet/xilinx/xilinx_axienet_main.c |  2 ++
+ drivers/net/ethernet/xilinx/xilinx_emaclite.c     |  1 +
+ drivers/net/usb/qmi_wwan.c                        | 10 +++++++---
+ drivers/net/usb/r8152.c                           | 17 +++++++++++++++++
+ drivers/net/xen-netback/xenbus.c                  |  1 +
+ include/net/mac80211.h                            |  7 ++-----
+ net/batman-adv/multicast.c                        | 11 +++++++----
+ net/batman-adv/network-coding.c                   |  2 +-
+ net/batman-adv/originator.c                       |  7 ++++---
+ net/batman-adv/routing.c                          |  6 ++++--
+ net/ipv4/tcp_output.c                             |  4 ++--
+ net/mac80211/key.c                                | 12 +++++++++---
+ net/openvswitch/flow.c                            |  5 +++--
+ net/openvswitch/vport.c                           |  2 +-
+ 27 files changed, 105 insertions(+), 71 deletions(-)
