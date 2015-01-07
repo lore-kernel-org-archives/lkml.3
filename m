@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758697AbbAGDEW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 22:04:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46230 "EHLO
+	id S1758682AbbAGDEU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 22:04:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46250 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756852AbbAGBv4 (ORCPT
+	with ESMTP id S1756859AbbAGBv4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jan 2015 20:51:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.18 22/84] dm bufio: fix memleak when using a dm_buffers inline bio
-Date: Tue,  6 Jan 2015 17:49:25 -0800
-Message-Id: <20150107014029.732882165@linuxfoundation.org>
+        Milan Broz <gmazyland@gmail.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.18 23/84] dm crypt: use memzero_explicit for on-stack buffer
+Date: Tue,  6 Jan 2015 17:49:26 -0800
+Message-Id: <20150107014029.761795721@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
 References: <20150107014029.012974975@linuxfoundation.org>
@@ -30,65 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
+From: Milan Broz <gmazyland@gmail.com>
 
-commit 445559cdcb98a141f5de415b94fd6eaccab87e6d upstream.
+commit 1a71d6ffe18c0d0f03fc8531949cc8ed41d702ee upstream.
 
-When dm-bufio sets out to use the bio built into a struct dm_buffer to
-issue an IO, it needs to call bio_reset after it's done with the bio
-so that we can free things attached to the bio such as the integrity
-payload.  Therefore, inject our own endio callback to take care of
-the bio_reset after calling submit_io's end_io callback.
+Use memzero_explicit to cleanup sensitive data allocated on stack
+to prevent the compiler from optimizing and removing memset() calls.
 
-Test case:
-1. modprobe scsi_debug delay=0 dif=1 dix=199 ato=1 dev_size_mb=300
-2. Set up a dm-bufio client, e.g. dm-verity, on the scsi_debug device
-3. Repeatedly read metadata and watch kmalloc-192 leak!
-
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Milan Broz <gmazyland@gmail.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-bufio.c |   20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+ drivers/md/dm-crypt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -532,6 +532,19 @@ static void use_dmio(struct dm_buffer *b
- 		end_io(&b->bio, r);
+--- a/drivers/md/dm-crypt.c
++++ b/drivers/md/dm-crypt.c
+@@ -705,7 +705,7 @@ static int crypt_iv_tcw_whitening(struct
+ 	for (i = 0; i < ((1 << SECTOR_SHIFT) / 8); i++)
+ 		crypto_xor(data + i * 8, buf, 8);
+ out:
+-	memset(buf, 0, sizeof(buf));
++	memzero_explicit(buf, sizeof(buf));
+ 	return r;
  }
  
-+static void inline_endio(struct bio *bio, int error)
-+{
-+	bio_end_io_t *end_fn = bio->bi_private;
-+
-+	/*
-+	 * Reset the bio to free any attached resources
-+	 * (e.g. bio integrity profiles).
-+	 */
-+	bio_reset(bio);
-+
-+	end_fn(bio, error);
-+}
-+
- static void use_inline_bio(struct dm_buffer *b, int rw, sector_t block,
- 			   bio_end_io_t *end_io)
- {
-@@ -543,7 +556,12 @@ static void use_inline_bio(struct dm_buf
- 	b->bio.bi_max_vecs = DM_BUFIO_INLINE_VECS;
- 	b->bio.bi_iter.bi_sector = block << b->c->sectors_per_block_bits;
- 	b->bio.bi_bdev = b->c->bdev;
--	b->bio.bi_end_io = end_io;
-+	b->bio.bi_end_io = inline_endio;
-+	/*
-+	 * Use of .bi_private isn't a problem here because
-+	 * the dm_buffer's inline bio is local to bufio.
-+	 */
-+	b->bio.bi_private = end_io;
- 
- 	/*
- 	 * We assume that if len >= PAGE_SIZE ptr is page-aligned.
 
 
