@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752459AbbAGLJE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 06:09:04 -0500
-Received: from plane.gmane.org ([80.91.229.3]:45478 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751494AbbAGLJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 06:09:03 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Holger =?iso-8859-1?q?Hoffst=E4tte?= 
-	<holger.hoffstaette@googlemail.com>
-Subject: Re: Dirty pages underflow on 3.14.23
-Date: Wed, 7 Jan 2015 10:57:46 +0000 (UTC)
-Message-ID: <pan.2015.01.07.10.57.46@googlemail.com>
-References: <alpine.LRH.2.02.1501051744020.5119@file01.intranet.prod.int.rdu2.redhat.com>
-	<20150106150250.GA26895@phnom.home.cmpxchg.org>
-	<alpine.LRH.2.02.1501061246400.16437@file01.intranet.prod.int.rdu2.redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: p4ff58476.dip0.t-ipconnect.de
-User-Agent: Pan/0.139 (Sexual Chocolate; GIT bf56508
- git://git.gnome.org/pan2)
-Cc: linux-mm@kvack.org
+	id S1752541AbbAGK6I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 05:58:08 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:33375 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752080AbbAGK5w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 05:57:52 -0500
+Date: Wed, 7 Jan 2015 11:57:49 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Minchan Kim <minchan@kernel.org>, David Rientjes <rientjes@google.com>,
+        Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH V4 4/4] mm: microoptimize zonelist operations
+Message-ID: <20150107105749.GC16553@dhcp22.suse.cz>
+References: <1420478263-25207-1-git-send-email-vbabka@suse.cz>
+ <1420478263-25207-5-git-send-email-vbabka@suse.cz>
+ <20150106150920.GE20860@dhcp22.suse.cz>
+ <54ACF93B.3060801@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54ACF93B.3060801@suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 06 Jan 2015 12:54:43 -0500, Mikulas Patocka wrote:
-
-> On Tue, 6 Jan 2015, Johannes Weiner wrote:
+On Wed 07-01-15 10:15:39, Vlastimil Babka wrote:
+> On 01/06/2015 04:09 PM, Michal Hocko wrote:
+> > On Mon 05-01-15 18:17:43, Vlastimil Babka wrote:
+> >> The function next_zones_zonelist() returns zoneref pointer, as well as zone
+> >> pointer via extra parameter. Since the latter can be trivially obtained by
+> >> dereferencing the former, the overhead of the extra parameter is unjustified.
+> >> 
+> >> This patch thus removes the zone parameter from next_zones_zonelist(). Both
+> >> callers happen to be in the same header file, so it's simple to add the
+> >> zoneref dereference inline. We save some bytes of code size.
+> > 
+> > Dunno. It makes first_zones_zonelist and next_zones_zonelist look
+> > different which might be a bit confusing. It's not a big deal but
+> > I am not sure it is worth it.
 > 
->> > The bug probably happened during git pull or apt-get update, though
->> > one can't be sure that these commands caused it.
->> > 
->> > I see that 3.14.24 containes some fix for underflow (commit
->> > 6619741f17f541113a02c30f22a9ca22e32c9546, upstream commit
->> > abe5f972912d086c080be4bde67750630b6fb38b), but it doesn't seem that
->> > that commit fixes this condition. If you have a commit that could fix
->> > this, say it.
->> 
->> That's an unrelated counter, but there is a known dirty underflow
->> problem that was addressed in 87a7e00b206a ("mm: protect
->> set_page_dirty() from ongoing truncation").  It should make it into the
->> stable kernels in the near future.  Can you reproduce this issue?
->> 
->> Thanks,
->> Johannes
-> 
-> I can't reprodce it. It happened just once.
-> 
-> That patch is supposed to fix an occasional underflow by a single page -
-> while my meminfo showed underflow by 22952KiB (5738 pages).
+> Yeah I thought that nobody uses them directly anyway thanks to
+> for_each_zone_zonelist* so it's not a big deal.
 
-You are probably looking for:
-commit 835f252c6debd204fcd607c79975089b1ecd3472
-"aio: fix uncorrent dirty pages accouting when truncating AIO ring buffer"
+OK, I have checked why we need the whole struct zoneref when it
+only caches zone_idx. dd1a239f6f2d (mm: have zonelist contains
+structs with both a zone pointer and zone_idx) claims this will
+reduce cache contention by reducing pointer chasing because we
+do not have to dereference pgdat so often in hot paths. Fair
+enough but I do not see any numbers in the changelog nor in the
+original discussion (https://lkml.org/lkml/2007/11/20/547 resp.
+https://lkml.org/lkml/2007/9/28/170). Maybe Mel remembers what was the
+benchmark which has shown the difference so that we can check whether
+this is still relevant and caching the index is still worth it.
 
-It definitely went into 3.14.26, don't know about 3.16.x.
-
--h
-
+-- 
+Michal Hocko
+SUSE Labs
