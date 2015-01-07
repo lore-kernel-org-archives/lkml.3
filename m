@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933537AbbAGCjc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:39:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46962 "EHLO
+	id S933553AbbAGCjd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:39:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46956 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757510AbbAGCQo (ORCPT
+	with ESMTP id S1757511AbbAGCQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jan 2015 21:16:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
         Mikulas Patocka <mpatocka@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.17 18/73] dcache: fix kmemcheck warning in switch_names
-Date: Tue,  6 Jan 2015 18:15:39 -0800
-Message-Id: <20150107021558.079390710@linuxfoundation.org>
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.17 19/73] dm bufio: fix memleak when using a dm_buffers inline bio
+Date: Tue,  6 Jan 2015 18:15:40 -0800
+Message-Id: <20150107021558.108283623@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107021557.521276020@linuxfoundation.org>
 References: <20150107021557.521276020@linuxfoundation.org>
@@ -29,35 +30,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
 
-commit 08d4f7722268755ee34ed1c9e8afee7dfff022bb upstream.
+commit 445559cdcb98a141f5de415b94fd6eaccab87e6d upstream.
 
-This patch fixes kmemcheck warning in switch_names. The function
-switch_names swaps inline names of two dentries. It swaps full arrays
-d_iname, no matter how many bytes are really used by the strings. Reading
-data beyond string ends results in kmemcheck warning.
+When dm-bufio sets out to use the bio built into a struct dm_buffer to
+issue an IO, it needs to call bio_reset after it's done with the bio
+so that we can free things attached to the bio such as the integrity
+payload.  Therefore, inject our own endio callback to take care of
+the bio_reset after calling submit_io's end_io callback.
 
-We fix the bug by marking both arrays as fully initialized.
+Test case:
+1. modprobe scsi_debug delay=0 dif=1 dix=199 ato=1 dev_size_mb=300
+2. Set up a dm-bufio client, e.g. dm-verity, on the scsi_debug device
+3. Repeatedly read metadata and watch kmalloc-192 leak!
 
+Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
 Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/dcache.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/md/dm-bufio.c |   20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2407,6 +2407,8 @@ static void switch_names(struct dentry *
- 			 */
- 			unsigned int i;
- 			BUILD_BUG_ON(!IS_ALIGNED(DNAME_INLINE_LEN, sizeof(long)));
-+			kmemcheck_mark_initialized(dentry->d_iname, DNAME_INLINE_LEN);
-+			kmemcheck_mark_initialized(target->d_iname, DNAME_INLINE_LEN);
- 			if (!exchange) {
- 				memcpy(dentry->d_iname, target->d_name.name,
- 						target->d_name.len + 1);
+--- a/drivers/md/dm-bufio.c
++++ b/drivers/md/dm-bufio.c
+@@ -532,6 +532,19 @@ static void use_dmio(struct dm_buffer *b
+ 		end_io(&b->bio, r);
+ }
+ 
++static void inline_endio(struct bio *bio, int error)
++{
++	bio_end_io_t *end_fn = bio->bi_private;
++
++	/*
++	 * Reset the bio to free any attached resources
++	 * (e.g. bio integrity profiles).
++	 */
++	bio_reset(bio);
++
++	end_fn(bio, error);
++}
++
+ static void use_inline_bio(struct dm_buffer *b, int rw, sector_t block,
+ 			   bio_end_io_t *end_io)
+ {
+@@ -543,7 +556,12 @@ static void use_inline_bio(struct dm_buf
+ 	b->bio.bi_max_vecs = DM_BUFIO_INLINE_VECS;
+ 	b->bio.bi_iter.bi_sector = block << b->c->sectors_per_block_bits;
+ 	b->bio.bi_bdev = b->c->bdev;
+-	b->bio.bi_end_io = end_io;
++	b->bio.bi_end_io = inline_endio;
++	/*
++	 * Use of .bi_private isn't a problem here because
++	 * the dm_buffer's inline bio is local to bufio.
++	 */
++	b->bio.bi_private = end_io;
+ 
+ 	/*
+ 	 * We assume that if len >= PAGE_SIZE ptr is page-aligned.
 
 
