@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206AbbAGSjL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 13:39:11 -0500
-Received: from mail-yh0-f41.google.com ([209.85.213.41]:46174 "EHLO
-	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752326AbbAGSjJ (ORCPT
+	id S1754272AbbAGSju (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 13:39:50 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:47020 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752448AbbAGSjt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 13:39:09 -0500
+	Wed, 7 Jan 2015 13:39:49 -0500
+From: Kalle Valo <kvalo@codeaurora.org>
+To: =?utf-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
+Cc: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>,
+        "linux-wireless\@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] bcma: fix two coding style issues, more than 80 characters per line.
+References: <1419766622-10911-1-git-send-email-oscar.forner.martinez@gmail.com>
+	<87bnmaqxvs.fsf@kamboji.qca.qualcomm.com>
+	<CACna6rzWaHg=M15q=swf+yqMEB3smRRANuLHkSK1dU1MtG8jgg@mail.gmail.com>
+Date: Wed, 07 Jan 2015 20:39:44 +0200
+In-Reply-To: <CACna6rzWaHg=M15q=swf+yqMEB3smRRANuLHkSK1dU1MtG8jgg@mail.gmail.com>
+	(=?utf-8?Q?=22Rafa=C5=82_Mi=C5=82ecki=22's?= message of "Wed, 7 Jan 2015
+ 19:12:30 +0100")
+Message-ID: <87y4peo2of.fsf@kamboji.qca.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1420394696-20099-1-git-send-email-me@mortis.eu>
-References: <1420394696-20099-1-git-send-email-me@mortis.eu>
-Date: Wed, 7 Jan 2015 20:39:08 +0200
-Message-ID: <CAHp75VdrZrX7CyqcJUM5ZB8+yS4s=PR5xeGVvY+jgJp_wdxqGQ@mail.gmail.com>
-Subject: Re: [PATCH] Fix an infinite retry-loop
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Giel van Schijndel <me@mortis.eu>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
-        Ron Mercer <ron.mercer@qlogic.com>,
-        "supporter:QLOGIC QLA3XXX NE..." <linux-driver@qlogic.com>,
-        "open list:QLOGIC QLA3XXX NE..." <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 4, 2015 at 8:04 PM, Giel van Schijndel <me@mortis.eu> wrote:
-> This was clearly intended as a retry-10-times loop, but due to the
-> absence of code incrementing the loop-counter it was practically a
-> retry-forever loop.
->
-> Rewritten it as a for-loop as well to make the loop-counter increment
-> (as well as its potential absence) easier to spot.
+Rafał Miłecki <zajec5@gmail.com> writes:
 
-It's already in upstream in better form.
+> On 7 January 2015 at 18:55, Kalle Valo <kvalo@codeaurora.org> wrote:
+>> Oscar Forner Martinez <oscar.forner.martinez@gmail.com> writes:
+>>
+>>> Two lines with more than 80 characters per line have been split in several lines.
+>>>
+>>> Signed-off-by: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>
+>>
+>> Thanks, applied to wireless-drivers-next.git.
+>
+> Could you still replace it (V4) with an older version (V3)? Before I
+> explained V3 was OK Oscar already sent this (worse) V4.
 
-> ---
->  drivers/net/ethernet/qlogic/qla3xxx.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/net/ethernet/qlogic/qla3xxx.c b/drivers/net/ethernet/qlogic/qla3xxx.c
-> index c2f09af..35a26c9 100644
-> --- a/drivers/net/ethernet/qlogic/qla3xxx.c
-> +++ b/drivers/net/ethernet/qlogic/qla3xxx.c
-> @@ -144,9 +144,9 @@ static int ql_sem_lock(struct ql3_adapter *qdev, u32 sem_mask, u32 sem_bits)
->   */
->  static int ql_wait_for_drvr_lock(struct ql3_adapter *qdev)
->  {
-> -       int i = 0;
-> +       int i;
->
-> -       while (i < 10) {
-> +       for (i = 0; i < 10; ++i) {
->                 if (i)
->                         ssleep(1);
->
-> --
-> 2.1.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+No. I'm not going to rebase a public git tree unless there's a huge
+disaster.
 
+But if I see V4 I'm going to assume that's the one I need to apply, not
+some older version. If V4 is not good for some reason, make it
+ABSOLUTELY clear that I should not apply it. I do not want to start
+guessing what patch I should apply.
 
+> This is not critical though, we can always send separated patch for
+> one more line > 80 chars.
+
+Please send a followup patch if you want to fix something.
 
 -- 
-With Best Regards,
-Andy Shevchenko
+Kalle Valo
