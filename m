@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758676AbbAGDDm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 22:03:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46242 "EHLO
+	id S1758663AbbAGDDX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 22:03:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46230 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756871AbbAGBv5 (ORCPT
+	with ESMTP id S1756878AbbAGBv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:51:57 -0500
+	Tue, 6 Jan 2015 20:51:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dan Carpenter <dan.carpenter@oracle.com>,
         Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.18 26/84] dm cache: fix spurious cell_defer when dealing with partial block at end of device
-Date: Tue,  6 Jan 2015 17:49:29 -0800
-Message-Id: <20150107014029.856048256@linuxfoundation.org>
+Subject: [PATCH 3.18 27/84] dm space map metadata: fix sm_bootstrap_get_nr_blocks()
+Date: Tue,  6 Jan 2015 17:49:30 -0800
+Message-Id: <20150107014029.885210844@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
 References: <20150107014029.012974975@linuxfoundation.org>
@@ -28,40 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit f824a2af3dfbbb766c02e19df21f985bceadf0ee upstream.
+commit c1c6156fe4d4577444b769d7edd5dd503e57bbc9 upstream.
 
-We never bother caching a partial block that is at the back end of the
-origin device.  No cell ever gets locked, but the calling code was
-assuming it was and trying to release it.
+This function isn't right and it causes a static checker warning:
 
-Now the code only releases if the cell has been set to a non NULL
-value.
+	drivers/md/dm-thin.c:3016 maybe_resize_data_dev()
+	error: potentially using uninitialized 'sb_data_size'.
 
-Signed-off-by: Joe Thornber <ejt@redhat.com>
+It should set "*count" and return zero on success the same as the
+sm_metadata_get_nr_blocks() function does earlier.
+
+Fixes: 3241b1d3e0aa ('dm: add persistent data library')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-cache-target.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/persistent-data/dm-space-map-metadata.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -2554,11 +2554,11 @@ static int __cache_map(struct cache *cac
- static int cache_map(struct dm_target *ti, struct bio *bio)
+--- a/drivers/md/persistent-data/dm-space-map-metadata.c
++++ b/drivers/md/persistent-data/dm-space-map-metadata.c
+@@ -564,7 +564,9 @@ static int sm_bootstrap_get_nr_blocks(st
  {
- 	int r;
--	struct dm_bio_prison_cell *cell;
-+	struct dm_bio_prison_cell *cell = NULL;
- 	struct cache *cache = ti->private;
+ 	struct sm_metadata *smm = container_of(sm, struct sm_metadata, sm);
  
- 	r = __cache_map(cache, bio, &cell);
--	if (r == DM_MAPIO_REMAPPED) {
-+	if (r == DM_MAPIO_REMAPPED && cell) {
- 		inc_ds(cache, bio, cell);
- 		cell_defer(cache, cell, false);
- 	}
+-	return smm->ll.nr_blocks;
++	*count = smm->ll.nr_blocks;
++
++	return 0;
+ }
+ 
+ static int sm_bootstrap_get_nr_free(struct dm_space_map *sm, dm_block_t *count)
 
 
