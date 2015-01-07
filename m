@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086AbbAGJ4g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 04:56:36 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:37556 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751698AbbAGJ4C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 04:56:02 -0500
+	id S1752138AbbAGJ7X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 04:59:23 -0500
+Received: from mga14.intel.com ([192.55.52.115]:37057 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750873AbbAGJ7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 04:59:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,713,1413270000"; 
+   d="scan'208";a="658034829"
+Message-ID: <54AD030E.5000201@intel.com>
+Date: Wed, 07 Jan 2015 11:57:34 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <1420558883-10131-37-git-send-email-mst@redhat.com>
-References: <1420558883-10131-1-git-send-email-mst@redhat.com>
-	<1420558883-10131-37-git-send-email-mst@redhat.com>
-Date: Wed, 7 Jan 2015 10:56:00 +0100
-X-Google-Sender-Auth: BefAkVAV-g_jAra0-r5leJ-7ptk
-Message-ID: <CAMuHMdXsBsdUH-C2rHTDf4csYsNjsx2_nn4jfNEgm-akduSUAw@mail.gmail.com>
-Subject: Re: [PATCH v2 36/40] m68k: macro whitespace fixes
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Linux-Arch <linux-arch@vger.kernel.org>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Waiman Long <Waiman.Long@hp.com>,
+        Stephane Eranian <eranian@google.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tools: perf: util: dso: Remove some unused functions
+References: <1420232625-3628-1-git-send-email-rickard_strandqvist@spectrumdigital.se>	<54AA3C1E.10200@intel.com> <CAKXHbyP54J4ZaiMVGMvVUXh4ie0zsQhwc9TEbPEqE9x6W_RyxQ@mail.gmail.com>
+In-Reply-To: <CAKXHbyP54J4ZaiMVGMvVUXh4ie0zsQhwc9TEbPEqE9x6W_RyxQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 6, 2015 at 4:45 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> While working on arch/m68k/include/asm/uaccess.h, I noticed
-> that one macro within this header is made harder to read because it
-> violates a coding style rule: space is missing after comma.
->
-> Fix it up.
->
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+On 06/01/15 20:05, Rickard Strandqvist wrote:
+> 2015-01-05 8:24 GMT+01:00 Adrian Hunter <adrian.hunter@intel.com>:
+>> On 02/01/15 23:03, Rickard Strandqvist wrote:
+>>> Removes some functions that are not used anywhere:
+>>> dso__data_size() dso__data_status_seen()
+>>>
+>>> This was partially found by using a static code analysis program called cppcheck.
+>>>
+>>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>>> ---
+>>
+>> Please do not remove these. They are also preparation for Intel PT.
+>>
+> 
+> 
+> Hi
+> 
+> Ok, sorry!
+> 
+> But this  obvious, or would it not be good to add same comments?
 
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+The Intel PT preparation is a little unusual, and of course I am always
+optimistic about getting the rest of the patches added. Adding a comment
+only to remove it later seems a bit messy.
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
