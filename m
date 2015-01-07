@@ -1,50 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932401AbbAGETf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 23:19:35 -0500
-Received: from ozlabs.org ([103.22.144.67]:34199 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755141AbbAGETc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 23:19:32 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: nick <xerofoify@gmail.com>
-Cc: x86@kernel.org, ak@linux.intel.com, JBeulich@suse.com,
-        lguest@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: Implement Functions in boot.c
-In-Reply-To: <54AC04CA.1000102@gmail.com>
-References: <54AC04CA.1000102@gmail.com>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 07 Jan 2015 12:31:59 +1030
-Message-ID: <87bnmb4aco.fsf@rustcorp.com.au>
+	id S932213AbbAGCD6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:03:58 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:38721 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756039AbbAGCDz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 21:03:55 -0500
+Date: Tue, 6 Jan 2015 18:03:47 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Jerome Marchand <jmarchan@redhat.com>, Hugh Dickins <hughd@google.com>,
+        "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
+        "minchan@kernel.org" <minchan@kernel.org>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "n-horiguchi@ah.jp.nec.com" <n-horiguchi@ah.jp.nec.com>,
+        "pintu.k@samsung.com" <pintu.k@samsung.com>
+Subject: Re: [RFC] mm:change meminfo cached calculation
+In-Reply-To: <20150106172518.8f84bffdfa0d35336b233d07@linux-foundation.org>
+Message-ID: <alpine.LSU.2.11.1501061747540.2041@eggly.anvils>
+References: <35FD53F367049845BC99AC72306C23D103E688B313EE@CNBJMBX05.corpusers.net> <CALYGNiOuBKz8shHSrFCp0BT5AV6XkNOCHj+LJedQQ-2YdZtM7w@mail.gmail.com> <35FD53F367049845BC99AC72306C23D103E688B313F2@CNBJMBX05.corpusers.net> <20141205143134.37139da2208c654a0d3cd942@linux-foundation.org>
+ <35FD53F367049845BC99AC72306C23D103E688B313F4@CNBJMBX05.corpusers.net> <20141208114601.GA28846@node.dhcp.inet.fi> <35FD53F367049845BC99AC72306C23D103E688B313FB@CNBJMBX05.corpusers.net> <CALYGNiMEytHuND37f+hNdMKqCPzN0k_uha6CaeL_fyzrj-obNQ@mail.gmail.com>
+ <35FD53F367049845BC99AC72306C23D103E688B31408@CNBJMBX05.corpusers.net> <35FD53F367049845BC99AC72306C23D103EDAF89E14C@CNBJMBX05.corpusers.net> <35FD53F367049845BC99AC72306C23D103EDAF89E160@CNBJMBX05.corpusers.net> <20150106164340.55e83f742d6f57c19e6500ff@linux-foundation.org>
+ <alpine.LSU.2.11.1501061654340.1497@eggly.anvils> <20150106172518.8f84bffdfa0d35336b233d07@linux-foundation.org>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nick <xerofoify@gmail.com> writes:
-> Greetings Rusty,
-> I am wondering why we haven't implementing the below functions:
->  /* Let's just say, I wouldn't do debugging under a Guest. */
->  static unsigned long lguest_get_debugreg(int regno)
-> {
->          /* FIXME: Implement */
->          return 0;
-> }
->
->  static void lguest_set_debugreg(int regno, unsigned long value)
-> {
->          /* FIXME: Implement */
-> }
-> Seems to me that this are needed for various areas in the lguest subsystem and should
-> be implemented for debugging ease of use in the lguest subsystem.
+On Tue, 6 Jan 2015, Andrew Morton wrote:
+> On Tue, 6 Jan 2015 17:04:33 -0800 (PST) Hugh Dickins <hughd@google.com> wrote:
+> > On Tue, 6 Jan 2015, Andrew Morton wrote:
+> > > On Fri, 26 Dec 2014 19:56:49 +0800 "Wang, Yalin" <Yalin.Wang@sonymobile.com> wrote:
+> > > 
+> > > > This patch subtract sharedram from cached,
+> > > > sharedram can only be swap into swap partitions,
+> > > > they should be treated as swap pages, not as cached pages.
+> > > > 
+> > > > ...
+> > > >
+> > > > --- a/fs/proc/meminfo.c
+> > > > +++ b/fs/proc/meminfo.c
+> > > > @@ -45,7 +45,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+> > > >  	committed = percpu_counter_read_positive(&vm_committed_as);
+> > > >  
+> > > >  	cached = global_page_state(NR_FILE_PAGES) -
+> > > > -			total_swapcache_pages() - i.bufferram;
+> > > > +			total_swapcache_pages() - i.bufferram - i.sharedram;
+> > > >  	if (cached < 0)
+> > > >  		cached = 0;
+> > > 
+> > > Documentation/filesystems/proc.txt says
+> > > 
+> > > :      Cached: in-memory cache for files read from the disk (the
+> > > :              pagecache).  Doesn't include SwapCached
+> > > 
+> > > So yes, I guess it should not include shmem.
+> > > 
+> > > And why not do this as well?
+> > > 
+> > > 
+> > > --- a/Documentation/filesystems/proc.txt~mm-change-meminfo-cached-calculation-fix
+> > > +++ a/Documentation/filesystems/proc.txt
+> > > @@ -811,7 +811,7 @@ MemAvailable: An estimate of how much me
+> > >       Buffers: Relatively temporary storage for raw disk blocks
+> > >                shouldn't get tremendously large (20MB or so)
+> > >        Cached: in-memory cache for files read from the disk (the
+> > > -              pagecache).  Doesn't include SwapCached
+> > > +              pagecache).  Doesn't include SwapCached or Shmem.
+> > >    SwapCached: Memory that once was swapped out, is swapped back in but
+> > >                still also is in the swapfile (if memory is needed it
+> > >                doesn't need to be swapped out AGAIN because it is already
+> > 
+> > Whoa.  Changes of this kind would have made good sense about 14 years ago.
+> > And there's plenty more which would benefit from having anon/shmem/file
+> > properly distinguished.  But how can we make such a change now,
+> > breaking everything that has made its own sense of these counts?
+> 
+> That's what I was wondering, but I was having some trouble picking a
+> situation where it mattered much.
 
-Well, normal use of gdb works.  It can't use hardware watchpoints,
-though.
+If it doesn't matter, then we don't need to change it.
 
-To fix this, hypercalls would have to be added to manipulate the debug
-registers, and these registers would have to be saved and restored in
-the world switcher code.
+> What's the problematic scenario
+> here?  Userspace that is taking Cached, saying "that was silly" and
+> subtracting Shmem from it by hand?
 
-Patches welcome!
-Rusty.
+Someone a long time ago saw "that was silly", worked out it was because
+of Shmem, adjusted their scripts or whatever accordingly, and has run
+happily ever since.
+
+> 
+> I suppose that as nobody knows we should err on the side of caution and
+> leave this alone.  But the situation is pretty sad - it would be nice
+> to make the code agree with the documentation at least.
+
+By all means fix the documentation.  And work on a /proc/meminfo.2015
+which has sensibly differentiated counts (and probably omits that
+wonderful Linux 2.2-compatible "Buffers").
+
+But there's more to do than I can think of.  Cc'ing Jerome who has a
+particular interest in this (no, I haven't forgotten his patches,
+but nor have I had a moment to reconsider them).
+
+Hugh
