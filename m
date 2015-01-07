@@ -1,154 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756203AbbAGHa5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 02:30:57 -0500
-Received: from mga01.intel.com ([192.55.52.88]:2508 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755673AbbAGHaQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 02:30:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,713,1413270000"; 
-   d="scan'208";a="665634261"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Joerg Roedel <joro@8bytes.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Yinghai Lu <yinghai@kernel.org>, Borislav Petkov <bp@alien8.de>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org
-Subject: [Patch v2 16/16] iommu/irq_remapping: Normailize the way to detect whether IR is enabled
-Date: Wed,  7 Jan 2015 15:31:43 +0800
-Message-Id: <1420615903-28253-17-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1420615903-28253-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1420615903-28253-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1753258AbbAGHqk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 02:46:40 -0500
+Received: from mail-bl2on0126.outbound.protection.outlook.com ([65.55.169.126]:26539
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751247AbbAGHqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 02:46:38 -0500
+X-Greylist: delayed 947 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Jan 2015 02:46:38 EST
+From: Zidan Wang <zidan.wang@freescale.com>
+To: <broonie@kernel.org>
+CC: <lgirdwood@gmail.com>, <perex@perex.cz>, <tiwai@suse.de>,
+        <lars@metafoo.de>, <ckeepax@opensource.wolfsonmicro.com>,
+        <patches@opensource.wolfsonmicro.com>, <alsa-devel@alsa-project.org>,
+        <linux-kernel@vger.kernel.org>, Zidan Wang <b50113@freescale.com>
+Subject: [alsa-devel][PATCH v2 1/2] ASoC: wm8960: Let wm8960 codec driver manage its own MCLK
+Date: Wed, 7 Jan 2015 15:31:44 +0800
+Message-ID: <1420615905-4078-1-git-send-email-zidan.wang@freescale.com>
+X-Mailer: git-send-email 1.9.1
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=zidan.wang@freescale.com; 
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(33646002)(84676001)(6806004)(104016003)(92566001)(69596002)(77156002)(62966003)(21056001)(110136001)(106466001)(81156004)(19580395003)(19580405001)(31966008)(4396001)(50226001)(46102003)(97736003)(47776003)(20776003)(105606002)(48376002)(50466002)(86362001)(50986999)(89996001)(77096005)(85426001)(68736005)(107046002)(120916001)(2351001)(99396003)(87936001)(36756003)(229853001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN3PR0301MB1249;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-DmarcAction: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BN3PR0301MB1249;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:(601004);SRVR:BN3PR0301MB1249;
+X-Forefront-PRVS: 044968D9E1
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1249;
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 07 Jan 2015 07:30:43.8590
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.158.2]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN3PR0301MB1249
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Refine code by normailizing the way to detect whether IR is enabled.
+From: Zidan Wang <b50113@freescale.com>
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+When we want to use wm8960 codec, we should enable its MCLK in machine driver.
+It's reasonable for wm8960 codec driver to manage its own MCLK.
+
+When current bias_level is SND_SOC_BIAS_ON, it is preparing for a transition
+away from ON. In this case, disable the codec mclk. When current bias_level
+is not SND_SOC_BIAS_ON, it preparing for a transition to ON. In this case,
+enable the codec mclk.
+
+Signed-off-by: Zidan Wang <b50113@freescale.com>
 ---
- drivers/iommu/irq_remapping.c |   38 ++++++++++++++------------------------
- 1 file changed, 14 insertions(+), 24 deletions(-)
+ sound/soc/codecs/wm8960.c | 51 ++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 48 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index 5585c4e17e39..390079ee1350 100644
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -218,7 +218,7 @@ int __init irq_remapping_enable(void)
- {
- 	int ret;
- 
--	if (!remap_ops || !remap_ops->enable)
-+	if (!remap_ops->enable)
- 		return -ENODEV;
- 
- 	ret = remap_ops->enable();
-@@ -231,22 +231,16 @@ int __init irq_remapping_enable(void)
- 
- void irq_remapping_disable(void)
- {
--	if (!irq_remapping_enabled ||
--	    !remap_ops ||
--	    !remap_ops->disable)
--		return;
--
--	remap_ops->disable();
-+	if (irq_remapping_enabled && remap_ops->disable)
-+		remap_ops->disable();
+diff --git a/sound/soc/codecs/wm8960.c b/sound/soc/codecs/wm8960.c
+index 75cd7de..fd25973 100644
+--- a/sound/soc/codecs/wm8960.c
++++ b/sound/soc/codecs/wm8960.c
+@@ -15,6 +15,7 @@
+ #include <linux/init.h>
+ #include <linux/delay.h>
+ #include <linux/pm.h>
++#include <linux/clk.h>
+ #include <linux/i2c.h>
+ #include <linux/slab.h>
+ #include <sound/core.h>
+@@ -117,6 +118,7 @@ static bool wm8960_volatile(struct device *dev, unsigned int reg)
  }
  
- int irq_remapping_reenable(int mode)
+ struct wm8960_priv {
++	struct clk *mclk;
+ 	struct regmap *regmap;
+ 	int (*set_bias_level)(struct snd_soc_codec *,
+ 			      enum snd_soc_bias_level level);
+@@ -618,14 +620,38 @@ static int wm8960_set_bias_level_out3(struct snd_soc_codec *codec,
+ 				      enum snd_soc_bias_level level)
  {
--	if (!irq_remapping_enabled ||
--	    !remap_ops ||
--	    !remap_ops->reenable)
--		return 0;
-+	if (irq_remapping_enabled && remap_ops->reenable)
-+		return remap_ops->reenable(mode);
+ 	struct wm8960_priv *wm8960 = snd_soc_codec_get_drvdata(codec);
++	int ret;
  
--	return remap_ops->reenable(mode);
-+	return 0;
- }
+ 	switch (level) {
+ 	case SND_SOC_BIAS_ON:
+ 		break;
  
- int __init irq_remap_enable_fault_handling(void)
-@@ -254,7 +248,7 @@ int __init irq_remap_enable_fault_handling(void)
- 	if (!irq_remapping_enabled)
- 		return 0;
+ 	case SND_SOC_BIAS_PREPARE:
+-		/* Set VMID to 2x50k */
+-		snd_soc_update_bits(codec, WM8960_POWER1, 0x180, 0x80);
++		switch (codec->dapm.bias_level) {
++		case SND_SOC_BIAS_STANDBY:
++			if (!IS_ERR(wm8960->mclk)) {
++				ret = clk_prepare_enable(wm8960->mclk);
++				if (ret) {
++					dev_err(codec->dev,
++						"Failed to enable MCLK: %d\n",
++						ret);
++					return ret;
++				}
++			}
++
++			/* Set VMID to 2x50k */
++			snd_soc_update_bits(codec, WM8960_POWER1, 0x180, 0x80);
++			break;
++
++		case SND_SOC_BIAS_ON:
++			if (!IS_ERR(wm8960->mclk))
++				clk_disable_unprepare(wm8960->mclk);
++			break;
++
++		default:
++			break;
++		}
++
+ 		break;
  
--	if (!remap_ops || !remap_ops->enable_faulting)
-+	if (!remap_ops->enable_faulting)
- 		return -ENODEV;
- 
- 	return remap_ops->enable_faulting();
-@@ -265,7 +259,7 @@ int setup_ioapic_remapped_entry(int irq,
- 				unsigned int destination, int vector,
- 				struct io_apic_irq_attr *attr)
+ 	case SND_SOC_BIAS_STANDBY:
+@@ -674,7 +700,7 @@ static int wm8960_set_bias_level_capless(struct snd_soc_codec *codec,
+ 					 enum snd_soc_bias_level level)
  {
--	if (!remap_ops || !remap_ops->setup_ioapic_entry)
-+	if (!remap_ops->setup_ioapic_entry)
- 		return -ENODEV;
+ 	struct wm8960_priv *wm8960 = snd_soc_codec_get_drvdata(codec);
+-	int reg;
++	int reg, ret;
  
- 	return remap_ops->setup_ioapic_entry(irq, entry, destination,
-@@ -275,8 +269,7 @@ int setup_ioapic_remapped_entry(int irq,
- static int set_remapped_irq_affinity(struct irq_data *data,
- 				     const struct cpumask *mask, bool force)
- {
--	if (!config_enabled(CONFIG_SMP) || !remap_ops ||
--	    !remap_ops->set_affinity)
-+	if (!config_enabled(CONFIG_SMP) || !remap_ops->set_affinity)
- 		return 0;
+ 	switch (level) {
+ 	case SND_SOC_BIAS_ON:
+@@ -715,9 +741,22 @@ static int wm8960_set_bias_level_capless(struct snd_soc_codec *codec,
+ 					    WM8960_VREF, WM8960_VREF);
  
- 	return remap_ops->set_affinity(data, mask, force);
-@@ -286,10 +279,7 @@ void free_remapped_irq(int irq)
- {
- 	struct irq_cfg *cfg = irq_cfg(irq);
+ 			msleep(100);
++
++			if (!IS_ERR(wm8960->mclk)) {
++				ret = clk_prepare_enable(wm8960->mclk);
++				if (ret) {
++					dev_err(codec->dev,
++						"Failed to enable MCLK: %d\n",
++						ret);
++					return ret;
++				}
++			}
+ 			break;
  
--	if (!remap_ops || !remap_ops->free_irq)
--		return;
--
--	if (irq_remapped(cfg))
-+	if (irq_remapped(cfg) && remap_ops->free_irq)
- 		remap_ops->free_irq(irq);
- }
+ 		case SND_SOC_BIAS_ON:
++			if (!IS_ERR(wm8960->mclk))
++				clk_disable_unprepare(wm8960->mclk);
++
+ 			/* Enable anti-pop mode */
+ 			snd_soc_update_bits(codec, WM8960_APOP1,
+ 					    WM8960_POBCTRL | WM8960_SOFT_ST |
+@@ -1002,6 +1041,12 @@ static int wm8960_i2c_probe(struct i2c_client *i2c,
+ 	if (wm8960 == NULL)
+ 		return -ENOMEM;
  
-@@ -301,13 +291,13 @@ void compose_remapped_msi_msg(struct pci_dev *pdev,
- 
- 	if (!irq_remapped(cfg))
- 		native_compose_msi_msg(pdev, irq, dest, msg, hpet_id);
--	else if (remap_ops && remap_ops->compose_msi_msg)
-+	else if (remap_ops->compose_msi_msg)
- 		remap_ops->compose_msi_msg(pdev, irq, dest, msg, hpet_id);
- }
- 
- static int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec)
- {
--	if (!remap_ops || !remap_ops->msi_alloc_irq)
-+	if (!remap_ops->msi_alloc_irq)
- 		return -ENODEV;
- 
- 	return remap_ops->msi_alloc_irq(pdev, irq, nvec);
-@@ -316,7 +306,7 @@ static int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec)
- static int msi_setup_remapped_irq(struct pci_dev *pdev, unsigned int irq,
- 				  int index, int sub_handle)
- {
--	if (!remap_ops || !remap_ops->msi_setup_irq)
-+	if (!remap_ops->msi_setup_irq)
- 		return -ENODEV;
- 
- 	return remap_ops->msi_setup_irq(pdev, irq, index, sub_handle);
-@@ -326,7 +316,7 @@ int setup_hpet_msi_remapped(unsigned int irq, unsigned int id)
- {
- 	int ret;
- 
--	if (!remap_ops || !remap_ops->alloc_hpet_msi)
-+	if (!remap_ops->alloc_hpet_msi)
- 		return -ENODEV;
- 
- 	ret = remap_ops->alloc_hpet_msi(irq, id);
++	wm8960->mclk = devm_clk_get(&i2c->dev, "mclk");
++	if (IS_ERR(wm8960->mclk)) {
++		if (PTR_ERR(wm8960->mclk) == -EPROBE_DEFER)
++			return -EPROBE_DEFER;
++	}
++
+ 	wm8960->regmap = devm_regmap_init_i2c(i2c, &wm8960_regmap);
+ 	if (IS_ERR(wm8960->regmap))
+ 		return PTR_ERR(wm8960->regmap);
 -- 
-1.7.10.4
+1.9.1
 
