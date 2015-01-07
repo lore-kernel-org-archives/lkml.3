@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932733AbbAGBwa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 20:52:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46417 "EHLO
+	id S1757153AbbAGCAh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:00:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46230 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932558AbbAGBwU (ORCPT
+	with ESMTP id S1757037AbbAGBwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:52:20 -0500
+	Tue, 6 Jan 2015 20:52:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Willy Tarreau <w@1wt.eu>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.10 02/38] x86/tls: Validate TLS entries to protect espfix
+        Jan Kara <jack@suse.cz>, Petr Vandrovec <petr@vandrovec.name>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.18 71/84] ncpfs: return proper error from NCP_IOC_SETROOT ioctl
 Date: Tue,  6 Jan 2015 17:50:14 -0800
-Message-Id: <20150107014952.866254269@linuxfoundation.org>
+Message-Id: <20150107014031.276335802@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
-In-Reply-To: <20150107014952.440109372@linuxfoundation.org>
-References: <20150107014952.440109372@linuxfoundation.org>
+In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
+References: <20150107014029.012974975@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -28,81 +26,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Jan Kara <jack@suse.cz>
 
-commit 41bdc78544b8a93a9c6814b8bbbfef966272abbe upstream.
+commit a682e9c28cac152e6e54c39efcf046e0c8cfcf63 upstream.
 
-Installing a 16-bit RW data segment into the GDT defeats espfix.
-AFAICT this will not affect glibc, Wine, or dosemu at all.
+If some error happens in NCP_IOC_SETROOT ioctl, the appropriate error
+return value is then (in most cases) just overwritten before we return.
+This can result in reporting success to userspace although error happened.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Acked-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Willy Tarreau <w@1wt.eu>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+This bug was introduced by commit 2e54eb96e2c8 ("BKL: Remove BKL from
+ncpfs").  Propagate the errors correctly.
+
+Coverity id: 1226925.
+
+Fixes: 2e54eb96e2c80 ("BKL: Remove BKL from ncpfs")
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Petr Vandrovec <petr@vandrovec.name>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/tls.c |   23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+ fs/ncpfs/ioctl.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/arch/x86/kernel/tls.c
-+++ b/arch/x86/kernel/tls.c
-@@ -27,6 +27,21 @@ static int get_free_idx(void)
- 	return -ESRCH;
- }
+--- a/fs/ncpfs/ioctl.c
++++ b/fs/ncpfs/ioctl.c
+@@ -447,7 +447,6 @@ static long __ncp_ioctl(struct inode *in
+ 						result = -EIO;
+ 					}
+ 				}
+-				result = 0;
+ 			}
+ 			mutex_unlock(&server->root_setup_lock);
  
-+static bool tls_desc_okay(const struct user_desc *info)
-+{
-+	if (LDT_empty(info))
-+		return true;
-+
-+	/*
-+	 * espfix is required for 16-bit data segments, but espfix
-+	 * only works for LDT segments.
-+	 */
-+	if (!info->seg_32bit)
-+		return false;
-+
-+	return true;
-+}
-+
- static void set_tls_desc(struct task_struct *p, int idx,
- 			 const struct user_desc *info, int n)
- {
-@@ -66,6 +81,9 @@ int do_set_thread_area(struct task_struc
- 	if (copy_from_user(&info, u_info, sizeof(info)))
- 		return -EFAULT;
- 
-+	if (!tls_desc_okay(&info))
-+		return -EINVAL;
-+
- 	if (idx == -1)
- 		idx = info.entry_number;
- 
-@@ -192,6 +210,7 @@ int regset_tls_set(struct task_struct *t
- {
- 	struct user_desc infobuf[GDT_ENTRY_TLS_ENTRIES];
- 	const struct user_desc *info;
-+	int i;
- 
- 	if (pos >= GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
- 	    (pos % sizeof(struct user_desc)) != 0 ||
-@@ -205,6 +224,10 @@ int regset_tls_set(struct task_struct *t
- 	else
- 		info = infobuf;
- 
-+	for (i = 0; i < count / sizeof(struct user_desc); i++)
-+		if (!tls_desc_okay(info + i))
-+			return -EINVAL;
-+
- 	set_tls_desc(target,
- 		     GDT_ENTRY_TLS_MIN + (pos / sizeof(struct user_desc)),
- 		     info, count / sizeof(struct user_desc));
 
 
