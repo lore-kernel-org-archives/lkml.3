@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721AbbAGMPe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 07:15:34 -0500
-Received: from h1.radempa.de ([176.9.142.194]:52614 "EHLO mail.cosmopool.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751783AbbAGMPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 07:15:32 -0500
-From: Harald Geyer <harald@ccbib.org>
-To: Jonathan Cameron <jic23@kernel.org>
-cc: Richard Weinberger <richard@nod.at>, knaack.h@gmx.de, lars@metafoo.de,
-        pmeerw@pmeerw.net, sanjeev_sharma@mentor.com,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv2 1/3,RESEND] iio: dht11: Fix out-of-bounds read
-In-reply-to: <54AA97B9.7040703@nod.at>
-References: <1417563176-31972-1-git-send-email-richard@nod.at> <54A53FBF.5000003@kernel.org> <7e4f6a70e48afe96457ebbcf07572224@imap.cosmopool.net> <54A680F8.30209@nod.at> <54A91DA1.6080107@kernel.org> <E1Y881p-0001Fp-NX@stardust.g4.wien.funkfeuer.at> <54AA97B9.7040703@nod.at>
-Comments: In-reply-to Richard Weinberger <richard@nod.at>
-   message dated "Mon, 05 Jan 2015 14:55:05 +0100."
+	id S1752763AbbAGMQX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 07:16:23 -0500
+Received: from casper.infradead.org ([85.118.1.10]:33615 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038AbbAGMQW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 07:16:22 -0500
+Date: Wed, 7 Jan 2015 13:16:17 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Kanaka Juvva <kanaka.d.juvva@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v4 10/11] perf/x86/intel: Perform rotation on Intel CQM
+ RMIDs
+Message-ID: <20150107121617.GF25325@worktop.programming.kicks-ass.net>
+References: <1415999712-5850-1-git-send-email-matt@console-pimps.org>
+ <1415999712-5850-11-git-send-email-matt@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <4008.1420632922.1@stardust.g4.wien.funkfeuer.at>
-Date: Wed, 07 Jan 2015 13:15:22 +0100
-Message-Id: <E1Y8pWE-00012g-Ec@stardust.g4.wien.funkfeuer.at>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415999712-5850-11-git-send-email-matt@console-pimps.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As we access i-1 we must not start with i=0.
+On Fri, Nov 14, 2014 at 09:15:11PM +0000, Matt Fleming wrote:
+ +	/*
+> +	 * A reasonable upper limit on the max threshold is the number
+> +	 * of lines tagged per RMID if all RMIDs have the same number of
+> +	 * lines tagged in the LLC.
+> +	 *
+> +	 * For a 35MB LLC and 56 RMIDs, this is ~1.8% of the LLC.
+> +	 */
+> +	__intel_cqm_max_threshold =
+> +		boot_cpu_data.x86_cache_size * 1024 / (cqm_max_rmid + 1);
 
-From: Richard Weinberger <richard@nod.at>
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Acked-by: Hartmut Knaack <knaack.h@gmx.de>
-Acked-by: Harald Geyer <harald@ccbib.org>
-Reviewed-by: Sanjeev Sharma <sanjeev_sharma@mentor.com>
----
-Resending again to get the metadata right.
-No Signed-off-by from me, because I didn't contribute anything.
-No changes since v1 except reordering.
+Seeing how a percentage is without unit, the 35MB figure seems
+pointless.
 
- drivers/iio/humidity/dht11.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Also, why would a flat distribution be a good measure for 'empty'? I
+would think that would in fact constitute in use.
 
-diff --git a/drivers/iio/humidity/dht11.c b/drivers/iio/humidity/dht11.c
-index 623c145..f546eca 100644
---- a/drivers/iio/humidity/dht11.c
-+++ b/drivers/iio/humidity/dht11.c
-@@ -88,7 +88,7 @@ static int dht11_decode(struct dht11 *dht11, int offset)
- 	unsigned char temp_int, temp_dec, hum_int, hum_dec, checksum;
- 
- 	/* Calculate timestamp resolution */
--	for (i = 0; i < dht11->num_edges; ++i) {
-+	for (i = 1; i < dht11->num_edges; ++i) {
- 		t = dht11->edges[i].ts - dht11->edges[i-1].ts;
- 		if (t > 0 && t < timeres)
- 			timeres = t;
--- 
-1.7.2.5
-
+Should we make this 1/16th of this figure or any other random fraction <
+1 ?
