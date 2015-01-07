@@ -1,119 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753033AbbAGOw1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 09:52:27 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:51385 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784AbbAGOwZ (ORCPT
+	id S1753034AbbAGO5l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 09:57:41 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35621 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752104AbbAGO5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 09:52:25 -0500
-Date: Wed, 7 Jan 2015 09:50:50 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Jan Beulich <JBeulich@suse.com>, David Rientjes <rientjes@google.com>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Richard Weinberger <richard@nod.at>, Oren Twaig <oren@scalemp.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Prarit Bhargava <prarit@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Ingo Molnar <mingo@kernel.org>, xen-devel@lists.xenproject.org
-Subject: Re: [Bugfix] x86/apic: Fix xen IRQ allocation failure caused by
- commit b81975eade8c
-Message-ID: <20150107145050.GC30457@l.oracle.com>
-References: <1420611244-25624-1-git-send-email-jiang.liu@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420611244-25624-1-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 7 Jan 2015 09:57:40 -0500
+From: Mark Rutland <mark.rutland@arm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Rutland <mark.rutland@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: [PATCH] perf: drop module reference on event init failure
+Date: Wed,  7 Jan 2015 14:56:51 +0000
+Message-Id: <1420642611-22667-1-git-send-email-mark.rutland@arm.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 02:13:49PM +0800, Jiang Liu wrote:
-> Commit b81975eade8c ("x86, irq: Clean up irqdomain transition code")
-> breaks xen IRQ allocation because xen_smp_prepare_cpus() doesn't invoke
-> setup_IO_APIC(), so no irqdomains created for IOAPICs and
-> mp_map_pin_to_irq() fails at the very beginning.
-> --- a/arch/x86/kernel/apic/io_apic.c
-> +++ b/arch/x86/kernel/apic/io_apic.c
-> @@ -2369,31 +2369,29 @@ static void ioapic_destroy_irqdomain(int idx)
->  	ioapics[idx].pin_info = NULL;
->  }
->  
-> -void __init setup_IO_APIC(void)
-> +void __init setup_IO_APIC(bool xen_smp)
->  {
->  	int ioapic;
->  
-> -	/*
-> -	 * calling enable_IO_APIC() is moved to setup_local_APIC for BP
-> -	 */
-> -	io_apic_irqs = nr_legacy_irqs() ? ~PIC_IRQS : ~0UL;
-> +	if (!xen_smp) {
-> +		apic_printk(APIC_VERBOSE, "ENABLING IO-APIC IRQs\n");
-> +		io_apic_irqs = nr_legacy_irqs() ? ~PIC_IRQS : ~0UL;
-> +
-> +		/* Set up IO-APIC IRQ routing. */
-> +		x86_init.mpparse.setup_ioapic_ids();
-> +		sync_Arb_IDs();
-> +	}
+When initialising an event, perf_init_event will call try_module_get to
+ensure that the PMU's module cannot be removed for the lifetime of the
+event, with __free_event dropping the reference when the event is
+finally destroyed. If something fails after the event has been
+initialised, but before the event is installed, perf_event_alloc will
+drop the reference on the module.
 
+However, if we fail to initialise an event for some reason (e.g. we ask
+an uncore PMU to perform sampling, and it refuses to initialise the
+event), we do not drop the refcount. If we try to open such a bogus
+event without a precise IDR type, we will loop over each PMU in the pmus
+list, incrementing each of their refcounts without decrementing them.
 
-Is there a specific reason that this cannot run in all cases?
+This patch adds a module_put when pmu->event_init(event) fails, ensuring
+that the refcounts are balanced in failure cases. As the innards of the
+precise and search based initialisation look very similar, this logic is
+hoisted out into a new helper function. While the early return for the
+failed try_module_get is removed from the search case, this is handled
+by the remaining return when ret is not -ENOENT.
 
-What I am asking is why are we doing a special case here? The description
-at the top implied that we were just missing an call to
-setup_IO_APIC.. 
+Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+---
+ kernel/events/core.c | 28 ++++++++++++++++------------
+ 1 file changed, 16 insertions(+), 12 deletions(-)
 
->  
-> -	apic_printk(APIC_VERBOSE, "ENABLING IO-APIC IRQs\n");
->  	for_each_ioapic(ioapic)
->  		BUG_ON(mp_irqdomain_create(ioapic));
-> -
-> -	/*
-> -         * Set up IO-APIC IRQ routing.
-> -         */
-> -	x86_init.mpparse.setup_ioapic_ids();
-> -
-> -	sync_Arb_IDs();
->  	setup_IO_APIC_irqs();
-> -	init_IO_APIC_traps();
-> -	if (nr_legacy_irqs())
-> -		check_timer();
-> -
->  	ioapic_initialized = 1;
-> +
-> +	if (!xen_smp) {
-> +		init_IO_APIC_traps();
-> +		if (nr_legacy_irqs())
-> +			check_timer();
-> +	}
->  }
->  
->  /*
-> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-> index 4c071aeb8417..7eb0283901fa 100644
-> --- a/arch/x86/xen/smp.c
-> +++ b/arch/x86/xen/smp.c
-> @@ -326,7 +326,10 @@ static void __init xen_smp_prepare_cpus(unsigned int max_cpus)
->  
->  		xen_raw_printk(m);
->  		panic(m);
-> +	} else {
-> +		setup_IO_APIC(true);
->  	}
-> +
->  	xen_init_lock_cpu(0);
->  
->  	smp_store_boot_cpu_info();
-> -- 
-> 1.7.10.4
-> 
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 4c1ee7f..4faccf3 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6857,6 +6857,20 @@ void perf_pmu_unregister(struct pmu *pmu)
+ }
+ EXPORT_SYMBOL_GPL(perf_pmu_unregister);
+ 
++static int perf_try_init_event(struct pmu *pmu, struct perf_event *event)
++{
++	int ret;
++
++	if (!try_module_get(pmu->module))
++		return -ENODEV;
++	event->pmu = pmu;
++	ret = pmu->event_init(event);
++	if (ret)
++		module_put(pmu->module);
++
++	return ret;
++}
++
+ struct pmu *perf_init_event(struct perf_event *event)
+ {
+ 	struct pmu *pmu = NULL;
+@@ -6869,24 +6883,14 @@ struct pmu *perf_init_event(struct perf_event *event)
+ 	pmu = idr_find(&pmu_idr, event->attr.type);
+ 	rcu_read_unlock();
+ 	if (pmu) {
+-		if (!try_module_get(pmu->module)) {
+-			pmu = ERR_PTR(-ENODEV);
+-			goto unlock;
+-		}
+-		event->pmu = pmu;
+-		ret = pmu->event_init(event);
++		ret = perf_try_init_event(pmu, event);
+ 		if (ret)
+ 			pmu = ERR_PTR(ret);
+ 		goto unlock;
+ 	}
+ 
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+-		if (!try_module_get(pmu->module)) {
+-			pmu = ERR_PTR(-ENODEV);
+-			goto unlock;
+-		}
+-		event->pmu = pmu;
+-		ret = pmu->event_init(event);
++		ret = perf_try_init_event(pmu, event);
+ 		if (!ret)
+ 			goto unlock;
+ 
+-- 
+1.9.1
+
