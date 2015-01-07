@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754819AbbAGRYS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 12:24:18 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:47440 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754539AbbAGRVK (ORCPT
+	id S1754631AbbAGRVQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 12:21:16 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:44744 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754494AbbAGRVJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 12:21:10 -0500
+	Wed, 7 Jan 2015 12:21:09 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,262 +14,81 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 06/10] tiny_rcu: Directly force QS when call_rcu_[bh|sched]() on idle_task
-Date: Wed,  7 Jan 2015 09:20:53 -0800
-Message-Id: <1420651257-553-6-git-send-email-paulmck@linux.vnet.ibm.com>
+        bobby.prani@gmail.com, Ying Xue <ying.xue@windriver.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 07/10] rculist: Fix sparse warning
+Date: Wed,  7 Jan 2015 09:20:54 -0800
+Message-Id: <1420651257-553-7-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1420651257-553-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20150107172030.GA31571@linux.vnet.ibm.com>
  <1420651257-553-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15010717-8236-0000-0000-00000869E0DA
+x-cbid: 15010717-0025-0000-0000-00000791AF0E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+From: Ying Xue <ying.xue@windriver.com>
 
-For RCU in UP, context-switch = QS = GP, thus we can force a
-context-switch when any call_rcu_[bh|sched]() is happened on idle_task.
-After doing so, rcu_idle/irq_enter/exit() are useless, so we can simply
-make these functions empty.
+This fixes the following sparse warnings:
 
-More important, this change does not change the functionality logically.
-Note: raise_softirq(RCU_SOFTIRQ)/rcu_sched_qs() in rcu_idle_enter() and
-outmost rcu_irq_exit() will have to wake up the ksoftirqd
-(due to in_interrupt() == 0).
+make C=1 CF=-D__CHECK_ENDIAN__ net/ipv6/addrconf.o
+net/ipv6/addrconf.c:3495:9: error: incompatible types in comparison expression (different address spaces)
+net/ipv6/addrconf.c:3495:9: error: incompatible types in comparison expression (different address spaces)
+net/ipv6/addrconf.c:3495:9: error: incompatible types in comparison expression (different address spaces)
+net/ipv6/addrconf.c:3495:9: error: incompatible types in comparison expression (different address spaces)
 
-Before this patch		After this patch:
-call_rcu_sched() in idle;	call_rcu_sched() in idle
-				  set resched
-do other stuffs;		do other stuffs
-outmost rcu_irq_exit()		outmost rcu_irq_exit() (empty function)
-  (or rcu_idle_enter())		  (or rcu_idle_enter(), also empty function)
-				start to resched. (see above)
-  rcu_sched_qs()		rcu_sched_qs()
-    QS,and GP and advance cb	  QS,and GP and advance cb
-    wake up the ksoftirqd	    wake up the ksoftirqd
-      set resched
-resched to ksoftirqd (or other)	resched to ksoftirqd (or other)
+To silence these spare complaints, an RCU annotation should be added to
+"next" pointer of hlist_node structure through hlist_next_rcu() macro
+when iterating over a hlist with hlist_for_each_entry_continue_rcu_bh().
 
-These two code patches are almost the same.
+By the way, this commit also resolves the same error appearing in
+hlist_for_each_entry_continue_rcu().
 
-Size changed after patched:
-
-size kernel/rcu/tiny-old.o kernel/rcu/tiny-patched.o
-   text	   data	    bss	    dec	    hex	filename
-   3449	    206	      8	   3663	    e4f	kernel/rcu/tiny-old.o
-   2406	    144	      8	   2558	    9fe	kernel/rcu/tiny-patched.o
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Ying Xue <ying.xue@windriver.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcu/rcu.h         |  6 +++
- kernel/rcu/tiny.c        | 99 ++++--------------------------------------------
- kernel/rcu/tiny_plugin.h |  2 +-
- kernel/rcu/tree.c        |  6 ---
- 4 files changed, 14 insertions(+), 99 deletions(-)
+ include/linux/rculist.h | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/rcu/rcu.h b/kernel/rcu/rcu.h
-index 07bb02eda844..80adef7d4c3d 100644
---- a/kernel/rcu/rcu.h
-+++ b/kernel/rcu/rcu.h
-@@ -137,4 +137,10 @@ int rcu_jiffies_till_stall_check(void);
- 
- void rcu_early_boot_tests(void);
- 
-+/*
-+ * This function really isn't for public consumption, but RCU is special in
-+ * that context switches can allow the state machine to make progress.
-+ */
-+extern void resched_cpu(int cpu);
-+
- #endif /* __LINUX_RCU_H */
-diff --git a/kernel/rcu/tiny.c b/kernel/rcu/tiny.c
-index 805b6d59c854..85287ec054fd 100644
---- a/kernel/rcu/tiny.c
-+++ b/kernel/rcu/tiny.c
-@@ -47,54 +47,14 @@ static void __call_rcu(struct rcu_head *head,
- 		       void (*func)(struct rcu_head *rcu),
- 		       struct rcu_ctrlblk *rcp);
- 
--static long long rcu_dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
--
- #include "tiny_plugin.h"
- 
--/* Common code for rcu_idle_enter() and rcu_irq_exit(), see kernel/rcu/tree.c. */
--static void rcu_idle_enter_common(long long newval)
--{
--	if (newval) {
--		RCU_TRACE(trace_rcu_dyntick(TPS("--="),
--					    rcu_dynticks_nesting, newval));
--		rcu_dynticks_nesting = newval;
--		return;
--	}
--	RCU_TRACE(trace_rcu_dyntick(TPS("Start"),
--				    rcu_dynticks_nesting, newval));
--	if (IS_ENABLED(CONFIG_RCU_TRACE) && !is_idle_task(current)) {
--		struct task_struct *idle __maybe_unused = idle_task(smp_processor_id());
--
--		RCU_TRACE(trace_rcu_dyntick(TPS("Entry error: not idle task"),
--					    rcu_dynticks_nesting, newval));
--		ftrace_dump(DUMP_ALL);
--		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
--			  current->pid, current->comm,
--			  idle->pid, idle->comm); /* must be idle task! */
--	}
--	rcu_sched_qs(); /* implies rcu_bh_inc() */
--	barrier();
--	rcu_dynticks_nesting = newval;
--}
--
- /*
-  * Enter idle, which is an extended quiescent state if we have fully
-- * entered that mode (i.e., if the new value of dynticks_nesting is zero).
-+ * entered that mode.
+diff --git a/include/linux/rculist.h b/include/linux/rculist.h
+index 529bc946f450..a18b16f1dc0e 100644
+--- a/include/linux/rculist.h
++++ b/include/linux/rculist.h
+@@ -524,11 +524,11 @@ static inline void hlist_add_behind_rcu(struct hlist_node *n,
+  * @member:	the name of the hlist_node within the struct.
   */
- void rcu_idle_enter(void)
- {
--	unsigned long flags;
--	long long newval;
--
--	local_irq_save(flags);
--	WARN_ON_ONCE((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) == 0);
--	if ((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) ==
--	    DYNTICK_TASK_NEST_VALUE)
--		newval = 0;
--	else
--		newval = rcu_dynticks_nesting - DYNTICK_TASK_NEST_VALUE;
--	rcu_idle_enter_common(newval);
--	local_irq_restore(flags);
- }
- EXPORT_SYMBOL_GPL(rcu_idle_enter);
+ #define hlist_for_each_entry_continue_rcu(pos, member)			\
+-	for (pos = hlist_entry_safe(rcu_dereference((pos)->member.next),\
+-			typeof(*(pos)), member);			\
++	for (pos = hlist_entry_safe(rcu_dereference_raw(hlist_next_rcu( \
++			&(pos)->member)), typeof(*(pos)), member);	\
+ 	     pos;							\
+-	     pos = hlist_entry_safe(rcu_dereference((pos)->member.next),\
+-			typeof(*(pos)), member))
++	     pos = hlist_entry_safe(rcu_dereference_raw(hlist_next_rcu(	\
++			&(pos)->member)), typeof(*(pos)), member))
  
-@@ -103,55 +63,14 @@ EXPORT_SYMBOL_GPL(rcu_idle_enter);
+ /**
+  * hlist_for_each_entry_continue_rcu_bh - iterate over a hlist continuing after current point
+@@ -536,11 +536,11 @@ static inline void hlist_add_behind_rcu(struct hlist_node *n,
+  * @member:	the name of the hlist_node within the struct.
   */
- void rcu_irq_exit(void)
- {
--	unsigned long flags;
--	long long newval;
--
--	local_irq_save(flags);
--	newval = rcu_dynticks_nesting - 1;
--	WARN_ON_ONCE(newval < 0);
--	rcu_idle_enter_common(newval);
--	local_irq_restore(flags);
- }
- EXPORT_SYMBOL_GPL(rcu_irq_exit);
+ #define hlist_for_each_entry_continue_rcu_bh(pos, member)		\
+-	for (pos = hlist_entry_safe(rcu_dereference_bh((pos)->member.next),\
+-			typeof(*(pos)), member);			\
++	for (pos = hlist_entry_safe(rcu_dereference_bh(hlist_next_rcu(  \
++			&(pos)->member)), typeof(*(pos)), member);	\
+ 	     pos;							\
+-	     pos = hlist_entry_safe(rcu_dereference_bh((pos)->member.next),\
+-			typeof(*(pos)), member))
++	     pos = hlist_entry_safe(rcu_dereference_bh(hlist_next_rcu(	\
++			&(pos)->member)), typeof(*(pos)), member))
  
--/* Common code for rcu_idle_exit() and rcu_irq_enter(), see kernel/rcu/tree.c. */
--static void rcu_idle_exit_common(long long oldval)
--{
--	if (oldval) {
--		RCU_TRACE(trace_rcu_dyntick(TPS("++="),
--					    oldval, rcu_dynticks_nesting));
--		return;
--	}
--	RCU_TRACE(trace_rcu_dyntick(TPS("End"), oldval, rcu_dynticks_nesting));
--	if (IS_ENABLED(CONFIG_RCU_TRACE) && !is_idle_task(current)) {
--		struct task_struct *idle __maybe_unused = idle_task(smp_processor_id());
--
--		RCU_TRACE(trace_rcu_dyntick(TPS("Exit error: not idle task"),
--			  oldval, rcu_dynticks_nesting));
--		ftrace_dump(DUMP_ALL);
--		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
--			  current->pid, current->comm,
--			  idle->pid, idle->comm); /* must be idle task! */
--	}
--}
--
- /*
-  * Exit idle, so that we are no longer in an extended quiescent state.
-  */
- void rcu_idle_exit(void)
- {
--	unsigned long flags;
--	long long oldval;
--
--	local_irq_save(flags);
--	oldval = rcu_dynticks_nesting;
--	WARN_ON_ONCE(rcu_dynticks_nesting < 0);
--	if (rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK)
--		rcu_dynticks_nesting += DYNTICK_TASK_NEST_VALUE;
--	else
--		rcu_dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
--	rcu_idle_exit_common(oldval);
--	local_irq_restore(flags);
- }
- EXPORT_SYMBOL_GPL(rcu_idle_exit);
- 
-@@ -160,15 +79,6 @@ EXPORT_SYMBOL_GPL(rcu_idle_exit);
-  */
- void rcu_irq_enter(void)
- {
--	unsigned long flags;
--	long long oldval;
--
--	local_irq_save(flags);
--	oldval = rcu_dynticks_nesting;
--	rcu_dynticks_nesting++;
--	WARN_ON_ONCE(rcu_dynticks_nesting == 0);
--	rcu_idle_exit_common(oldval);
--	local_irq_restore(flags);
- }
- EXPORT_SYMBOL_GPL(rcu_irq_enter);
- 
-@@ -179,7 +89,7 @@ EXPORT_SYMBOL_GPL(rcu_irq_enter);
-  */
- bool notrace __rcu_is_watching(void)
- {
--	return rcu_dynticks_nesting;
-+	return true;
- }
- EXPORT_SYMBOL(__rcu_is_watching);
- 
-@@ -347,6 +257,11 @@ static void __call_rcu(struct rcu_head *head,
- 	rcp->curtail = &head->next;
- 	RCU_TRACE(rcp->qlen++);
- 	local_irq_restore(flags);
-+
-+	if (unlikely(is_idle_task(current))) {
-+		/* force scheduling for rcu_sched_qs() */
-+		resched_cpu(0);
-+	}
- }
- 
- /*
-diff --git a/kernel/rcu/tiny_plugin.h b/kernel/rcu/tiny_plugin.h
-index 858c56569127..b5fc5e5fc85d 100644
---- a/kernel/rcu/tiny_plugin.h
-+++ b/kernel/rcu/tiny_plugin.h
-@@ -147,7 +147,7 @@ static void check_cpu_stall(struct rcu_ctrlblk *rcp)
- 	js = ACCESS_ONCE(rcp->jiffies_stall);
- 	if (*rcp->curtail && ULONG_CMP_GE(j, js)) {
- 		pr_err("INFO: %s stall on CPU (%lu ticks this GP) idle=%llx (t=%lu jiffies q=%ld)\n",
--		       rcp->name, rcp->ticks_this_gp, rcu_dynticks_nesting,
-+		       rcp->name, rcp->ticks_this_gp, DYNTICK_TASK_EXIT_IDLE,
- 		       jiffies - rcp->gp_start, rcp->qlen);
- 		dump_stack();
- 	}
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index 9c25b99e2c33..203b50d7ecbd 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -935,12 +935,6 @@ static int dyntick_save_progress_counter(struct rcu_data *rdp,
- }
- 
- /*
-- * This function really isn't for public consumption, but RCU is special in
-- * that context switches can allow the state machine to make progress.
-- */
--extern void resched_cpu(int cpu);
--
--/*
-  * Return true if the specified CPU has passed through a quiescent
-  * state by virtue of being in or having passed through an dynticks
-  * idle state since the last call to dyntick_save_progress_counter()
+ /**
+  * hlist_for_each_entry_from_rcu - iterate over a hlist continuing from current point
 -- 
 1.8.1.5
 
