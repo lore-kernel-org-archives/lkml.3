@@ -1,97 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933348AbbAGC7d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:59:33 -0500
-Received: from mail-yh0-f48.google.com ([209.85.213.48]:53623 "EHLO
-	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758525AbbAGC7K (ORCPT
+	id S1758610AbbAGDAt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 22:00:49 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:42219 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752978AbbAGDAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:59:10 -0500
-From: Walter Lozano <walter@vanguardiasur.com.ar>
-To: michael.hennerich@analog.com, dmitry.torokhov@gmail.com,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        devicetree@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Walter Lozano <walter@vanguardiasur.com.ar>
-Subject: [PATCH 2/2] Input: adxl34x - add device tree documentation
-Date: Tue,  6 Jan 2015 23:58:57 -0300
-Message-Id: <1420599537-28740-2-git-send-email-walter@vanguardiasur.com.ar>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1420599537-28740-1-git-send-email-walter@vanguardiasur.com.ar>
-References: <1420599537-28740-1-git-send-email-walter@vanguardiasur.com.ar>
+	Tue, 6 Jan 2015 22:00:46 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/+B6NucFBmoXB6epHSYacqjzwpIfZZQZE=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 593B963F106
+Date: Tue, 6 Jan 2015 22:00:29 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter =?iso-8859-1?Q?K=FCmmel?= <syntheticpp@gmx.net>,
+        Pavel Machek <pavel@ucw.cz>, Santosh Shilimkar <ssantosh@kernel.org>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH v2] irqchip: omap-intc: fix legacy DMA regression
+Message-ID: <20150107030029.GE24989@titan.lakedaemon.net>
+References: <1420563093-26026-1-git-send-email-balbi@ti.com>
+ <1420576688-10604-1-git-send-email-balbi@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420576688-10604-1-git-send-email-balbi@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a basic documentation regarding the device tree
-bindings of adxl34x digital accelerometer.
+On Tue, Jan 06, 2015 at 02:38:08PM -0600, Felipe Balbi wrote:
+> commit 55601c9f2467 (arm: omap: intc: switch over
+> to linear irq domain) introduced a regression with
+> SDMA legacy driver because that driver strictly depends
+> on INTC's IRQs starting at NR_IRQs. Aparently
+> irq_domain_add_linear() won't guarantee that, since we see
+> a 7 IRQs difference when booting with and without the
+> commit cited above.
+> 
+> Until arch/arm/plat-omap/dma.c is properly fixed, we
+> must maintain OMAP2/3 using irq_domain_add_legacy().
+> 
+> A FIXME note was added so people know to delete that
+> code once that legacy DMA driver is fixed up.
+> 
+> Fixes: 55601c9f2467 (arm: omap: intc: switch over to linear irq domain)
+> Cc: <stable@vger.kernel.org> # v3.18
+> Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+> Tested-by: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> ---
+>  drivers/irqchip/irq-omap-intc.c | 26 +++++++++++++++++++++-----
+>  1 file changed, 21 insertions(+), 5 deletions(-)
 
-Signed-off-by: Walter Lozano <walter@vanguardiasur.com.ar>
----
- .../devicetree/bindings/input/adxl34x.txt          |   53 ++++++++++++++++++++
- 1 file changed, 53 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/input/adxl34x.txt
+Applied to irqchip/urgent.  Thanks for taking care of the Fixes and
+stable tags!
 
-diff --git a/Documentation/devicetree/bindings/input/adxl34x.txt b/Documentation/devicetree/bindings/input/adxl34x.txt
-new file mode 100644
-index 0000000..0774f7e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/input/adxl34x.txt
-@@ -0,0 +1,53 @@
-+Device Tree bindings for adxl34x digital accelerometer, both spi and i2c.
-+
-+Depending on the interface this node should be a child of a spi or i2c bus.
-+
-+Required properties:
-+- compatible: "adxl34x"
-+- reg: SPI/I2C device address
-+- interrupt-parent: a phandle for the interrupt controller
-+- interrupts: interrupt to which the chip is connected
-+
-+Optional parameters:
-+Please refer to include/linux/input/adxl34x.h for specific info. If the value
-+is not specified the driver will use its default.
-+
-+- adi,tap-axis-control: u8 default 0
-+- adi,tap-threshold: u8 default 35
-+- adi,tap-duration: u8 default 3
-+- adi,tap-latency: u8 default 20
-+- adi,tap-window: u8 default 20
-+- adi,act-axis-control: u8 default 0xFF
-+- adi,activity-threshold: u8 default 6
-+- adi,inactivity-threshold: u8 default 4
-+- adi,inactivity-time: u8 default 3
-+- adi,free-fall-threshold: u8 default 8
-+- adi,free-fall-time: u8 default 20
-+- adi,data-rate: u8 default 8
-+- adi,data-range: u8 default 4
-+- adi,low-power-mode: u8 defaut 0
-+- adi,power-mode: u8 default 0x30
-+- adi,fifo-mode: u8 default 2
-+- adi,watermark: u8 default 0
-+- adi,use-int2: u8
-+- adi,orientation-enable: u8 default 0
-+- adi,deadzone-angle: u8 default 0
-+- divisor-length: u8 default 0
-+
-+Example
-+
-+&i2c1 {
-+	status = "okay";
-+
-+	accel1: accelerometer@53 {
-+		compatible = "adxl34x";
-+		reg = <0x53>;
-+
-+		interrupt-parent = <&portc>;
-+		interrupts = <3 2>;
-+
-+		adi,inactivity-time = /bits/ 8 <6>;
-+		adi,data-range = /bits/ 8 <1>;
-+	};
-+};
-+
--- 
-1.7.10.4
+thx,
 
+Jason.
