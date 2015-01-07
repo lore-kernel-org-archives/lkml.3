@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753626AbbAGPm5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 10:42:57 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:56520 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752672AbbAGPm4 (ORCPT
+	id S1753671AbbAGPnv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 10:43:51 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:33787 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752908AbbAGPnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 10:42:56 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        kgdb-bugreport@lists.sourceforge.net,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: [RESEND PATCH v3.19-rc2] kdb: Remove stack dump when entering kgdb due to NMI
-Date: Wed,  7 Jan 2015 15:42:32 +0000
-Message-Id: <1420645352-2790-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1405518033-11671-1-git-send-email-daniel.thompson@linaro.org>
-References: <1405518033-11671-1-git-send-email-daniel.thompson@linaro.org>
+	Wed, 7 Jan 2015 10:43:49 -0500
+From: Yaniv Gardi <ygardi@qti.qualcomm.com>
+To: James.Bottomley@HansenPartnership.com, hch@infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, santoshsy@gmail.com,
+        linux-scsi-owner@vger.kernel.org, subhashj@codeaurora.org,
+        ygardi@codeaurora.org, noag@codeaurora.org, draviv@codeaurora.org,
+        Yaniv Gardi <ygardi@qti.qualcomm.com>
+Subject: [PATCH v5 0/4] *** add support for UFS in QCOM platforms ***
+Date: Wed,  7 Jan 2015 17:43:27 +0200
+Message-Id: <1420645411-26222-1-git-send-email-ygardi@qti.qualcomm.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Issuing a stack dump feels ergonomically wrong when entering due to NMI.
+*** BLURB HERE ***
 
-Entering due to NMI is normally a reaction to a user request, either the
-NMI button on a server or a "magic knock" on a UART. Therefore the
-backtrace behaviour on entry due to NMI should be like SysRq-g (no stack
-dump) rather than like oops.
+Yaniv Gardi (4):
+  phy: qcom-ufs: add support for 20nm phy
+  scsi:ufs-qcom: add specific support for Qualcomm platforms
+  phy: qcom-ufs: add support for 14nm phy
+  scsi: ufs-qcom-ice: add Inline Crypto Engine (ICE) support for UFS
 
-Note also that the stack dump does not offer any information that
-cannot be trivial retrieved using the 'bt' command.
+ drivers/phy/Makefile                |    3 +
+ drivers/phy/phy-qcom-ufs-i.h        |  167 ++++++
+ drivers/phy/phy-qcom-ufs-qmp-14nm.c |  201 +++++++
+ drivers/phy/phy-qcom-ufs-qmp-14nm.h |  177 ++++++
+ drivers/phy/phy-qcom-ufs-qmp-20nm.c |  257 +++++++++
+ drivers/phy/phy-qcom-ufs-qmp-20nm.h |  235 ++++++++
+ drivers/phy/phy-qcom-ufs.c          |  745 ++++++++++++++++++++++++
+ drivers/scsi/ufs/Kconfig            |   24 +
+ drivers/scsi/ufs/Makefile           |    2 +
+ drivers/scsi/ufs/ufs-qcom-ice.c     |  520 +++++++++++++++++
+ drivers/scsi/ufs/ufs-qcom-ice.h     |  113 ++++
+ drivers/scsi/ufs/ufs-qcom.c         | 1058 +++++++++++++++++++++++++++++++++++
+ drivers/scsi/ufs/ufs-qcom.h         |  195 +++++++
+ include/linux/phy/phy-qcom-ufs.h    |   33 ++
+ 14 files changed, 3730 insertions(+)
+ create mode 100644 drivers/phy/phy-qcom-ufs-i.h
+ create mode 100644 drivers/phy/phy-qcom-ufs-qmp-14nm.c
+ create mode 100644 drivers/phy/phy-qcom-ufs-qmp-14nm.h
+ create mode 100644 drivers/phy/phy-qcom-ufs-qmp-20nm.c
+ create mode 100644 drivers/phy/phy-qcom-ufs-qmp-20nm.h
+ create mode 100644 drivers/phy/phy-qcom-ufs.c
+ create mode 100644 drivers/scsi/ufs/ufs-qcom-ice.c
+ create mode 100644 drivers/scsi/ufs/ufs-qcom-ice.h
+ create mode 100644 drivers/scsi/ufs/ufs-qcom.c
+ create mode 100644 drivers/scsi/ufs/ufs-qcom.h
+ create mode 100644 include/linux/phy/phy-qcom-ufs.h
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>
----
- kernel/debug/kdb/kdb_main.c | 1 -
- 1 file changed, 1 deletion(-)
+-- 
+1.8.2.1
 
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 379650b984f8..f9ba42363132 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -1207,7 +1207,6 @@ static int kdb_local(kdb_reason_t reason, int error, struct pt_regs *regs,
- 		kdb_printf("due to NonMaskable Interrupt @ "
- 			   kdb_machreg_fmt "\n",
- 			   instruction_pointer(regs));
--		kdb_dumpregs(regs);
- 		break;
- 	case KDB_REASON_SSTEP:
- 	case KDB_REASON_BREAK:
---
-1.9.3
-
+-- 
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
