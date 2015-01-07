@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755697AbbAGXqV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 18:46:21 -0500
-Received: from mailout.micron.com ([137.201.242.129]:50077 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755662AbbAGXqS convert rfc822-to-8bit (ORCPT
+	id S1755750AbbAGXq2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 18:46:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34248 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755705AbbAGXq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 18:46:18 -0500
-From: "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: "axboe@kernel.dk" <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] block: pass correct seed to integrity metadata
- generation function
-Thread-Topic: [PATCH] block: pass correct seed to integrity metadata
- generation function
-Thread-Index: AdAbHdTOKR9VxT2kSG67KJv7w9th2QPtcy25AAAYpIA=
-Date: Wed, 7 Jan 2015 23:46:13 +0000
-Message-ID: <80B89753B40C5141A3E2D53FE7A2A8A994634DCA@NTXBOIMBX02.micron.com>
-References: <54936D1E.3020700@micron.com> <54ADBC6E.50301@micron.com>
-	<yq14ms25g21.fsf@sermon.lab.mkp.net>
-	<80B89753B40C5141A3E2D53FE7A2A8A994634D2A@NTXBOIMBX02.micron.com>
- <yq1r3v640pg.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq1r3v640pg.fsf@sermon.lab.mkp.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [137.201.88.182]
-x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-21230.002
-x-tm-as-result: No--32.176200-0.000000-31
-x-tm-as-user-approved-sender: Yes
-x-tm-as-user-blocked-sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 7 Jan 2015 18:46:26 -0500
+Date: Wed, 7 Jan 2015 15:46:25 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.17 00/73] 3.17.8-stable review
+Message-ID: <20150107234625.GB19926@kroah.com>
+References: <20150107021557.521276020@linuxfoundation.org>
+ <54AD389A.5000808@roeck-us.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54AD389A.5000808@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Martin K. Petersen [mailto:martin.petersen@oracle.com]
-> Sent: Wednesday, January 07, 2015 3:43 PM
-> To: Sam Bradshaw (sbradshaw)
-> Cc: Martin K. Petersen; axboe@kernel.dk; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] block: pass correct seed to integrity metadata
-> generation function
+On Wed, Jan 07, 2015 at 05:46:02AM -0800, Guenter Roeck wrote:
+> On 01/06/2015 06:15 PM, Greg Kroah-Hartman wrote:
+> >NOTE, this is the LAST 3.17-stable kernel to be released, you should
+> >move to 3.18 by now, as 3.17 is end-of-life after this release.
+> >
+> >
+> >
+> >This is the start of the stable review cycle for the 3.17.8 release.
+> >There are 73 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
+> >
 > 
-> >>>>> "Sam" == Sam Bradshaw (sbradshaw) <sbradshaw@micron.com> writes:
+> Build results:
+> 	total: 133 pass: 132 fail: 1
+> Failed builds:
+> 	avr32:atngw100mkii_evklcd101_defconfig
 > 
-> Sam> Yes, you were CC: on the original.  Could you take a peek at the
-> Sam> patch and give me feedback?  https://lkml.org/lkml/2014/12/18/521
+> Qemu tests:
+> 	total: 30 pass: 30 fail: 0
 > 
-> Is the target an NVMe device?
+> Details are available at http://server.roeck-us.net:8010/builders.
+> 
+> It looks like you didn't apply the patch needed to address
+> the avr32 build problem, so results are as expected.
 
-Yes.
+Yeah, I didn't get to that one, oh well, no one seemed to really care :)
 
+Thanks for testing all 4 of these and letting me know.
+
+greg k-h
