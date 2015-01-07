@@ -1,199 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757376AbbAGCF0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:05:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46597 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757255AbbAGCBz (ORCPT
+	id S933202AbbAGCIK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:08:10 -0500
+Received: from SpacedOut.fries.net ([67.64.210.234]:53032 "EHLO
+	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933151AbbAGCHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:01:55 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Filipe Manana <fdmanana@suse.com>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.10 38/38] Btrfs: fix fs corruption on transaction abort if device supports discard
-Date: Tue,  6 Jan 2015 17:50:50 -0800
-Message-Id: <20150107014958.496441992@linuxfoundation.org>
-X-Mailer: git-send-email 2.2.1
-In-Reply-To: <20150107014952.440109372@linuxfoundation.org>
-References: <20150107014952.440109372@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 6 Jan 2015 21:07:51 -0500
+X-Greylist: delayed 461 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Jan 2015 21:07:49 EST
+Date: Tue, 6 Jan 2015 19:59:55 -0600
+From: David Fries <David@Fries.net>
+To: Mariusz Gorski <marius.gorski@gmail.com>
+Cc: Evgeniy Polyakov <zbr@ioremap.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] w1: slaves: w1_therm: Add sysfs entry for current
+ temperature
+Message-ID: <20150107015955.GA14323@spacedout.fries.net>
+References: <1420554596-10250-1-git-send-email-marius.gorski@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420554596-10250-1-git-send-email-marius.gorski@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Tue, 06 Jan 2015 19:59:56 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jan 06, 2015 at 03:29:54PM +0100, Mariusz Gorski wrote:
+> DS18B20 and it's brothers are pretty popular in the RaspberryPi world
+> when it comes to temperature measurement. All tutorials on the Internet
+> use the same way of parsing the output of the w1_slave sysfs file.
+> These patches add a dedicated sysfs entry called 'temp' whose only job
+> is to output the current temperature.
+> 
+> What could be improved here is the way how dev->bus_mutex is locked/unlocked,
+> which is split right now between two functions - maybe it would be better
+> to move all dev->bus_mutex locking into read_rom() and introduce another
+> mutex for protecting the slave's structures (e.g. family_data).
 
-------------------
+As to adding another mutex, there are enough little mutexes around the
+one wire system that it already feels like a mess and I tried to get 
+all the race conditions that I could.
 
-From: Filipe Manana <fdmanana@suse.com>
+I think you don't understand what the bus_mutex protects.  It protects
+other devices from accessing the one wire bus.  The way you coded it,
+temp_show will allow only one temperature sensor to be accessed and
+read at a time, considering it takes 750 ms that's holding up the bus
+for a long time, and depending on how the devices are connected, isn't
+needed.  If the temperature sensor is parasite powered, nothing else
+can use the bus while it is converting, if it has dedicated power,
+other slaves can be accessed at the same time.
 
-commit 678886bdc6378c1cbd5072da2c5a3035000214e3 upstream.
+I second using a standard sensor attribute if there is one appropriate
+rather than here.  I didn't in my application, but then I wasn't 
+adding a new method to get the same data, I was using the existing 
+netlink method.  If it does get added to a standard sensor access
+method, I do request that it be optional (like w1_therm which I don't
+use), and not sit there polling the sensor for the current temperature
+every X seconds when no one is using the data (OpenBSD does this, or
+at least last I saw, and you have no idea how old the sensor data
+reading is or have any control over how often it will poll it).
 
-When we abort a transaction we iterate over all the ranges marked as dirty
-in fs_info->freed_extents[0] and fs_info->freed_extents[1], clear them
-from those trees, add them back (unpin) to the free space caches and, if
-the fs was mounted with "-o discard", perform a discard on those regions.
-Also, after adding the regions to the free space caches, a fitrim ioctl call
-can see those ranges in a block group's free space cache and perform a discard
-on the ranges, so the same issue can happen without "-o discard" as well.
+I have 15 DS18B20 temperature sensors scattered around the house on a 
+single one wire network.  I don't use the w1_therm system, I talk
+through netlink to the kernel.  This has the advantage of being an
+asynchronous socket based interface so I can write a packet to request
+each sensor to do a conversion, get the write command status, and then
+after a timeout, write another to get a return, then read back the
+data.
 
-This causes corruption, affecting one or multiple btree nodes (in the worst
-case leaving the fs unmountable) because some of those ranges (the ones in
-the fs_info->pinned_extents tree) correspond to btree nodes/leafs that are
-referred by the last committed super block - breaking the rule that anything
-that was committed by a transaction is untouched until the next transaction
-commits successfully.
+Using the sysfs means blocking while the read is in progress.  Reading
+15 means either taking at least 11.250 seconds as you read them
+serially, or having 15 threads blocked on one read each (provided they
+don't block the other readers).
 
-I ran into this while running in a loop (for several hours) the fstest that
-I recently submitted:
+Thanks for Cc'ing me on this.
 
-  [PATCH] fstests: add btrfs test to stress chunk allocation/removal and fstrim
+> Mariusz Gorski (2):
+>   w1: slaves: w1_therm: Extract read_rom function
+>   w1: slaves: w1_therm: Add temp attribute
+> 
+>  drivers/w1/slaves/w1_therm.c | 83 ++++++++++++++++++++++++++++++++++----------
+>  1 file changed, 65 insertions(+), 18 deletions(-)
+> 
+> -- 
+> 2.2.1
 
-The corruption always happened when a transaction aborted and then fsck complained
-like this:
-
-   _check_btrfs_filesystem: filesystem on /dev/sdc is inconsistent
-   *** fsck.btrfs output ***
-   Check tree block failed, want=94945280, have=0
-   Check tree block failed, want=94945280, have=0
-   Check tree block failed, want=94945280, have=0
-   Check tree block failed, want=94945280, have=0
-   Check tree block failed, want=94945280, have=0
-   read block failed check_tree_block
-   Couldn't open file system
-
-In this case 94945280 corresponded to the root of a tree.
-Using frace what I observed was the following sequence of steps happened:
-
-   1) transaction N started, fs_info->pinned_extents pointed to
-      fs_info->freed_extents[0];
-
-   2) node/eb 94945280 is created;
-
-   3) eb is persisted to disk;
-
-   4) transaction N commit starts, fs_info->pinned_extents now points to
-      fs_info->freed_extents[1], and transaction N completes;
-
-   5) transaction N + 1 starts;
-
-   6) eb is COWed, and btrfs_free_tree_block() called for this eb;
-
-   7) eb range (94945280 to 94945280 + 16Kb) is added to
-      fs_info->pinned_extents (fs_info->freed_extents[1]);
-
-   8) Something goes wrong in transaction N + 1, like hitting ENOSPC
-      for example, and the transaction is aborted, turning the fs into
-      readonly mode. The stack trace I got for example:
-
-      [112065.253935]  [<ffffffff8140c7b6>] dump_stack+0x4d/0x66
-      [112065.254271]  [<ffffffff81042984>] warn_slowpath_common+0x7f/0x98
-      [112065.254567]  [<ffffffffa0325990>] ? __btrfs_abort_transaction+0x50/0x10b [btrfs]
-      [112065.261674]  [<ffffffff810429e5>] warn_slowpath_fmt+0x48/0x50
-      [112065.261922]  [<ffffffffa032949e>] ? btrfs_free_path+0x26/0x29 [btrfs]
-      [112065.262211]  [<ffffffffa0325990>] __btrfs_abort_transaction+0x50/0x10b [btrfs]
-      [112065.262545]  [<ffffffffa036b1d6>] btrfs_remove_chunk+0x537/0x58b [btrfs]
-      [112065.262771]  [<ffffffffa033840f>] btrfs_delete_unused_bgs+0x1de/0x21b [btrfs]
-      [112065.263105]  [<ffffffffa0343106>] cleaner_kthread+0x100/0x12f [btrfs]
-      (...)
-      [112065.264493] ---[ end trace dd7903a975a31a08 ]---
-      [112065.264673] BTRFS: error (device sdc) in btrfs_remove_chunk:2625: errno=-28 No space left
-      [112065.264997] BTRFS info (device sdc): forced readonly
-
-   9) The clear kthread sees that the BTRFS_FS_STATE_ERROR bit is set in
-      fs_info->fs_state and calls btrfs_cleanup_transaction(), which in
-      turn calls btrfs_destroy_pinned_extent();
-
-   10) Then btrfs_destroy_pinned_extent() iterates over all the ranges
-       marked as dirty in fs_info->freed_extents[], and for each one
-       it calls discard, if the fs was mounted with "-o discard", and
-       adds the range to the free space cache of the respective block
-       group;
-
-   11) btrfs_trim_block_group(), invoked from the fitrim ioctl code path,
-       sees the free space entries and performs a discard;
-
-   12) After an umount and mount (or fsck), our eb's location on disk was full
-       of zeroes, and it should have been untouched, because it was marked as
-       dirty in the fs_info->pinned_extents tree, and therefore used by the
-       trees that the last committed superblock points to.
-
-Fix this by not performing a discard and not adding the ranges to the free space
-caches - it's useless from this point since the fs is now in readonly mode and
-we won't write free space caches to disk anymore (otherwise we would leak space)
-nor any new superblock. By not adding the ranges to the free space caches, it
-prevents other code paths from allocating that space and write to it as well,
-therefore being safer and simpler.
-
-This isn't a new problem, as it's been present since 2011 (git commit
-acce952b0263825da32cf10489413dec78053347).
-
-Signed-off-by: Filipe Manana <fdmanana@suse.com>
-Signed-off-by: Chris Mason <clm@fb.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/btrfs/disk-io.c     |    6 ------
- fs/btrfs/extent-tree.c |   10 ++++++----
- 2 files changed, 6 insertions(+), 10 deletions(-)
-
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -3857,12 +3857,6 @@ again:
- 		if (ret)
- 			break;
- 
--		/* opt_discard */
--		if (btrfs_test_opt(root, DISCARD))
--			ret = btrfs_error_discard_extent(root, start,
--							 end + 1 - start,
--							 NULL);
--
- 		clear_extent_dirty(unpin, start, end, GFP_NOFS);
- 		btrfs_error_unpin_extent_range(root, start, end);
- 		cond_resched();
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -5277,7 +5277,8 @@ void btrfs_prepare_extent_commit(struct
- 	update_global_block_rsv(fs_info);
- }
- 
--static int unpin_extent_range(struct btrfs_root *root, u64 start, u64 end)
-+static int unpin_extent_range(struct btrfs_root *root, u64 start, u64 end,
-+			      const bool return_free_space)
- {
- 	struct btrfs_fs_info *fs_info = root->fs_info;
- 	struct btrfs_block_group_cache *cache = NULL;
-@@ -5301,7 +5302,8 @@ static int unpin_extent_range(struct btr
- 
- 		if (start < cache->last_byte_to_unpin) {
- 			len = min(len, cache->last_byte_to_unpin - start);
--			btrfs_add_free_space(cache, start, len);
-+			if (return_free_space)
-+				btrfs_add_free_space(cache, start, len);
- 		}
- 
- 		start += len;
-@@ -5364,7 +5366,7 @@ int btrfs_finish_extent_commit(struct bt
- 						   end + 1 - start, NULL);
- 
- 		clear_extent_dirty(unpin, start, end, GFP_NOFS);
--		unpin_extent_range(root, start, end);
-+		unpin_extent_range(root, start, end, true);
- 		cond_resched();
- 	}
- 
-@@ -8564,7 +8566,7 @@ out:
- 
- int btrfs_error_unpin_extent_range(struct btrfs_root *root, u64 start, u64 end)
- {
--	return unpin_extent_range(root, start, end);
-+	return unpin_extent_range(root, start, end, false);
- }
- 
- int btrfs_error_discard_extent(struct btrfs_root *root, u64 bytenr,
-
-
+-- 
+David Fries <david@fries.net>    PGP pub CB1EE8F0
+http://fries.net/~david/
