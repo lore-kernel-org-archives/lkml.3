@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497AbbAGU4s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 15:56:48 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:41105 "EHLO e7.ny.us.ibm.com"
+	id S1755136AbbAGUxS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 15:53:18 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:48042 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754999AbbAGUxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754991AbbAGUxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 Jan 2015 15:53:13 -0500
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: initramfs <initramfs@vger.kernel.org>
@@ -12,237 +12,92 @@ Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Al Viro <viro@ZenIV.linux.org.uk>,
         linux-ima-devel@lists.sourceforge.net,
         linux-security-module <linux-security-module@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [RFC][PATCH 2/9] initramfs: add extended attribute support
-Date: Wed,  7 Jan 2015 15:52:53 -0500
-Message-Id: <1420663980-20842-3-git-send-email-zohar@linux.vnet.ibm.com>
+Subject: [RFC][PATCH 3/9] gen_init_cpio: replace inline format string with common variable
+Date: Wed,  7 Jan 2015 15:52:54 -0500
+Message-Id: <1420663980-20842-4-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1420663980-20842-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1420663980-20842-1-git-send-email-zohar@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15010720-0037-0000-0000-00000049B5F0
+x-cbid: 15010720-0029-0000-0000-0000019C4C1C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch writes out the extended attributes included in the cpio file.
-As the "security.ima" xattr needs to be written after the file data,
-this patch separates extracting and setting the xattrs by defining two
-new states "GotXattrs" and "SetXattrs".
+The same printf format string is used in a number of places.  This
+patch replaces the inline format string with a single common variable
+called newcformat.
 
 Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 ---
- init/initramfs.c | 85 +++++++++++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 75 insertions(+), 10 deletions(-)
+ usr/gen_init_cpio.c | 18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
 
-diff --git a/init/initramfs.c b/init/initramfs.c
-index 527703e..11ffd3e 100644
---- a/init/initramfs.c
-+++ b/init/initramfs.c
-@@ -52,6 +52,7 @@ static void __init error(char *x)
- /* link hash */
+diff --git a/usr/gen_init_cpio.c b/usr/gen_init_cpio.c
+index 225ad24..ee35361 100644
+--- a/usr/gen_init_cpio.c
++++ b/usr/gen_init_cpio.c
+@@ -20,6 +20,9 @@
+ #define xstr(s) #s
+ #define str(s) xstr(s)
  
- #define N_ALIGN(len) ((((len) + 1) & ~3) + 2)
-+#define X_ALIGN(len) ((len + 3) & ~3)
- 
- static __initdata struct hash {
- 	int ino, minor, major;
-@@ -154,19 +155,20 @@ static __initdata time_t mtime;
- 
- static __initdata unsigned long ino, major, minor, nlink;
- static __initdata umode_t mode;
--static __initdata unsigned long body_len, name_len;
-+static __initdata unsigned long body_len, name_len, xattr_buflen;
- static __initdata uid_t uid;
- static __initdata gid_t gid;
- static __initdata unsigned rdev;
-+static __initdata int newcx;
- 
- static void __init parse_header(char *s)
- {
--	unsigned long parsed[12];
-+	unsigned long parsed[13];
- 	char buf[9];
- 	int i;
- 
- 	buf[8] = '\0';
--	for (i = 0, s += 6; i < 12; i++, s += 8) {
-+	for (i = 0; i < (!newcx ? 12 : 13); i++, s += 8) {
- 		memcpy(buf, s, 8);
- 		parsed[i] = simple_strtoul(buf, NULL, 16);
- 	}
-@@ -181,6 +183,7 @@ static void __init parse_header(char *s)
- 	minor = parsed[8];
- 	rdev = new_encode_dev(MKDEV(parsed[9], parsed[10]));
- 	name_len = parsed[11];
-+	xattr_buflen = newcx ? parsed[12] : 0;
- }
- 
- /* FSM */
-@@ -192,7 +195,9 @@ static __initdata enum state {
- 	GotHeader,
- 	SkipIt,
- 	GotName,
-+	GotXattrs,
- 	CopyFile,
-+	SetXattrs,
- 	GotSymlink,
- 	Reset
- } state, next_state;
-@@ -209,6 +214,8 @@ static inline void __init eat(unsigned n)
- }
- 
- static __initdata char *vcollected;
-+static __initdata char *ncollected;
-+static __initdata char *xcollected;
- static __initdata char *collected;
- static long remains __initdata;
- static __initdata char *collect;
-@@ -227,7 +234,7 @@ static void __init read_into(char *buf, unsigned size, enum state next)
- 	}
- }
- 
--static __initdata char *header_buf, *symlink_buf, *name_buf;
-+static __initdata char *header_buf, *symlink_buf, *name_buf, *xattr_buf;
- 
- static int __init do_start(void)
- {
-@@ -251,22 +258,26 @@ static int __init do_collect(void)
- 
- static int __init do_format(void)
- {
-+	newcx = 0;
- 	if (memcmp(collected, "070707", 6)==0) {
- 		error("incorrect cpio method used: use -H newc option");
- 		return 1;
- 	}
--	if (memcmp(collected, "070701", 6)) {
-+	if (memcmp(collected, "070703", 6) == 0)
-+		newcx = 1;
-+	else if (memcmp(collected, "070701", 6)) {
- 		error("no cpio magic");
- 		return 1;
- 	}
--	read_into(header_buf, 104, GotHeader);
-+	read_into(header_buf, !newcx ? 104: 112, GotHeader);
- 	return 0;
- }
- 
- static int __init do_header(void)
- {
- 	parse_header(collected);
--	next_header = this_header + N_ALIGN(name_len) + body_len;
-+	next_header = this_header + N_ALIGN(name_len) + X_ALIGN(xattr_buflen)
-+	    + body_len;
- 	next_header = (next_header + 3) & ~3;
- 	state = SkipIt;
- 	if (name_len <= 0 || name_len > PATH_MAX)
-@@ -328,8 +339,52 @@ static void __init clean_path(char *path, umode_t mode)
- 	}
- }
- 
--static __initdata int wfd;
-+static int __init do_xattrs(void)
-+{
-+	state = next_state;
-+	xcollected = kmalloc(xattr_buflen, GFP_KERNEL);
-+	if (!xcollected)
-+		panic("can't allocate xattr buffer");
-+	memcpy(xcollected, collected, xattr_buflen);
-+	return 0;
-+}
++static char *newcfmt = "%s%08X%08X%08lX%08lX%08X%08lX"
++			"%08X%08X%08X%08X%08X%08X%08X";
 +
-+static int __init do_setxattrs(void)
-+{
-+	char *xattr_name = NULL;
-+	int i, offset = 8, num_xattrs = 0;
-+	unsigned xattr_value_size;
-+	char *buf = xcollected;
-+
-+	state = SkipIt;
-+	next_state = Reset;
+ static unsigned int offset;
+ static unsigned int ino = 721;
+ static time_t default_mtime;
+@@ -74,8 +77,7 @@ static void cpio_trailer(void)
+ 	char s[256];
+ 	const char name[] = "TRAILER!!!";
  
-+	if (!newcx || xattr_buflen == 0 || !buf)
-+		return 0;
-+
-+	sscanf(buf, "%08X", &num_xattrs);
-+
-+	/* xattr format: name value-len value */
-+	for (i = 0; i < num_xattrs; i++) {
-+		void *xattr_buf;
-+		int rc;
-+
-+		xattr_name = buf + offset;
-+		offset += (strlen(xattr_name) + 1);
-+		sscanf(buf + offset, "%08X", &xattr_value_size);
-+		xattr_buf = buf + offset + 8;
-+		rc = sys_setxattr(ncollected, xattr_name, xattr_buf,
-+				  xattr_value_size, 0);
-+		pr_debug("%s: %s size: %u (rc: %d)\n", ncollected, xattr_name,
-+			xattr_value_size, rc);
-+		offset += (8 + xattr_value_size);
-+	}
-+	kfree(ncollected);
-+	kfree(xcollected);
-+	return 0;
-+}
-+
-+static __initdata int wfd;
- static int __init do_name(void)
- {
- 	state = SkipIt;
-@@ -370,6 +425,12 @@ static int __init do_name(void)
- 			do_utime(collected, mtime);
- 		}
- 	}
-+
-+	if (xattr_buflen > 0) {
-+		ncollected = kstrdup(collected, GFP_KERNEL);
-+		next_state = (state == SkipIt) ? SetXattrs : state;
-+		read_into(xattr_buf, X_ALIGN(xattr_buflen), GotXattrs);
-+	}
- 	return 0;
- }
+-	sprintf(s, "%s%08X%08X%08lX%08lX%08X%08lX"
+-	       "%08X%08X%08X%08X%08X%08X%08X",
++	sprintf(s, newcfmt,
+ 		"070701",		/* magic */
+ 		0,			/* ino */
+ 		0,			/* mode */
+@@ -106,8 +108,7 @@ static int cpio_mkslink(const char *name, const char *target,
  
-@@ -382,7 +443,7 @@ static int __init do_copy(void)
- 		do_utime(vcollected, mtime);
- 		kfree(vcollected);
- 		eat(body_len);
--		state = SkipIt;
-+		state = (newcx && xattr_buflen > 0)? SetXattrs : SkipIt;
- 		return 0;
- 	} else {
- 		if (xwrite(wfd, victim, count) != count)
-@@ -412,7 +473,9 @@ static __initdata int (*actions[])(void) = {
- 	[GotHeader]	= do_header,
- 	[SkipIt]	= do_skip,
- 	[GotName]	= do_name,
-+	[GotXattrs]	= do_xattrs,
- 	[CopyFile]	= do_copy,
-+	[SetXattrs]	= do_setxattrs,
- 	[GotSymlink]	= do_symlink,
- 	[Reset]		= do_reset,
- };
-@@ -461,9 +524,10 @@ static char * __init unpack_to_rootfs(char *buf, unsigned long len)
- 	const char *compress_name;
- 	static __initdata char msg_buf[64];
+ 	if (name[0] == '/')
+ 		name++;
+-	sprintf(s,"%s%08X%08X%08lX%08lX%08X%08lX"
+-	       "%08X%08X%08X%08X%08X%08X%08X",
++	sprintf(s, newcfmt,
+ 		"070701",		/* magic */
+ 		ino++,			/* ino */
+ 		S_IFLNK | mode,		/* mode */
+@@ -155,8 +156,7 @@ static int cpio_mkgeneric(const char *name, unsigned int mode,
  
--	header_buf = kmalloc(110, GFP_KERNEL);
-+	header_buf = kmalloc(118, GFP_KERNEL);
- 	symlink_buf = kmalloc(PATH_MAX + N_ALIGN(PATH_MAX) + 1, GFP_KERNEL);
- 	name_buf = kmalloc(N_ALIGN(PATH_MAX), GFP_KERNEL);
-+	xattr_buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
+ 	if (name[0] == '/')
+ 		name++;
+-	sprintf(s,"%s%08X%08X%08lX%08lX%08X%08lX"
+-	       "%08X%08X%08X%08X%08X%08X%08X",
++	sprintf(s, newcfmt,
+ 		"070701",		/* magic */
+ 		ino++,			/* ino */
+ 		mode,			/* mode */
+@@ -249,8 +249,7 @@ static int cpio_mknod(const char *name, unsigned int mode,
  
- 	if (!header_buf || !symlink_buf || !name_buf)
- 		panic("can't allocate buffers");
-@@ -510,6 +574,7 @@ static char * __init unpack_to_rootfs(char *buf, unsigned long len)
- 		len -= my_inptr;
- 	}
- 	dir_utime();
-+	kfree(xattr_buf);
- 	kfree(name_buf);
- 	kfree(symlink_buf);
- 	kfree(header_buf);
+ 	if (name[0] == '/')
+ 		name++;
+-	sprintf(s,"%s%08X%08X%08lX%08lX%08X%08lX"
+-	       "%08X%08X%08X%08X%08X%08X%08X",
++	sprintf(s, newcfmt,
+ 		"070701",		/* magic */
+ 		ino++,			/* ino */
+ 		mode,			/* mode */
+@@ -339,8 +338,7 @@ static int cpio_mkfile(const char *name, const char *location,
+ 		if (name[0] == '/')
+ 			name++;
+ 		namesize = strlen(name) + 1;
+-		sprintf(s,"%s%08X%08X%08lX%08lX%08X%08lX"
+-		       "%08lX%08X%08X%08X%08X%08X%08X",
++		sprintf(s, newcfmt,
+ 			"070701",		/* magic */
+ 			ino,			/* ino */
+ 			mode,			/* mode */
 -- 
 1.8.1.4
 
