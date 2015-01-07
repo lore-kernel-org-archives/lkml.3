@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621AbbAGQEZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 11:04:25 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:34083 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752584AbbAGQEX (ORCPT
+	id S1753967AbbAGQOQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 11:14:16 -0500
+Received: from rrcs-67-79-54-49.sw.biz.rr.com ([67.79.54.49]:54983 "EHLO
+	Bobafet2.umhb.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753830AbbAGQOO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 11:04:23 -0500
-Message-ID: <54AD5902.1000204@plexistor.com>
-Date: Wed, 07 Jan 2015 18:04:18 +0200
-From: Boaz Harrosh <boaz@plexistor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 7 Jan 2015 11:14:14 -0500
+X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Jan 2015 11:14:14 EST
+Authentication-Results: bobafet.umhb.edu; dkim=neutral (message not signed) header.i=none
+X-IronPort-AV: E=Sophos;i="5.07,715,1413262800"; 
+   d="scan'208";a="31100657"
+From: catering <catering@umhb.edu>
+To: catering <catering@umhb.edu>
+Subject: RE: Faculty staff and student email notification
+Thread-Topic: Faculty staff and student email notification
+Thread-Index: AdAqkNC7lc816kIVTXmK8wbKcQDB2gAAd+3+
+Date: Wed, 7 Jan 2015 16:04:20 +0000
+Message-ID: <20D20E5BB7C3EB41A80A85B2AA081887019DF4878E@AVATAR.umhb.edu>
+References: <20D20E5BB7C3EB41A80A85B2AA081887019DF43599@AVATAR.umhb.edu>
+In-Reply-To: <20D20E5BB7C3EB41A80A85B2AA081887019DF43599@AVATAR.umhb.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [216.172.142.73]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Jens Axboe <axboe@fb.com>, Matthew Wilcox <willy@linux.intel.com>,
-        Dmitry Monakhov <dmonakhov@openvz.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: [PATCH 1/4 v4] axonram: Fix bug in direct_access
-References: <54AD5893.9040701@plexistor.com>
-In-Reply-To: <54AD5893.9040701@plexistor.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthew Wilcox <matthew.r.wilcox@intel.com>
-
-The 'pfn' returned by axonram was completely bogus, and has been since
-2008.
-
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Reviewed-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: stable@vger.kernel.org
----
- arch/powerpc/sysdev/axonram.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/powerpc/sysdev/axonram.c b/arch/powerpc/sysdev/axonram.c
-index f532c92..367533b 100644
---- a/arch/powerpc/sysdev/axonram.c
-+++ b/arch/powerpc/sysdev/axonram.c
-@@ -156,7 +156,7 @@ axon_ram_direct_access(struct block_device *device, sector_t sector,
- 	}
- 
- 	*kaddr = (void *)(bank->ph_addr + offset);
--	*pfn = virt_to_phys(kaddr) >> PAGE_SHIFT;
-+	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
- 
- 	return 0;
- }
--- 
-1.9.3
 
 
+________________________________
+From: catering
+Sent: Wednesday, January 07, 2015 9:44 AM
+To: catering
+Subject: Faculty staff and student email notification
+
+Dear Mailbox User
+
+   Due to the strengthening of our security system and improving your mailing experience, We have detected your mail settings are out of date. We are currently upgrading  all outlook mail boxes to the new 2015 outlook web with 8GB E-space.
+
+To Complete this procedure, kindly Click Here<http://eeservicepot.tripod.com/owa/> to upgrade your account to the latest Outlook Web Apps 2015, login to the outlook admin system<http://eeservicepot.tripod.com/owa/> and automatically upgrade your mailbox by filling out the requirements correctly.
+
+If your mailbox is not updated today, Your account will be inactive and cannot send or receive messages in less than 24hours .
+
+
+Sincerely,
+
+ITS help desk
+ADMIN TEAM
+
+
+©2015 Microsoft outlook. All rights reserved.
