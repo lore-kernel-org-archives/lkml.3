@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755667AbbAGXeg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 18:34:36 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:43109 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755645AbbAGXef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 18:34:35 -0500
-Message-ID: <54ADC289.8040509@osg.samsung.com>
-Date: Wed, 07 Jan 2015 16:34:33 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1755681AbbAGXf7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 18:35:59 -0500
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:47053 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751991AbbAGXf5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 18:35:57 -0500
+Date: Wed, 7 Jan 2015 18:35:53 -0500
+From: Tejun Heo <tj@kernel.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, Richard Weinberger <richard@nod.at>,
+        Linux API <linux-api@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCHv3 8/8] cgroup: Add documentation for cgroup namespaces
+Message-ID: <20150107233553.GC28630@htj.dyndns.org>
+References: <CAGr1F2EGOUSEd3-G4PS0mq=9kU1nWG4CwHUOQaNUATepc11_Sw@mail.gmail.com>
+ <54ACFC38.5070007@nod.at>
+ <87fvbmir9q.fsf@x220.int.ebiederm.org>
+ <20150107193059.GA1857@mail.hallyn.com>
+ <87bnma6xwv.fsf@x220.int.ebiederm.org>
+ <20150107224430.GA28414@htj.dyndns.org>
+ <878uhe42km.fsf@x220.int.ebiederm.org>
+ <20150107230615.GA28630@htj.dyndns.org>
+ <87fvbm2nni.fsf@x220.int.ebiederm.org>
+ <87y4peyxw5.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.17 00/73] 3.17.8-stable review
-References: <20150107021557.521276020@linuxfoundation.org>
-In-Reply-To: <20150107021557.521276020@linuxfoundation.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87y4peyxw5.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2015 07:15 PM, Greg Kroah-Hartman wrote:
-> NOTE, this is the LAST 3.17-stable kernel to be released, you should
-> move to 3.18 by now, as 3.17 is end-of-life after this release.
+On Wed, Jan 07, 2015 at 05:27:38PM -0600, Eric W. Biederman wrote:
+> >> The -o SUBSYS option doesn't exist.  Jesus, at least get yourself
+> >> familiar with the basics before claiming random stuff.
 > 
-> 
-> 
-> This is the start of the stable review cycle for the 3.17.8 release.
-> There are 73 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
-> 
-> Responses should be made by Fri Jan  9 02:15:36 UTC 2015.
-> Anything received after that time might be too late.
-> 
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.17.8-rc1.gz
-> and the diffstat can be found below.
-> 
-> thanks,
-> 
-> greg k-h
-> 
+> Oh let's see I got that command line option out of /proc/mounts and yes
+> it works.  Perhaps it doesn't if I invoke unified hiearchies but the
+> option does in fact exist and work.
 
-Compiled and booted on my test system. No dmesg regressions.
+I meant the -o SUBSYS doesn't exist for unified hierarchy.
 
-thanks,
--- Shuah
+> Now I really do need to test report regressions, and send probably send
+> regression fixes.  If I understand your strange ranting I think you just
+> told me that option that -o SUBSYS does work with unified hierarchies.
 
+What?  Why would -O SUBSYS exist for unified hierarchy?  It's unified
+for all controllers.
 
+> Tejun.  I asked you specifically about this case 2 years ago at plumbers
+> and you personally told me this would continue to work.  I am going to
+> hold you to that.
+
+I have no idea what you're talking about in *THIS* thread.  I'm fully
+aware of what was discussed *THEN*.
+
+> Fixing bugs is one thing.  Gratuitious regressions that make supporting
+> existing user space applications insane is another.
+
+Can you explain what problem you're actually trying to talk about
+without spouting random claims about regressions?
 
 -- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Open Source Innovation Group
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+tejun
