@@ -1,53 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751416AbbAGKDW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 05:03:22 -0500
-Received: from mail113-251.mail.alibaba.com ([205.204.113.251]:54142 "EHLO
-	us-alimail-mta1.hst.scl.en.alidc.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750835AbbAGKDU (ORCPT
+	id S1752005AbbAGKGF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 05:06:05 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:63387 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859AbbAGKGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 05:03:20 -0500
-X-Alimail-AntiSpam: AC=PASS;BC=-1|-1;BR=01201311R311e4;FP=0|-1|-1|-1|0|-1|-1|-1;HT=r41g03005;MF=hillf.zj@alibaba-inc.com;PH=DS;RN=11;RT=11;SR=0;
-Reply-To: "Hillf Danton" <hillf.zj@alibaba-inc.com>
-From: "Hillf Danton" <hillf.zj@alibaba-inc.com>
-To: "'Wang Nan'" <wangnan0@huawei.com>
-Cc: <linux@arm.linux.org.uk>, "'Ingo Molnar'" <mingo@redhat.com>,
-        <masami.hiramatsu.pt@hitachi.com>, <anil.s.keshavamurthy@intel.com>,
-        <davem@davemloft.net>, <ananth@in.ibm.com>, <dave.long@linaro.org>,
-        <tixy@linaro.org>, <lizefan@huawei.com>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>
-References: <043a01d02a5b$44ec45f0$cec4d1d0$@alibaba-inc.com> <54ACFFB6.3040102@huawei.com>
-In-Reply-To: <54ACFFB6.3040102@huawei.com>
-Subject: RE: [RFC PATCH 09/11] kprobes: core logic of eraly kprobes
-Date: Wed, 07 Jan 2015 18:02:07 +0800
-Message-ID: <045301d02a60$ff36e8c0$fda4ba40$@alibaba-inc.com>
+	Wed, 7 Jan 2015 05:06:00 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>, linux-omap@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] serial: 8250: Make ISA ports optional
+Date: Wed, 07 Jan 2015 11:05:14 +0100
+Message-ID: <2241604.rliP7ovaYi@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54AC580B.2050809@hurleysoftware.com>
+References: <1420513785-23660-1-git-send-email-peter@hurleysoftware.com> <6786513.g26uGMFKLE@wuerfel> <54AC580B.2050809@hurleysoftware.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQIEtj9idETv8rQxsVvdEO6VYoonSQMUtq4inDKuSJA=
-Content-Language: zh-cn
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:XxDFGbG9LVLnJ9JtfM0KuPsDC7I6FjarN9R+rRWcg0JExKQ3tMW
+ AfxECD6gLw6UiQBp3Wk/RlOkqBBRobtm9X7It6KQkMe8VIwOHSMgifDxw5fYHeWCXtpRIZE
+ Akxcf7DjN+7FyB9SobDa/La2eP+VGr4FrQWdoODK1M+S3SGeDMXKVPbhSMwGwvWMJPV1Fr/
+ lMIZA7ndK4hveX8CdPALg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 06 January 2015 16:47:55 Peter Hurley wrote:
+> On 01/06/2015 02:43 PM, Arnd Bergmann wrote:
+> > On Tuesday 06 January 2015 09:32:02 Peter Hurley wrote:
+> >> On 01/06/2015 08:13 AM, Arnd Bergmann wrote:
+> >>> On Monday 05 January 2015 22:09:45 Peter Hurley wrote:
+> >>>> Some arches have no need to create unprobed 8250 ports; these phantom
+> >>>> ports are primarily required for ISA ports which have no probe
+> >>>> mechanism or to provide non-operational ports for userspace to
+> >>>> configure (via TIOCSSERIAL and TIOCSERCONFIG ioctls).
+> >>>>
+> >>>> Provide CONFIG_SERIAL_8250_PHANTOM_UARTS knob to disable phantom port
+> >>>> registration; ie., CONFIG_SERIAL_8250_PHANTOM_UARTS=N only registers
+> >>>> probed ports (ACPI/PNP, "serial8250" platform devices, PCI, etc).
+> >>>>
+> >>>> Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> >>>> Cc: Tony Lindgren <tony@atomide.com>
+> >>>> Cc: Grant Likely <grant.likely@linaro.org>
+> >>>> Cc: Arnd Bergmann <arnd@arndb.de>
+> >>>> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> >>>
+> >>> The intent is definitely right, but I think a better approach is
+> >>> possible.
+> >>>
+> >>> I haven't tried it here, but how about moving the serial8250_init
+> >>> function into a separate module, along with all the other parts
+> >>> that are only used for ISA devices, but leaving the actual core
+> >>> (all exported symbols) in this file?
 > >>
-> >> +struct early_kprobe_slot {
-> >> +	struct optimized_kprobe op;
-> >> +};
-> >> +
-> > [...]
+> >> Unfortunately, I don't see a way to remove the stacked initialization
+> >> without risking tons of breakage.
 > >>
-> >>  /* Free optimized instructions and optimized_kprobe */
-> >> +static int ek_free_early_kprobe(struct early_kprobe_slot *slot);
-> >
-> > [2] How is it implemented? In subsequent patches?
-> >
+> >> Since later probes can "find" an already-existing port and
+> >> re-initialize it, the probe order is crucial. For example, a PCI
+> >> probe can "find" an existing "serial8250" platform device port,
+> >> resulting in only one device node.
+> > 
+> > I'm probably missing something important, by why would that
+> > be any different if the PCI driver gets loaded first and the
+> > ISA driver second?
 > 
-> It is implemented using macro. Please see patch 7/11 and
-> 
-> DEFINE_EKPROBE_ALLOC_OPS(struct early_kprobe_slot, early_kprobe, static);
->
-What is the reason that it is listed in C file, given that it is done in H already?
+> Well, the PCI driver would have the proper irq, for one. So, if the
+> the platform driver re-initialized the port to the wrong irq...
 
+I see. So we must still ensure that the ISA driver either gets loaded
+before the PCI driver, or never. It is already closely coupled with
+the PNP driver, but I think we can still get to the point where you
+don't load the ISA driver at all if you only have platform 8250
+ports that are not supposed to be reconfigurable.
+
+On most non-x86 machines, I would think we also want a way to build
+the PCI driver without that dependency.
+
+	Arnd
