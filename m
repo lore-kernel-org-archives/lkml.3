@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755975AbbAGI4E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 03:56:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36563 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752688AbbAGI4C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 03:56:02 -0500
-Date: Wed, 7 Jan 2015 10:55:55 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Greg Kurz <gkurz@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: [PATCH] vhost/net: length miscalculation
-Message-ID: <1420620847-24477-1-git-send-email-mst@redhat.com>
+	id S1756026AbbAGI5a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 03:57:30 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:46622 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848AbbAGI53 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 03:57:29 -0500
+Message-ID: <54ACF4FA.2080309@linaro.org>
+Date: Wed, 07 Jan 2015 08:57:30 +0000
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Mutt-Fcc: =sent
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Kiran Raparthy <kiran.kumar@linaro.org>, linux-kernel@vger.kernel.org,
+        Colin Cross <ccross@android.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: Re: [RFC v4] debug: prevent entering debug mode on panic/exception.
+References: <1419338309-16729-1-git-send-email-kiran.kumar@linaro.org>	<20150105161412.44f53313e1d771dc9f968264@linux-foundation.org>	<54ABFFD3.2020305@linaro.org> <20150106131608.a756b9e8aaf8c496099a5736@linux-foundation.org>
+In-Reply-To: <20150106131608.a756b9e8aaf8c496099a5736@linux-foundation.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 8b38694a2dc8b18374310df50174f1e4376d6824
-    vhost/net: virtio 1.0 byte swap
-had this chunk:
--       heads[headcount - 1].len += datalen;
-+       heads[headcount - 1].len = cpu_to_vhost32(vq, len - datalen);
+On 06/01/15 21:16, Andrew Morton wrote:
+> On Tue, 06 Jan 2015 15:31:31 +0000 Daniel Thompson <daniel.thompson@linaro.org> wrote:
+> 
+>> On 06/01/15 00:14, Andrew Morton wrote:
+>>> We appear to have forgotten to document panic_timeout.  Sigh.
+>>
+>> I knew I'd seen it somewhere...
+>>
+>> Once its been sysctlised it ends up called "panic":
+>>   https://www.kernel.org/doc/Documentation/sysctl/kernel.txt
+> 
+> Confused.  That file doesn't mention panic_timeout.  But it is the
+> place where panic_timeout can be described.
 
-This adds datalen with the wrong sign, causing guest panics.
+The sysctl is called "panic" (as is the closely related kernel parameter)
 
-Fixes: 8b38694a2dc8b18374310df50174f1e4376d6824
-Reported-by: Alex Williamson <alex.williamson@redhat.com>
-Suggested-by: Greg Kurz <gkurz@linux.vnet.ibm.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+The name panic_timeout is used only for the C symbol presumably because
+panic was already used for something else...
 
-Alex, could you please confirm this fixes the crash for you?
 
- drivers/vhost/net.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Daniel.
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 14419a8..d415d69 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -538,7 +538,7 @@ static int get_rx_bufs(struct vhost_virtqueue *vq,
- 		++headcount;
- 		seg += in;
- 	}
--	heads[headcount - 1].len = cpu_to_vhost32(vq, len - datalen);
-+	heads[headcount - 1].len = cpu_to_vhost32(vq, len + datalen);
- 	*iovcount = seg;
- 	if (unlikely(log))
- 		*log_num = nlogs;
--- 
-MST
