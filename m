@@ -1,208 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561AbbAGPEj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 10:04:39 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:37559 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753509AbbAGPEg (ORCPT
+	id S1753590AbbAGPFJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 10:05:09 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:38072 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484AbbAGPFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 10:04:36 -0500
-From: Peter Griffin <peter.griffin@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
-        patrice.chotard@st.com, peppe.cavallaro@st.com, kishon@ti.com,
-        arnd@arndb.de
-Cc: peter.griffin@linaro.org, lee.jones@linaro.org, devicetree@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH v2 7/7] stmmac: dwmac-sti: Pass sysconfig register offset via syscon dt property.
-Date: Wed,  7 Jan 2015 15:04:12 +0000
-Message-Id: <1420643052-4506-8-git-send-email-peter.griffin@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1420643052-4506-1-git-send-email-peter.griffin@linaro.org>
-References: <1420643052-4506-1-git-send-email-peter.griffin@linaro.org>
+	Wed, 7 Jan 2015 10:05:05 -0500
+Message-ID: <54AD4B1B.1030801@gmail.com>
+Date: Thu, 08 Jan 2015 00:04:59 +0900
+From: Seunghun Lee <waydi1@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: hujianyang <hujianyang@huawei.com>
+CC: miklos@szeredi.hu, sedat.dilek@gmail.com, richard.weinberger@gmail.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-unionfs@vger.kernel.org
+Subject: Re: [PATCH] ovl: Prevent rw remount when it should be ro mount
+References: <1420219609-2568-1-git-send-email-waydi1@gmail.com> <54A8AC74.2060106@huawei.com> <54ABEB06.2010008@gmail.com> <54ACA052.8010800@huawei.com>
+In-Reply-To: <54ACA052.8010800@huawei.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on Arnds review comments here https://lkml.org/lkml/2014/11/13/161,
-we should not be mixing address spaces in the reg property like this driver
-currently does. This patch updates the driver, dt docs and also the existing
-dt nodes to pass the sysconfig offset in the syscon dt property.
+Hi Hu,
 
-This patch breaks DT compatibility! But this platform is considered WIP,
-and is only used by a few developers who are upstreaming support for it.
-This change has been done as a single atomic commit to ensure it is
-bisectable.
+On 01/07/2015 11:56 AM, hujianyang wrote:
+> Hi,
+>
+> There maybe some misunderstandings here. I think your patch really
+> fix an important problem, but not in correct way.
+>
+> On 2015/1/6 22:02, Seunghun Lee wrote:
+>> After patch:
+>> root@qemux86:~# mount -t overlay overlay -olowerdir=lower:lower2 merged
+>> mount: warning: merged seems to be mounted read-only.
+>> root@qemux86:~# mount | grep overlay
+>> overlay on /home/root/merged type overlay (ro,relatime,lowerdir=lower:lower2)
+>> root@qemux86:~# mount -o remount,rw merged
+>> mount: warning: /home/root/merged seems to be mounted read-only.
+>> root@qemux86:~# mount | grep overlay
+>> overlay on /home/root/merged type overlay (ro,relatime,lowerdir=lower:lower2)
+>> root@qemux86:~# echo hi > merged/hi
+>> -sh: merged/hi: Read-only file system
+>> root@qemux86:~#
+>>
+> If users want a rw mount, can we give them a ro mount? I think it's
+> wrong, .remount_fs should refuse this request.
+>
+> So I think your .remount_fs should check both what users in userpace
+> want and what kernel can offer, then realize legal requests and
+> refuse illegal requests. Not changing the requests from users.
+Many file systems just change flags when user requests read-write remount.
+(romfs, squashfs, sysv...)
+I thought this case is similar above filesystems.
+> Further more, can we replace upper/lower/work directories or mount
+> point by this .remount_fs?
+>
+> If you want to export a new function, I think you should considering
+> more about these.
+>
+> Thanks,
+> Hu
+>
+Yes, you are right. However, this patch is a minimal support to
+prevent kernel panic when file system is remounted to read-write mode.
+And many file systems have remount_fs function of this kind.
 
-Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
----
- Documentation/devicetree/bindings/net/sti-dwmac.txt | 14 +++++---------
- arch/arm/boot/dts/stih415.dtsi                      | 12 ++++++------
- arch/arm/boot/dts/stih416.dtsi                      | 12 ++++++------
- drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c     | 13 +++++++------
- 4 files changed, 24 insertions(+), 27 deletions(-)
+I think what you mentioned is can be added later if it is necessary.
 
-diff --git a/Documentation/devicetree/bindings/net/sti-dwmac.txt b/Documentation/devicetree/bindings/net/sti-dwmac.txt
-index 6762a6b..d05c1e1 100644
---- a/Documentation/devicetree/bindings/net/sti-dwmac.txt
-+++ b/Documentation/devicetree/bindings/net/sti-dwmac.txt
-@@ -9,14 +9,10 @@ The device node has following properties.
- Required properties:
-  - compatible	: Can be "st,stih415-dwmac", "st,stih416-dwmac",
-    "st,stih407-dwmac", "st,stid127-dwmac".
-- - reg : Offset of the glue configuration register map in system
--   configuration regmap pointed by st,syscon property and size.
-- - st,syscon : Should be phandle to system configuration node which
--   encompases this glue registers.
-+ - st,syscon : Should be phandle/offset pair. The phandle to the syscon node which
-+   encompases the glue register, and the offset of the control register.
-  - st,gmac_en: this is to enable the gmac into a dedicated sysctl control
-    register available on STiH407 SoC.
-- - sti-ethconf: this is the gmac glue logic register to enable the GMAC,
--   select among the different modes and program the clk retiming.
-  - pinctrl-0: pin-control for all the MII mode supported.
- 
- Optional properties:
-@@ -40,10 +36,10 @@ ethernet0: dwmac@9630000 {
- 	device_type = "network";
- 	status = "disabled";
- 	compatible = "st,stih407-dwmac", "snps,dwmac", "snps,dwmac-3.710";
--	reg = <0x9630000 0x8000>, <0x80 0x4>;
--	reg-names = "stmmaceth", "sti-ethconf";
-+	reg = <0x9630000 0x8000>;
-+	reg-names = "stmmaceth";
- 
--	st,syscon = <&syscfg_sbc_reg>;
-+	st,syscon = <&syscfg_sbc_reg 0x80>;
- 	st,gmac_en;
- 	resets = <&softreset STIH407_ETH1_SOFTRESET>;
- 	reset-names = "stmmaceth";
-diff --git a/arch/arm/boot/dts/stih415.dtsi b/arch/arm/boot/dts/stih415.dtsi
-index 9198c12..19b019b 100644
---- a/arch/arm/boot/dts/stih415.dtsi
-+++ b/arch/arm/boot/dts/stih415.dtsi
-@@ -153,8 +153,8 @@
- 			compatible	= "st,stih415-dwmac", "snps,dwmac", "snps,dwmac-3.610";
- 			status 		= "disabled";
- 
--			reg 		= <0xfe810000 0x8000>, <0x148 0x4>;
--			reg-names	= "stmmaceth", "sti-ethconf";
-+			reg		= <0xfe810000 0x8000>;
-+			reg-names	= "stmmaceth";
- 
- 			interrupts 	= <0 147 0>, <0 148 0>, <0 149 0>;
- 			interrupt-names = "macirq", "eth_wake_irq", "eth_lpi";
-@@ -165,7 +165,7 @@
- 			snps,mixed-burst;
- 			snps,force_sf_dma_mode;
- 
--			st,syscon	= <&syscfg_rear>;
-+			st,syscon	= <&syscfg_rear 0x148>;
- 
- 			pinctrl-names 	= "default";
- 			pinctrl-0	= <&pinctrl_mii0>;
-@@ -177,8 +177,8 @@
- 			device_type = "network";
- 			compatible	= "st,stih415-dwmac", "snps,dwmac", "snps,dwmac-3.610";
- 			status 		= "disabled";
--			reg		= <0xfef08000 0x8000>, <0x74 0x4>;
--			reg-names	= "stmmaceth", "sti-ethconf";
-+			reg		= <0xfef08000 0x8000>;
-+			reg-names	= "stmmaceth";
- 			interrupts 	= <0 150 0>, <0 151 0>, <0 152 0>;
- 			interrupt-names = "macirq", "eth_wake_irq", "eth_lpi";
- 
-@@ -186,7 +186,7 @@
- 			snps,mixed-burst;
- 			snps,force_sf_dma_mode;
- 
--			st,syscon		= <&syscfg_sbc>;
-+			st,syscon		= <&syscfg_sbc 0x74>;
- 
- 			resets			= <&softreset STIH415_ETH1_SOFTRESET>;
- 			reset-names		= "stmmaceth";
-diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
-index 85afe01..ea28eba 100644
---- a/arch/arm/boot/dts/stih416.dtsi
-+++ b/arch/arm/boot/dts/stih416.dtsi
-@@ -163,8 +163,8 @@
- 			device_type 	= "network";
- 			compatible	= "st,stih416-dwmac", "snps,dwmac", "snps,dwmac-3.710";
- 			status 		= "disabled";
--			reg 		= <0xfe810000 0x8000>, <0x8bc 0x4>;
--			reg-names	= "stmmaceth", "sti-ethconf";
-+			reg		= <0xfe810000 0x8000>;
-+			reg-names	= "stmmaceth";
- 
- 			interrupts = <0 133 0>, <0 134 0>, <0 135 0>;
- 			interrupt-names = "macirq", "eth_wake_irq", "eth_lpi";
-@@ -172,7 +172,7 @@
- 			snps,pbl 	= <32>;
- 			snps,mixed-burst;
- 
--			st,syscon		= <&syscfg_rear>;
-+			st,syscon		= <&syscfg_rear 0x8bc>;
- 			resets			= <&softreset STIH416_ETH0_SOFTRESET>;
- 			reset-names		= "stmmaceth";
- 			pinctrl-names 	= "default";
-@@ -185,15 +185,15 @@
- 			device_type = "network";
- 			compatible		= "st,stih416-dwmac", "snps,dwmac", "snps,dwmac-3.710";
- 			status 		= "disabled";
--			reg		= <0xfef08000 0x8000>, <0x7f0 0x4>;
--			reg-names	= "stmmaceth", "sti-ethconf";
-+			reg		= <0xfef08000 0x8000>;
-+			reg-names	= "stmmaceth";
- 			interrupts = <0 136 0>, <0 137 0>, <0 138 0>;
- 			interrupt-names = "macirq", "eth_wake_irq", "eth_lpi";
- 
- 			snps,pbl	= <32>;
- 			snps,mixed-burst;
- 
--			st,syscon	= <&syscfg_sbc>;
-+			st,syscon	= <&syscfg_sbc 0x7f0>;
- 
- 			resets		= <&softreset STIH416_ETH1_SOFTRESET>;
- 			reset-names	= "stmmaceth";
-diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c
-index 056b358..bb6e2dc 100644
---- a/drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c
-@@ -122,7 +122,7 @@ struct sti_dwmac {
- 	bool ext_phyclk;	/* Clock from external PHY */
- 	u32 tx_retime_src;	/* TXCLK Retiming*/
- 	struct clk *clk;	/* PHY clock */
--	int ctrl_reg;		/* GMAC glue-logic control register */
-+	u32 ctrl_reg;		/* GMAC glue-logic control register */
- 	int clk_sel_reg;	/* GMAC ext clk selection register */
- 	struct device *dev;
- 	struct regmap *regmap;
-@@ -285,11 +285,6 @@ static int sti_dwmac_parse_data(struct sti_dwmac *dwmac,
- 	if (!np)
- 		return -EINVAL;
- 
--	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "sti-ethconf");
--	if (!res)
--		return -ENODATA;
--	dwmac->ctrl_reg = res->start;
--
- 	/* clk selection from extra syscfg register */
- 	dwmac->clk_sel_reg = -ENXIO;
- 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "sti-clkconf");
-@@ -300,6 +295,12 @@ static int sti_dwmac_parse_data(struct sti_dwmac *dwmac,
- 	if (IS_ERR(regmap))
- 		return PTR_ERR(regmap);
- 
-+	err = of_property_read_u32_index(np, "st,syscon", 1, &dwmac->ctrl_reg);
-+	if (err) {
-+		dev_err(dev, "Can't get sysconfig ctrl offset (%d)\n", err);
-+		return err;
-+	}
-+
- 	dwmac->dev = dev;
- 	dwmac->interface = of_get_phy_mode(np);
- 	dwmac->regmap = regmap;
--- 
-1.9.1
-
+Thanks.
