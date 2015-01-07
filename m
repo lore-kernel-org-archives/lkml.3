@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932846AbbAGBwf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 20:52:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46250 "EHLO
+	id S1757052AbbAGB6p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 20:58:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46421 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932567AbbAGBwW (ORCPT
+	with ESMTP id S932384AbbAGBwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:52:22 -0500
+	Tue, 6 Jan 2015 20:52:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrei Warkentin <andrey.warkentin@gmail.com>,
-        Baruch Siach <baruch@tkos.co.il>, Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH 3.10 08/38] mmc: block: add newline to sysfs display of force_ro
+        Carl Henrik Lunde <chlunde@ping.uio.no>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.18 77/84] udf: Check component length before reading it
 Date: Tue,  6 Jan 2015 17:50:20 -0800
-Message-Id: <20150107014953.809724602@linuxfoundation.org>
+Message-Id: <20150107014031.460573795@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
-In-Reply-To: <20150107014952.440109372@linuxfoundation.org>
-References: <20150107014952.440109372@linuxfoundation.org>
+In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
+References: <20150107014029.012974975@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,36 +24,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Baruch Siach <baruch@tkos.co.il>
+From: Jan Kara <jack@suse.cz>
 
-commit 0031a98a85e9fca282624bfc887f9531b2768396 upstream.
+commit e237ec37ec154564f8690c5bd1795339955eeef9 upstream.
 
-Make force_ro consistent with other sysfs entries.
+Check that length specified in a component of a symlink fits in the
+input buffer we are reading. Also properly ignore component length for
+component types that do not use it. Otherwise we read memory after end
+of buffer for corrupted udf image.
 
-Fixes: 371a689f64b0d ('mmc: MMC boot partitions support')
-Cc: Andrei Warkentin <andrey.warkentin@gmail.com>
-Signed-off-by: Baruch Siach <baruch@tkos.co.il>
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+Reported-by: Carl Henrik Lunde <chlunde@ping.uio.no>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/card/block.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/udf/symlink.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -257,7 +257,7 @@ static ssize_t force_ro_show(struct devi
- 	int ret;
- 	struct mmc_blk_data *md = mmc_blk_get(dev_to_disk(dev));
- 
--	ret = snprintf(buf, PAGE_SIZE, "%d",
-+	ret = snprintf(buf, PAGE_SIZE, "%d\n",
- 		       get_disk_ro(dev_to_disk(dev)) ^
- 		       md->read_only);
- 	mmc_blk_put(md);
+--- a/fs/udf/symlink.c
++++ b/fs/udf/symlink.c
+@@ -42,14 +42,17 @@ static int udf_pc_to_char(struct super_b
+ 	tolen--;
+ 	while (elen < fromlen) {
+ 		pc = (struct pathComponent *)(from + elen);
++		elen += sizeof(struct pathComponent);
+ 		switch (pc->componentType) {
+ 		case 1:
+ 			/*
+ 			 * Symlink points to some place which should be agreed
+  			 * upon between originator and receiver of the media. Ignore.
+ 			 */
+-			if (pc->lengthComponentIdent > 0)
++			if (pc->lengthComponentIdent > 0) {
++				elen += pc->lengthComponentIdent;
+ 				break;
++			}
+ 			/* Fall through */
+ 		case 2:
+ 			if (tolen == 0)
+@@ -74,6 +77,9 @@ static int udf_pc_to_char(struct super_b
+ 			/* that would be . - just ignore */
+ 			break;
+ 		case 5:
++			elen += pc->lengthComponentIdent;
++			if (elen > fromlen)
++				return -EIO;
+ 			comp_len = udf_get_filename(sb, pc->componentIdent,
+ 						    pc->lengthComponentIdent,
+ 						    p, tolen);
+@@ -85,7 +91,6 @@ static int udf_pc_to_char(struct super_b
+ 			tolen--;
+ 			break;
+ 		}
+-		elen += sizeof(struct pathComponent) + pc->lengthComponentIdent;
+ 	}
+ 	if (p > to + 1)
+ 		p[-1] = '\0';
 
 
