@@ -1,161 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911AbbAGRPJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 12:15:09 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:38618 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929AbbAGRPH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 12:15:07 -0500
-From: Petr Cermak <petrcermak@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Primiano Tucci <primiano@chromium.org>,
-        Petr Cermak <petrcermak@chromium.org>
-Subject: [PATCH v2 1/2] task_mmu: Reduce excessive indentation in clear_refs_write
-Date: Wed,  7 Jan 2015 17:06:53 +0000
-Message-Id: <ebf1cce7f112b917e5a667016f4bdfbaea6e8c07.1420643264.git.petrcermak@chromium.org>
-X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
-In-Reply-To: <cover.1420643264.git.petrcermak@chromium.org>
-References: <cover.1420643264.git.petrcermak@chromium.org>
+	id S1754135AbbAGRHE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 12:07:04 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:40925 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753305AbbAGRHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 12:07:00 -0500
+Date: Wed, 7 Jan 2015 18:06:54 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, tony.luck@intel.com,
+        dougthompson@xmission.com, mchehab@osg.samsung.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-edac@vger.kernel.org,
+        dave.hansen@linux.intel.com, mgorman@suse.de, bp@suse.de,
+        riel@redhat.com, jacob.w.shin@gmail.com
+Subject: Re: [PATCH 0/3] Fix MCE handling for AMD multi-node processors
+Message-ID: <20150107170654.GG3984@pd.tnic>
+References: <1419279012-4754-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+ <20141222201542.GB1942@pd.tnic>
+ <5498858F.1030209@amd.com>
+ <20141222231929.GC1942@pd.tnic>
+ <5499C57B.5030900@amd.com>
+ <54AC75A7.6050608@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <54AC75A7.6050608@amd.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a purely cosmetic fix for clear_refs_write(). It removes excessive
-indentation as suggested by Bjorn Helgaas <bhelgaas@google.com>. This is to
-make upcoming changes to the file more readable.
+On Tue, Jan 06, 2015 at 05:54:15PM -0600, Aravind Gopalakrishnan wrote:
+> Hi Boris,
+> It seems my earlier understanding of hardware behavior was not completely
+> right.
+> Here are some clarifications I have received after some internal discussion-
+> When D18F3x44[NBMstToMstCpuEn] is set, the interrupt is also routed to the
+> NBC.
 
-Signed-off-by: Petr Cermak <petrcermak@chromium.org>
----
- fs/proc/task_mmu.c | 102 ++++++++++++++++++++++++++++-------------------------
- 1 file changed, 53 insertions(+), 49 deletions(-)
+Good :)
 
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 246eae8..500d310 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -828,6 +828,8 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
- 	enum clear_refs_types type;
- 	int itype;
- 	int rv;
-+	struct clear_refs_private cp;
-+	struct mm_walk clear_refs_walk;
- 
- 	memset(buffer, 0, sizeof(buffer));
- 	if (count > sizeof(buffer) - 1)
-@@ -852,59 +854,61 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
- 	if (!task)
- 		return -ESRCH;
- 	mm = get_task_mm(task);
--	if (mm) {
--		struct clear_refs_private cp = {
--			.type = type,
--		};
--		struct mm_walk clear_refs_walk = {
--			.pmd_entry = clear_refs_pte_range,
--			.mm = mm,
--			.private = &cp,
--		};
--		down_read(&mm->mmap_sem);
--		if (type == CLEAR_REFS_SOFT_DIRTY) {
--			for (vma = mm->mmap; vma; vma = vma->vm_next) {
--				if (!(vma->vm_flags & VM_SOFTDIRTY))
--					continue;
--				up_read(&mm->mmap_sem);
--				down_write(&mm->mmap_sem);
--				for (vma = mm->mmap; vma; vma = vma->vm_next) {
--					vma->vm_flags &= ~VM_SOFTDIRTY;
--					vma_set_page_prot(vma);
--				}
--				downgrade_write(&mm->mmap_sem);
--				break;
--			}
--			mmu_notifier_invalidate_range_start(mm, 0, -1);
--		}
-+	if (!mm)
-+		goto out_task;
-+
-+	cp = (struct clear_refs_private) {
-+		.type = type
-+	};
-+	clear_refs_walk = (struct mm_walk) {
-+		.pmd_entry = clear_refs_pte_range,
-+		.mm = mm,
-+		.private = &cp
-+	};
-+	down_read(&mm->mmap_sem);
-+	if (type == CLEAR_REFS_SOFT_DIRTY) {
- 		for (vma = mm->mmap; vma; vma = vma->vm_next) {
--			cp.vma = vma;
--			if (is_vm_hugetlb_page(vma))
--				continue;
--			/*
--			 * Writing 1 to /proc/pid/clear_refs affects all pages.
--			 *
--			 * Writing 2 to /proc/pid/clear_refs only affects
--			 * Anonymous pages.
--			 *
--			 * Writing 3 to /proc/pid/clear_refs only affects file
--			 * mapped pages.
--			 *
--			 * Writing 4 to /proc/pid/clear_refs affects all pages.
--			 */
--			if (type == CLEAR_REFS_ANON && vma->vm_file)
-+			if (!(vma->vm_flags & VM_SOFTDIRTY))
- 				continue;
--			if (type == CLEAR_REFS_MAPPED && !vma->vm_file)
--				continue;
--			walk_page_range(vma->vm_start, vma->vm_end,
--					&clear_refs_walk);
-+			up_read(&mm->mmap_sem);
-+			down_write(&mm->mmap_sem);
-+			for (vma = mm->mmap; vma; vma = vma->vm_next) {
-+				vma->vm_flags &= ~VM_SOFTDIRTY;
-+				vma_set_page_prot(vma);
-+			}
-+			downgrade_write(&mm->mmap_sem);
-+			break;
- 		}
--		if (type == CLEAR_REFS_SOFT_DIRTY)
--			mmu_notifier_invalidate_range_end(mm, 0, -1);
--		flush_tlb_mm(mm);
--		up_read(&mm->mmap_sem);
--		mmput(mm);
-+		mmu_notifier_invalidate_range_start(mm, 0, -1);
- 	}
-+	for (vma = mm->mmap; vma; vma = vma->vm_next) {
-+		cp.vma = vma;
-+		if (is_vm_hugetlb_page(vma))
-+			continue;
-+		/*
-+		 * Writing 1 to /proc/pid/clear_refs affects all pages.
-+		 *
-+		 * Writing 2 to /proc/pid/clear_refs only affects anonymous
-+		 * pages.
-+		 *
-+		 * Writing 3 to /proc/pid/clear_refs only affects file mapped
-+		 * pages.
-+		 *
-+		 * Writing 4 to /proc/pid/clear_refs affects all pages.
-+		 */
-+		if (type == CLEAR_REFS_ANON && vma->vm_file)
-+			continue;
-+		if (type == CLEAR_REFS_MAPPED && !vma->vm_file)
-+			continue;
-+		walk_page_range(vma->vm_start, vma->vm_end, &clear_refs_walk);
-+	}
-+	if (type == CLEAR_REFS_SOFT_DIRTY)
-+		mmu_notifier_invalidate_range_end(mm, 0, -1);
-+	flush_tlb_mm(mm);
-+	up_read(&mm->mmap_sem);
-+	mmput(mm);
-+
-+out_task:
- 	put_task_struct(task);
- 
- 	return count;
+> This was not immediately clear to me from the description for the field in
+> the BKDG.
+> The BKDG states that errors are reported to the NBC and also that status,
+> addr, ctl
+> MSRs for MC4 are only accessible from the NBC.
+> I took this to understand that the error info is written to the NBC MSRs
+> while
+> the #MC could be generated from the non-NBC.
+> 
+> Now, given that setting NBMstToMstCpuEn ensures #MC is generated only on NBC
+> for MC4 errors,
+> we don't have a problem to solve in the #MC handler code.
+> So, we can discard patch2 of the series,
+> 
+> But we still need to change the error injection interfaces in mce_amd_inj:
+> mce_amd_inj triggers a #MC on the cpu number that the user specifies on
+> debugfs.
+> For any error other than MC4 errors, this is fine.
+> But we should really be triggering #MC only on NBC for MC4 errors.
+
+Why?
+
+As you said yourself, the errors get reported on the NBC. Where they get
+*triggered* is a different story.
+
+We do injection as it is described in "2.15.2 Error Injection and
+Simulation" in F15h BKDG, for example. Reporting of the thusly injected
+bank4 error goes to the NBC.
+
+I don't see the need to fix anything in the code as it is.
+
 -- 
-2.2.0.rc0.207.ga3a616c
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
