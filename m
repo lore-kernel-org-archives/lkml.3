@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712AbbAGLag (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 06:30:36 -0500
+	id S1753068AbbAGLdc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 06:33:32 -0500
 Received: from mailout1.w1.samsung.com ([210.118.77.11]:61519 "EHLO
 	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752477AbbAGLac (ORCPT
+	with ESMTP id S1752671AbbAGLae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 06:30:32 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-d4-54ad18d70c7c
+	Wed, 7 Jan 2015 06:30:34 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-a0-54ad18d6dc5a
 From: Marek Szyprowski <m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
@@ -20,143 +20,135 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         linus.walleij@linaro.org, tony@atomide.com, drake@endlessm.com,
         loeliger@gmail.com, Mark Rutland <mark.rutland@arm.com>, nm@ti.com,
         khilman@linaro.org
-Subject: [PATCH v12 0/9] Enable L2 cache support on Exynos4210/4x12 SoCs
-Date: Wed, 07 Jan 2015 12:30:15 +0100
-Message-id: <1420630224-8887-1-git-send-email-m.szyprowski@samsung.com>
+Subject: [PATCH v12 1/9] ARM: OMAP2+: use common l2cache initialization code
+Date: Wed, 07 Jan 2015 12:30:16 +0100
+Message-id: <1420630224-8887-2-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.9.2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPLMWRmVeSWpSXmKPExsVy+t/xq7rXJdaGGMxeL2bxd9IxdotH8x8z
+In-reply-to: <1420630224-8887-1-git-send-email-m.szyprowski@samsung.com>
+References: <1420630224-8887-1-git-send-email-m.szyprowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsVy+t/xq7rXJNaGGBx7qGTxd9IxdotH8x8z
 	W/QuuMpm8fXwCkaLs01v2C22d85gt5jyZzmTxabH11gtLu+aw2Yxe0k/i8WM8/uYLG5f5rU4
 	t30Li8XaI3fZLZZev8hk8ebHWSaLU9c/s1ms2vWH0WL/FS8HYY8189YwerQ097B5/P41idHj
 	29dJLB6X+3qZPBZ9z/LYOesuu8eda3vYPDYvqfe4cqKJ1aNvyypGj+M3tjN5fN4kF8AbxWWT
-	kpqTWZZapG+XwJXxp+sQW8EftYpJc9tYGxj/yHUxcnJICJhIvN+6hxHCFpO4cG89WxcjF4eQ
-	wFJGiaVbpjBDOH1MEltXn2IDqWITMJToetsFZosIuEn8W3cIrINZYBqLxKYj55lBEsICHhK3
-	pr9mBbFZBFQl/i6/yQRi8wq4S5za+IAdYp2cxP+XK5gmMHIvYGRYxSiaWppcUJyUnmukV5yY
-	W1yal66XnJ+7iRES6F93MC49ZnWIUYCDUYmHV2HymhAh1sSy4srcQ4wSHMxKIrxvfgGFeFMS
-	K6tSi/Lji0pzUosPMTJxcEo1MDbK5FWkSpj3Mck313fLPnEw37rirMKLZ/vvrS6erHPtiauY
-	+QaH0Dqujz/jnxUp/ct7U3NjodMXg03nKlI3FL/6xVLz4+6hGbO3LOw6eiPARWz6fLkZpUp9
-	DeHeh1J3Zp14v0u58ZDmmeC85YIRjteD8pqvWPi3SzWtcjr1iFX9+bX7l/c0rldiKc5INNRi
-	LipOBAAw/4rfUgIAAA==
+	kpqTWZZapG+XwJVxbu0StoJXMhX/NtxmaWDcJtHFyMkhIWAi0bP2OBuELSZx4d56IJuLQ0hg
+	KaPEgXPLWSCcPiaJ5l3/wKrYBAwlut52gdkiAm4S/9YdAutgFpjGIrHpyHlmkISwgI/EzOW9
+	YEUsAqoSUx+dZAWxeQXcJbpXfmSHWCcn8f/lCiYQm1PAQ+LO+WVgthBQzYKJK9kmMPIuYGRY
+	xSiaWppcUJyUnmuoV5yYW1yal66XnJ+7iRESGV92MC4+ZnWIUYCDUYmHt6BvTYgQa2JZcWXu
+	IUYJDmYlEd43v4BCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGAPiOiqeaQk3ie98uVBt0rsPFanT
+	HRStCpfUt75MVl93KU34R/5RNtvns0v2rrmyKzpgw5Z840OzH8RK3SsTmeD58bzTp58Z77ac
+	/znPK3Ix/00jy+LLFYELGt40n+bznWC1WiBNKevngcjopqsfBTbxhrwxnFAsU/HE1zm7oXHV
+	6ket31m6VyuxFGckGmoxFxUnAgB3gflVagIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an updated patchset, which intends to add support for L2 cache
-on Exynos4 SoCs on boards running under secure firmware, which requires
-certain initialization steps to be done with help of firmware, as
-selected registers are writable only from secure mode.
+This patch implements generic DT L2C initialisation (the one from
+init_IRQ in arch/arm/kernel/irq.c) for Omap4 and AM43 platforms and
+kills the SoC specific stuff in arch/arm/mach-omap2/omap4-common.c.
 
-First patch updates Omap2+ platforms by moving l2cache initialization to
-common code. This will resolve too early call to l2cache init, what might
-cause kmalloc failure in code added in next patches.
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Tested-by: Nishanth Menon <nm@ti.com>
+Acked-by: Nishanth Menon <nm@ti.com>
+Acked-by: Tony Lindgren <tony@atomide.com>
+---
+ arch/arm/mach-omap2/board-generic.c |  6 ++++++
+ arch/arm/mach-omap2/common.h        |  8 ++++++++
+ arch/arm/mach-omap2/omap4-common.c  | 16 +---------------
+ 3 files changed, 15 insertions(+), 15 deletions(-)
 
-Next patch fixes access method to latency and filter settings in l2cache
-driver.
-
-Next four patches extend existing support for secure write in L2C driver
-to account for design of secure firmware running on Exynos. Namely:
- 1) direct read access to certain registers is needed on Exynos, because
-    secure firmware calls set several registers at once,
- 2) not all boards are running secure firmware, so .write_sec callback
-    needs to be installed in Exynos firmware ops initialization code,
- 3) write access to {DATA,TAG}_LATENCY_CTRL registers fron non-secure world
-    is not allowed and so must use l2c_write_sec as well,
- 4) on certain boards, default value of prefetch register is incorrect
-    and must be overridden at L2C initialization.
-For boards running with firmware that provides access to individual
-L2C registers this series should introduce no functional changes. However
-since the driver is widely used on other platforms I'd like to kindly ask
-any interested people for testing.
-
-Further three patches add implementation of .write_sec and .configure
-callbacks for Exynos secure firmware and necessary DT nodes to enable
-L2 cache.
-
-Changes in this version tested on Exynos4412-based TRATS2 and OdroidU3+
-boards (both with secure firmware). There should be no functional change
-for Exynos boards running without secure firmware. OMAP based platforms
-were tested by Nishanth Menon and Tony Lindgren.
-
-Depends on:
-- v3.19-rc2
-
-Changelog:
-
-Changes since v11:
-(https://lkml.org/lkml/2015/1/5/254)
-- Added changes suggested by Nishanth to 'ARM: l2c: use l2c_write_sec()
-  for restoring latency and filter regs' patch
-- Fixed 'checkpatch --strict' issues
-- Added Nishanth's and Tony's acked/tested tags
-
-Changes since v10:
-(https://lkml.org/lkml/2014/12/23/151)
-- Added patch, which fixes access method to latency and filter settings
-  in l2cache
-
-Changes since v9:
-(https://lkml.org/lkml/2014/11/17/217)
-- Rebased onto vanilla v3.19-rc1
-- Added patch for Omap2+ (move l2cache initialization to common code), what
-  fixes too early initialization (kmalloc failure)
-
-Changes since v8:
-(http://lkml.org/lkml/2014/11/13/263)
-- Rebased onto vanilla v3.18-rc3 and added required includes, which were
-  previously added by other patches
-- Added Acked-by tags for Exynos part
-
-Changes since v7:
-(https://lkml.org/lkml/2014/10/29/158)
-- rebased onto arm-soc/for-next kernel tree (depends on patches merged to
-  v3.18-rc3 and arm-soc/samsung/pm2 branch)
-- removed 'ARM: l2c: unify L2C-310 OF initialization error messages' patch
-  (no longer needed)
-
-Changes since v6:
-(https://lkml.org/lkml/2014/10/27/233)
-- changed PL310 to L2C-310 prefix in error messages
-- added patch shortening the error message about incorrect associativity
-
-Changes since v5:
-(https://lkml.org/lkml/2014/9/24/364)
-- rebased onto v3.18-rc2
-- added error message about missing properties values
-
-Changes since v4:
-(https://lkml.org/lkml/2014/8/26/461)
- - rewrote the code accessing l2x0_saved_regs from assembly code
- - added comment and reworked unconditional call to SMC_CMD_L2X0INVALL
-
-
-Patch summary:
-
-Marek Szyprowski (2):
-  ARM: OMAP2+: use common l2cache initialization code
-  ARM: l2c: use l2c_write_sec() for restoring latency and filter regs
-
-Tomasz Figa (7):
-  ARM: l2c: Refactor the driver to use commit-like interface
-  ARM: l2c: Add interface to ask hypervisor to configure L2C
-  ARM: l2c: Get outer cache .write_sec callback from mach_desc only if
-    not NULL
-  ARM: l2c: Add support for overriding prefetch settings
-  ARM: EXYNOS: Add .write_sec outer cache callback for L2C-310
-  ARM: EXYNOS: Add support for non-secure L2X0 resume
-  ARM: dts: exynos4: Add nodes for L2 cache controller
-
- Documentation/devicetree/bindings/arm/l2cc.txt |  10 +
- arch/arm/boot/dts/exynos4210.dtsi              |   9 +
- arch/arm/boot/dts/exynos4x12.dtsi              |  14 ++
- arch/arm/include/asm/outercache.h              |   3 +
- arch/arm/kernel/irq.c                          |   3 +-
- arch/arm/mach-exynos/firmware.c                |  50 +++++
- arch/arm/mach-exynos/sleep.S                   |  46 +++++
- arch/arm/mach-omap2/board-generic.c            |   6 +
- arch/arm/mach-omap2/common.h                   |   8 +
- arch/arm/mach-omap2/omap4-common.c             |  16 +-
- arch/arm/mm/cache-l2x0.c                       | 272 ++++++++++++++++---------
- 11 files changed, 325 insertions(+), 112 deletions(-)
-
+diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
+index 608079a1aba6..c5c480b76da5 100644
+--- a/arch/arm/mach-omap2/board-generic.c
++++ b/arch/arm/mach-omap2/board-generic.c
+@@ -171,6 +171,9 @@ static const char *const omap4_boards_compat[] __initconst = {
+ };
+ 
+ DT_MACHINE_START(OMAP4_DT, "Generic OMAP4 (Flattened Device Tree)")
++	.l2c_aux_val	= OMAP_L2C_AUX_CTRL,
++	.l2c_aux_mask	= 0xcf9fffff,
++	.l2c_write_sec	= omap4_l2c310_write_sec,
+ 	.reserve	= omap_reserve,
+ 	.smp		= smp_ops(omap4_smp_ops),
+ 	.map_io		= omap4_map_io,
+@@ -214,6 +217,9 @@ static const char *const am43_boards_compat[] __initconst = {
+ };
+ 
+ DT_MACHINE_START(AM43_DT, "Generic AM43 (Flattened Device Tree)")
++	.l2c_aux_val	= OMAP_L2C_AUX_CTRL,
++	.l2c_aux_mask	= 0xcf9fffff,
++	.l2c_write_sec	= omap4_l2c310_write_sec,
+ 	.map_io		= am33xx_map_io,
+ 	.init_early	= am43xx_init_early,
+ 	.init_late	= am43xx_init_late,
+diff --git a/arch/arm/mach-omap2/common.h b/arch/arm/mach-omap2/common.h
+index 377eea849e7b..2610c9f8d29f 100644
+--- a/arch/arm/mach-omap2/common.h
++++ b/arch/arm/mach-omap2/common.h
+@@ -35,6 +35,7 @@
+ #include <linux/irqchip/irq-omap-intc.h>
+ 
+ #include <asm/proc-fns.h>
++#include <asm/hardware/cache-l2x0.h>
+ 
+ #include "i2c.h"
+ #include "serial.h"
+@@ -94,11 +95,18 @@ extern void omap3_gptimer_timer_init(void);
+ extern void omap4_local_timer_init(void);
+ #ifdef CONFIG_CACHE_L2X0
+ int omap_l2_cache_init(void);
++#define OMAP_L2C_AUX_CTRL	(L2C_AUX_CTRL_SHARED_OVERRIDE | \
++				 L310_AUX_CTRL_DATA_PREFETCH | \
++				 L310_AUX_CTRL_INSTR_PREFETCH)
++void omap4_l2c310_write_sec(unsigned long val, unsigned reg);
+ #else
+ static inline int omap_l2_cache_init(void)
+ {
+ 	return 0;
+ }
++
++#define OMAP_L2C_AUX_CTRL	0
++#define omap4_l2c310_write_sec	NULL
+ #endif
+ extern void omap5_realtime_timer_init(void);
+ 
+diff --git a/arch/arm/mach-omap2/omap4-common.c b/arch/arm/mach-omap2/omap4-common.c
+index b7cb44abe49b..fe99ceff2e2d 100644
+--- a/arch/arm/mach-omap2/omap4-common.c
++++ b/arch/arm/mach-omap2/omap4-common.c
+@@ -166,7 +166,7 @@ void __iomem *omap4_get_l2cache_base(void)
+ 	return l2cache_base;
+ }
+ 
+-static void omap4_l2c310_write_sec(unsigned long val, unsigned reg)
++void omap4_l2c310_write_sec(unsigned long val, unsigned reg)
+ {
+ 	unsigned smc_op;
+ 
+@@ -201,24 +201,10 @@ static void omap4_l2c310_write_sec(unsigned long val, unsigned reg)
+ 
+ int __init omap_l2_cache_init(void)
+ {
+-	u32 aux_ctrl;
+-
+ 	/* Static mapping, never released */
+ 	l2cache_base = ioremap(OMAP44XX_L2CACHE_BASE, SZ_4K);
+ 	if (WARN_ON(!l2cache_base))
+ 		return -ENOMEM;
+-
+-	/* 16-way associativity, parity disabled, way size - 64KB (es2.0 +) */
+-	aux_ctrl = L2C_AUX_CTRL_SHARED_OVERRIDE |
+-		   L310_AUX_CTRL_DATA_PREFETCH |
+-		   L310_AUX_CTRL_INSTR_PREFETCH;
+-
+-	outer_cache.write_sec = omap4_l2c310_write_sec;
+-	if (of_have_populated_dt())
+-		l2x0_of_init(aux_ctrl, 0xcf9fffff);
+-	else
+-		l2x0_init(l2cache_base, aux_ctrl, 0xcf9fffff);
+-
+ 	return 0;
+ }
+ #endif
 -- 
 1.9.2
 
