@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758586AbbAGC7L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:59:11 -0500
-Received: from mail-yk0-f182.google.com ([209.85.160.182]:48954 "EHLO
-	mail-yk0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756639AbbAGC7H (ORCPT
+	id S933348AbbAGC7d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:59:33 -0500
+Received: from mail-yh0-f48.google.com ([209.85.213.48]:53623 "EHLO
+	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758525AbbAGC7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:59:07 -0500
+	Tue, 6 Jan 2015 21:59:10 -0500
 From: Walter Lozano <walter@vanguardiasur.com.ar>
 To: michael.hennerich@analog.com, dmitry.torokhov@gmail.com,
         robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -14,164 +14,84 @@ To: michael.hennerich@analog.com, dmitry.torokhov@gmail.com,
         devicetree@vger.kernel.org, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Walter Lozano <walter@vanguardiasur.com.ar>
-Subject: [PATCH 1/2] Input: adxl34x - add OF support
-Date: Tue,  6 Jan 2015 23:58:56 -0300
-Message-Id: <1420599537-28740-1-git-send-email-walter@vanguardiasur.com.ar>
+Subject: [PATCH 2/2] Input: adxl34x - add device tree documentation
+Date: Tue,  6 Jan 2015 23:58:57 -0300
+Message-Id: <1420599537-28740-2-git-send-email-walter@vanguardiasur.com.ar>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1420599537-28740-1-git-send-email-walter@vanguardiasur.com.ar>
+References: <1420599537-28740-1-git-send-email-walter@vanguardiasur.com.ar>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the missing support for OF to the adxl34x digital
-accelerometer. This is a basic version which supports the main
-optional parameters. This implementation copies the default values
-to the adxl34x_platform_data structure and overrides the values
-that are passed from the device tree.
+This patch adds a basic documentation regarding the device tree
+bindings of adxl34x digital accelerometer.
 
 Signed-off-by: Walter Lozano <walter@vanguardiasur.com.ar>
 ---
- drivers/input/misc/adxl34x.c |  108 +++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 107 insertions(+), 1 deletion(-)
+ .../devicetree/bindings/input/adxl34x.txt          |   53 ++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/input/adxl34x.txt
 
-diff --git a/drivers/input/misc/adxl34x.c b/drivers/input/misc/adxl34x.c
-index 2b2d02f..b3e06a3 100644
---- a/drivers/input/misc/adxl34x.c
-+++ b/drivers/input/misc/adxl34x.c
-@@ -16,6 +16,8 @@
- #include <linux/workqueue.h>
- #include <linux/input/adxl34x.h>
- #include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
- 
- #include "adxl34x.h"
- 
-@@ -688,13 +690,113 @@ static void adxl34x_input_close(struct input_dev *input)
- 	mutex_unlock(&ac->mutex);
- }
- 
-+void adxl34x_parse_dt(struct device *dev, struct adxl34x_platform_data *pdata){
-+	if (!dev->of_node)
-+		return;
+diff --git a/Documentation/devicetree/bindings/input/adxl34x.txt b/Documentation/devicetree/bindings/input/adxl34x.txt
+new file mode 100644
+index 0000000..0774f7e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/adxl34x.txt
+@@ -0,0 +1,53 @@
++Device Tree bindings for adxl34x digital accelerometer, both spi and i2c.
 +
-+	pdata =  kzalloc(sizeof(*pdata), GFP_KERNEL);
++Depending on the interface this node should be a child of a spi or i2c bus.
 +
-+	memcpy(pdata, &adxl34x_default_init, sizeof(struct adxl34x_platform_data));
++Required properties:
++- compatible: "adxl34x"
++- reg: SPI/I2C device address
++- interrupt-parent: a phandle for the interrupt controller
++- interrupts: interrupt to which the chip is connected
 +
-+	of_property_read_u8(dev->of_node, "adi,tap-axis-control",
-+		 &pdata->tap_axis_control);
++Optional parameters:
++Please refer to include/linux/input/adxl34x.h for specific info. If the value
++is not specified the driver will use its default.
 +
-+	of_property_read_u8(dev->of_node, "adi,tap-threshold",
-+		 &pdata->tap_threshold);
++- adi,tap-axis-control: u8 default 0
++- adi,tap-threshold: u8 default 35
++- adi,tap-duration: u8 default 3
++- adi,tap-latency: u8 default 20
++- adi,tap-window: u8 default 20
++- adi,act-axis-control: u8 default 0xFF
++- adi,activity-threshold: u8 default 6
++- adi,inactivity-threshold: u8 default 4
++- adi,inactivity-time: u8 default 3
++- adi,free-fall-threshold: u8 default 8
++- adi,free-fall-time: u8 default 20
++- adi,data-rate: u8 default 8
++- adi,data-range: u8 default 4
++- adi,low-power-mode: u8 defaut 0
++- adi,power-mode: u8 default 0x30
++- adi,fifo-mode: u8 default 2
++- adi,watermark: u8 default 0
++- adi,use-int2: u8
++- adi,orientation-enable: u8 default 0
++- adi,deadzone-angle: u8 default 0
++- divisor-length: u8 default 0
 +
-+	of_property_read_u8(dev->of_node, "adi,tap-duration",
-+		 &pdata->tap_duration);
++Example
 +
-+	of_property_read_u8(dev->of_node, "adi,tap-latency",
-+		 &pdata->tap_latency);
++&i2c1 {
++	status = "okay";
 +
-+	of_property_read_u8(dev->of_node, "adi,tap-window",
-+		 &pdata->tap_window);
++	accel1: accelerometer@53 {
++		compatible = "adxl34x";
++		reg = <0x53>;
 +
-+	of_property_read_u8(dev->of_node, "adi,act-axis-control",
-+		 &pdata->act_axis_control);
++		interrupt-parent = <&portc>;
++		interrupts = <3 2>;
 +
-+	of_property_read_u8(dev->of_node, "adi,activity-threshold",
-+		 &pdata->activity_threshold);
++		adi,inactivity-time = /bits/ 8 <6>;
++		adi,data-range = /bits/ 8 <1>;
++	};
++};
 +
-+	of_property_read_u8(dev->of_node, "adi,inactivity-threshold",
-+		 &pdata->inactivity_threshold);
-+
-+	of_property_read_u8(dev->of_node, "adi,inactivity-time",
-+		 &pdata->inactivity_time);
-+
-+	of_property_read_u8(dev->of_node, "adi,free-fall-threshold",
-+		 &pdata->free_fall_threshold);
-+
-+	of_property_read_u8(dev->of_node, "adi,free-fall-time",
-+		 &pdata->free_fall_time);
-+
-+	of_property_read_u8(dev->of_node, "adi,data-rate",
-+		 &pdata->data_rate);
-+
-+	of_property_read_u8(dev->of_node, "adi,data-range",
-+		 &pdata->data_range);
-+
-+	of_property_read_u8(dev->of_node, "adi,low-power-mode",
-+		 &pdata->low_power_mode);
-+
-+	of_property_read_u8(dev->of_node, "adi,power-mode",
-+		 &pdata->power_mode);
-+
-+	of_property_read_u8(dev->of_node, "adi,fifo-mode",
-+		 &pdata->fifo_mode);
-+
-+	of_property_read_u8(dev->of_node, "adi,watermark",
-+		 &pdata->watermark);
-+
-+	of_property_read_u8(dev->of_node, "adi,use-int2",
-+		 &pdata->use_int2);
-+
-+	of_property_read_u8(dev->of_node, "adi,orientation-enable",
-+		 &pdata->orientation_enable);
-+
-+	of_property_read_u8(dev->of_node, "adi,deadzone-angle",
-+		 &pdata->deadzone_angle);
-+
-+	of_property_read_u8(dev->of_node, "adi,divisor-length",
-+		 &pdata->divisor_length);
-+
-+	of_property_read_u32(dev->of_node, "adi,ev-type",
-+		 &pdata->ev_type);
-+
-+	of_property_read_u32(dev->of_node, "adi,ev-code-x",
-+		 &pdata->ev_code_x);
-+
-+	of_property_read_u32(dev->of_node, "adi,ev-code-y",
-+		 &pdata->ev_code_y);
-+
-+	of_property_read_u32(dev->of_node, "adi,ev-code-z",
-+		 &pdata->ev_code_z);
-+
-+	of_property_read_u32_array(dev->of_node, "adi,ev-code-tap",
-+		 pdata->ev_code_tap, 3);
-+
-+	of_property_read_u32(dev->of_node, "adi,ev-code-ff",
-+		 &pdata->ev_code_ff);
-+
-+	of_property_read_u32(dev->of_node, "adi,ev-code-act-inactivity",
-+		 &pdata->ev_code_act_inactivity);
-+
-+	of_property_read_u32_array(dev->of_node, "adi,ev-codes-orient-2d",
-+		 pdata->ev_codes_orient_2d, 4);
-+
-+	of_property_read_u32_array(dev->of_node, "adi,ev-codes-orient-3d",
-+		 pdata->ev_codes_orient_3d, 6);
-+
-+}
-+
- struct adxl34x *adxl34x_probe(struct device *dev, int irq,
- 			      bool fifo_delay_default,
- 			      const struct adxl34x_bus_ops *bops)
- {
- 	struct adxl34x *ac;
- 	struct input_dev *input_dev;
--	const struct adxl34x_platform_data *pdata;
-+	struct adxl34x_platform_data *pdata;
- 	int err, range, i;
- 	unsigned char revid;
- 
-@@ -714,6 +816,10 @@ struct adxl34x *adxl34x_probe(struct device *dev, int irq,
- 	ac->fifo_delay = fifo_delay_default;
- 
- 	pdata = dev_get_platdata(dev);
-+
-+	if (!pdata && dev->of_node)
-+		adxl34x_parse_dt(dev, pdata);
-+
- 	if (!pdata) {
- 		dev_dbg(dev,
- 			"No platform data: Using default initialization\n");
 -- 
 1.7.10.4
 
