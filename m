@@ -1,142 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882AbbAGPpr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 10:45:47 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:33194 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639AbbAGPpp (ORCPT
+	id S1753541AbbAGPrN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 10:47:13 -0500
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:60451 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752419AbbAGPrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 10:45:45 -0500
-Date: Wed, 7 Jan 2015 10:44:16 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Jan Beulich <JBeulich@suse.com>, David Rientjes <rientjes@google.com>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Richard Weinberger <richard@nod.at>, Oren Twaig <oren@scalemp.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Prarit Bhargava <prarit@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Ingo Molnar <mingo@kernel.org>, xen-devel@lists.xenproject.org
-Subject: Re: [Bugfix] x86/apic: Fix xen IRQ allocation failure caused by
- commit b81975eade8c
-Message-ID: <20150107154416.GB30955@l.oracle.com>
-References: <1420611244-25624-1-git-send-email-jiang.liu@linux.intel.com>
- <20150107145050.GC30457@l.oracle.com>
- <54AD52D0.5050303@linux.intel.com>
+	Wed, 7 Jan 2015 10:47:12 -0500
+Message-ID: <54AD54FC.7040107@android.com>
+Date: Wed, 07 Jan 2015 07:47:08 -0800
+From: Mark Salyzyn <salyzyn@android.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54AD52D0.5050303@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Joe Perches <joe@perches.com>
+CC: linux-kernel@vger.kernel.org, Anton Vorontsov <anton@enomsg.org>,
+        Colin Cross <ccross@android.com>, Kees Cook <keescook@chromium.org>,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH v3 1/3] pstore: use scnprintf
+References: <1420571907-13162-1-git-send-email-salyzyn@android.com> <1420597507.28667.2.camel@perches.com>
+In-Reply-To: <1420597507.28667.2.camel@perches.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 11:37:52PM +0800, Jiang Liu wrote:
-> On 2015/1/7 22:50, Konrad Rzeszutek Wilk wrote:
-> > On Wed, Jan 07, 2015 at 02:13:49PM +0800, Jiang Liu wrote:
-> >> Commit b81975eade8c ("x86, irq: Clean up irqdomain transition code")
-> >> breaks xen IRQ allocation because xen_smp_prepare_cpus() doesn't invoke
-> >> setup_IO_APIC(), so no irqdomains created for IOAPICs and
-> >> mp_map_pin_to_irq() fails at the very beginning.
-> >> --- a/arch/x86/kernel/apic/io_apic.c
-> >> +++ b/arch/x86/kernel/apic/io_apic.c
-> >> @@ -2369,31 +2369,29 @@ static void ioapic_destroy_irqdomain(int idx)
-> >>  	ioapics[idx].pin_info = NULL;
-> >>  }
-> >>  
-> >> -void __init setup_IO_APIC(void)
-> >> +void __init setup_IO_APIC(bool xen_smp)
-> >>  {
-> >>  	int ioapic;
-> >>  
-> >> -	/*
-> >> -	 * calling enable_IO_APIC() is moved to setup_local_APIC for BP
-> >> -	 */
-> >> -	io_apic_irqs = nr_legacy_irqs() ? ~PIC_IRQS : ~0UL;
-> >> +	if (!xen_smp) {
-> >> +		apic_printk(APIC_VERBOSE, "ENABLING IO-APIC IRQs\n");
-> >> +		io_apic_irqs = nr_legacy_irqs() ? ~PIC_IRQS : ~0UL;
-> >> +
-> >> +		/* Set up IO-APIC IRQ routing. */
-> >> +		x86_init.mpparse.setup_ioapic_ids();
-> >> +		sync_Arb_IDs();
-> >> +	}
-> > 
-> > 
-> > Is there a specific reason that this cannot run in all cases?
-> > 
-> > What I am asking is why are we doing a special case here? The description
-> > at the top implied that we were just missing an call to
-> > setup_IO_APIC.. 
-> Hi Konrad,
-> 	I'm not very familiar with Xen IRQ yet, so I just enabled the
-> code to create irqdomains for IOAPICs and keep other part as is. I will
-> try to check whether we could enable other part all together:)
+On 01/06/2015 06:25 PM, Joe Perches wrote:
+> It'd be nice to describe the changes between versions.
+>
+> Typically, it's done after the --- line separating the
+> changelog and sign-off and the patch.
+>
+> cheers, Joe
+Thanks.
 
-If you want you can (privately) send me (or Sander) and patch that I would
-be happy to test out. It is quite amusing that I have not used the power
-button for quite a while  - I always rebooting the machine to install
-a new kernel :-)
+For the record:
 
-> Regards!
-> Gerry
-> 
-> > 
-> >>  
-> >> -	apic_printk(APIC_VERBOSE, "ENABLING IO-APIC IRQs\n");
-> >>  	for_each_ioapic(ioapic)
-> >>  		BUG_ON(mp_irqdomain_create(ioapic));
-> >> -
-> >> -	/*
-> >> -         * Set up IO-APIC IRQ routing.
-> >> -         */
-> >> -	x86_init.mpparse.setup_ioapic_ids();
-> >> -
-> >> -	sync_Arb_IDs();
-> >>  	setup_IO_APIC_irqs();
-> >> -	init_IO_APIC_traps();
-> >> -	if (nr_legacy_irqs())
-> >> -		check_timer();
-> >> -
-> >>  	ioapic_initialized = 1;
-> >> +
-> >> +	if (!xen_smp) {
-> >> +		init_IO_APIC_traps();
-> >> +		if (nr_legacy_irqs())
-> >> +			check_timer();
-> >> +	}
-> >>  }
-> >>  
-> >>  /*
-> >> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-> >> index 4c071aeb8417..7eb0283901fa 100644
-> >> --- a/arch/x86/xen/smp.c
-> >> +++ b/arch/x86/xen/smp.c
-> >> @@ -326,7 +326,10 @@ static void __init xen_smp_prepare_cpus(unsigned int max_cpus)
-> >>  
-> >>  		xen_raw_printk(m);
-> >>  		panic(m);
-> >> +	} else {
-> >> +		setup_IO_APIC(true);
-> >>  	}
-> >> +
-> >>  	xen_init_lock_cpu(0);
-> >>  
-> >>  	smp_store_boot_cpu_info();
-> >> -- 
-> >> 1.7.10.4
-> >>
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
+Original: used snprintf
+V2: switched to scnprintf, but one line-wrap had an embedded space
+V3: dropped the embedded space (inert)
+
+Used git-email for submissions for the first time, consider the lack of 
+comment learning a new workflow (its been a few years since my last 
+submissions, forgive me gohd, for I have sinned)
+
+Sincerely -- Mark Salyzyn
