@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334AbbAGOZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 09:25:27 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56729 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750962AbbAGOZZ (ORCPT
+	id S1753147AbbAGO0J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 09:26:09 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:54386 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752843AbbAGO0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 09:25:25 -0500
-Date: Wed, 7 Jan 2015 14:25:14 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Suzuki Poulose <Suzuki.Poulose@arm.com>, Leo Yan <leo.yan@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Xiaolong Ye <yexl@marvell.com>
-Subject: Re: [PATCH] arm64: mm: support instruction SETEND
-Message-ID: <20150107142513.GB2199@e104818-lin.cambridge.arm.com>
-References: <1420609930-1689-1-git-send-email-leo.yan@linaro.org>
- <54AD061A.6090602@arm.com>
- <20150107102543.GD7485@arm.com>
+	Wed, 7 Jan 2015 09:26:05 -0500
+Date: Wed, 7 Jan 2015 15:26:05 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: Johan Hovold <johan@kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Subject: Re: [PATCH v2 4/4] mfd: dln2: add suspend/resume functionality
+Message-ID: <20150107142605.GG22905@localhost>
+References: <1418745435-2851-1-git-send-email-octavian.purdila@intel.com>
+ <1418745435-2851-5-git-send-email-octavian.purdila@intel.com>
+ <20150107102637.GD22905@localhost>
+ <CAE1zotJ8RcSing2cQWPFzHoEiH1FH1-NsYZrShuQ=hVEwextug@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150107102543.GD7485@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAE1zotJ8RcSing2cQWPFzHoEiH1FH1-NsYZrShuQ=hVEwextug@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 10:25:43AM +0000, Will Deacon wrote:
-> On Wed, Jan 07, 2015 at 10:10:34AM +0000, Suzuki K. Poulose wrote:
-> > On 07/01/15 05:52, Leo Yan wrote:
-> > > Currently kernel has set the bit SCTLR_EL1.SED, so the SETEND
-> > > instruction will be treated as UNALLOCATED; this error can be
-> > > reproduced when ARMv8 cpu runs with EL1/aarch64 and EL0/aarch32
-> > > mode, finally kernel will trap the exception if the userspace
-> > > libs use SETEND instruction.
-> > >
-> > > So this patch clears bit SCTLR_EL1.SED to support SETEND instruction.
-> > >
-> > The best way to do this, is via the instruction emulation framework 
-> > added by Punit, which handles the armv8 deprecated/obsoleted 
-> > instructions. This is now queued for 3.19.
-> > I have a patchset which adds the 'SETEND' emulation support to the 
-> > framework. This will enable better handling of the feature, including 
-> > finding out the users of the deprecated instruction (when we switch to 
-> > the emulation mode).
-> > 
-> > Btw, there is one open question that I am seeking answer for.
-> > 
-> > What should be the endianness of the signal handlers ? Should we leave 
-> > it to the application ? Or restore the 'default' endianness for the 
-> > signal handler ?
+On Thu, Jan 08, 2015 at 02:16:15AM +1300, Octavian Purdila wrote:
+> On Wed, Jan 7, 2015 at 11:26 PM, Johan Hovold <johan@kernel.org> wrote:
+> > On Tue, Dec 16, 2014 at 05:57:15PM +0200, Octavian Purdila wrote:
+> >> Without suspend/resume functionality in the USB driver the USB core
+> >> will disconnect and reconnect the DLN2 port and because the GPIO
+> >> framework does not yet support removal of an in-use controller a
+> >> suspend/resume operation will result in a crash.
+> >>
+> >> This patch provides suspend and resume functions for the DLN2 driver
+> >> so that the above scenario is avoided.
+> >>
+> >> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+> >
+> > This patch looks good now, but how did you say this device was powered?
+> >
+> > If powered by vbus you cannot assume that the device maintains it's
+> > state over a suspend cycle, something which would complicate matters
+> > quite a bit...
 > 
-> I think we should restore the default endianness, otherwise you're
-> essentially forcing signal handlers to do a setend as their first
-> instruction to get into a consistent state. That also matches the endianness
-> of the sigframe that we push onto the stack, right?
+> Yes, the device is powered by VBUS. During my tests, depending on the
+> host and USB port, VBUS is sometimes preserved - and this is the case
+> this patch addresses, and sometimes is not, but in that case because
+> no reset_resume routine is implemented the resume path will go through
+> the disconnect/reconnect process.
 
-It looks like this is what setup_return() already does on arm32
-(switching to the default endianness).
+Yes, it depends on the host controller and I believe the common case is
+to drop VBUS.
 
-Now that we plan to allow SETEND in AArch32 applications, we need
-something similar in the arm64 compat_setup_return().
+> This second case is not addressed by
+> the patch, as I think in this second case fixing the GPIO framework to
+> support the removal of an in-use device is the best way to go.
 
--- 
-Catalin
+I agree.
+
+But please do mention that this case is not handled in the commit
+message.
+
+Thanks,
+Johan
