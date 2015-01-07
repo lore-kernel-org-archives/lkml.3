@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758699AbbAGDEw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 22:04:52 -0500
+	id S1758513AbbAGC5g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:57:36 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:46242 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756842AbbAGBv4 (ORCPT
+	with ESMTP id S1756939AbbAGBwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:51:56 -0500
+	Tue, 6 Jan 2015 20:52:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Zi Shen Lim <zlim.lnx@gmail.com>, Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 3.18 32/84] arm64: bpf: lift restriction on last instruction
-Date: Tue,  6 Jan 2015 17:49:35 -0800
-Message-Id: <20150107014030.078041536@linuxfoundation.org>
+        Thierry Reding <treding@nvidia.com>
+Subject: [PATCH 3.18 33/84] drm/tegra: gem: dumb: pitch and size are outputs
+Date: Tue,  6 Jan 2015 17:49:36 -0800
+Message-Id: <20150107014030.107585982@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
 References: <20150107014029.012974975@linuxfoundation.org>
@@ -29,85 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zi Shen Lim <zlim.lnx@gmail.com>
+From: Thierry Reding <treding@nvidia.com>
 
-commit 51c9fbb1b146f3336a93d398c439b6fbfe5ab489 upstream.
+commit dc6057ecb39edb34b0461ca55382094410bd257a upstream.
 
-Earlier implementation assumed last instruction is BPF_EXIT.
-Since this is no longer a restriction in eBPF, we remove this
-limitation.
+When creating a dumb buffer object using the DRM_IOCTL_MODE_CREATE_DUMB
+IOCTL, only the width, height, bpp and flags parameters are inputs. The
+caller is not guaranteed to zero out or set handle, pitch and size, so
+the driver must not treat these values as possible inputs.
 
-Per Alexei Starovoitov [1]:
-> classic BPF has a restriction that last insn is always BPF_RET.
-> eBPF doesn't have BPF_RET instruction and this restriction.
-> It has BPF_EXIT insn which can appear anywhere in the program
-> one or more times and it doesn't have to be last insn.
+Fixes a bug where running the Weston compositor on Tegra DRM would cause
+an attempt to allocate a 3 GiB framebuffer to be allocated.
 
-[1] https://lkml.org/lkml/2014/11/27/2
-
-Fixes: e54bcde3d69d ("arm64: eBPF JIT compiler")
-Acked-by: Alexei Starovoitov <ast@plumgrid.com>
-Signed-off-by: Zi Shen Lim <zlim.lnx@gmail.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+Fixes: de2ba664c30f ("gpu: host1x: drm: Add memory manager and fb")
+Signed-off-by: Thierry Reding <treding@nvidia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/net/bpf_jit_comp.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/tegra/gem.c |   10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
---- a/arch/arm64/net/bpf_jit_comp.c
-+++ b/arch/arm64/net/bpf_jit_comp.c
-@@ -60,7 +60,7 @@ struct jit_ctx {
- 	const struct bpf_prog *prog;
- 	int idx;
- 	int tmp_used;
--	int body_offset;
-+	int epilogue_offset;
- 	int *offset;
- 	u32 *image;
- };
-@@ -130,8 +130,8 @@ static void jit_fill_hole(void *area, un
- 
- static inline int epilogue_offset(const struct jit_ctx *ctx)
+--- a/drivers/gpu/drm/tegra/gem.c
++++ b/drivers/gpu/drm/tegra/gem.c
+@@ -259,16 +259,12 @@ void tegra_bo_free_object(struct drm_gem
+ int tegra_bo_dumb_create(struct drm_file *file, struct drm_device *drm,
+ 			 struct drm_mode_create_dumb *args)
  {
--	int to = ctx->offset[ctx->prog->len - 1];
--	int from = ctx->idx - ctx->body_offset;
-+	int to = ctx->epilogue_offset;
-+	int from = ctx->idx;
+-	int min_pitch = DIV_ROUND_UP(args->width * args->bpp, 8);
++	unsigned int min_pitch = DIV_ROUND_UP(args->width * args->bpp, 8);
+ 	struct tegra_drm *tegra = drm->dev_private;
+ 	struct tegra_bo *bo;
  
- 	return to - from;
- }
-@@ -463,6 +463,8 @@ emit_cond_jmp:
- 	}
- 	/* function return */
- 	case BPF_JMP | BPF_EXIT:
-+		/* Optimization: when last instruction is EXIT,
-+		   simply fallthrough to epilogue. */
- 		if (i == ctx->prog->len - 1)
- 			break;
- 		jmp_offset = epilogue_offset(ctx);
-@@ -685,11 +687,13 @@ void bpf_int_jit_compile(struct bpf_prog
+-	min_pitch = round_up(min_pitch, tegra->pitch_align);
+-	if (args->pitch < min_pitch)
+-		args->pitch = min_pitch;
+-
+-	if (args->size < args->pitch * args->height)
+-		args->size = args->pitch * args->height;
++	args->pitch = round_up(min_pitch, tegra->pitch_align);
++	args->size = args->pitch * args->height;
  
- 	/* 1. Initial fake pass to compute ctx->idx. */
- 
--	/* Fake pass to fill in ctx->offset. */
-+	/* Fake pass to fill in ctx->offset and ctx->tmp_used. */
- 	if (build_body(&ctx))
- 		goto out;
- 
- 	build_prologue(&ctx);
-+
-+	ctx.epilogue_offset = ctx.idx;
- 	build_epilogue(&ctx);
- 
- 	/* Now we know the actual image size. */
-@@ -706,7 +710,6 @@ void bpf_int_jit_compile(struct bpf_prog
- 
- 	build_prologue(&ctx);
- 
--	ctx.body_offset = ctx.idx;
- 	if (build_body(&ctx)) {
- 		bpf_jit_binary_free(header);
- 		goto out;
+ 	bo = tegra_bo_create_with_handle(file, drm, args->size, 0,
+ 					 &args->handle);
 
 
