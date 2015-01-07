@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609AbbAGHsk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 02:48:40 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:51499 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410AbbAGHsj (ORCPT
+	id S1755659AbbAGHpF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 02:45:05 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:33672 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752279AbbAGHpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 02:48:39 -0500
-From: Wang Nan <wangnan0@huawei.com>
-To: <linux@arm.linux.org.uk>, <mingo@redhat.com>, <x86@kernel.org>,
-        <masami.hiramatsu.pt@hitachi.com>, <anil.s.keshavamurthy@intel.com>,
-        <davem@davemloft.net>, <ananth@in.ibm.com>, <dave.long@linaro.org>,
-        <tixy@linaro.org>
-CC: <lizefan@huawei.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH 11/11] kprobes: add CONFIG_EARLY_KPROBES option.
-Date: Wed, 7 Jan 2015 15:42:13 +0800
-Message-ID: <1420616533-43585-1-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1420616086-42692-1-git-send-email-wangnan0@huawei.com>
-References: <1420616086-42692-1-git-send-email-wangnan0@huawei.com>
+	Wed, 7 Jan 2015 02:45:04 -0500
+X-Original-SENDERIP: 10.177.220.203
+X-Original-MAILFROM: namhyung@kernel.org
+Date: Wed, 7 Jan 2015 16:42:58 +0900
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 4/5] perf diff: Fix output ordering to honor next column
+Message-ID: <20150107074258.GE849@sejong>
+References: <1419656793-32756-1-git-send-email-namhyung@kernel.org>
+ <1419656793-32756-4-git-send-email-namhyung@kernel.org>
+ <20150104181640.GB29388@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020205.54ACE496.0199,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 8b3211567c861867b23efb286d139e18
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20150104181640.GB29388@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable early kprobes in Kconfig.
+Hi Jiri,
 
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
----
- arch/Kconfig | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+On Sun, Jan 04, 2015 at 07:16:40PM +0100, Jiri Olsa wrote:
+> On Sat, Dec 27, 2014 at 02:06:32PM +0900, Namhyung Kim wrote:
+> 
+> SNIP
+> 
+> >  	if (!pairs_left || !pairs_right)
+> >  		return pairs_left ? -1 : 1;
+> >  
+> > -	p_left  = get_pair_data(left,  &data__files[sort_compute]);
+> > -	p_right = get_pair_data(right, &data__files[sort_compute]);
+> > +	p_left  = get_pair_data(left,  &data__files[sort_idx]);
+> > +	p_right = get_pair_data(right, &data__files[sort_idx]);
+> >  
+> >  	if (!p_left && !p_right)
+> >  		return 0;
+> > @@ -555,8 +560,13 @@ hist_entry__cmp_nop(struct hist_entry *left __maybe_unused,
+> >  static int64_t
+> >  hist_entry__cmp_baseline(struct hist_entry *left, struct hist_entry *right)
+> >  {
+> > -	if (sort_compute)
+> > -		return 0;
+> > +	/*
+> > +	 * This function will be called first for each entry to resort
+> > +	 * output.  Next compare-functions use this idx to find their
+> > +	 * data and increase it for next data so we need to initialize
+> > +	 * it everytime.
+> > +	 */
+> > +	data_idx = 0;
+> 
+> hum, could we omit the global 'data_idx' variable usage by passing
+> 'struct perf_hpp_fmt' into color fmt callbacks? (like hist_entry__cmp_delta..)
+> 
+> we could get the data_idx from 'struct diff_hpp_fmt'::idx
 
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 05d7a8a..06dff4b 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -46,6 +46,18 @@ config KPROBES
- 	  for kernel debugging, non-intrusive instrumentation and testing.
- 	  If in doubt, say "N".
- 
-+config EARLY_KPROBES
-+	depends on KPROBES && OPTPROBES
-+	def_bool y
-+
-+config NR_EARLY_KPROBES_SLOTS
-+	int "Number of possible early kprobes"
-+	range 1 64
-+	default 16
-+	depends on EARLY_KPROBES
-+	help
-+	  Number of early kprobes slots.
-+
- config JUMP_LABEL
-        bool "Optimize very unlikely/likely branches"
-        depends on HAVE_ARCH_JUMP_LABEL
--- 
-1.8.4
+Right, I thought that too.  But it requires adding '__maybe_unused
+fmt' argument to all callbacks so I just decided to use a quick
+solution.  I'll convert to pass the fmt argument as it'll make
+possible future changes easier.
 
+Thanks,
+Namhyung
