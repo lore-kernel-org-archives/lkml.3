@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976AbbAGRKA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 12:10:00 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:37185 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753049AbbAGRJ7 (ORCPT
+	id S1754257AbbAGRKg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 12:10:36 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:35425 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754168AbbAGRKe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 12:09:59 -0500
-Date: Wed, 7 Jan 2015 09:09:50 -0800
+	Wed, 7 Jan 2015 12:10:34 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,39 +14,51 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com
-Subject: [PATCH tip/core/rcu 0/3] Documentation updates for 3.20
-Message-ID: <20150107170950.GA30629@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        bobby.prani@gmail.com, Xie XiuQi <xiexiuqi@huawei.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 1/3] documentation: Update sysfs path for rcu_cpu_stall_timeout
+Date: Wed,  7 Jan 2015 09:10:20 -0800
+Message-Id: <1420650622-31241-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <20150107170950.GA30629@linux.vnet.ibm.com>
+References: <20150107170950.GA30629@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15010717-0025-0000-0000-0000079193D8
+x-cbid: 15010717-0017-0000-0000-000007BD3C00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: Xie XiuQi <xiexiuqi@huawei.com>
 
-This series contains a few documentation updates:
+Commit 6bfc09e2327d ("rcu: Provide RCU CPU stall warnings for tiny RCU")
+moved the rcu_cpu_stall_timeout module parameter from rcutree.c to
+rcupdate.c, but failed to update Documentation/RCU/stallwarn.txt. This
+commit therefore repairs this omission.
 
-1.	Updates the sysfs path for rcu_cpu_stall_timeout, courtesy of
-	Xie XiuQi.
+commit 96224daa16d6 ("documentation: Update sysfs path for rcu_cpu_stall_suppress")
+updated the path for rcu_cpu_stall_suppress, but failed to update for
+rcu_cpu_stall_timeout.
 
-2.	Records limitations of bitfields and small variables, noting
-	among other things that safe concurrent update to adjacent
-	non-bitfield scalar variables is required by the C11 standard.
+Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ Documentation/RCU/stallwarn.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-3.	Fix typo in memory-barriers.txt, courtesy of Davidlohr Bueso.
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
- b/Documentation/RCU/stallwarn.txt   |    2 -
- b/Documentation/memory-barriers.txt |   46 +++++++++++++++++++++++++++++++++++-
- 2 files changed, 46 insertions(+), 2 deletions(-)
+diff --git a/Documentation/RCU/stallwarn.txt b/Documentation/RCU/stallwarn.txt
+index ed186a902d31..4f8e33952b88 100644
+--- a/Documentation/RCU/stallwarn.txt
++++ b/Documentation/RCU/stallwarn.txt
+@@ -15,7 +15,7 @@ CONFIG_RCU_CPU_STALL_TIMEOUT
+ 	21 seconds.
+ 
+ 	This configuration parameter may be changed at runtime via the
+-	/sys/module/rcutree/parameters/rcu_cpu_stall_timeout, however
++	/sys/module/rcupdate/parameters/rcu_cpu_stall_timeout, however
+ 	this parameter is checked only at the beginning of a cycle.
+ 	So if you are 10 seconds into a 40-second stall, setting this
+ 	sysfs parameter to (say) five will shorten the timeout for the
+-- 
+1.8.1.5
 
