@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949AbbAGRba (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 12:31:30 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45245 "EHLO arroyo.ext.ti.com"
+	id S1754983AbbAGRbc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 12:31:32 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:60428 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754405AbbAGRb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754391AbbAGRb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 Jan 2015 12:31:27 -0500
 From: Suman Anna <s-anna@ti.com>
 To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>
@@ -14,9 +14,9 @@ CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Felipe Balbi <balbi@ti.com>, <devicetree@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-omap@vger.kernel.org>, Suman Anna <s-anna@ti.com>
-Subject: [RFC PATCH 1/3] of/device: manage resources similar to platform_device_add
-Date: Wed, 7 Jan 2015 11:30:52 -0600
-Message-ID: <1420651854-17768-2-git-send-email-s-anna@ti.com>
+Subject: [RFC PATCH 2/3] core: platform: fix an invalid kfree during of_platform_depopulate
+Date: Wed, 7 Jan 2015 11:30:53 -0600
+Message-ID: <1420651854-17768-3-git-send-email-s-anna@ti.com>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <1420651854-17768-1-git-send-email-s-anna@ti.com>
 References: <1420651854-17768-1-git-send-email-s-anna@ti.com>
@@ -28,77 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Drivers can use of_platform_populate() to create platform devices
 for children of the device main node, and a complementary API
-of_platform_depopulate() is provided to delete these child platform
-devices. The of_platform_depopulate() leverages the platform API
-for performing the cleanup of these devices.
+of_platform_depopulate() is provided to delete these child devices.
+Any platform_data supplied for the OF devices through auxdata lookup
+data is populated directly in the device's platform_data field, unlike
+those created using platform API. The of_platform_depopulate()
+leverages the platform code for cleanup, and this will result in a
+kernel oops due to an invalid kfree on this direct populated
+platform_data.
 
-The platform device resources are managed differently between
-of_device_add and platform_device_add, and this asymmetry causes
-a kernel oops in platform_device_del during removal of the resources.
-Manage the platform device resources similar to platform_device_add
-to fix this kernel oops.
+Fix this by resetting the platform data for OF devices during
+platform device cleanup.
 
 Signed-off-by: Suman Anna <s-anna@ti.com>
 ---
- drivers/of/device.c | 38 +++++++++++++++++++++++++++++++++++++-
- 1 file changed, 37 insertions(+), 1 deletion(-)
+ drivers/base/platform.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/of/device.c b/drivers/of/device.c
-index 46d6c75c1404..fa27c1c71f29 100644
---- a/drivers/of/device.c
-+++ b/drivers/of/device.c
-@@ -50,6 +50,8 @@ EXPORT_SYMBOL(of_dev_put);
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index 9421fed40905..129e69c8c894 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -200,6 +200,8 @@ static void platform_device_release(struct device *dev)
+ 	struct platform_object *pa = container_of(dev, struct platform_object,
+ 						  pdev.dev);
  
- int of_device_add(struct platform_device *ofdev)
- {
-+	int i, ret;
-+
- 	BUG_ON(ofdev->dev.of_node == NULL);
- 
- 	/* name and id have to be set so that the platform bus doesn't get
-@@ -63,7 +65,41 @@ int of_device_add(struct platform_device *ofdev)
- 	if (!ofdev->dev.parent)
- 		set_dev_node(&ofdev->dev, of_node_to_nid(ofdev->dev.of_node));
- 
--	return device_add(&ofdev->dev);
-+	for (i = 0; i < ofdev->num_resources; i++) {
-+		struct resource *p, *r = &ofdev->resource[i];
-+
-+		if (!r->name)
-+			r->name = dev_name(&ofdev->dev);
-+
-+		p = r->parent;
-+		if (!p) {
-+			if (resource_type(r) == IORESOURCE_MEM)
-+				p = &iomem_resource;
-+			else if (resource_type(r) == IORESOURCE_IO)
-+				p = &ioport_resource;
-+		}
-+
-+		if (p && insert_resource(p, r)) {
-+			dev_err(&ofdev->dev, "failed to claim resource %d\n",
-+				i);
-+			ret = -EBUSY;
-+			goto failed;
-+		}
-+	}
-+
-+	ret = device_add(&ofdev->dev);
-+	if (ret == 0)
-+		return ret;
-+
-+failed:
-+	while (--i >= 0) {
-+		struct resource *r = &ofdev->resource[i];
-+		unsigned long type = resource_type(r);
-+
-+		if (type == IORESOURCE_MEM || type == IORESOURCE_IO)
-+			release_resource(r);
-+	}
-+	return ret;
- }
- 
- int of_device_register(struct platform_device *pdev)
++	if (pa->pdev.dev.of_node)
++		pa->pdev.dev.platform_data = NULL;
+ 	of_device_node_put(&pa->pdev.dev);
+ 	kfree(pa->pdev.dev.platform_data);
+ 	kfree(pa->pdev.mfd_cell);
 -- 
 2.2.1
 
