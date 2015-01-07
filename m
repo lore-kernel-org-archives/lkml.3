@@ -1,60 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798AbbAGMmO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 07:42:14 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:45087 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752692AbbAGMmL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752717AbbAGMmL (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 7 Jan 2015 07:42:11 -0500
-Date: Wed, 7 Jan 2015 14:41:45 +0200
-From: Asaf Vertz <asaf.vertz@tandemg.com>
-To: jeffrey.t.kirsher@intel.com
-Cc: jesse.brandeburg@intel.com, bruce.w.allan@intel.com,
-        carolyn.wyborny@intel.com, donald.c.skidmore@intel.com,
-        gregory.v.rose@intel.com, matthew.vick@intel.com,
-        john.ronciak@intel.com, mitch.a.williams@intel.com,
-        linux.nics@intel.com, e1000-devel@lists.sourceforge.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] e1000: fix time comparison
-Message-ID: <20150107124145.GA15954@ubuntu>
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:45824 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752612AbbAGMmJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 07:42:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Wed, 7 Jan 2015 12:42:08 +0000
+Message-ID: <CALnsgKz7_zp76yTqp3J+ZT_bgd5s_NnDKR=oyvjurDbNkfXHBg@mail.gmail.com>
+Subject: [Bugs] PVS-Studio dives into Linux insides (3.18.1)
+From: Vladimir <quickcracktime@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To be future-proof and for better readability the time comparisons are
-modified to use time_after_eq() instead of plain, error-prone math.
-
-Signed-off-by: Asaf Vertz <asaf.vertz@tandemg.com>
----
- drivers/net/ethernet/intel/e1000/e1000_ethtool.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/net/ethernet/intel/e1000/e1000_ethtool.c b/drivers/net/ethernet/intel/e1000/e1000_ethtool.c
-index b691eb4..4270ad2 100644
---- a/drivers/net/ethernet/intel/e1000/e1000_ethtool.c
-+++ b/drivers/net/ethernet/intel/e1000/e1000_ethtool.c
-@@ -24,6 +24,7 @@
- /* ethtool support for e1000 */
- 
- #include "e1000.h"
-+#include <linux/jiffies.h>
- #include <linux/uaccess.h>
- 
- enum {NETDEV_STATS, E1000_STATS};
-@@ -1460,7 +1461,7 @@ static int e1000_run_loopback_test(struct e1000_adapter *adapter)
- 			ret_val = 13; /* ret_val is the same as mis-compare */
- 			break;
- 		}
--		if (jiffies >= (time + 2)) {
-+		if (time_after_eq(jiffies, time + 2)) {
- 			ret_val = 14; /* error code for time out error */
- 			break;
- 		}
--- 
-1.7.0.4
-
+PVS-Studio detected a bunch of bugs at Linux kernel !
+You may want to check it out and fix those bugs.
+To get more information, search for
+" PVS-Studio dives into Linux insides (3.18.1) "
+in the Internet, or use shortened l :
+bit [dot] ly/1BHsxeN
