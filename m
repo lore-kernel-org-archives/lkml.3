@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389AbbAGOJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 09:09:29 -0500
+	id S1753145AbbAGOIn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 09:08:43 -0500
 Received: from mailout3.samsung.com ([203.254.224.33]:10368 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190AbbAGOIc (ORCPT
+	with ESMTP id S1752726AbbAGOIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 09:08:32 -0500
-X-AuditID: cbfee690-f79ab6d0000046f7-81-54ad3dda156f
+	Wed, 7 Jan 2015 09:08:34 -0500
+X-AuditID: cbfee68d-f79296d000004278-1c-54ad3ddaf113
 From: Jaewon Kim <jaewon02.kim@samsung.com>
 To: Kukjin Kim <kgene@kernel.org>
 Cc: linux-samsung-soc@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>,
         linux-kernel@vger.kernel.org, Jaewon Kim <jaewon02.kim@samsung.com>
-Subject: [PATCH RESEND v2 3/4] ARM: dts: Enable USB node for exynos3250-rinato
-Date: Wed, 07 Jan 2015 23:08:20 +0900
-Message-id: <1420639701-1524-4-git-send-email-jaewon02.kim@samsung.com>
+Subject: [PATCH RESEND v2 4/4] ARM: dts: Enable USB node for exynos3250-monk
+Date: Wed, 07 Jan 2015 23:08:21 +0900
+Message-id: <1420639701-1524-5-git-send-email-jaewon02.kim@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1420639701-1524-1-git-send-email-jaewon02.kim@samsung.com>
 References: <1420639701-1524-1-git-send-email-jaewon02.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGLMWRmVeSWpSXmKPExsWyRsSkWPeW7doQg30bdC2uf3nOarGj4Qir
-	Rf/j18wWl3fNYbOYcX4fkwOrx6ZVnWwefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlXHy9H72
-	gkOsFWv3bGVtYDzC0sXIySEhYCJx8s13NghbTOLCvfVANheHkMBSRok3a3YywxTt+XaNEcQW
-	EpjOKNH7OwKiqI1J4uCF62BFbALaEt/XL2btYuTgEBFQlNi8QAGkhllgEqPEjXsrWEFqhAX8
-	JNaung82iEVAVWL/6hdgV/AKuEu8XD6VDaRXQkBBYs4kG5Awp4CHxN4/R6H2ukv8eXaLFWSm
-	hMB/Nontb2azQswRkPg2+RALRK+sxKYDUDdLShxccYNlAqPwAkaGVYyiqQXJBcVJ6UUmesWJ
-	ucWleel6yfm5mxiBwXv637MJOxjvHbA+xCjAwajEw1vQtyZEiDWxrLgy9xCjKdCGicxSosn5
-	wBjJK4k3NDYzsjA1MTU2Mrc0UxLnfS31M1hIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDo/hx
-	hRPThQpFzseGzsuUdpROslsn7DT3snSQU5TtzN1bjbNi767cmHrqrI3XzRmSBu++y8xZPPvm
-	0YWFcVJHcs+9O8MinisWMjuw6vPMF7c3vFytuu1P26HKiPglux0/hQWcnj4jJXWFjLFQbOox
-	laI32tVv5v3Ue23UWMU1zT0i1P6kjSdLihJLcUaioRZzUXEiAJ7i5N1ZAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAIsWRmVeSWpSXmKPExsVy+t9jQd1btmtDDBaeUbO4/uU5q8WOhiOs
-	Fv2PXzNbXN41h81ixvl9TA6sHptWdbJ59G1ZxejxeZNcAHNUA6NNRmpiSmqRQmpecn5KZl66
-	rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBOJYWyxJxSoFBAYnGxkr4dpgmhIW66
-	FjCNEbq+IUFwPUYGaCBhDWPGydP72QsOsVas3bOVtYHxCEsXIyeHhICJxJ5v1xghbDGJC/fW
-	s4HYQgLTGSV6f0d0MXIB2W1MEgcvXGcGSbAJaEt8X7+YtYuRg0NEQFFi8wIFkBpmgUmMEjfu
-	rWAFqREW8JNYu3o+2FAWAVWJ/atfgC3jFXCXeLl8KhtIr4SAgsScSTYgYU4BD4m9f44yQux1
-	l/jz7BbrBEbeBYwMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCY+OZ9A7GVQ0WhxgFOBiV
-	eHgL+taECLEmlhVX5h5ilOBgVhLhffMLKMSbklhZlVqUH19UmpNafIjRFOioicxSosn5wLjN
-	K4k3NDYxM7I0Mje0MDI2VxLnVbJvCxESSE8sSc1OTS1ILYLpY+LglGpglL1xWT3q9rrXtlzv
-	D3w5echkRccM63//HzkYKrDPOR//hG9NkeUUMR2Tnhfv2dIYH3n65gbI1T6+rlO8Tkt8Vt+q
-	G59WZlc+ENwRJK5rV9X8NcHHPibzp3vf23PB/LeXZU96KHGkgDvzfcYe9mnxTSufiWxoUNi4
-	aPmqR0k/Hm9MfbSzQ/ZPuBJLcUaioRZzUXEiAFylWSmjAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsWyRsSkUPeW7doQg8PfjC2uf3nOarGj4Qir
+	Rf/j18wWl3fNYbOYcX4fkwOrx6ZVnWwefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlfHiYX3B
+	PtaKxoPcDYz7WboYOTkkBEwkvly7yQxhi0lcuLeerYuRi0NIYCmjRPP0VkaYov3tM5kgEtMZ
+	Jd51r2OBcNqYJA5euA7WziagLfF9/WLWLkYODhEBRYnNCxRAapgFJjFK3Li3ghWkRljAR+LX
+	1y+MIDUsAqoSi/57g5i8Au4ST1/pg5gSAgoScybZgBRzCnhI7P1zFOwEIaCKP89usYJMlBD4
+	zSbRd+YU2EQWAQGJb5MPsUD0ykpsOgD1i6TEwRU3WCYwCi9gZFjFKJpakFxQnJReZKhXnJhb
+	XJqXrpecn7uJERi2p/89693BePuA9SFGAQ5GJR7egr41IUKsiWXFlbmHGE2BNkxklhJNzgdG
+	R15JvKGxmZGFqYmpsZG5pZmSOK+i1M9gIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYyBUkpK
+	99qSOLUYpjkzxOY+8OJ/XMh/o7Z8XvMhjfnCKgZ7DP8or1/MH5IrZcFytyTift/V5YsZk7zL
+	V11IyPXTL9BYOOm1zyo239ebO3L+PV0dsuVU576UmSXek86Hzts05cDLLYwzNf8tMPp6dfHP
+	Lw5pcb11jGV1kebx0dvOXvl+9Ei3lL8SS3FGoqEWc1FxIgA4Nzo9VgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e+xoO4t27UhBl879Syuf3nOarGj4Qir
+	Rf/j18wWl3fNYbOYcX4fkwOrx6ZVnWwefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZdu
+	q+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RTSaEsMacUKBSQWFyspG+HaUJoiJuu
+	BUxjhK5vSBBcj5EBGkhYw5jx4mF9wT7WisaD3A2M+1m6GDk5JARMJPa3z2SCsMUkLtxbz9bF
+	yMUhJDCdUeJd9zoWCKeNSeLghevMIFVsAtoS39cvZu1i5OAQEVCU2LxAAaSGWWASo8SNeytY
+	QWqEBXwkfn39wghSwyKgKrHovzeIySvgLvH0lT6IKSGgIDFnkg1IMaeAh8TeP0cZQWwhoIo/
+	z26xTmDkXcDIsIpRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOCqeSe1gXNlgcYhRgINRiYe3
+	oG9NiBBrYllxZe4hRgkOZiUR3je/gEK8KYmVValF+fFFpTmpxYcYTYFOmsgsJZqcD4zYvJJ4
+	Q2MTMyNLI3NDCyNjcyVxXiX7thAhgfTEktTs1NSC1CKYPiYOTqkGxt79cfkXzp1YOqO7VYzT
+	pqmh+sFbi8XCd0tzk+rn/JVk/HVLlu87r+6O3CZuobjVSjZ81/5rMwe1nZ2+IzeytNDe//vy
+	ks/uvtplomF2x/+mTPTfsum6nlPFD8HrZsX96/vnaHqdFo5b6mtq2bPR18X0/3GbTtkO3feN
+	u9jcrZSEFA4vDfumxFKckWioxVxUnAgAHlyniaACAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -48,18 +48,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables hsotg and usbphy node to use USB 2.0 Device.
+This patch adds device tree node for hsotg to control USB 2.0 Device.
 
 Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
 ---
- arch/arm/boot/dts/exynos3250-rinato.dts |   10 ++++++++++
+ arch/arm/boot/dts/exynos3250-monk.dts |   10 ++++++++++
  1 file changed, 10 insertions(+)
 
-diff --git a/arch/arm/boot/dts/exynos3250-rinato.dts b/arch/arm/boot/dts/exynos3250-rinato.dts
-index 0e3d499..b3f217c 100644
---- a/arch/arm/boot/dts/exynos3250-rinato.dts
-+++ b/arch/arm/boot/dts/exynos3250-rinato.dts
-@@ -132,6 +132,16 @@
+diff --git a/arch/arm/boot/dts/exynos3250-monk.dts b/arch/arm/boot/dts/exynos3250-monk.dts
+index 7102d88..3f18b21 100644
+--- a/arch/arm/boot/dts/exynos3250-monk.dts
++++ b/arch/arm/boot/dts/exynos3250-monk.dts
+@@ -141,6 +141,16 @@
  	};
  };
  
