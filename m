@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755194AbbAGIzK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 03:55:10 -0500
-Received: from smtprelay.synopsys.com ([198.182.60.111]:52927 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753391AbbAGIzI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 03:55:08 -0500
-Message-ID: <54ACF45E.4020100@synopsys.com>
-Date: Wed, 7 Jan 2015 14:24:54 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1755975AbbAGI4E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 03:56:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36563 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752688AbbAGI4C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 03:56:02 -0500
+Date: Wed, 7 Jan 2015 10:55:55 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        Greg Kurz <gkurz@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: [PATCH] vhost/net: length miscalculation
+Message-ID: <1420620847-24477-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-To: Geert Uytterhoeven <geert@linux-m68k.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: Build regressions/improvements in v3.19-rc3
-References: <1420536979-31149-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1420536979-31149-1-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.196.223]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+commit 8b38694a2dc8b18374310df50174f1e4376d6824
+    vhost/net: virtio 1.0 byte swap
+had this chunk:
+-       heads[headcount - 1].len += datalen;
++       heads[headcount - 1].len = cpu_to_vhost32(vq, len - datalen);
 
-On Tuesday 06 January 2015 03:06 PM, Geert Uytterhoeven wrote:
-> Below is the list of build error/warning regressions/improvements in
-> v3.19-rc3[1] compared to v3.18[2].
-> 
-> Summarized:
->   - build errors: +86/-19
->   - build warnings: +242/-127
-> 
-> JFYI, when comparing v3.19-rc3[1] to v3.19-rc2[3], the summaries are:
->   - build errors: +64/-9
->   - build warnings: +123/-75
-> 
-> Note that there may be false regressions, as some logs are incomplete.
-> Still, they're build errors/warnings.
-> 
-> As I haven't mastered kup yet, there's no verbose summary at
-> http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/v3.19-rc3.summary.gz
-> 
-> Happy fixing! ;-)
-> 
-> Thanks to the linux-next team for providing the build service.
-> 
-> [1] http://kisskb.ellerman.id.au/kisskb/head/8277/ (255 out of 262 configs)
-> [2] http://kisskb.ellerman.id.au/kisskb/head/8168/ (all 262 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/8257/ (all 262 configs)
+This adds datalen with the wrong sign, causing guest panics.
 
-How can I get the ARC tools / config added to test setup.
-AFAIKR linux-next already has ARC setup as I got a build failure report from them
-once [1]
+Fixes: 8b38694a2dc8b18374310df50174f1e4376d6824
+Reported-by: Alex Williamson <alex.williamson@redhat.com>
+Suggested-by: Greg Kurz <gkurz@linux.vnet.ibm.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
-[1] https://lkml.org/lkml/2014/9/25/767
+Alex, could you please confirm this fixes the crash for you?
 
-Thx,
--Vineet
+ drivers/vhost/net.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 14419a8..d415d69 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -538,7 +538,7 @@ static int get_rx_bufs(struct vhost_virtqueue *vq,
+ 		++headcount;
+ 		seg += in;
+ 	}
+-	heads[headcount - 1].len = cpu_to_vhost32(vq, len - datalen);
++	heads[headcount - 1].len = cpu_to_vhost32(vq, len + datalen);
+ 	*iovcount = seg;
+ 	if (unlikely(log))
+ 		*log_num = nlogs;
+-- 
+MST
