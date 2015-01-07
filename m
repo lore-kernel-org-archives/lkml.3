@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547AbbAGPl6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 10:41:58 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:49911 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753354AbbAGPl4 (ORCPT
+	id S1753626AbbAGPm5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 10:42:57 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:56520 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752672AbbAGPm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 10:41:56 -0500
-Date: Wed, 7 Jan 2015 15:41:38 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Andrew Jackson <Andrew.Jackson@arm.com>
-Cc: Jean-Francois Moine <moinejf@free.fr>, Mark Brown <broonie@kernel.org>,
-        Dave Airlie <airlied@gmail.com>, Jyri Sarha <jsarha@ti.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v9 3/4] ASoC: tda998x: add a codec to the HDMI transmitter
-Message-ID: <20150107154138.GL12302@n2100.arm.linux.org.uk>
-References: <cover.1420628786.git.moinejf@free.fr>
- <23b36acc1f769418a06f3e929eba288b5911da12.1420628786.git.moinejf@free.fr>
- <54AD4C77.5000401@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54AD4C77.5000401@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 7 Jan 2015 10:42:56 -0500
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+        kgdb-bugreport@lists.sourceforge.net,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: [RESEND PATCH v3.19-rc2] kdb: Remove stack dump when entering kgdb due to NMI
+Date: Wed,  7 Jan 2015 15:42:32 +0000
+Message-Id: <1420645352-2790-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1405518033-11671-1-git-send-email-daniel.thompson@linaro.org>
+References: <1405518033-11671-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 03:10:47PM +0000, Andrew Jackson wrote:
-> On 01/07/15 10:51, Jean-Francois Moine wrote:
-> > diff --git a/drivers/gpu/drm/i2c/Kconfig b/drivers/gpu/drm/i2c/Kconfig
-> > index 22c7ed6..24fc975 100644
-> > --- a/drivers/gpu/drm/i2c/Kconfig
-> > +++ b/drivers/gpu/drm/i2c/Kconfig
-> > @@ -28,6 +28,7 @@ config DRM_I2C_SIL164
-> >  config DRM_I2C_NXP_TDA998X
-> >         tristate "NXP Semiconductors TDA998X HDMI encoder"
-> >         default m if DRM_TILCDC
-> > +       select SND_SOC_TDA998X
-> 
-> Do you need this since sound/soc/codecs/Kconfig conditionally brings in the
-> CODEC driver?
+Issuing a stack dump feels ergonomically wrong when entering due to NMI.
 
-More importantly, it's broken, because it'll cause Kconfig to complain
-if you enable DRM_I2C_NXP_TDA998X, but have ASoC disabled.
+Entering due to NMI is normally a reaction to a user request, either the
+NMI button on a server or a "magic knock" on a UART. Therefore the
+backtrace behaviour on entry due to NMI should be like SysRq-g (no stack
+dump) rather than like oops.
 
-Moreover, if you decide you want the sound and ASoC built as a module,
-but want to build in DRM and TDA998x support (so you can get video
-output working on boot before initramfs/rootfs), Kconfig may well
-complain.
+Note also that the stack dump does not offer any information that
+cannot be trivial retrieved using the 'bt' command.
 
-> > +static int __init tda998x_codec_init(void)
-> > +{
-> > +       return 0;
-> > +}
-> > +static void __exit tda998x_codec_exit(void)
-> > +{
-> > +}
-> > +module_init(tda998x_codec_init);
-> > +module_exit(tda998x_codec_exit);
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Jason Wessel <jason.wessel@windriver.com>
+---
+ kernel/debug/kdb/kdb_main.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-There's no need for these if they remain as the above.  Modules can have
-both init/exit functions, or neither, and they are still unloadable.
-Only modules which provide only an init function get locked in on load.
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index 379650b984f8..f9ba42363132 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -1207,7 +1207,6 @@ static int kdb_local(kdb_reason_t reason, int error, struct pt_regs *regs,
+ 		kdb_printf("due to NonMaskable Interrupt @ "
+ 			   kdb_machreg_fmt "\n",
+ 			   instruction_pointer(regs));
+-		kdb_dumpregs(regs);
+ 		break;
+ 	case KDB_REASON_SSTEP:
+ 	case KDB_REASON_BREAK:
+--
+1.9.3
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
