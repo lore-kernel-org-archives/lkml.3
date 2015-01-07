@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932928AbbAGB5O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 20:57:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46421 "EHLO
+	id S932951AbbAGB5Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 20:57:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46250 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932463AbbAGBwR (ORCPT
+	with ESMTP id S932483AbbAGBwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:52:17 -0500
+	Tue, 6 Jan 2015 20:52:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josef Bacik <jbacik@fb.com>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.18 83/84] Btrfs: make sure logged extents complete in the current transaction V3
-Date: Tue,  6 Jan 2015 17:50:26 -0800
-Message-Id: <20150107014031.641090831@linuxfoundation.org>
+        Filipe Manana <fdmanana@suse.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.18 84/84] Btrfs: fix fs corruption on transaction abort if device supports discard
+Date: Tue,  6 Jan 2015 17:50:27 -0800
+Message-Id: <20150107014031.670726051@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
 References: <20150107014029.012974975@linuxfoundation.org>
@@ -28,273 +28,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fb.com>
+From: Filipe Manana <fdmanana@suse.com>
 
-commit 50d9aa99bd35c77200e0e3dd7a72274f8304701f upstream.
+commit 678886bdc6378c1cbd5072da2c5a3035000214e3 upstream.
 
-Liu Bo pointed out that my previous fix would lose the generation update in the
-scenario I described.  It is actually much worse than that, we could lose the
-entire extent if we lose power right after the transaction commits.  Consider
-the following
+When we abort a transaction we iterate over all the ranges marked as dirty
+in fs_info->freed_extents[0] and fs_info->freed_extents[1], clear them
+from those trees, add them back (unpin) to the free space caches and, if
+the fs was mounted with "-o discard", perform a discard on those regions.
+Also, after adding the regions to the free space caches, a fitrim ioctl call
+can see those ranges in a block group's free space cache and perform a discard
+on the ranges, so the same issue can happen without "-o discard" as well.
 
-write extent 0-4k
-log extent in log tree
-commit transaction
-	< power fail happens here
-ordered extent completes
+This causes corruption, affecting one or multiple btree nodes (in the worst
+case leaving the fs unmountable) because some of those ranges (the ones in
+the fs_info->pinned_extents tree) correspond to btree nodes/leafs that are
+referred by the last committed super block - breaking the rule that anything
+that was committed by a transaction is untouched until the next transaction
+commits successfully.
 
-We would lose the 0-4k extent because it hasn't updated the actual fs tree, and
-the transaction commit will reset the log so it isn't replayed.  If we lose
-power before the transaction commit we are save, otherwise we are not.
+I ran into this while running in a loop (for several hours) the fstest that
+I recently submitted:
 
-Fix this by keeping track of all extents we logged in this transaction.  Then
-when we go to commit the transaction make sure we wait for all of those ordered
-extents to complete before proceeding.  This will make sure that if we lose
-power after the transaction commit we still have our data.  This also fixes the
-problem of the improperly updated extent generation.  Thanks,
+  [PATCH] fstests: add btrfs test to stress chunk allocation/removal and fstrim
 
-Signed-off-by: Josef Bacik <jbacik@fb.com>
+The corruption always happened when a transaction aborted and then fsck complained
+like this:
+
+   _check_btrfs_filesystem: filesystem on /dev/sdc is inconsistent
+   *** fsck.btrfs output ***
+   Check tree block failed, want=94945280, have=0
+   Check tree block failed, want=94945280, have=0
+   Check tree block failed, want=94945280, have=0
+   Check tree block failed, want=94945280, have=0
+   Check tree block failed, want=94945280, have=0
+   read block failed check_tree_block
+   Couldn't open file system
+
+In this case 94945280 corresponded to the root of a tree.
+Using frace what I observed was the following sequence of steps happened:
+
+   1) transaction N started, fs_info->pinned_extents pointed to
+      fs_info->freed_extents[0];
+
+   2) node/eb 94945280 is created;
+
+   3) eb is persisted to disk;
+
+   4) transaction N commit starts, fs_info->pinned_extents now points to
+      fs_info->freed_extents[1], and transaction N completes;
+
+   5) transaction N + 1 starts;
+
+   6) eb is COWed, and btrfs_free_tree_block() called for this eb;
+
+   7) eb range (94945280 to 94945280 + 16Kb) is added to
+      fs_info->pinned_extents (fs_info->freed_extents[1]);
+
+   8) Something goes wrong in transaction N + 1, like hitting ENOSPC
+      for example, and the transaction is aborted, turning the fs into
+      readonly mode. The stack trace I got for example:
+
+      [112065.253935]  [<ffffffff8140c7b6>] dump_stack+0x4d/0x66
+      [112065.254271]  [<ffffffff81042984>] warn_slowpath_common+0x7f/0x98
+      [112065.254567]  [<ffffffffa0325990>] ? __btrfs_abort_transaction+0x50/0x10b [btrfs]
+      [112065.261674]  [<ffffffff810429e5>] warn_slowpath_fmt+0x48/0x50
+      [112065.261922]  [<ffffffffa032949e>] ? btrfs_free_path+0x26/0x29 [btrfs]
+      [112065.262211]  [<ffffffffa0325990>] __btrfs_abort_transaction+0x50/0x10b [btrfs]
+      [112065.262545]  [<ffffffffa036b1d6>] btrfs_remove_chunk+0x537/0x58b [btrfs]
+      [112065.262771]  [<ffffffffa033840f>] btrfs_delete_unused_bgs+0x1de/0x21b [btrfs]
+      [112065.263105]  [<ffffffffa0343106>] cleaner_kthread+0x100/0x12f [btrfs]
+      (...)
+      [112065.264493] ---[ end trace dd7903a975a31a08 ]---
+      [112065.264673] BTRFS: error (device sdc) in btrfs_remove_chunk:2625: errno=-28 No space left
+      [112065.264997] BTRFS info (device sdc): forced readonly
+
+   9) The clear kthread sees that the BTRFS_FS_STATE_ERROR bit is set in
+      fs_info->fs_state and calls btrfs_cleanup_transaction(), which in
+      turn calls btrfs_destroy_pinned_extent();
+
+   10) Then btrfs_destroy_pinned_extent() iterates over all the ranges
+       marked as dirty in fs_info->freed_extents[], and for each one
+       it calls discard, if the fs was mounted with "-o discard", and
+       adds the range to the free space cache of the respective block
+       group;
+
+   11) btrfs_trim_block_group(), invoked from the fitrim ioctl code path,
+       sees the free space entries and performs a discard;
+
+   12) After an umount and mount (or fsck), our eb's location on disk was full
+       of zeroes, and it should have been untouched, because it was marked as
+       dirty in the fs_info->pinned_extents tree, and therefore used by the
+       trees that the last committed superblock points to.
+
+Fix this by not performing a discard and not adding the ranges to the free space
+caches - it's useless from this point since the fs is now in readonly mode and
+we won't write free space caches to disk anymore (otherwise we would leak space)
+nor any new superblock. By not adding the ranges to the free space caches, it
+prevents other code paths from allocating that space and write to it as well,
+therefore being safer and simpler.
+
+This isn't a new problem, as it's been present since 2011 (git commit
+acce952b0263825da32cf10489413dec78053347).
+
+Signed-off-by: Filipe Manana <fdmanana@suse.com>
 Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/disk-io.c      |   20 ++++++++++++++++++++
- fs/btrfs/ordered-data.c |    9 +++++++--
- fs/btrfs/ordered-data.h |    8 +++++++-
- fs/btrfs/transaction.c  |   33 +++++++++++++++++++++++++++++++++
- fs/btrfs/transaction.h  |    2 ++
- fs/btrfs/tree-log.c     |    6 +++---
- 6 files changed, 72 insertions(+), 6 deletions(-)
+ fs/btrfs/disk-io.c     |    6 ------
+ fs/btrfs/extent-tree.c |   10 ++++++----
+ 2 files changed, 6 insertions(+), 10 deletions(-)
 
 --- a/fs/btrfs/disk-io.c
 +++ b/fs/btrfs/disk-io.c
-@@ -4129,6 +4129,25 @@ again:
- 	return 0;
+@@ -4106,12 +4106,6 @@ again:
+ 		if (ret)
+ 			break;
+ 
+-		/* opt_discard */
+-		if (btrfs_test_opt(root, DISCARD))
+-			ret = btrfs_error_discard_extent(root, start,
+-							 end + 1 - start,
+-							 NULL);
+-
+ 		clear_extent_dirty(unpin, start, end, GFP_NOFS);
+ 		btrfs_error_unpin_extent_range(root, start, end);
+ 		cond_resched();
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -5715,7 +5715,8 @@ void btrfs_prepare_extent_commit(struct
+ 	update_global_block_rsv(fs_info);
  }
  
-+static void btrfs_free_pending_ordered(struct btrfs_transaction *cur_trans,
-+				       struct btrfs_fs_info *fs_info)
-+{
-+	struct btrfs_ordered_extent *ordered;
-+
-+	spin_lock(&fs_info->trans_lock);
-+	while (!list_empty(&cur_trans->pending_ordered)) {
-+		ordered = list_first_entry(&cur_trans->pending_ordered,
-+					   struct btrfs_ordered_extent,
-+					   trans_list);
-+		list_del_init(&ordered->trans_list);
-+		spin_unlock(&fs_info->trans_lock);
-+
-+		btrfs_put_ordered_extent(ordered);
-+		spin_lock(&fs_info->trans_lock);
-+	}
-+	spin_unlock(&fs_info->trans_lock);
-+}
-+
- void btrfs_cleanup_one_transaction(struct btrfs_transaction *cur_trans,
- 				   struct btrfs_root *root)
+-static int unpin_extent_range(struct btrfs_root *root, u64 start, u64 end)
++static int unpin_extent_range(struct btrfs_root *root, u64 start, u64 end,
++			      const bool return_free_space)
  {
-@@ -4140,6 +4159,7 @@ void btrfs_cleanup_one_transaction(struc
- 	cur_trans->state = TRANS_STATE_UNBLOCKED;
- 	wake_up(&root->fs_info->transaction_wait);
+ 	struct btrfs_fs_info *fs_info = root->fs_info;
+ 	struct btrfs_block_group_cache *cache = NULL;
+@@ -5739,7 +5740,8 @@ static int unpin_extent_range(struct btr
  
-+	btrfs_free_pending_ordered(cur_trans, root->fs_info);
- 	btrfs_destroy_delayed_inodes(root);
- 	btrfs_assert_delayed_root_empty(root);
+ 		if (start < cache->last_byte_to_unpin) {
+ 			len = min(len, cache->last_byte_to_unpin - start);
+-			btrfs_add_free_space(cache, start, len);
++			if (return_free_space)
++				btrfs_add_free_space(cache, start, len);
+ 		}
  
---- a/fs/btrfs/ordered-data.c
-+++ b/fs/btrfs/ordered-data.c
-@@ -220,6 +220,7 @@ static int __btrfs_add_ordered_extent(st
- 	INIT_LIST_HEAD(&entry->work_list);
- 	init_completion(&entry->completion);
- 	INIT_LIST_HEAD(&entry->log_list);
-+	INIT_LIST_HEAD(&entry->trans_list);
+ 		start += len;
+@@ -5803,7 +5805,7 @@ int btrfs_finish_extent_commit(struct bt
+ 						   end + 1 - start, NULL);
  
- 	trace_btrfs_ordered_extent_add(inode, entry);
- 
-@@ -443,6 +444,8 @@ void btrfs_get_logged_extents(struct ino
- 		ordered = rb_entry(n, struct btrfs_ordered_extent, rb_node);
- 		if (!list_empty(&ordered->log_list))
- 			continue;
-+		if (test_bit(BTRFS_ORDERED_LOGGED, &ordered->flags))
-+			continue;
- 		list_add_tail(&ordered->log_list, logged_list);
- 		atomic_inc(&ordered->refs);
+ 		clear_extent_dirty(unpin, start, end, GFP_NOFS);
+-		unpin_extent_range(root, start, end);
++		unpin_extent_range(root, start, end, true);
+ 		cond_resched();
  	}
-@@ -472,7 +475,8 @@ void btrfs_submit_logged_extents(struct
- 	spin_unlock_irq(&log->log_extents_lock[index]);
+ 
+@@ -9585,7 +9587,7 @@ out:
+ 
+ int btrfs_error_unpin_extent_range(struct btrfs_root *root, u64 start, u64 end)
+ {
+-	return unpin_extent_range(root, start, end);
++	return unpin_extent_range(root, start, end, false);
  }
  
--void btrfs_wait_logged_extents(struct btrfs_root *log, u64 transid)
-+void btrfs_wait_logged_extents(struct btrfs_trans_handle *trans,
-+			       struct btrfs_root *log, u64 transid)
- {
- 	struct btrfs_ordered_extent *ordered;
- 	int index = transid % 2;
-@@ -497,7 +501,8 @@ void btrfs_wait_logged_extents(struct bt
- 		wait_event(ordered->wait, test_bit(BTRFS_ORDERED_IO_DONE,
- 						   &ordered->flags));
- 
--		btrfs_put_ordered_extent(ordered);
-+		if (!test_and_set_bit(BTRFS_ORDERED_LOGGED, &ordered->flags))
-+			list_add_tail(&ordered->trans_list, &trans->ordered);
- 		spin_lock_irq(&log->log_extents_lock[index]);
- 	}
- 	spin_unlock_irq(&log->log_extents_lock[index]);
---- a/fs/btrfs/ordered-data.h
-+++ b/fs/btrfs/ordered-data.h
-@@ -71,6 +71,8 @@ struct btrfs_ordered_sum {
- 				       ordered extent */
- #define BTRFS_ORDERED_TRUNCATED 9 /* Set when we have to truncate an extent */
- 
-+#define BTRFS_ORDERED_LOGGED 10 /* Set when we've waited on this ordered extent
-+				 * in the logging code. */
- struct btrfs_ordered_extent {
- 	/* logical offset in the file */
- 	u64 file_offset;
-@@ -121,6 +123,9 @@ struct btrfs_ordered_extent {
- 	/* If we need to wait on this to be done */
- 	struct list_head log_list;
- 
-+	/* If the transaction needs to wait on this ordered extent */
-+	struct list_head trans_list;
-+
- 	/* used to wait for the BTRFS_ORDERED_COMPLETE bit */
- 	wait_queue_head_t wait;
- 
-@@ -197,7 +202,8 @@ void btrfs_get_logged_extents(struct ino
- void btrfs_put_logged_extents(struct list_head *logged_list);
- void btrfs_submit_logged_extents(struct list_head *logged_list,
- 				 struct btrfs_root *log);
--void btrfs_wait_logged_extents(struct btrfs_root *log, u64 transid);
-+void btrfs_wait_logged_extents(struct btrfs_trans_handle *trans,
-+			       struct btrfs_root *log, u64 transid);
- void btrfs_free_logged_extents(struct btrfs_root *log, u64 transid);
- int __init ordered_data_init(void);
- void ordered_data_exit(void);
---- a/fs/btrfs/transaction.c
-+++ b/fs/btrfs/transaction.c
-@@ -220,6 +220,7 @@ loop:
- 	INIT_LIST_HEAD(&cur_trans->pending_snapshots);
- 	INIT_LIST_HEAD(&cur_trans->pending_chunks);
- 	INIT_LIST_HEAD(&cur_trans->switch_commits);
-+	INIT_LIST_HEAD(&cur_trans->pending_ordered);
- 	list_add_tail(&cur_trans->list, &fs_info->trans_list);
- 	extent_io_tree_init(&cur_trans->dirty_pages,
- 			     fs_info->btree_inode->i_mapping);
-@@ -488,6 +489,7 @@ again:
- 	h->sync = false;
- 	INIT_LIST_HEAD(&h->qgroup_ref_list);
- 	INIT_LIST_HEAD(&h->new_bgs);
-+	INIT_LIST_HEAD(&h->ordered);
- 
- 	smp_mb();
- 	if (cur_trans->state >= TRANS_STATE_BLOCKED &&
-@@ -719,6 +721,12 @@ static int __btrfs_end_transaction(struc
- 	if (!list_empty(&trans->new_bgs))
- 		btrfs_create_pending_block_groups(trans, root);
- 
-+	if (!list_empty(&trans->ordered)) {
-+		spin_lock(&info->trans_lock);
-+		list_splice(&trans->ordered, &cur_trans->pending_ordered);
-+		spin_unlock(&info->trans_lock);
-+	}
-+
- 	trans->delayed_ref_updates = 0;
- 	if (!trans->sync) {
- 		must_run_delayed_refs =
-@@ -1652,6 +1660,28 @@ static inline void btrfs_wait_delalloc_f
- 		btrfs_wait_ordered_roots(fs_info, -1);
- }
- 
-+static inline void
-+btrfs_wait_pending_ordered(struct btrfs_transaction *cur_trans,
-+			   struct btrfs_fs_info *fs_info)
-+{
-+	struct btrfs_ordered_extent *ordered;
-+
-+	spin_lock(&fs_info->trans_lock);
-+	while (!list_empty(&cur_trans->pending_ordered)) {
-+		ordered = list_first_entry(&cur_trans->pending_ordered,
-+					   struct btrfs_ordered_extent,
-+					   trans_list);
-+		list_del_init(&ordered->trans_list);
-+		spin_unlock(&fs_info->trans_lock);
-+
-+		wait_event(ordered->wait, test_bit(BTRFS_ORDERED_COMPLETE,
-+						   &ordered->flags));
-+		btrfs_put_ordered_extent(ordered);
-+		spin_lock(&fs_info->trans_lock);
-+	}
-+	spin_unlock(&fs_info->trans_lock);
-+}
-+
- int btrfs_commit_transaction(struct btrfs_trans_handle *trans,
- 			     struct btrfs_root *root)
- {
-@@ -1702,6 +1732,7 @@ int btrfs_commit_transaction(struct btrf
- 	}
- 
- 	spin_lock(&root->fs_info->trans_lock);
-+	list_splice(&trans->ordered, &cur_trans->pending_ordered);
- 	if (cur_trans->state >= TRANS_STATE_COMMIT_START) {
- 		spin_unlock(&root->fs_info->trans_lock);
- 		atomic_inc(&cur_trans->use_count);
-@@ -1754,6 +1785,8 @@ int btrfs_commit_transaction(struct btrf
- 
- 	btrfs_wait_delalloc_flush(root->fs_info);
- 
-+	btrfs_wait_pending_ordered(cur_trans, root->fs_info);
-+
- 	btrfs_scrub_pause(root);
- 	/*
- 	 * Ok now we need to make sure to block out any other joins while we
---- a/fs/btrfs/transaction.h
-+++ b/fs/btrfs/transaction.h
-@@ -56,6 +56,7 @@ struct btrfs_transaction {
- 	wait_queue_head_t commit_wait;
- 	struct list_head pending_snapshots;
- 	struct list_head pending_chunks;
-+	struct list_head pending_ordered;
- 	struct list_head switch_commits;
- 	struct btrfs_delayed_ref_root delayed_refs;
- 	int aborted;
-@@ -105,6 +106,7 @@ struct btrfs_trans_handle {
- 	 */
- 	struct btrfs_root *root;
- 	struct seq_list delayed_ref_elem;
-+	struct list_head ordered;
- 	struct list_head qgroup_ref_list;
- 	struct list_head new_bgs;
- };
---- a/fs/btrfs/tree-log.c
-+++ b/fs/btrfs/tree-log.c
-@@ -2600,7 +2600,7 @@ int btrfs_sync_log(struct btrfs_trans_ha
- 	if (atomic_read(&log_root_tree->log_commit[index2])) {
- 		blk_finish_plug(&plug);
- 		btrfs_wait_marked_extents(log, &log->dirty_log_pages, mark);
--		btrfs_wait_logged_extents(log, log_transid);
-+		btrfs_wait_logged_extents(trans, log, log_transid);
- 		wait_log_commit(trans, log_root_tree,
- 				root_log_ctx.log_transid);
- 		mutex_unlock(&log_root_tree->log_mutex);
-@@ -2645,7 +2645,7 @@ int btrfs_sync_log(struct btrfs_trans_ha
- 	btrfs_wait_marked_extents(log_root_tree,
- 				  &log_root_tree->dirty_log_pages,
- 				  EXTENT_NEW | EXTENT_DIRTY);
--	btrfs_wait_logged_extents(log, log_transid);
-+	btrfs_wait_logged_extents(trans, log, log_transid);
- 
- 	btrfs_set_super_log_root(root->fs_info->super_for_commit,
- 				log_root_tree->node->start);
-@@ -3766,7 +3766,7 @@ static int log_one_extent(struct btrfs_t
- 	fi = btrfs_item_ptr(leaf, path->slots[0],
- 			    struct btrfs_file_extent_item);
- 
--	btrfs_set_token_file_extent_generation(leaf, fi, em->generation,
-+	btrfs_set_token_file_extent_generation(leaf, fi, trans->transid,
- 					       &token);
- 	if (test_bit(EXTENT_FLAG_PREALLOC, &em->flags))
- 		btrfs_set_token_file_extent_type(leaf, fi,
+ int btrfs_error_discard_extent(struct btrfs_root *root, u64 bytenr,
 
 
