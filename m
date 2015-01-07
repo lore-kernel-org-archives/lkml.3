@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238AbbAGSMX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 13:12:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56848 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753678AbbAGSMW (ORCPT
+	id S1754339AbbAGSMd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 13:12:33 -0500
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:40962 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754275AbbAGSMb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 13:12:22 -0500
-Date: Wed, 7 Jan 2015 10:12:21 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: sakshi <sakshi.april5@gmail.com>
-Cc: forest@alittletooquiet.net, tvboxspy@gmail.com, gclement@baobob.org,
-        guido@vanguardiasur.com.ar, shack@linux.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fixed line over 80 characters warning
-Message-ID: <20150107181221.GA6644@kroah.com>
-References: <1420650446-21507-1-git-send-email-sakshi.april5@gmail.com>
+	Wed, 7 Jan 2015 13:12:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420650446-21507-1-git-send-email-sakshi.april5@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <87bnmaqxvs.fsf@kamboji.qca.qualcomm.com>
+References: <1419766622-10911-1-git-send-email-oscar.forner.martinez@gmail.com>
+	<87bnmaqxvs.fsf@kamboji.qca.qualcomm.com>
+Date: Wed, 7 Jan 2015 19:12:30 +0100
+Message-ID: <CACna6rzWaHg=M15q=swf+yqMEB3smRRANuLHkSK1dU1MtG8jgg@mail.gmail.com>
+Subject: Re: [PATCH v4] bcma: fix two coding style issues, more than 80
+ characters per line.
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Kalle Valo <kvalo@codeaurora.org>
+Cc: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 10:37:26PM +0530, sakshi wrote:
-> Signed-off-by: sakshi <sakshi.april5@gmail.com>
+On 7 January 2015 at 18:55, Kalle Valo <kvalo@codeaurora.org> wrote:
+> Oscar Forner Martinez <oscar.forner.martinez@gmail.com> writes:
+>
+>> Two lines with more than 80 characters per line have been split in several lines.
+>>
+>> Signed-off-by: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>
+>
+> Thanks, applied to wireless-drivers-next.git.
 
-Your subject needs to provide a little bit more data, as what part of
-the kernel you are modifying, and the like.  Look at existing patches
-for examples of this.
+Could you still replace it (V4) with an older version (V3)? Before I
+explained V3 was OK Oscar already sent this (worse) V4.
 
-Also, we need a changelog body, saying what you are doing.
+This is not critical though, we can always send separated patch for
+one more line > 80 chars.
 
-And finally, we need a "full" name for the From: and signed-off-by:
-line, I doubt you sign legal documents with just those 6 letters, right?
-
-Please fix up and resend.
-
-thanks,
-
-greg k-h
+-- 
+Rafał
