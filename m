@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758062AbbAGCZo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:25:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47115 "EHLO
+	id S1758016AbbAGCYy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:24:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47126 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757694AbbAGCSD (ORCPT
+	with ESMTP id S1757701AbbAGCSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:18:03 -0500
+	Tue, 6 Jan 2015 21:18:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Carl Henrik Lunde <chlunde@gmail.com>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.17 64/73] udf: Verify symlink size before loading it
-Date: Tue,  6 Jan 2015 18:16:25 -0800
-Message-Id: <20150107021559.470217206@linuxfoundation.org>
+        Carl Henrik Lunde <chlunde@ping.uio.no>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.17 65/73] udf: Check component length before reading it
+Date: Tue,  6 Jan 2015 18:16:26 -0800
+Message-Id: <20150107021559.499780756@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107021557.521276020@linuxfoundation.org>
 References: <20150107021557.521276020@linuxfoundation.org>
@@ -30,65 +30,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jan Kara <jack@suse.cz>
 
-commit a1d47b262952a45aae62bd49cfaf33dd76c11a2c upstream.
+commit e237ec37ec154564f8690c5bd1795339955eeef9 upstream.
 
-UDF specification allows arbitrarily large symlinks. However we support
-only symlinks at most one block large. Check the length of the symlink
-so that we don't access memory beyond end of the symlink block.
+Check that length specified in a component of a symlink fits in the
+input buffer we are reading. Also properly ignore component length for
+component types that do not use it. Otherwise we read memory after end
+of buffer for corrupted udf image.
 
-Reported-by: Carl Henrik Lunde <chlunde@gmail.com>
+Reported-by: Carl Henrik Lunde <chlunde@ping.uio.no>
 Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/udf/symlink.c |   17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+ fs/udf/symlink.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
 --- a/fs/udf/symlink.c
 +++ b/fs/udf/symlink.c
-@@ -99,11 +99,17 @@ static int udf_symlink_filler(struct fil
- 	struct inode *inode = page->mapping->host;
- 	struct buffer_head *bh = NULL;
- 	unsigned char *symlink;
--	int err = -EIO;
-+	int err;
- 	unsigned char *p = kmap(page);
- 	struct udf_inode_info *iinfo;
- 	uint32_t pos;
- 
-+	/* We don't support symlinks longer than one block */
-+	if (inode->i_size > inode->i_sb->s_blocksize) {
-+		err = -ENAMETOOLONG;
-+		goto out_unmap;
-+	}
-+
- 	iinfo = UDF_I(inode);
- 	pos = udf_block_map(inode, 0);
- 
-@@ -113,8 +119,10 @@ static int udf_symlink_filler(struct fil
- 	} else {
- 		bh = sb_bread(inode->i_sb, pos);
- 
--		if (!bh)
--			goto out;
-+		if (!bh) {
-+			err = -EIO;
-+			goto out_unlock_inode;
-+		}
- 
- 		symlink = bh->b_data;
+@@ -42,14 +42,17 @@ static int udf_pc_to_char(struct super_b
+ 	tolen--;
+ 	while (elen < fromlen) {
+ 		pc = (struct pathComponent *)(from + elen);
++		elen += sizeof(struct pathComponent);
+ 		switch (pc->componentType) {
+ 		case 1:
+ 			/*
+ 			 * Symlink points to some place which should be agreed
+  			 * upon between originator and receiver of the media. Ignore.
+ 			 */
+-			if (pc->lengthComponentIdent > 0)
++			if (pc->lengthComponentIdent > 0) {
++				elen += pc->lengthComponentIdent;
+ 				break;
++			}
+ 			/* Fall through */
+ 		case 2:
+ 			if (tolen == 0)
+@@ -74,6 +77,9 @@ static int udf_pc_to_char(struct super_b
+ 			/* that would be . - just ignore */
+ 			break;
+ 		case 5:
++			elen += pc->lengthComponentIdent;
++			if (elen > fromlen)
++				return -EIO;
+ 			comp_len = udf_get_filename(sb, pc->componentIdent,
+ 						    pc->lengthComponentIdent,
+ 						    p, tolen);
+@@ -85,7 +91,6 @@ static int udf_pc_to_char(struct super_b
+ 			tolen--;
+ 			break;
+ 		}
+-		elen += sizeof(struct pathComponent) + pc->lengthComponentIdent;
  	}
-@@ -130,9 +138,10 @@ static int udf_symlink_filler(struct fil
- 	unlock_page(page);
- 	return 0;
- 
--out:
-+out_unlock_inode:
- 	up_read(&iinfo->i_data_sem);
- 	SetPageError(page);
-+out_unmap:
- 	kunmap(page);
- 	unlock_page(page);
- 	return err;
+ 	if (p > to + 1)
+ 		p[-1] = '\0';
 
 
