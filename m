@@ -1,108 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754963AbbAGToL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 14:44:11 -0500
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:48401 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754639AbbAGToJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 14:44:09 -0500
-Date: Wed, 7 Jan 2015 21:43:59 +0200
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Felipe Balbi <balbi@ti.com>, pali.rohar@gmail.com, sre@debian.org,
-        sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        ivo.g.dimitrov.75@gmail.com
-Subject: Re: 3.19 on Nokia n900: audio quality awful
-Message-ID: <20150107194359.GE6071@fuloong-minipc.musicnaut.iki.fi>
-References: <20150106170433.GA5408@amd>
- <20150106172545.GK6502@saruman>
- <20150106175115.GA19487@amd>
- <20150106202857.GB32308@saruman>
- <20150106205000.GB13902@amd>
- <20150106205730.GA6071@fuloong-minipc.musicnaut.iki.fi>
- <20150106220805.GD13902@amd>
- <20150106222717.GC6071@fuloong-minipc.musicnaut.iki.fi>
- <20150106225856.GB31990@amd>
+	id S1754254AbbAGTsb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 14:48:31 -0500
+Received: from smtpsal1.cc.upv.es ([158.42.249.61]:54616 "EHLO smtpsalv.upv.es"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753603AbbAGTsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 14:48:30 -0500
+Message-ID: <20150107204754.191110bihbw3t10q@webmail.upv.es>
+Date: Wed, 07 Jan 2015 20:47:54 +0100
+From: Hector Marco Gisbert <hecmargi@upv.es>
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>,
+        Ismael Ripoll Ripoll <iripoll@disca.upv.es>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: [PATH] Fix stack randomization on x86_64 bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
 Content-Disposition: inline
-In-Reply-To: <20150106225856.GB31990@amd>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7bit
+User-Agent: Dynamic Internet Messaging Program (DIMP) H3 (1.1.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Tue, Jan 06, 2015 at 11:58:56PM +0100, Pavel Machek wrote:
-> On Wed 2015-01-07 00:27:17, Aaro Koskinen wrote:
-> > On Tue, Jan 06, 2015 at 11:08:05PM +0100, Pavel Machek wrote:
-> > > On Tue 2015-01-06 22:57:30, Aaro Koskinen wrote:
-> > > > Hi,
-> > > > 
-> > > > On Tue, Jan 06, 2015 at 09:50:00PM +0100, Pavel Machek wrote:
-> > > > > PS: Unfortunately, N900 will not boot using nfsroot in 3.16+ at least,
-> > > > > and boot from MMC card is broken and has been for quite some time.
-> > > > 
-> > > > USB networking works fine with 3.19-rc3 and also MMC card rootfs.
-> > > 
-> > > Does nfsroot work for you? USB networking works as a module but not
-> > > build-in. [Patch is available for this one.]
-> > > 
-> > > u-SD card seems to have similar problem. If I try it after boot, I can
-> > > access it ok, but using u-SD card for rootfs fails. If it works for
-> > > you, it would be interesting to know.
-> > 
-> > I haven't tried nfsroot, but I've been using USB networking for ssh
-> > for a couple of years without issues. I have g_ether as module.
-> > 
-> > Also I recently switched rootfs to u-SD card, and it (MMC) works fine
-> > as builtin.
-> > 
-> > But I'm mounting it from userspace (using builtin initramfs inside
-> > zImage), with a poll loop that waits for a device to appear. Maybe if you
-> > do it from kernel you need to use root wait/delay etc. options?
-> 
-> Yes, it works if I mount it later. It fails when done directly using
-> root=, even with rootwait etc. Hard to believe, yes, but try it. You
-> can watch the results on console.
+[PATH] Fix stack randomization on x86_64 bit
 
-Well, I tried and it works. 3.19-rc3 mounting logs are below.
+The issue is that the stack for processes is not properly randomized on 64 bit
+architectures due to an integer overflow.
 
-I used "root=/dev/mmcblk0p2 rootwait". Note that the external MMC
-is "mmcblk0" from kernel point of view.
 
-Without serial console I guess you could maybe capture the failure
-logs using mtdoops (assuming the kernel panics when it fails to mount
-the rootfs). mtdoops was used even in the sales model kernel, so there
-is MTD partition reserved already for it called "log".
+The affected function is randomize_stack_top() in file "fs/binfmt_elf.c":
 
-I would also recommend using initramfs to do the mounting etc. Then you
-could use the framebuffer console to observe and debug some obvious issues
-(assuming the framebuffer works, it often regresses unfortunately...).
+static unsigned long randomize_stack_top(unsigned long stack_top)
+{
+         unsigned int random_variable = 0;
 
-A.
+         if ((current->flags & PF_RANDOMIZE) &&
+                 !(current->personality & ADDR_NO_RANDOMIZE)) {
+                 random_variable = get_random_int() & STACK_RND_MASK;
+                 random_variable <<= PAGE_SHIFT;
+         }
+#ifdef CONFIG_STACK_GROWSUP
+         return PAGE_ALIGN(stack_top) + random_variable;
+#else
+         return PAGE_ALIGN(stack_top) - random_variable;
+#endif
+}
 
-...
 
-[    2.145721] Waiting for root device /dev/mmcblk0p2...
-[    2.194335] mmc0: host does not support reading read-only switch, assuming write-enable
-[    2.213775] mmc0: new high speed SDHC card at address aaaa
-[    2.227905] mmcblk0: mmc0:aaaa SL32G 29.7 GiB
-[    2.252227]  mmcblk0: p1 p2
-[    2.381958] EXT4-fs (mmcblk0p2): couldn't mount as ext3 due to feature incompatibilities
-[    2.399627] EXT4-fs (mmcblk0p2): couldn't mount as ext2 due to feature incompatibilities
-[    2.420196] EXT4-fs (mmcblk0p2): INFO: recovery required on readonly filesystem
-[    2.435485] EXT4-fs (mmcblk0p2): write access will be enabled during recovery[    2.497375] mmc1: switch to bus width 2 failed
-[    2.510620] mmc1: switch to bus width 1 failed
-[    2.524658] mmc1: new high speed MMC card at address 0001
-[    2.541229] mmcblk1: mmc1:0001 MMC32G 29.8 GiB
-[    2.553710] mmcblk1boot0: mmc1:0001 MMC32G partition 1 512 KiB
-[    2.569854] mmcblk1boot1: mmc1:0001 MMC32G partition 2 512 KiB
-[    2.587646]  mmcblk1: p1 p2 p3
-[    2.827606] EXT4-fs (mmcblk0p2): recovery complete
-[    2.848327] EXT4-fs (mmcblk0p2): mounted filesystem with ordered data mode. Opts: (null)
-[    2.863464] VFS: Mounted root (ext4 filesystem) readonly on device 179:2.
+Note that, it declares the "random_variable" variable as "unsigned int". Since
+the result of the shifting operation between STACK_RND_MASK (which is  
+0x3fffff on
+x86_64, 22 bits) and PAGE_SHIFT (which is 12 on x86_64):
+
+random_variable <<= PAGE_SHIFT;
+
+then the two leftmost bits are dropped when storing the result in the
+"random_variable". This variable shall be at least 34 bits long to hold the
+(22+12) result.
+
+These two dropped bits have an impact on the entropy of process stack.
+Concretely, the total stack entropy is reduced by four: from 2^28 to 2^30 (One
+fourth of expected entropy).
+
+This patch restores back the entropy by correcting the types involved in the
+operations in the functions randomize_stack_top() and stack_maxrandom_size().
+
+
+Signed-off-by: Hector Marco-Gisbert <hecmargi@upv.es>
+Signed-off-by: Ismael Ripoll <iripoll@upv.es>
+
+
+diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
+index 919b912..df4552b 100644
+--- a/arch/x86/mm/mmap.c
++++ b/arch/x86/mm/mmap.c
+@@ -35,12 +35,12 @@ struct va_alignment __read_mostly va_align = {
+  	.flags = -1,
+  };
+
+-static unsigned int stack_maxrandom_size(void)
++static unsigned long stack_maxrandom_size(void)
+  {
+-	unsigned int max = 0;
++	unsigned long max = 0;
+  	if ((current->flags & PF_RANDOMIZE) &&
+  		!(current->personality & ADDR_NO_RANDOMIZE)) {
+-		max = ((-1U) & STACK_RND_MASK) << PAGE_SHIFT;
++		max = ((-1UL) & STACK_RND_MASK) << PAGE_SHIFT;
+  	}
+
+  	return max;
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index d8fc060..ee668b4 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -554,11 +554,11 @@ out:
+
+  static unsigned long randomize_stack_top(unsigned long stack_top)
+  {
+-	unsigned int random_variable = 0;
++	unsigned long random_variable = 0;
+
+  	if ((current->flags & PF_RANDOMIZE) &&
+  		!(current->personality & ADDR_NO_RANDOMIZE)) {
+-		random_variable = get_random_int() & STACK_RND_MASK;
++		random_variable = (unsigned long) get_random_int() & STACK_RND_MASK;
+  		random_variable <<= PAGE_SHIFT;
+  	}
+  #ifdef CONFIG_STACK_GROWSUP
+
+
