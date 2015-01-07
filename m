@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524AbbAGHik (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 02:38:40 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:60655 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410AbbAGHii (ORCPT
+	id S1755821AbbAGHiz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 02:38:55 -0500
+Received: from smtprelay.synopsys.com ([198.182.47.9]:39815 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755212AbbAGHix convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 02:38:38 -0500
-Date: Wed, 7 Jan 2015 09:38:34 +0200
-From: Asaf Vertz <asaf.vertz@tandemg.com>
-To: josh.h.morris@us.ibm.com
-Cc: pjk1939@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] rsxx: fix time comparison
-Message-ID: <20150107073834.GA9215@ubuntu>
+	Wed, 7 Jan 2015 02:38:53 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: "peterz@infradead.org" <peterz@infradead.org>,
+        "jolsa@kernel.org" <jolsa@kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-perf-users@vger.kernel.org" <linux-perf-users@vger.kernel.org>,
+        "bp@suse.de" <bp@suse.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "Alexey.Brodkin@synopsys.com" <Alexey.Brodkin@synopsys.com>
+Subject: Re: [PATCH 0/5] Perf fixes for ARC + uClibc
+Thread-Topic: [PATCH 0/5] Perf fixes for ARC + uClibc
+Thread-Index: AQHQKbgGApZ3zo7S3kq95vmbhkqlsg==
+Date: Wed, 7 Jan 2015 07:38:47 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA2307565BCA4D7@IN01WEMBXA.internal.synopsys.com>
+References: <1420552335-26886-1-git-send-email-vgupta@synopsys.com>
+ <20150106151329.GD2517@redhat.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.196.223]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To be future-proof and for better readability the time comparisons are
-modified to use time_before() instead of plain, error-prone math.
+On Tuesday 06 January 2015 08:43 PM, Arnaldo Carvalho de Melo wrote:
 
-Signed-off-by: Asaf Vertz <asaf.vertz@tandemg.com>
----
- drivers/block/rsxx/core.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+Em Tue, Jan 06, 2015 at 07:22:10PM +0530, Vineet Gupta escreveu:
 
-diff --git a/drivers/block/rsxx/core.c b/drivers/block/rsxx/core.c
-index d8b2488..ea527e8 100644
---- a/drivers/block/rsxx/core.c
-+++ b/drivers/block/rsxx/core.c
-@@ -25,6 +25,7 @@
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/interrupt.h>
-+#include <linux/jiffies.h>
- #include <linux/module.h>
- #include <linux/pci.h>
- #include <linux/reboot.h>
-@@ -513,8 +514,8 @@ static void card_event_handler(struct work_struct *work)
- static int card_shutdown(struct rsxx_cardinfo *card)
- {
- 	unsigned int state;
--	signed long start;
--	const int timeout = msecs_to_jiffies(120000);
-+	unsigned long start;
-+	const unsigned long timeout = msecs_to_jiffies(120000);
- 	int st;
- 
- 	/* We can't issue a shutdown if the card is in a transition state */
-@@ -524,7 +525,7 @@ static int card_shutdown(struct rsxx_cardinfo *card)
- 		if (st)
- 			return st;
- 	} while (state == CARD_STATE_STARTING &&
--		 (jiffies - start < timeout));
-+		 time_before(jiffies, start + timeout));
- 
- 	if (state == CARD_STATE_STARTING)
- 		return -ETIMEDOUT;
-@@ -543,7 +544,7 @@ static int card_shutdown(struct rsxx_cardinfo *card)
- 		if (st)
- 			return st;
- 	} while (state != CARD_STATE_SHUTDOWN &&
--		 (jiffies - start < timeout));
-+		 time_before(jiffies, start + timeout));
- 
- 	if (state != CARD_STATE_SHUTDOWN)
- 		return -ETIMEDOUT;
--- 
-1.7.0.4
 
+> Hi,
+>
+> This series based off linux-next of 20150105 allows us to build/use perf
+> for ARC with uClibc based userland.
+
+
+Do you have some ready made ARC VM image with devel tools I could use with qemu?
+
+- Arnaldo
+
+
+
+FWIW, most of the issues I posted fixes for can be reproduced with building perf with ARC buildroot !
+
+git://github.com:foss-for-synopsys-dwc-arc-processors/buildroot.git
+
+Thx,
+-Vineet
