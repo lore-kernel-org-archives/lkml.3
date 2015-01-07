@@ -1,112 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222AbbAGKUg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 05:20:36 -0500
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:49700 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772AbbAGKUd (ORCPT
+	id S1752260AbbAGKWk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 05:22:40 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:64988 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751021AbbAGKWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 05:20:33 -0500
-Date: Wed, 7 Jan 2015 11:20:24 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Cyril Bur <cyrilbur@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        mpe@ellerman.id.au, drjones@redhat.com, dzickus@redhat.com,
-        mingo@kernel.org, uobergfe@redhat.com, chaiw.fnst@cn.fujitsu.com,
-        cl@linu.com, fabf@skynet.be, atomlin@redhat.com, benzh@chromium.org,
-        heiko.carstens@de.ibm.com
-Subject: Re: [PATCH 2/2] powerpc: add running_clock for powerpc to prevent
- spurious softlockup warnings
-Message-ID: <20150107112024.76aa9217@mschwide>
-In-Reply-To: <1420512241.2910.41.camel@cyril>
-References: <1419224764-11384-1-git-send-email-cyrilbur@gmail.com>
-	<1419224764-11384-3-git-send-email-cyrilbur@gmail.com>
-	<20150105141013.946b5d15c5d003de8238951c@linux-foundation.org>
-	<1420512241.2910.41.camel@cyril>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 7 Jan 2015 05:22:37 -0500
+Date: Wed, 7 Jan 2015 11:22:37 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: linus.walleij@linaro.org, lee.jones@linaro.org, johan@kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-gpio@vger.kernel.org
+Subject: Re: [PATCH v2 3/4] mfd: dln2: add start/stop RX URBs helpers
+Message-ID: <20150107102237.GC22905@localhost>
+References: <1418745435-2851-1-git-send-email-octavian.purdila@intel.com>
+ <1418745435-2851-4-git-send-email-octavian.purdila@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15010710-0017-0000-0000-000002854201
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418745435-2851-4-git-send-email-octavian.purdila@intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 06 Jan 2015 13:44:01 +1100
-Cyril Bur <cyrilbur@gmail.com> wrote:
-
-> On Mon, 2015-01-05 at 14:10 -0800, Andrew Morton wrote:
-> > On Mon, 22 Dec 2014 16:06:04 +1100 Cyril Bur <cyrilbur@gmail.com> wrote:
-> > 
-> > > On POWER8 virtualised kernels the VTB register can be read to have a view of
-> > > time that only increases while the guest is running. This will prevent guests
-> > > from seeing time jump if a guest is paused for significant amounts of time.
-> > > 
-> > > On POWER7 and below virtualised kernels stolen time is subtracted from
-> > > sched_clock as a best effort approximation. This will not eliminate spurious
-> > > warnings in the case of a suspended guest but may reduce the occurance in the
-> > > case of softlockups due to host over commit.
-> > > 
-> > > Bare metal kernels should avoid reading the VTB as KVM does not restore sane
-> > > values when not executing. sched_clock is returned in this case.
-> > > 
-> > > --- a/arch/powerpc/kernel/time.c
-> > > +++ b/arch/powerpc/kernel/time.c
-> > > @@ -621,6 +621,30 @@ unsigned long long sched_clock(void)
-> > >  	return mulhdu(get_tb() - boot_tb, tb_to_ns_scale) << tb_to_ns_shift;
-> > >  }
-> > >  
-> > > +unsigned long long running_clock(void)
-> > 
-> > Non-kvm kernels don't need this code.  Is there some appropriate
-> > "#ifdef CONFIG_foo" we can wrap this in?
-> CONFIG_PSERIES would work, having said that typical compilation for a
-> powernv kernel almost always includes CONFIG_PSERIES (although it
-> doesn't need to)... still, your point is valid, will add in v2.
-> > 
-> > 
-> > > +{
-> > > +	/*
-> > > +	 * Don't read the VTB as a host since KVM does not switch in host timebase
-> > > +	 * into the VTB when it takes a guest off the CPU, reading the VTB would
-> > > +	 * result in reading 'last switched out' guest VTB.
-> > > +	 */
-> > > +
-> > > +	if (firmware_has_feature(FW_FEATURE_LPAR)) {
-> > > +		if (cpu_has_feature(CPU_FTR_ARCH_207S))
-> > > +			return mulhdu(get_vtb() - boot_tb, tb_to_ns_scale) << tb_to_ns_shift;
-> > > +
-> > > +		/* This is a next best approximation without a VTB. */
-> > > +		return sched_clock() - cputime_to_nsecs(kcpustat_this_cpu->cpustat[CPUTIME_STEAL]);
-> > 
-> > Why is this result dependent on FW_FEATURE_LPAR?  It's all generic code.
-> Good point, the reason it ended up there is because I wanted to avoid
-> behaviour changes.
-> > 
-> > In fact the kernel/sched/clock.c default implementation of
-> > running_clock() could use this expression.  Would that be good or bad? :)
-> For power I'm almost certain it would be fine, on platforms which don't
-> do stolen time cpustat[CPUTIME_STEAL] should always be zero and if not
-> then the value should always be sane (although as mentioned in the
-> comment, not as accurate as using the VTB).
+On Tue, Dec 16, 2014 at 05:57:14PM +0200, Octavian Purdila wrote:
+> This is in preparation for adding suspend / resume support.
 > 
-> Putting it in the default implementation could cause behavioural changes
-> for x86 and s390, I would want their views on doing that.
+> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+> ---
+>  drivers/mfd/dln2.c | 51 +++++++++++++++++++++++++++++++++++++++++----------
+>  1 file changed, 41 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/mfd/dln2.c b/drivers/mfd/dln2.c
+> index 6d49685..75358d2 100644
+> --- a/drivers/mfd/dln2.c
+> +++ b/drivers/mfd/dln2.c
+> @@ -587,12 +587,19 @@ static void dln2_free_rx_urbs(struct dln2_dev *dln2)
+>  	int i;
+>  
+>  	for (i = 0; i < DLN2_MAX_URBS; i++) {
+> -		usb_kill_urb(dln2->rx_urb[i]);
+>  		usb_free_urb(dln2->rx_urb[i]);
+>  		kfree(dln2->rx_buf[i]);
+>  	}
+>  }
+>  
+> +static void dln2_stop_rx_urbs(struct dln2_dev *dln2)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < DLN2_MAX_URBS; i++)
+> +		usb_kill_urb(dln2->rx_urb[i]);
+> +}
+> +
+>  static void dln2_free(struct dln2_dev *dln2)
+>  {
+>  	dln2_free_rx_urbs(dln2);
+> @@ -604,9 +611,7 @@ static int dln2_setup_rx_urbs(struct dln2_dev *dln2,
+>  			      struct usb_host_interface *hostif)
+>  {
+>  	int i;
+> -	int ret;
+>  	const int rx_max_size = DLN2_RX_BUF_SIZE;
+> -	struct device *dev = &dln2->interface->dev;
+>  
+>  	for (i = 0; i < DLN2_MAX_URBS; i++) {
+>  		dln2->rx_buf[i] = kmalloc(rx_max_size, GFP_KERNEL);
+> @@ -621,7 +626,19 @@ static int dln2_setup_rx_urbs(struct dln2_dev *dln2,
+>  				  usb_rcvbulkpipe(dln2->usb_dev, dln2->ep_in),
+>  				  dln2->rx_buf[i], rx_max_size, dln2_rx, dln2);
+>  
 
-I would prefer to make sched_clock do all the work. We have been thinking
-about steal time vs sched_clock as well, our solution would be to exchange
-the time source. Right now sched_clock is based on the TOD clock, the code
-that takes steal time into account would use the CPU timer instead.
-With the subtraction of kcpustat_this_cpu->cpustat[CPUTIME_STEAL] in
-common code we would have to add the same value in the sched_clock
-implementation as the steal time is already included in the CPU timer
-deltas.
+You should remove this stray newline as well. 
 
--- 
-blue skies,
-   Martin.
+> -		ret = usb_submit_urb(dln2->rx_urb[i], GFP_KERNEL);
+> +	}
+> +
+> +	return 0;
+> +}
 
-"Reality continues to ruin my life." - Calvin.
+Otherwise,
 
+Reviewed-by: Johan Hovold <johan@kernel.org>
+
+Johan
