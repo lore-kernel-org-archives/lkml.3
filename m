@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758396AbbAGCo7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:44:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46763 "EHLO
+	id S1758354AbbAGCoc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:44:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46770 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932955AbbAGCHh (ORCPT
+	with ESMTP id S932965AbbAGCHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:07:37 -0500
+	Tue, 6 Jan 2015 21:07:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.14 16/52] dm cache: only use overwrite optimisation for promotion when in writeback mode
-Date: Tue,  6 Jan 2015 18:06:44 -0800
-Message-Id: <20150107020557.729624894@linuxfoundation.org>
+Subject: [PATCH 3.14 17/52] dm cache: dirty flag was mistakenly being cleared when promoting via overwrite
+Date: Tue,  6 Jan 2015 18:06:45 -0800
+Message-Id: <20150107020557.946310606@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107020555.043793795@linuxfoundation.org>
 References: <20150107020555.043793795@linuxfoundation.org>
@@ -30,30 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Joe Thornber <ejt@redhat.com>
 
-commit f29a3147e251d7ae20d3194ff67f109d71e501b4 upstream.
+commit 1e32134a5a404e80bfb47fad8a94e9bbfcbdacc5 upstream.
 
-Overwrite causes the cache block and origin blocks to diverge, which
-is only allowed in writeback mode.
+If the incoming bio is a WRITE and completely covers a block then we
+don't bother to do any copying for a promotion operation.  Once this is
+done the cache block and origin block will be different, so we need to
+set it to 'dirty'.
 
 Signed-off-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-cache-target.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/md/dm-cache-target.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
 --- a/drivers/md/dm-cache-target.c
 +++ b/drivers/md/dm-cache-target.c
-@@ -1060,7 +1060,8 @@ static void issue_copy(struct dm_cache_m
+@@ -946,10 +946,14 @@ static void migration_success_post_commi
+ 		}
  
- 		avoid = is_discarded_oblock(cache, mg->new_oblock);
- 
--		if (!avoid && bio_writes_complete_block(cache, bio)) {
-+		if (writeback_mode(&cache->features) &&
-+		    !avoid && bio_writes_complete_block(cache, bio)) {
- 			issue_overwrite(mg, bio);
- 			return;
+ 	} else {
+-		clear_dirty(cache, mg->new_oblock, mg->cblock);
+-		if (mg->requeue_holder)
++		if (mg->requeue_holder) {
++			clear_dirty(cache, mg->new_oblock, mg->cblock);
+ 			cell_defer(cache, mg->new_ocell, true);
+-		else {
++		} else {
++			/*
++			 * The block was promoted via an overwrite, so it's dirty.
++			 */
++			set_dirty(cache, mg->new_oblock, mg->cblock);
+ 			bio_endio(mg->new_ocell->holder, 0);
+ 			cell_defer(cache, mg->new_ocell, false);
  		}
 
 
