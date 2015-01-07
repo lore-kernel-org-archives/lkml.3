@@ -1,60 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373AbbAGVd0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 16:33:26 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:50255 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978AbbAGVdX (ORCPT
+	id S1755393AbbAGVdy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 16:33:54 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:55165 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755138AbbAGVdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 16:33:23 -0500
-Message-ID: <1420666401.5947.35.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: TCP connection issues against Amazon S3
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Erik Grinaker <erik@bengler.no>
-Cc: Yuchung Cheng <ycheng@google.com>,
+	Wed, 7 Jan 2015 16:33:52 -0500
+Message-ID: <1420666431.12144.71.camel@haakon3.risingtidesystems.com>
+Subject: Re: [target:nvme_of 3/3]
+ drivers/target/nvme_of/nvme_of_configfs.c:25:31: sparse: symbol
+ 'nvme_of_fabric_configfs' was not declared. Should it be static?
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Sagi Grimberg <sagig@dev.mellanox.co.il>
+Cc: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "target-devel@vger.kernel.org" <target-devel@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Date: Wed, 07 Jan 2015 13:33:21 -0800
-In-Reply-To: <A58F8257-97F8-4662-98FC-7AC57F35A3A4@bengler.no>
-References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no>
-	 <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no>
-	 <1420564837.32621.30.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no>
-	 <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com>
-	 <03FC652E-AA01-42C7-BD52-019B6D922A9C@bengler.no>
-	 <CAK6E8=cP0BFUob5MVj9M0hC0efgRnUY=JMUPKee+v-4TLvHBgg@mail.gmail.com>
-	 <76DC89D1-CFCE-44B7-994E-4349FEEDEFA6@bengler.no>
-	 <1420575216.5947.12.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <4DA8529D-4EEC-42DA-89B0-DC7746DB2B10@bengler.no>
-	 <3F608393-E5F1-4647-81BF-C6C740100934@bengler.no>
-	 <CAK6E8=cf7cROQ0SON0BihkbOsBB+-sLAbexxgt4_xD+Auqev3Q@mail.gmail.com>
-	 <34CE0233-F881-4F40-B119-AA9D8F7D500F@bengler.no>
-	 <1420646284.5947.19.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <A58F8257-97F8-4662-98FC-7AC57F35A3A4@bengler.no>
+        "Patil, Kiran" <kiran.patil@intel.com>,
+        "Minturn, Dave B" <dave.b.minturn@intel.com>
+Date: Wed, 07 Jan 2015 13:33:51 -0800
+In-Reply-To: <8F6AF977-2BD7-46FF-A38D-108AF3C05809@dev.mellanox.co.il>
+References: <201501070334.EgwC5iey%fengguang.wu@intel.com>
+	 <1420584282.6927.62.camel@haakon3.risingtidesystems.com>
+	 <54ACF516.4080602@dev.mellanox.co.il>
+	 <1420654943.12144.38.camel@haakon3.risingtidesystems.com>
+	 <8F6AF977-2BD7-46FF-A38D-108AF3C05809@dev.mellanox.co.il>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-07 at 20:37 +0000, Erik Grinaker wrote:
+On Wed, 2015-01-07 at 22:26 +0200, Sagi Grimberg wrote:
+> >> On Wed, 2015-01-07 at 10:57 +0200, Sagi Grimberg wrote:
+> >>> On 1/7/2015 12:44 AM, Nicholas A. Bellinger wrote:
 
-> I agree. I have contacted Amazon about this, but am not too hopeful
-> for a quick fix; they have been promising SACK-support on their
-> loadbalancers since 2006, for example.
+<SNIP>
+
+> >> Hey Nic,
+> >> 
+> >> Hope all is well.
+> >> 
+> >> So this skeleton is interesting to me. As this is a fabric module I
+> >> assume this would be the NVMEoFabrics target mode driver for upstream 
+> >> which would be able to talk to NVMEoFabrics initiator (which by
+> >> the way makes LIO something more than a SCSI target - will this be 
+> >> accepted?).
+> > 
+> > That is currently the plan.
+> > 
+> > It's still unclear how this will work wrt to existing target code, but
+> > given the amount of logic that NVMe is borrowing from SCSI on the
+> > command set side (PR, ALUA, VAAI, DIF), I'm sure there is an opportunity
+> > for code sharing between NVMe and SCSI based fabrics.
 > 
-> That said, since this change breaks a service as popular as S3, it
-> might be worth reconsidering.
+> Right, but I assume there will be a different method to provision this
+> stuff given that the target exposes NVME SQs.
 > 
 
-Which change are you talking about ? Have you done a bisection to
-clearly identify the patch exposing this sender bug ?
+Yeah, it's not clear how this is going to work yet, but I'd expect a new
+backend driver will be required for exposing NVMe hardware queues into
+target -> fabric driver code.
 
-We are not going to stick TCP stack to 20th century and buggy peers or
-middleboxes, sorry.
+> > 
+> >> I'm currently participating in nvmexpress working group defining the
+> >> standard of protocol, specifically in the context of RDMA (naturally).
+> > 
+> > Glad to hear that your involved.  ;)
+> 
+> Should say passively involved, at the moment I'm just following this
+> stuff.
+> 
+> > 
+> >> I'm interested in taking an active role in this project, It is
+> >> important to build this layered from day one - separating the fabric 
+> >> logic (RDMA or FCoE) from the core layer.
+> >> 
+> >> Moreover, I know that Mellanox has some plans on accelerating this
+> >> area in future devices and we are currently looking into ways to
+> >> do that. I want to see that the SW will be able to support that.
+> >> 
+> >> So, Thoughts?
+> > 
+> > FYI, Kiran and Dave (CC'ed) from Intel will be driving upstream NVME-OF
+> > target development.
+> > 
+> > I'll be primarily focused on figuring out how NVMe and SCSI can play
+> > nicely in target-core, and helping out on the NVMe-OF side where
+> > necessary.
+> 
+> Is there something open that I can start playing around with? What is
+> the status here? I imagine that the initiator is developed as well...
+> 
 
+I don't believe any public code is available yet, and considering the
+draft spec is only available to members of the NVMe consortium, it's
+likely going to be a while before that happens.
 
+However, Dave mentioned off-list that sharing early code amongst NVMe
+consortium members should not be an issue.
+
+--nab 
 
