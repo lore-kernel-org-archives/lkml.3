@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933607AbbAGCrB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:47:01 -0500
+	id S933576AbbAGCqK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:46:10 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:46770 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932476AbbAGCHf (ORCPT
+	with ESMTP id S932384AbbAGCHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:07:35 -0500
+	Tue, 6 Jan 2015 21:07:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Robert Elliott <elliott@hp.com>, Hannes Reinecke <hare@suse.de>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.14 12/52] scsi: correct return values for .eh_abort_handler implementations
-Date: Tue,  6 Jan 2015 18:06:40 -0800
-Message-Id: <20150107020557.049613487@linuxfoundation.org>
+        Peng Tao <tao.peng@primarydata.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.14 13/52] nfs41: fix nfs4_proc_layoutget error handling
+Date: Tue,  6 Jan 2015 18:06:41 -0800
+Message-Id: <20150107020557.213429910@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107020555.043793795@linuxfoundation.org>
 References: <20150107020555.043793795@linuxfoundation.org>
@@ -29,148 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Reinecke <hare@suse.de>
+From: Peng Tao <tao.peng@primarydata.com>
 
-commit b6c92b7e0af575e2b8b05bdf33633cf9e1661cbf upstream.
+commit 4bd5a980de87d2b5af417485bde97b8eb3d6cf6a upstream.
 
-The .eh_abort_handler needs to return SUCCESS, FAILED, or
-FAST_IO_FAIL. So fixup all callers to adhere to this requirement.
+nfs4_layoutget_release() drops layout hdr refcnt. Grab the refcnt
+early so that it is safe to call .release in case nfs4_alloc_pages
+fails.
 
-Reviewed-by: Robert Elliott <elliott@hp.com>
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Peng Tao <tao.peng@primarydata.com>
+Fixes: a47970ff78147 ("NFSv4.1: Hold reference to layout hdr in layoutget")
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/NCR5380.c            |   12 ++++++------
- drivers/scsi/aha1740.c            |    2 +-
- drivers/scsi/atari_NCR5380.c      |    2 +-
- drivers/scsi/esas2r/esas2r_main.c |    2 +-
- drivers/scsi/megaraid.c           |    8 ++++----
- drivers/scsi/sun3_NCR5380.c       |   10 +++++-----
- 6 files changed, 18 insertions(+), 18 deletions(-)
+ fs/nfs/nfs4proc.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/scsi/NCR5380.c
-+++ b/drivers/scsi/NCR5380.c
-@@ -2655,14 +2655,14 @@ static void NCR5380_dma_complete(NCR5380
-  *
-  * Purpose : abort a command
-  *
-- * Inputs : cmd - the Scsi_Cmnd to abort, code - code to set the 
-- *      host byte of the result field to, if zero DID_ABORTED is 
-+ * Inputs : cmd - the Scsi_Cmnd to abort, code - code to set the
-+ *      host byte of the result field to, if zero DID_ABORTED is
-  *      used.
-  *
-- * Returns : 0 - success, -1 on failure.
-+ * Returns : SUCCESS - success, FAILED on failure.
-  *
-- *	XXX - there is no way to abort the command that is currently 
-- *	connected, you have to wait for it to complete.  If this is 
-+ *	XXX - there is no way to abort the command that is currently
-+ *	connected, you have to wait for it to complete.  If this is
-  *	a problem, we could implement longjmp() / setjmp(), setjmp()
-  *	called where the loop started in NCR5380_main().
-  *
-@@ -2712,7 +2712,7 @@ static int NCR5380_abort(Scsi_Cmnd * cmd
-  * aborted flag and get back into our main loop.
-  */
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -7589,6 +7589,9 @@ nfs4_proc_layoutget(struct nfs4_layoutge
  
--		return 0;
-+		return SUCCESS;
- 	}
- #endif
+ 	dprintk("--> %s\n", __func__);
  
---- a/drivers/scsi/aha1740.c
-+++ b/drivers/scsi/aha1740.c
-@@ -531,7 +531,7 @@ static int aha1740_eh_abort_handler (Scs
-  * quiet as possible...
-  */
++	/* nfs4_layoutget_release calls pnfs_put_layout_hdr */
++	pnfs_get_layout_hdr(NFS_I(inode)->layout);
++
+ 	lgp->args.layout.pages = nfs4_alloc_pages(max_pages, gfp_flags);
+ 	if (!lgp->args.layout.pages) {
+ 		nfs4_layoutget_release(lgp);
+@@ -7601,9 +7604,6 @@ nfs4_proc_layoutget(struct nfs4_layoutge
+ 	lgp->res.seq_res.sr_slot = NULL;
+ 	nfs4_init_sequence(&lgp->args.seq_args, &lgp->res.seq_res, 0);
  
--	return 0;
-+	return SUCCESS;
- }
- 
- static struct scsi_host_template aha1740_template = {
---- a/drivers/scsi/atari_NCR5380.c
-+++ b/drivers/scsi/atari_NCR5380.c
-@@ -2613,7 +2613,7 @@ static void NCR5380_reselect(struct Scsi
-  *	host byte of the result field to, if zero DID_ABORTED is
-  *	used.
-  *
-- * Returns : 0 - success, -1 on failure.
-+ * Returns : SUCCESS - success, FAILED on failure.
-  *
-  * XXX - there is no way to abort the command that is currently
-  *	 connected, you have to wait for it to complete.  If this is
---- a/drivers/scsi/esas2r/esas2r_main.c
-+++ b/drivers/scsi/esas2r/esas2r_main.c
-@@ -1057,7 +1057,7 @@ int esas2r_eh_abort(struct scsi_cmnd *cm
- 
- 		cmd->scsi_done(cmd);
- 
--		return 0;
-+		return SUCCESS;
- 	}
- 
- 	spin_lock_irqsave(&a->queue_lock, flags);
---- a/drivers/scsi/megaraid.c
-+++ b/drivers/scsi/megaraid.c
-@@ -1967,7 +1967,7 @@ megaraid_abort_and_reset(adapter_t *adap
- 	     cmd->device->id, cmd->device->lun);
- 
- 	if(list_empty(&adapter->pending_list))
--		return FALSE;
-+		return FAILED;
- 
- 	list_for_each_safe(pos, next, &adapter->pending_list) {
- 
-@@ -1990,7 +1990,7 @@ megaraid_abort_and_reset(adapter_t *adap
- 					(aor==SCB_ABORT) ? "ABORTING":"RESET",
- 					scb->idx);
- 
--				return FALSE;
-+				return FAILED;
- 			}
- 			else {
- 
-@@ -2015,12 +2015,12 @@ megaraid_abort_and_reset(adapter_t *adap
- 				list_add_tail(SCSI_LIST(cmd),
- 						&adapter->completed_list);
- 
--				return TRUE;
-+				return SUCCESS;
- 			}
- 		}
- 	}
- 
--	return FALSE;
-+	return FAILED;
- }
- 
- static inline int
---- a/drivers/scsi/sun3_NCR5380.c
-+++ b/drivers/scsi/sun3_NCR5380.c
-@@ -2597,15 +2597,15 @@ static void NCR5380_reselect (struct Scs
-  * Purpose : abort a command
-  *
-  * Inputs : cmd - the struct scsi_cmnd to abort, code - code to set the
-- * 	host byte of the result field to, if zero DID_ABORTED is 
-+ *	host byte of the result field to, if zero DID_ABORTED is
-  *	used.
-  *
-- * Returns : 0 - success, -1 on failure.
-+ * Returns : SUCCESS - success, FAILED on failure.
-  *
-- * XXX - there is no way to abort the command that is currently 
-- * 	 connected, you have to wait for it to complete.  If this is 
-+ * XXX - there is no way to abort the command that is currently
-+ *	 connected, you have to wait for it to complete.  If this is
-  *	 a problem, we could implement longjmp() / setjmp(), setjmp()
-- * 	 called where the loop started in NCR5380_main().
-+ *	 called where the loop started in NCR5380_main().
-  */
- 
- static int NCR5380_abort(struct scsi_cmnd *cmd)
+-	/* nfs4_layoutget_release calls pnfs_put_layout_hdr */
+-	pnfs_get_layout_hdr(NFS_I(inode)->layout);
+-
+ 	task = rpc_run_task(&task_setup_data);
+ 	if (IS_ERR(task))
+ 		return ERR_CAST(task);
 
 
