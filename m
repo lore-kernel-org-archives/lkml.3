@@ -1,135 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099AbbAGRoC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 12:44:02 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:51186 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753697AbbAGRn6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 12:43:58 -0500
-Date: Wed, 7 Jan 2015 09:43:53 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Olliver Schinagl <oliver@schinagl.nl>
-Cc: Olliver Schinagl <oliver+list@schinagl.nl>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Sam Ravnborg <sam@ravnborg.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1] input: make use of the input_set_capability helper
-Message-ID: <20150107174353.GB38027@dtor-ws>
-References: <1420615866-3528-1-git-send-email-oliver+list@schinagl.nl>
- <20150107075703.GE5256@dtor-ws>
- <54ACEC10.5000508@schinagl.nl>
- <20150107082603.GG5256@dtor-ws>
- <54ACFF44.9050805@schinagl.nl>
+	id S1754343AbbAGRqM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 12:46:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47328 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753557AbbAGRqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 12:46:10 -0500
+Message-ID: <54AD7098.5010700@redhat.com>
+Date: Wed, 07 Jan 2015 12:44:56 -0500
+From: Jon Masters <jcm@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54ACFF44.9050805@schinagl.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@kernel.org>, Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Herring <robh@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Lv Zheng <lv.zheng@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [Linaro-acpi] [PATCH v5 18/18] Documentation: ACPI for ARM64
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <2161376.07iV9ANMSk@wuerfel> <20150107115039.GA2199@e104818-lin.cambridge.arm.com> <1520439.Y1rXzXY1eS@wuerfel> <20150107172741.GY2634@sirena.org.uk>
+In-Reply-To: <20150107172741.GY2634@sirena.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 10:41:24AM +0100, Olliver Schinagl wrote:
-> HEy Dmitry,
+On 01/07/2015 12:27 PM, Mark Brown wrote:
+> On Wed, Jan 07, 2015 at 02:06:28PM +0100, Arnd Bergmann wrote:
+>> On Wednesday 07 January 2015 11:50:39 Catalin Marinas wrote:
 > 
-> On 07-01-15 09:26, Dmitry Torokhov wrote:
-> >On Wed, Jan 07, 2015 at 09:19:28AM +0100, Olliver Schinagl wrote:
-> >>Hey Dmitry,
-> >>
-> >>On 07-01-15 08:57, Dmitry Torokhov wrote:
-> >>>Hi Olliver,
-> >>>
-> >>>On Wed, Jan 07, 2015 at 08:31:06AM +0100, Olliver Schinagl wrote:
-> >>>>From: Olliver Schinagl <oliver@schinagl.nl>
-> >>>>
-> >>>>Almost all of the speaker drivers under input manipulate the ev bits
-> >>>>directly, which is not needed, as there is a helper available.
-> >>>>
-> >>>>This patch makes use of the helper for the speaker drivers.
-> >>>>
-> >>>>Signed-off-by: Olliver Schinagl <oliver@schinagl.nl>
-> >>>>---
-> >>>>  drivers/input/misc/cm109.c         | 4 ++--
-> >>>>  drivers/input/misc/ixp4xx-beeper.c | 5 ++---
-> >>>>  drivers/input/misc/m68kspkr.c      | 5 ++---
-> >>>>  drivers/input/misc/pcspkr.c        | 5 ++---
-> >>>>  drivers/input/misc/pwm-beeper.c    | 5 +----
-> >>>>  drivers/input/misc/sparcspkr.c     | 6 ++----
-> >>>>  6 files changed, 11 insertions(+), 19 deletions(-)
-> >>>>
-> >>>>diff --git a/drivers/input/misc/cm109.c b/drivers/input/misc/cm109.c
-> >>>>index 9365535..8e41070 100644
-> >>>>--- a/drivers/input/misc/cm109.c
-> >>>>+++ b/drivers/input/misc/cm109.c
-> >>>>@@ -767,10 +767,10 @@ static int cm109_usb_probe(struct usb_interface *intf,
-> >>>>  	input_dev->keycodesize = sizeof(unsigned char);
-> >>>>  	input_dev->keycodemax = ARRAY_SIZE(dev->keymap);
-> >>>>-	input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_SND);
-> >>>>-	input_dev->sndbit[0] = BIT_MASK(SND_BELL) | BIT_MASK(SND_TONE);
-> >>>>+	input_set_capability(input_dev, EV_SND, SND_BELL | SND_TONE);
-> >>>No, input_set_capability() takes single event code, not bitmask. The
-> >>>fact that it works for these 2 values of SND events is pure coincidence
-> >>>(the old code wasn't much better though).
-> >Ah, not, it does not work at all. Instead of setting bits 1 and 2 your
-> >code sets bit 3 in dev->sndbit.
-> >
-> >>What do you suggest we should do then? Fix input_set_capability to
-> >>take bit masks? or multiline events?
-> >>I'm not sure why __set_bits() wouldn't work for bitmasks, could you
-> >>educate me?
-> >Call it once per event:
-> >
-> >	input_set_capability(input_dev, EV_SND, SND_BELL);
-> >	input_set_capability(input_dev, EV_SND, SND_TONE);
-> roger, done
-> >
-> >>>>  	/* register available key events */
-> >>>>+	input_dev->evbit[0] = BIT_MASK(EV_KEY);
-> >>>Would prefer __set_bit(EV_KEY, input_dev->evbit); here instead.
-> >>I only moved the EV_KEY bit from above to its appropiate place here.
-> >The original code was setting combination of bits; here we set single
-> >one and __set_bit() is cleaner IMO.
-> The documentation contradicts this actually, it says to use
-> set_bit() first, but favors the direct writing as above as it is
-> 'shorter in some cases'.
-
-Right, sometimes, when you need to set 3-4 values on evbit (that is
-pretty much guaranteed to fit into one long word) it is shoerted to
-write
-
-	input->evbit[0] = BIT(EV_A) | BIT(EV_B) | BIT(EV_C);
-
-it is shorted, but it is not that great as it relies on knowledge of
-EV_* values. Now relying on that knowledge is pretty safe as they form
-userspace ABI and will not be changed, only extended. But nowadays I
-prefer using __set_bit() or input_set_capability() if possible.
-
+>>> From what I gathered so far, the main reason for _some_ vendors is not
+>>> support for "other" OS but actually features that ACPI has and DT
+>>> doesn't (like AML; I deliberately ignore statements like "industry
+>>> standard"). _If_ such reasons are sound, maybe they have a case for
+>>> ACPI-only machines targeted primarily at Linux.
 > 
-> Furthermore, I'm a little confused as what the purpose of
-> input_set_capability() is, if we use set_bits (or __set_bits) here.
-> It appears we use set_bits here because it is manipulating several
-> entries in the array (well atleast index 0) and
-> set_input_capability() doesn't handle arrays? But when I look at
-> struct input_dev, all those entries are arrays, including sndbit. So
-> we only use set_input_capabilities when manipulating index 0 when
-> its the only one? Feels a little strange to me, but probably is my
-> lack of knowledge herin, so appologies for that.
+>> What I got from the replies from HP, Huawei and from earlier discussions
+>> with Jon is that they all hope to get to the point of relying on AML
+>> alone to bridge the differences between SoC families.
 
-__set_bit() sets arbitrary bit in memory started at given address. So to
-set bit 65 (or bit 1 in the 3rd element of u32 array a) on you do:
+I'm expecting to need new drivers for SoC IP blocks that are net new,
+but generational differences between iterations of the same SoC should
+be abstracted behind the firmware (and we are already seeing this with
+at least one platform). Platform wise, it's nice to already see e.g.
+mmconfig working to handle the specific ways a platform wires PCI.
 
-	__set_bit(65, a);
+> I tend to agree with you that it's an overreach to think that this is
+> going to completely abstract away the differences between SoCs from
+> different vendors without substantial further standardization work.
 
-input_set_capability() is a wrapper that does set both evbit and
-appropriate *bit for given event type and event code and caller does not
-need to know all the details about bitmap names inside input device
-structure.
+(which we plan to do - I intend ultimately for us to have an answer to
+the Windows Hardware Qualification guides for ARM server systems)
 
-Thanks.
+> However it does seem reasonable to expect that features like AML are
+> going to be more successful in handling board differences and
+> incremental revisions of SoCs - things like interactions with system
+> power controllers for example.  That seems like a useful win in and of
+> itself, and one that's worth supporting.
 
--- 
-Dmitry
+Indeed.
+
+>> The main problem here is that can AML only cover part of the problem:
+>> it can talk to a clock controller e.g. over I2C, SPI, GPIO, UART
+>> or IPMI, but you still need a device driver in the kernel to talk to
+>> those, and SBSA doesn't mandate a specific implementation so you can
+>> expect every other SoC that is coming out to have a different one.
+> 
+>> Similarly, SBSA is rather vague about some peripherals it mandates,
+>> and if a new SoC has a slightly different AHCI variation, there is
+>> nothing you can do about it in AML.
+> 
+>> x86 gets around this problem by having an extreme level of hardware
+>> backwards compatibility, so you don't even need AML for this and
+>> can generally boot a (almost) full-featured Linux kernel with
+>> acpi=off on the command line.
+> 
+> That level of hardware compatibility does partly come from the need to
+> run existing software.  I'd expect that similar effects will start to
+> come into play with ARMv8 ACPI systems if they become successful; people
+> will do things like ensure compatibility with common IPs that have
+> existing Linux drivers that distros tend to include as standard.
+
+Agreed.
+
+Jon.
+
