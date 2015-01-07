@@ -1,113 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529AbbAGAuh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 19:50:37 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:42436 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539AbbAGAuf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 19:50:35 -0500
+	id S1756549AbbAGAve (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 19:51:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43639 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752166AbbAGAvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 19:51:33 -0500
+Date: Wed, 7 Jan 2015 08:52:18 +0800
+From: Fam Zheng <famz@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
+        Venkatesh Srinivas <venkateshs@google.com>
+Subject: Re: [PATCH v3] virtio-scsi: Fix the race condition in
+ virtscsi_handle_event
+Message-ID: <20150107005218.GA2912@fam-t430.nay.redhat.com>
+References: <1420550705-22162-1-git-send-email-famz@redhat.com>
+ <20150106145447.GA7787@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CADYu308MmdGeajFTDt38zZSy7K2VKbDppuqmiJn=1ZwL5d1vmw@mail.gmail.com>
-References: <1419782872-2991-1-git-send-email-aniroop.mathur@gmail.com>
-	<alpine.LNX.2.00.1412291302470.1680@pobox.suse.cz>
-	<CADYu308MmdGeajFTDt38zZSy7K2VKbDppuqmiJn=1ZwL5d1vmw@mail.gmail.com>
-Date: Tue, 6 Jan 2015 16:50:34 -0800
-Message-ID: <CAF8JNh+gzA_m-mMjjAdBz6WyyFemTU26VDOLufOJXJ5DMkK2yg@mail.gmail.com>
-Subject: Re: [PATCH] hid: Initialize battery_no to -1 & correct its format string
-From: Ping Cheng <pinglinux@gmail.com>
-To: Aniroop Mathur <aniroop.mathur@gmail.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Jason Gerecke <killertofu@gmail.com>, Ping Cheng <pingc@wacom.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        a.mathur@samsung.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150106145447.GA7787@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+On Tue, 01/06 16:54, Michael S. Tsirkin wrote:
+> On Tue, Jan 06, 2015 at 09:25:05PM +0800, Fam Zheng wrote:
+> > There is a race condition in virtscsi_handle_event, when many device
+> > hotplug/unplug events flush in quickly.
+> > 
+> > The scsi_remove_device in virtscsi_handle_transport_reset may trigger
+> > the BUG_ON in scsi_target_reap, because the state is altered behind it,
+> > probably by scsi_scan_host of another event. I'm able to reproduce it by
+> > repeatedly plugging and unplugging a scsi disk with the same lun number.
+> > 
+> > To fix this, a single thread workqueue (local to the module) is added,
+> > which makes the scan work serialized.
+> 
+> All wqs are serialized:
+> 
+> 	Note that the flag WQ_NON_REENTRANT no longer exists as all workqueues
+> 	are now non-reentrant - any work item is guaranteed to be executed by
+> 	at most one worker system-wide at any given time.
+> 
+> 
+> > With this change, the panic goes
+> > away.
+> 
+> I think the commit log is confusing.
+> serialization can not be an issue.
+> 
+> At a guess, what happens is two events are processed out of order,
+> so unplug bypasses another event, causing use after free errors.
 
-The relevant code was introduced by
-d70420b914c98a3758674c6e9858810e0ab4ea30. Can you take a look and let
-us know if Aniroop's patch fits your original thought or not?
+It's not just order, it's race. A wq item is only serialized to itself - that's
+what non-reentrant means here. But when there are two events, there are *two*
+wq items, which do run concurrently by system_freezable_wq.
 
-Thanks,
+> 
+> With this in mind, your patch will indeed fix the issue, but
+> a better fix would be to call alloc_ordered_workqueue.
 
-Ping
+alloc_ordered_workqueue does fix it, but still by serializing all the wq items.
 
-On Tue, Jan 6, 2015 at 6:32 AM, Aniroop Mathur <aniroop.mathur@gmail.com> wrote:
-> Dear Mr. Jason and Mr. Ping,
->
-> Please update about below patch.
-> Except avoiding subtraction, there is also a need to avoid negative
-> battery name which may come due to %ld, so need to change to %lu.
->
-> Thanks,
-> Aniroop
->
-> On Mon, Dec 29, 2014 at 5:33 PM, Jiri Kosina <jkosina@suse.cz> wrote:
->> On Sun, 28 Dec 2014, Aniroop Mathur wrote:
->>
->>> From: Aniroop Mathur <a.mathur@samsung.com>
->>>
->>> This patch initializes battery_no to -1 to avoid extra subtraction
->>> operation performed everytime wacom battery is initialized
->>
->> This is so femto-optimization, that I don't really care deeply. Adding
->> Jason and Ping to CC. If they want this, I'll apply the patch.
->>
->>> and correct format string of unsigned long from %ld to %lu.
->>>
->>> Signed-off-by: Aniroop Mathur <a.mathur@samsung.com>
->>> ---
->>>  drivers/hid/wacom_sys.c | 8 ++++----
->>>  1 file changed, 4 insertions(+), 4 deletions(-)
->>>
->>> diff --git a/drivers/hid/wacom_sys.c b/drivers/hid/wacom_sys.c
->>> index 129fd33..4b5ff84 100644
->>> --- a/drivers/hid/wacom_sys.c
->>> +++ b/drivers/hid/wacom_sys.c
->>> @@ -919,17 +919,17 @@ static int wacom_ac_get_property(struct power_supply *psy,
->>>
->>>  static int wacom_initialize_battery(struct wacom *wacom)
->>>  {
->>> -     static atomic_t battery_no = ATOMIC_INIT(0);
->>> +     static atomic_t battery_no = ATOMIC_INIT(-1);
->>>       int error;
->>>       unsigned long n;
->>>
->>>       if (wacom->wacom_wac.features.quirks & WACOM_QUIRK_BATTERY) {
->>> -             n = atomic_inc_return(&battery_no) - 1;
->>> +             n = atomic_inc_return(&battery_no);
->>>
->>>               wacom->battery.properties = wacom_battery_props;
->>>               wacom->battery.num_properties = ARRAY_SIZE(wacom_battery_props);
->>>               wacom->battery.get_property = wacom_battery_get_property;
->>> -             sprintf(wacom->wacom_wac.bat_name, "wacom_battery_%ld", n);
->>> +             sprintf(wacom->wacom_wac.bat_name, "wacom_battery_%lu", n);
->>>               wacom->battery.name = wacom->wacom_wac.bat_name;
->>>               wacom->battery.type = POWER_SUPPLY_TYPE_BATTERY;
->>>               wacom->battery.use_for_apm = 0;
->>> @@ -937,7 +937,7 @@ static int wacom_initialize_battery(struct wacom *wacom)
->>>               wacom->ac.properties = wacom_ac_props;
->>>               wacom->ac.num_properties = ARRAY_SIZE(wacom_ac_props);
->>>               wacom->ac.get_property = wacom_ac_get_property;
->>> -             sprintf(wacom->wacom_wac.ac_name, "wacom_ac_%ld", n);
->>> +             sprintf(wacom->wacom_wac.ac_name, "wacom_ac_%lu", n);
->>>               wacom->ac.name = wacom->wacom_wac.ac_name;
->>>               wacom->ac.type = POWER_SUPPLY_TYPE_MAINS;
->>>               wacom->ac.use_for_apm = 0;
->>> --
->>> 1.9.1
->>>
->>
->> --
->> Jiri Kosina
->> SUSE Labs
+By definition, create_singlethread_workqueue only adds a WQ_MEM_RECLAIM flag,
+which is not related to the question. They are the same other than that.
+
+> 
+> > Signed-off-by: Fam Zheng <famz@redhat.com>
+> > ---
+> > 
+> > v3: Fix spacing and destroy order. (MST)
+> > ---
+> >  drivers/scsi/virtio_scsi.c | 14 +++++++++++++-
+> >  1 file changed, 13 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+> > index c52bb5d..144bb73 100644
+> > --- a/drivers/scsi/virtio_scsi.c
+> > +++ b/drivers/scsi/virtio_scsi.c
+> > @@ -120,6 +120,7 @@ struct virtio_scsi {
+> >  
+> >  static struct kmem_cache *virtscsi_cmd_cache;
+> >  static mempool_t *virtscsi_cmd_pool;
+> > +static struct workqueue_struct *virtscsi_scan_wq;
+> >  
+> >  static inline struct Scsi_Host *virtio_scsi_host(struct virtio_device *vdev)
+> >  {
+> > @@ -404,7 +405,7 @@ static void virtscsi_complete_event(struct virtio_scsi *vscsi, void *buf)
+> >  	struct virtio_scsi_event_node *event_node = buf;
+> >  
+> >  	if (!vscsi->stop_events)
+> > -		queue_work(system_freezable_wq, &event_node->work);
+> > +		queue_work(virtscsi_scan_wq, &event_node->work);
+> 
+> This means wq isn't freezable anymore.
+
+Maybe add WQ_FREEZABLE back to the flags then. I'll see.
+
+> 
+> >  }
+> >  
+> >  static void virtscsi_event_done(struct virtqueue *vq)
+> > @@ -1119,6 +1120,13 @@ static int __init init(void)
+> >  		pr_err("mempool_create() for virtscsi_cmd_pool failed\n");
+> >  		goto error;
+> >  	}
+> > +
+> > +	virtscsi_scan_wq = create_singlethread_workqueue("virtscsi-scan");
+> > +	if (!virtscsi_scan_wq) {
+> > +		pr_err("create_singlethread_workqueue() for virtscsi_scan_wq failed\n");
+> > +		goto error;
+> > +	}
+> > +
+> 
+> Documentation/workqueue.txt says:
+> alloc_workqueue() allocates a wq.  The original create_*workqueue()
+> functions are deprecated and scheduled for removal.  alloc_workqueue()
+> takes three arguments - @name, @flags and @max_active.
+
+OK, let's use alloc_ordered_workqueue.
+
+> 
+> 
+> >  	ret = register_virtio_driver(&virtio_scsi_driver);
+> >  	if (ret < 0)
+> >  		goto error;
+> > @@ -1126,6 +1134,9 @@ static int __init init(void)
+> >  	return 0;
+> >  
+> >  error:
+> > +	if (virtscsi_scan_wq) {
+> > +		destroy_workqueue(virtscsi_scan_wq);
+> > +	}
+> 
+> Single line, shouldn't use {} here.
+
+OK.
+
+Fam
+
+> 
+> >  	if (virtscsi_cmd_pool) {
+> >  		mempool_destroy(virtscsi_cmd_pool);
+> >  		virtscsi_cmd_pool = NULL;
+> > @@ -1140,6 +1151,7 @@ error:
+> >  static void __exit fini(void)
+> >  {
+> >  	unregister_virtio_driver(&virtio_scsi_driver);
+> > +	destroy_workqueue(virtscsi_scan_wq);
+> >  	mempool_destroy(virtscsi_cmd_pool);
+> >  	kmem_cache_destroy(virtscsi_cmd_cache);
+> >  }
+> > -- 
+> > 1.9.3
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
