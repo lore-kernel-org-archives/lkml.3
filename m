@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487AbbAGOFn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 09:05:43 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:32735 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117AbbAGOFm (ORCPT
+	id S1751711AbbAGOMG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 09:12:06 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:38578 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772AbbAGOMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 09:05:42 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-To: david.vrabel@citrix.com, konrad.wilk@oracle.com, jgross@suse.com
-Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        boris.ostrovsky@oracle.com
-Subject: [PATCH] x86/xen: Free bootmem in free_p2m_page() during early boot
-Date: Wed,  7 Jan 2015 09:08:54 -0500
-Message-Id: <1420639734-24808-1-git-send-email-boris.ostrovsky@oracle.com>
-X-Mailer: git-send-email 1.9.3
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 7 Jan 2015 09:12:03 -0500
+Message-ID: <54AD3EAE.6090009@gmail.com>
+Date: Wed, 07 Jan 2015 15:11:58 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+To: Jisheng Zhang <jszhang@marvell.com>, mturquette@linaro.org,
+        sboyd@codeaurora.org, alexandre.belloni@free-electrons.com,
+        antoine.tenart@free-electrons.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk
+CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3/3] clk: berlin: bg2q: remove non-exist "smemc" gate
+ clock
+References: <1420016272-6789-1-git-send-email-jszhang@marvell.com> <1420016272-6789-4-git-send-email-jszhang@marvell.com>
+In-Reply-To: <1420016272-6789-4-git-send-email-jszhang@marvell.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With recent changes in p2m we now have legitimate cases when
-p2m memory needs to be freed during early boot (i.e. before
-slab is initialized).
+On 31.12.2014 09:57, Jisheng Zhang wrote:
+> The "smemc" clock is removed on BG2Q SoCs. In fact, bit19 of clkenable
+> register is for nfc. Current code use bit19 for non-exist "smemc"
+> incorrectly, this prevents eMMC from working due to the sdhci's
+> "core" clk is still gated.
+>
+> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+> Cc: stable@vger.kernel.org # 3.16+
+> ---
+>   drivers/clk/berlin/bg2q.c | 1 -
+>   1 file changed, 1 deletion(-)
+>
+> diff --git a/drivers/clk/berlin/bg2q.c b/drivers/clk/berlin/bg2q.c
+> index 21784e4..440ef81 100644
+> --- a/drivers/clk/berlin/bg2q.c
+> +++ b/drivers/clk/berlin/bg2q.c
+> @@ -285,7 +285,6 @@ static const struct berlin2_gate_data bg2q_gates[] __initconst = {
+>   	{ "pbridge",	"perif",	15, CLK_IGNORE_UNUSED },
+>   	{ "sdio",	"perif",	16, CLK_IGNORE_UNUSED },
+>   	{ "nfc",	"perif",	18 },
+> -	{ "smemc",	"perif",	19 },
 
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
----
- arch/x86/xen/p2m.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+Jisheng,
 
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index edbc7a6..df8acb4 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -167,10 +167,13 @@ static void * __ref alloc_p2m_page(void)
- 	return (void *)__get_free_page(GFP_KERNEL | __GFP_REPEAT);
- }
- 
--/* Only to be called in case of a race for a page just allocated! */
- static void free_p2m_page(void *p)
- {
--	BUG_ON(!slab_is_available());
-+	if (unlikely(!slab_is_available())) {
-+		free_bootmem((unsigned long)p, PAGE_SIZE);
-+		return;
-+	}
-+
- 	free_page((unsigned long)p);
- }
- 
--- 
-1.9.3
+if bit 19 is for nfc, how does that work out with bit 18 which is
+still assigned to nfc? Can you re-evaluate clkenable registers for
+BG2Q and fix it up accordingly? I'd suggest to still disable as many
+clocks as possible rather than removing the corresponding clk_gates.
+
+Sebastian
+
+>   	{ "pcie",	"perif",	22 },
+>   };
+>
+>
 
