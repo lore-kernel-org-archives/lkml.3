@@ -1,141 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752442AbbAGLUq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 06:20:46 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:43038 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751690AbbAGLUo (ORCPT
+	id S1752332AbbAGL0q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 06:26:46 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:46918 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494AbbAGL0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 06:20:44 -0500
-Message-ID: <54AD166C.9060507@ti.com>
-Date: Wed, 7 Jan 2015 13:20:12 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 7 Jan 2015 06:26:45 -0500
+Message-ID: <54AD17F1.4010002@linaro.org>
+Date: Wed, 07 Jan 2015 12:26:41 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Paul Walmsley <paul@pwsan.com>, Lokesh Vutla <lokeshvutla@ti.com>
-CC: <tony@atomide.com>, <santosh.shilimkar@oracle.com>, <t-kristo@ti.com>,
-        <nm@ti.com>, <nsekhar@ti.com>, <bcousson@baylibre.com>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <s-anna@ti.com>
-Subject: Re: [PATCH] ARM: OMAP2+: hwmod: Fix _wait_target_ready() for hwmods
- without sysc
-References: <1418917790-1791-1-git-send-email-rogerq@ti.com> <5492F84E.7020706@ti.com> <alpine.DEB.2.02.1501020654050.27058@utopia.booyaka.com> <54AA4CD4.40105@ti.com> <alpine.DEB.2.02.1501060202540.28771@utopia.booyaka.com>
-In-Reply-To: <alpine.DEB.2.02.1501060202540.28771@utopia.booyaka.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Olof Johansson <olof@lixom.net>, Magnus Damm <magnus.damm@gmail.com>,
+        Tobias Jakobi <tjakobi@math.uni-bielefeld.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL]: clockevents: 3.18 fixes
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/15 04:04, Paul Walmsley wrote:
-> 
-> Roger, Lokesh, could you try this one instead?
-> 
-> It passes all the basic tests here except it does not boot on the 4460 
-> VAR-SOM-OM - unclear why at this point - but it would be good to see if it 
-> works on your AM4372 boards, since I don't have that one.
-> 
-> Test logs are here:
-> 
-> http://www.pwsan.com/omap/testlogs/hwmod_skip_only_remap_v3.19-rc/20150105171744/
-> 
-> 
-> - Paul
-> 
-> 
-> From 4f2e13bd2181e0ebede3aabc484aa2339830748a Mon Sep 17 00:00:00 2001
-> From: Paul Walmsley <paul@pwsan.com>
-> Date: Mon, 5 Jan 2015 15:49:57 -0700
-> Subject: [PATCH] Only skip ioremap() if IP block does not have OCP header
->  registers. Experimental.
-> 
-> ---
->  arch/arm/mach-omap2/omap_hwmod.c | 33 +++++++++++++++++++++------------
->  1 file changed, 21 insertions(+), 12 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
-> index cbb908dc5cf0..03df8833d399 100644
-> --- a/arch/arm/mach-omap2/omap_hwmod.c
-> +++ b/arch/arm/mach-omap2/omap_hwmod.c
-> @@ -1938,6 +1938,8 @@ static int _reset(struct omap_hwmod *oh)
->  	pr_debug("omap_hwmod: %s: resetting\n", oh->name);
->  
->  	if (oh->class->reset) {
-> +		WARN(!oh->_mpu_rt_va, "Attempt to call custom reset with no MPU register target ioremapped: %s",
-> +		     oh->name);
 
-Not part of $subject.
+Hi Thomas,
 
->  		r = oh->class->reset(oh);
->  	} else {
->  		if (oh->rst_lines_cnt > 0) {
-> @@ -2358,15 +2360,19 @@ static int of_dev_hwmod_lookup(struct device_node *np,
->  }
->  
->  /**
-> - * _init_mpu_rt_base - populate the virtual address for a hwmod
-> + * _init_mpu_rt_base - populate the MPU port and virtual address
->   * @oh: struct omap_hwmod * to locate the virtual address
->   * @data: (unused, caller should pass NULL)
->   * @index: index of the reg entry iospace in device tree
->   * @np: struct device_node * of the IP block's device node in the DT data
->   *
-> - * Cache the virtual address used by the MPU to access this IP block's
-> - * registers.  This address is needed early so the OCP registers that
-> - * are part of the device's address space can be ioremapped properly.
-> + * Cache the interconnect target port and the virtual address used by
-> + * the MPU to access this IP block's registers.  The address is needed
-> + * early so the OCP registers that are part of the device's address
-> + * space can be ioremapped properly.  The presence or absence of the
-> + * interconnect target port also indicates whether the hwmod code
-> + * should wait for the IP block to indicate readiness after it is
-> + * enabled.
->   *
->   * Returns 0 on success, -EINVAL if an invalid hwmod is passed, and
->   * -ENXIO on absent or invalid register target address space.
-> @@ -2385,6 +2391,13 @@ static int __init _init_mpu_rt_base(struct omap_hwmod *oh, void *data,
->  	if (oh->_int_flags & _HWMOD_NO_MPU_PORT)
->  		return -ENXIO;
->  
-> +	/*
-> +	 * If there's no need for the hwmod code to read or write to
-> +	 * the IP block registers, bail out early before the ioremap()
-> +	 */
-> +	if (!oh->class->sysc)
-> +		return 0;
-> +
->  	mem = _find_mpu_rt_addr_space(oh);
->  	if (!mem) {
->  		pr_debug("omap_hwmod: %s: no MPU register target found\n",
-> @@ -2451,14 +2464,10 @@ static int __init _init(struct omap_hwmod *oh, void *data)
->  				oh->name, np->name);
->  	}
->  
-> -	if (oh->class->sysc) {
-> -		r = _init_mpu_rt_base(oh, NULL, index, np);
-> -		if (r < 0) {
-> -			WARN(1, "omap_hwmod: %s: doesn't have mpu register target base\n",
-> -			     oh->name);
-> -			return 0;
-> -		}
-> -	}
-> +	r = _init_mpu_rt_base(oh, NULL, index, np);
-> +	if (r < 0)
-> +		pr_debug("omap_hwmod: %s: doesn't have mpu register target base\n",
-> +			 oh->name);
+this pull request provides three fixes for 3.18.
 
-This is the real piece that fixes the issue.
+  * Magnus Damn fixed the cpumask for the sh_tmu driver in order to make 
+it work on the SMP system
 
->  
->  	r = _init_clocks(oh, NULL);
->  	if (r < 0) {
-> 
+  * Olof Johansson fixed the __iomem annotation to prevent a sparse warning
 
-I've tested this patch on am43x-gp-evm, and it seems to fix the issue although with some unpleasant warning messages.
-So if we can get rid of the WARN() you can put my
+  * Tobias Jakobi fixed the mct mask inversion which was introduced by 
+commit a1ba7a7a
 
-Acked-by: Roger Quadros <rogerq@ti.com>
+Thanks !
 
-cheers,
--roger
+   -- Daniel
+
+ps: happy new year ;)
+
+The following changes since commit a5fd9733a30d18d7ac23f17080e7e07bb3205b69:
+
+   tick/powerclamp: Remove tick_nohz_idle abuse (2014-12-19 14:05:52 +0100)
+
+are available in the git repository at:
+
+   http://git.linaro.org/people/daniel.lezcano/linux.git 
+clockevents/3.18-fixes
+
+for you to fetch changes up to f2a5473861cf69c03d0f0ee5d0ea1b853b9e582e:
+
+   clocksource: sh_tmu: Set cpu_possible_mask to fix SMP broadcast 
+(2015-01-05 14:43:37 +0100)
+
+----------------------------------------------------------------
+Magnus Damm (1):
+       clocksource: sh_tmu: Set cpu_possible_mask to fix SMP broadcast
+
+Olof Johansson (1):
+       clocksource: kona: fix __iomem annotation
+
+Tobias Jakobi (1):
+       clocksource: exynos_mct: Fix bitmask regression for exynos4_mct_write
+
+  drivers/clocksource/bcm_kona_timer.c | 9 ++++-----
+  drivers/clocksource/exynos_mct.c     | 4 ++--
+  drivers/clocksource/sh_tmu.c         | 2 +-
+  3 files changed, 7 insertions(+), 8 deletions(-)
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
