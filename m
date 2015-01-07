@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529AbbAGPck (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 10:32:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55427 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753193AbbAGPcj (ORCPT
+	id S1753101AbbAGPg1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 10:36:27 -0500
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:58947 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752092AbbAGPgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 10:32:39 -0500
-Date: Wed, 7 Jan 2015 07:32:38 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: stable 3.14 backport request for ARC
-Message-ID: <20150107153238.GA3524@kroah.com>
-References: <C2D7FE5348E1B147BCA15975FBA2307565BC9324@IN01WEMBXA.internal.synopsys.com>
- <54ACEE83.10105@synopsys.com>
+	Wed, 7 Jan 2015 10:36:25 -0500
+Date: Wed, 7 Jan 2015 16:36:17 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Chen Gang S <gang.chen@sunrus.com.cn>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        holzheu@linux.vnet.ibm.com, linux-s390@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] s390: include: timex: Use macro CLOCK_STORE_SIZE
+ instead of hard code number
+Message-ID: <20150107163617.190b5992@mschwide>
+In-Reply-To: <54AD4677.6040009@sunrus.com.cn>
+References: <54A55954.6000002@sunrus.com.cn>
+	<20150102094625.GA4059@osiris>
+	<54A76584.6020700@sunrus.com.cn>
+	<20150105095948.0612e7bc@mschwide>
+	<54AD4677.6040009@sunrus.com.cn>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54ACEE83.10105@synopsys.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15010715-0013-0000-0000-000002825966
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 01:59:55PM +0530, Vineet Gupta wrote:
-> Hi Greg,
-> 
-> On Tuesday 23 December 2014 01:38 PM, Vineet Gupta wrote:
-> > Hi,
-> > 
-> > Can you please backport the following mainline commits to 3.14 stable.
-> > 
-> > 2014-02-07 ec7ac6afd07b ARC: switch to generic ENTRY/END assembler annotations 
-> > 2014-04-18 64ee9f32c33c ARC: Delete stale barrier.h 
-> > 
-> > 
-> > Thx,
-> > -Vineet
-> 
-> It seems above request fell thru the cracks due to holiday season.
-> Can you please queue up above for next 3.14 stable cycle.
-> 
-> and also the following:
-> 
-> 2014-06-24 ba25915fb2cd ARC: Fix build breakage for !CONFIG_ARC_DW2_UNWIND
-> 2014-10-01 e8ef060b37c2 ARC: [nsimosci] move peripherals to match model to FPGA
+On Wed, 07 Jan 2015 22:45:11 +0800
+Chen Gang S <gang.chen@sunrus.com.cn> wrote:
 
-Lots of things "fell through", I have over 300 pending patches that
-didn't make it into this round of kernel releases, so you are in good
-company.  Just relax, they will make it in eventually :)
+> On 01/05/2015 04:59 PM, Martin Schwidefsky wrote:
+> > On Sat, 03 Jan 2015 11:44:04 +0800
+> > Chen Gang <gang.chen@sunrus.com.cn> wrote:
+> > 
+> >>
+> >> Thank you for your work.
+> >>
+> >> In honest, originally, I was not sure whether it would cause bug (do not
+> >> know gcc would generic incorrect code for it). :-)
+> > 
+> > Even if the code happened to be correct it does not matter. The intention
+> > of the sizeof() has been to get to the correct 16, not 8. The fix is
+> > fine as it is.
+> > 
+> 
+> Excuse me, my English is not quite well, I am not quite sure about what
+> you said (might misunderstand what you said), so I provide the related
+> information below for confirmation, please check, thanks.
+> 
+> sizeof(clk) is for a pointer, not for an array (for C language, it
+> treats array parameter as a pointer), the related demo is below:
 
-thanks,
+And your patch fixes this problem. My comment was in regard to the
+impact of the original bug. As the typeof construct is used to
+prevent the compiler from over-optimizing, the code can come out
+correct even if the bug is present.
 
-greg k-h
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
