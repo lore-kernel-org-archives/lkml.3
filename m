@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711AbbAGXgX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 18:36:23 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:62434 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755556AbbAGXgV (ORCPT
+	id S1755653AbbAGXiU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 18:38:20 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:34958 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754740AbbAGXiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 18:36:21 -0500
-From: Fabio Estevam <festevam@gmail.com>
-To: shawn.guo@linaro.org
-Cc: linux-kernel@vger.kernel.org, Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] ARM: imx_v6_v7_defconfig: Select CONFIG_FB_MXS
-Date: Wed,  7 Jan 2015 21:35:54 -0200
-Message-Id: <1420673754-6645-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 7 Jan 2015 18:38:18 -0500
+MIME-Version: 1.0
+In-Reply-To: <1420656594-8908-3-git-send-email-m-karicheri2@ti.com>
+References: <1420656594-8908-1-git-send-email-m-karicheri2@ti.com> <1420656594-8908-3-git-send-email-m-karicheri2@ti.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Wed, 7 Jan 2015 17:37:56 -0600
+Message-ID: <CAL_Jsq+pKeXuGnZV_NYHn6iZgeOs404OPhcUb0FJs=-7j2P1Ug@mail.gmail.com>
+Subject: Re: [PATCH v3 2/4] of: move of_dma_configure() to device,c to help re-use
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: Joerg Roedel <joro@8bytes.org>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+On Wed, Jan 7, 2015 at 12:49 PM, Murali Karicheri <m-karicheri2@ti.com> wrote:
+> Move of_dma_configure() to device.c so that same function can be re-used
+> for PCI devices to obtain DMA configuration from DT. Also add a second
+> argument so that for PCI, DT node of root bus host bridge can be used to
+> obtain the DMA configuration for the slave PCI device. Additionally fix
+> the dma-range size when the DT attribute is missing. i.e  set size to
+> dev->coherent_dma_mask + 1 instead of dev->coherent_dma_mask.
 
-CONFIG_FB_MXS is the LCD driver for mx6solo-lite and mx6solox.
+Additionally is a red flag for put in another patch. There is an issue
+I think as well.
 
-Enable it by default.
+> +       ret = of_dma_get_range(np, &dma_addr, &paddr, &size);
+> +       if (ret < 0) {
+> +               dma_addr = offset = 0;
+> +               size = dev->coherent_dma_mask + 1;
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- arch/arm/configs/imx_v6_v7_defconfig | 1 +
- 1 file changed, 1 insertion(+)
+If coherent_dma_mask is DMA_BIT_MASK(64), then you will overflow and
+have a size of 0. There may also be a problem when the mask is only
+32-bit type.
 
-diff --git a/arch/arm/configs/imx_v6_v7_defconfig b/arch/arm/configs/imx_v6_v7_defconfig
-index 9575af8..1f36977 100644
---- a/arch/arm/configs/imx_v6_v7_defconfig
-+++ b/arch/arm/configs/imx_v6_v7_defconfig
-@@ -203,6 +203,7 @@ CONFIG_DRM_PANEL_SIMPLE=y
- CONFIG_LCD_CLASS_DEVICE=y
- CONFIG_LCD_L4F00242T03=y
- CONFIG_LCD_PLATFORM=y
-+CONFIG_FB_MXS=y
- CONFIG_BACKLIGHT_PWM=y
- CONFIG_BACKLIGHT_GPIO=y
- CONFIG_FRAMEBUFFER_CONSOLE=y
--- 
-1.9.1
-
+Rob
