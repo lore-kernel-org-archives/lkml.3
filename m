@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264AbbAGKLI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 05:11:08 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56464 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489AbbAGKLG (ORCPT
+	id S1752316AbbAGKMm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 05:12:42 -0500
+Received: from smtp-out4.electric.net ([192.162.216.184]:59052 "EHLO
+	smtp-out4.electric.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069AbbAGKMj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 05:11:06 -0500
-Date: Wed, 7 Jan 2015 10:10:56 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 31/40] arm64: macro whitespace fixes
-Message-ID: <20150107101055.GB7485@arm.com>
-References: <1420558883-10131-1-git-send-email-mst@redhat.com>
- <1420558883-10131-32-git-send-email-mst@redhat.com>
+	Wed, 7 Jan 2015 05:12:39 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Ani Sinha'" <ani@arista.com>, "corbet@lwn.net" <corbet@lwn.net>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "edumazet@google.com" <edumazet@google.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "P@draigbrady.com" <P@draigbrady.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "fruggeri@arista.com" <fruggeri@arista.com>
+Subject: RE: [PATCH 1/1] update ip-sysctl.txt documentation
+Thread-Topic: [PATCH 1/1] update ip-sysctl.txt documentation
+Thread-Index: AQHQKgl5VVPZQ6+Wr0qNPFoMBOPU3Zy0bwaw
+Date: Wed, 7 Jan 2015 10:11:30 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1CAC2762@AcuExch.aculab.com>
+References: <1420587382-24612-1-git-send-email-ani@arista.com>
+In-Reply-To: <1420587382-24612-1-git-send-email-ani@arista.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420558883-10131-32-git-send-email-mst@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Outbound-IP: 213.249.233.130
+X-Env-From: David.Laight@ACULAB.COM
+X-PolicySMART: 3396946, 3397078
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 03:45:15PM +0000, Michael S. Tsirkin wrote:
-> While working on arch/arm64/include/asm/uaccess.h, I noticed
-> that one macro within this header is made harder to read because it
-> violates a coding style rule: space is missing after comma.
+From: Ani Sinha
+> Update documentation to reflect the fact that
+> /proc/sys/net/ipv4/route/max_size is no longer used for ipv4.
 > 
-> Fix it up.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Ani Sinha <ani@arista.com>
 > ---
-
-Acked-by: Will Deacon <will.deacon@arm.com>
-
-Will
-
->  arch/arm64/include/asm/uaccess.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  Documentation/networking/ip-sysctl.txt |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
 > 
-> diff --git a/arch/arm64/include/asm/uaccess.h b/arch/arm64/include/asm/uaccess.h
-> index 9a2069b..07e1ba44 100644
-> --- a/arch/arm64/include/asm/uaccess.h
-> +++ b/arch/arm64/include/asm/uaccess.h
-> @@ -63,7 +63,7 @@ static inline void set_fs(mm_segment_t fs)
->  	current_thread_info()->addr_limit = fs;
->  }
->  
-> -#define segment_eq(a,b)	((a) == (b))
-> +#define segment_eq(a, b)	((a) == (b))
->  
->  /*
->   * Return 1 if addr < current->addr_limit, 0 otherwise.
-> -- 
-> MST
+> diff --git a/Documentation/networking/ip-sysctl.txt b/Documentation/networking/ip-sysctl.txt
+> index 9bffdfc..2a28261 100644
+> --- a/Documentation/networking/ip-sysctl.txt
+> +++ b/Documentation/networking/ip-sysctl.txt
+> @@ -64,8 +64,10 @@ fwmark_reflect - BOOLEAN
+>  	Default: 0
 > 
-> 
+>  route/max_size - INTEGER
+> -	Maximum number of routes allowed in the kernel.  Increase
+> -	this when using large numbers of interfaces and/or routes.
+> +	Post linux kernel 3.6, this is deprecated for ipv4 as route cache is no
+> +	longer used. For ipv6, this is used to limit the maximum number of ipv6
+> +	routes allowed in the kernel.  Increase this when using large numbers of
+> +	interfaces and/or routes.
+
+Now imagine you are reading ip-sysctl.txt, the new text is all wrong.
+Something like:
+	Limit on the size of the ip route caches.
+	Ignored for ipv4 after kernel 3.6 because the ipv4 route cache was removed.
+	Increase this when using large numbers of interfaces and/or routes.
+would read better.
+
+	David
+
