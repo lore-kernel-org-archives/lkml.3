@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756768AbbAGJMH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 04:12:07 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:63821 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755913AbbAGJMB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 04:12:01 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ray Jui <rjui@broadcom.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Matt Porter <mporter@linaro.org>,
-        Alex Elder <elder@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        Scott Branden <sbranden@broadcom.com>, linux-kernel@vger.kernel.org,
-        bcm-kernel-feedback-list@broadcom.com
-Subject: Re: [PATCH v2 4/5] clk: cygnus: add clock support for Broadcom Cygnus
-Date: Wed, 07 Jan 2015 10:11:38 +0100
-Message-ID: <2938966.fY2WjearG6@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <54AC99F3.8040703@broadcom.com>
-References: <1420500076-18302-5-git-send-email-rjui@broadcom.com> <2048376.BFrtW5tszK@wuerfel> <54AC99F3.8040703@broadcom.com>
+	id S1755888AbbAGJLw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 04:11:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:32975 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752025AbbAGJLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 04:11:49 -0500
+Message-ID: <54ACF851.3040002@suse.cz>
+Date: Wed, 07 Jan 2015 10:11:45 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:IaKutGd4qvQ8R+Ff/mK7oMKJ1ImTC4vDTcCD9NyDmc7X4oaFPKM
- 0lHsE65t1jap8wP4O1tM1YnXeG/YTd9c7fj1vTeYeZPXT2r3wP/LCUrwXXqsJfG1ywqSqEM
- RlgE++QShPA9/TXYEbIofY5Wj1UEQ799tY/t9ZlRLQgvSeRhwNhwMaENJVNLXahn51D9SFN
- 4NJcgbReb+nE4VoFh1uvA==
-X-UI-Out-Filterresults: notjunk:1;
+To: Michal Hocko <mhocko@suse.cz>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Minchan Kim <minchan@kernel.org>, David Rientjes <rientjes@google.com>,
+        Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH V4 3/4] mm: reduce try_to_compact_pages parameters
+References: <1420478263-25207-1-git-send-email-vbabka@suse.cz> <1420478263-25207-4-git-send-email-vbabka@suse.cz> <20150106145710.GD20860@dhcp22.suse.cz>
+In-Reply-To: <20150106145710.GD20860@dhcp22.suse.cz>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 06 January 2015 18:29:07 Ray Jui wrote:
-> On 1/6/2015 12:21 PM, Arnd Bergmann wrote:
-> > On Monday 05 January 2015 15:21:15 Ray Jui wrote:
-> > 
-> > The tables look fairly regular. Is it possible that it's common
-> > to all iproc variants with a standard way to derive all other
-> > values from the channel index?
-> > 
-> Ah no. Not only it's different between different iproc variants, it's
-> also different between plls on the same soc.
+On 01/06/2015 03:57 PM, Michal Hocko wrote:
+> Hmm, wait a minute
+> 
+> On Mon 05-01-15 18:17:42, Vlastimil Babka wrote:
+> [...]
+>> -unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>> -			int order, gfp_t gfp_mask, nodemask_t *nodemask,
+>> -			enum migrate_mode mode, int *contended,
+>> -			int alloc_flags, int classzone_idx)
+>> +unsigned long try_to_compact_pages(gfp_t gfp_mask, unsigned int order,
+>> +			int alloc_flags, const struct alloc_context *ac,
+>> +			enum migrate_mode mode, int *contended)
+>>  {
+>> -	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
+>>  	int may_enter_fs = gfp_mask & __GFP_FS;
+>>  	int may_perform_io = gfp_mask & __GFP_IO;
+>>  	struct zoneref *z;
+> 
+> gfp_mask might change since the high_zoneidx was set up in the call
+> chain. I guess this shouldn't change to the gfp_zone output but it is
+> worth double checking.
 
-Ok, I see.
- 
-> >> +static const struct iproc_asiu_gate asiu_gate[BCM_CYGNUS_NUM_ASIU_CLKS] = {
-> >> +	[BCM_CYGNUS_ASIU_KEYPAD_CLK] =
-> >> +		asiu_gate_val(0x0, 7),
-> >> +	[BCM_CYGNUS_ASIU_ADC_CLK] =
-> >> +		asiu_gate_val(0x0, 9),
-> >> +	[BCM_CYGNUS_ASIU_PWM_CLK] =
-> >> +		asiu_gate_val(IPROC_CLK_INVALID_OFFSET, 0),
-> >> +};
-> > 
-> > Here I think a better binding would be to pass the gate value in the
-> > clock specifier, rather than an artificial index. That would let
-> > you get rid of the BCM_CYGNUS_ASIU_KEYPAD_CLK/BCM_CYGNUS_ASIU_ADC_CLK
-> > macros.
-> > 
-> You meant to pass in both the gate register offset and its bit shift
-> through the clock specifier? But isn't the current ASIU clock code much
-> more consistent with the rest of the iProc clock code?
+Yeah I checked that. gfp_zone() operates just on GFP_ZONEMASK part of the flags,
+and we don't change that.
 
-For simple devices that don't need an index macro, I would always
-prefer not defining them, because they are a pain to maintain.
-For a simple gate clock controller, we could compute both the offset
-and bit number from a single integer.
+>> @@ -1365,8 +1363,8 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>>  		return COMPACT_SKIPPED;
+>>  
+>>  	/* Compact each zone in the list */
+>> -	for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
+>> -								nodemask) {
+>> +	for_each_zone_zonelist_nodemask(zone, z, ac->zonelist, ac->high_zoneidx,
+>> +								ac->nodemask) {
+>>  		int status;
+>>  		int zone_contended;
+>>  
+> 
 
-However, I now saw upon taking a closer look that the asiu has both
-a gate and a divider, and the latter one is not as simple, so
-my comment doesn't apply here.
-
-	Arnd
