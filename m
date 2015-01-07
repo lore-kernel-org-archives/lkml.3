@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036AbbAGFrm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 00:47:42 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:42955 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003AbbAGFrj (ORCPT
+	id S1755230AbbAGFtD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 00:49:03 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:15583 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755031AbbAGFtA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 00:47:39 -0500
-X-AuditID: cbfee68f-f791c6d000004834-c2-54acc879ceee
+	Wed, 7 Jan 2015 00:49:00 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-94-54acc8ca350e
 From: Namjae Jeon <namjae.jeon@samsung.com>
 To: "'Brian Foster'" <bfoster@redhat.com>
 Cc: "'Dave Chinner'" <david@fromorbit.com>, "'Theodore Ts'o'" <tytso@mit.edu>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "'linux-ext4'" <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
         "'Ashish Sangwan'" <a.sangwan@samsung.com>
-References: <004801d02670$79bd5bf0$6d3813d0$@samsung.com>
- <20150106181309.GH5874@bfoster.bfoster>
-In-reply-to: <20150106181309.GH5874@bfoster.bfoster>
-Subject: RE: [PATCH v7 10/11]  xfstests: fsstress: Add fallocate insert range
+References: <004901d02670$835ac120$8a104360$@samsung.com>
+ <20150106181323.GI5874@bfoster.bfoster>
+In-reply-to: <20150106181323.GI5874@bfoster.bfoster>
+Subject: RE: [PATCH v7 11/11] xfstests: fsx: Add fallocate insert range
  operation
-Date: Wed, 07 Jan 2015 14:47:37 +0900
-Message-id: <001801d02a3d$7125aad0$53710070$@samsung.com>
+Date: Wed, 07 Jan 2015 14:48:57 +0900
+Message-id: <001901d02a3d$a10cd9d0$e3268d70$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQF7aq0fEPuRAIsLWu6pKDYha2hK7gIeNdzhnUydIbA=
+Thread-index: AQL7d2zMpqHVPsskxEt3+n+R89EJ/wKgNHxemkhz6AA=
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsWyRsSkSLfyxJoQg3un9CyWTrzEbPHuc5XF
-	lmP3GC1mzrvDZrFn70kWi8u75rBZtPb8ZLdY1HeL0YHD49QiCY+mM0eZPVZf2Mro8X7fVTaP
-	vi2rGD0+b5ILYIvisklJzcksSy3St0vgytj52LZgkUzF6kXPWBoY74l2MXJySAiYSMye9YcF
-	whaTuHBvPVsXIxeHkMBSRonbR5cxwxTtbtzGCmILCUxnlLhyRQei6C+jRP+n74xdjBwcbALa
-	En+2gA0VEVCXuDNvAgtIDbPAJ0aJh1cOMEM0J0vsfXoazOYEGrrw6A42EFtYIFLiws3rYAtY
-	BFQlPrzeAVbDK2ApseDLNkYIW1Dix+R7YJcyC2hJrN95nAnClpfYvOYt1KEKEjvOvmaEOMJK
-	4vym82wQNSIS+168YwQ5SELgI7vExqvN7BDLBCS+TT7EAvKAhICsxKYDUHMkJQ6uuMEygVFi
-	FpLVs5CsnoVk9SwkKxYwsqxiFE0tSC4oTkovMtYrTswtLs1L10vOz93ECIzm0/+e9e9gvHvA
-	+hCjAAejEg9vQd+aECHWxLLiytxDjKZAF01klhJNzgemjLySeENjMyMLUxNTYyNzSzMlcd6F
-	Uj+DhQTSE0tSs1NTC1KL4otKc1KLDzEycXBKNTCqmGqfSZ0TVLTy+2aDksubZm/VTHnNNe/C
-	spT8ZjejlEhWca1/i1yv9vK+nJHdpKU1uT65Iyw73eRkZ188T4HGyi9XXJ81XxK4ntznGH5s
-	ZhYfk8qhfzsVZ3hVL4q4qZ63TGXb3FqP/NIZjYukn8/mmhxjeykgo+Dq0y12TPypTBqdez5m
-	9yqxFGckGmoxFxUnAgCP5dD64QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBKsWRmVeSWpSXmKPExsVy+t9jQd3KE2tCDL5MUbNYOvESs8W7z1UW
-	W47dY7SYOe8Om8WevSdZLC7vmsNm0drzk91iUd8tRgcOj1OLJDyazhxl9lh9YSujx/t9V9k8
-	+rasYvT4vEkugC2qgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE31VbJ
-	xSdA1y0zB+geJYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYGaCBhDWPGzse2BYtk
-	KlYvesbSwHhPtIuRk0NCwERid+M2VghbTOLCvfVsILaQwHRGiStXdLoYuYDsv4wS/Z++M3Yx
-	cnCwCWhL/NkC1isioC5xZ94EFpAaZoFPjBIPrxxghmhOltj79DSYzQm0YOHRHWBDhQUiJS7c
-	vA62jEVAVeLD6x1gNbwClhILvmxjhLAFJX5MvscCYjMLaEms33mcCcKWl9i85i0zxKEKEjvO
-	vmaEOMJK4vym82wQNSIS+168Y5zAKDQLyahZSEbNQjJqFpKWBYwsqxhFUwuSC4qT0nMN9YoT
-	c4tL89L1kvNzNzGCU8UzqR2MKxssDjEKcDAq8fAW9K0JEWJNLCuuzD3EKMHBrCTCa9UJFOJN
-	SaysSi3Kjy8qzUktPsRoCvTpRGYp0eR8YBrLK4k3NDYxM7I0Mje0MDI2VxLnVbJvCxESSE8s
-	Sc1OTS1ILYLpY+LglGpgjJAx9DBh0311vF9dVtXOrnzLmxdWy/7JWRQy1TVuyOf6WiOw7Pgf
-	5zcsq1l/K7beXr9SJkrquGrcB48NvyzWJignn/l0ad8cr/B3Kq4VZY8Kmufyce7ZWRfOeqru
-	bNEHu0fSR76ItX04yX/siz6vz9PFNocVZ6XF/61afN/R4tSbmSflH2fvU2Ipzkg01GIuKk4E
-	ACN5HbcrAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPIsWRmVeSWpSXmKPExsWyRsSkUPfUiTUhBmdvsFssnXiJ2eLd5yqL
+	LcfuMVrMnHeHzWLP3pMsFpd3zWGzaO35yW6xqO8WowOHx6lFEh5NZ44ye6y+sJXR4/2+q2we
+	fVtWMXp83iQXwBbFZZOSmpNZllqkb5fAlbH/5WSmgk9cFa8WvGdvYFzC0cXIySEhYCJx+PhF
+	VghbTOLCvfVsXYxcHEICSxkl7qzYxtTFyAFW9HFmGER8OqPEy7YGJgjnL6PEitUnmEGK2AS0
+	Jf5sEQUZJCKgLnFn3gQWkBpmgU+MEg+vHGAGSQgJJEs8mvwAzOYEGvrmVhM7iC0sECwxoeEO
+	E4jNIqAqMXnVTbAaXgFLifVzX7JD2IISPybfYwGxmQW0JNbvPM4EYctLbF7zlhniAwWJHWdf
+	M0IcYSWx8d0sqBoRiX0v3jGCHCQh8JNd4tPEr8wQywQkvk0+xALxpazEpgNQcyQlDq64wTKB
+	UWIWktWzkKyehWT1LCQrFjCyrGIUTS1ILihOSi8y0StOzC0uzUvXS87P3cQIjOfT/55N2MF4
+	74D1IUYBDkYlHt6CvjUhQqyJZcWVuYcYTYEumsgsJZqcD0waeSXxhsZmRhamJqbGRuaWZkri
+	vK+lfgYLCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYPRav8Ln1McQhaB6xf0pgv9v2qZ2z66e
+	xs74R70qSnvJfFfd/DNrJ4U3mK9+t+Y435+YH1EKamuuz1ql5V5YrRvinLDguooYe133A553
+	akcj3s9SE3PdcWhh8/37iUv31MjvVfC9tJ7X1/rD/SiPvGxPkZfuO0xac7qDnrcHvmhgVLBm
+	11p8S4mlOCPRUIu5qDgRAPcdUwfiAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJKsWRmVeSWpSXmKPExsVy+t9jQd2TJ9aEGKx7YmOxdOIlZot3n6ss
+	thy7x2gxc94dNos9e0+yWFzeNYfNorXnJ7vFor5bjA4cHqcWSXg0nTnK7LH6wlZGj/f7rrJ5
+	9G1ZxejxeZNcAFtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2S
+	i0+ArltmDtA9SgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaM/S8nMxV8
+	4qp4teA9ewPjEo4uRg4OCQETiY8zw7oYOYFMMYkL99azdTFycQgJTGeUeNnWwATh/GWUWLH6
+	BDNIA5uAtsSfLaIgDSIC6hJ35k1gAalhFvjEKPHwygFmkISQQLLEo8kPwGxOoAVvbjWxg9jC
+	AsESExruMIHYLAKqEpNX3QSr4RWwlFg/9yU7hC0o8WPyPRYQm1lAS2L9zuNMELa8xOY1b5kh
+	LlWQ2HH2NSPEEVYSG9/NgqoRkdj34h3jBEahWUhGzUIyahaSUbOQtCxgZFnFKJpakFxQnJSe
+	a6hXnJhbXJqXrpecn7uJEZwsnkntYFzZYHGIUYCDUYmHt6BvTYgQa2JZcWXuIUYJDmYlEV6r
+	TqAQb0piZVVqUX58UWlOavEhRlOgTycyS4km5wMTWV5JvKGxiZmRpZG5oYWRsbmSOK+SfVuI
+	kEB6YklqdmpqQWoRTB8TB6dUA2PbUna2t7msV+S3W19/crw1+Skrz68bxk3X3m664fuR94KD
+	X7a73LRFM+s38rV/uvZkk4zrwo2su/ueP5nqGuv/6/uzw6o77nC7XVcMfPtuS3r6pesHDF0P
+	OU22E7eS/frOKzd9jqrnjIJJh07KPTA3umF42ODa5BM723+qJMVOqdf5u1Ux8FOXEktxRqKh
+	FnNRcSIA6FrkLywDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,113 +61,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> On Fri, Jan 02, 2015 at 06:42:51PM +0900, Namjae Jeon wrote:
-> > This commit adds insert operation support for fsstress, which is
-> > meant to exercise fallocate FALLOC_FL_INSERT_RANGE support.
-> >
-> > Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> > Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-> > ---
-> 
-> It might be nice to avoid setting FALLOC_FL_KEEP_SIZE for insert and
-> collapse ops alike (see the only use of KEEP_SIZE in fsstress.c) to
-> increase the likelihood of valid fallocate() calls. We currently set it
-> randomly, but unconditionally across all fallocate ops.
-> 
-> That could be done in a separate patch, however, and this looks good to
-> me:
-Thank you! I will share a separate patch.
-
-> 
-> Reviewed-by: Brian Foster <bfoster@redhat.com>
-> 
-> >  ltp/fsstress.c | 19 ++++++++++++++++---
-> >  src/global.h   |  4 ++++
-> >  2 files changed, 20 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/ltp/fsstress.c b/ltp/fsstress.c
-> > index b56fe5c..aa3e0c3 100644
-> > --- a/ltp/fsstress.c
-> > +++ b/ltp/fsstress.c
-> > @@ -72,6 +72,7 @@ typedef enum {
-> >  	OP_PUNCH,
-> >  	OP_ZERO,
-> >  	OP_COLLAPSE,
-> > +	OP_INSERT,
-> >  	OP_READ,
-> >  	OP_READLINK,
-> >  	OP_RENAME,
-> > @@ -170,6 +171,7 @@ void	mknod_f(int, long);
-> >  void	punch_f(int, long);
-> >  void	zero_f(int, long);
-> >  void	collapse_f(int, long);
-> > +void	insert_f(int, long);
-> >  void	read_f(int, long);
-> >  void	readlink_f(int, long);
-> >  void	rename_f(int, long);
-> > @@ -209,6 +211,7 @@ opdesc_t	ops[] = {
-> >  	{ OP_PUNCH, "punch", punch_f, 1, 1 },
-> >  	{ OP_ZERO, "zero", zero_f, 1, 1 },
-> >  	{ OP_COLLAPSE, "collapse", collapse_f, 1, 1 },
-> > +	{ OP_INSERT, "insert", insert_f, 1, 1 },
-> >  	{ OP_READ, "read", read_f, 1, 0 },
-> >  	{ OP_READLINK, "readlink", readlink_f, 1, 0 },
-> >  	{ OP_RENAME, "rename", rename_f, 2, 1 },
-> > @@ -2176,6 +2179,7 @@ struct print_flags falloc_flags [] = {
-> >  	{ FALLOC_FL_NO_HIDE_STALE, "NO_HIDE_STALE"},
-> >  	{ FALLOC_FL_COLLAPSE_RANGE, "COLLAPSE_RANGE"},
-> >  	{ FALLOC_FL_ZERO_RANGE, "ZERO_RANGE"},
-> > +	{ FALLOC_FL_INSERT_RANGE, "INSERT_RANGE"},
-> >  	{ -1, NULL}
-> >  };
-> >
-> > @@ -2227,10 +2231,11 @@ do_fallocate(int opno, long r, int mode)
-> >  	off %= maxfsize;
-> >  	len = (off64_t)(random() % (1024 * 1024));
-> >  	/*
-> > -	 * Collapse range requires off and len to be block aligned, make it
-> > -	 * more likely to be the case.
-> > +	 * Collapse/insert range requires off and len to be block aligned,
-> > +	 * make it more likely to be the case.
-> >  	 */
-> > -	if ((mode & FALLOC_FL_COLLAPSE_RANGE) && (opno % 2)) {
-> > +	if ((mode & (FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_INSERT_RANGE)) &&
-> > +		(opno % 2)) {
-> >  		off = ((off + stb.st_blksize - 1) & ~(stb.st_blksize - 1));
-> >  		len = ((len + stb.st_blksize - 1) & ~(stb.st_blksize - 1));
+> >  		}
+> >  		break;
+> > +	case OP_INSERT_RANGE:
+> > +		if (!insert_range_calls) {
+> > +			log4(OP_SKIPPED, OP_INSERT_RANGE, offset, size);
+> > +			goto out;
+> > +		}
+> > +		break;
 > >  	}
-> > @@ -2656,6 +2661,14 @@ collapse_f(int opno, long r)
-> >  }
 > >
-> >  void
-> > +insert_f(int opno, long r)
-> > +{
-> > +#ifdef HAVE_LINUX_FALLOC_H
-> > +	do_fallocate(opno, r, FALLOC_FL_INSERT_RANGE);
-> > +#endif
-> > +}
-> > +
-> > +void
-> >  read_f(int opno, long r)
-> >  {
-> >  	char		*buf;
-> > diff --git a/src/global.h b/src/global.h
-> > index 8180f66..f63246b 100644
-> > --- a/src/global.h
-> > +++ b/src/global.h
-> > @@ -172,6 +172,10 @@
-> >  #define FALLOC_FL_ZERO_RANGE		0x10
-> >  #endif
-> >
-> > +#ifndef FALLOC_FL_INSERT_RANGE
-> > +#define FALLOC_FL_INSERT_RANGE		0x20
-> > +#endif
-> > +
-> >  #endif /* HAVE_LINUX_FALLOC_H */
-> >
-> >  #endif /* GLOBAL_H */
-> > --
-> > 1.7.11-rc0
-> >
+> >  	switch (op) {
+> > @@ -1244,6 +1313,21 @@ test(void)
+> >  		}
+> >  		do_collapse_range(offset, size);
+> >  		break;
+> > +	case OP_INSERT_RANGE:
+> > +		TRIM_OFF_LEN(offset, size, (maxfilelen - 1) - file_size);
+> 
+> I see a ton of "skipping insert beyond EOF" messages when I run fsx with
+> this patch that boil down to that we trim against the max allowable file
+> size increase rather than the current file size. I suspect the intent
+> here is to not limit the insert length based on the file size. That
+> makes sense, but that causes us to fail to mod the insert offset against
+> the file size and thus generate a ton more noise.
+> 
+> Could we either open code the trim to handle the offset/len correctly or
+> break up the macro in a way that facilitates doing so? For example, a
+> quick solution might be to create TRIM_OFF() and TRIM_LEN() based on the
+> associated code in TRIM_OFF_LEN(), redefine TRIM_OFF_LEN() to use the
+> new macros, and then the insert range code could do something like:
+> 
+> 	TRIM_OFF(offset, file_size - 1);
+> 	TRIM_LEN(offset, size, maxfilelen - file_size);
+> 	...
+> 
+Okay, I will change it as your suggestion.
+
+> Brian
+> 
 
