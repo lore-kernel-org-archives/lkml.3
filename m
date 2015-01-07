@@ -1,135 +1,341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850AbbAGQF0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 11:05:26 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:35624 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753199AbbAGQFW (ORCPT
+	id S1753857AbbAGQFk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 11:05:40 -0500
+Received: from mail-we0-f171.google.com ([74.125.82.171]:51281 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753212AbbAGQFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 11:05:22 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19dIeVcc9EqJn7M/aZ/oMkrDn9W2YXvzx0=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 474C463FC22
-Date: Wed, 7 Jan 2015 11:05:02 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Bjorn Andersson <bjorn@kryo.se>,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Phong Vo <pvo@apm.com>,
-        Linus Walleij <linus.walleij@linaro.org>, Tin Huynh <tnhuynh@apm.com>,
-        Y Vo <yvo@apm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Toan Le <toanle@apm.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 1/3] genirq: Allow the irqchip state of an IRQ to be
- save/restored
-Message-ID: <20150107160502.GJ24989@titan.lakedaemon.net>
-References: <1417623503-30261-1-git-send-email-marc.zyngier@arm.com>
- <1417623503-30261-2-git-send-email-marc.zyngier@arm.com>
- <CAJAp7OijMW4_VMp29K1UxtURJT-WgwwsN-O1x3Lqi-gHrAj6Sw@mail.gmail.com>
- <5486C2D6.6020006@arm.com>
+	Wed, 7 Jan 2015 11:05:37 -0500
+Message-ID: <54AD594E.4030207@plexistor.com>
+Date: Wed, 07 Jan 2015 18:05:34 +0200
+From: Boaz Harrosh <boaz@plexistor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5486C2D6.6020006@arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jens Axboe <axboe@fb.com>, Matthew Wilcox <willy@linux.intel.com>,
+        Dmitry Monakhov <dmonakhov@openvz.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: [PATCH 2/4 v4] block: Change direct_access calling convention
+References: <54AD5893.9040701@plexistor.com>
+In-Reply-To: <54AD5893.9040701@plexistor.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marc,
+From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 
-On Tue, Dec 09, 2014 at 09:37:26AM +0000, Marc Zyngier wrote:
-> On 08/12/14 22:42, Bjorn Andersson wrote:
-> > On Wed, Dec 3, 2014 at 8:18 AM, Marc Zyngier <marc.zyngier@arm.com> wrote:
-> >> There is a number of cases where a kernel subsystem may want to
-> >> introspect the state of an interrupt at the irqchip level:
-> >>
-> >> - When a peripheral is shared between virtual machines,
-> >>   its interrupt state becomes part of the guest's state,
-> >>   and must be switched accordingly. KVM on arm/arm64 requires
-> >>   this for its guest-visible timer
-> >> - Some GPIO controllers seem to require peeking into the
-> >>   interrupt controller they are connected to to report
-> >>   their internal state
-> >>
-> >> This seem to be a pattern that is common enough for the core code
-> >> to try and support this without too many horrible hacks. Introduce
-> >> a pair of accessors (irq_get_irqchip_state/irq_set_irqchip_state)
-> >> to retrieve the bits that can be of interest to another subsystem:
-> >> pending, active, and masked.
-> >>
-> >> - irq_get_irqchip_state returns the state of the interrupt according
-> >>   to a parameter set to IRQCHIP_STATE_PENDING, IRQCHIP_STATE_ACTIVE,
-> >>   IRQCHIP_STATE_MASKED or IRQCHIP_STATE_LINE_LEVEL.
-> >> - irq_set_irqchip_state similarly sets the state of the interrupt.
-> >>
-> >> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
-> > 
-> > With the addition of actually assigning err to something useful in the
-> > setter below:
-> > 
-> > Reviewed-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> > Tested-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> > 
-> >> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-> > 
-> > [..]
-> > 
-> >> +/**
-> >> + *     irq_set_irqchip_state - set the state of a forwarded interrupt.
-> >> + *     @irq: Interrupt line that is forwarded to a VM
-> >> + *     @which: State to be restored (one of IRQCHIP_STATE_*)
-> >> + *     @val: Value corresponding to @which
-> >> + *
-> >> + *     This call sets the internal irqchip state of an interrupt,
-> >> + *     depending on the value of @which.
-> >> + *
-> >> + *     This function should be called with preemption disabled if the
-> >> + *     interrupt controller has per-cpu registers.
-> >> + */
-> >> +int irq_set_irqchip_state(unsigned int irq, enum irqchip_irq_state which,
-> >> +                         bool val)
-> >> +{
-> >> +       struct irq_desc *desc;
-> >> +       struct irq_data *data;
-> >> +       struct irq_chip *chip;
-> >> +       unsigned long flags;
-> >> +       int err = -EINVAL;
-> >> +
-> >> +       desc = irq_get_desc_buslock(irq, &flags, 0);
-> >> +       if (!desc)
-> >> +               return err;
-> >> +
-> >> +       data = irq_desc_get_irq_data(desc);
-> >> +
-> >> +       do {
-> >> +               chip = irq_data_get_irq_chip(data);
-> >> +               if (chip->irq_set_irqchip_state)
-> >> +                       break;
-> >> +#ifdef CONFIG_IRQ_DOMAIN_HIERARCHY
-> >> +               data = data->parent_data;
-> >> +#else
-> >> +               data = NULL;
-> >> +#endif
-> >> +       } while (data);
-> >> +
-> >> +       if (data)
-> >> +               chip->irq_set_irqchip_state(data, which, val);
-> > 
-> > err =
-> 
-> Ah, that will teach me to write test code that actually checks the
-> return value! :-)
-> 
-> Thanks for the fix and the tags.
+In order to support accesses to larger chunks of memory, pass in a
+'size' parameter (counted in bytes), and return the amount available at
+that address.
 
-Did I miss the new version of this?
+Add a new helper function, bdev_direct_access(), to handle common
+functionality including partition handling, checking the length requested
+is positive, checking for the sector being page-aligned, and checking
+the length of the request does not pass the end of the partition.
 
-thx,
+Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Reviewed-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Boaz Harrosh <boaz@plexistor.com>
+---
+ Documentation/filesystems/xip.txt | 15 +++++++++------
+ arch/powerpc/sysdev/axonram.c     | 17 ++++-------------
+ drivers/block/brd.c               | 14 +++++++-------
+ drivers/s390/block/dcssblk.c      | 21 +++++++++-----------
+ fs/block_dev.c                    | 40 +++++++++++++++++++++++++++++++++++++++
+ fs/ext2/xip.c                     | 31 +++++++++++++-----------------
+ include/linux/blkdev.h            |  6 ++++--
+ 7 files changed, 86 insertions(+), 58 deletions(-)
 
-Jason.
+diff --git a/Documentation/filesystems/xip.txt b/Documentation/filesystems/xip.txt
+index 0466ee5..b774729 100644
+--- a/Documentation/filesystems/xip.txt
++++ b/Documentation/filesystems/xip.txt
+@@ -28,12 +28,15 @@ Implementation
+ Execute-in-place is implemented in three steps: block device operation,
+ address space operation, and file operations.
+ 
+-A block device operation named direct_access is used to retrieve a
+-reference (pointer) to a block on-disk. The reference is supposed to be
+-cpu-addressable, physical address and remain valid until the release operation
+-is performed. A struct block_device reference is used to address the device,
+-and a sector_t argument is used to identify the individual block. As an
+-alternative, memory technology devices can be used for this.
++A block device operation named direct_access is used to translate the
++block device sector number to a page frame number (pfn) that identifies
++the physical page for the memory.  It also returns a kernel virtual
++address that can be used to access the memory.
++
++The direct_access method takes a 'size' parameter that indicates the
++number of bytes being requested.  The function should return the number
++of bytes that can be contiguously accessed at that offset.  It may also
++return a negative errno if an error occurs.
+ 
+ The block device operation is optional, these block devices support it as of
+ today:
+diff --git a/arch/powerpc/sysdev/axonram.c b/arch/powerpc/sysdev/axonram.c
+index 367533b..ee90db1 100644
+--- a/arch/powerpc/sysdev/axonram.c
++++ b/arch/powerpc/sysdev/axonram.c
+@@ -139,26 +139,17 @@ axon_ram_make_request(struct request_queue *queue, struct bio *bio)
+  * axon_ram_direct_access - direct_access() method for block device
+  * @device, @sector, @data: see block_device_operations method
+  */
+-static int
++static long
+ axon_ram_direct_access(struct block_device *device, sector_t sector,
+-		       void **kaddr, unsigned long *pfn)
++		       void **kaddr, unsigned long *pfn, long size)
+ {
+ 	struct axon_ram_bank *bank = device->bd_disk->private_data;
+-	loff_t offset;
+-
+-	offset = sector;
+-	if (device->bd_part != NULL)
+-		offset += device->bd_part->start_sect;
+-	offset <<= AXON_RAM_SECTOR_SHIFT;
+-	if (offset >= bank->size) {
+-		dev_err(&bank->device->dev, "Access outside of address space\n");
+-		return -ERANGE;
+-	}
++	loff_t offset = (loff_t)sector << AXON_RAM_SECTOR_SHIFT;
+ 
+ 	*kaddr = (void *)(bank->ph_addr + offset);
+ 	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
+ 
+-	return 0;
++	return bank->size - offset;
+ }
+ 
+ static const struct block_device_operations axon_ram_devops = {
+diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+index 3598110..89e90ec 100644
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -370,25 +370,25 @@ static int brd_rw_page(struct block_device *bdev, sector_t sector,
+ }
+ 
+ #ifdef CONFIG_BLK_DEV_XIP
+-static int brd_direct_access(struct block_device *bdev, sector_t sector,
+-			void **kaddr, unsigned long *pfn)
++static long brd_direct_access(struct block_device *bdev, sector_t sector,
++			void **kaddr, unsigned long *pfn, long size)
+ {
+ 	struct brd_device *brd = bdev->bd_disk->private_data;
+ 	struct page *page;
+ 
+ 	if (!brd)
+ 		return -ENODEV;
+-	if (sector & (PAGE_SECTORS-1))
+-		return -EINVAL;
+-	if (sector + PAGE_SECTORS > get_capacity(bdev->bd_disk))
+-		return -ERANGE;
+ 	page = brd_insert_page(brd, sector);
+ 	if (!page)
+ 		return -ENOSPC;
+ 	*kaddr = page_address(page);
+ 	*pfn = page_to_pfn(page);
+ 
+-	return 0;
++	/*
++	 * TODO: If size > PAGE_SIZE, we could look to see if the next page in
++	 * the file happens to be mapped to the next page of physical RAM.
++	 */
++	return PAGE_SIZE;
+ }
+ #endif
+ 
+diff --git a/drivers/s390/block/dcssblk.c b/drivers/s390/block/dcssblk.c
+index b550c8c..31d6884 100644
+--- a/drivers/s390/block/dcssblk.c
++++ b/drivers/s390/block/dcssblk.c
+@@ -28,8 +28,8 @@
+ static int dcssblk_open(struct block_device *bdev, fmode_t mode);
+ static void dcssblk_release(struct gendisk *disk, fmode_t mode);
+ static void dcssblk_make_request(struct request_queue *q, struct bio *bio);
+-static int dcssblk_direct_access(struct block_device *bdev, sector_t secnum,
+-				 void **kaddr, unsigned long *pfn);
++static long dcssblk_direct_access(struct block_device *bdev, sector_t secnum,
++				 void **kaddr, unsigned long *pfn, long size);
+ 
+ static char dcssblk_segments[DCSSBLK_PARM_LEN] = "\0";
+ 
+@@ -866,25 +866,22 @@ fail:
+ 	bio_io_error(bio);
+ }
+ 
+-static int
++static long
+ dcssblk_direct_access (struct block_device *bdev, sector_t secnum,
+-			void **kaddr, unsigned long *pfn)
++			void **kaddr, unsigned long *pfn, long size)
+ {
+ 	struct dcssblk_dev_info *dev_info;
+-	unsigned long pgoff;
++	unsigned long offset, dev_sz;
+ 
+ 	dev_info = bdev->bd_disk->private_data;
+ 	if (!dev_info)
+ 		return -ENODEV;
+-	if (secnum % (PAGE_SIZE/512))
+-		return -EINVAL;
+-	pgoff = secnum / (PAGE_SIZE / 512);
+-	if ((pgoff+1)*PAGE_SIZE-1 > dev_info->end - dev_info->start)
+-		return -ERANGE;
+-	*kaddr = (void *) (dev_info->start+pgoff*PAGE_SIZE);
++	dev_sz = dev_info->end - dev_info->start;
++	offset = secnum * 512;
++	*kaddr = (void *) (dev_info->start + offset);
+ 	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
+ 
+-	return 0;
++	return dev_sz - offset;
+ }
+ 
+ static void
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index b48c41b..f314c2c 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -429,6 +429,46 @@ int bdev_write_page(struct block_device *bdev, sector_t sector,
+ }
+ EXPORT_SYMBOL_GPL(bdev_write_page);
+ 
++/**
++ * bdev_direct_access() - Get the address for directly-accessibly memory
++ * @bdev: The device containing the memory
++ * @sector: The offset within the device
++ * @addr: Where to put the address of the memory
++ * @pfn: The Page Frame Number for the memory
++ * @size: The number of bytes requested
++ *
++ * If a block device is made up of directly addressable memory, this function
++ * will tell the caller the PFN and the address of the memory.  The address
++ * may be directly dereferenced within the kernel without the need to call
++ * ioremap(), kmap() or similar.  The PFN is suitable for inserting into
++ * page tables.
++ *
++ * Return: negative errno if an error occurs, otherwise the number of bytes
++ * accessible at this address.
++ */
++long bdev_direct_access(struct block_device *bdev, sector_t sector,
++			void **addr, unsigned long *pfn, long size)
++{
++	long avail;
++	const struct block_device_operations *ops = bdev->bd_disk->fops;
++
++	if (size < 0)
++		return size;
++	if (!ops->direct_access)
++		return -EOPNOTSUPP;
++	if ((sector + DIV_ROUND_UP(size, 512)) >
++					part_nr_sects_read(bdev->bd_part))
++		return -ERANGE;
++	sector += get_start_sect(bdev);
++	if (sector % (PAGE_SIZE / 512))
++		return -EINVAL;
++	avail = ops->direct_access(bdev, sector, addr, pfn, size);
++	if (!avail)
++		return -ERANGE;
++	return min(avail, size);
++}
++EXPORT_SYMBOL_GPL(bdev_direct_access);
++
+ /*
+  * pseudo-fs
+  */
+diff --git a/fs/ext2/xip.c b/fs/ext2/xip.c
+index e98171a..bbc5fec 100644
+--- a/fs/ext2/xip.c
++++ b/fs/ext2/xip.c
+@@ -13,18 +13,12 @@
+ #include "ext2.h"
+ #include "xip.h"
+ 
+-static inline int
+-__inode_direct_access(struct inode *inode, sector_t block,
+-		      void **kaddr, unsigned long *pfn)
++static inline long __inode_direct_access(struct inode *inode, sector_t block,
++				void **kaddr, unsigned long *pfn, long size)
+ {
+ 	struct block_device *bdev = inode->i_sb->s_bdev;
+-	const struct block_device_operations *ops = bdev->bd_disk->fops;
+-	sector_t sector;
+-
+-	sector = block * (PAGE_SIZE / 512); /* ext2 block to bdev sector */
+-
+-	BUG_ON(!ops->direct_access);
+-	return ops->direct_access(bdev, sector, kaddr, pfn);
++	sector_t sector = block * (PAGE_SIZE / 512);
++	return bdev_direct_access(bdev, sector, kaddr, pfn, size);
+ }
+ 
+ static inline int
+@@ -53,12 +47,13 @@ ext2_clear_xip_target(struct inode *inode, sector_t block)
+ {
+ 	void *kaddr;
+ 	unsigned long pfn;
+-	int rc;
++	long size;
+ 
+-	rc = __inode_direct_access(inode, block, &kaddr, &pfn);
+-	if (!rc)
+-		clear_page(kaddr);
+-	return rc;
++	size = __inode_direct_access(inode, block, &kaddr, &pfn, PAGE_SIZE);
++	if (size < 0)
++		return size;
++	clear_page(kaddr);
++	return 0;
+ }
+ 
+ void ext2_xip_verify_sb(struct super_block *sb)
+@@ -77,7 +72,7 @@ void ext2_xip_verify_sb(struct super_block *sb)
+ int ext2_get_xip_mem(struct address_space *mapping, pgoff_t pgoff, int create,
+ 				void **kmem, unsigned long *pfn)
+ {
+-	int rc;
++	long rc;
+ 	sector_t block;
+ 
+ 	/* first, retrieve the sector number */
+@@ -86,6 +81,6 @@ int ext2_get_xip_mem(struct address_space *mapping, pgoff_t pgoff, int create,
+ 		return rc;
+ 
+ 	/* retrieve address of the target data */
+-	rc = __inode_direct_access(mapping->host, block, kmem, pfn);
+-	return rc;
++	rc = __inode_direct_access(mapping->host, block, kmem, pfn, PAGE_SIZE);
++	return (rc < 0) ? rc : 0;
+ }
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 92f4b4b..e9086be 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1601,8 +1601,8 @@ struct block_device_operations {
+ 	int (*rw_page)(struct block_device *, sector_t, struct page *, int rw);
+ 	int (*ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+ 	int (*compat_ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+-	int (*direct_access) (struct block_device *, sector_t,
+-						void **, unsigned long *);
++	long (*direct_access)(struct block_device *, sector_t,
++					void **, unsigned long *pfn, long size);
+ 	unsigned int (*check_events) (struct gendisk *disk,
+ 				      unsigned int clearing);
+ 	/* ->media_changed() is DEPRECATED, use ->check_events() instead */
+@@ -1620,6 +1620,8 @@ extern int __blkdev_driver_ioctl(struct block_device *, fmode_t, unsigned int,
+ extern int bdev_read_page(struct block_device *, sector_t, struct page *);
+ extern int bdev_write_page(struct block_device *, sector_t, struct page *,
+ 						struct writeback_control *);
++extern long bdev_direct_access(struct block_device *, sector_t, void **addr,
++						unsigned long *pfn, long size);
+ #else /* CONFIG_BLOCK */
+ 
+ struct block_device;
+-- 
+1.9.3
+
+
