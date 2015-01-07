@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831AbbAGLbM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 06:31:12 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:10344 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752725AbbAGLai (ORCPT
+	id S1752855AbbAGLbk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 06:31:40 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:61569 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752719AbbAGLah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 06:30:38 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-f0-54ad18dc77b1
+	Wed, 7 Jan 2015 06:30:37 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-c3-54ad18dc7873
 From: Marek Szyprowski <m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
@@ -20,119 +20,111 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         linus.walleij@linaro.org, tony@atomide.com, drake@endlessm.com,
         loeliger@gmail.com, Mark Rutland <mark.rutland@arm.com>, nm@ti.com,
         khilman@linaro.org
-Subject: [PATCH v12 7/9] ARM: EXYNOS: Add .write_sec outer cache callback for
- L2C-310
-Date: Wed, 07 Jan 2015 12:30:22 +0100
-Message-id: <1420630224-8887-8-git-send-email-m.szyprowski@samsung.com>
+Subject: [PATCH v12 8/9] ARM: EXYNOS: Add support for non-secure L2X0 resume
+Date: Wed, 07 Jan 2015 12:30:23 +0100
+Message-id: <1420630224-8887-9-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.9.2
 In-reply-to: <1420630224-8887-1-git-send-email-m.szyprowski@samsung.com>
 References: <1420630224-8887-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t/xq7p3JNaGGHw7pGnxd9IxdotH8x8z
-	W/QuuMpm8fXwCkaLs01v2C22d85gt5jyZzmTxabH11gtLu+aw2Yxe0k/i8WM8/uYLG5f5rU4
-	t30Li8XaI3fZLZZev8hk8ebHWSaLU9c/s1ms2vWH0WL/FS8HYY8189YwerQ097B5/P41idHj
-	29dJLB6X+3qZPBZ9z/LYOesuu8eda3vYPDYvqfe4cqKJ1aNvyypGj+M3tjN5fN4kF8AbxWWT
-	kpqTWZZapG+XwJXRuFOlYK94RdOC1ewNjOuEuxg5OSQETCS2vHjECmGLSVy4t56ti5GLQ0hg
-	KaNEz45+dginj0nifOcnFpAqNgFDia63XWwgtoiAm8S/dYfAOpgFprFIbDpynhkkISwQLnF8
-	5mR2EJtFQFViUf9NsBW8Au4SO862MUKsk5P4/3IFE4jNKeAhcef8MjBbCKhmwcSVbBMYeRcw
-	MqxiFE0tTS4oTkrPNdIrTswtLs1L10vOz93ECImLrzsYlx6zOsQowMGoxMOrMHlNiBBrYllx
-	Ze4hRgkOZiUR3je/gEK8KYmVValF+fFFpTmpxYcYmTg4pRoYt/g17g9afCJj6eaozo4HK/k6
-	JBz2l32sX59et+v3trQf24V2XBP7VtW11/J/d5/WfF/lsg0/94oe5/n+XtlMWH4235PlmewB
-	78J41k5Nunsg/B/XJeGVszwyWo7NaVG5uivvtuXPtxFJrk4pX0InB+7gPKa8VO3rNoO1vh8E
-	grUFu7Ofdzt/UWIpzkg01GIuKk4EAM7M9ztpAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsVy+t/xq7p3JNaGGNxqZrb4O+kYu8Wj+Y+Z
+	LXoXXGWz+Hp4BaPF2aY37BbbO2ewW0z5s5zJYtPja6wWl3fNYbOYvaSfxWLG+X1MFrcv81qc
+	276FxWLtkbvsFkuvX2SyePPjLJPFqeuf2SxW7frDaLH/ipeDsMeaeWsYPVqae9g8fv+axOjx
+	7eskFo/Lfb1MHou+Z3nsnHWX3ePOtT1sHpuX1HtcOdHE6tG3ZRWjx/Eb25k8Pm+SC+CN4rJJ
+	Sc3JLEst0rdL4Mq4+02pYIpgRWfPV6YGxv+8XYwcHBICJhL39mh0MXICmWISF+6tZ+ti5OIQ
+	EljKKPH1ZScrhNPHJHG+8xMLSBWbgKFE19suNhBbRMBN4t+6Q2AdzALTWCQ2HTnPDJIQFvCR
+	ePPgNlgDi4CqxINZWxlBbF4Bd4njv64zQayTk/j/cgWYzSngIXHn/DIwWwioZsHElWwTGHkX
+	MDKsYhRNLU0uKE5KzzXUK07MLS7NS9dLzs/dxAiJii87GBcfszrEKMDBqMTDW9C3JkSINbGs
+	uDL3EKMEB7OSCO+bX0Ah3pTEyqrUovz4otKc1OJDjEwcnFINjP5Rmmf+f/TOs0tnCfy0ivmP
+	UIHiRRuNR4fmTPj6YOXDxVemzpz4SO6tn8bB96bBKfsvb319pNN0cuP7HW8tZpQEHZxv8NdB
+	WW/9i/Obl9lPZ8w+xeXzLa7la7vOfclMWb10ZeHToZ2nWvYauc8Q4LT6IN3+9kPCZNnWl0sv
+	/5/w2PF3wzTr09uVWIozEg21mIuKEwEwlK1EaAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tomasz Figa <t.figa@samsung.com>
 
-Exynos4 SoCs equipped with an L2C-310 cache controller and running under
-secure firmware require certain registers of aforementioned IP to be
-accessed only from secure mode. This means that SMC calls are required
-for certain register writes. To handle this, an implementation of
-.write_sec and .configure callbacks is provided by this patch.
+On Exynos SoCs it is necessary to resume operation of L2C early in
+assembly code, because otherwise certain systems will crash. This patch
+adds necessary code to non-secure resume handler.
 
 Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-[added comment and reworked unconditional call to SMC_CMD_L2X0INVALL]
+[rewrote the code accessing l2x0_saved_regs]
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 ---
- arch/arm/mach-exynos/firmware.c | 50 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 50 insertions(+)
+ arch/arm/mach-exynos/sleep.S | 46 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 46 insertions(+)
 
-diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
-index 766f57d2f029..4791a3cc00f9 100644
---- a/arch/arm/mach-exynos/firmware.c
-+++ b/arch/arm/mach-exynos/firmware.c
-@@ -17,6 +17,7 @@
- #include <asm/cacheflush.h>
- #include <asm/cputype.h>
- #include <asm/firmware.h>
+diff --git a/arch/arm/mach-exynos/sleep.S b/arch/arm/mach-exynos/sleep.S
+index e3c373082bbe..31d25834b9c4 100644
+--- a/arch/arm/mach-exynos/sleep.S
++++ b/arch/arm/mach-exynos/sleep.S
+@@ -16,6 +16,8 @@
+  */
+ 
+ #include <linux/linkage.h>
++#include <asm/asm-offsets.h>
 +#include <asm/hardware/cache-l2x0.h>
- #include <asm/suspend.h>
+ #include "smc.h"
  
- #include <mach/map.h>
-@@ -136,6 +137,43 @@ static const struct firmware_ops exynos_firmware_ops = {
- 	.resume			= IS_ENABLED(CONFIG_EXYNOS_CPU_SUSPEND) ? exynos_resume : NULL,
- };
- 
-+static void exynos_l2_write_sec(unsigned long val, unsigned reg)
-+{
-+	static int l2cache_enabled;
+ #define CPU_MASK	0xff0ffff0
+@@ -74,6 +76,45 @@ ENTRY(exynos_cpu_resume_ns)
+ 	mov	r0, #SMC_CMD_C15RESUME
+ 	dsb
+ 	smc	#0
++#ifdef CONFIG_CACHE_L2X0
++	adr	r0, 1f
++	ldr	r2, [r0]
++	add	r0, r2, r0
 +
-+	switch (reg) {
-+	case L2X0_CTRL:
-+		if (val & L2X0_CTRL_EN) {
-+			/*
-+			 * Before the cache can be enabled, due to firmware
-+			 * design, SMC_CMD_L2X0INVALL must be called.
-+			 */
-+			if (!l2cache_enabled) {
-+				exynos_smc(SMC_CMD_L2X0INVALL, 0, 0, 0);
-+				l2cache_enabled = 1;
-+			}
-+		} else {
-+			l2cache_enabled = 0;
-+		}
-+		exynos_smc(SMC_CMD_L2X0CTRL, val, 0, 0);
-+		break;
++	/* Check that the address has been initialised. */
++	ldr	r1, [r0, #L2X0_R_PHY_BASE]
++	teq	r1, #0
++	beq	skip_l2x0
 +
-+	case L2X0_DEBUG_CTRL:
-+		exynos_smc(SMC_CMD_L2X0DEBUG, val, 0, 0);
-+		break;
++	/* Check if controller has been enabled. */
++	ldr	r2, [r1, #L2X0_CTRL]
++	tst	r2, #0x1
++	bne	skip_l2x0
 +
-+	default:
-+		WARN_ONCE(1, "%s: ignoring write to reg 0x%x\n", __func__, reg);
-+	}
-+}
++	ldr	r1, [r0, #L2X0_R_TAG_LATENCY]
++	ldr	r2, [r0, #L2X0_R_DATA_LATENCY]
++	ldr	r3, [r0, #L2X0_R_PREFETCH_CTRL]
++	mov	r0, #SMC_CMD_L2X0SETUP1
++	smc	#0
 +
-+static void exynos_l2_configure(const struct l2x0_regs *regs)
-+{
-+	exynos_smc(SMC_CMD_L2X0SETUP1, regs->tag_latency, regs->data_latency,
-+		   regs->prefetch_ctrl);
-+	exynos_smc(SMC_CMD_L2X0SETUP2, regs->pwr_ctrl, regs->aux_ctrl, 0);
-+}
++	/* Reload saved regs pointer because smc corrupts registers. */
++	adr	r0, 1f
++	ldr	r2, [r0]
++	add	r0, r2, r0
 +
- void __init exynos_firmware_init(void)
- {
- 	struct device_node *nd;
-@@ -155,4 +193,16 @@ void __init exynos_firmware_init(void)
- 	pr_info("Running under secure firmware.\n");
- 
- 	register_firmware_ops(&exynos_firmware_ops);
++	ldr	r1, [r0, #L2X0_R_PWR_CTRL]
++	ldr	r2, [r0, #L2X0_R_AUX_CTRL]
++	mov	r0, #SMC_CMD_L2X0SETUP2
++	smc	#0
 +
-+	/*
-+	 * Exynos 4 SoCs (based on Cortex A9 and equipped with L2C-310),
-+	 * running under secure firmware, require certain registers of L2
-+	 * cache controller to be written in secure mode. Here .write_sec
-+	 * callback is provided to perform necessary SMC calls.
-+	 */
-+	if (IS_ENABLED(CONFIG_CACHE_L2X0) &&
-+	    read_cpuid_part() == ARM_CPU_PART_CORTEX_A9) {
-+		outer_cache.write_sec = exynos_l2_write_sec;
-+		outer_cache.configure = exynos_l2_configure;
-+	}
- }
++	mov	r0, #SMC_CMD_L2X0INVALL
++	smc	#0
++
++	mov	r1, #1
++	mov	r0, #SMC_CMD_L2X0CTRL
++	smc	#0
++skip_l2x0:
++#endif /* CONFIG_CACHE_L2X0 */
+ skip_cp15:
+ 	b	cpu_resume
+ ENDPROC(exynos_cpu_resume_ns)
+@@ -83,3 +124,8 @@ cp15_save_diag:
+ 	.globl cp15_save_power
+ cp15_save_power:
+ 	.long	0	@ cp15 power control
++
++#ifdef CONFIG_CACHE_L2X0
++	.align
++1:	.long	l2x0_saved_regs - .
++#endif /* CONFIG_CACHE_L2X0 */
 -- 
 1.9.2
 
