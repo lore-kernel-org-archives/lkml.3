@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523AbbAGS27 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 13:28:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56872 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754349AbbAGS24 (ORCPT
+	id S1752419AbbAGSgJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 13:36:09 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:38687 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751267AbbAGSgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 13:28:56 -0500
-Date: Wed, 7 Jan 2015 10:28:55 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Sasha Levin <sasha.levin@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        stable <stable@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>
-Subject: Re: [PATCH 2/2] time: adjtimex: Validate the ADJ_FREQUENCY values
-Message-ID: <20150107182855.GB7699@kroah.com>
-References: <1420654340-3009-1-git-send-email-john.stultz@linaro.org>
- <1420654340-3009-3-git-send-email-john.stultz@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420654340-3009-3-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 7 Jan 2015 13:36:07 -0500
+From: Andrey Skvortsov <andrej.skvortzov@gmail.com>
+X-Google-Original-From: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
+To: Shuah Khan <shuahkh@osg.samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <koct9i@gmail.com>, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Andrey Skvortsov <andrej.skvortzov@gmail.com>
+Subject: [PATCH] selftests/vm: fix link error for transhuge-stress test
+Date: Wed,  7 Jan 2015 21:35:54 +0300
+Message-Id: <1420655754-10076-1-git-send-email-Andrej.Skvortzov@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 10:12:20AM -0800, John Stultz wrote:
-> From: Sasha Levin <sasha.levin@oracle.com>
-> 
-> Verify that the frequency value from userspace is valid and makes sense.
-> 
-> Unverified values can cause overflows later on.
-> 
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: stable <stable@vger.kernel.org>
-> Cc: Andy Lutomirski <luto@amacapital.net>
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> [jstultz: Fix up bug for negative values and drop redunent cap check]
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
-> ---
->  kernel/time/ntp.c | 7 +++++++
->  1 file changed, 7 insertions(+)
+add -lrt to fix undefined reference to `clock_gettime'
 
-<formletter>
+Signed-off-by: Andrey Skvortsov <andrej.skvortzov@gmail.com>
+---
+ tools/testing/selftests/vm/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-This is not the correct way to submit patches for inclusion in the
-stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-for how to do this properly.
+diff --git a/tools/testing/selftests/vm/Makefile b/tools/testing/selftests/vm/Makefile
+index 4c4b1f6..077828c 100644
+--- a/tools/testing/selftests/vm/Makefile
++++ b/tools/testing/selftests/vm/Makefile
+@@ -7,7 +7,7 @@ BINARIES += transhuge-stress
+ 
+ all: $(BINARIES)
+ %: %.c
+-	$(CC) $(CFLAGS) -o $@ $^
++	$(CC) $(CFLAGS) -o $@ $^ -lrt
+ 
+ run_tests: all
+ 	@/bin/sh ./run_vmtests || (echo "vmtests: [FAIL]"; exit 1)
+-- 
+1.7.9.5
 
-</formletter>
