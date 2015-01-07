@@ -1,101 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195AbbAGNhh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 08:37:37 -0500
-Received: from smtp2-out.insa-rennes.fr ([193.52.94.25]:63075 "EHLO
-	smtp2-out.insa-rennes.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275AbbAGNhf (ORCPT
+	id S1753248AbbAGNik (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 08:38:40 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:42976 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752951AbbAGNij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 08:37:35 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuwEAJ01rVQKBQEm/2dsb2JhbABUCBaDQliDBsMwhXMCgVIBAQEBAX2EDQEDAiNVARALIRYLAgIJAwIBAgFFBg0BBwEBiDWvJZNHAQEBAQEBBAEBAQEBAQEbjyJWB4JogUEFj3qBKYcZhQEhg2eHSwKEEW4BAYJBAQEB
-Message-ID: <54AD3692.7040903@supelec.fr>
-Date: Wed, 07 Jan 2015 14:37:22 +0100
-From: Laurent Georget <laurent.georget@supelec.fr>
+	Wed, 7 Jan 2015 08:38:39 -0500
+Message-ID: <54AD36D4.4060504@roeck-us.net>
+Date: Wed, 07 Jan 2015 05:38:28 -0800
+From: Guenter Roeck <linux@roeck-us.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-CC: lkml <linux-kernel@vger.kernel.org>, Petr Gajdos <PGajdos@suse.cz>,
-        John Stultz <john.stultz@linaro.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Jeff Epler <jepler@unpythonic.net>
-Subject: Re: Request for review of adjtimex(2) man page
-References: <54AD2C56.10700@gmail.com>
-In-Reply-To: <54AD2C56.10700@gmail.com>
-Content-Type: multipart/signed; micalg=pgp-sha256;
- protocol="application/pgp-signature";
- boundary="eb7bPC2JHF3Ga1EWLXJMp5ATc8ErhittJ"
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.10 00/38] 3.10.64-stable review
+References: <20150107014952.440109372@linuxfoundation.org>
+In-Reply-To: <20150107014952.440109372@linuxfoundation.org>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020203.54AD36DF.013C,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 6
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---eb7bPC2JHF3Ga1EWLXJMp5ATc8ErhittJ
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On 01/06/2015 05:50 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.64 release.
+> There are 38 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Fri Jan  9 01:49:29 UTC 2015.
+> Anything received after that time might be too late.
+>
 
-Hello,
+Build results:
+	total: 137 pass: 137 fail: 0
+Qemu tests:
+	total: 27 pass: 27 fail: 0
 
+Details are available at http://server.roeck-us.net:8010/builders.
 
->I've added a large number
-> of FIXMEs in the draft below, and would be happy if anyone can supply
-> some content to fill any of the gaps.
+Guenter
 
-Isn't the man page going to be very long and hard to read if we explain a=
-ll=20
-the NTP internals in adjtimex.2? I think we could create a second man pag=
-e
-(for instance ntp.7) in section 7 to provide extensive explanations and r=
-efer
-to it from adjtimex.2. Does that seem okay?
-
-> .BR STA_PLL
-> Enable phase-locked loop (PLL) updates (read-write) via
-> .\" FIXME Any pointer to further information about what this means?
-> .\"       (It was not immediately obvious from a scan of the RFC, wheth=
-er
-> .\"       this is described in the RFC.)
-> .BR ADJ_OFFSET .
-
-> .BR STA_FLL
-> Select frequency-locked loop (FLL) mode (read-write).
-> .\" FIXME Any pointer to further information about what this means?
-> .\"       (It was not immediately obvious from a scan of the RFC, wheth=
-er
-> .\"       this is described in the RFC.)
-
-In this particular case, for example, PLL and FLL are the two modes by wh=
-ich
-the clock offset can be controlled. Roughly speaking, PLL is phase lockin=
-g
-(the clock time is adjusted to the source time) and FLL is frequency lock=
-ing
-(the clock frequency is adjusted to the source frequency). Is that level =
-of
-details be sufficient for adjtimex.2?
-
-Valuable resources that go beyond the content of the RFC are publications=
- and
-presentations from Pr. David Mills (http://www.eecis.udel.edu/~mills/) li=
-ke
-http://www.eecis.udel.edu/~mills/database/brief/clock/clock.pdf.
-
-Cheers,
-
-Laurent
-
-
---eb7bPC2JHF3Ga1EWLXJMp5ATc8ErhittJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iF4EAREIAAYFAlStNpcACgkQRTidSplJch5W/QD8Dz0CCSU2oRhrwU1pU8n7jDZb
-4PLDSycZbV3ZeKMelT8BAIMNV+h7yQQEsQIqnU8RO42+CHGTIU9wui5qXWQRmKO9
-=49lj
------END PGP SIGNATURE-----
-
---eb7bPC2JHF3Ga1EWLXJMp5ATc8ErhittJ--
