@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654AbbAGMOq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 07:14:46 -0500
-Received: from smtprelay02.ispgateway.de ([80.67.18.14]:42852 "EHLO
-	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783AbbAGMOn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 07:14:43 -0500
-X-Greylist: delayed 332 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Jan 2015 07:14:43 EST
-Message-ID: <54AD21E2.2020100@ladisch.de>
-Date: Wed, 07 Jan 2015 13:09:06 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752543AbbAGMNp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 07:13:45 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:46890 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751783AbbAGMNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 07:13:44 -0500
+Date: Wed, 7 Jan 2015 13:13:40 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>, X86 ML <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        =?utf-8?B?RnLDqWTDqXJpYw==?= Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] x86, mce: Get rid of TIF_MCE_NOTIFY and associated mce
+ tricks
+Message-ID: <20150107121340.GB3984@pd.tnic>
+References: <CALCETrV6=aWoAckieQkPJ4BCr9VzU=9080EmLfeL4ZWm+Hr55g@mail.gmail.com>
+ <54ab2ffa301102cd6e@agluck-desk.sc.intel.com>
+ <CALCETrV+mchcQ5SgBO8+xLvw9rrHm4yvq+wZtQsD1EMMGzAMEw@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F3299127A@ORSMSX114.amr.corp.intel.com>
 MIME-Version: 1.0
-To: Raimonds Cicans <ray@apollo.lv>, linux-kernel@vger.kernel.org
-Subject: Re: Questions about IOMMU & PCIe switch
-References: <54ACB0D4.3000008@apollo.lv>
-In-Reply-To: <54ACB0D4.3000008@apollo.lv>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F3299127A@ORSMSX114.amr.corp.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Raimonds Cicans wrote:
-> We have two kinds of PCIe cards:
-> A1 - based on chip B
-> A2 - based on same chip B but behind PCIe switch
->
-> Card A1 work flawlessly in any configuration,
-> but card A2 work flawlessly only if system
-> lack IOMMU or have disabled IOMMU
+On Tue, Jan 06, 2015 at 06:00:08PM +0000, Luck, Tony wrote:
+> That's fine with me.  Boris ... any comments?
 
-In theory, such a switch should be transparent.
+Same here:
 
-> Do we have to treat card with PCIe switch in special way?
+Acked-by: Borislav Petkov <bp@suse.de>
 
-No.  But the switch has to work correctly, and driver must be
-written correctly.
+I like negative diffstats:
 
-Which switch?  Which driver?
+ include/asm/mce.h         |    1
+ include/asm/thread_info.h |    4 -
+ kernel/cpu/mcheck/mce.c   |  109 ++++++++++------------------------------------
+ kernel/signal.c           |    6 --
+ 4 files changed, 26 insertions(+), 94 deletions(-)
 
+Procedural question: so this is going in, in the next merge window,
+aimed at 3.20, right?
 
-Regards,
-Clemens
+IMO that is a good plan as we have max time to deal with fallout, should
+there be any.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
