@@ -1,51 +1,372 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbbAGM2O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 07:28:14 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:42433 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752038AbbAGM2N (ORCPT
+	id S1752919AbbAGM2d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 07:28:33 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:34122 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038AbbAGM2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 07:28:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <D0D2667E.D2C25%andreas.dilger@intel.com>
-References: <CANZNk80SoQZU994psVKuuGRGGHnGgO7bcFpPBQoGyg=CjW77xw@mail.gmail.com>
-	<20150107083654.GK15033@mwanda>
-	<D0D2667E.D2C25%andreas.dilger@intel.com>
-Date: Wed, 7 Jan 2015 14:28:12 +0200
-Message-ID: <CANZNk83Y5T75H86VZ4dMVigPiaVADZB60yc6QWWCWdJ=SdT+sQ@mail.gmail.com>
-Subject: Re: lustre/lnet/lnet/lib-move.c: memcpy with (struct
- iovec*)->iov_base, which is __user
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-To: "Dilger, Andreas" <andreas.dilger@intel.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "Drokin, Oleg" <oleg.drokin@intel.com>,
-        "HPDD-discuss@ml01.01.org" <HPDD-discuss@ml01.01.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        OSUOSL Drivers <devel@driverdev.osuosl.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 7 Jan 2015 07:28:30 -0500
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: [PATCH v3] arm: perf: Directly handle SMP platforms with one SPI
+Date: Wed,  7 Jan 2015 12:28:18 +0000
+Message-Id: <1420633698-11742-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1416581603-30557-1-git-send-email-daniel.thompson@linaro.org>
+References: <1416581603-30557-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-07 13:32 GMT+02:00 Dilger, Andreas <andreas.dilger@intel.com>:
-> On 2015/01/07, 1:36 AM, "Dan Carpenter" <dan.carpenter@oracle.com> wrote:
->> Didn't Al change these to kvec instead of iovec?  You have to look at
->> the callers to figure out if it's actually a user space pointer or a
->> kernel pointer.
->
-> A patch was sent by Al on Dec 2 to replace iovec with kvec, in a thread
-> titled "[PATCH] staging:lustre:lnet: Incorrect type in assignment".  Greg
-> replied on Dec 10 in another thread (also fixing this same warning) titled
-> "[PATCH] staging: lustre: Fix the warning messages about casting without
-> __user macro" that Al's patch was in the staging tree for 3.19-rc1.
+Some ARM platforms mux the PMU interrupt of every core into a single
+SPI. On such platforms if the PMU of any core except 0 raises an interrupt
+then it cannot be serviced and eventually, if you are lucky, the spurious
+irq detection might forcefully disable the interrupt.
 
-In current linux-next, I see none of the mentioned patches. Also I
-don't see them mentioned in GKH's merge commit "Merge tag
-'staging-3.19-rc1'..."
-Is it ok?
+On these SoCs it is not possible to determine which core raised the
+interrupt so workaround this issue by queuing irqwork on the other
+cores whenever the primary interrupt handler is unable to service the
+interrupt.
 
--- 
-Andrey Utkin
+The u8500 platform has an alternative workaround that dynamically alters
+the affinity of the PMU interrupt. This workaround logic is no longer
+required so the original code is removed as is the hook it relied upon.
+
+Tested on imx6q (which has fours cores/PMUs all muxed to a single SPI).
+
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+---
+
+Notes:
+    v2 was tested on u8500 (thanks to Linus Walleij). v3 doesn't change
+    anything conceptual but the changes were just enough for me not to
+    preserve the Tested-By:.
+    
+    v3:
+     * Removed function pointer indirection when deploying workaround code
+       and reorganise the code accordingly (Mark Rutland).
+     * Move the workaround state tracking into the existing percpu data
+       structure (Mark Rutland).
+     * Renamed cret to percpu_ret and rewrote the comment describing the
+       purpose of this variable (Mark Rutland).
+     * Copy the cpu_online_mask and use that to act on a consistent set of
+       cpus throughout the workaround (Mark Rutland).
+     * Changed "single_irq" to "muxed_spi" to more explicitly describe
+       the problem.
+    
+    v2:
+     * Fixed build problems on systems without SMP.
+    
+    v1:
+     * Thanks to Lucas Stach, Russell King and Thomas Gleixner for
+       critiquing an older, completely different way to tackle the
+       same problem.
+    
+
+ arch/arm/include/asm/pmu.h       |  17 ++++++
+ arch/arm/kernel/perf_event.c     |   9 +--
+ arch/arm/kernel/perf_event_cpu.c | 122 +++++++++++++++++++++++++++++++++++++++
+ arch/arm/kernel/perf_event_v7.c  |   2 +-
+ arch/arm/mach-ux500/cpu-db8500.c |  29 ----------
+ 5 files changed, 141 insertions(+), 38 deletions(-)
+
+diff --git a/arch/arm/include/asm/pmu.h b/arch/arm/include/asm/pmu.h
+index b1596bd59129..295e762d5116 100644
+--- a/arch/arm/include/asm/pmu.h
++++ b/arch/arm/include/asm/pmu.h
+@@ -87,6 +87,19 @@ struct pmu_hw_events {
+ 	 * already have to allocate this struct per cpu.
+ 	 */
+ 	struct arm_pmu		*percpu_pmu;
++
++#ifdef CONFIG_SMP
++	/*
++	 * This is used to schedule workaround logic on platforms where all
++	 * the PMUs are attached to a single SPI.
++	 */
++	struct irq_work work;
++
++	/*
++	 * Used to track state when deploying above workaround.
++	 */
++	atomic_t work_ret;
++#endif
+ };
+
+ struct arm_pmu {
+@@ -117,6 +130,10 @@ struct arm_pmu {
+ 	struct platform_device	*plat_device;
+ 	struct pmu_hw_events	__percpu *hw_events;
+ 	struct notifier_block	hotplug_nb;
++#ifdef CONFIG_SMP
++	int             muxed_spi_workaround_irq;
++	atomic_t        remaining_work;
++#endif
+ };
+
+ #define to_arm_pmu(p) (container_of(p, struct arm_pmu, pmu))
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index f7c65adaa428..e5c537b57f94 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -299,8 +299,6 @@ validate_group(struct perf_event *event)
+ static irqreturn_t armpmu_dispatch_irq(int irq, void *dev)
+ {
+ 	struct arm_pmu *armpmu;
+-	struct platform_device *plat_device;
+-	struct arm_pmu_platdata *plat;
+ 	int ret;
+ 	u64 start_clock, finish_clock;
+
+@@ -311,14 +309,9 @@ static irqreturn_t armpmu_dispatch_irq(int irq, void *dev)
+ 	 * dereference.
+ 	 */
+ 	armpmu = *(void **)dev;
+-	plat_device = armpmu->plat_device;
+-	plat = dev_get_platdata(&plat_device->dev);
+
+ 	start_clock = sched_clock();
+-	if (plat && plat->handle_irq)
+-		ret = plat->handle_irq(irq, armpmu, armpmu->handle_irq);
+-	else
+-		ret = armpmu->handle_irq(irq, armpmu);
++	ret = armpmu->handle_irq(irq, armpmu);
+ 	finish_clock = sched_clock();
+
+ 	perf_sample_event_took(finish_clock - start_clock);
+diff --git a/arch/arm/kernel/perf_event_cpu.c b/arch/arm/kernel/perf_event_cpu.c
+index dd9acc95ebc0..3d51c5f442eb 100644
+--- a/arch/arm/kernel/perf_event_cpu.c
++++ b/arch/arm/kernel/perf_event_cpu.c
+@@ -59,6 +59,116 @@ int perf_num_counters(void)
+ }
+ EXPORT_SYMBOL_GPL(perf_num_counters);
+
++#ifdef CONFIG_SMP
++/*
++ * Workaround logic that is distributed to all cores if the PMU has only
++ * a single IRQ and the CPU receiving that IRQ cannot handle it. Its
++ * job is to try to service the interrupt on the current CPU. It will
++ * also enable the IRQ again if all the other CPUs have already tried to
++ * service it.
++ */
++static void cpu_pmu_do_percpu_work(struct irq_work *w)
++{
++	struct pmu_hw_events *hw_events =
++	    container_of(w, struct pmu_hw_events, work);
++	struct arm_pmu *cpu_pmu = hw_events->percpu_pmu;
++
++	atomic_set(&hw_events->work_ret,
++		   cpu_pmu->handle_irq(0, cpu_pmu));
++
++	if (atomic_dec_and_test(&cpu_pmu->remaining_work))
++		enable_irq(cpu_pmu->muxed_spi_workaround_irq);
++}
++
++/*
++ * Called when the main interrupt handler cannot determine the source
++ * of interrupt. It will deploy a workaround if we are running on an SMP
++ * platform with only a single muxed SPI.
++ *
++ * The workaround disables the interrupt and distributes irqwork to all
++ * other processors in the system. Hopefully one of them will clear the
++ * interrupt...
++ */
++static irqreturn_t cpu_pmu_handle_irq_none(int irq_num, struct arm_pmu *cpu_pmu)
++{
++	irqreturn_t ret = IRQ_NONE;
++	cpumask_t deploy_on_mask;
++	int cpu, work_ret;
++
++	if (irq_num != cpu_pmu->muxed_spi_workaround_irq)
++		return IRQ_NONE;
++
++	disable_irq_nosync(cpu_pmu->muxed_spi_workaround_irq);
++
++	cpumask_copy(&deploy_on_mask, cpu_online_mask);
++	cpumask_clear_cpu(smp_processor_id(), &deploy_on_mask);
++	atomic_add(cpumask_weight(&deploy_on_mask), &cpu_pmu->remaining_work);
++	smp_mb__after_atomic();
++
++	for_each_cpu(cpu, &deploy_on_mask) {
++		struct pmu_hw_events *hw_events =
++		    per_cpu_ptr(cpu_pmu->hw_events, cpu);
++
++		/*
++		 * The workaround code exits immediately without waiting to
++		 * see if the interrupt was handled by another CPU. This makes
++		 * it hard for us to decide between IRQ_HANDLED and IRQ_NONE.
++		 * However, the handler isn't shared so we don't have to worry
++		 * about being a good citizen, only about keeping the spurious
++		 * interrupt detector working. This allows us to return the
++		 * result of our *previous* attempt to deploy workaround.
++		 */
++		work_ret = atomic_read(&hw_events->work_ret);
++		if (work_ret != IRQ_NONE)
++			ret = work_ret;
++
++		if (!irq_work_queue_on(&hw_events->work, cpu))
++			if (atomic_dec_and_test(&cpu_pmu->remaining_work))
++				enable_irq(cpu_pmu->muxed_spi_workaround_irq);
++	}
++
++	return ret;
++}
++
++static int cpu_pmu_muxed_spi_workaround_init(struct arm_pmu *cpu_pmu)
++{
++	struct platform_device *pmu_device = cpu_pmu->plat_device;
++	int cpu;
++
++	for_each_possible_cpu(cpu) {
++		struct pmu_hw_events *hw_events =
++		    per_cpu_ptr(cpu_pmu->hw_events, cpu);
++
++		init_irq_work(&hw_events->work, cpu_pmu_do_percpu_work);
++		atomic_set(&hw_events->work_ret, IRQ_HANDLED);
++	}
++
++	aomic_set(cpu_pmu->remaining_work, 0);
++	cpu_pmu->muxed_spi_workaround_irq = platform_get_irq(pmu_device, 0);
++
++	return 0;
++}
++
++static void cpu_pmu_muxed_spi_workaround_term(struct arm_pmu *cpu_pmu)
++{
++	cpu_pmu->muxed_spi_workaround_irq = 0;
++}
++#else /* CONFIG_SMP */
++static int cpu_pmu_muxed_spi_workaround_init(struct arm_pmu *cpu_pmu)
++{
++	return 0;
++}
++
++static void cpu_pmu_muxed_spi_workaround_term(struct arm_pmu *cpu_pmu)
++{
++}
++
++static irqreturn_t cpu_pmu_handle_irq_none(int irq_num, struct arm_pmu *cpu_pmu)
++{
++	return IRQ_NONE;
++}
++#endif /* CONFIG_SMP */
++
+ /* Include the PMU-specific implementations. */
+ #include "perf_event_xscale.c"
+ #include "perf_event_v6.c"
+@@ -98,6 +208,8 @@ static void cpu_pmu_free_irq(struct arm_pmu *cpu_pmu)
+ 			if (irq >= 0)
+ 				free_irq(irq, per_cpu_ptr(&hw_events->percpu_pmu, i));
+ 		}
++
++		cpu_pmu_muxed_spi_workaround_term(cpu_pmu);
+ 	}
+ }
+
+@@ -155,6 +267,16 @@ static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu, irq_handler_t handler)
+
+ 			cpumask_set_cpu(i, &cpu_pmu->active_irqs);
+ 		}
++
++		/*
++		 * If we are running SMP and have only one interrupt source
++		 * then get ready to share that single irq among the cores.
++		 */
++		if (nr_cpu_ids > 1 && irqs == 1) {
++			err = cpu_pmu_muxed_spi_workaround_init(cpu_pmu);
++			if (err)
++				return err;
++		}
+ 	}
+
+ 	return 0;
+diff --git a/arch/arm/kernel/perf_event_v7.c b/arch/arm/kernel/perf_event_v7.c
+index 8993770c47de..0dd914c10803 100644
+--- a/arch/arm/kernel/perf_event_v7.c
++++ b/arch/arm/kernel/perf_event_v7.c
+@@ -792,7 +792,7 @@ static irqreturn_t armv7pmu_handle_irq(int irq_num, void *dev)
+ 	 * Did an overflow occur?
+ 	 */
+ 	if (!armv7_pmnc_has_overflowed(pmnc))
+-		return IRQ_NONE;
++		return cpu_pmu_handle_irq_none(irq_num, cpu_pmu);
+
+ 	/*
+ 	 * Handle the counter(s) overflow(s)
+diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
+index 6f63954c8bde..917774999c5c 100644
+--- a/arch/arm/mach-ux500/cpu-db8500.c
++++ b/arch/arm/mach-ux500/cpu-db8500.c
+@@ -12,8 +12,6 @@
+ #include <linux/init.h>
+ #include <linux/device.h>
+ #include <linux/amba/bus.h>
+-#include <linux/interrupt.h>
+-#include <linux/irq.h>
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/mfd/abx500/ab8500.h>
+@@ -23,7 +21,6 @@
+ #include <linux/regulator/machine.h>
+ #include <linux/random.h>
+
+-#include <asm/pmu.h>
+ #include <asm/mach/map.h>
+
+ #include "setup.h"
+@@ -99,30 +96,6 @@ static void __init u8500_map_io(void)
+ 		iotable_init(u8500_io_desc, ARRAY_SIZE(u8500_io_desc));
+ }
+
+-/*
+- * The PMU IRQ lines of two cores are wired together into a single interrupt.
+- * Bounce the interrupt to the other core if it's not ours.
+- */
+-static irqreturn_t db8500_pmu_handler(int irq, void *dev, irq_handler_t handler)
+-{
+-	irqreturn_t ret = handler(irq, dev);
+-	int other = !smp_processor_id();
+-
+-	if (ret == IRQ_NONE && cpu_online(other))
+-		irq_set_affinity(irq, cpumask_of(other));
+-
+-	/*
+-	 * We should be able to get away with the amount of IRQ_NONEs we give,
+-	 * while still having the spurious IRQ detection code kick in if the
+-	 * interrupt really starts hitting spuriously.
+-	 */
+-	return ret;
+-}
+-
+-static struct arm_pmu_platdata db8500_pmu_platdata = {
+-	.handle_irq		= db8500_pmu_handler,
+-};
+-
+ static const char *db8500_read_soc_id(void)
+ {
+ 	void __iomem *uid = __io_address(U8500_BB_UID_BASE);
+@@ -143,8 +116,6 @@ static struct device * __init db8500_soc_device_init(void)
+ }
+
+ static struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
+-	/* Requires call-back bindings. */
+-	OF_DEV_AUXDATA("arm,cortex-a9-pmu", 0, "arm-pmu", &db8500_pmu_platdata),
+ 	/* Requires DMA bindings. */
+ 	OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80123000,
+ 		       "ux500-msp-i2s.0", &msp0_platform_data),
+--
+1.9.3
+
