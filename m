@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975AbbAGQf2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 11:35:28 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:59381 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753888AbbAGQfZ (ORCPT
+	id S1754061AbbAGQfh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 11:35:37 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:40406 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753989AbbAGQfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 11:35:25 -0500
+	Wed, 7 Jan 2015 11:35:34 -0500
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Jason Wessel <jason.wessel@windriver.com>
 Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
@@ -20,9 +20,9 @@ Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
         linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
         Sumit Semwal <sumit.semwal@linaro.org>,
         Daniel Thompson <daniel.thompson@linaro.org>
-Subject: [RESEND PATCH v5 3.19-rc2 1/8] kdb: Remove currently unused kdbtab_t->cmd_flags
-Date: Wed,  7 Jan 2015 16:34:51 +0000
-Message-Id: <1420648498-17428-2-git-send-email-daniel.thompson@linaro.org>
+Subject: [RESEND PATCH v5 3.19-rc2 2/8] kdb: Rename kdb_repeat_t to kdb_cmdflags_t, cmd_repeat to cmd_flags
+Date: Wed,  7 Jan 2015 16:34:52 +0000
+Message-Id: <1420648498-17428-3-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1420648498-17428-1-git-send-email-daniel.thompson@linaro.org>
 References: <1399381429-16194-1-git-send-email-daniel.thompson@linaro.org>
@@ -33,43 +33,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 
-The struct member is never used in the code, so we can remove it.
+We're about to add more options for command behaviour, so let's expand
+the meaning of kdb_repeat_t.
 
-We will introduce real flags soon by renaming cmd_repeat to cmd_flags.
+So far we just do various renames, there should be no functional changes.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 Cc: Jason Wessel <jason.wessel@windriver.com>
 ---
- kernel/debug/kdb/kdb_main.c    | 1 -
- kernel/debug/kdb/kdb_private.h | 1 -
- 2 files changed, 2 deletions(-)
+ include/linux/kdb.h            | 6 +++---
+ kernel/debug/kdb/kdb_main.c    | 6 +++---
+ kernel/debug/kdb/kdb_private.h | 2 +-
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
+diff --git a/include/linux/kdb.h b/include/linux/kdb.h
+index 290db1269c4c..e650f79aa414 100644
+--- a/include/linux/kdb.h
++++ b/include/linux/kdb.h
+@@ -17,7 +17,7 @@ typedef enum {
+ 	KDB_REPEAT_NONE = 0,	/* Do not repeat this command */
+ 	KDB_REPEAT_NO_ARGS,	/* Repeat the command without arguments */
+ 	KDB_REPEAT_WITH_ARGS,	/* Repeat the command including its arguments */
+-} kdb_repeat_t;
++} kdb_cmdflags_t;
+ 
+ typedef int (*kdb_func_t)(int, const char **);
+ 
+@@ -147,7 +147,7 @@ static inline const char *kdb_walk_kallsyms(loff_t *pos)
+ /* Dynamic kdb shell command registration */
+ extern int kdb_register(char *, kdb_func_t, char *, char *, short);
+ extern int kdb_register_repeat(char *, kdb_func_t, char *, char *,
+-			       short, kdb_repeat_t);
++			       short, kdb_cmdflags_t);
+ extern int kdb_unregister(char *);
+ #else /* ! CONFIG_KGDB_KDB */
+ static inline __printf(1, 2) int kdb_printf(const char *fmt, ...) { return 0; }
+@@ -156,7 +156,7 @@ static inline int kdb_register(char *cmd, kdb_func_t func, char *usage,
+ 			       char *help, short minlen) { return 0; }
+ static inline int kdb_register_repeat(char *cmd, kdb_func_t func, char *usage,
+ 				      char *help, short minlen,
+-				      kdb_repeat_t repeat) { return 0; }
++				      kdb_cmdflags_t flags) { return 0; }
+ static inline int kdb_unregister(char *cmd) { return 0; }
+ #endif	/* CONFIG_KGDB_KDB */
+ enum {
 diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 379650b984f8..cc02aa205668 100644
+index cc02aa205668..41966b5f86b7 100644
 --- a/kernel/debug/kdb/kdb_main.c
 +++ b/kernel/debug/kdb/kdb_main.c
-@@ -2694,7 +2694,6 @@ int kdb_register_repeat(char *cmd,
- 	kp->cmd_func   = func;
+@@ -1008,7 +1008,7 @@ int kdb_parse(const char *cmdstr)
+ 		if (result && ignore_errors && result > KDB_CMD_GO)
+ 			result = 0;
+ 		KDB_STATE_CLEAR(CMD);
+-		switch (tp->cmd_repeat) {
++		switch (tp->cmd_flags) {
+ 		case KDB_REPEAT_NONE:
+ 			argc = 0;
+ 			if (argv[0])
+@@ -2646,7 +2646,7 @@ int kdb_register_repeat(char *cmd,
+ 			char *usage,
+ 			char *help,
+ 			short minlen,
+-			kdb_repeat_t repeat)
++			kdb_cmdflags_t flags)
+ {
+ 	int i;
+ 	kdbtab_t *kp;
+@@ -2695,7 +2695,7 @@ int kdb_register_repeat(char *cmd,
  	kp->cmd_usage  = usage;
  	kp->cmd_help   = help;
--	kp->cmd_flags  = 0;
  	kp->cmd_minlen = minlen;
- 	kp->cmd_repeat = repeat;
+-	kp->cmd_repeat = repeat;
++	kp->cmd_flags  = flags;
  
+ 	return 0;
+ }
 diff --git a/kernel/debug/kdb/kdb_private.h b/kernel/debug/kdb/kdb_private.h
-index 7afd3c8c41d5..c4c46c7b26fd 100644
+index c4c46c7b26fd..eaacd1693954 100644
 --- a/kernel/debug/kdb/kdb_private.h
 +++ b/kernel/debug/kdb/kdb_private.h
-@@ -172,7 +172,6 @@ typedef struct _kdbtab {
- 	kdb_func_t cmd_func;		/* Function to execute command */
- 	char    *cmd_usage;		/* Usage String for this command */
+@@ -174,7 +174,7 @@ typedef struct _kdbtab {
  	char    *cmd_help;		/* Help message for this command */
--	short    cmd_flags;		/* Parsing flags */
  	short    cmd_minlen;		/* Minimum legal # command
  					 * chars required */
- 	kdb_repeat_t cmd_repeat;	/* Does command auto repeat on enter? */
+-	kdb_repeat_t cmd_repeat;	/* Does command auto repeat on enter? */
++	kdb_cmdflags_t cmd_flags;	/* Command behaviour flags */
+ } kdbtab_t;
+ 
+ extern int kdb_bt(int, const char **);	/* KDB display back trace */
 -- 
 1.9.3
 
