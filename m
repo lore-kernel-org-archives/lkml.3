@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753753AbbAGQIB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 11:08:01 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:39264 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159AbbAGQH7 (ORCPT
+	id S1753508AbbAGQJm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 11:09:42 -0500
+Received: from mail-we0-f171.google.com ([74.125.82.171]:54039 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381AbbAGQJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 11:07:59 -0500
-Message-ID: <54AD59DC.4020703@plexistor.com>
-Date: Wed, 07 Jan 2015 18:07:56 +0200
+	Wed, 7 Jan 2015 11:09:40 -0500
+Message-ID: <54AD5A42.5040404@plexistor.com>
+Date: Wed, 07 Jan 2015 18:09:38 +0200
 From: Boaz Harrosh <boaz@plexistor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
@@ -17,7 +17,7 @@ To: Jens Axboe <axboe@fb.com>, Matthew Wilcox <willy@linux.intel.com>,
 CC: linux-kernel <linux-kernel@vger.kernel.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: [PATCH 3/4 v4] brd: Fix all partitions BUGs
+Subject: [PATCH 4/4 v4] brd: Request from fdisk 4k alignment
 References: <54AD5893.9040701@plexistor.com>
 In-Reply-To: <54AD5893.9040701@plexistor.com>
 Content-Type: text/plain; charset=utf-8
@@ -28,250 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Boaz Harrosh <boaz@plexistor.com>
 
-This patch fixes up brd's partitions scheme, now enjoying all worlds.
+Because of the direct_access() API which returns a PFN. partitions
+better start on 4K boundary, else offset ZERO of a partition will
+not be aligned and blk_direct_access() will fail the call.
 
-The MAIN fix here is that currently, if one fdisks some partitions,
-a BAD bug will make all partitions point to the same start-end sector
-ie: 0 - brd_size And an mkfs of any partition would trash the partition
-table and the other partition.
+By setting blk_queue_physical_block_size(PAGE_SIZE) we can communicate
+this to fdisk and friends.
 
-Another fix is that "mount -U uuid" will not work if show_part was not
-specified, because of the GENHD_FL_SUPPRESS_PARTITION_INFO flag.
-We now always load without it and remove the show_part parameter.
+The call to blk_queue_physical_block_size() is harmless and will
+not affect the Kernel behavior in any way. It is only for
+communication to user-mode.
 
-[We remove Dmitry's new module-param part_show it is now always
- show]
+before this patch running fdisk on a default size brd of 4M
+the first sector offered is 34 (BAD), but after this patch it
+will be 40, ie 8 sectors aligned. Also when entering some random
+partition sizes the next partition-start sector is offered 8 sectors
+aligned after this patch. (Please note that with fdisk the user
+can still enter bad values, only the offered default values will
+be correct)
 
-So NOW the logic goes like this:
-* max_part - Just says how many minors to reserve between ramX
-  devices. In any way, there can be as many partition as requested.
-  If minors between devices ends, then dynamic 259-major ids will
-  be allocated on the fly.
-  The default is now max_part=1, which means all partitions devt(s)
-  will be from the dynamic (259) major-range.
-  (If persistent partition minors is needed use max_part=X)
-  For example with /dev/sdX max_part is hard coded 16.
+Note that with bdev-size > 4M fdisk will try to align on a 1M
+boundary (above first-sector will be 2048), in any case.
 
-* Creation of new devices on the fly still/always work:
-  mknod /path/devnod b 1 X
-  fdisk -l /path/devnod
-  Will create a new device if [X / max_part] was not already
-  created before. (Just as before)
-
-  partitions on the dynamically created device will work as well
-  Same logic applies with minors as with the pre-created ones.
-
-TODO: dynamic grow of device size. So each device can have it's
-      own size.
-
-CC: Dmitry Monakhov <dmonakhov@openvz.org>
-Tested-by: Ross Zwisler <ross.zwisler@linux.intel.com>
+CC: Martin K. Petersen <martin.petersen@oracle.com>
 Signed-off-by: Boaz Harrosh <boaz@plexistor.com>
 ---
- drivers/block/brd.c | 100 ++++++++++++++++++++--------------------------------
- 1 file changed, 38 insertions(+), 62 deletions(-)
+ drivers/block/brd.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
 diff --git a/drivers/block/brd.c b/drivers/block/brd.c
-index 89e90ec..a7463c959 100644
+index a7463c959..c01b921 100644
 --- a/drivers/block/brd.c
 +++ b/drivers/block/brd.c
-@@ -438,19 +438,18 @@ static const struct block_device_operations brd_fops = {
- /*
-  * And now the modules code and kernel interface.
-  */
--static int rd_nr;
--int rd_size = CONFIG_BLK_DEV_RAM_SIZE;
--static int max_part;
--static int part_shift;
--static int part_show = 0;
-+static int rd_nr = CONFIG_BLK_DEV_RAM_COUNT;
- module_param(rd_nr, int, S_IRUGO);
- MODULE_PARM_DESC(rd_nr, "Maximum number of brd devices");
+@@ -486,10 +486,19 @@ static struct brd_device *brd_alloc(int i)
+ 	brd->brd_queue = blk_alloc_queue(GFP_KERNEL);
+ 	if (!brd->brd_queue)
+ 		goto out_free_dev;
 +
-+int rd_size = CONFIG_BLK_DEV_RAM_SIZE;
- module_param(rd_size, int, S_IRUGO);
- MODULE_PARM_DESC(rd_size, "Size of each RAM disk in kbytes.");
+ 	blk_queue_make_request(brd->brd_queue, brd_make_request);
+ 	blk_queue_max_hw_sectors(brd->brd_queue, 1024);
+ 	blk_queue_bounce_limit(brd->brd_queue, BLK_BOUNCE_ANY);
+ 
++	/* This is so fdisk will align partitions on 4k, because of
++	 * direct_access API needing 4k alignment, returning a PFN
++	 * (This is only a problem on very small devices <= 4M,
++	 *  otherwise fdisk will align on 1M. Regardless this call
++	 *  is harmless)
++	 */
++	blk_queue_physical_block_size(brd->brd_queue, PAGE_SIZE);
 +
-+static int max_part = 1;
- module_param(max_part, int, S_IRUGO);
--MODULE_PARM_DESC(max_part, "Maximum number of partitions per RAM disk");
--module_param(part_show, int, S_IRUGO);
--MODULE_PARM_DESC(part_show, "Control RAM disk visibility in /proc/partitions");
-+MODULE_PARM_DESC(max_part, "Num Minors to reserve between devices");
-+
- MODULE_LICENSE("GPL");
- MODULE_ALIAS_BLOCKDEV_MAJOR(RAMDISK_MAJOR);
- MODULE_ALIAS("rd");
-@@ -496,16 +495,15 @@ static struct brd_device *brd_alloc(int i)
+ 	brd->brd_queue->limits.discard_granularity = PAGE_SIZE;
+ 	brd->brd_queue->limits.max_discard_sectors = UINT_MAX;
  	brd->brd_queue->limits.discard_zeroes_data = 1;
- 	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, brd->brd_queue);
- 
--	disk = brd->brd_disk = alloc_disk(1 << part_shift);
-+	disk = brd->brd_disk = alloc_disk(max_part);
- 	if (!disk)
- 		goto out_free_queue;
- 	disk->major		= RAMDISK_MAJOR;
--	disk->first_minor	= i << part_shift;
-+	disk->first_minor	= i * max_part;
- 	disk->fops		= &brd_fops;
- 	disk->private_data	= brd;
- 	disk->queue		= brd->brd_queue;
--	if (!part_show)
--		disk->flags |= GENHD_FL_SUPPRESS_PARTITION_INFO;
-+	disk->flags		= GENHD_FL_EXT_DEVT;
- 	sprintf(disk->disk_name, "ram%d", i);
- 	set_capacity(disk, rd_size * 2);
- 
-@@ -527,10 +525,11 @@ static void brd_free(struct brd_device *brd)
- 	kfree(brd);
- }
- 
--static struct brd_device *brd_init_one(int i)
-+static struct brd_device *brd_init_one(int i, bool *new)
- {
- 	struct brd_device *brd;
- 
-+	*new = false;
- 	list_for_each_entry(brd, &brd_devices, brd_list) {
- 		if (brd->brd_number == i)
- 			goto out;
-@@ -541,6 +540,7 @@ static struct brd_device *brd_init_one(int i)
- 		add_disk(brd->brd_disk);
- 		list_add_tail(&brd->brd_list, &brd_devices);
- 	}
-+	*new = true;
- out:
- 	return brd;
- }
-@@ -556,70 +556,46 @@ static struct kobject *brd_probe(dev_t dev, int *part, void *data)
- {
- 	struct brd_device *brd;
- 	struct kobject *kobj;
-+	bool new;
- 
- 	mutex_lock(&brd_devices_mutex);
--	brd = brd_init_one(MINOR(dev) >> part_shift);
-+	brd = brd_init_one(MINOR(dev) / max_part, &new);
- 	kobj = brd ? get_disk(brd->brd_disk) : NULL;
- 	mutex_unlock(&brd_devices_mutex);
- 
--	*part = 0;
-+	if (new)
-+		*part = 0;
-+
- 	return kobj;
- }
- 
- static int __init brd_init(void)
- {
--	int i, nr;
--	unsigned long range;
- 	struct brd_device *brd, *next;
-+	int i;
- 
- 	/*
- 	 * brd module now has a feature to instantiate underlying device
- 	 * structure on-demand, provided that there is an access dev node.
--	 * However, this will not work well with user space tool that doesn't
--	 * know about such "feature".  In order to not break any existing
--	 * tool, we do the following:
- 	 *
--	 * (1) if rd_nr is specified, create that many upfront, and this
--	 *     also becomes a hard limit.
--	 * (2) if rd_nr is not specified, create CONFIG_BLK_DEV_RAM_COUNT
--	 *     (default 16) rd device on module load, user can further
--	 *     extend brd device by create dev node themselves and have
--	 *     kernel automatically instantiate actual device on-demand.
-+	 * (1) if rd_nr is specified, create that many upfront. else
-+	 *     it defaults to CONFIG_BLK_DEV_RAM_COUNT
-+	 * (2) User can further extend brd devices by create dev node themselves
-+	 *     and have kernel automatically instantiate actual device
-+	 *     on-demand. Example:
-+	 *		mknod /path/devnod_name b 1 X	# 1 is the rd major
-+	 *		fdisk -l /path/devnod_name
-+	 *	If (X / max_part) was not already created it will be created
-+	 *	dynamically.
- 	 */
- 
--	part_shift = 0;
--	if (max_part > 0) {
--		part_shift = fls(max_part);
--
--		/*
--		 * Adjust max_part according to part_shift as it is exported
--		 * to user space so that user can decide correct minor number
--		 * if [s]he want to create more devices.
--		 *
--		 * Note that -1 is required because partition 0 is reserved
--		 * for the whole disk.
--		 */
--		max_part = (1UL << part_shift) - 1;
--	}
--
--	if ((1UL << part_shift) > DISK_MAX_PARTS)
--		return -EINVAL;
--
--	if (rd_nr > 1UL << (MINORBITS - part_shift))
--		return -EINVAL;
--
--	if (rd_nr) {
--		nr = rd_nr;
--		range = rd_nr << part_shift;
--	} else {
--		nr = CONFIG_BLK_DEV_RAM_COUNT;
--		range = 1UL << MINORBITS;
--	}
--
- 	if (register_blkdev(RAMDISK_MAJOR, "ramdisk"))
- 		return -EIO;
- 
--	for (i = 0; i < nr; i++) {
-+	if (unlikely(!max_part))
-+		max_part = 1;
-+
-+	for (i = 0; i < rd_nr; i++) {
- 		brd = brd_alloc(i);
- 		if (!brd)
- 			goto out_free;
-@@ -631,10 +607,10 @@ static int __init brd_init(void)
- 	list_for_each_entry(brd, &brd_devices, brd_list)
- 		add_disk(brd->brd_disk);
- 
--	blk_register_region(MKDEV(RAMDISK_MAJOR, 0), range,
-+	blk_register_region(MKDEV(RAMDISK_MAJOR, 0), 1UL << MINORBITS,
- 				  THIS_MODULE, brd_probe, NULL, NULL);
- 
--	printk(KERN_INFO "brd: module loaded\n");
-+	pr_info("brd: module loaded\n");
- 	return 0;
- 
- out_free:
-@@ -644,21 +620,21 @@ out_free:
- 	}
- 	unregister_blkdev(RAMDISK_MAJOR, "ramdisk");
- 
-+	pr_info("brd: module NOT loaded !!!\n");
- 	return -ENOMEM;
- }
- 
- static void __exit brd_exit(void)
- {
--	unsigned long range;
- 	struct brd_device *brd, *next;
- 
--	range = rd_nr ? rd_nr << part_shift : 1UL << MINORBITS;
--
- 	list_for_each_entry_safe(brd, next, &brd_devices, brd_list)
- 		brd_del_one(brd);
- 
--	blk_unregister_region(MKDEV(RAMDISK_MAJOR, 0), range);
-+	blk_unregister_region(MKDEV(RAMDISK_MAJOR, 0), 1UL << MINORBITS);
- 	unregister_blkdev(RAMDISK_MAJOR, "ramdisk");
-+
-+	pr_info("brd: module unloaded\n");
- }
- 
- module_init(brd_init);
 -- 
 1.9.3
 
