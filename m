@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756740AbbAGHnM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 02:43:12 -0500
-Received: from mga03.intel.com ([134.134.136.65]:62578 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753368AbbAGHnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 02:43:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="437408640"
-Message-ID: <1420616586.6201.74.camel@intel.com>
-Subject: Re: [LKP] [sb_edac] 50d1bb93672: EDAC sbridge: ECC is disabled.
- Aborting
-From: Huang Ying <ying.huang@intel.com>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>, LKP ML <lkp@01.org>
-Date: Wed, 07 Jan 2015 15:43:06 +0800
-In-Reply-To: <20150105140606.GA25309@redhat.com>
-References: <1418890406.26403.2.camel@intel.com>
-	 <20141218090536.0d671dca@recife.lan> <1418966819.26403.33.camel@intel.com>
-	 <20150105140606.GA25309@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755833AbbAGHtN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 02:49:13 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:37024 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755165AbbAGHtM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 02:49:12 -0500
+X-Original-SENDERIP: 10.177.220.203
+X-Original-MAILFROM: namhyung@kernel.org
+Date: Wed, 7 Jan 2015 16:47:06 +0900
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 5/5] perf diff: Fix -o/--order option behavior
+Message-ID: <20150107074706.GF849@sejong>
+References: <1419656793-32756-1-git-send-email-namhyung@kernel.org>
+ <1419656793-32756-5-git-send-email-namhyung@kernel.org>
+ <20150104182656.GC29388@krava.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20150104182656.GC29388@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2015-01-05 at 09:06 -0500, Aristeu Rozanski wrote:
-> Hi,
-> On Fri, Dec 19, 2014 at 01:26:59PM +0800, Huang Ying wrote:
-> > In fact, I am not complaining :-), just FYI. As I said, this may be a
-> > expected behavior because this is a Haswell machine and the Haswell
-> > support was added in this patch.
-> > 
-> > > From the above, what looks weird, from EDAC driver PoV, is:
-> > > 	[   12.506298] EDAC sbridge: ECC is disabled. Aborting
-> > 
-> > This is what I want help from you to confirm whether it is abnormal.
-> > 
-> > > Does it used to work before? If so, was there any BIOS setting change?
-> > > Does the memories used on this machine have ECC?
-> > 
-> > This is a high-end desktop, there is something as below in dmidecode
-> > output.  Is there some other way to tell whether the memories have ECC?
-> > 
-> > Handle 0x0018, DMI type 16, 23 bytes
-> > Physical Memory Array
-> >         Location: System Board Or Motherboard
-> >         Use: System Memory
-> >         Error Correction Type: Multi-bit ECC
-> >         Maximum Capacity: 128 GB
-> >         Error Information Handle: Not Provided
-> >         Number Of Devices: 4
-> > 
-> > Handle 0x001A, DMI type 17, 34 bytes
-> > Memory Device
-> >         Array Handle: 0x0018
-> >         Error Information Handle: Not Provided
-> >         Total Width: 72 bits
-> >         Data Width: 72 bits
-> >         Size: 8192 MB
-> >         Form Factor: DIMM
-> >         Set: None
-> >         Locator: DIMM_A1
-> >         Bank Locator: CPU 0
-> >         Type: <OUT OF SPEC>
-> >         Type Detail: Synchronous
-> >         Speed: 1067 MHz
-> >         Manufacturer: 0x11
-> >         Serial Number: Unknown
-> >         Asset Tag: Unknown
-> >         Part Number: Unknown
-> >         Rank: 1
-> >         Configured Clock Speed: Unknown
+On Sun, Jan 04, 2015 at 07:26:56PM +0100, Jiri Olsa wrote:
+> On Sat, Dec 27, 2014 at 02:06:33PM +0900, Namhyung Kim wrote:
 > 
-> unfortunately with this I can't say :(
-> Do you mind checking on EFI or maybe looking at the memory modules' part
-> number?
+> SNIP
+> 
+> > +		return 0;
+> > +
+> > +	fmt = zalloc(sizeof(*fmt));
+> > +	if (fmt == NULL) {
+> > +		pr_err("Memory allocation failed\n");
+> > +		return -1;
+> > +	}
+> > +
+> > +	fmt->cmp      = hist_entry__cmp_nop;
+> > +	fmt->collapse = hist_entry__cmp_nop;
+> > +
+> > +	switch (compute) {
+> > +	case COMPUTE_DELTA:
+> > +		fmt->sort = hist_entry__cmp_delta_idx;
+> > +		break;
+> > +	case COMPUTE_RATIO:
+> > +		fmt->sort = hist_entry__cmp_ratio_idx;
+> > +		break;
+> > +	case COMPUTE_WEIGHTED_DIFF:
+> > +		fmt->sort = hist_entry__cmp_wdiff_idx;
+> > +		break;
+> > +	default:
+> > +		BUG_ON(1);
+> > +	}
+> > +
+> > +	list_add(&fmt->sort_list, &perf_hpp__sort_list);
+> > +	return 0;
+> 
+> so the first 'fmt' which gets to sorting is the one for
+> data__files[sort_idx] file, that sounds good..
+> 
+> but as the sorting goes through all the perf_hpp__sort_list list,
+> it will hit the 'sort_idx' data again.. should you disable sort
+> function for its 'fmt' then?
 
-Do not find memory modules' part number in EFI menu.  Some information
-about memory is:
+Do you really think it's needed?
 
-2133MT/s Micron DRx8 8GB UDIMM
+Yes, it'll be called twice but I think it's a relatively rare case as
+most entries will be sorted by the sort_idx and baseline columns.
 
-Best Regards,
-Huang, Ying
-
-
+Thanks,
+Namhyung
