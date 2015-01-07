@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539AbbAGQjr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 11:39:47 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:30268 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381AbbAGQjq (ORCPT
+	id S1754063AbbAGQkf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 11:40:35 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:41846 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753861AbbAGQke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 11:39:46 -0500
-Message-ID: <54AD6148.6030703@oracle.com>
-Date: Wed, 07 Jan 2015 11:39:36 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 7 Jan 2015 11:40:34 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t07GeVvC023975, This message is accepted by code: ctloc85258
+From: Chunhao Lin <hau@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        Chunhao Lin <hau@realtek.com>
+Subject: [PATCH net-next 00/11]r8169:update hardware parameter
+Date: Thu, 8 Jan 2015 00:40:15 +0800
+Message-ID: <1420648826-12972-1-git-send-email-hau@realtek.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-To: Ming Lei <ming.lei@canonical.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] firmware class: remove from pending list on load failure
-References: <1420472494-25836-1-git-send-email-sasha.levin@oracle.com> <CACVXFVPUF1x8YDwHtYzoC6LiPy22Lr2bZC-N73+NakFMBrEUFw@mail.gmail.com>
-In-Reply-To: <CACVXFVPUF1x8YDwHtYzoC6LiPy22Lr2bZC-N73+NakFMBrEUFw@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2015 11:52 PM, Ming Lei wrote:
-> On Mon, Jan 5, 2015 at 11:41 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
->> > If we failed loading the firmware we have to make sure it leaves the pending
->> > list if abort wasn't executed for it.
->> >
->> > Otherwise we'd free an object still on the pending list and corrupt it.
->> >
->> > Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
->> > ---
->> >  drivers/base/firmware_class.c | 11 ++++++++++-
->> >  1 file changed, 10 insertions(+), 1 deletion(-)
->> >
->> > diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
->> > index 58470c3..8ccf6cf4 100644
->> > --- a/drivers/base/firmware_class.c
->> > +++ b/drivers/base/firmware_class.c
->> > @@ -929,9 +929,18 @@ static int _request_firmware_load(struct firmware_priv *fw_priv,
->> >         cancel_delayed_work_sync(&fw_priv->timeout_work);
->> >         if (is_fw_load_aborted(buf))
->> >                 retval = -EAGAIN;
->> > -       else if (!buf->data)
->> > +       else if (!buf->data) {
->> >                 retval = -ENOMEM;
->> >
->> > +               /*
->> > +                * We failed loading, but abort was never done so we
->> > +                * need to remove it from the pending list ourselves.
->> > +                */
->> > +               mutex_lock(&fw_lock);
->> > +               list_del_init(&buf->pending_list);
->> > +               mutex_unlock(&fw_lock);
-> The buf is always removed before the complete_all(), isn't it? Or did
-> you observe the issue?
+These series of patch include the ephy update of following adapters.
+rtl8411
+rtl8168f
+rtl8168evl
+rtl8168dp
+rtl8105
+rtl8402
 
-Not in the case where userspacehelper fails. Yes, this is not a theoretical
-thing and can be easily reproduced.
+Jumbo frame patch update of following adapters.
+rtl8168dp
+rtl8168e
+rtl8168evl
 
+Also remove unnecessary function rtl_hw_start_8168dp. And add function
+rtl_hw_start_8168f_2 to set rtl8168f rev.b ephy paramerers.
 
-Thanks,
-Sasha
+Chunhao Lin (11):
+  r8169:change rtl8168dp jumbo frame patch
+  r8169:update rtl8168e and rtl8168evl jumbo frame patch
+  r8169:change the way of setting rtl8168dp ephy parameters.
+  r8169:update rtl8168dp pcie ephy parameter
+  r8169:remove function rtl_hw_start_8168dp
+  r8169:update rtl8168evl pcie ephy parameter
+  r8169:update rtl8168f pcie ephy parameter
+  r8169:update rtl8411 pcie ephy parameter
+  r8169:update rtl8105e pcie ephy parameter
+  r8169:update rtl8402 pcie ephy parameter
+  r8169:update rtl8168f rev.b pcie ephy parameter
+
+ drivers/net/ethernet/realtek/r8169.c | 112 +++++++++++++++--------------------
+ 1 file changed, 49 insertions(+), 63 deletions(-)
+
+-- 
+1.9.1
+
