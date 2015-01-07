@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439AbbAGXdR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 18:33:17 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:43093 "EHLO lists.s-osg.org"
+	id S1755582AbbAGXdn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 18:33:43 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:43097 "EHLO lists.s-osg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751945AbbAGXdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 18:33:15 -0500
-Message-ID: <54ADC239.90403@osg.samsung.com>
-Date: Wed, 07 Jan 2015 16:33:13 -0700
+	id S1752055AbbAGXdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 18:33:41 -0500
+Message-ID: <54ADC254.10401@osg.samsung.com>
+Date: Wed, 07 Jan 2015 16:33:40 -0700
 From: Shuah Khan <shuahkh@osg.samsung.com>
 Organization: Samsung Open Source Group
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
@@ -17,26 +17,26 @@ To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
 CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
         stable@vger.kernel.org
-Subject: Re: [PATCH 3.18 00/84] 3.18.2-stable review
-References: <20150107014029.012974975@linuxfoundation.org>
-In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
+Subject: Re: [PATCH 3.10 00/38] 3.10.64-stable review
+References: <20150107014952.440109372@linuxfoundation.org>
+In-Reply-To: <20150107014952.440109372@linuxfoundation.org>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2015 06:49 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.18.2 release.
-> There are 84 patches in this series, all will be posted as a response
+On 01/06/2015 06:50 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.64 release.
+> There are 38 patches in this series, all will be posted as a response
 > to this one.  If anyone has any issues with these being applied, please
 > let me know.
 > 
-> Responses should be made by Fri Jan  9 01:40:07 UTC 2015.
+> Responses should be made by Fri Jan  9 01:49:29 UTC 2015.
 > Anything received after that time might be too late.
 > 
 > The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.18.2-rc1.gz
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.64-rc1.gz
 > and the diffstat can be found below.
 > 
 > thanks,
@@ -46,9 +46,8 @@ On 01/06/2015 06:49 PM, Greg Kroah-Hartman wrote:
 
 Compiled and booted on my test system. No dmesg regressions.
 
+thanks,
 -- Shuah
-
-
 -- 
 Shuah Khan
 Sr. Linux Kernel Developer
