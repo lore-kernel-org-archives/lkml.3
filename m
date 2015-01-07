@@ -1,243 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017AbbAGQZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 11:25:58 -0500
-Received: from mail-oi0-f50.google.com ([209.85.218.50]:41706 "EHLO
-	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753961AbbAGQZz (ORCPT
+	id S1753374AbbAGQaW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 11:30:22 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45613 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752474AbbAGQaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 11:25:55 -0500
+	Wed, 7 Jan 2015 11:30:20 -0500
+Message-ID: <54AD5F13.1020107@pengutronix.de>
+Date: Wed, 07 Jan 2015 17:30:11 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20150107080159.GF5256@dtor-ws>
-References: <1420599537-28740-1-git-send-email-walter@vanguardiasur.com.ar>
-	<20150107080159.GF5256@dtor-ws>
-Date: Wed, 7 Jan 2015 13:25:54 -0300
-Message-ID: <CABxpGwAKZp728gL5DFkuBA4nU_5fGRvxu_-vROpw5BfVuxjoDA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Input: adxl34x - add OF support
-From: Walter Lozano <walter@vanguardiasur.com.ar>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: michael.hennerich@analog.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: Kedareswara rao Appana <appana.durga.rao@xilinx.com>, wg@grandegger.com,
+        michal.simek@xilinx.com, grant.likely@linaro.org,
+        linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Kedareswara rao Appana <appanad@xilinx.com>
+Subject: Re: [PATCH v4] can: Convert to runtime_pm
+References: <58f37b6fd9104ce185c413c473fe047b@BY2FFO11FD050.protection.gbl> <54AD267C.4060004@pengutronix.de> <a868331b44ce4b2a80b572399530f1f9@BN1BFFO11FD043.protection.gbl>
+In-Reply-To: <a868331b44ce4b2a80b572399530f1f9@BN1BFFO11FD043.protection.gbl>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="OWo51QjMmBw5UudRFBwODqMbhe8teBlxh"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dimitry,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--OWo51QjMmBw5UudRFBwODqMbhe8teBlxh
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-First of all, thanks for your feedback
-
-On Wed, Jan 7, 2015 at 5:01 AM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> Hi Walter,
->
-> On Tue, Jan 06, 2015 at 11:58:56PM -0300, Walter Lozano wrote:
->> This patch adds the missing support for OF to the adxl34x digital
->> accelerometer. This is a basic version which supports the main
->> optional parameters. This implementation copies the default values
->> to the adxl34x_platform_data structure and overrides the values
->> that are passed from the device tree.
+On 01/07/2015 04:58 PM, S=C3=B6ren Brinkmann wrote:
+>> I think you have to convert the _remove() function, too. Have a look a=
+t
+>> the gpio-zynq.c driver:
 >>
->> Signed-off-by: Walter Lozano <walter@vanguardiasur.com.ar>
->> ---
->>  drivers/input/misc/adxl34x.c |  108 +++++++++++++++++++++++++++++++++++++++++-
->>  1 file changed, 107 insertions(+), 1 deletion(-)
+>>> static int zynq_gpio_remove(struct platform_device *pdev)
+>>> {
+>>> 	struct zynq_gpio *gpio =3D platform_get_drvdata(pdev);
+>>>
+>>> 	pm_runtime_get_sync(&pdev->dev);
 >>
->> diff --git a/drivers/input/misc/adxl34x.c b/drivers/input/misc/adxl34x.c
->> index 2b2d02f..b3e06a3 100644
->> --- a/drivers/input/misc/adxl34x.c
->> +++ b/drivers/input/misc/adxl34x.c
->> @@ -16,6 +16,8 @@
->>  #include <linux/workqueue.h>
->>  #include <linux/input/adxl34x.h>
->>  #include <linux/module.h>
->> +#include <linux/of.h>
->> +#include <linux/of_device.h>
->>
->>  #include "adxl34x.h"
->>
->> @@ -688,13 +690,113 @@ static void adxl34x_input_close(struct input_dev *input)
->>       mutex_unlock(&ac->mutex);
->>  }
->>
->> +void adxl34x_parse_dt(struct device *dev, struct adxl34x_platform_data *pdata){
->> +     if (!dev->of_node)
->> +             return;
->> +
->> +     pdata =  kzalloc(sizeof(*pdata), GFP_KERNEL);
->> +
->> +     memcpy(pdata, &adxl34x_default_init, sizeof(struct adxl34x_platform_data));
->> +
->> +     of_property_read_u8(dev->of_node, "adi,tap-axis-control",
->> +              &pdata->tap_axis_control);
->> +
->> +     of_property_read_u8(dev->of_node, "adi,tap-threshold",
->> +              &pdata->tap_threshold);
->> +
->> +     of_property_read_u8(dev->of_node, "adi,tap-duration",
->> +              &pdata->tap_duration);
->> +
->> +     of_property_read_u8(dev->of_node, "adi,tap-latency",
->> +              &pdata->tap_latency);
->> +
->> +     of_property_read_u8(dev->of_node, "adi,tap-window",
->> +              &pdata->tap_window);
->> +
->> +     of_property_read_u8(dev->of_node, "adi,act-axis-control",
->> +              &pdata->act_axis_control);
->> +
->> +     of_property_read_u8(dev->of_node, "adi,activity-threshold",
->> +              &pdata->activity_threshold);
->> +
->> +     of_property_read_u8(dev->of_node, "adi,inactivity-threshold",
->> +              &pdata->inactivity_threshold);
->> +
->> +     of_property_read_u8(dev->of_node, "adi,inactivity-time",
->> +              &pdata->inactivity_time);
->> +
->> +     of_property_read_u8(dev->of_node, "adi,free-fall-threshold",
->> +              &pdata->free_fall_threshold);
->> +
->> +     of_property_read_u8(dev->of_node, "adi,free-fall-time",
->> +              &pdata->free_fall_time);
->> +
->> +     of_property_read_u8(dev->of_node, "adi,data-rate",
->> +              &pdata->data_rate);
->> +
->> +     of_property_read_u8(dev->of_node, "adi,data-range",
->> +              &pdata->data_range);
->> +
->> +     of_property_read_u8(dev->of_node, "adi,low-power-mode",
->> +              &pdata->low_power_mode);
->> +
->> +     of_property_read_u8(dev->of_node, "adi,power-mode",
->> +              &pdata->power_mode);
->> +
->> +     of_property_read_u8(dev->of_node, "adi,fifo-mode",
->> +              &pdata->fifo_mode);
->> +
->> +     of_property_read_u8(dev->of_node, "adi,watermark",
->> +              &pdata->watermark);
->> +
->> +     of_property_read_u8(dev->of_node, "adi,use-int2",
->> +              &pdata->use_int2);
->> +
->> +     of_property_read_u8(dev->of_node, "adi,orientation-enable",
->> +              &pdata->orientation_enable);
->> +
->> +     of_property_read_u8(dev->of_node, "adi,deadzone-angle",
->> +              &pdata->deadzone_angle);
->> +
->> +     of_property_read_u8(dev->of_node, "adi,divisor-length",
->> +              &pdata->divisor_length);
->> +
->> +     of_property_read_u32(dev->of_node, "adi,ev-type",
->> +              &pdata->ev_type);
->
-> All these ev* properties are Linux-specific so should have linux prefix
-> and not adi.
+>> However I don't understand why the get_sync() is here. Maybe S=C3=B6re=
+n can help?
+>=20
+> IIRC, the concern was that the remove function may be called while the =
+device is
+> runtime suspended. Hence the remove function needs to resume the device=
+ since the
+> remove function may access the HW.
 
-Yes, I have many doubts about these parameters. First I'm not sure if anybody
-will need to change them as the accelerometer reports absolute values.
-I was thinking
-about omitting them but I would like someone else opinion.
+What about the corresponding runtime_put()? Would some counter be
+unbalanced upon device removal?
 
-The default values for these parameters are
+Without having tested it, unloading and loading, i.e. reloading a CAN
+driver is easier than reloading the gpio driver on an average embedded
+system. Kedareswara please test your driver with something like:
+modprobe; ifconfig up; cansend; ifconfig down; rmmod in a loop.
 
-    .ev_type = EV_ABS,
-    .ev_code_x = ABS_X, /* EV_REL */
-    .ev_code_y = ABS_Y, /* EV_REL */
-    .ev_code_z = ABS_Z, /* EV_REL */
+Marc
 
-    .ev_code_tap = {BTN_TOUCH, BTN_TOUCH, BTN_TOUCH}, /* EV_KEY {x,y,z} */
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
-In case if it is worthy should I add nodes for each different event?
 
-For example
+--OWo51QjMmBw5UudRFBwODqMbhe8teBlxh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-       axisx{
-            label = "Axis X";
-            linux,code = <0>;
-        }
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
->> +
->> +     of_property_read_u32(dev->of_node, "adi,ev-code-x",
->> +              &pdata->ev_code_x);
->> +
->> +     of_property_read_u32(dev->of_node, "adi,ev-code-y",
->> +              &pdata->ev_code_y);
->> +
->> +     of_property_read_u32(dev->of_node, "adi,ev-code-z",
->> +              &pdata->ev_code_z);
->> +
->> +     of_property_read_u32_array(dev->of_node, "adi,ev-code-tap",
->> +              pdata->ev_code_tap, 3);
->> +
->> +     of_property_read_u32(dev->of_node, "adi,ev-code-ff",
->> +              &pdata->ev_code_ff);
->> +
->> +     of_property_read_u32(dev->of_node, "adi,ev-code-act-inactivity",
->> +              &pdata->ev_code_act_inactivity);
->> +
->> +     of_property_read_u32_array(dev->of_node, "adi,ev-codes-orient-2d",
->> +              pdata->ev_codes_orient_2d, 4);
->> +
->> +     of_property_read_u32_array(dev->of_node, "adi,ev-codes-orient-3d",
->> +              pdata->ev_codes_orient_3d, 6);
->> +
->> +}
->> +
->>  struct adxl34x *adxl34x_probe(struct device *dev, int irq,
->>                             bool fifo_delay_default,
->>                             const struct adxl34x_bus_ops *bops)
->>  {
->>       struct adxl34x *ac;
->>       struct input_dev *input_dev;
->> -     const struct adxl34x_platform_data *pdata;
->> +     struct adxl34x_platform_data *pdata;
->>       int err, range, i;
->>       unsigned char revid;
->>
->> @@ -714,6 +816,10 @@ struct adxl34x *adxl34x_probe(struct device *dev, int irq,
->>       ac->fifo_delay = fifo_delay_default;
->>
->>       pdata = dev_get_platdata(dev);
->> +
->> +     if (!pdata && dev->of_node)
->> +             adxl34x_parse_dt(dev, pdata);
->> +
->>       if (!pdata) {
->
-> Umm, what's changing data pointer? Was this tested?
->
+iQIcBAEBAgAGBQJUrV8TAAoJECte4hHFiupU39sP/j+wOgZt9YoAOJMnKfVoXBhe
+8hgX2SAJuK1nrUzhDa1ZjH/R+LuSwh7j9eggz/IQVhCHfCa2PbIx+79AzLUOp65J
+XsLFWJoy6mes1t4rEyXFWbttLZ/MZNpfVglOLaCYaAErzG6yyWvSxECNDuPItR3k
+Ta4L2wkbMD54iDAh+JBRxNopXYnuFtAhvOpATmGAim0clFvhDu1Wr64MTOifNdze
+CyOG8KkJdRJR2OCB5fM5P0D4KNJhFWlIOP5yDa4oBz+6awDwpsnD/F7kZlJDiLzr
+x7Cgbmp1eWG+svDK60oETJOwMJb8dWXvUJedQXuymF5OCJHhJTUCr9AY3onWndlY
+/XYiJ4vFPbLyB8EprjRMflEbTOeLtHP/RmHw3h8Qa1K4UsmntXbZ8rl3KeJWdage
+mneb9dDesAiY6tVa2SnUolitajxklqMN09aK6YTwR1LQXGH76AICeE6a/tNyydc8
+ZN+NggmrwFMZPgWJuix5dZlrXgZ/wsnHZlFBDEz8NwKm+cVPh+DQVNkba93KbQoL
+/5GWT+ktICkrOEf4XUVYaMdGCIX1lNku56nTq5GRDZ1zB0n7WSTTxZFN4K8Zx9x6
+Oqk9oNtW9KG9+XLNXAA5fFmopNWnpFmcX/uXkWRnQokQai3EIYTToSetbQ3Znn+4
+HQMXe6VRBft5aHC8KQy8
+=yKPv
+-----END PGP SIGNATURE-----
 
-You are right. I've tested a previous version, but then I make some changes as
-I have some doubts about how is the better way to handle the compatibility
-with board files.
-
-My initial intention was to keep the original code as much as I can, so in case
-of using board files the pdata is set to adxl34x_default_init, but if
-DT is used,
-memory is allocated and the default parameters are copied. Then in the remove,
-only if DT is used free the memory (not included in this patch).
-
-So as I wasn't quite sure if this was the best approach I send this patch to get
-some comments. Probably I should send a RFC...
-
->>               dev_dbg(dev,
->>                       "No platform data: Using default initialization\n");
->> --
->> 1.7.10.4
->>
-
-Thanks again for your time and comments.
-
-Regards,
-
-Walter
-
--- 
-Walter Lozano, VanguardiaSur
-www.vanguardiasur.com.ar
+--OWo51QjMmBw5UudRFBwODqMbhe8teBlxh--
