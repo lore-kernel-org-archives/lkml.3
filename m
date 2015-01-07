@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254AbbAGOBc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 09:01:32 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:58008 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752024AbbAGOBb convert rfc822-to-8bit (ORCPT
+	id S1753343AbbAGOCB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 09:02:01 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:36467 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753056AbbAGOB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 09:01:31 -0500
-Content-Type: text/plain; charset=utf-8
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH] bcma: fix three coding style issues, more than 80 characters per line
-From: =?utf-8?Q?=C3=92scar_Forner_Mart=C3=ADnez?= 
-	<oscar.forner.martinez@gmail.com>
-In-Reply-To: <87a91uu20u.fsf@kamboji.qca.qualcomm.com>
-Date: Wed, 7 Jan 2015 14:01:26 +0000
-Cc: =?utf-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <5A7028D9-7822-4E60-BE8D-E7D91A9D9222@gmail.com>
-References: <1419708268-14114-1-git-send-email-oscar.forner.martinez@gmail.com> <CACna6rz4ue2PFQR-=nKxmCJSw9O8pKU=S7LqxA68OY1D0obvKg@mail.gmail.com> <8761cv6i42.fsf@kamboji.qca.qualcomm.com> <B4179D1B-BF97-469D-9BBE-ED8059E1D3A9@gmail.com> <87a91uu20u.fsf@kamboji.qca.qualcomm.com>
-To: Kalle Valo <kvalo@codeaurora.org>
-X-Mailer: Apple Mail (2.1878.6)
+	Wed, 7 Jan 2015 09:01:59 -0500
+X-AuditID: cbfee68f-f791c6d000004834-35-54ad3c553195
+From: Jaewon Kim <jaewon02.kim@samsung.com>
+To: Kukjin Kim <kgene@kernel.org>
+Cc: linux-samsung-soc@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>,
+        linux-kernel@vger.kernel.org, Jaewon Kim <jaewon02.kim@samsung.com>
+Subject: [PATCH RESEND 0/2] Add regulator-haptic device tree
+Date: Wed, 07 Jan 2015 23:01:51 +0900
+Message-id: <1420639313-897-1-git-send-email-jaewon02.kim@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLLMWRmVeSWpSXmKPExsWyRsSkRDfUZm2IwZPlAhbXvzxntdjRcITV
+	ov/xa2aLy7vmsFnMOL+PyYHVY9OqTjaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgymg7coux
+	oIelYsLTtywNjCuYuxg5OSQETCQePN3CDmGLSVy4t54NxBYSWMoosWR+NEzNrcVPoOLTGSVe
+	d4t1MXIB2W1MErMPzwMbxCagLfF9/WLWLkYODhEBRYnNCxRAapgFJjFK3Li3ghWkRljARqLp
+	/yewQSwCqhJ/b+wGi/MKuElMWwaygANomYLEnEk2IL0SAo/ZJI7uXssIUS8g8W3yIRaIGlmJ
+	TQeg7peUOLjiBssERsEFjAyrGEVTC5ILipPSi4z1ihNzi0vz0vWS83M3MQJD8fS/Z/07GO8e
+	sD7EKMDBqMTDW9C3JkSINbGsuDL3EKMp0IaJzFKiyfnAgM8riTc0NjOyMDUxNTYytzRTEudd
+	KPUzWEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAOj/c7+T2lrE1qaGptNWfdazznzmusar32l
+	mFfUjt6ZEwSZXsVWBRdPXXf/nL7rzPVXPT2VhDmYOiakhn4/J+91JzfC9Kv3l/CA3eJF2XeY
+	42erFUa8k7+c37b1yvHJhS+MhSe86b70bufZcPHn+z80LPM8/9dFrUOO5wZvrP0btV/nrVz1
+	AyuVWIozEg21mIuKEwErWVnYQAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsVy+t9jQd1Qm7UhBtffc1pc//Kc1WJHwxFW
+	i/7Hr5ktLu+aw2Yx4/w+JgdWj02rOtk8+rasYvT4vEkugDmqgdEmIzUxJbVIITUvOT8lMy/d
+	Vsk7ON453tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB2inkkJZYk4pUCggsbhYSd8O04TQEDdd
+	C5jGCF3fkCC4HiMDNJCwhjGj7cgtxoIelooJT9+yNDCuYO5i5OSQEDCRuLX4CRuELSZx4d56
+	MFtIYDqjxOtusS5GLiC7jUli9uF5YA1sAtoS39cvZu1i5OAQEVCU2LxAAaSGWWASo8SNeytY
+	QWqEBWwkmv5/AhvEIqAq8ffGbrA4r4CbxLRlIMs4gJYpSMyZZDOBkXsBI8MqRtHUguSC4qT0
+	XCO94sTc4tK8dL3k/NxNjOBQfya9g3FVg8UhRgEORiUe3oK+NSFCrIllxZW5hxglOJiVRHjf
+	/AIK8aYkVlalFuXHF5XmpBYfYjQFWj6RWUo0OR8Yh3kl8YbGJmZGlkbmhhZGxuZK4rxK9m0h
+	QgLpiSWp2ampBalFMH1MHJxSDYwaG7xSHsxv3W9jzZDBvLc60MU4TXBikUTr30XFe9Z8EWLo
+	Zvp187eheuO5aDY/pXM8KxMvCBnM/Lx+ktTvS2ujv0T/ytuw79Kh5S5WRceOTK3VmXTw/fZa
+	YHLwf/Xqur059+t86c4NnVESrzVqWu/N/F4+r1RNx+iqDGdI7ZxFB522aoWpiyuxFGckGmox
+	FxUnAgAw9XTTiwIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I know my patch is not urgent at all. My e-mail was just to remind that stills there. I do not know how much time I have to wait until I should remind a patch.
+This patch series adds regulator-haptic device tree in rinato and monk boards.
 
-On 7 Jan 2015, at 13:57, Kalle Valo <kvalo@codeaurora.org> wrote:
+The regulator-haptic has haptic motor and it is controlled by
+voltage of regulator via force feedback framework.
 
-> Òscar Forner Martínez <oscar.forner.martinez@gmail.com> writes:
-> 
->> That e-mail is just to remind that this patch stills waiting.
-> 
-> Just like the other 150 patches as of yesterday. All I can say please wait
-> patiently and follow the status in patchwork. Your patch isn't urgent in
-> any way.
-> 
->> On 29 Dec 2014, at 07:16, Kalle Valo <kvalo@codeaurora.org> wrote:
->>> Rafał Miłecki <zajec5@gmail.com> writes:
->>> 
->>>> Acked-by: Rafał Miłecki <zajec5@gmail.com>
->>>> 
->>>> Kalle: will you pick this patch?
->>> 
->>> Most likely yes, but let's wait first for John's opinion about how to
->>> handle bcma patches.
-> 
-> I talked with John about this and I'll start taking bcma patches from
-> now on.
-> 
-> -- 
-> Kalle Valo
+Jaewon Kim (2):
+  ARM: dts: exynos3250-rinato: Add regulator-haptic node for haptics
+  ARM: dts: exynos3250-monk: Add regulator-haptic node for haptics
+
+ arch/arm/boot/dts/exynos3250-monk.dts   |    7 +++++++
+ arch/arm/boot/dts/exynos3250-rinato.dts |    7 +++++++
+ 2 files changed, 14 insertions(+)
+
+-- 
+1.7.9.5
 
