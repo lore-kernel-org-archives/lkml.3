@@ -1,563 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521AbbAGNBd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 08:01:33 -0500
-Received: from smarthost01c.mail.zen.net.uk ([212.23.1.5]:45964 "EHLO
-	smarthost01c.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751523AbbAGNBb (ORCPT
+	id S1752826AbbAGNEp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 08:04:45 -0500
+Received: from forward5l.mail.yandex.net ([84.201.143.138]:54452 "EHLO
+	forward5l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752705AbbAGNEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 08:01:31 -0500
-Message-ID: <1420635683.4044.31.camel@linaro.org>
-Subject: Re: [PATCH v19 08/11] ARM: kprobes: enable OPTPROBES for ARM 32
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Wang Nan <wangnan0@huawei.com>
-Cc: masami.hiramatsu.pt@hitachi.com, linux@arm.linux.org.uk,
-        lizefan@huawei.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Wed, 07 Jan 2015 13:01:23 +0000
-In-Reply-To: <1420457376-77366-1-git-send-email-wangnan0@huawei.com>
-References: <1420457284-76923-1-git-send-email-wangnan0@huawei.com>
-	 <1420457376-77366-1-git-send-email-wangnan0@huawei.com>
+	Wed, 7 Jan 2015 08:04:44 -0500
+Authentication-Results: smtp2o.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Message-ID: <1420635879.14676.12.camel@yandex.ru>
+Subject: Re: Another SCHED_DEADLINE bug (with bisection and possible fix)
+From: Kirill Tkhai <tkhai@yandex.ru>
+Reply-To: tkhai@yandex.ru
+To: Luca Abeni <luca.abeni@unitn.it>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 07 Jan 2015 16:04:39 +0300
+In-Reply-To: <54AD2A56.70307@unitn.it>
+References: <20141230002738.6c12db31@utopia>
+		 <2629881420411885@web9m.yandex.ru> <54AAABFB.3060109@unitn.it>
+		 <1420499241.3361.14.camel@yandex.ru> <20150107080155.1d42d123@luca-1225C>
+	 <1420633741.12772.10.camel@yandex.ru> <54AD2A56.70307@unitn.it>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.12.9-1 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01c-IP: [82.69.122.217]
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2015-01-05 at 19:29 +0800, Wang Nan wrote:
-> This patch introduce kprobeopt for ARM 32.
+On Ср, 2015-01-07 at 13:45 +0100, Luca Abeni wrote:
+> On 01/07/2015 01:29 PM, Kirill Tkhai wrote:
+> [...]
+> >>>> Based on your comments, I suspect my patch can be further
+> >>>> simplified by moving the call to init_dl_task_timer() in
+> >>>> __sched_fork().
+> >>>
+> >>> It seems this way has problems. The first one is that task may become
+> >>> throttled again, and we will start dl_timer again.
+> >> Well, in my understanding if I change the parameters of a
+> >> SCHED_DEADLINE task when it is throttled, it stays throttled... So, the
+> >> task might not become throttled again before the dl timer fires.
+> >> So, I hoped this problem does not exist. But I might be wrong.
+> >
+> > You keep zeroing of dl_se->dl_throttled
+> Right... Now that you point this out, I realize that dl_se->dl_throttled = 0
+> should be inside the if().
 > 
-> Limitations:
->  - Currently only kernel compiled with ARM ISA is supported.
-> 
->  - Offset between probe point and optinsn slot must not larger than
->    32MiB. Masami Hiramatsu suggests replacing 2 words, it will make
->    things complex. Futher patch can make such optimization.
-> 
-> Kprobe opt on ARM is relatively simpler than kprobe opt on x86 because
-> ARM instruction is always 4 bytes aligned and 4 bytes long. This patch
-> replace probed instruction by a 'b', branch to trampoline code and then
-> calls optimized_callback(). optimized_callback() calls opt_pre_handler()
-> to execute kprobe handler. It also emulate/simulate replaced instruction.
-> 
-> When unregistering kprobe, the deferred manner of unoptimizer may leave
-> branch instruction before optimizer is called. Different from x86_64,
-> which only copy the probed insn after optprobe_template_end and
-> reexecute them, this patch call singlestep to emulate/simulate the insn
-> directly. Futher patch can optimize this behavior.
-> 
-> Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
+> > and further enqueue_task() places it on the dl_rq.
+> I was under the impression that no further enqueue_task() will happen (since
+> the task is throttled, it is not on runqueue, so __sched_setscheduler() will
+> not dequeue/enqueue it).
+> But I am probably missing something else :)
 
-Reviewed-by: Jon Medhurst (<tixy@linaro.org>
+We have two concept of "on runqueue". The first one is rq->on_rq. It means
+that a task is "queued". The second is on_dl_rq(dl_se).
 
+When task is not "queued", it's always not on dl_rq.
 
-> Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-> Cc: Will Deacon <will.deacon@arm.com>
-> ---
->  arch/arm/Kconfig                        |   1 +
->  arch/arm/{kernel => include/asm}/insn.h |   0
->  arch/arm/include/asm/kprobes.h          |  29 +++
->  arch/arm/kernel/Makefile                |   2 +-
->  arch/arm/kernel/ftrace.c                |   3 +-
->  arch/arm/kernel/jump_label.c            |   3 +-
->  arch/arm/probes/kprobes/Makefile        |   1 +
->  arch/arm/probes/kprobes/core.c          |  26 ++-
->  arch/arm/probes/kprobes/core.h          |   2 +
->  arch/arm/probes/kprobes/opt-arm.c       | 317 ++++++++++++++++++++++++++++++++
->  10 files changed, 372 insertions(+), 12 deletions(-)
->  rename arch/arm/{kernel => include/asm}/insn.h (100%)
->  create mode 100644 arch/arm/probes/kprobes/opt-arm.c
+When task is "queued" it may be in two states:
+1)on_dl_rq() -- this means the task is not throttled;
+2)!on_dl_rq() -- is task as throttled.
+
+So when we are discussing about a throttled task, the task is "queued". If
+you clear dl_throttled, __sched_setscheduler() places it back it the both
+meaning: on_rq and on_dl_rq, and the task becomes available for picking
+in __schedule().
+
 > 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 97d07ed..3d5dc2d 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -60,6 +60,7 @@ config ARM
->  	select HAVE_MEMBLOCK
->  	select HAVE_MOD_ARCH_SPECIFIC if ARM_UNWIND
->  	select HAVE_OPROFILE if (HAVE_PERF_EVENTS)
-> +	select HAVE_OPTPROBES if !THUMB2_KERNEL
->  	select HAVE_PERF_EVENTS
->  	select HAVE_PERF_REGS
->  	select HAVE_PERF_USER_STACK_DUMP
-> diff --git a/arch/arm/kernel/insn.h b/arch/arm/include/asm/insn.h
-> similarity index 100%
-> rename from arch/arm/kernel/insn.h
-> rename to arch/arm/include/asm/insn.h
-> diff --git a/arch/arm/include/asm/kprobes.h b/arch/arm/include/asm/kprobes.h
-> index 56f9ac6..50ff3bc 100644
-> --- a/arch/arm/include/asm/kprobes.h
-> +++ b/arch/arm/include/asm/kprobes.h
-> @@ -50,5 +50,34 @@ int kprobe_fault_handler(struct pt_regs *regs, unsigned int fsr);
->  int kprobe_exceptions_notify(struct notifier_block *self,
->  			     unsigned long val, void *data);
->  
-> +/* optinsn template addresses */
-> +extern __visible kprobe_opcode_t optprobe_template_entry;
-> +extern __visible kprobe_opcode_t optprobe_template_val;
-> +extern __visible kprobe_opcode_t optprobe_template_call;
-> +extern __visible kprobe_opcode_t optprobe_template_end;
-> +extern __visible kprobe_opcode_t optprobe_template_sub_sp;
-> +extern __visible kprobe_opcode_t optprobe_template_add_sp;
-> +
-> +#define MAX_OPTIMIZED_LENGTH	4
-> +#define MAX_OPTINSN_SIZE				\
-> +	((unsigned long)&optprobe_template_end -	\
-> +	 (unsigned long)&optprobe_template_entry)
-> +#define RELATIVEJUMP_SIZE	4
-> +
-> +struct arch_optimized_insn {
-> +	/*
-> +	 * copy of the original instructions.
-> +	 * Different from x86, ARM kprobe_opcode_t is u32.
-> +	 */
-> +#define MAX_COPIED_INSN	DIV_ROUND_UP(RELATIVEJUMP_SIZE, sizeof(kprobe_opcode_t))
-> +	kprobe_opcode_t copied_insn[MAX_COPIED_INSN];
-> +	/* detour code buffer */
-> +	kprobe_opcode_t *insn;
-> +	/*
-> +	 * We always copy one instruction on ARM,
-> +	 * so size will always be 4, and unlike x86, there is no
-> +	 * need for a size field.
-> +	 */
-> +};
->  
->  #endif /* _ARM_KPROBES_H */
-> diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-> index 9c51a43..902397d 100644
-> --- a/arch/arm/kernel/Makefile
-> +++ b/arch/arm/kernel/Makefile
-> @@ -52,7 +52,7 @@ obj-$(CONFIG_FUNCTION_GRAPH_TRACER)	+= ftrace.o insn.o
->  obj-$(CONFIG_JUMP_LABEL)	+= jump_label.o insn.o patch.o
->  obj-$(CONFIG_KEXEC)		+= machine_kexec.o relocate_kernel.o
->  # Main staffs in KPROBES are in arch/arm/probes/ .
-> -obj-$(CONFIG_KPROBES)		+= patch.o
-> +obj-$(CONFIG_KPROBES)		+= patch.o insn.o
->  obj-$(CONFIG_OABI_COMPAT)	+= sys_oabi-compat.o
->  obj-$(CONFIG_ARM_THUMBEE)	+= thumbee.o
->  obj-$(CONFIG_KGDB)		+= kgdb.o patch.o
-> diff --git a/arch/arm/kernel/ftrace.c b/arch/arm/kernel/ftrace.c
-> index b8c75e4..709ee1d 100644
-> --- a/arch/arm/kernel/ftrace.c
-> +++ b/arch/arm/kernel/ftrace.c
-> @@ -20,8 +20,7 @@
->  #include <asm/cacheflush.h>
->  #include <asm/opcodes.h>
->  #include <asm/ftrace.h>
-> -
-> -#include "insn.h"
-> +#include <asm/insn.h>
->  
->  #ifdef CONFIG_THUMB2_KERNEL
->  #define	NOP		0xf85deb04	/* pop.w {lr} */
-> diff --git a/arch/arm/kernel/jump_label.c b/arch/arm/kernel/jump_label.c
-> index d8da075..e39cbf4 100644
-> --- a/arch/arm/kernel/jump_label.c
-> +++ b/arch/arm/kernel/jump_label.c
-> @@ -1,8 +1,7 @@
->  #include <linux/kernel.h>
->  #include <linux/jump_label.h>
->  #include <asm/patch.h>
-> -
-> -#include "insn.h"
-> +#include <asm/insn.h>
->  
->  #ifdef HAVE_JUMP_LABEL
->  
-> diff --git a/arch/arm/probes/kprobes/Makefile b/arch/arm/probes/kprobes/Makefile
-> index bc8d504..76a36bf 100644
-> --- a/arch/arm/probes/kprobes/Makefile
-> +++ b/arch/arm/probes/kprobes/Makefile
-> @@ -7,5 +7,6 @@ obj-$(CONFIG_KPROBES)		+= actions-thumb.o checkers-thumb.o
->  test-kprobes-objs		+= test-thumb.o
->  else
->  obj-$(CONFIG_KPROBES)		+= actions-arm.o checkers-arm.o
-> +obj-$(CONFIG_OPTPROBES)		+= opt-arm.o
->  test-kprobes-objs		+= test-arm.o
->  endif
-> diff --git a/arch/arm/probes/kprobes/core.c b/arch/arm/probes/kprobes/core.c
-> index 3a58db4..a4ec240 100644
-> --- a/arch/arm/probes/kprobes/core.c
-> +++ b/arch/arm/probes/kprobes/core.c
-> @@ -163,19 +163,31 @@ void __kprobes arch_arm_kprobe(struct kprobe *p)
->   * memory. It is also needed to atomically set the two half-words of a 32-bit
->   * Thumb breakpoint.
->   */
-> -int __kprobes __arch_disarm_kprobe(void *p)
-> -{
-> -	struct kprobe *kp = p;
-> -	void *addr = (void *)((uintptr_t)kp->addr & ~1);
-> -
-> -	__patch_text(addr, kp->opcode);
-> +struct patch {
-> +	void *addr;
-> +	unsigned int insn;
-> +};
->  
-> +static int __kprobes_remove_breakpoint(void *data)
-> +{
-> +	struct patch *p = data;
-> +	__patch_text(p->addr, p->insn);
->  	return 0;
->  }
->  
-> +void __kprobes kprobes_remove_breakpoint(void *addr, unsigned int insn)
-> +{
-> +	struct patch p = {
-> +		.addr = addr,
-> +		.insn = insn,
-> +	};
-> +	stop_machine(__kprobes_remove_breakpoint, &p, cpu_online_mask);
-> +}
-> +
->  void __kprobes arch_disarm_kprobe(struct kprobe *p)
->  {
-> -	stop_machine(__arch_disarm_kprobe, p, cpu_online_mask);
-> +	kprobes_remove_breakpoint((void *)((uintptr_t)p->addr & ~1),
-> +			p->opcode);
->  }
->  
->  void __kprobes arch_remove_kprobe(struct kprobe *p)
-> diff --git a/arch/arm/probes/kprobes/core.h b/arch/arm/probes/kprobes/core.h
-> index f88c79f..b3036c5 100644
-> --- a/arch/arm/probes/kprobes/core.h
-> +++ b/arch/arm/probes/kprobes/core.h
-> @@ -30,6 +30,8 @@
->  #define KPROBE_THUMB16_BREAKPOINT_INSTRUCTION	0xde18
->  #define KPROBE_THUMB32_BREAKPOINT_INSTRUCTION	0xf7f0a018
->  
-> +extern void kprobes_remove_breakpoint(void *addr, unsigned int insn);
-> +
->  enum probes_insn __kprobes
->  kprobe_decode_ldmstm(kprobe_opcode_t insn, struct arch_probes_insn *asi,
->  		const struct decode_header *h);
-> diff --git a/arch/arm/probes/kprobes/opt-arm.c b/arch/arm/probes/kprobes/opt-arm.c
-> new file mode 100644
-> index 0000000..6a60df3
-> --- /dev/null
-> +++ b/arch/arm/probes/kprobes/opt-arm.c
-> @@ -0,0 +1,317 @@
-> +/*
-> + *  Kernel Probes Jump Optimization (Optprobes)
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-> + *
-> + * Copyright (C) IBM Corporation, 2002, 2004
-> + * Copyright (C) Hitachi Ltd., 2012
-> + * Copyright (C) Huawei Inc., 2014
-> + */
-> +
-> +#include <linux/kprobes.h>
-> +#include <linux/jump_label.h>
-> +#include <asm/kprobes.h>
-> +#include <asm/cacheflush.h>
-> +/* for arm_gen_branch */
-> +#include <asm/insn.h>
-> +/* for patch_text */
-> +#include <asm/patch.h>
-> +
-> +#include "core.h"
-> +
-> +/*
-> + * NOTE: the first sub and add instruction will be modified according
-> + * to the stack cost of the instruction.
-> + */
-> +asm (
-> +			".global optprobe_template_entry\n"
-> +			"optprobe_template_entry:\n"
-> +			".global optprobe_template_sub_sp\n"
-> +			"optprobe_template_sub_sp:"
-> +			"	sub	sp, sp, #0xff\n"
-> +			"	stmia	sp, {r0 - r14} \n"
-> +			".global optprobe_template_add_sp\n"
-> +			"optprobe_template_add_sp:"
-> +			"	add	r3, sp, #0xff\n"
-> +			"	str	r3, [sp, #52]\n"
-> +			"	mrs	r4, cpsr\n"
-> +			"	str	r4, [sp, #64]\n"
-> +			"	mov	r1, sp\n"
-> +			"	ldr	r0, 1f\n"
-> +			"	ldr	r2, 2f\n"
-> +			/*
-> +			 * AEABI requires an 8-bytes alignment stack. If
-> +			 * SP % 8 != 0 (SP % 4 == 0 should be ensured),
-> +			 * alloc more bytes here.
-> +			 */
-> +			"	and	r4, sp, #4\n"
-> +			"	sub	sp, sp, r4\n"
-> +			"	blx	r2\n"
-> +			"	add	sp, sp, r4\n"
-> +			"	ldr	r1, [sp, #64]\n"
-> +			"	tst	r1, #"__stringify(PSR_T_BIT)"\n"
-> +			"	ldrne	r2, [sp, #60]\n"
-> +			"	orrne	r2, #1\n"
-> +			"	strne	r2, [sp, #60] @ set bit0 of PC for thumb\n"
-> +			"	msr	cpsr_cxsf, r1\n"
-> +			"	ldmia	sp, {r0 - r15}\n"
-> +			".global optprobe_template_val\n"
-> +			"optprobe_template_val:\n"
-> +			"1:	.long 0\n"
-> +			".global optprobe_template_call\n"
-> +			"optprobe_template_call:\n"
-> +			"2:	.long 0\n"
-> +			".global optprobe_template_end\n"
-> +			"optprobe_template_end:\n");
-> +
-> +#define TMPL_VAL_IDX \
-> +	((unsigned long *)&optprobe_template_val - (unsigned long *)&optprobe_template_entry)
-> +#define TMPL_CALL_IDX \
-> +	((unsigned long *)&optprobe_template_call - (unsigned long *)&optprobe_template_entry)
-> +#define TMPL_END_IDX \
-> +	((unsigned long *)&optprobe_template_end - (unsigned long *)&optprobe_template_entry)
-> +#define TMPL_ADD_SP \
-> +	((unsigned long *)&optprobe_template_add_sp - (unsigned long *)&optprobe_template_entry)
-> +#define TMPL_SUB_SP \
-> +	((unsigned long *)&optprobe_template_sub_sp - (unsigned long *)&optprobe_template_entry)
-> +
-> +/*
-> + * ARM can always optimize an instruction when using ARM ISA, except
-> + * instructions like 'str r0, [sp, r1]' which store to stack and unable
-> + * to determine stack space consumption statically.
-> + */
-> +int arch_prepared_optinsn(struct arch_optimized_insn *optinsn)
-> +{
-> +	return optinsn->insn != NULL;
-> +}
-> +
-> +/*
-> + * In ARM ISA, kprobe opt always replace one instruction (4 bytes
-> + * aligned and 4 bytes long). It is impossible to encounter another
-> + * kprobe in the address range. So always return 0.
-> + */
-> +int arch_check_optimized_kprobe(struct optimized_kprobe *op)
-> +{
-> +	return 0;
-> +}
-> +
-> +/* Caller must ensure addr & 3 == 0 */
-> +static int can_optimize(struct kprobe *kp)
-> +{
-> +	if (kp->ainsn.stack_space < 0)
-> +		return 0;
-> +	/*
-> +	 * 255 is the biggest imm can be used in 'sub r0, r0, #<imm>'.
-> +	 * Number larger than 255 needs special encoding.
-> +	 */
-> +	if (kp->ainsn.stack_space > 255 - sizeof(struct pt_regs))
-> +		return 0;
-> +	return 1;
-> +}
-> +
-> +/* Free optimized instruction slot */
-> +static void
-> +__arch_remove_optimized_kprobe(struct optimized_kprobe *op, int dirty)
-> +{
-> +	if (op->optinsn.insn) {
-> +		free_optinsn_slot(op->optinsn.insn, dirty);
-> +		op->optinsn.insn = NULL;
-> +	}
-> +}
-> +
-> +extern void kprobe_handler(struct pt_regs *regs);
-> +
-> +static void
-> +optimized_callback(struct optimized_kprobe *op, struct pt_regs *regs)
-> +{
-> +	unsigned long flags;
-> +	struct kprobe *p = &op->kp;
-> +	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
-> +
-> +	/* Save skipped registers */
-> +	regs->ARM_pc = (unsigned long)op->kp.addr;
-> +	regs->ARM_ORIG_r0 = ~0UL;
-> +
-> +	local_irq_save(flags);
-> +
-> +	if (kprobe_running()) {
-> +		kprobes_inc_nmissed_count(&op->kp);
-> +	} else {
-> +		__this_cpu_write(current_kprobe, &op->kp);
-> +		kcb->kprobe_status = KPROBE_HIT_ACTIVE;
-> +		opt_pre_handler(&op->kp, regs);
-> +		__this_cpu_write(current_kprobe, NULL);
-> +	}
-> +
-> +	/* In each case, we must singlestep the replaced instruction. */
-> +	op->kp.ainsn.insn_singlestep(p->opcode, &p->ainsn, regs);
-> +
-> +	local_irq_restore(flags);
-> +}
-> +
-> +int arch_prepare_optimized_kprobe(struct optimized_kprobe *op, struct kprobe *orig)
-> +{
-> +	kprobe_opcode_t *code;
-> +	unsigned long rel_chk;
-> +	unsigned long val;
-> +	unsigned long stack_protect = sizeof(struct pt_regs);
-> +
-> +	if (!can_optimize(orig))
-> +		return -EILSEQ;
-> +
-> +	code = get_optinsn_slot();
-> +	if (!code)
-> +		return -ENOMEM;
-> +
-> +	/*
-> +	 * Verify if the address gap is in 32MiB range, because this uses
-> +	 * a relative jump.
-> +	 *
-> +	 * kprobe opt use a 'b' instruction to branch to optinsn.insn.
-> +	 * According to ARM manual, branch instruction is:
-> +	 *
-> +	 *   31  28 27           24 23             0
-> +	 *  +------+---+---+---+---+----------------+
-> +	 *  | cond | 1 | 0 | 1 | 0 |      imm24     |
-> +	 *  +------+---+---+---+---+----------------+
-> +	 *
-> +	 * imm24 is a signed 24 bits integer. The real branch offset is computed
-> +	 * by: imm32 = SignExtend(imm24:'00', 32);
-> +	 *
-> +	 * So the maximum forward branch should be:
-> +	 *   (0x007fffff << 2) = 0x01fffffc =  0x1fffffc
-> +	 * The maximum backword branch should be:
-> +	 *   (0xff800000 << 2) = 0xfe000000 = -0x2000000
-> +	 *
-> +	 * We can simply check (rel & 0xfe000003):
-> +	 *  if rel is positive, (rel & 0xfe000000) shoule be 0
-> +	 *  if rel is negitive, (rel & 0xfe000000) should be 0xfe000000
-> +	 *  the last '3' is used for alignment checking.
-> +	 */
-> +	rel_chk = (unsigned long)((long)code -
-> +			(long)orig->addr + 8) & 0xfe000003;
-> +
-> +	if ((rel_chk != 0) && (rel_chk != 0xfe000000)) {
-> +		/*
-> +		 * Different from x86, we free code buf directly instead of
-> +		 * calling __arch_remove_optimized_kprobe() because
-> +		 * we have not fill any field in op.
-> +		 */
-> +		free_optinsn_slot(code, 0);
-> +		return -ERANGE;
-> +	}
-> +
-> +	/* Copy arch-dep-instance from template. */
-> +	memcpy(code, &optprobe_template_entry,
-> +			TMPL_END_IDX * sizeof(kprobe_opcode_t));
-> +
-> +	/* Adjust buffer according to instruction. */
-> +	BUG_ON(orig->ainsn.stack_space < 0);
-> +
-> +	stack_protect += orig->ainsn.stack_space;
-> +
-> +	/* Should have been filtered by can_optimize(). */
-> +	BUG_ON(stack_protect > 255);
-> +
-> +	/* Create a 'sub sp, sp, #<stack_protect>' */
-> +	code[TMPL_SUB_SP] = __opcode_to_mem_arm(0xe24dd000 | stack_protect);
-> +	/* Create a 'add r3, sp, #<stack_protect>' */
-> +	code[TMPL_ADD_SP] = __opcode_to_mem_arm(0xe28d3000 | stack_protect);
-> +
-> +	/* Set probe information */
-> +	val = (unsigned long)op;
-> +	code[TMPL_VAL_IDX] = val;
-> +
-> +	/* Set probe function call */
-> +	val = (unsigned long)optimized_callback;
-> +	code[TMPL_CALL_IDX] = val;
-> +
-> +	flush_icache_range((unsigned long)code,
-> +			   (unsigned long)(&code[TMPL_END_IDX]));
-> +
-> +	/* Set op->optinsn.insn means prepared. */
-> +	op->optinsn.insn = code;
-> +	return 0;
-> +}
-> +
-> +void __kprobes arch_optimize_kprobes(struct list_head *oplist)
-> +{
-> +	struct optimized_kprobe *op, *tmp;
-> +
-> +	list_for_each_entry_safe(op, tmp, oplist, list) {
-> +		unsigned long insn;
-> +		WARN_ON(kprobe_disabled(&op->kp));
-> +
-> +		/*
-> +		 * Backup instructions which will be replaced
-> +		 * by jump address
-> +		 */
-> +		memcpy(op->optinsn.copied_insn, op->kp.addr,
-> +				RELATIVEJUMP_SIZE);
-> +
-> +		insn = arm_gen_branch((unsigned long)op->kp.addr,
-> +				(unsigned long)op->optinsn.insn);
-> +		BUG_ON(insn == 0);
-> +
-> +		/*
-> +		 * Make it a conditional branch if replaced insn
-> +		 * is consitional
-> +		 */
-> +		insn = (__mem_to_opcode_arm(
-> +			  op->optinsn.copied_insn[0]) & 0xf0000000) |
-> +			(insn & 0x0fffffff);
-> +
-> +		/*
-> +		 * Similar to __arch_disarm_kprobe, operations which
-> +		 * removing breakpoints must be wrapped by stop_machine
-> +		 * to avoid racing.
-> +		 */
-> +		kprobes_remove_breakpoint(op->kp.addr, insn);
-> +
-> +		list_del_init(&op->list);
-> +	}
-> +}
-> +
-> +void arch_unoptimize_kprobe(struct optimized_kprobe *op)
-> +{
-> +	arch_arm_kprobe(&op->kp);
-> +}
-> +
-> +/*
-> + * Recover original instructions and breakpoints from relative jumps.
-> + * Caller must call with locking kprobe_mutex.
-> + */
-> +void arch_unoptimize_kprobes(struct list_head *oplist,
-> +			    struct list_head *done_list)
-> +{
-> +	struct optimized_kprobe *op, *tmp;
-> +
-> +	list_for_each_entry_safe(op, tmp, oplist, list) {
-> +		arch_unoptimize_kprobe(op);
-> +		list_move(&op->list, done_list);
-> +	}
-> +}
-> +
-> +int arch_within_optimized_kprobe(struct optimized_kprobe *op,
-> +				unsigned long addr)
-> +{
-> +	return ((unsigned long)op->kp.addr <= addr &&
-> +		(unsigned long)op->kp.addr + RELATIVEJUMP_SIZE > addr);
-> +}
-> +
-> +void arch_remove_optimized_kprobe(struct optimized_kprobe *op)
-> +{
-> +	__arch_remove_optimized_kprobe(op, 1);
-> +}
+> >>> The second is that
+> >>> it's better to minimize number of combination of situations we have.
+> >>> Let's keep only one combination: timer is set <-> task is throttled.
+> >> Yes, this was my goal too... So, if I change the parameters of a task
+> >> when it is throttled, I leave dl_throttled set to 1 and I leave the
+> >> timer active.
+> >
+> > As I see,
+> >
+> > dl_se->dl_throttled = 0;
+> >
+> > is still in __setparam_dl() after your patch, so you do not leave
+> > it set to 1.
+> You are right, my fault.
+> 
+> [...]
+> >>> I think that when people change task's parameters, they want the
+> >>> kernel reacts on this immediately. For example, you want to kill
+> >>> throttled deadline task. You change parameters, but nothing happens.
+> >>> I think all developers had this use case when they were debugging
+> >>> deadline class.
+> >> I see... Different people have different requirements :)
+> >> My goal was to do something like adaptive scheduling (or scheduling
+> >> tasks with mode changes), so I did not want that changing the
+> >> scheduling parameters of a task affected the scheduling of the other
+> >> tasks... But if a task exits the throttled state when I change its
+> >> parameters, it might consume much more than the reserved CPU time.
+> >> Also, I suspect this kind of approach can be exploited by malicious
+> >> users: if I create a task with runtime 30ms and period 100ms, and I
+> >> change its scheduling parameters (to runtime=29ms and back) frequently
+> >> enough, I can consume much more than 30% of the CPU time...
+> >>
+> >> Anyway, I am fine with every patch that fixes the bug :)
+> >
+> > Deadline class requires root privileges. So, I do not see a problem
+> > here. Please, see __sched_setscheduler().
+> I know... But the final goal is to allow non-root users to use SCHED_DEADLINE,
+> so I was thinking about future problems.
 
+I think everything may change many times before we implement that. It's better
+to keep the code in the consistent state.
+
+> > If in the future we allow non-privileged users to increase deadline,
+> > we will reflect that in __setparam_dl() too.
+> Ok.
+
+Does my patch help you? It helps me, but anyway I need your confirmation.
+
+Thanks,
+Kirill.
 
