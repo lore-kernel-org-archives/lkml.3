@@ -1,201 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755205AbbAGVlX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 16:41:23 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:39758 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752989AbbAGVlT (ORCPT
+	id S1754856AbbAGVpl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 16:45:41 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:41548 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752303AbbAGVpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 16:41:19 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/sphbtWBx4N/x72VpKIbtGEVo9PT0hmQc=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 8001064035C
-Date: Wed, 7 Jan 2015 16:40:55 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Jon Masters <jcm@redhat.com>
-Cc: Mark Brown <broonie@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Herring <robh@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
-        Robert Richter <rric@kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Lv Zheng <lv.zheng@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [Linaro-acpi] [PATCH v5 18/18] Documentation: ACPI for ARM64
-Message-ID: <20150107214055.GP24989@titan.lakedaemon.net>
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>
- <2161376.07iV9ANMSk@wuerfel>
- <20150107115039.GA2199@e104818-lin.cambridge.arm.com>
- <1520439.Y1rXzXY1eS@wuerfel>
- <20150107172741.GY2634@sirena.org.uk>
- <20150107184158.GO24989@titan.lakedaemon.net>
- <54AD8FF2.60407@redhat.com>
+	Wed, 7 Jan 2015 16:45:40 -0500
+Date: Wed, 7 Jan 2015 13:45:30 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Simek <michal.simek@xilinx.com>
+Subject: Re: linux-next: Tree for Jan 7 (microblaze qemu problems)
+Message-ID: <20150107214530.GA27620@roeck-us.net>
+References: <20150107151618.7cb9d574@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54AD8FF2.60407@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20150107151618.7cb9d574@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020205.54ADA90B.02AA,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 3
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 02:58:42PM -0500, Jon Masters wrote:
-> On 01/07/2015 01:41 PM, Jason Cooper wrote:
-> > On Wed, Jan 07, 2015 at 05:27:41PM +0000, Mark Brown wrote:
-> >> On Wed, Jan 07, 2015 at 02:06:28PM +0100, Arnd Bergmann wrote:
-> >>> On Wednesday 07 January 2015 11:50:39 Catalin Marinas wrote:
-> >>
-> >>>> From what I gathered so far, the main reason for _some_ vendors is not
-> >>>> support for "other" OS but actually features that ACPI has and DT
-> >>>> doesn't (like AML; I deliberately ignore statements like "industry
-> >>>> standard"). _If_ such reasons are sound, maybe they have a case for
-> >>>> ACPI-only machines targeted primarily at Linux.
-> >>
-> >>> What I got from the replies from HP, Huawei and from earlier discussions
-> >>> with Jon is that they all hope to get to the point of relying on AML
-> >>> alone to bridge the differences between SoC families. However, I don't
-> >>> see that happening with the limited hardware compatibility that the
-> >>> existing SBSA provides:
-> >>
-> >> I tend to agree with you that it's an overreach to think that this is
-> >> going to completely abstract away the differences between SoCs from
-> >> different vendors without substantial further standardization work.
-> >> However it does seem reasonable to expect that features like AML are
-> >> going to be more successful in handling board differences and
-> >> incremental revisions of SoCs - things like interactions with system
-> >> power controllers for example.  That seems like a useful win in and of
-> >> itself, and one that's worth supporting.
-> > 
-> > This piqued my interest, so I did a little research and found the
-> > following to describe AML (second para under "What does this mean?")
-> > 
-> >   http://community.arm.com/groups/processors/blog/2014/05/01/let-s-talk-acpi-for-servers
-> > 
-> > iiuc, AML are basically drivers for some low-level functions provided as
-> > binary blobs via the ACPI tables.
+On Wed, Jan 07, 2015 at 03:16:18PM +1100, Stephen Rothwell wrote:
+> Hi all,
 > 
-> AML isn't a "driver" per se. Think of it as providing a couple of
-> methods for doing things like turning on a device, where the interpreted
-> code might cause e.g. a memory address to be written with a value that
-> causes a side effect (e.g. talking with a system configuration
-> co-processor hidden inside the SoC the adjusts the clocking, enables
-> power, configures PHY parameters, etc.). Most of the "AML" that you see
-> on servers is actually just informational, or methods that return data
-> describing the hardware installed.
-
-So, similar in scope to an irqchip driver?  Because that's what I was
-thinking when I said "driver", not alsa or drm...  Thanks for great
-description.
-
-> > How does this work in a trusted boot scenario?
+> Changes since 20150106:
 > 
-> No different than on x86.
-
-Suprisingly, I don't do much with x86 development-wise.  The x86 boxes
-are just tools to me.  So I'm not very familiar with the intricacies
-there.  Do you have a pointer to ACPI update security
-standards/protocols?
-
-> > Can the ACPI tables, and these binary blobs with it, be updated from userspace?
+> *crickets*
 > 
-> Tables are baked into the firmware and are updated as a result of normal
-> firmware updates (which already has a defined process). There are
-> secondary tables that can augment things like the primary DSDT but those
-> are also provided by the platform. There are only two ways the "OS"
-> might provide a DSDT, but only including here for pedantry:
+> Non-merge commits (relative to Linus' tree): 1350
+>  1543 files changed, 41856 insertions(+), 24250 deletions(-)
 > 
-> 1). If you compile a kernel specially with an embedded DSDT within the
-> image itself (nobody does this one any more AFAIK).
-> 
-> 2). If you attach a special update test DSDT into your initramfs in a
-> particular way, in which case I believe secure boot already is disabled.
-> 
-> But these are all developer/debug things, not intended for users running
-> in a secure boot environment.
 
-Right, I'm more concerned about the update process being the vector to
-inject bad code.
+With this kernel I get the following WARNINGs (lots of htem) when running
+microblaze images (both big and little endian) with qemu.
 
-> > If so, is there an authentication mechanism (including for non-secure boot scenarios)?
-> 
-> It's no different than scenarios on x86, which are well covered.
-> 
-> > One of the reasons I've really enjoyed working with ARM platforms and DT
-> > is the absence of this type of 'feature'.  I honestly don't care whether
-> > the kernel gets the board configuration info from DT or ACPI or FOO, as
-> > long as we can avoid the security mistakes of the past:
-> > 
-> >   http://www.spiegel.de/international/world/catalog-reveals-nsa-has-back-doors-for-numerous-devices-a-940994.html
-> 
-> ACPI is not the great satan.
+WARNING: CPU: 0 PID: 1 at arch/microblaze/kernel/cpu/cache.c:432
+__invalidate_dcache_range_msr_irq_wt+0xcc/0xd8()
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Not tainted 3.19.0-rc3-next-20150107 #1
+...
+(sample) Call Trace:
+[<c0004080>] microblaze_unwind+0x5c/0x78
+[<c0003d64>] show_stack+0xe0/0x164
+[<c02e2224>] dump_stack+0x20/0x38
+[<c000adbc>] warn_slowpath_common+0x90/0xec
+[<c000aea0>] warn_slowpath_null+0xc/0x24
+[<c000493c>] __invalidate_dcache_range_msr_irq_wt+0xc0/0xd8
+[<c00c59c4>] simple_write_begin+0xf8/0x170
+[<c005d18c>] generic_perform_write+0xa8/0x2ac
+[<c005f1f8>] __generic_file_write_iter+0x1a8/0x478
+[<c005f504>] generic_file_write_iter+0x3c/0x128
+[<c009b0c4>] new_sync_write+0x84/0xcc
+[<c009ba88>] vfs_write+0xe8/0x224
+[<c009c314>] SyS_write+0x4c/0xf4
+[<c03d5200>] xwrite+0x48/0xb8
+[<c03d52a0>] do_copy+0x30/0x1ac
+[<c03d47b4>] write_buffer+0x34/0x60
+[<c03d4810>] flush_buffer+0x30/0xd0
+[<c03e4c70>] gunzip+0x2c0/0x3ac
+[<c03d4c20>] unpack_to_rootfs+0x1b8/0x368
+[<c03d56e8>] populate_rootfs+0x28/0x2d8
+[<c000044c>] do_one_initcall+0xa0/0x24c
+[<c03d2d9c>] kernel_init_freeable+0x150/0x238
+[<c02dedf0>] kernel_init+0x8/0x14c
+[<c0005d78>] ret_from_kernel_thread+0x8/0x20
 
-Relax, I'm not saying, nor implying that. :)  I *am* saying that
-upgradeable executable code not loaded from traditional OS storage
-(harddisk, flash) is a valid security concern.
+Detailed logs are available at http://server.roeck-us.net:8010/builders.
 
-> I'm aware certain others in the community have written missinformed
-> blog posts and G+ rants equating ACPI with SMI and even with various
-> other system firmware.
+bisect results:
 
-You're in luck, I don't blog or do social media. :-P
+# bad: [7e3619a6de57f0257a2f6480182d2287ee05e314] Add linux-next specific files for 20150107
+# good: [b1940cd21c0f4abdce101253e860feff547291b0] Linux 3.19-rc3
+git bisect start 'HEAD' 'v3.19-rc3'
+# bad: [c48667c5659248ff2b2fbff5cd23c43b5768e81b] Merge remote-tracking branch 'net-next/master'
+git bisect bad c48667c5659248ff2b2fbff5cd23c43b5768e81b
+# bad: [5aa2843082a0ce9b710549bdc7ae8d54140edc70] Merge remote-tracking branch 'pci/next'
+git bisect bad 5aa2843082a0ce9b710549bdc7ae8d54140edc70
+# good: [11339e9e3d575c1486ff57dc49c83b6154918305] Merge remote-tracking branch 'samsung/for-next'
+git bisect good 11339e9e3d575c1486ff57dc49c83b6154918305
+# bad: [50d16e144b253542d89830c0ace8573a67ce4b16] Merge remote-tracking branch 'powerpc-mpe/next'
+git bisect bad 50d16e144b253542d89830c0ace8573a67ce4b16
+# good: [3fda5c0dda2eafe244898809a74831209cdb69b7] Merge remote-tracking branch 'cris/for-next'
+git bisect good 3fda5c0dda2eafe244898809a74831209cdb69b7
+# bad: [8b772494fda25dd998ade5621cc0684a5c897179] Merge remote-tracking branch 'microblaze/next'
+git bisect bad 8b772494fda25dd998ade5621cc0684a5c897179
+# bad: [cd2b00db005541d15ea9fbb474b5e5e98b993d8e] microblaze: Fix variable types to remove W=1 warning
+git bisect bad cd2b00db005541d15ea9fbb474b5e5e98b993d8e
+# good: [8543e6c96762fcc930af5725088c2b9e4865c3aa] microblaze: Use unsigned return type in do_syscall_trace_enter
+git bisect good 8543e6c96762fcc930af5725088c2b9e4865c3aa
+# good: [e76fdb324844cc0367f8c6ea5d13278a81568ccb] microblaze: Use unsigned type for "for" loop because of comparison-kgdb.c
+git bisect good e76fdb324844cc0367f8c6ea5d13278a81568ccb
+# bad: [b343c7d621bf801b502cba812c3dcb4320942b93] microblaze: Use unsigned type for limit comparison in cache.c
+git bisect bad b343c7d621bf801b502cba812c3dcb4320942b93
+# good: [bdb96e3cad21f5973c95f0e6687db4a57eff7c53] microblaze: Use unsigned type for proper comparison in cpuinfo*.c
+git bisect good bdb96e3cad21f5973c95f0e6687db4a57eff7c53
+# first bad commit: [b343c7d621bf801b502cba812c3dcb4320942b93] microblaze: Use unsigned type for limit comparison in cache.c
 
-> I can't force someone to become informed on a topic, especially if
-> it's politically useful to them to hate on ACPI and use the security
-> paranoia handwavy argument.
+Reverting the offending commit fixes the problem.
 
-I'm not sure where you got that from.  I said very specifically, since
-trimmed, that I don't care where the board configuration data comes
-from, DT, ACPI, or FOO.
-
-If ACPI works, is stable, and integrates with the community, I'd use it.
-Right now, DT is the closest to that goal, so it's what I prefer.
-
-> > I'm not advocating "throw out AML and ACPI with it!", rather I'd like to
-> > see a serious, open, discussion about the security implications of a
-> > convenience feature such as AML.
-> 
-> AML is in (almost) every server you're using today.
-
-"It's already everywhere" is not a valid reason to dismiss a security
-discussion.  It's *not* on ARM today, so AML on ARM is a significant
-change to ecosystem.  I'd hope I'm not the only person who was taking
-advantage of fewer firmware hiding spots that ARM provides. :)
-
-> What you want to be worried about is hidden firmware, especially what
-> might be running inside a Trusted environment or inside an SMI
-> context, or the radio firmware on your phone that the NSA have
-> backdoored.
-
-These are all valid security concerns, but this thread was about
-ACPI/AML on ARM, so I didn't mention them.  Just because there are three
-other holes doesn't mean we should throw up our hands and not address the
-one in front of us.
-
-> Once we've solved every other issue, we can come back to whether the
-> extremely limited capabilities of AML are what the evil bad guys are
-> using to infiltrate our minds and make us think that we all want to
-> use ACPI.
-
-Umm, wow.  I was not implying that a malicious piece of code would call
-AML in a bad way to do something nefarious.  I *am* concerned about a
-malicious update to the ACPI tables hooking an innocent AML call so that
-*any* malicious code could be run at boot time, or suspend/resume,
-shutdown, etc.
-
-Sorry to have plucked a nerve, but I am sincerely interested in having a
-*rational* discussion about how this changes the ARM ecosystem.  fwiw,
-if I didn't think this was going to hit mainline, I wouldn't've bothered
-bringing it up. ;-)
-
-thx,
-
-Jason.
+Guenter
