@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932273AbbAGR4L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 12:56:11 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:52657 "EHLO
+	id S932235AbbAGRyG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 12:54:06 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:52668 "EHLO
 	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755050AbbAGRw6 (ORCPT
+	with ESMTP id S932134AbbAGRw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 12:52:58 -0500
+	Wed, 7 Jan 2015 12:52:59 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,102 +14,65 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 08/10] rcu: Add GP-kthread-starvation checks to CPU stall warnings
-Date: Wed,  7 Jan 2015 09:52:46 -0800
-Message-Id: <1420653168-6434-8-git-send-email-paulmck@linux.vnet.ibm.com>
+        bobby.prani@gmail.com, Miroslav Benes <mbenes@suse.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 09/10] rcu: Fix RCU CPU stall detection in tiny implementation
+Date: Wed,  7 Jan 2015 09:52:47 -0800
+Message-Id: <1420653168-6434-9-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1420653168-6434-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20150107175225.GA4237@linux.vnet.ibm.com>
  <1420653168-6434-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15010717-0009-0000-0000-000007C65C64
+x-cbid: 15010717-0009-0000-0000-000007C65C65
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Miroslav Benes <mbenes@suse.cz>
 
-This commit adds a message that is printed if the relevant grace-period
-kthread has not been able to run for the two seconds preceding the
-stall warning.  (The two seconds is double the maximum interval between
-successive bouts of quiescent-state forcing.)
+The tiny RCU CPU stall detection depends on *rcp->curtail not being
+NULL. It is however a tail pointer and thus NULL by definition. Instead we
+should check rcp->rcucblist for the presence of pending callbacks which
+need to be processed. With this fix INFO about the stall is printed and
+jiffies_stall (jiffies at next stall) correctly updated.
 
+Note that the check for pending callback is necessary to avoid spurious
+warnings if there are no pendings callbacks.
+
+Signed-off-by: Miroslav Benes <mbenes@suse.cz>
+[ paulmck: Fused identical "if" statements, ported to -rcu. ]
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- Documentation/RCU/stallwarn.txt |  9 +++++++++
- kernel/rcu/tree.c               | 21 ++++++++++++++++++++-
- 2 files changed, 29 insertions(+), 1 deletion(-)
+ kernel/rcu/tiny_plugin.h | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/RCU/stallwarn.txt b/Documentation/RCU/stallwarn.txt
-index 55f9707fe60a..53e7d2856db6 100644
---- a/Documentation/RCU/stallwarn.txt
-+++ b/Documentation/RCU/stallwarn.txt
-@@ -152,6 +152,15 @@ no non-lazy callbacks ("." is printed otherwise, as shown above) and
- "D" indicates that dyntick-idle processing is enabled ("." is printed
- otherwise, for example, if disabled via the "nohz=" kernel boot parameter).
- 
-+If the relevant grace-period kthread has been unable to run prior to
-+the stall warning, the following additional line is printed:
-+
-+	rcu_preempt kthread starved for 2023 jiffies!
-+
-+Starving the grace-period kthreads of CPU time can of course result in
-+RCU CPU stall warnings even when all CPUs and tasks have passed through
-+the required quiescent states.
-+
- 
- Multiple Warnings From One Stall
- 
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index 6284c19b39ba..5110a1767c22 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -1073,6 +1073,21 @@ static void record_gp_stall_check_time(struct rcu_state *rsp)
+diff --git a/kernel/rcu/tiny_plugin.h b/kernel/rcu/tiny_plugin.h
+index 858c56569127..80f908afe348 100644
+--- a/kernel/rcu/tiny_plugin.h
++++ b/kernel/rcu/tiny_plugin.h
+@@ -145,17 +145,16 @@ static void check_cpu_stall(struct rcu_ctrlblk *rcp)
+ 	rcp->ticks_this_gp++;
+ 	j = jiffies;
+ 	js = ACCESS_ONCE(rcp->jiffies_stall);
+-	if (*rcp->curtail && ULONG_CMP_GE(j, js)) {
++	if (rcp->rcucblist && ULONG_CMP_GE(j, js)) {
+ 		pr_err("INFO: %s stall on CPU (%lu ticks this GP) idle=%llx (t=%lu jiffies q=%ld)\n",
+ 		       rcp->name, rcp->ticks_this_gp, rcu_dynticks_nesting,
+ 		       jiffies - rcp->gp_start, rcp->qlen);
+ 		dump_stack();
+-	}
+-	if (*rcp->curtail && ULONG_CMP_GE(j, js))
+ 		ACCESS_ONCE(rcp->jiffies_stall) = jiffies +
+ 			3 * rcu_jiffies_till_stall_check() + 3;
+-	else if (ULONG_CMP_GE(j, js))
++	} else if (ULONG_CMP_GE(j, js)) {
+ 		ACCESS_ONCE(rcp->jiffies_stall) = jiffies + rcu_jiffies_till_stall_check();
++	}
  }
  
- /*
-+ * Complain about starvation of grace-period kthread.
-+ */
-+static void rcu_check_gp_kthread_starvation(struct rcu_state *rsp)
-+{
-+	unsigned long gpa;
-+	unsigned long j;
-+
-+	j = jiffies;
-+	gpa = ACCESS_ONCE(rsp->gp_activity);
-+	if (j - gpa > 2 * HZ)
-+		pr_err("%s kthread starved for %ld jiffies!\n",
-+		       rsp->name, j - gpa);
-+}
-+
-+/*
-  * Dump stacks of all tasks running on stalled CPUs.
-  */
- static void rcu_dump_cpu_stacks(struct rcu_state *rsp)
-@@ -1169,9 +1184,10 @@ static void print_other_cpu_stall(struct rcu_state *rsp, unsigned long gpnum)
- 	}
- 
- 	/* Complain about tasks blocking the grace period. */
--
- 	rcu_print_detail_task_stall(rsp);
- 
-+	rcu_check_gp_kthread_starvation(rsp);
-+
- 	force_quiescent_state(rsp);  /* Kick them all. */
- }
- 
-@@ -1196,6 +1212,9 @@ static void print_cpu_stall(struct rcu_state *rsp)
- 	pr_cont(" (t=%lu jiffies g=%ld c=%ld q=%lu)\n",
- 		jiffies - rsp->gp_start,
- 		(long)rsp->gpnum, (long)rsp->completed, totqlen);
-+
-+	rcu_check_gp_kthread_starvation(rsp);
-+
- 	rcu_dump_cpu_stacks(rsp);
- 
- 	raw_spin_lock_irqsave(&rnp->lock, flags);
+ static void reset_cpu_stall_ticks(struct rcu_ctrlblk *rcp)
 -- 
 1.8.1.5
 
