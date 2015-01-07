@@ -1,71 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130AbbAGKQN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 05:16:13 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:57192 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876AbbAGKQK (ORCPT
+	id S1752161AbbAGKTN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 05:19:13 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:17776 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884AbbAGKTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 05:16:10 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-66-54ad076833ee
-From: Marcin Jabrzyk <m.jabrzyk@samsung.com>
-To: konrad.wilk@oracle.com, trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
-        Marcin Jabrzyk <m.jabrzyk@samsung.com>
-Subject: [PATCH] mm: fix cleancache debugfs directory path
-Date: Wed, 07 Jan 2015 11:14:41 +0100
-Message-id: <1420625681-13819-1-git-send-email-m.jabrzyk@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDJMWRmVeSWpSXmKPExsVy+t/xa7oZ7GtDDGb/V7XYOGM9q8WyxU8Z
-	Lc42vWG3uLxrDpvFvTX/WS2mne9mtHi//zKTA7vHplWdbB6bPk1i9/j49BaLR9+WVYwenzfJ
-	BbBGcdmkpOZklqUW6dslcGXc77vJWtDOXfHhyn72BsaZnF2MHBwSAiYSN+eIdjFyApliEhfu
-	rWfrYuTiEBJYyijx7fUZZginl0ni7Kw2RpAGNgEdifOrNUAaRAT0JD6t6WUEsZkFpjJKHJpo
-	CmILC1hJrLo5hw3EZhFQlbj7bSkriM0r4Cpx4uBLFohlchInj01mncDIvYCRYRWjaGppckFx
-	UnquoV5xYm5xaV66XnJ+7iZGSIh82cG4+JjVIUYBDkYlHt6CvjUhQqyJZcWVuYcYJTiYlUR4
-	3/wCCvGmJFZWpRblxxeV5qQWH2Jk4uCUamBk2fTeV1dSoE4mL1v2OE/2YcWD6m81+A0+rU9M
-	+12vySa0e/OnC3O/i0kteh6/+sSX3vWHnpzgfuR1dJ61+3a7V1/Snx9OWTihIbNlU8u2fYku
-	glV7/t2fz5vqtuH3y6kxV9hWpW++FyVlE51p9uDBBuO3bKLLX7un8yybuWH1jws6Vb/2ml2c
-	osRSnJFoqMVcVJwIAEzLZinvAQAA
+	Wed, 7 Jan 2015 05:19:09 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 07 Jan 2015 02:17:38 -0800
+Date: Wed, 7 Jan 2015 12:19:00 +0200
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Vince Hsu <vinceh@nvidia.com>, Lucas Stach <dev@lynxeye.de>,
+        <swarren@wwwdotorg.org>, <gnurou@gmail.com>, <bskeggs@redhat.com>,
+        <martin.peres@free.fr>, <seven@nimrod-online.com>,
+        <samuel.pitoiset@gmail.com>, <nouveau@lists.freedesktop.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/11] ARM: tegra: add function to control the GPU rail
+ clamp
+Message-ID: <20150107101900.GP10073@tbergstrom-lnx.Nvidia.com>
+References: <1419331204-26679-1-git-send-email-vinceh@nvidia.com>
+ <1419331204-26679-2-git-send-email-vinceh@nvidia.com>
+ <1419426990.2179.7.camel@lynxeye.de>
+ <549B7638.2010405@nvidia.com>
+ <20150105150932.GG12010@ulmo.nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20150105150932.GG12010@ulmo.nvidia.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.21.24.170]
+X-ClientProxiedBy: UKMAIL101.nvidia.com (10.26.138.13) To
+ UKMAIL101.nvidia.com (10.26.138.13)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minor fixes for cleancache about wrong debugfs paths
-in documentation and code comment.
+On Mon, Jan 05, 2015 at 04:09:33PM +0100, Thierry Reding wrote:
+> * PGP Signed by an unknown key
+> 
+> On Thu, Dec 25, 2014 at 10:28:08AM +0800, Vince Hsu wrote:
+> > On 12/24/2014 09:16 PM, Lucas Stach wrote:
+> > >Am Dienstag, den 23.12.2014, 18:39 +0800 schrieb Vince Hsu:
+> > >>The Tegra124 and later Tegra SoCs have a sepatate rail gating register
+> > >>to enable/disable the clamp. The original function
+> > >>tegra_powergate_remove_clamping() is not sufficient for the enable
+> > >>function. So add a new function which is dedicated to the GPU rail
+> > >>gating. Also don't refer to the powergate ID since the GPU ID makes no
+> > >>sense here.
+> > >>
+> > >>Signed-off-by: Vince Hsu <vinceh@nvidia.com>
+> > >To be honest I don't see the point of this patch.
+> > >You are bloating the PMC interface by introducing another exported
+> > >function that does nothing different than what the current function
+> > >already does.
+> > >
+> > >If you need a way to assert the clamp I would have expected you to
+> > >introduce a common function to do this for all power partitions.
+> > I thought about adding an tegra_powergate_assert_clamping(), but that
+> > doesn't make sense to all the power partitions except GPU. Note the
+> > difference in TRM. Any suggestion for the common function?
+> 
+> I don't think extending the powergate API is useful at this point. We've
+> long had an open TODO item to replace this with a generic API. I did
+> some prototyping a while ago to use generic power domains for this, that
+> way all the details and dependencies between the partitions could be
+> properly modeled.
+> 
+> Can you take a look at my staging/powergate branch here:
+> 
+> 	https://github.com/thierryreding/linux/commits/staging/powergate
+> 
+> and see if you can use that instead? The idea is to completely hide the
+> details of power partitions from drivers and use runtime PM instead.
+> 
+> Also adding Peter whom I had discussed this with earlier. Can we finally
+> get this converted? I'd rather not keep complicating this custom API to
+> avoid making the conversion even more difficult.
 
-Signed-off-by: Marcin Jabrzyk <m.jabrzyk@samsung.com>
----
- Documentation/vm/cleancache.txt | 2 +-
- mm/cleancache.c                 | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Conceptually I fully agree that we should use runtime PM and powerdomains.
+However I don't think the implementation you mentioned is correct. The resets 
+of all modules in a domain need to be asserted and the memory clients need to
+be flushed. All this needs to be done with module clocks enabled (resets are
+synchronous).  Then all module clocks need to be disabled and then the
+partition can be powergated. After ungating, the module resets need to be
+deasserted and the FLUSH bit cleared with clocks enabled.
 
-diff --git a/Documentation/vm/cleancache.txt b/Documentation/vm/cleancache.txt
-index 142fbb0f325a..01d76282444e 100644
---- a/Documentation/vm/cleancache.txt
-+++ b/Documentation/vm/cleancache.txt
-@@ -85,7 +85,7 @@ lock the page to ensure serial behavior.
- CLEANCACHE PERFORMANCE METRICS
- 
- If properly configured, monitoring of cleancache is done via debugfs in
--the /sys/kernel/debug/mm/cleancache directory.  The effectiveness of cleancache
-+the /sys/kernel/debug/cleancache directory.  The effectiveness of cleancache
- can be measured (across all filesystems) with:
- 
- succ_gets	- number of gets that were successful
-diff --git a/mm/cleancache.c b/mm/cleancache.c
-index d0eac4350403..053bcd8f12fb 100644
---- a/mm/cleancache.c
-+++ b/mm/cleancache.c
-@@ -25,7 +25,7 @@
- static struct cleancache_ops *cleancache_ops __read_mostly;
- 
- /*
-- * Counters available via /sys/kernel/debug/frontswap (if debugfs is
-+ * Counters available via /sys/kernel/debug/cleancache (if debugfs is
-  * properly configured.  These are for information only so are not protected
-  * against increment races.
-  */
--- 
-1.9.1
+Cheers,
 
+Peter.
