@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758032AbbAGC0R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:26:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47112 "EHLO
+	id S1758062AbbAGCZo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:25:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47115 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757689AbbAGCSD (ORCPT
+	with ESMTP id S1757694AbbAGCSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jan 2015 21:18:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Carl Henrik Lunde <chlunde@ping.uio.no>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.17 63/73] udf: Verify i_size when loading inode
-Date: Tue,  6 Jan 2015 18:16:24 -0800
-Message-Id: <20150107021559.441223730@linuxfoundation.org>
+        Carl Henrik Lunde <chlunde@gmail.com>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.17 64/73] udf: Verify symlink size before loading it
+Date: Tue,  6 Jan 2015 18:16:25 -0800
+Message-Id: <20150107021559.470217206@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107021557.521276020@linuxfoundation.org>
 References: <20150107021557.521276020@linuxfoundation.org>
@@ -30,42 +30,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jan Kara <jack@suse.cz>
 
-commit e159332b9af4b04d882dbcfe1bb0117f0a6d4b58 upstream.
+commit a1d47b262952a45aae62bd49cfaf33dd76c11a2c upstream.
 
-Verify that inode size is sane when loading inode with data stored in
-ICB. Otherwise we may get confused later when working with the inode and
-inode size is too big.
+UDF specification allows arbitrarily large symlinks. However we support
+only symlinks at most one block large. Check the length of the symlink
+so that we don't access memory beyond end of the symlink block.
 
-Reported-by: Carl Henrik Lunde <chlunde@ping.uio.no>
+Reported-by: Carl Henrik Lunde <chlunde@gmail.com>
 Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/udf/inode.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ fs/udf/symlink.c |   17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
 
---- a/fs/udf/inode.c
-+++ b/fs/udf/inode.c
-@@ -1489,6 +1489,20 @@ reread:
- 	}
- 	inode->i_generation = iinfo->i_unique;
+--- a/fs/udf/symlink.c
++++ b/fs/udf/symlink.c
+@@ -99,11 +99,17 @@ static int udf_symlink_filler(struct fil
+ 	struct inode *inode = page->mapping->host;
+ 	struct buffer_head *bh = NULL;
+ 	unsigned char *symlink;
+-	int err = -EIO;
++	int err;
+ 	unsigned char *p = kmap(page);
+ 	struct udf_inode_info *iinfo;
+ 	uint32_t pos;
  
-+	/* Sanity checks for files in ICB so that we don't get confused later */
-+	if (iinfo->i_alloc_type == ICBTAG_FLAG_AD_IN_ICB) {
-+		/*
-+		 * For file in ICB data is stored in allocation descriptor
-+		 * so sizes should match
-+		 */
-+		if (iinfo->i_lenAlloc != inode->i_size)
-+			goto out;
-+		/* File in ICB has to fit in there... */
-+		if (inode->i_size > inode->i_sb->s_blocksize -
-+					udf_file_entry_alloc_offset(inode))
-+			goto out;
++	/* We don't support symlinks longer than one block */
++	if (inode->i_size > inode->i_sb->s_blocksize) {
++		err = -ENAMETOOLONG;
++		goto out_unmap;
 +	}
 +
- 	switch (fe->icbTag.fileType) {
- 	case ICBTAG_FILE_TYPE_DIRECTORY:
- 		inode->i_op = &udf_dir_inode_operations;
+ 	iinfo = UDF_I(inode);
+ 	pos = udf_block_map(inode, 0);
+ 
+@@ -113,8 +119,10 @@ static int udf_symlink_filler(struct fil
+ 	} else {
+ 		bh = sb_bread(inode->i_sb, pos);
+ 
+-		if (!bh)
+-			goto out;
++		if (!bh) {
++			err = -EIO;
++			goto out_unlock_inode;
++		}
+ 
+ 		symlink = bh->b_data;
+ 	}
+@@ -130,9 +138,10 @@ static int udf_symlink_filler(struct fil
+ 	unlock_page(page);
+ 	return 0;
+ 
+-out:
++out_unlock_inode:
+ 	up_read(&iinfo->i_data_sem);
+ 	SetPageError(page);
++out_unmap:
+ 	kunmap(page);
+ 	unlock_page(page);
+ 	return err;
 
 
