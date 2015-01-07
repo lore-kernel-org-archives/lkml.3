@@ -1,46 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752254AbbAGKmF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 05:42:05 -0500
-Received: from s3.sipsolutions.net ([5.9.151.49]:35619 "EHLO sipsolutions.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750985AbbAGKmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 05:42:03 -0500
-Message-ID: <1420627315.3407.2.camel@sipsolutions.net>
-Subject: Re: [PATCH] wireless extensions should default to Y
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: jikos@suse.cz, kernel list <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, davem@davemloft.net,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
-Date: Wed, 07 Jan 2015 11:41:55 +0100
-In-Reply-To: <20150107101903.GA6563@amd>
-References: <20150107101903.GA6563@amd>
+	id S1752416AbbAGKnV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 05:43:21 -0500
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:56484 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751224AbbAGKnS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 05:43:18 -0500
+X-Sasl-enc: wEMlNBiK3w41zkphYqZTR5gG+jqFejMwZH26cf03zosY 1420627397
+Message-ID: <1420627396.26870.36.camel@stressinduktion.org>
+Subject: Re: [PATCH net] ipv6: Prevent ipv6_find_hdr() from returning ENOENT
+ for valid non-first fragments
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Rahul Sharma <rsharma@arista.com>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
+Date: Wed, 07 Jan 2015 11:43:16 +0100
+In-Reply-To: <CAFB3abwKpR1VqZXUrsexqveAZrA2LTSmTe8a=-H7z2HjAptjwA@mail.gmail.com>
+References: <CAFB3abzYNYqtzd_n+Ym0Lo=DYbV0HPU=Tqw=stALNnu188hMKQ@mail.gmail.com>
+	 <20150106224706.GA7416@salvia>
+	 <CAFB3abwKpR1VqZXUrsexqveAZrA2LTSmTe8a=-H7z2HjAptjwA@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
+X-Mailer: Evolution 3.12.9 (3.12.9-1.fc21) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-07 at 11:19 +0100, Pavel Machek wrote:
-> Do we need following patch on top of
-> 24a0aa212ee2dbe44360288684478d76a8e20a0a revert?
+Hi,
+
+On Mi, 2015-01-07 at 11:11 +0530, Rahul Sharma wrote:
+> On Wed, Jan 7, 2015 at 4:17 AM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+> > On Wed, Jan 07, 2015 at 03:03:20AM +0530, Rahul Sharma wrote:
+> >> ipv6_find_hdr() currently assumes that the next-header field in the
+> >> fragment header of the non-first fragment is the "protocol number of
+> >> the last header" (here last header excludes any extension header
+> >> protocol numbers ) which is incorrect as per RFC2460. The next-header
+> >> value is the first header of the fragmentable part of the original
+> >> packet (which can be extension header as well).
+> >> This can create reassembly problems. For example: Fragmented
+> >> authenticated OSPFv3 packets (where AH header is inserted before the
+> >> protocol header). For the second fragment, the next header value in
+> >> the fragment header will be NEXTHDR_AUTH which is correct but
+> >> ipv6_find_hdr will return ENOENT since AH is an extension header
+> >> resulting in second fragment getting dropped. This check for the
+> >> presence of non-extension header needs to be removed.
+> >>
+> >> Signed-off-by: Rahul Sharma <rsharma@arista.com>
+> >> ---
+> >> --- linux-3.18.1/net/ipv6/exthdrs_core.c.orig   2015-01-06
+> >> 10:25:36.411419863 -0800
+> >> +++ linux-3.18.1/net/ipv6/exthdrs_core.c        2015-01-06
+> >> 10:51:45.819364986 -0800
+> >> @@ -171,10 +171,11 @@ EXPORT_SYMBOL_GPL(ipv6_find_tlv);
+> >>   * If the first fragment doesn't contain the final protocol header or
+> >>   * NEXTHDR_NONE it is considered invalid.
+> >>   *
+> >> - * Note that non-1st fragment is special case that "the protocol number
+> >> - * of last header" is "next header" field in Fragment header. In this case,
+> >> - * *offset is meaningless and fragment offset is stored in *fragoff if fragoff
+> >> - * isn't NULL.
+> >> + * Note that non-1st fragment is special case that "the protocol number of the
+> >> + * first header of the fragmentable part of the original packet" is
+> >> + * "next header" field in the Fragment header. In this case, *offset is
+> >> + * meaningless and fragment offset is stored in *fragoff if fragoff isn't
+> >> + * NULL.
+> >>   *
+> >>   * if flags is not NULL and it's a fragment, then the frag flag
+> >>   * IP6_FH_F_FRAG will be set. If it's an AH header, the
+> >> @@ -250,9 +251,7 @@ int ipv6_find_hdr(const struct sk_buff *
+> >>
+> >>                         _frag_off = ntohs(*fp) & ~0x7;
+> >>                         if (_frag_off) {
+> >> -                               if (target < 0 &&
+> >> -                                   ((!ipv6_ext_hdr(hp->nexthdr)) ||
+> >
+> > This check assumes that the following headers cannot show up in the
+> > fragmented part of the IPv6 packet:
+> >
+> >  12 bool ipv6_ext_hdr(u8 nexthdr)
+> >  13 {
+> >  14         /*
+> >  15          * find out if nexthdr is an extension header or a protocol
+> >  16          */
+> >  17         return   (nexthdr == NEXTHDR_HOP)       ||
+> >  18                  (nexthdr == NEXTHDR_ROUTING)   ||
+> >  19                  (nexthdr == NEXTHDR_FRAGMENT)  ||
+> >  20                  (nexthdr == NEXTHDR_AUTH)      ||
+> >  21                  (nexthdr == NEXTHDR_NONE)      ||
+> >  22                  (nexthdr == NEXTHDR_DEST);
+> >
+> >> -                                    hp->nexthdr == NEXTHDR_NONE)) {
+> >> +                               if (target < 0) {
+> >>                                         if (fragoff)
+> >>                                                 *fragoff = _frag_off;
+> >>                                         return hp->nexthdr;
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> I updated kernel today, and (probably because extensions were not
-> selectable before), the default choice was "N", which is wrong:
-> oldconfig should result in compatible choices being made, for example
-> to help bisect.
+> I think this is incorrect. Authentication header shows up in the
+> fragmentable part of the original IPv6 packet. So, for the non-first
+> fragments the next-header field value can be NEXTHDR_AUTH.
 
-I don't believe we need this. It has been defaulting to N for a long
-time, it's just that it got thrown out of your config due to building
-inbetween the patch and its revert. Had you built only before and after
-that wouldn't be an issue.
+Pablo's mail got me thinking again.
 
-If we default to Y now we send the wrong signal. If you really need to
-bisect something wext related you have far bigger issues I'd think, the
-code hasn't changed *forever*.
+In general, IPv6 extension headers can appear in any order and stacks
+must be process them. Fragmentation adds a limitation, that some
+extension headers do not make sense and don't have any effect if they
+appear after a fragmentation header (HbH and ROUTING).
 
-johannes
+Looking at the rest of the function we don't check for HBHHDR or RTHDR
+following a fragmentation header either if we process the first fragment
+(core stack only processes HBH if directly following the ipv6 header
+anyway).
+
+So, in my opinion, it is safe to completely remove this check and it
+would align if the rest of the extension processing logic. The callers
+all seem fine with that.
+
+Pablo, what do you think?
+
+Anyway, the patch does not apply cleanly, the patch header is mangled.
+Could you check and send again?
+
+Thanks,
+Hannes
+
 
