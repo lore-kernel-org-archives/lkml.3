@@ -1,144 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322AbbAGWTK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 17:19:10 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:42763 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755087AbbAGWTI (ORCPT
+	id S1755104AbbAGWYn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 17:24:43 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:55328 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753186AbbAGWYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 17:19:08 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Magnus Damm <magnus.damm@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] irqchip: renesas-intc-irqpin: r8a7779 IRLM setup support
-Date: Thu, 08 Jan 2015 00:19:22 +0200
-Message-ID: <61770409.DB0uPzOGg3@avalon>
-User-Agent: KMail/4.14.3 (Linux/3.17.7-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20150107171545.GM24989@titan.lakedaemon.net>
-References: <20141215050920.533.20169.sendpatchset@w520> <1533637.nrBHixev6I@avalon> <20150107171545.GM24989@titan.lakedaemon.net>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 7 Jan 2015 17:24:42 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Corey Minyard <minyard@acm.org>,
+        openipmi-developer@lists.sourceforge.net,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH v2 1/2] ipmi: Cleanup DEBUG_TIMING ifdef usage
+Date: Wed,  7 Jan 2015 14:24:28 -0800
+Message-Id: <1420669469-3218-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1420663910-6406-1-git-send-email-john.stultz@linaro.org>
+References: <1420663910-6406-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
+The driver uses #ifdef DEBUG_TIMING in order to conditionally print out
+timestamped debug messages. Unfortunately it adds the ifdefs all over the
+usage sites.
 
-On Wednesday 07 January 2015 12:15:45 Jason Cooper wrote:
-> On Thu, Dec 18, 2014 at 04:39:51AM +0200, Laurent Pinchart wrote:
-> > On Thursday 18 December 2014 10:26:27 Magnus Damm wrote:
-> >> On Thu, Dec 18, 2014 at 6:41 AM, Laurent Pinchart wrote:
-> >>> On Monday 15 December 2014 14:09:20 Magnus Damm wrote:
-> >>>> From: Magnus Damm <damm+renesas@opensource.se>
-> >>>> 
-> >>>> Add r8a7779 specific support for IRLM bit configuration
-> >>>> in the INTC-IRQPIN driver. Without this code we need
-> >>>> special workaround code in arch/arm/mach-shmobile.
-> >>>> 
-> >>>> The IRLM bit for the INTC hardware exists on various
-> >>>> older SH-based SoCs and is used to select between two
-> >>>> modes for the external interrupt pins IRQ0 to IRQ3:
-> >>>> 
-> >>>> IRLM = 0: (default from reset on r8a7779)
-> >>>> In this mode the pins IRQ0 to IRQ3 are used together
-> >>>> to give a value between 0 and 15 to the SoC. External
-> >>>> logic is required for masking. This mode is not
-> >>>> supported by the INTC-IRQPIN driver.
-> >>>> 
-> >>>> IRLM = 1: (needs this patch or configuration elsewhere)
-> >>>> In this mode IRQ0 to IRQ3 operate as 4 individual
-> >>>> external interrupt pins. In this mode the SMSC ethernet
-> >>>> chip can be used via IRQ1 on r8a7779 Marzen. This mode
-> >>>> is the only supported mode by the INTC-IRQPIN driver.
-> >>>> 
-> >>>> For this patch to work the r8a7779 DTS needs to pass
-> >>>> the ICR0 register as the last register bank.
-> >>>> 
-> >>>> Signed-off-by: Magnus Damm <damm+renesas@opensource.se>
-> >>>> ---
-> >>>> 
-> >>>>  Same version as sent on December 3rd.
-> >>>>  
-> >>>>  Written against renesas-devel-20141202-v3.18-rc7 which is
-> >>>>  basically v3.18-rc7 plus latest arch/arm/mach-shmobile code.
-> >>>>  
-> >>>>  Documentation/devicetree/bindings/interrupt-controller/renesas,intc-
-> >>>>  irqpin.txt |    5 +
-> >>>>  drivers/irqchip/irq-renesas-intc-irqpi            |   50 ++++++++--
-> >>>>  2 files changed, 46 insertions(+), 9 deletions(-)
-> >>>> 
-> >>>> ---
-> >>>> 0001/Documentation/devicetree/bindings/interrupt-controller/renesas,i
-> >>>> ntc-irqpin.txt +++
-> >>>> work/Documentation/devicetree/bindings/interrupt-controller/renesas,i
-> >>>> ntc-irqpin.txt      2014-12-03 20:25:13.000000000 +0900
-> >>>> @@ -9,6 +9,11 @@
-> >>>> Required properties:
-> >>>>      - "renesas,intc-irqpin-r8a7778" (R-Car M1A)
-> >>>>      - "renesas,intc-irqpin-r8a7779" (R-Car H1)
-> >>>>      - "renesas,intc-irqpin-sh73a0" (SH-Mobile AG5)
-> >>>> +
-> >>>> +- reg: Base address and length of each register bank used by the
-> >>>> external
-> >>>> +  IRQ pins driven by the interrupt controller hardware module. The
-> >>>> base
-> >>>> +  addresses, length and number of required register banks varies
-> >>>> with soctype.
-> >>> 
-> >>> Ouch. Ouch. Multiple times. Very much :-/
-> >>> 
-> >>> I suppose it's too late to fix the DT bindings ?
-> 
-> Fix?  Is this a change to the reg property (from an undocumented
-> version)?  Or just adding the reg property?  If the later, then as long
-> as the driver preserves the old behavior when the reg property isn't
-> present, we should be good.
-> 
-> If the case was the former, then we need to keep in mind that these are
-> old SoCs and that this binding is mfgr-specific.  afair from the DT
-> maintainers, it's acceptable to have a little instability under these
-> conditions.
+This patch cleans it up by adding a debug_timestamp() function which
+is compiled out if DEBUG_TIMING isn't present. This cleans up all
+the ugly ifdefs in the function logic.
 
-The reg property is already used, and this patch documents it. My concern is 
-that the property is (at least in my opinion) used in a pretty dirty way.
+Cc: Corey Minyard <minyard@acm.org>
+Cc: openipmi-developer@lists.sourceforge.net
+Cc: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+v2: Caught a missed DEBUG_TIMING ifdef 
 
-In a nutshell, the INTC IP core handles several banks of interrupts, with a 
-set of registers per bank. The registers are interleaved instead of split per 
-bank. However, the driver expects one device instance per bank, with one 
-memory resource for each register. This predates DT support and has never been 
-reworked. I would have liked to instantiate a single INTC device given that we 
-have a single INTC IP core, but the change would likely be too disruptive.
+ drivers/char/ipmi/ipmi_si_intf.c | 61 ++++++++++++++--------------------------
+ 1 file changed, 21 insertions(+), 40 deletions(-)
 
-> >> I don't think it is ever too late, but the question is just how urgent
-> >> it is to get rid of the Marzen C board code. With the code in this
-> >> patch queue up we can get rid of the board code. If someone decides to
-> >> rework the INTC IRQPIN bits then we will have to live with the Marzen
-> >> code for longer. And if we should do it right and describe the actual
-> >> hardware, then perhaps we should consider the non-IRQ-pin interrupts
-> >> included in INTC for some SoCs. So it rapidly gets more complex...
-> > 
-> > I don't think there's a need to delay getting rid of Marzen legacy code,
-> > my comment wasn't an attempt to delay your efforts :-)
-> > 
-> > Looking at the hardware we should have a single INTC DT node, not four.
-> > What I'm wondering is whether we could still fix the DT bindings, or if
-> > the backward compatibility requirements would make it too painful,
-> > especially given that R-Car Gen2 doesn't use INTC.
-> 
-> Please see above.  I'm sure the DT maintainers will chirp up if the
-> winds have shifted, but I'd rather we do it right if we're breaking
-> compatibility anyway.
-
-We're not breaking compatibility with this patch. The question is whether we 
-should break compatibility to do things right.
-
+diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+index 967b73a..e54c02b 100644
+--- a/drivers/char/ipmi/ipmi_si_intf.c
++++ b/drivers/char/ipmi/ipmi_si_intf.c
+@@ -321,6 +321,18 @@ static int try_smi_init(struct smi_info *smi);
+ static void cleanup_one_si(struct smi_info *to_clean);
+ static void cleanup_ipmi_si(void);
+ 
++#ifdef DEBUG_TIMING
++void debug_timestamp(char *msg)
++{
++	struct timeval t;
++
++	do_gettimeofday(&t);
++	pr_debug("**%s: %d.%9.9d\n", msg, t.tv_sec, t.tv_usec);
++}
++#else
++#define debug_timestamp(x)
++#endif
++
+ static ATOMIC_NOTIFIER_HEAD(xaction_notifier_list);
+ static int register_xaction_notifier(struct notifier_block *nb)
+ {
+@@ -358,9 +370,6 @@ static void return_hosed_msg(struct smi_info *smi_info, int cCode)
+ static enum si_sm_result start_next_msg(struct smi_info *smi_info)
+ {
+ 	int              rv;
+-#ifdef DEBUG_TIMING
+-	struct timeval t;
+-#endif
+ 
+ 	if (!smi_info->waiting_msg) {
+ 		smi_info->curr_msg = NULL;
+@@ -370,10 +379,7 @@ static enum si_sm_result start_next_msg(struct smi_info *smi_info)
+ 
+ 		smi_info->curr_msg = smi_info->waiting_msg;
+ 		smi_info->waiting_msg = NULL;
+-#ifdef DEBUG_TIMING
+-		do_gettimeofday(&t);
+-		printk(KERN_DEBUG "**Start2: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+-#endif
++		debug_timestamp("Start2");
+ 		err = atomic_notifier_call_chain(&xaction_notifier_list,
+ 				0, smi_info);
+ 		if (err & NOTIFY_STOP_MASK) {
+@@ -582,12 +588,8 @@ static void check_bt_irq(struct smi_info *smi_info, bool irq_on)
+ static void handle_transaction_done(struct smi_info *smi_info)
+ {
+ 	struct ipmi_smi_msg *msg;
+-#ifdef DEBUG_TIMING
+-	struct timeval t;
+ 
+-	do_gettimeofday(&t);
+-	printk(KERN_DEBUG "**Done: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+-#endif
++	debug_timestamp("Done");
+ 	switch (smi_info->si_state) {
+ 	case SI_NORMAL:
+ 		if (!smi_info->curr_msg)
+@@ -929,17 +931,11 @@ static void sender(void                *send_info,
+ 	struct smi_info   *smi_info = send_info;
+ 	enum si_sm_result result;
+ 	unsigned long     flags;
+-#ifdef DEBUG_TIMING
+-	struct timeval    t;
+-#endif
+ 
+ 	BUG_ON(smi_info->waiting_msg);
+ 	smi_info->waiting_msg = msg;
+ 
+-#ifdef DEBUG_TIMING
+-	do_gettimeofday(&t);
+-	printk("**Enqueue: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+-#endif
++	debug_timestamp("Enqueue");
+ 
+ 	if (smi_info->run_to_completion) {
+ 		/*
+@@ -1128,15 +1124,10 @@ static void smi_timeout(unsigned long data)
+ 	unsigned long     jiffies_now;
+ 	long              time_diff;
+ 	long		  timeout;
+-#ifdef DEBUG_TIMING
+-	struct timeval    t;
+-#endif
+ 
+ 	spin_lock_irqsave(&(smi_info->si_lock), flags);
+-#ifdef DEBUG_TIMING
+-	do_gettimeofday(&t);
+-	printk(KERN_DEBUG "**Timer: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+-#endif
++	debug_timestamp("Timer");
++
+ 	jiffies_now = jiffies;
+ 	time_diff = (((long)jiffies_now - (long)smi_info->last_timeout_jiffies)
+ 		     * SI_USEC_PER_JIFFY);
+@@ -1173,18 +1164,13 @@ static irqreturn_t si_irq_handler(int irq, void *data)
+ {
+ 	struct smi_info *smi_info = data;
+ 	unsigned long   flags;
+-#ifdef DEBUG_TIMING
+-	struct timeval  t;
+-#endif
+ 
+ 	spin_lock_irqsave(&(smi_info->si_lock), flags);
+ 
+ 	smi_inc_stat(smi_info, interrupts);
+ 
+-#ifdef DEBUG_TIMING
+-	do_gettimeofday(&t);
+-	printk(KERN_DEBUG "**Interrupt: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+-#endif
++	debug_timestamp("Interrupt");
++
+ 	smi_event_handler(smi_info, 0);
+ 	spin_unlock_irqrestore(&(smi_info->si_lock), flags);
+ 	return IRQ_HANDLED;
+@@ -2038,18 +2024,13 @@ static u32 ipmi_acpi_gpe(acpi_handle gpe_device,
+ {
+ 	struct smi_info *smi_info = context;
+ 	unsigned long   flags;
+-#ifdef DEBUG_TIMING
+-	struct timeval t;
+-#endif
+ 
+ 	spin_lock_irqsave(&(smi_info->si_lock), flags);
+ 
+ 	smi_inc_stat(smi_info, interrupts);
+ 
+-#ifdef DEBUG_TIMING
+-	do_gettimeofday(&t);
+-	printk("**ACPI_GPE: %d.%9.9d\n", t.tv_sec, t.tv_usec);
+-#endif
++	debug_timestamp("ACPI_GPE");
++
+ 	smi_event_handler(smi_info, 0);
+ 	spin_unlock_irqrestore(&(smi_info->si_lock), flags);
+ 
 -- 
-Regards,
-
-Laurent Pinchart
+1.9.1
 
