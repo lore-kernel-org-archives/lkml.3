@@ -1,95 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556AbbAGQM6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 11:12:58 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:45070 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752584AbbAGQM5 (ORCPT
+	id S1753685AbbAGQNv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 11:13:51 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:15693 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751863AbbAGQNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 11:12:57 -0500
-Date: Wed, 7 Jan 2015 08:12:46 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "Luck, Tony" <tony.luck@intel.com>,
-        X86 ML <x86@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	Wed, 7 Jan 2015 11:13:49 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/6v/IjYXA2fWaCWzv9t6e4sH9wSae3s7Y=
+X-DKIM: OpenDKIM Filter v2.0.1 titan BE76563FCB5
+Date: Wed, 7 Jan 2015 11:13:33 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Bjorn Andersson <bjorn@kryo.se>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, Phong Vo <pvo@apm.com>,
+        Linus Walleij <linus.walleij@linaro.org>, Tin Huynh <tnhuynh@apm.com>,
+        Y Vo <yvo@apm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Toan Le <toanle@apm.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] x86, mce: Get rid of TIF_MCE_NOTIFY and associated mce
- tricks
-Message-ID: <20150107161246.GY5280@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CALCETrV6=aWoAckieQkPJ4BCr9VzU=9080EmLfeL4ZWm+Hr55g@mail.gmail.com>
- <54ab2ffa301102cd6e@agluck-desk.sc.intel.com>
- <CALCETrV+mchcQ5SgBO8+xLvw9rrHm4yvq+wZtQsD1EMMGzAMEw@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3299127A@ORSMSX114.amr.corp.intel.com>
- <20150107121340.GB3984@pd.tnic>
- <CALCETrW9N8Dw7r3m=r4rec4GKo18arFgOBxA+WnnLdw+AVb1BQ@mail.gmail.com>
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 1/3] genirq: Allow the irqchip state of an IRQ to be
+ save/restored
+Message-ID: <20150107161333.GL24989@titan.lakedaemon.net>
+References: <1417623503-30261-1-git-send-email-marc.zyngier@arm.com>
+ <1417623503-30261-2-git-send-email-marc.zyngier@arm.com>
+ <CAJAp7OijMW4_VMp29K1UxtURJT-WgwwsN-O1x3Lqi-gHrAj6Sw@mail.gmail.com>
+ <5486C2D6.6020006@arm.com>
+ <20150107160502.GJ24989@titan.lakedaemon.net>
+ <54AD5A52.4090608@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrW9N8Dw7r3m=r4rec4GKo18arFgOBxA+WnnLdw+AVb1BQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15010716-0013-0000-0000-000007B35CAA
+In-Reply-To: <54AD5A52.4090608@arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 07:51:26AM -0800, Andy Lutomirski wrote:
-> On Wed, Jan 7, 2015 at 4:13 AM, Borislav Petkov <bp@alien8.de> wrote:
-> > On Tue, Jan 06, 2015 at 06:00:08PM +0000, Luck, Tony wrote:
-> >> That's fine with me.  Boris ... any comments?
-> >
-> > Same here:
-> >
-> > Acked-by: Borislav Petkov <bp@suse.de>
-> >
-> > I like negative diffstats:
-> >
-> >  include/asm/mce.h         |    1
-> >  include/asm/thread_info.h |    4 -
-> >  kernel/cpu/mcheck/mce.c   |  109 ++++++++++------------------------------------
-> >  kernel/signal.c           |    6 --
-> >  4 files changed, 26 insertions(+), 94 deletions(-)
-> >
-> > Procedural question: so this is going in, in the next merge window,
-> > aimed at 3.20, right?
+On Wed, Jan 07, 2015 at 04:09:54PM +0000, Marc Zyngier wrote:
+> On 07/01/15 16:05, Jason Cooper wrote:
+...
+> > Did I miss the new version of this?
 > 
-> Yes, assuming that Ingo and Thomas agree.
-> 
-> When does Paul usually send the rcu pull request?  I can send these as
-> a pull request or an emailed series after that happens.
+> I'm rebasing all my stuff at the moment. Expect something later today
+> (or tomorrow morning worse case).
 
-I normally send it to -tip at about -rc5.  Which is coming right up,
-isn't it?  Guess I had better get my tree organized.  ;-)
+Ok, wasn't trying to rush.  I had a few days of mail anomalies, so I was
+just double checking that it didn't go missing.
 
-							Thanx, Paul
+thx,
 
-> --Andy
-> 
-> >
-> > IMO that is a good plan as we have max time to deal with fallout, should
-> > there be any.
-> >
-> > Thanks.
-> >
-> > --
-> > Regards/Gruss,
-> >     Boris.
-> >
-> > Sent from a fat crate under my desk. Formatting is fine.
-> > --
-> 
-> 
-> 
-> -- 
-> Andy Lutomirski
-> AMA Capital Management, LLC
-> 
-
+Jason.
