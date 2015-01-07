@@ -1,78 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753004AbbAGNJg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 08:09:36 -0500
-Received: from hofr.at ([212.69.189.236]:43569 "EHLO mail.hofr.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751630AbbAGNJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 08:09:35 -0500
-Date: Wed, 7 Jan 2015 14:09:32 +0100
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: "Jiang, Dave" <dave.jiang@intel.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rashika.kheria@gmail.com" <rashika.kheria@gmail.com>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        "josh@joshtriplett.org" <josh@joshtriplett.org>
-Subject: Re: [PATCH] ioat: fail self-test if wait_for_completion times out
-Message-ID: <20150107130932.GA3891@opentech.at>
-References: <1419763047-15414-1-git-send-email-der.herr@hofr.at> <1420476711.7745.2.camel@djiang5-desk2.amr.corp.intel.com> <20150106004246.GA31803@opentech.at> <1420558682.62574.2.camel@djiang5-desk2.amr.corp.intel.com> <54AD2AB3.9030801@redhat.com>
+	id S1752972AbbAGNMz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 08:12:55 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:49628 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820AbbAGNMx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 08:12:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54AD2AB3.9030801@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1420533751-23999-1-git-send-email-howard.chen@linaro.org>
+References: <1420533751-23999-1-git-send-email-howard.chen@linaro.org>
+Date: Wed, 7 Jan 2015 14:12:51 +0100
+Message-ID: <CABuKBeJFa=70ZRKhq9_2dZRTPGsFBqNtUCSkUkUPYrZD8HTmYg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Add sysirq device node for mt6592, also correct the
+ timer interrupt.
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Howard Chen <howard.chen@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "moderated list:ARM/Mediatek SoC..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 07 Jan 2015, Prarit Bhargava wrote:
+Hi Howard,
 
-> 
-> 
-> On 01/06/2015 10:38 AM, Jiang, Dave wrote:
-> >>>> -	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
-> >>>> +	if (tmo == 0 || dma->device_tx_status(dma_chan, cookie, NULL)
-> >>>> +			!= DMA_COMPLETE) {
-> >>>
-> >>> Can you please do: 
-> >>> +	if (tmo == 0 ||
-> >>> +	    dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
-> >>
-> >> Documentation/CodingStyle:Chapter 2
-> >>
-> >> "Statements longer than 80 columns will be broken into sensible chunks, unless
-> >> exceeding 80 columns significantly increases readability and does not hide
-> >> information. Descendants are always substantially shorter than the parent and
-> >> are placed substantially to the right. The same applies to function headers..."
-> >>
-> >> am I misreading the CodingStyle here ?
-> > 
-> > I'm not sure what the issue is here.... What I proposed is still the
-> > same length as the original code. And what I suggested complies with the
-> > existing coding style that's already there.
-> 
-> Ugh ... I missed this obvious CodingStyle error.
-> 
-> What Dave is trying to say is that he (and I'm pretty sure everyone else
-> for that matter) disagree with you style change because you have not broken
-> the columns into "sensible chunks".
-> 
-> IOW ... this,
-> 
-> 	if (tmo == 0 ||
-> 	    dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
-> 
-> is much easier to comprehend than this,
-> 
-> 	if (tmo == 0 || dma->device_tx_status(dma_chan, cookie, NULL)
-> 			!= DMA_COMPLETE) {
+2015-01-06 9:42 GMT+01:00 Howard Chen <howard.chen@linaro.org>:
+> Signed-off-by: Howard Chen <howard.chen@linaro.org>
+> ---
+>  arch/arm/boot/dts/mt6592.dtsi | 21 +++++++++++++++++----
+>  1 file changed, 17 insertions(+), 4 deletions(-)
+
+Please use in the subject "ARM: mediatek: " prefix and please add a
+commit message to your patch. From my point of view it's OK if you
+explain in the commit message why we can/should change the timer
+interrupt, please do so.
+
 >
-agreed - it was just not clear to me how strict things should
-be applied - e.g. the indentation with spaces - will cleanup and
-resend.
+> diff --git a/arch/arm/boot/dts/mt6592.dtsi b/arch/arm/boot/dts/mt6592.dtsi
+> index 31e5a09..1db453f 100644
+> --- a/arch/arm/boot/dts/mt6592.dtsi
+> +++ b/arch/arm/boot/dts/mt6592.dtsi
+> @@ -18,7 +18,7 @@
+>
+>  / {
+>         compatible = "mediatek,mt6592";
+> -       interrupt-parent = <&gic>;
+> +       interrupt-parent = <&sysirq>;
+>
+>         cpus {
+>                 #address-cells = <1>;
+> @@ -78,21 +78,34 @@
+>                 #clock-cells = <0>;
+>         };
+>
+> +       uart_clk: uart_clk {
+> +               compatible = "fixed-clock";
+> +               clock-frequency = <26000000>;
+> +               #clock-cells = <0>;
+> +       };
+> +
 
-thx!
-hofrat 
+Please delete the uart clock, it has nothing to do with the sysirq in
+the first place.
+
+Thanks,
+Matthias
+
+>         timer: timer@10008000 {
+>                 compatible = "mediatek,mt6577-timer";
+>                 reg = <0x10008000 0x80>;
+> -               interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_HIGH>;
+> +               interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_LOW>;
+>                 clocks = <&system_clk>, <&rtc_clk>;
+>                 clock-names = "system-clk", "rtc-clk";
+>         };
+>
+> +       sysirq: interrupt-controller@10200220 {
+> +               compatible = "mediatek,mt6592-sysirq", "mediatek,mt6577-sysirq";
+> +               interrupt-controller;
+> +               #interrupt-cells = <3>;
+> +               interrupt-parent = <&gic>;
+> +               reg = <0x10200220 0x1c>;
+> +       };
+> +
+>         gic: interrupt-controller@10211000 {
+>                 compatible = "arm,cortex-a7-gic";
+>                 interrupt-controller;
+>                 #interrupt-cells = <3>;
+> +               interrupt-parent = <&gic>;
+>                 reg = <0x10211000 0x1000>,
+>                       <0x10212000 0x1000>;
+>         };
+> -
+>  };
+> -
+> --
+> 1.9.1
+>
+
+
+
+-- 
+motzblog.wordpress.com
