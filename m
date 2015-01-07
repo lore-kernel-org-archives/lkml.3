@@ -1,106 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800AbbAGLam (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 06:30:42 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:10344 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670AbbAGLaj (ORCPT
+	id S1753016AbbAGLdH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 06:33:07 -0500
+Received: from mga03.intel.com ([134.134.136.65]:51302 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752985AbbAGLdC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 06:30:39 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-c8-54ad18dccebf
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, lauraa@codeaurora.org,
-        linus.walleij@linaro.org, tony@atomide.com, drake@endlessm.com,
-        loeliger@gmail.com, Mark Rutland <mark.rutland@arm.com>, nm@ti.com,
-        khilman@linaro.org
-Subject: [PATCH v12 9/9] ARM: dts: exynos4: Add nodes for L2 cache controller
-Date: Wed, 07 Jan 2015 12:30:24 +0100
-Message-id: <1420630224-8887-10-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.9.2
-In-reply-to: <1420630224-8887-1-git-send-email-m.szyprowski@samsung.com>
-References: <1420630224-8887-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t/xq7p3JNaGGPxYZWzxd9IxdotH8x8z
-	W/QuuMpm8fXwCkaLs01v2C22d85gt5jyZzmTxabH11gtLu+aw2Yxe0k/i8WM8/uYLG5f5rU4
-	t30Li8XaI3fZLZZev8hk8ebHWSaLU9c/s1ms2vWH0WL/FS8HYY8189YwerQ097B5/P41idHj
-	29dJLB6X+3qZPBZ9z/LYOesuu8eda3vYPDYvqfe4cqKJ1aNvyypGj+M3tjN5fN4kF8AbxWWT
-	kpqTWZZapG+XwJVxd9lB9oJJfBV3PrUyNTDe4u5i5OSQEDCReHjoOzuELSZx4d56ti5GLg4h
-	gaWMEv9O3wdLCAn0MUk8/RcLYrMJGEp0ve1iA7FFBNwk/q07BNbALDCNRWLTkfPMIAlhAV+J
-	ayd2MIHYLAKqEs3vtzKC2LwCHhKbLz5hgdgmJ/H/5QqwGk6g+J3zy5gglrlLLJi4km0CI+8C
-	RoZVjKKppckFxUnpuYZ6xYm5xaV56XrJ+bmbGCFx8WUH4+JjVocYBTgYlXh4C/rWhAixJpYV
-	V+YeYpTgYFYS4X3zCyjEm5JYWZValB9fVJqTWnyIkYmDU6qB0X73w/n7WJ5dPuSrl9d3cPqs
-	Rzx/9a1dna0z2P1YZT5Ihzyb4HU6dMeN6dvSpTNmJuw+ulXzsN3neD3eZ1YXjn11vLEo3OZf
-	XDKP+tUUlw6TKV3J4nq3Jh3lb7xt+iq3UC3l4G3JWycyhX7w1UswJW/xvHSop8DylHfcT9mF
-	z1IeyBxa8VpWQYmlOCPRUIu5qDgRAEysbsFpAgAA
+	Wed, 7 Jan 2015 06:33:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="437485828"
+From: "Dilger, Andreas" <andreas.dilger@intel.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+CC: "Drokin, Oleg" <oleg.drokin@intel.com>,
+        "HPDD-discuss@ml01.01.org" <HPDD-discuss@ml01.01.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        OSUOSL Drivers <devel@driverdev.osuosl.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+Subject: Re: lustre/lnet/lnet/lib-move.c: memcpy with (struct
+ iovec*)->iov_base, which is __user
+Thread-Topic: lustre/lnet/lnet/lib-move.c: memcpy with (struct
+ iovec*)->iov_base, which is __user
+Thread-Index: AQHQKgLkt1vkC4ZL3keuW3w1+SLWXZy03EQA//+73oA=
+Date: Wed, 7 Jan 2015 11:32:59 +0000
+Message-ID: <D0D2667E.D2C25%andreas.dilger@intel.com>
+References: <CANZNk80SoQZU994psVKuuGRGGHnGgO7bcFpPBQoGyg=CjW77xw@mail.gmail.com>
+ <20150107083654.GK15033@mwanda>
+In-Reply-To: <20150107083654.GK15033@mwanda>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.254.188.251]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <3662E1D38E8E064E933B3D008E3AE393@intel.com>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tomasz Figa <t.figa@samsung.com>
+On 2015/01/07, 1:36 AM, "Dan Carpenter" <dan.carpenter@oracle.com> wrote:
+> Didn't Al change these to kvec instead of iovec?  You have to look at
+> the callers to figure out if it's actually a user space pointer or a
+> kernel pointer.
 
-This patch adds device tree nodes for L2 cache controller present on
-Exynos4 SoCs.
+A patch was sent by Al on Dec 2 to replace iovec with kvec, in a thread
+titled "[PATCH] staging:lustre:lnet: Incorrect type in assignment".  Greg
+replied on Dec 10 in another thread (also fixing this same warning) titled
+"[PATCH] staging: lustre: Fix the warning messages about casting without
+__user macro" that Al's patch was in the staging tree for 3.19-rc1.
 
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
----
- arch/arm/boot/dts/exynos4210.dtsi |  9 +++++++++
- arch/arm/boot/dts/exynos4x12.dtsi | 14 ++++++++++++++
- 2 files changed, 23 insertions(+)
-
-diff --git a/arch/arm/boot/dts/exynos4210.dtsi b/arch/arm/boot/dts/exynos4210.dtsi
-index bcc9e63c8070..8e45ea44317e 100644
---- a/arch/arm/boot/dts/exynos4210.dtsi
-+++ b/arch/arm/boot/dts/exynos4210.dtsi
-@@ -81,6 +81,15 @@
- 		reg = <0x10023CA0 0x20>;
- 	};
- 
-+	l2c: l2-cache-controller@10502000 {
-+		compatible = "arm,pl310-cache";
-+		reg = <0x10502000 0x1000>;
-+		cache-unified;
-+		cache-level = <2>;
-+		arm,tag-latency = <2 2 1>;
-+		arm,data-latency = <2 2 1>;
-+	};
-+
- 	gic: interrupt-controller@10490000 {
- 		cpu-offset = <0x8000>;
- 	};
-diff --git a/arch/arm/boot/dts/exynos4x12.dtsi b/arch/arm/boot/dts/exynos4x12.dtsi
-index 93b70402e943..8bc97c415c9a 100644
---- a/arch/arm/boot/dts/exynos4x12.dtsi
-+++ b/arch/arm/boot/dts/exynos4x12.dtsi
-@@ -54,6 +54,20 @@
- 		reg = <0x10023CA0 0x20>;
- 	};
- 
-+	l2c: l2-cache-controller@10502000 {
-+		compatible = "arm,pl310-cache";
-+		reg = <0x10502000 0x1000>;
-+		cache-unified;
-+		cache-level = <2>;
-+		arm,tag-latency = <2 2 1>;
-+		arm,data-latency = <3 2 1>;
-+		arm,double-linefill = <1>;
-+		arm,double-linefill-incr = <0>;
-+		arm,double-linefill-wrap = <1>;
-+		arm,prefetch-drop = <1>;
-+		arm,prefetch-offset = <7>;
-+	};
-+
- 	clock: clock-controller@10030000 {
- 		compatible = "samsung,exynos4412-clock";
- 		reg = <0x10030000 0x20000>;
+Cheers, Andreas
 -- 
-1.9.2
+Andreas Dilger
+
+Lustre Software Architect
+Intel High Performance Data Division
+
 
