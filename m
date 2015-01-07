@@ -1,55 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700AbbAGSU4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 13:20:56 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:53789 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754159AbbAGSTw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 13:19:52 -0500
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 12/12] rcutorture: Add more diagnostics in rcu_barrier() test failure case
-Date: Wed,  7 Jan 2015 10:19:38 -0800
-Message-Id: <1420654779-11213-12-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1420654779-11213-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20150107181915.GA7803@linux.vnet.ibm.com>
- <1420654779-11213-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15010718-0025-0000-0000-0000079243B9
+	id S1754756AbbAGSVo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 13:21:44 -0500
+Received: from fieldses.org ([174.143.236.118]:47380 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754344AbbAGSVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 13:21:42 -0500
+Date: Wed, 7 Jan 2015 13:21:41 -0500
+To: Holger =?utf-8?Q?Hoffst=C3=A4tte?= 
+	<holger.hoffstaette@googlemail.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.18.1: broken directory with one file too many
+Message-ID: <20150107182141.GA7066@fieldses.org>
+References: <20141218144856.GA18179@fieldses.org>
+ <alpine.OSX.2.19.9992.1412180955000.62182@planck.local>
+ <20141218151914.GB18179@fieldses.org>
+ <pan.2014.12.18.15.42.53@googlemail.com>
+ <20141218163254.GF18179@fieldses.org>
+ <549303FC.9090604@googlemail.com>
+ <20141218170653.GG18179@fieldses.org>
+ <54932EA5.9090803@googlemail.com>
+ <20141220180243.GA10273@fieldses.org>
+ <pan.2015.01.07.00.25.06@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <pan.2015.01.07.00.25.06@googlemail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Wed, Jan 07, 2015 at 12:25:06AM +0000, Holger Hoffstätte wrote:
+> On Sat, 20 Dec 2014 13:02:43 -0500, J. Bruce Fields wrote:
+> 
+> > On Thu, Dec 18, 2014 at 08:44:37PM +0100, Holger Hoffstätte wrote:
+> >> On 12/18/14 18:06, J. Bruce Fields wrote:
+> >> > Whoops, now I see, the server-side trace has the same problem, I just
+> >> > overlooked it the first time.
+> >> 
+> >> Excellent, so we know it's the server's fault. Really would have been
+> >> odd to not have it in the server trace.
+> >> 
+> >> >> ..in order to rule out a mistake on my part with the two separate
+> >> >> runs (which prevents correlated analysis) I was just about to boot
+> >> >> the server back into 3.18.1 and re-run both client- and server-side
+> >> >> traces simultaneously. However I have to head out for a bit first;
+> >> >> will post that later today.
+> >> > 
+> >> > So this might still be interesting, but it's not a high priority.
+> >> 
+> >> Then I guess I'll better keep my feet still and don't muddle the waters
+> >> further, looks like you found what you need. If you still need it just
+> >> holler.
+> >> 
+> >> Let me know if there's anything I can do to help/patch/test!
+> > 
+> > Gah.  Does this fix it?
+> > 
+> > A struct xdr_stream at a page boundary might point to the end of one
+> > page or the beginning of the next, and I'm guessing xdr_truncate_encode
+> > wasn't prepared to handle the former.
+> > 
+> > This happens if the readdir entry that would have exceeded the client's
+> > dircount/maxcount limit would have ended exactly on a 4k page boundary,
+> > and inspection of the trace shows you're hitting exactly that case.
+> > 
+> > If this does the job then I'll go figure out how to make this logic less
+> > ugly....
+> > 
+> > --b.
+> > 
+> > diff --git a/net/sunrpc/xdr.c b/net/sunrpc/xdr.c index
+> > 1cb61242e55e..32910b91d17c 100644 --- a/net/sunrpc/xdr.c +++
+> > b/net/sunrpc/xdr.c @@ -630,6 +630,9 @@ void xdr_truncate_encode(struct
+> > xdr_stream *xdr, size_t len)
+> >  
+> >  	new = buf->page_base + buf->page_len;
+> >  	old = new + fraglen;
+> > +	/* XXX: HACK: */
+> > +	if (xdr->p == page_address(*xdr->page_ptr) + PAGE_SIZE)
+> > +		xdr->page_ptr++;
+> >  	xdr->page_ptr -= (old >> PAGE_SHIFT) - (new >> PAGE_SHIFT);
+> >  
+> >  	if (buf->page_len) {
+> 
+> Any news on getting this upstream and into -stables? I ack'ed it on Dec. 
+> 20 and have been running it 24/7 since then with no problems.
+> 
+> Just making sure it doesn't disappear into the post-holiday couch 
+> crack.. :)
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/rcu/rcutorture.c | 3 +++
- 1 file changed, 3 insertions(+)
+Yeah, understood, thanks for the reminder.  I took another look and
+found a simpler fix and wanted to reproduce.  Unfortunately the
+reproducer depends on a lot of details (your git directory won't
+necessarily work on somebody else's setup) so all I found was a brute
+force attempt to create directories which lots of various-sized entries
+(excuse the sloppy shell):
 
-diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
-index 24142c200901..30d42aa55d83 100644
---- a/kernel/rcu/rcutorture.c
-+++ b/kernel/rcu/rcutorture.c
-@@ -1427,6 +1427,9 @@ static int rcu_torture_barrier(void *arg)
- 		cur_ops->cb_barrier(); /* Implies smp_mb() for wait_event(). */
- 		if (atomic_read(&barrier_cbs_invoked) != n_barrier_cbs) {
- 			n_rcu_torture_barrier_error++;
-+			pr_err("barrier_cbs_invoked = %d, n_barrier_cbs = %d\n",
-+			       atomic_read(&barrier_cbs_invoked),
-+			       n_barrier_cbs);
- 			WARN_ON_ONCE(1);
- 		}
- 		n_barrier_successes++;
--- 
-1.8.1.5
+	j=74
+	k=100
+	while true; do 
+		ssh root@f20-3 '
+			cd /exports/xfs/DIR
+			rm -f 00*
+			for ((i=0; i<'$k'; i++)); do
+				touch $(printf "%0'$j'.0f" $i); done
+			for ((i='$k'; i<100; i++));
+				do touch $(printf "%0'$((j+1))'.0f" $i); done
+		'
+		if ! diff <(ssh root@f20-3 ls /exports/xfs/DIR/) <(ls DIR); then
+			echo "diff found at $j, $k"
+			break
+		fi
+		echo $j, $((k--))
+		if [ $k -eq 0 ]; then
+			echo ---
+			echo $((j+=4)), $((k=100))
+		fi
+	done
 
+Now that I think of it there might be other operations (read, readlink)
+that could trigger the same problem more easily.
+
+But anyway that reproducer worked and confirmed the following which I'll
+probably pass along upstream today or tomorrow....
+
+--b.
+
+commit 9f5b5c33b2ee
+Author: J. Bruce Fields <bfields@redhat.com>
+Date:   Mon Dec 22 16:14:51 2014 -0500
+
+    rpc: fix xdr_truncate_encode to handle buffer ending on page boundary
+    
+    A struct xdr_stream at a page boundary might point to the end of one
+    page or the beginning of the next, but xdr_truncate_encode isn't
+    prepared to handle the former.
+    
+    This can cause corruption of NFSv4 READDIR replies in the case that a
+    readdir entry that would have exceeded the client's dircount/maxcount
+    limit would have ended exactly on a 4k page boundary.  You're more
+    likely to hit this case on large directories.
+    
+    Other xdr_truncate_encode callers are probably also affected.
+    
+    Reported-by: Holger Hoffstätte <holger.hoffstaette@googlemail.com>
+    Tested-by: Holger Hoffstätte <holger.hoffstaette@googlemail.com>
+    Fixes: 3e19ce762b53 "rpc: xdr_truncate_encode"
+    Cc: stable@vger.kernel.org
+    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+
+diff --git a/net/sunrpc/xdr.c b/net/sunrpc/xdr.c
+index 1cb61242e55e..862307ac341f 100644
+--- a/net/sunrpc/xdr.c
++++ b/net/sunrpc/xdr.c
+@@ -629,8 +629,8 @@ void xdr_truncate_encode(struct xdr_stream *xdr, size_t len)
+ 	buf->len -= fraglen;
+ 
+ 	new = buf->page_base + buf->page_len;
+-	old = new + fraglen;
+-	xdr->page_ptr -= (old >> PAGE_SHIFT) - (new >> PAGE_SHIFT);
++
++	xdr->page_ptr = buf->pages + (new >> PAGE_SHIFT);
+ 
+ 	if (buf->page_len) {
+ 		xdr->p = page_address(*xdr->page_ptr);
