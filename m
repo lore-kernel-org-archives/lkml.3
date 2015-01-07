@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933442AbbAGCUk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:20:40 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:32806 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932655AbbAGCUg (ORCPT
+	id S1757837AbbAGCS6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:18:58 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:61947 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932653AbbAGCSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 21:20:36 -0500
-From: gyungoh@gmail.com
-X-Google-Original-From: jack.yoo@skyworksinc.com
-To: sameo@linux.intel.com, lee.jones@linaro.org, grant.likely@linaro.org,
-        robh+dt@kernel.org, jg1.han@samsung.com, cooloney@gmail.com,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        trivial@kernel.org
-Cc: akpm@linux-foundation.org, jic23@kernel.org,
-        thomas.petazzoni@free-electrons.com, ktsai@capellamicro.com,
-        hs@denx.de, stwiss.opensource@diasemi.com, matti.vaittinen@nsn.com,
-        broonie@kernel.org, jason@lakedaemon.net, heiko@sntech.de,
-        shawn.guo@freescale.com, florian.vaussard@epfl.ch, andrew@lunn.ch,
-        antonynpavlov@gmail.com, hytszk@gmail.com, plagnioj@jcrosoft.com,
-        tomi.valkeinen@ti.com, jack.yoo@skyworksinc.com,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: [PATCH v10 6/6] devicetree: i2c: Add SKY81452 to the Trivial Devices list
-Date: Wed,  7 Jan 2015 11:19:27 +0900
-Message-Id: <1420597167-3188-7-git-send-email-jack.yoo@skyworksinc.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1420597167-3188-1-git-send-email-jack.yoo@skyworksinc.com>
-References: <1420597167-3188-1-git-send-email-jack.yoo@skyworksinc.com>
+	Tue, 6 Jan 2015 21:18:55 -0500
+Date: Tue, 6 Jan 2015 18:21:28 -0800
+From: Kent Overstreet <kmo@daterainc.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2 percpu/for-3.20] percpu_ref: remove unnecessary
+ ACCESS_ONCE() in percpu_ref_tryget_live()
+Message-ID: <20150107022128.GC2433@kmo-pixel>
+References: <20150106152347.GD3077@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150106152347.GD3077@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+On Tue, Jan 06, 2015 at 10:23:47AM -0500, Tejun Heo wrote:
+> __ref_is_percpu() needs the implied ACCESS_ONCE() in
+> lockless_dereference() on @ref->percpu_count_ptr because the value is
+> tested for !__PERCPU_REF_ATOMIC, which may be set asynchronously, and
+> then used as a pointer.  If the compiler generates a separate fetch
+> when using it as a pointer, __PERCPU_REF_ATOMIC may be set in between
+> contaminating the pointer value.
+> 
+> percpu_ref_tryget_live() also uses ACCESS_ONCE() to test
+> __PERCPU_REF_DEAD; however, there's no reason for this.  I just copied
+> ACCESS_ONCE() usage blindly from __ref_is_percpu().  All it does is
+> confusing people trying to understand what's going on.
+> 
+> This patch removes the unnecessary ACCESS_ONCE() usage from
+> percpu_ref_tryget_live() and adds a comment explaining why
+> __ref_is_percpu() needs it.
 
-Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
----
-Changes v10:
-Nothing
+lockless_dereference() is new - cool! I've been wanting that without even
+realizing it.
 
-Changes v9:
-Nothing
-
-Changes v8:
-Nothing
-
-Changes v7:
-Nothing
-
-Changes v6:
-Nothing
-
-Changes v5:
-Nothing
-
-Changes v4:
-Nothing
-
-Changes v3:
-Nothing
-
-Changes v2:
-Add SKY81452 to the Trivial Devices list
-
- Documentation/devicetree/bindings/i2c/trivial-devices.txt | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-index fbde415..122fa1e 100644
---- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-+++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-@@ -77,6 +77,7 @@ ramtron,24c64		i2c serial eeprom  (24cxx)
- ricoh,rs5c372a		I2C bus SERIAL INTERFACE REAL-TIME CLOCK IC
- samsung,24ad0xd1	S524AD0XF1 (128K/256K-bit Serial EEPROM for Low Power)
- sii,s35390a		2-wire CMOS real-time clock
-+skyworks,sky81452	Skyworks SKY81452: Six-Channel White LED Driver with Touch Panel Bias Supply
- st-micro,24c256		i2c serial eeprom  (24cxx)
- stm,m41t00		Serial Access TIMEKEEPER
- stm,m41t62		Serial real-time clock (RTC) with alarm
--- 
-1.9.1
-
+Acked-by: Kent Overstreet <kmo@daterainc.com>
