@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645AbbAGB6H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 20:58:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46230 "EHLO
+	id S932899AbbAGB4b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 20:56:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46417 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932416AbbAGBwQ (ORCPT
+	with ESMTP id S932505AbbAGBwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:52:16 -0500
+	Tue, 6 Jan 2015 20:52:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Guy Briggs <rgb@redhat.com>, Paul Moore <pmoore@redhat.com>
-Subject: [PATCH 3.18 69/84] audit: restore AUDIT_LOGINUID unset ABI
-Date: Tue,  6 Jan 2015 17:50:12 -0800
-Message-Id: <20150107014031.217294554@linuxfoundation.org>
+        P J P <ppandit@redhat.com>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.10 01/38] isofs: Fix infinite looping over CE entries
+Date: Tue,  6 Jan 2015 17:50:13 -0800
+Message-Id: <20150107014952.733004449@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
-In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
-References: <20150107014029.012974975@linuxfoundation.org>
+In-Reply-To: <20150107014952.440109372@linuxfoundation.org>
+References: <20150107014952.440109372@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,104 +24,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Richard Guy Briggs <rgb@redhat.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 041d7b98ffe59c59fdd639931dea7d74f9aa9a59 upstream.
+commit f54e18f1b831c92f6512d2eedb224cd63d607d3d upstream.
 
-A regression was caused by commit 780a7654cee8:
-	 audit: Make testing for a valid loginuid explicit.
-(which in turn attempted to fix a regression caused by e1760bd)
+Rock Ridge extensions define so called Continuation Entries (CE) which
+define where is further space with Rock Ridge data. Corrupted isofs
+image can contain arbitrarily long chain of these, including a one
+containing loop and thus causing kernel to end in an infinite loop when
+traversing these entries.
 
-When audit_krule_to_data() fills in the rules to get a listing, there was a
-missing clause to convert back from AUDIT_LOGINUID_SET to AUDIT_LOGINUID.
+Limit the traversal to 32 entries which should be more than enough space
+to store all the Rock Ridge data.
 
-This broke userspace by not returning the same information that was sent and
-expected.
-
-The rule:
-	auditctl -a exit,never -F auid=-1
-gives:
-	auditctl -l
-		LIST_RULES: exit,never f24=0 syscall=all
-when it should give:
-		LIST_RULES: exit,never auid=-1 (0xffffffff) syscall=all
-
-Tag it so that it is reported the same way it was set.  Create a new
-private flags audit_krule field (pflags) to store it that won't interact with
-the public one from the API.
-
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Reported-by: P J P <ppandit@redhat.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/audit.h |    4 ++++
- kernel/auditfilter.c  |   10 ++++++++++
- 2 files changed, 14 insertions(+)
+ fs/isofs/rock.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -47,6 +47,7 @@ struct sk_buff;
- 
- struct audit_krule {
- 	int			vers_ops;
-+	u32			pflags;
- 	u32			flags;
- 	u32			listnr;
- 	u32			action;
-@@ -64,6 +65,9 @@ struct audit_krule {
- 	u64			prio;
+--- a/fs/isofs/rock.c
++++ b/fs/isofs/rock.c
+@@ -30,6 +30,7 @@ struct rock_state {
+ 	int cont_size;
+ 	int cont_extent;
+ 	int cont_offset;
++	int cont_loops;
+ 	struct inode *inode;
  };
  
-+/* Flag to indicate legacy AUDIT_LOGINUID unset usage */
-+#define AUDIT_LOGINUID_LEGACY		0x1
+@@ -73,6 +74,9 @@ static void init_rock_state(struct rock_
+ 	rs->inode = inode;
+ }
+ 
++/* Maximum number of Rock Ridge continuation entries */
++#define RR_MAX_CE_ENTRIES 32
 +
- struct audit_field {
- 	u32				type;
- 	union {
---- a/kernel/auditfilter.c
-+++ b/kernel/auditfilter.c
-@@ -442,6 +442,7 @@ static struct audit_entry *audit_data_to
- 		if ((f->type == AUDIT_LOGINUID) && (f->val == AUDIT_UID_UNSET)) {
- 			f->type = AUDIT_LOGINUID_SET;
- 			f->val = 0;
-+			entry->rule.pflags |= AUDIT_LOGINUID_LEGACY;
+ /*
+  * Returns 0 if the caller should continue scanning, 1 if the scan must end
+  * and -ve on error.
+@@ -105,6 +109,8 @@ static int rock_continue(struct rock_sta
+ 			goto out;
  		}
- 
- 		err = audit_field_valid(entry, f);
-@@ -617,6 +618,13 @@ static struct audit_rule_data *audit_kru
- 			data->buflen += data->values[i] =
- 				audit_pack_string(&bufp, krule->filterkey);
- 			break;
-+		case AUDIT_LOGINUID_SET:
-+			if (krule->pflags & AUDIT_LOGINUID_LEGACY && !f->val) {
-+				data->fields[i] = AUDIT_LOGINUID;
-+				data->values[i] = AUDIT_UID_UNSET;
-+				break;
-+			}
-+			/* fallthrough if set */
- 		default:
- 			data->values[i] = f->val;
- 		}
-@@ -633,6 +641,7 @@ static int audit_compare_rule(struct aud
- 	int i;
- 
- 	if (a->flags != b->flags ||
-+	    a->pflags != b->pflags ||
- 	    a->listnr != b->listnr ||
- 	    a->action != b->action ||
- 	    a->field_count != b->field_count)
-@@ -751,6 +760,7 @@ struct audit_entry *audit_dupe_rule(stru
- 	new = &entry->rule;
- 	new->vers_ops = old->vers_ops;
- 	new->flags = old->flags;
-+	new->pflags = old->pflags;
- 	new->listnr = old->listnr;
- 	new->action = old->action;
- 	for (i = 0; i < AUDIT_BITMASK_SIZE; i++)
+ 		ret = -EIO;
++		if (++rs->cont_loops >= RR_MAX_CE_ENTRIES)
++			goto out;
+ 		bh = sb_bread(rs->inode->i_sb, rs->cont_extent);
+ 		if (bh) {
+ 			memcpy(rs->buffer, bh->b_data + rs->cont_offset,
 
 
