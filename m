@@ -1,136 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754435AbbAGRP4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 12:15:56 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:10257 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754399AbbAGRPw (ORCPT
+	id S1754179AbbAGRPP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 12:15:15 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60812 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751929AbbAGRPL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 12:15:52 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+ZNKm/PBksIM6/8IpubrfUDL0bwRvUXyA=
-X-DKIM: OpenDKIM Filter v2.0.1 titan D9F3663FDBD
-Date: Wed, 7 Jan 2015 12:15:45 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Magnus Damm <magnus.damm@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] irqchip: renesas-intc-irqpin: r8a7779 IRLM setup
- support
-Message-ID: <20150107171545.GM24989@titan.lakedaemon.net>
-References: <20141215050920.533.20169.sendpatchset@w520>
- <52558289.TJpHJaW3sy@avalon>
- <CANqRtoS34Jf+ztJYpt1faCkNQk-V0vihgxjWj2Sn61YWKZepJQ@mail.gmail.com>
- <1533637.nrBHixev6I@avalon>
+	Wed, 7 Jan 2015 12:15:11 -0500
+Message-ID: <54AD69CC.7010902@wwwdotorg.org>
+Date: Wed, 07 Jan 2015 10:15:56 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1533637.nrBHixev6I@avalon>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] ARM: tegra: rely on bootloader pinmux programming
+ on nyan-big
+References: <1420540653-14816-1-git-send-email-tomeu.vizoso@collabora.com> <1420540653-14816-2-git-send-email-tomeu.vizoso@collabora.com> <54AC16B0.5050703@wwwdotorg.org> <CAAObsKB1gMcLZ=n8Mc6JSLQHn5-6VWOhERLgYTdi6nit6yCj5w@mail.gmail.com>
+In-Reply-To: <CAAObsKB1gMcLZ=n8Mc6JSLQHn5-6VWOhERLgYTdi6nit6yCj5w@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 18, 2014 at 04:39:51AM +0200, Laurent Pinchart wrote:
-> Hi Magnus,
-> 
-> On Thursday 18 December 2014 10:26:27 Magnus Damm wrote:
-> > On Thu, Dec 18, 2014 at 6:41 AM, Laurent Pinchart wrote:
-> > > On Monday 15 December 2014 14:09:20 Magnus Damm wrote:
-> > >> From: Magnus Damm <damm+renesas@opensource.se>
-> > >> 
-> > >> Add r8a7779 specific support for IRLM bit configuration
-> > >> in the INTC-IRQPIN driver. Without this code we need
-> > >> special workaround code in arch/arm/mach-shmobile.
-> > >> 
-> > >> The IRLM bit for the INTC hardware exists on various
-> > >> older SH-based SoCs and is used to select between two
-> > >> modes for the external interrupt pins IRQ0 to IRQ3:
-> > >> 
-> > >> IRLM = 0: (default from reset on r8a7779)
-> > >> In this mode the pins IRQ0 to IRQ3 are used together
-> > >> to give a value between 0 and 15 to the SoC. External
-> > >> logic is required for masking. This mode is not
-> > >> supported by the INTC-IRQPIN driver.
-> > >> 
-> > >> IRLM = 1: (needs this patch or configuration elsewhere)
-> > >> In this mode IRQ0 to IRQ3 operate as 4 individual
-> > >> external interrupt pins. In this mode the SMSC ethernet
-> > >> chip can be used via IRQ1 on r8a7779 Marzen. This mode
-> > >> is the only supported mode by the INTC-IRQPIN driver.
-> > >> 
-> > >> For this patch to work the r8a7779 DTS needs to pass
-> > >> the ICR0 register as the last register bank.
-> > >> 
-> > >> Signed-off-by: Magnus Damm <damm+renesas@opensource.se>
-> > >> ---
-> > >> 
-> > >>  Same version as sent on December 3rd.
-> > >>  
-> > >>  Written against renesas-devel-20141202-v3.18-rc7 which is
-> > >>  basically v3.18-rc7 plus latest arch/arm/mach-shmobile code.
-> > >>  
-> > >>  Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqp
-> > >>  in.txt |    5 +
-> > >>  drivers/irqchip/irq-renesas-intc-irqpi                |   50 ++++++++--
-> > >>  2 files changed, 46 insertions(+), 9 deletions(-)
-> > >> 
-> > >> ---
-> > >> 0001/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-
-> > >> ir qpin.txt +++
-> > >> work/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-
-> > >> irqpin.txt      2014-12-03 20:25:13.000000000 +0900
-> > >> @@ -9,6 +9,11 @@
-> > >> Required properties:
-> > >>      - "renesas,intc-irqpin-r8a7778" (R-Car M1A)
-> > >>      - "renesas,intc-irqpin-r8a7779" (R-Car H1)
-> > >>      - "renesas,intc-irqpin-sh73a0" (SH-Mobile AG5)
-> > >> +
-> > >> +- reg: Base address and length of each register bank used by the
-> > >> external
-> > >> +  IRQ pins driven by the interrupt controller hardware module. The base
-> > >> +  addresses, length and number of required register banks varies with
-> > >> soctype.
-> > > 
-> > > Ouch. Ouch. Multiple times. Very much :-/
-> > > 
-> > > I suppose it's too late to fix the DT bindings ?
+On 01/07/2015 01:06 AM, Tomeu Vizoso wrote:
+> On 6 January 2015 at 18:09, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 01/06/2015 03:37 AM, Tomeu Vizoso wrote:
+>>>
+>>> Following 6dbaff2b, the kernel expects that the bootloader has correctly
+>>> programmed the Tegra pinmux.
+>>>
+>>> DTs for the Jetson and the Venice2 had been updated already but this one
+>>> was left behind.
+>>
+>>
+>> So this setup is true for NVIDIA-controlled development/reference boards
+>> where we've ensured that the bootloader sets up 100% of the pinmux.
+>>
+>> However, I know that Coreboot on this board doesn't set up everything in the
+>> pinmux, and since it's in r/o flash never will. As such, I'm not sure this
+>> change is safe for this board. That is, unless you want to force upstream
+>> kernels to be booted via a chain-loaded path: Coreboot (r/o) -> U-Boot (r/w
+>> with full pinmux setup) -> kernel.
+>>
+>>> Have tested this with the stock vendor firmware (coreboot) and have found
+>>> no
+>>> issues.
+>>
+>>
+>> There are presumably a bunch of features which aren't yet supported
+>> upstream, and hence you couldn't test though? That means we might find that
+>> parts of the pinmux aren't yet programmed but need to be to enable those
+>> features.
+>
+> Sure, there's no chance that my testing could have been extensive enough.
+>
+> Following Andrew's feedback, I will be looking at getting the pinmux
+> programming right in the DTs.
 
-Fix?  Is this a change to the reg property (from an undocumented
-version)?  Or just adding the reg property?  If the later, then as long
-as the driver preserves the old behavior when the reg property isn't
-present, we should be good.
+As an FYI, the way this typically works (for NVIDIA reference boards, 
+and many/most customer boards) is that NVIDIA syseng publishes an Excel 
+spreadsheet that can be edited to define the board's pinmux, and which 
+performs some error checks. This spreadsheet can directly generate (via 
+Excel macros/...) pinmux data tables and/or DT files for our 
+product/internal/downstream Android and L4T kernels. For recent SoCs, 
+the tegra-pinmux-scripts project[1] can take a CSV representation of the 
+spreadsheet and generate both a U-Boot header file (for upstream or L4T; 
+they're the same) and upstream Linux kernel DT files that represent the 
+pinmux.
 
-If the case was the former, then we need to keep in mind that these are
-old SoCs and that this binding is mfgr-specific.  afair from the DT
-maintainers, it's acceptable to have a little instability under these
-conditions.
+So, your best bet is to see if such a spreadsheet exists for these 
+platforms, and import it into tegra-pinmux-scripts. That will save a lot 
+of work if the spreadsheet exists (and is up-to-date).
 
-> > I don't think it is ever too late, but the question is just how urgent
-> > it is to get rid of the Marzen C board code. With the code in this
-> > patch queue up we can get rid of the board code. If someone decides to
-> > rework the INTC IRQPIN bits then we will have to live with the Marzen
-> > code for longer. And if we should do it right and describe the actual
-> > hardware, then perhaps we should consider the non-IRQ-pin interrupts
-> > included in INTC for some SoCs. So it rapidly gets more complex...
-> 
-> I don't think there's a need to delay getting rid of Marzen legacy code, my 
-> comment wasn't an attempt to delay your efforts :-)
-> 
-> Looking at the hardware we should have a single INTC DT node, not four. What 
-> I'm wondering is whether we could still fix the DT bindings, or if the 
-> backward compatibility requirements would make it too painful, especially 
-> given that R-Car Gen2 doesn't use INTC.
-
-Please see above.  I'm sure the DT maintainers will chirp up if the
-winds have shifted, but I'd rather we do it right if we're breaking
-compatibility anyway.
-
-thx,
-
-Jason.
+[1] https://github.com/NVIDIA/tegra-pinmux-scripts
