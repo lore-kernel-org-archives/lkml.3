@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407AbbAGRdc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 12:33:32 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:11508 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753909AbbAGRd3 (ORCPT
+	id S1755113AbbAGReU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 12:34:20 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41710 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753713AbbAGReS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 12:33:29 -0500
-X-IronPort-AV: E=Sophos;i="5.07,715,1413270000"; 
-   d="scan'208";a="54496224"
-Message-ID: <54AD6DE5.20601@broadcom.com>
-Date: Wed, 7 Jan 2015 09:33:25 -0800
-From: Ray Jui <rjui@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 7 Jan 2015 12:34:18 -0500
+Date: Wed, 7 Jan 2015 17:33:51 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Andrew Jackson <Andrew.Jackson@arm.com>
+Cc: Jean-Francois Moine <moinejf@free.fr>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Dave Airlie <airlied@gmail.com>, Jyri Sarha <jsarha@ti.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20150107173351.GB2634@sirena.org.uk>
+References: <cover.1420628786.git.moinejf@free.fr>
+ <0084acea5a3475a77531d6a77483f36d3469111a.1420628786.git.moinejf@free.fr>
+ <54AD4511.30702@arm.com>
+ <20150107180825.52334d4f@armhf>
+ <54AD6A5C.60903@arm.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Matt Porter <mporter@linaro.org>,
-        Alex Elder <elder@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
-        "Scott Branden" <sbranden@broadcom.com>,
-        <linux-kernel@vger.kernel.org>,
-        <bcm-kernel-feedback-list@broadcom.com>
-Subject: Re: [PATCH v2 4/5] clk: cygnus: add clock support for Broadcom Cygnus
-References: <1420500076-18302-5-git-send-email-rjui@broadcom.com> <2048376.BFrtW5tszK@wuerfel> <54AC99F3.8040703@broadcom.com> <2938966.fY2WjearG6@wuerfel>
-In-Reply-To: <2938966.fY2WjearG6@wuerfel>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yTfYsguFsV8cp5cf"
+Content-Disposition: inline
+In-Reply-To: <54AD6A5C.60903@arm.com>
+X-Cookie: What's so funny?
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v9 1/4] drm/i2c: tda998x: Add DT support for audio
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--yTfYsguFsV8cp5cf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 1/7/2015 1:11 AM, Arnd Bergmann wrote:
-> On Tuesday 06 January 2015 18:29:07 Ray Jui wrote:
->> On 1/6/2015 12:21 PM, Arnd Bergmann wrote:
->>> On Monday 05 January 2015 15:21:15 Ray Jui wrote:
->>>> +static const struct iproc_asiu_gate asiu_gate[BCM_CYGNUS_NUM_ASIU_CLKS] = {
->>>> +	[BCM_CYGNUS_ASIU_KEYPAD_CLK] =
->>>> +		asiu_gate_val(0x0, 7),
->>>> +	[BCM_CYGNUS_ASIU_ADC_CLK] =
->>>> +		asiu_gate_val(0x0, 9),
->>>> +	[BCM_CYGNUS_ASIU_PWM_CLK] =
->>>> +		asiu_gate_val(IPROC_CLK_INVALID_OFFSET, 0),
->>>> +};
->>>
->>> Here I think a better binding would be to pass the gate value in the
->>> clock specifier, rather than an artificial index. That would let
->>> you get rid of the BCM_CYGNUS_ASIU_KEYPAD_CLK/BCM_CYGNUS_ASIU_ADC_CLK
->>> macros.
->>>
->> You meant to pass in both the gate register offset and its bit shift
->> through the clock specifier? But isn't the current ASIU clock code much
->> more consistent with the rest of the iProc clock code?
-> 
-> For simple devices that don't need an index macro, I would always
-> prefer not defining them, because they are a pain to maintain.
-> For a simple gate clock controller, we could compute both the offset
-> and bit number from a single integer.
-> 
-> However, I now saw upon taking a closer look that the asiu has both
-> a gate and a divider, and the latter one is not as simple, so
-> my comment doesn't apply here.
-> 
-> 	Arnd
-> 
-Okay. I'll leave this as it is and make other changes based on the
-review. Thanks!
+On Wed, Jan 07, 2015 at 05:18:20PM +0000, Andrew Jackson wrote:
+
+> I understand your difficulty!  I was just wanting something to clarify th=
+e=20
+> meaning of the value without reference to the driver source.
+
+> You could add something like this to your existing explanation: "The value
+> describes which audio input pins are selected; this varies depending
+> on chip type so consult the section on audio port configuration in the=20
+> relevant datasheet.". =20
+
+This is commonly done by just saying that the value will be written into
+a given bitfield for such and such a purpose and then relying on the
+chip documentation for that; it's a more direct way of saying the above.
+
+--yTfYsguFsV8cp5cf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUrW3+AAoJECTWi3JdVIfQlX0H/RX+ohGKBgKyWlTMPcFZFEB6
+tMppOk1zQhdIqxs4qWJPsRDC2ZXWRXgk2WI621PSjkxWrhAO9H2Jju0G9fnmdynq
+5WSZsWe1s1yDjOYMLnbhUIOwWzDqCHYf+bH3CeDzvWPIG+SmujHRnKI6AS/whzPv
+jQrGnS7T2u3IV+3IK2TgJohIU9JMdft2KsTk4D4YpXDPS1BatvcitM6UfX/en/U6
+SawZUl6NGSzT+efmQWOastopkjn6r0bA6odaGI0DjaXnmq+ymCj9BqOb1Qb0EhSf
+0vv5GdPfZYDukvlU2FuLP/iWHNixU7N9h2pcvJsC82/Np85l2Im7VqIBNDWIcQY=
+=7iDb
+-----END PGP SIGNATURE-----
+
+--yTfYsguFsV8cp5cf--
