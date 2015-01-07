@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110AbbAGGl7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 01:41:59 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:50134 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754952AbbAGGl6 (ORCPT
+	id S1754559AbbAGGvE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 01:51:04 -0500
+Received: from cassarossa.samfundet.no ([193.35.52.29]:49385 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751607AbbAGGvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 01:41:58 -0500
-Date: Wed, 7 Jan 2015 07:41:54 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Ken Wilson <ken.wilson@opengear.com>, robh+dt@kernel.org,
-        mark.rutland@arm.com, devicetree@vger.kernel.org,
-        linux@arm.linux.org.uk, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, gerg@uclinux.org,
-        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
-        broonie@kernel.org, ezequiel.garcia@free-electrons.com,
-        galak@codeaurora.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] spi: orion: Add multiple chip select support for Armada
- 370 and 375
-Message-ID: <20150107074154.1334b5c0@free-electrons.com>
-In-Reply-To: <54AC5B16.9020206@free-electrons.com>
-References: <1420579846-31962-1-git-send-email-ken.wilson@opengear.com>
-	<54AC5B16.9020206@free-electrons.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Wed, 7 Jan 2015 01:51:03 -0500
+Date: Wed, 7 Jan 2015 07:50:55 +0100
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, Haavard Skinnemoen <hskinnemoen@gmail.com>
+Subject: Re: [PATCH v2 24/40] avr32: whitespace fix
+Message-ID: <20150107065055.GA18142@samfundet.no>
+References: <1420558883-10131-1-git-send-email-mst@redhat.com>
+ <1420558883-10131-25-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420558883-10131-25-git-send-email-mst@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Gregory CLEMENT,
+Around Tue 06 Jan 2015 17:44:50 +0200 or thereabout, Michael S. Tsirkin wrote:
+> Align using tabs to make code prettier.
+>
 
-On Tue, 06 Jan 2015 23:00:54 +0100, Gregory CLEMENT wrote:
+It is already aligned using tabs, but there is one too much. Thanks for
+cleaning.
 
-> On 06/01/2015 22:30, Ken Wilson wrote:
-> > Create a new dt binding for the Armada 375 that supports up to
-> > 3 chip selects but uses the same prescaler values and algorithm
-> > as the basic orion binding.
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+>
+
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+
+> ---
+>  arch/avr32/include/asm/uaccess.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> There was already a patch that have been sent for this:
-> http://thread.gmane.org/gmane.linux.kernel.spi.devel/17808/focus=17809
-> 
-> but in the end it has not been merged. The last email on the thread was
-> about doing the manipulation in set_cs and not in setup_transfer(). And I
-> didn't find a newer version.
-> 
-> Maybe it just fell through the cracks.
-> Thomas did you remember of it?
-
-Yes, it is still on my TODO-list, but I haven't yet gotten around to
-submitting a new version. So I haven't looked at Ken's contribution,
-but if Ken is willing to bring it up to a state where it can be
-mainlined, that would definitely be welcome.
-
-Thanks,
-
-Thomas
+> diff --git a/arch/avr32/include/asm/uaccess.h b/arch/avr32/include/asm/uaccess.h
+> index ccd07c4..72607f3 100644
+> --- a/arch/avr32/include/asm/uaccess.h
+> +++ b/arch/avr32/include/asm/uaccess.h
+> @@ -278,7 +278,7 @@ extern int __put_user_bad(void);
+>  				       __pu_err);			\
+>  			break;						\
+>  		case 8:							\
+> -			__put_user_asm("d", __pu_addr, __pu_val,		\
+> +			__put_user_asm("d", __pu_addr, __pu_val,	\
+>  				       __pu_err);			\
+>  			break;						\
+>  		default:						\
 -- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+mvh
+Hans-Christian Egtvedt
