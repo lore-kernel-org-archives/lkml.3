@@ -1,169 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636AbbAGUwE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 15:52:04 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:53478 "EHLO
+	id S1754809AbbAGUwK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 15:52:10 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:36840 "EHLO
 	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752455AbbAGUwD (ORCPT
+	with ESMTP id S1754672AbbAGUwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 15:52:03 -0500
+	Wed, 7 Jan 2015 15:52:07 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: lkml <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Corey Minyard <minyard@acm.org>,
         openipmi-developer@lists.sourceforge.net,
         Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 1/2][RFC] ipmi: Cleanup DEBUG_TIMING ifdef usage
-Date: Wed,  7 Jan 2015 12:51:49 -0800
-Message-Id: <1420663910-6406-1-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 2/2][RFC] ipmi: Update timespec usage to timespec64
+Date: Wed,  7 Jan 2015 12:51:50 -0800
+Message-Id: <1420663910-6406-2-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1420663910-6406-1-git-send-email-john.stultz@linaro.org>
+References: <1420663910-6406-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver uses #ifdef DEBUG_TIMING in order to conditionally print out
-timestamped debug messages. Unfortunately it adds the ifdefs all over the
-usage sites.
-
-This patch cleans it up by adding a debug_timestamp() function which
-is compiled out if DEBUG_TIMING isn't present. This cleans up all
-the ugly ifdefs in the function logic.
+As part of the internal y2038 cleanup, this patch removes
+timespec usage in the ipmi driver, replacing it timespec64
 
 Cc: Corey Minyard <minyard@acm.org>
 Cc: openipmi-developer@lists.sourceforge.net
 Cc: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/char/ipmi/ipmi_si_intf.c | 58 +++++++++++++++-------------------------
- 1 file changed, 21 insertions(+), 37 deletions(-)
+ drivers/char/ipmi/ipmi_si_intf.c | 25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
-index 967b73a..cc3a07d 100644
+index cc3a07d..814ba98 100644
 --- a/drivers/char/ipmi/ipmi_si_intf.c
 +++ b/drivers/char/ipmi/ipmi_si_intf.c
-@@ -321,6 +321,18 @@ static int try_smi_init(struct smi_info *smi);
- static void cleanup_one_si(struct smi_info *to_clean);
- static void cleanup_ipmi_si(void);
- 
-+#ifdef DEBUG_TIMING
-+void debug_timestamp(char *msg)
-+{
-+	struct timeval t;
-+
-+	do_gettimeofday(&t);
-+	pr_debug("**%s: %d.%9.9d\n", msg, t.tv_sec, t.tv_usec);
-+}
-+#else
-+#define debug_timestamp(x)
-+#endif
-+
- static ATOMIC_NOTIFIER_HEAD(xaction_notifier_list);
- static int register_xaction_notifier(struct notifier_block *nb)
+@@ -324,10 +324,10 @@ static void cleanup_ipmi_si(void);
+ #ifdef DEBUG_TIMING
+ void debug_timestamp(char *msg)
  {
-@@ -370,10 +382,7 @@ static enum si_sm_result start_next_msg(struct smi_info *smi_info)
- 
- 		smi_info->curr_msg = smi_info->waiting_msg;
- 		smi_info->waiting_msg = NULL;
--#ifdef DEBUG_TIMING
--		do_gettimeofday(&t);
--		printk(KERN_DEBUG "**Start2: %d.%9.9d\n", t.tv_sec, t.tv_usec);
--#endif
-+		debug_timestamp("Start2");
- 		err = atomic_notifier_call_chain(&xaction_notifier_list,
- 				0, smi_info);
- 		if (err & NOTIFY_STOP_MASK) {
-@@ -582,12 +591,8 @@ static void check_bt_irq(struct smi_info *smi_info, bool irq_on)
- static void handle_transaction_done(struct smi_info *smi_info)
- {
- 	struct ipmi_smi_msg *msg;
--#ifdef DEBUG_TIMING
 -	struct timeval t;
++	struct timespec64 t;
  
 -	do_gettimeofday(&t);
--	printk(KERN_DEBUG "**Done: %d.%9.9d\n", t.tv_sec, t.tv_usec);
--#endif
-+	debug_timestamp("Done");
- 	switch (smi_info->si_state) {
- 	case SI_NORMAL:
- 		if (!smi_info->curr_msg)
-@@ -929,17 +934,11 @@ static void sender(void                *send_info,
- 	struct smi_info   *smi_info = send_info;
- 	enum si_sm_result result;
- 	unsigned long     flags;
--#ifdef DEBUG_TIMING
--	struct timeval    t;
--#endif
- 
- 	BUG_ON(smi_info->waiting_msg);
- 	smi_info->waiting_msg = msg;
- 
--#ifdef DEBUG_TIMING
--	do_gettimeofday(&t);
--	printk("**Enqueue: %d.%9.9d\n", t.tv_sec, t.tv_usec);
--#endif
-+	debug_timestamp("Enqueue");
- 
- 	if (smi_info->run_to_completion) {
- 		/*
-@@ -1128,15 +1127,10 @@ static void smi_timeout(unsigned long data)
- 	unsigned long     jiffies_now;
- 	long              time_diff;
- 	long		  timeout;
--#ifdef DEBUG_TIMING
--	struct timeval    t;
--#endif
- 
- 	spin_lock_irqsave(&(smi_info->si_lock), flags);
--#ifdef DEBUG_TIMING
--	do_gettimeofday(&t);
--	printk(KERN_DEBUG "**Timer: %d.%9.9d\n", t.tv_sec, t.tv_usec);
--#endif
-+	debug_timestamp("Timer");
-+
- 	jiffies_now = jiffies;
- 	time_diff = (((long)jiffies_now - (long)smi_info->last_timeout_jiffies)
- 		     * SI_USEC_PER_JIFFY);
-@@ -1173,18 +1167,13 @@ static irqreturn_t si_irq_handler(int irq, void *data)
+-	pr_debug("**%s: %d.%9.9d\n", msg, t.tv_sec, t.tv_usec);
++	do_getnstimeofday64(&t);
++	pr_debug("**%s: %lld.%9.9d\n", msg, (long long) t.tv_sec, t.tv_usec);
+ }
+ #else
+ #define debug_timestamp(x)
+@@ -988,18 +988,18 @@ static void set_run_to_completion(void *send_info, bool i_run_to_completion)
+  * we are spinning in kipmid looking for something and not delaying
+  * between checks
+  */
+-static inline void ipmi_si_set_not_busy(struct timespec *ts)
++static inline void ipmi_si_set_not_busy(struct timespec64 *ts)
  {
+ 	ts->tv_nsec = -1;
+ }
+-static inline int ipmi_si_is_busy(struct timespec *ts)
++static inline int ipmi_si_is_busy(struct timespec64 *ts)
+ {
+ 	return ts->tv_nsec != -1;
+ }
+ 
+ static inline int ipmi_thread_busy_wait(enum si_sm_result smi_result,
+ 					const struct smi_info *smi_info,
+-					struct timespec *busy_until)
++					struct timespec64 *busy_until)
+ {
+ 	unsigned int max_busy_us = 0;
+ 
+@@ -1008,12 +1008,13 @@ static inline int ipmi_thread_busy_wait(enum si_sm_result smi_result,
+ 	if (max_busy_us == 0 || smi_result != SI_SM_CALL_WITH_DELAY)
+ 		ipmi_si_set_not_busy(busy_until);
+ 	else if (!ipmi_si_is_busy(busy_until)) {
+-		getnstimeofday(busy_until);
+-		timespec_add_ns(busy_until, max_busy_us*NSEC_PER_USEC);
++		getnstimeofday64(busy_until);
++		timespec64_add_ns(busy_until, max_busy_us*NSEC_PER_USEC);
+ 	} else {
+-		struct timespec now;
+-		getnstimeofday(&now);
+-		if (unlikely(timespec_compare(&now, busy_until) > 0)) {
++		struct timespec64 now;
++
++		getnstimeofday64(&now);
++		if (unlikely(timespec64_compare(&now, busy_until) > 0)) {
+ 			ipmi_si_set_not_busy(busy_until);
+ 			return 0;
+ 		}
+@@ -1036,7 +1037,7 @@ static int ipmi_thread(void *data)
  	struct smi_info *smi_info = data;
- 	unsigned long   flags;
--#ifdef DEBUG_TIMING
--	struct timeval  t;
--#endif
+ 	unsigned long flags;
+ 	enum si_sm_result smi_result;
+-	struct timespec busy_until;
++	struct timespec64 busy_until;
  
- 	spin_lock_irqsave(&(smi_info->si_lock), flags);
- 
- 	smi_inc_stat(smi_info, interrupts);
- 
--#ifdef DEBUG_TIMING
--	do_gettimeofday(&t);
--	printk(KERN_DEBUG "**Interrupt: %d.%9.9d\n", t.tv_sec, t.tv_usec);
--#endif
-+	debug_timestamp("Interrupt");
-+
- 	smi_event_handler(smi_info, 0);
- 	spin_unlock_irqrestore(&(smi_info->si_lock), flags);
- 	return IRQ_HANDLED;
-@@ -2038,18 +2027,13 @@ static u32 ipmi_acpi_gpe(acpi_handle gpe_device,
- {
- 	struct smi_info *smi_info = context;
- 	unsigned long   flags;
--#ifdef DEBUG_TIMING
--	struct timeval t;
--#endif
- 
- 	spin_lock_irqsave(&(smi_info->si_lock), flags);
- 
- 	smi_inc_stat(smi_info, interrupts);
- 
--#ifdef DEBUG_TIMING
--	do_gettimeofday(&t);
--	printk("**ACPI_GPE: %d.%9.9d\n", t.tv_sec, t.tv_usec);
--#endif
-+	debug_timestamp("ACPI_GPE");
-+
- 	smi_event_handler(smi_info, 0);
- 	spin_unlock_irqrestore(&(smi_info->si_lock), flags);
- 
+ 	ipmi_si_set_not_busy(&busy_until);
+ 	set_user_nice(current, MAX_NICE);
 -- 
 1.9.1
 
