@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308AbbAGNrh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 08:47:37 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:44751 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752735AbbAGNrf (ORCPT
+	id S1753334AbbAGNr6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 08:47:58 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:63227 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753310AbbAGNr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 08:47:35 -0500
-Message-ID: <54AD38EE.1080008@roeck-us.net>
-Date: Wed, 07 Jan 2015 05:47:26 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 7 Jan 2015 08:47:56 -0500
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.18 00/84] 3.18.2-stable review
-References: <20150107014029.012974975@linuxfoundation.org>
-In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.50F5812F.0045,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 13
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20150107212439.7254d389@canb.auug.org.au>
+References: <CA+icZUVVPe68VGwRcc5ztxGwHi83wHJVeiJMUuBynm2LypoaZA@mail.gmail.com>
+	<20150107212439.7254d389@canb.auug.org.au>
+Date: Wed, 7 Jan 2015 14:47:53 +0100
+Message-ID: <CA+icZUVYu2uaAG-sSf5pf_rzGU+BSBAwu9mhBDrCXZ0a2nw1sA@mail.gmail.com>
+Subject: Re: Missing next-$date git-tag when pulled-in linux-next.git on top
+ of linus.git
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2015 05:49 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.18.2 release.
-> There are 84 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+On Wed, Jan 7, 2015 at 11:24 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Sedat,
 >
-> Responses should be made by Fri Jan  9 01:40:07 UTC 2015.
-> Anything received after that time might be too late.
+> On Wed, 7 Jan 2015 09:24:57 +0100 Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>
+>> My workflow looks like this
+>>
+>> # Get mainline Git tree
+>> $ git clone $LINUS_GIT_URL
+>>
+>> # Checkout latest mainline (rc) tag (aka -next's "origin" commit-id)
+>> $ git checkout -b Linux-v3.19-rc3 v3.19-rc3
+>>
+>> # Base to pull in current -next
+>> $ git checkout -b Linux-next-20150107
+>>
+>> # Pull in stuff from next-20150107
+>> $ git pull git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+>> tags/next-20150107
+>
+> Just do
+>
+> $ git pull git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
+>
+> That should also fetch the next- tag.
 >
 
-Build results:
-	total: 133 pass: 133 fail: 0
-Qemu tests:
-	total: 30 pass: 30 fail: 0
+For current -next this is OK.
+Sometimes I needed to test against a specific next-version.
+Any idea?
 
-Details are available at http://server.roeck-us.net:8010/builders.
-
-Guenter
-
+- Sedat -
