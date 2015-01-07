@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758513AbbAGC5g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:57:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46242 "EHLO
+	id S1758630AbbAGDCF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 22:02:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46230 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756939AbbAGBwD (ORCPT
+	with ESMTP id S1756895AbbAGBv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:52:03 -0500
+	Tue, 6 Jan 2015 20:51:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Dmitry Osipenko <digetx@gmail.com>,
         Thierry Reding <treding@nvidia.com>
-Subject: [PATCH 3.18 33/84] drm/tegra: gem: dumb: pitch and size are outputs
-Date: Tue,  6 Jan 2015 17:49:36 -0800
-Message-Id: <20150107014030.107585982@linuxfoundation.org>
+Subject: [PATCH 3.18 34/84] ARM: tegra: Re-add removed SoC id macro to tegra_resume()
+Date: Tue,  6 Jan 2015 17:49:37 -0800
+Message-Id: <20150107014030.138061537@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
 References: <20150107014029.012974975@linuxfoundation.org>
@@ -28,47 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thierry Reding <treding@nvidia.com>
+From: Dmitry Osipenko <digetx@gmail.com>
 
-commit dc6057ecb39edb34b0461ca55382094410bd257a upstream.
+commit e4a680099a6e97ecdbb81081cff9e4a489a4dc44 upstream.
 
-When creating a dumb buffer object using the DRM_IOCTL_MODE_CREATE_DUMB
-IOCTL, only the width, height, bpp and flags parameters are inputs. The
-caller is not guaranteed to zero out or set handle, pitch and size, so
-the driver must not treat these values as possible inputs.
+Commit d127e9c ("ARM: tegra: make tegra_resume can work with current and later
+chips") removed tegra_get_soc_id macro leaving used cpu register corrupted after
+branching to v7_invalidate_l1() and as result causing execution of unintended
+code on tegra20. Possibly it was expected that r6 would be SoC id func argument
+since common cpu reset handler is setting r6 before branching to tegra_resume(),
+but neither tegra20_lp1_reset() nor tegra30_lp1_reset() aren't setting r6
+register before jumping to resume function. Fix it by re-adding macro.
 
-Fixes a bug where running the Weston compositor on Tegra DRM would cause
-an attempt to allocate a 3 GiB framebuffer to be allocated.
-
-Fixes: de2ba664c30f ("gpu: host1x: drm: Add memory manager and fb")
+Fixes: d127e9c (ARM: tegra: make tegra_resume can work with current and later chips)
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/tegra/gem.c |   10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+ arch/arm/mach-tegra/reset-handler.S |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/tegra/gem.c
-+++ b/drivers/gpu/drm/tegra/gem.c
-@@ -259,16 +259,12 @@ void tegra_bo_free_object(struct drm_gem
- int tegra_bo_dumb_create(struct drm_file *file, struct drm_device *drm,
- 			 struct drm_mode_create_dumb *args)
- {
--	int min_pitch = DIV_ROUND_UP(args->width * args->bpp, 8);
-+	unsigned int min_pitch = DIV_ROUND_UP(args->width * args->bpp, 8);
- 	struct tegra_drm *tegra = drm->dev_private;
- 	struct tegra_bo *bo;
+--- a/arch/arm/mach-tegra/reset-handler.S
++++ b/arch/arm/mach-tegra/reset-handler.S
+@@ -51,6 +51,7 @@ ENTRY(tegra_resume)
+  THUMB(	it	ne )
+ 	bne	cpu_resume			@ no
  
--	min_pitch = round_up(min_pitch, tegra->pitch_align);
--	if (args->pitch < min_pitch)
--		args->pitch = min_pitch;
--
--	if (args->size < args->pitch * args->height)
--		args->size = args->pitch * args->height;
-+	args->pitch = round_up(min_pitch, tegra->pitch_align);
-+	args->size = args->pitch * args->height;
- 
- 	bo = tegra_bo_create_with_handle(file, drm, args->size, 0,
- 					 &args->handle);
++	tegra_get_soc_id TEGRA_APB_MISC_BASE, r6
+ 	/* Are we on Tegra20? */
+ 	cmp	r6, #TEGRA20
+ 	beq	1f				@ Yes
 
 
