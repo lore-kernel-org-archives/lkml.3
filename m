@@ -1,58 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054AbbAGQRw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 11:17:52 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:45557 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753859AbbAGQRu (ORCPT
+	id S1753996AbbAGQRL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 11:17:11 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:60914 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753079AbbAGQRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 11:17:50 -0500
-From: Imre Palik <imrep.amz@gmail.com>
-To: xen-devel@lists.xenproject.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, "Palik, Imre" <imrep@amazon.de>,
-        Anthony Liguori <aliguori@amazon.com>
-Subject: [PATCH RFC] xen-time: decreasing the rating of the xen clocksource below that of the tsc clocksource for dom0's
-Date: Wed,  7 Jan 2015 17:16:38 +0100
-Message-Id: <1420647398-20207-1-git-send-email-imrep.amz@gmail.com>
+	Wed, 7 Jan 2015 11:17:09 -0500
+From: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: leo.yan@linaro.org, yexl@marvell.com, will.deacon@arm.com,
+        mark.rultand@arm.com, catalin.marinas@arm.com,
+        linux-kernel@vger.kernel.org,
+        "Suzuki K. Poulose" <suzuki.poulose@arm.com>
+Subject: [PATCH 0/2] Support deprecated SETEND instruction for AArch32
+Date: Wed,  7 Jan 2015 16:16:43 +0000
+Message-Id: <1420647405-3907-1-git-send-email-suzuki.poulose@arm.com>
 X-Mailer: git-send-email 1.7.9.5
+X-OriginalArrivalTime: 07 Jan 2015 16:17:06.0222 (UTC) FILETIME=[61278CE0:01D02A95]
+X-MC-Unique: 115010716170707201
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id t07GHG18024504
 
-From: "Palik, Imre" <imrep@amazon.de>
+From: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
 
-In Dom0's the use of the TSC clocksource (whenever it is stable enough to
-be used) instead of the Xen clocksource should not cause any issues, as
-Dom0 VMs never live-migrated.  The TSC clocksource is somewhat more
-efficient than the Xen paravirtualised clocksource, thus it should have
-higher rating.
+This series add support for controlling the 'setend' instruction,
+which is deprecated in ARMv8, using the legacy instruction emulation
+framework, introduced by Punit Agrawal.
 
-Cc: Anthony Liguori <aliguori@amazon.com>
-Signed-off-by: Imre Palik <imrep@amazon.de>
----
- arch/x86/xen/time.c |    4 ++++
- 1 file changed, 4 insertions(+)
+Patch 1 re-organises the infrastructure a little bit to avoid multiple
+CPU hotplug notifiers.
 
-diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-index f473d26..c768726 100644
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -487,6 +487,10 @@ static void __init xen_time_init(void)
- 	int cpu = smp_processor_id();
- 	struct timespec tp;
- 
-+	/* As Dom0 is never moved, no penalty on using TSC there */
-+	if (xen_initial_domain())
-+		xen_clocksource.rating = 275;
-+
- 	clocksource_register_hz(&xen_clocksource, NSEC_PER_SEC);
- 
- 	if (HYPERVISOR_vcpu_op(VCPUOP_stop_periodic_timer, cpu, NULL) == 0) {
+Patch 2 adds the support for SETEND.
+
+Testing :
+
+ $ cat setend_sig.c 
+ #include <stdio.h>
+ #include <signal.h>
+
+ #define setend_be(a)	asm __volatile__ ( "setend be" ::: "memory" )
+ #define setend_le(a)	asm __volatile__ ( "setend le" ::: "memory" )
+
+ volatile int flag = 1;
+
+ void sigint(int sig)
+ {
+	printf("in sighandler %d\n", sig);
+	flag = 0;
+	return;
+ }
+
+ main()
+ {
+	volatile int a = 0x0;
+
+	(void)signal(SIGINT, sigint);
+	printf("Press Ctrl+C to continue\n");
+	setend_be();
+	a ++;
+
+	while (flag);
+
+	setend_le();
+	a ++;
+
+	printf("a: 0x%x\n", a);
+	return 0;
+ }
+ $ cat /proc/sys/abi/setend 
+ 1
+ $ echo 1 > /sys/kernel/debug/tracing/events/emulation/instruction_emulation/enable 
+ $ echo 1 > /sys/kernel/debug/tracing/tracing_on 
+ $ ./setend_sig_a32 
+ Press Ctrl+C to continue
+ ^Cin sighandler 2
+ a: 0x1000001
+ $ cat /sys/kernel/debug/tracing/trace
+ # tracer: nop
+ #
+ # entries-in-buffer/entries-written: 2/2   #P:2
+ #
+ #                              _-----=> irqs-off
+ #                             / _----=> need-resched
+ #                            | / _---=> hardirq/softirq
+ #                            || / _--=> preempt-depth
+ #                            ||| /     delay
+ #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+ #              | |       |   ||||       |         |
+   setend_sig_a32-1373  [000] ...1   491.554499: instruction_emulation: instr="setend be" addr=0x8460
+   setend_sig_a32-1373  [000] ...1   492.833056: instruction_emulation: instr="setend le" addr=0x8488
+ $ dmesg | tail
+ [  491.554807] "setend_sig_a32" (1373) uses deprecated setend instruction at 0x8460
+ [  492.833285] "setend_sig_a32" (1373) uses deprecated setend instruction at 0x8488
+ $ echo 2 > /proc/sys/abi/setend
+ $ ./setend_sig_t16 
+ Press Ctrl+C to continue
+ ^Cin sighandler 2
+ a: 0x1000001
+ $ dmesg | tail
+ [  491.554807] "setend_sig_a32" (1373) uses deprecated setend instruction at 0x8460
+ [  492.833285] "setend_sig_a32" (1373) uses deprecated setend instruction at 0x8488
+ [  537.426216] Removed setend emulation handler
+ [  537.426624] Enabled setend support
+ ---
+
+Suzuki K. Poulose (2):
+  arm64: Consolidate hotplug notifier for instruction emulation
+  arm64: Emulate SETEND for AArch32 tasks
+
+ Documentation/arm64/legacy_instructions.txt |    5 +
+ arch/arm64/Kconfig                          |   10 ++
+ arch/arm64/include/asm/ptrace.h             |    7 ++
+ arch/arm64/kernel/armv8_deprecated.c        |  174 +++++++++++++++++++--------
+ arch/arm64/kernel/signal32.c                |    5 +-
+ 5 files changed, 151 insertions(+), 50 deletions(-)
+
 -- 
 1.7.9.5
+
 
