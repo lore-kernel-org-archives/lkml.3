@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758856AbbAGDJB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 22:09:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46236 "EHLO
+	id S1758841AbbAGDJA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 22:09:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46224 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756560AbbAGBvt (ORCPT
+	with ESMTP id S1756612AbbAGBvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jan 2015 20:51:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.18 05/84] x86, kvm: Clear paravirt_enabled on KVM guests for espfix32s benefit
-Date: Tue,  6 Jan 2015 17:49:08 -0800
-Message-Id: <20150107014029.188716319@linuxfoundation.org>
+        Arend Van Spriel <arend@broadcom.com>,
+        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.18 06/84] brcmfmac: Fix bitmap malloc bug in msgbuf.
+Date: Tue,  6 Jan 2015 17:49:09 -0800
+Message-Id: <20150107014029.217934707@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
 References: <20150107014029.012974975@linuxfoundation.org>
@@ -30,68 +31,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Hante Meuleman <meuleman@broadcom.com>
 
-commit 29fa6825463c97e5157284db80107d1bfac5d77b upstream.
+commit 333c2aa029b847051a2db76a6ca59f699a520030 upstream.
 
-paravirt_enabled has the following effects:
-
- - Disables the F00F bug workaround warning.  There is no F00F bug
-   workaround any more because Linux's standard IDT handling already
-   works around the F00F bug, but the warning still exists.  This
-   is only cosmetic, and, in any event, there is no such thing as
-   KVM on a CPU with the F00F bug.
-
- - Disables 32-bit APM BIOS detection.  On a KVM paravirt system,
-   there should be no APM BIOS anyway.
-
- - Disables tboot.  I think that the tboot code should check the
-   CPUID hypervisor bit directly if it matters.
-
- - paravirt_enabled disables espfix32.  espfix32 should *not* be
-   disabled under KVM paravirt.
-
-The last point is the purpose of this patch.  It fixes a leak of the
-high 16 bits of the kernel stack address on 32-bit KVM paravirt
-guests.  Fixes CVE-2014-8134.
-
-Suggested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Reviewed-by: Arend Van Spriel <arend@broadcom.com>
+Reviewed-by: Pieter-Paul Giesberts <pieterpg@broadcom.com>
+Signed-off-by: Hante Meuleman <meuleman@broadcom.com>
+Signed-off-by: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/kvm.c      |    9 ++++++++-
- arch/x86/kernel/kvmclock.c |    1 -
- 2 files changed, 8 insertions(+), 2 deletions(-)
+ drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -283,7 +283,14 @@ NOKPROBE_SYMBOL(do_async_page_fault);
- static void __init paravirt_ops_setup(void)
- {
- 	pv_info.name = "KVM";
--	pv_info.paravirt_enabled = 1;
-+
-+	/*
-+	 * KVM isn't paravirt in the sense of paravirt_enabled.  A KVM
-+	 * guest kernel works like a bare metal kernel with additional
-+	 * features, and paravirt_enabled is about features that are
-+	 * missing.
-+	 */
-+	pv_info.paravirt_enabled = 0;
- 
- 	if (kvm_para_has_feature(KVM_FEATURE_NOP_IO_DELAY))
- 		pv_cpu_ops.io_delay = kvm_io_delay;
---- a/arch/x86/kernel/kvmclock.c
-+++ b/arch/x86/kernel/kvmclock.c
-@@ -263,7 +263,6 @@ void __init kvmclock_init(void)
- #endif
- 	kvm_get_preset_lpj();
- 	clocksource_register_hz(&kvm_clock, NSEC_PER_SEC);
--	pv_info.paravirt_enabled = 1;
- 	pv_info.name = "KVM";
- 
- 	if (kvm_para_has_feature(KVM_FEATURE_CLOCKSOURCE_STABLE_BIT))
+--- a/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c
+@@ -1355,6 +1355,7 @@ int brcmf_proto_msgbuf_attach(struct brc
+ 	}
+ 	INIT_WORK(&msgbuf->txflow_work, brcmf_msgbuf_txflow_worker);
+ 	count = BITS_TO_LONGS(if_msgbuf->nrof_flowrings);
++	count = count * sizeof(unsigned long);
+ 	msgbuf->flow_map = kzalloc(count, GFP_KERNEL);
+ 	if (!msgbuf->flow_map)
+ 		goto fail;
 
 
