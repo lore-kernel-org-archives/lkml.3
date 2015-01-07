@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632AbbAGP6B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 10:58:01 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56865 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753295AbbAGP57 (ORCPT
+	id S1753875AbbAGP6L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 10:58:11 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:51155 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753475AbbAGP6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 10:57:59 -0500
-Date: Wed, 7 Jan 2015 15:57:47 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Mathieu Poirier <mathieu.poirier@linaro.org>
-Cc: Rob Herring <robherring2@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Wed, 7 Jan 2015 10:58:06 -0500
+Message-ID: <1420646284.5947.19.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: TCP connection issues against Amazon S3
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Erik Grinaker <erik@bengler.no>
+Cc: Yuchung Cheng <ycheng@google.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        khilman@linaro.org, daniel.lezcano@linaro.org
-Subject: Re: [PATCH] ARM: vexpress: bindings: Add generic PD awareness to the
- spc controller
-Message-ID: <20150107155747.GA31975@red-moon>
-References: <1420562732-4353-1-git-send-email-mathieu.poirier@linaro.org>
- <CAL_JsqJwauxNNojhAaYEr7oQTm6fwYwtByv_s6-tHiXYA214AQ@mail.gmail.com>
- <CANLsYkz_tx0MAnssO1JmgGzeaj12oU64FJjiKKyEOyXuUKk8jQ@mail.gmail.com>
- <CAL_JsqLv8Q4eS_bwuLbEOBSxjU7uff4__KcSi3qwAvgmjhQKHw@mail.gmail.com>
- <20150107105438.GA7256@e102568-lin.cambridge.arm.com>
- <CANLsYkxbMT1cYquZzbcYuo+=5xNBUhS6jJePovErwkaDDef_Gg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANLsYkxbMT1cYquZzbcYuo+=5xNBUhS6jJePovErwkaDDef_Gg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        netdev <netdev@vger.kernel.org>
+Date: Wed, 07 Jan 2015 07:58:04 -0800
+In-Reply-To: <34CE0233-F881-4F40-B119-AA9D8F7D500F@bengler.no>
+References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no>
+	 <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no>
+	 <1420564837.32621.30.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no>
+	 <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com>
+	 <03FC652E-AA01-42C7-BD52-019B6D922A9C@bengler.no>
+	 <CAK6E8=cP0BFUob5MVj9M0hC0efgRnUY=JMUPKee+v-4TLvHBgg@mail.gmail.com>
+	 <76DC89D1-CFCE-44B7-994E-4349FEEDEFA6@bengler.no>
+	 <1420575216.5947.12.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <4DA8529D-4EEC-42DA-89B0-DC7746DB2B10@bengler.no>
+	 <3F608393-E5F1-4647-81BF-C6C740100934@bengler.no>
+	 <CAK6E8=cf7cROQ0SON0BihkbOsBB+-sLAbexxgt4_xD+Auqev3Q@mail.gmail.com>
+	 <34CE0233-F881-4F40-B119-AA9D8F7D500F@bengler.no>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 02:33:38PM +0000, Mathieu Poirier wrote:
-
-[...]
-
-> >> > I will ask the vexpress maintainers where they want to see this code
-> >> > going.  Would you accept this binding as part of the existing
-> >> > "arm,vexpress-sysreg" [1] or even "arm,vexpress-scc" [2]?
-> >
-> > We are not CC'ed :). [2] is my answer, see below.
+On Wed, 2015-01-07 at 13:31 +0000, Erik Grinaker wrote:
+> On 06 Jan 2015, at 22:00, Yuchung Cheng <ycheng@google.com> wrote:
+> > On Tue, Jan 6, 2015 at 1:04 PM, Erik Grinaker <erik@bengler.no> wrote:
+> >> 
+> >>> On 06 Jan 2015, at 20:26, Erik Grinaker <erik@bengler.no> wrote:
+> >> This still doesn’t explain why it works with older kernels, but not newer ones. I’m thinking it’s
+> > probably some minor change, which gets amplified by the lack of SACKs
+> > on the loadbalancer. Anyway, I’ll bring it up with Amazon.
+> > can you post traces with the older kernels?
 > 
-> Thanks for the review - does it also mean you'd like to see the
-> creation of the generic power domains moved to tc2_pm.c ?
+> Here is a dump using 3.11.10 against a non-SACK-enabled loadbalancer:
+> 
+> http://abstrakt.bengler.no/tcp-issues-s3-nosack-3.11.10.pcap.bz2
+> 
+> The transfer shows lots of DUPACKs and retransmits, but this does not
+> seem to have as bad an effect as it did with the failing transfer we
+> saw on newer kernels:
+> 
+> http://abstrakt.bengler.no/tcp-issues-s3-failure.pcap.bz2
+> 
+> One big difference, which Rick touched on earlier, is that the newer
+> kernels keep sending TCP window updates as it’s going through the
+> retransmits. The older kernel does not do this.
 
-Not necessarily, I think the creation is ok where it is, what we have
-to do is to link the power domains to idle states instead of "disabling"
-the spc power down command, see other thread.
+The new kernel is the receiver : It does no retransmits.
 
-I agree you need updated DT bindings for idle states to achieve that
-and all the glue code that goes with it (in order for an idle state
-to link to the power domain structs you are creating).
+Increasing window in ACK packets should not prevent sender into
+retransmitting missing packets.
 
-I copied in Kevin and Daniel since I know they are interested and are
-working on this.
+Sender is not a linux host and is very buggy IMO : If receiver
+advertises a too big window, sender decides to not retransmit in some
+cases.
 
-Thanks,
-Lorenzo
+You can play with /proc/sys/net/ipv4/tcp_rmem and adopt very low values
+to work around the sender bug.
+
+( Or use SO_RCVBUF in receiver application)
+
+
