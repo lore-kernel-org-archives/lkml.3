@@ -1,165 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756398AbbAGBfr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 20:35:47 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:58951 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574AbbAGBfq convert rfc822-to-8bit (ORCPT
+	id S1756584AbbAGBhu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 20:37:50 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:13743 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751845AbbAGBhs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:35:46 -0500
-Date: Tue, 06 Jan 2015 20:35:42 -0500 (EST)
-Message-Id: <20150106.203542.1515714670133944465.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.6 on Emacs 24.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 06 Jan 2015 17:35:45 -0800 (PST)
+	Tue, 6 Jan 2015 20:37:48 -0500
+From: Calvin Owens <calvinowens@fb.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: <linux-kernel@vger.kernel.org>, <kernel-team@fb.com>,
+        Calvin Owens <calvinowens@fb.com>
+Subject: [PATCH] ksoftirqd: Enable IRQs and call cond_resched() before poking RCU
+Date: Tue, 6 Jan 2015 17:37:39 -0800
+Message-ID: <1420594659-16996-1-git-send-email-calvinowens@fb.com>
+X-Mailer: git-send-email 2.1.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-07_01:2015-01-06,2015-01-07,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=3.45033029023803
+ compositescore=0.928708196901072 urlsuspect_oldscore=0.928708196901072
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.928708196901072 spamscore=0
+ recipient_to_sender_domain_totalscore=12 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1501070016
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+While debugging an issue with excessive softirq usage, I encountered the
+following note in commit 3e339b5dae24a706 ("softirq: Use hotplug thread
+infrastructure"):
 
-Just a pile of random fixes, including:
+    [ paulmck: Call rcu_note_context_switch() with interrupts enabled. ]
 
-1) Do not apply TSO limits to non-TSO packets, fix from Herbert
-   Xu.
+...but despite this note, the patch still calls RCU with IRQs disabled.
 
-2) MDI{,X} eeprom check in e100 driver is reversed, from
-   John W. Linville.
+This seemingly innocuous change caused a significant regression in softirq
+CPU usage on the sending side of a large TCP transfer (~1 GB/s): when
+introducing 0.01% packet loss, the softirq usage would jump to around 25%,
+spiking as high as 50%. Before the change, the usage would never exceed 5%.
 
-3) Missing error return assignments in several ethernet drivers,
-   from Julia Lawall.
+Moving the call to rcu_note_context_switch() after the cond_sched() call,
+as it was originally before the hotplug patch, completely eliminated this
+problem.
 
-4) Altera TSE device doesn't come back up after ifconfig down/up
-   sequence, fix from Kostya Belezko.
+Signed-off-by: Calvin Owens <calvinowens@fb.com>
+---
+ kernel/softirq.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-5) Add more cases to the check for whether the qmi_wwan device has
-   a bogus MAC address and needs to be assigned a random one.  From
-   Kristian Evensen.
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 501baa9..9e787d8 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -656,9 +656,13 @@ static void run_ksoftirqd(unsigned int cpu)
+ 		 * in the task stack here.
+ 		 */
+ 		__do_softirq();
+-		rcu_note_context_switch();
+ 		local_irq_enable();
+ 		cond_resched();
++
++		preempt_disable();
++		rcu_note_context_switch(cpu);
++		preempt_enable();
++
+ 		return;
+ 	}
+ 	local_irq_enable();
+-- 
+2.1.1
 
-6) Fix interrupt hangs in CPSW, from Felipe Balbi.
-
-7) Implement ndo_features_check in r8152 so that the stack doesn't
-   feed GSO packets which are outside of the chip's capabilities.
-   From Hayes Wang.
-
-Please pull, thanks a lot!
-
-The following changes since commit 2c90331cf5ed1d648a711b9483e173aaaf2c4a9b:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2014-12-30 10:45:47 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git 
-
-for you to fetch changes up to 2abad79afa700e837cb4feed170141292e0720c0:
-
-  qla3xxx: don't allow never end busy loop (2015-01-06 17:41:36 -0500)
-
-----------------------------------------------------------------
-Andy Shevchenko (1):
-      qla3xxx: don't allow never end busy loop
-
-Ben Pfaff (1):
-      openvswitch: Consistently include VLAN header in flow and port stats.
-
-David S. Miller (4):
-      Merge branch 'master' of git://git.kernel.org/.../jkirsher/net
-      Merge branch 'mlx4-net'
-      Merge tag 'mac80211-for-davem-2015-01-06' of git://git.kernel.org/.../jberg/mac80211
-      Merge tag 'batman-adv-fix-for-davem' of git://git.open-mesh.org/linux-merge
-
-Felipe Balbi (1):
-      net: ethernet: cpsw: fix hangs with interrupts
-
-Govindarajulu Varadarajan (1):
-      enic: free all rq buffs when allocation fails
-
-Herbert Xu (1):
-      tcp: Do not apply TSO segment limit to non-TSO packets
-
-Jack Morgenstein (1):
-      net/mlx4_core: Fix error flow in mlx4_init_hca()
-
-Joe Perches (1):
-      i40e: Fix possible memory leak in i40e_dbg_dump_desc
-
-Johannes Berg (1):
-      Revert "mac80211: Fix accounting of the tailroom-needed counter"
-
-John W. Linville (1):
-      e100: fix typo in MDI/MDI-X eeprom check in e100_phy_init
-
-Julia Lawall (4):
-      net: Xilinx: fix error return code
-      myri10ge: fix error return code
-      net: sun4i-emac: fix error return code
-      net: axienet: fix error return code
-
-Kostya Belezko (1):
-      Altera TSE: Add missing phydev
-
-Kristian Evensen (1):
-      qmi_wwan: Set random MAC on devices with buggy fw
-
-Linus Lüssing (4):
-      batman-adv: fix delayed foreign originator recognition
-      batman-adv: fix counter for multicast supporting nodes
-      batman-adv: fix multicast counter when purging originators
-      batman-adv: fix potential TT client + orig-node memory leak
-
-Maor Gottlieb (1):
-      net/mlx4_core: Correcly update the mtt's offset in the MR re-reg flow
-
-Martin Hundebøll (1):
-      batman-adv: fix lock class for decoding hash in network-coding.c
-
-Palik, Imre (1):
-      xen-netback: fixing the propagation of the transmit shaper timeout
-
-Simon Wunderlich (1):
-      batman-adv: fix and simplify condition when bonding should be used
-
-Todd Fujinaka (1):
-      igb: Remove unneeded FIXME
-
-Yongjian Xu (1):
-      qlcnic: Fix return value in qlcnic_probe()
-
-hayeswang (1):
-      r8152: support ndo_features_check
-
- drivers/net/ethernet/allwinner/sun4i-emac.c       |  4 +++-
- drivers/net/ethernet/altera/altera_tse_main.c     | 15 ++++++---------
- drivers/net/ethernet/cisco/enic/enic_main.c       |  6 ++++--
- drivers/net/ethernet/intel/e100.c                 |  2 +-
- drivers/net/ethernet/intel/i40e/i40e_debugfs.c    |  4 +++-
- drivers/net/ethernet/intel/igb/e1000_82575.c      |  2 +-
- drivers/net/ethernet/mellanox/mlx4/main.c         | 13 ++++---------
- drivers/net/ethernet/mellanox/mlx4/mr.c           |  9 +++++----
- drivers/net/ethernet/myricom/myri10ge/myri10ge.c  |  4 +++-
- drivers/net/ethernet/qlogic/qla3xxx.c             |  8 +++-----
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c  |  1 +
- drivers/net/ethernet/ti/cpsw.c                    | 19 ++++++++-----------
- drivers/net/ethernet/xilinx/ll_temac_main.c       |  2 ++
- drivers/net/ethernet/xilinx/xilinx_axienet_main.c |  2 ++
- drivers/net/ethernet/xilinx/xilinx_emaclite.c     |  1 +
- drivers/net/usb/qmi_wwan.c                        | 10 +++++++---
- drivers/net/usb/r8152.c                           | 17 +++++++++++++++++
- drivers/net/xen-netback/xenbus.c                  |  1 +
- include/net/mac80211.h                            |  7 ++-----
- net/batman-adv/multicast.c                        | 11 +++++++----
- net/batman-adv/network-coding.c                   |  2 +-
- net/batman-adv/originator.c                       |  7 ++++---
- net/batman-adv/routing.c                          |  6 ++++--
- net/ipv4/tcp_output.c                             |  4 ++--
- net/mac80211/key.c                                | 12 +++++++++---
- net/openvswitch/flow.c                            |  5 +++--
- net/openvswitch/vport.c                           |  2 +-
- 27 files changed, 105 insertions(+), 71 deletions(-)
