@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757763AbbAGCSJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:18:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47115 "EHLO
+	id S1757742AbbAGCSH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 21:18:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47126 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757679AbbAGCSF (ORCPT
+	with ESMTP id S1757710AbbAGCSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jan 2015 21:18:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josef Bacik <jbacik@fb.com>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.17 68/73] Btrfs: make sure we wait on logged extents when fsycning two subvols
-Date: Tue,  6 Jan 2015 18:16:29 -0800
-Message-Id: <20150107021559.594956440@linuxfoundation.org>
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        David Sterba <dsterba@suse.cz>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.17 69/73] btrfs: fix wrong accounting of raid1 data profile in statfs
+Date: Tue,  6 Jan 2015 18:16:30 -0800
+Message-Id: <20150107021559.624063837@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <20150107021557.521276020@linuxfoundation.org>
 References: <20150107021557.521276020@linuxfoundation.org>
@@ -28,37 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fb.com>
+From: David Sterba <dsterba@suse.cz>
 
-commit 9dba8cf128ef98257ca719722280c9634e7e9dc7 upstream.
+commit 0d95c1bec906dd1ad951c9c001e798ca52baeb0f upstream.
 
-If we have two fsync()'s race on different subvols one will do all of its work
-to get into the log_tree, wait on it's outstanding IO, and then allow the
-log_tree to finish it's commit.  The problem is we were just free'ing that
-subvols logged extents instead of waiting on them, so whoever lost the race
-wouldn't really have their data on disk.  Fix this by waiting properly instead
-of freeing the logged extents.  Thanks,
+The sizes that are obtained from space infos are in raw units and have
+to be adjusted according to the raid factor. This was missing for
+f_bavail and df reported doubled size for raid1.
 
-Signed-off-by: Josef Bacik <jbacik@fb.com>
+Reported-by: Martin Steigerwald <Martin@lichtvoll.de>
+Fixes: ba7b6e62f420 ("btrfs: adjust statfs calculations according to raid profiles")
+Signed-off-by: David Sterba <dsterba@suse.cz>
 Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/tree-log.c |    2 +-
+ fs/btrfs/super.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/btrfs/tree-log.c
-+++ b/fs/btrfs/tree-log.c
-@@ -2598,9 +2598,9 @@ int btrfs_sync_log(struct btrfs_trans_ha
- 	if (atomic_read(&log_root_tree->log_commit[index2])) {
- 		blk_finish_plug(&plug);
- 		btrfs_wait_marked_extents(log, &log->dirty_log_pages, mark);
-+		btrfs_wait_logged_extents(log, log_transid);
- 		wait_log_commit(trans, log_root_tree,
- 				root_log_ctx.log_transid);
--		btrfs_free_logged_extents(log, log_transid);
- 		mutex_unlock(&log_root_tree->log_mutex);
- 		ret = root_log_ctx.log_ret;
- 		goto out;
+--- a/fs/btrfs/super.c
++++ b/fs/btrfs/super.c
+@@ -1731,7 +1731,7 @@ static int btrfs_statfs(struct dentry *d
+ 	buf->f_bfree -= block_rsv->size >> bits;
+ 	spin_unlock(&block_rsv->lock);
+ 
+-	buf->f_bavail = total_free_data;
++	buf->f_bavail = div_u64(total_free_data, factor);
+ 	ret = btrfs_calc_avail_data_space(fs_info->tree_root, &total_free_data);
+ 	if (ret) {
+ 		mutex_unlock(&fs_info->chunk_mutex);
 
 
