@@ -1,122 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826AbbAGNEp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 08:04:45 -0500
-Received: from forward5l.mail.yandex.net ([84.201.143.138]:54452 "EHLO
-	forward5l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752705AbbAGNEo (ORCPT
+	id S1752004AbbAGNHJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 08:07:09 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:50341 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753118AbbAGNHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 08:04:44 -0500
-Authentication-Results: smtp2o.mail.yandex.net; dkim=pass header.i=@yandex.ru
-Message-ID: <1420635879.14676.12.camel@yandex.ru>
-Subject: Re: Another SCHED_DEADLINE bug (with bisection and possible fix)
-From: Kirill Tkhai <tkhai@yandex.ru>
-Reply-To: tkhai@yandex.ru
-To: Luca Abeni <luca.abeni@unitn.it>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 07 Jan 2015 16:04:39 +0300
-In-Reply-To: <54AD2A56.70307@unitn.it>
-References: <20141230002738.6c12db31@utopia>
-		 <2629881420411885@web9m.yandex.ru> <54AAABFB.3060109@unitn.it>
-		 <1420499241.3361.14.camel@yandex.ru> <20150107080155.1d42d123@luca-1225C>
-	 <1420633741.12772.10.camel@yandex.ru> <54AD2A56.70307@unitn.it>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Wed, 7 Jan 2015 08:07:07 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Catalin Marinas <catalin.marinas@arm.com>, Rob Herring <robh@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Robert Richter <rric@kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Lv Zheng <lv.zheng@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [Linaro-acpi] [PATCH v5 18/18] Documentation: ACPI for ARM64
+Date: Wed, 07 Jan 2015 14:06:28 +0100
+Message-ID: <1520439.Y1rXzXY1eS@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20150107115039.GA2199@e104818-lin.cambridge.arm.com>
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <2161376.07iV9ANMSk@wuerfel> <20150107115039.GA2199@e104818-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:eZxW3GH1E1v90dnLWONKrZd4gNG1u5w1rDjUt5f3bgwD2OaeXXE
+ VTImmcdUm9HGsxs7VCA9+U/q39l81DGzg0Iqm/dfgl3xGCmhJigq9CK/be0ASOXlCS3JE+/
+ bZIQhwyQ7FhNsl/UZWgk17HLm77LBOtbFri2/ZgrH153TfI+vEu8LRXbXhAUE19KkoP+/2M
+ Yo9xIsZi+hUJrdLCbVUjg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Ср, 2015-01-07 at 13:45 +0100, Luca Abeni wrote:
-> On 01/07/2015 01:29 PM, Kirill Tkhai wrote:
-> [...]
-> >>>> Based on your comments, I suspect my patch can be further
-> >>>> simplified by moving the call to init_dl_task_timer() in
-> >>>> __sched_fork().
-> >>>
-> >>> It seems this way has problems. The first one is that task may become
-> >>> throttled again, and we will start dl_timer again.
-> >> Well, in my understanding if I change the parameters of a
-> >> SCHED_DEADLINE task when it is throttled, it stays throttled... So, the
-> >> task might not become throttled again before the dl timer fires.
-> >> So, I hoped this problem does not exist. But I might be wrong.
-> >
-> > You keep zeroing of dl_se->dl_throttled
-> Right... Now that you point this out, I realize that dl_se->dl_throttled = 0
-> should be inside the if().
+On Wednesday 07 January 2015 11:50:39 Catalin Marinas wrote:
+> On Wed, Jan 07, 2015 at 10:36:13AM +0000, Arnd Bergmann wrote:
+> > On Tuesday 06 January 2015 23:55:58 Jon Masters wrote:
+> > > On 01/06/2015 05:06 PM, Jon Masters wrote:
+> > > > On 01/06/2015 02:21 PM, Arnd Bergmann wrote:
+> > > >> On Tuesday 06 January 2015 11:24:43 Jon Masters wrote:
+> > > >>> On 01/06/2015 06:20 AM, Catalin Marinas wrote:
+> > > >>>
+> > > >>>> Now, what's preventing a vendor firmware from providing only ACPI
+> > > >>>> tables? Do we enforce it in some way (arm-acpi.txt, kernel warning etc.)
+> > > >>>> that both DT and ACPI are supported, or at least that dts files are
+> > > >>>> merged in the kernel first?
+> > > >>>
+> > > >>> I know of some (server) firmware that will only provide ACPI in the
+> > > >>> medium term, so this is coming.
+> > > >>
+> > > >> Medium term is fine, as long as they are not expecting their hardware
+> > > >> to be supported by Linux before ACPI support is stable enough for
+> > > >> general consumption.
+> > > > 
+> > > > To be clear, I think that's reasonable for upstream. I may love ACPI,
+> > > > but vendors can always ship kernels with a config supporting ACPI only
+> > > > platforms in the interim period if they have a commercial justification
+> > > > and that doesn't have to be supported in terms of the upstream default.
+> > 
+> > I would hope that none of the ACPI-only machines are meant to run Linux
+> > as a primary operating system, that would be very sad.
 > 
-> > and further enqueue_task() places it on the dl_rq.
-> I was under the impression that no further enqueue_task() will happen (since
-> the task is throttled, it is not on runqueue, so __sched_setscheduler() will
-> not dequeue/enqueue it).
-> But I am probably missing something else :)
+> I keep hearing different stories around this. I think this goes back to
+> the last point on Al's to-do list, the reason _why_ vendors need ACPI.
+> As you mentioned some time ago, I would also like to see a summary of
+> such reasons included in the cover letter for the arm64 ACPI patches. In
+> the meantime, we can assume that DT is required.
 
-We have two concept of "on runqueue". The first one is rq->on_rq. It means
-that a task is "queued". The second is on_dl_rq(dl_se).
+Right, if we can finish the discussion about the reason for having ACPI,
+we can skip a lot of pointless back-and-forth on the other issues.
 
-When task is not "queued", it's always not on dl_rq.
+> From what I gathered so far, the main reason for _some_ vendors is not
+> support for "other" OS but actually features that ACPI has and DT
+> doesn't (like AML; I deliberately ignore statements like "industry
+> standard"). _If_ such reasons are sound, maybe they have a case for
+> ACPI-only machines targeted primarily at Linux.
 
-When task is "queued" it may be in two states:
-1)on_dl_rq() -- this means the task is not throttled;
-2)!on_dl_rq() -- is task as throttled.
+What I got from the replies from HP, Huawei and from earlier discussions
+with Jon is that they all hope to get to the point of relying on AML
+alone to bridge the differences between SoC families. However, I don't
+see that happening with the limited hardware compatibility that the
+existing SBSA provides:
 
-So when we are discussing about a throttled task, the task is "queued". If
-you clear dl_throttled, __sched_setscheduler() places it back it the both
-meaning: on_rq and on_dl_rq, and the task becomes available for picking
-in __schedule().
+> In theory, it may be beneficial to the kernel maintainers as such
+> ACPI-only machine would potentially require less kernel driver code
+> compared to DT. For example, no need for pin control, clocks or voltage
+> regulator drivers as they are handled in AML. Of course, the counter
+> argument is that it's harder to debug when problems appear but I would
+> expect on such ACPI-only machines that the hardware vendor is very
+> active on solving them (I'm more thinking for machines that sit in some
+> data centre and are actively maintained rather than some board I keep in
+> my house; for the latter, I definitely prefer DT and full control).
 
+The main problem here is that can AML only cover part of the problem:
+it can talk to a clock controller e.g. over I2C, SPI, GPIO, UART
+or IPMI, but you still need a device driver in the kernel to talk to
+those, and SBSA doesn't mandate a specific implementation so you can
+expect every other SoC that is coming out to have a different one.
+
+Similarly, SBSA is rather vague about some peripherals it mandates,
+and if a new SoC has a slightly different AHCI variation, there is
+nothing you can do about it in AML.
+
+x86 gets around this problem by having an extreme level of hardware
+backwards compatibility, so you don't even need AML for this and
+can generally boot a (almost) full-featured Linux kernel with
+acpi=off on the command line.
+
+> > Vendors that are interested in Linux support should instead work on getting
+> > their hardware supported upstream so they don't need a private kernel to
+> > match their private firmware.
 > 
-> >>> The second is that
-> >>> it's better to minimize number of combination of situations we have.
-> >>> Let's keep only one combination: timer is set <-> task is throttled.
-> >> Yes, this was my goal too... So, if I change the parameters of a task
-> >> when it is throttled, I leave dl_throttled set to 1 and I leave the
-> >> timer active.
-> >
-> > As I see,
-> >
-> > dl_se->dl_throttled = 0;
-> >
-> > is still in __setparam_dl() after your patch, so you do not leave
-> > it set to 1.
-> You are right, my fault.
+> I agree, irrespective of whether they target ACPI longer term or not.
 > 
-> [...]
-> >>> I think that when people change task's parameters, they want the
-> >>> kernel reacts on this immediately. For example, you want to kill
-> >>> throttled deadline task. You change parameters, but nothing happens.
-> >>> I think all developers had this use case when they were debugging
-> >>> deadline class.
-> >> I see... Different people have different requirements :)
-> >> My goal was to do something like adaptive scheduling (or scheduling
-> >> tasks with mode changes), so I did not want that changing the
-> >> scheduling parameters of a task affected the scheduling of the other
-> >> tasks... But if a task exits the throttled state when I change its
-> >> parameters, it might consume much more than the reserved CPU time.
-> >> Also, I suspect this kind of approach can be exploited by malicious
-> >> users: if I create a task with runtime 30ms and period 100ms, and I
-> >> change its scheduling parameters (to runtime=29ms and back) frequently
-> >> enough, I can consume much more than 30% of the CPU time...
-> >>
-> >> Anyway, I am fine with every patch that fixes the bug :)
-> >
-> > Deadline class requires root privileges. So, I do not see a problem
-> > here. Please, see __sched_setscheduler().
-> I know... But the final goal is to allow non-root users to use SCHED_DEADLINE,
-> so I was thinking about future problems.
+> As I said yesterday, at some point in the future, ACPI-only SoC support
+> may not require any new kernel code, just usual PCIe drivers that may
+> already be there. If we ever get to that stage (it's not a kernel
+> problem, it's more about SoC standardisation), vendors would be able to
+> run mainline kernels without additional driver code with a few SoC
+> differences handled by AML (e.g. clocks). At that point, I don't see any
+> incentive for them to upstream additional driver code (e.g. clocks) just
+> to support a DT-only kernel. We are probably still a long way, nothing
+> to worry about just yet ;).
 
-I think everything may change many times before we implement that. It's better
-to keep the code in the consistent state.
+Agreed on all points, yes.
 
-> > If in the future we allow non-privileged users to increase deadline,
-> > we will reflect that in __setparam_dl() too.
-> Ok.
-
-Does my patch help you? It helps me, but anyway I need your confirmation.
-
-Thanks,
-Kirill.
-
+	Arnd
