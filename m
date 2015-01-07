@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543AbbAGMNp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 07:13:45 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:46890 "EHLO mail.skyhub.de"
+	id S1752721AbbAGMPe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 07:15:34 -0500
+Received: from h1.radempa.de ([176.9.142.194]:52614 "EHLO mail.cosmopool.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751783AbbAGMNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 07:13:44 -0500
-Date: Wed, 7 Jan 2015 13:13:40 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>, X86 ML <x86@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        =?utf-8?B?RnLDqWTDqXJpYw==?= Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] x86, mce: Get rid of TIF_MCE_NOTIFY and associated mce
- tricks
-Message-ID: <20150107121340.GB3984@pd.tnic>
-References: <CALCETrV6=aWoAckieQkPJ4BCr9VzU=9080EmLfeL4ZWm+Hr55g@mail.gmail.com>
- <54ab2ffa301102cd6e@agluck-desk.sc.intel.com>
- <CALCETrV+mchcQ5SgBO8+xLvw9rrHm4yvq+wZtQsD1EMMGzAMEw@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F3299127A@ORSMSX114.amr.corp.intel.com>
+	id S1751783AbbAGMPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 07:15:32 -0500
+From: Harald Geyer <harald@ccbib.org>
+To: Jonathan Cameron <jic23@kernel.org>
+cc: Richard Weinberger <richard@nod.at>, knaack.h@gmx.de, lars@metafoo.de,
+        pmeerw@pmeerw.net, sanjeev_sharma@mentor.com,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCHv2 1/3,RESEND] iio: dht11: Fix out-of-bounds read
+In-reply-to: <54AA97B9.7040703@nod.at>
+References: <1417563176-31972-1-git-send-email-richard@nod.at> <54A53FBF.5000003@kernel.org> <7e4f6a70e48afe96457ebbcf07572224@imap.cosmopool.net> <54A680F8.30209@nod.at> <54A91DA1.6080107@kernel.org> <E1Y881p-0001Fp-NX@stardust.g4.wien.funkfeuer.at> <54AA97B9.7040703@nod.at>
+Comments: In-reply-to Richard Weinberger <richard@nod.at>
+   message dated "Mon, 05 Jan 2015 14:55:05 +0100."
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F3299127A@ORSMSX114.amr.corp.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <4008.1420632922.1@stardust.g4.wien.funkfeuer.at>
+Date: Wed, 07 Jan 2015 13:15:22 +0100
+Message-Id: <E1Y8pWE-00012g-Ec@stardust.g4.wien.funkfeuer.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 06:00:08PM +0000, Luck, Tony wrote:
-> That's fine with me.  Boris ... any comments?
+As we access i-1 we must not start with i=0.
 
-Same here:
+From: Richard Weinberger <richard@nod.at>
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Acked-by: Hartmut Knaack <knaack.h@gmx.de>
+Acked-by: Harald Geyer <harald@ccbib.org>
+Reviewed-by: Sanjeev Sharma <sanjeev_sharma@mentor.com>
+---
+Resending again to get the metadata right.
+No Signed-off-by from me, because I didn't contribute anything.
+No changes since v1 except reordering.
 
-Acked-by: Borislav Petkov <bp@suse.de>
+ drivers/iio/humidity/dht11.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I like negative diffstats:
-
- include/asm/mce.h         |    1
- include/asm/thread_info.h |    4 -
- kernel/cpu/mcheck/mce.c   |  109 ++++++++++------------------------------------
- kernel/signal.c           |    6 --
- 4 files changed, 26 insertions(+), 94 deletions(-)
-
-Procedural question: so this is going in, in the next merge window,
-aimed at 3.20, right?
-
-IMO that is a good plan as we have max time to deal with fallout, should
-there be any.
-
-Thanks.
-
+diff --git a/drivers/iio/humidity/dht11.c b/drivers/iio/humidity/dht11.c
+index 623c145..f546eca 100644
+--- a/drivers/iio/humidity/dht11.c
++++ b/drivers/iio/humidity/dht11.c
+@@ -88,7 +88,7 @@ static int dht11_decode(struct dht11 *dht11, int offset)
+ 	unsigned char temp_int, temp_dec, hum_int, hum_dec, checksum;
+ 
+ 	/* Calculate timestamp resolution */
+-	for (i = 0; i < dht11->num_edges; ++i) {
++	for (i = 1; i < dht11->num_edges; ++i) {
+ 		t = dht11->edges[i].ts - dht11->edges[i-1].ts;
+ 		if (t > 0 && t < timeres)
+ 			timeres = t;
 -- 
-Regards/Gruss,
-    Boris.
+1.7.2.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
