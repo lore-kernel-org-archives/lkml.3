@@ -1,142 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932AbbAGHSp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 02:18:45 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:45446 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754170AbbAGHSo (ORCPT
+	id S1751925AbbAGH1q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 02:27:46 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:52711 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978AbbAGH1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 02:18:44 -0500
-MIME-Version: 1.0
-In-Reply-To: <54ACC64F.6030304@redhat.com>
-References: <cover.1419295081.git.luto@amacapital.net> <8d09c16eb39cbe264417cc66c4aca730af10b70b.1419295081.git.luto@amacapital.net>
- <20150105152511.GA9172@amt.cnet> <CALCETrXRs4NmhMvp+7kydrfyGCiNymkTe_sP6HFVvhMCC2Ei0Q@mail.gmail.com>
- <20150105191756.GA31201@amt.cnet> <CALCETrVWmbcv1w5a3N1VzyWEobP0qW+RQkhWO9yOkxzdKdJgeg@mail.gmail.com>
- <20150105224858.GA6846@amt.cnet> <54AB9FFD.6070309@redhat.com>
- <54ABCE85.6070004@redhat.com> <CALCETrWKgB7nj19zW_cQaa4RWjDojbN92_3+-27bHXbB-EEOnA@mail.gmail.com>
- <54ACC64F.6030304@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 6 Jan 2015 23:18:21 -0800
-Message-ID: <CALCETrXGGV9R_4Knz_0LTaz3X2PS1KJDdBfq_RHAVquKdUjrYQ@mail.gmail.com>
-Subject: Re: [RFC 2/2] x86, vdso, pvclock: Simplify and speed up the vdso
- pvclock reader
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm list <kvm@vger.kernel.org>, Gleb Natapov <gleb@kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 7 Jan 2015 02:27:45 -0500
+From: Arjun AK <arjunak234@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        Arjun AK <arjunak234@gmail.com>
+Subject: [PATCH] staging: ft1000: Fix code style issue
+Date: Wed,  7 Jan 2015 12:57:05 +0530
+Message-Id: <1420615625-25738-1-git-send-email-arjunak234@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 6, 2015 at 9:38 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
->
->
-> On 06/01/2015 17:56, Andy Lutomirski wrote:
->> Still no good.  We can migrate a bunch of times so we see the same CPU
->> all three times
->
-> There are no three times.  The CPU you see here:
->
->>>
->>>
->>>     // ... compute nanoseconds from pvti and tsc ...
->>>     rmb();
->>> }   while(v != pvti->version);
->
-> is the same you read here:
->
->>>         cpu = get_cpu();
->
-> The algorithm is:
+Remove unnecessary braces from single statement blocks.
 
-I still don't see why this is safe, and I think that the issue is that
-you left out part of the loop.
+Signed-off-by: Arjun AK <arjunak234@gmail.com>
+---
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c | 101 ++++++++---------------
+ 1 file changed, 35 insertions(+), 66 deletions(-)
 
->
-> 1) get a consistent (cpu, version, tsc)
->
->    1.a) get cpu
-
-Suppose we observe cpu 0.
-
->    1.b) get pvti[cpu]->version, ignoring low bit
-
-Missing step, presumably here: read pvti[cpu]->tsc_timestamp, scale,
-etc.  This could all execute on vCPU 1.  We could read values that are
-inconsistent with each other.
-
->    1.c) get (tsc, cpu)
-
-Now we could end up back on vCPU 0.
-
->    1.d) if cpu from 1.a and 1.c do not match, loop
->    1.e) if pvti[cpu] was being updated, we'll loop later
->
-> 2) compute nanoseconds from pvti[cpu] and tsc
->
-> 3) if pvti[cpu] changed under our feet during (2), i.e. version doesn't
-> match, retry.
->
-> As long as the CPU is consistent between get_cpu() and rdtscp(), there
-> is no problem with migration, because pvti is always accessed for that
-> one CPU.  If there were any problem, it would be caught by the version
-> check.  Writing it down with two nested do...whiles makes it clearer IMHO.
-
-Why exactly would it be caught by the version check?
-
-My ugly patch tries to make the argument that, at any point at which
-we observe ourselves to be on a given vCPU, that vCPU won't be
-updating pvti.  That means that, if version doesn't change between two
-consecutive observations that we're on that vCPU, then we're okay.
-This IMO sucks.  It's fragile, it's hard to make a coherent argument
-about correctness, and it requires at least two getcpu-like operations
-to read the time.  Those operations are *slow*.  One is much better
-than two, and zero is much better than one.
-
->
->> and *still* don't get a consistent read, unless we
->> play nasty games with lots of version checks (I have a patch for that,
->> but I don't like it very much).  The patch is here:
->>
->> https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/commit/?h=x86/vdso_paranoia&id=a69754dc5ff33f5187162b5338854ad23dd7be8d
->>
->> but I don't like it.
->>
->> Thus far, I've been told unambiguously that a guest can't observe pvti
->> while it's being written, and I think you're now telling me that this
->> isn't true and that a guest *can* observe pvti while it's being
->> written while the low bit of the version field is not set.  If so,
->> this is rather strongly incompatible with the spec in the KVM docs.
->
-> Where am I saying that?
-
-I thought the conclusion from what you and Marcelo pointed out about
-the code was that, once the first vCPU updated its pvti, it could
-start running guest code while the other vCPUs are still updating
-pvti, so its guest code can observe the other vCPUs mid-update.
-
->> Also, if you do this, can you also make setting and clearing
->> STABLE_BIT properly atomic across all vCPUs?  Or at least do something
->> like setting it last and clearing it first on vPCU 0?
->
-> That would be nice if you want to make the pvclock area fit in a single
-> page.  However, it would have to be a separate flag bit, or a separate
-> CPUID feature.
-
-It would be nice to have.  Although I think that fixing the host to
-increment version pre-update and post-update may actually be good
-enough.  Is there any case in which it would fail in practice if we
-made that fix and always looked at pvti 0?
-
---Andy
-
->
-> Paolo
-
-
-
+diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+index e9a37ee..809e32c 100644
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+@@ -172,11 +172,10 @@ u16 ft1000_read_dpram_mag_16(struct net_device *dev, int offset, int Index)
+ 	spin_lock_irqsave(&info->dpram_lock, flags);
+ 	ft1000_write_reg(dev, FT1000_REG_DPRAM_ADDR, offset);
+ 	/* check if we want to read upper or lower 32-bit word */
+-	if (Index) {
++	if (Index)
+ 		data = ft1000_read_reg(dev, FT1000_REG_MAG_DPDATAL);
+-	} else {
++	else
+ 		data = ft1000_read_reg(dev, FT1000_REG_MAG_DPDATAH);
+-	}
+ 	spin_unlock_irqrestore(&info->dpram_lock, flags);
+ 
+ 	return data;
+@@ -204,11 +203,10 @@ static inline void ft1000_write_dpram_mag_16(struct net_device *dev,
+ 	/* Provide mutual exclusive access while reading ASIC registers. */
+ 	spin_lock_irqsave(&info->dpram_lock, flags);
+ 	ft1000_write_reg(dev, FT1000_REG_DPRAM_ADDR, offset);
+-	if (Index) {
++	if (Index)
+ 		ft1000_write_reg(dev, FT1000_REG_MAG_DPDATAL, value);
+-	} else {
++	else
+ 		ft1000_write_reg(dev, FT1000_REG_MAG_DPDATAH, value);
+-	}
+ 	spin_unlock_irqrestore(&info->dpram_lock, flags);
+ }
+ 
+@@ -440,9 +438,8 @@ static int ft1000_reset_card(struct net_device *dev)
+ 			tempword =
+ 				ft1000_read_dpram_mag_16(dev, FT1000_MAG_DPRAM_FEFE,
+ 							 FT1000_MAG_DPRAM_FEFE_INDX);
+-			if (tempword == 0xfefe) {
++			if (tempword == 0xfefe)
+ 				break;
+-			}
+ 			mdelay(20);
+ 		}
+ 
+@@ -570,12 +567,10 @@ static void ft1000_hbchk(u_long data)
+ 		pr_debug("hi_ho value = 0x%x\n", tempword);
+ 		/* Let's perform another check if ho is not detected */
+ 		if (tempword != ho) {
+-			if (info->AsicID == ELECTRABUZZ_ID) {
++			if (info->AsicID == ELECTRABUZZ_ID)
+ 				tempword = ft1000_read_dpram(dev, FT1000_HI_HO);
+-			}
+-			else {
++			else
+ 				tempword = ntohs(ft1000_read_dpram_mag_16(dev, FT1000_MAG_HI_HO, FT1000_MAG_HI_HO_INDX));
+-			}
+ 		}
+ 		if (tempword != ho) {
+ 			pr_info("heartbeat failed - no ho detected\n");
+@@ -621,9 +616,8 @@ static void ft1000_hbchk(u_long data)
+ 
+ 		tempword = ft1000_read_reg(dev, FT1000_REG_DOORBELL);
+ 		/* Let's check doorbell again if fail */
+-		if (tempword & FT1000_DB_HB) {
++		if (tempword & FT1000_DB_HB)
+ 			tempword = ft1000_read_reg(dev, FT1000_REG_DOORBELL);
+-		}
+ 		if (tempword & FT1000_DB_HB) {
+ 			pr_info("heartbeat doorbell not clear by firmware\n");
+ 			if (info->AsicID == ELECTRABUZZ_ID) {
+@@ -686,19 +680,15 @@ static void ft1000_hbchk(u_long data)
+ 		}
+ 		/* Let's write hi again if fail */
+ 		if (tempword != hi) {
+-			if (info->AsicID == ELECTRABUZZ_ID) {
++			if (info->AsicID == ELECTRABUZZ_ID)
+ 				ft1000_write_dpram(dev, FT1000_HI_HO, hi);
+-			}
+-			else {
++			else
+ 				ft1000_write_dpram_mag_16(dev, FT1000_MAG_HI_HO, hi_mag, FT1000_MAG_HI_HO_INDX);
+-			}
+ 
+-			if (info->AsicID == ELECTRABUZZ_ID) {
++			if (info->AsicID == ELECTRABUZZ_ID)
+ 				tempword = ft1000_read_dpram(dev, FT1000_HI_HO);
+-			}
+-			else {
++			else
+ 				tempword = ntohs(ft1000_read_dpram_mag_16(dev, FT1000_MAG_HI_HO, FT1000_MAG_HI_HO_INDX));
+-			}
+ 
+ 		}
+ 
+@@ -770,9 +760,8 @@ static void ft1000_send_cmd(struct net_device *dev, u16 *ptempbuffer, int size,
+ 
+ 	size += sizeof(struct pseudo_hdr);
+ 	/* check for odd byte and increment to 16-bit word align value */
+-	if ((size & 0x0001)) {
++	if ((size & 0x0001))
+ 		size++;
+-	}
+ 	pr_debug("total length = %d\n", size);
+ 	pr_debug("length = %d\n", ntohs(*ptempbuffer));
+ 	/*
+@@ -915,9 +904,8 @@ static bool ft1000_receive_cmd(struct net_device *dev, u16 *pbuffer,
+ 		 * Calculate pseudo header checksum
+ 		 */
+ 		tempword = *ppseudohdr++;
+-		for (i = 1; i < 7; i++) {
++		for (i = 1; i < 7; i++)
+ 			tempword ^= *ppseudohdr++;
+-		}
+ 		if ((tempword != *ppseudohdr)) {
+ 			pr_debug("Pseudo header checksum mismatch\n");
+ 			/* Drop this message */
+@@ -957,12 +945,10 @@ static void ft1000_proc_drvmsg(struct net_device *dev)
+ 		u16 wrd;
+ 	} convert;
+ 
+-	if (info->AsicID == ELECTRABUZZ_ID) {
++	if (info->AsicID == ELECTRABUZZ_ID)
+ 		tempword = FT1000_DPRAM_RX_BASE+2;
+-	}
+-	else {
++	else
+ 		tempword = FT1000_DPRAM_MAG_RX_BASE;
+-	}
+ 	if (ft1000_receive_cmd(dev, &cmdbuffer[0], MAX_CMD_SQSIZE, &tempword)) {
+ 
+ 		/* Get the message type which is total_len + PSEUDO header + msgtype + message body */
+@@ -982,9 +968,8 @@ static void ft1000_proc_drvmsg(struct net_device *dev)
+ 				while (tempword & FT1000_DB_DPRAM_TX) {
+ 					mdelay(5);
+ 					i++;
+-					if (i == 10) {
++					if (i == 10)
+ 						break;
+-					}
+ 				}
+ 				ptr =
+ 					list_entry(info->prov_list.next,
+@@ -1105,9 +1090,8 @@ static void ft1000_proc_drvmsg(struct net_device *dev)
+ 				mdelay(10);
+ 				tempword =
+ 					ft1000_read_reg(dev, FT1000_REG_DOORBELL);
+-				if (tempword & FT1000_DB_DPRAM_TX) {
++				if (tempword & FT1000_DB_DPRAM_TX)
+ 					mdelay(10);
+-				}
+ 			}
+ 
+ 			if ((tempword & FT1000_DB_DPRAM_TX) == 0) {
+@@ -1134,9 +1118,8 @@ static void ft1000_proc_drvmsg(struct net_device *dev)
+ 				ppseudo_hdr->portsrc = 0;
+ 				/* Calculate new checksum */
+ 				ppseudo_hdr->checksum = *pmsg++;
+-				for (i = 1; i < 7; i++) {
++				for (i = 1; i < 7; i++)
+ 					ppseudo_hdr->checksum ^= *pmsg++;
+-				}
+ 				info->DSPInfoBlk[8] = 0x7200;
+ 				info->DSPInfoBlk[9] =
+ 					htons(info->DSPInfoBlklen);
+@@ -1156,9 +1139,8 @@ static void ft1000_proc_drvmsg(struct net_device *dev)
+ 				mdelay(10);
+ 				tempword =
+ 					ft1000_read_reg(dev, FT1000_REG_DOORBELL);
+-				if (tempword & FT1000_DB_DPRAM_TX) {
++				if (tempword & FT1000_DB_DPRAM_TX)
+ 					mdelay(10);
+-				}
+ 			}
+ 
+ 			if ((tempword & FT1000_DB_DPRAM_TX) == 0) {
+@@ -1184,9 +1166,8 @@ static void ft1000_proc_drvmsg(struct net_device *dev)
+ 				ppseudo_hdr->portsrc = 0;
+ 				/* Calculate new checksum */
+ 				ppseudo_hdr->checksum = *pmsg++;
+-				for (i = 1; i < 7; i++) {
++				for (i = 1; i < 7; i++)
+ 					ppseudo_hdr->checksum ^= *pmsg++;
+-				}
+ 				pmsg = (u16 *)&tempbuffer[16];
+ 				*pmsg++ = htons(RSP_DRV_ERR_RPT_MSG);
+ 				*pmsg++ = htons(0x000e);
+@@ -1508,9 +1489,8 @@ static void ft1000_flush_fifo(struct net_device *dev, u16 DrvErrNum)
+ 			tempword = inw(dev->base_addr + FT1000_REG_MAG_DFSR);
+ 			pr_debug("FT1000_REG_MAG_DFSR = 0x%x\n", tempword);
+ 		}
+-		if (DrvErrNum) {
++		if (DrvErrNum)
+ 			pcmcia->PktIntfErr++;
+-		}
+ 	}
+ }
+ 
+@@ -1567,9 +1547,8 @@ static int ft1000_copy_up_pkt(struct net_device *dev)
+ 	if (skb == NULL) {
+ 		pr_debug("No Network buffers available\n");
+ 		/* Read High word to complete 32 bit access */
+-		if (info->AsicID == MAGNEMITE_ID) {
++		if (info->AsicID == MAGNEMITE_ID)
+ 			tempword = ft1000_read_reg(dev, FT1000_REG_MAG_DFRH);
+-		}
+ 		ft1000_flush_fifo(dev, 0);
+ 		info->stats.rx_errors++;
+ 		return FAILURE;
+@@ -1673,9 +1652,8 @@ static int ft1000_copy_up_pkt(struct net_device *dev)
+ 	}
+ 
+ 	pr_debug("Data passed to Protocol layer:\n");
+-	for (i = 0; i < len + 12; i++) {
++	for (i = 0; i < len + 12; i++)
+ 		pr_debug("Protocol Data: 0x%x\n", *ptemp++);
+-	}
+ 
+ 	skb->dev = dev;
+ 	skb->protocol = eth_type_trans(skb, dev);
+@@ -1729,21 +1707,16 @@ static int ft1000_copy_down_pkt(struct net_device *dev, u16 *packet, u16 len)
+ 	/* Check if there is room on the FIFO */
+ 	if (len > ft1000_read_fifo_len(dev)) {
+ 		udelay(10);
+-		if (len > ft1000_read_fifo_len(dev)) {
++		if (len > ft1000_read_fifo_len(dev))
+ 			udelay(20);
+-		}
+-		if (len > ft1000_read_fifo_len(dev)) {
++		if (len > ft1000_read_fifo_len(dev))
+ 			udelay(20);
+-		}
+-		if (len > ft1000_read_fifo_len(dev)) {
++		if (len > ft1000_read_fifo_len(dev))
+ 			udelay(20);
+-		}
+-		if (len > ft1000_read_fifo_len(dev)) {
++		if (len > ft1000_read_fifo_len(dev))
+ 			udelay(20);
+-		}
+-		if (len > ft1000_read_fifo_len(dev)) {
++		if (len > ft1000_read_fifo_len(dev))
+ 			udelay(20);
+-		}
+ 		if (len > ft1000_read_fifo_len(dev)) {
+ 			pr_debug("Transmit FIFO is full - pkt drop\n");
+ 			info->stats.tx_errors++;
+@@ -1751,11 +1724,10 @@ static int ft1000_copy_down_pkt(struct net_device *dev, u16 *packet, u16 len)
+ 		}
+ 	}
+ 	/* Create pseudo header and send pseudo/ip to hardware */
+-	if (info->AsicID == ELECTRABUZZ_ID) {
++	if (info->AsicID == ELECTRABUZZ_ID)
+ 		pseudo.blk.length = len;
+-	} else {
++	else
+ 		pseudo.blk.length = ntohs(len);
+-	}
+ 	pseudo.blk.source = DSPID;	/* Need to swap to get in correct order */
+ 	pseudo.blk.destination = HOSTID;
+ 	pseudo.blk.portdest = NETWORKID;	/* Need to swap to get in correct order */
+@@ -1768,9 +1740,8 @@ static int ft1000_copy_down_pkt(struct net_device *dev, u16 *packet, u16 len)
+ 	pseudo.blk.qos_class = 0;
+ 	/* Calculate pseudo header checksum */
+ 	pseudo.blk.checksum = pseudo.buff[0];
+-	for (i = 1; i < 7; i++) {
++	for (i = 1; i < 7; i++)
+ 		pseudo.blk.checksum ^= pseudo.buff[i];
+-	}
+ 
+ 	/* Production Mode */
+ 	if (info->AsicID == ELECTRABUZZ_ID) {
+@@ -1835,9 +1806,8 @@ static int ft1000_copy_down_pkt(struct net_device *dev, u16 *packet, u16 len)
+ 
+ 		plong = (u32 *)packet;
+ 		/* Write PPP type + IP Packet into Downlink FIFO */
+-		for (i = 0; i < (len >> 2); i++) {
++		for (i = 0; i < (len >> 2); i++)
+ 			outl(*plong++, dev->base_addr + FT1000_REG_MAG_UFDR);
+-		}
+ 
+ 		/* Check for odd alignment */
+ 		if (len & 0x0003) {
+@@ -1969,11 +1939,10 @@ static irqreturn_t ft1000_interrupt(int irq, void *dev_id)
+ 						ft1000_read_reg(dev,
+ 								FT1000_REG_MAG_DFSR);
+ 				}
+-				if (tempword & 0x1f) {
++				if (tempword & 0x1f)
+ 					ft1000_copy_up_pkt(dev);
+-				} else {
++				else
+ 					break;
+-				}
+ 				cnt++;
+ 			} while (cnt < MAX_RCV_LOOP);
+ 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+2.1.0
+
