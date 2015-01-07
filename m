@@ -1,108 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034AbbAGO5l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 09:57:41 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35621 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752104AbbAGO5k (ORCPT
+	id S1752877AbbAGPBs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 10:01:48 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56767 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381AbbAGPBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 09:57:40 -0500
-From: Mark Rutland <mark.rutland@arm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Rutland <mark.rutland@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-Subject: [PATCH] perf: drop module reference on event init failure
-Date: Wed,  7 Jan 2015 14:56:51 +0000
-Message-Id: <1420642611-22667-1-git-send-email-mark.rutland@arm.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 7 Jan 2015 10:01:46 -0500
+Date: Wed, 7 Jan 2015 15:01:36 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        Pavel Machek <pavel@ucw.cz>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
+ pyaudio (and probably more)
+Message-ID: <20150107150136.GC2199@e104818-lin.cambridge.arm.com>
+References: <alpine.LFD.2.11.1501041438130.18844@knanqh.ubzr>
+ <CA+55aFxMbicJZXzzHc8=vdwCzhz4kdrmZEKjLadZXr7aySZ4zg@mail.gmail.com>
+ <alpine.LFD.2.11.1501041526390.18844@knanqh.ubzr>
+ <CA+55aFxRRcSJ5i=EcQ-qqMrz0icn28JKjQuH3xGU65hjpVm9hw@mail.gmail.com>
+ <20150104211555.GB12302@n2100.arm.linux.org.uk>
+ <20150105142206.76ca2e18@lxorguk.ukuu.org.uk>
+ <CAHkRjk5EAUvdR5ED_M=dB+5yu3RtZLgo_aighUrozovHKnOp=w@mail.gmail.com>
+ <CA+55aFwfnT2M1OXzYiy74WCdoRHpKgMby20eqCBe-pEoS6ds-w@mail.gmail.com>
+ <CAHkRjk4SLvjRtAv6+kP6uUgA7KWk=_PacqxbT1_7LB-QX4=AGQ@mail.gmail.com>
+ <CA+55aFw8x01fBKczTSNkAZ06rwULVp0A=pASJACs8S1SB_Orew@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFw8x01fBKczTSNkAZ06rwULVp0A=pASJACs8S1SB_Orew@mail.gmail.com>
+Thread-Topic: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
+ pyaudio (and probably more)
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When initialising an event, perf_init_event will call try_module_get to
-ensure that the PMU's module cannot be removed for the lifetime of the
-event, with __free_event dropping the reference when the event is
-finally destroyed. If something fails after the event has been
-initialised, but before the event is installed, perf_event_alloc will
-drop the reference on the module.
+On Wed, Jan 07, 2015 at 01:20:06AM +0000, Linus Torvalds wrote:
+> On Tue, Jan 6, 2015 at 3:42 PM, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> >>
+> >> That's what bogomips *is*, for chrissake! It's a bogus measure of how
+> >> many times you go through the delay loop.
+> >
+> > I think that's where the misunderstanding is. We don't have any idea
+> > how many times we go through the delay loop. We just go through the
+> > delay loop until the counter (driven by an independent frequency)
+> > changes X times.
+> 
+> .. and that's exactly what we do on x86 too with the TSC. It's fine.
 
-However, if we fail to initialise an event for some reason (e.g. we ask
-an uncore PMU to perform sampling, and it refuses to initialise the
-event), we do not drop the refcount. If we try to open such a bogus
-event without a precise IDR type, we will loop over each PMU in the pmus
-list, incrementing each of their refcounts without decrementing them.
+I may be mistaken but isn't TSC somehow related to the CPU frequency on
+x86?
 
-This patch adds a module_put when pmu->event_init(event) fails, ensuring
-that the refcounts are balanced in failure cases. As the innards of the
-precise and search based initialisation look very similar, this logic is
-hoisted out into a new helper function. While the early return for the
-failed try_module_get is removed from the search case, this is handled
-by the remaining return when ret is not -ENOENT.
+On ARM, the generic/architected timer is not. It's just a timer+counter
+(used as clocksource and event generator in Linux) clocked at a
+frequency completely independent from the CPU frequency, *no* relation
+between the two.
 
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
----
- kernel/events/core.c | 28 ++++++++++++++++------------
- 1 file changed, 16 insertions(+), 12 deletions(-)
+I think a better comparison would be to HPET rather than TSC. But on x86
+we use HPET to calibrate the TSC and use the TSC for the delay loop. If
+on x86 the BogoMIPS was changed to report the HPET frequency, would you
+be ok with it?
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 4c1ee7f..4faccf3 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -6857,6 +6857,20 @@ void perf_pmu_unregister(struct pmu *pmu)
- }
- EXPORT_SYMBOL_GPL(perf_pmu_unregister);
- 
-+static int perf_try_init_event(struct pmu *pmu, struct perf_event *event)
-+{
-+	int ret;
-+
-+	if (!try_module_get(pmu->module))
-+		return -ENODEV;
-+	event->pmu = pmu;
-+	ret = pmu->event_init(event);
-+	if (ret)
-+		module_put(pmu->module);
-+
-+	return ret;
-+}
-+
- struct pmu *perf_init_event(struct perf_event *event)
- {
- 	struct pmu *pmu = NULL;
-@@ -6869,24 +6883,14 @@ struct pmu *perf_init_event(struct perf_event *event)
- 	pmu = idr_find(&pmu_idr, event->attr.type);
- 	rcu_read_unlock();
- 	if (pmu) {
--		if (!try_module_get(pmu->module)) {
--			pmu = ERR_PTR(-ENODEV);
--			goto unlock;
--		}
--		event->pmu = pmu;
--		ret = pmu->event_init(event);
-+		ret = perf_try_init_event(pmu, event);
- 		if (ret)
- 			pmu = ERR_PTR(ret);
- 		goto unlock;
- 	}
- 
- 	list_for_each_entry_rcu(pmu, &pmus, entry) {
--		if (!try_module_get(pmu->module)) {
--			pmu = ERR_PTR(-ENODEV);
--			goto unlock;
--		}
--		event->pmu = pmu;
--		ret = pmu->event_init(event);
-+		ret = perf_try_init_event(pmu, event);
- 		if (!ret)
- 			goto unlock;
- 
+> > With the current arm timer-based (and arm64) implementation, the
+> > reported BogoMIPS has nothing to do with the CPU benchmark. It just
+> > tells you that a X MHz counter needs X*1000000/HZ ticks per jiffy.
+> 
+> Yes. And that's a valid bogomips. We've done that for ages on x86.
+
+See above, my understanding of TSC is that the x86 BogoMIPS is at least
+in some way closely related to the CPU frequency. That's more like a
+perf counter on ARM counting the CPU cycles but we don't use it for
+udelay() (as it may or may not be enabled in a production system).
+
 -- 
-1.9.1
-
+Catalin
