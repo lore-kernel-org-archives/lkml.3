@@ -1,133 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262AbbAGT7z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 14:59:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38930 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753963AbbAGT7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 14:59:53 -0500
-Message-ID: <54AD8FF2.60407@redhat.com>
-Date: Wed, 07 Jan 2015 14:58:42 -0500
-From: Jon Masters <jcm@redhat.com>
-Organization: Red Hat, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754623AbbAGUAp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 15:00:45 -0500
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:51351 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753386AbbAGUAn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 15:00:43 -0500
+Message-ID: <54AD9062.8080204@de.ibm.com>
+Date: Wed, 07 Jan 2015 21:00:34 +0100
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>, Mark Brown <broonie@kernel.org>
-CC: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Herring <robh@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
-        Robert Richter <rric@kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Lv Zheng <lv.zheng@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [Linaro-acpi] [PATCH v5 18/18] Documentation: ACPI for ARM64
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <2161376.07iV9ANMSk@wuerfel> <20150107115039.GA2199@e104818-lin.cambridge.arm.com> <1520439.Y1rXzXY1eS@wuerfel> <20150107172741.GY2634@sirena.org.uk> <20150107184158.GO24989@titan.lakedaemon.net>
-In-Reply-To: <20150107184158.GO24989@titan.lakedaemon.net>
+To: Guenter Roeck <linux@roeck-us.net>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org
+Subject: Re: linux-next: Tree for Jan 7
+References: <20150107151618.7cb9d574@canb.auug.org.au> <20150107142656.GA5666@roeck-us.net> <20150107163310.GZ5280@linux.vnet.ibm.com> <20150107173022.GA26631@roeck-us.net> <20150107180922.GC5280@linux.vnet.ibm.com> <20150107191813.GA28881@roeck-us.net>
+In-Reply-To: <20150107191813.GA28881@roeck-us.net>
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15010720-0025-0000-0000-00000343522E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2015 01:41 PM, Jason Cooper wrote:
-> On Wed, Jan 07, 2015 at 05:27:41PM +0000, Mark Brown wrote:
->> On Wed, Jan 07, 2015 at 02:06:28PM +0100, Arnd Bergmann wrote:
->>> On Wednesday 07 January 2015 11:50:39 Catalin Marinas wrote:
+Am 07.01.2015 um 20:18 schrieb Guenter Roeck:
+> On Wed, Jan 07, 2015 at 10:09:22AM -0800, Paul E. McKenney wrote:
+>> On Wed, Jan 07, 2015 at 09:30:22AM -0800, Guenter Roeck wrote:
+>>> On Wed, Jan 07, 2015 at 08:33:10AM -0800, Paul E. McKenney wrote:
+>>>> On Wed, Jan 07, 2015 at 06:26:56AM -0800, Guenter Roeck wrote:
+>>>>> On Wed, Jan 07, 2015 at 03:16:18PM +1100, Stephen Rothwell wrote:
+>>>>>> Hi all,
+>>>>>>
+>>>>>> Changes since 20150106:
+>>>>>>
+>>>>>> *crickets*
+>>>>>>
+>>>>>> Non-merge commits (relative to Linus' tree): 1350
+>>>>>>  1543 files changed, 41856 insertions(+), 24250 deletions(-)
+>>>>>>
+>>>>>> ----------------------------------------------------------------------------
+>>>>>>
+>>>>>
+>>>>> New build failure for sh:dreamcast_defconfig:
+>>>>>
+>>>>> arch/sh/mm/gup.c: In function 'gup_get_pte':
+>>>>> arch/sh/mm/gup.c:20:2: error: invalid initializer
+>>>>> make[1]: *** [arch/sh/mm/gup.o] Error 1
+>>>>>
+>>>>> bisect log:
+>>>>>
+>>>>> # bad: [7e3619a6de57f0257a2f6480182d2287ee05e314] Add linux-next specific files for 20150107
+>>>>> # good: [b1940cd21c0f4abdce101253e860feff547291b0] Linux 3.19-rc3
+>>>>> git bisect start 'HEAD' 'v3.19-rc3'
+>>>>> # good: [c48667c5659248ff2b2fbff5cd23c43b5768e81b] Merge remote-tracking branch 'net-next/master'
+>>>>> git bisect good c48667c5659248ff2b2fbff5cd23c43b5768e81b
+>>>>> # good: [b8cf629ce7d554711dd7ab256b00e6110355e1d7] Merge remote-tracking branch 'mmc-uh/next'
+>>>>> git bisect good b8cf629ce7d554711dd7ab256b00e6110355e1d7
+>>>>> # good: [cc52ff032bc2d91c78d7cf9aefcfa9e266ace816] Merge remote-tracking branch 'rcu/rcu/next'
+>>>>> git bisect good cc52ff032bc2d91c78d7cf9aefcfa9e266ace816
+>>>>> # bad: [9634277bcdab7b9d6a91409dc11d85502aa2e74b] Merge remote-tracking branch 'access_once/linux-next'
+>>>>> git bisect bad 9634277bcdab7b9d6a91409dc11d85502aa2e74b
+>>>>> # good: [261379560ee6aa65b4869c94eda0d3d60773aca3] Merge remote-tracking branch 'scsi/for-next'
+>>>>> git bisect good 261379560ee6aa65b4869c94eda0d3d60773aca3
+>>>>> # good: [38d45afa56bfca714780e45532760d64cd53b65b] Merge remote-tracking branch 'llvmlinux/for-next'
+>>>>> git bisect good 38d45afa56bfca714780e45532760d64cd53b65b
+>>>>> # good: [9afbe1ce2403c7d097bfaafcc5b27950040f7608] Merge remote-tracking branch 'y2038/y2038'
+>>>>> git bisect good 9afbe1ce2403c7d097bfaafcc5b27950040f7608
+>>>>> # bad: [a91ed664749cbec0325ef9da7d12619d9bb72e2d] kernel: tighten rules for ACCESS ONCE
+>>>>> git bisect bad a91ed664749cbec0325ef9da7d12619d9bb72e2d
+>>>>> # good: [e3865cc4a17e979e6b2f26af026686fae5567096] x86/xen/p2m: Replace ACCESS_ONCE with READ_ONCE
+>>>>> git bisect good e3865cc4a17e979e6b2f26af026686fae5567096
+>>>>> # good: [e2579c6f22ee0a43394d603cef6989dca98c5610] mm/gup: Replace ACCESS_ONCE with READ_ONCE
+>>>>> git bisect good e2579c6f22ee0a43394d603cef6989dca98c5610
+>>>>> # first bad commit: [a91ed664749cbec0325ef9da7d12619d9bb72e2d] kernel: tighten rules for ACCESS ONCE
+>>>>>
+>>>>> Maybe the ACCESS_ONCE in the affected file should be replaced with READ_ONCE ?
+>>>>
+>>>> That is my belief.  What happens when you try it?
+>>>>
+>>> Build passes, and my qemu tests pass as well. That doesn't mean
+>>> that the change is correct, of course, since I don't know if the code
+>>> in question is executed.
 >>
->>>> From what I gathered so far, the main reason for _some_ vendors is not
->>>> support for "other" OS but actually features that ACPI has and DT
->>>> doesn't (like AML; I deliberately ignore statements like "industry
->>>> standard"). _If_ such reasons are sound, maybe they have a case for
->>>> ACPI-only machines targeted primarily at Linux.
+>> Would it be possible to increment a counter at that location, then
+>> print it out at some convenient point?
 >>
->>> What I got from the replies from HP, Huawei and from earlier discussions
->>> with Jon is that they all hope to get to the point of relying on AML
->>> alone to bridge the differences between SoC families. However, I don't
->>> see that happening with the limited hardware compatibility that the
->>> existing SBSA provides:
+> I made it simpler and just added a call to panic() ... which had no effect,
+> so the function is not called in my qemu tests. Any idea what I would have
+> to do to trigger a call ?
+> 
+>>> Should I send a patch with the change ?
 >>
->> I tend to agree with you that it's an overreach to think that this is
->> going to completely abstract away the differences between SoCs from
->> different vendors without substantial further standardization work.
->> However it does seem reasonable to expect that features like AML are
->> going to be more successful in handling board differences and
->> incremental revisions of SoCs - things like interactions with system
->> power controllers for example.  That seems like a useful win in and of
->> itself, and one that's worth supporting.
-> 
-> This piqued my interest, so I did a little research and found the
-> following to describe AML (second para under "What does this mean?")
-> 
->   http://community.arm.com/groups/processors/blog/2014/05/01/let-s-talk-acpi-for-servers
-> 
-> iiuc, AML are basically drivers for some low-level functions provided as
-> binary blobs via the ACPI tables.
+>> I believe such a patch is needed.  Testing would be good, but the patch
+>> is what we were thinking of for this situation.
+>>
+> I'll probably send a patch marked "compile-tested only" if I can't find a way
+> to test the change.
 
-AML isn't a "driver" per se. Think of it as providing a couple of
-methods for doing things like turning on a device, where the interpreted
-code might cause e.g. a memory address to be written with a value that
-causes a side effect (e.g. talking with a system configuration
-co-processor hidden inside the SoC the adjusts the clocking, enables
-power, configures PHY parameters, etc.). Most of the "AML" that you see
-on servers is actually just informational, or methods that return data
-describing the hardware installed.
+I was going to fix as well, but I can certainly take your patch. Can you send it with proper signed-off-by etc and I will add it to the access_once tree?
 
-> How does this work in a trusted boot scenario?
-
-No different than on x86.
-
-> Can the ACPI tables, and these binary blobs with it, be updated from userspace?
-
-Tables are baked into the firmware and are updated as a result of normal
-firmware updates (which already has a defined process). There are
-secondary tables that can augment things like the primary DSDT but those
-are also provided by the platform. There are only two ways the "OS"
-might provide a DSDT, but only including here for pedantry:
-
-1). If you compile a kernel specially with an embedded DSDT within the
-image itself (nobody does this one any more AFAIK).
-
-2). If you attach a special update test DSDT into your initramfs in a
-particular way, in which case I believe secure boot already is disabled.
-
-But these are all developer/debug things, not intended for users running
-in a secure boot environment.
-
-> If so, is there an authentication mechanism (including for non-secure boot scenarios)?
-
-It's no different than scenarios on x86, which are well covered.
-
-> One of the reasons I've really enjoyed working with ARM platforms and DT
-> is the absence of this type of 'feature'.  I honestly don't care whether
-> the kernel gets the board configuration info from DT or ACPI or FOO, as
-> long as we can avoid the security mistakes of the past:
-> 
->   http://www.spiegel.de/international/world/catalog-reveals-nsa-has-back-doors-for-numerous-devices-a-940994.html
-
-ACPI is not the great satan. I'm aware certain others in the community
-have written missinformed blog posts and G+ rants equating ACPI with SMI
-and even with various other system firmware. I can't force someone to
-become informed on a topic, especially if it's politically useful to
-them to hate on ACPI and use the security paranoia handwavy argument.
-
-> I'm not advocating "throw out AML and ACPI with it!", rather I'd like to
-> see a serious, open, discussion about the security implications of a
-> convenience feature such as AML.
-
-AML is in (almost) every server you're using today. What you want to be
-worried about is hidden firmware, especially what might be running
-inside a Trusted environment or inside an SMI context, or the radio
-firmware on your phone that the NSA have backdoored. Once we've solved
-every other issue, we can come back to whether the extremely limited
-capabilities of AML are what the evil bad guys are using to infiltrate
-our minds and make us think that we all want to use ACPI.
-
-Jon.
+Christian
 
