@@ -1,134 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889AbbAGGKd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 01:10:33 -0500
-Received: from leo.clearchain.com ([199.73.29.74]:36775 "EHLO
-	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834AbbAGGKb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 01:10:31 -0500
-X-Greylist: delayed 474 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Jan 2015 01:10:31 EST
-Date: Wed, 7 Jan 2015 16:10:25 +1000
-From: Peter Hutterer <peter.hutterer@who-t.net>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Gabriele Mazzotta <gabriele.mzt@gmail.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Maxwell Anselm <silverhammermba@gmail.com>
-Subject: Re: [PATCH 1/2] input: synaptics - make image sensors report
- ABS_MT_TOUCH_MAJOR
-Message-ID: <20150107061025.GB17069@jelly.redhat.com>
-References: <1419679889-6582-1-git-send-email-gabriele.mzt@gmail.com>
- <1419679889-6582-2-git-send-email-gabriele.mzt@gmail.com>
- <CAN+gG=Fhaj2aQM7gxXZBaXx3MZQbdMdCZ7KO=nmhzufp4YqnmA@mail.gmail.com>
- <1777845.g1sZJx65aj@xps13>
- <CAN+gG=FQY4V8K6k-mVrYRNSLoJDZW5bX1T=rD04MkEedQRdfUg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAN+gG=FQY4V8K6k-mVrYRNSLoJDZW5bX1T=rD04MkEedQRdfUg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.4.3 (mail.clearchain.com [127.0.0.1]); Wed, 07 Jan 2015 16:40:26 +1030 (CST)
+	id S1754696AbbAGGLV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 01:11:21 -0500
+Received: from mga01.intel.com ([192.55.52.88]:20537 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753854AbbAGGLT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 01:11:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,712,1413270000"; 
+   d="scan'208";a="647398984"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sander Eikelenboom <linux@eikelenboom.it>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>, Jan Beulich <JBeulich@suse.com>,
+        David Rientjes <rientjes@google.com>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Richard Weinberger <richard@nod.at>, Oren Twaig <oren@scalemp.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Prarit Bhargava <prarit@redhat.com>, Yinghai Lu <yinghai@kernel.org>
+Cc: Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Ingo Molnar <mingo@kernel.org>, xen-devel@lists.xenproject.org
+Subject: [Bugfix] x86/apic: Fix xen IRQ allocation failure caused by commit b81975eade8c
+Date: Wed,  7 Jan 2015 14:13:49 +0800
+Message-Id: <1420611244-25624-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 05, 2015 at 05:04:55PM -0500, Benjamin Tissoires wrote:
-> On Mon, Jan 5, 2015 at 5:00 PM, Gabriele Mazzotta
-> <gabriele.mzt@gmail.com> wrote:
-> > On Monday 05 January 2015 14:24:30 Benjamin Tissoires wrote:
-> >> Hi Gabriele,
-> >>
-> >> [Adding Peter and Hans as this change will impact both
-> >> xf86-input-synaptics and libinput]
-> >>
-> >> On Sat, Dec 27, 2014 at 6:31 AM, Gabriele Mazzotta
-> >> <gabriele.mzt@gmail.com> wrote:
-> >> > Despite claiming to be able to report ABS_TOOL_WIDTH, image sensors
-> >> > were not doing it. Make them report widths and use ABS_MT_TOUCH_MAJOR
-> >> > instead ABS_TOOL_WIDTH.
-> >>
-> >> It looks like the current xorg-synaptics code already handles
-> >> ABS_MT_TOUCH_MAJOR as finger_width. So I think we should be good in
-> >> replacing the ABS_TOOL_WIDTH event. However, I'd prefer having Peter
-> >> confirm this because xorg-synaptics still relies a lot on the single
-> >> touch emulation.
-> >>
-> >> >
-> >> > Since the 'w' slot is used to report the finger count when two or more
-> >> > fingers are on the touchpad, make sure that only meaningful values are
-> >> > emitted, i.e. values greater than or equal to 4, and assign the correct
-> >> > range to ABS_MT_TOUCH_MAJOR.
-> >> >
-> >> > Link: https://bugzilla.kernel.org/show_bug.cgi?id=77161
-> >> > Signed-off-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-> >> > ---
-> >> >  drivers/input/mouse/synaptics.c | 11 +++++++++--
-> >> >  1 file changed, 9 insertions(+), 2 deletions(-)
-> >> >
-> >> > diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-> >> > index f947292..ea0563e 100644
-> >> > --- a/drivers/input/mouse/synaptics.c
-> >> > +++ b/drivers/input/mouse/synaptics.c
-> >> > @@ -814,6 +814,8 @@ static void synaptics_report_slot(struct input_dev *dev, int slot,
-> >>
-> >> Just FYI, this does not apply anymore on top of Dmitry's tree.
-> >> synaptics_report_slot() has been removed, and you should now report
-> >> the slot state in synaptics_report_mt_data().
-> >>
-> >> >         input_report_abs(dev, ABS_MT_POSITION_X, hw->x);
-> >> >         input_report_abs(dev, ABS_MT_POSITION_Y, synaptics_invert_y(hw->y));
-> >> >         input_report_abs(dev, ABS_MT_PRESSURE, hw->z);
-> >> > +       if (hw->w >= 4)
-> >>
-> >> That I don't like. IMO, at this point, .w should only contain the
-> >> finger width, unconditionally.
-> >> Also, with 2/2, .w is computed accurately for the second finger, but
-> >> not for the first.
-> >>
-> >> I tried to figure out a way to properly extract the actual width
-> >> information from the sgm packet when the w is 0 or 1, and the only way
-> >> I found was to do the fix in synaptics_image_sensor_process(). I would
-> >> have preferred dealing with that in synaptics_parse_hw_state()
-> >> directly, but I think the final code would be more and more ugly.
-> >> Dealing with the true finger width in synaptics_image_sensor_process()
-> >> is not a problem for cr48 sensors, because they will not have the
-> >> ABS_MT_TOUCH_MAJOR event exported.
-> >
-> > Regarding the last part on cr48 sensors.
-> > Currently these sensors are not reporting widths through ABS_TOOL_WIDTH
-> > and I don't see what could go wrong if they start reporting
-> > ABS_MT_TOUCH_MAJOR. If I understood correctly, they can report widths
-> > only when one finger is on the touchpad. This means that they will
-> > report widths through slot 0, but they won't through slot 1. Nothing
-> > bad should happen.
-> 
-> I am not entirely sure. The entire purpose of having widht for palm
-> detection is to filter palm from true finger events. So if we only
-> have the width info on the first slot, it would be useless IMO.
-> Still I agree with "nothing bad should happen" :)
+Commit b81975eade8c ("x86, irq: Clean up irqdomain transition code")
+breaks xen IRQ allocation because xen_smp_prepare_cpus() doesn't invoke
+setup_IO_APIC(), so no irqdomains created for IOAPICs and
+mp_map_pin_to_irq() fails at the very beginning.
 
-fwiw, I found finger width _very_ unreliable for palm detection. from what I
-recorded, both finger width and palm width ranges overlap to a large amount,
-making width useless for anything that's not the whole hand on the
-touchpad.
+Enhance xen_smp_prepare_cpus() to call setup_IO_APIC() to initialize
+irqdomain for IOAPICs.
 
-Cheers,
-   Peter
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Reported-and-tested-by: Sander Eikelenboom <linux@eikelenboom.it>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+Hi all,
+	This patch should be backported to v3.17, but there are
+conflicts. So I will send backported patch to 3.17/3.18 stable tree
+once this patch has been merged into mainstream kernel.
+Thanks!
+Gerry
+---
+ arch/x86/include/asm/io_apic.h       |    2 +-
+ arch/x86/include/asm/smpboot_hooks.h |    5 ++---
+ arch/x86/kernel/apic/apic.c          |    5 ++---
+ arch/x86/kernel/apic/io_apic.c       |   32 +++++++++++++++-----------------
+ arch/x86/xen/smp.c                   |    3 +++
+ 5 files changed, 23 insertions(+), 24 deletions(-)
 
-> > I've just rebased my patches and included the support for cr48 sensors.
-> > The only change I made was to change the default width value from
-> > 5 to 4 since this is the minimum values these sensors can report
-> > (according to the existing code).
-> >
-> > Anyway, should I simply include the changes you suggested to handle
-> > widths of sgm packets in what will be the new 2/2?
-> 
-> Go ahead and include my changes in your 2/2. It's better to have a
-> consistent commit.
-> 
-> Cheers,
-> Benjamin
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index bf006cce9418..72a1298658bb 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -237,7 +237,7 @@ static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned
+ 
+ extern void io_apic_eoi(unsigned int apic, unsigned int vector);
+ 
+-extern void setup_IO_APIC(void);
++extern void setup_IO_APIC(bool xen_smp);
+ extern void enable_IO_APIC(void);
+ extern void disable_IO_APIC(void);
+ extern void setup_ioapic_dest(void);
+diff --git a/arch/x86/include/asm/smpboot_hooks.h b/arch/x86/include/asm/smpboot_hooks.h
+index 0da7409f0bec..e47df710a588 100644
+--- a/arch/x86/include/asm/smpboot_hooks.h
++++ b/arch/x86/include/asm/smpboot_hooks.h
+@@ -53,10 +53,9 @@ static inline void __init smpboot_setup_io_apic(void)
+ 	 * go and set it up:
+ 	 */
+ 	if (!skip_ioapic_setup && nr_ioapics)
+-		setup_IO_APIC();
+-	else {
++		setup_IO_APIC(false);
++	else
+ 		nr_ioapics = 0;
+-	}
+ #endif
+ }
+ 
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 29b5b18afa27..71b8a6cb7f0e 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1913,10 +1913,9 @@ int __init APIC_init_uniprocessor(void)
+ 
+ #ifdef CONFIG_X86_IO_APIC
+ 	if (smp_found_config && !skip_ioapic_setup && nr_ioapics)
+-		setup_IO_APIC();
+-	else {
++		setup_IO_APIC(false);
++	else
+ 		nr_ioapics = 0;
+-	}
+ #endif
+ 
+ 	x86_init.timers.setup_percpu_clockev();
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 3f5f60406ab1..13cddc75e4c0 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -2369,31 +2369,29 @@ static void ioapic_destroy_irqdomain(int idx)
+ 	ioapics[idx].pin_info = NULL;
+ }
+ 
+-void __init setup_IO_APIC(void)
++void __init setup_IO_APIC(bool xen_smp)
+ {
+ 	int ioapic;
+ 
+-	/*
+-	 * calling enable_IO_APIC() is moved to setup_local_APIC for BP
+-	 */
+-	io_apic_irqs = nr_legacy_irqs() ? ~PIC_IRQS : ~0UL;
++	if (!xen_smp) {
++		apic_printk(APIC_VERBOSE, "ENABLING IO-APIC IRQs\n");
++		io_apic_irqs = nr_legacy_irqs() ? ~PIC_IRQS : ~0UL;
++
++		/* Set up IO-APIC IRQ routing. */
++		x86_init.mpparse.setup_ioapic_ids();
++		sync_Arb_IDs();
++	}
+ 
+-	apic_printk(APIC_VERBOSE, "ENABLING IO-APIC IRQs\n");
+ 	for_each_ioapic(ioapic)
+ 		BUG_ON(mp_irqdomain_create(ioapic));
+-
+-	/*
+-         * Set up IO-APIC IRQ routing.
+-         */
+-	x86_init.mpparse.setup_ioapic_ids();
+-
+-	sync_Arb_IDs();
+ 	setup_IO_APIC_irqs();
+-	init_IO_APIC_traps();
+-	if (nr_legacy_irqs())
+-		check_timer();
+-
+ 	ioapic_initialized = 1;
++
++	if (!xen_smp) {
++		init_IO_APIC_traps();
++		if (nr_legacy_irqs())
++			check_timer();
++	}
+ }
+ 
+ /*
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index 4c071aeb8417..7eb0283901fa 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -326,7 +326,10 @@ static void __init xen_smp_prepare_cpus(unsigned int max_cpus)
+ 
+ 		xen_raw_printk(m);
+ 		panic(m);
++	} else {
++		setup_IO_APIC(true);
+ 	}
++
+ 	xen_init_lock_cpu(0);
+ 
+ 	smp_store_boot_cpu_info();
+-- 
+1.7.10.4
+
