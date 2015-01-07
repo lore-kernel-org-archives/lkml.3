@@ -1,233 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723AbbAGF07 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 00:26:59 -0500
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:54559 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750AbbAGF05 (ORCPT
+	id S1755125AbbAGFj7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 00:39:59 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:13956 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754834AbbAGFjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 00:26:57 -0500
-Message-ID: <54ACC35F.1070007@hp.com>
-Date: Wed, 07 Jan 2015 13:25:51 +0800
-From: "Li, ZhenHua" <zhen-hual@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Baoquan He <bhe@redhat.com>
-CC: dwmw2@infradead.org, indou.takao@jp.fujitsu.com, joro@8bytes.org,
-        vgoyal@redhat.com, dyoung@redhat.com, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        kexec@lists.infradead.org, alex.williamson@redhat.com,
-        ddutile@redhat.com, ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com,
-        doug.hatch@hp.com, jerry.hoemann@hp.com, tom.vaden@hp.com,
-        li.zhang6@hp.com, lisa.mitchell@hp.com, billsumnerlinux@gmail.com,
-        rwright@hp.com, "Li, ZhenHua" <zhen-hual@hp.com>
-Subject: Re: [PATCH v7 0/10] iommu/vt-d: Fix intel vt-d faults in kdump kernel
-References: <1420603474-4235-1-git-send-email-zhen-hual@hp.com> <54ACB1E9.9070904@hp.com> <20150107050247.GA16050@dhcp-16-116.nay.redhat.com>
-In-Reply-To: <20150107050247.GA16050@dhcp-16-116.nay.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Jan 2015 00:39:20 -0500
+X-AuditID: cbfee68f-f791c6d000004834-5c-54acc679a28c
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: kgene@kernel.org, linux@arm.linux.org.uk, b.zolnierkie@samsung.com,
+        amit.daniel@samsung.com, arnd@arndb.de, thomas.ab@samsung.com,
+        Pankaj Dubey <pankaj.dubey@samsung.com>
+Subject: [PATCH v2 0/6] samsung: pmu: split up SoC specific PMU data
+Date: Wed, 07 Jan 2015 11:01:22 +0530
+Message-id: <1420608688-10459-1-git-send-email-pankaj.dubey@samsung.com>
+X-Mailer: git-send-email 2.2.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsWyRsSkTrfy2JoQgxnL9C0aroZY/J10jN1i
+	44z1rBb9j18zW2x6fI3V4vKuOWwWM87vY7K4fZnXYtHWL+wWHcsYHbg8Wpp72Dx+/5rE6LFp
+	VSebx+Yl9R59W1YxenzeJBfAFsVlk5Kak1mWWqRvl8CVsfBJG1PBcZWKVS9uMzYwvpTuYuTk
+	kBAwkZi67xMrhC0mceHeerYuRi4OIYGljBJdy+awwBRNPrOVBSIxnVHi4YIVzBDOBCaJ7Z+O
+	s4NUsQnoSjx5P5cZxBYRyJbov70arINZYBOjxOvuU2A7hAVcJO6/bwdrYBFQlej4BjKWg4NX
+	wEOi66IrxDY5iS23HrGD9EoITGeX+Nl0DqpeQOLb5ENg9RICshKbDjBD1EtKHFxxg2UCo+AC
+	RoZVjKKpBckFxUnpRcZ6xYm5xaV56XrJ+bmbGIGBffrfs/4djHcPWB9iFOBgVOLhLehbEyLE
+	mlhWXJl7iNEUaMNEZinR5Hxg/OSVxBsamxlZmJqYGhuZW5opifMulPoZLCSQnliSmp2aWpBa
+	FF9UmpNafIiRiYNTqoFx0x4OIdGpT87UT3pSP2NrQOZ8rgQThgM3igvvfxb/21deJn1v84+o
+	3RfWrvyzqGvqpd/XlHbP2uLEt527Z0N/jdr1Vg0xxUWTApI5dmdVrb7zTvWIlcvvE1xdKXIV
+	1QYPGJvtmRvreO0uTI88FfE8tKav78ADvtDE0O69+U/XMrzedHh5a6a3EktxRqKhFnNRcSIA
+	A7HqbWcCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHIsWRmVeSWpSXmKPExsVy+t9jQd3KY2tCDP41qFo0XA2x+DvpGLvF
+	xhnrWS36H79mttj0+BqrxeVdc9gsZpzfx2Rx+zKvxaKtX9gtOpYxOnB5tDT3sHn8/jWJ0WPT
+	qk42j81L6j36tqxi9Pi8SS6ALaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJc
+	SSEvMTfVVsnFJ0DXLTMH6C4lhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEN
+	Y8bCJ21MBcdVKla9uM3YwPhSuouRk0NCwERi8pmtLBC2mMSFe+vZuhi5OIQEpjNKPFywghnC
+	mcAksf3TcXaQKjYBXYkn7+cyg9giAtkS/bdXs4AUMQtsYpR43X2KFSQhLOAicf99O1gDi4Cq
+	RMc3kBUcHLwCHhJdF10htslJbLn1iH0CI/cCRoZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmb
+	GMFx80xqB+PKBotDjAIcjEo8vAV9a0KEWBPLiitzDzFKcDArifBadQKFeFMSK6tSi/Lji0pz
+	UosPMZoCLZ/ILCWanA+M6bySeENjE3NTY1NLEwsTM0slcV4l+7YQIYH0xJLU7NTUgtQimD4m
+	Dk6pBsb0xNcXTK6fWXFuwe62jVWs07XdbhlphVu+6hETrb0yS8jTchdD9L1JljvUFG9PfrB/
+	UuaqT9Ny35odq44U5nBvflZ0lo1hd0B4+IYrzhbfn6Z8f97zyuzO6hdLq/5u81p7bpPRrBbJ
+	1J7yOdfD1dhYOnLv2djvnPV1n9LKydpyGt9mXZSd8/eXEktxRqKhFnNRcSIAPdJ1VLECAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is same as the last one I send to you yesterday.
+This patch series is a part of continuation work from following series
+[1] and [2].
 
-The continuous memory that needed for data in this patchset:
-RE: PAGE_SIZE, 4096 Bytes;
-IRTE: 65536 * 16 ; 1M Bytes;
+1: exynos: Move pmu driver to driver/soc folder and add exynos7 support
+   http://www.spinics.net/lists/linux-samsung-soc/msg39797.html from Amit Daniel Kacchap
+2: soc: samsung: pmu: split up SoC specific PMU data
+   https://lkml.org/lkml/2014/11/30/175 from me
 
-It should use same memory as the old versions of this patchset. The 
-changes for the last version do not need more memory.
+As there were concerns ([3] and [4]) for moving PMU implementation into
+"drivers/soc/samsung/" and using it for ARM64 samsung SoCs
 
-Regards
-Zhenhua
+3: https://lkml.org/lkml/2014/11/24/322 from Bartlomiej Zolnierkiewicz
+4: http://www.spinics.net/lists/linux-samsung-soc/msg39809.html from Kukjin Kim
 
-On 01/07/2015 01:02 PM, Baoquan He wrote:
-> On 01/07/15 at 12:11pm, Li, ZhenHua wrote:
->> Many thanks to Takao Indoh and Baoquan He, for your testing on more
->> different systems.
->>
->> The calling of flush functions are added to this version.
->>
->> The usage of __iommu_flush_cache function :
->> 1. Fixes a dump on Takao's system.
->> 2. Reduces the count of faults on Baoquan's system.
->
-> I am testing the version you sent to me yesterday afternoon. Is that
-> different with this patchset? I found your patchset man reserve a big
-> contiguous memory region under 896M, this will cause the crashkernel
-> reservation failed when I set crashkernel=320M. The reason I increase
-> the crashkerenl reservation to 320M is 256M is not enough and cause OOM
-> when that patchset is tested.
->
-> I am checking what happened.
->
->
-> Thanks
-> Baoquan
->
->>
->> Regards
->> Zhenhua
->>
->> On 01/07/2015 12:04 PM, Li, Zhen-Hua wrote:
->>> This patchset is an update of Bill Sumner's patchset, implements a fix for:
->>> If a kernel boots with intel_iommu=on on a system that supports intel vt-d,
->>> when a panic happens, the kdump kernel will boot with these faults:
->>>
->>>      dmar: DRHD: handling fault status reg 102
->>>      dmar: DMAR:[DMA Read] Request device [01:00.0] fault addr fff80000
->>>      DMAR:[fault reason 01] Present bit in root entry is clear
->>>
->>>      dmar: DRHD: handling fault status reg 2
->>>      dmar: INTR-REMAP: Request device [[61:00.0] fault index 42
->>>      INTR-REMAP:[fault reason 34] Present field in the IRTE entry is clear
->>>
->>> On some system, the interrupt remapping fault will also happen even if the
->>> intel_iommu is not set to on, because the interrupt remapping will be enabled
->>> when x2apic is needed by the system.
->>>
->>> The cause of the DMA fault is described in Bill's original version, and the
->>> INTR-Remap fault is caused by a similar reason. In short, the initialization
->>> of vt-d drivers causes the in-flight DMA and interrupt requests get wrong
->>> response.
->>>
->>> To fix this problem, we modifies the behaviors of the intel vt-d in the
->>> crashdump kernel:
->>>
->>> For DMA Remapping:
->>> 1. To accept the vt-d hardware in an active state,
->>> 2. Do not disable and re-enable the translation, keep it enabled.
->>> 3. Use the old root entry table, do not rewrite the RTA register.
->>> 4. Malloc and use new context entry table and page table, copy data from the
->>>     old ones that used by the old kernel.
->>> 5. to use different portions of the iova address ranges for the device drivers
->>>     in the crashdump kernel than the iova ranges that were in-use at the time
->>>     of the panic.
->>> 6. After device driver is loaded, when it issues the first dma_map command,
->>>     free the dmar_domain structure for this device, and generate a new one, so
->>>     that the device can be assigned a new and empty page table.
->>> 7. When a new context entry table is generated, we also save its address to
->>>     the old root entry table.
->>>
->>> For Interrupt Remapping:
->>> 1. To accept the vt-d hardware in an active state,
->>> 2. Do not disable and re-enable the interrupt remapping, keep it enabled.
->>> 3. Use the old interrupt remapping table, do not rewrite the IRTA register.
->>> 4. When ioapic entry is setup, the interrupt remapping table is changed, and
->>>     the updated data will be stored to the old interrupt remapping table.
->>>
->>> Advantages of this approach:
->>> 1. All manipulation of the IO-device is done by the Linux device-driver
->>>     for that device.
->>> 2. This approach behaves in a manner very similar to operation without an
->>>     active iommu.
->>> 3. Any activity between the IO-device and its RMRR areas is handled by the
->>>     device-driver in the same manner as during a non-kdump boot.
->>> 4. If an IO-device has no driver in the kdump kernel, it is simply left alone.
->>>     This supports the practice of creating a special kdump kernel without
->>>     drivers for any devices that are not required for taking a crashdump.
->>> 5. Minimal code-changes among the existing mainline intel vt-d code.
->>>
->>> Summary of changes in this patch set:
->>> 1. Added some useful function for root entry table in code intel-iommu.c
->>> 2. Added new members to struct root_entry and struct irte;
->>> 3. Functions to load old root entry table to iommu->root_entry from the memory
->>>     of old kernel.
->>> 4. Functions to malloc new context entry table and page table and copy the data
->>>     from the old ones to the malloced new ones.
->>> 5. Functions to enable support for DMA remapping in kdump kernel.
->>> 6. Functions to load old irte data from the old kernel to the kdump kernel.
->>> 7. Some code changes that support other behaviours that have been listed.
->>> 8. In the new functions, use physical address as "unsigned long" type, not
->>>     pointers.
->>>
->>> Original version by Bill Sumner:
->>>      https://lkml.org/lkml/2014/1/10/518
->>>      https://lkml.org/lkml/2014/4/15/716
->>>      https://lkml.org/lkml/2014/4/24/836
->>>
->>> Zhenhua's updates:
->>>      https://lkml.org/lkml/2014/10/21/134
->>>      https://lkml.org/lkml/2014/12/15/121
->>>      https://lkml.org/lkml/2014/12/22/53
->>>
->>> Changelog[v7]:
->>>      1. Use __iommu_flush_cache to flush the data to hardware.
->>>
->>> Changelog[v6]:
->>>      1. Use "unsigned long" as type of physical address.
->>>      2. Use new function unmap_device_dma to unmap the old dma.
->>>      3. Some small incorrect bits order for aw shift.
->>>
->>> Changelog[v5]:
->>>      1. Do not disable and re-enable traslation and interrupt remapping.
->>>      2. Use old root entry table.
->>>      3. Use old interrupt remapping table.
->>>      4. New functions to copy data from old kernel, and save to old kernel mem.
->>>      5. New functions to save updated root entry table and irte table.
->>>      6. Use intel_unmap to unmap the old dma;
->>>      7. Allocate new pages while driver is being loaded.
->>>
->>> Changelog[v4]:
->>>      1. Cut off the patches that move some defines and functions to new files.
->>>      2. Reduce the numbers of patches to five, make it more easier to read.
->>>      3. Changed the name of functions, make them consistent with current context
->>>         get/set functions.
->>>      4. Add change to function __iommu_attach_domain.
->>>
->>> Changelog[v3]:
->>>      1. Commented-out "#define DEBUG 1" to eliminate debug messages.
->>>      2. Updated the comments about changes in each version.
->>>      3. Fixed: one-line added to Copy-Translations patch to initialize the iovad
->>>            struct as recommended by Baoquan He [bhe@redhat.com]
->>>            init_iova_domain(&domain->iovad, DMA_32BIT_PFN);
->>>
->>> Changelog[v2]:
->>>      The following series implements a fix for:
->>>      A kdump problem about DMA that has been discussed for a long time. That is,
->>>      when a kernel panics and boots into the kdump kernel, DMA started by the
->>>      panicked kernel is not stopped before the kdump kernel is booted and the
->>>      kdump kernel disables the IOMMU while this DMA continues.  This causes the
->>>      IOMMU to stop translating the DMA addresses as IOVAs and begin to treat
->>>      them as physical memory addresses -- which causes the DMA to either:
->>>          (1) generate DMAR errors or
->>>          (2) generate PCI SERR errors or
->>>          (3) transfer data to or from incorrect areas of memory. Often this
->>>              causes the dump to fail.
->>>
->>> Changelog[v1]:
->>>      The original version.
->>>
->>> Changed in this version:
->>> 1. Do not disable and re-enable traslation and interrupt remapping.
->>> 2. Use old root entry table.
->>> 3. Use old interrupt remapping table.
->>> 4. Use "unsigned long" as physical address.
->>> 5. Use intel_unmap to unmap the old dma;
->>>
->>> Baoquan He <bhe@redhat.com> helps testing this patchset.
->>>
->>>    iommu/vt-d: Update iommu_attach_domain() and its callers
->>>    iommu/vt-d: Items required for kdump
->>>    iommu/vt-d: Add domain-id functions
->>>    iommu/vt-d: functions to copy data from old mem
->>>    iommu/vt-d: Add functions to load and save old re
->>>    iommu/vt-d: datatypes and functions used for kdump
->>>    iommu/vt-d: enable kdump support in iommu module
->>>    iommu/vt-d: assign new page table for dma_map
->>>    iommu/vt-d: Copy functions for irte
->>>    iommu/vt-d: Use old irte in kdump kernel
->>>
->>> Signed-off-by: Bill Sumner <billsumnerlinux@gmail.com>
->>> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
->>> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
->>> Tested-by: Baoquan He <bhe@redhat.com>
->>> ---
->>>   drivers/iommu/intel-iommu.c         | 1050 +++++++++++++++++++++++++++++++++--
->>>   drivers/iommu/intel_irq_remapping.c |  104 +++-
->>>   include/linux/intel-iommu.h         |   18 +
->>>   3 files changed, 1130 insertions(+), 42 deletions(-)
->>>
->>
+To address these concerns I posted patch [5] and splitted up SoC specific PMU
+configuration data from exynos-pmu driver, since all changes had been
+in single patch, size of patch was too large and it failed to appear on
+samsung and arm-linux mailing list, but somehow it appeared on LKML.
+
+5: soc: samsung: pmu: split up SoC specific PMU data
+   https://lkml.org/lkml/2014/11/30/175
+
+Here is second attempt for the same, in this series I am splitting up SoC specific
+PMU configuration data into mach-exynos folder itself, before moving all of them
+under drivers/soc/samsung/. Also instead of making all changes in single patch it has been
+broken into SoC specific patches to avoid large size of patch. With this approach there will
+not be unwanted big churns just after adding exynos-pmu under drivers/soc/samsung.
+
+All these patches are just refactoring to keep minimal changes while moving
+exynos-pmu driver under drivers/soc/samsung/. Support for exynos7 PMU can be added
+on top of it, in such a manner that for ARM64 build, ARM related SoC's PMU will not
+get compiled and thus unnecessary increasing kernel image size.
+
+I have tested it for normal system booting on Exynos3250 and SMDK5250 boards.
+I have verified S2R on SMDK5250 after these patches and it's working fine.
+
+These patches have been prepared on top of Kukjin Kim's for-next
+having SHA-ID as 1eeec807bf644a0e691026b2fd and on top of my following accepted patch [6],
+to avoid conflict in future.
+
+6: ARM: EXYNOS: Remove i2c sys configuration related code
+     http://www.spinics.net/lists/linux-samsung-soc/msg40671.html
+
+
+Amit Daniel Kachhap (1):
+  ARM: EXYNOS: Move pmu specific headers under "linux/soc/samsung"
+
+Pankaj Dubey (5):
+  ARCH: EXYNOS: split up exynos3250 SoC specific PMU data
+  ARCH: EXYNOS: split up exynos4 SoC specific PMU data
+  ARCH: EXYNOS: split up exynos5250 SoC specific PMU data
+  ARCH: EXYNOS: split up exynos5420 SoC specific PMU data
+  drivers: soc: Add support for Exynos PMU driver
+
+ arch/arm/mach-exynos/Kconfig                       |    1 +
+ arch/arm/mach-exynos/Makefile                      |    2 +-
+ arch/arm/mach-exynos/exynos.c                      |    2 +-
+ arch/arm/mach-exynos/mcpm-exynos.c                 |    2 +-
+ arch/arm/mach-exynos/platsmp.c                     |    2 +-
+ arch/arm/mach-exynos/pm.c                          |    4 +-
+ arch/arm/mach-exynos/pmu.c                         | 1005 --------------------
+ arch/arm/mach-exynos/suspend.c                     |    4 +-
+ drivers/soc/Kconfig                                |    1 +
+ drivers/soc/Makefile                               |    1 +
+ drivers/soc/samsung/Kconfig                        |   20 +
+ drivers/soc/samsung/Makefile                       |    4 +
+ drivers/soc/samsung/exynos-pmu.c                   |  148 +++
+ drivers/soc/samsung/exynos-pmu.h                   |   52 +
+ drivers/soc/samsung/exynos3250-pmu.c               |  175 ++++
+ drivers/soc/samsung/exynos4-pmu.c                  |  223 +++++
+ drivers/soc/samsung/exynos5250-pmu.c               |  196 ++++
+ drivers/soc/samsung/exynos5420-pmu.c               |  297 ++++++
+ .../linux/soc/samsung}/exynos-pmu.h                |    0
+ .../linux/soc/samsung/exynos-regs-pmu.h            |    0
+ 20 files changed, 1126 insertions(+), 1013 deletions(-)
+ delete mode 100644 arch/arm/mach-exynos/pmu.c
+ create mode 100644 drivers/soc/samsung/Kconfig
+ create mode 100644 drivers/soc/samsung/Makefile
+ create mode 100644 drivers/soc/samsung/exynos-pmu.c
+ create mode 100644 drivers/soc/samsung/exynos-pmu.h
+ create mode 100644 drivers/soc/samsung/exynos3250-pmu.c
+ create mode 100644 drivers/soc/samsung/exynos4-pmu.c
+ create mode 100644 drivers/soc/samsung/exynos5250-pmu.c
+ create mode 100644 drivers/soc/samsung/exynos5420-pmu.c
+ rename {arch/arm/mach-exynos => include/linux/soc/samsung}/exynos-pmu.h (100%)
+ rename arch/arm/mach-exynos/regs-pmu.h => include/linux/soc/samsung/exynos-regs-pmu.h (100%)
+
+-- 
+2.2.0
 
