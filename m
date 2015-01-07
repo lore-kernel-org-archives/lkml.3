@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756985AbbAGB6b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 20:58:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46250 "EHLO
+	id S932688AbbAGB4J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 20:56:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46421 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932386AbbAGBwQ (ORCPT
+	with ESMTP id S932535AbbAGBwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:52:16 -0500
+	Tue, 6 Jan 2015 20:52:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tyler Hicks <tyhicks@canonical.com>,
-        Priya Bansal <p.bansal@samsung.com>
-Subject: [PATCH 3.18 78/84] eCryptfs: Force RO mount when encrypted view is enabled
-Date: Tue,  6 Jan 2015 17:50:21 -0800
-Message-Id: <20150107014031.491718469@linuxfoundation.org>
+        Peng Tao <tao.peng@primarydata.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.10 10/38] nfs41: fix nfs4_proc_layoutget error handling
+Date: Tue,  6 Jan 2015 17:50:22 -0800
+Message-Id: <20150107014954.153111132@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
-In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
-References: <20150107014029.012974975@linuxfoundation.org>
+In-Reply-To: <20150107014952.440109372@linuxfoundation.org>
+References: <20150107014952.440109372@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,107 +25,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tyler Hicks <tyhicks@canonical.com>
+From: Peng Tao <tao.peng@primarydata.com>
 
-commit 332b122d39c9cbff8b799007a825d94b2e7c12f2 upstream.
+commit 4bd5a980de87d2b5af417485bde97b8eb3d6cf6a upstream.
 
-The ecryptfs_encrypted_view mount option greatly changes the
-functionality of an eCryptfs mount. Instead of encrypting and decrypting
-lower files, it provides a unified view of the encrypted files in the
-lower filesystem. The presence of the ecryptfs_encrypted_view mount
-option is intended to force a read-only mount and modifying files is not
-supported when the feature is in use. See the following commit for more
-information:
+nfs4_layoutget_release() drops layout hdr refcnt. Grab the refcnt
+early so that it is safe to call .release in case nfs4_alloc_pages
+fails.
 
-  e77a56d [PATCH] eCryptfs: Encrypted passthrough
-
-This patch forces the mount to be read-only when the
-ecryptfs_encrypted_view mount option is specified by setting the
-MS_RDONLY flag on the superblock. Additionally, this patch removes some
-broken logic in ecryptfs_open() that attempted to prevent modifications
-of files when the encrypted view feature was in use. The check in
-ecryptfs_open() was not sufficient to prevent file modifications using
-system calls that do not operate on a file descriptor.
-
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Reported-by: Priya Bansal <p.bansal@samsung.com>
+Signed-off-by: Peng Tao <tao.peng@primarydata.com>
+Fixes: a47970ff78147 ("NFSv4.1: Hold reference to layout hdr in layoutget")
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ecryptfs/file.c |   12 ------------
- fs/ecryptfs/main.c |   16 +++++++++++++---
- 2 files changed, 13 insertions(+), 15 deletions(-)
+ fs/nfs/nfs4proc.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/ecryptfs/file.c
-+++ b/fs/ecryptfs/file.c
-@@ -190,23 +190,11 @@ static int ecryptfs_open(struct inode *i
- {
- 	int rc = 0;
- 	struct ecryptfs_crypt_stat *crypt_stat = NULL;
--	struct ecryptfs_mount_crypt_stat *mount_crypt_stat;
- 	struct dentry *ecryptfs_dentry = file->f_path.dentry;
- 	/* Private value of ecryptfs_dentry allocated in
- 	 * ecryptfs_lookup() */
- 	struct ecryptfs_file_info *file_info;
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -6418,6 +6418,9 @@ nfs4_proc_layoutget(struct nfs4_layoutge
  
--	mount_crypt_stat = &ecryptfs_superblock_to_private(
--		ecryptfs_dentry->d_sb)->mount_crypt_stat;
--	if ((mount_crypt_stat->flags & ECRYPTFS_ENCRYPTED_VIEW_ENABLED)
--	    && ((file->f_flags & O_WRONLY) || (file->f_flags & O_RDWR)
--		|| (file->f_flags & O_CREAT) || (file->f_flags & O_TRUNC)
--		|| (file->f_flags & O_APPEND))) {
--		printk(KERN_WARNING "Mount has encrypted view enabled; "
--		       "files may only be read\n");
--		rc = -EPERM;
--		goto out;
--	}
- 	/* Released in ecryptfs_release or end of function if failure */
- 	file_info = kmem_cache_zalloc(ecryptfs_file_info_cache, GFP_KERNEL);
- 	ecryptfs_set_file_private(file, file_info);
---- a/fs/ecryptfs/main.c
-+++ b/fs/ecryptfs/main.c
-@@ -493,6 +493,7 @@ static struct dentry *ecryptfs_mount(str
- {
- 	struct super_block *s;
- 	struct ecryptfs_sb_info *sbi;
-+	struct ecryptfs_mount_crypt_stat *mount_crypt_stat;
- 	struct ecryptfs_dentry_info *root_info;
- 	const char *err = "Getting sb failed";
- 	struct inode *inode;
-@@ -511,6 +512,7 @@ static struct dentry *ecryptfs_mount(str
- 		err = "Error parsing options";
- 		goto out;
- 	}
-+	mount_crypt_stat = &sbi->mount_crypt_stat;
+ 	dprintk("--> %s\n", __func__);
  
- 	s = sget(fs_type, NULL, set_anon_super, flags, NULL);
- 	if (IS_ERR(s)) {
-@@ -557,11 +559,19 @@ static struct dentry *ecryptfs_mount(str
- 
- 	/**
- 	 * Set the POSIX ACL flag based on whether they're enabled in the lower
--	 * mount. Force a read-only eCryptfs mount if the lower mount is ro.
--	 * Allow a ro eCryptfs mount even when the lower mount is rw.
-+	 * mount.
- 	 */
- 	s->s_flags = flags & ~MS_POSIXACL;
--	s->s_flags |= path.dentry->d_sb->s_flags & (MS_RDONLY | MS_POSIXACL);
-+	s->s_flags |= path.dentry->d_sb->s_flags & MS_POSIXACL;
++	/* nfs4_layoutget_release calls pnfs_put_layout_hdr */
++	pnfs_get_layout_hdr(NFS_I(inode)->layout);
 +
-+	/**
-+	 * Force a read-only eCryptfs mount when:
-+	 *   1) The lower mount is ro
-+	 *   2) The ecryptfs_encrypted_view mount option is specified
-+	 */
-+	if (path.dentry->d_sb->s_flags & MS_RDONLY ||
-+	    mount_crypt_stat->flags & ECRYPTFS_ENCRYPTED_VIEW_ENABLED)
-+		s->s_flags |= MS_RDONLY;
+ 	lgp->args.layout.pages = nfs4_alloc_pages(max_pages, gfp_flags);
+ 	if (!lgp->args.layout.pages) {
+ 		nfs4_layoutget_release(lgp);
+@@ -6430,9 +6433,6 @@ nfs4_proc_layoutget(struct nfs4_layoutge
+ 	lgp->res.seq_res.sr_slot = NULL;
+ 	nfs41_init_sequence(&lgp->args.seq_args, &lgp->res.seq_res, 0);
  
- 	s->s_maxbytes = path.dentry->d_sb->s_maxbytes;
- 	s->s_blocksize = path.dentry->d_sb->s_blocksize;
+-	/* nfs4_layoutget_release calls pnfs_put_layout_hdr */
+-	pnfs_get_layout_hdr(NFS_I(inode)->layout);
+-
+ 	task = rpc_run_task(&task_setup_data);
+ 	if (IS_ERR(task))
+ 		return ERR_CAST(task);
 
 
