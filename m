@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757153AbbAGCAh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 21:00:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46230 "EHLO
+	id S932686AbbAGBw2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 20:52:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46421 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757037AbbAGBwO (ORCPT
+	with ESMTP id S932560AbbAGBwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 20:52:14 -0500
+	Tue, 6 Jan 2015 20:52:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Petr Vandrovec <petr@vandrovec.name>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.18 71/84] ncpfs: return proper error from NCP_IOC_SETROOT ioctl
-Date: Tue,  6 Jan 2015 17:50:14 -0800
-Message-Id: <20150107014031.276335802@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Willy Tarreau <w@1wt.eu>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.10 03/38] x86/tls: Disallow unusual TLS segments
+Date: Tue,  6 Jan 2015 17:50:15 -0800
+Message-Id: <20150107014953.042606303@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
-In-Reply-To: <20150107014029.012974975@linuxfoundation.org>
-References: <20150107014029.012974975@linuxfoundation.org>
+In-Reply-To: <20150107014952.440109372@linuxfoundation.org>
+References: <20150107014952.440109372@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,43 +28,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit a682e9c28cac152e6e54c39efcf046e0c8cfcf63 upstream.
+commit 0e58af4e1d2166e9e33375a0f121e4867010d4f8 upstream.
 
-If some error happens in NCP_IOC_SETROOT ioctl, the appropriate error
-return value is then (in most cases) just overwritten before we return.
-This can result in reporting success to userspace although error happened.
+Users have no business installing custom code segments into the
+GDT, and segments that are not present but are otherwise valid
+are a historical source of interesting attacks.
 
-This bug was introduced by commit 2e54eb96e2c8 ("BKL: Remove BKL from
-ncpfs").  Propagate the errors correctly.
+For completeness, block attempts to set the L bit.  (Prior to
+this patch, the L bit would have been silently dropped.)
 
-Coverity id: 1226925.
+This is an ABI break.  I've checked glibc, musl, and Wine, and
+none of them look like they'll have any trouble.
 
-Fixes: 2e54eb96e2c80 ("BKL: Remove BKL from ncpfs")
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Petr Vandrovec <petr@vandrovec.name>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Note to stable maintainers: this is a hardening patch that fixes
+no known bugs.  Given the possibility of ABI issues, this
+probably shouldn't be backported quickly.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ncpfs/ioctl.c |    1 -
- 1 file changed, 1 deletion(-)
+ arch/x86/kernel/tls.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
---- a/fs/ncpfs/ioctl.c
-+++ b/fs/ncpfs/ioctl.c
-@@ -447,7 +447,6 @@ static long __ncp_ioctl(struct inode *in
- 						result = -EIO;
- 					}
- 				}
--				result = 0;
- 			}
- 			mutex_unlock(&server->root_setup_lock);
+--- a/arch/x86/kernel/tls.c
++++ b/arch/x86/kernel/tls.c
+@@ -39,6 +39,28 @@ static bool tls_desc_okay(const struct u
+ 	if (!info->seg_32bit)
+ 		return false;
+ 
++	/* Only allow data segments in the TLS array. */
++	if (info->contents > 1)
++		return false;
++
++	/*
++	 * Non-present segments with DPL 3 present an interesting attack
++	 * surface.  The kernel should handle such segments correctly,
++	 * but TLS is very difficult to protect in a sandbox, so prevent
++	 * such segments from being created.
++	 *
++	 * If userspace needs to remove a TLS entry, it can still delete
++	 * it outright.
++	 */
++	if (info->seg_not_present)
++		return false;
++
++#ifdef CONFIG_X86_64
++	/* The L bit makes no sense for data. */
++	if (info->lm)
++		return false;
++#endif
++
+ 	return true;
+ }
  
 
 
