@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754995AbbAGSXm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 13:23:42 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:46693 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753943AbbAGSXk (ORCPT
+	id S1754340AbbAGS1h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 13:27:37 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34747 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753557AbbAGS1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 13:23:40 -0500
-Date: Wed, 7 Jan 2015 19:23:35 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        "\\\"Rafael J. Wysocki\\\"" <rjw@rjwysocki.net>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Oleg Nesterov <oleg@redhat.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH -v2 1/5] oom: add helpers for setting and clearing
- TIF_MEMDIE
-Message-ID: <20150107182335.GG16553@dhcp22.suse.cz>
-References: <20141110163055.GC18373@dhcp22.suse.cz>
- <1417797707-31699-1-git-send-email-mhocko@suse.cz>
- <1417797707-31699-2-git-send-email-mhocko@suse.cz>
- <20150107175731.GG4395@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150107175731.GG4395@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 7 Jan 2015 13:27:36 -0500
+Message-ID: <1420655248.3191.73.camel@pengutronix.de>
+Subject: Re: [PATCH v2 0/7] imx-drm: ipuv3-crtc: Implement mode_fixup
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Steve Longerbeam <slongerbeam@gmail.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, David Airlie <airlied@linux.ie>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Denis Carikli <denis@eukrea.com>,
+        Jiada Wang <jiada_wang@mentor.com>,
+        Steve Longerbeam <steve_longerbeam@mentor.com>
+Date: Wed, 07 Jan 2015 19:27:28 +0100
+In-Reply-To: <1418954426-21909-1-git-send-email-steve_longerbeam@mentor.com>
+References: <1418954426-21909-1-git-send-email-steve_longerbeam@mentor.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.9-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 07-01-15 12:57:31, Tejun Heo wrote:
-> On Fri, Dec 05, 2014 at 05:41:43PM +0100, Michal Hocko wrote:
-> > +/**
-> > + * Unmarks the current task as OOM victim.
-> > + */
-> > +void unmark_tsk_oom_victim(void)
-> > +{
-> > +	clear_thread_flag(TIF_MEMDIE);
-> > +}
+Am Donnerstag, den 18.12.2014, 18:00 -0800 schrieb Steve Longerbeam:
+> This patchset implements ->mode_fixup() in the imx ipuv3-crtc driver,
+> using a new support function ipu_di_adjust_videomode(). This new
+> function needs to be subsystem independent, so it accepts a video
+> mode as a 'struct videomode'. Hence ipu-crtc ->mode_fixup() needs
+> another support function to convert a drm_display_mode to a videomode
+> before passing the mode to ipu_di_adjust_videomode() for fixup.
 > 
-> This prolly should be unmark_current_oom_victim()?
+> Also some related code cleanup: 'struct ipu_di_signal_cfg' should
+> use 'struct videomode' for mode timings.
 
-OK.
+Alright, I have applied the series with
+s/videomode_from_drm_display_mode/drm_display_mode_to_videomode/
 
-> Also, can we
-> please use full "task" at least in global symbols?  I don't think tsk
-> abbreviation is that popular in function names.
+thanks
+Philipp
 
-It is mimicking *_tsk_thread_flag() API.
-
--- 
-Michal Hocko
-SUSE Labs
