@@ -1,132 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416AbbAGKnV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 05:43:21 -0500
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:56484 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751224AbbAGKnS (ORCPT
+	id S1752211AbbAGKrF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 05:47:05 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:36344 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbbAGKrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 05:43:18 -0500
-X-Sasl-enc: wEMlNBiK3w41zkphYqZTR5gG+jqFejMwZH26cf03zosY 1420627397
-Message-ID: <1420627396.26870.36.camel@stressinduktion.org>
-Subject: Re: [PATCH net] ipv6: Prevent ipv6_find_hdr() from returning ENOENT
- for valid non-first fragments
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Rahul Sharma <rsharma@arista.com>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
-Date: Wed, 07 Jan 2015 11:43:16 +0100
-In-Reply-To: <CAFB3abwKpR1VqZXUrsexqveAZrA2LTSmTe8a=-H7z2HjAptjwA@mail.gmail.com>
-References: <CAFB3abzYNYqtzd_n+Ym0Lo=DYbV0HPU=Tqw=stALNnu188hMKQ@mail.gmail.com>
-	 <20150106224706.GA7416@salvia>
-	 <CAFB3abwKpR1VqZXUrsexqveAZrA2LTSmTe8a=-H7z2HjAptjwA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9 (3.12.9-1.fc21) 
-Mime-Version: 1.0
+	Wed, 7 Jan 2015 05:47:03 -0500
+Message-ID: <54AD0E54.9060900@huawei.com>
+Date: Wed, 7 Jan 2015 18:45:40 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Hillf Danton <hillf.zj@alibaba-inc.com>
+CC: <linux@arm.linux.org.uk>, <mingo@redhat.com>, <x86@kernel.org>,
+        <masami.hiramatsu.pt@hitachi.com>, <anil.s.keshavamurthy@intel.com>,
+        <davem@davemloft.net>, <ananth@in.ibm.com>, <dave.long@linaro.org>,
+        <tixy@linaro.org>, <lizefan@huawei.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 07/11] kprobes: introduces macros for allocing early
+ kprobe resources.
+References: <1420616086-42692-1-git-send-email-wangnan0@huawei.com> <1420616151-43023-1-git-send-email-wangnan0@huawei.com>
+In-Reply-To: <1420616151-43023-1-git-send-email-wangnan0@huawei.com>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.90]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020203.54AD0E65.00CB,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 8f9725a1b6c9bb632df1432497f07145
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mi, 2015-01-07 at 11:11 +0530, Rahul Sharma wrote:
-> On Wed, Jan 7, 2015 at 4:17 AM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
-> > On Wed, Jan 07, 2015 at 03:03:20AM +0530, Rahul Sharma wrote:
-> >> ipv6_find_hdr() currently assumes that the next-header field in the
-> >> fragment header of the non-first fragment is the "protocol number of
-> >> the last header" (here last header excludes any extension header
-> >> protocol numbers ) which is incorrect as per RFC2460. The next-header
-> >> value is the first header of the fragmentable part of the original
-> >> packet (which can be extension header as well).
-> >> This can create reassembly problems. For example: Fragmented
-> >> authenticated OSPFv3 packets (where AH header is inserted before the
-> >> protocol header). For the second fragment, the next header value in
-> >> the fragment header will be NEXTHDR_AUTH which is correct but
-> >> ipv6_find_hdr will return ENOENT since AH is an extension header
-> >> resulting in second fragment getting dropped. This check for the
-> >> presence of non-extension header needs to be removed.
-> >>
-> >> Signed-off-by: Rahul Sharma <rsharma@arista.com>
-> >> ---
-> >> --- linux-3.18.1/net/ipv6/exthdrs_core.c.orig   2015-01-06
-> >> 10:25:36.411419863 -0800
-> >> +++ linux-3.18.1/net/ipv6/exthdrs_core.c        2015-01-06
-> >> 10:51:45.819364986 -0800
-> >> @@ -171,10 +171,11 @@ EXPORT_SYMBOL_GPL(ipv6_find_tlv);
-> >>   * If the first fragment doesn't contain the final protocol header or
-> >>   * NEXTHDR_NONE it is considered invalid.
-> >>   *
-> >> - * Note that non-1st fragment is special case that "the protocol number
-> >> - * of last header" is "next header" field in Fragment header. In this case,
-> >> - * *offset is meaningless and fragment offset is stored in *fragoff if fragoff
-> >> - * isn't NULL.
-> >> + * Note that non-1st fragment is special case that "the protocol number of the
-> >> + * first header of the fragmentable part of the original packet" is
-> >> + * "next header" field in the Fragment header. In this case, *offset is
-> >> + * meaningless and fragment offset is stored in *fragoff if fragoff isn't
-> >> + * NULL.
-> >>   *
-> >>   * if flags is not NULL and it's a fragment, then the frag flag
-> >>   * IP6_FH_F_FRAG will be set. If it's an AH header, the
-> >> @@ -250,9 +251,7 @@ int ipv6_find_hdr(const struct sk_buff *
-> >>
-> >>                         _frag_off = ntohs(*fp) & ~0x7;
-> >>                         if (_frag_off) {
-> >> -                               if (target < 0 &&
-> >> -                                   ((!ipv6_ext_hdr(hp->nexthdr)) ||
-> >
-> > This check assumes that the following headers cannot show up in the
-> > fragmented part of the IPv6 packet:
-> >
-> >  12 bool ipv6_ext_hdr(u8 nexthdr)
-> >  13 {
-> >  14         /*
-> >  15          * find out if nexthdr is an extension header or a protocol
-> >  16          */
-> >  17         return   (nexthdr == NEXTHDR_HOP)       ||
-> >  18                  (nexthdr == NEXTHDR_ROUTING)   ||
-> >  19                  (nexthdr == NEXTHDR_FRAGMENT)  ||
-> >  20                  (nexthdr == NEXTHDR_AUTH)      ||
-> >  21                  (nexthdr == NEXTHDR_NONE)      ||
-> >  22                  (nexthdr == NEXTHDR_DEST);
-> >
-> >> -                                    hp->nexthdr == NEXTHDR_NONE)) {
-> >> +                               if (target < 0) {
-> >>                                         if (fragoff)
-> >>                                                 *fragoff = _frag_off;
-> >>                                         return hp->nexthdr;
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On 2015/1/7 15:35, Wang Nan wrote:
+> Introduces macros to genearte common early kprobe related resource
+> allocator.
 > 
-> I think this is incorrect. Authentication header shows up in the
-> fragmentable part of the original IPv6 packet. So, for the non-first
-> fragments the next-header field value can be NEXTHDR_AUTH.
+> All early kprobe related resources are statically allocated during
+> linking for each early kprobe slot. For each type of resource, a bitmap
+> is used to track allocation. __DEFINE_EKPROBE_ALLOC_OPS defines alloc
+> and free handler for them. The range of the resource and the bitmap
+> should be provided for allocaing and freeing. DEFINE_EKPROBE_ALLOC_OPS
+> defines bitmap and the array used by it.
+> 
+> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+> ---
+>  include/linux/kprobes.h | 69 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 69 insertions(+)
+> 
+> diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+> index b0265f9..9a18188 100644
+> --- a/include/linux/kprobes.h
+> +++ b/include/linux/kprobes.h
+> @@ -270,6 +270,75 @@ extern void show_registers(struct pt_regs *regs);
+>  extern void kprobes_inc_nmissed_count(struct kprobe *p);
+>  extern bool arch_within_kprobe_blacklist(unsigned long addr);
+>  
+> +#ifdef CONFIG_EARLY_KPROBES
+> +
+> +#define NR_EARLY_KPROBES_SLOTS	CONFIG_NR_EARLY_KPROBES_SLOTS
+> +#define ALIGN_UP(v, a)	(((v) + ((a) - 1)) & ~((a) - 1))
+> +#define EARLY_KPROBES_BITMAP_SZ	ALIGN_UP(NR_EARLY_KPROBES_SLOTS, BITS_PER_LONG)
+> +
+> +#define __ek_in_range(v, s, e)	(((v) >= (s)) && ((v) < (e)))
+> +#define __ek_buf_sz(s, e)	((void *)(e) - (void *)(s))
+> +#define __ek_elem_sz_b(s, e)	(__ek_buf_sz(s, e) / NR_EARLY_KPROBES_SLOTS)
+> +#define __ek_elem_sz(s, e)	(__ek_elem_sz_b(s, e) / sizeof(s[0]))
+> +#define __ek_elem_idx(v, s, e)	(__ek_buf_sz(s, v) / __ek_elem_sz_b(s, e))
+> +#define __ek_get_elem(i, s, e)	(&((s)[__ek_elem_sz(s, e) * (i)]))
+> +#define __DEFINE_EKPROBE_ALLOC_OPS(__t, __name)				\
+> +static inline __t *__ek_alloc_##__name(__t *__s, __t *__e, unsigned long *__b)\
+> +{									\
+> +	int __i = find_next_zero_bit(__b, NR_EARLY_KPROBES_SLOTS, 0);	\
+> +	if (__i >= NR_EARLY_KPROBES_SLOTS)				\
+> +		return NULL;						\
+> +	set_bit(__i, __b);						\
+> +	return __ek_get_elem(__i, __s, __e);				\
+> +}									\
+> +static inline int __ek_free_##__name(__t *__v, __t *__s, __t *__e, unsigned long *__b)	\
+> +{									\
+> +	if (!__ek_in_range(__v, __s, __e))				\
+> +		return 0;						\
+> +	clear_bit(__ek_elem_idx(__v, __s, __e), __b);			\
+> +	return 1;							\
+> +}
+> +
+> +#define DEFINE_EKPROBE_ALLOC_OPS(__t, __name, __static)			\
+> +__static __t __ek_##__name##_slots[NR_EARLY_KPROBES_SLOTS];		\
+> +__static unsigned long __ek_##__name##_bitmap[EARLY_KPROBES_BITMAP_SZ];	\
+> +__DEFINE_EKPROBE_ALLOC_OPS(__t, __name)					\
+> +static inline __t *ek_alloc_##__name(void)				\
+> +{									\
+> +	return __ek_alloc_##__name(&((__ek_##__name##_slots)[0]),	\
+> +			&((__ek_##__name##_slots)[NR_EARLY_KPROBES_SLOTS]),\
+> +			(__ek_##__name##_bitmap));			\
+> +}									\
+> +static inline int ek_free_##__name(__t *__s)				\
+> +{									\
+> +	return __ek_free_##__name(__s, &((__ek_##__name##_slots)[0]),	\
+> +			&((__ek_##__name##_slots)[NR_EARLY_KPROBES_SLOTS]),\
+> +			(__ek_##__name##_bitmap));			\
+> +}
+> +
+> +
+> +#else
+> +#define __DEFINE_EKPROBE_ALLOC_OPS(__t, __name)				\
+> +static inline __t *__ek_alloc_##__name(__t *__s, __t *__e, unsigned long *__b)\
+> +{									\
+> +	return NULL;							\
+> +}									\
+> +static inline int __ek_free_##__name(__t *__v, __t *__s, __t *__e, unsigned long *__b)\
+> +{									\
+> +	return 0;							\
+> +}
+> +
+> +#define DEFINE_EKPROBE_ALLOC_OPS(__t, __name, __static)			\
+> +static inline __t *ek_alloc_##__name(void)				\
+> +{									\
+> +	return NULL;							\
+> +}									\
+> +static inline void ek_free_##__name(__t *__s)				\
+> +{									\
+> +}
+> +
 
-Pablo's mail got me thinking again.
+Sorry, here is a small problem. Should be:
+static inline int ek_free_##__name(__t *__s)				\
+{									\
+	return 0;							\
+}
 
-In general, IPv6 extension headers can appear in any order and stacks
-must be process them. Fragmentation adds a limitation, that some
-extension headers do not make sense and don't have any effect if they
-appear after a fragmentation header (HbH and ROUTING).
-
-Looking at the rest of the function we don't check for HBHHDR or RTHDR
-following a fragmentation header either if we process the first fragment
-(core stack only processes HBH if directly following the ipv6 header
-anyway).
-
-So, in my opinion, it is safe to completely remove this check and it
-would align if the rest of the extension processing logic. The callers
-all seem fine with that.
-
-Pablo, what do you think?
-
-Anyway, the patch does not apply cleanly, the patch header is mangled.
-Could you check and send again?
-
-Thanks,
-Hannes
+> +#endif
+> +
+>  struct kprobe_insn_cache {
+>  	struct mutex mutex;
+>  	void *(*alloc)(void);	/* allocate insn page */
+> 
 
 
