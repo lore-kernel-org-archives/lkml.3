@@ -1,74 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752413AbbAGH5L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 02:57:11 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:34531 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161AbbAGH5I (ORCPT
+	id S1753253AbbAGICH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 03:02:07 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:53063 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751607AbbAGICF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 02:57:08 -0500
-Date: Tue, 6 Jan 2015 23:57:03 -0800
+	Wed, 7 Jan 2015 03:02:05 -0500
+Date: Wed, 7 Jan 2015 00:01:59 -0800
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Olliver Schinagl <oliver+list@schinagl.nl>
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Sam Ravnborg <sam@ravnborg.org>, Olliver Schinagl <oliver@schinagl.nl>,
+To: Walter Lozano <walter@vanguardiasur.com.ar>
+Cc: michael.hennerich@analog.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devicetree@vger.kernel.org,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1] input: make use of the input_set_capability helper
-Message-ID: <20150107075703.GE5256@dtor-ws>
-References: <1420615866-3528-1-git-send-email-oliver+list@schinagl.nl>
+Subject: Re: [PATCH 1/2] Input: adxl34x - add OF support
+Message-ID: <20150107080159.GF5256@dtor-ws>
+References: <1420599537-28740-1-git-send-email-walter@vanguardiasur.com.ar>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1420615866-3528-1-git-send-email-oliver+list@schinagl.nl>
+In-Reply-To: <1420599537-28740-1-git-send-email-walter@vanguardiasur.com.ar>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Olliver,
+Hi Walter,
 
-On Wed, Jan 07, 2015 at 08:31:06AM +0100, Olliver Schinagl wrote:
-> From: Olliver Schinagl <oliver@schinagl.nl>
+On Tue, Jan 06, 2015 at 11:58:56PM -0300, Walter Lozano wrote:
+> This patch adds the missing support for OF to the adxl34x digital
+> accelerometer. This is a basic version which supports the main
+> optional parameters. This implementation copies the default values
+> to the adxl34x_platform_data structure and overrides the values
+> that are passed from the device tree.
 > 
-> Almost all of the speaker drivers under input manipulate the ev bits
-> directly, which is not needed, as there is a helper available.
-> 
-> This patch makes use of the helper for the speaker drivers.
-> 
-> Signed-off-by: Olliver Schinagl <oliver@schinagl.nl>
+> Signed-off-by: Walter Lozano <walter@vanguardiasur.com.ar>
 > ---
->  drivers/input/misc/cm109.c         | 4 ++--
->  drivers/input/misc/ixp4xx-beeper.c | 5 ++---
->  drivers/input/misc/m68kspkr.c      | 5 ++---
->  drivers/input/misc/pcspkr.c        | 5 ++---
->  drivers/input/misc/pwm-beeper.c    | 5 +----
->  drivers/input/misc/sparcspkr.c     | 6 ++----
->  6 files changed, 11 insertions(+), 19 deletions(-)
+>  drivers/input/misc/adxl34x.c |  108 +++++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 107 insertions(+), 1 deletion(-)
 > 
-> diff --git a/drivers/input/misc/cm109.c b/drivers/input/misc/cm109.c
-> index 9365535..8e41070 100644
-> --- a/drivers/input/misc/cm109.c
-> +++ b/drivers/input/misc/cm109.c
-> @@ -767,10 +767,10 @@ static int cm109_usb_probe(struct usb_interface *intf,
->  	input_dev->keycodesize = sizeof(unsigned char);
->  	input_dev->keycodemax = ARRAY_SIZE(dev->keymap);
+> diff --git a/drivers/input/misc/adxl34x.c b/drivers/input/misc/adxl34x.c
+> index 2b2d02f..b3e06a3 100644
+> --- a/drivers/input/misc/adxl34x.c
+> +++ b/drivers/input/misc/adxl34x.c
+> @@ -16,6 +16,8 @@
+>  #include <linux/workqueue.h>
+>  #include <linux/input/adxl34x.h>
+>  #include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_device.h>
 >  
-> -	input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_SND);
-> -	input_dev->sndbit[0] = BIT_MASK(SND_BELL) | BIT_MASK(SND_TONE);
-> +	input_set_capability(input_dev, EV_SND, SND_BELL | SND_TONE);
-
-No, input_set_capability() takes single event code, not bitmask. The
-fact that it works for these 2 values of SND events is pure coincidence
-(the old code wasn't much better though).
-
+>  #include "adxl34x.h"
 >  
->  	/* register available key events */
-> +	input_dev->evbit[0] = BIT_MASK(EV_KEY);
+> @@ -688,13 +690,113 @@ static void adxl34x_input_close(struct input_dev *input)
+>  	mutex_unlock(&ac->mutex);
+>  }
+>  
+> +void adxl34x_parse_dt(struct device *dev, struct adxl34x_platform_data *pdata){
+> +	if (!dev->of_node)
+> +		return;
+> +
+> +	pdata =  kzalloc(sizeof(*pdata), GFP_KERNEL);
+> +
+> +	memcpy(pdata, &adxl34x_default_init, sizeof(struct adxl34x_platform_data));
+> +
+> +	of_property_read_u8(dev->of_node, "adi,tap-axis-control",
+> +		 &pdata->tap_axis_control);
+> +
+> +	of_property_read_u8(dev->of_node, "adi,tap-threshold",
+> +		 &pdata->tap_threshold);
+> +
+> +	of_property_read_u8(dev->of_node, "adi,tap-duration",
+> +		 &pdata->tap_duration);
+> +
+> +	of_property_read_u8(dev->of_node, "adi,tap-latency",
+> +		 &pdata->tap_latency);
+> +
+> +	of_property_read_u8(dev->of_node, "adi,tap-window",
+> +		 &pdata->tap_window);
+> +
+> +	of_property_read_u8(dev->of_node, "adi,act-axis-control",
+> +		 &pdata->act_axis_control);
+> +
+> +	of_property_read_u8(dev->of_node, "adi,activity-threshold",
+> +		 &pdata->activity_threshold);
+> +
+> +	of_property_read_u8(dev->of_node, "adi,inactivity-threshold",
+> +		 &pdata->inactivity_threshold);
+> +
+> +	of_property_read_u8(dev->of_node, "adi,inactivity-time",
+> +		 &pdata->inactivity_time);
+> +
+> +	of_property_read_u8(dev->of_node, "adi,free-fall-threshold",
+> +		 &pdata->free_fall_threshold);
+> +
+> +	of_property_read_u8(dev->of_node, "adi,free-fall-time",
+> +		 &pdata->free_fall_time);
+> +
+> +	of_property_read_u8(dev->of_node, "adi,data-rate",
+> +		 &pdata->data_rate);
+> +
+> +	of_property_read_u8(dev->of_node, "adi,data-range",
+> +		 &pdata->data_range);
+> +
+> +	of_property_read_u8(dev->of_node, "adi,low-power-mode",
+> +		 &pdata->low_power_mode);
+> +
+> +	of_property_read_u8(dev->of_node, "adi,power-mode",
+> +		 &pdata->power_mode);
+> +
+> +	of_property_read_u8(dev->of_node, "adi,fifo-mode",
+> +		 &pdata->fifo_mode);
+> +
+> +	of_property_read_u8(dev->of_node, "adi,watermark",
+> +		 &pdata->watermark);
+> +
+> +	of_property_read_u8(dev->of_node, "adi,use-int2",
+> +		 &pdata->use_int2);
+> +
+> +	of_property_read_u8(dev->of_node, "adi,orientation-enable",
+> +		 &pdata->orientation_enable);
+> +
+> +	of_property_read_u8(dev->of_node, "adi,deadzone-angle",
+> +		 &pdata->deadzone_angle);
+> +
+> +	of_property_read_u8(dev->of_node, "adi,divisor-length",
+> +		 &pdata->divisor_length);
+> +
+> +	of_property_read_u32(dev->of_node, "adi,ev-type",
+> +		 &pdata->ev_type);
 
-Would prefer __set_bit(EV_KEY, input_dev->evbit); here instead.
+All these ev* properties are Linux-specific so should have linux prefix
+and not adi.
+
+> +
+> +	of_property_read_u32(dev->of_node, "adi,ev-code-x",
+> +		 &pdata->ev_code_x);
+> +
+> +	of_property_read_u32(dev->of_node, "adi,ev-code-y",
+> +		 &pdata->ev_code_y);
+> +
+> +	of_property_read_u32(dev->of_node, "adi,ev-code-z",
+> +		 &pdata->ev_code_z);
+> +
+> +	of_property_read_u32_array(dev->of_node, "adi,ev-code-tap",
+> +		 pdata->ev_code_tap, 3);
+> +
+> +	of_property_read_u32(dev->of_node, "adi,ev-code-ff",
+> +		 &pdata->ev_code_ff);
+> +
+> +	of_property_read_u32(dev->of_node, "adi,ev-code-act-inactivity",
+> +		 &pdata->ev_code_act_inactivity);
+> +
+> +	of_property_read_u32_array(dev->of_node, "adi,ev-codes-orient-2d",
+> +		 pdata->ev_codes_orient_2d, 4);
+> +
+> +	of_property_read_u32_array(dev->of_node, "adi,ev-codes-orient-3d",
+> +		 pdata->ev_codes_orient_3d, 6);
+> +
+> +}
+> +
+>  struct adxl34x *adxl34x_probe(struct device *dev, int irq,
+>  			      bool fifo_delay_default,
+>  			      const struct adxl34x_bus_ops *bops)
+>  {
+>  	struct adxl34x *ac;
+>  	struct input_dev *input_dev;
+> -	const struct adxl34x_platform_data *pdata;
+> +	struct adxl34x_platform_data *pdata;
+>  	int err, range, i;
+>  	unsigned char revid;
+>  
+> @@ -714,6 +816,10 @@ struct adxl34x *adxl34x_probe(struct device *dev, int irq,
+>  	ac->fifo_delay = fifo_delay_default;
+>  
+>  	pdata = dev_get_platdata(dev);
+> +
+> +	if (!pdata && dev->of_node)
+> +		adxl34x_parse_dt(dev, pdata);
+> +
+>  	if (!pdata) {
+
+Umm, what's changing data pointer? Was this tested?
+
+>  		dev_dbg(dev,
+>  			"No platform data: Using default initialization\n");
+> -- 
+> 1.7.10.4
+> 
 
 Thanks.
 
