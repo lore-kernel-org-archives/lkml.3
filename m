@@ -1,185 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010AbbAGFww (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 00:52:52 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:35844 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751105AbbAGFwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 00:52:45 -0500
-From: Vignesh R <vigneshr@ti.com>
-To: Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Samuel Ortiz <sameo@linux.intel.com>, Brad Griffis <bgriffis@ti.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
-        Jan Kardell <jan.kardell@telliq.com>, Felipe Balbi <balbi@ti.com>,
-        Wolfram Sang <wsa@the-dreams.de>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-iio@vger.kernel.org>,
-        <linux-input@vger.kernel.org>, Vignesh R <vigneshr@ti.com>
-Subject: [PATCH v6 6/6] input: touchscreen: ti_am335x_tsc: Replace delta filtering with median filtering
-Date: Wed, 7 Jan 2015 11:19:39 +0530
-Message-ID: <1420609779-11156-7-git-send-email-vigneshr@ti.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1420609779-11156-1-git-send-email-vigneshr@ti.com>
-References: <1420609779-11156-1-git-send-email-vigneshr@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1755050AbbAGFuT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 00:50:19 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:11976 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003AbbAGFuQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 00:50:16 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-c5-54acc91626fe
+From: Namjae Jeon <namjae.jeon@samsung.com>
+To: "'Brian Foster'" <bfoster@redhat.com>
+Cc: "'Dave Chinner'" <david@fromorbit.com>, "'Theodore Ts'o'" <tytso@mit.edu>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'linux-ext4'" <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
+        "'Ashish Sangwan'" <a.sangwan@samsung.com>
+References: <004701d02670$73dcb0a0$5b9611e0$@samsung.com>
+ <20150106191010.GJ5874@bfoster.bfoster>
+In-reply-to: <20150106191010.GJ5874@bfoster.bfoster>
+Subject: RE: [PATCH v7 9/11] xfstests: generic/043: Test multiple fallocate
+ insert/collapse range calls
+Date: Wed, 07 Jan 2015 14:50:13 +0900
+Message-id: <001a01d02a3d$ce7462d0$6b5d2870$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIvGHOauN9jkNRBdlZw+n1ZWUFkpgEzhfS0m+yXdxA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPIsWRmVeSWpSXmKPExsWyRsSkWFfs5JoQg8/rhSyWTrzEbPHuc5XF
+	lmP3GC1mzrvDZrFn70kWi8u75rBZtPb8ZLdY1HeL0YHD49QiCY+mM0eZPVZf2Mro8X7fVTaP
+	vi2rGD0+b5ILYIvisklJzcksSy3St0vgyrjT9pKlYBV/RePsTpYGxjXcXYwcHBICJhJ7jyR2
+	MXICmWISF+6tZ+ti5OIQEljKKPGp6wUbRMJEYn3PDKjEdEaJv70X2CGcv4wSNw73soBMYhPQ
+	lvizRRSkQURAXeLOvAksIDXMAp8YJR5eOcAMkhASSJb42/YJbCon0NSHtxqZQGxhgUyJQ+3T
+	wGwWAVWJruO3GUFsXgFLiXv3P7NC2IISPybfYwGxmQW0JNbvPM4EYctLbF7zlhniUgWJHWdf
+	M0IcYSWxt+0/M0SNiMS+F+8YQQ6SEPjKLnH58T52iGUCEt8mH2KBBIWsxKYDUHMkJQ6uuMEy
+	gVFiFpLVs5CsnoVk9SwkKxYwsqxiFE0tSC4oTkovMtErTswtLs1L10vOz93ECIzn0/+eTdjB
+	eO+A9SFGAQ5GJR7egr41IUKsiWXFlbmHGE2BLprILCWanA9MGnkl8YbGZkYWpiamxkbmlmZK
+	4ryvpX4GCwmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamDUDWqWlXzSaC2my/xtR0vanrC93238
+	krKrlutN2HAq4NzWIoslVg/uOp/e93hVYE/VB+PkisulC858XLl+5VkBx+Y5Bj/VmNYGWOdp
+	fbCv4VnEN9XpZU+DW63NFafEC+eezpn2dmr2Vy6FeQtTrrTM/1jxOOvxf7tpB/3jFadray/d
+	tee6o/FXJZbijERDLeai4kQA3li9JuICAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFKsWRmVeSWpSXmKPExsVy+t9jQV2xk2tCDBbc5rJYOvESs8W7z1UW
+	W47dY7SYOe8Om8WevSdZLC7vmsNm0drzk91iUd8tRgcOj1OLJDyazhxl9lh9YSujx/t9V9k8
+	+rasYvT4vEkugC2qgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE31VbJ
+	xSdA1y0zB+geJYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYGaCBhDWPGnbaXLAWr
+	+CsaZ3eyNDCu4e5i5OSQEDCRWN8zgw3CFpO4cG89kM3FISQwnVHib+8FdgjnL6PEjcO9LF2M
+	HBxsAtoSf7aIgjSICKhL3Jk3gQWkhlngE6PEwysHmEESQgLJEn/bPoFN5QTa8PBWIxOILSyQ
+	KXGofRqYzSKgKtF1/DYjiM0rYClx7/5nVghbUOLH5HssIDazgJbE+p3HmSBseYnNa94yQ1yq
+	ILHj7GtGiCOsJPa2/WeGqBGR2PfiHeMERqFZSEbNQjJqFpJRs5C0LGBkWcUomlqQXFCclJ5r
+	pFecmFtcmpeul5yfu4kRnC6eSe9gXNVgcYhRgINRiYe3oG9NiBBrYllxZe4hRgkOZiURXqtO
+	oBBvSmJlVWpRfnxRaU5q8SFGU6BPJzJLiSbnA1NZXkm8obGJmZGlkbmhhZGxuZI4r5J9W4iQ
+	QHpiSWp2ampBahFMHxMHp1QD42bucC31ih1iJyOv3deVfx/5MJlBoePypgippkm7sw7LCBsw
+	PPaZ0VAT1a+8Obl206c9O/ZM6D+i1sf9V0Boxz5HsSt1+n4V7c7lx4U19W/+T1g878I8LZ8Z
+	8nL3XijekLBteuL/7HL1SSe9K2vfhl587fI2okGp0EHwteSH3NXf360NcwvhUWIpzkg01GIu
+	Kk4EAO//53QtAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, delta filtering was applied TSC co-ordinate readouts before
-reporting a single value to user space. This patch replaces delta filtering
-with median filtering. Median filtering sorts co-ordinate readouts, drops min
-and max values, and reports the average of remaining values. This method is
-more sensible than delta filering. Median filtering is applied only if number
-of readouts is greater than 3 else just average of co-ordinate readouts is
-reported.
+> > +
+> > +for (( BSIZE = 1024; BSIZE <= 4096; BSIZE *= 2 )); do
+> > +
+> > +	length=$(($BLOCKS * $BSIZE))
+> > +	case $FSTYP in
+> > +	xfs)
+> > +	_scratch_mkfs -b size=$BSIZE >> $seqres.full 2>&1
+> > +	;;
+> > +	ext4)
+> > +	_scratch_mkfs -b $BSIZE >> $seqres.full 2>&1
+> > +	;;
+> > +	esac
+> 
+> I think we typically try to define things like blocksize in the test
+> configuration. The MKFS_OPTIONS env. var. can be defined with the
+> correct options for the associated fs being tested. That eliminates the
+> need to loop and for the fs-specific _scratch_mkfs calls above.
+Okay, I will change.
+> 
+> > +	_scratch_mount >> $seqres.full 2>&1
+> > +
+> > +	# Write file
+> > +	$XFS_IO_PROG -f -c "pwrite 0 $length" -c fsync $testfile > /dev/null
+> > +
+> > +
+> > +	# Insert alternate blocks
+> 
+> Trailing space in the above comment.
+> 
+> > +	for (( j=0; j < $(($BLOCKS/2)); j++ )); do
+> > +		offset=$((($j*$BSIZE)*2))
+> > +		$XFS_IO_PROG -c "finsert $offset $BSIZE" $testfile > /dev/null
+> > +	done
+> > +
+> > +	# Check if 100 extents are present
+> > +	$XFS_IO_PROG -c "fiemap -v" $testfile | grep "^ *[0-9]*:" |wc -l
+> > +
+> > +	_check_scratch_fs
+> > +	if [ $? -ne 0 ]; then
+> > +		status=1
+> > +		exit
+> > +	fi
+> > +
+> > +	# Collapse alternate blocks
+> 
+> ... and here as well.
+Okay, I wil fix both points.
+> 
+> > +	for (( j=0; j < $(($BLOCKS/2)); j++ )); do
+> > +		offset=$((($j*$BSIZE)))
+> > +		$XFS_IO_PROG -c "fcollapse $offset $BSIZE" $testfile > /dev/null
+> > +	done
+> > +
+> > +	# Check if 1 extents are present
+> > +	$XFS_IO_PROG -c "fiemap -v" $testfile | grep "^ *[0-9]*:" |wc -l
+> > +
+> > +	_check_scratch_fs
+> > +	if [ $? -ne 0 ]; then
+> > +		status=1
+> > +		exit
+> > +	fi
+> > +
+> 
+> Maybe create a copy of the original file before we run through the
+> insert and collapse sequence and cmp the files here as a last step?
+Good idea. I will add your point.
 
-Signed-off-by: Vignesh R <vigneshr@ti.com>
----
- drivers/input/touchscreen/ti_am335x_tsc.c | 92 +++++++++++++++++--------------
- 1 file changed, 52 insertions(+), 40 deletions(-)
-
-diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
-index 7c0f6b21559d..191a1b87895f 100644
---- a/drivers/input/touchscreen/ti_am335x_tsc.c
-+++ b/drivers/input/touchscreen/ti_am335x_tsc.c
-@@ -26,6 +26,7 @@
- #include <linux/delay.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
-+#include <linux/sort.h>
- 
- #include <linux/mfd/ti_am335x_tscadc.h>
- 
-@@ -204,56 +205,61 @@ static void titsc_step_config(struct titsc *ts_dev)
- 	am335x_tsc_se_set_cache(ts_dev->mfd_tscadc, ts_dev->step_mask);
- }
- 
-+static int titsc_cmp_coord(const void *a, const void *b)
-+{
-+	return *(int *)a - *(int *)b;
-+}
-+
- static void titsc_read_coordinates(struct titsc *ts_dev,
- 		u32 *x, u32 *y, u32 *z1, u32 *z2)
- {
--	unsigned int fifocount = titsc_readl(ts_dev, REG_FIFO0CNT);
--	unsigned int prev_val_x = ~0, prev_val_y = ~0;
--	unsigned int prev_diff_x = ~0, prev_diff_y = ~0;
--	unsigned int read, diff;
--	unsigned int i, channel;
-+	unsigned int yvals[7], xvals[7];
-+	unsigned int i, xsum = 0, ysum = 0;
- 	unsigned int creads = ts_dev->coordinate_readouts;
--	unsigned int first_step = TOTAL_STEPS - (creads * 2 + 2);
- 
--	*z1 = *z2 = 0;
--	if (fifocount % (creads * 2 + 2))
--		fifocount -= fifocount % (creads * 2 + 2);
--	/*
--	 * Delta filter is used to remove large variations in sampled
--	 * values from ADC. The filter tries to predict where the next
--	 * coordinate could be. This is done by taking a previous
--	 * coordinate and subtracting it form current one. Further the
--	 * algorithm compares the difference with that of a present value,
--	 * if true the value is reported to the sub system.
--	 */
--	for (i = 0; i < fifocount; i++) {
--		read = titsc_readl(ts_dev, REG_FIFO0);
--
--		channel = (read & 0xf0000) >> 16;
--		read &= 0xfff;
--		if (channel > first_step + creads + 2) {
--			diff = abs(read - prev_val_x);
--			if (diff < prev_diff_x) {
--				prev_diff_x = diff;
--				*x = read;
--			}
--			prev_val_x = read;
-+	for (i = 0; i < creads; i++) {
-+		yvals[i] = titsc_readl(ts_dev, REG_FIFO0);
-+		yvals[i] &= 0xfff;
-+	}
- 
--		} else if (channel == first_step + creads + 1) {
--			*z1 = read;
-+	*z1 = titsc_readl(ts_dev, REG_FIFO0);
-+	*z1 &= 0xfff;
-+	*z2 = titsc_readl(ts_dev, REG_FIFO0);
-+	*z2 &= 0xfff;
- 
--		} else if (channel == first_step + creads + 2) {
--			*z2 = read;
-+	for (i = 0; i < creads; i++) {
-+		xvals[i] = titsc_readl(ts_dev, REG_FIFO0);
-+		xvals[i] &= 0xfff;
-+	}
- 
--		} else if (channel > first_step) {
--			diff = abs(read - prev_val_y);
--			if (diff < prev_diff_y) {
--				prev_diff_y = diff;
--				*y = read;
--			}
--			prev_val_y = read;
-+	/*
-+	 * If co-ordinates readouts is less than 4 then
-+	 * report the average. In case of 4 or more
-+	 * readouts, sort the co-ordinate samples, drop
-+	 * min and max values and report the average of
-+	 * remaining values.
-+	 */
-+	if (creads <=  3) {
-+		for (i = 0; i < creads; i++) {
-+			ysum += yvals[i];
-+			xsum += xvals[i];
- 		}
-+		ysum /= creads;
-+		xsum /= creads;
-+	} else {
-+		sort(yvals, creads, sizeof(unsigned int),
-+		     titsc_cmp_coord, NULL);
-+		sort(xvals, creads, sizeof(unsigned int),
-+		     titsc_cmp_coord, NULL);
-+		for (i = 1; i < creads - 1; i++) {
-+			ysum += yvals[i];
-+			xsum += xvals[i];
-+		}
-+		ysum /= creads - 2;
-+		xsum /= creads - 2;
- 	}
-+	*y = ysum;
-+	*x = xsum;
- }
- 
- static irqreturn_t titsc_irq(int irq, void *dev)
-@@ -369,6 +375,12 @@ static int titsc_parse_dt(struct platform_device *pdev,
- 	if (err < 0)
- 		return err;
- 
-+	if (ts_dev->coordinate_readouts <= 0) {
-+		dev_warn(&pdev->dev,
-+			 "invalid co-ordinate readouts, resetting it to 5\n");
-+		ts_dev->coordinate_readouts = 5;
-+	}
-+
- 	err = of_property_read_u32(node, "ti,charge-delay",
- 				   &ts_dev->charge_delay);
- 	/*
--- 
-1.9.1
+Thanks for your review!
+> 
+> Brian
 
