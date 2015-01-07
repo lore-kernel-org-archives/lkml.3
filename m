@@ -1,46 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755613AbbAGXqF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 18:46:05 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:55159 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755534AbbAGXqA (ORCPT
+	id S1752792AbbAGXuB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 18:50:01 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:53265 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755961AbbAGXt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 18:46:00 -0500
-From: Ani Sinha <ani@arista.com>
-To: corbet@lwn.net, davem@davemloft.net, edumazet@google.com,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ani@arista.com, P@draigbrady.com, netdev@vger.kernel.org,
-        fruggeri@arista.com
-Subject: [PATCH 1/1] update ip-sysctl.txt documentation (v2)
-Date: Wed,  7 Jan 2015 15:45:56 -0800
-Message-Id: <1420674356-32210-1-git-send-email-ani@arista.com>
-X-Mailer: git-send-email 1.7.4.4
+	Wed, 7 Jan 2015 18:49:56 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/npnMKmb6FLD/Y9bYFy1eR
+Date: Wed, 7 Jan 2015 15:46:10 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: bcousson@baylibre.com, robh+dt@kernel.org, trivial@kernel.org,
+        kernel list <linux-kernel@vger.kernel.org>, linux-omap@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH] dts: omap3-n900: cleanup english
+Message-ID: <20150107234610.GJ13010@atomide.com>
+References: <20141207161147.GA18588@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141207161147.GA18588@amd>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update documentation to reflect the fact that
-/proc/sys/net/ipv4/route/max_size is no longer used for ipv4.
+* Pavel Machek <pavel@ucw.cz> [141207 08:14]:
+> This fixes english in comments and removes extra empty newline.
+> 
+> Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
-Signed-off-by: Ani Sinha <ani@arista.com>
----
- Documentation/networking/ip-sysctl.txt |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Applying into omap-for-v3.20/dt thanks.
 
-diff --git a/Documentation/networking/ip-sysctl.txt b/Documentation/networking/ip-sysctl.txt
-index 9bffdfc..85b0221 100644
---- a/Documentation/networking/ip-sysctl.txt
-+++ b/Documentation/networking/ip-sysctl.txt
-@@ -66,6 +66,8 @@ fwmark_reflect - BOOLEAN
- route/max_size - INTEGER
- 	Maximum number of routes allowed in the kernel.  Increase
- 	this when using large numbers of interfaces and/or routes.
-+	From linux kernel 3.6 onwards, this is deprecated for ipv4
-+	as route cache is no longer used.
+Tony
  
- neigh/default/gc_thresh1 - INTEGER
- 	Minimum number of entries to keep.  Garbage collector will not
--- 
-1.7.4.4
-
+> diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
+> index 11d8afd..9e0e5a2 100644
+> --- a/arch/arm/boot/dts/omap3-n900.dts
+> +++ b/arch/arm/boot/dts/omap3-n900.dts
+> @@ -287,7 +287,7 @@
+>  	regulator-name = "V28";
+>  	regulator-min-microvolt = <2800000>;
+>  	regulator-max-microvolt = <2800000>;
+> -	regulator-always-on; /* due battery cover sensor */
+> +	regulator-always-on; /* due to battery cover sensor */
+>  };
+>  
+>  &vaux2 {
+> @@ -345,7 +345,6 @@
+>  	regulator-name = "VIO";
+>  	regulator-min-microvolt = <1800000>;
+>  	regulator-max-microvolt = <1800000>;
+> -
+>  };
+>  
+>  &vintana1 {
+> 
+> -- 
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> 
