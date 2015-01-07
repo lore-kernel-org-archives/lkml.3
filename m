@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727AbbAGLwd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 06:52:33 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:6517 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750998AbbAGLwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 06:52:31 -0500
-X-Mailbox-Line: From f682ee5ef933fd71d7e9ecaa503dff20304c1d75 Mon Sep 17 00:00:00 2001
-Message-Id: <f682ee5ef933fd71d7e9ecaa503dff20304c1d75.1420628786.git.moinejf@free.fr>
-In-Reply-To: <cover.1420628786.git.moinejf@free.fr>
-References: <cover.1420628786.git.moinejf@free.fr>
-From: Jean-Francois Moine <moinejf@free.fr>
-Date: Wed, 7 Jan 2015 11:00:50 +0100
-Subject: [PATCH v9 2/4] drm/i2c: tda998x: Change drvdata for audio extension
-To: Mark Brown <broonie@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Dave Airlie <airlied@gmail.com>, Andrew Jackson <Andrew.Jackson@arm.com>,
-        Jyri Sarha <jsarha@ti.com>, alsa-devel@alsa-project.org,
-        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
+	id S1751416AbbAGKDW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 05:03:22 -0500
+Received: from mail113-251.mail.alibaba.com ([205.204.113.251]:54142 "EHLO
+	us-alimail-mta1.hst.scl.en.alidc.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750835AbbAGKDU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 05:03:20 -0500
+X-Alimail-AntiSpam: AC=PASS;BC=-1|-1;BR=01201311R311e4;FP=0|-1|-1|-1|0|-1|-1|-1;HT=r41g03005;MF=hillf.zj@alibaba-inc.com;PH=DS;RN=11;RT=11;SR=0;
+Reply-To: "Hillf Danton" <hillf.zj@alibaba-inc.com>
+From: "Hillf Danton" <hillf.zj@alibaba-inc.com>
+To: "'Wang Nan'" <wangnan0@huawei.com>
+Cc: <linux@arm.linux.org.uk>, "'Ingo Molnar'" <mingo@redhat.com>,
+        <masami.hiramatsu.pt@hitachi.com>, <anil.s.keshavamurthy@intel.com>,
+        <davem@davemloft.net>, <ananth@in.ibm.com>, <dave.long@linaro.org>,
+        <tixy@linaro.org>, <lizefan@huawei.com>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>
+References: <043a01d02a5b$44ec45f0$cec4d1d0$@alibaba-inc.com> <54ACFFB6.3040102@huawei.com>
+In-Reply-To: <54ACFFB6.3040102@huawei.com>
+Subject: RE: [RFC PATCH 09/11] kprobes: core logic of eraly kprobes
+Date: Wed, 07 Jan 2015 18:02:07 +0800
+Message-ID: <045301d02a60$ff36e8c0$fda4ba40$@alibaba-inc.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQIEtj9idETv8rQxsVvdEO6VYoonSQMUtq4inDKuSJA=
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The device drvdata is used for component bind, but points to the
-encoder/connector structure which is hidden from the slave encoder.
-For audio extension, the slave encoder private data must be accessible,
-so, this patch changes drvdata to the slave encoder private data and
-sets it in case of slave encoder use.
-
-Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
----
- drivers/gpu/drm/i2c/tda998x_drv.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-index 9d9b072..ce1478d 100644
---- a/drivers/gpu/drm/i2c/tda998x_drv.c
-+++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-@@ -1437,6 +1437,8 @@ static int tda998x_encoder_init(struct i2c_client *client,
- 	encoder_slave->slave_priv = priv;
- 	encoder_slave->slave_funcs = &tda998x_encoder_slave_funcs;
- 
-+	dev_set_drvdata(&client->dev, priv);
-+
- 	return 0;
- }
- 
-@@ -1563,7 +1565,7 @@ static int tda998x_bind(struct device *dev, struct device *master, void *data)
- 	if (!priv)
- 		return -ENOMEM;
- 
--	dev_set_drvdata(dev, priv);
-+	dev_set_drvdata(dev, &priv->base);
- 
- 	priv->base.encoder = &priv->encoder;
- 	priv->connector.interlace_allowed = 1;
-@@ -1613,7 +1615,9 @@ err_encoder:
- static void tda998x_unbind(struct device *dev, struct device *master,
- 			   void *data)
- {
--	struct tda998x_priv2 *priv = dev_get_drvdata(dev);
-+	struct tda998x_priv *priv_s = dev_get_drvdata(dev);
-+	struct tda998x_priv2 *priv =
-+			container_of(priv_s, struct tda998x_priv2, base);
- 
- 	drm_connector_cleanup(&priv->connector);
- 	drm_encoder_cleanup(&priv->encoder);
--- 
-2.1.4
+> >>
+> >> +struct early_kprobe_slot {
+> >> +	struct optimized_kprobe op;
+> >> +};
+> >> +
+> > [...]
+> >>
+> >>  /* Free optimized instructions and optimized_kprobe */
+> >> +static int ek_free_early_kprobe(struct early_kprobe_slot *slot);
+> >
+> > [2] How is it implemented? In subsequent patches?
+> >
+> 
+> It is implemented using macro. Please see patch 7/11 and
+> 
+> DEFINE_EKPROBE_ALLOC_OPS(struct early_kprobe_slot, early_kprobe, static);
+>
+What is the reason that it is listed in C file, given that it is done in H already?
 
