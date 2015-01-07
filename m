@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757325AbbAGDlF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 22:41:05 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:55497 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757099AbbAGDlB (ORCPT
+	id S1757586AbbAGDlK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 22:41:10 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:58224 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757278AbbAGDlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 22:41:01 -0500
+	Tue, 6 Jan 2015 22:41:05 -0500
 From: Chunyan Zhang <zhang.chunyan@linaro.org>
 To: samuel@sortiz.org
 Cc: arnd@linaro.org, zhang.lyra@gmail.com, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 4/6] driver/net/irda: Replace timeval with ktime_t in nsc-ircc
-Date: Wed,  7 Jan 2015 11:39:36 +0800
-Message-Id: <1420601978-15866-5-git-send-email-zhang.chunyan@linaro.org>
+Subject: [PATCH 5/6] driver/net/irda: Replace timeval with ktime_t in stir4200
+Date: Wed,  7 Jan 2015 11:39:37 +0800
+Message-Id: <1420601978-15866-6-git-send-email-zhang.chunyan@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1420601978-15866-1-git-send-email-zhang.chunyan@linaro.org>
 References: <driver-irda>
@@ -31,66 +31,74 @@ since ktime_get returns a ktime_t, but do_gettimeofday returns a
 struct timeval, and the other reason is that ktime_get() uses
 the monotonic clock.
 
-This patch use ktime_us_delta to get the elapsed time, and in this
-way it no longer needs to check for the overflow, because
-ktime_us_delta returns time difference of microsecond.
+This patch use ktime_us_delta to get the elapsed time of microsecond.
 
 Signed-off-by: Chunyan Zhang <zhang.chunyan@linaro.org>
 ---
- drivers/net/irda/nsc-ircc.c |    8 +++-----
- drivers/net/irda/nsc-ircc.h |    6 +++---
- 2 files changed, 6 insertions(+), 8 deletions(-)
+ drivers/net/irda/stir4200.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/net/irda/nsc-ircc.c b/drivers/net/irda/nsc-ircc.c
-index e7317b1..cabb82e 100644
---- a/drivers/net/irda/nsc-ircc.c
-+++ b/drivers/net/irda/nsc-ircc.c
-@@ -1501,10 +1501,8 @@ static netdev_tx_t nsc_ircc_hard_xmit_fir(struct sk_buff *skb,
- 		mtt = irda_get_mtt(skb);
- 		if (mtt) {
- 			/* Check how much time we have used already */
--			do_gettimeofday(&self->now);
--			diff = self->now.tv_usec - self->stamp.tv_usec;
--			if (diff < 0) 
--				diff += 1000000;
-+			self->now = ktime_get();
-+			diff = ktime_us_delta(self->now, self->stamp);
- 			
- 			/* Check if the mtt is larger than the time we have
- 			 * already used by all the protocol processing
-@@ -1867,7 +1865,7 @@ static int nsc_ircc_dma_receive_complete(struct nsc_ircc_cb *self, int iobase)
- 			 * reduce the min turn time a bit since we will know
- 			 * how much time we have used for protocol processing
- 			 */
--			do_gettimeofday(&self->stamp);
-+			self->stamp = ktime_get();
+diff --git a/drivers/net/irda/stir4200.c b/drivers/net/irda/stir4200.c
+index dd1bd10..008e12d 100644
+--- a/drivers/net/irda/stir4200.c
++++ b/drivers/net/irda/stir4200.c
+@@ -40,6 +40,7 @@
+ #include <linux/moduleparam.h>
  
- 			skb = dev_alloc_skb(len+1);
- 			if (skb == NULL)  {
-diff --git a/drivers/net/irda/nsc-ircc.h b/drivers/net/irda/nsc-ircc.h
-index 32fa582..dd2185a 100644
---- a/drivers/net/irda/nsc-ircc.h
-+++ b/drivers/net/irda/nsc-ircc.h
-@@ -28,7 +28,7 @@
- #ifndef NSC_IRCC_H
- #define NSC_IRCC_H
- 
--#include <linux/time.h>
+ #include <linux/kernel.h>
 +#include <linux/ktime.h>
+ #include <linux/types.h>
+ #include <linux/time.h>
+ #include <linux/skbuff.h>
+@@ -174,7 +175,7 @@ struct stir_cb {
+ 	__u8		  *fifo_status;
  
- #include <linux/spinlock.h>
- #include <linux/pm.h>
-@@ -263,8 +263,8 @@ struct nsc_ircc_cb {
- 
- 	__u8 ier;                  /* Interrupt enable register */
- 
--	struct timeval stamp;
+ 	iobuff_t  	  rx_buff;	/* receive unwrap state machine */
+-	struct timeval	  rx_time;
++	ktime_t		rx_time;
+ 	int		  receiving;
+ 	struct urb	 *rx_urb;
+ };
+@@ -650,15 +651,14 @@ static int fifo_txwait(struct stir_cb *stir, int space)
+ static void turnaround_delay(const struct stir_cb *stir, long us)
+ {
+ 	long ticks;
 -	struct timeval now;
-+	ktime_t stamp;
-+	ktime_t	now;
++	ktime_t now;
  
- 	spinlock_t lock;           /* For serializing operations */
- 	
+ 	if (us <= 0)
+ 		return;
+ 
+-	do_gettimeofday(&now);
+-	if (now.tv_sec - stir->rx_time.tv_sec > 0)
+-		us -= USEC_PER_SEC;
+-	us -= now.tv_usec - stir->rx_time.tv_usec;
++	now = ktime_get();
++	us -= ktime_us_delta(now, stir->rx_time);
++
+ 	if (us < 10)
+ 		return;
+ 
+@@ -823,8 +823,8 @@ static void stir_rcv_irq(struct urb *urb)
+ 		pr_debug("receive %d\n", urb->actual_length);
+ 		unwrap_chars(stir, urb->transfer_buffer,
+ 			     urb->actual_length);
+-		
+-		do_gettimeofday(&stir->rx_time);
++
++		stir->rx_time = ktime_get();
+ 	}
+ 
+ 	/* kernel thread is stopping receiver don't resubmit */
+@@ -876,7 +876,7 @@ static int stir_net_open(struct net_device *netdev)
+ 
+ 	skb_reserve(stir->rx_buff.skb, 1);
+ 	stir->rx_buff.head = stir->rx_buff.skb->data;
+-	do_gettimeofday(&stir->rx_time);
++	stir->rx_time = ktime_get();
+ 
+ 	stir->rx_urb = usb_alloc_urb(0, GFP_KERNEL);
+ 	if (!stir->rx_urb) 
 -- 
 1.7.9.5
 
