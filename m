@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751099AbbAGJ6g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 04:58:36 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49564 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783AbbAGJ6a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 04:58:30 -0500
-Message-ID: <1420624699.3191.19.camel@pengutronix.de>
-Subject: Re: [PATCH] mfd: syscon: fix syscon probing from dt
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, linux-kernel@vger.kernel.org,
-        Vivek Gautam <gautam.vivek@samsung.com>, kernel@pengutronix.de,
-        Lee Jones <lee.jones@linaro.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Date: Wed, 07 Jan 2015 10:58:19 +0100
-In-Reply-To: <3852443.x4DN8HDuzc@phil>
-References: <1420558236-14063-1-git-send-email-p.zabel@pengutronix.de>
-	 <3852443.x4DN8HDuzc@phil>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1752727AbbAGLwd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 06:52:33 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:6517 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750998AbbAGLwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 06:52:31 -0500
+X-Mailbox-Line: From f682ee5ef933fd71d7e9ecaa503dff20304c1d75 Mon Sep 17 00:00:00 2001
+Message-Id: <f682ee5ef933fd71d7e9ecaa503dff20304c1d75.1420628786.git.moinejf@free.fr>
+In-Reply-To: <cover.1420628786.git.moinejf@free.fr>
+References: <cover.1420628786.git.moinejf@free.fr>
+From: Jean-Francois Moine <moinejf@free.fr>
+Date: Wed, 7 Jan 2015 11:00:50 +0100
+Subject: [PATCH v9 2/4] drm/i2c: tda998x: Change drvdata for audio extension
+To: Mark Brown <broonie@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Dave Airlie <airlied@gmail.com>, Andrew Jackson <Andrew.Jackson@arm.com>,
+        Jyri Sarha <jsarha@ti.com>, alsa-devel@alsa-project.org,
+        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Heiko,
+The device drvdata is used for component bind, but points to the
+encoder/connector structure which is hidden from the slave encoder.
+For audio extension, the slave encoder private data must be accessible,
+so, this patch changes drvdata to the slave encoder private data and
+sets it in case of slave encoder use.
 
-Am Dienstag, den 06.01.2015, 20:05 +0100 schrieb Heiko Stübner:
-> Hi Philipp,
-> 
-> Am Dienstag, 6. Januar 2015, 16:30:36 schrieb Philipp Zabel:
-> > Patch bdb0066df96e ("mfd: syscon: Decouple syscon interface from platform
-> > devices") breaks probing pure syscon devices from device tree, such as
-> > anatop and iomuxc-gpr on i.MX. This patch adds back the dt id table to
-> > match against "syscon" compatible device tree nodes.
-> 
-> could you elaborate a bit on the problem you're seeing without your patch?
->
-> With bdb0066df96e the syscon should be registered by the first call to one of 
-> the syscon_regmap_lookup_by_* functions. On my rockchip boards this works 
-> without any hickups:
+Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+---
+ drivers/gpu/drm/i2c/tda998x_drv.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-Oh, I didn't understand that is the way it's supposed to work now.
-
-I noticed that after booting v3.19-rc on a nitrogen6x, the
-/sys/kernel/debug/regmap/{20c8000.anatop,20e0000.iomuxc-gpr}
-directories were missing. The syscon regmap is indeed registered,
-but since regmap_init_mmio is called with dev = NULL, regmap_attach_dev,
-and thus regmap_debugfs_init, is never called from regmap_init.
-
-Also I want to add child devices to the syscon device since a while ago:
-https://lkml.org/lkml/2014/12/15/133
-This doesn't work anymore if there is no syscon device.
-
-regards
-Philipp
+diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
+index 9d9b072..ce1478d 100644
+--- a/drivers/gpu/drm/i2c/tda998x_drv.c
++++ b/drivers/gpu/drm/i2c/tda998x_drv.c
+@@ -1437,6 +1437,8 @@ static int tda998x_encoder_init(struct i2c_client *client,
+ 	encoder_slave->slave_priv = priv;
+ 	encoder_slave->slave_funcs = &tda998x_encoder_slave_funcs;
+ 
++	dev_set_drvdata(&client->dev, priv);
++
+ 	return 0;
+ }
+ 
+@@ -1563,7 +1565,7 @@ static int tda998x_bind(struct device *dev, struct device *master, void *data)
+ 	if (!priv)
+ 		return -ENOMEM;
+ 
+-	dev_set_drvdata(dev, priv);
++	dev_set_drvdata(dev, &priv->base);
+ 
+ 	priv->base.encoder = &priv->encoder;
+ 	priv->connector.interlace_allowed = 1;
+@@ -1613,7 +1615,9 @@ err_encoder:
+ static void tda998x_unbind(struct device *dev, struct device *master,
+ 			   void *data)
+ {
+-	struct tda998x_priv2 *priv = dev_get_drvdata(dev);
++	struct tda998x_priv *priv_s = dev_get_drvdata(dev);
++	struct tda998x_priv2 *priv =
++			container_of(priv_s, struct tda998x_priv2, base);
+ 
+ 	drm_connector_cleanup(&priv->connector);
+ 	drm_encoder_cleanup(&priv->encoder);
+-- 
+2.1.4
 
