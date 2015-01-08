@@ -1,114 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754481AbbAHXLM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 18:11:12 -0500
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:38961 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752118AbbAHXLK (ORCPT
+	id S1754933AbbAHXZN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 18:25:13 -0500
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:34208 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752592AbbAHXZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 18:11:10 -0500
+	Thu, 8 Jan 2015 18:25:10 -0500
+Message-ID: <54AF11CF.9080600@hurleysoftware.com>
+Date: Thu, 08 Jan 2015 18:25:03 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <1420745423.25367.77.camel@redhat.com>
-References: <20141121180322.26669.65689.stgit@gimli.home> <20141121182427.26669.82417.stgit@gimli.home>
- <20150108160733.GA6575@google.com> <1420745423.25367.77.camel@redhat.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 8 Jan 2015 17:10:48 -0600
-Message-ID: <CAErSpo7E3-qEwHeeMvKvGmUzPQ6eP7=g0mqUZuBBrdcu_yN95w@mail.gmail.com>
-Subject: Re: [PATCH 4/4] PCI: quirk Atheros AR93xx to avoid bus reset
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH] serial: 8250: Make ISA ports optional
+References: <1420513785-23660-1-git-send-email-peter@hurleysoftware.com>	<20150108131008.16c9a31c@lxorguk.ukuu.org.uk>	<54AEAC47.1040403@hurleysoftware.com>	<1896224.oMI8M6J5T7@wuerfel> <20150108223626.43fd93d5@lxorguk.ukuu.org.uk>
+In-Reply-To: <20150108223626.43fd93d5@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 8, 2015 at 1:30 PM, Alex Williamson
-<alex.williamson@redhat.com> wrote:
-> On Thu, 2015-01-08 at 09:07 -0700, Bjorn Helgaas wrote:
->> On Fri, Nov 21, 2014 at 11:24:27AM -0700, Alex Williamson wrote:
->> > Reports against the TL-WDN4800 card indicate that PCI bus reset of
->> > this Atheros device cause system lock-ups and resets.  I've also
->> > been able to confirm this behavior on multiple systems.  The device
->> > never returns from reset and attempts to access config space of the
->> > device after reset result in hangs.  Blacklist bus reset for the
->> > device to avoid this issue.
->> >
->> > Reported-by: Andreas Hartmann <andihartmann@freenet.de>
->> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
->> > Tested-by: Andreas Hartmann <andihartmann@freenet.de>
->>
->> If I understand correctly, these two (patches 3 & 4) fix a v3.14 regression
->> caused by 425c1b223dac ("PCI: Add Virtual Channel to save/restore support").
->>
->> If so, these should go to for-linus for v3.19.  What about patches 1 & 2?
->> Do they fix a regression?  Is there a pointer to a bugzilla or problem
->> report about that issue?
->>
->> I don't understand the connection between 425c1b223dac and
->> PCI_DEV_FLAGS_NO_BUS_RESET, because 425c1b223dac doesn't seem to do any
->> resets.  Is that the wrong commit, or can you outline the connection for
->> me?
->
-> TBH, I don't have a lot of faith in associating this to 425c1b223dac,
-> I'm not sure how Andreas' bisect landed there.  IME, this device cannot,
-> and has never been able to handle a bus reset.  A simple setpci
-> experiment on the commandline can confirm this.  What I think happened
-> is that with the PCI bus reset infrastructure we added, we switched QEMU
-> to prefer PCI bus resets over things like PM D3hot->D0 resets.  So it's
-> just more prolific use of bus resets by userspace.
+On 01/08/2015 05:36 PM, One Thousand Gnomes wrote:
+>> One idea that has come up in the past but never saw an implementation
+>> is to make the ttyS namespace and minor numbers completely generic and
+>> let any serial port driver use it. This would be a major rework, but
+>> have the added advantage of cleaning up a number of other namespace
+>> issues as well. There also lots of open question, in particular how
+>> to maintain compatibility with existing drivers. One could imagine
+>> that each uart always gets a ttyS device and optionally also gets
+>> a device node for the same port with a driver specific chardev as
+>> most of them do today. Or it could be an either/or decision that is
+>> made at compile time or as a module parameter.
+> 
+> I'm not sure we should use ttyS for it. ttyS means 8250, a lot of
+> existing code knows what ttyS is and what sort of ioctls and the like are
+> assumed.
 
-Maybe it's not 425c1b223dac, but it seems pretty clear that it really
-is a regression from the user point of view.  I'm sure Andreas was
-using the same user-space for v3.13 and v3.14.
+That genie has already escaped the bottle.
 
-Testing 425c1b223dac^ (the predecessor of 425c1b223dac) and
-425c1b223dac would confirm the bisect results.
+./arch/powerpc/platforms/powermac/setup.c:	char *devname = "ttyS";
+./arch/powerpc/platforms/chrp/setup.c:		add_preferred_console("ttyS", 0, NULL);
+./arch/powerpc/kernel/legacy_serial.c:		return add_preferred_console("ttyS", offset, opt);
+./arch/xtensa/platforms/iss/console.c:	serial_driver->name = "ttyS";
+./arch/mips/sni/setup.c:			add_preferred_console("ttyS", port,
+./arch/mips/sgi-ip32/ip32-setup.c:			add_preferred_console("ttyS", *(con + 1) == '2' ? 1 : 0,
+./arch/mips/jazz/setup.c:	add_preferred_console("ttyS", 0, "9600");
+./arch/mips/sgi-ip22/ip22-setup.c:		add_preferred_console("ttyS", *(ctype + 1) == '2' ? 1 : 0,
+./arch/arm/mach-davinci/board-da830-evm.c:	return add_preferred_console("ttyS", 2, "115200");
+./arch/arm/mach-davinci/board-mityomapl138.c:	return add_preferred_console("ttyS", 1, "115200");
+./arch/arm/mach-davinci/board-da850-evm.c:	return add_preferred_console("ttyS", 2, "115200");
+./arch/arm/mach-davinci/board-omapl138-hawk.c:	return add_preferred_console("ttyS", 2, "115200");
+./arch/cris/arch-v10/kernel/debugport.c:	name : "ttyS",
+./arch/ia64/hp/sim/simserial.c:	hp_simserial_driver->name = "ttyS";
+./arch/um/drivers/ssl.c:	.device_name 		= "ttyS",
+./arch/s390/kernel/setup.c:			add_preferred_console("ttyS", 1, NULL);
+./drivers/tty/amiserial.c:	.name =		"ttyS",
+./drivers/tty/serial/serial_txx9.c:#define TXX9_TTY_NAME "ttyS"
+./drivers/tty/serial/sunsab.c:	.dev_name		= "ttyS",
+./drivers/tty/serial/mcf.c:	.dev_name	= "ttyS",
+./drivers/tty/serial/atmel_serial.c:#define ATMEL_DEVICENAME	"ttyS"
+./drivers/tty/serial/bcm63xx_uart.c:	.dev_name	= "ttyS",
+./drivers/tty/serial/sunsu.c:	.dev_name		= "ttyS",
+./drivers/tty/serial/mrst_max3110.c:	.dev_name	= "ttyS",
+./drivers/tty/serial/apbuart.c:	.name = "ttyS",
+./drivers/tty/serial/apbuart.c:	.dev_name = "ttyS",
+./drivers/tty/serial/tilegx.c:#define TILEGX_UART_NAME	"ttyS"
+./drivers/tty/serial/pmac_zilog.c:#define PMACZILOG_NAME		"ttyS"
+./drivers/tty/serial/pnx8xxx_uart.c:	.dev_name		= "ttyS",
+./drivers/tty/serial/m32r_sio.c:	.dev_name		= "ttyS",
+./drivers/tty/serial/ip22zilog.c:	.dev_name	= "ttyS",
+./drivers/tty/serial/zs.c:	.dev_name		= "ttyS",
+./drivers/tty/serial/68328serial.c:	serial_driver->name = "ttyS";
+./drivers/tty/serial/crisv10.c:	driver->name = "ttyS";
+/drivers/tty/serial/8250/8250_core.c:	.dev_name		= "ttyS",
+./drivers/tty/serial/sunzilog.c:	.dev_name	=	"ttyS",
+./drivers/tty/serial/pxa.c:	.dev_name	= "ttyS",
+./drivers/tty/serial/dz.c:	.dev_name		= "ttyS",
+./drivers/tty/serial/sunhv.c:	.dev_name		= "ttyS",
+./drivers/s390/char/sclp_vt220.c:#define SCLP_VT220_CONSOLE_NAME		"ttyS"
+./drivers/s390/char/sclp_con.c:#define sclp_console_name  "ttyS"
+./drivers/s390/char/con3215.c:	driver->name = "ttyS";
 
-If it really turns out that 425c1b223dac^ works and 425c1b223dac
-fails, maybe we could learn something interesting by adding debug
-output to the various reset flavors and comparing the output?
 
-> There's also no regression in 1 & 2, PM reset has never done anything
-> useful on those devices.  Thanks,
+Besides, despite its pedigree, omap is no closer to 8250 than anything
+else in drivers/tty/serial/
 
-Since 1 & 2 don't fix a regression, I think what I should do is apply
-3 & 4 to for-linus for v3.19, then apply 1 & 2 on top as v3.20
-material.
+> A generic namespace needs not to be attached to a legacy naming 
+> 
+> (eg also put all serial ports in /dev/serial/0 /dev/serial/1 etc either
+> via the tty layer or via systemd/udev)
 
-Bjorn
+This doesn't address pre-init.
 
->> > ---
->> >
->> >  drivers/pci/quirks.c |   14 ++++++++++++++
->> >  1 file changed, 14 insertions(+)
->> >
->> > diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
->> > index 561e10d..ebbd5b4 100644
->> > --- a/drivers/pci/quirks.c
->> > +++ b/drivers/pci/quirks.c
->> > @@ -3029,6 +3029,20 @@ static void quirk_no_pm_reset(struct pci_dev *dev)
->> >  DECLARE_PCI_FIXUP_CLASS_HEADER(PCI_VENDOR_ID_ATI, PCI_ANY_ID,
->> >                            PCI_CLASS_DISPLAY_VGA, 8, quirk_no_pm_reset);
->> >
->> > +static void quirk_no_bus_reset(struct pci_dev *dev)
->> > +{
->> > +   dev->dev_flags |= PCI_DEV_FLAGS_NO_BUS_RESET;
->> > +}
->> > +
->> > +/*
->> > + * Atheros AR93xx chips do not behave after a bus reset.  The device will
->> > + * throw a Link Down error on AER capable system and regardless of AER,
->> > + * config space of the device is never accessible again and typically
->> > + * causes the system to hang or reset when access is attempted.
->> > + * http://www.spinics.net/lists/linux-pci/msg34797.html
->> > + */
->> > +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATHEROS, 0x0030, quirk_no_bus_reset);
->> > +
->> >  #ifdef CONFIG_ACPI
->> >  /*
->> >   * Apple: Shutdown Cactus Ridge Thunderbolt controller.
->> >
->
->
->
+Regards,
+Peter Hurley
