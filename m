@@ -1,104 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756837AbbAHQ0g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 11:26:36 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:40882 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756507AbbAHQ0e (ORCPT
+	id S1756852AbbAHQ2n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 11:28:43 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:35125 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753578AbbAHQ2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 11:26:34 -0500
-Message-ID: <54AEAFB6.9050609@codeaurora.org>
-Date: Thu, 08 Jan 2015 11:26:30 -0500
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:33.0) Gecko/20100101 Thunderbird/33.0
+	Thu, 8 Jan 2015 11:28:41 -0500
 MIME-Version: 1.0
-To: Andy Gross <agross@codeaurora.org>, Vinod Koul <vinod.koul@intel.com>
-CC: dmaengine@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Archit Taneja <architt@codeaurora.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Patch v2 2/2] dt/bindings: qcom_adm: Fix channel specificers
-References: <1420687572-7116-1-git-send-email-agross@codeaurora.org> <1420687572-7116-3-git-send-email-agross@codeaurora.org>
-In-Reply-To: <1420687572-7116-3-git-send-email-agross@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20150106004714.6d63023c.akpm@linux-foundation.org>
+References: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
+	<20141210140347.GA23252@infradead.org>
+	<20141210141211.GD2220@wil.cx>
+	<20150105184143.GA665@infradead.org>
+	<20150106004714.6d63023c.akpm@linux-foundation.org>
+Date: Thu, 8 Jan 2015 11:28:40 -0500
+Message-ID: <CANP1eJHOMSP8GYc_1pi8ciZZFWR0dH=N5a4HA=RYezohDmm+Rg@mail.gmail.com>
+Subject: Re: [PATCH v12 00/20] DAX: Page cache bypass for filesystems on
+ memory storage
+From: Milosz Tanski <milosz@adfin.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
+On Tue, Jan 6, 2015 at 3:47 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Mon, 5 Jan 2015 10:41:43 -0800 Christoph Hellwig <hch@infradead.org> wrote:
+>
+>> On Wed, Dec 10, 2014 at 09:12:11AM -0500, Matthew Wilcox wrote:
+>> > On Wed, Dec 10, 2014 at 06:03:47AM -0800, Christoph Hellwig wrote:
+>> > > What is the status of this patch set?
+>> >
+>> > I have no outstanding bug reports against it.  Linus told me that he
+>> > wants to see it come through Andrew's tree.  I have an email two weeks
+>> > ago from Andrew saying that it's on his list.  I would love to see it
+>> > merged since it's almost a year old at this point.
+>>
+>> And since then another month and aother merge window has passed.  Is
+>> there any way to speed up merging big patch sets like this one?
+>
+> I took a look at dax last time and found it to be unreviewable due to
+> lack of design description, objectives and code comments.  Hopefully
+> that's been addressed - I should get back to it fairly soon as I chew
+> through merge window and holiday backlog.
+>
+>> Another one is non-blocking read one that has real life use on one
+>> of the biggest server side webapp frameworks but doesn't seem to make
+>> progress, which is a bit frustrating.
+>
+> I took a look at pread2() as well and I have two main issues:
+>
+> - The patchset includes a pwrite2() syscall which has nothing to do
+>   with nonblocking reads and which was poorly described and had little
+>   justification for inclusion.
+>
+> - We've talked for years about implementing this via fincore+pread
+>   and at least two fincore implementations are floating about.  Now
+>   along comes pread2() which does it all in one hit.
+>
+>   Which approach is best?  I expect fincore+pread is simpler, more
+>   flexible and more maintainable.  But pread2() will have lower CPU
+>   consumption and lower average-case latency.
+>
+>   But how *much* better is pread2()?  I expect the difference will be
+>   minor because these operations are associated with a great big
+>   cache-stomping memcpy.  If the pread2() advantage is "insignificant
+>   for real world workloads" then perhaps it isn't the best way to go.
+>
+>   I just don't know, and diligence requires that we answer the
+>   question.  But all I've seen in response to these questions is
+>   handwaving.  It would be a shame to make a mistake because nobody
+>   found the time to perform the investigation.
+>
+> Also, integration of pread2() into xfstests is (or was) happening and
+> the results of that aren't yet known.
+>
 
-On 01/07/2015 10:26 PM, Andy Gross wrote:
-> This patch removes the crci information from the dma channel property.  At least
-> one client device requires using more than one CRCI value for a channel.  This
-> does not match the current binding and the crci information needs to be removed.
-> 
-> Instead, the client device will provide this information via other means.
-> 
-> Signed-off-by: Andy Gross <agross@codeaurora.org>
-> ---
->  Documentation/devicetree/bindings/dma/qcom_adm.txt |   14 +++++---------
->  1 file changed, 5 insertions(+), 9 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/dma/qcom_adm.txt b/Documentation/devicetree/bindings/dma/qcom_adm.txt
-> index 9bcab91..fba67c6 100644
-> --- a/Documentation/devicetree/bindings/dma/qcom_adm.txt
-> +++ b/Documentation/devicetree/bindings/dma/qcom_adm.txt
-> @@ -4,8 +4,7 @@ Required properties:
->  - compatible: must contain "qcom,adm" for IPQ/APQ8064 and MSM8960
->  - reg: Address range for DMA registers
->  - interrupts: Should contain one interrupt shared by all channels
-> -- #dma-cells: must be <2>.  First cell denotes the channel number.  Second cell
-> -  denotes CRCI (client rate control interface) flow control assignment.
-> +- #dma-cells: must be <1>.  First cell denotes the channel number.
->  - clocks: Should contain the core clock and interface clock.
->  - clock-names: Must contain "core" for the core clock and "iface" for the
->    interface clock.
-> @@ -22,7 +21,7 @@ Example:
->  			compatible = "qcom,adm";
->  			reg = <0x18300000 0x100000>;
->  			interrupts = <0 170 0>;
-> -			#dma-cells = <2>;
-> +			#dma-cells = <1>;
->  
->  			clocks = <&gcc ADM0_CLK>, <&gcc ADM0_PBUS_CLK>;
->  			clock-names = "core", "iface";
-> @@ -35,15 +34,12 @@ Example:
->  			qcom,ee = <0>;
->  		};
->  
-> -DMA clients must use the format descripted in the dma.txt file, using a three
-> +DMA clients must use the format descripted in the dma.txt file, using a two
->  cell specifier for each channel.
->  
->  Each dmas request consists of 3 cells:
+Andrew I  got busier with my other job related things between the
+Thanksgiving & Christmas then anticipated. However, I have updated and
+taken apart the patchset into two pieces (preadv2 and pwritev2). That
+should make evaluating the two separately easier. With the help of
+Volker I hacked up preadv2 support into samba and I hopefully have
+some numbers from it soon. Finally, I'm putting together a test case
+for the typical webapp middle-tier service (epoll + threadpool for
+diskio).
 
-Now 2 cells?
+Haven't stopped, just progressing on that slower due to external factors.
 
->   1. phandle pointing to the DMA controller
->   2. channel number
-> - 3. CRCI assignment, if applicable.  If no CRCI flow control is required, use 0.
-> -    The CRCI is used for flow control.  It identifies the peripheral device that
-> -    is the source/destination for the transferred data.
->  
->  Example:
->  
-> @@ -56,7 +52,7 @@ Example:
->  
->  		cs-gpios = <&qcom_pinmux 20 0>;
->  
-> -		dmas = <&adm_dma 6 9>,
-> -			<&adm_dma 5 10>;
-> +		dmas = <&adm_dma 6>,
-> +			<&adm_dma 5>;
->  		dma-names = "rx", "tx";
->  	};
-> 
-
-Chris
+P.S: Sorry for re-send. On the road and was using gmail to respond
+with... it randomly forgets plain-text only settings.
 
 -- 
-Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
+Milosz Tanski
+CTO
+16 East 34th Street, 15th floor
+New York, NY 10016
+
+p: 646-253-9055
+e: milosz@adfin.com
