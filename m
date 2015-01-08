@@ -1,103 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbbAHINY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 03:13:24 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:58462 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752665AbbAHINW (ORCPT
+	id S1753670AbbAHIOz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 03:14:55 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:35207 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753331AbbAHIOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 03:13:22 -0500
-Date: Thu, 8 Jan 2015 09:13:18 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] net/at91_ether: prepare and unprepare clock
-Message-ID: <20150108091318.45ca2760@bbrezillon>
-In-Reply-To: <1420671566-30784-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1420671566-30784-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Thu, 8 Jan 2015 03:14:53 -0500
+Date: Thu, 8 Jan 2015 09:14:46 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Sudeep Holla <sudeep.holla@arm.com>
+Cc: linux-kernel@vger.kernel.org, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux390@de.ibm.com, linux-s390@vger.kernel.org
+Subject: Re: [PATCH RFT] s390: move cacheinfo sysfs to generic cacheinfo
+ infrastructure
+Message-ID: <20150108081446.GC3997@osiris>
+References: <1420702912-9749-1-git-send-email-sudeep.holla@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420702912-9749-1-git-send-email-sudeep.holla@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15010808-0041-0000-0000-000002C97CC6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  7 Jan 2015 23:59:26 +0100
-Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
-
-> The clock is enabled without being prepared, this leads to:
+On Thu, Jan 08, 2015 at 07:41:52AM +0000, Sudeep Holla wrote:
+> This patch removes the redundant sysfs cacheinfo code by reusing
+> the newly introduced generic cacheinfo infrastructure through the
+> commit 246246cbde5e ("drivers: base: support cpu cache information
+> interface to userspace via sysfs")
 > 
-> WARNING: CPU: 0 PID: 1 at drivers/clk/clk.c:889 __clk_enable+0x24/0xa8()
-> 
-> and a non working ethernet interface.
-> 
-> Use clk_prepare_enable() and clk_disable_unprepare() to handle the clock.
-> 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-
-Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-
+> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Cc: linux390@de.ibm.com
+> Cc: linux-s390@vger.kernel.org
 > ---
->  drivers/net/ethernet/cadence/at91_ether.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
+>  arch/s390/kernel/cache.c | 388 +++++++++++------------------------------------
+>  1 file changed, 92 insertions(+), 296 deletions(-)
 > 
-> diff --git a/drivers/net/ethernet/cadence/at91_ether.c b/drivers/net/ethernet/cadence/at91_ether.c
-> index 55eb7f2af2b4..7ef55f5fa664 100644
-> --- a/drivers/net/ethernet/cadence/at91_ether.c
-> +++ b/drivers/net/ethernet/cadence/at91_ether.c
-> @@ -340,7 +340,7 @@ static int __init at91ether_probe(struct platform_device *pdev)
->  		res = PTR_ERR(lp->pclk);
->  		goto err_free_dev;
->  	}
-> -	clk_enable(lp->pclk);
-> +	clk_prepare_enable(lp->pclk);
->  
->  	lp->hclk = ERR_PTR(-ENOENT);
->  	lp->tx_clk = ERR_PTR(-ENOENT);
-> @@ -406,7 +406,7 @@ static int __init at91ether_probe(struct platform_device *pdev)
->  err_out_unregister_netdev:
->  	unregister_netdev(dev);
->  err_disable_clock:
-> -	clk_disable(lp->pclk);
-> +	clk_disable_unprepare(lp->pclk);
->  err_free_dev:
->  	free_netdev(dev);
->  	return res;
-> @@ -424,7 +424,7 @@ static int at91ether_remove(struct platform_device *pdev)
->  	kfree(lp->mii_bus->irq);
->  	mdiobus_free(lp->mii_bus);
->  	unregister_netdev(dev);
-> -	clk_disable(lp->pclk);
-> +	clk_disable_unprepare(lp->pclk);
->  	free_netdev(dev);
->  
->  	return 0;
-> @@ -440,7 +440,7 @@ static int at91ether_suspend(struct platform_device *pdev, pm_message_t mesg)
->  		netif_stop_queue(net_dev);
->  		netif_device_detach(net_dev);
->  
-> -		clk_disable(lp->pclk);
-> +		clk_disable_unprepare(lp->pclk);
->  	}
->  	return 0;
->  }
-> @@ -451,7 +451,7 @@ static int at91ether_resume(struct platform_device *pdev)
->  	struct macb *lp = netdev_priv(net_dev);
->  
->  	if (netif_running(net_dev)) {
-> -		clk_enable(lp->pclk);
-> +		clk_prepare_enable(lp->pclk);
->  
->  		netif_device_attach(net_dev);
->  		netif_start_queue(net_dev);
+> Hi Heiko,
+> 
+> If you can give this a quick testing though nothing has changes since
+> you last tested it, that would be good.
+> 
+> If nothing is broken, please feel free to take this through your tree.
+> 
+> Regards,
+> Sudeep
 
+Still works. I forwarded your patch with my sign-off to Martin, so he can
+apply it for the next merge window.
 
+Thanks a lot for your work!
+Heiko
 
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
