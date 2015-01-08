@@ -1,38 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282AbbAHPJg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 10:09:36 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:34786 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932230AbbAHPJf (ORCPT
+	id S1756535AbbAHPLk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 10:11:40 -0500
+Received: from outbound-smtp01.blacknight.com ([81.17.249.7]:56488 "EHLO
+	outbound-smtp01.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752646AbbAHPLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 10:09:35 -0500
-Date: Thu, 8 Jan 2015 18:09:21 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Sakshi Bansal <sakshi.april5@gmail.com>
-Cc: forest@alittletooquiet.net, devel@driverdev.osuosl.org,
-        gclement@baobob.org, shack@linux.com, tvboxspy@gmail.com,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [Discarding old patch and resending new one] Fixed line over 80
- characters for drivers/staging/vt6655/baseband.c by splitting the line into
- two
-Message-ID: <20150108150921.GN15033@mwanda>
-References: <20150107181221.GA6644@kroah.com>
- <1420727642-6937-1-git-send-email-sakshi.april5@gmail.com>
+	Thu, 8 Jan 2015 10:11:38 -0500
+Message-ID: <54AE9E27.2050307@nexus-software.ie>
+Date: Thu, 08 Jan 2015 15:11:35 +0000
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420727642-6937-1-git-send-email-sakshi.april5@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: "Ong, Boon Leong" <boon.leong.ong@intel.com>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "dvhart@infradead.org" <dvhart@infradead.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>
+Subject: Re: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
+References: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie> <1419873783-5161-2-git-send-email-pure.logic@nexus-software.ie> <AF233D1473C1364ABD51D28909A1B1B7326E0CC8@PGSMSX105.gar.corp.intel.com> <54AE8136.2060400@nexus-software.ie> <AF233D1473C1364ABD51D28909A1B1B7326E297E@PGSMSX105.gar.corp.intel.com>
+In-Reply-To: <AF233D1473C1364ABD51D28909A1B1B7326E297E@PGSMSX105.gar.corp.intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Read: https://www.google.com/search?q=how+to+write+a+v2+patch
 
-The subject is still messed up and there is no changelog.
+> Suggest to split the imr_del() into 2 functions:-
+> (1) by address + size
+> (2) by IMR index
+> At current implementation, it does not support (2) only because it fails at
+> imr_check_range().
 
-regards,
-dan carpenter
+Hi Boon Leong.
+
+I'll have a think about that :)
+
+Just on imr_del() though, it does support removal by way of index.
+
++static void __init intel_galileo_imr_init(void)
++{
++	unsigned long base  = virt_to_phys(&_text);
++	unsigned long size = virt_to_phys(&_sinittext) - base - IMR_ALIGN;
++	int i, ret;
++
++	/* Tear down all existing unlocked IMRs */
++	for (i = 0; i <= QUARK_X1000_IMR_NUM; i++)
++		imr_del(i, 0, 0);
+
+That's what the platform code has to do for every unlocked IMR, to make 
+sure there are no stale IMRs left that could conflict with the EFI 
+memory map !
+
+--
+BOD
+
+
+
 
