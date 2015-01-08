@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464AbbAHHok (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 02:44:40 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:39342 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753051AbbAHHoj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 02:44:39 -0500
-X-Original-SENDERIP: 10.177.222.153
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Thu, 8 Jan 2015 16:44:47 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Davidlohr Bueso <dave@stgolabs.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Jesper Dangaard Brouer <brouer@redhat.com>, rostedt@goodmis.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/2] mm/slub: optimize alloc/free fastpath by removing
- preemption on/off
-Message-ID: <20150108074447.GA25453@js1304-P5Q-DELUXE>
-References: <1420421765-3209-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1420513392.24290.2.camel@stgolabs.net>
- <20150106080948.GA18346@js1304-P5Q-DELUXE>
- <1420563737.24290.7.camel@stgolabs.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420563737.24290.7.camel@stgolabs.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753509AbbAHHqH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 02:46:07 -0500
+Received: from smtp2.provo.novell.com ([137.65.250.81]:47843 "EHLO
+	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752368AbbAHHqF (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Thu, 8 Jan 2015 02:46:05 -0500
+Message-ID: <1420703154.12346.10.camel@stgolabs.net>
+Subject: Re: [LKP] [mm] c8c06efa8b5: -7.6% unixbench.score
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: Huang Ying <ying.huang@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, LKP ML <lkp@01.org>
+Date: Wed, 07 Jan 2015 23:45:54 -0800
+In-Reply-To: <1420684064.6201.86.camel@linux.intel.com>
+References: <1420684064.6201.86.camel@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 09:02:17AM -0800, Davidlohr Bueso wrote:
-> On Tue, 2015-01-06 at 17:09 +0900, Joonsoo Kim wrote:
-> > On Mon, Jan 05, 2015 at 07:03:12PM -0800, Davidlohr Bueso wrote:
-> > > On Mon, 2015-01-05 at 10:36 +0900, Joonsoo Kim wrote:
-> > > > -	preempt_disable();
-> > > > -	c = this_cpu_ptr(s->cpu_slab);
-> > > > +	do {
-> > > > +		tid = this_cpu_read(s->cpu_slab->tid);
-> > > > +		c = this_cpu_ptr(s->cpu_slab);
-> > > > +	} while (IS_ENABLED(CONFIG_PREEMPT) && unlikely(tid != c->tid));
-> > > > +	barrier();
-> > > 
-> > > I don't see the compiler reodering the object/page stores below, since c
-> > > is updated in the loop anyway. Is this really necessary (same goes for
-> > > slab_free)? The generated code by gcc 4.8 looks correct without it.
-> > > Additionally, the implied barriers for preemption control aren't really
-> > > the same semantics used here (if that is actually the reason why you are
-> > > using them).
-> > 
-> > Hello,
-> > 
-> > I'd like to use tid as a pivot so it should be fetched before fetching
-> > anything on c. Is it impossible even if !CONFIG_PREEMPT without
-> > barrier()?
+On Thu, 2015-01-08 at 10:27 +0800, Huang Ying wrote:
+Cc'ing Peter.
+
+> FYI, we noticed the below changes on
 > 
-> You'd need a smp_wmb() in between tid and c in the loop then, which
-> looks quite unpleasant. All in all disabling preemption isn't really
-> that expensive, and you should redo your performance number if you go
-> this way.
+> commit c8c06efa8b552608493b7066c234cfa82c47fcea ("mm: convert i_mmap_mutex to rwsem")
 
-This barrier() is not for read/write synchronization between cpus.
-All read/write operation to cpu_slab would happen on correct cpu in
-successful case. What I'd need to guarantee here is to prevent
-reordering between fetching operation for correctness of algorithm. In
-this case, barrier() seems enough to me. Am I wrong?
+Same exact everything, except for the lock type. No sharing going on.
 
-Thanks.
+> testbox/testcase/testparams: lituya/unixbench/performance-execl
+> 
+> 83cde9e8ba95d180  c8c06efa8b552608493b7066c2  
+> ----------------  --------------------------  
+>          %stddev     %change         %stddev
+>              \          |                \  
+>     721721 ±  1%    +303.6%    2913110 ±  3%  unixbench.time.voluntary_context_switches
+>      11767 ±  0%      -7.6%      10867 ±  1%  unixbench.score
+
+And this workload appears to be from execl, right? Make sense with some
+of those numbers!!
+
+>  2.323e+08 ±  0%      -7.2%  2.157e+08 ±  1%  unixbench.time.minor_page_faults
+>        207 ±  0%      -7.0%        192 ±  1%  unixbench.time.user_time
+>    4923450 ±  0%      -5.7%    4641672 ±  0%  unixbench.time.involuntary_context_switches
+>        584 ±  0%      -5.2%        554 ±  0%  unixbench.time.percent_of_cpu_this_job_got
+>        948 ±  0%      -4.9%        902 ±  0%  unixbench.time.system_time
+>          0 ±  0%      +Inf%     672942 ±  2%  latency_stats.hits.call_rwsem_down_write_failed.vma_adjust.__split_vma.split_vma.mprotect_fixup.SyS_mprotect.system_call_fastpath
+
+What does this "hits" thing mean exactly? Since I assume both before and
+after runs have the same level of concurrency when pounding on mmap
+operations, I doubt it means that its the amount of calls into the
+slowpath... in addition the lock is obviously contended so we can forget
+about anything in the fastpath.
+
+So this is a call_rwsem_down_write_failed() vs __mutex_lock_common()
+issue.
+
+
+Thanks,
+Davidlohr
+
