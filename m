@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756874AbbAHRgK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 12:36:10 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:58194 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750927AbbAHRgJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 12:36:09 -0500
-Date: Thu, 8 Jan 2015 17:36:00 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Pratyush Anand <panand@redhat.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tixy@linaro.org" <tixy@linaro.org>,
-        "ananth@in.ibm.com" <ananth@in.ibm.com>,
-        "sandeepa.prabhu@linaro.org" <sandeepa.prabhu@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "anil.s.keshavamurthy@intel.com" <anil.s.keshavamurthy@intel.com>,
-        "masami.hiramatsu.pt@hitachi.com" <masami.hiramatsu.pt@hitachi.com>,
-        "wcohen@redhat.com" <wcohen@redhat.com>,
-        "oleg@redhat.com" <oleg@redhat.com>
-Subject: Re: [RFC 2/8] ARM64: Refactor kprobes-arm64
-Message-ID: <20150108173600.GW11583@arm.com>
-References: <cover.1420038188.git.panand@redhat.com>
- <9a86c217f387f45568c18b724024b0d3e040d2c6.1420038188.git.panand@redhat.com>
- <20150108165557.GQ11583@arm.com>
- <54AEBF54.7000704@redhat.com>
+	id S932346AbbAHRn7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 12:43:59 -0500
+Received: from fn.samba.org ([216.83.154.106]:50775 "EHLO mail.samba.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932116AbbAHRn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 12:43:56 -0500
+X-Greylist: delayed 463 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Jan 2015 12:43:56 EST
+Date: Thu, 8 Jan 2015 09:36:10 -0800
+From: Jeremy Allison <jra@samba.org>
+To: Milosz Tanski <milosz@adfin.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v12 00/20] DAX: Page cache bypass for filesystems on
+ memory storage
+Message-ID: <20150108173610.GB6189@samba2>
+Reply-To: Jeremy Allison <jra@samba.org>
+References: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
+ <20141210140347.GA23252@infradead.org>
+ <20141210141211.GD2220@wil.cx>
+ <20150105184143.GA665@infradead.org>
+ <20150106004714.6d63023c.akpm@linux-foundation.org>
+ <CANP1eJHOMSP8GYc_1pi8ciZZFWR0dH=N5a4HA=RYezohDmm+Rg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54AEBF54.7000704@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CANP1eJHOMSP8GYc_1pi8ciZZFWR0dH=N5a4HA=RYezohDmm+Rg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 08, 2015 at 05:33:08PM +0000, Pratyush Anand wrote:
-> On Thursday 08 January 2015 10:25 PM, Will Deacon wrote:
-> > On Wed, Dec 31, 2014 at 03:21:18PM +0000, Pratyush Anand wrote:
-> >> Most of the stuff of kprobes-arm64.c can also be used by uprobes.c. So
-> >> move all those part to common code area. In the process rename kprobe to
-> >> probe whereever possible.
-> >>
-> >> No functional change.
-> >
-> > In which case, can you merge this into the kprobes series (which we haven't
-> > merged yet)?
+On Thu, Jan 08, 2015 at 11:28:40AM -0500, Milosz Tanski wrote:
 > >
 > 
-> Yes, thats why these are just RFCs. I will send next version of uprobe 
-> only after kprobe patches are accepted into maintainer's tree.
+> Andrew I  got busier with my other job related things between the
+> Thanksgiving & Christmas then anticipated. However, I have updated and
+> taken apart the patchset into two pieces (preadv2 and pwritev2). That
+> should make evaluating the two separately easier. With the help of
+> Volker I hacked up preadv2 support into samba and I hopefully have
+> some numbers from it soon. Finally, I'm putting together a test case
 
-Ok, but it also makes sense to make kprobes refactoring changes *before* the
-patches are merged, as that reduces churn in mainline whilst you don't have
-any other dependencies.
+I'd be very interested in seeing that patch code and those
+numbers !
 
-Will
+Cheers,
+
+	Jeremy.
