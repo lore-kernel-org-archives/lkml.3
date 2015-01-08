@@ -1,109 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830AbbAHQGh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 11:06:37 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:57951 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753249AbbAHQGf (ORCPT
+	id S1756236AbbAHQHj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 11:07:39 -0500
+Received: from mail-oi0-f52.google.com ([209.85.218.52]:55511 "EHLO
+	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755053AbbAHQHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 11:06:35 -0500
-Date: Thu, 8 Jan 2015 16:06:26 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: "joro@8bytes.org" <joro@8bytes.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "arnd@arndb.de" <arnd@arndb.de>
-Subject: Re: [PATCH v3 3/4] of/pci: add of_pci_dma_configure() update dma
- configuration
-Message-ID: <20150108160626.GN11583@arm.com>
-References: <1420656594-8908-1-git-send-email-m-karicheri2@ti.com>
- <1420656594-8908-4-git-send-email-m-karicheri2@ti.com>
+	Thu, 8 Jan 2015 11:07:37 -0500
+Date: Thu, 8 Jan 2015 09:07:33 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] PCI: quirk Atheros AR93xx to avoid bus reset
+Message-ID: <20150108160733.GA6575@google.com>
+References: <20141121180322.26669.65689.stgit@gimli.home>
+ <20141121182427.26669.82417.stgit@gimli.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1420656594-8908-4-git-send-email-m-karicheri2@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141121182427.26669.82417.stgit@gimli.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 06:49:53PM +0000, Murali Karicheri wrote:
-> Add of_pci_dma_configure() to allow updating the dma configuration
-> of the pci device using the configuration from DT of the parent of
-> the root bridge device.
+On Fri, Nov 21, 2014 at 11:24:27AM -0700, Alex Williamson wrote:
+> Reports against the TL-WDN4800 card indicate that PCI bus reset of
+> this Atheros device cause system lock-ups and resets.  I've also
+> been able to confirm this behavior on multiple systems.  The device
+> never returns from reset and attempts to access config space of the
+> device after reset result in hangs.  Blacklist bus reset for the
+> device to avoid this issue.
 > 
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> Reported-by: Andreas Hartmann <andihartmann@freenet.de>
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> Tested-by: Andreas Hartmann <andihartmann@freenet.de>
+
+If I understand correctly, these two (patches 3 & 4) fix a v3.14 regression
+caused by 425c1b223dac ("PCI: Add Virtual Channel to save/restore support").
+
+If so, these should go to for-linus for v3.19.  What about patches 1 & 2?
+Do they fix a regression?  Is there a pointer to a bugzilla or problem
+report about that issue?
+
+I don't understand the connection between 425c1b223dac and
+PCI_DEV_FLAGS_NO_BUS_RESET, because 425c1b223dac doesn't seem to do any
+resets.  Is that the wrong commit, or can you outline the connection for
+me?
+
+Bjorn
+
 > ---
->  drivers/of/of_pci.c    |   39 +++++++++++++++++++++++++++++++++++++++
->  include/linux/of_pci.h |   12 ++++++++++++
->  2 files changed, 51 insertions(+)
 > 
-> diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-> index 88471d3..34878c9 100644
-> --- a/drivers/of/of_pci.c
-> +++ b/drivers/of/of_pci.c
-> @@ -2,6 +2,7 @@
->  #include <linux/export.h>
->  #include <linux/of.h>
->  #include <linux/of_address.h>
-> +#include <linux/of_device.h>
->  #include <linux/of_pci.h>
->  #include <linux/slab.h>
+>  drivers/pci/quirks.c |   14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
+> 
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index 561e10d..ebbd5b4 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -3029,6 +3029,20 @@ static void quirk_no_pm_reset(struct pci_dev *dev)
+>  DECLARE_PCI_FIXUP_CLASS_HEADER(PCI_VENDOR_ID_ATI, PCI_ANY_ID,
+>  			       PCI_CLASS_DISPLAY_VGA, 8, quirk_no_pm_reset);
 >  
-> @@ -229,6 +230,44 @@ parse_failed:
->  	return err;
->  }
->  EXPORT_SYMBOL_GPL(of_pci_get_host_bridge_resources);
-> +
-> +/**
-> + * of_get_pci_root_bridge_parent - get the OF node of the root bridge's parent
-> + * @dev: ptr to pci_dev struct of the pci device
-> + *
-> + * This function will traverse the bus up to the root bus starting with
-> + * the child and return the OF node ptr to root bridge device's parent device.
-> + */
-> +struct device_node *of_get_pci_root_bridge_parent(struct pci_dev *dev)
+> +static void quirk_no_bus_reset(struct pci_dev *dev)
 > +{
-> +	struct pci_bus *bus = dev->bus;
-> +	struct device *bridge;
-> +
-> +	while (!pci_is_root_bus(bus))
-> +		bus = bus->parent;
-> +	bridge = bus->bridge;
-> +
-> +	return bridge->parent->of_node;
+> +	dev->dev_flags |= PCI_DEV_FLAGS_NO_BUS_RESET;
 > +}
-> +EXPORT_SYMBOL_GPL(of_get_pci_root_bridge_parent);
 > +
-> +/**
-> + * of_pci_dma_configure - Setup DMA configuration
-> + * @dev: ptr to pci_dev struct of the pci device
-> + *
-> + * Function to update PCI devices's DMA configuration using the same
-> + * info from the OF node of root host bridge's parent.
+> +/*
+> + * Atheros AR93xx chips do not behave after a bus reset.  The device will
+> + * throw a Link Down error on AER capable system and regardless of AER,
+> + * config space of the device is never accessible again and typically
+> + * causes the system to hang or reset when access is attempted.
+> + * http://www.spinics.net/lists/linux-pci/msg34797.html
 > + */
-> +void of_pci_dma_configure(struct pci_dev *pci_dev)
-> +{
-> +	struct device *dev = &pci_dev->dev;
-> +	struct device_node *parent_np;
+> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATHEROS, 0x0030, quirk_no_bus_reset);
 > +
-> +	parent_np = of_get_pci_root_bridge_parent(pci_dev);
-> +	of_dma_configure(dev, parent_np);
-> +}
-> +EXPORT_SYMBOL_GPL(of_pci_dma_configure);
-
-Whilst I think this is the right overall structure, I think this function
-should determine the set of DMA aliases for the device and pass that through
-to the IOMMU (as mentioned in my reply to the cover letter). Then we just
-need to work out what we're doing for groups.
-
-Will
+>  #ifdef CONFIG_ACPI
+>  /*
+>   * Apple: Shutdown Cactus Ridge Thunderbolt controller.
+> 
