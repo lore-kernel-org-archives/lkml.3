@@ -1,91 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756707AbbAHOrF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 09:47:05 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40181 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754415AbbAHOrA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 09:47:00 -0500
-X-Greylist: delayed 378 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Jan 2015 09:46:59 EST
+	id S1755973AbbAHOml (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 09:42:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41461 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752686AbbAHOmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 09:42:40 -0500
+Date: Thu, 8 Jan 2015 15:42:27 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Kan Liang <kan.liang@intel.com>
+Subject: Re: [PATCHSET 0/7] perf diff: Fix and improve output ordering (v2)
+Message-ID: <20150108144227.GC16094@krava.brq.redhat.com>
+References: <1420677949-6719-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <54AE43A9.3020309@schinagl.nl>
-References: <1420621722-7428-1-git-send-email-oliver+list@schinagl.nl>
- <1420621722-7428-5-git-send-email-oliver+list@schinagl.nl>
- <20150107235522.GA6670@dtor-ws> <54AE43A9.3020309@schinagl.nl>
-From: Rob Herring <robherring2@gmail.com>
-Date: Thu, 8 Jan 2015 08:40:20 -0600
-Message-ID: <CAL_JsqJE_PCXrejHO3vfdbbtC4FGyuPhJ8W-A=8nZMcu6aBxCw@mail.gmail.com>
-Subject: Re: [PATCH v1 4/4] leds: no longer use unnamed gpios
-To: Olliver Schinagl <oliver@schinagl.nl>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Olliver Schinagl <oliver+list@schinagl.nl>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, Bryan Wu <cooloney@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>, Robin Gong <b38343@freescale.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Alexander Shiyan <shc_work@mail.ru>,
-        Jingoo Han <jg1.han@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        linux-leds@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420677949-6719-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 8, 2015 at 2:45 AM, Olliver Schinagl <oliver@schinagl.nl> wrote:
-> Hey Dmitry,
->
->
-> On 08-01-15 00:55, Dmitry Torokhov wrote:
->>
->> On Wed, Jan 07, 2015 at 10:08:42AM +0100, Olliver Schinagl wrote:
->>>
->>> From: Olliver Schinagl <oliver@schinagl.nl>
->>>
->>> The gpio document says we should not use unnamed bindings for gpios.
->>> This patch uses the 'led-' prefix to the gpios and updates code and
->>> documents. Because the devm_get_gpiod_from_child() falls back to using
->>> old-style unnamed gpios, we can update the code first, and update
->>> dts files as time allows.
+On Thu, Jan 08, 2015 at 09:45:41AM +0900, Namhyung Kim wrote:
+> Hello,
+> 
+> This patchset improves perf diff output to sort by baseline and then
+> next columns in turn.  And fix -o/--order option behavior too.
+> 
+>  * changes in v2)
+>   - pass fmt arg to ->cmp, ->collapse, ->sort callbacks (Jiri)
+>   - add Acked-by from Jiri
+> 
+> The patch 1-3 are resend.  The patch 4-5 are preparation and the patch
+> 6-7 are the main change.
 
-[...]
+for the new stuff ^^^ :
 
->>> --- a/drivers/leds/leds-gpio.c
->>> +++ b/drivers/leds/leds-gpio.c
->>> @@ -184,7 +184,7 @@ static struct gpio_leds_priv *gpio_leds_create(struct
->>> platform_device *pdev)
->>>                 struct gpio_led led = {};
->>>                 const char *state = NULL;
->>>   -             led.gpiod = devm_get_gpiod_from_child(dev, NULL, child);
->>> +               led.gpiod = devm_get_gpiod_from_child(dev, "led", child);
->>
->> Would not this break existing boards using old bindings? You need to
->> handle both cases: if you can't located "led-gpios" then you will have to
->> try just "gpios".
->
-> Very true. I was rather even hoping we could update all bindings, I don't
-> mind going through the available dts files to fix them ... But need to know
-> that that's the proper way to go before doing the work ;)
+Acked-by: Jiri Olsa <jolsa@kernel.org>
 
-That will not work. You cannot make changes that require a new dtb
-with a new kernel. This would also break for the other way around
-(i.e. a new dtb and old kernel).
+thanks,
+jirka
 
-You would have to search for both led-gpios and gpios. I'm not sure if
-we can do that generically for all GPIOs. If you had a node with both
-"blah-gpios" and "gpios", it would break. I would hope there are no
-such cases like that. We also now have to consider how ACPI identifies
-GPIOs and whether this makes sense.
-
-Rob
+> 
+> 
+> Before:
+> 
+>   # Baseline/0  Delta/1  Delta/2  Shared Object      Symbol
+>   # ..........  .......  .......  .................  ..........................................
+>   #
+>         32.75%   +0.28%   -0.83%  libc-2.20.so       [.] malloc
+>         31.50%   -0.74%   -0.23%  libc-2.20.so       [.] _int_free
+>         22.98%   +0.51%   +0.52%  libc-2.20.so       [.] _int_malloc
+>          5.70%   +0.28%   +0.30%  libc-2.20.so       [.] free
+>          4.38%   -0.21%   +0.25%  a.out              [.] main
+>          1.32%   -0.15%   +0.05%  a.out              [.] free@plt
+>          1.31%   +0.03%   -0.06%  a.out              [.] malloc@plt
+>          0.01%   -0.01%   -0.01%  [kernel.kallsyms]  [k] native_write_msr_safe
+>          0.01%                    [kernel.kallsyms]  [k] scheduler_tick
+>          0.01%            -0.00%  [kernel.kallsyms]  [k] native_read_msr_safe
+>                           +0.01%  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
+>                  +0.01%   +0.01%  [kernel.kallsyms]  [k] apic_timer_interrupt
+>                           +0.01%  [kernel.kallsyms]  [k] intel_pstate_timer_func
+>                  +0.01%           [kernel.kallsyms]  [k] perf_adjust_freq_unthr_context.part.82
+>                  +0.01%           [kernel.kallsyms]  [k] read_tsc
+>                           +0.01%  [kernel.kallsyms]  [k] timekeeping_update.constprop.8
+>     
+> After:
+> 
+>   # Baseline/0  Delta/1  Delta/2  Shared Object      Symbol
+>   # ..........  .......  .......  .................  ..........................................
+>   #
+>         32.75%   +0.28%   -0.83%  libc-2.20.so       [.] malloc
+>         31.50%   -0.74%   -0.23%  libc-2.20.so       [.] _int_free
+>         22.98%   +0.51%   +0.52%  libc-2.20.so       [.] _int_malloc
+>          5.70%   +0.28%   +0.30%  libc-2.20.so       [.] free
+>          4.38%   -0.21%   +0.25%  a.out              [.] main
+>          1.32%   -0.15%   +0.05%  a.out              [.] free@plt
+>          1.31%   +0.03%   -0.06%  a.out              [.] malloc@plt
+>          0.01%   -0.01%   -0.01%  [kernel.kallsyms]  [k] native_write_msr_safe
+>          0.01%                    [kernel.kallsyms]  [k] scheduler_tick
+>          0.01%            -0.00%  [kernel.kallsyms]  [k] native_read_msr_safe
+>                  +0.01%   +0.01%  [kernel.kallsyms]  [k] apic_timer_interrupt
+>                  +0.01%           [kernel.kallsyms]  [k] read_tsc
+>                  +0.01%           [kernel.kallsyms]  [k] perf_adjust_freq_unthr_context.part.82
+>                           +0.01%  [kernel.kallsyms]  [k] intel_pstate_timer_func
+>                           +0.01%  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
+>                           +0.01%  [kernel.kallsyms]  [k] timekeeping_update.constprop.8
+> 
+> 
+> You can get this from 'perf/diff-sort-v2' branch on my tree:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+> 
+> 
+> Any comments are welcome, thanks
+> Namhyung
+> 
+> 
+> Namhyung Kim (7):
+>   perf diff: Fix to sort by baseline field by default
+>   perf diff: Get rid of hists__compute_resort()
+>   perf diff: Print diff result more precisely
+>   perf diff: Introduce fmt_to_data_file() helper
+>   perf tools: Pass struct perf_hpp_fmt to its callbacks
+>   perf diff: Fix output ordering to honor next column
+>   perf diff: Fix -o/--order option behavior
+> 
+>  tools/perf/builtin-diff.c | 252 +++++++++++++++++++++++++++++++++-------------
+>  tools/perf/ui/hist.c      |  12 ++-
+>  tools/perf/util/hist.c    |   6 +-
+>  tools/perf/util/hist.h    |   9 +-
+>  tools/perf/util/sort.c    |  37 ++++++-
+>  5 files changed, 232 insertions(+), 84 deletions(-)
+> 
+> -- 
+> 2.1.3
+> 
