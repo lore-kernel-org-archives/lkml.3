@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165AbbAHJRJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 04:17:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58478 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753946AbbAHJRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 04:17:06 -0500
-From: Fam Zheng <famz@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Miklos Szeredi <mszeredi@suse.cz>, Juri Lelli <juri.lelli@gmail.com>,
-        Zach Brown <zab@zabbo.net>, David Drysdale <drysdale@google.com>,
-        Fam Zheng <famz@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Dario Faggioli <raistlin@linux.it>, "Theodore Ts'o" <tytso@mit.edu>,
-        Peter Zijlstra <peterz@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Fabian Frederick <fabf@skynet.be>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-fsdevel@vger.kernel.org,
-        linux-api@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>
-Subject: [RESEND PATCH 3/3] x86: hook up epoll_pwait1 syscall
-Date: Thu,  8 Jan 2015 17:16:03 +0800
-Message-Id: <1420708563-21743-4-git-send-email-famz@redhat.com>
-In-Reply-To: <1420708563-21743-1-git-send-email-famz@redhat.com>
-References: <1420708563-21743-1-git-send-email-famz@redhat.com>
+	id S1756193AbbAHJS7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 04:18:59 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:38558 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753151AbbAHJS5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 04:18:57 -0500
+From: Omar Sandoval <osandov@osandov.com>
+To: Trond Myklebust <trond.myklebust@primarydata.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        Omar Sandoval <osandov@osandov.com>
+Subject: [PATCH RESEND] nfs: prevent truncate on active swapfile
+Date: Thu,  8 Jan 2015 01:18:30 -0800
+Message-Id: <fdc56e2887c3ed93f4e6a6e784ee0748c2d13295.1420708562.git.osandov@osandov.com>
+X-Mailer: git-send-email 2.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Fam Zheng <famz@redhat.com>
----
- arch/x86/syscalls/syscall_32.tbl | 1 +
- arch/x86/syscalls/syscall_64.tbl | 1 +
- 2 files changed, 2 insertions(+)
+Most filesystems prevent truncation of an active swapfile by way of
+inode_newsize_ok, called from inode_change_ok. NFS doesn't call either
+from nfs_setattr, presumably because most of these checks are expected
+to be done server-side. However, the IS_SWAPFILE check can only be done
+client-side, and truncating a swapfile can't possibly be good.
 
-diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
-index b3560ec..1c863f6 100644
---- a/arch/x86/syscalls/syscall_32.tbl
-+++ b/arch/x86/syscalls/syscall_32.tbl
-@@ -365,3 +365,4 @@
- 356	i386	memfd_create		sys_memfd_create
- 357	i386	bpf			sys_bpf
- 358	i386	execveat		sys_execveat			stub32_execveat
-+359	i386	epoll_pwait1		sys_epoll_pwait1
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index 8d656fb..644a90f 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -329,6 +329,7 @@
- 320	common	kexec_file_load		sys_kexec_file_load
- 321	common	bpf			sys_bpf
- 322	64	execveat		stub_execveat
-+323	common	epoll_pwait1		sys_epoll_pwait1
+Signed-off-by: Omar Sandoval <osandov@osandov.com>
+---
+Hi, Trond,
+
+Now that the holidays are over, could you take a look at this? It was
+generated against v3.19-rc3.
+
+Thanks!
+
+ fs/nfs/inode.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+index 4bffe63..9205513 100644
+--- a/fs/nfs/inode.c
++++ b/fs/nfs/inode.c
+@@ -506,10 +506,15 @@ nfs_setattr(struct dentry *dentry, struct iattr *attr)
+ 		attr->ia_valid &= ~ATTR_MODE;
  
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
+ 	if (attr->ia_valid & ATTR_SIZE) {
++		loff_t i_size;
++
+ 		BUG_ON(!S_ISREG(inode->i_mode));
+ 
+-		if (attr->ia_size == i_size_read(inode))
++		i_size = i_size_read(inode);
++		if (attr->ia_size == i_size)
+ 			attr->ia_valid &= ~ATTR_SIZE;
++		else if (attr->ia_size < i_size && IS_SWAPFILE(inode))
++			return -ETXTBSY;
+ 	}
+ 
+ 	/* Optimization: if the end result is no change, don't RPC */
 -- 
-1.9.3
+2.2.1
 
