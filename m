@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757662AbbAHWrX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 17:47:23 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49941 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755636AbbAHWrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 17:47:21 -0500
-Message-ID: <54AF08C7.2010100@ti.com>
-Date: Thu, 8 Jan 2015 17:46:31 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1757628AbbAHWqw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 17:46:52 -0500
+Received: from mout.kundenserver.de ([212.227.17.10]:56750 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757380AbbAHWqv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 17:46:51 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Baruch Siach <baruch@tkos.co.il>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 0/8] ARM: Conexant Digicolor CX92755 SoC support
+Date: Thu, 08 Jan 2015 23:46:46 +0100
+Message-ID: <5966468.GiJYdzCvnt@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <cover.1420744368.git.baruch@tkos.co.il>
+References: <cover.1420744368.git.baruch@tkos.co.il>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <bhelgaas@google.com>, <linux-arm-kernel@lists.infradead.org>,
-        <joro@8bytes.org>, <grant.likely@linaro.org>, <robh+dt@kernel.org>,
-        <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <will.deacon@arm.com>, <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v3 0/4] PCI: get DMA configuration from parent device
-References: <1420656594-8908-1-git-send-email-m-karicheri2@ti.com> <54ADBB89.8070503@ti.com> <1934001.D0JfDRp1gF@wuerfel> <2785994.gTZ9chGdKf@wuerfel>
-In-Reply-To: <2785994.gTZ9chGdKf@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:hQM12wnorMku5WyOhKFeIMoe9vNmo0ymDV5hAMdwO4fL0+uA/MS
+ O/6HZr+HTaJEvR3xAbpLSyA5VP0Yccz4wsCmEnPjHSjGHWd7XwflGqgjWfXaNNwNEaIhg47
+ ZmD4+p50Lu54MpG13VWTmjegnwd6Xp84UMbxtjnEHf8uxmjIgNWhpUfSQdNSa5DYvB1Lqzk
+ PdRJcbAvAMi6fT0csI+AA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2015 05:27 PM, Arnd Bergmann wrote:
-> On Thursday 08 January 2015 09:56:39 Arnd Bergmann wrote:
->> There is another interesting case, which is a USB host controller or
->> something similar behind a PCI bus. These are quite common and also
->> need to be handled in some form. Let's do just PCI first for now, but
->> be aware that this will come next. Should we assume that the ID that
->> is required for a device is either known from the device node, or
->> that it comes from a PCI device? That means for the USB case, we will
->> likely need to have some custom logic. There seems to be an implicit
->> assumption all over the kernel that all devices have the same IOMMU
->> instance, but we can't really rely on that here.
->>
->
-> Update: I've checked the USB implementation and we are lucky because
-> these interactions are all done by the USB host controller, and a
-> USB device is not itself DMA capable. We don't have to do anything
-> for USB.
+On Thursday 08 January 2015 21:39:56 Baruch Siach wrote:
+> This series adds initial support for the Conexant CX92755 SoC. The CX92755 is
+> one of the Digicolor series of SoCs, all sharing many of the same peripherals.
+> The code was tested on the CX92755 evaluation kit, AKA Equinox.
+> 
+> Uses attempting to try this code will most likely also want the UART/console
+> driver available from https://patchwork.kernel.org/patch/5515861/.
+ 
+Looks great overall now.
 
-Ok Thanks.
+I have just two more comments in one patch, and one general request:
 
-Murali
->
-> 	Arnd
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please add a patch description for every patch. The text above would
+be a good start for the first patch, but it would be lost in the git
+history if it's only in the cover letter.
 
+other than that, feel free to add my
 
--- 
-Murali Karicheri
-Linux Kernel, Texas Instruments
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+Once there are no more review comments, please submit the first three
+patches to arm@kernel.org, and send the other patches as separate
+series to the respective maintainers for irqchip and clocksource.
+
+	Arnd
