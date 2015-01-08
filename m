@@ -1,84 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757197AbbAHREG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 12:04:06 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:56817 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754724AbbAHRED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 12:04:03 -0500
-Date: Thu, 8 Jan 2015 12:03:49 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vmscan: force scan offline memory cgroups
-Message-ID: <20150108170349.GA32079@phnom.home.cmpxchg.org>
-References: <1420728669-16889-1-git-send-email-vdavydov@parallels.com>
+	id S932322AbbAHRFG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 12:05:06 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:33816 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932263AbbAHRFD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 12:05:03 -0500
+Date: Thu, 8 Jan 2015 18:04:09 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, Paul Walmsley <pwalmsley@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, dmaengine@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dmaengine: tegra: add slave capabilities reporting
+Message-ID: <20150108170409.GW7853@lukather>
+References: <alpine.DEB.2.02.1501060640220.28771@utopia.booyaka.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HxEkdbCoFEDbFH5U"
 Content-Disposition: inline
-In-Reply-To: <1420728669-16889-1-git-send-email-vdavydov@parallels.com>
+In-Reply-To: <alpine.DEB.2.02.1501060640220.28771@utopia.booyaka.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 08, 2015 at 05:51:09PM +0300, Vladimir Davydov wrote:
-> Since commit b2052564e66d ("mm: memcontrol: continue cache reclaim from
-> offlined groups") pages charged to a memory cgroup are not reparented
-> when the cgroup is removed. Instead, they are supposed to be reclaimed
-> in a regular way, along with pages accounted to online memory cgroups.
-> 
-> However, an lruvec of an offline memory cgroup will sooner or later get
-> so small that it will be scanned only at low scan priorities (see
-> get_scan_count()). Therefore, if there are enough reclaimable pages in
-> big lruvecs, pages accounted to offline memory cgroups will never be
-> scanned at all, wasting memory.
-> 
-> Fix this by unconditionally forcing scanning dead lruvecs from kswapd.
-> 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 
-Yes, it makes sense to continue draining them at this point.  I just
-have a few comments inline:
+--HxEkdbCoFEDbFH5U
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> @@ -1367,6 +1367,20 @@ int mem_cgroup_inactive_anon_is_low(struct lruvec *lruvec)
->  	return inactive * inactive_ratio < active;
->  }
->  
-> +bool mem_cgroup_need_force_scan(struct lruvec *lruvec)
-> +{
-> +	struct mem_cgroup_per_zone *mz;
-> +	struct mem_cgroup *memcg;
-> +
-> +	if (mem_cgroup_disabled())
-> +		return false;
-> +
-> +	mz = container_of(lruvec, struct mem_cgroup_per_zone, lruvec);
-> +	memcg = mz->memcg;
-> +
-> +	return !(memcg->css.flags & CSS_ONLINE);
-> +}
+On Tue, Jan 06, 2015 at 06:44:56AM +0000, Paul Walmsley wrote:
+>=20
+> After commit ecc19d17868be9c9f8f00ed928791533c420f3e0 ("dmaengine: Add
+> a warning for drivers not using the generic slave caps retrieval"),
+> the Tegra APB DMA driver causes this warning during boot:
+>=20
+> WARNING: CPU: 0 PID: 1 at drivers/dma/dmaengine.c:830 dma_async_device_re=
+gister+0x294/0x538()
+> this driver doesn't support generic slave capabilities reporting
+>=20
+> Fix by setting the appropriate reporting structure fields that are
+> passed to dma_async_device_register().
+>=20
+> Signed-off-by: Paul Walmsley <paul@pwsan.com>
+> Cc: Paul Walmsley <pwalmsley@nvidia.com>
+> Cc: Laxman Dewangan <ldewangan@nvidia.com>
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Dan Williams <dan.j.williams@intel.com>
+> Cc: Stephen Warren <swarren@wwwdotorg.org>
+> Cc: Thierry Reding <thierry.reding@gmail.com>
+> Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Cc: Alexandre Courbot <gnurou@gmail.com>
 
-It's better to name functions after what they do, rather than what
-they are used for, to make reuse easy.  mem_cgroup_lruvec_online()?
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-> @@ -1935,7 +1935,8 @@ static void get_scan_count(struct lruvec *lruvec, int swappiness,
->  	 * latencies, so it's better to scan a minimum amount there as
->  	 * well.
->  	 */
-> -	if (current_is_kswapd() && !zone_reclaimable(zone))
-> +	if (current_is_kswapd() &&
-> +	    (!zone_reclaimable(zone) || mem_cgroup_need_force_scan(lruvec)))
->  		force_scan = true;
+Thanks!
+Maxime
 
-This would probably be easier on the eyes if you broke that up:
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-if (current_is_kswapd()) {
-        if (!zone_reclaimable(zone))
-                force_scan = true;
-        else if (!mem_cgroup_online_from_lruvec(lruvec))
-                force_scan = true;
-} else if (!global_reclaim(sc)) {
-                force_scan = true;
-}
+--HxEkdbCoFEDbFH5U
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUrriJAAoJEBx+YmzsjxAgvksP/2o1c/5D1p4WnXYYFW1f99aZ
+Ht4nr38/LZ+n2O8UOMQdz3Sy4BLFI+9Caht1KWES3BA/hXXa1KRcnwiMD5qleCAj
+aLrt3w8NmtxmweR2UUOO7HyrAjBBEI7PqPw0XagRQtxaHkXqm1+0ZLN+n0hDIQzj
+jc0kWzArtbG5dDH9LeE+dnp70TOBQtXBKlS3/nlVFBWJR7JoVc9BbgG/4Ir0lMs4
+O4EpPU0yr3Pyir/0ViRqLxBGSGHGTS7XewjK/+/pBGMT6sJgqCnQnNPdDS+8VnfV
+S652EI6Tt/RK952yWA6WxMS9tDOLhks8loU8PKdHRxnHf1e1rWApNzkhOcn2Ale4
+1i//lTv8iWOnopTX/99KghNq83Ha5e5nbJurMeS+W+0V9/WAtvovCifNHoKJQMxu
+5xtNKWONZByV6+k1QaIT3fYScIWkfYjxJSVFxyrIj7g4p6YSgkXZv5Cs7+2t4eb4
+HRb6Tcdt5XKkG6apmsTTXCGMYacuTPotP1Tt3qj0Dhmsm6s+YY6Sh4T5OwBwOgei
+kWJmem6MbymzCp0Xj/o6bdn1PWVffZQykkI5jMuKPjwPDD4le9QUxNC0ULDttihj
+LkETEGHLItmdr/U4S6LvbrQKLHVHNOxNk5cEPOEv5ZSJYdg85JnXguEO27h2vCjN
+LBedy1+7YokoSPihmkSu
+=ciJk
+-----END PGP SIGNATURE-----
+
+--HxEkdbCoFEDbFH5U--
