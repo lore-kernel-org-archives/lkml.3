@@ -1,91 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756313AbbAHLSX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 06:18:23 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:47452 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756233AbbAHLSV (ORCPT
+	id S1756345AbbAHLXy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 06:23:54 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:46641 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756008AbbAHLXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 06:18:21 -0500
+	Thu, 8 Jan 2015 06:23:52 -0500
+Message-ID: <54AE68BC.305@gmail.com>
+Date: Thu, 08 Jan 2015 14:23:40 +0300
+From: Dmitry Osipenko <digetx@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <1420460918-24380-1-git-send-email-eddie.huang@mediatek.com>
-References: <1420460918-24380-1-git-send-email-eddie.huang@mediatek.com>
-Date: Thu, 8 Jan 2015 12:18:19 +0100
-Message-ID: <CABuKBeLy5pg6GJNsE2ArszaG3k2DX1Ao3RA=1EjT3dHUQxui2Q@mail.gmail.com>
-Subject: Re: [PATCH] ARM: mediatek: dts: Add UART dts for MT8127 and MT8135 boards
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: Eddie Huang <eddie.huang@mediatek.com>
-Cc: srv_heupstream <srv_heupstream@mediatek.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Paul Walmsley <paul@pwsan.com>, linux-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
         Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        =?UTF-8?B?WUggQ2hlbiAo6Zmz5pix6LGqKQ==?= <yh.chen@mediatek.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Paul Walmsley <pwalmsley@nvidia.com>,
+        Thierry Reding <treding@nvidia.com>, Allen Martin <amartin@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Alexandre Courbot <gnurou@gmail.com>
+Subject: Re: [PATCH] soc: tegra: pmc: restrict compilation of suspend-related
+ support to ARM
+References: <alpine.DEB.2.02.1412092224050.31750@utopia.booyaka.com> <20150107143354.GD1621@ulmo> <54AD4FB7.20600@gmail.com> <20150108084929.GA1987@ulmo.nvidia.com> <54AE5117.5020905@gmail.com> <20150108105818.GJ1987@ulmo.nvidia.com>
+In-Reply-To: <20150108105818.GJ1987@ulmo.nvidia.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eddie,
+08.01.2015 13:58, Thierry Reding пишет:
+> On Thu, Jan 08, 2015 at 12:42:47PM +0300, Dmitry Osipenko wrote:
+>> 08.01.2015 11:49, Thierry Reding пишет:
+>>> I don't like changing this back to syscore_ops since it makes things
+>>> less easier to follow. I also don't think that using PMC_SCRATCH41 for
+>>> two different purposes is a good thing. There are a couple of
+>>> suggestions in my reply to your original patch. Could you investigate
+>>> whether any of those can be used to fix this instead?
+>>>
+>>> Thierry
+>>>
+>>
+>> I haven't received your reply. Double checked gmail inbox and mailing lists -
+>> nothing. It may just not propagated yet if you sent it today, otherwise can you
+>> please re-send it?
+> 
+> For some reason it hadn't gone out. Should be now, though.
+> 
+> Thierry
+> 
 
-2015-01-05 13:28 GMT+01:00 Eddie Huang <eddie.huang@mediatek.com>:
-> This patch enable UART for MT8127 moose board and MT8135 evalution board.
-> Adding the dts, these two boards can show log and shell prompts.
-> This patch base on my previous MT8135/MT8127 SoC UART dtsi patch [1] and
-> Matthias's modification to disable SoC UART by default.
-
-I applied this patch deleting this two lines and the reference. From
-my understanding this is extra information about the patch depends on
-the actual development process and should normally be in the cover
-letter but not in the patch description itself.
-
-Thanks,
-Matthias
-
->
-> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-December/312311.html
->
-> Signed-off-by: Eddie Huang <eddie.huang@mediatek.com>
-> ---
->  arch/arm/boot/dts/mt8127-moose.dts | 4 ++++
->  arch/arm/boot/dts/mt8135-evbp1.dts | 4 ++++
->  2 files changed, 8 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/mt8127-moose.dts b/arch/arm/boot/dts/mt8127-moose.dts
-> index 13cba0e..073e295 100644
-> --- a/arch/arm/boot/dts/mt8127-moose.dts
-> +++ b/arch/arm/boot/dts/mt8127-moose.dts
-> @@ -23,3 +23,7 @@
->                 reg = <0 0x80000000 0 0x40000000>;
->         };
->  };
-> +
-> +&uart0 {
-> +       status = "okay";
-> +};
-> diff --git a/arch/arm/boot/dts/mt8135-evbp1.dts b/arch/arm/boot/dts/mt8135-evbp1.dts
-> index a5adf97..3667738 100644
-> --- a/arch/arm/boot/dts/mt8135-evbp1.dts
-> +++ b/arch/arm/boot/dts/mt8135-evbp1.dts
-> @@ -23,3 +23,7 @@
->                 reg = <0 0x80000000 0 0x40000000>;
->         };
->  };
-> +
-> +&uart3 {
-> +       status = "okay";
-> +};
-> --
-> 1.8.1.1.dirty
->
-
-
+Received now, thanks! Your proposal sounds interesting, I'll try it.
 
 -- 
-motzblog.wordpress.com
+Dmitry
