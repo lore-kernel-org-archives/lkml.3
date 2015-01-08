@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755709AbbAHBCc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 20:02:32 -0500
-Received: from ozlabs.org ([103.22.144.67]:60091 "EHLO ozlabs.org"
+	id S1755676AbbAHBB4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 20:01:56 -0500
+Received: from ozlabs.org ([103.22.144.67]:55259 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755383AbbAHBBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 20:01:39 -0500
+	id S1755440AbbAHBBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 20:01:40 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
 To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Chris Metcalf <cmetcalf@ezchip.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-ia64@vger.kernel.org,
-        linux-parisc@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: [PATCH 1/3] module_arch_freeing_init(): new hook for archs before module->module_init freed.
-Date: Thu,  8 Jan 2015 11:28:05 +1030
-Message-Id: <1420678687-30548-2-git-send-email-rusty@rustcorp.com.au>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Ley Foon Tan <lftan@altera.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Chris Metcalf <cmetcalf@ezchip.com>,
+        Steven Rostedt <rostedt@goodmis.org>, x86@kernel.org,
+        Alexei Starovoitov <ast@kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-cris-kernel@axis.com, linux-mips@linux-mips.org,
+        nios2-dev@lists.rocketboards.org, linuxppc-dev@lists.ozlabs.org,
+        sparclinux@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH 2/3] module: remove mod arg from module_free, rename module_memfree().
+Date: Thu,  8 Jan 2015 11:28:06 +1030
+Message-Id: <1420678687-30548-3-git-send-email-rusty@rustcorp.com.au>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1420678687-30548-1-git-send-email-rusty@rustcorp.com.au>
 References: <1420678687-30548-1-git-send-email-rusty@rustcorp.com.au>
@@ -27,196 +31,246 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Archs have been abusing module_free() to clean up their arch-specific
-allocations.  Since module_free() is also (ab)used by BPF and trace code,
-let's keep it to simple allocations, and provide a hook called before
-that.
+Nothing needs the module pointer any more, and the next patch will
+call it from RCU, where the module itself might no longer exist.
+Removing the arg is the safest approach.
 
-This means that avr32, ia64, parisc and s390 no longer need to implement
-their own module_free() at all.  avr32 doesn't need module_finalize()
-either.
+This just codifies the use of the module_alloc/module_free pattern
+which ftrace and bpf use.
 
 Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Ley Foon Tan <lftan@altera.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Chris Metcalf <cmetcalf@ezchip.com>
-Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
-Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Cc: Helge Deller <deller@gmx.de>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: x86@kernel.org
+Cc: Alexei Starovoitov <ast@kernel.org>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-cris-kernel@axis.com
 Cc: linux-kernel@vger.kernel.org
-Cc: linux-ia64@vger.kernel.org
-Cc: linux-parisc@vger.kernel.org
-Cc: linux-s390@vger.kernel.org
+Cc: linux-mips@linux-mips.org
+Cc: nios2-dev@lists.rocketboards.org
+Cc: linuxppc-dev@lists.ozlabs.org
+Cc: sparclinux@vger.kernel.org
+Cc: netdev@vger.kernel.org
 ---
- arch/avr32/kernel/module.c   | 13 +------------
- arch/ia64/kernel/module.c    |  6 ++----
- arch/parisc/kernel/module.c  |  6 +-----
- arch/s390/kernel/module.c    | 10 +++-------
- arch/tile/kernel/module.c    |  2 +-
- include/linux/moduleloader.h |  2 ++
- kernel/module.c              |  7 +++++++
- 7 files changed, 17 insertions(+), 29 deletions(-)
+ arch/cris/kernel/module.c       |  2 +-
+ arch/mips/net/bpf_jit.c         |  2 +-
+ arch/nios2/kernel/module.c      |  2 +-
+ arch/powerpc/net/bpf_jit_comp.c |  2 +-
+ arch/sparc/net/bpf_jit_comp.c   |  4 ++--
+ arch/tile/kernel/module.c       |  2 +-
+ arch/x86/kernel/ftrace.c        |  2 +-
+ include/linux/moduleloader.h    |  2 +-
+ kernel/bpf/core.c               |  2 +-
+ kernel/kprobes.c                |  2 +-
+ kernel/module.c                 | 14 +++++++-------
+ 11 files changed, 18 insertions(+), 18 deletions(-)
 
-diff --git a/arch/avr32/kernel/module.c b/arch/avr32/kernel/module.c
-index 2c9412908024..164efa009e5b 100644
---- a/arch/avr32/kernel/module.c
-+++ b/arch/avr32/kernel/module.c
-@@ -19,12 +19,10 @@
- #include <linux/moduleloader.h>
- #include <linux/vmalloc.h>
+diff --git a/arch/cris/kernel/module.c b/arch/cris/kernel/module.c
+index 51123f985eb5..af04cb6b6dc9 100644
+--- a/arch/cris/kernel/module.c
++++ b/arch/cris/kernel/module.c
+@@ -36,7 +36,7 @@ void *module_alloc(unsigned long size)
+ }
  
+ /* Free memory returned from module_alloc */
 -void module_free(struct module *mod, void *module_region)
-+void module_arch_freeing_init(struct module *mod)
++void module_memfree(void *module_region)
  {
- 	vfree(mod->arch.syminfo);
- 	mod->arch.syminfo = NULL;
--
--	vfree(module_region);
+ 	kfree(module_region);
  }
- 
- static inline int check_rela(Elf32_Rela *rela, struct module *module,
-@@ -291,12 +289,3 @@ int apply_relocate_add(Elf32_Shdr *sechdrs, const char *strtab,
- 
- 	return ret;
- }
--
--int module_finalize(const Elf_Ehdr *hdr, const Elf_Shdr *sechdrs,
--		    struct module *module)
--{
--	vfree(module->arch.syminfo);
--	module->arch.syminfo = NULL;
--
--	return 0;
--}
-diff --git a/arch/ia64/kernel/module.c b/arch/ia64/kernel/module.c
-index 24603be24c14..29754aae5177 100644
---- a/arch/ia64/kernel/module.c
-+++ b/arch/ia64/kernel/module.c
-@@ -305,14 +305,12 @@ plt_target (struct plt_entry *plt)
- #endif /* !USE_BRL */
- 
- void
--module_free (struct module *mod, void *module_region)
-+module_arch_freeing_init (struct module *mod)
+diff --git a/arch/mips/net/bpf_jit.c b/arch/mips/net/bpf_jit.c
+index 9fd6834a2172..5d6139390bf8 100644
+--- a/arch/mips/net/bpf_jit.c
++++ b/arch/mips/net/bpf_jit.c
+@@ -1388,7 +1388,7 @@ out:
+ void bpf_jit_free(struct bpf_prog *fp)
  {
--	if (mod && mod->arch.init_unw_table &&
--	    module_region == mod->module_init) {
-+	if (mod->arch.init_unw_table) {
- 		unw_remove_unwind_table(mod->arch.init_unw_table);
- 		mod->arch.init_unw_table = NULL;
- 	}
--	vfree(module_region);
+ 	if (fp->jited)
+-		module_free(NULL, fp->bpf_func);
++		module_memfree(fp->bpf_func);
+ 
+ 	bpf_prog_unlock_free(fp);
+ }
+diff --git a/arch/nios2/kernel/module.c b/arch/nios2/kernel/module.c
+index cc924a38f22a..e2e3f13f98d5 100644
+--- a/arch/nios2/kernel/module.c
++++ b/arch/nios2/kernel/module.c
+@@ -36,7 +36,7 @@ void *module_alloc(unsigned long size)
  }
  
- /* Have we already seen one of these relocations? */
-diff --git a/arch/parisc/kernel/module.c b/arch/parisc/kernel/module.c
-index 50dfafc3f2c1..5822e8e200e6 100644
---- a/arch/parisc/kernel/module.c
-+++ b/arch/parisc/kernel/module.c
-@@ -298,14 +298,10 @@ static inline unsigned long count_stubs(const Elf_Rela *rela, unsigned long n)
- }
- #endif
- 
--
--/* Free memory returned from module_alloc */
+ /* Free memory returned from module_alloc */
 -void module_free(struct module *mod, void *module_region)
-+void module_arch_freeing_init(struct module *mod)
++void module_memfree(void *module_region)
  {
- 	kfree(mod->arch.section);
- 	mod->arch.section = NULL;
--
--	vfree(module_region);
+ 	kfree(module_region);
  }
- 
- /* Additional bytes needed in front of individual sections */
-diff --git a/arch/s390/kernel/module.c b/arch/s390/kernel/module.c
-index b89b59158b95..409d152585be 100644
---- a/arch/s390/kernel/module.c
-+++ b/arch/s390/kernel/module.c
-@@ -55,14 +55,10 @@ void *module_alloc(unsigned long size)
- }
- #endif
- 
--/* Free memory returned from module_alloc */
--void module_free(struct module *mod, void *module_region)
-+void module_arch_freeing_init(struct module *mod)
+diff --git a/arch/powerpc/net/bpf_jit_comp.c b/arch/powerpc/net/bpf_jit_comp.c
+index 1ca125b9c226..d1916b577f2c 100644
+--- a/arch/powerpc/net/bpf_jit_comp.c
++++ b/arch/powerpc/net/bpf_jit_comp.c
+@@ -699,7 +699,7 @@ out:
+ void bpf_jit_free(struct bpf_prog *fp)
  {
--	if (mod) {
--		vfree(mod->arch.syminfo);
--		mod->arch.syminfo = NULL;
--	}
--	vfree(module_region);
-+	vfree(mod->arch.syminfo);
-+	mod->arch.syminfo = NULL;
- }
+ 	if (fp->jited)
+-		module_free(NULL, fp->bpf_func);
++		module_memfree(fp->bpf_func);
  
- static void check_rela(Elf_Rela *rela, struct module *me)
+ 	bpf_prog_unlock_free(fp);
+ }
+diff --git a/arch/sparc/net/bpf_jit_comp.c b/arch/sparc/net/bpf_jit_comp.c
+index f33e7c7a3bf7..7931eeeb649a 100644
+--- a/arch/sparc/net/bpf_jit_comp.c
++++ b/arch/sparc/net/bpf_jit_comp.c
+@@ -776,7 +776,7 @@ cond_branch:			f_offset = addrs[i + filter[i].jf];
+ 				if (unlikely(proglen + ilen > oldproglen)) {
+ 					pr_err("bpb_jit_compile fatal error\n");
+ 					kfree(addrs);
+-					module_free(NULL, image);
++					module_memfree(image);
+ 					return;
+ 				}
+ 				memcpy(image + proglen, temp, ilen);
+@@ -822,7 +822,7 @@ out:
+ void bpf_jit_free(struct bpf_prog *fp)
+ {
+ 	if (fp->jited)
+-		module_free(NULL, fp->bpf_func);
++		module_memfree(fp->bpf_func);
+ 
+ 	bpf_prog_unlock_free(fp);
+ }
 diff --git a/arch/tile/kernel/module.c b/arch/tile/kernel/module.c
-index 96447c9160a0..62a597e810d6 100644
+index 62a597e810d6..2305084c9b93 100644
 --- a/arch/tile/kernel/module.c
 +++ b/arch/tile/kernel/module.c
-@@ -83,7 +83,7 @@ void module_free(struct module *mod, void *module_region)
- 		     0, 0, 0, NULL, NULL, 0);
+@@ -74,7 +74,7 @@ error:
  
- 	/*
--	 * FIXME: If module_region == mod->module_init, trim exception
-+	 * FIXME: Add module_arch_freeing_init to trim exception
- 	 * table entries.
- 	 */
+ 
+ /* Free memory returned from module_alloc */
+-void module_free(struct module *mod, void *module_region)
++void module_memfree(void *module_region)
+ {
+ 	vfree(module_region);
+ 
+diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+index 2142376dc8c6..8b7b0a51e742 100644
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -674,7 +674,7 @@ static inline void *alloc_tramp(unsigned long size)
  }
+ static inline void tramp_free(void *tramp)
+ {
+-	module_free(NULL, tramp);
++	module_memfree(tramp);
+ }
+ #else
+ /* Trampolines can only be created if modules are supported */
 diff --git a/include/linux/moduleloader.h b/include/linux/moduleloader.h
-index 7eeb9bbfb816..054eac853090 100644
+index 054eac853090..f7556261fe3c 100644
 --- a/include/linux/moduleloader.h
 +++ b/include/linux/moduleloader.h
-@@ -82,4 +82,6 @@ int module_finalize(const Elf_Ehdr *hdr,
- /* Any cleanup needed when module leaves. */
- void module_arch_cleanup(struct module *mod);
+@@ -26,7 +26,7 @@ unsigned int arch_mod_section_prepend(struct module *mod, unsigned int section);
+ void *module_alloc(unsigned long size);
  
-+/* Any cleanup before freeing mod->module_init */
-+void module_arch_freeing_init(struct module *mod);
- #endif
+ /* Free memory returned from module_alloc. */
+-void module_free(struct module *mod, void *module_region);
++void module_memfree(void *module_region);
+ 
+ /*
+  * Apply the given relocation to the (simplified) ELF.  Return -error
+diff --git a/kernel/bpf/core.c b/kernel/bpf/core.c
+index d6594e457a25..a64e7a207d2b 100644
+--- a/kernel/bpf/core.c
++++ b/kernel/bpf/core.c
+@@ -163,7 +163,7 @@ bpf_jit_binary_alloc(unsigned int proglen, u8 **image_ptr,
+ 
+ void bpf_jit_binary_free(struct bpf_binary_header *hdr)
+ {
+-	module_free(NULL, hdr);
++	module_memfree(hdr);
+ }
+ #endif /* CONFIG_BPF_JIT */
+ 
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 06f58309fed2..ee619929cf90 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -127,7 +127,7 @@ static void *alloc_insn_page(void)
+ 
+ static void free_insn_page(void *page)
+ {
+-	module_free(NULL, page);
++	module_memfree(page);
+ }
+ 
+ struct kprobe_insn_cache kprobe_insn_slots = {
 diff --git a/kernel/module.c b/kernel/module.c
-index 3965511ae133..68be0b1f9e7f 100644
+index 68be0b1f9e7f..1f85fd5c89d3 100644
 --- a/kernel/module.c
 +++ b/kernel/module.c
-@@ -1804,6 +1804,10 @@ void __weak module_arch_cleanup(struct module *mod)
+@@ -1795,7 +1795,7 @@ static void unset_module_core_ro_nx(struct module *mod) { }
+ static void unset_module_init_ro_nx(struct module *mod) { }
+ #endif
+ 
+-void __weak module_free(struct module *mod, void *module_region)
++void __weak module_memfree(void *module_region)
  {
+ 	vfree(module_region);
  }
- 
-+void __weak module_arch_freeing_init(struct module *mod)
-+{
-+}
-+
- /* Free a module, remove from lists, etc. */
- static void free_module(struct module *mod)
- {
-@@ -1841,6 +1845,7 @@ static void free_module(struct module *mod)
- 
+@@ -1846,7 +1846,7 @@ static void free_module(struct module *mod)
  	/* This may be NULL, but that's OK */
  	unset_module_init_ro_nx(mod);
-+	module_arch_freeing_init(mod);
- 	module_free(mod, mod->module_init);
+ 	module_arch_freeing_init(mod);
+-	module_free(mod, mod->module_init);
++	module_memfree(mod->module_init);
  	kfree(mod->args);
  	percpu_modfree(mod);
-@@ -2930,6 +2935,7 @@ static struct module *layout_and_allocate(struct load_info *info, int flags)
- static void module_deallocate(struct module *mod, struct load_info *info)
+ 
+@@ -1855,7 +1855,7 @@ static void free_module(struct module *mod)
+ 
+ 	/* Finally, free the core (containing the module structure) */
+ 	unset_module_core_ro_nx(mod);
+-	module_free(mod, mod->module_core);
++	module_memfree(mod->module_core);
+ 
+ #ifdef CONFIG_MPU
+ 	update_protections(current->mm);
+@@ -2790,7 +2790,7 @@ static int move_module(struct module *mod, struct load_info *info)
+ 		 */
+ 		kmemleak_ignore(ptr);
+ 		if (!ptr) {
+-			module_free(mod, mod->module_core);
++			module_memfree(mod->module_core);
+ 			return -ENOMEM;
+ 		}
+ 		memset(ptr, 0, mod->init_size);
+@@ -2936,8 +2936,8 @@ static void module_deallocate(struct module *mod, struct load_info *info)
  {
  	percpu_modfree(mod);
-+	module_arch_freeing_init(mod);
- 	module_free(mod, mod->module_init);
- 	module_free(mod, mod->module_core);
+ 	module_arch_freeing_init(mod);
+-	module_free(mod, mod->module_init);
+-	module_free(mod, mod->module_core);
++	module_memfree(mod->module_init);
++	module_memfree(mod->module_core);
  }
-@@ -3055,6 +3061,7 @@ static int do_init_module(struct module *mod)
- 	mod->strtab = mod->core_strtab;
+ 
+ int __weak module_finalize(const Elf_Ehdr *hdr,
+@@ -3062,7 +3062,7 @@ static int do_init_module(struct module *mod)
  #endif
  	unset_module_init_ro_nx(mod);
-+	module_arch_freeing_init(mod);
- 	module_free(mod, mod->module_init);
+ 	module_arch_freeing_init(mod);
+-	module_free(mod, mod->module_init);
++	module_memfree(mod->module_init);
  	mod->module_init = NULL;
  	mod->init_size = 0;
+ 	mod->init_ro_size = 0;
 -- 
 2.1.0
 
