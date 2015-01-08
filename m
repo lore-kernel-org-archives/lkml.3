@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756739AbbAHN2M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 08:28:12 -0500
-Received: from mail.kapsi.fi ([217.30.184.167]:47934 "EHLO mail.kapsi.fi"
+	id S932124AbbAHN2P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 08:28:15 -0500
+Received: from mail.kapsi.fi ([217.30.184.167]:51572 "EHLO mail.kapsi.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754103AbbAHN2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754709AbbAHN2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Jan 2015 08:28:05 -0500
 From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
 To: swarren@wwwdotorg.org, thierry.reding@gmail.com, gnurou@gmail.com,
@@ -15,9 +15,9 @@ Cc: mturquette@linaro.org, pwalmsley@nvidia.com, vinceh@nvidia.com,
         linux-arm-kernel@lists.infradead.org, tuomas.tynkkynen@iki.fi,
         Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
         Mikko Perttunen <mikko.perttunen@kapsi.fi>
-Subject: [PATCH v7 10/16] ARM: tegra: Enable the DFLL on the Jetson TK1
-Date: Thu,  8 Jan 2015 15:22:13 +0200
-Message-Id: <1420723339-30735-11-git-send-email-mikko.perttunen@kapsi.fi>
+Subject: [PATCH v7 11/16] cpufreq: tegra124: Add device tree bindings
+Date: Thu,  8 Jan 2015 15:22:14 +0200
+Message-Id: <1420723339-30735-12-git-send-email-mikko.perttunen@kapsi.fi>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <1420723339-30735-1-git-send-email-mikko.perttunen@kapsi.fi>
 References: <1420723339-30735-1-git-send-email-mikko.perttunen@kapsi.fi>
@@ -30,42 +30,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 
-Add the board-specific properties of the DFLL for the Jetson TK1 board.
-On this board, the DFLL will take control of the sd0 regulator on the
-on-board AS3722 PMIC.
+The cpufreq driver for Tegra124 will be a different one than the old
+Tegra20 cpufreq driver (tegra-cpufreq), which does not use the device
+tree.
 
 Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 Signed-off-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
 ---
- arch/arm/boot/dts/tegra124-jetson-tk1.dts | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ .../bindings/cpufreq/tegra124-cpufreq.txt          | 44 ++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/cpufreq/tegra124-cpufreq.txt
 
-diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1.dts b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-index 4eb540b..f539990 100644
---- a/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-+++ b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-@@ -1509,7 +1509,7 @@
- 				vin-ldo9-10-supply = <&vdd_5v0_sys>;
- 				vin-ldo11-supply = <&vdd_3v3_run>;
- 
--				sd0 {
-+				vdd_cpu: sd0 {
- 					regulator-name = "+VDD_CPU_AP";
- 					regulator-min-microvolt = <700000>;
- 					regulator-max-microvolt = <1400000>;
-@@ -1730,6 +1730,12 @@
- 		non-removable;
- 	};
- 
-+	dfll@0,70110000 {
-+		status = "okay";
-+		vdd-cpu-supply = <&vdd_cpu>;
-+		nvidia,i2c-fs-rate = <400000>;
+diff --git a/Documentation/devicetree/bindings/cpufreq/tegra124-cpufreq.txt b/Documentation/devicetree/bindings/cpufreq/tegra124-cpufreq.txt
+new file mode 100644
+index 0000000..b1669fb
+--- /dev/null
++++ b/Documentation/devicetree/bindings/cpufreq/tegra124-cpufreq.txt
+@@ -0,0 +1,44 @@
++Tegra124 CPU frequency scaling driver bindings
++----------------------------------------------
++
++Both required and optional properties listed below must be defined
++under node /cpus/cpu@0.
++
++Required properties:
++- clocks: Must contain an entry for each entry in clock-names.
++  See ../clocks/clock-bindings.txt for details.
++- clock-names: Must include the following entries:
++  - cpu_g: Clock mux for the fast CPU cluster.
++  - cpu_lp: Clock mux for the low-power CPU cluster.
++  - pll_x: Fast PLL clocksource.
++  - pll_p: Auxiliary PLL used during fast PLL rate changes.
++  - dfll: Fast DFLL clocksource that also automatically scales CPU voltage.
++- vdd-cpu-supply: Regulator for CPU voltage
++
++Optional properties:
++- clock-latency: Specify the possible maximum transition latency for clock,
++  in unit of nanoseconds.
++
++Example:
++--------
++cpus {
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	cpu@0 {
++		device_type = "cpu";
++		compatible = "arm,cortex-a15";
++		reg = <0>;
++
++		clocks = <&tegra_car TEGRA124_CLK_CCLK_G>,
++			 <&tegra_car TEGRA124_CLK_CCLK_LP>,
++			 <&tegra_car TEGRA124_CLK_PLL_X>,
++			 <&tegra_car TEGRA124_CLK_PLL_P>,
++			 <&dfll>;
++		clock-names = "cpu_g", "cpu_lp", "pll_x", "pll_p", "dfll";
++		clock-latency = <300000>;
++		vdd-cpu-supply: <&vdd_cpu>;
 +	};
 +
- 	ahub@0,70300000 {
- 		i2s@0,70301100 {
- 			status = "okay";
++	<...>
++};
 -- 
 2.2.1
 
