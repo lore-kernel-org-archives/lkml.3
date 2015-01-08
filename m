@@ -1,69 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757050AbbAHQz3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 11:55:29 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:58013 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754692AbbAHQzZ (ORCPT
+	id S1756978AbbAHQzX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 11:55:23 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:53957 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754712AbbAHQzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 11:55:25 -0500
-Date: Thu, 8 Jan 2015 16:55:07 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Pratyush Anand <panand@redhat.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tixy@linaro.org" <tixy@linaro.org>,
-        "ananth@in.ibm.com" <ananth@in.ibm.com>,
-        "sandeepa.prabhu@linaro.org" <sandeepa.prabhu@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "anil.s.keshavamurthy@intel.com" <anil.s.keshavamurthy@intel.com>,
-        "masami.hiramatsu.pt@hitachi.com" <masami.hiramatsu.pt@hitachi.com>,
-        "wcohen@redhat.com" <wcohen@redhat.com>,
-        "oleg@redhat.com" <oleg@redhat.com>
-Subject: Re: [RFC 1/8] ARM64: Move BRK opcodes defines from kprobes.h to
- insn.h
-Message-ID: <20150108165506.GP11583@arm.com>
-References: <cover.1420038188.git.panand@redhat.com>
- <5beb1ff58d4928a873be5e898b62d8cc2003ec7c.1420038188.git.panand@redhat.com>
+	Thu, 8 Jan 2015 11:55:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5beb1ff58d4928a873be5e898b62d8cc2003ec7c.1420038188.git.panand@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Date: Thu, 8 Jan 2015 22:25:20 +0530
+Message-ID: <CABP0=5eH0ojXTpd+2gV3zJG2cKMBinxH+oL0APQY5_1EKAafvw@mail.gmail.com>
+Subject: Fix for same server binary but with different labels issue in smack
+ ipv6 implementation (kernel ver-3.18)
+From: Vishal Goel <goel.cool@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        casey@schaufler-ca.com
+Cc: "vishal.goel@samsung.com" <vishal.goel@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 31, 2014 at 03:21:17PM +0000, Pratyush Anand wrote:
-> Its better to keep all BRK opcodes used by kprobes and uprobes at one
-> place. Therefore move these defines to asm/insn.h.
-> 
-> Signed-off-by: Pratyush Anand <panand@redhat.com>
-> ---
->  arch/arm64/include/asm/insn.h | 6 ++++++
->  arch/arm64/kernel/kprobes.h   | 7 +------
->  2 files changed, 7 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/arm64/include/asm/insn.h b/arch/arm64/include/asm/insn.h
-> index e2ff32a93b5c..87fa48746806 100644
-> --- a/arch/arm64/include/asm/insn.h
-> +++ b/arch/arm64/include/asm/insn.h
-> @@ -23,6 +23,12 @@
->  /* A64 instructions are always 32 bits. */
->  #define	AARCH64_INSN_SIZE		4
->  
-> +/* BRK opcodes with ESR encoding  */
-> +#define BRK64_ESR_MASK		0xFFFF
-> +#define BRK64_ESR_KPROBES	0x0004
-> +#define BRK64_OPCODE_KPROBES	0xD4200080	/* "brk 0x4" */
+[PATCH] This patch fixes the bug which comes up when one tcp server
+ is already running on some ip and port with "test" as SMACK64IPIN label. And
+ we try to run the same server again with same port, same protocol, and same
+ ip but with different SMACK64IPIN label "server". Then this new server
+ process will exit with an error "Address already in use". Now when we try to
+ run tcp client with SMACK64IPOUT label as "test", then connection denied
+ error comes.It should not happen since both tcp server and client labels are
+ same. This happens because new server process updates the existing port entry
+ in the list before exiting with an error. This happens because checking for
+ same binding address is done after smack hook call
+ "security_smack_socket_bind()". Due to which previous port entry gets updated
+ in the smack hook before new server process returns with an error.
 
-These might be better off in debug-monitors.h, but I guess that's for the
-kprobes series to sort out.
+Now new check has been added before updating the existing port entry in
+smk_ipv6_port_label() function.
+It checks whether the socket for corresponding port entry is closed or
+not. If it is closed then it means no binding error
+will come later. So in this case we can update the existing port entry
+otherwise return.
+For checking whether socket is closed or not, one more field
+"smk_can_reuse" has been
+added in the "smk_port_label" structure. This field will be marked 1 in
+"smack_sk_free_security()" function. This function gets called
+to free the socket security blob when the socket gets closed. In this
+function,
+port entry is searched in the list for the closing socket. If it is
+found then "smk_can_reuse" field is set to 1.
+"smk_can_reuse" field is set to 0 in smk_ipv6_port_label() function
+after creating a new entry in the list.
+'0' indicates that socket is being used by someone.
 
-> +#define ARCH64_NOP_OPCODE	0xD503201F
+Signed-off-by: Vishal Goel <vishal.goel@samsung.com>
+            Himanshu Shukla <himanshu.sh@samsung.com>
+---
+ security/smack/smack.h     |  1 +
+ security/smack/smack_lsm.c | 16 ++++++++++++++++
+ 2 files changed, 17 insertions(+)
 
-We have aarch64_insn_gen_nop for this.
+diff --git a/security/smack/smack.h b/security/smack/smack.h
+index e8c6477..a26d519 100644
+--- a/security/smack/smack.h
++++ b/security/smack/smack.h
+@@ -136,6 +136,7 @@ struct smk_port_label {
+      struct smack_known      *smk_in;    /* inbound label */
+      struct smack_known      *smk_out;   /* outgoing label */
+      short                   sock_type;      /*Socket type*/
++     short             smk_can_reuse;
+ };
 
-Will
+ /*
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index 81647e8..bdf3a28 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -2085,6 +2085,18 @@ static int smack_sk_alloc_security(struct sock
+*sk, int family, gfp_t gfp_flags)
+  */
+ static void smack_sk_free_security(struct sock *sk)
+ {
++     struct smk_port_label *spp;
++
++     if (sk->sk_family == PF_INET6) {
++           rcu_read_lock();
++           list_for_each_entry_rcu(spp, &smk_ipv6_port_list, list) {
++                 if (spp->smk_sock != sk)
++                       continue;
++                 spp->smk_can_reuse = 1;
++                 break;
++           }
++           rcu_read_unlock();
++     }
+      kfree(sk->sk_security);
+ }
+
+@@ -2266,10 +2278,13 @@ static void smk_ipv6_port_label(struct socket
+*sock, struct sockaddr *address)
+      list_for_each_entry_rcu(spp, &smk_ipv6_port_list, list) {
+            if (spp->smk_port != port || spp->sock_type != sock->type)
+                  continue;
++           if (spp->smk_can_reuse != 1)
++                 return;
+            spp->smk_port = port;
+            spp->smk_sock = sk;
+            spp->smk_in = ssp->smk_in;
+            spp->smk_out = ssp->smk_out;
++           spp->smk_can_reuse = 0;
+            rcu_read_unlock();
+            return;
+      }
+@@ -2286,6 +2301,7 @@ static void smk_ipv6_port_label(struct socket
+*sock, struct sockaddr *address)
+      spp->smk_in = ssp->smk_in;
+      spp->smk_out = ssp->smk_out;
+      spp->sock_type = sock->type;
++     spp->smk_can_reuse = 0;
+
+      mutex_lock(&smack_ipv6_lock);
+      list_add_rcu(&spp->list, &smk_ipv6_port_list);
+--
+1.8.3.2
