@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851AbbAHOhK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 09:37:10 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:42289 "EHLO SMTP.CITRIX.COM"
+	id S1756138AbbAHOjB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 09:39:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43769 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753805AbbAHOhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 09:37:09 -0500
-X-IronPort-AV: E=Sophos;i="5.07,723,1413244800"; 
-   d="scan'208";a="212675983"
-Message-ID: <54AE9604.4040901@citrix.com>
-Date: Thu, 8 Jan 2015 14:36:52 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1753440AbbAHOjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 09:39:00 -0500
+Date: Thu, 8 Jan 2015 15:38:18 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Dominique Toupin <dominique.toupin@ericsson.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jeremie Galarneau <jgalar@efficios.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [PATCHv2 0/8] perf tools: Add perf data CTF conversion
+Message-ID: <20150108143818.GB16094@krava.brq.redhat.com>
+References: <1418310749-22267-1-git-send-email-jolsa@kernel.org>
+ <20150108142913.GI23965@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Vitaly Kuznetsov <vkuznets@redhat.com>, <x86@kernel.org>
-CC: Andrew Jones <drjones@redhat.com>, <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, David Vrabel <david.vrabel@citrix.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <xen-devel@lists.xenproject.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Laszlo Ersek <lersek@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Xen-devel] [PATCH v2] x86/xen: avoid freeing static 'name' when
- kasprintf() fails
-References: <1420463205-19249-1-git-send-email-vkuznets@redhat.com> <1420471671-32051-1-git-send-email-vkuznets@redhat.com>
-In-Reply-To: <1420471671-32051-1-git-send-email-vkuznets@redhat.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150108142913.GI23965@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/15 15:27, Vitaly Kuznetsov wrote:
-> In case kasprintf() fails in xen_setup_timer() we assign name to the static
-> string "<timer kasprintf failed>". We, however, don't check that fact before
-> issuing kfree() in xen_teardown_timer(), kernel is supposed to crash with
-> 'kernel BUG at mm/slub.c:3341!'
+On Thu, Jan 08, 2015 at 03:29:13PM +0100, Peter Zijlstra wrote:
+> On Thu, Dec 11, 2014 at 04:12:21PM +0100, Jiri Olsa wrote:
+> > Basically we are adding 'perf data convert' command to
+> > allow conversion of perf data file into CTF [1] data.
 > 
-> Solve the issue by making name a fixed length string inside struct
-> xen_clock_event_device. 16 bytes should be enough.
+> I cant help myself; CTF remains: "Capture The Flag" for me :-)
 
-Applied to stable/for-linus-3.19, thanks.
+I'll take that as an ack ;-)
 
-David
+jirka
