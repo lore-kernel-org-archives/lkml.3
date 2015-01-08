@@ -1,120 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196AbbAHKGm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 05:06:42 -0500
-Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:5606 "EHLO
-	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751141AbbAHKGk convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 05:06:40 -0500
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'chris@printf.net'" <chris@printf.net>,
-        "'ulf.hansson@linaro.org'" <ulf.hansson@linaro.org>,
-        "'tim.kryger@gmail.com'" <tim.kryger@gmail.com>,
-        "'tgih.jun@samsung.com'" <tgih.jun@samsung.com>,
-        "'johan.rudholm@axis.com'" <johan.rudholm@axis.com>,
-        "'linux-mmc@vger.kernel.org'" <linux-mmc@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Thu, 8 Jan 2015 18:06:32 +0800
-Subject: [RFC] mmc:change mmc_init workqueue into a freezable workqueue
-Thread-Topic: [RFC] mmc:change mmc_init workqueue into a freezable workqueue
-Thread-Index: AdArKscTl4nihDsKS+OgMy1GnhD4tw==
-Message-ID: <35FD53F367049845BC99AC72306C23D103EDAF89E192@CNBJMBX05.corpusers.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932209AbbAHNhP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 08:37:15 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:47852 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754453AbbAHNhN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 08:37:13 -0500
+Date: Thu, 8 Jan 2015 18:07:50 +0800
+From: simon <wei.guo.simon@gmail.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        wei.guo.simon@gmail.com
+Subject: [PATCH 3.19.0-rc3 1/1] STAGING: Fix pcl818.c coding style issue
+Message-ID: <20150108100750.GA2437@thunderCat>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix the mmc driver suspend/resume conflict problems,
-mmc workqueue will queue mmc_rescan(), and it will call some
-pm_runtime_* functions, this will conflict with suspend path sometimes,
-and will result in some strange behavior:
+ Correct coding style problem in pcl818.c. The coding style problems(29 warnings detected by checkpatch.pl) includes:
+  - line over 80 characters
+  - There is space before tabs
+ The changed file has been verified with checkpatch.pl to be clean for warnings/errors.
 
-Suspend path:
-	-000 |context_switch(inline)
-	-000 |__schedule()
-	-001 |schedule_preempt_disabled()
-	-002 |spin_lock(inline)
-	-002 |__mutex_lock_common(inline)
-	-002 |__mutex_lock_slowpath(lock_count = 0xEDCD0F48)
-	-003 |__mutex_fastpath_lock(inline)
-	-003 |mutex_lock(lock = 0xEDCD0F48)
-	-004 |sdhci_do_set_ios(host = 0xEDCD0CC0, ios = 0xEDCD0A70)
-	-005 |sdhci_set_ios(?, ios = 0xEDCD0A70)
-	-006 |mmc_set_ios(host = 0xEDCD0800)
-	-007 |mmc_delay(inline)
-	-007 |mmc_power_off(host = 0xEDCD0800)
-	-008 |mmc_suspend_host(inline)
-	-008 |mmc_suspend_host(host = 0xEDCD0800)
-	-009 |mmc_host_suspend(dev = 0xEDCD0808)
-	-010 |dpm_run_callback(cb = 0xC0627A88, dev = 0xEDCD0808, state = (event = 2), info = 0xC0B6EF9B)
-	-011 |__device_suspend(dev = 0xEDCD0808, state = (event = 2), ?)
-	-012 |device_suspend(inline)
-	-012 |dpm_suspend(state = (event = 2))
-	-013 |suspend_devices_and_enter(state = 3)
-	-014 |enter_state(inline)
-	-014 |pm_suspend(state = 3)
-	-015 |try_to_suspend(?)
-	-016 |static_key_false(inline)
-	-016 |trace_workqueue_execute_end(inline)
-	-016 |process_one_work(worker = 0xD5E87040, work = 0xC0E3FF54)
-	-017 |worker_thread(__worker = 0xD5E87040)
-	-018 |kthread(_create = 0xE9FFBF10)
-	-019 |kernel_thread_exit(asm)
-	 --- |end of frame
-
-mmc_rescan() resume path:
-	 -000 |context_switch(inline)
-	 -000 |__schedule()
-	 -001 |do_undefinstr(regs = 0xD12242F0)
-	 -002 |__und_svc(asm)
-	  --> |exception
-	  -003 |sdhci_set_power(host = 0xEDCD0CC0, power = 0)
-	  -004 |sdhci_do_set_ios(host = 0xEDCD0CC0, ios = 0xEDCD0A70)
-	  -005 |sdhci_set_ios(?, ios = 0xEDCD0A70)
-	  -006 |mmc_set_ios(host = 0xEDCD0800)
-	  -007 |mmc_delay(inline)
-	  -007 |mmc_power_up(host = 0xEDCD0800)
-	  -008 |mmc_resume_bus(inline)
-	  -008 |mmc_resume_bus(host = 0xEDCD0800)
-	  -009 |mmc_rpm_hold(host = 0xEDCD0800, ?)
-	  -010 |mmc_rescan(work = 0xEDCD0AB0)
-	  -011 |static_key_false(inline)
-	  -011 |trace_workqueue_execute_end(inline)
-	  -011 |process_one_work(worker = 0xE5F0BBC0, work = 0xEDCD0AB0)
-	  -012 |worker_thread(__worker = 0xE5F0BBC0)
-	  -013 |kthread(_create = 0xD03A5F10)
-	  -014 |kernel_thread_exit(asm)
-	   --- |end of frame
-
-most mmc power callback function don't check this special case, and
-will cause problems, make sure the workqueue is stopped during suspend
-is more safe.
+ Signed-off-by: Simon Guo <wei.guo.simon@gmail.com>
 ---
- drivers/mmc/core/core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/pcl818.c | 50 ++++++++++++++++++++-------------
+ 1 file changed, 30 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index a6c139d..ae8757f 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -3881,7 +3881,7 @@ static int __init mmc_init(void)
- {
- 	int ret;
+diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
+index 8edea35..111bee1 100644
+--- a/drivers/staging/comedi/drivers/pcl818.c
++++ b/drivers/staging/comedi/drivers/pcl818.c
+@@ -45,11 +45,11 @@ A word or two about DMA. Driver support DMA operations at two ways:
+     [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
+     [2] - DMA	(0=disable, 1, 3)
+     [3] - 0, 10=10MHz clock for 8254
+-              1= 1MHz clock for 8254
++	      1= 1MHz clock for 8254
+     [4] - 0,  5=A/D input  -5V.. +5V
+-          1, 10=A/D input -10V..+10V
++	  1, 10=A/D input -10V..+10V
+     [5] - 0,  5=D/A output 0-5V  (internal reference -5V)
+-          1, 10=D/A output 0-10V (internal reference -10V)
++	  1, 10=D/A output 0-10V (internal reference -10V)
+ 	  2    =D/A output unknown (external reference)
  
--	workqueue = alloc_ordered_workqueue("kmmcd", 0);
-+	workqueue = alloc_ordered_workqueue("kmmcd", WQ_FREEZABLE);
- 	if (!workqueue)
- 		return -ENOMEM;
+    Options for PCL-818, PCL-818H:
+@@ -57,44 +57,44 @@ A word or two about DMA. Driver support DMA operations at two ways:
+     [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
+     [2] - DMA	(0=disable, 1, 3)
+     [3] - 0, 10=10MHz clock for 8254
+-              1= 1MHz clock for 8254
++	      1= 1MHz clock for 8254
+     [4] - 0,  5=D/A output 0-5V  (internal reference -5V)
+-          1, 10=D/A output 0-10V (internal reference -10V)
++	  1, 10=D/A output 0-10V (internal reference -10V)
+ 	  2    =D/A output unknown (external reference)
  
+    Options for PCL-818HD, PCL-818HG:
+     [0] - IO Base
+     [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
+     [2] - DMA/FIFO  (-1=use FIFO, 0=disable both FIFO and DMA,
+-                      1=use DMA ch 1, 3=use DMA ch 3)
++		      1=use DMA ch 1, 3=use DMA ch 3)
+     [3] - 0, 10=10MHz clock for 8254
+-              1= 1MHz clock for 8254
++	      1= 1MHz clock for 8254
+     [4] - 0,  5=D/A output 0-5V  (internal reference -5V)
+-          1, 10=D/A output 0-10V (internal reference -10V)
+-   	  2    =D/A output unknown (external reference)
++	  1, 10=D/A output 0-10V (internal reference -10V)
++	  2    =D/A output unknown (external reference)
+ 
+    Options for PCL-718:
+     [0] - IO Base
+     [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
+     [2] - DMA	(0=disable, 1, 3)
+     [3] - 0, 10=10MHz clock for 8254
+-              1= 1MHz clock for 8254
++	      1= 1MHz clock for 8254
+     [4] -     0=A/D Range is +/-10V
+ 	      1=             +/-5V
+ 	      2=             +/-2.5V
+ 	      3=             +/-1V
+ 	      4=             +/-0.5V
+-	      5=  	     user defined bipolar
++	      5=	     user defined bipolar
+ 	      6=	     0-10V
+ 	      7=	     0-5V
+- 	      8=	     0-2V
++	      8=	     0-2V
+ 	      9=	     0-1V
+ 	     10=	     user defined unipolar
+     [5] - 0,  5=D/A outputs 0-5V  (internal reference -5V)
+-          1, 10=D/A outputs 0-10V (internal reference -10V)
++	  1, 10=D/A outputs 0-10V (internal reference -10V)
+ 	      2=D/A outputs unknown (external reference)
+     [6] - 0, 60=max  60kHz A/D sampling
+-          1,100=max 100kHz A/D sampling (PCL-718 with Option 001 installed)
++	  1,100=max 100kHz A/D sampling (PCL-718 with Option 001 installed)
+ 
+ */
+ 
+@@ -309,11 +309,19 @@ struct pcl818_private {
+ 	unsigned long dmabuf[2];	/*  pointers to begin of DMA buffers */
+ 	unsigned int hwdmaptr[2];	/*  hardware address of DMA buffers */
+ 	int next_dma_buf;	/*  which DMA buffer will be used next round */
+-	long dma_runs_to_end;	/*  how many we must permorm DMA transfer to end of record */
+-	unsigned long last_dma_run;	/*  how many bytes we must transfer on last DMA page */
+-	unsigned int ns_min;	/*  manimal allowed delay between samples (in us) for actual card */
++	long dma_runs_to_end;	/*  how many we must permorm DMA transfer
++				 *  to end of record
++				 */
++	unsigned long last_dma_run;	/*  how many bytes we must transfer
++					 *  on last DMA page
++					 */
++	unsigned int ns_min;	/*  manimal allowed delay between
++				 *  samples (in us) for actual card
++				 */
+ 	int i8253_osc_base;	/*  1/frequency of on board oscilator in ns */
+-	unsigned int act_chanlist[16];	/*  MUX setting for actual AI operations */
++	unsigned int act_chanlist[16];	/*  MUX setting for actual
++					 *  AI operations
++					 */
+ 	unsigned int act_chanlist_len;	/*  how long is actual MUX list */
+ 	unsigned int act_chanlist_pos;	/*  actual position in MUX list */
+ 	unsigned int ai_data_len;	/*  len of data buffer */
+@@ -687,7 +695,8 @@ static int check_channel_list(struct comedi_device *dev,
+ 				break;
+ 			nowmustbechan =
+ 			    (CR_CHAN(chansegment[i - 1]) + 1) % s->n_chan;
+-			if (nowmustbechan != CR_CHAN(chanlist[i])) {	/*  channel list isn't continuous :-( */
++			if (nowmustbechan != CR_CHAN(chanlist[i])) {
++				/*  channel list isn't continuous :-( */
+ 				dev_dbg(dev->class_dev,
+ 					"channel list must be continuous! chanlist[%i]=%d but must be %d or %d!\n",
+ 					i, CR_CHAN(chanlist[i]), nowmustbechan,
+@@ -1194,8 +1203,9 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	devpriv->ns_min = board->ns_min;
+ 
+ 	if (!board->is_818) {
++		/* extended PCL718 to 100kHz DAC */
+ 		if ((it->options[6] == 1) || (it->options[6] == 100))
+-			devpriv->ns_min = 10000;	/* extended PCL718 to 100kHz DAC */
++			devpriv->ns_min = 10000;
+ 	}
+ 
+ 	pcl818_reset(dev);
 -- 
-2.1.3
+1.8.1.2
+
