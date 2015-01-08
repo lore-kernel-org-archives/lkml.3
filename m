@@ -1,60 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755388AbbAHWvJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 17:51:09 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:44095 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752516AbbAHWvH (ORCPT
+	id S932366AbbAHWxp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 17:53:45 -0500
+Received: from us-mx2.synaptics.com ([192.147.44.131]:25579 "EHLO
+	us-mx1.synaptics.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754706AbbAHWxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 17:51:07 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Ulrich Hecht <ulrich.hecht+renesas@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/8] Add Simple Power-Managed Bus Support
-Date: Fri, 09 Jan 2015 00:51:23 +0200
-Message-ID: <10372546.9gL7hIlFWP@avalon>
-User-Agent: KMail/4.14.3 (Linux/3.17.7-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <CAMuHMdVeEmKiqGTOmevaBDbJ=nBTbSi6d6Xrm0eyvbMTtyU=sA@mail.gmail.com>
-References: <1418842153-17113-1-git-send-email-geert+renesas@glider.be> <CAMuHMdVeEmKiqGTOmevaBDbJ=nBTbSi6d6Xrm0eyvbMTtyU=sA@mail.gmail.com>
+	Thu, 8 Jan 2015 17:53:43 -0500
+X-PGP-Universal: processed;
+	by securemail.synaptics.com on Thu, 08 Jan 2015 15:21:11 -0800
+From: Andrew Duggan <aduggan@synaptics.com>
+To: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Andrew Duggan <aduggan@synaptics.com>, Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Subject: [PATCH v2 2/3] HID: rmi: Support touchpads with external buttons
+Date: Thu, 8 Jan 2015 14:51:34 -0800
+Message-ID: <1420757496-3955-1-git-send-email-aduggan@synaptics.com>
+X-Mailer: git-send-email 2.1.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain
+X-Originating-IP: [10.4.10.98]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+The external buttons on HID touchpads are connected as pass through devices and
+button events are not reported in the rmi registers. As a result on these
+devices we need to allow the HID generic desktop button events to be processed
+by hid-input. Unfortunately, there is no way to query the touchpad to determine
+that it has pass through buttons so the RMI_DEVICE_HAS_PHYS_BUTTONS should be
+set manually when adding the device to rmi_id[].
 
-On Thursday 08 January 2015 20:28:45 Geert Uytterhoeven wrote:
-> On Wed, Dec 17, 2014 at 7:49 PM, Geert Uytterhoeven wrote:
-> > The Renesas Bus State Controller (BSC) provides an external bus for
-> > connecting multiple external devices to an SoC, driving several chip
-> > select lines, for e.g. NOR FLASH, Ethernet and USB.
-> > On the kzm9g and ape6evm development boards, an smsc9220 Ethernet
-> > controller is connnected to the BSC of an SH-Mobile AG5 (sh73a0) resp.
-> > R-Mobile APE6 (r8a73a4) SoC.
-> 
-> [...]
-> 
-> > This was tested on sh73a0/kzm9g-multiplatform. Without this, Ethernet
-> > doesn't work, as the ZB clock is disabled by clk_disable_unused().
-> > Testing on r8a73a4/ape6evm-multiplatform would be appreciated.
-> 
-> Has anyone tried this on r8a73a4/ape6evm-multiplatform?
+Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
+---
+Here is the second version of the remaining patches in this patch series from
+last month. The most significant changes are setting the HAS_PHYS_BUTTONS flags
+in driver_data and avoiding reset being called with every button press.
 
-I'm afraid I can't help there, as I have no APE6EVM board.
+ drivers/hid/hid-rmi.c | 20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
+index 018f80f..290f8f7 100644
+--- a/drivers/hid/hid-rmi.c
++++ b/drivers/hid/hid-rmi.c
+@@ -35,6 +35,7 @@
+ 
+ /* device flags */
+ #define RMI_DEVICE			BIT(0)
++#define RMI_DEVICE_HAS_PHYS_BUTTONS	BIT(1)
+ 
+ enum rmi_mode_type {
+ 	RMI_MODE_OFF			= 0,
+@@ -472,6 +473,15 @@ static int rmi_event(struct hid_device *hdev, struct hid_field *field,
+ 	if ((data->device_flags & RMI_DEVICE) &&
+ 	    (field->application == HID_GD_POINTER ||
+ 	    field->application == HID_GD_MOUSE)) {
++		if (data->device_flags & RMI_DEVICE_HAS_PHYS_BUTTONS) {
++			if ((usage->hid & HID_USAGE_PAGE) == HID_UP_BUTTON)
++				return 0;
++
++			if ((usage->hid == HID_GD_X || usage->hid == HID_GD_Y)
++			    && !value)
++				return 1;
++		}
++
+ 		rmi_schedule_reset(hdev);
+ 		return 1;
+ 	}
+@@ -942,8 +952,13 @@ static int rmi_input_mapping(struct hid_device *hdev,
+ 	 * we want to make HID ignore the advertised HID collection
+ 	 * for RMI deivces
+ 	 */
+-	if (data->device_flags & RMI_DEVICE)
++	if (data->device_flags & RMI_DEVICE) {
++		if ((data->device_flags & RMI_DEVICE_HAS_PHYS_BUTTONS) &&
++		    ((usage->hid & HID_USAGE_PAGE) == HID_UP_BUTTON))
++			return 0;
++
+ 		return -1;
++	}
+ 
+ 	return 0;
+ }
+@@ -991,6 +1006,9 @@ static int rmi_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 		return ret;
+ 	}
+ 
++	if (id->driver_data)
++		data->device_flags = id->driver_data;
++
+ 	/*
+ 	 * Check for the RMI specific report ids. If they are misisng
+ 	 * simply return and let the events be processed by hid-input
 -- 
-Regards,
-
-Laurent Pinchart
+2.1.0
 
