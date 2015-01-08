@@ -1,61 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755782AbbAHBE3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 20:04:29 -0500
-Received: from peace.netnation.com ([204.174.223.2]:54817 "EHLO
-	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752198AbbAHBE1 (ORCPT
+	id S1755868AbbAHBEv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 20:04:51 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:60304 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755831AbbAHBEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 20:04:27 -0500
-Date: Wed, 7 Jan 2015 17:04:26 -0800
-From: Simon Kirby <sim@hostway.ca>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Holger Hoffst?tte <holger.hoffstaette@googlemail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Dirty pages underflow on 3.14.23
-Message-ID: <20150108010426.GB6664@hostway.ca>
-References: <alpine.LRH.2.02.1501051744020.5119@file01.intranet.prod.int.rdu2.redhat.com>
- <20150106150250.GA26895@phnom.home.cmpxchg.org>
- <alpine.LRH.2.02.1501061246400.16437@file01.intranet.prod.int.rdu2.redhat.com>
- <pan.2015.01.07.10.57.46@googlemail.com>
- <20150107212858.GA6664@hostway.ca>
- <54ADA99A.90501@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54ADA99A.90501@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 7 Jan 2015 20:04:48 -0500
+X-AuditID: cbfee691-f79b86d000004a5a-8a-54add7ab6461
+From: Inha Song <ideal.song@samsung.com>
+To: broonie@kernel.org, lgirdwood@gmail.com, lee.jones@linaro.org,
+        ckeepax@opensource.wolfsonmicro.com
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Inha Song <ideal.song@samsung.com>
+Subject: [alsa-devel] [RESEND PATCH] mfd: wm8994: set mfd id-base for regulator
+ devs creation to avoid conflicts
+Date: Thu, 08 Jan 2015 10:04:33 +0900
+Message-id: <1420679073-3316-1-git-send-email-ideal.song@samsung.com>
+X-Mailer: git-send-email 2.0.0.390.gcb682f8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsWyRsSkQHf19bUhBr+2m1hcuXiIyWLqwyds
+	Fv+m3GC32PX3PqPF/a9HGS2+Xelgsri8aw6bxfK3/9ksTnezOnB6bPjcxOaxc9Zddo9NqzrZ
+	PO5c28PmMe9koMfLib/ZPPq2rGL0+LxJLoAjissmJTUnsyy1SN8ugSvj7qMJrAVfOCu+T73E
+	3MD4mb2LkZNDQsBE4umJ7YwQtpjEhXvr2boYuTiEBJYySvx7sYIJpujZsjksEIlFjBIHdq1j
+	hXDmMEnMOfGAFaSKTUBD4vvnzcwgtohAhsTiD5fARjELLGSUeLLnMViRsECRxLyzN8BsFgFV
+	iWdHd7OB2LwCrhKf/i5ihVinLbGvYSYbhL2MXWLfUhaIegGJb5MPAdkcQHFZiU0HmCFKJCUO
+	rrjBMoFRcAEjwypG0dSC5ILipPQiU73ixNzi0rx0veT83E2MwDA//e/ZxB2M9w9YH2IU4GBU
+	4uEt6FsTIsSaWFZcmXuI0RRow0RmKdHkfGA05ZXEGxqbGVmYmpgaG5lbmimJ8+pI/wwWEkhP
+	LEnNTk0tSC2KLyrNSS0+xMjEwSnVwKi0UNFUsy3a+6yKsoz4fr1dpQrd2x/M3Pvt4iYVrUNs
+	AQuvhN7jiHX6s0Fu0anfj+2Onkzp2/m+fuHu1Rr+OoUfFJm835XnGFfozvzFGLPy8mQGhrsS
+	s7zamswnzvOZ0Fizc4eAvt/7bq47TxxCZJnXtMme8rGtDpeNe7dkzbJnnO8fbdY78EaJpTgj
+	0VCLuag4EQBj/DmhbgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGIsWRmVeSWpSXmKPExsVy+t9jAd3V19eGGKx/pGNx5eIhJoupD5+w
+	WfybcoPdYtff+4wW978eZbT4dqWDyeLyrjlsFsvf/mezON3N6sDpseFzE5vHzll32T02repk
+	87hzbQ+bx7yTgR4vJ/5m8+jbsorR4/MmuQCOqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hT
+	MwNDXUNLC3MlhbzE3FRbJRefAF23zByg85QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYE
+	wfUYGaCBhDWMGXcfTWAt+MJZ8X3qJeYGxs/sXYycHBICJhLPls1hgbDFJC7cW8/WxcjFISSw
+	iFHiwK51rBDOHCaJOScesIJUsQloSHz/vJkZxBYRyJBY/OESWAezwEJGiSd7HoMVCQsUScw7
+	ewPMZhFQlXh2dDcbiM0r4Crx6e8iVoh12hL7GmayTWDkXsDIsIpRNLUguaA4KT3XSK84Mbe4
+	NC9dLzk/dxMjOI6eSe9gXNVgcYhRgINRiYe3oG9NiBBrYllxZe4hRgkOZiUR3q6za0OEeFMS
+	K6tSi/Lji0pzUosPMZoCbZ/ILCWanA+M8bySeENjEzMjSyNzQwsjY3MlcV4l+7YQIYH0xJLU
+	7NTUgtQimD4mDk6pBsZ1B5b2im9VFZ3Ds1Bc6aou7yfltTsn/rQVufUxUj78b7oWV9ek2QeT
+	W1bPF3Gp2/nlC5v4/4j4HOfzKpZMVw7efbf1/6/3UkLifREeWzf2pK+M0tQ8KnVXNSiSudI+
+	Pljpw8RjK5n1mhd8embZ8mD2xdNCDfI/bH4W9531vf03M9rSfdGh7BwlluKMREMt5qLiRACr
+	wJeQuQIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 10:48:10PM +0100, Vlastimil Babka wrote:
+After commit: 6e3f62f0793e ("mfd: core: Fix platform-device id generation")
+We must set the id base when register a duplicate name of mfd_cell.
+If not, duplicate filename error was reported.
 
-> On 01/07/2015 10:28 PM, Simon Kirby wrote:
->
-> > Hmm...A possibly-related issue...Before trying this, after a fresh boot,
-> > /proc/vmstat showed:
-> > 
-> > nr_alloc_batch 4294541205
-> 
-> This can happen, and not be a problem in general. However, there was a fix
-> abe5f972912d086c080be4bde67750630b6fb38b in 3.17 for a potential performance
-> issue if this counter overflows on single processor configuration. It was marked
-> stable, but the 3.16 series was discontinued before the fix could be backported.
-> So if you are on single-core, you might hit the performance issue.
+- sysfs: cannot create duplicate filename '/devices/.../wm8994-ldo'
 
-That particular commit seems to just change the code path in that case,
-but should it be underflowing at all on UP?
+Signed-off-by: Inha Song <ideal.song@samsung.com>
+---
+ drivers/mfd/wm8994-core.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-> > Still, nr_alloc_batch reads as 4294254379 after MySQL restart, and now
-> > seems to stay up there.
-> 
-> Hm if it stays there, then you are probably hitting the performance issue. Look
-> at /proc/zoneinfo, which zone has the underflow. It means this zone will get
-> unfair amount of allocations, while others may contain stale data and would be
-> better candidates.
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index e6fab94..47cd3cc 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -36,12 +36,12 @@
+ static const struct mfd_cell wm8994_regulator_devs[] = {
+ 	{
+ 		.name = "wm8994-ldo",
+-		.id = 1,
++		.id = 0,
+ 		.pm_runtime_no_callbacks = true,
+ 	},
+ 	{
+ 		.name = "wm8994-ldo",
+-		.id = 2,
++		.id = 1,
+ 		.pm_runtime_no_callbacks = true,
+ 	},
+ };
+@@ -344,7 +344,7 @@ static int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 	dev_set_drvdata(wm8994->dev, wm8994);
+ 
+ 	/* Add the on-chip regulators first for bootstrapping */
+-	ret = mfd_add_devices(wm8994->dev, -1,
++	ret = mfd_add_devices(wm8994->dev, 0,
+ 			      wm8994_regulator_devs,
+ 			      ARRAY_SIZE(wm8994_regulator_devs),
+ 			      NULL, 0, NULL);
+-- 
+2.0.0.390.gcb682f8
 
-In this case, it has only 640MB, and there's only DMA and Normal. This is
-affecting Normal, and DMA is so small that it probably doesn't matter.
-
-Simon-
