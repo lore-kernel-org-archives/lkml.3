@@ -1,109 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756532AbbAHMgV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 07:36:21 -0500
-Received: from www.osadl.org ([62.245.132.105]:39187 "EHLO www.osadl.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753069AbbAHMgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 07:36:19 -0500
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Kalle Valo <kvalo@qca.qualcomm.com>
-Cc: Michal Kazior <michal.kazior@tieto.com>,
-        Ben Greear <greearb@candelatech.com>,
-        Chun-Yeow Yeoh <yeohchunyeow@gmail.com>,
-        Yanbo Li <yanbol@qti.qualcomm.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        ath10k@lists.infradead.org, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nicholas Mc Guire <der.herr@hofr.at>
-Subject: [PATCH v3] ath10k: fixup wait_for_completion_timeout return handling
-Date: Thu,  8 Jan 2015 13:27:34 +0100
-Message-Id: <1420720054-27870-1-git-send-email-der.herr@hofr.at>
-X-Mailer: git-send-email 1.7.10.4
+	id S932171AbbAHM2t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 07:28:49 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:58698 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579AbbAHM2r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 07:28:47 -0500
+MIME-Version: 1.0
+In-Reply-To: <1420698191-10878-2-git-send-email-howard.chen@linaro.org>
+References: <1420698191-10878-1-git-send-email-howard.chen@linaro.org>
+	<1420698191-10878-2-git-send-email-howard.chen@linaro.org>
+Date: Thu, 8 Jan 2015 13:28:45 +0100
+Message-ID: <CABuKBeLFD4D8MB14o206Bs2t5sqhatsLzhV26rHkFrt5dd8+Qw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] dt-bindings: add mt6592 compatible string for
+ mediatek sysirq
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Howard Chen <howard.chen@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "moderated list:ARM/Mediatek SoC..." 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wait_for_completion_timeout does not return negative values so the tests
-for <= 0 are not needed and the case differentiation in the error handling
-path unnecessary.
+Hi Howard,
 
-v2: all wait_for_completion_timeout changes in a single patch
-v3: patch formatting cleanups - no change of actual patch
+2015-01-08 7:23 GMT+01:00 Howard Chen <howard.chen@linaro.org>:
+> Signed-off-by: Howard Chen <howard.chen@linaro.org>
+> ---
+>  Documentation/devicetree/bindings/arm/mediatek/mediatek,sysirq.txt | 1 +
+>  1 file changed, 1 insertion(+)
 
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
----
-patch was only compile tested x86_64_defconfig + CONFIG_ATH_CARDS=m
-CONFIG_ATH10K=m
+This patch lacks a description of what it does. I added a description
+and applied both to my tree. Please remember the next time to add a
+description to all patches.
 
-patch is against linux-next 3.19.0-rc1 -next-20141226
+Thanks,
+Matthias
 
-None of the proposed cleanups are critical.
-All changes should only be removing unreachable cases.
+>
+> diff --git a/Documentation/devicetree/bindings/arm/mediatek/mediatek,sysirq.txt b/Documentation/devicetree/bindings/arm/mediatek/mediatek,sysirq.txt
+> index d680b07..4cd6f7b 100644
+> --- a/Documentation/devicetree/bindings/arm/mediatek/mediatek,sysirq.txt
+> +++ b/Documentation/devicetree/bindings/arm/mediatek/mediatek,sysirq.txt
+> @@ -7,6 +7,7 @@ Required properties:
+>  - compatible: should be one of:
+>         "mediatek,mt8135-sysirq"
+>         "mediatek,mt8127-sysirq"
+> +       "mediatek,mt6592-sysirq"
+>         "mediatek,mt6589-sysirq"
+>         "mediatek,mt6582-sysirq"
+>         "mediatek,mt6577-sysirq"
+> --
+> 1.9.1
+>
 
- drivers/net/wireless/ath/ath10k/debug.c |    2 +-
- drivers/net/wireless/ath/ath10k/htc.c   |    6 ++----
- drivers/net/wireless/ath/ath10k/htt.c   |    2 +-
- drivers/net/wireless/ath/ath10k/mac.c   |    2 +-
- 4 files changed, 5 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath10k/debug.c b/drivers/net/wireless/ath/ath10k/debug.c
-index a716758..7e1fe93 100644
---- a/drivers/net/wireless/ath/ath10k/debug.c
-+++ b/drivers/net/wireless/ath/ath10k/debug.c
-@@ -373,7 +373,7 @@ static int ath10k_debug_fw_stats_request(struct ath10k *ar)
- 
- 		ret = wait_for_completion_timeout(&ar->debug.fw_stats_complete,
- 						  1*HZ);
--		if (ret <= 0)
-+		if (ret == 0)
- 			return -ETIMEDOUT;
- 
- 		spin_lock_bh(&ar->data_lock);
-diff --git a/drivers/net/wireless/ath/ath10k/htc.c b/drivers/net/wireless/ath/ath10k/htc.c
-index f1946a6..2fd9e18 100644
---- a/drivers/net/wireless/ath/ath10k/htc.c
-+++ b/drivers/net/wireless/ath/ath10k/htc.c
-@@ -703,11 +703,9 @@ int ath10k_htc_connect_service(struct ath10k_htc *htc,
- 	/* wait for response */
- 	status = wait_for_completion_timeout(&htc->ctl_resp,
- 					     ATH10K_HTC_CONN_SVC_TIMEOUT_HZ);
--	if (status <= 0) {
--		if (status == 0)
--			status = -ETIMEDOUT;
-+	if (status == 0) {
- 		ath10k_err(ar, "Service connect timeout: %d\n", status);
--		return status;
-+		return -ETIMEDOUT;
- 	}
- 
- 	/* we controlled the buffer creation, it's aligned */
-diff --git a/drivers/net/wireless/ath/ath10k/htt.c b/drivers/net/wireless/ath/ath10k/htt.c
-index 56cb4ac..58b6fc1 100644
---- a/drivers/net/wireless/ath/ath10k/htt.c
-+++ b/drivers/net/wireless/ath/ath10k/htt.c
-@@ -102,7 +102,7 @@ int ath10k_htt_setup(struct ath10k_htt *htt)
- 
- 	status = wait_for_completion_timeout(&htt->target_version_received,
- 					     HTT_TARGET_VERSION_TIMEOUT_HZ);
--	if (status <= 0) {
-+	if (status == 0) {
- 		ath10k_warn(ar, "htt version request timed out\n");
- 		return -ETIMEDOUT;
- 	}
-diff --git a/drivers/net/wireless/ath/ath10k/mac.c b/drivers/net/wireless/ath/ath10k/mac.c
-index c400567..f9d7dbb 100644
---- a/drivers/net/wireless/ath/ath10k/mac.c
-+++ b/drivers/net/wireless/ath/ath10k/mac.c
-@@ -2151,7 +2151,7 @@ void ath10k_offchan_tx_work(struct work_struct *work)
- 
- 		ret = wait_for_completion_timeout(&ar->offchan_tx_completed,
- 						  3 * HZ);
--		if (ret <= 0)
-+		if (ret == 0)
- 			ath10k_warn(ar, "timed out waiting for offchannel skb %p\n",
- 				    skb);
- 
+
 -- 
-1.7.10.4
-
+motzblog.wordpress.com
