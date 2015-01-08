@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756334AbbAHOx3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 09:53:29 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60944 "EHLO arroyo.ext.ti.com"
+	id S1756428AbbAHOyF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 09:54:05 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:50281 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751569AbbAHOx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 09:53:27 -0500
-Message-ID: <54AE99D0.1050205@ti.com>
-Date: Thu, 8 Jan 2015 16:53:04 +0200
+	id S1752870AbbAHOyD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 09:54:03 -0500
+Message-ID: <54AE99F5.1010404@ti.com>
+Date: Thu, 8 Jan 2015 16:53:41 +0200
 From: Jyri Sarha <jsarha@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
@@ -16,82 +16,171 @@ To: Jean-Francois Moine <moinejf@free.fr>, Mark Brown <broonie@kernel.org>,
 CC: Dave Airlie <airlied@gmail.com>, Andrew Jackson <Andrew.Jackson@arm.com>,
         <alsa-devel@alsa-project.org>, <devicetree@vger.kernel.org>,
         <dri-devel@lists.freedesktop.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v9 0/4] ASoC: tda998x: add a codec to the HDMI transmitter
-References: <cover.1420628786.git.moinejf@free.fr>
-In-Reply-To: <cover.1420628786.git.moinejf@free.fr>
+Subject: Re: [PATCH v9 1/4] drm/i2c: tda998x: Add DT support for audio
+References: <cover.1420628786.git.moinejf@free.fr> <0084acea5a3475a77531d6a77483f36d3469111a.1420628786.git.moinejf@free.fr>
+In-Reply-To: <0084acea5a3475a77531d6a77483f36d3469111a.1420628786.git.moinejf@free.fr>
 Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 01/07/2015 01:06 PM, Jean-Francois Moine wrote:
-> Based on 3.19.0-rc3.
+On 01/07/2015 11:10 AM, Jean-Francois Moine wrote:
+> This patch permits the definition of the audio ports from the device tree.
 >
-> v9:
-> 	- back to a TDA998x specific CODEC
-
-I did not mean that you could not make your shot at generic codec. It 
-will just need more work before it is generic enough for other HDMI 
-encoders to fully utilize it.
-
-BTW, the HDMI codec is now completely unused, since my OMAP4+ HDMI audio 
-patches were merged (it uses dummy codec) and my BBB HDMI audio patches 
-were never merged.
-
-But then again if you'll rather make a tda998x specific codec for now, I 
-am fine with that. Let's see later when(/if) I get my generic HDMI codec 
-ready - I'll eventually need something for SiI9022 - if it makes sense 
-to start using it with tda998x too.
-
-Best regards,
-Jyri
-
-> 	- more comments
-> 	- change magic values to constants
-> v8:
-> 	- change some comments about the patches
-> v7:
-> 	- remove the change of the K predivider (Jyri Sarha)
-> 	- add S24_3LE and S32_LE as possible audio formats (Jyri Sarha)
-> 	- don't move the struct priv2 definition and use the
-> 	  slave encoder private data as the device private data
-> 	  (Russell King)
-> 	- remove the useless request_module (Russell King/Mark Brown)
-> 	- don't lock the HDMI module (Russell King)
-> 	- use platform_device_unregister to remove the codec
-> 	  (Russell King)
-> v6:
-> 	- extend the HDMI CODEC instead of using a specific CODEC
-> v5:
-> 	- use the TDA998x private data instead of a specific area
-> 	  for the CODEC interface
-> 	- the CODEC is TDA998x specific (Mark Brown)
-> v4:
-> 	- remove all the TDA998x specific stuff from the CODEC
-> 	- move the EDID scan from the CODEC to the TDA998x
-> 	- move the CODEC to sound/soc (Mark Brown)
-> 	- update the audio_sample_rate from the EDID (Andrew Jackson)
-> v3: fix bad rate (Andrew Jackson)int drm_edid_to_sad(struct edid *edid, struct cea_sad **sads);
-
-> v2: check double stream start (Mark Brown)
+> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+> ---
+>   .../devicetree/bindings/drm/i2c/tda998x.txt        | 18 +++++++
+>   drivers/gpu/drm/i2c/tda998x_drv.c                  | 60 ++++++++++++++++++----
+>   2 files changed, 69 insertions(+), 9 deletions(-)
 >
-> Jean-Francois Moine (4):
->    drm/i2c: tda998x: Add DT support for audio
->    drm/i2c: tda998x: Change drvdata for audio extension
->    ASoC: tda998x: add a codec to the HDMI transmitter
->    drm/i2c: tda998x: set cts_n according to the sample width
+> diff --git a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
+> index e9e4bce..e50e7cd 100644
+> --- a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
+> +++ b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
+> @@ -17,6 +17,20 @@ Optional properties:
+>     - video-ports: 24 bits value which defines how the video controller
+>   	output is wired to the TDA998x input - default: <0x230145>
 >
->   .../devicetree/bindings/drm/i2c/tda998x.txt        |  18 ++
->   drivers/gpu/drm/i2c/Kconfig                        |   1 +
->   drivers/gpu/drm/i2c/tda998x_drv.c                  | 213 +++++++++++++++++++--
->   include/sound/tda998x.h                            |  23 +++
->   sound/soc/codecs/Kconfig                           |   4 +
->   sound/soc/codecs/Makefile                          |   2 +
->   sound/soc/codecs/tda998x.c                         | 175 +++++++++++++++++
->   7 files changed, 424 insertions(+), 12 deletions(-)
->   create mode 100644 include/sound/tda998x.h
->   create mode 100644 sound/soc/codecs/tda998x.c
+> +  - audio-ports: must contain one or two values selecting the source
+> +	in the audio port.
+> +	The source type is given by the corresponding entry in
+> +	the audio-port-names property.
+> +
+
+This binding does not allow multi channel i2s setups with multiple i2s 
+pins. It would be nice to support that in the DT binding, even if the 
+code is not yet ready for it.
+
+How about having these two optional properties instead of audio-ports 
+and audio-port-names:
+
+audio-port-i2s: Upto 4 values for selecting pins for i2s port
+audio-port-spdif: Value for selecting input pin for spdif port
+
+Presence of one of the properties would be mandatory and both are allowed.
+
+Sorry to notice this only now, but I have not yet looked the drm side 
+changes too closely.
+
+> +  - audio-port-names: must contain entries matching the entries in
+> +	the audio-ports property.
+> +	Each value may be "i2s" or "spdif", giving the type of
+> +	the audio source.
+> +
+> +  - #sound-dai-cells: must be set to <1> for use with the simple-card.
+> +	The TDA998x audio CODEC always defines two DAIs.
+> +	The DAI 0 is the S/PDIF input and the DAI 1 is the I2S input.
+> +
+>   Example:
+>
+>   	tda998x: hdmi-encoder {
+> @@ -26,4 +40,8 @@ Example:
+>   		interrupts = <27 2>;		/* falling edge */
+>   		pinctrl-0 = <&pmx_camera>;
+>   		pinctrl-names = "default";
+> +
+> +		audio-ports = <0x04>, <0x03>;
+> +		audio-port-names = "spdif", "i2s";
+> +		#sound-dai-cells = <1>;
+>   	};
+> diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
+> index 70658af..9d9b072 100644
+> --- a/drivers/gpu/drm/i2c/tda998x_drv.c
+> +++ b/drivers/gpu/drm/i2c/tda998x_drv.c
+> @@ -20,6 +20,7 @@
+>   #include <linux/module.h>
+>   #include <linux/irq.h>
+>   #include <sound/asoundef.h>
+> +#include <linux/platform_device.h>
+>
+>   #include <drm/drmP.h>
+>   #include <drm/drm_crtc_helper.h>
+> @@ -44,6 +45,8 @@ struct tda998x_priv {
+>   	wait_queue_head_t wq_edid;
+>   	volatile int wq_edid_wait;
+>   	struct drm_encoder *encoder;
+> +
+> +	u8 audio_ports[2];
+>   };
+>
+>   #define to_tda998x_priv(x)  ((struct tda998x_priv *)to_encoder_slave(x)->slave_priv)
+> @@ -1254,12 +1257,16 @@ static int tda998x_create(struct i2c_client *client, struct tda998x_priv *priv)
+>   {
+>   	struct device_node *np = client->dev.of_node;
+>   	u32 video;
+> -	int rev_lo, rev_hi, ret;
+> +	int i, rev_lo, rev_hi, ret;
+> +	const char *p;
+>
+>   	priv->vip_cntrl_0 = VIP_CNTRL_0_SWAP_A(2) | VIP_CNTRL_0_SWAP_B(3);
+>   	priv->vip_cntrl_1 = VIP_CNTRL_1_SWAP_C(0) | VIP_CNTRL_1_SWAP_D(1);
+>   	priv->vip_cntrl_2 = VIP_CNTRL_2_SWAP_E(4) | VIP_CNTRL_2_SWAP_F(5);
+>
+> +	priv->params.audio_frame[1] = 1;		/* channels - 1 */
+> +	priv->params.audio_sample_rate = 48000;		/* 48kHz */
+> +
+>   	priv->current_page = 0xff;
+>   	priv->hdmi = client;
+>   	priv->cec = i2c_new_dummy(client->adapter, 0x34);
+> @@ -1351,15 +1358,50 @@ static int tda998x_create(struct i2c_client *client, struct tda998x_priv *priv)
+>   	/* enable EDID read irq: */
+>   	reg_set(priv, REG_INT_FLAGS_2, INT_FLAGS_2_EDID_BLK_RD);
+>
+> -	if (!np)
+> -		return 0;		/* non-DT */
+> +	/* get the device tree parameters */
+> +	if (np) {
+> +
+> +		/* optional video properties */
+> +		ret = of_property_read_u32(np, "video-ports", &video);
+> +		if (ret == 0) {
+> +			priv->vip_cntrl_0 = video >> 16;
+> +			priv->vip_cntrl_1 = video >> 8;
+> +			priv->vip_cntrl_2 = video;
+> +		}
+> +
+> +		/* optional audio properties */
+> +		for (i = 0; i < 2; i++) {
+> +			u32 port;
+>
+> -	/* get the optional video properties */
+> -	ret = of_property_read_u32(np, "video-ports", &video);
+> -	if (ret == 0) {
+> -		priv->vip_cntrl_0 = video >> 16;
+> -		priv->vip_cntrl_1 = video >> 8;
+> -		priv->vip_cntrl_2 = video;
+> +			ret = of_property_read_u32_index(np, "audio-ports", i, &port);
+> +			if (ret)
+> +				break;
+> +			ret = of_property_read_string_index(np, "audio-port-names",
+> +							i, &p);
+> +			if (ret) {
+> +				dev_err(&client->dev,
+> +					"missing audio-port-names[%d]\n", i);
+> +				break;
+> +			}
+> +			if (strcmp(p, "spdif") == 0) {
+> +				priv->audio_ports[0] = port;
+> +			} else if (strcmp(p, "i2s") == 0) {
+> +				priv->audio_ports[1] = port;
+> +			} else {
+> +				dev_err(&client->dev,
+> +					"bad audio-port-names '%s'\n", p);
+> +				break;
+> +			}
+> +		}
+> +		if (priv->audio_ports[0]) {
+> +			priv->params.audio_cfg = priv->audio_ports[0];
+> +			priv->params.audio_format = AFMT_SPDIF;
+> +			priv->params.audio_clk_cfg = 0;
+> +		} else {
+> +			priv->params.audio_cfg = priv->audio_ports[1];
+> +			priv->params.audio_format = AFMT_I2S;
+> +			priv->params.audio_clk_cfg = 1;
+> +		}
+>   	}
+>
+>   	return 0;
 >
 
