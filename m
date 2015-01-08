@@ -1,509 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755326AbbAHAEm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 19:04:42 -0500
-Received: from mga02.intel.com ([134.134.136.20]:43282 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755105AbbAHAEk convert rfc822-to-8bit (ORCPT
+	id S1755569AbbAHAFx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 19:05:53 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:39411 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752157AbbAHAFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 19:04:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="437773337"
-From: "Ong, Boon Leong" <boon.leong.ong@intel.com>
-To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "dvhart@infradead.org" <dvhart@infradead.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
-Thread-Topic: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
-Thread-Index: AQHQI41CoFze/rj2YEaQrKcsZxtS4py1Md6Q
-Date: Thu, 8 Jan 2015 00:04:33 +0000
-Message-ID: <AF233D1473C1364ABD51D28909A1B1B7326E0CC8@PGSMSX105.gar.corp.intel.com>
-References: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie>
- <1419873783-5161-2-git-send-email-pure.logic@nexus-software.ie>
-In-Reply-To: <1419873783-5161-2-git-send-email-pure.logic@nexus-software.ie>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.205]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 7 Jan 2015 19:05:51 -0500
 MIME-Version: 1.0
+In-Reply-To: <CAHkRjk6FT+WJ3u9qhfB-EMcqhOHGQSe4dW4MpZF6vE97B0vD0A@mail.gmail.com>
+References: <alpine.LFD.2.11.1501041547050.18844@knanqh.ubzr>
+	<CA+55aFy5yB2d-1iXEUtU+puua4TAmV0kZF_7TBhXO1Y4Khqb9Q@mail.gmail.com>
+	<alpine.LFD.2.11.1501041609290.18844@knanqh.ubzr>
+	<20150104212659.GC12302@n2100.arm.linux.org.uk>
+	<alpine.LFD.2.11.1501042343240.18844@knanqh.ubzr>
+	<CAHkRjk6Vg_AR8rFNYzPcnPwfKZqaVuaCoG67CEVPRgp1-bDetA@mail.gmail.com>
+	<CA+55aFypmZExpCvD699TQOs1NDK_mT-_rR3UWOdxdzkOKvbdoA@mail.gmail.com>
+	<alpine.LFD.2.11.1501071354130.1322@knanqh.ubzr>
+	<CA+55aFw70ZvHKH+8_aS7E7FZZuuWQA++zGQuSmuvDE3DWU+x3A@mail.gmail.com>
+	<alpine.LFD.2.11.1501071446460.1322@knanqh.ubzr>
+	<20150107205346.GO12302@n2100.arm.linux.org.uk>
+	<CAHkRjk6FT+WJ3u9qhfB-EMcqhOHGQSe4dW4MpZF6vE97B0vD0A@mail.gmail.com>
+Date: Wed, 7 Jan 2015 16:05:50 -0800
+X-Google-Sender-Auth: vRGKEEt35f5yxhr4DB8HZ7vSYls
+Message-ID: <CA+55aFz0cjsS4BTwtBt9P1pKHmPjXPYnOvFuP07UVoek7jSYLw@mail.gmail.com>
+Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
+ pyaudio (and probably more)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, Pavel Machek <pavel@ucw.cz>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        kernel list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
->owner@vger.kernel.org] On Behalf Of Bryan O'Donoghue
->Sent: Monday, December 29, 2014 9:23 AM
->To: tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com; x86@kernel.org;
->dvhart@infradead.org; platform-driver-x86@vger.kernel.org; linux-
->kernel@vger.kernel.org
->Cc: Bryan O'Donoghue
->Subject: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
+On Wed, Jan 7, 2015 at 2:14 PM, Catalin Marinas <catalin.marinas@arm.com> wrote:
 >
-Suggest to add a statement on 3 different types of IMR: General IMR, 
-Host Memory I/O Boundary IMR & System Management Mode IMR. Then, call out
-that this patch is meant to support general IMR type only.
-
->Intel's Quark X1000 SoC contains a set of registers called Isolated Memory
->Regions. IMRs are accessed over the IOSF mailbox interface. IMRs are areas
->carved out of memory that define read/write access rights to the various
->system agents within the Quark system. For a given agent in the system it is
->possible to specify if that agent may read or write an area of memory defined
->by an IMR with a granularity of 1 kilobyte.
+> We need to look back at the point we added timer-based delay about 2.5
+> years ago. Prior to commit d0a533b18235d362, platform A reported
+> bogomips 300. After that commit, the *same* platform A (not B),
+> started reported 6.
 >
->Quark_SecureBootPRM_330234_001.pdf section 4.5 details the concept of
->IMRs
-Would it be better if we provide a URL to the pdf? 
+> Is the above considered user breakage?
 
->
->eSRAM flush, CPU Snoop, CPU SMM Mode, CPU non-SMM mode, PMU and
-PMU? You meant RMU - Remote Management Unit
+Things change. The only thing that is considered "user breakage" is
+when something actually doesn't work any more.
 
-<snippet removed>
+That has always been the rule. It's not that the kernel ABI (with all
+the system calls, all the /proc files, all the ioctl's, etc) is set in
+stone and "sacred". Absolutely anything can be changed, wildly.
 
->
->diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig index ba397bd..8303ca2
->100644
->--- a/arch/x86/Kconfig
->+++ b/arch/x86/Kconfig
->@@ -526,6 +526,29 @@ config IOSF_MBI_DEBUG
->
-> 	  If you don't require the option or are in doubt, say N.
->
->+config IMR
->+	tristate "Isolated Memory Region support"
->+	default m
->+	depends on IOSF_MBI
->+	---help---
->+	  This option enables support for Isolated Memory Regions.
->+	  IMRs are a set of registers that define read and write access masks
->+	  to prohibit certain system agents from accessing memory with 1k
->+	  granularity.
->+	  IMRs make it possible to control read/write access to an address
->+	  by hardware agents inside the SoC. Read and write masks can be
->+	  defined for
->+		- SMM mode
->+		- Non SMM mode
->+		- PCI VC0/VC1
->+		- CPU snoop
-Add "(write mask only)" at the end. 
+But if it turns out that applications (or hardware) that people use
+end up breaking noticeably, then *that* is a regression.
 
->+		- eSRAM flush
->+		- PMU access
-Do you mean RMU (Remote Management Unit) as documented in data-sheet?
+And the important part there are those weasel-words: "that people use"
+and "noticeably".
 
->+	  Quark contains a set of IMR registers and makes use of those
->+	  registers during it's bootup process.
->+
->+	  If you are running on a Galileo/Quark say Y here
->+
-> config X86_RDC321X
-> 	bool "RDC R-321x SoC"
-> 	depends on X86_32
->diff --git a/arch/x86/include/asm/imr.h b/arch/x86/include/asm/imr.h new
->file mode 100644 index 0000000..fe8f3b8
->--- /dev/null
->+++ b/arch/x86/include/asm/imr.h
->@@ -0,0 +1,79 @@
->+/*
->+ * imr.h: Isolated Memory Region API
->+ *
->+ * Copyright(c) 2013 Intel Corporation.
->+ * Copyright(c) 2014 Bryan O'Donoghue <pure.logic@nexus-software.ie>
->+ *
->+ * This program is free software; you can redistribute it and/or
->+ * modify it under the terms of the GNU General Public License
->+ * as published by the Free Software Foundation; version 2
->+ * of the License.
->+ */
->+#ifndef _IMR_H
->+#define _IMR_H
->+
->+#include <asm/intel-quark.h>
->+#include <linux/types.h>
->+
->+/*
->+ * Right now IMRs are not reported via CPUID though it'd be really
->+great if
->+ * future silicon did report via CPUID for this feature bringing it
->+in-line with
->+ * other similar features - like MTRRs, MSRs etc.
->+ *
->+ * A macro is defined here which is an analog to the other cpu_has_x
->+type
->+ * features
->+ */
->+#define cpu_has_imr cpu_is_quark
-We don't really need this #define method since we are using x86_match_cpu().
-So, please remove them. 
+For example, a test-suite giving a different result is *not* a
+regression, although it should obviously be considered a big red flag.
+So if somebody tells you that some test-suite shows that some ABI
+changed, at the very least you should be very nervous about things.
 
->+
->+/* IMR agent access mask bits */
->+#define IMR_ESRAM_FLUSH		0x80000000
->+#define IMR_CPU_SNOOP		0x40000000
-Suggest to add a comment to mark CPU_SNOOP as applicable for write-mask only.
+But if that same test-suite result is then used in a production
+environment as part of some actual user flow, and it breaks that user
+model, then it suddenly becomes a regression.  So the very definition
+of "regression" is not really about the API changing, but about
+breaking peoples existing setups. Of course, if you never change any
+API that is visible to user space, you can never create that kind of
+regression, so they are _related_, but some people confuse the two.
+They are still very different.
 
->+#define IMR_HB_ACCESS		0x20000000
->+#define IMR_VC1_ID3		0x00008000
->+#define IMR_VC1_ID2		0x00004000
->+#define IMR_VC1_ID1		0x00002000
->+#define IMR_VC1_ID0		0x00001000
->+#define IMR_VC0_ID3		0x00000800
->+#define IMR_VC0_ID2		0x00000400
->+#define IMR_VC0_ID1		0x00000200
->+#define IMR_VC0_ID0		0x00000100
->+#define IMR_SMM			0x00000002
->+#define IMR_NON_SMM		0x00000001
-Per data-sheet, this is called CPU_0 and CPU0. Suggest to stick with the name used in datasheet...
+Similarly, theoretical arguments of "so-and-so wouldn't work after
+this change" are just that - theoretical arguments. It's something to
+worry about, but it's not an actual *regression* until it causes
+problems.
 
->+#define IMR_ACCESS_NONE		0x00000000
->+
->+/* Definition of read/write masks from published BSP code */
->+#define IMR_READ_ACCESS_ALL	0xBFFFFFFF
->+#define IMR_WRITE_ACCESS_ALL	0xFFFFFFFF
->+
->+/* Number of IMRs provided by Quark X1000 SoC */
->+#define QUARK_X1000_IMR_NUM	0x07
->+#define QUARK_X1000_IMR_REGBASE 0x40
->+
->+/* IMR alignment bits - only bits 31:10 are checked for IMR validity */
->+#define IMR_ALIGN		0x400
->+#define IMR_MASK		(IMR_ALIGN - 1)
->+
->+/**
->+ * imr_add_range - Add an Isolated Memory Region
->+ * @base: Physical base address of region aligned to 4k
->+ * @size: Physical size of region in bytes
-Please add side-note that 'size' should be 1-KiB aligned. 
-Or should we consider auto-alignment feature...
+For an extreme example of this: we can remove support for whole
+platforms and architectures, and sometimes we do. It clearly
+completely breaks support for the hardware in question - but it only
+counts as a regression if anybody notices and cares. There may still
+be active users of that platform that provably cannot possibly work at
+all any more, but if they never upgrade the kernel, then it's still
+not a regression.
 
->+ * @read_mask: Read access mask
->+ * @write_mask: Write access mask
->+ * @lock: Indicates whether or not to permenantly lock this region
-Typo: permanently 
+In this case, pretty much all of /proc/cpuinfo is mainly
+"informational". Maybe there are applications that show it, but more
+likely you have people who ssh in and just do
 
->+ * @return: Index of the IMR allocated or negative value indicating error
->+ */ 
-> + int imr_add(unsigned long base, unsigned long size,
->+	    unsigned int rmask, unsigned int wmask, bool lock);
->+
->+/**
->+ * imr_del_range - Delete an Isolated Memory Region
->+ * @reg: IMR index to remove
->+ * @base: Physical base address of region aligned to 4k
->+ * @size: Physical size of region in bytes
->+ * @return:	-EINVAL on invalid range or out or range id
->+ *		-ENODEV if reg is valid but no IMR exists or is locked
->+ *		0 on success
->+ */
->+int imr_del(int reg, unsigned long base, unsigned long size);
+    cat /proc/cpuinfo
 
-How about just offer imr delete based index-only as returned by imr_add()?
-We just need to check if that IMR is locked. If locked, then bail out. 
-Else, we will zero-out IMR register for that index to remove it.  
+to see what kind of system they are running on. That's the main point
+of much of /proc, and things like /proc/cpuinfo in particular.
 
->+
->+#endif /* _IMR_H */
+Now *main* point doesn't necessarily mean "only point". There clearly
+are binaries parsing it. Some do it to figure out how many CPU's the
+system has, often simply because using /proc is simple from various
+scripting environments, for example. So while most of /proc/cpuinfo is
+clearly for human consumption, it's also understandable that some
+parts of it might matter for people.
 
-<snippet>
+And quite frankly, I personally think that any program that parses
+/proc/cpuinfo in order to find the bogomips value and use it for
+anything is just clearly insane. Why would you ever do that? It makes
+no sense. It's crazy. Apparently the crazy audio library didn't even
+do it in a meaningful way, and the use of that value seems to be
+pretty much random, and the actual value likely doesn't really even
+*matter*.
 
->diff --git a/arch/x86/kernel/imr.c b/arch/x86/kernel/imr.c new file mode
->100644 index 0000000..4115138
->--- /dev/null
->+++ b/arch/x86/kernel/imr.c
->@@ -0,0 +1,529 @@
->+/**
->+ * intel_imr.c
->+ *
->+ * Copyright(c) 2013 Intel Corporation.
->+ * Copyright(c) 2014 Bryan O'Donoghue <pure.logic@nexus-software.ie>
->+ *
->+ * IMR registers define an isolated region of memory that can
->+ * be masked to prohibit certain system agents from accessing memory.
->+ * When a device behind a masked port performs an access - snooped or
->+not, an
->+ * IMR may optionally prevent that transaction from changing the state
->+of memory
->+ * or from getting correct data in response to the operation.
->+ * Write data will be dropped and reads will return 0xFFFFFFFF, the
->+system will
->+ * reset and system BIOS will print out an error message to inform the
->+user that
->+ * an IMR has been violated.
->+ * This code is based on the Linux MTRR code and refernece code from Intel's
-Typo: reference
+But the rule for "regression" has never been about sanity, or about
+whether the ABI changes. There are tons of horribly insane user
+programs. Parsing /proc to find bogomips may be insane and odd, but
+it's certainly not the worst kind of diseased code I've ever heard
+about. We have had major programs that literally depended on totally
+insane small details that were never intentional, and just happened to
+have some particular implementation detail. And then the
+implementation changed, and the interface ostensibly did exactly the
+same thing, but because it did it with some meaningless difference
+that couldn't *possibly* matter in any sane situation, it caused a
+regression.
 
->+ * Quark BSP EFI, Linux and grub code.
->+ */
->+#include <asm/intel-quark.h>
->+#include <asm/imr.h>
->+#include <asm/iosf_mbi.h>
->+#include <linux/debugfs.h>
->+#include <linux/init.h>
->+#include <linux/module.h>
->+#include <linux/platform_device.h>
->+#include <linux/types.h>
->+
->+struct imr_device {
->+	struct dentry	*debugfs_dir;
->+	struct mutex	lock;
->+	int		num;
->+	int		used;
-This 'used' variable is not used elsewhere, please removed.  
-Instead, suggest to rename 'init' field which is set during probe() function if it is Quark.
-In all exported functions imr_add() & imr_delete(), we have test logic against init to check if
-we should bail-out earlier (being defensive towards erroneous used of imr_xxx exported functions.)
+So the kernel regression rules are very strict in that it's the
+absolute #1 rule in kernel development, but at the same time, they are
+about as lax as they can possibly be: an interface change is only a
+regression if somebody notices.
 
->+	int		reg_base;
->+};
->+
->+static struct imr_device imr_dev;
->+
->+/**
->+ * Values derived from published code in Quark BSP
->+ *
->+ * addr_lo
->+ * 31		Lock bit
->+ * 30		Enable bit - not implemented on Quark X1000
->+ * 29:25	Reserved
->+ * 24:2		1 kilobyte aligned lo address
->+ * 1:0		Reserved
->+ *
->+ * addr_hi
->+ * 31:25	Reserved
->+ * 24:2		1 kilobyte aligned hi address
->+ * 1:0		Reserved
->+ */
->+#define IMR_LOCK	0x80000000
->+#define IMR_ENABLE	0x04000000
-Enable bit is not present per data-sheet. So, we can remove this #define.
+Changing the bogomips value - even radically - or removing it entirely
+isn't a regression in itself.
 
->+
->+struct imr {
->+	u32 addr_lo;
->+	u32 addr_hi;
->+	u32 rmask;
->+	u32 wmask;
->+};
->+
->+#define IMR_NUM_REGS	(sizeof(struct imr)/sizeof(u32))
->+#define IMR_SHIFT	8
->+#define imr_to_phys(x)	(x << IMR_SHIFT)
->+#define phys_to_imr(x)	(x >> IMR_SHIFT)
-What about address masking (0xFFFFFC)? Don't we need that?
+And in this case, I do suspect that the *actual* value really almost
+doesn't matter. It looks more like some internal badly done hint for
+some buffer size or other. It is possible that wild fluctuations could
+be noticeable, but it's fairly unlikely.
 
->+
->+#ifdef CONFIG_DEBUG_FS
->+
->+/**
->+ * imr_dbgfs_state_show
->+ * Print state of IMR registers
->+ *
->+ * @s:		pointer to seq_file for output
->+ * @unused:	unused parameter
->+ * @return	0 on success or error code passed from mbi_iosf on failure
->+ */
->+static int imr_dbgfs_state_show(struct seq_file *s, void *unused) {
->+	int i, ret = -ENODEV;
->+	struct imr imr;
->+	u32 size;
->+
->+	mutex_lock(&imr_dev.lock);
->+
->+	for (i = 0; i <= imr_dev.num; i++) {
->+
->+		ret = imr_read(i, &imr);
->+		if (ret)
->+			break;
->+
->+		/*
->+		 * Remember to add IMR_ALIGN bytes to size to indicate the
->+		 * inherent IMR_ALIGN size bytes contained in the masked away
->+		 * lower ten bits
->+		 */
->+		size = 0;
->+		if (imr_enabled(&imr)) {
->+			size = imr_to_phys(imr.addr_hi) -
->+			       imr_to_phys(imr.addr_lo);
->+			size += IMR_ALIGN;
->+		}
+The other "good news" in this area is that I suspect that the random
+ARM platforms that actually changed 2.5 years ago are not very widely
+used any more.  So not only does the actual real value probably not
+matter much to begin with, but the platforms where it really changed
+are probably not a major issue.
 
-As explained in my separate email, even under lo=0 & hi=0, the size computed is still valid.
-So, I believe that the test here is redundant.
-
->+		seq_printf(s, "imr%02i: base=0x%08x, end=0x%08x, size=0x%08x "o=
->+			   "rmask=0x%08x, wmask=0x%08x, %s, %s\n", i,
->+			   imr_to_phys(imr.addr_lo),
->+			   imr_to_phys(imr.addr_hi) + IMR_MASK, size,
->+			   imr.rmask, imr.wmask,
->+			   imr_enabled(&imr) ? "enabled " : "disabled",
-IMR enable-bit is not present and  imr_enabled() test is not robust.
-Suggest to remove this indication which is not reliable. 
-
->+			   imr.addr_lo & IMR_LOCK ? "locked" : "unlocked");
->+	}
->+
->+	mutex_unlock(&imr_dev.lock);
->+
->+	return ret;
->+}
->+
-<snippet removed>
-
->+
->+/**
->+ * imr_add_range
->+ * Add an Isolated Memory Region
->+ *
->+ * @base: Physical base address of region aligned to 4k
->+ * @size: Physical size of region in bytes
-Please add side-note that 'size' should be 1-KiB aligned. 
-
->+ * @read_mask: Read access mask
->+ * @write_mask: Write access mask
->+ * @lock: Indicates whether or not to permenantly lock this region
-Typo: permanently
-
->+ * @return: Index of the IMR allocated or negative value indicating
->+error  */ int imr_add(unsigned long base, unsigned long size,
->+	    unsigned int rmask, unsigned int wmask, bool lock) {
->+	unsigned long end = base + size;
->+	struct imr imr;
->+	int reg, i, overlap, ret;
->+
-As explained above in imr_dev struct, we can add test against imr_dev.init
-here and bail-out if this function is incorrectly used.
-
-<snippet removed>
->+
->+	/* Allocate IMR */
->+	imr.addr_lo = IMR_ENABLE | phys_to_imr(base);
-Please drop "IMR_ENABLE" here since not there is no such register bit-30.
-
->+
->+/**
->+ * imr_del_range
->+ * Delete an Isolated Memory Region
->+ *
->+ * @reg: IMR index to remove
->+ * @base: Physical base address of region aligned to 4k
->+ * @size: Physical size of region in bytes
->+ * @return:	-EINVAL on invalid range or out or range id
->+ *		-ENODEV if reg is valid but no IMR exists or is locked
->+ *		0 on success
->+ */
->+int imr_del(int reg, unsigned long base, unsigned long size) {
->+	struct imr imr;
->+	int found = 0, i, ret = 0;
->+	unsigned long  max = base + size;
->+
->+	if (imr_check_range(base, size))
->+		return -EINVAL;
->+
->+	if (reg > imr_dev.num)
->+		return -EINVAL;
->+
->+	mutex_lock(&imr_dev.lock);
->+
->+	/* if a specific IMR is given try to use it */
->+	if (reg >= 0) {
->+		ret = imr_read(reg, &imr);
->+		if (ret)
->+			goto done;
->+
->+		if (!imr_enabled(&imr) || imr.addr_lo & IMR_LOCK) {
->+			ret = -ENODEV;
->+			goto done;
->+		}
->+		found = 1;
->+	}
->+
->+	/* search for match based on address range */
->+	for (i = 0; i <= imr_dev.num && found == 0; i++) {
->+		ret = imr_read(reg, &imr);
->+		if (ret)
->+			goto done;
->+
->+		if (!imr_enabled(&imr) || imr.addr_lo & IMR_LOCK)
->+			continue;
->+
->+		if ((imr_to_phys(imr.addr_lo) == base) &&
->+		    (imr_to_phys(imr.addr_hi) == max)) {
->+			found = 1;
->+			reg = i;
->+		}
->+	}
->+
->+	if (found == 0) {
->+		ret = -ENODEV;
->+		goto done;
->+	}
->+
->+	/* Tear down the IMR */
->+	imr.addr_lo = 0;
->+	imr.addr_hi = 0;
->+	imr.rmask = IMR_READ_ACCESS_ALL;
->+	imr.wmask = IMR_WRITE_ACCESS_ALL;
->+
->+	ret = imr_write(reg, &imr, false);
->+
->+done:
->+	mutex_unlock(&imr_dev.lock);
->+	return ret;
->+}
->+EXPORT_SYMBOL(imr_del);
-As suggested earlier, we can just offer imr delete based index-only as returned by imr_add()?
-We just need to check if that IMR is locked. If locked, then bail out. 
-Else, we will zero-out IMR register for that index to remove it.  This should simplify the for-loop above.
-Please consider...
-
-
-
->+
->+/**
->+ * intel_imr_probe
->+ * entry point for IMR driver
->+ *
->+ * return: -ENODEV for no IMR support 0 if good to go  */ static int
->+__init intel_imr_init(void) {
->+	struct cpuinfo_x86 *c = &cpu_data(cpu);
->+
->+	if (!cpu_has_imr(c))
->+		return -ENODEV;
->+
->+	if (iosf_mbi_available() == false)
->+		return -ENODEV;
->+
->+	if (cpu_is_quark(c)) {
->+		imr_dev.num = QUARK_X1000_IMR_NUM;
->+		imr_dev.reg_base = QUARK_X1000_IMR_REGBASE;
->+	} else {
->+		pr_err("Unknown IMR implementation\n");
->+		return -ENODEV;
->+	}
-We can just have:  
-
-if (!x86_match_cpu(soc_imr_ids) || !iosf_mbi_available()) { 
-	pr_info("IMR init failed due to IOSF_MBI not available or SoC is not Quark.\n"); 
-	return -ENODEV; 
-} else {
-	imr_dev.num = QUARK_X1000_IMR_NUM;
-	imr_dev.reg_base = QUARK_X1000_IMR_REGBASE;   
-}
-
-Where the below is added before intel_imr_init() function
-static const struct x86_cpu_id soc_imr_ids[] = {  
-        { X86_VENDOR_INTEL, 5, 9}, /* Intel Quark SoC X1000 */ 
-        {}   
-}; 
-MODULE_DEVICE_TABLE(x86cpu, soc_imr_ids);
-
+                            Linus
