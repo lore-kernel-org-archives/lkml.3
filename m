@@ -1,81 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756793AbbAHNIV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 08:08:21 -0500
-Received: from outbound-smtp03.blacknight.com ([81.17.249.16]:35528 "EHLO
-	outbound-smtp03.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756728AbbAHNIT (ORCPT
+	id S1756822AbbAHNJD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 08:09:03 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:49615 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754937AbbAHNJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 08:08:19 -0500
-Message-ID: <54AE8136.2060400@nexus-software.ie>
-Date: Thu, 08 Jan 2015 13:08:06 +0000
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+	Thu, 8 Jan 2015 08:09:00 -0500
+Message-ID: <54AE8166.2060908@redhat.com>
+Date: Thu, 08 Jan 2015 14:08:54 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: "Ong, Boon Leong" <boon.leong.ong@intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "dvhart@infradead.org" <dvhart@infradead.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
-References: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie> <1419873783-5161-2-git-send-email-pure.logic@nexus-software.ie> <AF233D1473C1364ABD51D28909A1B1B7326E0CC8@PGSMSX105.gar.corp.intel.com>
-In-Reply-To: <AF233D1473C1364ABD51D28909A1B1B7326E0CC8@PGSMSX105.gar.corp.intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+Newsgroups: gmane.linux.scsi,gmane.linux.kernel
+To: Fam Zheng <famz@redhat.com>, linux-kernel@vger.kernel.org
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Venkatesh Srinivas <venkateshs@google.com>
+Subject: Re: [PATCH v4] virtio-scsi: Fix the race condition in virtscsi_handle_event
+References: <1420685852-5078-1-git-send-email-famz@redhat.com>
+In-Reply-To: <1420685852-5078-1-git-send-email-famz@redhat.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/15 00:04, Ong, Boon Leong wrote:
 
-Hi Boon Leong - skipping the simple stuff.
 
->> +/**
->> + * imr_del_range - Delete an Isolated Memory Region
->> + * @reg: IMR index to remove
->> + * @base: Physical base address of region aligned to 4k
->> + * @size: Physical size of region in bytes
->> + * @return:	-EINVAL on invalid range or out or range id
->> + *		-ENODEV if reg is valid but no IMR exists or is locked
->> + *		0 on success
->> + */
->> +int imr_del(int reg, unsigned long base, unsigned long size);
->
-> How about just offer imr delete based index-only as returned by imr_add()?
-> We just need to check if that IMR is locked. If locked, then bail out.
-> Else, we will zero-out IMR register for that index to remove it.
+On 08/01/2015 03:57, Fam Zheng wrote:
+> There is a race condition in virtscsi_handle_event, when many device
+> hotplug/unplug events flush in quickly.
+> 
+> The scsi_remove_device in virtscsi_handle_transport_reset may trigger
+> the BUG_ON in scsi_target_reap, because the state is altered behind it,
+> probably by scsi_scan_host of another event. I'm able to reproduce it by
+> repeatedly plugging and unplugging a scsi disk with the same lun number.
+> 
+> To fix this, a single thread workqueue (local to the module) is added,
+> which makes the scan work serialized. With this change, the panic goes
+> away.
+> 
+> Signed-off-by: Fam Zheng <famz@redhat.com>
 
-Hmm.
+Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
 
-The MTRR API this is based on allows you to specific an address range 
-and I think that makes sense for an IMR API too because - say you want 
-to tear down the IMR around the kernel .text area - but you don't know 
-which IMR it is.
-
-You'd just do
-
-unsigned long base  = virt_to_phys(&_text);
-unsigned long size = virt_to_phys(&_sinittext) - base - IMR_ALIGN;
-
-imr_del(-1, base, size);
-
-Rather than having to know which specific index to kill. Also later 
-silicon may have more - or less IMR indices - so deleting based on an 
-address range is a valuable feature I think.
-
-> if (!x86_match_cpu(soc_imr_ids) || !iosf_mbi_available()) {
-> 	pr_info("IMR init failed due to IOSF_MBI not available or SoC is not Quark.\n");
-> 	return -ENODEV;
-> } else {
-> 	imr_dev.num = QUARK_X1000_IMR_NUM;
-> 	imr_dev.reg_base = QUARK_X1000_IMR_REGBASE;
-> }
-
-That works for me.
-
---
-BOD
-
+> ---
+> 
+> v4: Addressing MST's comments:
+>     Use ordered workqueue, with WQ_FREEZABLE and WQ_MEM_RECLAIM flags.
+>     Coding style fixes.
+> 
+> v3: Fix spacing and destroy order. (MST)
+> ---
+>  drivers/scsi/virtio_scsi.c | 14 +++++++++++++-
+>  1 file changed, 13 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+> index c52bb5d..0db63b5 100644
+> --- a/drivers/scsi/virtio_scsi.c
+> +++ b/drivers/scsi/virtio_scsi.c
+> @@ -120,6 +120,7 @@ struct virtio_scsi {
+>  
+>  static struct kmem_cache *virtscsi_cmd_cache;
+>  static mempool_t *virtscsi_cmd_pool;
+> +static struct workqueue_struct *virtscsi_scan_wq;
+>  
+>  static inline struct Scsi_Host *virtio_scsi_host(struct virtio_device *vdev)
+>  {
+> @@ -404,7 +405,7 @@ static void virtscsi_complete_event(struct virtio_scsi *vscsi, void *buf)
+>  	struct virtio_scsi_event_node *event_node = buf;
+>  
+>  	if (!vscsi->stop_events)
+> -		queue_work(system_freezable_wq, &event_node->work);
+> +		queue_work(virtscsi_scan_wq, &event_node->work);
+>  }
+>  
+>  static void virtscsi_event_done(struct virtqueue *vq)
+> @@ -1119,6 +1120,14 @@ static int __init init(void)
+>  		pr_err("mempool_create() for virtscsi_cmd_pool failed\n");
+>  		goto error;
+>  	}
+> +
+> +	virtscsi_scan_wq =
+> +		alloc_ordered_workqueue("virtscsi-scan", WQ_FREEZABLE | WQ_MEM_RECLAIM);
+> +	if (!virtscsi_scan_wq) {
+> +		pr_err("create_singlethread_workqueue() for virtscsi_scan_wq failed\n");
+> +		goto error;
+> +	}
+> +
+>  	ret = register_virtio_driver(&virtio_scsi_driver);
+>  	if (ret < 0)
+>  		goto error;
+> @@ -1126,6 +1135,8 @@ static int __init init(void)
+>  	return 0;
+>  
+>  error:
+> +	if (virtscsi_scan_wq)
+> +		destroy_workqueue(virtscsi_scan_wq);
+>  	if (virtscsi_cmd_pool) {
+>  		mempool_destroy(virtscsi_cmd_pool);
+>  		virtscsi_cmd_pool = NULL;
+> @@ -1140,6 +1151,7 @@ error:
+>  static void __exit fini(void)
+>  {
+>  	unregister_virtio_driver(&virtio_scsi_driver);
+> +	destroy_workqueue(virtscsi_scan_wq);
+>  	mempool_destroy(virtscsi_cmd_pool);
+>  	kmem_cache_destroy(virtscsi_cmd_cache);
+>  }
+> 
