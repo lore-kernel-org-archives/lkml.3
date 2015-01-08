@@ -1,208 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466AbbAHOOq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 09:14:46 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:64200 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754085AbbAHOOo convert rfc822-to-8bit (ORCPT
+	id S1755733AbbAHOQG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 09:16:06 -0500
+Received: from mail-bn1bon0116.outbound.protection.outlook.com ([157.56.111.116]:60928
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752422AbbAHOQD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 09:14:44 -0500
+	Thu, 8 Jan 2015 09:16:03 -0500
+X-WSS-ID: 0NHV3MH-08-1EQ-02
+X-M-MSG: 
+Message-ID: <54AE910E.5060803@amd.com>
+Date: Thu, 8 Jan 2015 16:15:42 +0200
+From: Oded Gabbay <oded.gabbay@amd.com>
+Organization: AMD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <20141210134719.GX27182@phenom.ffwll.local>
-References: <1412971678-4457-1-git-send-email-sumit.semwal@linaro.org>
-	<1412971678-4457-2-git-send-email-sumit.semwal@linaro.org>
-	<20141011185502.GH26941@phenom.ffwll.local>
-	<CAO_48GH2JmyT-qLyJk=H=rVkds79Gr2MsD3u+1pV48ta78q7OQ@mail.gmail.com>
-	<20141210134719.GX27182@phenom.ffwll.local>
-Date: Thu, 8 Jan 2015 15:14:42 +0100
-Message-ID: <CA+M3ks54sfDkEPrVV=jeoWhoGd_yHz+ifbZ6TntSS_EnCJbNkg@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [RFC 1/4] dma-buf: Add constraints sharing information
-From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-To: Sumit Semwal <sumit.semwal@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, linaro-kernel@lists.linaro.org,
+To: Thierry Reding <thierry.reding@gmail.com>,
+        =?UTF-8?B?Q2hyaXN0aWFuIEvDtg==?= =?UTF-8?B?bmln?= 
+	<christian.koenig@amd.com>
+CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        David Airlie <airlied@linux.ie>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linaro MM SIG <linaro-mm-sig@lists.linaro.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        "Geert Uytterhoeven" <geert+renesas@glider.be>,
+        Dana Elifaz <Dana.Elifaz@amd.com>, <linux-kernel@vger.kernel.org>,
+        <dri-devel@lists.freedesktop.org>,
+        "Alexander Deucher" <Alexander.Deucher@amd.com>,
+        <iommu@lists.linux-foundation.org>, "Arnd Bergmann" <arnd@arndb.de>,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH 0/2] Change order of linkage in kernel makefiles for amdkfd
+References: <1419246435-7050-1-git-send-email-oded.gabbay@amd.com>
+ <1621810.aTt9O4Ghzs@avalon> <549FEB52.4020103@amd.com>
+ <1678486.9ZXZnn5och@avalon> <54A12028.7020303@amd.com>
+ <20150105154657.GJ12010@ulmo.nvidia.com>
+In-Reply-To: <20150105154657.GJ12010@ulmo.nvidia.com>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+X-Originating-IP: [10.20.0.84]
 Content-Transfer-Encoding: 8BIT
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(51444003)(51704005)(479174004)(377454003)(199003)(24454002)(92566001)(101416001)(33656002)(4396001)(106466001)(59896002)(76176999)(23676002)(105586002)(93886004)(87266999)(50986999)(65816999)(54356999)(99396003)(84676001)(21056001)(87936001)(107046002)(36756003)(120916001)(83506001)(80316001)(19580395003)(68736005)(77096005)(64706001)(47776003)(20776003)(65806001)(97736003)(50466002)(62966003)(65956001)(64126003)(86362001)(77156002)(2950100001)(31966008)(46102003)(15975445007)(129583001);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB208;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-DmarcAction: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:CO1PR02MB208;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CO1PR02MB208;
+X-Forefront-PRVS: 0450A714CB
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB208;
+X-OriginatorOrg: amd4.onmicrosoft.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 08 Jan 2015 14:15:57.8828
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.222]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: CO1PR02MB208
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For me dmabuf and cenalloc offer two different features: one is buffer
-sharing (dmabuf) and one is buffer allocation (cenalloc).
+Hi Thierry,
+Generally I agree with the issues you describe in the current design.
+One task in our 2015 workplan is to change the whole method amdkfd is loaded, so 
+it can independently load at any time, regardless of the order of loading 
+between it and radeon and amd_iommu_v2. To reach that goal, I assume we will 
+have to use some form of deferred probing.
 
-You may want to use dmabuf sharing feature whithout need of the buffer
-allocation feature, that is what for drm, v4l2, ION and other use
-dmabuf.
+However, for the moment, this is the best band-aid I could think of, and 
+choosing between this band-aid or no band-aid at all, I prefer the former any day.
 
-In addition of dmabuf we need something aware of hardware devices
-constraints to allocate the buffer, that will be the role of cenalloc.
-Like ION, cenalloc will also provide a usespace API to allocate
-buffers but , unlike ION, the selection of the allocator will be based
-on devices constraints not on heap ID.
+	Oded
 
-In first step I think we can forget the bitmask approach and only use
-the current fields of devices structure like coherent_dma_mask,
-dma_parms->max_segment_size or dma_parms->segment_boundary_mask to
-find matching allocator.
 
-What I propose is to add in allocator ops a match(struct device*)
-function which will be call at attache time.
-In this way cenalloc could ask to each allocator if it is able to
-allocate buffer for all attached devices.
-
-Regards,
-Benjamin
-
-2014-12-10 14:47 GMT+01:00 Daniel Vetter <daniel@ffwll.ch>:
-> On Wed, Dec 10, 2014 at 07:01:16PM +0530, Sumit Semwal wrote:
->> Hi Daniel,
+On 01/05/2015 05:46 PM, Thierry Reding wrote:
+> On Mon, Dec 29, 2014 at 10:34:32AM +0100, Christian König wrote:
+>> Am 29.12.2014 um 09:16 schrieb Laurent Pinchart:
+>>> Hi Oded,
+>>>
+>>> On Sunday 28 December 2014 13:36:50 Oded Gabbay wrote:
+>>>> On 12/26/2014 11:19 AM, Laurent Pinchart wrote:
+>>>>> On Thursday 25 December 2014 14:20:59 Thierry Reding wrote:
+>>>>>> On Mon, Dec 22, 2014 at 01:07:13PM +0200, Oded Gabbay wrote:
+>>>>>>> This small patch-set, was created to solve the bug described at
+>>>>>>> https://bugzilla.kernel.org/show_bug.cgi?id=89661 (Kernel panic when
+>>>>>>> trying use amdkfd driver on Kaveri). It replaces the previous patch-set
+>>>>>>> called [PATCH 0/3] Use workqueue for device init in amdkfd
+>>>>>>> (http://lists.freedesktop.org/archives/dri-devel/2014-December/074401.ht
+>>>>>>> ml)
+>>>>>>>
+>>>>>>> That bug appears only when radeon, amdkfd and amd_iommu_v2 are compiled
+>>>>>>> inside the kernel (not as modules). In that case, the correct loading
+>>>>>>> order, as determined by the exported symbol used by each driver, is
+>>>>>>> not enforced anymore and the kernel loads them based on who was linked
+>>>>>>> first. That makes radeon load first, amdkfd second and amd_iommu_v2
+>>>>>>> third.
+>>>>>>>
+>>>>>>> Because the initialization of a device in amdkfd is initiated by radeon,
+>>>>>>> and can only be completed if amdkfd and amd_iommu_v2 were loaded and
+>>>>>>> initialized, then in the case mentioned above, this initalization fails
+>>>>>>> and there is a kernel panic as some pointers are not initialized but
+>>>>>>> used nontheless.
+>>>>>>>
+>>>>>>> To solve this bug, this patch-set moves iommu/ before gpu/ in
+>>>>>>> drivers/Makefile and also moves amdkfd/ before radeon/ in
+>>>>>>> drivers/gpu/drm/Makefile.
+>>>>>>>
+>>>>>>> The rationale is that in general, AMD GPU devices are dependent on AMD
+>>>>>>> IOMMU controller functionality to allow the GPU to access a process's
+>>>>>>> virtual memory address space, without the need for pinning the memory.
+>>>>>>> That's why it makes sense to initialize the iommu/ subsystem ahead of
+>>>>>>> the gpu/ subsystem.
+>>>>>> I strongly object to this patch set. This makes assumptions about how
+>>>>>> the build system influences probe order. That's bad because seemingly
+>>>>>> unrelated changes could easily break this in the future.
+>>>>>>
+>>>>>> We already have ways to solve this kind of dependency (driver probe
+>>>>>> deferral), and I think you should be using it to solve this particular
+>>>>>> problem rather than some linking order hack.
+>>>>> While I agree with you that probe deferral is the way to go, I believe
+>>>>> linkage ordering can still be used as an optimization to avoid deferring
+>>>>> probe in the most common cases. I'm thus not opposed to moving iommu/
+>>>>> earlier in link order (provided we can properly test for side effects, as
+>>>>> the jump is pretty large), but not as a replacement for probe deferral.
+>>>> My thoughts exactly. If this was some extreme use case, than it would be
+>>>> justified to solve it with probe deferral. But I think that for most common
+>>>> cases, GPU are dependent on IOMMU and *not* vice-versa.
 >>
->> Thanks a bunch for your review comments! A few comments, post our
->> discussion at LPC;
+>> Fixing this through deferred probing sounds like the correct long term
+>> solution to me as well.
 >>
->> On 12 October 2014 at 00:25, Daniel Vetter <daniel@ffwll.ch> wrote:
->> > On Sat, Oct 11, 2014 at 01:37:55AM +0530, Sumit Semwal wrote:
->> >> At present, struct device lacks a mechanism of exposing memory
->> >> access constraints for the device.
->> >>
->> >> Consequently, there is also no mechanism to share these constraints
->> >> while sharing buffers using dma-buf.
->> >>
->> >> If we add support for sharing such constraints, we could use that
->> >> to try to collect requirements of different buffer-sharing devices
->> >> to allocate buffers from a pool that satisfies requirements of all
->> >> such devices.
->> >>
->> >> This is an attempt to add this support; at the moment, only a bitmask
->> >> is added, but if post discussion, we realise we need more information,
->> >> we could always extend the definition of constraint.
->> >>
->> >> A new dma-buf op is also added, to allow exporters to interpret or decide
->> >> on constraint-masks on their own. A default implementation is provided to
->> >> just AND (&) all the constraint-masks.
->> >>
->> >> What constitutes a constraint-mask could be left for interpretation on a
->> >> per-platform basis, while defining some common masks.
->> >>
->> >> Signed-off-by: Sumit Semwal <sumit.semwal@linaro.org>
->> >> Cc: linux-kernel@vger.kernel.org
->> >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> >> Cc: linux-media@vger.kernel.org
->> >> Cc: dri-devel@lists.freedesktop.org
->> >> Cc: linaro-mm-sig@lists.linaro.org
->> >
->> > Just a few high-level comments, I'm between conference travel but
->> > hopefully I can discuss this a bit at plumbers next week.
->> >
->> > - I agree that for the insane specific cases we need something opaque like
->> >   the access constraints mask you propose here. But for the normal case I
->> >   think the existing dma constraints in dma_params would go a long way,
->> >   and I think we should look at Rob's RFC from aeons ago to solve those:
->> >
->> >   https://lkml.org/lkml/2012/7/19/285
->> >
->> >   With this we should be able to cover the allocation constraints of 90%
->> >   of all cases hopefully.
->> >
->> > - I'm not sure whether an opaque bitmask is good enough really, I suspect
->> >   that we also need various priorities between different allocators. With
->> >   the option that some allocators are flat-out incompatible.
->>
->> Your/Rob's idea to figure out the constraints wrt max number of
->> segments in the sg_list can provide, like you said, maybe 80-90% of
->> the allocation constraints hopefully. The opaque mask should help for
->> the remaining 'crazy' cases, so I'll be glad to merge Rob's and my
->> approach on defining the constraints.
->>
->> I should think a little bit more about the priority idea that you
->> propose here (and in another patch), but atm I am unable to see how
->> that could help solve the finding-out-constraints problem.
->> >
->> > - The big bummer imo with ION is that it fully side-steps, but this
->> >   proposal here also seems to add entirely new allocators. My rough idea
->>
->> This proposal does borrow this bit from ION, but once we have the
->> required changes done in the dma api itself, the allocators can just
->> become shims to the dma api allocators (eg dma_alloc_coherent etc) for
->> cases where they can be used directly, while leaving provision for any
->> crazy platform-specific allocators, without the userspace having to
->> worry about it.
->>
->> >   was that at allocate/attach time we iterate over all attached devices
->> >   like in Rob's patch and compute the most constrained allocation
->> >   requirements. Then we pick the underlying dma api allocator for these
->> >   constraints. That probably means that we need to open up the dma api a
->> >   bit. But I guess for a start we could simply try to allocate from the
->> >   most constrained device. Together with the opaque bits you propose here
->> >   we could even map additional crazy requirements like that an allocation
->> >   must come from a specific memory bank (provided by a special-purpose CMA
->> >   region). That might also mean that requirements are exclusive and no
->> >   allocation is possible.
->> >
->> My idea was a little variation on what you said here - rather than do
->> compute the most constraint allocation 'after' devices have attached
->> (and right now, we don't really have a way to know that - but that's
->> another point), I'd proposed to do the compute on each attach request,
->> so the requesting drivers can know immediately if the attachment will
->> not work for the other currently attached devices.
+>> But what Thierry is referring to here is probably the approach of returning
+>> -EAGAIN from the probe method (at least that was the last status when I
+>> looked into this).
 >
-> Well I said allocate/attach ;-) But yeah if we check at attach and reject
-> anything that doesn't work then there's no need to check again when
-> allocating, it /should/ work. But perhaps good to be paranoid and check
-> again.
+> -EPROBE_DEFER would be the one that I was referring to.
 >
->> > - I'm not sure we should allow drivers to override the access constraint
->> >   checks really - the dma_buf interfaces already provide this possibility
->> >   through the ->attach callback. In there exporters are allowed to reject
->> >   the attachment for any reason whatsover.
->> >
->> This override the access constraint check is again meant only as a
->> helper, but I could sure drop it.
+>> The problem with this approach is the interface design between radeon and
+>> amdkfd. amdkfd simply doesn't have a probe method which gets called when the
+>> hardware is detected and can return -EAGAIN. Instead amdkfd is called by
+>> radeon after hardware initialization when it is way to late for such a
+>> thing.
+>
+> That sounds like a pretty brittle design. It sounds like nowhere in the
+> code you've encoded this dependency and you rely on symbols only to
+> ensure probe ordering.
+>
+> Couldn't you simply make radeon check for availability of the IOMMU
+> early and defer probing if it's not there yet? Or if radeon depends on
+> the IOMMU via amdkfd, then perhaps calling into amdkfd to check for the
+> availability of the IOMMU would be a more correct representation of the
+> dependency.
+>
+>>>> BTW, my first try at solving this was to use probe deferral (using
+>>>> workqueue), but the feedback I got from Christian and Dave was that moving
+>>>> iommu/ linkage before gpu/ was a much more simpler solution.
+>>> To clarify my position, I believe changing the link order can be a worthwhile
+>>> optimization, but I'm uncertain about the long term viability of that change
+>>> as a fix. Probe deferral has been introduced because not all probe ordering
+>>> issues can be fixed through link ordering, so we should fix the problem
+>>> properly.
+>>>
+>>> This being said, if modifying the link order can help for now without
+>>> introducing negative side effects, it would only postpone the real fix, so I'm
+>>> not opposed to it.
 >>
->> > - I think we should at least provide a helper implementation to allocate
->> >   dma-buffers for multiple devices using the dma constraints logic we
->> >   implement here. I think we should even go as far as providing a default
->> >   implementation for dma-bufs which uses dma_alloc_coherent and this new
->> >   dma contstraints computation code internally. This should be good enough
->>
->> Ok, my idea was to keep the allocation helpers separate from dma-buf
->> framework - hence the cenalloc idea; if it seems like an extremely
->> terrible approach to separate out helpers, I could try and do an RFC
->> based on your idea.
+>> Yeah, that sounds like the right approach to me as well.
 >
-> Oh, I like helpers, it'd just put them into the dma-buf code and integrate
-> it directly instead of creating something separate.
+> I don't think that's a good approach at all. It doesn't encode the
+> dependency anywhere. All you have is some Makefile that lists a bunch of
+> directories. What happens if anybody was to change that order for some
+> other reason? If you're not Cc'ed on the patch and nobody else NAK's it
+> because they are accidentally aware of the dependency that patch is
+> going to break radeon.
 >
->> >   for almost all devices, except those that do crazy stuff like swap
->> >   support of buffer objects (gem/ttm), virtual hardware buffers (vmwgfx)
->> >   or have other special needs (e.g. non-coherent buffers as speed
->> >   optimization).
->> >
->> Cenalloc type of idea could allow for these special needs I think!
+>> In general I would prefer that modules compiled into the kernel load
+>> by the order of their symbol dependency just like standalone modules
+>> do.
 >
-> Well imo we should aim for 90% first, fix out fallout and then reasses
-> what's needed. Tends to leat to better design overall.
-> -Daniel
-> --
-> Daniel Vetter
-> Software Engineer, Intel Corporation
-> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+> That I generally agree with. But it can't be a replacement for properly
+> describing the runtime dependencies between modules. There can be other
+> reasons than link order that influence probe ordering. What if the IOMMU
+> driver for some reason gains deferred probe support and therefore
+> doesn't succeed on the first probe? Or only sometimes.
 >
-> _______________________________________________
-> Linaro-mm-sig mailing list
-> Linaro-mm-sig@lists.linaro.org
-> http://lists.linaro.org/mailman/listinfo/linaro-mm-sig
+> Properly describing the dependency is the only way to prevent any of
+> that.
+>
+> Thierry
+>
 
 
-
--- 
-Benjamin Gaignard
-
-Graphic Working Group
-
-Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro: Facebook | Twitter | Blog
