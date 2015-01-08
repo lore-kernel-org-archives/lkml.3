@@ -1,121 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755710AbbAHTxJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 14:53:09 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:57223 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755496AbbAHTxH (ORCPT
+	id S1755090AbbAHTwy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 14:52:54 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45020 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015AbbAHTww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 14:53:07 -0500
-Message-ID: <54AEDFED.8060008@ti.com>
-Date: Thu, 8 Jan 2015 14:52:13 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Thu, 8 Jan 2015 14:52:52 -0500
+Date: Thu, 8 Jan 2015 19:52:32 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Max Filippov <jcmvbkbc@gmail.com>
+Cc: alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
+        linux-xtensa@linux-xtensa.org, linux-kernel@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>, Liam Girdwood <lgirdwood@gmail.com>,
+        Jaroslav Kysela <perex@perex.cz>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>
+Message-ID: <20150108195231.GB2634@sirena.org.uk>
+References: <1419614378-25229-1-git-send-email-jcmvbkbc@gmail.com>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "joro@8bytes.org" <joro@8bytes.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "arnd@arndb.de" <arnd@arndb.de>
-Subject: Re: [PATCH v3 3/4] of/pci: add of_pci_dma_configure() update dma
- configuration
-References: <1420656594-8908-1-git-send-email-m-karicheri2@ti.com> <1420656594-8908-4-git-send-email-m-karicheri2@ti.com> <20150108160626.GN11583@arm.com>
-In-Reply-To: <20150108160626.GN11583@arm.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Av1MWY1rjlqAnvVo"
+Content-Disposition: inline
+In-Reply-To: <1419614378-25229-1-git-send-email-jcmvbkbc@gmail.com>
+X-Cookie: What's so funny?
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3 REPOST] ASoC: add xtensa xtfpga I2S interface and
+ platform
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2015 11:06 AM, Will Deacon wrote:
-> On Wed, Jan 07, 2015 at 06:49:53PM +0000, Murali Karicheri wrote:
->> Add of_pci_dma_configure() to allow updating the dma configuration
->> of the pci device using the configuration from DT of the parent of
->> the root bridge device.
->>
->> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
->> ---
->>   drivers/of/of_pci.c    |   39 +++++++++++++++++++++++++++++++++++++++
->>   include/linux/of_pci.h |   12 ++++++++++++
->>   2 files changed, 51 insertions(+)
->>
->> diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
->> index 88471d3..34878c9 100644
->> --- a/drivers/of/of_pci.c
->> +++ b/drivers/of/of_pci.c
->> @@ -2,6 +2,7 @@
->>   #include<linux/export.h>
->>   #include<linux/of.h>
->>   #include<linux/of_address.h>
->> +#include<linux/of_device.h>
->>   #include<linux/of_pci.h>
->>   #include<linux/slab.h>
->>
->> @@ -229,6 +230,44 @@ parse_failed:
->>   	return err;
->>   }
->>   EXPORT_SYMBOL_GPL(of_pci_get_host_bridge_resources);
->> +
->> +/**
->> + * of_get_pci_root_bridge_parent - get the OF node of the root bridge's parent
->> + * @dev: ptr to pci_dev struct of the pci device
->> + *
->> + * This function will traverse the bus up to the root bus starting with
->> + * the child and return the OF node ptr to root bridge device's parent device.
->> + */
->> +struct device_node *of_get_pci_root_bridge_parent(struct pci_dev *dev)
->> +{
->> +	struct pci_bus *bus = dev->bus;
->> +	struct device *bridge;
->> +
->> +	while (!pci_is_root_bus(bus))
->> +		bus = bus->parent;
->> +	bridge = bus->bridge;
->> +
->> +	return bridge->parent->of_node;
->> +}
->> +EXPORT_SYMBOL_GPL(of_get_pci_root_bridge_parent);
->> +
->> +/**
->> + * of_pci_dma_configure - Setup DMA configuration
->> + * @dev: ptr to pci_dev struct of the pci device
->> + *
->> + * Function to update PCI devices's DMA configuration using the same
->> + * info from the OF node of root host bridge's parent.
->> + */
->> +void of_pci_dma_configure(struct pci_dev *pci_dev)
->> +{
->> +	struct device *dev =&pci_dev->dev;
->> +	struct device_node *parent_np;
->> +
->> +	parent_np = of_get_pci_root_bridge_parent(pci_dev);
->> +	of_dma_configure(dev, parent_np);
->> +}
->> +EXPORT_SYMBOL_GPL(of_pci_dma_configure);
->
-> Whilst I think this is the right overall structure, I think this function
-> should determine the set of DMA aliases for the device and pass that through
-> to the IOMMU (as mentioned in my reply to the cover letter). Then we just
-> need to work out what we're doing for groups.
->
-> Will
-Will,
 
-Could you add this as as a follow up patch as I don't have a platformm 
-that support IOMMU and as such my understanding of the IOMMU is limited?
+--Av1MWY1rjlqAnvVo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I can help test the change to make sure it has no side effect on 
-Keystone that doesn't support IOMMU.
+On Fri, Dec 26, 2014 at 08:19:38PM +0300, Max Filippov wrote:
+> XTFPGA boards provides an audio subsystem that consists of TI CDCE706
+> clock synthesizer, I2S transmitter and TLV320AIC23 audio codec.
 
-Thanks.
--- 
-Murali Karicheri
-Linux Kernel, Texas Instruments
+Applied, thanks - the revisions to the RCU stuff make it a lot clearer,
+thanks.
+
+--Av1MWY1rjlqAnvVo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUrt//AAoJECTWi3JdVIfQpEsH/39taBhvaryU1iekn0D0baHs
+Gu1Rx9s5Z2EUqp3nLOaGOaoeyiNfLO3LKdPffzNOg72GSpZV7rtDS9Sibi+LMQW5
+l3HeiTEkGmeYE5s0BBp1rqImid7UScTWw6PR0QY07ECUKZAYc+hG9vh8hlwqly94
+nif2mjW14hj7+nhIIAqZnhwnas9VkRRoW3/td463a3it7vqyIpYofp6TzhgOj05v
+NBKBUTJ7KSmFcU9AQFK9Zv6IG8ZiG1M4pgWvHLBO35VtUiXa9E86D+g9GKLVA8ty
+07obt3Srhk0t5CjSBHWuEnQEj2rfKmlz4Yz29hAuSlQQijR7cFdxjhnUhM7kKGQ=
+=RncA
+-----END PGP SIGNATURE-----
+
+--Av1MWY1rjlqAnvVo--
