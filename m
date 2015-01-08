@@ -1,97 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078AbbAHEZM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 23:25:12 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:6534 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752246AbbAHEZK (ORCPT
+	id S1752971AbbAHEeQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 23:34:16 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:57688 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751839AbbAHEeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 23:25:10 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 07 Jan 2015 20:17:47 -0800
-Message-ID: <54AE06AE.8080603@nvidia.com>
-Date: Thu, 8 Jan 2015 12:25:18 +0800
-From: Vince Hsu <vinceh@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 7 Jan 2015 23:34:14 -0500
+Date: Wed, 7 Jan 2015 20:33:29 -0800
+From: Calvin Owens <calvinowens@fb.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, Peter Zijlstra <peterz@infradead.org>,
+        <linux-kernel@vger.kernel.org>, <kernel-team@fb.com>,
+        <calvinowens@fb.com>
+Subject: Re: [PATCH v2] ksoftirqd: Enable IRQs and call cond_resched() before
+ poking RCU
+Message-ID: <20150108043329.GB27996@mail.thefacebook.com>
+References: <1420594659-16996-1-git-send-email-calvinowens@fb.com>
+ <20150107014906.GA27996@mail.thefacebook.com>
+ <20150107021926.GT5280@linux.vnet.ibm.com>
+ <20150107165223.GA21555@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Peter De Schrijver <pdeschrijver@nvidia.com>, Lucas Stach <dev@lynxeye.de>,
-        <swarren@wwwdotorg.org>, <gnurou@gmail.com>, <bskeggs@redhat.com>,
-        <martin.peres@free.fr>, <seven@nimrod-online.com>,
-        <samuel.pitoiset@gmail.com>, <nouveau@lists.freedesktop.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/11] ARM: tegra: add function to control the GPU rail
- clamp
-References: <1419331204-26679-1-git-send-email-vinceh@nvidia.com> <1419331204-26679-2-git-send-email-vinceh@nvidia.com> <1419426990.2179.7.camel@lynxeye.de> <549B7638.2010405@nvidia.com> <20150105150932.GG12010@ulmo.nvidia.com> <20150107101900.GP10073@tbergstrom-lnx.Nvidia.com> <54AD0F37.5080609@nvidia.com> <20150107132709.GA6988@ulmo> <20150107140852.GR10073@tbergstrom-lnx.Nvidia.com> <20150107142828.GB7392@nvidia.com> <20150107144805.GF1621@ulmo>
-In-Reply-To: <20150107144805.GF1621@ulmo>
-X-Originating-IP: [10.19.108.126]
-X-ClientProxiedBy: HKMAIL102.nvidia.com (10.18.16.11) To
- HKMAIL101.nvidia.com (10.18.16.10)
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20150107165223.GA21555@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-08_02:2015-01-07,2015-01-08,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=3.45033029023803
+ compositescore=0.928708196901072 urlsuspect_oldscore=0.928708196901072
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.928708196901072 spamscore=0
+ recipient_to_sender_domain_totalscore=12 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1501080043
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 01/07 at 08:52 -0800, Paul E. McKenney wrote:
+> On Tue, Jan 06, 2015 at 06:19:26PM -0800, Paul E. McKenney wrote:
+> > On Tue, Jan 06, 2015 at 05:49:06PM -0800, Calvin Owens wrote:
+> > > While debugging an issue with excessive softirq usage, I encountered the
+> > > following note in commit 3e339b5dae24a706 ("softirq: Use hotplug thread
+> > > infrastructure"):
+> > > 
+> > >     [ paulmck: Call rcu_note_context_switch() with interrupts enabled. ]
+> > > 
+> > > ...but despite this note, the patch still calls RCU with IRQs disabled.
+> > > 
+> > > This seemingly innocuous change caused a significant regression in softirq
+> > > CPU usage on the sending side of a large TCP transfer (~1 GB/s): when
+> > > introducing 0.01% packet loss, the softirq usage would jump to around 25%,
+> > > spiking as high as 50%. Before the change, the usage would never exceed 5%.
+> > > 
+> > > Moving the call to rcu_note_context_switch() after the cond_sched() call,
+> > > as it was originally before the hotplug patch, completely eliminated this
+> > > problem.
+> > > 
+> > > Signed-off-by: Calvin Owens <calvinowens@fb.com>
+> > > ---
+> > > Changes since v1:
+> > > 	I mixed up the kernel versions I was patching against, sorry!
+> > > 
+> > >  kernel/softirq.c | 6 +++++-
+> > >  1 file changed, 5 insertions(+), 1 deletion(-)
+> > > 
+> > > diff --git a/kernel/softirq.c b/kernel/softirq.c
+> > > index 501baa9..9e787d8 100644
+> > > --- a/kernel/softirq.c
+> > > +++ b/kernel/softirq.c
+> > > @@ -656,9 +656,13 @@ static void run_ksoftirqd(unsigned int cpu)
+> > >  		 * in the task stack here.
+> > >  		 */
+> > >  		__do_softirq();
+> > > -		rcu_note_context_switch();
+> > >  		local_irq_enable();
+> > >  		cond_resched();
+> > 
+> > If this is for 3.20, we can just replace cond_resched() with
+> > cond_resched_rcu_qs(), and get rid of the direct call to
+> > rcu_note_context_switch().  This has the benefit of avoiding
+> > needless rcu_note_context_switch() overhead if cond_resched()
+> > actually did a reschedule.
+> > 
+> > But don't try it in 3.19 or earlier.  ;-)
+> 
+> As in the following for 3.20.  Does this version work for you?
 
-On 01/07/2015 10:48 PM, Thierry Reding wrote:
-> * PGP Signed by an unknown key
->
-> On Wed, Jan 07, 2015 at 10:28:29PM +0800, Vince Hsu wrote:
->> On 04:08:52PM Jan 07, Peter De Schrijver wrote:
->>> On Wed, Jan 07, 2015 at 02:27:10PM +0100, Thierry Reding wrote:
->>>
->>>>> Yeah. I plan to have the information of all the clock client of the
->>>>> partitions and
->>>>> the memory clients be defined statically in c source, e.g. pmc-tegra124.c.
->>>>> All modules can declare which domain they belong to in DT. One domain can
->>>>> be really power gated only when no module is awake. Note the clock clients
->>>>> of
->>>>> one domain might not equal to the clocks of the module. The reset is not
->>>>> either.
->>>>> So I don't get the clock and reset from module. How do you think?
->>>> This whole situation is quite messy. The above sequence basically means
->>>> that drivers can't reset hardware modules because otherwise they might
->>>> race with the power domain code. It also means that we can't powergate
->>> The powerdomain framework won't call any powergating method as long as a
->>> module in the domain is still active. So as long as drivers don't try to
->>> reset the hw without having done a pm_runtime_get(), we shouldn't have such
->>> a race?
->> Agree. And as long as the driver has the correct reset procedure, that should
->> be fine to occur between power ungating and gating sequences.
->>
->>>> modules on demand because they might be in the same power domain as one
->>>> other module that's still busy.
->>>>
->>> The powerdomain framework keeps track of which modules are active (by hooking
->>> into runtime pm) and won't try to shutdown a domain unless all modules are
->>> inactive.
->> Yeah. By the way, that means we should start supporting runtime pm for all
->> the modules to use generic power domain.
-> Indeed, that'll be a prerequisite before we can merge power domain
-> support. I do have a couple of local patches that add very rudimentary
-> runtime PM for various drivers. For starters we could probably just do
-> the
->
-> 	pm_runtime_enable(...);
-> 	pm_runtime_get_sync(...)
->
-> in the ->probe() and
->
-> 	pm_runtime_put_sync(...);
-> 	pm_runtime_disable(...);
->
-> in the ->remove() callbacks for those drivers. That's by no means
-> optimal but should get us pretty close to what we do now and still
-> support the generic power domains.
-Cool. Could you send me the patches?
+That's great, thanks :)
+
+Should this go to stable as well? It is technically a regression, albeit
+a rather long-standing one.
+
+My original scenario was a bit contrived, but I tested this on some real
+loads and it makes a difference: on a heavily loaded Proxygen server,
+the aggregate softirq CPU usage decreases by roughly 10% (relative)
+given the same amount of traffic with the patch. It also produces
+statistically significant performance wins at higher loads on
+webservers: about a 1% reduction in overall CPU utilization and improved
+latency metrics.
 
 Thanks,
-Vince
-
->
-> Thierry
->
-> * Unknown Key
-> * 0x7F3EB3A1
-
+Calvin
+ 
+> 							Thanx, Paul
+> 
+> ------------------------------------------------------------------------
+> 
+> ksoftirqd: Enable IRQs and call cond_resched() before poking RCU
+> 
+> While debugging an issue with excessive softirq usage, I encountered the
+> following note in commit 3e339b5dae24a706 ("softirq: Use hotplug thread
+> infrastructure"):
+>     
+>         [ paulmck: Call rcu_note_context_switch() with interrupts enabled. ]
+>     
+> ...but despite this note, the patch still calls RCU with IRQs disabled.
+> 
+> This seemingly innocuous change caused a significant regression in softirq
+> CPU usage on the sending side of a large TCP transfer (~1 GB/s): when
+> introducing 0.01% packet loss, the softirq usage would jump to around 25%,
+> spiking as high as 50%. Before the change, the usage would never exceed 5%.
+> 
+> Moving the call to rcu_note_context_switch() after the cond_sched() call,
+> as it was originally before the hotplug patch, completely eliminated this
+> problem, but the new cond_resched_rcu_qs() provides shorter code and
+> avoids double RCU notification in the case where cond_resched() really
+> did a context switch.
+> 
+> Signed-off-by: Calvin Owens <calvinowens@fb.com>
+> [ paulmck: Substituted shiny new cond_resched_rcu_qs() primitive. ]
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> diff --git a/kernel/softirq.c b/kernel/softirq.c
+> index 501baa9ac1be..8cdb98847c7b 100644
+> --- a/kernel/softirq.c
+> +++ b/kernel/softirq.c
+> @@ -656,9 +656,8 @@ static void run_ksoftirqd(unsigned int cpu)
+>  		 * in the task stack here.
+>  		 */
+>  		__do_softirq();
+> -		rcu_note_context_switch();
+>  		local_irq_enable();
+> -		cond_resched();
+> +		cond_resched_rcu_qs();
+>  		return;
+>  	}
+>  	local_irq_enable();
+> 
