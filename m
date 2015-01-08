@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025AbbAHJwy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 04:52:54 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46465 "EHLO
+	id S1754982AbbAHJxZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 04:53:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46481 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141AbbAHJwu (ORCPT
+	with ESMTP id S1754094AbbAHJxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 04:52:50 -0500
-Date: Thu, 8 Jan 2015 01:52:32 -0800
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-4093325f829746b88eaf02a5ae3b88a325ea8b75@git.kernel.org>
-Cc: masami.hiramatsu.pt@hitachi.com, mingo@kernel.org, dsahern@gmail.com,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org, mjw@redhat.com,
-        acme@redhat.com, namhyung@kernel.org, hpa@zytor.com
-Reply-To: masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
-        dsahern@gmail.com, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        mjw@redhat.com, acme@redhat.com, namhyung@kernel.org, hpa@zytor.com
-In-Reply-To: <20141230090533.GH6081@sejong>
-References: <20141230090533.GH6081@sejong>
+	Thu, 8 Jan 2015 04:53:21 -0500
+Date: Thu, 8 Jan 2015 01:52:51 -0800
+From: tip-bot for Taesoo Kim <tipbot@zytor.com>
+Message-ID: <tip-b3505208804f3b59150cd77719f01c8b0023a865@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, taesoo@gatech.edu,
+        paulus@samba.org, tsgatesv@gmail.com, tglx@linutronix.de,
+        hpa@zytor.com, mingo@kernel.org, mingo@redhat.com, namhyung@kernel.org,
+        a.p.zijlstra@chello.nl
+Reply-To: linux-kernel@vger.kernel.org, paulus@samba.org, taesoo@gatech.edu,
+        acme@redhat.com, hpa@zytor.com, tglx@linutronix.de, tsgatesv@gmail.com,
+        namhyung@kernel.org, a.p.zijlstra@chello.nl, mingo@redhat.com,
+        mingo@kernel.org
+In-Reply-To: <1419997015-11071-1-git-send-email-tsgatesv@gmail.com>
+References: <1419997015-11071-1-git-send-email-tsgatesv@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf probe: Fix crash in dwarf_getcfi_elf
-Git-Commit-ID: 4093325f829746b88eaf02a5ae3b88a325ea8b75
+Subject: [tip:perf/urgent] perf list: Fix --raw-dump option
+Git-Commit-ID: b3505208804f3b59150cd77719f01c8b0023a865
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,101 +35,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4093325f829746b88eaf02a5ae3b88a325ea8b75
-Gitweb:     http://git.kernel.org/tip/4093325f829746b88eaf02a5ae3b88a325ea8b75
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Tue, 30 Dec 2014 17:47:47 +0900
+Commit-ID:  b3505208804f3b59150cd77719f01c8b0023a865
+Gitweb:     http://git.kernel.org/tip/b3505208804f3b59150cd77719f01c8b0023a865
+Author:     Taesoo Kim <tsgatesv@gmail.com>
+AuthorDate: Tue, 30 Dec 2014 22:36:55 -0500
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 2 Jan 2015 12:44:01 -0300
+CommitDate: Fri, 2 Jan 2015 23:26:58 -0300
 
-perf probe: Fix crash in dwarf_getcfi_elf
+perf list: Fix --raw-dump option
 
-David reported that perf can segfault when adding an uprobe event like
-this:
+Currently, 'perf list --raw-dump' requires extra arguments
+(e.g., hw) to invoke, which breaks bash/zsh completion
+(perf-completion.sh).
 
-  $ perf probe -x /lib64/libc-2.14.90.so -a 'malloc  size=%di'
+  $ perf list --raw-dump
+    Error: unknown option `raw-dump'
 
-  (gdb) bt
-  #0  parse_eh_frame_hdr (hdr=0x0, hdr_size=2596, hdr_vaddr=71788,
-      ehdr=0x7fffffffd390, eh_frame_vaddr=
-      0x7fffffffd378, table_entries=0x8808d8, table_encoding=0x8808e0 "") at
-      dwarf_getcfi_elf.c:79
-  #1  0x000000385f81615a in getcfi_scn_eh_frame (hdr_vaddr=71788,
-      hdr_scn=0x8839b0, shdr=0x7fffffffd2f0, scn=<optimized out>,
-      ehdr=0x7fffffffd390, elf=0x882b30) at dwarf_getcfi_elf.c:231
-  #2  getcfi_shdr (ehdr=0x7fffffffd390, elf=0x882b30) at dwarf_getcfi_elf.c:283
-  #3  dwarf_getcfi_elf (elf=0x882b30) at dwarf_getcfi_elf.c:309
-  #4  0x00000000004d5bac in debuginfo__find_probes (pf=0x7fffffffd4f0,
-      dbg=Unhandled dwarf expression opcode 0xfa) at util/probe-finder.c:993
-  #5  0x00000000004d634a in debuginfo__find_trace_events (dbg=0x880840,
-      pev=<optimized out>, tevs=0x880f88, max_tevs=<optimized out>) at
-      util/probe-finder.c:1200
-  #6  0x00000000004aed6b in try_to_find_probe_trace_events (target=0x881b20
-      "/lib64/libpthread-2.14.90.so",
-      max_tevs=128, tevs=0x880f88, pev=0x859b30) at util/probe-event.c:482
-  #7  convert_to_probe_trace_events (target=0x881b20
-      "/lib64/libpthread-2.14.90.so", max_tevs=128, tevs=0x880f88,
-      pev=0x859b30) at util/probe-event.c:2356
-  #8  add_perf_probe_events (pevs=<optimized out>, npevs=1, max_tevs=128,
-      target=0x881b20 "/lib64/libpthread-2.14.90.so", force_add=false) at
-      util/probe-event.c:2391
-  #9  0x000000000044014f in __cmd_probe (argc=<optimized out>,
-      argv=0x7fffffffe2f0, prefix=Unhandled dwarf expression opcode 0xfa) at
-      at builtin-probe.c:488
-  #10 0x0000000000440313 in cmd_probe (argc=5, argv=0x7fffffffe2f0,
-      prefix=<optimized out>) at builtin-probe.c:506
-  #11 0x000000000041d133 in run_builtin (p=0x805680, argc=5,
-      argv=0x7fffffffe2f0) at perf.c:341
-  #12 0x000000000041c8b2 in handle_internal_command (argv=<optimized out>,
-      argc=<optimized out>) at perf.c:400
-  #13 run_argv (argv=<optimized out>, argcp=<optimized out>) at perf.c:444
-  #14 main (argc=5, argv=0x7fffffffe2f0) at perf.c:559
+     usage: perf list [hw|sw|cache|tracepoint|pmu|event_glob]
 
-And I found a related commit (5704c8c4fa71 "getcfi_scn_eh_frame: Don't
-crash and burn when .eh_frame bits aren't there.") in elfutils that can
-lead to a unexpected crash like this.  To safely use the function, it
-needs to check the .eh_frame section is a PROGBITS type.
+After,
 
-Reported-by: David Ahern <dsahern@gmail.com>
-Tested-by: David Ahern <dsahern@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Mark Wielaard <mjw@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Link: http://lkml.kernel.org/r/20141230090533.GH6081@sejong
+  $ perf list --raw-dump
+  cpu-cycles instructions cache-references cache-misses ...
+
+Signed-off-by: Taesoo Kim <tsgatesv@gmail.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Taesoo kim <taesoo@gatech.edu>
+Link: http://lkml.kernel.org/r/1419997015-11071-1-git-send-email-tsgatesv@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/probe-finder.c | 18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
+ tools/perf/builtin-list.c | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index c7918f8..b5247d7 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -989,8 +989,24 @@ static int debuginfo__find_probes(struct debuginfo *dbg,
- 	int ret = 0;
+diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
+index 011195e..198f3c3 100644
+--- a/tools/perf/builtin-list.c
++++ b/tools/perf/builtin-list.c
+@@ -19,7 +19,9 @@
+ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+ 	int i;
+-	const struct option list_options[] = {
++	bool raw_dump = false;
++	struct option list_options[] = {
++		OPT_BOOLEAN(0, "raw-dump", &raw_dump, "Dump raw events"),
+ 		OPT_END()
+ 	};
+ 	const char * const list_usage[] = {
+@@ -27,11 +29,18 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		NULL
+ 	};
  
- #if _ELFUTILS_PREREQ(0, 142)
-+	Elf *elf;
-+	GElf_Ehdr ehdr;
-+	GElf_Shdr shdr;
++	set_option_flag(list_options, 0, "raw-dump", PARSE_OPT_HIDDEN);
 +
- 	/* Get the call frame information from this dwarf */
--	pf->cfi = dwarf_getcfi_elf(dwarf_getelf(dbg->dbg));
-+	elf = dwarf_getelf(dbg->dbg);
-+	if (elf == NULL)
-+		return -EINVAL;
-+
-+	if (gelf_getehdr(elf, &ehdr) == NULL)
-+		return -EINVAL;
-+
-+	if (elf_section_by_name(elf, &ehdr, &shdr, ".eh_frame", NULL) &&
-+	    shdr.sh_type == SHT_PROGBITS) {
-+		pf->cfi = dwarf_getcfi_elf(elf);
-+	} else {
-+		pf->cfi = dwarf_getcfi(dbg->dbg);
+ 	argc = parse_options(argc, argv, list_options, list_usage,
+ 			     PARSE_OPT_STOP_AT_NON_OPTION);
+ 
+ 	setup_pager();
+ 
++	if (raw_dump) {
++		print_events(NULL, true);
++		return 0;
 +	}
- #endif
- 
- 	off = 0;
++
+ 	if (argc == 0) {
+ 		print_events(NULL, false);
+ 		return 0;
+@@ -53,8 +62,6 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			print_hwcache_events(NULL, false);
+ 		else if (strcmp(argv[i], "pmu") == 0)
+ 			print_pmu_events(NULL, false);
+-		else if (strcmp(argv[i], "--raw-dump") == 0)
+-			print_events(NULL, true);
+ 		else {
+ 			char *sep = strchr(argv[i], ':'), *s;
+ 			int sep_idx;
