@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177AbbAIAA5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 19:00:57 -0500
-Received: from us-mx2.synaptics.com ([192.147.44.131]:21119 "EHLO
-	us-mx1.synaptics.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755956AbbAIAA4 (ORCPT
+	id S1752854AbbAHX7y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 18:59:54 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:41665 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011AbbAHX7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 19:00:56 -0500
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Thu, 08 Jan 2015 16:28:22 -0800
-Message-ID: <54AF19BE.9010506@synaptics.com>
-Date: Thu, 8 Jan 2015 15:58:54 -0800
-From: Andrew Duggan <aduggan@synaptics.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <benjamin.tissoires@redhat.com>, <jkosina@suse.cz>
-Subject: Re: NULL pointer dereference in i2c-hid
-References: <31518562.V5Oyo0POsI@xps13> <2094646.ov2KaAkedO@xps13> <548B3E32.2050503@synaptics.com> <1877487.FqOELR9dBu@xps13>
-In-Reply-To: <1877487.FqOELR9dBu@xps13>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.4.10.98]
+	Thu, 8 Jan 2015 18:59:53 -0500
+From: Moritz Fischer <moritz.fischer@ettus.com>
+To: dmitry.torokhov@gmail.com
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Moritz Fischer <moritz.fischer@ettus.com>
+Subject: [PATCH v3 0/3] NI Ettus Research USRP E3x0 Button driver
+Date: Fri,  9 Jan 2015 00:59:28 +0100
+Message-Id: <1420761571-22903-1-git-send-email-moritz.fischer@ettus.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/24/2014 03:53 PM, Gabriele Mazzotta wrote:
-[...snip...]
->>>> Also, if you can get the firmware id from your touchpad that would also
->>>> be useful.
->>>>
->>>> $ sudo ./rmihidtool -f /dev/hidraw0
->>> firmware id: 1522295
->> Thanks, I will see if I can get any additional information on this.
->>
->> Andrew
-> Hi,
->
-> I think I found the source of the problem.
->
-> $ ./rmihidtool /dev/hidraw1 -r 0x50 1
-> 0x01  #PalmDetect Interrupt Enable, right?
-Yes, 0x50 does appear to be the address of the palm detect interrupt 
-enable register.
-> $ ./rmihidtool /dev/hidraw1 -w 0x50 0  #Disable PalmDetect Interrupt
->
-> It makes more sense now that widths greater than 12 trigger the bug.
-That is weird behavior and I haven't seen anything like that before. I 
-will file a bug to see if firmware has any idea why this is happening.
->
-> Gabriele
->
-Andrew
+This patchset adds NI Ettus Research USRP E3x0 power button support and
+corresponding devicetree bindings and MAINTAINER entries.
+
+It was developed and tested on our NI Ettus Research USRP E310 embedded
+SDR on top of 3.19-rc3.
+
+Moritz Fischer (3):
+  input: misc: Support NI Ettus Research USRP E3x0 Button
+  doc: dt: Add documentation for e3x0-button bindings.
+  Update MAINTAINERS file with e3x0-button info.
+
+ .../devicetree/bindings/input/e3x0-button.txt      |  25 ++++
+ MAINTAINERS                                        |   8 ++
+ drivers/input/misc/Kconfig                         |  10 ++
+ drivers/input/misc/Makefile                        |   1 +
+ drivers/input/misc/e3x0-button.c                   | 156 +++++++++++++++++++++
+ 5 files changed, 200 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/input/e3x0-button.txt
+ create mode 100644 drivers/input/misc/e3x0-button.c
+
+-- 
+1.9.3
+
