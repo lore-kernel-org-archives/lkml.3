@@ -1,41 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932555AbbAHWSX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 17:18:23 -0500
-Received: from smtprelay0229.hostedemail.com ([216.40.44.229]:59250 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754999AbbAHWSV (ORCPT
+	id S932418AbbAHWYk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 17:24:40 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:56307 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755160AbbAHWYj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 17:18:21 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:421:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1561:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3622:3865:3867:3868:3872:3873:4321:5007:6119:6261:7903:8957:10004:10400:10848:11232:11658:11914:12517:12519:12679:12740:13069:13311:13357:13972:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: dad39_48568c6a6fe32
-X-Filterd-Recvd-Size: 1183
-Message-ID: <1420755495.11784.15.camel@perches.com>
-Subject: Re: [PATCH] ethernet: atheros: Add nss-gmac driver
-From: Joe Perches <joe@perches.com>
-To: Stephen Wang <wstephen@codeaurora.org>
-Cc: jcliburn@gmail.com, grant.likely@linaro.org, robh+dt@kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        devicetree@vger.kernel.org
-Date: Thu, 08 Jan 2015 14:18:15 -0800
-In-Reply-To: <1420754626-30121-1-git-send-email-wstephen@codeaurora.org>
-References: <y> <1420754626-30121-1-git-send-email-wstephen@codeaurora.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Jan 2015 17:24:39 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: Rob Herring <robherring2@gmail.com>, Joerg Roedel <joro@8bytes.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v3 2/4] of: move of_dma_configure() to device,c to help re-use
+Date: Thu, 08 Jan 2015 23:24:11 +0100
+Message-ID: <2083932.v1GzgAfexK@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54AED9EC.1020703@ti.com>
+References: <1420656594-8908-1-git-send-email-m-karicheri2@ti.com> <3861625.CJ6m15sZMh@wuerfel> <54AED9EC.1020703@ti.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:kXr9BMS7uTylM9mx8rqw0EcpzEVRmA6i4W6ltNjZZ9On6JiWrCE
+ aRXsDLPtlE8As5/LjPwerkreke2Qi6UV6RulA2TKRZ1f2PFFaXTIUsaazQ1lcUCucpD72Bc
+ Rz4QlW/MgvICyiZB2xJWqWohqAtlzK0pG7YNfftq/TDq3EBgmD4Bk4Y1UEn3vzAANDuYPYS
+ mid8ZjJVrKbIL+6GHWXRg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2015-01-08 at 14:03 -0800, Stephen Wang wrote:
-> This driver adds support for the internal GMACs on IPQ806x SoCs.
-> It supports the device-tree and will register up to 4 ethernet
-> interfaces.
+On Thursday 08 January 2015 14:26:36 Murali Karicheri wrote:
+> On 01/08/2015 03:40 AM, Arnd Bergmann wrote:
+> > On Wednesday 07 January 2015 17:37:56 Rob Herring wrote:
+> >> On Wed, Jan 7, 2015 at 12:49 PM, Murali Karicheri<m-karicheri2@ti.com>  wrote:
+> >>
+> >>> +       ret = of_dma_get_range(np,&dma_addr,&paddr,&size);
+> >>> +       if (ret<  0) {
+> >>> +               dma_addr = offset = 0;
+> >>> +               size = dev->coherent_dma_mask + 1;
+> >>
+> >> If coherent_dma_mask is DMA_BIT_MASK(64), then you will overflow and
+> >> have a size of 0. There may also be a problem when the mask is only
+> >> 32-bit type.
+> >
+> > The mask is always a 64-bit type, it's not optional. But you are right,
+> > the 64-bit mask case is broken, so I guess we have to fix it differently
+> > by always passing the smaller value into arch_setup_dma_ops and
+> > adapting that function instead.
+> Arnd,
+> 
+> What is the smaller value you are referring to in the below code? 
+> between *dev->dma_mask and size from DT? But overflow can still happen 
+> when size is to be calculated in arch_setup_dma_ops() for Non DT case or 
+> when DT size is configured to be equivalent of DMA_BIT_MASK(64) + 1. Can 
+> we discuss the code change you have in mind when you get a chance?
 
-Trivial:
+I meant changing every function that the size values gets passed into
+to take a mask like 0xffffffff instead of a size like 0x100000000, so
+we can represent a 64-bit capable bus correctly.
 
-You might try running the code through checkpatch.
+This means we also need to adapt the value returned from of_dma_get_range.
+A minor complication here is that the DT properties sometimes already
+contain the mask value, in particular when we want to represent a
+full mapping like 
+
+	bus {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		dma-ranges = <0 0 0xffffffff>; /* all 4 GB, DMA_BIT_MASK(32) */
+	};
+
+as opposed to
+
+	bus {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		dma-ranges = <0 0 0x80000000>; /* only lower 2GB, DMA_BIT_MASK(31) */
+	};
+
+or
+
+	bus {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		dma-ranges = <0 0 0x0000000100000000>; /* 4GB of 64-bit address space */
+	};
 
 
+	Arnd
