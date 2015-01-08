@@ -1,88 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756508AbbAHPGi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 10:06:38 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:62152 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754324AbbAHPGg (ORCPT
+	id S1756647AbbAHPHs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 10:07:48 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:60243 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753486AbbAHPHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 10:06:36 -0500
-Message-ID: <54AE9CF0.8060907@gmail.com>
-Date: Thu, 08 Jan 2015 16:06:24 +0100
-From: Imre Palik <imrep.amz@gmail.com>
+	Thu, 8 Jan 2015 10:07:47 -0500
+Message-ID: <54AE9D3A.1060302@fb.com>
+Date: Thu, 8 Jan 2015 08:07:38 -0700
+From: Jens Axboe <axboe@fb.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: xen-devel@lists.xenproject.org, "Palik, Imre" <imrep@amazon.de>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, David Vrabel <david.vrabel@citrix.com>,
-        Anthony Liguori <aliguori@amazon.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Xen-devel] [PATCH RFC] xen-time: decreasing the rating of the
- xen clocksource below that of the tsc clocksource for dom0's
-References: <1420647398-20207-1-git-send-email-imrep.amz@gmail.com> <1420648234.18631.117.camel@citrix.com>
-In-Reply-To: <1420648234.18631.117.camel@citrix.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+To: =?UTF-8?B?SsO8cmcgQmlsbGV0ZXI=?= <j@bitron.ch>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] null_blk: fix blk_mq_init_queue() error handling
+References: <1420711456-17257-1-git-send-email-j@bitron.ch>
+In-Reply-To: <1420711456-17257-1-git-send-email-j@bitron.ch>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-08_04:2015-01-07,2015-01-08,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.925924926977281 urlsuspect_oldscore=0.925924926977281
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.925924926977281 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1501080144
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/15 17:30, Ian Campbell wrote:
-> On Wed, 2015-01-07 at 17:16 +0100, Imre Palik wrote:
->> From: "Palik, Imre" <imrep@amazon.de>
->>
->> In Dom0's the use of the TSC clocksource (whenever it is stable enough to
->> be used) instead of the Xen clocksource should not cause any issues, as
->> Dom0 VMs never live-migrated.
-> 
-> Is this still true given that dom0's vcpus are migrated amongst pcpus on
-> the host? The tsc are not synchronised on some generations of hardware
-> so the result there would be the TSC appearing to do very odd things
-> under dom0's feet. Does Linux cope with that or does it not matter for
-> some other reason?
+On 01/08/2015 03:04 AM, Jürg Billeter wrote:
+> blk_mq_init_queue() returns ERR_PTR() on failure, not NULL.
 
-First of all, if the initial pcpus are not synchronised, linux won't consider
-TSC as a viable clocksource.
+This is fixed in for-linus, going upstream this week.
 
-If the initial pcpus are synchronised, but then the dom0 vcpus are migrated to
-unsynchronised pcpus, then hopefully the tsc watchdog catches the issue, and
-the kernel falls back to the xen clocksource.  The issue here is that the
-watchdog can only detect clock skews bigger than 0.0625s/0.5s.  Hopefully this
-is enough to avoid the weirdest things.
 
-Also, some parts of the kernel (e.g., scheduling) will always use the paravirt
-clock.  No matter what priorities are set.
-
-So it should be safe for some definition of safe.
-But I was unable to test it on a hardware platform that would hit the problematic
-case described above.
-
-> 
->>
->> Cc: Anthony Liguori <aliguori@amazon.com>
->> Signed-off-by: Imre Palik <imrep@amazon.de>
->> ---
->>  arch/x86/xen/time.c |    4 ++++
->>  1 file changed, 4 insertions(+)
->>
->> diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
->> index f473d26..c768726 100644
->> --- a/arch/x86/xen/time.c
->> +++ b/arch/x86/xen/time.c
->> @@ -487,6 +487,10 @@ static void __init xen_time_init(void)
->>  	int cpu = smp_processor_id();
->>  	struct timespec tp;
->>  
->> +	/* As Dom0 is never moved, no penalty on using TSC there */
->> +	if (xen_initial_domain())
->> +		xen_clocksource.rating = 275;
->> +
->>  	clocksource_register_hz(&xen_clocksource, NSEC_PER_SEC);
->>  
->>  	if (HYPERVISOR_vcpu_op(VCPUOP_stop_periodic_timer, cpu, NULL) == 0) {
-> 
-> 
+-- 
+Jens Axboe
 
