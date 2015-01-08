@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932298AbbAHNuS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 08:50:18 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:63303 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932256AbbAHNuQ (ORCPT
+	id S1754884AbbAHNwm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 08:52:42 -0500
+Received: from mail-oi0-f48.google.com ([209.85.218.48]:46828 "EHLO
+	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754454AbbAHNwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 08:50:16 -0500
+	Thu, 8 Jan 2015 08:52:41 -0500
 MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <54AD4B1B.1030801@gmail.com>
-References: <1420219609-2568-1-git-send-email-waydi1@gmail.com>
-	<54A8AC74.2060106@huawei.com>
-	<54ABEB06.2010008@gmail.com>
-	<54ACA052.8010800@huawei.com>
-	<54AD4B1B.1030801@gmail.com>
-Date: Thu, 8 Jan 2015 14:50:15 +0100
-Message-ID: <CAJfpegsLg2UL06kR=0njvo9Lgdu20BsxxrHw0TyfokLNUg30dg@mail.gmail.com>
-Subject: Re: [PATCH] ovl: Prevent rw remount when it should be ro mount
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Seunghun Lee <waydi1@gmail.com>
-Cc: hujianyang <hujianyang@huawei.com>, Sedat Dilek <sedat.dilek@gmail.com>,
-        richard.weinberger@gmail.com,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-unionfs@vger.kernel.org
+In-Reply-To: <20150108102826.GC16059@krava.redhat.com>
+References: <1418310749-22267-1-git-send-email-jolsa@kernel.org>
+ <20141222150838.GF29096@krava.brq.redhat.com> <20150108102826.GC16059@krava.redhat.com>
+From: Namhyung Kim <namhyung@gmail.com>
+Date: Thu, 8 Jan 2015 22:52:20 +0900
+Message-ID: <CAM9d7cgiryFhLBu7RC6rGS80pqO7WEHQVBEFpjOuXYUOiACyoA@mail.gmail.com>
+Subject: Re: [PATCHv2 0/8] perf tools: Add perf data CTF conversion
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Jiri Olsa <jolsa@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Dominique Toupin <dominique.toupin@ericsson.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jeremie Galarneau <jgalar@efficios.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Tom Zanussi <tzanussi@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 7, 2015 at 4:04 PM, Seunghun Lee <waydi1@gmail.com> wrote:
->> On 2015/1/6 22:02, Seunghun Lee wrote:
->>> After patch:
->>> root@qemux86:~# mount -t overlay overlay -olowerdir=lower:lower2 merged
->>> mount: warning: merged seems to be mounted read-only.
->>> root@qemux86:~# mount | grep overlay
->>> overlay on /home/root/merged type overlay (ro,relatime,lowerdir=lower:lower2)
->>> root@qemux86:~# mount -o remount,rw merged
->>> mount: warning: /home/root/merged seems to be mounted read-only.
->>> root@qemux86:~# mount | grep overlay
->>> overlay on /home/root/merged type overlay (ro,relatime,lowerdir=lower:lower2)
->>> root@qemux86:~# echo hi > merged/hi
->>> -sh: merged/hi: Read-only file system
->>> root@qemux86:~#
->>>
->> If users want a rw mount, can we give them a ro mount? I think it's
->> wrong, .remount_fs should refuse this request.
+On Thu, Jan 8, 2015 at 7:28 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> ping
+>
+> On Mon, Dec 22, 2014 at 04:08:38PM +0100, Jiri Olsa wrote:
+>> On Thu, Dec 11, 2014 at 04:12:21PM +0100, Jiri Olsa wrote:
+>> > hi,
+>> > this is follow up on original RFC patchset:
+>> >   http://marc.info/?t=140732735600004&r=1&w=2
+>> >
+>> > Basically we are adding 'perf data convert' command to
+>> > allow conversion of perf data file into CTF [1] data.
+>> >
+>> > v2 changes:
+>> >   - addressed comments from Namhyung
+>> >   - rebased to latest acme's perf/core
+>>
+>> any ack? ;-)
 
-Yeah.  Applied fixed patch.
+I didn't give it a try myself but I couldn't find a problem anymore
+during the code review, so feel free to add
+
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 
 Thanks,
-Mikos
+Namhyung
