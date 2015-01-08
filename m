@@ -1,81 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861AbbAHD3P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 22:29:15 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:58802 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640AbbAHD3O (ORCPT
+	id S1756077AbbAHDa0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 22:30:26 -0500
+Received: from mail-oi0-f46.google.com ([209.85.218.46]:54192 "EHLO
+	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755390AbbAHDaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 22:29:14 -0500
-Message-ID: <54ADF90B.1070800@imgtec.com>
-Date: Thu, 8 Jan 2015 00:27:07 -0300
-From: Ezequiel Garcia <ezequiel.garcia@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 7 Jan 2015 22:30:24 -0500
 MIME-Version: 1.0
-To: =?UTF-8?B?IlFpIFdhbmcg546L6LW3IChxaXdhbmcpIg==?= 
-	<qiwang@micron.com>,
-        Brian Norris <computersforpeace@gmail.com>
-CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        =?UTF-8?B?IkZyYW5rIExpdSDliJjnvqQgKGZyYW5rbGl1KSI=?= 
-	<frankliu@micron.com>,
-        =?UTF-8?B?Ik1lbGFuaWUgWmhhbmcg5byg54eVIChtZWxhbmll?=
-	 =?UTF-8?B?emhhbmcpIg==?= <melaniezhang@micron.com>,
-        =?UTF-8?B?IlBldGVyIFA=?=
-	 =?UTF-8?B?YW4g5r2Y5qCLIChwZXRlcnBhbmRvbmcpIg==?= 
-	<peterpandong@micron.com>
-Subject: Re: [PATCH 0/3] An alternative to SPI NAND
-References: <87F60714EC601C4C83DFF1D2E3D390A04AB3F3@NTXXIAMBX02.xacn.micron.com> <20150108010257.GP9759@ld-irv-0074> <71CF8D7F32C5C24C9CD1D0E02D52498A7714DD2A@NTXXIAMBX02.xacn.micron.com>
-In-Reply-To: <71CF8D7F32C5C24C9CD1D0E02D52498A7714DD2A@NTXXIAMBX02.xacn.micron.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.100.200.172]
+In-Reply-To: <1420673754-6645-1-git-send-email-festevam@gmail.com>
+References: <1420673754-6645-1-git-send-email-festevam@gmail.com>
+Date: Thu, 8 Jan 2015 11:30:24 +0800
+Message-ID: <CA+8Hj82JWcb_+cvc6d75rd-2C_AiMmZwOAOFa2gTq2f1RpTz8A@mail.gmail.com>
+Subject: Re: [PATCH] ARM: imx_v6_v7_defconfig: Select CONFIG_FB_MXS
+From: Liu Ying <liu.y.victor@gmail.com>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Qi Wang,
+2015-01-08 7:35 GMT+08:00 Fabio Estevam <festevam@gmail.com>:
+> From: Fabio Estevam <fabio.estevam@freescale.com>
+>
+> CONFIG_FB_MXS is the LCD driver for mx6solo-lite and mx6solox.
+>
+> Enable it by default.
 
-On 01/07/2015 11:45 PM, Qi Wang 王起 (qiwang) wrote:
-> Hi Brian,
-> 
-> On Thu, Jan 08, 2015 at 9:03:24AM +0000, Brian Norris wrote:
->>
->> On Thu, Jan 08, 2015 at 12:47:24AM +0000, Peter Pan 潘栋 (peterpandong)
->> wrote:
->>> Documentation/devicetree/bindings/mtd/spi-nand.txt |   22 +
->>> drivers/mtd/Kconfig                                |    2 +
->>> drivers/mtd/Makefile                               |    1 +
->>> drivers/mtd/spi-nand/Kconfig                       |    7 +
->>> drivers/mtd/spi-nand/Makefile                      |    3 +
->>> drivers/mtd/spi-nand/spi-nand-base.c               | 2034
->> ++++++++++++++++++++
->>> drivers/mtd/spi-nand/spi-nand-bbt.c                | 1279 ++++++++++++
->>
->> I can already tell by the diffstat that I don't like this. We probably
->> don't need 3000 new lines of code for this, but we especially don't want
->> to duplicate nand_bbt.c. It won't take a lot of work to augment
->> nand_bbt.c to make it shareable. (I can whip that patch up if needed.)
-> 
-> Yes, I agree with you, Nand_bbt.c do can be shared by Parallel NAND and
-> SPI NAND. Actually, we are working at this now. Will send patches to you
-> Once we finished it.
-> 
+I'm not sure if it is suitable to enable CONFIG_FB_MXS by default.
+At least, I have no strong objections.
 
-Thanks for the quick submission!
+I am considering to add a LCDIF CRTC driver to the imx-drm framework
+so that we may use the existing LDB drm driver to support the mx6solox
+LVDS interface.
 
-However, Brian is right, this code duplication is a no go.
+I see the i915 and omap2 fb drivers depend on !DRM_XXXX:
 
-Perhaps a more valid approach would be to first identify the code that
-needs to be shared in nand_bbt.c and nand_base.c, and export those
-symbols (or maybe do the required refactor).
+grep DRM_ drivers/video/fbdev/ -nr
+drivers/video/fbdev/omap2/omapfb/Kconfig:3:        depends on FB &&
+OMAP2_DSS && !DRM_OMAP
+drivers/video/fbdev/Kconfig:1197:       depends on !DRM_I915
 
-Then, separate the SPI NAND upper and lower logic (in a similar to my
-proposal, which I still consider turned out to be clean).
+So, similarly, we'll probably have two LCDIF drivers and make the DRM
+one enabled by default - finally, CONFIG_FB_MXS is disabled.
 
-These two things would lead to a simpler and smaller patchset. I also
-suggest to cut off everything that we don't utterly need on a first
-submission, so it's easier to review.
+Another concern is the compatibility. Since both the framebuffer driver
+and the imx-drm driver would export the framebuffer interface to the
+user space, we'd better to keep the interface behavior the same.
+Maybe, this is not a big problem, because we need to keep the compatibility
+anyway...
+
+Regards,
+Liu Ying
+
+>
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+> ---
+>  arch/arm/configs/imx_v6_v7_defconfig | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/arch/arm/configs/imx_v6_v7_defconfig b/arch/arm/configs/imx_v6_v7_defconfig
+> index 9575af8..1f36977 100644
+> --- a/arch/arm/configs/imx_v6_v7_defconfig
+> +++ b/arch/arm/configs/imx_v6_v7_defconfig
+> @@ -203,6 +203,7 @@ CONFIG_DRM_PANEL_SIMPLE=y
+>  CONFIG_LCD_CLASS_DEVICE=y
+>  CONFIG_LCD_L4F00242T03=y
+>  CONFIG_LCD_PLATFORM=y
+> +CONFIG_FB_MXS=y
+>  CONFIG_BACKLIGHT_PWM=y
+>  CONFIG_BACKLIGHT_GPIO=y
+>  CONFIG_FRAMEBUFFER_CONSOLE=y
+> --
+> 1.9.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
 -- 
-Ezequiel
+Best Regards,
+Liu Ying
