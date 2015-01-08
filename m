@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237AbbAHXjr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 18:39:47 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:45312 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752882AbbAHXjp (ORCPT
+	id S932476AbbAHXkb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 18:40:31 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:53451 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932243AbbAHXka (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 18:39:45 -0500
-Message-ID: <54AF1540.6090800@codeaurora.org>
-Date: Thu, 08 Jan 2015 15:39:44 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 8 Jan 2015 18:40:30 -0500
 MIME-Version: 1.0
-To: Andy Gross <agross@codeaurora.org>, linux-arm-msm@vger.kernel.org
-CC: devicetree@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
-        linux-kernel@vger.kernel.org,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] soc: qcom: Add TCSR driver
-References: <1420757577-20425-1-git-send-email-agross@codeaurora.org> <1420757577-20425-2-git-send-email-agross@codeaurora.org>
-In-Reply-To: <1420757577-20425-2-git-send-email-agross@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CACRpkdZq4r+3yLvumxM-+f-VyMCb-ZF8xE7_kOx7uAoxrPzpTw@mail.gmail.com>
+References: <1418302951-9309-1-git-send-email-octavian.purdila@intel.com>
+	<1418302951-9309-3-git-send-email-octavian.purdila@intel.com>
+	<CACRpkdZq4r+3yLvumxM-+f-VyMCb-ZF8xE7_kOx7uAoxrPzpTw@mail.gmail.com>
+Date: Fri, 9 Jan 2015 12:40:28 +1300
+Message-ID: <CAE1zotKu0f+169_WO3O=+Q1hpU_r-x60FLpJRWyd-na7B9T_VA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] gpio: dln2: use bus_sync_unlock instead of scheduling work
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Johan Hovold <johan@kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2015 02:52 PM, Andy Gross wrote:
-> +
-> +static struct platform_driver qcom_tcsr_driver = {
-> +	.driver = {
-> +		.name		= "tcsr",
-> +		.owner		= THIS_MODULE,
+On Thu, Jan 1, 2015 at 9:56 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Thu, Dec 11, 2014 at 2:02 PM, Octavian Purdila
+> <octavian.purdila@intel.com> wrote:
+>
+>> Use the irq_chip bus_sync_unlock method to update hardware registers
+>> instead of scheduling work from the mask/unmask methods. This simplifies
+>> a bit the driver and make it more uniform with the other GPIO IRQ
+>> drivers.
+>>
+>> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+>
+> Patch applied for fixes.
+>
 
-This is done by the module_platform_driver() macro now so it's largely
-unnecessary. Best to remove it so that the janitors don't find you!
+Hi Linus,
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
+I don't see the patch applied, could you please consider it for the
+-for-next branch?
 
+Thanks,
+Tavi
