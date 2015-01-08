@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757272AbbAHWFg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 17:05:36 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:50079 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753677AbbAHWFe (ORCPT
+	id S1756129AbbAHWJD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 17:09:03 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:34637 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752017AbbAHWJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 17:05:34 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH] serial: 8250: Make ISA ports optional
-Date: Thu, 08 Jan 2015 23:05:12 +0100
-Message-ID: <1896224.oMI8M6J5T7@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <54AEAC47.1040403@hurleysoftware.com>
-References: <1420513785-23660-1-git-send-email-peter@hurleysoftware.com> <20150108131008.16c9a31c@lxorguk.ukuu.org.uk> <54AEAC47.1040403@hurleysoftware.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:zYqUSBrBS6uCLv29FQcr5J6Q/SP3kTaoAZ2H2kFawLhQ9DfliTg
- Jk3aY5KxHdOMq+ZhqfPcn0GHNhXY1cbrhaXVEy33uB3YngLEBKgeQlnElwJ/lXUWrrDjEwn
- dW1dqai3z/0MKX4fz54sZ+gVhzXq4C4BW5YDsluXYau8sEBpLHSq5FZKutxAGrYmsFzyboA
- hWbpsIjmc1/qrSu0FNQLQ==
-X-UI-Out-Filterresults: notjunk:1;
+	Thu, 8 Jan 2015 17:09:00 -0500
+Message-ID: <1420754931.6338.95.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [RFC][PATCH 6/9] gen_initramfs_list.sh: include xattrs
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Rob Landley <rob@landley.net>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        initramfs <initramfs@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        linux-ima-devel@lists.sourceforge.net,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Fionnuala Gunter <fin@linux.vnet.ibm.com>
+Date: Thu, 08 Jan 2015 17:08:51 -0500
+In-Reply-To: <54AECA32.6000304@landley.net>
+References: <1420663980-20842-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1420663980-20842-7-git-send-email-zohar@linux.vnet.ibm.com>
+	 <CA+5PVA77x2W9LyHMq1jSW3HKqNgFPz-gPVOH0QtEmmMBwzOx_Q@mail.gmail.com>
+	 <1420729994.6338.52.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <54AECA32.6000304@landley.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15010822-0021-0000-0000-000003431A58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 January 2015 11:11:51 Peter Hurley wrote:
+On Thu, 2015-01-08 at 12:19 -0600, Rob Landley wrote:
 > 
-> This interface is just storage and minor allocation, since the
-> port-reuse behavior will be limited to the "universal" driver.
-> From a sub-driver perspective, the shared storage is actually
-> a hindrance, so that reduces the requirement to minor allocation.
+> But I am curious about how you propose to encode xattrs into the cpio
+> format. (Which Al Viro chose because it's _simple_. There isn't really
+> a
+> controlling spec since Posix decided to deprecated it in 2001 and
+> yank
+> it from SUSv3 onwards. LSB extended several header fields to 8 hex
+> digits instead of 6, but they still have 32 bit timestamps which seems
+> a
+> bit short-sighted. If you're going to define a new rev with a new
+> magic
+> number, there are a couple other things you might wanna fix...)
+
+Sounds like a good opportunity to make the other changes as well.  We
+can include the other changes in this patch set.  Is this (initramfs)
+the right mailing list for this discussion?  Do other people need to be
+included?
+
+> I ask because I maintain a new from-scratch cpio implementation
+> (http://landley.net/hg/toybox/file/1571/toys/posix/cpio.c), so I'd
+> presumably have to add your format extensions to this. Is there any
+> sort
+> of documentation on them?
 > 
-> And that's where I'm stuck at the moment -- how to share ttyS
-> minor allocation. ttyS console is a related problem.
+> The toybox config Android is using has this cpio implementation
+> enabled
+> (see
+> https://android.googlesource.com/platform/external/toybox/+/9250c95a8c47/Android.mk)
+> so I'd rather like to get this sort of detail right...
 
-One idea that has come up in the past but never saw an implementation
-is to make the ttyS namespace and minor numbers completely generic and
-let any serial port driver use it. This would be a major rework, but
-have the added advantage of cleaning up a number of other namespace
-issues as well. There also lots of open question, in particular how
-to maintain compatibility with existing drivers. One could imagine
-that each uart always gets a ttyS device and optionally also gets
-a device node for the same port with a driver specific chardev as
-most of them do today. Or it could be an either/or decision that is
-made at compile time or as a module parameter.
+The xattr section, which follows the file name, is of the format:
+<number of xattrs> { <xattr name> <xattr data size> <xattr data> } for
+each xattr, terminated with a NULL byte and padded to a 4 byte boundary.
 
-	Arnd
+The header contains an additional field, before the checksum, containing
+the xattr section length, including the NULL byte, but without the
+padding.
+
+Note that gen_init_cpio does not include "security.evm" as it is file
+system dependent.
+
+Mimi
+
