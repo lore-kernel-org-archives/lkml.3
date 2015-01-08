@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783AbbAHGUh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 01:20:37 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:55286 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300AbbAHGUg (ORCPT
+	id S1753342AbbAHGY2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 01:24:28 -0500
+Received: from sci-ig2.spreadtrum.com ([222.66.158.135]:39145 "EHLO
+	SHSQR01.spreadtrum.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751488AbbAHGY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 01:20:36 -0500
-X-Original-SENDERIP: 10.177.220.203
-X-Original-MAILFROM: namhyung@kernel.org
-Date: Thu, 8 Jan 2015 15:18:35 +0900
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Alexis Berlemont <alexis.berlemont@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 01/30] perf tools: Add new build framework support
-Message-ID: <20150108061835.GD7268@sejong>
-References: <1420212972-21595-1-git-send-email-jolsa@kernel.org>
- <1420212972-21595-2-git-send-email-jolsa@kernel.org>
+	Thu, 8 Jan 2015 01:24:27 -0500
+From: =?gb2312?B?Q2h1bnlhbiBaaGFuZyAo1cW0utHeKQ==?= 
+	<Chunyan.Zhang@spreadtrum.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "ionut.m.alexa@gmail.com" <ionut.m.alexa@gmail.com>,
+        =?gb2312?B?TWFyayBZYW5nICjR7tPAu9Qp?= <Mark.Yang@spreadtrum.com>,
+        =?gb2312?B?V2VpIFFpYW8gKMfHzrAp?= <Wei.Qiao@spreadtrum.com>,
+        =?gb2312?B?R2VuZyBSZW4gKMjO4tkp?= <Geng.Ren@spreadtrum.com>,
+        =?gb2312?B?T3Jzb24gWmhhaSAotdS+qSk=?= <Orson.Zhai@spreadtrum.com>,
+        =?gb2312?B?WmhpemhvdSBaaGFuZyAo1cXWztbeKQ==?= 
+	<Zhizhou.Zhang@spreadtrum.com>,
+        =?gb2312?B?S2UgV2FuZyAozfW/xik=?= <Ke.Wang@spreadtrum.com>,
+        "zhang.lyra@gmail.com" <zhang.lyra@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@infradead.org>, "Tejun Heo" <tj@kernel.org>
+Subject: RE: [PATCH] kernel: async: Fixed the wrong waitting condition of
+ wait_event
+Thread-Topic: [PATCH] kernel: async: Fixed the wrong waitting condition of
+ wait_event
+Thread-Index: AQHQKtuHfaC3GIuPaUGx5xFMzLOA6Zy1u7kA
+Date: Thu, 8 Jan 2015 06:20:35 +0000
+Message-ID: <4fdc864411a24125b49ca66989011928@SHMBX02.spreadtrum.com>
+References: <async>
+	<1420428935-30385-1-git-send-email-chunyan.zhang@spreadtrum.com>,<20150107163915.50a71131faf74e0f75562137@linux-foundation.org>
+In-Reply-To: <20150107163915.50a71131faf74e0f75562137@linux-foundation.org>
+Accept-Language: en-US, zh-CN, en-HK
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.0.67.164]
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1420212972-21595-2-git-send-email-jolsa@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-MAIL: SHSQR01.spreadtrum.com t086Knf2058981
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t086OXqw028941
 
-On Fri, Jan 02, 2015 at 04:35:43PM +0100, Jiri Olsa wrote:
-> Adding new build framework. There's no change for actual
-> building at this point, it comes in the next patches.
-> 
-> The idea and more details are explained in the
-> 'Documentation/Build' file.
+Hi, Andrew
+
+Could you give us the test log including the runtime problems you've got?
+
+Thank you so much.
 
 
-[SNIP]
-> diff --git a/tools/perf/Documentation/Build b/tools/perf/Documentation/Build
-> new file mode 100644
-> index 000000000000..7008520600eb
-> --- /dev/null
-> +++ b/tools/perf/Documentation/Build
-> @@ -0,0 +1,123 @@
-> +
-> +1) perf build
-> +=============
-> +The perf build process consists of several separated building blocks,
-> +which are linked together to form the perf binary:
-> +  - libperf library (static)
-> +  - perf builtin commands
-> +  - traceevent library (static)
-> +  - GTK ui library
+Best regards
+Chunyan
 
-And libapikfs library (static) ?
+On Mon, 5 Jan 2015 11:35:35 +0800 Chunyan Zhang <chunyan.zhang@spreadtrum.com> wrote:
 
-Thanks,
-Namhyung
+> This patch changes the waitting condition of wait_event in the
+> function 'async_synchronize_cookie_domain'.
+>
+> This function waits until all asynchronous function calls for the certain
+> domain have been done.
+>
+> But, the function 'lowest_in_progress' returns the lowest *pending*
+> entry's cookie.
+>
+> So we should make sure that the return value of lowest_in_progress(domain)
+> must be larger than @cookie.
+
+I'm having runtime problems with this.  Twice the kernel silently hangs
+late in initcalls and the third time I got a great stream of oopses.
+
+I'll drop it.  Hopefully you'll be able to work through the bug with
+Arjan and Tejun.
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
