@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756393AbbAHOov (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 09:44:51 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:31348 "EHLO SMTP.CITRIX.COM"
+	id S1756499AbbAHOp3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 09:45:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51339 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753771AbbAHOou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 09:44:50 -0500
-X-IronPort-AV: E=Sophos;i="5.07,723,1413244800"; 
-   d="scan'208";a="212680787"
-Message-ID: <54AE97BC.1040909@citrix.com>
-Date: Thu, 8 Jan 2015 14:44:12 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1752063AbbAHOp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 09:45:28 -0500
+Date: Thu, 8 Jan 2015 15:44:36 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Alexis Berlemont <alexis.berlemont@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 29/30] perf tools: Add support to configure builtin
+ commands inclusion
+Message-ID: <20150108144436.GD16094@krava.brq.redhat.com>
+References: <1420212972-21595-1-git-send-email-jolsa@kernel.org>
+ <1420212972-21595-30-git-send-email-jolsa@kernel.org>
+ <20150108071527.GE7268@sejong>
 MIME-Version: 1.0
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
-        <konrad.wilk@oracle.com>, <jgross@suse.com>
-CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH v2] x86/xen: Free bootmem in free_p2m_page()
- during early boot
-References: <1420655263-17239-1-git-send-email-boris.ostrovsky@oracle.com>
-In-Reply-To: <1420655263-17239-1-git-send-email-boris.ostrovsky@oracle.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150108071527.GE7268@sejong>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/15 18:27, Boris Ostrovsky wrote:
-> With recent changes in p2m we now have legitimate cases when
-> p2m memory needs to be freed during early boot (i.e. before
-> slab is initialized).
-> 
-> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-> Reviewed-by: Juergen Gross <jgross@suse.com>
-> ---
-> 
-> v2: Add __ref annotation
+On Thu, Jan 08, 2015 at 04:15:27PM +0900, Namhyung Kim wrote:
 
-Thanks.  I've updated stable/for-linus-3.19 with this version.
+SNIP
 
-David
+> > +perf-$(CONFIG_BUILTIN_KVM)           += builtin-kvm.o
+> > +perf-$(CONFIG_BUILTIN_INJECT)        += builtin-inject.o
+> > +perf-$(CONFIG_BUILTIN_MEM)           += builtin-mem.o
+> > +
+> > +ifeq ($(CONFIG_AUDIT),y)
+> > +perf-$(CONFIG_BUILTIN_TRACE)         += builtin-trace.o
+> > +endif
+> > +
+> > +ifeq ($(CONFIG_LIBELF),y)
+> > +perf-$(CONFIG_BUILTIN_PROBE)         += builtin-probe.o
+> > +endif
+> >  
+> >  perf-y += bench/
+> 
+> I guess it also needs to be changed like below?
+> 
+>    perf-$(CONFIG_BUILTIN_BENCH) += bench/
+> 
+
+right, thanks
+
+jirka
