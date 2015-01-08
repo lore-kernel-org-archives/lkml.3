@@ -1,52 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757158AbbAHSCh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 13:02:37 -0500
-Received: from mga09.intel.com ([134.134.136.24]:62723 "EHLO mga09.intel.com"
+	id S932498AbbAHSGa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 13:06:30 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:53140 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755370AbbAHSCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 13:02:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="509438710"
-Date: Fri, 9 Jan 2015 02:02:00 +0800
-From: kbuild test robot <fengguang.wu@intel.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: kbuild-all@01.org, Lee Jones <lee.jones@linaro.org>,
-        Octavian Purdila <octavian.purdila@intel.com>,
-        Johan Hovold <johan@kernel.org>,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [wsa:i2c/quirks 8/11] drivers/i2c/busses/i2c-dln2.c:184:27: sparse:
- symbol 'dln2_i2c_quirks' was not declared. Should it be static?
-Message-ID: <201501090243.rmSyDkOe%fengguang.wu@intel.com>
+	id S932066AbbAHSG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 13:06:28 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
+        Eduardo Valentin <edubezval@gmail.com>
+CC: <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>
+Subject: [PATCH V2] (gpio-fan): Add thermal control hooks
+Date: Thu, 8 Jan 2015 12:05:03 -0600
+Message-ID: <1420740303-12529-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: fengguang.wu@intel.com
-X-SA-Exim-Scanned: No (on bee); SAEximRunCond expanded to false
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tree:   git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux i2c/quirks
-head:   b1d39af8ae21f4930854b0656aa83a83fd38049e
-commit: dfd33ddaa80259918c200cfacb9076c75cf1da82 [8/11] i2c: dln2: make use of the new infrastructure for quirks
-reproduce:
-  # apt-get install sparse
-  git checkout dfd33ddaa80259918c200cfacb9076c75cf1da82
-  make ARCH=x86_64 allmodconfig
-  make C=1 CF=-D__CHECK_ENDIAN__
+Allow gpio-fan to be used as thermal cooling device for platforms that
+use GPIO maps to control fans.
 
+As part of this change, we make the shutdown and remove logic the same
+as well.
 
-sparse warnings: (new ones prefixed by >>)
-
->> drivers/i2c/busses/i2c-dln2.c:184:27: sparse: symbol 'dln2_i2c_quirks' was not declared. Should it be static?
-
-Please review and possibly fold the followup patch.
-
+Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
-0-DAY kernel test infrastructure                Open Source Technology Center
-http://lists.01.org/mailman/listinfo/kbuild                 Intel Corporation
+
+Changes since v1:
+	- review comments incorporated (hopefully correct)
+	- checkpatch verified
+	- retested :).
+
+V1: https://patchwork.kernel.org/patch/5587061/
+
+ .../devicetree/bindings/gpio/gpio-fan.txt          |   13 +++
+ drivers/hwmon/gpio-fan.c                           |   83 ++++++++++++++++++--
+ 2 files changed, 89 insertions(+), 7 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/gpio/gpio-fan.txt b/Documentation/devicetree/bindings/gpio/gpio-fan.txt
+index 2dd457a3469a..43ca2a45b862 100644
+--- a/Documentation/devicetree/bindings/gpio/gpio-fan.txt
++++ b/Documentation/devicetree/bindings/gpio/gpio-fan.txt
+@@ -11,6 +11,9 @@ Required properties:
+ Optional properties:
+ - alarm-gpios: This pin going active indicates something is wrong with
+   the fan, and a udev event will be fired.
++- cooling-cells: If used as a cooling device, must be <2>
++  Also see: Documentation/devicetree/bindings/thermal/thermal.txt
++  min and max states are derived from the speed-map of the fan.
+ 
+ Examples:
+ 
+@@ -23,3 +26,13 @@ Examples:
+ 				      6000 2>;
+ 		alarm-gpios = <&gpio1 15 1>;
+ 	};
++	gpio_fan_cool: gpio_fan {
++		compatible = "gpio-fan";
++		gpios = <&gpio2 14 1
++			 &gpio2 13 1>;
++		gpio-fan,speed-map =	<0    0>,
++					<3000 1>,
++					<6000 2>;
++		alarm-gpios = <&gpio2 15 1>;
++		#cooling-cells = <2>; /* min followed by max */
++	};
+diff --git a/drivers/hwmon/gpio-fan.c b/drivers/hwmon/gpio-fan.c
+index 36abf814b8c7..20232c11b579 100644
+--- a/drivers/hwmon/gpio-fan.c
++++ b/drivers/hwmon/gpio-fan.c
+@@ -34,10 +34,13 @@
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
+ #include <linux/of_gpio.h>
++#include <linux/thermal.h>
+ 
+ struct gpio_fan_data {
+ 	struct platform_device	*pdev;
+ 	struct device		*hwmon_dev;
++	/* Cooling device if any */
++	struct thermal_cooling_device *cdev;
+ 	struct mutex		lock; /* lock GPIOs operations. */
+ 	int			num_ctrl;
+ 	unsigned		*ctrl;
+@@ -387,6 +390,53 @@ static int fan_ctrl_init(struct gpio_fan_data *fan_data,
+ 	return 0;
+ }
+ 
++static int gpio_fan_get_max_state(struct thermal_cooling_device *cdev,
++				  unsigned long *state)
++{
++	struct gpio_fan_data *fan_data = cdev->devdata;
++
++	if (!fan_data)
++		return -EINVAL;
++
++	*state = fan_data->num_speed - 1;
++	return 0;
++}
++
++static int gpio_fan_get_cur_state(struct thermal_cooling_device *cdev,
++				  unsigned long *state)
++{
++	struct gpio_fan_data *fan_data = cdev->devdata;
++	int r;
++
++	if (!fan_data)
++		return -EINVAL;
++
++	r = get_fan_speed_index(fan_data);
++	if (r < 0)
++		return r;
++
++	*state = r;
++	return 0;
++}
++
++static int gpio_fan_set_cur_state(struct thermal_cooling_device *cdev,
++				  unsigned long state)
++{
++	struct gpio_fan_data *fan_data = cdev->devdata;
++
++	if (!fan_data)
++		return -EINVAL;
++
++	set_fan_speed(fan_data, state);
++	return 0;
++}
++
++static const struct thermal_cooling_device_ops gpio_fan_cool_ops = {
++	.get_max_state = gpio_fan_get_max_state,
++	.get_cur_state = gpio_fan_get_cur_state,
++	.set_cur_state = gpio_fan_set_cur_state,
++};
++
+ #ifdef CONFIG_OF_GPIO
+ /*
+  * Translate OpenFirmware node properties into platform_data
+@@ -495,6 +545,11 @@ static int gpio_fan_probe(struct platform_device *pdev)
+ 	struct gpio_fan_data *fan_data;
+ 	struct gpio_fan_platform_data *pdata = dev_get_platdata(&pdev->dev);
+ 
++	fan_data = devm_kzalloc(&pdev->dev, sizeof(struct gpio_fan_data),
++				GFP_KERNEL);
++	if (!fan_data)
++		return -ENOMEM;
++
+ #ifdef CONFIG_OF_GPIO
+ 	if (!pdata) {
+ 		pdata = devm_kzalloc(&pdev->dev,
+@@ -506,17 +561,20 @@ static int gpio_fan_probe(struct platform_device *pdev)
+ 		err = gpio_fan_get_of_pdata(&pdev->dev, pdata);
+ 		if (err)
+ 			return err;
++		/* Optional cooling device register for Device tree platforms */
++		fan_data->cdev =
++			thermal_of_cooling_device_register(pdev->dev.of_node,
++							   "gpio-fan", fan_data,
++							   &gpio_fan_cool_ops);
+ 	}
+ #else /* CONFIG_OF_GPIO */
+ 	if (!pdata)
+ 		return -EINVAL;
++	/* Optional cooling device register for non Device tree platforms */
++	fan_data->cdev = thermal_cooling_device_register("gpio-fan", fan_data,
++							 &gpio_fan_cool_ops);
+ #endif /* CONFIG_OF_GPIO */
+ 
+-	fan_data = devm_kzalloc(&pdev->dev, sizeof(struct gpio_fan_data),
+-				GFP_KERNEL);
+-	if (!fan_data)
+-		return -ENOMEM;
+-
+ 	fan_data->pdev = pdev;
+ 	platform_set_drvdata(pdev, fan_data);
+ 	mutex_init(&fan_data->lock);
+@@ -550,12 +608,22 @@ static int gpio_fan_probe(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static void gpio_fan_shutdown(struct platform_device *pdev)
++static int gpio_fan_remove(struct platform_device *pdev)
+ {
+-	struct gpio_fan_data *fan_data = dev_get_drvdata(&pdev->dev);
++	struct gpio_fan_data *fan_data = platform_get_drvdata(pdev);
++
++	if (!IS_ERR(fan_data->cdev))
++		thermal_cooling_device_unregister(fan_data->cdev);
+ 
+ 	if (fan_data->ctrl)
+ 		set_fan_speed(fan_data, 0);
++
++	return 0;
++}
++
++static void gpio_fan_shutdown(struct platform_device *pdev)
++{
++	gpio_fan_remove(pdev);
+ }
+ 
+ #ifdef CONFIG_PM_SLEEP
+@@ -589,6 +657,7 @@ static SIMPLE_DEV_PM_OPS(gpio_fan_pm, gpio_fan_suspend, gpio_fan_resume);
+ 
+ static struct platform_driver gpio_fan_driver = {
+ 	.probe		= gpio_fan_probe,
++	.remove		= gpio_fan_remove,
+ 	.shutdown	= gpio_fan_shutdown,
+ 	.driver	= {
+ 		.name	= "gpio-fan",
+-- 
+1.7.9.5
+
