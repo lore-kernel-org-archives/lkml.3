@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080AbbAHPFt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 10:05:49 -0500
-Received: from fortimail.online.lv ([81.198.164.220]:40206 "EHLO
-	fortimail.online.lv" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601AbbAHPFs (ORCPT
+	id S1756508AbbAHPGi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 10:06:38 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:62152 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754324AbbAHPGg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 10:05:48 -0500
-Message-ID: <54AE9CC8.2080302@apollo.lv>
-Date: Thu, 08 Jan 2015 17:05:44 +0200
-From: Raimonds Cicans <ray@apollo.lv>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0)
- Gecko/20100101 Thunderbird/31.3.0
+	Thu, 8 Jan 2015 10:06:36 -0500
+Message-ID: <54AE9CF0.8060907@gmail.com>
+Date: Thu, 08 Jan 2015 16:06:24 +0100
+From: Imre Palik <imrep.amz@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org
-Subject: Re: Questions about IOMMU & PCIe switch
-References: <54ACB0D4.3000008@apollo.lv> <54AD21E2.2020100@ladisch.de>
- <54AD3D0B.6060501@apollo.lv> <54AE410B.40101@ladisch.de>
-In-Reply-To: <54AE410B.40101@ladisch.de>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: xen-devel@lists.xenproject.org, "Palik, Imre" <imrep@amazon.de>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, David Vrabel <david.vrabel@citrix.com>,
+        Anthony Liguori <aliguori@amazon.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Xen-devel] [PATCH RFC] xen-time: decreasing the rating of the
+ xen clocksource below that of the tsc clocksource for dom0's
+References: <1420647398-20207-1-git-send-email-imrep.amz@gmail.com> <1420648234.18631.117.camel@citrix.com>
+In-Reply-To: <1420648234.18631.117.camel@citrix.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-DomainKey-Status: no signature
-DKIM-Status: no signature
-X-AXIGEN-DK-Result: No records
-X-AXIGEN-DKIM-Result: No records
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.01.2015 10:34, Clemens Ladisch wrote:
-> Raimonds Cicans wrote:
->> https://github.com/ljalves/linux_media/issues/66
-> If the TBS driver works, why don't you use it?
-1) driver is not stable in 24x7 setups
+On 01/07/15 17:30, Ian Campbell wrote:
+> On Wed, 2015-01-07 at 17:16 +0100, Imre Palik wrote:
+>> From: "Palik, Imre" <imrep@amazon.de>
+>>
+>> In Dom0's the use of the TSC clocksource (whenever it is stable enough to
+>> be used) instead of the Xen clocksource should not cause any issues, as
+>> Dom0 VMs never live-migrated.
+> 
+> Is this still true given that dom0's vcpus are migrated amongst pcpus on
+> the host? The tsc are not synchronised on some generations of hardware
+> so the result there would be the TSC appearing to do very odd things
+> under dom0's feet. Does Linux cope with that or does it not matter for
+> some other reason?
 
-2) driver use old DVBAPI. This cause problems with some
-      user space programs.
+First of all, if the initial pcpus are not synchronised, linux won't consider
+TSC as a viable clocksource.
 
-3) TBS recommends to use card in MSI interrupt mode
-      but this mode on IOMMU systems do not work:
-      card is able to find transponders and tune to it
-      but can not receive any data
+If the initial pcpus are synchronised, but then the dom0 vcpus are migrated to
+unsynchronised pcpus, then hopefully the tsc watchdog catches the issue, and
+the kernel falls back to the xen clocksource.  The issue here is that the
+watchdog can only detect clock skews bigger than 0.0625s/0.5s.  Hopefully this
+is enough to avoid the weirdest things.
 
-4) I use GRSecurity patched kernels but external media
-     drivers are incompatible with such kernels.
-     I am forced to use driver source code injection in kernel
-     from project https://github.com/bas-t/saa716x-intree
-     which injects few drivers from https://github.com/ljalves/linux_media
-     in kernel source tree.
+Also, some parts of the kernel (e.g., scheduling) will always use the paravirt
+clock.  No matter what priorities are set.
 
-5) I prefer open source drivers, but TBS drivers are half way open -
-     open back-end drivers and closed front-end drivers.
+So it should be safe for some definition of safe.
+But I was unable to test it on a hardware platform that would hit the problematic
+case described above.
 
->
-> The WARNING from the kernel log indicates a hardware bug in the PCIe
-> bridge.  Do you have the same card, and do you also get this warning
-> with kernel 3.16?
-1) I have same card with same revision number
+> 
+>>
+>> Cc: Anthony Liguori <aliguori@amazon.com>
+>> Signed-off-by: Imre Palik <imrep@amazon.de>
+>> ---
+>>  arch/x86/xen/time.c |    4 ++++
+>>  1 file changed, 4 insertions(+)
+>>
+>> diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+>> index f473d26..c768726 100644
+>> --- a/arch/x86/xen/time.c
+>> +++ b/arch/x86/xen/time.c
+>> @@ -487,6 +487,10 @@ static void __init xen_time_init(void)
+>>  	int cpu = smp_processor_id();
+>>  	struct timespec tp;
+>>  
+>> +	/* As Dom0 is never moved, no penalty on using TSC there */
+>> +	if (xen_initial_domain())
+>> +		xen_clocksource.rating = 275;
+>> +
+>>  	clocksource_register_hz(&xen_clocksource, NSEC_PER_SEC);
+>>  
+>>  	if (HYPERVISOR_vcpu_op(VCPUOP_stop_periodic_timer, cpu, NULL) == 0) {
+> 
+> 
 
-2) affected computer is Intel based but mine is AMD based
-
-3) I can not test kernel 3.16 because I had IOMMU related regression
-     in kernels 3.14-3.17 (AMD-Vi: Completion-Wait loop timed out)
-     On other kernels I do not have such warning, but starting from
-     kernel 3.17.7 I have IOMMU related messages with my other card
-    (TBS 6981):
-
-AMD-Vi: Event logged [IO_PAGE_FAULT device=08:00.0 domain=0x001c 
-address=0x0000000001355000 flags=0x0000]
-
-and
-
-WARNING: CPU: 0 PID: 13204 at drivers/iommu/amd_iommu.c:2625 
-dma_ops_domain_unmap.part.9+0x4d/0x56()
-
-Because TBS 6981 driver is included in kernel I contacted yesterday 
-linux-media mailing list, but not received answer yet.
-
-
-
-Raimonds Cicans
