@@ -1,84 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757136AbbAHRCG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 12:02:06 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:58052 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755989AbbAHRCB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 12:02:01 -0500
-Date: Thu, 8 Jan 2015 17:01:52 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Pratyush Anand <panand@redhat.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tixy@linaro.org" <tixy@linaro.org>,
-        "ananth@in.ibm.com" <ananth@in.ibm.com>,
-        "sandeepa.prabhu@linaro.org" <sandeepa.prabhu@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "anil.s.keshavamurthy@intel.com" <anil.s.keshavamurthy@intel.com>,
-        "masami.hiramatsu.pt@hitachi.com" <masami.hiramatsu.pt@hitachi.com>,
-        "wcohen@redhat.com" <wcohen@redhat.com>
-Subject: Re: [RFC 6/8] ARM64: Handle TRAP_HWBRKPT for user mode as well
-Message-ID: <20150108170152.GS11583@arm.com>
-References: <cover.1420038188.git.panand@redhat.com>
- <1e0a9e778669bb2a2e40bf101eff8ae85110ce54.1420038188.git.panand@redhat.com>
- <20150102180523.GC6761@redhat.com>
+	id S1756928AbbAHRDY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 12:03:24 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:50768 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751490AbbAHRDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 12:03:23 -0500
+Date: Thu, 8 Jan 2015 11:02:36 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+CC: Rohith Seelaboyina <rseelaboyina@nvidia.com>, <balbi@ti.com>,
+        <gregkh@linuxfoundation.org>, <r.baldyga@samsung.com>,
+        <andrzej.p@samsung.com>, <joe@perches.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] usb: gadget: ffs: Fix sparse error
+Message-ID: <20150108170236.GI31926@saruman>
+Reply-To: <balbi@ti.com>
+References: <1419422401-8401-1-git-send-email-rseelaboyina@nvidia.com>
+ <xa1t3885qg8k.fsf@mina86.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3U8TY7m7wOx7RL1F"
 Content-Disposition: inline
-In-Reply-To: <20150102180523.GC6761@redhat.com>
+In-Reply-To: <xa1t3885qg8k.fsf@mina86.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 02, 2015 at 06:05:23PM +0000, Oleg Nesterov wrote:
-> Let me repeat once again that I know absolutely nothing about arm* ;)
-> 
-> On 12/31, Pratyush Anand wrote:
-> >
-> > uprobe registers a handler at step_hook. So, single_step_handler now
-> > checks for user mode as well if there is a valid hook.
-> >
-> > Signed-off-by: Pratyush Anand <panand@redhat.com>
-> > ---
-> >  arch/arm64/kernel/debug-monitors.c | 6 +++---
-> >  1 file changed, 3 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/arch/arm64/kernel/debug-monitors.c b/arch/arm64/kernel/debug-monitors.c
-> > index b056369fd47d..2676b8655241 100644
-> > --- a/arch/arm64/kernel/debug-monitors.c
-> > +++ b/arch/arm64/kernel/debug-monitors.c
-> > @@ -236,6 +236,9 @@ static int single_step_handler(unsigned long addr, unsigned int esr,
-> >  	if (!reinstall_suspended_bps(regs))
-> >  		return 0;
-> >
-> > +	if (call_step_hook(regs, esr) == DBG_HOOK_HANDLED)
-> > +		return 0;
-> > +
-> >  	if (user_mode(regs)) {
-> >  		info.si_signo = SIGTRAP;
-> >  		info.si_errno = 0;
-> > @@ -251,9 +254,6 @@ static int single_step_handler(unsigned long addr, unsigned int esr,
-> >  		 */
-> >  		user_rewind_single_step(current);
-> >  	} else {
-> > -		if (call_step_hook(regs, esr) == DBG_HOOK_HANDLED)
-> > -			return 0;
-> > -
-> 
-> Agreed, we need something like this change...
-> 
-> But did you verify that it can't break other users of register_step_hook() ?
-> The current handlers do not check user_mode() == F, they assume that they
-> can't be called otherwise.
-> 
-> If this all is correct, please explain why in the changelog.
+--3U8TY7m7wOx7RL1F
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I think you're right, and kgdb will need fixing with this change.
+Hi,
 
-Will
+On Wed, Dec 24, 2014 at 03:23:07PM +0100, Michal Nazarewicz wrote:
+> On Wed, Dec 24 2014, Rohith Seelaboyina wrote:
+> > This patch fixes the sparse error in functionfs
+> > driver.
+> >
+> > drivers/usb/gadget/function/f_fs.c:400:44: error: bad
+> > constant experssion.
+> >
+> > Dynamic memory allocation through kcalloc is more safer
+> > than declaring variable array size, Fix this error by
+> > using kcalloc for memory allocation, Check if memory
+> > allocation is successful and return -ENOMEM on failure.
+> >
+> > Signed-off-by: Rohith Seelaboyina <rseelaboyina@nvidia.com>
+>=20
+> This has already been addressed in a way that does not require dynamic
+> allocation: <https://lkml.org/lkml/2014/9/10/513>.  I'd rather patch
+> attached at the end would be applied.
+
+can you send below as a proper patch ?
+
+thanks
+
+--=20
+balbi
+
+--3U8TY7m7wOx7RL1F
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUrrgrAAoJEIaOsuA1yqREuWEP/0fXGXsyzKL9hKjZWl50IlBP
+d2XMVPwlOR9zNlSSz02QKyDWnnie5JaE9x/l8YAAU8BKVikQLmaSvBAvbK1zIkgc
+EKDMQwE/5OxKEoO4u9UHY5+8FvpWmV25NzemyGYou9p1S4EjyycUfc+EGu3/VzwH
+lkzHTdPux39e6mgqSk9yXcOiVdX3wV5mnkz3BFpQTnrVHruqygFgJzF4pficlf79
+8knf4jNjSIo6+qmMxFSUQXIgTrSw21WqAXdVcWdB9JqIQ/yPMdg/kc3WMgBrw236
+PBH90YtodCmhWUmpbqoQngiKD0V5lt99D3MOpkZhhmk2/HKJAVeUYDftncRyLdVb
++GBAf3+o6DZrWcabiffBZRRezBl85MBRnOVKiKWvG1UWUQMqCGlRyUI75WkY9Zx8
+u9oM7d3fEDZcviXXeMTDfjFOnmN6/43qN1rGkXsEJZKZrEWC1V9OkThHpn+9RweW
+B/+P7GvCNDJ+AUCDrtFaDBSLjiev8Y92hjnEFqzi6m0guM0QL/ciF+CoC1ieVxSK
+rf3AeiWnCn442qJe8feF/kk3op+7/TdlI9SDUx9BDNanjAriVRhlWZXzlkl9SxfX
+VxKelIzQ1+Ou9/qLCms6cBxkRs8ZMxb7VrITiql5GEoWYVEnJET+PemJXSGe5NOr
+j1mwzOLF+YjTg2DsEBeX
+=UGBO
+-----END PGP SIGNATURE-----
+
+--3U8TY7m7wOx7RL1F--
