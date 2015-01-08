@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731AbbAHOwO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 09:52:14 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:33669 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147AbbAHOwM (ORCPT
+	id S1756784AbbAHOwb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 09:52:31 -0500
+Received: from mga02.intel.com ([134.134.136.20]:32917 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751569AbbAHOw3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 09:52:12 -0500
-Date: Thu, 8 Jan 2015 15:52:10 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC/PATCHSET 00/37] perf tools: Speed-up perf report by using
- multi thread (v1)
-Message-ID: <20150108145210.GY2915@two.firstfloor.org>
-References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
- <20150105184811.GQ2915@two.firstfloor.org>
- <20150107065849.GB849@sejong>
+	Thu, 8 Jan 2015 09:52:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="509326745"
+From: "Ong, Boon Leong" <boon.leong.ong@intel.com>
+To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Darren Hart <dvhart@infradead.org>,
+        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>
+Subject: RE: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
+Thread-Topic: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
+Thread-Index: AQHQI41CoFze/rj2YEaQrKcsZxtS4pyyOcYAgABmfYCAAr8x0IAAS5qAgACxhlA=
+Date: Thu, 8 Jan 2015 14:52:24 +0000
+Message-ID: <AF233D1473C1364ABD51D28909A1B1B7326E29B2@PGSMSX105.gar.corp.intel.com>
+References: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie>
+ <1419873783-5161-2-git-send-email-pure.logic@nexus-software.ie>
+ <20150106073634.GB59754@vmdeb7> <54ABE67B.1070706@nexus-software.ie>
+ <AF233D1473C1364ABD51D28909A1B1B7326E0C25@PGSMSX105.gar.corp.intel.com>
+ <54AE73C7.90009@nexus-software.ie>
+In-Reply-To: <54AE73C7.90009@nexus-software.ie>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.206]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150107065849.GB849@sejong>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Isn't it fast enough to have a single thread that pre scans
-> > the events (perhaps with some single-thread optimizations
-> > like vectorization), and then load balances the work to
-> > a thread pool?
-> 
-> I don't understand it.  Could you please elaborate it?
+>On 07/01/15 23:45, Ong, Boon Leong wrote:
+>>> Since BIOS and grub code both use 0x00000000 as the 'off' address I
+>>> think it makes sense for the kernel to continue to use that address.
+>>
+>> Just add on top of what Daren mentioned in another mail, based on the
+>> Quark document, the base address can start from zero. Say lo=0, hi=0,
+>> and WM & RM may be changed from default value, 1st 1KiB will be marked as
+>IMR. It seems to me that there is no good way to test if an IMR is 'occupied'
+>and/or 'enabled'
+>> since enable-bit is not available. But, what is benefit of testing
+>> against lo=0 & hi=0? The logic to calculate size will work under
+>> lo=0 & hi=0 anway.
+>
+>Hi Boon Leong.
+>
+>I think it does make sense to add a check for rmask and wmask in the 'access all'
+>state when determining if an IMR is enabled on X1000 or not
 
-Have a thread pool. Then there is a single thread which pre-processes
-events and puts them into queues, which are then processed in parallel
-by the threads in the thread pool.
-
-
--Andi
+Ya, checking against rmask & wmask whether they have been changed from default stage
+would help here. Thanks 
