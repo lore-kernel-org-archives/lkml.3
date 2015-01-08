@@ -1,35 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932347AbbAHSEj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 13:04:39 -0500
-Received: from domail2.emirates.net.ae ([86.96.226.149]:37643 "EHLO
-	domail2.emirates.net.ae" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754894AbbAHSEi (ORCPT
+	id S1757124AbbAHSBB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 13:01:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34514 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570AbbAHSBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 13:04:38 -0500
-X-Greylist: delayed 344 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Jan 2015 13:04:38 EST
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; CHARSET=US-ASCII
-From: joe eden <teamcons@eim.ae>
-Subject: From: joe eden
-Message-id: <D77414E1-CEA1-4615-B543-4CADE18D7555@eim.ae>
-Date: Thu, 08 Jan 2015 18:58:46 +0100
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-X-Mailer: iPhone Mail (8F190)
+	Thu, 8 Jan 2015 13:01:00 -0500
+Message-ID: <54AEC5D4.2040800@canonical.com>
+Date: Thu, 08 Jan 2015 13:00:52 -0500
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+CC: "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Koenig, Christian" <Christian.Koenig@amd.com>,
+        David Airlie <airlied@linux.ie>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Subject: Re: [Regression][v3.17][3.18][3.19-rc3] drm/radeon: re-enable dpm
+ by default on BTC
+References: <54ADB86B.10105@canonical.com> <A3397C8B8B789E45844E7EC5DEAD89D0635DD4D6@satlexdag06.amd.com> <54AEAF92.10507@canonical.com> <A3397C8B8B789E45844E7EC5DEAD89D0635E2A10@satlexdag05.amd.com>
+In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D0635E2A10@satlexdag05.amd.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/08/2015 12:48 PM, Deucher, Alexander wrote:
+>> -----Original Message-----
+>> From: Joseph Salisbury [mailto:joseph.salisbury@canonical.com]
+>> Sent: Thursday, January 08, 2015 11:26 AM
+>> To: Deucher, Alexander
+>> Cc: stable@vger.kernel.org; LKML; Koenig, Christian; David Airlie; dri-devel
+>> Subject: Re: [Regression][v3.17][3.18][3.19-rc3] drm/radeon: re-enable dpm
+>> by default on BTC
+>>
+>> On 01/07/2015 09:51 PM, Deucher, Alexander wrote:
+>>>> -----Original Message-----
+>>>> From: Joseph Salisbury [mailto:joseph.salisbury@canonical.com]
+>>>> Sent: Wednesday, January 07, 2015 5:51 PM
+>>>> To: Deucher, Alexander
+>>>> Cc: stable@vger.kernel.org; LKML; Koenig, Christian; David Airlie; dri-devel
+>>>> Subject: [Regression][v3.17][3.18][3.19-rc3] drm/radeon: re-enable dpm
+>> by
+>>>> default on BTC
+>>>>
+>>>> Hi Alexander,
+>>>>
+>>>> A kernel bug report was opened against Ubuntu [0].  After a kernel
+>>>> bisect, it was found that reverting the following commit resolved this bug:
+>>>>
+>>>> commit c08abf11900e19b14dd3a0cc3d105bd74519cd18
+>>>> Author: Alex Deucher <alexander.deucher@amd.com>
+>>>> Date:   Mon Jul 14 12:01:40 2014 -0400
+>>>>
+>>>>     drm/radeon: re-enable dpm by default on BTC
+>>>>
+>>>> The regression was introduced as of v3.17-rc1 and still exists in
+>>>> current mainline.  It has also made it's way into the stable releases.
+>>>>
+>>>> I was hoping to get your feedback, since you are the patch author.  Do
+>>>> you think gathering any additional data will help diagnose this issue,
+>>>> or would it be best to submit a revert request?
+>>>>
+>>> Does revering b2dccf24e77 help?  I'd hate to revert this patch because it
+>> disables power management for a whole family of chips.  If it doesn't help I'd
+>> prefer to just add a quirk to disable it for the specific problematic board.
+>> Commit b2dccf24e77 was added to mainline as of v3.18-rc1 and was not
+>> cc'd to stable.  We are also seeing this issue in the 3.13.y stable
+>> kernel, which does not have commit b2dccf24e77 applied.  However, we can
+>> test reverting it in mainline?
+> Nope.  Won't make a difference.  The attached patch adds a quirk list for dpm which will fix the issue for the affected boards.
+>
+> Alex
 
-Sup
+Great.  Thanks so much for the assistance, Alex!  I'll have the patch
+tested and post some feedback.
 
-http://www.lasettadeipoetiestinti.it/fight.php?fill=mb5wmpv5hbev
+>
+>>> Alex
+>>>
+>>>> Thanks,
+>>>>
+>>>> Joe
+>>>>
+>>>> [0] http://pad.lv/1386534
 
-
-
-
-joe_eden@sbcglobal.net
-
-
-Sent from my iPhone
