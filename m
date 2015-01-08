@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757094AbbAHSsz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 13:48:55 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:45672 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752170AbbAHSsy (ORCPT
+	id S1757235AbbAHStD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 13:49:03 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:55184 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752170AbbAHSs5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 13:48:54 -0500
+	Thu, 8 Jan 2015 13:48:57 -0500
 From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 To: leif.lindholm@linaro.org, roy.franz@linaro.org, matt.fleming@intel.com,
         will.deacon@arm.com, catalin.marinas@arm.com,
@@ -14,119 +14,127 @@ To: leif.lindholm@linaro.org, roy.franz@linaro.org, matt.fleming@intel.com,
         bp@alien8.de, msalter@redhat.com, geoff.levand@linaro.org,
         dyoung@redhat.com, mark.rutland@arm.com, linux-kernel@vger.kernel.org
 Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Subject: [PATCH v5 0/8] arm64: stable UEFI virtual mappings for kexec
-Date: Thu,  8 Jan 2015 18:48:26 +0000
-Message-Id: <1420742914-2404-1-git-send-email-ard.biesheuvel@linaro.org>
+Subject: [PATCH v5 1/8] arm64/mm: add explicit struct_mm argument to __create_mapping()
+Date: Thu,  8 Jan 2015 18:48:27 +0000
+Message-Id: <1420742914-2404-2-git-send-email-ard.biesheuvel@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1420742914-2404-1-git-send-email-ard.biesheuvel@linaro.org>
+References: <1420742914-2404-1-git-send-email-ard.biesheuvel@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is v5 of the series to update the UEFI memory map handling for the arm64
-architecture so that virtual mappings of UEFI Runtime Services are stable across
-kexec.
+Currently, swapper_pg_dir and idmap_pg_dir share the init_mm mm_struct
+instance. To allow the introduction of other pg_dir instances, for instance,
+for UEFI's mapping of Runtime Services, make the struct_mm instance an
+explicit argument that gets passed down to the pmd and pte instantiation
+functions. Note that the consumers (pmd_populate/pgd_populate) of the
+mm_struct argument don't actually inspect it, but let's fix it for
+correctness' sake.
 
-Changes between v5 and v4:
-- rebased onto v3.19-rc3 + the early_ioremap() fix we sent out today
-- patches #1 and #2: unchanged
-- patch #3: added Matt's ack, addressed Boris's review comments
-- patch #4: added Boris's ack
-- patch #5: added Leif's ack
-- patch #6: addressed review comments from Mark Rutland, Leif and Matt (see
-  below)
-- patch #7 and #8: added Leif's ack
+Acked-by: Steve Capper <steve.capper@linaro.org>
+Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+---
+ arch/arm64/mm/mmu.c | 31 ++++++++++++++++---------------
+ 1 file changed, 16 insertions(+), 15 deletions(-)
 
-I have tried to address Matt's concern about drivers/firmware/efi/fdt.c becoming
-a dumping ground for ARM specific stuff by moving the virtmap creation to
-arm-stub.c. However, EFI is not the only place where sharing code between ARM
-and arm64 should be dealt with in a better way, so this remains a concern IMO.
-
-Regarding the duplicated version of efi_get_memory_map(): I dropped it and now
-call the original version twice, where the first call is actually only used to
-get an allocation whose size is an upper bound for all runtime region
-descriptors combined. I have posted a separate patch to improve the original
-as there are some concerns there as well.
-
-Regarding EFI_VIRTMAP/EFI_ARCH_1: I added an elaborate comment about it, and
-I think there is a case for retaining it next to EFI_RUNTIME_SERVICES.
-
-To de-risk the adoption of the subset of patches that are essential to get kexec
-working on UEFI systems, in v4 I dropped all the patches related to the iomem
-resource table, /dev/mem permissions and memory attributes etc. These topics
-have been addressed in a separate series.
-
-The primary changes between v4 and v3 in the patches that were kept are:
-- instead of reording the memory map so that part of it can double as input
-  argument to SetVirtualAddressMap(), increase the allocation size for the
-  memory map so that we can use some of it as scratch space and use that to
-  prepare the input to SVAM() instead. UPDATE: now a separate allocation (v5)
-- added some acks
-- rebased onto v3.19-rc1
-
-NOTE: these changes trigger an issue on AMD Seattle that we (Mark Rutland and I)
-consider a firmware bug. It appears that, during the call to SVAM() (which is
-called with a 1:1 mapping as per the UEFI spec) the virtual mapping being
-installed is dereferenced prematurely. This went unnoticed in the original
-situation, as the virtual mappings were just kernel mappings that are always
-accessible. However, in the new situation, those mappings are only active
-during Runtime Service invocations, and performing any kind of access through
-them at any other time triggers a fault.
-UPDATE: this issue has been fixed but obviously requires those affected to
-install a new version of the firmware
-
-============== v1 blurb ==================
-
-The main premise of these patches is that, in order to support kexec, we need
-to add code to the kernel that is able to deal with the state of the firmware
-after SetVirtualAddressMap() [SVAM] has been called. However, if we are going to
-deal with that anyway, why not make that the default state, and have only a
-single code path for both cases.
-
-This means SVAM() needs to move to the stub, and hence the code that invents
-the virtual layout needs to move with it. The result is that the kernel proper
-is entered with the virt_addr members of all EFI_MEMORY_RUNTIME regions
-assigned, and the mapping installed into the firmware. The kernel proper needs
-to set up the page tables, and switch to them while performing the runtime
-services calls. Note that there is also an efi_to_phys() to translate the values
-of the fw_vendor and tables fields of the EFI system table. Again, this is
-something we need to do anyway under kexec, or we end up handing over state
-between one kernel and the next, which implies different code paths between
-non-kexec and kexec.
-
-The layout is chosen such that it used the userland half of the virtual address
-space (TTBR0), which means no additional alignment or reservation is required
-to ensure that it will always be available.
-
-One thing that may stand out is the reordering of the memory map. The reason
-for doing this is that we can use the same memory map as input to SVAM(). The
-alternative is allocating memory for it using boot services, but that clutters
-up the existing logic a bit between getting the memory map, populating the fdt,
-and loop again if it didn't fit.
-
-Ard Biesheuvel (8):
-  arm64/mm: add explicit struct_mm argument to __create_mapping()
-  arm64/mm: add create_pgd_mapping() to create private page tables
-  efi: split off remapping code from efi_config_init()
-  efi: efistub: allow allocation alignment larger than EFI_PAGE_SIZE
-  arm64/efi: set EFI_ALLOC_ALIGN to 64 KB
-  arm64/efi: move SetVirtualAddressMap() to UEFI stub
-  arm64/efi: remove free_boot_services() and friends
-  arm64/efi: remove idmap manipulations from UEFI code
-
- arch/arm64/include/asm/efi.h                   |  38 ++-
- arch/arm64/include/asm/mmu.h                   |   5 +-
- arch/arm64/include/asm/pgtable.h               |   5 +
- arch/arm64/kernel/efi.c                        | 369 ++++++++-----------------
- arch/arm64/kernel/setup.c                      |   2 +-
- arch/arm64/mm/mmu.c                            |  60 ++--
- drivers/firmware/efi/efi.c                     |  56 ++--
- drivers/firmware/efi/libstub/arm-stub.c        |  59 ++++
- drivers/firmware/efi/libstub/efi-stub-helper.c |  25 +-
- drivers/firmware/efi/libstub/efistub.h         |   4 +
- drivers/firmware/efi/libstub/fdt.c             |  62 ++++-
- include/linux/efi.h                            |   2 +
- 12 files changed, 362 insertions(+), 325 deletions(-)
-
+diff --git a/arch/arm64/mm/mmu.c b/arch/arm64/mm/mmu.c
+index 6032f3e3056a..7d5dfe2d3de0 100644
+--- a/arch/arm64/mm/mmu.c
++++ b/arch/arm64/mm/mmu.c
+@@ -156,9 +156,9 @@ static void __init alloc_init_pte(pmd_t *pmd, unsigned long addr,
+ 	} while (pte++, addr += PAGE_SIZE, addr != end);
+ }
+ 
+-static void __init alloc_init_pmd(pud_t *pud, unsigned long addr,
+-				  unsigned long end, phys_addr_t phys,
+-				  int map_io)
++static void __init alloc_init_pmd(struct mm_struct *mm, pud_t *pud,
++				  unsigned long addr, unsigned long end,
++				  phys_addr_t phys, int map_io)
+ {
+ 	pmd_t *pmd;
+ 	unsigned long next;
+@@ -178,7 +178,7 @@ static void __init alloc_init_pmd(pud_t *pud, unsigned long addr,
+ 	 */
+ 	if (pud_none(*pud) || pud_bad(*pud)) {
+ 		pmd = early_alloc(PTRS_PER_PMD * sizeof(pmd_t));
+-		pud_populate(&init_mm, pud, pmd);
++		pud_populate(mm, pud, pmd);
+ 	}
+ 
+ 	pmd = pmd_offset(pud, addr);
+@@ -202,16 +202,16 @@ static void __init alloc_init_pmd(pud_t *pud, unsigned long addr,
+ 	} while (pmd++, addr = next, addr != end);
+ }
+ 
+-static void __init alloc_init_pud(pgd_t *pgd, unsigned long addr,
+-				  unsigned long end, phys_addr_t phys,
+-				  int map_io)
++static void __init alloc_init_pud(struct mm_struct *mm, pgd_t *pgd,
++				  unsigned long addr, unsigned long end,
++				  phys_addr_t phys, int map_io)
+ {
+ 	pud_t *pud;
+ 	unsigned long next;
+ 
+ 	if (pgd_none(*pgd)) {
+ 		pud = early_alloc(PTRS_PER_PUD * sizeof(pud_t));
+-		pgd_populate(&init_mm, pgd, pud);
++		pgd_populate(mm, pgd, pud);
+ 	}
+ 	BUG_ON(pgd_bad(*pgd));
+ 
+@@ -240,7 +240,7 @@ static void __init alloc_init_pud(pgd_t *pgd, unsigned long addr,
+ 				flush_tlb_all();
+ 			}
+ 		} else {
+-			alloc_init_pmd(pud, addr, next, phys, map_io);
++			alloc_init_pmd(mm, pud, addr, next, phys, map_io);
+ 		}
+ 		phys += next - addr;
+ 	} while (pud++, addr = next, addr != end);
+@@ -250,9 +250,9 @@ static void __init alloc_init_pud(pgd_t *pgd, unsigned long addr,
+  * Create the page directory entries and any necessary page tables for the
+  * mapping specified by 'md'.
+  */
+-static void __init __create_mapping(pgd_t *pgd, phys_addr_t phys,
+-				    unsigned long virt, phys_addr_t size,
+-				    int map_io)
++static void __init __create_mapping(struct mm_struct *mm, pgd_t *pgd,
++				    phys_addr_t phys, unsigned long virt,
++				    phys_addr_t size, int map_io)
+ {
+ 	unsigned long addr, length, end, next;
+ 
+@@ -262,7 +262,7 @@ static void __init __create_mapping(pgd_t *pgd, phys_addr_t phys,
+ 	end = addr + length;
+ 	do {
+ 		next = pgd_addr_end(addr, end);
+-		alloc_init_pud(pgd, addr, next, phys, map_io);
++		alloc_init_pud(mm, pgd, addr, next, phys, map_io);
+ 		phys += next - addr;
+ 	} while (pgd++, addr = next, addr != end);
+ }
+@@ -275,7 +275,8 @@ static void __init create_mapping(phys_addr_t phys, unsigned long virt,
+ 			&phys, virt);
+ 		return;
+ 	}
+-	__create_mapping(pgd_offset_k(virt & PAGE_MASK), phys, virt, size, 0);
++	__create_mapping(&init_mm, pgd_offset_k(virt & PAGE_MASK), phys, virt,
++			 size, 0);
+ }
+ 
+ void __init create_id_mapping(phys_addr_t addr, phys_addr_t size, int map_io)
+@@ -284,7 +285,7 @@ void __init create_id_mapping(phys_addr_t addr, phys_addr_t size, int map_io)
+ 		pr_warn("BUG: not creating id mapping for %pa\n", &addr);
+ 		return;
+ 	}
+-	__create_mapping(&idmap_pg_dir[pgd_index(addr)],
++	__create_mapping(&init_mm, &idmap_pg_dir[pgd_index(addr)],
+ 			 addr, addr, size, map_io);
+ }
+ 
 -- 
 1.8.3.2
 
