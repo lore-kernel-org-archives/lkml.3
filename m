@@ -1,42 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932212AbbAHPJI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 10:09:08 -0500
-Received: from mail.kernel.org ([198.145.29.136]:47235 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753114AbbAHPJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 10:09:05 -0500
-Date: Thu, 8 Jan 2015 12:09:01 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: "perf top -g" leaking ~300MB per second.
-Message-ID: <20150108150901.GE15396@kernel.org>
-References: <20141213084845.GA13453@x4>
- <20141213090331.GB13453@x4>
- <20141213152635.GG9845@kernel.org>
- <548C828B.4040309@gmail.com>
- <20141230053813.GD6081@sejong>
+	id S932282AbbAHPJg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 10:09:36 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:34786 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932230AbbAHPJf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 10:09:35 -0500
+Date: Thu, 8 Jan 2015 18:09:21 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Sakshi Bansal <sakshi.april5@gmail.com>
+Cc: forest@alittletooquiet.net, devel@driverdev.osuosl.org,
+        gclement@baobob.org, shack@linux.com, tvboxspy@gmail.com,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [Discarding old patch and resending new one] Fixed line over 80
+ characters for drivers/staging/vt6655/baseband.c by splitting the line into
+ two
+Message-ID: <20150108150921.GN15033@mwanda>
+References: <20150107181221.GA6644@kroah.com>
+ <1420727642-6937-1-git-send-email-sakshi.april5@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141230053813.GD6081@sejong>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1420727642-6937-1-git-send-email-sakshi.april5@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Dec 30, 2014 at 02:38:13PM +0900, Namhyung Kim escreveu:
-> Subject: [PATCH] perf callchain: Free callchains when hist entries are deleted
- 
-> Markus reported that "perf top -g" can leak ~300MB per second on his
-> machine.  This is partly because it missed to free callchains when
-> hist entries are deleted.  Fix it.
+Read: https://www.google.com/search?q=how+to+write+a+v2+patch
 
-Thanks, applied.
+The subject is still messed up and there is no changelog.
 
-- Arnaldo
+regards,
+dan carpenter
+
