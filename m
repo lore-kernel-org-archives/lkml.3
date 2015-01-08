@@ -1,54 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891AbbAHQia (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 11:38:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36669 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751987AbbAHQi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 11:38:28 -0500
-Message-ID: <54AEB25E.9050205@redhat.com>
-Date: Thu, 08 Jan 2015 10:37:50 -0600
-From: Mark Langsdorf <mlangsdo@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1756877AbbAHQiN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 11:38:13 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:43146 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754622AbbAHQiL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 11:38:11 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+To: <torvalds@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <kgdb-bugreport@lists.sourceforge.net>
+Subject: [GIT PULL] KGDB/KDB fixes for 3.19-rc4
+Date: Thu, 8 Jan 2015 10:37:59 -0600
+Message-ID: <1420735079-28822-1-git-send-email-jason.wessel@windriver.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: Linux 3.19-rc3
-References: <CA+55aFwsxoyLb9OWMSCL3doe_cz_EQtKsEFCyPUYn_T87pbz0A@mail.gmail.com> <54AE7D53.2020305@redhat.com> <20150108150850.GD5658@dhcp22.suse.cz>
-In-Reply-To: <20150108150850.GD5658@dhcp22.suse.cz>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2015 09:08 AM, Michal Hocko wrote:
-> [CCing linux-mm and CMA people]
-> [Full message here:
-> http://article.gmane.org/gmane.linux.ports.arm.kernel/383669]
+Linus,
 
->> [ 1054.095277] DMA: 109*64kB (UR) 53*128kB (R) 8*256kB (R) 0*512kB 0*1024kB
->> 0*2048kB 1*4096kB (R) 0*8192kB 0*16384kB 1*32768kB (R) 0*65536kB = 52672kB
->> [ 1054.108621] Normal: 191*64kB (MR) 0*128kB 0*256kB 0*512kB 0*1024kB
->> 0*2048kB 0*4096kB 0*8192kB 0*16384kB 0*32768kB 0*65536kB = 12224kB
-> [...]
->> [ 1054.142545] Free swap  = 6598400kB
->> [ 1054.145928] Total swap = 8388544kB
->> [ 1054.149317] 262112 pages RAM
->> [ 1054.152180] 0 pages HighMem/MovableOnly
->> [ 1054.155995] 18446744073709544361 pages reserved
->> [ 1054.160505] 8192 pages cma reserved
->
-> Besides underflow in the reserved pages accounting mentioned in other
-> email the free lists look strange as well. All free blocks with some memory
-> are marked as reserved. I would suspect something CMA related.
+Please pull the kgdb tree bug fixes.
 
-I get the same failure with CMA turned off entirely. I assume that means
-CMA is not the culprit.
+These have been around since 3.17 and in kgdb-next for the last 9
+weeks and some will go back to -stable.
 
---Mark Langsdorf
+Summary of changes:
 
+KGDB/KDB fixes and cleanups
+ Cleanups
+   kdb: Remove unused command flags, repeat flags and KDB_REPEAT_NONE
+
+ Fixes
+   kgdb/kdb: Allow access on a single core, if a CPU round up is deemed
+      impossible, which will allow inspection of the now "trashed" kernel
+   kdb: Add enable mask for the command groups
+   kdb: access controls to restrict sensitive commands 
+
+
+git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/kgdb.git tags/for_linus-3.19-rc4
+
+Thanks,
+Jason.
+
+The following changes since commit 206c5f60a3d902bc4b56dab2de3e88de5eb06108:
+
+  Linux 3.18-rc4 (2014-11-09 14:55:29 -0800)
+
+are available in the git repository at:
+
+  . kgdb-next
+
+for you to fetch changes up to 0f16996cf2ed7c368dd95b4c517ce572b96a10f5:
+
+  kernel/debug/debug_core.c: Logging clean-up (2014-11-11 09:31:53 -0600)
+
+----------------------------------------------------------------
+Anton Vorontsov (6):
+      kdb: Remove currently unused kdbtab_t->cmd_flags
+      kdb: Rename kdb_repeat_t to kdb_cmdflags_t, cmd_repeat to cmd_flags
+      kdb: Rename kdb_register_repeat() to kdb_register_flags()
+      kdb: Use KDB_REPEAT_* values as flags
+      kdb: Remove KDB_REPEAT_NONE flag
+      kdb: Add enable mask for groups of commands
+
+Daniel Thompson (3):
+      kdb: Categorize kdb commands (similar to SysRq categorization)
+      kdb: Allow access to sensitive commands to be restricted by default
+      kgdb: timeout if secondary CPUs ignore the roundup
+
+Fabian Frederick (1):
+      kernel/debug/debug_core.c: Logging clean-up
+
+ include/linux/kdb.h             |  62 ++++++++--
+ kernel/debug/debug_core.c       |  52 ++++----
+ kernel/debug/kdb/kdb_bp.c       |  37 +++---
+ kernel/debug/kdb/kdb_debugger.c |   4 +
+ kernel/debug/kdb/kdb_main.c     | 267 +++++++++++++++++++++++++---------------
+ kernel/debug/kdb/kdb_private.h  |   3 +-
+ kernel/trace/trace_kdb.c        |   4 +-
+ lib/Kconfig.kgdb                |  25 ++++
+ 8 files changed, 306 insertions(+), 148 deletions(-)
