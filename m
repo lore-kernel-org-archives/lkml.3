@@ -1,81 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609AbbAHFzF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 00:55:05 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:39291 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491AbbAHFzD (ORCPT
+	id S1752376AbbAHF6s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 00:58:48 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:51299 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855AbbAHF6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 00:55:03 -0500
-Date: Thu, 8 Jan 2015 00:54:59 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pavel Machek <pavel@ucw.cz>, Marc Zyngier <marc.zyngier@arm.com>,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
- pyaudio (and probably more)
-In-Reply-To: <CA+55aFyDQ4Mk8hHOvH-2nhpDgN+gBgiLf6=dLVcjKC5uetqzJw@mail.gmail.com>
-Message-ID: <alpine.LFD.2.11.1501080013310.1322@knanqh.ubzr>
-References: <alpine.LFD.2.11.1501041547050.18844@knanqh.ubzr> <alpine.LFD.2.11.1501041609290.18844@knanqh.ubzr> <20150104212659.GC12302@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1501042343240.18844@knanqh.ubzr> <CAHkRjk6Vg_AR8rFNYzPcnPwfKZqaVuaCoG67CEVPRgp1-bDetA@mail.gmail.com>
- <CA+55aFypmZExpCvD699TQOs1NDK_mT-_rR3UWOdxdzkOKvbdoA@mail.gmail.com> <alpine.LFD.2.11.1501071354130.1322@knanqh.ubzr> <CA+55aFw70ZvHKH+8_aS7E7FZZuuWQA++zGQuSmuvDE3DWU+x3A@mail.gmail.com> <alpine.LFD.2.11.1501071446460.1322@knanqh.ubzr>
- <20150107205346.GO12302@n2100.arm.linux.org.uk> <CAHkRjk6FT+WJ3u9qhfB-EMcqhOHGQSe4dW4MpZF6vE97B0vD0A@mail.gmail.com> <CA+55aFz0cjsS4BTwtBt9P1pKHmPjXPYnOvFuP07UVoek7jSYLw@mail.gmail.com> <alpine.LFD.2.11.1501071914250.1322@knanqh.ubzr>
- <CA+55aFyKz2tZDq6ANjKVmuvipKtjr+UP4c7ypNXtbXBcapOpKg@mail.gmail.com> <alpine.LFD.2.11.1501072228440.1322@knanqh.ubzr> <CA+55aFyDQ4Mk8hHOvH-2nhpDgN+gBgiLf6=dLVcjKC5uetqzJw@mail.gmail.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Thu, 8 Jan 2015 00:58:46 -0500
+Date: Wed, 7 Jan 2015 21:58:36 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Simek <michal.simek@xilinx.com>
+Subject: Re: linux-next: Tree for Jan 7 (microblaze qemu problems)
+Message-ID: <20150108055836.GA6084@roeck-us.net>
+References: <20150107151618.7cb9d574@canb.auug.org.au>
+ <20150107214530.GA27620@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150107214530.GA27620@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020204.50F664CE.01B5,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 3
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Jan 2015, Linus Torvalds wrote:
-
-> On Wed, Jan 7, 2015 at 8:56 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
-> >>
-> >> Yes, I actually would mind, unless you have a damn good reason for it.
-> >
-> > Consistency.
+On Wed, Jan 07, 2015 at 01:45:30PM -0800, Guenter Roeck wrote:
+> On Wed, Jan 07, 2015 at 03:16:18PM +1100, Stephen Rothwell wrote:
+> > Hi all,
+> > 
+> > Changes since 20150106:
+> > 
+> > *crickets*
+> > 
+> > Non-merge commits (relative to Linus' tree): 1350
+> >  1543 files changed, 41856 insertions(+), 24250 deletions(-)
+> > 
 > 
-> Fuck no.
+> With this kernel I get the following WARNINGs (lots of htem) when running
+> microblaze images (both big and little endian) with qemu.
 > 
-> "Completely made up number that you cannot explain" is not consistency.
+> WARNING: CPU: 0 PID: 1 at arch/microblaze/kernel/cpu/cache.c:432
+> __invalidate_dcache_range_msr_irq_wt+0xcc/0xd8()
+> Modules linked in:
+> CPU: 0 PID: 1 Comm: swapper Not tainted 3.19.0-rc3-next-20150107 #1
+> ...
+> (sample) Call Trace:
+> [<c0004080>] microblaze_unwind+0x5c/0x78
+> [<c0003d64>] show_stack+0xe0/0x164
+> [<c02e2224>] dump_stack+0x20/0x38
+> [<c000adbc>] warn_slowpath_common+0x90/0xec
+> [<c000aea0>] warn_slowpath_null+0xc/0x24
+> [<c000493c>] __invalidate_dcache_range_msr_irq_wt+0xc0/0xd8
+> [<c00c59c4>] simple_write_begin+0xf8/0x170
+> [<c005d18c>] generic_perform_write+0xa8/0x2ac
+> [<c005f1f8>] __generic_file_write_iter+0x1a8/0x478
+> [<c005f504>] generic_file_write_iter+0x3c/0x128
+> [<c009b0c4>] new_sync_write+0x84/0xcc
+> [<c009ba88>] vfs_write+0xe8/0x224
+> [<c009c314>] SyS_write+0x4c/0xf4
+> [<c03d5200>] xwrite+0x48/0xb8
+> [<c03d52a0>] do_copy+0x30/0x1ac
+> [<c03d47b4>] write_buffer+0x34/0x60
+> [<c03d4810>] flush_buffer+0x30/0xd0
+> [<c03e4c70>] gunzip+0x2c0/0x3ac
+> [<c03d4c20>] unpack_to_rootfs+0x1b8/0x368
+> [<c03d56e8>] populate_rootfs+0x28/0x2d8
+> [<c000044c>] do_one_initcall+0xa0/0x24c
+> [<c03d2d9c>] kernel_init_freeable+0x150/0x238
+> [<c02dedf0>] kernel_init+0x8/0x14c
+> [<c0005d78>] ret_from_kernel_thread+0x8/0x20
+> 
+> Detailed logs are available at http://server.roeck-us.net:8010/builders.
+> 
+> bisect results:
+> 
+> # bad: [7e3619a6de57f0257a2f6480182d2287ee05e314] Add linux-next specific files for 20150107
+> # good: [b1940cd21c0f4abdce101253e860feff547291b0] Linux 3.19-rc3
+> git bisect start 'HEAD' 'v3.19-rc3'
+> # bad: [c48667c5659248ff2b2fbff5cd23c43b5768e81b] Merge remote-tracking branch 'net-next/master'
+> git bisect bad c48667c5659248ff2b2fbff5cd23c43b5768e81b
+> # bad: [5aa2843082a0ce9b710549bdc7ae8d54140edc70] Merge remote-tracking branch 'pci/next'
+> git bisect bad 5aa2843082a0ce9b710549bdc7ae8d54140edc70
+> # good: [11339e9e3d575c1486ff57dc49c83b6154918305] Merge remote-tracking branch 'samsung/for-next'
+> git bisect good 11339e9e3d575c1486ff57dc49c83b6154918305
+> # bad: [50d16e144b253542d89830c0ace8573a67ce4b16] Merge remote-tracking branch 'powerpc-mpe/next'
+> git bisect bad 50d16e144b253542d89830c0ace8573a67ce4b16
+> # good: [3fda5c0dda2eafe244898809a74831209cdb69b7] Merge remote-tracking branch 'cris/for-next'
+> git bisect good 3fda5c0dda2eafe244898809a74831209cdb69b7
+> # bad: [8b772494fda25dd998ade5621cc0684a5c897179] Merge remote-tracking branch 'microblaze/next'
+> git bisect bad 8b772494fda25dd998ade5621cc0684a5c897179
+> # bad: [cd2b00db005541d15ea9fbb474b5e5e98b993d8e] microblaze: Fix variable types to remove W=1 warning
+> git bisect bad cd2b00db005541d15ea9fbb474b5e5e98b993d8e
+> # good: [8543e6c96762fcc930af5725088c2b9e4865c3aa] microblaze: Use unsigned return type in do_syscall_trace_enter
+> git bisect good 8543e6c96762fcc930af5725088c2b9e4865c3aa
+> # good: [e76fdb324844cc0367f8c6ea5d13278a81568ccb] microblaze: Use unsigned type for "for" loop because of comparison-kgdb.c
+> git bisect good e76fdb324844cc0367f8c6ea5d13278a81568ccb
+> # bad: [b343c7d621bf801b502cba812c3dcb4320942b93] microblaze: Use unsigned type for limit comparison in cache.c
+> git bisect bad b343c7d621bf801b502cba812c3dcb4320942b93
+> # good: [bdb96e3cad21f5973c95f0e6687db4a57eff7c53] microblaze: Use unsigned type for proper comparison in cpuinfo*.c
+> git bisect good bdb96e3cad21f5973c95f0e6687db4a57eff7c53
+> # first bad commit: [b343c7d621bf801b502cba812c3dcb4320942b93] microblaze: Use unsigned type for limit comparison in cache.c
+> 
+> Reverting the offending commit fixes the problem.
+> 
+Followup: I think the following should fix the problem.
+My qemu tests pass with this change.
 
-Again this statement.  I'm not against it as this is a true statement.
+Original patch:
 
-I really wonder how you can describe my intent with that statement 
-though. We must be living in different universes.  This is so wrong as 
-not to be funny anymore.
+-	WARN_ON(end - start < 0);                                       \
++	WARN_ON(end > start);                                   \
 
-If you don't want to see my reply that's fine.  It'll be there for the 
-posterity at least. If That's because you're just too proud to concede 
-I'm right then this is very sad.
+This looks wrong, since 'end - start < 0' is equivalent to 'end < start',
+not 'end > start'.
 
-All I'm trying to tell you is that 6 *is* a "Completely made up number 
-that you cannot explain" for user space and that's what we have right 
-now in mainline for some ARM machines.
+Guenter
 
-What I'm advocating for is a number that is _not_ completely made up.  
-I'm advocating for a bogomips which meaning is well known and dates back 
-to early Linux releases: the number of loops performed by the CPU during 
-a jiffy, scaled to a second worth of jiffies, divided by 2 because there 
-are 2 instructions in that loop.  Incidentally this very definition is 
-the one you provided yourself in this thread. That's what I want, yet 
-you qualify this as a "Completely made up number that you cannot 
-explain".
-
-> So you want to make bogomips a totally random number, that has no
-> meaning, no correlation to any clocksource, and no correlation to cpu
-> frequency either?
-
-Yeah right. I challenge you to quote anything I said in my previous 
-email where I clearly explained everything in 6 points what I want. 
-Anything you may quote to substantiate that statement of yours about 
-what I want.  Everyone following this thread knows you can't.
-
-But you probably didn't even read it. It might hurt too much.
-
-Sheesh.
-
-
-Nicolas
+---
+diff --git a/arch/microblaze/kernel/cpu/cache.c b/arch/microblaze/kernel/cpu/cache.c
+index 84c9558..0bde47e 100644
+--- a/arch/microblaze/kernel/cpu/cache.c
++++ b/arch/microblaze/kernel/cpu/cache.c
+@@ -143,7 +143,7 @@ do {									\
+ 	unsigned int volatile temp = 0;						\
+ 	unsigned int align = ~(line_length - 1);					\
+ 	end = ((end & align) == end) ? end - line_length : end & align;	\
+-	WARN_ON(end > start);					\
++	WARN_ON(end < start);					\
+ 									\
+ 	__asm__ __volatile__ (" 1:	" #op "	%1, r0;"		\
+ 					"cmpu	%0, %1, %2;"		\
