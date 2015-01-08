@@ -1,289 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240AbbAHSo0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 13:44:26 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36021 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750844AbbAHSoY (ORCPT
+	id S1757094AbbAHSsz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 13:48:55 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:45672 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752170AbbAHSsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 13:44:24 -0500
-Date: Thu, 8 Jan 2015 18:43:34 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Suzuki Poulose <suzpou01@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "yexl@marvell.com" <yexl@marvell.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "leo.yan@linaro.org" <leo.yan@linaro.org>
-Subject: Re: [PATCH 2/2] arm64: Emulate SETEND for AArch32 tasks
-Message-ID: <20150108184258.GB31280@leverpostej>
-References: <1420647405-3907-1-git-send-email-suzuki.poulose@arm.com>
- <1420647405-3907-3-git-send-email-suzuki.poulose@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420647405-3907-3-git-send-email-suzuki.poulose@arm.com>
-Thread-Topic: [PATCH 2/2] arm64: Emulate SETEND for AArch32 tasks
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 8 Jan 2015 13:48:54 -0500
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: leif.lindholm@linaro.org, roy.franz@linaro.org, matt.fleming@intel.com,
+        will.deacon@arm.com, catalin.marinas@arm.com,
+        linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org,
+        bp@alien8.de, msalter@redhat.com, geoff.levand@linaro.org,
+        dyoung@redhat.com, mark.rutland@arm.com, linux-kernel@vger.kernel.org
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Subject: [PATCH v5 0/8] arm64: stable UEFI virtual mappings for kexec
+Date: Thu,  8 Jan 2015 18:48:26 +0000
+Message-Id: <1420742914-2404-1-git-send-email-ard.biesheuvel@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Suzuki,
+This is v5 of the series to update the UEFI memory map handling for the arm64
+architecture so that virtual mappings of UEFI Runtime Services are stable across
+kexec.
 
-On Wed, Jan 07, 2015 at 04:16:45PM +0000, Suzuki K. Poulose wrote:
-> From: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
-> 
-> Emulate deprecated 'setend' instruction for AArch32 bit tasks.
-> 
-> 	setend [le/be] - Sets the endianness of EL0
-> 
-> The hardware support for the instruction can be enabled by setting the
-> SCTLR_EL1.SED bit. Like the other emulated instructions it is controlled by
-> an entry in /proc/sys/abi/. For more information see :
-> 	Documentation/arm64/legacy_instructions.txt
-> 
-> The instruction is emulated by setting/clearing the SPSR_EL1.E bit, which
-> will be reflected in the PSTATE.E in AArch32 context.
+Changes between v5 and v4:
+- rebased onto v3.19-rc3 + the early_ioremap() fix we sent out today
+- patches #1 and #2: unchanged
+- patch #3: added Matt's ack, addressed Boris's review comments
+- patch #4: added Boris's ack
+- patch #5: added Leif's ack
+- patch #6: addressed review comments from Mark Rutland, Leif and Matt (see
+  below)
+- patch #7 and #8: added Leif's ack
 
-A "fun" problem with emulating setend is that it will not always work
-unless we emulate the entire instruction set when userspace wants to be
-in an unsupported endianness.
+I have tried to address Matt's concern about drivers/firmware/efi/fdt.c becoming
+a dumping ground for ARM specific stuff by moving the virtmap creation to
+arm-stub.c. However, EFI is not the only place where sharing code between ARM
+and arm64 should be dealt with in a better way, so this remains a concern IMO.
 
-For implementations which are not bi-endian at EL0 (i.e. where
-ID_AA64MMFR0_EL1.BigEndEL0 == 0), SCTLR_EL1.E0E has a fixed value which
-we cannot change. The field names are misleading: in a BE-only system
-ID_AA64MMFR0_EL1.{BigEnd,BigEndEL0} == {0,0} and SCTLR_EL1.{EE,E0E} are
-fixed to {1,1}.
+Regarding the duplicated version of efi_get_memory_map(): I dropped it and now
+call the original version twice, where the first call is actually only used to
+get an allocation whose size is an upper bound for all runtime region
+descriptors combined. I have posted a separate patch to improve the original
+as there are some concerns there as well.
 
-I think we need to detect when EL0 has a fixed endianness such that we
-can treat the setend instruction as undefined. Otherwise we will
-silently fail to change EL0 endianness, advance the PC, and return to
-userspace in the wrong endianness, which will be very painful to debug.
-Userspace has the option of handling the resulting SIGILL in such cases.
+Regarding EFI_VIRTMAP/EFI_ARCH_1: I added an elaborate comment about it, and
+I think there is a case for retaining it next to EFI_RUNTIME_SERVICES.
 
-That means we need to be able to fail to transition into INSN_EMULATE
-mode as we currently can when transitioning to INSN_HW.
+To de-risk the adoption of the subset of patches that are essential to get kexec
+working on UEFI systems, in v4 I dropped all the patches related to the iomem
+resource table, /dev/mem permissions and memory attributes etc. These topics
+have been addressed in a separate series.
 
-> This patch also restores the native endianness for the execution of signal
-> handlers, since the process could have changed the endianness.
-> 
-> Signed-off-by: Suzuki K. Poulose <suzuki.poulose@arm.com>
-> ---
->  Documentation/arm64/legacy_instructions.txt |    5 ++
->  arch/arm64/Kconfig                          |   10 ++++
->  arch/arm64/include/asm/ptrace.h             |    7 +++
->  arch/arm64/kernel/armv8_deprecated.c        |   75 +++++++++++++++++++++++++++
->  arch/arm64/kernel/signal32.c                |    5 +-
->  5 files changed, 101 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/arm64/legacy_instructions.txt b/Documentation/arm64/legacy_instructions.txt
-> index a3b3da2..20e5621 100644
-> --- a/Documentation/arm64/legacy_instructions.txt
-> +++ b/Documentation/arm64/legacy_instructions.txt
-> @@ -43,3 +43,8 @@ Default: Undef (0)
->  Node: /proc/sys/abi/cp15_barrier
->  Status: Deprecated
->  Default: Emulate (1)
-> +
-> +* SETEND
-> +Node: /proc/sys/abi/setend
-> +Status: Deprecated
-> +Default: Emulate (1)
+The primary changes between v4 and v3 in the patches that were kept are:
+- instead of reording the memory map so that part of it can double as input
+  argument to SetVirtualAddressMap(), increase the allocation size for the
+  memory map so that we can use some of it as scratch space and use that to
+  prepare the input to SVAM() instead. UPDATE: now a separate allocation (v5)
+- added some acks
+- rebased onto v3.19-rc1
 
-Given we can't always emulate SETEND, should we document "Emulate where
-possible" or something to that effect?
+NOTE: these changes trigger an issue on AMD Seattle that we (Mark Rutland and I)
+consider a firmware bug. It appears that, during the call to SVAM() (which is
+called with a 1:1 mapping as per the UEFI spec) the virtual mapping being
+installed is dereferenced prematurely. This went unnoticed in the original
+situation, as the virtual mappings were just kernel mappings that are always
+accessible. However, in the new situation, those mappings are only active
+during Runtime Service invocations, and performing any kind of access through
+them at any other time triggers a fault.
+UPDATE: this issue has been fixed but obviously requires those affected to
+install a new version of the firmware
 
-> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-> index b1f9a20..c6d1fd9 100644
-> --- a/arch/arm64/Kconfig
-> +++ b/arch/arm64/Kconfig
-> @@ -540,6 +540,16 @@ config CP15_BARRIER_EMULATION
->  
->  	  If unsure, say Y
->  
-> +config SETEND_EMULATION
-> +	bool "Emulate SETEND instruction"
-> +	help
-> +	  The SETEND instruction alters the data-endianness of the
-> +	  AArch32 EL0, and is deprecated in ARMv8.
-> +
-> +	  Say Y here to enable software emulation of the instruction
-> +	  for AArch32 userspace code.
-> +
-> +	  If unsure, say Y
->  endif
->  
->  endmenu
-> diff --git a/arch/arm64/include/asm/ptrace.h b/arch/arm64/include/asm/ptrace.h
-> index 41ed9e1..d6dd9fd 100644
-> --- a/arch/arm64/include/asm/ptrace.h
-> +++ b/arch/arm64/include/asm/ptrace.h
-> @@ -58,6 +58,13 @@
->  #define COMPAT_PSR_Z_BIT	0x40000000
->  #define COMPAT_PSR_N_BIT	0x80000000
->  #define COMPAT_PSR_IT_MASK	0x0600fc00	/* If-Then execution state mask */
-> +
-> +#ifdef CONFIG_CPU_BIG_ENDIAN
-> +#define COMPAT_PSR_ENDSTATE	COMPAT_PSR_E_BIT
-> +#else
-> +#define COMPAT_PSR_ENDSTATE	0
-> +#endif
-> +
->  /*
->   * These are 'magic' values for PTRACE_PEEKUSR that return info about where a
->   * process is located in memory.
-> diff --git a/arch/arm64/kernel/armv8_deprecated.c b/arch/arm64/kernel/armv8_deprecated.c
-> index 9054447..dc91bac 100644
-> --- a/arch/arm64/kernel/armv8_deprecated.c
-> +++ b/arch/arm64/kernel/armv8_deprecated.c
-> @@ -477,6 +477,7 @@ ret:
->  }
->  
->  #define SCTLR_EL1_CP15BEN 	(1 << 5)
-> +#define SCTLR_EL1_SED		(1 << 8)
->  
->  static inline void config_sctlr_el1(u32 clear, u32 set)
->  {
-> @@ -521,6 +522,77 @@ static struct insn_emulation_ops cp15_barrier_ops = {
->  	.set_hw_mode = cp15_barrier_set_hw_mode,
->  };
->  
-> +static void setend_set_hw_mode(void *enable)
-> +{
-> +	if (enable)
-> +		config_sctlr_el1(SCTLR_EL1_SED, 0);
-> +	else
-> +		config_sctlr_el1(0, SCTLR_EL1_SED);
-> +}
-> +
-> +static int compat_setend_handler(struct pt_regs *regs, u32 endian)
+============== v1 blurb ==================
 
-If we s/endian/big_endian/ here we can drop the comments within the
-function as the test will be easier to read. We could also s/u32/bool/.
+The main premise of these patches is that, in order to support kexec, we need
+to add code to the kernel that is able to deal with the state of the firmware
+after SetVirtualAddressMap() [SVAM] has been called. However, if we are going to
+deal with that anyway, why not make that the default state, and have only a
+single code path for both cases.
 
-> +{
-> +	char insn[16] = "setend _e";
+This means SVAM() needs to move to the stub, and hence the code that invents
+the virtual layout needs to move with it. The result is that the kernel proper
+is entered with the virt_addr members of all EFI_MEMORY_RUNTIME regions
+assigned, and the mapping installed into the firmware. The kernel proper needs
+to set up the page tables, and switch to them while performing the runtime
+services calls. Note that there is also an efi_to_phys() to translate the values
+of the fw_vendor and tables fields of the EFI system table. Again, this is
+something we need to do anyway under kexec, or we end up handing over state
+between one kernel and the next, which implies different code paths between
+non-kexec and kexec.
 
-Elsewhere (e.g. in cp15barrier_handler) we write these out in full
-rather than modifying a string on the stack. I think we should do the
-same here (we can change insn to a char * and assign the full relevant
-string in either branch).
+The layout is chosen such that it used the userland half of the virtual address
+space (TTBR0), which means no additional alignment or reservation is required
+to ensure that it will always be available.
 
-Doing so will mean grepping for '"setend be"' finds this function, which
-is handy.
+One thing that may stand out is the reordering of the memory map. The reason
+for doing this is that we can use the same memory map as input to SVAM(). The
+alternative is allocating memory for it using boot services, but that clutters
+up the existing logic a bit between getting the memory map, populating the fdt,
+and loop again if it didn't fit.
 
-Thanks,
-Mark.
+Ard Biesheuvel (8):
+  arm64/mm: add explicit struct_mm argument to __create_mapping()
+  arm64/mm: add create_pgd_mapping() to create private page tables
+  efi: split off remapping code from efi_config_init()
+  efi: efistub: allow allocation alignment larger than EFI_PAGE_SIZE
+  arm64/efi: set EFI_ALLOC_ALIGN to 64 KB
+  arm64/efi: move SetVirtualAddressMap() to UEFI stub
+  arm64/efi: remove free_boot_services() and friends
+  arm64/efi: remove idmap manipulations from UEFI code
 
-> +
-> +	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, regs, regs->pc);
-> +
-> +	if (endian) {
-> +		/* Big Endian */
-> +		insn[7] = 'b';
-> +		regs->pstate |= COMPAT_PSR_E_BIT;
-> +	} else {
-> +		/* Little Endian */
-> +		insn[7] = 'l';
-> +		regs->pstate &= ~COMPAT_PSR_E_BIT;
-> +	}
-> +
-> +	trace_instruction_emulation(insn, regs->pc);
-> +	pr_warn_ratelimited("\"%s\" (%ld) uses deprecated setend instruction at 0x%llx\n",
-> +			current->comm, (unsigned long)current->pid, regs->pc);
-> +
-> +	return 0;
-> +}
-> +
-> +static int a32_setend_handler(struct pt_regs *regs, u32 instr)
-> +{
-> +	int rc = compat_setend_handler(regs, (instr >> 9) & 1);
-> +	regs->pc += 4;
-> +	return rc;
-> +}
-> +
-> +static int t16_setend_handler(struct pt_regs *regs, u32 instr)
-> +{
-> +	int rc = compat_setend_handler(regs, (instr >> 3) & 1);
-> +	regs->pc += 2;
-> +	return rc;
-> +}
-> +
-> +static struct undef_hook setend_hooks[] = {
-> +	{
-> +		.instr_mask	= 0xfffffdff,
-> +		.instr_val	= 0xf1010000,
-> +		.pstate_mask	= COMPAT_PSR_MODE_MASK,
-> +		.pstate_val	= COMPAT_PSR_MODE_USR,
-> +		.fn		= a32_setend_handler,
-> +	},
-> +	{
-> +		/* Thumb mode */
-> +		.instr_mask	= 0x0000fff7,
-> +		.instr_val	= 0x0000b650,
-> +		.pstate_mask	= (COMPAT_PSR_T_BIT | COMPAT_PSR_MODE_MASK),
-> +		.pstate_val	= (COMPAT_PSR_T_BIT | COMPAT_PSR_MODE_USR),
-> +		.fn		= t16_setend_handler,
-> +	},
-> +	{}
-> +};
-> +
-> +static struct insn_emulation_ops setend_ops = {
-> +	.name = "setend",
-> +	.status = INSN_DEPRECATED,
-> +	.hooks = setend_hooks,
-> +	.set_hw_mode = setend_set_hw_mode,
-> +};
-> +
->  static int insn_cpu_hotplug_notify(struct notifier_block *b,
->  			      unsigned long action, void *hcpu)
->  {
-> @@ -545,6 +617,9 @@ static int __init armv8_deprecated_init(void)
->  	if (IS_ENABLED(CONFIG_CP15_BARRIER_EMULATION))
->  		register_insn_emulation(&cp15_barrier_ops);
->  
-> +	if (IS_ENABLED(CONFIG_SETEND_EMULATION))
-> +		register_insn_emulation(&setend_ops);
-> +
->  	register_cpu_notifier(&insn_cpu_hotplug_notifier);
->  	register_insn_emulation_sysctl(ctl_abi);
->  
-> diff --git a/arch/arm64/kernel/signal32.c b/arch/arm64/kernel/signal32.c
-> index 5a1ba6e..aa763a5 100644
-> --- a/arch/arm64/kernel/signal32.c
-> +++ b/arch/arm64/kernel/signal32.c
-> @@ -440,7 +440,7 @@ static void compat_setup_return(struct pt_regs *regs, struct k_sigaction *ka,
->  {
->  	compat_ulong_t handler = ptr_to_compat(ka->sa.sa_handler);
->  	compat_ulong_t retcode;
-> -	compat_ulong_t spsr = regs->pstate & ~PSR_f;
-> +	compat_ulong_t spsr = regs->pstate & ~(PSR_f | COMPAT_PSR_E_BIT);
->  	int thumb;
->  
->  	/* Check if the handler is written for ARM or Thumb */
-> @@ -454,6 +454,9 @@ static void compat_setup_return(struct pt_regs *regs, struct k_sigaction *ka,
->  	/* The IT state must be cleared for both ARM and Thumb-2 */
->  	spsr &= ~COMPAT_PSR_IT_MASK;
->  
-> +	/* Restore the original endianness */
-> +	spsr |= COMPAT_PSR_ENDSTATE;
-> +
->  	if (ka->sa.sa_flags & SA_RESTORER) {
->  		retcode = ptr_to_compat(ka->sa.sa_restorer);
->  	} else {
-> -- 
-> 1.7.9.5
-> 
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+ arch/arm64/include/asm/efi.h                   |  38 ++-
+ arch/arm64/include/asm/mmu.h                   |   5 +-
+ arch/arm64/include/asm/pgtable.h               |   5 +
+ arch/arm64/kernel/efi.c                        | 369 ++++++++-----------------
+ arch/arm64/kernel/setup.c                      |   2 +-
+ arch/arm64/mm/mmu.c                            |  60 ++--
+ drivers/firmware/efi/efi.c                     |  56 ++--
+ drivers/firmware/efi/libstub/arm-stub.c        |  59 ++++
+ drivers/firmware/efi/libstub/efi-stub-helper.c |  25 +-
+ drivers/firmware/efi/libstub/efistub.h         |   4 +
+ drivers/firmware/efi/libstub/fdt.c             |  62 ++++-
+ include/linux/efi.h                            |   2 +
+ 12 files changed, 362 insertions(+), 325 deletions(-)
+
+-- 
+1.8.3.2
+
