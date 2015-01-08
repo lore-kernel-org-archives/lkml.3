@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757011AbbAHQxA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 11:53:00 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52728 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751896AbbAHQw6 (ORCPT
+	id S1757050AbbAHQz3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 11:55:29 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:58013 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754692AbbAHQzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 11:52:58 -0500
-Date: Thu, 8 Jan 2015 17:52:55 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Mark Seaborn <mseaborn@chromium.org>,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: DRAM unreliable under specific access patern
-Message-ID: <20150108165255.GA19657@amd>
-References: <CAL82V5NN8U4PyiSjLxgpTrgsgkbM7rRCbVF5P-HHyEqphLOy+g@mail.gmail.com>
- <20141224220818.GA17655@amd>
- <20150105192329.5f32c155@lxorguk.ukuu.org.uk>
- <CALCETrXby82sgbGTcSZFj54t=resYcwtPbcFRNh6Ksbr+Ow8HQ@mail.gmail.com>
- <20150106014718.GA23775@node.dhcp.inet.fi>
- <CALCETrV1O1MFJeY6WacF+QHdBGG7HoHdVQy=n951=Y+=g+h7mQ@mail.gmail.com>
- <20150106021836.GA24121@node.dhcp.inet.fi>
- <CALCETrXpJ7CPAKeh9nLA=PoCBT8w8NfhZg5cgUyG9BUtp2Jv+w@mail.gmail.com>
- <20150108130325.0592b18b@lxorguk.ukuu.org.uk>
+	Thu, 8 Jan 2015 11:55:25 -0500
+Date: Thu, 8 Jan 2015 16:55:07 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Pratyush Anand <panand@redhat.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tixy@linaro.org" <tixy@linaro.org>,
+        "ananth@in.ibm.com" <ananth@in.ibm.com>,
+        "sandeepa.prabhu@linaro.org" <sandeepa.prabhu@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "anil.s.keshavamurthy@intel.com" <anil.s.keshavamurthy@intel.com>,
+        "masami.hiramatsu.pt@hitachi.com" <masami.hiramatsu.pt@hitachi.com>,
+        "wcohen@redhat.com" <wcohen@redhat.com>,
+        "oleg@redhat.com" <oleg@redhat.com>
+Subject: Re: [RFC 1/8] ARM64: Move BRK opcodes defines from kprobes.h to
+ insn.h
+Message-ID: <20150108165506.GP11583@arm.com>
+References: <cover.1420038188.git.panand@redhat.com>
+ <5beb1ff58d4928a873be5e898b62d8cc2003ec7c.1420038188.git.panand@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150108130325.0592b18b@lxorguk.ukuu.org.uk>
+In-Reply-To: <5beb1ff58d4928a873be5e898b62d8cc2003ec7c.1420038188.git.panand@redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2015-01-08 13:03:25, One Thousand Gnomes wrote:
-> On Mon, 5 Jan 2015 18:26:07 -0800
-> Andy Lutomirski <luto@amacapital.net> wrote:
-
-> > > I don't know for sure, but it looks likely to me according to claim in the
-> > > paper (8MB). But it still can be sombody else's data: 644 file on
-> > > hugetlbfs mmap()ed r/o by anyone.
+On Wed, Dec 31, 2014 at 03:21:17PM +0000, Pratyush Anand wrote:
+> Its better to keep all BRK opcodes used by kprobes and uprobes at one
+> place. Therefore move these defines to asm/insn.h.
 > 
-> Thats less of a concern I think. As far as I can tell it would depend how
-> the memory is wired what actually gets hit. I'm not clear if its within
-> the range or not.
-
-I think it can hit outside the specified area, yes.
-
-> > > When I read the paper I thought that vdso would be interesting target for
-> > > the attack, but having all these constrains in place, it's hard aim the
-> > > attack anything widely used.
-> > >
-> > 
-> > The vdso and the vvar page are both at probably-well-known physical
-> > addresses, so you can at least target the kernel a little bit.  I
-> > *think* that kASLR helps a little bit here.
+> Signed-off-by: Pratyush Anand <panand@redhat.com>
+> ---
+>  arch/arm64/include/asm/insn.h | 6 ++++++
+>  arch/arm64/kernel/kprobes.h   | 7 +------
+>  2 files changed, 7 insertions(+), 6 deletions(-)
 > 
-> SMEP likewise if you were able to use 1GB to corrupt matching lines
-> elsewhere in RAM (eg the syscall table), but that would I think depend
-> how the RAM is physically configured.
-> 
-> Thats why the large TLB case worries me. With 4K pages and to an extent
-> with 2MB pages its actually quite hard to line up an attack if you know
-> something about the target. With 1GB hugepages you control the lower bits
-> of the physical address precisely. The question is whether that merely
-> enables you to decide where to shoot yourself or it goes beyond that
-> ?
+> diff --git a/arch/arm64/include/asm/insn.h b/arch/arm64/include/asm/insn.h
+> index e2ff32a93b5c..87fa48746806 100644
+> --- a/arch/arm64/include/asm/insn.h
+> +++ b/arch/arm64/include/asm/insn.h
+> @@ -23,6 +23,12 @@
+>  /* A64 instructions are always 32 bits. */
+>  #define	AARCH64_INSN_SIZE		4
+>  
+> +/* BRK opcodes with ESR encoding  */
+> +#define BRK64_ESR_MASK		0xFFFF
+> +#define BRK64_ESR_KPROBES	0x0004
+> +#define BRK64_OPCODE_KPROBES	0xD4200080	/* "brk 0x4" */
 
-I think you shoot pretty much randomly. Some cells are more likely to
-flip, some are less likely, but that depends on concrete DRAM chip.
+These might be better off in debug-monitors.h, but I guess that's for the
+kprobes series to sort out.
 
-> (Outside HPC anyway: for HPC cases it bites both ways I suspect - you've
-> got the ability to ensure you don't hit those access patterns while using
-> 1GB pages, but also nothing to randomise stuff to make them unlikely if
-> you happen to have worst case aligned data).
+> +#define ARCH64_NOP_OPCODE	0xD503201F
 
-I don't think it is a problem for HPC. You really can't do this by
-accident. You need very specific pattern of DRAM accesses. Get it 10
-times slower, and DRAM can handle that.
+We have aarch64_insn_gen_nop for this.
 
-Actually, I don't think you can trigger it without performing the
-cache flushing instructions. 
-
-
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Will
