@@ -1,73 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766AbbAHQ0G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 11:26:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34078 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756507AbbAHQ0B (ORCPT
+	id S1756837AbbAHQ0g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 11:26:36 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:40882 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756507AbbAHQ0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 11:26:01 -0500
-Message-ID: <54AEAF92.10507@canonical.com>
-Date: Thu, 08 Jan 2015 11:25:54 -0500
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 8 Jan 2015 11:26:34 -0500
+Message-ID: <54AEAFB6.9050609@codeaurora.org>
+Date: Thu, 08 Jan 2015 11:26:30 -0500
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:33.0) Gecko/20100101 Thunderbird/33.0
 MIME-Version: 1.0
-To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
-CC: "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Koenig, Christian" <Christian.Koenig@amd.com>,
-        David Airlie <airlied@linux.ie>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Subject: Re: [Regression][v3.17][3.18][3.19-rc3] drm/radeon: re-enable dpm
- by default on BTC
-References: <54ADB86B.10105@canonical.com> <A3397C8B8B789E45844E7EC5DEAD89D0635DD4D6@satlexdag06.amd.com>
-In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D0635DD4D6@satlexdag06.amd.com>
-Content-Type: text/plain; charset=utf-8
+To: Andy Gross <agross@codeaurora.org>, Vinod Koul <vinod.koul@intel.com>
+CC: dmaengine@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Archit Taneja <architt@codeaurora.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Patch v2 2/2] dt/bindings: qcom_adm: Fix channel specificers
+References: <1420687572-7116-1-git-send-email-agross@codeaurora.org> <1420687572-7116-3-git-send-email-agross@codeaurora.org>
+In-Reply-To: <1420687572-7116-3-git-send-email-agross@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2015 09:51 PM, Deucher, Alexander wrote:
->
->> -----Original Message-----
->> From: Joseph Salisbury [mailto:joseph.salisbury@canonical.com]
->> Sent: Wednesday, January 07, 2015 5:51 PM
->> To: Deucher, Alexander
->> Cc: stable@vger.kernel.org; LKML; Koenig, Christian; David Airlie; dri-devel
->> Subject: [Regression][v3.17][3.18][3.19-rc3] drm/radeon: re-enable dpm by
->> default on BTC
->>
->> Hi Alexander,
->>
->> A kernel bug report was opened against Ubuntu [0].  After a kernel
->> bisect, it was found that reverting the following commit resolved this bug:
->>
->> commit c08abf11900e19b14dd3a0cc3d105bd74519cd18
->> Author: Alex Deucher <alexander.deucher@amd.com>
->> Date:   Mon Jul 14 12:01:40 2014 -0400
->>
->>     drm/radeon: re-enable dpm by default on BTC
->>
->> The regression was introduced as of v3.17-rc1 and still exists in
->> current mainline.  It has also made it's way into the stable releases.
->>
->> I was hoping to get your feedback, since you are the patch author.  Do
->> you think gathering any additional data will help diagnose this issue,
->> or would it be best to submit a revert request?
->>
-> Does revering b2dccf24e77 help?  I'd hate to revert this patch because it disables power management for a whole family of chips.  If it doesn't help I'd prefer to just add a quirk to disable it for the specific problematic board.
-Commit b2dccf24e77 was added to mainline as of v3.18-rc1 and was not
-cc'd to stable.  We are also seeing this issue in the 3.13.y stable
-kernel, which does not have commit b2dccf24e77 applied.  However, we can
-test reverting it in mainline?
+Hi Andy,
 
->
-> Alex
->
->> Thanks,
->>
->> Joe
->>
->> [0] http://pad.lv/1386534
+On 01/07/2015 10:26 PM, Andy Gross wrote:
+> This patch removes the crci information from the dma channel property.  At least
+> one client device requires using more than one CRCI value for a channel.  This
+> does not match the current binding and the crci information needs to be removed.
+> 
+> Instead, the client device will provide this information via other means.
+> 
+> Signed-off-by: Andy Gross <agross@codeaurora.org>
+> ---
+>  Documentation/devicetree/bindings/dma/qcom_adm.txt |   14 +++++---------
+>  1 file changed, 5 insertions(+), 9 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/dma/qcom_adm.txt b/Documentation/devicetree/bindings/dma/qcom_adm.txt
+> index 9bcab91..fba67c6 100644
+> --- a/Documentation/devicetree/bindings/dma/qcom_adm.txt
+> +++ b/Documentation/devicetree/bindings/dma/qcom_adm.txt
+> @@ -4,8 +4,7 @@ Required properties:
+>  - compatible: must contain "qcom,adm" for IPQ/APQ8064 and MSM8960
+>  - reg: Address range for DMA registers
+>  - interrupts: Should contain one interrupt shared by all channels
+> -- #dma-cells: must be <2>.  First cell denotes the channel number.  Second cell
+> -  denotes CRCI (client rate control interface) flow control assignment.
+> +- #dma-cells: must be <1>.  First cell denotes the channel number.
+>  - clocks: Should contain the core clock and interface clock.
+>  - clock-names: Must contain "core" for the core clock and "iface" for the
+>    interface clock.
+> @@ -22,7 +21,7 @@ Example:
+>  			compatible = "qcom,adm";
+>  			reg = <0x18300000 0x100000>;
+>  			interrupts = <0 170 0>;
+> -			#dma-cells = <2>;
+> +			#dma-cells = <1>;
+>  
+>  			clocks = <&gcc ADM0_CLK>, <&gcc ADM0_PBUS_CLK>;
+>  			clock-names = "core", "iface";
+> @@ -35,15 +34,12 @@ Example:
+>  			qcom,ee = <0>;
+>  		};
+>  
+> -DMA clients must use the format descripted in the dma.txt file, using a three
+> +DMA clients must use the format descripted in the dma.txt file, using a two
+>  cell specifier for each channel.
+>  
+>  Each dmas request consists of 3 cells:
 
+Now 2 cells?
+
+>   1. phandle pointing to the DMA controller
+>   2. channel number
+> - 3. CRCI assignment, if applicable.  If no CRCI flow control is required, use 0.
+> -    The CRCI is used for flow control.  It identifies the peripheral device that
+> -    is the source/destination for the transferred data.
+>  
+>  Example:
+>  
+> @@ -56,7 +52,7 @@ Example:
+>  
+>  		cs-gpios = <&qcom_pinmux 20 0>;
+>  
+> -		dmas = <&adm_dma 6 9>,
+> -			<&adm_dma 5 10>;
+> +		dmas = <&adm_dma 6>,
+> +			<&adm_dma 5>;
+>  		dma-names = "rx", "tx";
+>  	};
+> 
+
+Chris
+
+-- 
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
