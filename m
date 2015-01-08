@@ -1,95 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755868AbbAHBEv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 20:04:51 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:60304 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755831AbbAHBEs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 20:04:48 -0500
-X-AuditID: cbfee691-f79b86d000004a5a-8a-54add7ab6461
-From: Inha Song <ideal.song@samsung.com>
-To: broonie@kernel.org, lgirdwood@gmail.com, lee.jones@linaro.org,
-        ckeepax@opensource.wolfsonmicro.com
-Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        Inha Song <ideal.song@samsung.com>
-Subject: [alsa-devel] [RESEND PATCH] mfd: wm8994: set mfd id-base for regulator
- devs creation to avoid conflicts
-Date: Thu, 08 Jan 2015 10:04:33 +0900
-Message-id: <1420679073-3316-1-git-send-email-ideal.song@samsung.com>
-X-Mailer: git-send-email 2.0.0.390.gcb682f8
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsWyRsSkQHf19bUhBr+2m1hcuXiIyWLqwyds
-	Fv+m3GC32PX3PqPF/a9HGS2+Xelgsri8aw6bxfK3/9ksTnezOnB6bPjcxOaxc9Zddo9NqzrZ
-	PO5c28PmMe9koMfLib/ZPPq2rGL0+LxJLoAjissmJTUnsyy1SN8ugSvj7qMJrAVfOCu+T73E
-	3MD4mb2LkZNDQsBE4umJ7YwQtpjEhXvr2boYuTiEBJYySvx7sYIJpujZsjksEIlFjBIHdq1j
-	hXDmMEnMOfGAFaSKTUBD4vvnzcwgtohAhsTiD5fARjELLGSUeLLnMViRsECRxLyzN8BsFgFV
-	iWdHd7OB2LwCrhKf/i5ihVinLbGvYSYbhL2MXWLfUhaIegGJb5MPAdkcQHFZiU0HmCFKJCUO
-	rrjBMoFRcAEjwypG0dSC5ILipPQiU73ixNzi0rx0veT83E2MwDA//e/ZxB2M9w9YH2IU4GBU
-	4uEt6FsTIsSaWFZcmXuI0RRow0RmKdHkfGA05ZXEGxqbGVmYmpgaG5lbmimJ8+pI/wwWEkhP
-	LEnNTk0tSC2KLyrNSS0+xMjEwSnVwKi0UNFUsy3a+6yKsoz4fr1dpQrd2x/M3Pvt4iYVrUNs
-	AQuvhN7jiHX6s0Fu0anfj+2Onkzp2/m+fuHu1Rr+OoUfFJm835XnGFfozvzFGLPy8mQGhrsS
-	s7zamswnzvOZ0Fizc4eAvt/7bq47TxxCZJnXtMme8rGtDpeNe7dkzbJnnO8fbdY78EaJpTgj
-	0VCLuag4EQBj/DmhbgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGIsWRmVeSWpSXmKPExsVy+t9jAd3V19eGGKx/pGNx5eIhJoupD5+w
-	WfybcoPdYtff+4wW978eZbT4dqWDyeLyrjlsFsvf/mezON3N6sDpseFzE5vHzll32T02repk
-	87hzbQ+bx7yTgR4vJ/5m8+jbsorR4/MmuQCOqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hT
-	MwNDXUNLC3MlhbzE3FRbJRefAF23zByg85QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYE
-	wfUYGaCBhDWMGXcfTWAt+MJZ8X3qJeYGxs/sXYycHBICJhLPls1hgbDFJC7cW8/WxcjFISSw
-	iFHiwK51rBDOHCaJOScesIJUsQloSHz/vJkZxBYRyJBY/OESWAezwEJGiSd7HoMVCQsUScw7
-	ewPMZhFQlXh2dDcbiM0r4Crx6e8iVoh12hL7GmayTWDkXsDIsIpRNLUguaA4KT3XSK84Mbe4
-	NC9dLzk/dxMjOI6eSe9gXNVgcYhRgINRiYe3oG9NiBBrYllxZe4hRgkOZiUR3q6za0OEeFMS
-	K6tSi/Lji0pzUosPMZoCbZ/ILCWanA+M8bySeENjEzMjSyNzQwsjY3MlcV4l+7YQIYH0xJLU
-	7NTUgtQimD4mDk6pBsZ1B5b2im9VFZ3Ds1Bc6aou7yfltTsn/rQVufUxUj78b7oWV9ek2QeT
-	W1bPF3Gp2/nlC5v4/4j4HOfzKpZMVw7efbf1/6/3UkLifREeWzf2pK+M0tQ8KnVXNSiSudI+
-	Pljpw8RjK5n1mhd8embZ8mD2xdNCDfI/bH4W9531vf03M9rSfdGh7BwlluKMREMt5qLiRACr
-	wJeQuQIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1755891AbbAHBFF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 20:05:05 -0500
+Received: from mga14.intel.com ([192.55.52.115]:40344 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753708AbbAHBFB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 20:05:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="437795990"
+Date: Wed, 7 Jan 2015 17:05:00 -0800
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: todd.e.brandt@linux.intel.com
+Cc: linux-pm@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sameo@linux.intel.com,
+        lee.jones@linaro.org, sre@kernel.org, dbaryshkov@gmail.com,
+        dwmw2@infradead.org, david.woodhouse@intel.com,
+        todd.e.brandt@intel.com
+Subject: Re: [PATCH 2/3] mfd/axp20x: add support for fuel gauge cell driver
+Message-ID: <20150107170500.321d0e8f@ultegra>
+In-Reply-To: <20150107212552.GC3440@linux.intel.com>
+References: <20150107212552.GC3440@linux.intel.com>
+Organization: OTC
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit: 6e3f62f0793e ("mfd: core: Fix platform-device id generation")
-We must set the id base when register a duplicate name of mfd_cell.
-If not, duplicate filename error was reported.
+On Wed, 7 Jan 2015 13:25:52 -0800
+Todd E Brandt <todd.e.brandt@linux.intel.com> wrote:
 
-- sysfs: cannot create duplicate filename '/devices/.../wm8994-ldo'
+> mfd/axp20x: add support for fuel gauge cell
+> 
+Acked-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> Register definitions and platform data structure 
+> for fuel gauge cell devices.
+> 
+> Signed-off-by: Todd Brandt <todd.e.brandt@intel.com>
+> ----
+>  include/linux/mfd/axp20x.h | 43
+> +++++++++++++++++++++++++++++++++++++++++-- 1 file changed, 41
+> insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/mfd/axp20x.h b/include/linux/mfd/axp20x.h
+> index 81589d1..dfabd6d 100644
+> --- a/include/linux/mfd/axp20x.h
+> +++ b/include/linux/mfd/axp20x.h
+> @@ -124,10 +124,27 @@ enum {
+>  #define AXP288_PMIC_ADC_H               0x56
+>  #define AXP288_PMIC_ADC_L               0x57
+>  #define AXP288_ADC_TS_PIN_CTRL          0x84
+> -
+>  #define AXP288_PMIC_ADC_EN              0x84
+> -#define AXP288_FG_TUNE5			0xed
+>  
+> +/* Fuel Gauge */
+> +#define AXP288_FG_RDC1_REG          0xba
+> +#define AXP288_FG_RDC0_REG          0xbb
+> +#define AXP288_FG_OCVH_REG          0xbc
+> +#define AXP288_FG_OCVL_REG          0xbd
+> +#define AXP288_FG_OCV_CURVE_REG     0xc0
+> +#define AXP288_FG_DES_CAP1_REG      0xe0
+> +#define AXP288_FG_DES_CAP0_REG      0xe1
+> +#define AXP288_FG_CC_MTR1_REG       0xe2
+> +#define AXP288_FG_CC_MTR0_REG       0xe3
+> +#define AXP288_FG_OCV_CAP_REG       0xe4
+> +#define AXP288_FG_CC_CAP_REG        0xe5
+> +#define AXP288_FG_LOW_CAP_REG       0xe6
+> +#define AXP288_FG_TUNE0             0xe8
+> +#define AXP288_FG_TUNE1             0xe9
+> +#define AXP288_FG_TUNE2             0xea
+> +#define AXP288_FG_TUNE3             0xeb
+> +#define AXP288_FG_TUNE4             0xec
+> +#define AXP288_FG_TUNE5             0xed
+>  
+>  /* Regulators IDs */
+>  enum {
+> @@ -236,4 +253,26 @@ struct axp20x_dev {
+>  	const struct regmap_irq_chip	*regmap_irq_chip;
+>  };
+>  
+> +#define BATTID_LEN				64
+> +#define OCV_CURVE_SIZE			32
+> +#define MAX_THERM_CURVE_SIZE	25
+> +#define PD_DEF_MIN_TEMP			0
+> +#define PD_DEF_MAX_TEMP			55
+> +
+> +struct axp20x_fg_pdata {
+> +	char battid[BATTID_LEN + 1];
+> +	int design_cap;
+> +	int min_volt;
+> +	int max_volt;
+> +	int max_temp;
+> +	int min_temp;
+> +	int cap1;
+> +	int cap0;
+> +	int rdc1;
+> +	int rdc0;
+> +	int ocv_curve[OCV_CURVE_SIZE];
+> +	int tcsz;
+> +	int thermistor_curve[MAX_THERM_CURVE_SIZE][2];
+> +};
+> +
+>  #endif /* __LINUX_MFD_AXP20X_H */
 
-Signed-off-by: Inha Song <ideal.song@samsung.com>
----
- drivers/mfd/wm8994-core.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
-index e6fab94..47cd3cc 100644
---- a/drivers/mfd/wm8994-core.c
-+++ b/drivers/mfd/wm8994-core.c
-@@ -36,12 +36,12 @@
- static const struct mfd_cell wm8994_regulator_devs[] = {
- 	{
- 		.name = "wm8994-ldo",
--		.id = 1,
-+		.id = 0,
- 		.pm_runtime_no_callbacks = true,
- 	},
- 	{
- 		.name = "wm8994-ldo",
--		.id = 2,
-+		.id = 1,
- 		.pm_runtime_no_callbacks = true,
- 	},
- };
-@@ -344,7 +344,7 @@ static int wm8994_device_init(struct wm8994 *wm8994, int irq)
- 	dev_set_drvdata(wm8994->dev, wm8994);
- 
- 	/* Add the on-chip regulators first for bootstrapping */
--	ret = mfd_add_devices(wm8994->dev, -1,
-+	ret = mfd_add_devices(wm8994->dev, 0,
- 			      wm8994_regulator_devs,
- 			      ARRAY_SIZE(wm8994_regulator_devs),
- 			      NULL, 0, NULL);
--- 
-2.0.0.390.gcb682f8
-
+[Jacob Pan]
