@@ -1,102 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979AbbAHSTl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 13:19:41 -0500
-Received: from mail-oi0-f44.google.com ([209.85.218.44]:54528 "EHLO
-	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754672AbbAHSTj (ORCPT
+	id S1755093AbbAHS27 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 13:28:59 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:59566 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751838AbbAHS25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 13:19:39 -0500
-Message-ID: <54AECA32.6000304@landley.net>
-Date: Thu, 08 Jan 2015 12:19:30 -0600
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 8 Jan 2015 13:28:57 -0500
+Date: Thu, 8 Jan 2015 13:28:45 -0500
+From: Chris Mason <clm@fb.com>
+To: <torvalds@linux-foundation.org>
+CC: <linux-btrfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Btrfs fixes
+Message-ID: <20150108182833.GA5005@ret.masoncoding.com>
+Mail-Followup-To: Chris Mason <clm@fb.com>, torvalds@linux-foundation.org,
+	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>
-CC: initramfs <initramfs@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-ima-devel@lists.sourceforge.net,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Fionnuala Gunter <fin@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH 6/9] gen_initramfs_list.sh: include xattrs
-References: <1420663980-20842-1-git-send-email-zohar@linux.vnet.ibm.com>	 <1420663980-20842-7-git-send-email-zohar@linux.vnet.ibm.com>	 <CA+5PVA77x2W9LyHMq1jSW3HKqNgFPz-gPVOH0QtEmmMBwzOx_Q@mail.gmail.com> <1420729994.6338.52.camel@dhcp-9-2-203-236.watson.ibm.com>
-In-Reply-To: <1420729994.6338.52.camel@dhcp-9-2-203-236.watson.ibm.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-08_04:2015-01-07,2015-01-08,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=5.55111512312578e-17 kscore.compositescore=0
+ circleOfTrustscore=29.4129509548051 compositescore=0.939076664828693
+ urlsuspect_oldscore=0.939076664828693 suspectscore=1
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.939076664828693 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1501080169
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2015 09:13 AM, Mimi Zohar wrote:
-> On Thu, 2015-01-08 at 09:01 -0500, Josh Boyer wrote: 
->> On Wed, Jan 7, 2015 at 3:52 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
->> That's pretty awkward.  I think it highlights the major downside of
->> this approach in that from a standard distro point of view this
->> functionality isn't likely to be used.  Do you foresee this feature as
->> something that should be widely used, or something that would be used
->> more in custom, locked-down machines?
-> 
-> Before distros can start enabling these features, software packages need
-> to come with file signatures.  Fin Gunter posted (and shortly will
-> re-post) patches to include file signatures in RPM patches.
+Hi Linus,
 
-My personal lack of caring about Red Hat's bureaucratic "signing
-binaries in triplicate" is probably large enough to be seen from space
-(obviously no vendor code has ever contained an exploit that could be
-used to run arbitrary code in ring 0, and this totally won't be used for
-vendor lock-in, but I remain unconvinced because I'm funny that way)...
+We have a small queue of btrfs fixes in my for-linus branch:
 
-But I am curious about how you propose to encode xattrs into the cpio
-format. (Which Al Viro chose because it's _simple_. There isn't really a
-controlling spec since Posix decided to deprecated it in 2001 and  yank
-it from SUSv3 onwards. LSB extended several header fields to 8 hex
-digits instead of 6, but they still have 32 bit timestamps which seems a
-bit short-sighted. If you're going to define a new rev with a new magic
-number, there are a couple other things you might wanna fix...)
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
 
-I ask because I maintain a new from-scratch cpio implementation
-(http://landley.net/hg/toybox/file/1571/toys/posix/cpio.c), so I'd
-presumably have to add your format extensions to this. Is there any sort
-of documentation on them?
+None of these are huge, but my commit does fix a regression from 3.18
+that could cause lost files during log replay.
 
-The toybox config Android is using has this cpio implementation enabled
-(see
-https://android.googlesource.com/platform/external/toybox/+/9250c95a8c47/Android.mk)
-so I'd rather like to get this sort of detail right...
+This also adds Dave Sterba to the list of Btrfs maintainers.  It doesn't
+mean we're doing things differently, but Dave has really been helping
+with the maintainer workload for years.
 
-> Including file signatures in RPM packages (and similarly in other
-> software package formats) is the direction we, the linux community, IMHO
-> should be moving.  How long this will take is entirely up to the
-> distros.
+Chris Mason (2) commits (+9/-0):
+    Btrfs: don't delay inode ref updates during log replay (+8/-0)
+    Btrfs: add more maintainers (+1/-0)
 
-Glued down to a trusted platform module such that obviously nobody can
-possibly exploit such a system, from
-https://www.youtube.com/watch?v=4loZGYqaZ7I to
-https://trmm.net/Thunderstrike_31c3
+Wang Shilong (1) commits (+3/-1):
+    Btrfs: call inode_dec_link_count() on mkdir error path
 
-I see this as way, way more about vendor lock-in than security.
+Filipe Manana (1) commits (+10/-3):
+    Btrfs: correctly get tree level in tree_backref_for_extent
 
->> I can understand not wanting to redefine the newc format in userspace
->> cpio, but if you want this to be easier to use then perhaps working
->> with dracut upstream to make it support this out of the box would be a
->> good idea.
-> 
-> Anyone using dracut/systemd is currently not using tmpfs, as specifying
-> "root=" on the boot command line reverts to using ramfs.  Rob Landley
-> suggested userspace apps use "ROOT=" instead.
-> (http://sourceforge.net/p/linux-ima/mailman/message/33189705/)
+Josef Bacik (1) commits (+6/-6):
+    Btrfs: abort transaction if we don't find the block group
 
-I'm working on a documentation update, but the old docs I wrote have
-gone a bit stale in a number of places so I'm not done yet...
+Dan Carpenter (1) commits (+1/-1):
+    Btrfs, scrub: uninitialized variable in scrub_extent_for_parity()
 
-> This patch set was posted as an RFC.  Assuming this solution for
-> including xattrs in the rootfs is acceptable, I'll post the
-> dracut/systemd changes.
+Total: (6) commits (+29/-11)
 
-(I'm not particularly interested in systemd either, but good luck with
-that...)
-
-> Mimi
-
-Rob
+ MAINTAINERS              |  1 +
+ fs/btrfs/backref.c       | 13 ++++++++++---
+ fs/btrfs/delayed-inode.c |  8 ++++++++
+ fs/btrfs/extent-tree.c   | 12 ++++++------
+ fs/btrfs/inode.c         |  4 +++-
+ fs/btrfs/scrub.c         |  2 +-
+ 6 files changed, 29 insertions(+), 11 deletions(-)
