@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756904AbbAHPcQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 10:32:16 -0500
-Received: from mail-yk0-f181.google.com ([209.85.160.181]:43649 "EHLO
-	mail-yk0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754894AbbAHPcL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 10:32:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <54AE9CC8.2080302@apollo.lv>
-References: <54ACB0D4.3000008@apollo.lv>
-	<54AD21E2.2020100@ladisch.de>
-	<54AD3D0B.6060501@apollo.lv>
-	<54AE410B.40101@ladisch.de>
-	<54AE9CC8.2080302@apollo.lv>
-Date: Thu, 8 Jan 2015 21:02:10 +0530
-Message-ID: <CAHFNz9Kj=+Gip-n=4tGaXfUXqc0QHoZgjZJ9s-0sTTFzTv4hxA@mail.gmail.com>
-Subject: Re: Questions about IOMMU & PCIe switch
-From: Manu Abraham <abraham.manu@gmail.com>
-To: Raimonds Cicans <ray@apollo.lv>
-Cc: Clemens Ladisch <clemens@ladisch.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755044AbbAHPhA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 10:37:00 -0500
+Received: from mail.kernel.org ([198.145.29.136]:48829 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754642AbbAHPg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 10:36:58 -0500
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 0/3] perf/urgent fixes
+Date: Thu,  8 Jan 2015 12:36:45 -0300
+Message-Id: <1420731408-8631-1-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 8, 2015 at 8:35 PM, Raimonds Cicans <ray@apollo.lv> wrote:
-> On 08.01.2015 10:34, Clemens Ladisch wrote:
->>
->> Raimonds Cicans wrote:
->>>
->>> https://github.com/ljalves/linux_media/issues/66
->>
->> If the TBS driver works, why don't you use it?
->
-> 1) driver is not stable in 24x7 setups
->
-> 2) driver use old DVBAPI. This cause problems with some
->      user space programs.
+Hi Ingo,
 
-It shouldn't. It is backward compatible.
+	Please consider pulling,
 
->
-> 3) TBS recommends to use card in MSI interrupt mode
->      but this mode on IOMMU systems do not work:
->      card is able to find transponders and tune to it
->      but can not receive any data
+- Arnaldo
 
-TBS didn't even have the courtesy to say thanks, but still.
-They don't have any clue on the driver.
+The following changes since commit ed9eb845d7916b2bc863e5b93c82e18be8faf032:
 
-You shouldn't use MSI mode on most systems unless you
-are sure that your machine works perfectly well with MSI
-mode.
+  Merge tag 'perf-urgent-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent (2015-01-08 08:59:22 +0100)
 
-You should simply use standard interrupt mode, if you are
-unsure.
-
-In any sense, that card looks a bit odd:
-
-1. It doesn't need a PCIe switch, nor that CPLD in there for
-the fact that it is using a SAA7160, rather than an E version,
-which thereby support 4 FGPI inputs (4 simultaneous TS's)
-(Redundant components)
-
-2. But in any sense, the PCIe switch is transparent, It doesn't
-need any programming. All what you can do with the PCIe
-switch is to reprogram the lines to it, nothing more. In any
-case, if your card is detected, there's no point in playing with
-the PCIe switch
-
-3. The TS failure in a while can most likely be attributed to
-bad CPLD programming. On the cards that I have worked
-with, they've worked pretty well.
+are available in the git repository at:
 
 
-Regards,
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-urgent-for-mingo
 
-Manu
+for you to fetch changes up to c09e31cc128cf1aec3a6cd47203508fbf0082873:
+
+  perf hists browser: Fix segfault when showing callchain (2015-01-08 11:59:16 -0300)
+
+----------------------------------------------------------------
+perf/urgent fixes:
+
+. Free callchains when hist entries are deleted, plugging a massive leak in
+  'top -g', where hist_entries (and its callchains) are decayed over time. (Namhyung Kim)
+
+. Fix segfault when showing callchain in the hists browser (report & top) (Namhyung Kim)
+
+. Fix children sort key behavior, and also the 'perf test 32' test that
+  was failing due to reliance on undefined behaviour (Namhyung Kim)
+
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+----------------------------------------------------------------
+Namhyung Kim (3):
+      perf hists: Fix children sort key behavior
+      perf callchain: Free callchains when hist entries are deleted
+      perf hists browser: Fix segfault when showing callchain
+
+ tools/perf/tests/hists_cumulate.c | 64 +++++++++++++++++++--------------------
+ tools/perf/ui/browsers/hists.c    |  2 +-
+ tools/perf/ui/hist.c              |  3 ++
+ tools/perf/util/callchain.c       | 30 ++++++++++++++++++
+ tools/perf/util/callchain.h       |  2 ++
+ tools/perf/util/hist.c            |  1 +
+ 6 files changed, 69 insertions(+), 33 deletions(-)
