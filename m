@@ -1,137 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567AbbAHBax (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 20:30:53 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:30533 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202AbbAHBaw (ORCPT
+	id S1753909AbbAHBlF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 20:41:05 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:40189 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202AbbAHBlB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 20:30:52 -0500
-Message-ID: <54ADDDAF.8060704@huawei.com>
-Date: Thu, 8 Jan 2015 09:30:23 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <lizefan@huawei.com>, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Jiri Olsa <jolsa@kernel.org>
-Subject: Re: [PATCH] perf: fix building error in x86_64 when dwarf unwind
- is on
-References: <1419643571-62764-1-git-send-email-wangnan0@huawei.com> <20141229075607.GC6081@sejong> <54A10D53.2010800@huawei.com> <54AC9FC0.7050902@huawei.com> <20150107054004.GA849@sejong> <20150107083920.GF6243@krava.brq.redhat.com> <54AD2672.1010009@huawei.com> <CAM9d7chGXX68B54igX5O+3ZEu322cW-Xfoz6Wen8=D8iQpyH6g@mail.gmail.com>
-In-Reply-To: <CAM9d7chGXX68B54igX5O+3ZEu322cW-Xfoz6Wen8=D8iQpyH6g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.90]
+	Wed, 7 Jan 2015 20:41:01 -0500
+X-AuditID: cbfee68f-f791c6d000004834-d0-54ade02a640d
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: myungjoo.ham@samsung.com, kgene@kernel.org
+Cc: kyungmin.park@samsung.com, rafael.j.wysocki@intel.com,
+        mark.rutland@arm.com, a.kesavan@samsung.com, tomasz.figa@gmail.com,
+        k.kozlowski@samsung.com, b.zolnierkie@samsung.com, robh+dt@kernel.org,
+        cw00.choi@samsung.com, inki.dae@samsung.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Subject: [PATCHv3 0/8] devfreq: Add generic exynos memory-bus frequency driver
+Date: Thu, 08 Jan 2015 10:40:49 +0900
+Message-id: <1420681257-3078-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.5.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsWyRsSkWFfrwdoQgzmfdCwer1nMZLFxxnpW
+	i+tfnrNaTLo/gcXi9QtDi/7Hr5ktzja9YbfY9Pgaq8XlXXPYLD73HmG0mHF+H5PF0usXmSxu
+	N65gs3i84i27ReveI+wWq3b9YXQQ8Fgzbw2jx85Zd9k9Fu95yeSxaVUnm8fmJfUefVtWMXp8
+	3iQXwB7FZZOSmpNZllqkb5fAlTHpxQSWgrlSFdPmHGBvYDwg0sXIySEhYCLx5303G4QtJnHh
+	3nogm4tDSGApo8S5Pa/YYYqWX3rBCpFYxChx/+BsJginiUni1Yr5jCBVbAJaEvtf3AAbJSKg
+	J9F5bA9YN7PAHyaJpk0sILawgJ9Ef+dfZhCbRUBVonvzNTCbV8BFYtrepVDbFCSWLZ/JCmFf
+	Ype4M4sNol5A4tvkQ0BzOIDishKbDjBDlEhKHFxxg2UCo+ACRoZVjKKpBckFxUnpRcZ6xYm5
+	xaV56XrJ+bmbGIERcvrfs/4djHcPWB9iFOBgVOLhLehbEyLEmlhWXJl7iNEUaMNEZinR5Hxg
+	HOaVxBsamxlZmJqYGhuZW5opifMulPoZLCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoGxuLuZ
+	0Wi1zVlJ53tcUutUOH/UONR9+BW2ZHX6TV1PqcuWM658WKWU1xn2Z/LKuUqOTmwenxcql1+L
+	kV/+seW97B67jhfOvtzBEU232poN3/l6Fm5RWOl0RXCJmGKOG9MTs3PuvI//yqmu2uUexzfp
+	19kwjdr5H7J26nd5Blwzue/0doXPpAAlluKMREMt5qLiRADog5h1iwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMIsWRmVeSWpSXmKPExsVy+t9jAV2tB2tDDBbNVrZ4vGYxk8XGGetZ
+	La5/ec5qMen+BBaL1y8MLfofv2a2ONv0ht1i0+NrrBaXd81hs/jce4TRYsb5fUwWS69fZLK4
+	3biCzeLxirfsFq17j7BbrNr1h9FBwGPNvDWMHjtn3WX3WLznJZPHplWdbB6bl9R79G1Zxejx
+	eZNcAHtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+Arltm
+	DtDxSgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaMSS8msBTMlaqYNucA
+	ewPjAZEuRk4OCQETieWXXrBC2GISF+6tZ+ti5OIQEljEKHH/4GwmCKeJSeLVivmMIFVsAloS
+	+1/cYAOxRQT0JDqP7WEHsZkF/jBJNG1iAbGFBfwk+jv/MoPYLAKqEt2br4HZvAIuEtP2LmWH
+	2KYgsWz5TNYJjNwLGBlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgRH4DPpHYyrGiwOMQpw
+	MCrx8Bb0rQkRYk0sK67MPcQowcGsJMLbdXZtiBBvSmJlVWpRfnxRaU5q8SFGU6DtE5mlRJPz
+	gckhryTe0NjEzMjSyNzQwsjYXEmcV8m+LURIID2xJDU7NbUgtQimj4mDU6qBcbqy7Gr33xct
+	P984Z/3YLPTtPJ8lfJmCPnXLrgWxbrEreTF1yubZ7b3+/accLDiLVq7mSl5a9Wzy4jN1DWbN
+	dYyLzTLPxepd2umvt9r13Znvy+ZXh6Ut3XpiXtquY0z+XbWBmzaKuqo7m36aKV+0VGDLrPur
+	VkW0nnh3a7pIdrDXdH1vpTsTdiixFGckGmoxFxUnAgDsYHDR1gIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/1/7 21:50, Namhyung Kim wrote:
-> On Wed, Jan 7, 2015 at 9:28 PM, Wang Nan <wangnan0@huawei.com> wrote:
->> On 2015/1/7 16:39, Jiri Olsa wrote:
->>> On Wed, Jan 07, 2015 at 02:40:04PM +0900, Namhyung Kim wrote:
->>>> diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
->>>> index 67a03a825b3c..eb3e2f3e14b4 100644
->>>> --- a/tools/perf/Makefile.perf
->>>> +++ b/tools/perf/Makefile.perf
->>>> @@ -462,10 +462,12 @@ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
->>>>  # Benchmark modules
->>>>  BUILTIN_OBJS += $(OUTPUT)bench/sched-messaging.o
->>>>  BUILTIN_OBJS += $(OUTPUT)bench/sched-pipe.o
->>>> +ifeq ($(ARCH),x86)
->>>>  ifeq ($(RAW_ARCH),x86_64)
->>>>  BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy-x86-64-asm.o
->>>>  BUILTIN_OBJS += $(OUTPUT)bench/mem-memset-x86-64-asm.o
->>>>  endif
->>>> +endif
->>>
->>> isn't the check for x86 superfluous here? the x86_64 check is stronger
->>>
->>> otherwise it looks ok to me.. Wang Nan, could you please check
->>> if it fixes the issue for you?
->>>
->>
->> Sorry, although Namhyung Kim's patch solves my ARCH=x86 problem, it breaks ARM building:
->>
->> ...
->> | bench/../../../arch/x86/lib/memcpy_64.S: Assembler messages:
->> | bench/../../../arch/x86/lib/memcpy_64.S:27: Error: junk at end of line, first unrecognized character is `,'
->> | bench/../../../arch/x86/lib/memcpy_64.S:29: Error: bad instruction `movq %rdi,%rax'
->> | bench/../../../arch/x86/lib/memcpy_64.S:30: Error: bad instruction `movq %rdx,%rcx'
->> | bench/../../../arch/x86/lib/memcpy_64.S:31: Error: bad instruction `shrq $3,%rcx'
->> | bench/../../../arch/x86/lib/memcpy_64.S:32: Error: bad instruction `andl $7,%edx'
->> ...
-> 
-> Strange.. this code is included only if ARCH=x86 in config/Makefile:
-> 
-> # Additional ARCH settings for x86
-> ifeq ($(ARCH),x86)
->   ifeq (${IS_64_BIT}, 1)
->     CFLAGS += -DHAVE_ARCH_X86_64_SUPPORT
->     ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
->     LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
->   else
->     LIBUNWIND_LIBS = -lunwind -lunwind-x86
->   endif
->   NO_PERF_REGS := 0
-> endif
-> 
-> Did your original patch build it without a problem?
-> 
+This patch-set adds the generic exynos bus frequency driver for memory bus
+with DEVFREQ framework. The Samsung Exynos SoCs have the common architecture
+for memory bus between DRAM memory and MMC/sub IP in SoC. This driver can
+support the memory bus frequency driver for Exynos SoCs.
 
-My original patch is free from this problem.
+Each memory bus block has a clock for memory bus speed and frequency
+table which is changed according to the utilization of memory bus on runtime.
+And then each memory bus group has the one more memory bus blocks and
+OPP table (including frequency and voltage), regulator, devfreq-event
+devices.
 
-bench/mem-memset-x86-64-asm.S doesn't use ARCH_INCLUDE, it direct include "../../../arch/x86/lib/memset_64.S".
+There are a little difference about the number of memory bus because each Exynos
+SoC have the different sub-IP and different memory bus speed. In spite of this
+difference among Exynos SoCs, we can support almost Exynos SoC by adding
+unique data of memory bus to devicetree file.
 
-> 
->>
->> It builds x86_64 bench when I corss compiling perf for arm (use ARCH=arm). This is caused by Makefile.perf:
->>
->> ...
->> BUILTIN_OBJS += $(OUTPUT)bench/sched-pipe.o
->> ifeq ($(RAW_ARCH),x86_64)
->> BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy-x86-64-asm.o
->> BUILTIN_OBJS += $(OUTPUT)bench/mem-memset-x86-64-asm.o
->> endif
->> BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy.o
->> ...
->>
->> Which rely on RAW_ARCH, but RAW_ARCH is not a cross-compiling-friendly variable now.
-> 
-> That's why I added the extra ARCH check.
-> 
+Depend on:
+- v3.19-rc3
+- [PATCHv7 00/10] devfreq: Add devfreq-event class to provide raw data for devfreq device
+  : https://lkml.org/lkml/2015/1/7/795
 
-With your additional ARCH check, ARM compiling is passed. However I suggest you not to
-use $(RAW_ARCH) directly, because it is get from "uname -m", which reflects the arch of
-build machine, not the arch of host machine (the machine perf will run on).
+Changelog:
 
-What about this:
+Changes from v2:
+(https://lkml.org/lkml/2014/12/31/2)
+- Support the memory bus frequency feature for Exynos3250-based Monk board
+- Fix build warning about variable uninitialized
 
----
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 67a03a82..1f71a32 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -462,10 +462,12 @@ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
- # Benchmark modules
- BUILTIN_OBJS += $(OUTPUT)bench/sched-messaging.o
- BUILTIN_OBJS += $(OUTPUT)bench/sched-pipe.o
--ifeq ($(RAW_ARCH),x86_64)
-+ifeq ($(ARCH), x86)
-+ifeq ($(IS_64_BIT), 1)
- BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy-x86-64-asm.o
- BUILTIN_OBJS += $(OUTPUT)bench/mem-memset-x86-64-asm.o
- endif
-+endif
- BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy.o
- BUILTIN_OBJS += $(OUTPUT)bench/futex-hash.o
- BUILTIN_OBJS += $(OUTPUT)bench/futex-wake.o
+Changes from v1:
+(https://lkml.org/lkml/2014/12/23/178)
+- This patchset is rebased on v3.19-rc2.
+- Fix bug after wake-up from suspend state. If devfreq device fail to get event,
+  exynos-busfreq retry to set the event for starting.
+- Add memory bus group of Exynos4x12/Exynos4210
+- Add divider clock id for Exynos4 memory bus frequency
+- Support memory bus frequency driver on Exynos4412-based TRATS2 board
+- This patch-set has the dependency on following patch-set[1]:
+  [1] [PATCHv6 0/9] devfreq: Add devfreq-event class to provide raw data for devfreq device
+  : https://lkml.org/lkml/2014/12/28/139
 
-> Thanks,
-> Namhyung
-> 
+Chanwoo Choi (8):
+  devfreq: exynos: Add generic exynos memory bus frequency driver
+  devfreq: exynos: Add documentation for generic exynos memory bus frequency driver
+  ARM: dts: Add memory bus node for Exynos3250
+  clk: samsung: exynos4: Add divider clock id for memory bus frequency
+  ARM: dts: Add memory bus node for Exynos4x12
+  ARM: dts: Add memory bus node for Exynos4210
+  ARM: dts: Add memory bus node for Exynos3250-based Rinato/Monk board
+  ARM: dts: Add memory bus node for Exynos4412-based TRATS2 board
 
+ .../devicetree/bindings/devfreq/exynos-busfreq.txt | 184 +++++++
+ arch/arm/boot/dts/exynos3250-monk.dts              |  12 +
+ arch/arm/boot/dts/exynos3250-rinato.dts            |  12 +
+ arch/arm/boot/dts/exynos3250.dtsi                  | 125 +++++
+ arch/arm/boot/dts/exynos4210.dtsi                  |  93 ++++
+ arch/arm/boot/dts/exynos4412-trats2.dts            |  12 +
+ arch/arm/boot/dts/exynos4x12.dtsi                  | 121 +++++
+ drivers/clk/samsung/clk-exynos4.c                  |  10 +-
+ drivers/devfreq/Kconfig                            |  15 +
+ drivers/devfreq/Makefile                           |   1 +
+ drivers/devfreq/exynos-busfreq.c                   | 589 +++++++++++++++++++++
+ include/dt-bindings/clock/exynos4.h                |   7 +-
+ 12 files changed, 1175 insertions(+), 6 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/devfreq/exynos-busfreq.txt
+ create mode 100644 drivers/devfreq/exynos-busfreq.c
+
+-- 
+1.8.5.5
 
