@@ -1,99 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993AbbAHJNC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 04:13:02 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34380 "EHLO mx2.suse.de"
+	id S1755800AbbAHJNc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 04:13:32 -0500
+Received: from sym2.noone.org ([178.63.92.236]:38971 "EHLO sym2.noone.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751141AbbAHJM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 04:12:57 -0500
-Message-ID: <1420708372.18399.15.camel@suse.cz>
-Subject: Re: [PATCH 0/3] epoll: Add epoll_pwait1 syscall
-From: Miklos Szeredi <mszeredi@suse.cz>
-To: Fam Zheng <famz@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Juri Lelli <juri.lelli@gmail.com>, Zach Brown <zab@zabbo.net>,
-        David Drysdale <drysdale@google.com>,
-        Kees Cook <keescook@chromium.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Dario Faggioli <raistlin@linux.it>, "Theodore Ts'o" <tytso@mit.edu>,
-        Peter Zijlstra <peterz@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Fabian Frederick <fabf@skynet.be>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-fsdevel@vger.kernel.org,
-        linux-api@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Thu, 08 Jan 2015 10:12:52 +0100
-In-Reply-To: <1420705550-24245-1-git-send-email-famz@redhat.com>
-References: <1420705550-24245-1-git-send-email-famz@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754118AbbAHJN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 04:13:27 -0500
+Date: Thu, 8 Jan 2015 10:13:23 +0100
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Aaron Wu <Aaron.wu@analog.com>
+Cc: mkl@pengutronix.de, wg@grandegger.com, linux-can@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        adi-buildroot-devel@lists.sourceforge.net
+Subject: Re: [PATCH V2 2/2] bfin_can: rewrite the driver to support the common
+Message-ID: <20150108091322.GE9157@distanz.ch>
+References: <1420700254-22529-1-git-send-email-Aaron.wu@analog.com>
+ <1420700254-22529-2-git-send-email-Aaron.wu@analog.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420700254-22529-2-git-send-email-Aaron.wu@analog.com>
+X-Editor: Vi IMproved 7.3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2015-01-08 at 16:25 +0800, Fam Zheng wrote:
-> Applications could use epoll interface when then need to poll a big number of
-> files in their main loops, to achieve better performance than ppoll(2). Except
-> for one concern: epoll only takes timeout parameters in microseconds, rather
-> than nanoseconds.
+On 2015-01-08 at 07:57:34 +0100, Aaron Wu <Aaron.wu@analog.com> wrote:
+> Rewrite the driver to comply to common style with MMU 
 > 
-> That is a drawback we should address. For a real case in QEMU, we run into a
-> scalability issue with ppoll(2) when many devices are attached to guest, in
-> which case many host fds, such as virtual disk images and sockets, need to be
-> polled by the main loop. As a result we are looking at switching to epoll, but
-> the coarse timeout precision is a trouble, as explained below. 
+> Signed-off-by: Aaron Wu <Aaron.wu@analog.com>
+> ---
+>  drivers/net/can/bfin_can.c |   21 ++++++++-------------
+>  1 file changed, 8 insertions(+), 13 deletions(-)
 > 
-> We're already using prctl(PR_SET_TIMERSLACK, 1) which is necessary to implement
-> timers in the main loop; and we call ppoll(2) with the next firing timer as
-> timeout, so when ppoll(2) returns, we know that we have more work to do (either
-> handling IO events, or fire a timer callback). This is natual and efficient,
-> except that ppoll(2) itself is slow.
-> 
-> Now that we want to switch to epoll, to speed up the polling. However the timer
-> slack setting will be effectively undone, because that way we will have to
-> round up the timeout to microseconds honoring timer contract. But consequently,
-> this hurts the general responsiveness.
-> 
-> Note: there are two alternatives, without changing kernel:
-> 
-> 1) Leading ppoll(2), with the epollfd only and a nanosecond timeout. It won't
-> be slow as one fd is polled. No more scalability issue. And if there are
-> events, we know from ppoll(2)'s return, then we do the epoll_wait(2) with
-> timeout=0; otherwise, there can't be events for the epoll, skip the following
-> epoll_wait and just continue with other work.
-> 
-> 2) Setup and add a timerfd to epoll, then we do epoll_wait(..., timeout=-1).
-> The timerfd will hopefully force epoll_wait to return when it timeouts, even if
-> no other events have arrived. This will inheritly give us timerfd's precision.
-> Note that for each poll, the desired timeout is different because the next
-> timer is different, so that, before each epoll_wait(2), there will be a
-> timerfd_settime syscall to set it to a proper value.
-> 
-> Unfortunately, both approaches require one more syscall per iteration, compared
-> to the original single ppoll(2), cost of which is unneglectable when we talk
-> about nanosecond granularity.
+> diff --git a/drivers/net/can/bfin_can.c b/drivers/net/can/bfin_can.c
+> index 0a5eff4..1d116a7 100644
+> --- a/drivers/net/can/bfin_can.c
+> +++ b/drivers/net/can/bfin_can.c
+[...]
+> @@ -617,9 +615,6 @@ static int bfin_can_remove(struct platform_device *pdev)
+>  
+>  	unregister_candev(dev);
+>  
+> -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	release_mem_region(res->start, resource_size(res));
+> -
 
-Please consider adding a "flags" argument to the new syscall (and
-returning EINVAL if non-zero).  See this article, which shows that
-extended syscalls almost always want flags, and they often get it only
-on the second try:
-
-http://lwn.net/Articles/585415/
-
-Thanks,
-Miklos
-
-P.S. stray apostrophes in To: and Cc: lines seems to be causing trouble.
-
+struct resource *res will be unused in bfin_can_remove() after this
+change, so it should be removed as well.
