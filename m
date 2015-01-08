@@ -1,69 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757116AbbAHRBv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 12:01:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44345 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756698AbbAHRBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 12:01:35 -0500
-From: Juergen Gross <jgross@suse.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        konrad.wilk@oracle.com, david.vrabel@citrix.com,
-        boris.ostrovsky@oracle.com
-Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH 3/3] xen: use correct type for physical addresses
-Date: Thu,  8 Jan 2015 18:01:30 +0100
-Message-Id: <1420736490-15351-4-git-send-email-jgross@suse.com>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1420736490-15351-1-git-send-email-jgross@suse.com>
-References: <1420736490-15351-1-git-send-email-jgross@suse.com>
+	id S1757136AbbAHRCG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 12:02:06 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:58052 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755989AbbAHRCB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 12:02:01 -0500
+Date: Thu, 8 Jan 2015 17:01:52 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Pratyush Anand <panand@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tixy@linaro.org" <tixy@linaro.org>,
+        "ananth@in.ibm.com" <ananth@in.ibm.com>,
+        "sandeepa.prabhu@linaro.org" <sandeepa.prabhu@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "anil.s.keshavamurthy@intel.com" <anil.s.keshavamurthy@intel.com>,
+        "masami.hiramatsu.pt@hitachi.com" <masami.hiramatsu.pt@hitachi.com>,
+        "wcohen@redhat.com" <wcohen@redhat.com>
+Subject: Re: [RFC 6/8] ARM64: Handle TRAP_HWBRKPT for user mode as well
+Message-ID: <20150108170152.GS11583@arm.com>
+References: <cover.1420038188.git.panand@redhat.com>
+ <1e0a9e778669bb2a2e40bf101eff8ae85110ce54.1420038188.git.panand@redhat.com>
+ <20150102180523.GC6761@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150102180523.GC6761@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When converting a pfn to a physical address be sure to use 64 bit
-wide types.
+On Fri, Jan 02, 2015 at 06:05:23PM +0000, Oleg Nesterov wrote:
+> Let me repeat once again that I know absolutely nothing about arm* ;)
+> 
+> On 12/31, Pratyush Anand wrote:
+> >
+> > uprobe registers a handler at step_hook. So, single_step_handler now
+> > checks for user mode as well if there is a valid hook.
+> >
+> > Signed-off-by: Pratyush Anand <panand@redhat.com>
+> > ---
+> >  arch/arm64/kernel/debug-monitors.c | 6 +++---
+> >  1 file changed, 3 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/arch/arm64/kernel/debug-monitors.c b/arch/arm64/kernel/debug-monitors.c
+> > index b056369fd47d..2676b8655241 100644
+> > --- a/arch/arm64/kernel/debug-monitors.c
+> > +++ b/arch/arm64/kernel/debug-monitors.c
+> > @@ -236,6 +236,9 @@ static int single_step_handler(unsigned long addr, unsigned int esr,
+> >  	if (!reinstall_suspended_bps(regs))
+> >  		return 0;
+> >
+> > +	if (call_step_hook(regs, esr) == DBG_HOOK_HANDLED)
+> > +		return 0;
+> > +
+> >  	if (user_mode(regs)) {
+> >  		info.si_signo = SIGTRAP;
+> >  		info.si_errno = 0;
+> > @@ -251,9 +254,6 @@ static int single_step_handler(unsigned long addr, unsigned int esr,
+> >  		 */
+> >  		user_rewind_single_step(current);
+> >  	} else {
+> > -		if (call_step_hook(regs, esr) == DBG_HOOK_HANDLED)
+> > -			return 0;
+> > -
+> 
+> Agreed, we need something like this change...
+> 
+> But did you verify that it can't break other users of register_step_hook() ?
+> The current handlers do not check user_mode() == F, they assume that they
+> can't be called otherwise.
+> 
+> If this all is correct, please explain why in the changelog.
 
-Also avoid invalidating memory for zero sized non-aligned extra
-memory regions.
+I think you're right, and kgdb will need fixing with this change.
 
-Signed-off-by: Juergen Gross <jgross@suse.com>
-Tested-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
----
- arch/x86/xen/setup.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index feb6d86..8839d7b 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -140,7 +140,7 @@ static void __init xen_del_extra_mem(u64 start, u64 size)
- unsigned long __ref xen_chk_extra_mem(unsigned long pfn)
- {
- 	int i;
--	unsigned long addr = PFN_PHYS(pfn);
-+	u64 addr = PFN_PHYS(pfn);
- 
- 	for (i = 0; i < XEN_EXTRA_MEM_MAX_REGIONS; i++) {
- 		if (addr >= xen_extra_mem[i].start &&
-@@ -160,6 +160,8 @@ void __init xen_inv_extra_mem(void)
- 	int i;
- 
- 	for (i = 0; i < XEN_EXTRA_MEM_MAX_REGIONS; i++) {
-+		if (!xen_extra_mem[i].size)
-+			continue;
- 		pfn_s = PFN_DOWN(xen_extra_mem[i].start);
- 		pfn_e = PFN_UP(xen_extra_mem[i].start + xen_extra_mem[i].size);
- 		for (pfn = pfn_s; pfn < pfn_e; pfn++)
-@@ -284,7 +286,7 @@ static void __init xen_update_mem_tables(unsigned long pfn, unsigned long mfn)
- 	}
- 
- 	/* Update kernel mapping, but not for highmem. */
--	if ((pfn << PAGE_SHIFT) >= __pa(high_memory))
-+	if (PFN_PHYS(pfn) >= (u64)(__pa(high_memory)))
- 		return;
- 
- 	if (HYPERVISOR_update_va_mapping((unsigned long)__va(pfn << PAGE_SHIFT),
--- 
-2.1.2
-
+Will
