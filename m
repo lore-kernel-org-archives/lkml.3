@@ -1,139 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755426AbbAHAWk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 19:22:40 -0500
-Received: from mail-oi0-f45.google.com ([209.85.218.45]:52166 "EHLO
-	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752315AbbAHAWi (ORCPT
+	id S1755552AbbAHAYW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 19:24:22 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:60159 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751919AbbAHAYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 19:22:38 -0500
+	Wed, 7 Jan 2015 19:24:20 -0500
+Date: Wed, 7 Jan 2015 16:24:15 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Walter Lozano <walter@vanguardiasur.com.ar>
+Cc: michael.hennerich@analog.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Input: adxl34x - add OF support
+Message-ID: <20150108002415.GB8570@dtor-ws>
+References: <1420599537-28740-1-git-send-email-walter@vanguardiasur.com.ar>
+ <20150107080159.GF5256@dtor-ws>
+ <CABxpGwAKZp728gL5DFkuBA4nU_5fGRvxu_-vROpw5BfVuxjoDA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20150107204754.191110bihbw3t10q@webmail.upv.es>
-References: <20150107204754.191110bihbw3t10q@webmail.upv.es>
-Date: Wed, 7 Jan 2015 16:22:38 -0800
-X-Google-Sender-Auth: hyuVEz-qIkvBKo_087j3aBwPNz8
-Message-ID: <CAGXu5jKgyU0BF5XW1PU9hvCiPu1rz1SPPKAvmuQ+GenfKvUkfA@mail.gmail.com>
-Subject: Re: [PATH] Fix stack randomization on x86_64 bit
-From: Kees Cook <keescook@chromium.org>
-To: Hector Marco Gisbert <hecmargi@upv.es>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Ismael Ripoll Ripoll <iripoll@disca.upv.es>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABxpGwAKZp728gL5DFkuBA4nU_5fGRvxu_-vROpw5BfVuxjoDA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 7, 2015 at 11:47 AM, Hector Marco Gisbert <hecmargi@upv.es> wrote:
->
-> [PATH] Fix stack randomization on x86_64 bit
+On Wed, Jan 07, 2015 at 01:25:54PM -0300, Walter Lozano wrote:
+> Hi Dimitry,
+> 
+> First of all, thanks for your feedback
+> 
+> On Wed, Jan 7, 2015 at 5:01 AM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+> > Hi Walter,
+> >
+> > On Tue, Jan 06, 2015 at 11:58:56PM -0300, Walter Lozano wrote:
+> >> This patch adds the missing support for OF to the adxl34x digital
+> >> accelerometer. This is a basic version which supports the main
+> >> optional parameters. This implementation copies the default values
+> >> to the adxl34x_platform_data structure and overrides the values
+> >> that are passed from the device tree.
+> >>
+> >> Signed-off-by: Walter Lozano <walter@vanguardiasur.com.ar>
+> >> ---
+> >>  drivers/input/misc/adxl34x.c |  108 +++++++++++++++++++++++++++++++++++++++++-
+> >>  1 file changed, 107 insertions(+), 1 deletion(-)
+> >>
+> >> diff --git a/drivers/input/misc/adxl34x.c b/drivers/input/misc/adxl34x.c
+> >> index 2b2d02f..b3e06a3 100644
+> >> --- a/drivers/input/misc/adxl34x.c
+> >> +++ b/drivers/input/misc/adxl34x.c
+> >> @@ -16,6 +16,8 @@
+> >>  #include <linux/workqueue.h>
+> >>  #include <linux/input/adxl34x.h>
+> >>  #include <linux/module.h>
+> >> +#include <linux/of.h>
+> >> +#include <linux/of_device.h>
+> >>
+> >>  #include "adxl34x.h"
+> >>
+> >> @@ -688,13 +690,113 @@ static void adxl34x_input_close(struct input_dev *input)
+> >>       mutex_unlock(&ac->mutex);
+> >>  }
+> >>
+> >> +void adxl34x_parse_dt(struct device *dev, struct adxl34x_platform_data *pdata){
+> >> +     if (!dev->of_node)
+> >> +             return;
+> >> +
+> >> +     pdata =  kzalloc(sizeof(*pdata), GFP_KERNEL);
+> >> +
+> >> +     memcpy(pdata, &adxl34x_default_init, sizeof(struct adxl34x_platform_data));
+> >> +
+> >> +     of_property_read_u8(dev->of_node, "adi,tap-axis-control",
+> >> +              &pdata->tap_axis_control);
+> >> +
+> >> +     of_property_read_u8(dev->of_node, "adi,tap-threshold",
+> >> +              &pdata->tap_threshold);
+> >> +
+> >> +     of_property_read_u8(dev->of_node, "adi,tap-duration",
+> >> +              &pdata->tap_duration);
+> >> +
+> >> +     of_property_read_u8(dev->of_node, "adi,tap-latency",
+> >> +              &pdata->tap_latency);
+> >> +
+> >> +     of_property_read_u8(dev->of_node, "adi,tap-window",
+> >> +              &pdata->tap_window);
+> >> +
+> >> +     of_property_read_u8(dev->of_node, "adi,act-axis-control",
+> >> +              &pdata->act_axis_control);
+> >> +
+> >> +     of_property_read_u8(dev->of_node, "adi,activity-threshold",
+> >> +              &pdata->activity_threshold);
+> >> +
+> >> +     of_property_read_u8(dev->of_node, "adi,inactivity-threshold",
+> >> +              &pdata->inactivity_threshold);
+> >> +
+> >> +     of_property_read_u8(dev->of_node, "adi,inactivity-time",
+> >> +              &pdata->inactivity_time);
+> >> +
+> >> +     of_property_read_u8(dev->of_node, "adi,free-fall-threshold",
+> >> +              &pdata->free_fall_threshold);
+> >> +
+> >> +     of_property_read_u8(dev->of_node, "adi,free-fall-time",
+> >> +              &pdata->free_fall_time);
+> >> +
+> >> +     of_property_read_u8(dev->of_node, "adi,data-rate",
+> >> +              &pdata->data_rate);
+> >> +
+> >> +     of_property_read_u8(dev->of_node, "adi,data-range",
+> >> +              &pdata->data_range);
+> >> +
+> >> +     of_property_read_u8(dev->of_node, "adi,low-power-mode",
+> >> +              &pdata->low_power_mode);
+> >> +
+> >> +     of_property_read_u8(dev->of_node, "adi,power-mode",
+> >> +              &pdata->power_mode);
+> >> +
+> >> +     of_property_read_u8(dev->of_node, "adi,fifo-mode",
+> >> +              &pdata->fifo_mode);
+> >> +
+> >> +     of_property_read_u8(dev->of_node, "adi,watermark",
+> >> +              &pdata->watermark);
+> >> +
+> >> +     of_property_read_u8(dev->of_node, "adi,use-int2",
+> >> +              &pdata->use_int2);
+> >> +
+> >> +     of_property_read_u8(dev->of_node, "adi,orientation-enable",
+> >> +              &pdata->orientation_enable);
+> >> +
+> >> +     of_property_read_u8(dev->of_node, "adi,deadzone-angle",
+> >> +              &pdata->deadzone_angle);
+> >> +
+> >> +     of_property_read_u8(dev->of_node, "adi,divisor-length",
+> >> +              &pdata->divisor_length);
+> >> +
+> >> +     of_property_read_u32(dev->of_node, "adi,ev-type",
+> >> +              &pdata->ev_type);
+> >
+> > All these ev* properties are Linux-specific so should have linux prefix
+> > and not adi.
+> 
+> Yes, I have many doubts about these parameters. First I'm not sure if anybody
+> will need to change them as the accelerometer reports absolute values.
+> I was thinking
+> about omitting them but I would like someone else opinion.
 
-s/PATH/PATCH/
+I wonder if someone will mount the chip "weirdly" thy might want to
+remap the axes.
 
->
-> The issue is that the stack for processes is not properly randomized on 64
-> bit
-> architectures due to an integer overflow.
->
->
-> The affected function is randomize_stack_top() in file "fs/binfmt_elf.c":
->
-> static unsigned long randomize_stack_top(unsigned long stack_top)
-> {
->         unsigned int random_variable = 0;
->
->         if ((current->flags & PF_RANDOMIZE) &&
->                 !(current->personality & ADDR_NO_RANDOMIZE)) {
->                 random_variable = get_random_int() & STACK_RND_MASK;
->                 random_variable <<= PAGE_SHIFT;
+> 
+> The default values for these parameters are
+> 
+>     .ev_type = EV_ABS,
+>     .ev_code_x = ABS_X, /* EV_REL */
+>     .ev_code_y = ABS_Y, /* EV_REL */
+>     .ev_code_z = ABS_Z, /* EV_REL */
+> 
+>     .ev_code_tap = {BTN_TOUCH, BTN_TOUCH, BTN_TOUCH}, /* EV_KEY {x,y,z} */
+> 
+> In case if it is worthy should I add nodes for each different event?
+> 
+> For example
+> 
+>        axisx{
+>             label = "Axis X";
+>             linux,code = <0>;
 >         }
-> #ifdef CONFIG_STACK_GROWSUP
->         return PAGE_ALIGN(stack_top) + random_variable;
-> #else
->         return PAGE_ALIGN(stack_top) - random_variable;
-> #endif
-> }
->
->
-> Note that, it declares the "random_variable" variable as "unsigned int".
-> Since
-> the result of the shifting operation between STACK_RND_MASK (which is
-> 0x3fffff on
-> x86_64, 22 bits) and PAGE_SHIFT (which is 12 on x86_64):
->
-> random_variable <<= PAGE_SHIFT;
->
-> then the two leftmost bits are dropped when storing the result in the
-> "random_variable". This variable shall be at least 34 bits long to hold the
-> (22+12) result.
->
-> These two dropped bits have an impact on the entropy of process stack.
-> Concretely, the total stack entropy is reduced by four: from 2^28 to 2^30
-> (One
-> fourth of expected entropy).
->
-> This patch restores back the entropy by correcting the types involved in the
-> operations in the functions randomize_stack_top() and
-> stack_maxrandom_size().
->
->
-> Signed-off-by: Hector Marco-Gisbert <hecmargi@upv.es>
-> Signed-off-by: Ismael Ripoll <iripoll@upv.es>
+> 
 
-Good catch!
+I'll defer to device tree guys on this.
 
-Reviewed-by: Kees Cook <keescook@chromium.org>
-
--Kees
-
->
->
-> diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
-> index 919b912..df4552b 100644
-> --- a/arch/x86/mm/mmap.c
-> +++ b/arch/x86/mm/mmap.c
-> @@ -35,12 +35,12 @@ struct va_alignment __read_mostly va_align = {
->         .flags = -1,
->  };
->
-> -static unsigned int stack_maxrandom_size(void)
-> +static unsigned long stack_maxrandom_size(void)
->  {
-> -       unsigned int max = 0;
-> +       unsigned long max = 0;
->         if ((current->flags & PF_RANDOMIZE) &&
->                 !(current->personality & ADDR_NO_RANDOMIZE)) {
-> -               max = ((-1U) & STACK_RND_MASK) << PAGE_SHIFT;
-> +               max = ((-1UL) & STACK_RND_MASK) << PAGE_SHIFT;
->         }
->
->         return max;
-> diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-> index d8fc060..ee668b4 100644
-> --- a/fs/binfmt_elf.c
-> +++ b/fs/binfmt_elf.c
-> @@ -554,11 +554,11 @@ out:
->
->  static unsigned long randomize_stack_top(unsigned long stack_top)
->  {
-> -       unsigned int random_variable = 0;
-> +       unsigned long random_variable = 0;
->
->         if ((current->flags & PF_RANDOMIZE) &&
->                 !(current->personality & ADDR_NO_RANDOMIZE)) {
-> -               random_variable = get_random_int() & STACK_RND_MASK;
-> +               random_variable = (unsigned long) get_random_int() &
-> STACK_RND_MASK;
->                 random_variable <<= PAGE_SHIFT;
->         }
->  #ifdef CONFIG_STACK_GROWSUP
->
->
-
-
+Thanks.
 
 -- 
-Kees Cook
-Chrome OS Security
+Dmitry
