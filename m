@@ -1,60 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379AbbAHA7k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 19:59:40 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:1884 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752409AbbAHA7j (ORCPT
+	id S932101AbbAHAr6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 19:47:58 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:42480 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752423AbbAHAr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 19:59:39 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="55718343"
-Message-ID: <54ADD298.9050806@cn.fujitsu.com>
-Date: Thu, 8 Jan 2015 08:43:04 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Brian Norris <computersforpeace@gmail.com>
-CC: <linux-mtd@lists.infradead.org>, <dwmw2@infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH 1/3] mtd:mtdblock: remove the needless mtdblks_lock
-References: <547E7348.5020204@cn.fujitsu.com> <20150107205926.GO9759@ld-irv-0074>
-In-Reply-To: <20150107205926.GO9759@ld-irv-0074>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.100]
+	Wed, 7 Jan 2015 19:47:56 -0500
+X-Original-SENDERIP: 10.177.220.203
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Kan Liang <kan.liang@intel.com>
+Subject: [PATCHSET 0/7] perf diff: Fix and improve output ordering (v2)
+Date: Thu,  8 Jan 2015 09:45:41 +0900
+Message-Id: <1420677949-6719-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Brian,
-On 01/08/2015 04:59 AM, Brian Norris wrote:
+Hello,
 
-> On Wed, Dec 03, 2014 at 10:19:52AM +0800, Gu Zheng wrote:
->> The global lock mtdblks_lock was used to protect the original mtdblks
->> array to avoid race conditions. As the mtdblks array was already gone,
->> but the mtdblks_lock is left, and it causes latency when open/release dev.
->> So we need to remove it here.
->>
->> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> 
-> Pushed this first patch to l2-mtd.git. Thanks!
+This patchset improves perf diff output to sort by baseline and then
+next columns in turn.  And fix -o/--order option behavior too.
 
-Thanks.
+ * changes in v2)
+  - pass fmt arg to ->cmp, ->collapse, ->sort callbacks (Jiri)
+  - add Acked-by from Jiri
 
-> 
-> I'm kinda ambivalent about the next two. They don't seem like necessary
-> cleanups, really. With the third patch, I think it's actually pretty
-> important that the caller understand that it's using container_of(). I
-> could be convinced otherwise though...
+The patch 1-3 are resend.  The patch 4-5 are preparation and the patch
+6-7 are the main change.
 
-OK.
 
-Regards,
-Gu
+Before:
 
-> 
-> Brian
-> 
+  # Baseline/0  Delta/1  Delta/2  Shared Object      Symbol
+  # ..........  .......  .......  .................  ..........................................
+  #
+        32.75%   +0.28%   -0.83%  libc-2.20.so       [.] malloc
+        31.50%   -0.74%   -0.23%  libc-2.20.so       [.] _int_free
+        22.98%   +0.51%   +0.52%  libc-2.20.so       [.] _int_malloc
+         5.70%   +0.28%   +0.30%  libc-2.20.so       [.] free
+         4.38%   -0.21%   +0.25%  a.out              [.] main
+         1.32%   -0.15%   +0.05%  a.out              [.] free@plt
+         1.31%   +0.03%   -0.06%  a.out              [.] malloc@plt
+         0.01%   -0.01%   -0.01%  [kernel.kallsyms]  [k] native_write_msr_safe
+         0.01%                    [kernel.kallsyms]  [k] scheduler_tick
+         0.01%            -0.00%  [kernel.kallsyms]  [k] native_read_msr_safe
+                          +0.01%  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
+                 +0.01%   +0.01%  [kernel.kallsyms]  [k] apic_timer_interrupt
+                          +0.01%  [kernel.kallsyms]  [k] intel_pstate_timer_func
+                 +0.01%           [kernel.kallsyms]  [k] perf_adjust_freq_unthr_context.part.82
+                 +0.01%           [kernel.kallsyms]  [k] read_tsc
+                          +0.01%  [kernel.kallsyms]  [k] timekeeping_update.constprop.8
+    
+After:
 
+  # Baseline/0  Delta/1  Delta/2  Shared Object      Symbol
+  # ..........  .......  .......  .................  ..........................................
+  #
+        32.75%   +0.28%   -0.83%  libc-2.20.so       [.] malloc
+        31.50%   -0.74%   -0.23%  libc-2.20.so       [.] _int_free
+        22.98%   +0.51%   +0.52%  libc-2.20.so       [.] _int_malloc
+         5.70%   +0.28%   +0.30%  libc-2.20.so       [.] free
+         4.38%   -0.21%   +0.25%  a.out              [.] main
+         1.32%   -0.15%   +0.05%  a.out              [.] free@plt
+         1.31%   +0.03%   -0.06%  a.out              [.] malloc@plt
+         0.01%   -0.01%   -0.01%  [kernel.kallsyms]  [k] native_write_msr_safe
+         0.01%                    [kernel.kallsyms]  [k] scheduler_tick
+         0.01%            -0.00%  [kernel.kallsyms]  [k] native_read_msr_safe
+                 +0.01%   +0.01%  [kernel.kallsyms]  [k] apic_timer_interrupt
+                 +0.01%           [kernel.kallsyms]  [k] read_tsc
+                 +0.01%           [kernel.kallsyms]  [k] perf_adjust_freq_unthr_context.part.82
+                          +0.01%  [kernel.kallsyms]  [k] intel_pstate_timer_func
+                          +0.01%  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
+                          +0.01%  [kernel.kallsyms]  [k] timekeeping_update.constprop.8
+
+
+You can get this from 'perf/diff-sort-v2' branch on my tree:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+
+Any comments are welcome, thanks
+Namhyung
+
+
+Namhyung Kim (7):
+  perf diff: Fix to sort by baseline field by default
+  perf diff: Get rid of hists__compute_resort()
+  perf diff: Print diff result more precisely
+  perf diff: Introduce fmt_to_data_file() helper
+  perf tools: Pass struct perf_hpp_fmt to its callbacks
+  perf diff: Fix output ordering to honor next column
+  perf diff: Fix -o/--order option behavior
+
+ tools/perf/builtin-diff.c | 252 +++++++++++++++++++++++++++++++++-------------
+ tools/perf/ui/hist.c      |  12 ++-
+ tools/perf/util/hist.c    |   6 +-
+ tools/perf/util/hist.h    |   9 +-
+ tools/perf/util/sort.c    |  37 ++++++-
+ 5 files changed, 232 insertions(+), 84 deletions(-)
+
+-- 
+2.1.3
 
