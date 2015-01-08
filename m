@@ -1,222 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757488AbbAHTlU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 14:41:20 -0500
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:53565 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755090AbbAHTlR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 14:41:17 -0500
-From: Thavatchai Makphaibulchoke <tmac@hp.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@redhat.com, tglx@linutronix.de,
-        Thavatchai Makphaibulchoke <tmac@hp.com>
-Subject: [PATCH RT] kernel/res_counter.c: Change lock of struct res_counter to raw_spinlock_t
-Date: Thu,  8 Jan 2015 12:38:37 -0700
-Message-Id: <1420745917-50747-1-git-send-email-tmac@hp.com>
-X-Mailer: git-send-email 1.9.1
+	id S1757426AbbAHTjO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 14:39:14 -0500
+Received: from mga01.intel.com ([192.55.52.88]:32577 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755232AbbAHTjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 14:39:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="438154264"
+Date: Fri, 9 Jan 2015 03:38:38 +0800
+From: kbuild test robot <fengguang.wu@intel.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>
+Cc: kbuild-all@01.org, Changman Lee <cm224.lee@samsung.com>,
+        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH f2fs] f2fs: pids_lock can be static
+Message-ID: <20150108193838.GA28080@snb>
+References: <201501090312.wCG4mLHp%fengguang.wu@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201501090312.wCG4mLHp%fengguang.wu@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: fengguang.wu@intel.com
+X-SA-Exim-Scanned: No (on bee); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since memory cgroups can be called from a page fault handler as shown
-by the stack dump here,
+fs/f2fs/trace.c:19:12: sparse: symbol 'pids_lock' was not declared. Should it be static?
 
-[12679.513255] BUG: scheduling while atomic: ssh/10621/0x00000002
-[12679.513305] Preemption disabled at:[<ffffffff811a20f7>] mem_cgroup_charge_common+0x37/0x60
-[12679.513305]
-[12679.513322] Call Trace:
-[12679.513331]  [<ffffffff81512f62>] dump_stack+0x4f/0x7c
-[12679.513333]  [<ffffffff8150f4f1>] __schedule_bug+0x9f/0xad
-[12679.513338]  [<ffffffff815155f3>] __schedule+0x653/0x720
-[12679.513340]  [<ffffffff815180ce>] ? _raw_spin_unlock_irqrestore+0x2e/0x70
-[12679.513343]  [<ffffffff81515784>] schedule+0x34/0xa0
-[12679.513345]  [<ffffffff81516fdb>] rt_spin_lock_slowlock+0x10b/0x250
-[12679.513348]  [<ffffffff815183a5>] rt_spin_lock+0x35/0x40
-[12679.513352]  [<ffffffff810ec1d9>] res_counter_uncharge_until+0x69/0xb0
-[12679.513354]  [<ffffffff810ec233>] res_counter_uncharge+0x13/0x20
-[12679.513358]  [<ffffffff8119c0be>] drain_stock.isra.38+0x5e/0x90
-[12679.513360]  [<ffffffff811a16a2>] __mem_cgroup_try_charge+0x3f2/0x8a0
-[12679.513363]  [<ffffffff811a20f7>] mem_cgroup_charge_common+0x37/0x60
-[12679.513365]  [<ffffffff811a3b06>] mem_cgroup_newpage_charge+0x26/0x30
-[12679.513369]  [<ffffffff8116c8d2>] handle_mm_fault+0x9b2/0xdb0
-[12679.513374]  [<ffffffff81400474>] ? sock_aio_read.part.11+0x104/0x130
-[12679.513379]  [<ffffffff8151c072>] __do_page_fault+0x182/0x4f0
-[12679.513381]  [<ffffffff814004c1>] ? sock_aio_read+0x21/0x30
-[12679.513385]  [<ffffffff811ab25a>] ? do_sync_read+0x5a/0x90
-[12679.513390]  [<ffffffff8108c981>] ? get_parent_ip+0x11/0x50
-[12679.513392]  [<ffffffff8151c41e>] do_page_fault+0x3e/0x80
-[12679.513395]  [<ffffffff81518e68>] page_fault+0x28/0x30
-
-the lock member of struct res_counter should be of type raw_spinlock_t,
-not spinlock_t which can go to sleep.
-
-Tested on a 2 node, 32 thread, plaform with cyclictest.
-
-Kernel version 3.14.25 + patch-3.14.25-rt22
-
-Sgned-off-by: T Makphaibulchoke <tmac@hp.com>
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 ---
- include/linux/res_counter.h | 26 +++++++++++++-------------
- kernel/res_counter.c        | 18 +++++++++---------
- 2 files changed, 22 insertions(+), 22 deletions(-)
+ trace.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
-index 201a697..61d94a4 100644
---- a/include/linux/res_counter.h
-+++ b/include/linux/res_counter.h
-@@ -47,7 +47,7 @@ struct res_counter {
- 	 * the lock to protect all of the above.
- 	 * the routines below consider this to be IRQ-safe
- 	 */
--	spinlock_t lock;
-+	raw_spinlock_t lock;
- 	/*
- 	 * Parent counter, used for hierarchial resource accounting
- 	 */
-@@ -148,12 +148,12 @@ static inline unsigned long long res_counter_margin(struct res_counter *cnt)
- 	unsigned long long margin;
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&cnt->lock, flags);
-+	raw_spin_lock_irqsave(&cnt->lock, flags);
- 	if (cnt->limit > cnt->usage)
- 		margin = cnt->limit - cnt->usage;
- 	else
- 		margin = 0;
--	spin_unlock_irqrestore(&cnt->lock, flags);
-+	raw_spin_unlock_irqrestore(&cnt->lock, flags);
- 	return margin;
- }
- 
-@@ -170,12 +170,12 @@ res_counter_soft_limit_excess(struct res_counter *cnt)
- 	unsigned long long excess;
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&cnt->lock, flags);
-+	raw_spin_lock_irqsave(&cnt->lock, flags);
- 	if (cnt->usage <= cnt->soft_limit)
- 		excess = 0;
- 	else
- 		excess = cnt->usage - cnt->soft_limit;
--	spin_unlock_irqrestore(&cnt->lock, flags);
-+	raw_spin_unlock_irqrestore(&cnt->lock, flags);
- 	return excess;
- }
- 
-@@ -183,18 +183,18 @@ static inline void res_counter_reset_max(struct res_counter *cnt)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&cnt->lock, flags);
-+	raw_spin_lock_irqsave(&cnt->lock, flags);
- 	cnt->max_usage = cnt->usage;
--	spin_unlock_irqrestore(&cnt->lock, flags);
-+	raw_spin_unlock_irqrestore(&cnt->lock, flags);
- }
- 
- static inline void res_counter_reset_failcnt(struct res_counter *cnt)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&cnt->lock, flags);
-+	raw_spin_lock_irqsave(&cnt->lock, flags);
- 	cnt->failcnt = 0;
--	spin_unlock_irqrestore(&cnt->lock, flags);
-+	raw_spin_unlock_irqrestore(&cnt->lock, flags);
- }
- 
- static inline int res_counter_set_limit(struct res_counter *cnt,
-@@ -203,12 +203,12 @@ static inline int res_counter_set_limit(struct res_counter *cnt,
- 	unsigned long flags;
- 	int ret = -EBUSY;
- 
--	spin_lock_irqsave(&cnt->lock, flags);
-+	raw_spin_lock_irqsave(&cnt->lock, flags);
- 	if (cnt->usage <= limit) {
- 		cnt->limit = limit;
- 		ret = 0;
- 	}
--	spin_unlock_irqrestore(&cnt->lock, flags);
-+	raw_spin_unlock_irqrestore(&cnt->lock, flags);
- 	return ret;
- }
- 
-@@ -218,9 +218,9 @@ res_counter_set_soft_limit(struct res_counter *cnt,
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&cnt->lock, flags);
-+	raw_spin_lock_irqsave(&cnt->lock, flags);
- 	cnt->soft_limit = soft_limit;
--	spin_unlock_irqrestore(&cnt->lock, flags);
-+	raw_spin_unlock_irqrestore(&cnt->lock, flags);
- 	return 0;
- }
- 
-diff --git a/kernel/res_counter.c b/kernel/res_counter.c
-index 3fbcb0d..59a7a62 100644
---- a/kernel/res_counter.c
-+++ b/kernel/res_counter.c
+diff --git a/fs/f2fs/trace.c b/fs/f2fs/trace.c
+index 92fa38a..517dfe5 100644
+--- a/fs/f2fs/trace.c
++++ b/fs/f2fs/trace.c
 @@ -16,7 +16,7 @@
+ #include "trace.h"
  
- void res_counter_init(struct res_counter *counter, struct res_counter *parent)
- {
--	spin_lock_init(&counter->lock);
-+	raw_spin_lock_init(&counter->lock);
- 	counter->limit = RES_COUNTER_MAX;
- 	counter->soft_limit = RES_COUNTER_MAX;
- 	counter->parent = parent;
-@@ -51,9 +51,9 @@ static int __res_counter_charge(struct res_counter *counter, unsigned long val,
- 	*limit_fail_at = NULL;
- 	local_irq_save_nort(flags);
- 	for (c = counter; c != NULL; c = c->parent) {
--		spin_lock(&c->lock);
-+		raw_spin_lock(&c->lock);
- 		r = res_counter_charge_locked(c, val, force);
--		spin_unlock(&c->lock);
-+		raw_spin_unlock(&c->lock);
- 		if (r < 0 && !ret) {
- 			ret = r;
- 			*limit_fail_at = c;
-@@ -64,9 +64,9 @@ static int __res_counter_charge(struct res_counter *counter, unsigned long val,
+ RADIX_TREE(pids, GFP_ATOMIC);
+-spinlock_t pids_lock;
++static spinlock_t pids_lock;
+ struct last_io_info last_io;
  
- 	if (ret < 0 && !force) {
- 		for (u = counter; u != c; u = u->parent) {
--			spin_lock(&u->lock);
-+			raw_spin_lock(&u->lock);
- 			res_counter_uncharge_locked(u, val);
--			spin_unlock(&u->lock);
-+			raw_spin_unlock(&u->lock);
- 		}
- 	}
- 	local_irq_restore_nort(flags);
-@@ -106,11 +106,11 @@ u64 res_counter_uncharge_until(struct res_counter *counter,
- 	local_irq_save_nort(flags);
- 	for (c = counter; c != top; c = c->parent) {
- 		u64 r;
--		spin_lock(&c->lock);
-+		raw_spin_lock(&c->lock);
- 		r = res_counter_uncharge_locked(c, val);
- 		if (c == counter)
- 			ret = r;
--		spin_unlock(&c->lock);
-+		raw_spin_unlock(&c->lock);
- 	}
- 	local_irq_restore_nort(flags);
- 	return ret;
-@@ -164,9 +164,9 @@ u64 res_counter_read_u64(struct res_counter *counter, int member)
- 	unsigned long flags;
- 	u64 ret;
- 
--	spin_lock_irqsave(&counter->lock, flags);
-+	raw_spin_lock_irqsave(&counter->lock, flags);
- 	ret = *res_counter_member(counter, member);
--	spin_unlock_irqrestore(&counter->lock, flags);
-+	raw_spin_unlock_irqrestore(&counter->lock, flags);
- 
- 	return ret;
- }
--- 
-1.9.1
-
+ static inline void __print_last_io(void)
