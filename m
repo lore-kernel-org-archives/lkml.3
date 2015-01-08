@@ -1,180 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481AbbAHHyx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 02:54:53 -0500
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:52709 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333AbbAHHyv (ORCPT
+	id S1755621AbbAHHzo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 02:55:44 -0500
+Received: from cassarossa.samfundet.no ([193.35.52.29]:45774 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298AbbAHHzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 02:54:51 -0500
-X-Original-SENDERIP: 10.177.222.153
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Thu, 8 Jan 2015 16:54:59 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andreas Mohr <andi@lisas.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Jesper Dangaard Brouer <brouer@redhat.com>
-Subject: Re: [PATCH 6/6] mm/slab: allocation fastpath without disabling irq
-Message-ID: <20150108075459.GB25453@js1304-P5Q-DELUXE>
-References: <1420421851-3281-7-git-send-email-iamjoonsoo.kim@lge.com>
- <20150105172139.GA11201@rhlx01.hs-esslingen.de>
- <20150106013122.GB17222@js1304-P5Q-DELUXE>
- <20150106103439.GA8669@rhlx01.hs-esslingen.de>
+	Thu, 8 Jan 2015 02:55:42 -0500
+Date: Thu, 8 Jan 2015 08:55:24 +0100
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@ezchip.com>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-ia64@vger.kernel.org,
+        linux-parisc@vger.kernel.org, linux-s390@vger.kernel.org
+Subject: Re: [PATCH 1/3] module_arch_freeing_init(): new hook for archs
+ before module->module_init freed.
+Message-ID: <20150108075524.GA24522@samfundet.no>
+References: <1420678687-30548-1-git-send-email-rusty@rustcorp.com.au>
+ <1420678687-30548-2-git-send-email-rusty@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150106103439.GA8669@rhlx01.hs-esslingen.de>
+In-Reply-To: <1420678687-30548-2-git-send-email-rusty@rustcorp.com.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 11:34:39AM +0100, Andreas Mohr wrote:
-> On Tue, Jan 06, 2015 at 10:31:22AM +0900, Joonsoo Kim wrote:
-> > Hello,
-> > 
-> > On Mon, Jan 05, 2015 at 06:21:39PM +0100, Andreas Mohr wrote:
-> > > Hi,
-> > > 
-> > > Joonsoo Kim wrote:
-> > > > +	ac->tid = next_tid(ac->tid);
-> > > (and all others)
-> > > 
-> > > object oriented:
-> > > array_cache_next_tid(ac);
-> > > (or perhaps rather: array_cache_start_transaction(ac);?).
-> > 
-> > Okay. Christoph request common transaction id management code. If
-> > above object oriented design fit that, I will do it.
+Around Thu 08 Jan 2015 11:28:05 +1030 or thereabout, Rusty Russell wrote:
+> Archs have been abusing module_free() to clean up their arch-specific
+> allocations.  Since module_free() is also (ab)used by BPF and trace code,
+> let's keep it to simple allocations, and provide a hook called before
+> that.
 > 
-> Yeah, that may easily have been the same thing.
-> This function would then obviously and simply do a
->     ac->tid = next_tid(ac->tid);
-> dance internally
-> (thereby likely introducing some nice instruction cache savings, too).
-> 
-> 
-> > > General thoughts (maybe just rambling, but that's just my feelings vs.
-> > > this mechanism, so maybe it's food for thought):
-> > > To me, the existing implementation seems too fond of IRQ fumbling
-> > > (i.e., affecting of oh so nicely *unrelated*
-> > > outer global environment context stuff).
-> > > A proper implementation wouldn't need *any* knowledge of this
-> > > (i.e., modifying such "IRQ disable" side effects,
-> > > to avoid having a scheduler hit and possibly ending up on another node).
-> > > 
-> > > Thus to me, the whole handling seems somewhat wrong and split
-> > > (since there remains the need to deal with scheduler distortion/disruption).
-> > > The bare-metal "inner" algorithm should not need to depend on such shenanigans
-> > > but simply be able to carry out its task unaffected,
-> > > where IRQs are simply always left enabled
-> > > (or at least potentially disabled by other kernel components only)
-> > > and the code then elegantly/inherently deals with IRQ complications.
-> > 
-> > I'm not sure I understand your opinion correctly. If my response is
-> > wrong, please let me know your thought more correctly.
-> 
-> I have to admit that I was talking general implementation guidelines
-> rather than having a very close look at what can be done *here*.
-> Put differently, my goal at this point was just to state weird questions,
-> for people to then reason about the bigger picture
-> and come to possibly brilliant conclusions ;)
-> 
-> 
-> > IRQ manipulation is done for synchronization of array cache, not for
-> > freezing allocation context. That is just side-effect. As Christoph
-> > said, slab operation could be executed in interrupt context so we
-> > should protect array cache even if we are in process context.
-> 
-> Ah, that clarifies collision areas, thanks!
-> 
-> In general the goal likely should be
-> to attempt to do as many things "in parallel" (guaranteed-collision-free,
-> via cleanly instance-separate data) as possible,
-> and then once the result has been calculated,
-> do quick/short updating (insertion/deletion)
-> of the shared/contended resource (here: array cache)
-> with the necessary protection (IRQs disabled, in this case).
-> Via some layering tricks, one could manage to do all the calculation handling
-> without even drawing in any "IRQ management" dependency
-> to that inner code part ("code file"?),
-> but the array cache management would then remain IRQ-affected
-> (in those outer layers which know that they are unfortunately still drawn down
-> by an annoying dependency on IRQ shenanigans).
-> Or, in other words: achieve a clean separation of layers
-> so that it's obvious which ones get hampered by annoying dependencies
-> and which ones are able to carry out their job unaffected.
+> This means that avr32, ia64, parisc and s390 no longer need to implement
+> their own module_free() at all.  avr32 doesn't need module_finalize()
+> either.
 
-Hello,
+At a glance it looks sane.
 
-Thanks for good explanation.
-I understand your suggestion and it sounds good. However, most of
-inner operations in SLAB are also affected by IRQ because they aim at
-updating array cache. :) If operation is done only in signle-context,
-more optimization may be possible, but, not yet possible.
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Chris Metcalf <cmetcalf@ezchip.com>
+> Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+> Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+> Cc: Tony Luck <tony.luck@intel.com>
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+> Cc: Helge Deller <deller@gmx.de>
+> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-ia64@vger.kernel.org
+> Cc: linux-parisc@vger.kernel.org
+> Cc: linux-s390@vger.kernel.org
 
-Anyway, your suggestion makes me relaize a big picture to go. I will
-keep this in mind. Thank you.
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 
-> 
-> 
-> And for the "disruption via interrupt context" part:
-> we currently seem to have "synchronous" handling,
-> where one needs to forcefully block access to a shared/contended resource
-> (which would be done
-> either via annoying mutex contention,
-> or even via wholesale blocking of IRQ execution).
-> To remove/reduce friction,
-> one should either remove any additional foreign-context access to that resource,
-> thereby making this implementation cleanly (if woefully)
-> single-context only (as Christoph seems to be intending,
-> by removing SLAB access from IRQ handlers?),
-> or ideally implement fully parallel instance-separate data management
-> (but I guess that's not what one would want
-> for a global multi-sized-area and thus fragmentation-avoiding SL*B allocator,
-> since that would mean splitting global memory resources
-> into per-instance areas?).
-> 
-> Alternatively, one could go for "asynchronous" handling,
-> where SL*B updates of any foreign-context (but not main-context)
-> are *delayed*,
-> by merely queuing them into a simple submission queue
-> which then will be delay-applied by main-context
-> either once main-context enters a certain "quiet" state (e.g. context switch?),
-> or once main-context needs to actively take into account
-> these effects of foreign-context registrations.
-> But for an allocator (memory manager),
-> such "asynchronous" handling might be completely impossible anyway,
-> since it might need to have a consistent global view,
-> of all resources at all times
-> (--> we're back to having a synchronous handling requirement,
-> via lock contention).
+> ---
+>  arch/avr32/kernel/module.c   | 13 +------------
+>  arch/ia64/kernel/module.c    |  6 ++----
+>  arch/parisc/kernel/module.c  |  6 +-----
+>  arch/s390/kernel/module.c    | 10 +++-------
+>  arch/tile/kernel/module.c    |  2 +-
+>  include/linux/moduleloader.h |  2 ++
+>  kernel/module.c              |  7 +++++++
+>  7 files changed, 17 insertions(+), 29 deletions(-)
 
-While implementing this patchset, I also thought having another queue
-for foreign context, but, didn't go that direction since it needs
-complicated code and I can't easily estimate trade-off of that
-implementation in terms of performance.
+<snipp diff>
 
-> 
-> 
-> > > These thoughts also mean that I'm unsure (difficult to determine)
-> > > of whether this change is good (i.e. a clean step in the right direction),
-> > > or whether instead the implementation could easily directly be made
-> > > fully independent from IRQ constraints.
-> > 
-> > Is there any issue that this change prevent further improvment?
-> > I think that we can go right direction easily as soon as we find
-> > a better solution even if this change is merged.
-> 
-> Ah, I see you're skillfully asking the right forward progress question ;)
-> 
-> To which I'm currently limited to saying
-> that from my side there are no objections to be added to the list
-> (other than the minor mechanical parts directly stated in my review).
-
-Okay.
-
-Thanks.
+-- 
+HcE
