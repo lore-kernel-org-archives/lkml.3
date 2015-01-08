@@ -1,78 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755093AbbAHS27 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 13:28:59 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:59566 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751838AbbAHS25 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 13:28:57 -0500
-Date: Thu, 8 Jan 2015 13:28:45 -0500
-From: Chris Mason <clm@fb.com>
-To: <torvalds@linux-foundation.org>
-CC: <linux-btrfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Btrfs fixes
-Message-ID: <20150108182833.GA5005@ret.masoncoding.com>
-Mail-Followup-To: Chris Mason <clm@fb.com>, torvalds@linux-foundation.org,
-	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1755409AbbAHS3H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 13:29:07 -0500
+Received: from sauhun.de ([89.238.76.85]:45885 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751838AbbAHS3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 13:29:00 -0500
+Date: Thu, 8 Jan 2015 19:28:48 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: kbuild test robot <fengguang.wu@intel.com>
+Cc: kbuild-all@01.org, Anders Berg <anders.berg@avagotech.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [wsa:i2c/quirks 7/11] drivers/i2c/busses/i2c-axxia.c:452:27:
+ sparse: symbol 'axxia_i2c_quirks' was not declared. Should it be static?
+Message-ID: <20150108182847.GA29629@katana>
+References: <201501090118.jHaamxHl%fengguang.wu@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NzB8fVQJ5HfG6fxh"
 Content-Disposition: inline
+In-Reply-To: <201501090118.jHaamxHl%fengguang.wu@intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-08_04:2015-01-07,2015-01-08,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=5.55111512312578e-17 kscore.compositescore=0
- circleOfTrustscore=29.4129509548051 compositescore=0.939076664828693
- urlsuspect_oldscore=0.939076664828693 suspectscore=1
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.939076664828693 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1501080169
-X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-We have a small queue of btrfs fixes in my for-linus branch:
+--NzB8fVQJ5HfG6fxh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+On Fri, Jan 09, 2015 at 01:57:37AM +0800, kbuild test robot wrote:
+> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux i2c/quirks
+> head:   b1d39af8ae21f4930854b0656aa83a83fd38049e
+> commit: 70181ecd2990326a91edb3dac1db4cce21e561f7 [7/11] i2c: axxia: make =
+use of the new infrastructure for quirks
+> reproduce:
+>   # apt-get install sparse
+>   git checkout 70181ecd2990326a91edb3dac1db4cce21e561f7
+>   make ARCH=3Dx86_64 allmodconfig
+>   make C=3D1 CF=3D-D__CHECK_ENDIAN__
+>=20
+>=20
+> sparse warnings: (new ones prefixed by >>)
+>=20
+> >> drivers/i2c/busses/i2c-axxia.c:452:27: sparse: symbol 'axxia_i2c_quirk=
+s' was not declared. Should it be static?
+>=20
+> Please review and possibly fold the followup patch.
 
-None of these are huge, but my commit does fix a regression from 3.18
-that could cause lost files during log replay.
+Yes, it should be static.
 
-This also adds Dave Sterba to the list of Btrfs maintainers.  It doesn't
-mean we're doing things differently, but Dave has really been helping
-with the maintainer workload for years.
+However, this is a development branch and in this case it would be
+enough if the test results would be directed to me only.
 
-Chris Mason (2) commits (+9/-0):
-    Btrfs: don't delay inode ref updates during log replay (+8/-0)
-    Btrfs: add more maintainers (+1/-0)
+Is there a way to achieve this? I know that adding "experimental" to the
+branch name will skip the testing. Is there another pattern to prevent
+sending mails to everyone?
 
-Wang Shilong (1) commits (+3/-1):
-    Btrfs: call inode_dec_link_count() on mkdir error path
+Thanks,
 
-Filipe Manana (1) commits (+10/-3):
-    Btrfs: correctly get tree level in tree_backref_for_extent
+   Wolfram
 
-Josef Bacik (1) commits (+6/-6):
-    Btrfs: abort transaction if we don't find the block group
 
-Dan Carpenter (1) commits (+1/-1):
-    Btrfs, scrub: uninitialized variable in scrub_extent_for_parity()
+--NzB8fVQJ5HfG6fxh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Total: (6) commits (+29/-11)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
- MAINTAINERS              |  1 +
- fs/btrfs/backref.c       | 13 ++++++++++---
- fs/btrfs/delayed-inode.c |  8 ++++++++
- fs/btrfs/extent-tree.c   | 12 ++++++------
- fs/btrfs/inode.c         |  4 +++-
- fs/btrfs/scrub.c         |  2 +-
- 6 files changed, 29 insertions(+), 11 deletions(-)
+iQIcBAEBAgAGBQJUrsxfAAoJEBQN5MwUoCm249kP/3ORDgY5yWWghs0rBbhkeV5D
+QY3yVuC2ODgrXfVlPqnsj176RG1kWqrYSRDzko2x2tLAi+hOk7r9QQOCXX7Tfqx8
+VvM8S9eOj7Rrtl0EiUZGvCuhAlSSflqbsic729TpBQoTs4w6nAnxb/9IfWcPz/cb
+4xKZF3OIJzXWb2rtOrIIjP/B//jEMHF60dsReGaV2trR88YFte4WjDqx/HsFuNUm
+zu3iXG6H4ZVt4+/tUvqOJQsHH7vWWFjeXOhqyzQXVUvKrICwlQA9EOTUygyV8APG
+ZEAJ5bE6Yxv9kQ15i9q0rDQnEgFERSzlUzPQ1inVymbHD2BIGOFvymts0fi+KBrK
+cgqFL4F0FlPePY2q2UnSONeEXKdA3urOsjJr40rx8P6XCx2zWZ5C8l0ds2bzoXuV
+Ea5WwtWGDESnWjKbqt0YDZSzhSBu/mnQHUoORvXKh5vvTiKlO5ivPw4ZmdVzd+Yx
+MV/ANQDkLgTlcFCssqxu37bHJpV46NRtBB4yALydXnkwi9Y98IJzxcldJBJsr0Lw
+aQcZS8tO3sPZ98phKt8yAo50nagLi4owdQlUq6EVh72zMU88gvykZvC+EUSROKCg
+my7B6HEI57DK8tyl6EJxFa0RM27AJaallp2hdWkG1eqPS7ff5Kxn0TXNaup0zrh9
+vH088MoLN0DWDshOKKYw
+=rIr7
+-----END PGP SIGNATURE-----
+
+--NzB8fVQJ5HfG6fxh--
