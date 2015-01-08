@@ -1,64 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757209AbbAHRsA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 12:48:00 -0500
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:57045 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757171AbbAHRr6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 12:47:58 -0500
-X-Sasl-enc: /EInl6fpc8WX2X1NNwQS7Anf17JdPLVAh4Np54BeAgYw 1420739277
-Content-Type: text/plain; charset=utf-8
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: TCP connection issues against Amazon S3
-From: Erik Grinaker <erik@bengler.no>
-In-Reply-To: <1420666401.5947.35.camel@edumazet-glaptop2.roam.corp.google.com>
-Date: Thu, 8 Jan 2015 17:47:55 +0000
-Cc: Yuchung Cheng <ycheng@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <DCC8B9AB-D1D7-4722-9B65-93AB5A559763@bengler.no>
-References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no>
- <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com>
- <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no>
- <1420564837.32621.30.camel@edumazet-glaptop2.roam.corp.google.com>
- <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no>
- <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com>
- <03FC652E-AA01-42C7-BD52-019B6D922A9C@bengler.no>
- <CAK6E8=cP0BFUob5MVj9M0hC0efgRnUY=JMUPKee+v-4TLvHBgg@mail.gmail.com>
- <76DC89D1-CFCE-44B7-994E-4349FEEDEFA6@bengler.no>
- <1420575216.5947.12.camel@edumazet-glaptop2.roam.corp.google.com>
- <4DA8529D-4EEC-42DA-89B0-DC7746DB2B10@bengler.no>
- <3F608393-E5F1-4647-81BF-C6C740100934@bengler.no>
- <CAK6E8=cf7cROQ0SON0BihkbOsBB+-sLAbexxgt4_xD+Auqev3Q@mail.gmail.com>
- <34CE0233-F881-4F40-B119-AA9D8F7D500F@bengler.no>
- <1420646284.5947.19.camel@edumazet-glaptop2.roam.corp.google.com>
- <A58F8257-97F8-4662-98FC-7AC57F35A3A4@bengler.no>
- <1420666401.5947.35.camel@edumazet-glaptop2.roam.corp.google.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-X-Mailer: Apple Mail (2.1993)
+	id S1757227AbbAHRsV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 12:48:21 -0500
+Received: from mail-bn1bon0139.outbound.protection.outlook.com ([157.56.111.139]:61440
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757188AbbAHRsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 12:48:15 -0500
+X-Greylist: delayed 53781 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Jan 2015 12:48:14 EST
+X-WSS-ID: 0NHVDG1-07-HWZ-02
+X-M-MSG: 
+From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+CC: "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Koenig, Christian" <Christian.Koenig@amd.com>,
+        David Airlie <airlied@linux.ie>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Subject: RE: [Regression][v3.17][3.18][3.19-rc3] drm/radeon: re-enable dpm
+ by default on BTC
+Thread-Topic: [Regression][v3.17][3.18][3.19-rc3] drm/radeon: re-enable dpm
+ by default on BTC
+Thread-Index: AQHQKsyDkXQZKaorv0C9Tt5ssWsoXZy1RGNQgAF5YQD//6yOUA==
+Date: Thu, 8 Jan 2015 17:48:00 +0000
+Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D0635E2A10@satlexdag05.amd.com>
+References: <54ADB86B.10105@canonical.com>
+ <A3397C8B8B789E45844E7EC5DEAD89D0635DD4D6@satlexdag06.amd.com>
+ <54AEAF92.10507@canonical.com>
+In-Reply-To: <54AEAF92.10507@canonical.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.180.168.240]
+Content-Type: multipart/mixed;
+	boundary="_002_A3397C8B8B789E45844E7EC5DEAD89D0635E2A10satlexdag05amdc_"
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Alexander.Deucher@amd.com; 
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(13464003)(199003)(24454002)(479174004)(51704005)(377454003)(164054003)(189002)(1720100001)(568964001)(110136001)(68736005)(120916001)(71186001)(84326002)(97736003)(2900100001)(2950100001)(99396003)(53416004)(2920100001)(102836002)(101416001)(15198665003)(15975445007)(87936001)(50986999)(46102003)(99936001)(33656002)(76176999)(54356999)(77156002)(62966003)(4396001)(20776003)(64706001)(19580395003)(106466001)(105586002)(106116001)(21056001)(512874002)(31966008)(86362001)(84676001)(92566001)(575784001)(2656002)(19580405001)(107046002)(15395725005)(55846006)(10090945008)(16193025007);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB204;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-DmarcAction: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BY2PR02MB204;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR02MB204;
+X-Forefront-PRVS: 0450A714CB
+X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB204;
+X-OriginatorOrg: amd4.onmicrosoft.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 08 Jan 2015 17:48:03.1936
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.221]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR02MB204
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07 Jan 2015, at 21:33, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> On Wed, 2015-01-07 at 20:37 +0000, Erik Grinaker wrote:
-> I agree. I have contacted Amazon about this, but am not too hopeful
->> for a quick fix; they have been promising SACK-support on their
->> loadbalancers since 2006, for example.
->> 
->> That said, since this change breaks a service as popular as S3, it
->> might be worth reconsidering.
-> 
-> Which change are you talking about ? Have you done a bisection to
-> clearly identify the patch exposing this sender bug ?
+--_002_A3397C8B8B789E45844E7EC5DEAD89D0635E2A10satlexdag05amdc_
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
 
-FWIW, I've done a bisection, and it’s triggered by this change:
+PiAtLS0tLU9yaWdpbmFsIE1lc3NhZ2UtLS0tLQ0KPiBGcm9tOiBKb3NlcGggU2FsaXNidXJ5IFtt
+YWlsdG86am9zZXBoLnNhbGlzYnVyeUBjYW5vbmljYWwuY29tXQ0KPiBTZW50OiBUaHVyc2RheSwg
+SmFudWFyeSAwOCwgMjAxNSAxMToyNiBBTQ0KPiBUbzogRGV1Y2hlciwgQWxleGFuZGVyDQo+IENj
+OiBzdGFibGVAdmdlci5rZXJuZWwub3JnOyBMS01MOyBLb2VuaWcsIENocmlzdGlhbjsgRGF2aWQg
+QWlybGllOyBkcmktZGV2ZWwNCj4gU3ViamVjdDogUmU6IFtSZWdyZXNzaW9uXVt2My4xN11bMy4x
+OF1bMy4xOS1yYzNdIGRybS9yYWRlb246IHJlLWVuYWJsZSBkcG0NCj4gYnkgZGVmYXVsdCBvbiBC
+VEMNCj4gDQo+IE9uIDAxLzA3LzIwMTUgMDk6NTEgUE0sIERldWNoZXIsIEFsZXhhbmRlciB3cm90
+ZToNCj4gPg0KPiA+PiAtLS0tLU9yaWdpbmFsIE1lc3NhZ2UtLS0tLQ0KPiA+PiBGcm9tOiBKb3Nl
+cGggU2FsaXNidXJ5IFttYWlsdG86am9zZXBoLnNhbGlzYnVyeUBjYW5vbmljYWwuY29tXQ0KPiA+
+PiBTZW50OiBXZWRuZXNkYXksIEphbnVhcnkgMDcsIDIwMTUgNTo1MSBQTQ0KPiA+PiBUbzogRGV1
+Y2hlciwgQWxleGFuZGVyDQo+ID4+IENjOiBzdGFibGVAdmdlci5rZXJuZWwub3JnOyBMS01MOyBL
+b2VuaWcsIENocmlzdGlhbjsgRGF2aWQgQWlybGllOyBkcmktZGV2ZWwNCj4gPj4gU3ViamVjdDog
+W1JlZ3Jlc3Npb25dW3YzLjE3XVszLjE4XVszLjE5LXJjM10gZHJtL3JhZGVvbjogcmUtZW5hYmxl
+IGRwbQ0KPiBieQ0KPiA+PiBkZWZhdWx0IG9uIEJUQw0KPiA+Pg0KPiA+PiBIaSBBbGV4YW5kZXIs
+DQo+ID4+DQo+ID4+IEEga2VybmVsIGJ1ZyByZXBvcnQgd2FzIG9wZW5lZCBhZ2FpbnN0IFVidW50
+dSBbMF0uICBBZnRlciBhIGtlcm5lbA0KPiA+PiBiaXNlY3QsIGl0IHdhcyBmb3VuZCB0aGF0IHJl
+dmVydGluZyB0aGUgZm9sbG93aW5nIGNvbW1pdCByZXNvbHZlZCB0aGlzIGJ1ZzoNCj4gPj4NCj4g
+Pj4gY29tbWl0IGMwOGFiZjExOTAwZTE5YjE0ZGQzYTBjYzNkMTA1YmQ3NDUxOWNkMTgNCj4gPj4g
+QXV0aG9yOiBBbGV4IERldWNoZXIgPGFsZXhhbmRlci5kZXVjaGVyQGFtZC5jb20+DQo+ID4+IERh
+dGU6ICAgTW9uIEp1bCAxNCAxMjowMTo0MCAyMDE0IC0wNDAwDQo+ID4+DQo+ID4+ICAgICBkcm0v
+cmFkZW9uOiByZS1lbmFibGUgZHBtIGJ5IGRlZmF1bHQgb24gQlRDDQo+ID4+DQo+ID4+IFRoZSBy
+ZWdyZXNzaW9uIHdhcyBpbnRyb2R1Y2VkIGFzIG9mIHYzLjE3LXJjMSBhbmQgc3RpbGwgZXhpc3Rz
+IGluDQo+ID4+IGN1cnJlbnQgbWFpbmxpbmUuICBJdCBoYXMgYWxzbyBtYWRlIGl0J3Mgd2F5IGlu
+dG8gdGhlIHN0YWJsZSByZWxlYXNlcy4NCj4gPj4NCj4gPj4gSSB3YXMgaG9waW5nIHRvIGdldCB5
+b3VyIGZlZWRiYWNrLCBzaW5jZSB5b3UgYXJlIHRoZSBwYXRjaCBhdXRob3IuICBEbw0KPiA+PiB5
+b3UgdGhpbmsgZ2F0aGVyaW5nIGFueSBhZGRpdGlvbmFsIGRhdGEgd2lsbCBoZWxwIGRpYWdub3Nl
+IHRoaXMgaXNzdWUsDQo+ID4+IG9yIHdvdWxkIGl0IGJlIGJlc3QgdG8gc3VibWl0IGEgcmV2ZXJ0
+IHJlcXVlc3Q/DQo+ID4+DQo+ID4gRG9lcyByZXZlcmluZyBiMmRjY2YyNGU3NyBoZWxwPyAgSSdk
+IGhhdGUgdG8gcmV2ZXJ0IHRoaXMgcGF0Y2ggYmVjYXVzZSBpdA0KPiBkaXNhYmxlcyBwb3dlciBt
+YW5hZ2VtZW50IGZvciBhIHdob2xlIGZhbWlseSBvZiBjaGlwcy4gIElmIGl0IGRvZXNuJ3QgaGVs
+cCBJJ2QNCj4gcHJlZmVyIHRvIGp1c3QgYWRkIGEgcXVpcmsgdG8gZGlzYWJsZSBpdCBmb3IgdGhl
+IHNwZWNpZmljIHByb2JsZW1hdGljIGJvYXJkLg0KPiBDb21taXQgYjJkY2NmMjRlNzcgd2FzIGFk
+ZGVkIHRvIG1haW5saW5lIGFzIG9mIHYzLjE4LXJjMSBhbmQgd2FzIG5vdA0KPiBjYydkIHRvIHN0
+YWJsZS4gIFdlIGFyZSBhbHNvIHNlZWluZyB0aGlzIGlzc3VlIGluIHRoZSAzLjEzLnkgc3RhYmxl
+DQo+IGtlcm5lbCwgd2hpY2ggZG9lcyBub3QgaGF2ZSBjb21taXQgYjJkY2NmMjRlNzcgYXBwbGll
+ZC4gIEhvd2V2ZXIsIHdlIGNhbg0KPiB0ZXN0IHJldmVydGluZyBpdCBpbiBtYWlubGluZT8NCg0K
+Tm9wZS4gIFdvbid0IG1ha2UgYSBkaWZmZXJlbmNlLiAgVGhlIGF0dGFjaGVkIHBhdGNoIGFkZHMg
+YSBxdWlyayBsaXN0IGZvciBkcG0gd2hpY2ggd2lsbCBmaXggdGhlIGlzc3VlIGZvciB0aGUgYWZm
+ZWN0ZWQgYm9hcmRzLg0KDQpBbGV4DQoNCj4gDQo+ID4NCj4gPiBBbGV4DQo+ID4NCj4gPj4gVGhh
+bmtzLA0KPiA+Pg0KPiA+PiBKb2UNCj4gPj4NCj4gPj4gWzBdIGh0dHA6Ly9wYWQubHYvMTM4NjUz
+NA0KDQo=
 
-https://github.com/torvalds/linux/commit/4e4f1fc226816905c937f9b29dabe351075dfe0f
+--_002_A3397C8B8B789E45844E7EC5DEAD89D0635E2A10satlexdag05amdc_
+Content-Type: application/octet-stream;
+	name="0001-drm-radeon-add-a-dpm-quirk-list.patch"
+Content-Description: 0001-drm-radeon-add-a-dpm-quirk-list.patch
+Content-Disposition: attachment;
+	filename="0001-drm-radeon-add-a-dpm-quirk-list.patch"; size=2156;
+	creation-date="Thu, 08 Jan 2015 17:45:58 GMT";
+	modification-date="Thu, 08 Jan 2015 17:44:42 GMT"
+Content-Transfer-Encoding: base64
 
-> We are not going to stick TCP stack to 20th century and buggy peers or
-> middleboxes, sorry.
+RnJvbSAxNzE5OWY0YzZkYjIxZDU4MTYzZTYwNTM4ZGU4NTg1YTRlMWIxMzdjIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBBbGV4IERldWNoZXIgPGFsZXhhbmRlci5kZXVjaGVyQGFtZC5j
+b20+CkRhdGU6IFRodSwgOCBKYW4gMjAxNSAxMDo0NjozMyAtMDUwMApTdWJqZWN0OiBbUEFUQ0hd
+IGRybS9yYWRlb246IGFkZCBhIGRwbSBxdWlyayBsaXN0CgpEaXNhYmxlIGRwbSBvbiBjZXJ0YWlu
+IHByb2JsZW1hdGljIGJvYXJkcyByYXRoZXIgdGhhbgpkaXNhYmxpbmcgZHBtIGZvciB0aGUgZW50
+aXJlIGNoaXAgZmFtaWx5IHNpbmNlIG1vc3QKYm9hcmRzIHdvcmsgZmluZS4KClNpZ25lZC1vZmYt
+Ynk6IEFsZXggRGV1Y2hlciA8YWxleGFuZGVyLmRldWNoZXJAYW1kLmNvbT4KQ2M6IHN0YWJsZUB2
+Z2VyLmtlcm5lbC5vcmcKLS0tCiBkcml2ZXJzL2dwdS9kcm0vcmFkZW9uL3JhZGVvbl9wbS5jIHwg
+MzMgKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrCiAxIGZpbGUgY2hhbmdlZCwgMzMg
+aW5zZXJ0aW9ucygrKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vcmFkZW9u
+X3BtLmMgYi9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL3JhZGVvbl9wbS5jCmluZGV4IDMyNTIyY2Mu
+LmY3ZGE4ZmUgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vcmFkZW9uX3BtLmMK
+KysrIGIvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9yYWRlb25fcG0uYwpAQCAtMTI4Nyw4ICsxMjg3
+LDM5IEBAIGRwbV9mYWlsZWQ6CiAJcmV0dXJuIHJldDsKIH0KIAorc3RydWN0IHJhZGVvbl9kcG1f
+cXVpcmsgeworCXUzMiBjaGlwX3ZlbmRvcjsKKwl1MzIgY2hpcF9kZXZpY2U7CisJdTMyIHN1YnN5
+c192ZW5kb3I7CisJdTMyIHN1YnN5c19kZXZpY2U7Cit9OworCisvKiBjYXJkcyB3aXRoIGRwbSBz
+dGFiaWxpdHkgcHJvYmxlbXMgKi8KK3N0YXRpYyBzdHJ1Y3QgcmFkZW9uX2RwbV9xdWlyayByYWRl
+b25fZHBtX3F1aXJrX2xpc3RbXSA9IHsKKwkvKiBUVVJLUyAtIGh0dHBzOi8vYnVncy5sYXVuY2hw
+YWQubmV0L3VidW50dS8rc291cmNlL2xpbnV4LytidWcvMTM4NjUzNCAqLworCXsgUENJX1ZFTkRP
+Ul9JRF9BVEksIDB4Njc1OSwgMHgxNjgyLCAweDMxOTUgfSwKKwkvKiBUVVJLUyAtIGh0dHBzOi8v
+YnVnemlsbGEua2VybmVsLm9yZy9zaG93X2J1Zy5jZ2k/aWQ9ODM3MzEgKi8KKwl7IFBDSV9WRU5E
+T1JfSURfQVRJLCAweDY4NDAsIDB4MTE3OSwgMHhmYjgxIH0sCisJeyAwLCAwLCAwLCAwIH0sCit9
+OworCiBpbnQgcmFkZW9uX3BtX2luaXQoc3RydWN0IHJhZGVvbl9kZXZpY2UgKnJkZXYpCiB7CisJ
+c3RydWN0IHJhZGVvbl9kcG1fcXVpcmsgKnAgPSByYWRlb25fZHBtX3F1aXJrX2xpc3Q7CisJYm9v
+bCBkaXNhYmxlX2RwbSA9IGZhbHNlOworCisJLyogQXBwbHkgZHBtIHF1aXJrcyAqLworCXdoaWxl
+IChwICYmIHAtPmNoaXBfZGV2aWNlICE9IDApIHsKKwkJaWYgKHJkZXYtPnBkZXYtPnZlbmRvciA9
+PSBwLT5jaGlwX3ZlbmRvciAmJgorCQkgICAgcmRldi0+cGRldi0+ZGV2aWNlID09IHAtPmNoaXBf
+ZGV2aWNlICYmCisJCSAgICByZGV2LT5wZGV2LT5zdWJzeXN0ZW1fdmVuZG9yID09IHAtPnN1YnN5
+c192ZW5kb3IgJiYKKwkJICAgIHJkZXYtPnBkZXYtPnN1YnN5c3RlbV9kZXZpY2UgPT0gcC0+c3Vi
+c3lzX2RldmljZSkgeworCQkJZGlzYWJsZV9kcG0gPSB0cnVlOworCQkJYnJlYWs7CisJCX0KKwkJ
+KytwOworCX0KKwogCS8qIGVuYWJsZSBkcG0gb24gcnY2eHgrICovCiAJc3dpdGNoIChyZGV2LT5m
+YW1pbHkpIHsKIAljYXNlIENISVBfUlY2MTA6CkBAIC0xMzQ0LDYgKzEzNzUsOCBAQCBpbnQgcmFk
+ZW9uX3BtX2luaXQoc3RydWN0IHJhZGVvbl9kZXZpY2UgKnJkZXYpCiAJCQkgKCEocmRldi0+Zmxh
+Z3MgJiBSQURFT05fSVNfSUdQKSkgJiYKIAkJCSAoIXJkZXYtPnNtY19mdykpCiAJCQlyZGV2LT5w
+bS5wbV9tZXRob2QgPSBQTV9NRVRIT0RfUFJPRklMRTsKKwkJZWxzZSBpZiAoZGlzYWJsZV9kcG0g
+JiYgKHJhZGVvbl9kcG0gPT0gLTEpKQorCQkJcmRldi0+cG0ucG1fbWV0aG9kID0gUE1fTUVUSE9E
+X1BST0ZJTEU7CiAJCWVsc2UgaWYgKHJhZGVvbl9kcG0gPT0gMCkKIAkJCXJkZXYtPnBtLnBtX21l
+dGhvZCA9IFBNX01FVEhPRF9QUk9GSUxFOwogCQllbHNlCi0tIAoxLjguMy4xCgo=
 
-That’s fair enough.
+--_002_A3397C8B8B789E45844E7EC5DEAD89D0635E2A10satlexdag05amdc_--
