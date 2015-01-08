@@ -1,73 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523AbbAHLMP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 06:12:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57407 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754069AbbAHLMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 06:12:12 -0500
-Message-ID: <54AE65BB.1020707@redhat.com>
-Date: Thu, 08 Jan 2015 12:10:51 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1755002AbbAHLXZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 06:23:25 -0500
+Received: from mailsmtp.meb.k12.tr ([212.175.170.119]:33555 "EHLO
+	k12mailgw1.meb.gov.tr" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751436AbbAHLXY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 06:23:24 -0500
+X-Greylist: delayed 621 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Jan 2015 06:23:23 EST
 MIME-Version: 1.0
-To: Fam Zheng <famz@redhat.com>, linux-kernel@vger.kernel.org
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Miklos Szeredi <mszeredi@suse.cz>, Juri Lelli <juri.lelli@gmail.com>,
-        Zach Brown <zab@zabbo.net>, David Drysdale <drysdale@google.com>,
-        Kees Cook <keescook@chromium.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Dario Faggioli <raistlin@linux.it>, "Theodore Ts'o" <tytso@mit.edu>,
-        Peter Zijlstra <peterz@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Fabian Frederick <fabf@skynet.be>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-fsdevel@vger.kernel.org,
-        linux-api@vger.kernel.org, Stefan Hajnoczi <stefanha@redhat.com>
-Subject: Re: [RESEND PATCH 2/3] epoll: Add implementation for epoll_pwait1
-References: <1420708563-21743-1-git-send-email-famz@redhat.com> <1420708563-21743-3-git-send-email-famz@redhat.com>
-In-Reply-To: <1420708563-21743-3-git-send-email-famz@redhat.com>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
 Content-Transfer-Encoding: 7bit
+Date: Thu, 08 Jan 2015 13:12:52 +0200
+From: "Ms.Ella" <748328@meb.k12.tr>
+To: undisclosed-recipients:;
+Subject: Attention
+Reply-To: <eg13133@qq.com>
+Mail-Reply-To: <eg13133@qq.com>
+Message-ID: <d38b8bab31b72257e8166eba1c5dd3c6@meb.k12.tr>
+User-Agent: SurGATE Messaging Suite Webmail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  I am Ms. Ella Golan; I am getting in touch with you regarding an 
+extremely important and urgent matter. If you would oblige me the 
+opportunity,I shall provide you with details upon your response.
 
-
-On 08/01/2015 10:16, Fam Zheng wrote:
-> Unlike ppoll(2), which accepts a timespec argument "timeout_ts" to
-> specify the timeout, epoll_wait(2) and epoll_pwait(2) expect a
-> microsecond timeout in int type.
-> 
-> This is an obstacle for applications in switching from ppoll to epoll,
-> if they want nanosecond resolution in their event loops.
-> 
-> Therefore, adding this variation of epoll wait interface, giving user an
-> option with *both* advantages, is a reasonable move: there could be
-> constantly scalable performance polling many fds, while having a
-> nanosecond timeout precision (assuming it has properly set up timer
-> slack with prctl(2)).
-> 
-> Signed-off-by: Fam Zheng <famz@redhat.com>
-> ---
->  fs/eventpoll.c           | 24 ++++++++++++++++++++++++
->  include/linux/syscalls.h |  4 ++++
->  kernel/sys_ni.c          |  3 +++
->  3 files changed, 31 insertions(+)
-
-As mentioned by Miklos in the non-resent version, please add a flags
-argument.  Invalid flags should return -EINVAL.
-
-In fact, we could already use the flags argument to specify an absolute
-timeout, which is a nice thing to have for QEMU too.
-
-Paolo
