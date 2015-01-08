@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865AbbAHN3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 08:29:15 -0500
-Received: from mail.kapsi.fi ([217.30.184.167]:46034 "EHLO mail.kapsi.fi"
+	id S1756739AbbAHN2M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 08:28:12 -0500
+Received: from mail.kapsi.fi ([217.30.184.167]:47934 "EHLO mail.kapsi.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756692AbbAHN2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 08:28:09 -0500
+	id S1754103AbbAHN2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 08:28:05 -0500
 From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
 To: swarren@wwwdotorg.org, thierry.reding@gmail.com, gnurou@gmail.com,
         pdeschrijver@nvidia.com, rjw@rjwysocki.net, viresh.kumar@linaro.org
@@ -15,9 +15,9 @@ Cc: mturquette@linaro.org, pwalmsley@nvidia.com, vinceh@nvidia.com,
         linux-arm-kernel@lists.infradead.org, tuomas.tynkkynen@iki.fi,
         Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
         Mikko Perttunen <mikko.perttunen@kapsi.fi>
-Subject: [PATCH v7 09/16] ARM: tegra: Add the DFLL to Tegra124 device tree
-Date: Thu,  8 Jan 2015 15:22:12 +0200
-Message-Id: <1420723339-30735-10-git-send-email-mikko.perttunen@kapsi.fi>
+Subject: [PATCH v7 10/16] ARM: tegra: Enable the DFLL on the Jetson TK1
+Date: Thu,  8 Jan 2015 15:22:13 +0200
+Message-Id: <1420723339-30735-11-git-send-email-mikko.perttunen@kapsi.fi>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <1420723339-30735-1-git-send-email-mikko.perttunen@kapsi.fi>
 References: <1420723339-30735-1-git-send-email-mikko.perttunen@kapsi.fi>
@@ -30,48 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 
-The DFLL clocksource is a separate IP block from the usual
-clock-and-reset controller, so it gets its own device tree node.
+Add the board-specific properties of the DFLL for the Jetson TK1 board.
+On this board, the DFLL will take control of the sd0 regulator on the
+on-board AS3722 PMIC.
 
 Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 Signed-off-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
 ---
- arch/arm/boot/dts/tegra124.dtsi | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ arch/arm/boot/dts/tegra124-jetson-tk1.dts | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
-index 4be06c6..c33a250 100644
---- a/arch/arm/boot/dts/tegra124.dtsi
-+++ b/arch/arm/boot/dts/tegra124.dtsi
-@@ -670,6 +670,28 @@
- 		#thermal-sensor-cells = <1>;
+diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1.dts b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+index 4eb540b..f539990 100644
+--- a/arch/arm/boot/dts/tegra124-jetson-tk1.dts
++++ b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+@@ -1509,7 +1509,7 @@
+ 				vin-ldo9-10-supply = <&vdd_5v0_sys>;
+ 				vin-ldo11-supply = <&vdd_3v3_run>;
+ 
+-				sd0 {
++				vdd_cpu: sd0 {
+ 					regulator-name = "+VDD_CPU_AP";
+ 					regulator-min-microvolt = <700000>;
+ 					regulator-max-microvolt = <1400000>;
+@@ -1730,6 +1730,12 @@
+ 		non-removable;
  	};
  
-+	dfll: dfll@0,70110000 {
-+		compatible = "nvidia,tegra124-dfll";
-+		reg = <0 0x70110000 0 0x100>, /* DFLL control */
-+		      <0 0x70110000 0 0x100>, /* I2C output control */
-+		      <0 0x70110100 0 0x100>, /* Integrated I2C controller */
-+		      <0 0x70110200 0 0x100>; /* Look-up table RAM */
-+		interrupts = <GIC_SPI 62 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&tegra_car TEGRA124_CLK_DFLL_SOC>,
-+			 <&tegra_car TEGRA124_CLK_DFLL_REF>,
-+			 <&tegra_car TEGRA124_CLK_I2C5>;
-+		clock-names = "soc", "ref", "i2c";
-+		#clock-cells = <0>;
-+		clock-output-names = "dfllCPU_out";
-+		nvidia,sample-rate = <12500>;
-+		nvidia,droop-ctrl = <0x00000f00>;
-+		nvidia,force-mode = <1>;
-+		nvidia,cf = <10>;
-+		nvidia,ci = <0>;
-+		nvidia,cg = <2>;
-+		status = "disabled";
++	dfll@0,70110000 {
++		status = "okay";
++		vdd-cpu-supply = <&vdd_cpu>;
++		nvidia,i2c-fs-rate = <400000>;
 +	};
 +
  	ahub@0,70300000 {
- 		compatible = "nvidia,tegra124-ahub";
- 		reg = <0x0 0x70300000 0x0 0x200>,
+ 		i2s@0,70301100 {
+ 			status = "okay";
 -- 
 2.2.1
 
