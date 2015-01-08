@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756834AbbAHRUR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 12:20:17 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:56820 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750825AbbAHRUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 12:20:15 -0500
-Date: Thu, 8 Jan 2015 12:20:07 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, xen-devel@lists.xenproject.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: Re: [PATCH 1/2] mm: allow for an alternate set of pages for
- userspace mappings
-Message-ID: <20150108172007.GB32079@phnom.home.cmpxchg.org>
-References: <1420730924-22811-1-git-send-email-david.vrabel@citrix.com>
- <1420730924-22811-2-git-send-email-david.vrabel@citrix.com>
+	id S1756930AbbAHRUY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 12:20:24 -0500
+Received: from smtprelay0133.hostedemail.com ([216.40.44.133]:60705 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756863AbbAHRUU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 12:20:20 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::,RULES_HIT:41:355:379:541:973:988:989:1260:1277:1311:1313:1314:1345:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2893:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3871:3872:3873:3874:5007:6119:6261:7875:7903:10004:10400:10848:11232:11658:11914:12296:12517:12519:13069:13070:13071:13161:13229:13311:13357:14347:21060:21067:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: gate05_59ca99104f43d
+X-Filterd-Recvd-Size: 1290
+Date: Thu, 8 Jan 2015 12:20:16 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, vvs@sw.ru
+Subject: Bug with jprobes and function graph tracer
+Message-ID: <20150108122016.0241f713@gandalf.local.home>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420730924-22811-2-git-send-email-david.vrabel@citrix.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 08, 2015 at 03:28:43PM +0000, David Vrabel wrote:
-> Add an optional array of pages to struct vm_area_struct that can be
-> used find the page backing a VMA.  This is useful in cases where the
-> normal mechanisms for finding the page don't work.  This array is only
-> inspected if the PTE is special.
-> 
-> Splitting a VMA with such an array of pages is trivially done by
-> adjusting vma->pages.  The original creator of the VMA must only free
-> the page array once all sub-VMAs are closed (e.g., by ref-counting in
-> vm_ops->open and vm_ops->close).
-> 
-> One use case is a Xen PV guest mapping foreign pages into userspace.
-> 
-> In a Xen PV guest, the PTEs contain MFNs so get_user_pages() (for
-> example) must do an MFN to PFN (M2P) lookup before it can get the
-> page.  For foreign pages (those owned by another guest) the M2P lookup
-> returns the PFN as seen by the foreign guest (which would be
-> completely the wrong page for the local guest).
-> 
-> This cannot be fixed up improving the M2P lookup since one MFN may be
-> mapped onto two or more pages so getting the right page is impossible
-> given just the MFN.
-> 
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-> ---
->  include/linux/mm_types.h |    8 ++++++++
->  mm/memory.c              |    2 ++
->  mm/mmap.c                |   12 +++++++++++-
->  3 files changed, 21 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-> index 6d34aa2..4f34609 100644
-> --- a/include/linux/mm_types.h
-> +++ b/include/linux/mm_types.h
-> @@ -309,6 +309,14 @@ struct vm_area_struct {
->  #ifdef CONFIG_NUMA
->  	struct mempolicy *vm_policy;	/* NUMA policy for the VMA */
->  #endif
-> +	/*
-> +	 * Array of pages to override the default vm_normal_page()
-> +	 * result iff the PTE is special.
-> +	 *
-> +	 * The memory for this should be refcounted in vm_ops->open
-> +	 * and vm_ops->close.
-> +	 */
-> +	struct page **pages;
+Hi Masami,
 
-Please make this configuration-dependent, not every Linux user should
-have to pay for a Xen optimization.
+First, I would like to wish you a Happy New Year :-)
+
+OK, now back to business.
+
+
+It has come to my attention that jprobes and function graph tracing do
+not play nicely together. I think you once told me they have issues as
+well.
+
+A simple way to test this is to load the jprobe_example.ko module and
+then run function graph tracing.
+
+Should we try to fix this? Or should it just be that users need to know
+not to enable the two together. Or we can prevent one from starting if
+the other is being used.
+
+Looking forward to hearing your thoughts on the subject.
+
+-- Steve
