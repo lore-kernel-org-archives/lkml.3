@@ -1,79 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932402AbbAHR4t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 12:56:49 -0500
-Received: from smtprelay0123.hostedemail.com ([216.40.44.123]:41092 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932356AbbAHR4s (ORCPT
+	id S932423AbbAHR5t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 12:57:49 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:56370 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755225AbbAHR5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 12:56:48 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,3,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:800:960:966:973:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1978:1981:2194:2196:2199:2200:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3291:3352:3865:3866:3867:3868:3871:4250:4321:4385:4418:4605:5007:6117:6119:6261:8603:9592:10012:10400:10848:11026:11473:11658:11914:12043:12296:12438:12517:12519:12555:12683:13069:13095:13311:13357:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:2:0
-X-HE-Tag: act21_754b1e7b2874f
-X-Filterd-Recvd-Size: 2265
-Message-ID: <1420739803.11784.7.camel@perches.com>
-Subject: [PATCH net-next] netfilter: nat_snmp_basic: Use generic dump
- facility
-From: Joe Perches <joe@perches.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 08 Jan 2015 09:56:43 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Jan 2015 12:57:47 -0500
+MIME-Version: 1.0
+In-Reply-To: <1420708372.18399.15.camel@suse.cz>
+References: <1420705550-24245-1-git-send-email-famz@redhat.com> <1420708372.18399.15.camel@suse.cz>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 8 Jan 2015 09:57:24 -0800
+Message-ID: <CALCETrVyPij1Zxwmw7p06UrZjoyYDXqEjmxyQ-KJ8Y7dx7mL3g@mail.gmail.com>
+Subject: Re: [PATCH 0/3] epoll: Add epoll_pwait1 syscall
+To: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Fam Zheng <famz@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Juri Lelli <juri.lelli@gmail.com>, Zach Brown <zab@zabbo.net>,
+        David Drysdale <drysdale@google.com>,
+        Kees Cook <keescook@chromium.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Dario Faggioli <raistlin@linux.it>, "Theodore Ts'o" <tytso@mit.edu>,
+        Peter Zijlstra <peterz@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Fabian Frederick <fabf@skynet.be>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the generic facility instead of a static hex_dump routine.
-Delete the now unused static routine.
+On Thu, Jan 8, 2015 at 1:12 AM, Miklos Szeredi <mszeredi@suse.cz> wrote:
+> On Thu, 2015-01-08 at 16:25 +0800, Fam Zheng wrote:
+>> Applications could use epoll interface when then need to poll a big number of
+>> files in their main loops, to achieve better performance than ppoll(2). Except
+>> for one concern: epoll only takes timeout parameters in microseconds, rather
+>> than nanoseconds.
+>>
+>> That is a drawback we should address. For a real case in QEMU, we run into a
+>> scalability issue with ppoll(2) when many devices are attached to guest, in
+>> which case many host fds, such as virtual disk images and sockets, need to be
+>> polled by the main loop. As a result we are looking at switching to epoll, but
+>> the coarse timeout precision is a trouble, as explained below.
+>>
+>> We're already using prctl(PR_SET_TIMERSLACK, 1) which is necessary to implement
+>> timers in the main loop; and we call ppoll(2) with the next firing timer as
+>> timeout, so when ppoll(2) returns, we know that we have more work to do (either
+>> handling IO events, or fire a timer callback). This is natual and efficient,
+>> except that ppoll(2) itself is slow.
+>>
+>> Now that we want to switch to epoll, to speed up the polling. However the timer
+>> slack setting will be effectively undone, because that way we will have to
+>> round up the timeout to microseconds honoring timer contract. But consequently,
+>> this hurts the general responsiveness.
+>>
+>> Note: there are two alternatives, without changing kernel:
+>>
+>> 1) Leading ppoll(2), with the epollfd only and a nanosecond timeout. It won't
+>> be slow as one fd is polled. No more scalability issue. And if there are
+>> events, we know from ppoll(2)'s return, then we do the epoll_wait(2) with
+>> timeout=0; otherwise, there can't be events for the epoll, skip the following
+>> epoll_wait and just continue with other work.
+>>
+>> 2) Setup and add a timerfd to epoll, then we do epoll_wait(..., timeout=-1).
+>> The timerfd will hopefully force epoll_wait to return when it timeouts, even if
+>> no other events have arrived. This will inheritly give us timerfd's precision.
+>> Note that for each poll, the desired timeout is different because the next
+>> timer is different, so that, before each epoll_wait(2), there will be a
+>> timerfd_settime syscall to set it to a proper value.
+>>
+>> Unfortunately, both approaches require one more syscall per iteration, compared
+>> to the original single ppoll(2), cost of which is unneglectable when we talk
+>> about nanosecond granularity.
 
-Now emits the hex dump at KERN_DEBUG instead of default.
+I'd like to see a more ambitious change, since the timer isn't the
+only problem like this.  Specifically, I'd like a syscall that does a
+list of epoll-related things and then waits.  The list of things could
+include, at least:
 
-Shrinks the kernel ever so trivially.
+ - EPOLL_CTL_MOD actions: level-triggered epoll users are likely to
+want to turn on and off their requests for events on a somewhat
+regular basis.
 
-$ size net/ipv4/netfilter/nf_nat_snmp_basic.o*
-   text	   data	    bss	    dec	    hex	filename
-   5948	    352	      8	   6308	   18a4	net/ipv4/netfilter/nf_nat_snmp_basic.o.defconfig.new
-   5985	    352	      8	   6345	   18c9	net/ipv4/netfilter/nf_nat_snmp_basic.o.defconfig.old
+ - timerfd_settime actions: this allows a single syscall to wait and
+adjust *both* monotonic and real-time wakeups.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- net/ipv4/netfilter/nf_nat_snmp_basic.c | 14 +-------------
- 1 file changed, 1 insertion(+), 13 deletions(-)
+Would this make sense?  It could look like:
 
-diff --git a/net/ipv4/netfilter/nf_nat_snmp_basic.c b/net/ipv4/netfilter/nf_nat_snmp_basic.c
-index 7c67667..5c8d3b5 100644
---- a/net/ipv4/netfilter/nf_nat_snmp_basic.c
-+++ b/net/ipv4/netfilter/nf_nat_snmp_basic.c
-@@ -998,18 +998,6 @@ err_id_free:
-  *
-  *****************************************************************************/
- 
--static void hex_dump(const unsigned char *buf, size_t len)
--{
--	size_t i;
--
--	for (i = 0; i < len; i++) {
--		if (i && !(i % 16))
--			printk("\n");
--		printk("%02x ", *(buf + i));
--	}
--	printk("\n");
--}
--
- /*
-  * Parse and mangle SNMP message according to mapping.
-  * (And this is the fucking 'basic' method).
-@@ -1026,7 +1014,7 @@ static int snmp_parse_mangle(unsigned char *msg,
- 	struct snmp_object *obj;
- 
- 	if (debug > 1)
--		hex_dump(msg, len);
-+		print_hex_dump_bytes("", DUMP_PREFIX_NONE, msg, len);
- 
- 	asn1_open(&ctx, msg, len);
- 
+int epoll_mod_and_pwait(int epfd,
+  struct epoll_event *events, int maxevents,
+  struct epoll_command *commands, int ncommands,
+  const sigset_t *sigmask);
 
-
+--Andy
