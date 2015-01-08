@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755050AbbAHQX6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 11:23:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54710 "EHLO mx1.redhat.com"
+	id S1756190AbbAHQZn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 11:25:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4404 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753578AbbAHQX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 11:23:56 -0500
-Message-ID: <54AEAF13.4050806@redhat.com>
-Date: Thu, 08 Jan 2015 17:23:47 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>,
-        linux-kernel@vger.kernel.org
-CC: kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [PATCH] KVM: x86: allow TSC deadline timer on all hosts
-References: <1420729170-23768-1-git-send-email-rkrcmar@redhat.com>
-In-Reply-To: <1420729170-23768-1-git-send-email-rkrcmar@redhat.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	id S1754374AbbAHQZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 11:25:42 -0500
+From: Denys Vlasenko <dvlasenk@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Denys Vlasenko <dvlasenk@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: [PATCH 0/4] x86: entry.S cleanup
+Date: Thu,  8 Jan 2015 17:25:11 +0100
+Message-Id: <1420734315-30943-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is the first part of a bigger patch set I posted last August,
+then under title of "x86: entry.S optimizations".
 
+I fully rebased that patch set to Linus tree, but currently
+Linus and -next are diverging a bit in arch/x86/kernel/entry_64.S
 
-On 08/01/2015 15:59, Radim Krčmář wrote:
-> Emulation does not utilize the feature.
+To make it easier for mainteiners, I'm splitting the old patch set
+into more digestible parts.
 
-Indeed... nice :)
+This is the first set. These four patches apply both to Linus and -next.
+They do not contain any substantial code changes.
+Patches 2 and 4 don't result in any actual code changes.
 
-Applied to kvm/queue, thanks.
+CC: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Oleg Nesterov <oleg@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>
+CC: Andy Lutomirski <luto@amacapital.net>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: X86 ML <x86@kernel.org>
+CC: Alexei Starovoitov <ast@plumgrid.com>
+CC: Will Drewry <wad@chromium.org>
+CC: Kees Cook <keescook@chromium.org>
+CC: linux-kernel@vger.kernel.org
 
-Paolo
+Denys Vlasenko (4):
+  x86: entry_64.S: delete unused code
+  x86: ia32entry.S: fix wrong symbolic constant usage: R11->ARGOFFSET
+  x86: open-code register save/restore in trace_hardirqs thunks
+  x86: entry_64.S: fold SAVE_ARGS_IRQ macro into its sole user
 
-> Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
-> ---
->  arch/x86/kvm/x86.c | 4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 933a373..ed879f1 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -2743,6 +2743,7 @@ int kvm_vm_ioctl_check_extension(struct kvm *kvm, long ext)
->  	case KVM_CAP_READONLY_MEM:
->  	case KVM_CAP_HYPERV_TIME:
->  	case KVM_CAP_IOAPIC_POLARITY_IGNORED:
-> +	case KVM_CAP_TSC_DEADLINE_TIMER:
->  #ifdef CONFIG_KVM_DEVICE_ASSIGNMENT
->  	case KVM_CAP_ASSIGN_DEV_IRQ:
->  	case KVM_CAP_PCI_2_3:
-> @@ -2781,9 +2782,6 @@ int kvm_vm_ioctl_check_extension(struct kvm *kvm, long ext)
->  	case KVM_CAP_TSC_CONTROL:
->  		r = kvm_has_tsc_control;
->  		break;
-> -	case KVM_CAP_TSC_DEADLINE_TIMER:
-> -		r = boot_cpu_has(X86_FEATURE_TSC_DEADLINE_TIMER);
-> -		break;
->  	default:
->  		r = 0;
->  		break;
-> 
+ arch/x86/ia32/ia32entry.S      |   4 +-
+ arch/x86/include/asm/calling.h |   1 -
+ arch/x86/kernel/entry_64.S     | 122 ++++++++++++++---------------------------
+ arch/x86/lib/thunk_64.S        |  29 ++++++++--
+ 4 files changed, 68 insertions(+), 88 deletions(-)
+
+-- 
+1.8.1.4
+
