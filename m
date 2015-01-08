@@ -1,123 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748AbbAHPy2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 10:54:28 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:57933 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753948AbbAHPy0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 10:54:26 -0500
-Date: Thu, 8 Jan 2015 15:54:16 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Murali Karicheri <m-karicheri2@ti.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v3 0/4] PCI: get DMA configuration from parent device
-Message-ID: <20150108155416.GM11583@arm.com>
-References: <1420656594-8908-1-git-send-email-m-karicheri2@ti.com>
- <4057859.4ynbgz66iN@wuerfel>
- <54ADBB89.8070503@ti.com>
- <1934001.D0JfDRp1gF@wuerfel>
+	id S1756755AbbAHPz3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 10:55:29 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:43185 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753114AbbAHPz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 10:55:28 -0500
+Message-ID: <54AEA86D.60709@osg.samsung.com>
+Date: Thu, 08 Jan 2015 08:55:25 -0700
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1934001.D0JfDRp1gF@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <koct9i@gmail.com>, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] selftests/vm: fix link error for transhuge-stress test
+References: <1420655754-10076-1-git-send-email-Andrej.Skvortzov@gmail.com> <54AD872E.9060802@osg.samsung.com> <20150107201045.GA5704@yulia-desktop>
+In-Reply-To: <20150107201045.GA5704@yulia-desktop>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 08, 2015 at 08:56:39AM +0000, Arnd Bergmann wrote:
-> On Wednesday 07 January 2015 18:04:41 Murali Karicheri wrote:
-> > On 01/07/2015 04:18 PM, Arnd Bergmann wrote:
-> > > On Wednesday 07 January 2015 13:49:50 Murali Karicheri wrote:
-> > >> PCI devices on Keystone doesn't have correct dma_pfn_offset set. This patch
-> > >> add capability to set the dma configuration such as dma-mask, dma_pfn_offset,
-> > >> and dma ops etc using the information from DT. The prior RFCs and discussions
-> > >> are available at [1] and [2] below.
-> > >>
-> > >> [2] : https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg790244.html
-> > >> [1] : http://www.gossamer-threads.com/lists/linux/kernel/2024591
-> > >
-> > > Looks all good to me in this version, I'm just unsure about one thing:
-> > >
-> > >>                 - Limit the of_iommu_configure to non pci devices
-> > >
-> > > My last recommendation was to pass the b/d/f number into
-> > > of_pci_dma_configure to handle this correctly. What was your
-> > > reason for not doing it in the end?
-> > Arnd,
-> > 
-> > I had responded to this already on the list and reproduced below your 
-> > remark and my response below from that thread.
-> 
-> Ah right, sorry for missing a reply on that.
-> 
-> > ---------------cut-------------------------------------------------------
-> >  > Actually regarding the bit I wrote above, it might be helpful to pass
-> >  > the PCI_DEVID() into both of_iommu_configure and of_dma_configure.
-> >  >
-> >  > While this may or may not be sufficient, I think there is no question
-> >  > about it being needed for the ARM SMMU with PCI, so we may as well add
-> >  > it at the point when you touch the same lines already. In the platform
-> >  > bus case, just pass zero here.
-> > 
-> > PCI_DEVID() is defined as
-> > 
-> > #define PCI_DEVID(bus, devfn)  ((((u16)(bus)) << 8) | (devfn))
-> > 
-> > So PCI_DEVID of 0 is a valid PCI DEVID.
-> 
-> I think that is ok: the idea would be that we always just list the
-> first ID of the range and then let the iommu driver add the offset
-> in the appropriate way.
-> 
-> > How about checking if the device is PCI in of_iommu_configure() using 
-> > dev_is_pci(dev) macro and return immediately for PCI? Need to include 
-> > pci.h in this file though.
-> > 
-> > Some of the iommu drivers already include this.
-> 
-> I guess you are right, but the driver can even handle the PCI
-> device correctly without the extra parameter:
-> 
-> 	devid = 0;
-> 	if (dev_is_pci(dev)) {
-> 		struct pci_dev *pdev = to_pci_dev(dev);
-> 		devid = PCI_DEVID(pdev->bus->number, pdev->devfn);
-> 	}
-> 
-> 	streamid += devid;
-> 
-> Other IOMMUs won't even care about the devid, so they will just work.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-I started looking at this in more depth for the ARM SMMU at the end of last
-year and the PCI case ends up being remarkably similar to the DT case.
+On 01/07/2015 01:10 PM, Andrey Skvortsov wrote:
+> On Wed, Jan 07, 2015 at 12:21:18PM -0700, Shuah Khan wrote:
+>> On 01/07/2015 11:35 AM, Andrey Skvortsov wrote:
+>>> add -lrt to fix undefined reference to `clock_gettime'
+>>> 
+>>> Signed-off-by: Andrey Skvortsov <andrej.skvortzov@gmail.com> 
+>>> --- tools/testing/selftests/vm/Makefile |    2 +- 1 file
+>>> changed, 1 insertion(+), 1 deletion(-)
+>>> 
+>>> diff --git a/tools/testing/selftests/vm/Makefile
+>>> b/tools/testing/selftests/vm/Makefile index 4c4b1f6..077828c
+>>> 100644 --- a/tools/testing/selftests/vm/Makefile +++
+>>> b/tools/testing/selftests/vm/Makefile @@ -7,7 +7,7 @@ BINARIES
+>>> += transhuge-stress
+>>> 
+>>> all: $(BINARIES) %: %.c -	$(CC) $(CFLAGS) -o $@ $^ +	$(CC)
+>>> $(CFLAGS) -o $@ $^ -lrt
+>>> 
+>>> run_tests: all @/bin/sh ./run_vmtests || (echo "vmtests:
+>>> [FAIL]"; exit 1)
+>>> 
+>> 
+>> Andrey,
+>> 
+>> I don't see any undefined references when I build. Curious if it
+>> is specific to your env??
+>> 
+>> Please include the warning in the change log when you fix
+>> warnings in the future.
+>> 
+> 
+> thanks for the comment.
+> 
+> Here is what I get without a patch:
+> 
+> linux-next/tools/testing/selftests/vm $ make gcc -Wall -o
+> hugepage-mmap hugepage-mmap.c gcc -Wall -o hugepage-shm
+> hugepage-shm.c gcc -Wall -o map_hugetlb map_hugetlb.c gcc -Wall -o
+> thuge-gen thuge-gen.c gcc -Wall -o hugetlbfstest hugetlbfstest.c 
+> gcc -Wall -o transhuge-stress transhuge-stress.c /tmp/ccpWoqkG.o:
+> In function `main': transhuge-stress.c:(.text+0x3a3): undefined
+> reference to `clock_gettime' transhuge-stress.c:(.text+0x4dc):
+> undefined reference to `clock_gettime' collect2: ld returned 1 exit
+> status make: *** [transhuge-stress] Error 1
+> 
+> 
+> $ gcc --version gcc (Ubuntu/Linaro 4.6.4-1ubuntu1~12.04) 4.6.4. The
+> same error I get on my other Debian system.
+> 
+> man page for clock_gettime says 'Link with -lrt'. So I think the
+> error message is correct.
+> 
 
-Although I initially thought we just needed the devid, actually we need to
-walk the PCI topology to find the dma alias for the device. The current
-code for doing that (iommu_group_get_for_pci_dev) only reports the resulting
-IOMMu group, which can actually correspond to *multiple* DMA aliases due
-to ACS restrictions.
+Thanks for fixing it. Applied to linux-kselftest fixes branch
 
-I knocked up a couple of patches for dealing with this in the ARM SMMU
-driver, but I'd really like that to be part of core code if possible :)
+- -- Shuah
 
-https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/commit/?h=iommu/pgtbl&id=41dc7b9e0ff1a4d79d1dd76619056fc0cfa8b84f
-https://git.kernel.org/cgit/linux/kernel/git/will/linux.git/commit/?h=iommu/pgtbl&id=5503996103138b41520d5eae90dda62abb65f04f
+- -- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Open Source Innovation Group
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-So, I think of_pci_dma_configure should determine the set of aliases for the
-group. What isn't clear to me for the DT *or* the PCI cases is what we
-actually do with the group at the dma-mapping level...
-
-Will
+iQIcBAEBAgAGBQJUrqhtAAoJEAsCRMQNDUMcVkgP/if69SGYILLnnj+7oBIuXJGl
+8QZVJRHKdN/8Tny7PVBDmerv8kTxbDfaJpJyHg8nSSFRyTmOKChNkO9mcR7TIXcP
+KxQn5BjYYUvcPM9jZESTAOIdEcaKbsMjj2Yknf49o7ij9YgCBPvFbDOZtfk/oMtF
+no3wGSuZPF4cRBvhfHJQdLMc87VeLSdz4eDBWZ7LX6EXlfWc8QH8iJhbLzmPp3pJ
+ofFKKeoaOrlcb/tQPdfSbWvVXZmWpJa8YdDGc2V+w6gahjPeWffe3ZTSyS4dwKZ+
+Ayt4F2ptxu+/1fbOb9ZSFCrST2q+yavvXR5D/guK1EqIi1iRHJzq9QSNO8VJksG1
+g+aCCTxI5qxHmmq2NandZ/UTttdxsUhPVO32IAFZcrq49gdPQqa/QuB0iI3fDevp
+kqueiQj96wHr6zBFMgO6O+Vw/bmOjNdFOQUIv6iEJt1SbRtouBa4VVSRsbJijwGU
+3jDZBmBhV/ntGuydqsPE1IAjQPO9nKk2rF7RZkx2OGx6Lc6kOk6BQ0eHnA/FgmcG
+vZiHAIK99K9dEd926C+nV6pYK9UfPU/UKtmxIa/Z5At4oxN3SUKeZokmCFC7f2Ff
+ueM0hLvEmfNTjSzGkx72RsdxE/6nU2kgYfNOGsJh4QuePrph9+orgHtb5qzZXmiA
+Mf3pjHSWH0sqAXKfZZmF
+=zsvn
+-----END PGP SIGNATURE-----
