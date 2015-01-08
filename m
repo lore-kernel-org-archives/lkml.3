@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511AbbAHKyM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 05:54:12 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:52783 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756481AbbAHKx7 (ORCPT
+	id S1756570AbbAHKzF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 05:55:05 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:41859 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756276AbbAHKzB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 05:53:59 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Greg Thelen <gthelen@google.com>, Glauber Costa <glommer@gmail.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm v3 9/9] fs: make shrinker memcg aware
-Date: Thu, 8 Jan 2015 13:53:19 +0300
-Message-ID: <0c7964c3143c16338565430656d5b2c197e0d946.1420711973.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1420711973.git.vdavydov@parallels.com>
-References: <cover.1420711973.git.vdavydov@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [81.5.99.36]
+	Thu, 8 Jan 2015 05:55:01 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-66-54ae62028769
+Message-id: <54AE61F6.808@samsung.com>
+Date: Thu, 08 Jan 2015 11:54:46 +0100
+From: Andrzej Hajda <a.hajda@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.3.0
+MIME-version: 1.0
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Andi Kleen <andi@firstfloor.org>, Andreas Mohr <andi@lisas.de>
+Cc: linux-mm@kvack.org, Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/4] kstrdup optimization
+References: <54A25135.5030103@samsung.com>
+ <20141230083230.GA17639@rhlx01.hs-esslingen.de>
+ <20141230212915.GN2915@two.firstfloor.org>
+In-reply-to: <20141230212915.GN2915@two.firstfloor.org>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHLMWRmVeSWpSXmKPExsVy+t/xq7pMSetCDJ6f17A4cu07u8Xlf29Y
+	LC7vmsNmcW/Nf1aLtUfusjuweszf+ZHRY9OnSeweS26qefRtWcXo8XmTXABrFJdNSmpOZllq
+	kb5dAlfGr12LmAr62StOztnI2MB4jbWLkZNDQsBEYvnab8wQtpjEhXvr2boYuTiEBJYySvS8
+	+sMO4XxilDi54CAbSBWvgJrEpK9T2EFsFgFVia+LpoJ1swloSvzdfBOsRlQgQuLDqq9Q9YIS
+	PybfYwGx+YC2TdzdC1YvIuAk8XVXL1icWSBZ4vmPdWAzhQUMJVb8XgZ1RSejxKLm1UwgCU4B
+	c4nmjVsYuxg5gBr0JO5f1ILolZfYvOYt8wRGwVlI1s1CqJqFpGoBI/MqRtHU0uSC4qT0XEO9
+	4sTc4tK8dL3k/NxNjJAw/7KDcfExq0OMAhyMSjy8H+6vDRFiTSwrrsw9xCjBwawkwqvjuS5E
+	iDclsbIqtSg/vqg0J7X4ECMTB6dUA2OWncKa3++FpoYIakdM+Glwxvyf33zt2dZbFkxOWcsb
+	eE/8SvS8JNkOZ/WrpSHvL76e0nug9WINl8OGLfUish9v3t/00zczPqm9SzafOWe/hbdyjOg3
+	nfzIGo/3h80/eh3f6/bdf+f5Ffua/G7q/ZIsD208Xtcfc+72xWkS+avN9of+FO/gdlZiKc5I
+	NNRiLipOBAB7RsPTUQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, to make any list_lru-based shrinker memcg aware we should only
-initialize its list_lru as memcg aware. Let's do it for the general FS
-shrinker (super_block::s_shrink).
+Hi Andi, Andreas,
 
-There are other FS-specific shrinkers that use list_lru for storing
-objects, such as XFS and GFS2 dquot cache shrinkers, but since they
-reclaim objects that are shared among different cgroups, there is no
-point making them memcg aware. It's a big question whether we should
-account them to memcg at all.
+Thanks for comments.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- fs/super.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+On 12/30/2014 10:29 PM, Andi Kleen wrote:
+>> This symmetry issue probably could be cleanly avoided only
+>> by having kfree() itself contain such an identifying check, as you suggest
+>> (thereby slowing down kfree() performance).
+> 
+> It actually shouldn't slow it down. kfree already complains if you free
+> a non slab page, this could be just in front of the error check.
+> 
+> The bigger concern is that it may hide some programing errors elsewhere
+> though. So it's probably better to keep it a separate function.
 
-diff --git a/fs/super.c b/fs/super.c
-index b027849d92d2..482b4071f4de 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -189,9 +189,9 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
- 	INIT_HLIST_BL_HEAD(&s->s_anon);
- 	INIT_LIST_HEAD(&s->s_inodes);
- 
--	if (list_lru_init(&s->s_dentry_lru))
-+	if (list_lru_init_memcg(&s->s_dentry_lru))
- 		goto fail;
--	if (list_lru_init(&s->s_inode_lru))
-+	if (list_lru_init_memcg(&s->s_inode_lru))
- 		goto fail;
- 
- 	init_rwsem(&s->s_umount);
-@@ -227,7 +227,7 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
- 	s->s_shrink.scan_objects = super_cache_scan;
- 	s->s_shrink.count_objects = super_cache_count;
- 	s->s_shrink.batch = 1024;
--	s->s_shrink.flags = SHRINKER_NUMA_AWARE;
-+	s->s_shrink.flags = SHRINKER_NUMA_AWARE | SHRINKER_MEMCG_AWARE;
- 	return s;
- 
- fail:
--- 
-1.7.10.4
+Shall I interpret it as preliminary ack?
+
+If yes, I can repost it without RFC prefix. Anyway I need to:
+- add EXPORT_SYMBOL(kstrdup_const),
+- add kerneldocs for both functions.
+
+I can also add patch constifying mnt->mnt_devname in alloc_vfsmnt,
+on my test platform it could save 13 additional allocations.
+
+Regards
+Andrzej
+
 
