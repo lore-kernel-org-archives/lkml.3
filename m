@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755986AbbAHVc7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 16:32:59 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:36705 "EHLO
+	id S1755675AbbAHVqN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 16:46:13 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:37691 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755244AbbAHVc5 (ORCPT
+	with ESMTP id S1755292AbbAHVqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 16:32:57 -0500
-Message-ID: <54AEF788.3060401@codeaurora.org>
-Date: Thu, 08 Jan 2015 13:32:56 -0800
+	Thu, 8 Jan 2015 16:46:10 -0500
+Message-ID: <54AEFAA0.3010605@codeaurora.org>
+Date: Thu, 08 Jan 2015 13:46:08 -0800
 From: Stephen Boyd <sboyd@codeaurora.org>
 User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Philipp Zabel <p.zabel@pengutronix.de>,
-        Mike Turquette <mturquette@linaro.org>
-CC: linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Subject: Re: [PATCH v2] clk: Do not complain about correctly set read-only
- muxes when assigning clock parents from device tree
-References: <1420559120-17405-1-git-send-email-p.zabel@pengutronix.de>
-In-Reply-To: <1420559120-17405-1-git-send-email-p.zabel@pengutronix.de>
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+CC: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-arm-msm@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] tty: serial: msm_serial: Remove duplicate code in
+ msm_console_setup
+References: <1420708545-6477-1-git-send-email-pramod.gurav@smartplayin.com>
+In-Reply-To: <1420708545-6477-1-git-send-email-pramod.gurav@smartplayin.com>
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2015 07:45 AM, Philipp Zabel wrote:
-> diff --git a/drivers/clk/clk-conf.c b/drivers/clk/clk-conf.c
-> index aad4796..bb4dc02 100644
-> --- a/drivers/clk/clk-conf.c
-> +++ b/drivers/clk/clk-conf.c
-> @@ -62,10 +62,13 @@ static int __set_clk_parents(struct device_node *node, bool clk_supplier)
->  			goto err;
->  		}
+On 01/08/2015 01:15 AM, Pramod Gurav wrote:
+>  drivers/tty/serial/msm_serial.c |   15 ---------------
+>  1 file changed, 15 deletions(-)
+>
+> diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
+> index c88b522..057008d 100644
+> --- a/drivers/tty/serial/msm_serial.c
+> +++ b/drivers/tty/serial/msm_serial.c
+> @@ -932,27 +932,12 @@ static int __init msm_console_setup(struct console *co, char *options)
+>  	if (unlikely(!port->membase))
+>  		return -ENXIO;
 >  
-> -		rc = clk_set_parent(clk, pclk);
-> -		if (rc < 0)
-> -			pr_err("clk: failed to reparent %s to %s: %d\n",
-> -			       __clk_get_name(clk), __clk_get_name(pclk), rc);
-> +		if (pclk != __clk_get_parent(clk)) {
-> +			rc = clk_set_parent(clk, pclk);
-> +			if (rc < 0)
-> +				pr_err("clk: failed to reparent %s to %s: %d\n",
-> +				       __clk_get_name(clk),
-> +				       __clk_get_name(pclk), rc);
-> +		}
->  		clk_put(clk);
->  		clk_put(pclk);
->  	}
+> -	msm_init_clock(port);
+> -
 
-Why not do this in the core? As far as I can tell other drivers could
-run into the same problem, no? Does this work?
+Hm.. doesn't the console setup happen before the port is opened though?
+I would think that we need to keep this around so that the clock is
+actually enabled before we go and write to hardware registers.
 
------8<-------
+>  	if (options)
+>  		uart_parse_options(options, &baud, &parity, &bits, &flow);
+>  
+>  	bits = 8;
+>  	parity = 'n';
+>  	flow = 'n';
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index f4963b7d4e17..3278645f4729 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -1677,16 +1677,18 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
- 	if (!clk)
- 		return 0;
- 
--	/* verify ops for for multi-parent clks */
--	if ((clk->num_parents > 1) && (!clk->ops->set_parent))
--		return -ENOSYS;
--
- 	/* prevent racing with updates to the clock topology */
- 	clk_prepare_lock();
- 
- 	if (clk->parent == parent)
- 		goto out;
- 
-+	/* verify ops for for multi-parent clks */
-+	if ((clk->num_parents > 1) && (!clk->ops->set_parent)) {
-+		ret = -ENOSYS;
-+		goto out;
-+	}
-+
- 	/* check that we are allowed to re-parent if the clock is in use */
- 	if ((clk->flags & CLK_SET_PARENT_GATE) && clk->prepare_count) {
- 		ret = -EBUSY;
+I wonder if we should leave this here? Maybe we can rely on the user
+specifying the right values on the command line?
+
+> -	msm_write(port, UART_MR2_BITS_PER_CHAR_8 | UART_MR2_STOP_BIT_LEN_ONE,
+> -		  UART_MR2);	/* 8N1 */
+> -
+> -	if (baud < 300 || baud > 115200)
+> -		baud = 115200;
+> -	msm_set_baud_rate(port, baud);
+> -
+> -	msm_reset(port);
+> -
+> -	if (msm_port->is_uartdm) {
+
+msm_port is unused now. Please remove it in the same patch.
 
 -- 
 Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
