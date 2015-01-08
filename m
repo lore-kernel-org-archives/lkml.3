@@ -1,392 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756882AbbAHQvD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 11:51:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49144 "EHLO mx1.redhat.com"
+	id S1756956AbbAHQv4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 11:51:56 -0500
+Received: from mga11.intel.com ([192.55.52.93]:37696 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754622AbbAHQvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 11:51:00 -0500
-Subject: [RFC PATCH 5/5] audit: replace getname()/putname() hacks with
- reference counters
-From: Paul Moore <pmoore@redhat.com>
-To: linux-audit@redhat.com, viro@zeniv.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 08 Jan 2015 11:50:56 -0500
-Message-ID: <20150108165056.11316.83417.stgit@localhost>
-In-Reply-To: <20150108164514.11316.85331.stgit@localhost>
-References: <20150108164514.11316.85331.stgit@localhost>
-User-Agent: StGit/0.17.1-dirty
+	id S1756917AbbAHQvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 11:51:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,723,1413270000"; 
+   d="scan'208";a="634419830"
+Message-ID: <54AEB5A8.8020909@intel.com>
+Date: Thu, 08 Jan 2015 08:51:52 -0800
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+CC: linux-man@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Qiaowei Ren <qiaowei.ren@intel.com>
+Subject: Re: [PATCH] prctl.2: Add description of Intel MPX calls
+References: <1418683928-28894-1-git-send-email-dave.hansen@intel.com> <54AE5B8A.4080607@gmail.com>
+In-Reply-To: <54AE5B8A.4080607@gmail.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to ensure that filenames are not released before the audit
-subsystem is done with the strings there are a number of hacks built
-into the fs and audit subsystems around getname() and putname().  To
-say these hacks are "ugly" would be kind.
+On 01/08/2015 02:27 AM, Michael Kerrisk (man-pages) wrote:
+> Thanks for the patch. Quite a number of queries below. Could you
+> address those and resubmit?
 
-This patch removes the filename hackery in favor of a more
-conventional reference count based approach.  The diffstat below tells
-most of the story; lots of audit/fs specific code is replaced with a
-traditional reference count based approach that is easily understood,
-even by those not familiar with the audit and/or fs subsystems.
+Absolutely, thanks for the detailed review!
 
-Signed-off-by: Paul Moore <pmoore@redhat.com>
----
- fs/namei.c            |   29 +++++++-------
- include/linux/audit.h |    3 -
- include/linux/fs.h    |    9 +---
- kernel/audit.h        |   17 +-------
- kernel/auditsc.c      |  101 ++++---------------------------------------------
- 5 files changed, 26 insertions(+), 133 deletions(-)
+I'll address most of your comments in the new patch.
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 1c0d4c7..7cbe13a 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -117,15 +117,6 @@
-  * POSIX.1 2.4: an empty pathname is invalid (ENOENT).
-  * PATH_MAX includes the nul terminator --RR.
-  */
--void final_putname(struct filename *name)
--{
--	if (name->separate) {
--		__putname(name->name);
--		kfree(name);
--	} else {
--		__putname(name);
--	}
--}
- 
- #define EMBEDDED_NAME_MAX	(PATH_MAX - sizeof(struct filename))
- 
-@@ -144,6 +135,7 @@ getname_flags(const char __user *filename, int flags, int *empty)
- 	result = __getname();
- 	if (unlikely(!result))
- 		return ERR_PTR(-ENOMEM);
-+	result->refcnt = 1;
- 
- 	/*
- 	 * First, try to embed the struct filename inside the names_cache
-@@ -178,6 +170,7 @@ recopy:
- 		}
- 		result->name = kname;
- 		result->separate = true;
-+		result->refcnt = 1;
- 		max = PATH_MAX;
- 		goto recopy;
- 	}
-@@ -201,7 +194,7 @@ recopy:
- 	return result;
- 
- error:
--	final_putname(result);
-+	putname(result);
- 	return err;
- }
- 
-@@ -242,19 +235,25 @@ getname_kernel(const char * filename)
- 	strlcpy((char *)result->name, filename, len);
- 	result->uptr = NULL;
- 	result->aname = NULL;
-+	result->refcnt = 1;
- 	audit_getname(result);
- 
- 	return result;
- }
- 
--#ifdef CONFIG_AUDITSYSCALL
- void putname(struct filename *name)
- {
--	if (unlikely(!audit_dummy_context()))
--		return audit_putname(name);
--	final_putname(name);
-+	BUG_ON(name->refcnt <= 0);
-+
-+	if (--name->refcnt > 0)
-+		return;
-+
-+	if (name->separate) {
-+		__putname(name->name);
-+		kfree(name);
-+	} else
-+		__putname(name);
- }
--#endif
- 
- static int check_acl(struct inode *inode, int mask)
- {
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index 9333192..086b2b1 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -128,7 +128,6 @@ extern void __audit_syscall_entry(int major, unsigned long a0, unsigned long a1,
- extern void __audit_syscall_exit(int ret_success, long ret_value);
- extern struct filename *__audit_reusename(const __user char *uptr);
- extern void __audit_getname(struct filename *name);
--extern void audit_putname(struct filename *name);
- 
- #define AUDIT_INODE_PARENT	1	/* dentry represents the parent */
- #define AUDIT_INODE_HIDDEN	2	/* audit record should be hidden */
-@@ -347,8 +346,6 @@ static inline struct filename *audit_reusename(const __user char *name)
- }
- static inline void audit_getname(struct filename *name)
- { }
--static inline void audit_putname(struct filename *name)
--{ }
- static inline void __audit_inode(struct filename *name,
- 					const struct dentry *dentry,
- 					unsigned int flags)
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index e11d60c..df7a047 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2017,6 +2017,7 @@ struct filename {
- 	const char		*name;	/* pointer to actual string */
- 	const __user char	*uptr;	/* original userland pointer */
- 	struct audit_names	*aname;
-+	int			refcnt;
- 	bool			separate; /* should "name" be freed? */
- };
- 
-@@ -2036,6 +2037,7 @@ extern int filp_close(struct file *, fl_owner_t id);
- 
- extern struct filename *getname(const char __user *);
- extern struct filename *getname_kernel(const char *);
-+extern void putname(struct filename *name);
- 
- enum {
- 	FILE_CREATED = 1,
-@@ -2056,15 +2058,8 @@ extern void __init vfs_caches_init(unsigned long);
- 
- extern struct kmem_cache *names_cachep;
- 
--extern void final_putname(struct filename *name);
--
- #define __getname()		kmem_cache_alloc(names_cachep, GFP_KERNEL)
- #define __putname(name)		kmem_cache_free(names_cachep, (void *)(name))
--#ifndef CONFIG_AUDITSYSCALL
--#define putname(name)		final_putname(name)
--#else
--extern void putname(struct filename *name);
--#endif
- 
- #ifdef CONFIG_BLOCK
- extern int register_blkdev(unsigned int, const char *);
-diff --git a/kernel/audit.h b/kernel/audit.h
-index 3cdffad..1caa0d3 100644
---- a/kernel/audit.h
-+++ b/kernel/audit.h
-@@ -24,12 +24,6 @@
- #include <linux/skbuff.h>
- #include <uapi/linux/mqueue.h>
- 
--/* 0 = no checking
--   1 = put_count checking
--   2 = verbose put_count checking
--*/
--#define AUDIT_DEBUG 0
--
- /* AUDIT_NAMES is the number of slots we reserve in the audit_context
-  * for saving names from getname().  If we get more names we will allocate
-  * a name dynamically and also add those to the list anchored by names_list. */
-@@ -74,9 +68,8 @@ struct audit_cap_data {
- 	};
- };
- 
--/* When fs/namei.c:getname() is called, we store the pointer in name and
-- * we don't let putname() free it (instead we free all of the saved
-- * pointers at syscall exit time).
-+/* When fs/namei.c:getname() is called, we store the pointer in name and bump
-+ * the refcnt in the associated filename struct.
-  *
-  * Further, in fs/namei.c:path_lookup() we store the inode and device.
-  */
-@@ -86,7 +79,6 @@ struct audit_names {
- 	struct filename		*name;
- 	int			name_len;	/* number of chars to log */
- 	bool			hidden;		/* don't log this record */
--	bool			name_put;	/* call __putname()? */
- 
- 	unsigned long		ino;
- 	dev_t			dev;
-@@ -208,11 +200,6 @@ struct audit_context {
- 	};
- 	int fds[2];
- 	struct audit_proctitle proctitle;
--
--#if AUDIT_DEBUG
--	int		    put_count;
--	int		    ino_count;
--#endif
- };
- 
- extern u32 audit_ever_enabled;
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 98edf06..f743cda 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -866,33 +866,10 @@ static inline void audit_free_names(struct audit_context *context)
- {
- 	struct audit_names *n, *next;
- 
--#if AUDIT_DEBUG == 2
--	if (context->put_count + context->ino_count != context->name_count) {
--		int i = 0;
--
--		pr_err("%s:%d(:%d): major=%d in_syscall=%d"
--		       " name_count=%d put_count=%d ino_count=%d"
--		       " [NOT freeing]\n", __FILE__, __LINE__,
--		       context->serial, context->major, context->in_syscall,
--		       context->name_count, context->put_count,
--		       context->ino_count);
--		list_for_each_entry(n, &context->names_list, list) {
--			pr_err("names[%d] = %p = %s\n", i++, n->name,
--			       n->name->name ?: "(null)");
--		}
--		dump_stack();
--		return;
--	}
--#endif
--#if AUDIT_DEBUG
--	context->put_count  = 0;
--	context->ino_count  = 0;
--#endif
--
- 	list_for_each_entry_safe(n, next, &context->names_list, list) {
- 		list_del(&n->list);
--		if (n->name && n->name_put)
--			final_putname(n->name);
-+		if (n->name)
-+			putname(n->name);
- 		if (n->should_free)
- 			kfree(n);
- 	}
-@@ -1711,9 +1688,6 @@ static struct audit_names *audit_alloc_name(struct audit_context *context,
- 	list_add_tail(&aname->list, &context->names_list);
- 
- 	context->name_count++;
--#if AUDIT_DEBUG
--	context->ino_count++;
--#endif
- 	return aname;
- }
- 
-@@ -1752,19 +1726,8 @@ void __audit_getname(struct filename *name)
- 	struct audit_context *context = current->audit_context;
- 	struct audit_names *n;
- 
--	if (!context->in_syscall) {
--#if AUDIT_DEBUG == 2
--		pr_err("%s:%d(:%d): ignoring getname(%p)\n",
--		       __FILE__, __LINE__, context->serial, name);
--		dump_stack();
--#endif
-+	if (!context->in_syscall)
- 		return;
--	}
--
--#if AUDIT_DEBUG
--	/* The filename _must_ have a populated ->name */
--	BUG_ON(!name->name);
--#endif
- 
- 	n = audit_alloc_name(context, AUDIT_TYPE_UNKNOWN);
- 	if (!n)
-@@ -1772,56 +1735,13 @@ void __audit_getname(struct filename *name)
- 
- 	n->name = name;
- 	n->name_len = AUDIT_NAME_FULL;
--	n->name_put = true;
- 	name->aname = n;
-+	name->refcnt++;
- 
- 	if (!context->pwd.dentry)
- 		get_fs_pwd(current->fs, &context->pwd);
- }
- 
--/* audit_putname - intercept a putname request
-- * @name: name to intercept and delay for putname
-- *
-- * If we have stored the name from getname in the audit context,
-- * then we delay the putname until syscall exit.
-- * Called from include/linux/fs.h:putname().
-- */
--void audit_putname(struct filename *name)
--{
--	struct audit_context *context = current->audit_context;
--
--	BUG_ON(!context);
--	if (!name->aname || !context->in_syscall) {
--#if AUDIT_DEBUG == 2
--		pr_err("%s:%d(:%d): final_putname(%p)\n",
--		       __FILE__, __LINE__, context->serial, name);
--		if (context->name_count) {
--			struct audit_names *n;
--			int i = 0;
--
--			list_for_each_entry(n, &context->names_list, list)
--				pr_err("name[%d] = %p = %s\n", i++, n->name,
--				       n->name->name ?: "(null)");
--			}
--#endif
--		final_putname(name);
--	}
--#if AUDIT_DEBUG
--	else {
--		++context->put_count;
--		if (context->put_count > context->name_count) {
--			pr_err("%s:%d(:%d): major=%d in_syscall=%d putname(%p)"
--			       " name_count=%d put_count=%d\n",
--			       __FILE__, __LINE__,
--			       context->serial, context->major,
--			       context->in_syscall, name->name,
--			       context->name_count, context->put_count);
--			dump_stack();
--		}
--	}
--#endif
--}
--
- /**
-  * __audit_inode - store the inode and device from a lookup
-  * @name: name being audited
-@@ -1842,11 +1762,6 @@ void __audit_inode(struct filename *name, const struct dentry *dentry,
- 	if (!name)
- 		goto out_alloc;
- 
--#if AUDIT_DEBUG
--	/* The struct filename _must_ have a populated ->name */
--	BUG_ON(!name->name);
--#endif
--
- 	/*
- 	 * If we have a pointer to an audit_names entry already, then we can
- 	 * just use it directly if the type is correct.
-@@ -1893,9 +1808,10 @@ out_alloc:
- 	n = audit_alloc_name(context, AUDIT_TYPE_UNKNOWN);
- 	if (!n)
- 		return;
--	if (name)
--		/* no need to set ->name_put as the original will cleanup */
-+	if (name) {
- 		n->name = name;
-+		name->refcnt++;
-+	}
- 
- out:
- 	if (parent) {
-@@ -1995,8 +1911,7 @@ void __audit_inode_child(const struct inode *parent,
- 		if (found_parent) {
- 			found_child->name = found_parent->name;
- 			found_child->name_len = AUDIT_NAME_FULL;
--			/* don't call __putname() */
--			found_child->name_put = false;
-+			found_child->name->refcnt++;
- 		}
- 	}
- 
+>> +The application must have allocated virtual space for the bounds
+>> +directory and placed its location in bndcfgu before enabling management.
+> 
+> s/bndcfgu/the bndcfgu register/
+> 
+> So, let me make sure I understood the previous sentence correctly.
+> Is this a good formulation:
+> 
+>     Before enabling MPX management using PR_MPX_ENABLE_MANAGEMENT, 
+>     the application must first have allocated a user-space buffer for
+>     the bounds directory and placed the location of that directory in
+>     the bndcfgu register.
+> ?
+> 
+> If so, I think the patch could be reworded closer to that text, since
+> it makes things a little clearer.
+
+That looks good to me.
+
+> By the way, what size should allocated for the buffer? And what can
+> wrong if the allocated buffer is too small?
+
+4MB on 32-bit and 2GB on 64-bit.
+
+If the buffer is too small, the hardware might attempt to read a
+non-allocated memory area (and SEGV).  The kernel would notice that the
+buffer is too small probably during the first bounds fault touching the
+unallocated area of the table.
+
+>> +Once management is enabled, the bounds directory may not be moved.
+> 
+> A few things are not so clear to me, even after reading Jon's article
+> and Documentation/x86/intel_mpx.txt. In particular, who has responsibility
+> for populating the bounds directory, and what is its format? Is this 
+> all invisible to the application? (Because I'm not quite clear on these
+> points, I'm not sure if anything should be said in the man page.)
+
+This is all best spelled out in the documentation available here:
+
+	https://software.intel.com/en-us/intel-isa-extensions
+
+The compiler generates code which loads the bounds values in to the
+bounds registers.  There are special instructions that "spill" the
+bounds registers in to the tables.
+
+So, the instructions in the application do it, but it's transparent and
+doesn't require any source modifications.
+
+>>  .P
+>>  The following options are available since Linux 3.5.
+>>  .\" commit fe8c7f5cbf91124987106faa3bdf0c8b955c4cf7
+> 
+> Could you add some text to the patch to explain the ENXIO error?
+
+Sure.
+
+> What are the semantics of the MPX state with respect to the
+> child of a fork(2)? (Probably, the man page needs to detail this.)
+
+The tables are inherited just as any other memory contents are.  The
+register contents are inherited just as any other register would be.
+
+> What happens to the MPX state during an execve(2)? (Probably, 
+> the man page needs to detail this.)
+
+The tables go away at exec just like any other memory.  The BNDCFGU
+register (the one holding the location of the tables) is zeroed.
+
+> Is there a way to discover the current state (enabled/disabled)
+> of MPX management? (It appears not, but I would like to confirm.)
+
+There is not.  It's not something I really expect an app to want to turn
+on and off or need to query.  It might not be a bad idea to expose it in
+/proc somehow.
+
+Also, FWIW, you could always attach with a debugger and check out the
+BNDCFGU contents if you _practically_ wanted to check for MPX being
+used.  It wouldn't tell you if bounds management is enabled, but it
+would be a really good indicator.
+
+> I see that the prctl() operations fail to check that unused arguments
+> are zero. See my patch sent in a separate mail to LKML et al.
+
+OK, fair enough.
 
