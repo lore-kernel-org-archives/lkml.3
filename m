@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932241AbbAHN2W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 08:28:22 -0500
-Received: from mail.kapsi.fi ([217.30.184.167]:42999 "EHLO mail.kapsi.fi"
+	id S1756702AbbAHN2J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 08:28:09 -0500
+Received: from mail.kapsi.fi ([217.30.184.167]:43854 "EHLO mail.kapsi.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756797AbbAHN2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 08:28:17 -0500
+	id S1754315AbbAHN2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 08:28:05 -0500
 From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
 To: swarren@wwwdotorg.org, thierry.reding@gmail.com, gnurou@gmail.com,
         pdeschrijver@nvidia.com, rjw@rjwysocki.net, viresh.kumar@linaro.org
@@ -15,9 +15,9 @@ Cc: mturquette@linaro.org, pwalmsley@nvidia.com, vinceh@nvidia.com,
         linux-arm-kernel@lists.infradead.org, tuomas.tynkkynen@iki.fi,
         Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
         Mikko Perttunen <mikko.perttunen@kapsi.fi>
-Subject: [PATCH v7 07/16] clk: tegra: Save/restore CCLKG_BURST_POLICY on suspend
-Date: Thu,  8 Jan 2015 15:22:10 +0200
-Message-Id: <1420723339-30735-8-git-send-email-mikko.perttunen@kapsi.fi>
+Subject: [PATCH v7 08/16] clk: tegra: Add the DFLL as a possible parent of the cclk_g clock
+Date: Thu,  8 Jan 2015 15:22:11 +0200
+Message-Id: <1420723339-30735-9-git-send-email-mikko.perttunen@kapsi.fi>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <1420723339-30735-1-git-send-email-mikko.perttunen@kapsi.fi>
 References: <1420723339-30735-1-git-send-email-mikko.perttunen@kapsi.fi>
@@ -30,61 +30,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 
-Save and restore this register since the LP1 restore assembly routines
-fiddle with it. Otherwise the CPU would keep running on PLLX after
-resume from suspend even when DFLL was the original clocksource.
+The DFLL clocksource was missing from the list of possible parents for
+the fast CPU cluster. Add it to the list.
 
 Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 Signed-off-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
 ---
- drivers/clk/tegra/clk-tegra124.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/clk/tegra/clk-tegra-super-gen4.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
-index 623b77f..9354c42 100644
---- a/drivers/clk/tegra/clk-tegra124.c
-+++ b/drivers/clk/tegra/clk-tegra124.c
-@@ -89,6 +89,8 @@
- #define PMC_PLLM_WB0_OVERRIDE 0x1dc
- #define PMC_PLLM_WB0_OVERRIDE_2 0x2b0
+diff --git a/drivers/clk/tegra/clk-tegra-super-gen4.c b/drivers/clk/tegra/clk-tegra-super-gen4.c
+index feb3201..f1f4410 100644
+--- a/drivers/clk/tegra/clk-tegra-super-gen4.c
++++ b/drivers/clk/tegra/clk-tegra-super-gen4.c
+@@ -44,7 +44,9 @@ static const char *sclk_parents[] = { "clk_m", "pll_c_out1", "pll_p_out4",
  
-+#define CCLKG_BURST_POLICY 0x368
-+
- #define UTMIP_PLL_CFG2 0x488
- #define UTMIP_PLL_CFG2_STABLE_COUNT(x) (((x) & 0xffff) << 6)
- #define UTMIP_PLL_CFG2_ACTIVE_DLY_COUNT(x) (((x) & 0x3f) << 18)
-@@ -121,6 +123,8 @@
- #ifdef CONFIG_PM_SLEEP
- static struct cpu_clk_suspend_context {
- 	u32 clk_csite_src;
-+	u32 cclkg_burst;
-+	u32 cclkg_divider;
- } tegra124_cpu_clk_sctx;
- #endif
+ static const char *cclk_g_parents[] = { "clk_m", "pll_c", "clk_32k", "pll_m",
+ 					"pll_p", "pll_p_out4", "unused",
+-					"unused", "pll_x" };
++					"unused", "pll_x", "unused", "unused",
++					"unused", "unused", "unused", "unused",
++					"dfllCPU_out" };
  
-@@ -1331,12 +1335,22 @@ static void tegra124_cpu_clock_suspend(void)
- 	tegra124_cpu_clk_sctx.clk_csite_src =
- 				readl(clk_base + CLK_SOURCE_CSITE);
- 	writel(3 << 30, clk_base + CLK_SOURCE_CSITE);
-+
-+	tegra124_cpu_clk_sctx.cclkg_burst =
-+				readl(clk_base + CCLKG_BURST_POLICY);
-+	tegra124_cpu_clk_sctx.cclkg_divider =
-+				readl(clk_base + CCLKG_BURST_POLICY + 4);
- }
- 
- static void tegra124_cpu_clock_resume(void)
- {
- 	writel(tegra124_cpu_clk_sctx.clk_csite_src,
- 				clk_base + CLK_SOURCE_CSITE);
-+
-+	writel(tegra124_cpu_clk_sctx.cclkg_burst,
-+					clk_base + CCLKG_BURST_POLICY);
-+	writel(tegra124_cpu_clk_sctx.cclkg_divider,
-+					clk_base + CCLKG_BURST_POLICY + 4);
- }
- #endif
- 
+ static const char *cclk_lp_parents[] = { "clk_m", "pll_c", "clk_32k", "pll_m",
+ 					 "pll_p", "pll_p_out4", "unused",
 -- 
 2.2.1
 
