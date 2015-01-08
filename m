@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757385AbbAHSlq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 13:41:46 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:53399 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755517AbbAHSlp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 13:41:45 -0500
-From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-To: tj@kernel.org
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Subject: [PATCH] ahci: Use dev_info() to inform about the lack of Device Sleep support
-Date: Thu,  8 Jan 2015 19:41:34 +0100
-Message-Id: <1420742494-5017-1-git-send-email-gabriele.mzt@gmail.com>
-X-Mailer: git-send-email 2.1.4
+	id S1757407AbbAHSlw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 13:41:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43346 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755517AbbAHSlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 13:41:49 -0500
+Date: Thu, 8 Jan 2015 10:41:46 -0800 (PST)
+From: Sage Weil <sweil@redhat.com>
+X-X-Sender: sage@cobra.newdream.net
+To: torvalds@linux-foundation.org
+cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Ceph fixes for -rc4
+Message-ID: <alpine.DEB.2.00.1501081040050.3041@cobra.newdream.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to the Serial ATA AHCI specification, Device Sleep is an
-optional feature and as such no errors should be printed if it's
-missing. Keep informing users, but use dev_info() instead of dev_err().
+Hi Linus,
 
-Signed-off-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
----
- drivers/ata/libahci.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Please pull the following Ceph fixes from
 
-diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-index 97683e4..61a9c07 100644
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -2003,7 +2003,7 @@ static void ahci_set_aggressive_devslp(struct ata_port *ap, bool sleep)
- 
- 	devslp = readl(port_mmio + PORT_DEVSLP);
- 	if (!(devslp & PORT_DEVSLP_DSP)) {
--		dev_err(ap->host->dev, "port does not support device sleep\n");
-+		dev_info(ap->host->dev, "port does not support device sleep\n");
- 		return;
- 	}
- 
--- 
-2.1.4
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client for-linus
 
+These are both pretty trivial: a sparse warning fix and size_t printk 
+thing.
+
+Thanks!
+sage
+
+----------------------------------------------------------------
+Ilya Dryomov (2):
+      ceph: use %zu for len in ceph_fill_inline_data()
+      libceph: fix sparse endianness warnings
+
+ fs/ceph/addr.c                  | 2 +-
+ include/linux/ceph/osd_client.h | 4 ++--
+ net/ceph/auth_x.c               | 2 +-
+ net/ceph/mon_client.c           | 2 +-
+ 4 files changed, 5 insertions(+), 5 deletions(-)
