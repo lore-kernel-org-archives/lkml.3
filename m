@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757277AbbAHRxE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 12:53:04 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:9252 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781AbbAHRxC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 12:53:02 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-a8-54aec3fca83a
-From: Rafal Krypa <r.krypa@samsung.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: James Morris <james.l.morris@oracle.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rafal Krypa <r.krypa@samsung.com>
-Subject: [PATCH] smack: Add missing logging in bidirectional UDS connect check
-Date: Thu, 08 Jan 2015 18:52:45 +0100
-Message-id: <1420739565-11392-1-git-send-email-r.krypa@samsung.com>
-X-Mailer: git-send-email 2.1.4
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBJMWRmVeSWpSXmKPExsVy+t/xy7p/Dq8LMZi91tri3rZfbBZ9j4Ms
-	Lu+aw2bxoecRm8XbSSuYLc5fOMfuwOZxbXekx8ent1g8+rasYvQ4un8Rm8fnTXIBrFFcNimp
-	OZllqUX6dglcGVf/zWEueMFW8WHBKeYGxn2sXYycHBICJhIrnuyBssUkLtxbz9bFyMUhJLCU
-	UWJbVzMLhNPLJPHqy00mkCo2AXWJpfN72UBsEQEdiX17nrODFDEL7GOUOLFnPwtIQljAT6L3
-	7EqwBhYBVYn76w6CreAVcJb42gDRLCEgJ3H++E/mCYzcCxgZVjGKppYmFxQnpeca6RUn5haX
-	5qXrJefnbmKEhMbXHYxLj1kdYhTgYFTi4f1wf22IEGtiWXFl7iFGCQ5mJRFeHc91IUK8KYmV
-	ValF+fFFpTmpxYcYmTg4pRoYNYU73A63n/cSlpPmMl9U/uLAjJNhnj05Yuu/LLSxstR8yGez
-	UzlWq+nTu+unH7ZIbwxcdn6a5ar1s3TFcu2eTLhfsjRvyVzlvDdW0nJzbY2/L97j5/JaQb1E
-	YUXUvNJqrR13NL98SD4QHrKkZdpkhsDu7Z3n3s2sUT4fvnlZXY6iVkaqtVarEktxRqKhFnNR
-	cSIAdFO7N+sBAAA=
+	id S932230AbbAHRzr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 12:55:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42461 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751669AbbAHRzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 12:55:46 -0500
+Message-ID: <54AEC470.50509@redhat.com>
+Date: Thu, 08 Jan 2015 23:24:56 +0530
+From: Pratyush Anand <panand@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: "tixy@linaro.org" <tixy@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "ananth@in.ibm.com" <ananth@in.ibm.com>,
+        "sandeepa.prabhu@linaro.org" <sandeepa.prabhu@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "anil.s.keshavamurthy@intel.com" <anil.s.keshavamurthy@intel.com>,
+        "oleg@redhat.com" <oleg@redhat.com>,
+        "masami.hiramatsu.pt@hitachi.com" <masami.hiramatsu.pt@hitachi.com>,
+        "wcohen@redhat.com" <wcohen@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC 8/8] ARM64: Add uprobe support
+References: <cover.1420038188.git.panand@redhat.com> <0694af6935f9c6873ef8d25ad51630a40a74a116.1420038188.git.panand@redhat.com> <20150108170324.GT11583@arm.com>
+In-Reply-To: <20150108170324.GT11583@arm.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During UDS connection check, both sides are checked for write access to
-the other side. But only the first check is performed with audit support.
-The second one didn't produce any audit logs. This simple patch fixes that.
 
-Signed-off-by: Rafal Krypa <r.krypa@samsung.com>
----
- security/smack/smack_lsm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index 8716ade..a688f7b 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -3333,7 +3333,7 @@ static int smack_unix_stream_connect(struct sock *sock,
- 		if (rc == 0) {
- 			okp = osp->smk_out;
- 			skp = ssp->smk_in;
--			rc = smk_access(okp, skp, MAY_WRITE, NULL);
-+			rc = smk_access(okp, skp, MAY_WRITE, &ad);
- 			rc = smk_bu_note("UDS connect", okp, skp,
- 						MAY_WRITE, rc);
- 		}
--- 
-2.1.4
+On Thursday 08 January 2015 10:33 PM, Will Deacon wrote:
+> On Wed, Dec 31, 2014 at 03:21:24PM +0000, Pratyush Anand wrote:
+>> This patch adds support for uprobe on ARM64 architecture.
+>>
+>> Unit test for following has been done so far and they have been found
+>> working
+>> 1. Normal instruction, which can be probed like sub, ldr, add etc.
+>> 2. Instructions which can be simulated like ret.
+>> 3. uretprobe
+>
+> I'm assuming that means you don't support compat (AArch32) tasks with this?
 
+Hummm.. Yes, compat not yet supported.
+
+I will come back on this.
+
+~Pratyush
+
+> How do you enforce that?
+>
+> Will
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
