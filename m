@@ -1,81 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751047AbbAHFEa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 00:04:30 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:41440 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705AbbAHFE3 (ORCPT
+	id S1751204AbbAHFLX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 00:11:23 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:49438 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707AbbAHFLW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 00:04:29 -0500
+	Thu, 8 Jan 2015 00:11:22 -0500
+X-Original-SENDERIP: 10.177.220.203
+X-Original-MAILFROM: namhyung@kernel.org
+Date: Thu, 8 Jan 2015 14:09:20 +0900
+From: Namhyung Kim <namhyung@kernel.org>
+To: Wang Nan <wangnan0@huawei.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lizefan@huawei.com, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Jiri Olsa <jolsa@kernel.org>
+Subject: Re: [PATCH] perf: fix building error in x86_64 when dwarf unwind is
+ on
+Message-ID: <20150108050920.GA7268@sejong>
+References: <1419643571-62764-1-git-send-email-wangnan0@huawei.com>
+ <20141229075607.GC6081@sejong>
+ <54A10D53.2010800@huawei.com>
+ <54AC9FC0.7050902@huawei.com>
+ <20150107054004.GA849@sejong>
+ <20150107083920.GF6243@krava.brq.redhat.com>
+ <54AD2672.1010009@huawei.com>
+ <CAM9d7chGXX68B54igX5O+3ZEu322cW-Xfoz6Wen8=D8iQpyH6g@mail.gmail.com>
+ <54ADDDAF.8060704@huawei.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.11.1501072228440.1322@knanqh.ubzr>
-References: <alpine.LFD.2.11.1501041547050.18844@knanqh.ubzr>
-	<CA+55aFy5yB2d-1iXEUtU+puua4TAmV0kZF_7TBhXO1Y4Khqb9Q@mail.gmail.com>
-	<alpine.LFD.2.11.1501041609290.18844@knanqh.ubzr>
-	<20150104212659.GC12302@n2100.arm.linux.org.uk>
-	<alpine.LFD.2.11.1501042343240.18844@knanqh.ubzr>
-	<CAHkRjk6Vg_AR8rFNYzPcnPwfKZqaVuaCoG67CEVPRgp1-bDetA@mail.gmail.com>
-	<CA+55aFypmZExpCvD699TQOs1NDK_mT-_rR3UWOdxdzkOKvbdoA@mail.gmail.com>
-	<alpine.LFD.2.11.1501071354130.1322@knanqh.ubzr>
-	<CA+55aFw70ZvHKH+8_aS7E7FZZuuWQA++zGQuSmuvDE3DWU+x3A@mail.gmail.com>
-	<alpine.LFD.2.11.1501071446460.1322@knanqh.ubzr>
-	<20150107205346.GO12302@n2100.arm.linux.org.uk>
-	<CAHkRjk6FT+WJ3u9qhfB-EMcqhOHGQSe4dW4MpZF6vE97B0vD0A@mail.gmail.com>
-	<CA+55aFz0cjsS4BTwtBt9P1pKHmPjXPYnOvFuP07UVoek7jSYLw@mail.gmail.com>
-	<alpine.LFD.2.11.1501071914250.1322@knanqh.ubzr>
-	<CA+55aFyKz2tZDq6ANjKVmuvipKtjr+UP4c7ypNXtbXBcapOpKg@mail.gmail.com>
-	<alpine.LFD.2.11.1501072228440.1322@knanqh.ubzr>
-Date: Wed, 7 Jan 2015 21:04:28 -0800
-X-Google-Sender-Auth: qJpbapyK6pAUciif6HSETkCFsKA
-Message-ID: <CA+55aFyDQ4Mk8hHOvH-2nhpDgN+gBgiLf6=dLVcjKC5uetqzJw@mail.gmail.com>
-Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
- pyaudio (and probably more)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pavel Machek <pavel@ucw.cz>, Marc Zyngier <marc.zyngier@arm.com>,
-        kernel list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <54ADDDAF.8060704@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 7, 2015 at 8:56 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
->>
->> Yes, I actually would mind, unless you have a damn good reason for it.
->
-> Consistency.
+On Thu, Jan 08, 2015 at 09:30:23AM +0800, Wang Nan wrote:
+> On 2015/1/7 21:50, Namhyung Kim wrote:
+> > On Wed, Jan 7, 2015 at 9:28 PM, Wang Nan <wangnan0@huawei.com> wrote:
+> >> On 2015/1/7 16:39, Jiri Olsa wrote:
+> >>> On Wed, Jan 07, 2015 at 02:40:04PM +0900, Namhyung Kim wrote:
+> >>>> diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+> >>>> index 67a03a825b3c..eb3e2f3e14b4 100644
+> >>>> --- a/tools/perf/Makefile.perf
+> >>>> +++ b/tools/perf/Makefile.perf
+> >>>> @@ -462,10 +462,12 @@ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+> >>>>  # Benchmark modules
+> >>>>  BUILTIN_OBJS += $(OUTPUT)bench/sched-messaging.o
+> >>>>  BUILTIN_OBJS += $(OUTPUT)bench/sched-pipe.o
+> >>>> +ifeq ($(ARCH),x86)
+> >>>>  ifeq ($(RAW_ARCH),x86_64)
+> >>>>  BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy-x86-64-asm.o
+> >>>>  BUILTIN_OBJS += $(OUTPUT)bench/mem-memset-x86-64-asm.o
+> >>>>  endif
+> >>>> +endif
+> >>>
+> >>> isn't the check for x86 superfluous here? the x86_64 check is stronger
+> >>>
+> >>> otherwise it looks ok to me.. Wang Nan, could you please check
+> >>> if it fixes the issue for you?
+> >>>
+> >>
+> >> Sorry, although Namhyung Kim's patch solves my ARCH=x86 problem, it breaks ARM building:
+> >>
+> >> ...
+> >> | bench/../../../arch/x86/lib/memcpy_64.S: Assembler messages:
+> >> | bench/../../../arch/x86/lib/memcpy_64.S:27: Error: junk at end of line, first unrecognized character is `,'
+> >> | bench/../../../arch/x86/lib/memcpy_64.S:29: Error: bad instruction `movq %rdi,%rax'
+> >> | bench/../../../arch/x86/lib/memcpy_64.S:30: Error: bad instruction `movq %rdx,%rcx'
+> >> | bench/../../../arch/x86/lib/memcpy_64.S:31: Error: bad instruction `shrq $3,%rcx'
+> >> | bench/../../../arch/x86/lib/memcpy_64.S:32: Error: bad instruction `andl $7,%edx'
+> >> ...
+> > 
+> > Strange.. this code is included only if ARCH=x86 in config/Makefile:
+> > 
+> > # Additional ARCH settings for x86
+> > ifeq ($(ARCH),x86)
+> >   ifeq (${IS_64_BIT}, 1)
+> >     CFLAGS += -DHAVE_ARCH_X86_64_SUPPORT
+> >     ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
+> >     LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
+> >   else
+> >     LIBUNWIND_LIBS = -lunwind -lunwind-x86
+> >   endif
+> >   NO_PERF_REGS := 0
+> > endif
+> > 
+> > Did your original patch build it without a problem?
+> > 
+> 
+> My original patch is free from this problem.
+> 
+> bench/mem-memset-x86-64-asm.S doesn't use ARCH_INCLUDE, it direct include "../../../arch/x86/lib/memset_64.S".
 
-Fuck no.
+Ah, got it.
 
-"Completely made up number that you cannot explain" is not consistency.
 
-The *current* situation is consistency. I can - and have in this very
-thread - explained what bogomips is in just a sentence or two.
+> 
+> > 
+> >>
+> >> It builds x86_64 bench when I corss compiling perf for arm (use ARCH=arm). This is caused by Makefile.perf:
+> >>
+> >> ...
+> >> BUILTIN_OBJS += $(OUTPUT)bench/sched-pipe.o
+> >> ifeq ($(RAW_ARCH),x86_64)
+> >> BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy-x86-64-asm.o
+> >> BUILTIN_OBJS += $(OUTPUT)bench/mem-memset-x86-64-asm.o
+> >> endif
+> >> BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy.o
+> >> ...
+> >>
+> >> Which rely on RAW_ARCH, but RAW_ARCH is not a cross-compiling-friendly variable now.
+> > 
+> > That's why I added the extra ARCH check.
+> > 
+> 
+> With your additional ARCH check, ARM compiling is passed. However I suggest you not to
+> use $(RAW_ARCH) directly, because it is get from "uname -m", which reflects the arch of
+> build machine, not the arch of host machine (the machine perf will run on).
+> 
+> What about this:
+> 
+> ---
+> diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+> index 67a03a82..1f71a32 100644
+> --- a/tools/perf/Makefile.perf
+> +++ b/tools/perf/Makefile.perf
+> @@ -462,10 +462,12 @@ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+>  # Benchmark modules
+>  BUILTIN_OBJS += $(OUTPUT)bench/sched-messaging.o
+>  BUILTIN_OBJS += $(OUTPUT)bench/sched-pipe.o
+> -ifeq ($(RAW_ARCH),x86_64)
+> +ifeq ($(ARCH), x86)
+> +ifeq ($(IS_64_BIT), 1)
+>  BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy-x86-64-asm.o
+>  BUILTIN_OBJS += $(OUTPUT)bench/mem-memset-x86-64-asm.o
+>  endif
+> +endif
+>  BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy.o
+>  BUILTIN_OBJS += $(OUTPUT)bench/futex-hash.o
+>  BUILTIN_OBJS += $(OUTPUT)bench/futex-wake.o
 
-You are just making shit up. Bad shit. Get off the drugs, because it's
-not the good kind.
+Looks good to me!
 
-> On ARM we just can't find the CPU clock in a generic way.
-
-Cry me a river.
-
-So you want to make bogomips a totally random number, that has no
-meaning, no correlation to any clocksource, and no correlation to cpu
-frequency either?
-
-And you argue for this though exactly WHAT? "Consistency".
-
-Bullshit.
-
-This whole thread is now marked as "muted" for me, because I can't
-take the BS any more. You make no sense.
-
-You guys playing games with bogomips was what broke things in the
-first place, and now you want to play *more* games?
-
-You're crazy. Go away. Or don't. I won't be seeing your emails anyway,
-so why would I care?
-
-                            Linus
+Thanks,
+Namhyung
