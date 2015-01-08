@@ -1,170 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586AbbAHH65 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 02:58:57 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:48117 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752964AbbAHH6y (ORCPT
+	id S1753666AbbAHIAh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 03:00:37 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:33746 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752290AbbAHIAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 02:58:54 -0500
-X-Original-SENDERIP: 10.177.220.203
-X-Original-MAILFROM: namhyung@kernel.org
-Date: Thu, 8 Jan 2015 16:56:53 +0900
-From: Namhyung Kim <namhyung@kernel.org>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: acme@redhat.com, peterz@infradead.org, jolsa@kernel.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org,
-        bp@suse.de, linux-arch@vger.kernel.org, Alexey.Brodkin@synopsys.com
-Subject: Re: [PATCH 5/5] perf tools: [uclibc] provide stub for
- pthread_attr_setaffinity_np
-Message-ID: <20150108075653.GG7268@sejong>
-References: <1420552335-26886-1-git-send-email-vgupta@synopsys.com>
- <1420552335-26886-6-git-send-email-vgupta@synopsys.com>
+	Thu, 8 Jan 2015 03:00:35 -0500
+Date: Thu, 8 Jan 2015 09:00:26 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Taesoo kim <taesoo@gatech.edu>, yrl.pp-manager.tt@hitachi.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 0/4] perf/urgent fixes
+Message-ID: <20150108080026.GA18918@gmail.com>
+References: <1420253737-2488-1-git-send-email-acme@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1420552335-26886-6-git-send-email-vgupta@synopsys.com>
+In-Reply-To: <1420253737-2488-1-git-send-email-acme@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 07:22:15PM +0530, Vineet Gupta wrote:
-> uClibc Linuxthreads.old doesnt support pthread_attr_setaffinity_np()
-> call
-> 
-> ----------------->8-----------------------
->   CC       bench/futex-hash.o
->   CC       bench/futex-wake.o
-> bench/futex-hash.c: In function 'bench_futex_hash':
-> bench/futex-hash.c:161:3: error: implicit declaration of function
-> 'pthread_attr_setaffinity_np' [-Werror=implicit-function-declaration]
->    ret = pthread_attr_setaffinity_np(&thread_attr, sizeof(cpu_set_t),
-> &cpu);
->    ^
-> bench/futex-hash.c:161:3: error: nested extern declaration of
-> 'pthread_attr_setaffinity_np' [-Werror=nested-externs]
-> ----------------->8-----------------------
-> 
-> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-> ---
->  tools/perf/bench/futex.h                    | 13 +++++++++++++
->  tools/perf/config/Makefile                  |  6 ++++++
->  tools/perf/config/feature-checks/Makefile   |  4 ++++
->  tools/perf/config/feature-checks/test-all.c |  5 +++++
->  4 files changed, 28 insertions(+)
 
-It seems that you fotgot to add the real test file
-(test-pthread_attr_setaffinity_np.c?) here..
+* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
 
-Thanks,
-Namhyung
-
-
+> Hi Ingo,
 > 
-> diff --git a/tools/perf/bench/futex.h b/tools/perf/bench/futex.h
-> index 71f2844cf97f..7ed22ff1e1ac 100644
-> --- a/tools/perf/bench/futex.h
-> +++ b/tools/perf/bench/futex.h
-> @@ -68,4 +68,17 @@ futex_cmp_requeue(u_int32_t *uaddr, u_int32_t val, u_int32_t *uaddr2, int nr_wak
->  		 val, opflags);
->  }
->  
-> +#ifndef HAVE_PTHREAD_ATTR_SETAFFINITY_NP
-> +#include <pthread.h>
-> +static inline int pthread_attr_setaffinity_np(pthread_attr_t *attr,
-> +					      size_t cpusetsize,
-> +					      cpu_set_t *cpuset)
-> +{
-> +	attr = attr;
-> +	cpusetsize = cpusetsize;
-> +	cpuset = cpuset;
-> +	return 0;
-> +}
-> +#endif
-> +
->  #endif /* _FUTEX_H */
-> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-> index 5d4b039fe1ed..6b59662136fa 100644
-> --- a/tools/perf/config/Makefile
-> +++ b/tools/perf/config/Makefile
-> @@ -198,6 +198,7 @@ CORE_FEATURE_TESTS =			\
->  	libpython-version		\
->  	libslang			\
->  	libunwind			\
-> +	pthread-attr-setaffinity-np	\
->  	stackprotector-all		\
->  	timerfd				\
->  	libdw-dwarf-unwind		\
-> @@ -226,6 +227,7 @@ VF_FEATURE_TESTS =			\
->  	libelf-getphdrnum		\
->  	libelf-mmap			\
->  	libpython-version		\
-> +	pthread-attr-setaffinity-np	\
->  	stackprotector-all		\
->  	timerfd				\
->  	libunwind-debug-frame		\
-> @@ -301,6 +303,10 @@ ifeq ($(feature-sync-compare-and-swap), 1)
->    CFLAGS += -DHAVE_SYNC_COMPARE_AND_SWAP_SUPPORT
->  endif
->  
-> +ifeq ($(feature-pthread-attr-setaffinity-np), 1)
-> +  CFLAGS += -DHAVE_PTHREAD_ATTR_SETAFFINITY_NP
-> +endif
-> +
->  ifndef NO_BIONIC
->    $(call feature_check,bionic)
->    ifeq ($(feature-bionic), 1)
-> diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-> index 53f19b5dbc37..e9b99bb29348 100644
-> --- a/tools/perf/config/feature-checks/Makefile
-> +++ b/tools/perf/config/feature-checks/Makefile
-> @@ -25,6 +25,7 @@ FILES=					\
->  	test-libslang.bin		\
->  	test-libunwind.bin		\
->  	test-libunwind-debug-frame.bin	\
-> +	test-pthread-attr-setaffinity-np.bin	\
->  	test-stackprotector-all.bin	\
->  	test-timerfd.bin		\
->  	test-libdw-dwarf-unwind.bin	\
-> @@ -47,6 +48,9 @@ test-all.bin:
->  test-hello.bin:
->  	$(BUILD)
->  
-> +test-pthread-attr-setaffinity-np.bin:
-> +	$(BUILD) -Werror
-> +
->  test-stackprotector-all.bin:
->  	$(BUILD) -Werror -fstack-protector-all
->  
-> diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
-> index 652e0098eba6..6d4d09323922 100644
-> --- a/tools/perf/config/feature-checks/test-all.c
-> +++ b/tools/perf/config/feature-checks/test-all.c
-> @@ -97,6 +97,10 @@
->  # include "test-zlib.c"
->  #undef main
->  
-> +#define main main_test_pthread_attr_setaffinity_np
-> +# include "test-pthread_attr_setaffinity_np.c"
-> +#undef main
-> +
->  int main(int argc, char *argv[])
->  {
->  	main_test_libpython();
-> @@ -121,6 +125,7 @@ int main(int argc, char *argv[])
->  	main_test_libdw_dwarf_unwind();
->  	main_test_sync_compare_and_swap(argc, argv);
->  	main_test_zlib();
-> +	main_test_pthread_attr_setaffinity_np();
->  
->  	return 0;
->  }
-> -- 
-> 1.9.1
+> 	Please consider pulling,
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> - Arnaldo
+> 
+> The following changes since commit 5b5e76218fbdbb71a01d5480f289ead624232876:
+> 
+>   Merge tag 'perf-urgent-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent (2015-01-01 22:24:36 +0100)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-urgent-for-mingo
+> 
+> for you to fetch changes up to e7024fc3783317608b8e07048116a72a7d1cd26d:
+> 
+>   perf diff: Fix to sort by baseline field by default (2015-01-02 23:27:18 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/urgent fixes:
+> 
+> - 'perf probe' should fall back to find probe point in symbols when failing
+>   to do so in a debuginfo file (Masami Hiramatsu)
+> 
+> - Fix 'perf probe' crash in dwarf_getcfi_elf (Namhyung Kim)
+> 
+> - Fix shell completion with 'perf list' --raw-dump option (Taesoo Kim)
+> 
+> - Fix 'perf diff' to sort by baseline field by default (Namhyung Kim)
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Masami Hiramatsu (1):
+>       perf probe: Fix to fall back to find probe point in symbols
+> 
+> Namhyung Kim (2):
+>       perf probe: Fix crash in dwarf_getcfi_elf
+>       perf diff: Fix to sort by baseline field by default
+> 
+> Taesoo Kim (1):
+>       perf list: Fix --raw-dump option
+> 
+>  tools/perf/builtin-diff.c      | 44 ++++++++++++++++++++++++++++++++++++++++++
+>  tools/perf/builtin-list.c      | 13 ++++++++++---
+>  tools/perf/util/probe-event.c  |  6 ++++--
+>  tools/perf/util/probe-finder.c | 18 ++++++++++++++++-
+>  4 files changed, 75 insertions(+), 6 deletions(-)
+
+Pulled, thanks a lot Arnaldo!
+
+	Ingo
