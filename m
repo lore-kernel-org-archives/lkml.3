@@ -1,38 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079AbbAHO3T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 09:29:19 -0500
-Received: from casper.infradead.org ([85.118.1.10]:42958 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290AbbAHO3S (ORCPT
+	id S1754038AbbAHOeQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 09:34:16 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:49966 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752646AbbAHOeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 09:29:18 -0500
-Date: Thu, 8 Jan 2015 15:29:13 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Dominique Toupin <dominique.toupin@ericsson.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jeremie Galarneau <jgalar@efficios.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [PATCHv2 0/8] perf tools: Add perf data CTF conversion
-Message-ID: <20150108142913.GI23965@worktop.programming.kicks-ass.net>
-References: <1418310749-22267-1-git-send-email-jolsa@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418310749-22267-1-git-send-email-jolsa@kernel.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Thu, 8 Jan 2015 09:34:15 -0500
+From: Sakshi Bansal <sakshi.april5@gmail.com>
+To: forest@alittletooquiet.net
+Cc: gregkh@linuxfoundation.org, tvboxspy@gmail.com, gclement@baobob.org,
+        guido@vanguardiasur.com.ar, shack@linux.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Sakshi Bansal <sakshi.april5@gmail.com>
+Subject: [Discarding old patch and resending new one] Fixed line over 80 characters for drivers/staging/vt6655/baseband.c by splitting the line into two
+Date: Thu,  8 Jan 2015 20:04:02 +0530
+Message-Id: <1420727642-6937-1-git-send-email-sakshi.april5@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <20150107181221.GA6644@kroah.com>
+References: <20150107181221.GA6644@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 04:12:21PM +0100, Jiri Olsa wrote:
-> Basically we are adding 'perf data convert' command to
-> allow conversion of perf data file into CTF [1] data.
+Signed-off-by: Sakshi Bansal <sakshi.april5@gmail.com>
+---
+ drivers/staging/vt6655/baseband.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-I cant help myself; CTF remains: "Capture The Flag" for me :-)
+diff --git a/drivers/staging/vt6655/baseband.c b/drivers/staging/vt6655/baseband.c
+index 86c72ba..c138f9b 100644
+--- a/drivers/staging/vt6655/baseband.c
++++ b/drivers/staging/vt6655/baseband.c
+@@ -27,7 +27,8 @@
+  *
+  * Functions:
+  *      BBuGetFrameTime        - Calculate data frame transmitting time
+- *      BBvCaculateParameter   - Caculate PhyLength, PhyService and Phy Signal parameter for baseband Tx
++ *      BBvCaculateParameter   - Caculate PhyLength, PhyService and Phy Signal
++ *                               parameter for baseband Tx
+  *      BBbReadEmbedded         - Embedded read baseband register via MAC
+  *      BBbWriteEmbedded        - Embedded write baseband register via MAC
+  *      BBbVT3253Init          - VIA VT3253 baseband chip init code
+-- 
+1.9.1
+
