@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755921AbbAHDSO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 22:18:14 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:35515 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752431AbbAHDSN (ORCPT
+	id S1755955AbbAHD0v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 22:26:51 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:50512 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752694AbbAHD0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 22:18:13 -0500
-Message-ID: <54ADF66F.7090400@imgtec.com>
-Date: Thu, 8 Jan 2015 00:15:59 -0300
-From: Ezequiel Garcia <ezequiel.garcia@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: =?gbk?Q?=22Peter_Pan_=C5=CB=B6=B0_=28peterpandong=29=22?= 
-	<peterpandong@micron.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "Brian Norris" <computersforpeace@gmail.com>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?gbk?Q?=22Qi_Wang_=CD=F5=C6=F0_=28qiwang=29=22?= 
-	<qiwang@micron.com>,
-        =?gbk?Q?=22Frank_Liu_=C1=F5=C8=BA_=28frankliu=29=22?= 
-	<frankliu@micron.com>,
-        =?gbk?Q?=22Melanie_Zhang_=D5=C5=D1=E0_=28me?=
-	 =?gbk?Q?laniezhang=29=22?= <melaniezhang@micron.com>
-Subject: Re: [PATCH 3/3] mtd: spi-nand: add devicetree binding
-References: <87F60714EC601C4C83DFF1D2E3D390A04AB425@NTXXIAMBX02.xacn.micron.com>
-In-Reply-To: <87F60714EC601C4C83DFF1D2E3D390A04AB425@NTXXIAMBX02.xacn.micron.com>
-Content-Type: text/plain; charset="gbk"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.100.200.172]
+	Wed, 7 Jan 2015 22:26:49 -0500
+From: Andy Gross <agross@codeaurora.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: dmaengine@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Archit Taneja <architt@codeaurora.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        linux-kernel@vger.kernel.org, Andy Gross <agross@codeaurora.org>
+Subject: [Patch v2 0/2] Add Qualcomm ADM dmaengine driver
+Date: Wed,  7 Jan 2015 21:26:10 -0600
+Message-Id: <1420687572-7116-1-git-send-email-agross@codeaurora.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch set introduces the dmaengine driver for the Qualcomm Application
+Data Mover (ADM) DMA controller present on MSM8960, APQ8064, and IPQ8064
+devices.
 
+The initial version of this driver will only support slave DMA operations
+between system memory and peripherals.  Flow control via the CRCI (client rate
+control interface) is supported and can be configured via device tree
+configuration.  Flow control usage is required for some peripheral devices.
 
-On 01/07/2015 09:52 PM, Peter Pan ÅË¶° (peterpandong) wrote:
-> This commit adds the devicetree binding document that specifies the
-> spi nand devices support.
-> 
-> Signed-off-by: Peter Pan <peterpandong@micron.com>
-> ---
->  Documentation/devicetree/bindings/mtd/spi-nand.txt | 22 ++++++++++++++++++++++
->  1 file changed, 22 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mtd/spi-nand.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/mtd/spi-nand.txt b/Documentation/devicetree/bindings/mtd/spi-nand.txt
-> new file mode 100644
-> index 0000000..9dd3efd
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mtd/spi-nand.txt
-> @@ -0,0 +1,22 @@
-> +* NAND driver for MT29F, GD5F and similar SPI NAND flash chips
-> +
-> +Required properties:
-> +- #address-cells, #size-cells : Must be present if the device has sub-nodes
-> +  representing partitions.
-> +- compatible : Should be the manufacturer and the name of the chip. Bear in mind
-> 
+Changes since v1:
+  - Fixed various review comments
+  - Fixed some descriptor programming issues.
+  - Added single descriptors to support sub burst length transactions.
+    Selection of single or box descriptors depends on the sg length and burst
+    size.
+  - Removed use of crci in the dmas property.  CRCI is now designated via the
+    slave_config structure and will be stored in slave_id.
 
-Unless I'm mistaken, we don't need the chip ID here, as SPI NAND allows
-to autodetect the device. Any reason why we can't just use a generic
-compatible "spi-nand" here?
+Andy Gross (2):
+  dmaengine: Add ADM driveri
+  dt/bindings: qcom_adm: Fix channel specificers
+
+ Documentation/devicetree/bindings/dma/qcom_adm.txt |   14 +-
+ drivers/dma/Kconfig                                |   10 +
+ drivers/dma/Makefile                               |    1 +
+ drivers/dma/qcom_adm.c                             |  899 ++++++++++++++++++++
+ 4 files changed, 915 insertions(+), 9 deletions(-)
+ create mode 100644 drivers/dma/qcom_adm.c
+
 -- 
-Ezequiel
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
