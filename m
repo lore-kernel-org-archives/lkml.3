@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698AbbAHRTu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 12:19:50 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:46945 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572AbbAHRTs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 12:19:48 -0500
-Date: Thu, 8 Jan 2015 11:19:46 -0600
-From: Andy Gross <agross@codeaurora.org>
-To: Christopher Covington <cov@codeaurora.org>
-Cc: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org,
-        Kumar Gala <galak@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Archit Taneja <architt@codeaurora.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Patch v2 2/2] dt/bindings: qcom_adm: Fix channel specificers
-Message-ID: <20150108171946.GA15842@qualcomm.com>
-References: <1420687572-7116-1-git-send-email-agross@codeaurora.org>
- <1420687572-7116-3-git-send-email-agross@codeaurora.org>
- <54AEAFB6.9050609@codeaurora.org>
+	id S1756834AbbAHRUR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 12:20:17 -0500
+Received: from gum.cmpxchg.org ([85.214.110.215]:56820 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750825AbbAHRUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 12:20:15 -0500
+Date: Thu, 8 Jan 2015 12:20:07 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, xen-devel@lists.xenproject.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: Re: [PATCH 1/2] mm: allow for an alternate set of pages for
+ userspace mappings
+Message-ID: <20150108172007.GB32079@phnom.home.cmpxchg.org>
+References: <1420730924-22811-1-git-send-email-david.vrabel@citrix.com>
+ <1420730924-22811-2-git-send-email-david.vrabel@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54AEAFB6.9050609@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1420730924-22811-2-git-send-email-david.vrabel@citrix.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 08, 2015 at 11:26:30AM -0500, Christopher Covington wrote:
-
-<snip>
-
-> > +DMA clients must use the format descripted in the dma.txt file, using a two
-> >  cell specifier for each channel.
-> >  
-> >  Each dmas request consists of 3 cells:
+On Thu, Jan 08, 2015 at 03:28:43PM +0000, David Vrabel wrote:
+> Add an optional array of pages to struct vm_area_struct that can be
+> used find the page backing a VMA.  This is useful in cases where the
+> normal mechanisms for finding the page don't work.  This array is only
+> inspected if the PTE is special.
 > 
-> Now 2 cells?
+> Splitting a VMA with such an array of pages is trivially done by
+> adjusting vma->pages.  The original creator of the VMA must only free
+> the page array once all sub-VMAs are closed (e.g., by ref-counting in
+> vm_ops->open and vm_ops->close).
+> 
+> One use case is a Xen PV guest mapping foreign pages into userspace.
+> 
+> In a Xen PV guest, the PTEs contain MFNs so get_user_pages() (for
+> example) must do an MFN to PFN (M2P) lookup before it can get the
+> page.  For foreign pages (those owned by another guest) the M2P lookup
+> returns the PFN as seen by the foreign guest (which would be
+> completely the wrong page for the local guest).
+> 
+> This cannot be fixed up improving the M2P lookup since one MFN may be
+> mapped onto two or more pages so getting the right page is impossible
+> given just the MFN.
+> 
+> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+> ---
+>  include/linux/mm_types.h |    8 ++++++++
+>  mm/memory.c              |    2 ++
+>  mm/mmap.c                |   12 +++++++++++-
+>  3 files changed, 21 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+> index 6d34aa2..4f34609 100644
+> --- a/include/linux/mm_types.h
+> +++ b/include/linux/mm_types.h
+> @@ -309,6 +309,14 @@ struct vm_area_struct {
+>  #ifdef CONFIG_NUMA
+>  	struct mempolicy *vm_policy;	/* NUMA policy for the VMA */
+>  #endif
+> +	/*
+> +	 * Array of pages to override the default vm_normal_page()
+> +	 * result iff the PTE is special.
+> +	 *
+> +	 * The memory for this should be refcounted in vm_ops->open
+> +	 * and vm_ops->close.
+> +	 */
+> +	struct page **pages;
 
-Good catch.  I'll fix in next rev.  Thanks!
-
-> >   1. phandle pointing to the DMA controller
-> >   2. channel number
-> > - 3. CRCI assignment, if applicable.  If no CRCI flow control is required, use 0.
-> > -    The CRCI is used for flow control.  It identifies the peripheral device that
-> > -    is the source/destination for the transferred data.
-> >  
-
-<snip>
-
--- 
-Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
-
+Please make this configuration-dependent, not every Linux user should
+have to pay for a Xen optimization.
