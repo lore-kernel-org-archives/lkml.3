@@ -1,90 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626AbbAHPvJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 10:51:09 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:53976 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754888AbbAHPvH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 10:51:07 -0500
-Date: Thu, 8 Jan 2015 10:51:06 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Linux PCI <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: Re: [RFC][PATCH] PCI / PM: Avoid resuming PCI devices during system
- suspend
-In-Reply-To: <1460212.bInrzeZle0@vostro.rjw.lan>
-Message-ID: <Pine.LNX.4.44L0.1501081041230.1633-100000@iolanthe.rowland.org>
+	id S932199AbbAHPvv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 10:51:51 -0500
+Received: from mga11.intel.com ([192.55.52.93]:13594 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754324AbbAHPvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 10:51:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,723,1413270000"; 
+   d="scan'208";a="658786301"
+From: "Jiang, Dave" <dave.jiang@intel.com>
+To: "der.herr@hofr.at" <der.herr@hofr.at>
+CC: "Williams, Dan J" <dan.j.williams@intel.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rashika.kheria@gmail.com" <rashika.kheria@gmail.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        "prarit@redhat.com" <prarit@redhat.com>,
+        "josh@joshtriplett.org" <josh@joshtriplett.org>
+Subject: Re: [PATCH v2] ioat: fail self-test if wait_for_completion times out
+Thread-Topic: [PATCH v2] ioat: fail self-test if wait_for_completion times
+ out
+Thread-Index: AQHQK07cik91MZF4kkez5HZ+fkIoyZy25YCA
+Date: Thu, 8 Jan 2015 15:51:45 +0000
+Message-ID: <1420732305.207559.0.camel@djiang5-desk2.amr.corp.intel.com>
+References: <1420726595-29152-1-git-send-email-der.herr@hofr.at>
+In-Reply-To: <1420726595-29152-1-git-send-email-der.herr@hofr.at>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.2.105.66]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <4D6E20F9A103204ABEA7B193A4D4499F@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t08Fpu2t031558
 
-On Thu, 8 Jan 2015, Rafael J. Wysocki wrote:
 
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+
+
+On Thu, 2015-01-08 at 14:16 +0000, Nicholas Mc Guire wrote:
+> wait_for_completion_timeout reaching timeout was being ignored,
+> fail the self-test if timeout condition occurs.
 > 
-> Commit f25c0ae2b4c4 (ACPI / PM: Avoid resuming devices in ACPI PM
-> domain during system suspend) modified the ACPI PM domain's system
-> suspend callbacks to allow devices attached to it to be left in the
-> runtime-suspended state during system suspend so as to optimize
-> the suspend process.
+> v2: fixup of coding style issues.
 > 
-> This was based on the general mechanism introduced by commit
-> aae4518b3124 (PM / sleep: Mechanism to avoid resuming runtime-suspended
-> devices unnecessarily).
+> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+Acked-by: Dave Jiang <dave.jiang@intel.com>
+
+> ---
 > 
-> Extend that approach to PCI devices by modifying the PCI bus type's
-> ->prepare callback to return 1 for devices that are runtime-suspended
-> when it is being executed and that are in a suitable power state and
-> need not be resumed going forward.
-
-Does this correctly handle PCI devices that aren't included in the ACPI
-tables?  For example, add-on PCI cards?
-
-> +/**
-> + * pci_dev_keep_suspended - Check if the device can stay in the suspended state.
-> + * @dev: Device to check.
-> + *
-> + * Return 'true' if the device is runtime-suspended, it doesn't have to be
-> + * reconfigured for system wakeup and the current power state of it is
-> + * suitable for the upcoming (system) transition.
-> + */
-> +bool pci_dev_keep_suspended(struct pci_dev *dev)
-> +{
-> +	if (!pm_runtime_suspended(&dev->dev) || platform_pci_need_resume(dev))
-> +		return false;
-> +
-> +	return pci_target_state(dev) == dev->current_state;
-> +}
-
-So if platform_pci_need_resume() returns "false", you will try to keep 
-the device suspended.  And platform_pci_need_resume() simply invokes 
-the .need_resume method of the pci_platform_pm structure.
-
-> +static bool acpi_pci_need_resume(struct pci_dev *dev)
-> +{
-> +	struct acpi_device *adev = ACPI_COMPANION(&dev->dev);
-> +
-> +	if (!adev || !acpi_device_power_manageable(adev))
-> +		return false;
-
-And this says if the device doesn't appear in ACPI then it doesn't need 
-to be resumed.
-
-But what if it uses PME and it currently has the wrong wakeup setting?  
-Shouldn't this routine start out with
-
-	if (!adev)
-		return true;
-
-?  Or should there maybe be an explicit test for devices using PME?
-
-Alan Stern
-
+> this was only compile tested with
+> x86_64_defconfig + CONFIG_DMA_ENGINE=y + CONFIG_INTEL_IOATDMA=m
+> 
+> patch is against linux-next 3.19.0-rc3 -next-20150108
+> 
+>  drivers/dma/ioat/dma_v3.c |    9 ++++++---
+>  1 file changed, 6 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+> index be307182..a26882e 100644
+> --- a/drivers/dma/ioat/dma_v3.c
+> +++ b/drivers/dma/ioat/dma_v3.c
+> @@ -1311,7 +1311,8 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
+>  
+>  	tmo = wait_for_completion_timeout(&cmp, msecs_to_jiffies(3000));
+>  
+> -	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
+> +	if (tmo == 0 ||
+> +	    dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
+>  		dev_err(dev, "Self-test xor timed out\n");
+>  		err = -ENODEV;
+>  		goto dma_unmap;
+> @@ -1377,7 +1378,8 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
+>  
+>  	tmo = wait_for_completion_timeout(&cmp, msecs_to_jiffies(3000));
+>  
+> -	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
+> +	if (tmo == 0 ||
+> +	    dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
+>  		dev_err(dev, "Self-test validate timed out\n");
+>  		err = -ENODEV;
+>  		goto dma_unmap;
+> @@ -1429,7 +1431,8 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
+>  
+>  	tmo = wait_for_completion_timeout(&cmp, msecs_to_jiffies(3000));
+>  
+> -	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
+> +	if (tmo == 0 ||
+> +	    dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
+>  		dev_err(dev, "Self-test 2nd validate timed out\n");
+>  		err = -ENODEV;
+>  		goto dma_unmap;
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
