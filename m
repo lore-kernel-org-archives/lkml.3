@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756819AbbAHMyz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 07:54:55 -0500
+	id S1756800AbbAHMyw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 07:54:52 -0500
 Received: from mga14.intel.com ([192.55.52.115]:35459 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756773AbbAHMyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 07:54:46 -0500
+	id S1756761AbbAHMyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 07:54:49 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="437999758"
+   d="scan'208";a="437999770"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V4 08/23] perf session: Add hooks to allow transparent decoding of Instruction Tracing data
-Date: Thu,  8 Jan 2015 14:52:12 +0200
-Message-Id: <1420721547-26470-9-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V4 09/23] perf session: Add Instruction Tracing options
+Date: Thu,  8 Jan 2015 14:52:13 +0200
+Message-Id: <1420721547-26470-10-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1420721547-26470-1-git-send-email-adrian.hunter@intel.com>
 References: <1420721547-26470-1-git-send-email-adrian.hunter@intel.com>
@@ -27,255 +27,249 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hook into session processing so that Instruction Trace decoding can
-synthesize events transparently to the tools.
-
-The advantages of transparent decoding are that tools can be used
-directly with perf.data files containing Instruction Tracing data,
-which is easier for the user and more efficient than having a
-separate decoding tool.
-
-This will work as follows:
-1. Tools will feed itrace events to the decoder using
-perf_tool->itrace() (support for that still to come).
-2. The decoder can process side-band events as needed due
-to the itrace->process_event() hook.
-3. The decoder can deliver synthesized events into the
-event stream using perf_session__deliver_synth_event().
-
-Note the expectation is that decoding will work on data that is
-time-ordered with respect to the per-cpu or per-thread contexts
-that were recorded.
+It is assumed that Instruction Trace decoding will
+synthesize events for consumption by other tools.
+The nature of Instruction Tracing suggests the
+initial inclusion of options for "instructions"
+and "branches" events, but more could be added
+as needed.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/itrace.h  | 57 +++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/session.c | 52 +++++++++++++++++++++++++++++++++++++-----
- tools/perf/util/session.h |  3 +++
- 3 files changed, 106 insertions(+), 6 deletions(-)
+ tools/perf/util/itrace.c  | 131 ++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/itrace.h  |  43 +++++++++++++++
+ tools/perf/util/session.h |   2 +
+ 3 files changed, 176 insertions(+)
 
+diff --git a/tools/perf/util/itrace.c b/tools/perf/util/itrace.c
+index d8fc89d..817b7b7 100644
+--- a/tools/perf/util/itrace.c
++++ b/tools/perf/util/itrace.c
+@@ -36,6 +36,7 @@
+ 
+ #include "event.h"
+ #include "debug.h"
++#include "parse-options.h"
+ 
+ int itrace_mmap__mmap(struct itrace_mmap *mm, struct itrace_mmap_params *mp,
+ 		      void *userpg, int fd)
+@@ -208,6 +209,136 @@ int perf_event__synthesize_itrace(struct perf_tool *tool,
+ 	return process(tool, &ev, NULL, NULL);
+ }
+ 
++#define PERF_ITRACE_DEFAULT_PERIOD_TYPE		PERF_ITRACE_PERIOD_NANOSECS
++#define PERF_ITRACE_DEFAULT_PERIOD		100000
++#define PERF_ITRACE_DEFAULT_CALLCHAIN_SZ	16
++#define PERF_ITRACE_MAX_CALLCHAIN_SZ		1024
++
++void itrace_synth_opts__set_default(struct itrace_synth_opts *synth_opts)
++{
++	synth_opts->instructions = true;
++	synth_opts->branches = true;
++	synth_opts->errors = true;
++	synth_opts->period_type = PERF_ITRACE_DEFAULT_PERIOD_TYPE;
++	synth_opts->period = PERF_ITRACE_DEFAULT_PERIOD;
++	synth_opts->callchain_sz = PERF_ITRACE_DEFAULT_CALLCHAIN_SZ;
++}
++
++int itrace_parse_synth_opts(const struct option *opt, const char *str,
++			    int unset)
++{
++	struct itrace_synth_opts *synth_opts = opt->value;
++	const char *p;
++	char *endptr;
++
++	synth_opts->set = true;
++
++	if (unset) {
++		synth_opts->dont_decode = true;
++		return 0;
++	}
++
++	if (!str) {
++		itrace_synth_opts__set_default(synth_opts);
++		return 0;
++	}
++
++	for (p = str; *p;) {
++		switch (*p++) {
++		case 'i':
++			synth_opts->instructions = true;
++			while (*p == ' ' || *p == ',')
++				p += 1;
++			if (isdigit(*p)) {
++				synth_opts->period = strtoull(p, &endptr, 10);
++				p = endptr;
++				while (*p == ' ' || *p == ',')
++					p += 1;
++				switch (*p++) {
++				case 'i':
++					synth_opts->period_type =
++						PERF_ITRACE_PERIOD_INSTRUCTIONS;
++					break;
++				case 't':
++					synth_opts->period_type =
++						PERF_ITRACE_PERIOD_TICKS;
++					break;
++				case 'm':
++					synth_opts->period *= 1000;
++					/* Fall through */
++				case 'u':
++					synth_opts->period *= 1000;
++					/* Fall through */
++				case 'n':
++					if (*p++ != 's')
++						goto out_err;
++					synth_opts->period_type =
++						PERF_ITRACE_PERIOD_NANOSECS;
++					break;
++				case '\0':
++					goto out;
++				default:
++					goto out_err;
++				}
++			}
++			break;
++		case 'b':
++			synth_opts->branches = true;
++			break;
++		case 'e':
++			synth_opts->errors = true;
++			break;
++		case 'd':
++			synth_opts->log = true;
++			break;
++		case 'c':
++			synth_opts->branches = true;
++			synth_opts->calls = true;
++			break;
++		case 'r':
++			synth_opts->branches = true;
++			synth_opts->returns = true;
++			break;
++		case 'g':
++			synth_opts->instructions = true;
++			synth_opts->callchain = true;
++			synth_opts->callchain_sz =
++					PERF_ITRACE_DEFAULT_CALLCHAIN_SZ;
++			while (*p == ' ' || *p == ',')
++				p += 1;
++			if (isdigit(*p)) {
++				unsigned int val;
++
++				val = strtoul(p, &endptr, 10);
++				p = endptr;
++				if (!val || val > PERF_ITRACE_MAX_CALLCHAIN_SZ)
++					goto out_err;
++				synth_opts->callchain_sz = val;
++			}
++			break;
++		case ' ':
++		case ',':
++			break;
++		default:
++			goto out_err;
++		}
++	}
++out:
++	if (synth_opts->instructions) {
++		if (!synth_opts->period_type)
++			synth_opts->period_type =
++					PERF_ITRACE_DEFAULT_PERIOD_TYPE;
++		if (!synth_opts->period)
++			synth_opts->period = PERF_ITRACE_DEFAULT_PERIOD;
++	}
++
++	return 0;
++
++out_err:
++	pr_err("Bad instruction trace options '%s'\n", str);
++	return -EINVAL;
++}
++
+ int itrace_mmap__read(struct itrace_mmap *mm, struct itrace_record *itr,
+ 		      struct perf_tool *tool, process_itrace_t fn)
+ {
 diff --git a/tools/perf/util/itrace.h b/tools/perf/util/itrace.h
-index 6eef25c..beea1d7 100644
+index beea1d7..5abb85a 100644
 --- a/tools/perf/util/itrace.h
 +++ b/tools/perf/util/itrace.h
-@@ -23,6 +23,7 @@
- #include <linux/types.h>
- 
- #include "../perf.h"
-+#include "session.h"
- 
- union perf_event;
+@@ -29,9 +29,49 @@ union perf_event;
  struct perf_session;
-@@ -32,6 +33,26 @@ struct record_opts;
+ struct perf_evlist;
+ struct perf_tool;
++struct option;
+ struct record_opts;
  struct itrace_info_event;
  
- /**
-+ * struct itrace - session callbacks to allow Instruction Trace data decoding.
-+ * @process_event: lets the decoder see all session events
-+ * @flush_events: process any remaining data
-+ * @free_events: free resources associated with event processing
-+ * @free: free resources associated with the session
-+ * @error_count: number of errors
-+ */
-+struct itrace {
-+	int (*process_event)(struct perf_session *session,
-+			     union perf_event *event,
-+			     struct perf_sample *sample,
-+			     struct perf_tool *tool);
-+	int (*flush_events)(struct perf_session *session,
-+			    struct perf_tool *tool);
-+	void (*free_events)(struct perf_session *session);
-+	void (*free)(struct perf_session *session);
-+	unsigned long long error_count;
++enum itrace_period_type {
++	PERF_ITRACE_PERIOD_INSTRUCTIONS,
++	PERF_ITRACE_PERIOD_TICKS,
++	PERF_ITRACE_PERIOD_NANOSECS,
 +};
 +
 +/**
-  * struct itrace_mmap - records an mmap of the itrace buffer.
-  * @base: address of mapped area
-  * @userpg: pointer to buffer's perf_event_mmap_page
-@@ -150,4 +171,40 @@ int perf_event__synthesize_itrace(struct perf_tool *tool,
++ * struct itrace_synth_opts - Instruction Tracing synthesis options.
++ * @set: indicates whether or not options have been set
++ * @inject: indicates the event (not just the sample) must be fully synthesized
++ *          because 'perf inject' will write it out
++ * @instructions: whether to synthesize 'instructions' events
++ * @branches: whether to synthesize 'branches' events
++ * @errors: whether to synthesize decoder error events
++ * @dont_decode: whether to skip decoding entirely
++ * @log: write a decoding log
++ * @calls: limit branch samples to calls (can be combined with @returns)
++ * @returns: limit branch samples to returns (can be combined with @calls)
++ * @callchain: add callchain to 'instructions' events
++ * @callchain_sz: maximum callchain size
++ * @period: 'instructions' events period
++ * @period_type: 'instructions' events period type
++ */
++struct itrace_synth_opts {
++	bool			set;
++	bool			inject;
++	bool			instructions;
++	bool			branches;
++	bool			errors;
++	bool			dont_decode;
++	bool			log;
++	bool			calls;
++	bool			returns;
++	bool			callchain;
++	unsigned int		callchain_sz;
++	unsigned long long	period;
++	enum itrace_period_type	period_type;
++};
++
+ /**
+  * struct itrace - session callbacks to allow Instruction Trace data decoding.
+  * @process_event: lets the decoder see all session events
+@@ -170,6 +210,9 @@ int perf_event__synthesize_itrace(struct perf_tool *tool,
+ 				  perf_event__handler_t process,
  				  size_t size, u64 offset, u64 ref, int idx,
  				  u32 tid, u32 cpu);
++int itrace_parse_synth_opts(const struct option *opt, const char *str,
++			    int unset);
++void itrace_synth_opts__set_default(struct itrace_synth_opts *synth_opts);
  
-+static inline int itrace__process_event(struct perf_session *session,
-+					union perf_event *event,
-+					struct perf_sample *sample,
-+					struct perf_tool *tool)
-+{
-+	if (!session->itrace)
-+		return 0;
-+
-+	return session->itrace->process_event(session, event, sample, tool);
-+}
-+
-+static inline int itrace__flush_events(struct perf_session *session,
-+				       struct perf_tool *tool)
-+{
-+	if (!session->itrace)
-+		return 0;
-+
-+	return session->itrace->flush_events(session, tool);
-+}
-+
-+static inline void itrace__free_events(struct perf_session *session)
-+{
-+	if (!session->itrace)
-+		return;
-+
-+	return session->itrace->free_events(session);
-+}
-+
-+static inline void itrace__free(struct perf_session *session)
-+{
-+	if (!session->itrace)
-+		return;
-+
-+	return session->itrace->free(session);
-+}
-+
- #endif
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index ea5d4ae..bb653ef 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -15,6 +15,7 @@
- #include "cpumap.h"
- #include "perf_regs.h"
- #include "asm/bug.h"
-+#include "itrace.h"
- 
- static int perf_session__open(struct perf_session *session)
- {
-@@ -166,6 +167,7 @@ static void perf_session_env__delete(struct perf_session_env *env)
- 
- void perf_session__delete(struct perf_session *session)
- {
-+	itrace__free(session);
- 	perf_session__destroy_kernel_maps(session);
- 	perf_session__delete_dead_threads(session);
- 	perf_session__delete_threads(session);
-@@ -929,10 +931,11 @@ perf_session__deliver_sample(struct perf_session *session,
- 					    &sample->read.one, machine);
- }
- 
--int perf_session__deliver_event(struct perf_session *session,
--				union perf_event *event,
--				struct perf_sample *sample,
--				struct perf_tool *tool, u64 file_offset)
-+static int __perf_session__deliver_event(struct perf_session *session,
-+					 union perf_event *event,
-+					 struct perf_sample *sample,
-+					 struct perf_tool *tool,
-+					 u64 file_offset)
- {
- 	struct perf_evsel *evsel;
- 	struct machine *machine;
-@@ -983,6 +986,24 @@ int perf_session__deliver_event(struct perf_session *session,
- 	}
- }
- 
-+int perf_session__deliver_event(struct perf_session *session,
-+				union perf_event *event,
-+				struct perf_sample *sample,
-+				struct perf_tool *tool,
-+				u64 file_offset)
-+{
-+	int ret;
-+
-+	ret = itrace__process_event(session, event, sample, tool);
-+	if (ret < 0)
-+		return ret;
-+	if (ret > 0)
-+		return 0;
-+
-+	return __perf_session__deliver_event(session, event, sample, tool,
-+					     file_offset);
-+}
-+
- static s64 perf_session__process_user_event(struct perf_session *session,
- 					    union perf_event *event,
- 					    struct perf_tool *tool,
-@@ -1041,7 +1062,7 @@ int perf_session__deliver_synth_event(struct perf_session *session,
- 	if (event->header.type >= PERF_RECORD_USER_TYPE_START)
- 		return perf_session__process_user_event(session, event, tool, 0);
- 
--	return perf_session__deliver_event(session, event, sample, tool, 0);
-+	return __perf_session__deliver_event(session, event, sample, tool, 0);
- }
- 
- static void event_swap(union perf_event *event, bool sample_id_all)
-@@ -1211,6 +1232,11 @@ static void perf_session__warn_about_errors(const struct perf_session *session,
- 
- 	if (session->stats.nr_unordered_events != 0)
- 		ui__warning("%u out of order events recorded.\n", session->stats.nr_unordered_events);
-+
-+	if (session->itrace && session->itrace->error_count) {
-+		ui__warning("%llu instruction trace errors\n",
-+			    session->itrace->error_count);
-+	}
- }
- 
- volatile int session_done;
-@@ -1298,10 +1324,14 @@ more:
- done:
- 	/* do the final flush for ordered samples */
- 	err = ordered_events__flush(session, tool, OE_FLUSH__FINAL);
-+	if (err)
-+		goto out_err;
-+	err = itrace__flush_events(session, tool);
- out_err:
- 	free(buf);
- 	perf_session__warn_about_errors(session, tool);
- 	ordered_events__free(&session->ordered_events);
-+	itrace__free_events(session);
- 	return err;
- }
- 
-@@ -1443,10 +1473,14 @@ more:
- out:
- 	/* do the final flush for ordered samples */
- 	err = ordered_events__flush(session, tool, OE_FLUSH__FINAL);
-+	if (err)
-+		goto out_err;
-+	err = itrace__flush_events(session, tool);
- out_err:
- 	ui_progress__finish();
- 	perf_session__warn_about_errors(session, tool);
- 	ordered_events__free(&session->ordered_events);
-+	itrace__free_events(session);
- 	session->one_mmap = false;
- 	return err;
- }
-@@ -1528,7 +1562,13 @@ size_t perf_session__fprintf_dsos_buildid(struct perf_session *session, FILE *fp
- 
- size_t perf_session__fprintf_nr_events(struct perf_session *session, FILE *fp)
- {
--	size_t ret = fprintf(fp, "Aggregated stats:\n");
-+	size_t ret;
-+	const char *msg = "";
-+
-+	if (perf_header__has_feat(&session->header, HEADER_ITRACE))
-+		msg = " (excludes Instruction Trace decoded/synthesized events)";
-+
-+	ret = fprintf(fp, "Aggregated stats:%s\n", msg);
- 
- 	ret += events_stats__fprintf(&session->stats, fp);
- 	return ret;
+ static inline int itrace__process_event(struct perf_session *session,
+ 					union perf_event *event,
 diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index dc26ebf..6f8ac2f 100644
+index 6f8ac2f..ccf6a75 100644
 --- a/tools/perf/util/session.h
 +++ b/tools/perf/util/session.h
-@@ -15,10 +15,13 @@
- struct ip_callchain;
+@@ -16,12 +16,14 @@ struct ip_callchain;
  struct thread;
  
-+struct itrace;
-+
+ struct itrace;
++struct itrace_synth_opts;
+ 
  struct perf_session {
  	struct perf_header	header;
  	struct machines		machines;
  	struct perf_evlist	*evlist;
-+	struct itrace		*itrace;
+ 	struct itrace		*itrace;
++	struct itrace_synth_opts *itrace_synth_opts;
  	struct trace_event	tevent;
  	struct events_stats	stats;
  	bool			repipe;
