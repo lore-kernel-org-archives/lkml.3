@@ -1,50 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756881AbbAHPcJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 10:32:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:33798 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756486AbbAHPcH (ORCPT
+	id S1756904AbbAHPcQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 10:32:16 -0500
+Received: from mail-yk0-f181.google.com ([209.85.160.181]:43649 "EHLO
+	mail-yk0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754894AbbAHPcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 10:32:07 -0500
-From: Colin King <colin.king@canonical.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] PM / clock_ops: initialize ret to avoid garbage being returned
-Date: Thu,  8 Jan 2015 15:31:01 +0000
-Message-Id: <1420731061-5029-1-git-send-email-colin.king@canonical.com>
-X-Mailer: git-send-email 2.1.4
+	Thu, 8 Jan 2015 10:32:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <54AE9CC8.2080302@apollo.lv>
+References: <54ACB0D4.3000008@apollo.lv>
+	<54AD21E2.2020100@ladisch.de>
+	<54AD3D0B.6060501@apollo.lv>
+	<54AE410B.40101@ladisch.de>
+	<54AE9CC8.2080302@apollo.lv>
+Date: Thu, 8 Jan 2015 21:02:10 +0530
+Message-ID: <CAHFNz9Kj=+Gip-n=4tGaXfUXqc0QHoZgjZJ9s-0sTTFzTv4hxA@mail.gmail.com>
+Subject: Re: Questions about IOMMU & PCIe switch
+From: Manu Abraham <abraham.manu@gmail.com>
+To: Raimonds Cicans <ray@apollo.lv>
+Cc: Clemens Ladisch <clemens@ladisch.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Ian King <colin.king@canonical.com>
+On Thu, Jan 8, 2015 at 8:35 PM, Raimonds Cicans <ray@apollo.lv> wrote:
+> On 08.01.2015 10:34, Clemens Ladisch wrote:
+>>
+>> Raimonds Cicans wrote:
+>>>
+>>> https://github.com/ljalves/linux_media/issues/66
+>>
+>> If the TBS driver works, why don't you use it?
+>
+> 1) driver is not stable in 24x7 setups
+>
+> 2) driver use old DVBAPI. This cause problems with some
+>      user space programs.
 
-cppcheck detected an unitialised ret:
-  [drivers/base/power/clock_ops.c:53]: (error) Uninitialized variable: ret
+It shouldn't. It is backward compatible.
 
-ret is only assigned if ce->status < PCE_STATUS_ERROR, if this is false
-then __pm_clk_enable returns whatever garbage ret picks up from the stack.
+>
+> 3) TBS recommends to use card in MSI interrupt mode
+>      but this mode on IOMMU systems do not work:
+>      card is able to find transponders and tune to it
+>      but can not receive any data
 
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
----
- drivers/base/power/clock_ops.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+TBS didn't even have the courtesy to say thanks, but still.
+They don't have any clue on the driver.
 
-diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
-index d626576..5bd283d 100644
---- a/drivers/base/power/clock_ops.c
-+++ b/drivers/base/power/clock_ops.c
-@@ -39,7 +39,7 @@ struct pm_clock_entry {
-  */
- static inline int __pm_clk_enable(struct device *dev, struct pm_clock_entry *ce)
- {
--	int ret;
-+	int ret = 0;
- 
- 	if (ce->status < PCE_STATUS_ERROR) {
- 		ret = clk_enable(ce->clk);
--- 
-1.7.9.5
+You shouldn't use MSI mode on most systems unless you
+are sure that your machine works perfectly well with MSI
+mode.
 
+You should simply use standard interrupt mode, if you are
+unsure.
+
+In any sense, that card looks a bit odd:
+
+1. It doesn't need a PCIe switch, nor that CPLD in there for
+the fact that it is using a SAA7160, rather than an E version,
+which thereby support 4 FGPI inputs (4 simultaneous TS's)
+(Redundant components)
+
+2. But in any sense, the PCIe switch is transparent, It doesn't
+need any programming. All what you can do with the PCIe
+switch is to reprogram the lines to it, nothing more. In any
+case, if your card is detected, there's no point in playing with
+the PCIe switch
+
+3. The TS failure in a while can most likely be attributed to
+bad CPLD programming. On the cards that I have worked
+with, they've worked pretty well.
+
+
+Regards,
+
+Manu
