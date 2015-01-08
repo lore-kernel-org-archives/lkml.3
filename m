@@ -1,113 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755627AbbAHQC0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 11:02:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57662 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753943AbbAHQCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 11:02:25 -0500
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "gregkh\@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "devel\@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "Haiyang Zhang" <haiyangz@microsoft.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] Tools: hv: fix compiler warnings and do minor cleanup
-References: <1418140103-11854-1-git-send-email-vkuznets@redhat.com>
-	<F792CF86EFE20D4AB8064279AFBA51C613E9B62F@SIXPRD3002MB028.064d.mgd.msft.net>
-	<87lhmfhna7.fsf@vitty.brq.redhat.com>
-	<20141210144829.GB17184@kroah.com>
-	<BY2PR0301MB071102AF97B27F11EF91F89CA0620@BY2PR0301MB0711.namprd03.prod.outlook.com>
-Date: Thu, 08 Jan 2015 17:02:15 +0100
-In-Reply-To: <BY2PR0301MB071102AF97B27F11EF91F89CA0620@BY2PR0301MB0711.namprd03.prod.outlook.com>
-	(KY Srinivasan's message of "Wed, 10 Dec 2014 17:50:23 +0000")
-Message-ID: <877fwxqn08.fsf@vitty.brq.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1754830AbbAHQGh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 11:06:37 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:57951 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753249AbbAHQGf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 11:06:35 -0500
+Date: Thu, 8 Jan 2015 16:06:26 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: "joro@8bytes.org" <joro@8bytes.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "arnd@arndb.de" <arnd@arndb.de>
+Subject: Re: [PATCH v3 3/4] of/pci: add of_pci_dma_configure() update dma
+ configuration
+Message-ID: <20150108160626.GN11583@arm.com>
+References: <1420656594-8908-1-git-send-email-m-karicheri2@ti.com>
+ <1420656594-8908-4-git-send-email-m-karicheri2@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420656594-8908-4-git-send-email-m-karicheri2@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KY Srinivasan <kys@microsoft.com> writes:
+On Wed, Jan 07, 2015 at 06:49:53PM +0000, Murali Karicheri wrote:
+> Add of_pci_dma_configure() to allow updating the dma configuration
+> of the pci device using the configuration from DT of the parent of
+> the root bridge device.
+> 
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> ---
+>  drivers/of/of_pci.c    |   39 +++++++++++++++++++++++++++++++++++++++
+>  include/linux/of_pci.h |   12 ++++++++++++
+>  2 files changed, 51 insertions(+)
+> 
+> diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+> index 88471d3..34878c9 100644
+> --- a/drivers/of/of_pci.c
+> +++ b/drivers/of/of_pci.c
+> @@ -2,6 +2,7 @@
+>  #include <linux/export.h>
+>  #include <linux/of.h>
+>  #include <linux/of_address.h>
+> +#include <linux/of_device.h>
+>  #include <linux/of_pci.h>
+>  #include <linux/slab.h>
+>  
+> @@ -229,6 +230,44 @@ parse_failed:
+>  	return err;
+>  }
+>  EXPORT_SYMBOL_GPL(of_pci_get_host_bridge_resources);
+> +
+> +/**
+> + * of_get_pci_root_bridge_parent - get the OF node of the root bridge's parent
+> + * @dev: ptr to pci_dev struct of the pci device
+> + *
+> + * This function will traverse the bus up to the root bus starting with
+> + * the child and return the OF node ptr to root bridge device's parent device.
+> + */
+> +struct device_node *of_get_pci_root_bridge_parent(struct pci_dev *dev)
+> +{
+> +	struct pci_bus *bus = dev->bus;
+> +	struct device *bridge;
+> +
+> +	while (!pci_is_root_bus(bus))
+> +		bus = bus->parent;
+> +	bridge = bus->bridge;
+> +
+> +	return bridge->parent->of_node;
+> +}
+> +EXPORT_SYMBOL_GPL(of_get_pci_root_bridge_parent);
+> +
+> +/**
+> + * of_pci_dma_configure - Setup DMA configuration
+> + * @dev: ptr to pci_dev struct of the pci device
+> + *
+> + * Function to update PCI devices's DMA configuration using the same
+> + * info from the OF node of root host bridge's parent.
+> + */
+> +void of_pci_dma_configure(struct pci_dev *pci_dev)
+> +{
+> +	struct device *dev = &pci_dev->dev;
+> +	struct device_node *parent_np;
+> +
+> +	parent_np = of_get_pci_root_bridge_parent(pci_dev);
+> +	of_dma_configure(dev, parent_np);
+> +}
+> +EXPORT_SYMBOL_GPL(of_pci_dma_configure);
 
->> -----Original Message-----
->> From: devel [mailto:driverdev-devel-bounces@linuxdriverproject.org] On
->> Behalf Of gregkh@linuxfoundation.org
->> Sent: Wednesday, December 10, 2014 6:48 AM
->> To: Vitaly Kuznetsov
->> Cc: devel@linuxdriverproject.org; Haiyang Zhang; linux-
->> kernel@vger.kernel.org
->> Subject: Re: [PATCH 0/5] Tools: hv: fix compiler warnings and do minor
->> cleanup
->> 
->> On Wed, Dec 10, 2014 at 10:22:40AM +0100, Vitaly Kuznetsov wrote:
->> > Dexuan Cui <decui@microsoft.com> writes:
->> >
->> > >> -----Original Message-----
->> > >> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
->> > >> Sent: Tuesday, December 9, 2014 23:48 PM
->> > >> To: KY Srinivasan
->> > >> Cc: Haiyang Zhang; devel@linuxdriverproject.org; linux-
->> > >> kernel@vger.kernel.org; Dexuan Cui
->> > >> Subject: [PATCH 0/5] Tools: hv: fix compiler warnings and do minor
->> > >> cleanup
->> > >>
->> > >> When someone does 'make' in tools/hv/ issues appear:
->> > >> - hv_fcopy_daemon is not being built;
->> > >> - lots of compiler warnings.
->> > >>
->> > >> This is just a cleanup. Compile-tested by myself on top of linux-
->> next/master.
->> > >>
->> > >> Piggyback this series and send "[PATCH 5/5] Tools: hv: do not add
->> > >> redundant '/'
->> > >>  in hv_start_fcopy()"
->> > >>
->> > >> Vitaly Kuznetsov (5):
->> > >>   Tools: hv: add mising fcopyd to the Makefile
->> > >>   Tools: hv: remove unused bytes_written from kvp_update_file()
->> > >>   Tools: hv: address compiler warnings for hv_kvp_daemon.c
->> > >>   Tools: hv: address compiler warnings for hv_fcopy_daemon.c
->> > >>   Tools: hv: do not add redundant '/' in hv_start_fcopy()
->> > >>
->> > >>  tools/hv/Makefile          |  4 ++--
->> > >>  tools/hv/hv_fcopy_daemon.c | 10 ++--------
->> > >>  tools/hv/hv_kvp_daemon.c   | 29 +++++++++++++----------------
->> > >>  3 files changed, 17 insertions(+), 26 deletions(-)
->> > >>
->> > >> --
->> > >> 1.9.3
->> > >
->> > > Hi Vitaly,
->> > > Thanks for the patchset!
->> > >
->> > > Acked-by: Dexuan Cui <decui@microsoft.com>
->> > >
->> > > PS, I added Greg into the TO list.
->> > > The hv code in drivers/hv/ and tools/hv/ usually has to go into
->> > > Greg's tree first.
->> >
->> > Well, I don't mind spamming Greg but he's not on the
->> > scripts/get_maintainer.pl output. In case he's not monitoring the list
->> > for patches by some other tool (patchwork?) a patch adding him to
->> > MAINTAINERS would do the job.
->> >
->> > Greg, do you want to become an official Hyper-V maintainer in
->> > MAINTAINERS? I can send a patch then :-)
->> 
->> No.  It's up to the "real" maintainers to take the patches and then forward
->> them on to me for inclusion in the kernel tree.  KY knows this...
->
-> I will take care of this.
->
+Whilst I think this is the right overall structure, I think this function
+should determine the set of DMA aliases for the device and pass that through
+to the IOMMU (as mentioned in my reply to the cover letter). Then we just
+need to work out what we're doing for groups.
 
-Hi KY,
-
-I just found out these patches never made it to any repo, at least I
-can't see them in char-misc-next. Do I need to resend?
-
-Thanks,
-
--- 
-  Vitaly
+Will
