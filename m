@@ -1,145 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142AbbAHJAe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 04:00:34 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55556 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756085AbbAHJAa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 04:00:30 -0500
-Message-ID: <54AE46F7.6030106@pengutronix.de>
-Date: Thu, 08 Jan 2015 09:59:35 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Aaron Wu <Aaron.wu@analog.com>, wg@grandegger.com,
-        linux-can@vger.kernel.org, linux-kernel@vger.kernel.org
-CC: adi-buildroot-devel@lists.sourceforge.net
-Subject: Re: [PATCH V2 2/2] bfin_can: rewrite the driver to support the common
-References: <1420700254-22529-1-git-send-email-Aaron.wu@analog.com> <1420700254-22529-2-git-send-email-Aaron.wu@analog.com>
-In-Reply-To: <1420700254-22529-2-git-send-email-Aaron.wu@analog.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="VN13KQ7RAgkXVfmCBoGg1NteHvT1UcxLX"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1755952AbbAHJAJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 04:00:09 -0500
+Received: from smtp2.provo.novell.com ([137.65.250.81]:34442 "EHLO
+	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753493AbbAHJAH (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Thu, 8 Jan 2015 04:00:07 -0500
+Message-ID: <1420707599.12346.14.camel@stgolabs.net>
+Subject: Re: [LKP] [mm] c8c06efa8b5: -7.6% unixbench.score
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: Huang Ying <ying.huang@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        LKP ML <lkp@01.org>
+Date: Thu, 08 Jan 2015 00:59:59 -0800
+In-Reply-To: <1420703414.12346.12.camel@stgolabs.net>
+References: <1420684064.6201.86.camel@linux.intel.com>
+	 <1420703154.12346.10.camel@stgolabs.net>
+	 <1420703414.12346.12.camel@stgolabs.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---VN13KQ7RAgkXVfmCBoGg1NteHvT1UcxLX
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2015-01-07 at 23:50 -0800, Davidlohr Bueso wrote:
+> On Wed, 2015-01-07 at 23:45 -0800, Davidlohr Bueso wrote:
+> > On Thu, 2015-01-08 at 10:27 +0800, Huang Ying wrote:
+> > Cc'ing Peter.
+> 
+> Err, resending with the complete msg.
+> 
+> > > FYI, we noticed the below changes on
+> > > 
+> > > commit c8c06efa8b552608493b7066c234cfa82c47fcea ("mm: convert i_mmap_mutex to rwsem")
+> > 
+> > Same exact everything, except for the lock type. No sharing going on.
+> > 
+> > > testbox/testcase/testparams: lituya/unixbench/performance-execl
+> > > 
+> > > 83cde9e8ba95d180  c8c06efa8b552608493b7066c2  
+> > > ----------------  --------------------------  
+> > >          %stddev     %change         %stddev
+> > >              \          |                \  
+> > >     721721 ±  1%    +303.6%    2913110 ±  3%  unixbench.time.voluntary_context_switches
+> > >      11767 ±  0%      -7.6%      10867 ±  1%  unixbench.score
+> > 
+> > And this workload appears to be from execl, right? Make sense with some
+> > of those numbers!!
+> > 
+> > >  2.323e+08 ±  0%      -7.2%  2.157e+08 ±  1%  unixbench.time.minor_page_faults
+> > >        207 ±  0%      -7.0%        192 ±  1%  unixbench.time.user_time
+> > >    4923450 ±  0%      -5.7%    4641672 ±  0%  unixbench.time.involuntary_context_switches
+> > >        584 ±  0%      -5.2%        554 ±  0%  unixbench.time.percent_of_cpu_this_job_got
+> > >        948 ±  0%      -4.9%        902 ±  0%  unixbench.time.system_time
+> > >          0 ±  0%      +Inf%     672942 ±  2%  latency_stats.hits.call_rwsem_down_write_failed.vma_adjust.__split_vma.split_vma.mprotect_fixup.SyS_mprotect.system_call_fastpath
+> > 
+> > What does this "hits" thing mean exactly? Since I assume both before and
+> > after runs have the same level of concurrency when pounding on mmap
+> > operations, I doubt it means that its the amount of calls into the
+> > slowpath... in addition the lock is obviously contended so we can forget
+> > about anything in the fastpath.
+> > 
+> > So this is a call_rwsem_down_write_failed() vs __mutex_lock_common()
+> > issue.
+> 
+> It's late, but for some initial thoughts I believe this comes down to
+> differences in how mutexes and rwsems deal with ultimately blocking (and
+> based on the nasty sched_debug numbers reported by Huang). We now do in
+> call_rwsem_down_write_failed:
+> 
+> 	/* wait to be given the lock */
+> 	while (true) {
+> 		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
+> 		if (!waiter.task)
+> 			break;
+> 		schedule();
+> 	}
 
-On 01/08/2015 07:57 AM, Aaron Wu wrote:
-> Rewrite the driver to comply to common style with MMU=20
->=20
-> Signed-off-by: Aaron Wu <Aaron.wu@analog.com>
+heh I was actually looking at the reader code. We really do:
 
-Can you please rephrase the subject into a more complete English
-sentence. You may use something like "convert driver to use
-devm_ioremap_resource()"
+	/* wait until we successfully acquire the lock */
+	set_current_state(TASK_UNINTERRUPTIBLE);
+	while (true) {
+		if (rwsem_try_write_lock(count, sem))
+			break;
+		raw_spin_unlock_irq(&sem->wait_lock);
 
-> ---
->  drivers/net/can/bfin_can.c |   21 ++++++++-------------
->  1 file changed, 8 insertions(+), 13 deletions(-)
->=20
-> diff --git a/drivers/net/can/bfin_can.c b/drivers/net/can/bfin_can.c
-> index 0a5eff4..1d116a7 100644
-> --- a/drivers/net/can/bfin_can.c
-> +++ b/drivers/net/can/bfin_can.c
-> @@ -551,16 +551,10 @@ static int bfin_can_probe(struct platform_device =
-*pdev)
->  		goto exit;
->  	}
-> =20
-> -	if (!request_mem_region(res_mem->start, resource_size(res_mem),
-> -				dev_name(&pdev->dev))) {
-> -		err =3D -EBUSY;
-> -		goto exit;
-> -	}
-> -
->  	/* request peripheral pins */
->  	err =3D peripheral_request_list(pdata, dev_name(&pdev->dev));
->  	if (err)
-> -		goto exit_mem_release;
-> +		goto exit;
-> =20
->  	dev =3D alloc_bfin_candev();
->  	if (!dev) {
-> @@ -569,7 +563,13 @@ static int bfin_can_probe(struct platform_device *=
-pdev)
->  	}
-> =20
->  	priv =3D netdev_priv(dev);
-> -	priv->membase =3D (void __iomem *)res_mem->start;
-> +
-> +	priv->membase =3D devm_ioremap_resource(&pdev->dev, res_mem);
-> +	if (IS_ERR((void *)priv->membase)) {
-Is this cast needed?
-> +		dev_err(&pdev->dev, "Cannot map IO\n");
-> +		return PTR_ERR((void *)priv->membase);
-Is this cast needed?
-> +	}
-> +
->  	priv->rx_irq =3D rx_irq->start;
->  	priv->tx_irq =3D tx_irq->start;
->  	priv->err_irq =3D err_irq->start;
-> @@ -601,8 +601,6 @@ exit_candev_free:
->  	free_candev(dev);
->  exit_peri_pin_free:
->  	peripheral_free_list(pdata);
-> -exit_mem_release:
-> -	release_mem_region(res_mem->start, resource_size(res_mem));
->  exit:
->  	return err;
->  }
-> @@ -617,9 +615,6 @@ static int bfin_can_remove(struct platform_device *=
-pdev)
-> =20
->  	unregister_candev(dev);
-> =20
-> -	res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	release_mem_region(res->start, resource_size(res));
-> -
->  	peripheral_free_list(priv->pin_list);
-> =20
->  	free_candev(dev);
->=20
+		/* Block until there are no active lockers. */
+		do {
+			schedule();
+			set_current_state(TASK_UNINTERRUPTIBLE);
+		} while ((count = sem->count) & RWSEM_ACTIVE_MASK);
 
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+		raw_spin_lock_irq(&sem->wait_lock);
+	}
 
 
---VN13KQ7RAgkXVfmCBoGg1NteHvT1UcxLX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Which still has similar issues with even two barriers, I guess for both
+the rwsem_try_write_lock call (less severe) and count checks. Anyway...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIbBAEBAgAGBQJUrkb3AAoJECte4hHFiupUAMEP+PHqSsYfbmyTf0ImCOBQcoFn
-5s9F4c6J/+zzsg/OY6Tb4jiXSkg+e+1LQUo5pCxn7MhAem+XP5RwSewBPx7sbDbI
-yxqOTpyZp2NSn/YGh0qTeMoaWoPN/baUHfajmyC2DjAJbIuyqYoP7pHMBgNFEoBA
-XnDJa6Q+bNveFNqUlffRBSlYtq3+SOsmf+yBwe4o0oYQZ6eojV4gzZm7KnWMbdCi
-JKi3OMNHuPvnBpVHyyl4qFkHVGX4Fa3hQdQhMa5sUIE9JbLImFr7n5GsTvBiqFO+
-3Ix3JsbUJFLlWXqjphFtRM+8Ec6KgnrgSiGZGD6IL8mgXBJP7E2vPWrryF9gZCez
-VkNtY+3tMHoHVtCBnXswsmp5pdQ1po/fHkyC7EwI45PDXtbq6iqVVkT4APKRZIvE
-mqtBv+R4ZUzVVxUvqjMrke6ZixjJk9i2iEiOzQDYoumN7h1e2XEkNcfI1tj/Ucjc
-af6E8KncOyJD8twx5oIG16uOdcz8G5mZYED6VsWGiI0ic5bCl2A6/IhJkyR6RKcM
-uQmuH+oyXfhX5cRjPwpR+PODLMW9Lj9QDED/avsIWq9lCDJtTMxbIJqnbm8yrkwu
-iAWW5N+mN5DhaedLat6myj6oFqoDv8mySeysgOMoY+iz0gHm/X4+vGMTkQnmhQIZ
-Sy0EEtVt1vrCqqXpsY4=
-=9vZQ
------END PGP SIGNATURE-----
-
---VN13KQ7RAgkXVfmCBoGg1NteHvT1UcxLX--
