@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074AbbAHJQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 04:16:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58444 "EHLO mx1.redhat.com"
+	id S932165AbbAHJRJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 04:17:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58478 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753946AbbAHJQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 04:16:52 -0500
+	id S1753946AbbAHJRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 04:17:06 -0500
 From: Fam Zheng <famz@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -29,96 +29,42 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "David S. Miller" <davem@davemloft.net>, linux-fsdevel@vger.kernel.org,
         linux-api@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
         Stefan Hajnoczi <stefanha@redhat.com>
-Subject: [RESEND PATCH 2/3] epoll: Add implementation for epoll_pwait1
-Date: Thu,  8 Jan 2015 17:16:02 +0800
-Message-Id: <1420708563-21743-3-git-send-email-famz@redhat.com>
+Subject: [RESEND PATCH 3/3] x86: hook up epoll_pwait1 syscall
+Date: Thu,  8 Jan 2015 17:16:03 +0800
+Message-Id: <1420708563-21743-4-git-send-email-famz@redhat.com>
 In-Reply-To: <1420708563-21743-1-git-send-email-famz@redhat.com>
 References: <1420708563-21743-1-git-send-email-famz@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unlike ppoll(2), which accepts a timespec argument "timeout_ts" to
-specify the timeout, epoll_wait(2) and epoll_pwait(2) expect a
-microsecond timeout in int type.
-
-This is an obstacle for applications in switching from ppoll to epoll,
-if they want nanosecond resolution in their event loops.
-
-Therefore, adding this variation of epoll wait interface, giving user an
-option with *both* advantages, is a reasonable move: there could be
-constantly scalable performance polling many fds, while having a
-nanosecond timeout precision (assuming it has properly set up timer
-slack with prctl(2)).
-
 Signed-off-by: Fam Zheng <famz@redhat.com>
 ---
- fs/eventpoll.c           | 24 ++++++++++++++++++++++++
- include/linux/syscalls.h |  4 ++++
- kernel/sys_ni.c          |  3 +++
- 3 files changed, 31 insertions(+)
+ arch/x86/syscalls/syscall_32.tbl | 1 +
+ arch/x86/syscalls/syscall_64.tbl | 1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 117ba72..ee69fd4 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -2066,6 +2066,30 @@ SYSCALL_DEFINE6(epoll_pwait, int, epfd, struct epoll_event __user *, events,
- 			      sigmask ? &ksigmask : NULL, sigsetsize);
- }
+diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
+index b3560ec..1c863f6 100644
+--- a/arch/x86/syscalls/syscall_32.tbl
++++ b/arch/x86/syscalls/syscall_32.tbl
+@@ -365,3 +365,4 @@
+ 356	i386	memfd_create		sys_memfd_create
+ 357	i386	bpf			sys_bpf
+ 358	i386	execveat		sys_execveat			stub32_execveat
++359	i386	epoll_pwait1		sys_epoll_pwait1
+diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+index 8d656fb..644a90f 100644
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -329,6 +329,7 @@
+ 320	common	kexec_file_load		sys_kexec_file_load
+ 321	common	bpf			sys_bpf
+ 322	64	execveat		stub_execveat
++323	common	epoll_pwait1		sys_epoll_pwait1
  
-+SYSCALL_DEFINE6(epoll_pwait1, int, epfd, struct epoll_event __user *, events,
-+		int, maxevents,
-+		struct timespec __user *, timeout,
-+		const sigset_t __user *, sigmask,
-+		size_t, sigsetsize)
-+{
-+	struct timespec ts;
-+	sigset_t ksigmask;
-+
-+	if (timeout && copy_from_user(&ts, timeout, sizeof(ts)))
-+		return -EFAULT;
-+
-+	if (sigmask) {
-+		if (sigsetsize != sizeof(sigset_t))
-+			return -EINVAL;
-+		if (copy_from_user(&ksigmask, sigmask, sizeof(ksigmask)))
-+			return -EFAULT;
-+	}
-+	return epoll_pwait_do(epfd, events, maxevents,
-+			      timeout ? &ts : NULL,
-+			      sigmask ? &ksigmask : NULL,
-+			      sigsetsize);
-+}
-+
- #ifdef CONFIG_COMPAT
- COMPAT_SYSCALL_DEFINE6(epoll_pwait, int, epfd,
- 		       struct epoll_event __user *, events,
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 85893d7..3e0ed0b 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -630,6 +630,10 @@ asmlinkage long sys_epoll_pwait(int epfd, struct epoll_event __user *events,
- 				int maxevents, int timeout,
- 				const sigset_t __user *sigmask,
- 				size_t sigsetsize);
-+asmlinkage long sys_epoll_pwait1(int epfd, struct epoll_event __user *events,
-+				 int maxevents, struct timespec __user *ts,
-+				 const sigset_t __user *sigmask,
-+				 size_t sigsetsize);
- asmlinkage long sys_gethostname(char __user *name, int len);
- asmlinkage long sys_sethostname(char __user *name, int len);
- asmlinkage long sys_setdomainname(char __user *name, int len);
-diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-index 5adcb0a..1044158 100644
---- a/kernel/sys_ni.c
-+++ b/kernel/sys_ni.c
-@@ -229,3 +229,6 @@ cond_syscall(sys_bpf);
- 
- /* execveat */
- cond_syscall(sys_execveat);
-+
-+/* epoll_pwait1 */
-+cond_syscall(sys_epoll_pwait1);
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
 -- 
 1.9.3
 
