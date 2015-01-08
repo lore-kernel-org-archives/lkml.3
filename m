@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932523AbbAHSIh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 13:08:37 -0500
-Received: from mga09.intel.com ([134.134.136.24]:39444 "EHLO mga09.intel.com"
+	id S1757261AbbAHSLJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 13:11:09 -0500
+Received: from mail.kernel.org ([198.145.29.136]:58407 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751697AbbAHSIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 13:08:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="438119388"
-Date: Fri, 9 Jan 2015 02:07:53 +0800
-From: kbuild test robot <fengguang.wu@intel.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: kbuild-all@01.org, Lars Poeschel <poeschel@lemonage.de>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH wsa] i2c: viperboard: vprbrd_quirks can be static
-Message-ID: <20150108180753.GA9361@lkp-sb04>
-References: <201501090239.gPJgrJIE%fengguang.wu@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201501090239.gPJgrJIE%fengguang.wu@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: fengguang.wu@intel.com
-X-SA-Exim-Scanned: No (on bee); SAEximRunCond expanded to false
+	id S1751309AbbAHSLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 13:11:08 -0500
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Cc: Jaegeuk Kim <jaegeuk@kernel.org>
+Subject: [PATCH 1/6] f2fs: fix wrong unlock_page call
+Date: Thu,  8 Jan 2015 10:10:56 -0800
+Message-Id: <1420740661-72288-1-git-send-email-jaegeuk@kernel.org>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/i2c/busses/i2c-viperboard.c:357:27: sparse: symbol 'vprbrd_quirks' was not declared. Should it be static?
+This patch removes wrongly called unlock_page.
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
 ---
- i2c-viperboard.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/f2fs/data.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/i2c/busses/i2c-viperboard.c b/drivers/i2c/busses/i2c-viperboard.c
-index f880f08..47e88ad 100644
---- a/drivers/i2c/busses/i2c-viperboard.c
-+++ b/drivers/i2c/busses/i2c-viperboard.c
-@@ -354,7 +354,7 @@ static const struct i2c_algorithm vprbrd_algorithm = {
- 	.functionality	= vprbrd_i2c_func,
- };
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index b48b355..a7b905c 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -837,7 +837,6 @@ write:
+ 	/* we should bypass data pages to proceed the kworkder jobs */
+ 	if (unlikely(f2fs_cp_error(sbi))) {
+ 		SetPageError(page);
+-		unlock_page(page);
+ 		goto out;
+ 	}
  
--struct i2c_adapter_quirks vprbrd_quirks = {
-+static struct i2c_adapter_quirks vprbrd_quirks = {
- 	.max_read_len = 2048,
- 	.max_write_len = 2048,
- };
+-- 
+2.1.1
+
