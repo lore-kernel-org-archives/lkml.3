@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342AbbAHGY2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 01:24:28 -0500
-Received: from sci-ig2.spreadtrum.com ([222.66.158.135]:39145 "EHLO
-	SHSQR01.spreadtrum.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751488AbbAHGY1 (ORCPT
+	id S1753007AbbAHGWl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 01:22:41 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:54725 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869AbbAHGWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 01:24:27 -0500
-From: =?gb2312?B?Q2h1bnlhbiBaaGFuZyAo1cW0utHeKQ==?= 
-	<Chunyan.Zhang@spreadtrum.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "ionut.m.alexa@gmail.com" <ionut.m.alexa@gmail.com>,
-        =?gb2312?B?TWFyayBZYW5nICjR7tPAu9Qp?= <Mark.Yang@spreadtrum.com>,
-        =?gb2312?B?V2VpIFFpYW8gKMfHzrAp?= <Wei.Qiao@spreadtrum.com>,
-        =?gb2312?B?R2VuZyBSZW4gKMjO4tkp?= <Geng.Ren@spreadtrum.com>,
-        =?gb2312?B?T3Jzb24gWmhhaSAotdS+qSk=?= <Orson.Zhai@spreadtrum.com>,
-        =?gb2312?B?WmhpemhvdSBaaGFuZyAo1cXWztbeKQ==?= 
-	<Zhizhou.Zhang@spreadtrum.com>,
-        =?gb2312?B?S2UgV2FuZyAozfW/xik=?= <Ke.Wang@spreadtrum.com>,
-        "zhang.lyra@gmail.com" <zhang.lyra@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arjan van de Ven <arjan@infradead.org>, "Tejun Heo" <tj@kernel.org>
-Subject: RE: [PATCH] kernel: async: Fixed the wrong waitting condition of
- wait_event
-Thread-Topic: [PATCH] kernel: async: Fixed the wrong waitting condition of
- wait_event
-Thread-Index: AQHQKtuHfaC3GIuPaUGx5xFMzLOA6Zy1u7kA
-Date: Thu, 8 Jan 2015 06:20:35 +0000
-Message-ID: <4fdc864411a24125b49ca66989011928@SHMBX02.spreadtrum.com>
-References: <async>
-	<1420428935-30385-1-git-send-email-chunyan.zhang@spreadtrum.com>,<20150107163915.50a71131faf74e0f75562137@linux-foundation.org>
-In-Reply-To: <20150107163915.50a71131faf74e0f75562137@linux-foundation.org>
-Accept-Language: en-US, zh-CN, en-HK
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.0.67.164]
-Content-Type: text/plain; charset="gb2312"
-MIME-Version: 1.0
-X-MAIL: SHSQR01.spreadtrum.com t086Knf2058981
+	Thu, 8 Jan 2015 01:22:40 -0500
+From: Howard Chen <howard.chen@linaro.org>
+To: matthias.bgg@gmail.com
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org (moderated list:ARM/Mediatek
+	SoC...),
+        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 1/2] ARM: mediatek: Add sysirq device node to mt6592 dtsi
+Date: Thu,  8 Jan 2015 14:23:10 +0800
+Message-Id: <1420698191-10878-1-git-send-email-howard.chen@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t086OXqw028941
 
-Hi, Andrew
+Add sysirq node to mt6592.dtsi and also correct timer interrupt flag.
+The old setting works because boot loader already set it.
+With a sysirq device node, the timer interrupt can use a correct value.
 
-Could you give us the test log including the runtime problems you've got?
+Signed-off-by: Howard Chen <howard.chen@linaro.org>
+---
+ arch/arm/boot/dts/mt6592.dtsi | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-Thank you so much.
+diff --git a/arch/arm/boot/dts/mt6592.dtsi b/arch/arm/boot/dts/mt6592.dtsi
+index 31e5a09..67c8174 100644
+--- a/arch/arm/boot/dts/mt6592.dtsi
++++ b/arch/arm/boot/dts/mt6592.dtsi
+@@ -18,7 +18,7 @@
+ 
+ / {
+ 	compatible = "mediatek,mt6592";
+-	interrupt-parent = <&gic>;
++	interrupt-parent = <&sysirq>;
+ 
+ 	cpus {
+ 		#address-cells = <1>;
+@@ -81,18 +81,25 @@
+ 	timer: timer@10008000 {
+ 		compatible = "mediatek,mt6577-timer";
+ 		reg = <0x10008000 0x80>;
+-		interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_HIGH>;
++		interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_LOW>;
+ 		clocks = <&system_clk>, <&rtc_clk>;
+ 		clock-names = "system-clk", "rtc-clk";
+ 	};
+ 
++	sysirq: interrupt-controller@10200220 {
++		compatible = "mediatek,mt6592-sysirq", "mediatek,mt6577-sysirq";
++		interrupt-controller;
++		#interrupt-cells = <3>;
++		interrupt-parent = <&gic>;
++		reg = <0x10200220 0x1c>;
++	};
++
+ 	gic: interrupt-controller@10211000 {
+ 		compatible = "arm,cortex-a7-gic";
+ 		interrupt-controller;
+ 		#interrupt-cells = <3>;
++		interrupt-parent = <&gic>;
+ 		reg = <0x10211000 0x1000>,
+ 		      <0x10212000 0x1000>;
+ 	};
+-
+ };
+-
+-- 
+1.9.1
 
-
-Best regards
-Chunyan
-
-On Mon, 5 Jan 2015 11:35:35 +0800 Chunyan Zhang <chunyan.zhang@spreadtrum.com> wrote:
-
-> This patch changes the waitting condition of wait_event in the
-> function 'async_synchronize_cookie_domain'.
->
-> This function waits until all asynchronous function calls for the certain
-> domain have been done.
->
-> But, the function 'lowest_in_progress' returns the lowest *pending*
-> entry's cookie.
->
-> So we should make sure that the return value of lowest_in_progress(domain)
-> must be larger than @cookie.
-
-I'm having runtime problems with this.  Twice the kernel silently hangs
-late in initcalls and the third time I got a great stream of oopses.
-
-I'll drop it.  Hopefully you'll be able to work through the bug with
-Arjan and Tejun.
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
