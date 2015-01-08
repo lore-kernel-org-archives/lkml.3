@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756862AbbAHMzV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 07:55:21 -0500
+	id S932360AbbAHM4k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 07:56:40 -0500
 Received: from mga14.intel.com ([192.55.52.115]:35459 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756844AbbAHMzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 07:55:17 -0500
+	id S1756847AbbAHMzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 07:55:20 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="437999929"
+   d="scan'208";a="437999944"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V4 19/23] perf inject: Re-pipe Instruction Tracing events
-Date: Thu,  8 Jan 2015 14:52:23 +0200
-Message-Id: <1420721547-26470-20-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V4 20/23] perf inject: Add Instruction Tracing support
+Date: Thu,  8 Jan 2015 14:52:24 +0200
+Message-Id: <1420721547-26470-21-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1420721547-26470-1-git-send-email-adrian.hunter@intel.com>
 References: <1420721547-26470-1-git-send-email-adrian.hunter@intel.com>
@@ -27,111 +27,197 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New Instruction Tracing events must be re-piped by default.
+Add support for decoding an Instruction Trace.  The
+Instruction Tracing events are stripped and replaced
+by synthesized events.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/builtin-inject.c | 63 +++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 58 insertions(+), 5 deletions(-)
+ tools/perf/Documentation/perf-inject.txt | 27 ++++++++++++
+ tools/perf/builtin-inject.c              | 71 +++++++++++++++++++++++++++++++-
+ 2 files changed, 96 insertions(+), 2 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-inject.txt b/tools/perf/Documentation/perf-inject.txt
+index dc7442c..9f49c43 100644
+--- a/tools/perf/Documentation/perf-inject.txt
++++ b/tools/perf/Documentation/perf-inject.txt
+@@ -44,6 +44,33 @@ OPTIONS
+ --kallsyms=<file>::
+ 	kallsyms pathname
+ 
++-Z::
++--itrace::
++	Decode Instruction Tracing data, replacing it with synthesized events.
++	Options are:
++
++		i	synthesize instructions events
++		b	synthesize branches events
++		c	synthesize branches events (calls only)
++		r	synthesize branches events (returns only)
++		e	synthesize error events
++		d	create a debug log
++		g	synthesize a call chain for instructions events
++
++	The default is all events i.e. the same as -Zibe
++
++	In addition, the period (default 1000) for instructions events can be
++	specified in units of:
++
++		i	instructions (default)
++		t	ticks
++		ms	milliseconds
++		us	microseconds
++		ns	nanoseconds
++
++	Also the call chain size (default 16, max. 1024) for instructions
++	events can be specified.
++
+ SEE ALSO
+ --------
+ linkperf:perf-record[1], linkperf:perf-report[1], linkperf:perf-archive[1]
 diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 84df2de..29e0840 100644
+index 29e0840..c3323ea 100644
 --- a/tools/perf/builtin-inject.c
 +++ b/tools/perf/builtin-inject.c
-@@ -38,14 +38,11 @@ struct event_entry {
- 	union perf_event event[0];
+@@ -16,6 +16,7 @@
+ #include "util/debug.h"
+ #include "util/build-id.h"
+ #include "util/data.h"
++#include "util/itrace.h"
+ 
+ #include "util/parse-options.h"
+ 
+@@ -30,6 +31,7 @@ struct perf_inject {
+ 	struct perf_data_file	output;
+ 	u64			bytes_written;
+ 	struct list_head	samples;
++	struct itrace_synth_opts itrace_synth_opts;
  };
  
--static int perf_event__repipe_synth(struct perf_tool *tool,
--				    union perf_event *event)
-+static int output_bytes(struct perf_inject *inject, void *buf, size_t sz)
+ struct event_entry {
+@@ -198,6 +200,32 @@ static int perf_event__repipe_fork(struct perf_tool *tool,
+ 	return err;
+ }
+ 
++static int perf_event__repipe_comm(struct perf_tool *tool,
++				   union perf_event *event,
++				   struct perf_sample *sample,
++				   struct machine *machine)
++{
++	int err;
++
++	err = perf_event__process_comm(tool, event, sample, machine);
++	perf_event__repipe(tool, event, sample, machine);
++
++	return err;
++}
++
++static int perf_event__repipe_exit(struct perf_tool *tool,
++				   union perf_event *event,
++				   struct perf_sample *sample,
++				   struct machine *machine)
++{
++	int err;
++
++	err = perf_event__process_exit(tool, event, sample, machine);
++	perf_event__repipe(tool, event, sample, machine);
++
++	return err;
++}
++
+ static int perf_event__repipe_tracing_data(struct perf_tool *tool,
+ 					   union perf_event *event,
+ 					   struct perf_session *session)
+@@ -210,6 +238,18 @@ static int perf_event__repipe_tracing_data(struct perf_tool *tool,
+ 	return err;
+ }
+ 
++static int perf_event__repipe_id_index(struct perf_tool *tool,
++				       union perf_event *event,
++				       struct perf_session *session)
++{
++	int err;
++
++	perf_event__repipe_synth(tool, event);
++	err = perf_event__process_id_index(tool, event, session);
++
++	return err;
++}
++
+ static int dso__read_build_id(struct dso *dso)
  {
--	struct perf_inject *inject = container_of(tool, struct perf_inject, tool);
- 	ssize_t size;
+ 	if (dso->has_build_id)
+@@ -393,16 +433,20 @@ static int __cmd_inject(struct perf_inject *inject)
+ 	int ret = -EINVAL;
+ 	struct perf_session *session = inject->session;
+ 	struct perf_data_file *file_out = &inject->output;
++	u64 output_data_offset;
  
--	size = perf_data_file__write(&inject->output, event,
--				     event->header.size);
-+	size = perf_data_file__write(&inject->output, buf, sz);
- 	if (size < 0)
- 		return -errno;
+ 	signal(SIGINT, sig_handler);
  
-@@ -53,6 +50,34 @@ static int perf_event__repipe_synth(struct perf_tool *tool,
- 	return 0;
- }
+-	if (inject->build_ids || inject->sched_stat) {
++	if (inject->build_ids || inject->sched_stat ||
++	    inject->itrace_synth_opts.set) {
+ 		inject->tool.mmap	  = perf_event__repipe_mmap;
+ 		inject->tool.mmap2	  = perf_event__repipe_mmap2;
+ 		inject->tool.fork	  = perf_event__repipe_fork;
+ 		inject->tool.tracing_data = perf_event__repipe_tracing_data;
+ 	}
  
-+static int copy_bytes(struct perf_inject *inject, int fd, off_t size)
-+{
-+	char buf[4096];
-+	ssize_t ssz;
-+	int ret;
++	output_data_offset = session->header.data_offset;
 +
-+	while (size > 0) {
-+		ssz = read(fd, buf, MIN(size, sizeof(buf)));
-+		if (ssz < 0)
-+			return -errno;
-+		ret = output_bytes(inject, buf, ssz);
-+		if (ret)
-+			return ret;
-+		size -= ssz;
-+	}
-+
-+	return 0;
-+}
-+
-+static int perf_event__repipe_synth(struct perf_tool *tool,
-+				    union perf_event *event)
-+{
-+	struct perf_inject *inject = container_of(tool, struct perf_inject,
-+						  tool);
-+
-+	return output_bytes(inject, event, event->header.size);
-+}
-+
- static int perf_event__repipe_op2_synth(struct perf_tool *tool,
- 					union perf_event *event,
- 					struct perf_session *session
-@@ -79,6 +104,31 @@ static int perf_event__repipe_attr(struct perf_tool *tool,
- 	return perf_event__repipe_synth(tool, event);
- }
+ 	if (inject->build_ids) {
+ 		inject->tool.sample = perf_event__inject_buildid;
+ 	} else if (inject->sched_stat) {
+@@ -423,10 +467,22 @@ static int __cmd_inject(struct perf_inject *inject)
+ 			else if (!strncmp(name, "sched:sched_stat_", 17))
+ 				evsel->handler = perf_inject__sched_stat;
+ 		}
++	} else if (inject->itrace_synth_opts.set) {
++		session->itrace_synth_opts = &inject->itrace_synth_opts;
++		inject->itrace_synth_opts.inject = true;
++		inject->tool.comm	    = perf_event__repipe_comm;
++		inject->tool.exit	    = perf_event__repipe_exit;
++		inject->tool.id_index	    = perf_event__repipe_id_index;
++		inject->tool.itrace_info    = perf_event__process_itrace_info;
++		inject->tool.itrace	    = perf_event__process_itrace;
++		inject->tool.ordered_events = true;
++		inject->tool.ordering_requires_timestamps = true;
++		/* Allow space in the header for new attributes */
++		output_data_offset = 4096;
+ 	}
  
-+static s64 perf_event__repipe_itrace(struct perf_tool *tool,
-+				     union perf_event *event,
-+				     struct perf_session *session
-+				     __maybe_unused)
-+{
-+	struct perf_inject *inject = container_of(tool, struct perf_inject,
-+						  tool);
-+	int ret;
-+
-+	if (perf_data_file__is_pipe(session->file) || !session->one_mmap) {
-+		ret = output_bytes(inject, event, event->header.size);
-+		if (ret < 0)
-+			return ret;
-+		ret = copy_bytes(inject, perf_data_file__fd(session->file),
-+				 event->itrace.size);
-+	} else {
-+		ret = output_bytes(inject, event,
-+				   event->header.size + event->itrace.size);
-+	}
-+	if (ret < 0)
-+		return ret;
-+
-+	return event->itrace.size;
-+}
-+
- static int perf_event__repipe(struct perf_tool *tool,
- 			      union perf_event *event,
- 			      struct perf_sample *sample __maybe_unused,
-@@ -407,6 +457,9 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.unthrottle	= perf_event__repipe,
- 			.attr		= perf_event__repipe_attr,
- 			.tracing_data	= perf_event__repipe_op2_synth,
-+			.itrace_info	= perf_event__repipe_op2_synth,
-+			.itrace		= perf_event__repipe_itrace,
-+			.itrace_error	= perf_event__repipe_op2_synth,
- 			.finished_round	= perf_event__repipe_op2_synth,
- 			.build_id	= perf_event__repipe_op2_synth,
- 			.id_index	= perf_event__repipe_op2_synth,
+ 	if (!file_out->is_pipe)
+-		lseek(file_out->fd, session->header.data_offset, SEEK_SET);
++		lseek(file_out->fd, output_data_offset, SEEK_SET);
+ 
+ 	ret = perf_session__process_events(session, &inject->tool);
+ 
+@@ -434,6 +490,14 @@ static int __cmd_inject(struct perf_inject *inject)
+ 		if (inject->build_ids)
+ 			perf_header__set_feat(&session->header,
+ 					      HEADER_BUILD_ID);
++		/*
++		 * The instruction traces have been removed and replaced with
++		 * synthesized hardware events, so clear the feature flag.
++		 */
++		if (inject->itrace_synth_opts.set)
++			perf_header__clear_feat(&session->header,
++						HEADER_ITRACE);
++		session->header.data_offset = output_data_offset;
+ 		session->header.data_size = inject->bytes_written;
+ 		perf_session__write_header(session, session->evlist, file_out->fd, true);
+ 	}
+@@ -490,6 +554,9 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			 "be more verbose (show build ids, etc)"),
+ 		OPT_STRING(0, "kallsyms", &symbol_conf.kallsyms_name, "file",
+ 			   "kallsyms pathname"),
++		OPT_CALLBACK_OPTARG('Z', "itrace", &inject.itrace_synth_opts,
++				    NULL, "opts", "Instruction Tracing options",
++				    itrace_parse_synth_opts),
+ 		OPT_END()
+ 	};
+ 	const char * const inject_usage[] = {
 -- 
 1.9.1
 
