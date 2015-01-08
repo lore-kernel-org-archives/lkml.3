@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521AbbAHOFf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 09:05:35 -0500
-Received: from mout.gmx.net ([212.227.15.15]:53798 "EHLO mout.gmx.net"
+	id S1753013AbbAHOGZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 09:06:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40044 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753636AbbAHOFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 09:05:34 -0500
-From: Sven Dziadek <sven.dziadek@gmx.de>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: wlan-ng: hfa384x_usb: Fix else is not useful warning
-Date: Thu,  8 Jan 2015 15:01:17 +0100
-Message-Id: <1420725677-14766-1-git-send-email-sven.dziadek@gmx.de>
-X-Mailer: git-send-email 2.1.4
-X-Provags-ID: V03:K0:DGFIhAKtV1W0WwDPMpvGTwQKUI6E44HuzmS6sUf+MKCH3QNNpp/
- F4SviKiuf0EmTpUMBoxRbgMs+YVFIC0OQ/yvdR+3c95kGfaXdZKYmzWeljD3lkDVo+p0bP6
- Eo9FGlHq41GwrLpkwv+1cF9h1PLtjEfAcYTmLvqXwQBSKeK0J+89bED5G33IaMj3OMH5ofX
- +nQGkyEL122383cr7xzcQ==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1750869AbbAHOGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 09:06:24 -0500
+Message-ID: <54AE8EDE.8010608@suse.cz>
+Date: Thu, 08 Jan 2015 15:06:22 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Masahiro Yamada <yamada.m@jp.panasonic.com>, linux-kbuild@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kbuild: use mixed-targets when two or more config targets
+ are given
+References: <1418292754-2987-1-git-send-email-yamada.m@jp.panasonic.com>
+In-Reply-To: <1418292754-2987-1-git-send-email-yamada.m@jp.panasonic.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the following checkpatch.pl warning:
-WARNING: else is not generally useful after a break or return
+On 2014-12-11 11:12, Masahiro Yamada wrote:
+> "make kvmconfig" expects that the .config has already been created,
+> but some people might want to create the .config and run kvmconfig
+> in one shot command, like this:
+> 
+>   $ make defconfig kvmconfig
+> 
+> To make sure this command works correctly even if -j* option is set,
+> we must handle them one by one.
+> This commit turns on mixed-targets when $(MAKECMDGOALS) includes
+> at least one config target and also includes another target.
+> 
+> Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
 
-Signed-off-by: Sven Dziadek <sven.dziadek@gmx.de>
----
- drivers/staging/wlan-ng/hfa384x_usb.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+Applied to kbuild.git#kbuild, thanks.
 
-diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c b/drivers/staging/wlan-ng/hfa384x_usb.c
-index 55d2f56..a9a5649 100644
---- a/drivers/staging/wlan-ng/hfa384x_usb.c
-+++ b/drivers/staging/wlan-ng/hfa384x_usb.c
-@@ -4123,12 +4123,11 @@ static int hfa384x_isgood_pdrcode(u16 pdrcode)
- 			pr_debug("Encountered unknown PDR#=0x%04x, assuming it's ok.\n",
- 				 pdrcode);
- 			return 1;
--		} else {
--			/* bad code */
--			pr_debug("Encountered unknown PDR#=0x%04x, (>=0x1000), assuming it's bad.\n",
--				 pdrcode);
--			return 0;
- 		}
-+		/* bad code */
-+		pr_debug("Encountered unknown PDR#=0x%04x, (>=0x1000), assuming it's bad.\n",
-+			pdrcode);
-+		return 0;
- 	}
- 	return 0;		/* avoid compiler warnings */
- }
--- 
-2.1.4
+Michal
 
