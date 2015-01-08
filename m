@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756329AbbAHMKt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 07:10:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38056 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755492AbbAHMKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 07:10:48 -0500
-Message-ID: <54AE73C5.4000409@suse.cz>
-Date: Thu, 08 Jan 2015 13:10:45 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1756521AbbAHMK5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 07:10:57 -0500
+Received: from outbound-smtp01.blacknight.com ([81.17.249.7]:49224 "EHLO
+	outbound-smtp01.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756433AbbAHMKz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 07:10:55 -0500
+Message-ID: <54AE73C7.90009@nexus-software.ie>
+Date: Thu, 08 Jan 2015 12:10:47 +0000
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Simon Kirby <sim@hostway.ca>
-CC: Holger Hoffst?tte <holger.hoffstaette@googlemail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Dirty pages underflow on 3.14.23
-References: <alpine.LRH.2.02.1501051744020.5119@file01.intranet.prod.int.rdu2.redhat.com> <20150106150250.GA26895@phnom.home.cmpxchg.org> <alpine.LRH.2.02.1501061246400.16437@file01.intranet.prod.int.rdu2.redhat.com> <pan.2015.01.07.10.57.46@googlemail.com> <20150107212858.GA6664@hostway.ca> <54ADA99A.90501@suse.cz> <20150108010426.GB6664@hostway.ca>
-In-Reply-To: <20150108010426.GB6664@hostway.ca>
-Content-Type: text/plain; charset=windows-1252
+To: "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        Darren Hart <dvhart@infradead.org>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
+References: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie> <1419873783-5161-2-git-send-email-pure.logic@nexus-software.ie> <20150106073634.GB59754@vmdeb7> <54ABE67B.1070706@nexus-software.ie> <AF233D1473C1364ABD51D28909A1B1B7326E0C25@PGSMSX105.gar.corp.intel.com>
+In-Reply-To: <AF233D1473C1364ABD51D28909A1B1B7326E0C25@PGSMSX105.gar.corp.intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2015 02:04 AM, Simon Kirby wrote:
-> On Wed, Jan 07, 2015 at 10:48:10PM +0100, Vlastimil Babka wrote:
-> 
->> On 01/07/2015 10:28 PM, Simon Kirby wrote:
->>
->> > Hmm...A possibly-related issue...Before trying this, after a fresh boot,
->> > /proc/vmstat showed:
->> > 
->> > nr_alloc_batch 4294541205
->> 
->> This can happen, and not be a problem in general. However, there was a fix
->> abe5f972912d086c080be4bde67750630b6fb38b in 3.17 for a potential performance
->> issue if this counter overflows on single processor configuration. It was marked
->> stable, but the 3.16 series was discontinued before the fix could be backported.
->> So if you are on single-core, you might hit the performance issue.
-> 
-> That particular commit seems to just change the code path in that case,
-> but should it be underflowing at all on UP?
+On 07/01/15 23:45, Ong, Boon Leong wrote:
+>> Since BIOS and grub code both use 0x00000000 as the 'off' address I think it
+>> makes sense for the kernel to continue to use that address.
+>
+> Just add on top of what Daren mentioned in another mail, based on the Quark document,
+> the base address can start from zero. Say lo=0, hi=0, and WM & RM may be changed from default value,
+> 1st 1KiB will be marked as IMR. It seems to me that there is no good way to test if an IMR is 'occupied' and/or 'enabled'
+> since enable-bit is not available. But, what is benefit of testing against lo=0 & hi=0? The logic to calculate size will work under
+> lo=0 & hi=0 anway.
 
-Yes, the code using this counter is either treating it as signed, or includes a
-<0 tests. It's just the /proc output might be confusing here...
+Hi Boon Leong.
 
->> > Still, nr_alloc_batch reads as 4294254379 after MySQL restart, and now
->> > seems to stay up there.
->> 
->> Hm if it stays there, then you are probably hitting the performance issue. Look
->> at /proc/zoneinfo, which zone has the underflow. It means this zone will get
->> unfair amount of allocations, while others may contain stale data and would be
->> better candidates.
-> 
-> In this case, it has only 640MB, and there's only DMA and Normal. This is
-> affecting Normal, and DMA is so small that it probably doesn't matter.
-> 
-> Simon-
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+I think it does make sense to add a check for rmask and wmask in the 
+'access all' state when determining if an IMR is enabled on X1000 or not.
+
+>> My own view is that it's not really desirable and easier to debug IMRs
+>> generally on a platform if overlaps aren't allowed.
+> I do agree on the benefit listed above. Perhaps, you can add explanation here
+> to mention the design decision.
+
+Will do.
+
 
