@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756160AbbAHJQq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 04:16:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37720 "EHLO mx1.redhat.com"
+	id S932074AbbAHJQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 04:16:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58444 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753946AbbAHJQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 04:16:40 -0500
+	id S1753946AbbAHJQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 04:16:52 -0500
 From: Fam Zheng <famz@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -29,176 +29,54 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "David S. Miller" <davem@davemloft.net>, linux-fsdevel@vger.kernel.org,
         linux-api@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
         Stefan Hajnoczi <stefanha@redhat.com>
-Subject: [RESEND PATCH 1/3] epoll: Extract epoll_wait_do and epoll_pwait_do
-Date: Thu,  8 Jan 2015 17:16:01 +0800
-Message-Id: <1420708563-21743-2-git-send-email-famz@redhat.com>
+Subject: [RESEND PATCH 2/3] epoll: Add implementation for epoll_pwait1
+Date: Thu,  8 Jan 2015 17:16:02 +0800
+Message-Id: <1420708563-21743-3-git-send-email-famz@redhat.com>
 In-Reply-To: <1420708563-21743-1-git-send-email-famz@redhat.com>
 References: <1420708563-21743-1-git-send-email-famz@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation of epoll_pwait1, this allows sharing code with coming new
-syscall. The new functions use timespec for timeout.
+Unlike ppoll(2), which accepts a timespec argument "timeout_ts" to
+specify the timeout, epoll_wait(2) and epoll_pwait(2) expect a
+microsecond timeout in int type.
+
+This is an obstacle for applications in switching from ppoll to epoll,
+if they want nanosecond resolution in their event loops.
+
+Therefore, adding this variation of epoll wait interface, giving user an
+option with *both* advantages, is a reasonable move: there could be
+constantly scalable performance polling many fds, while having a
+nanosecond timeout precision (assuming it has properly set up timer
+slack with prctl(2)).
 
 Signed-off-by: Fam Zheng <famz@redhat.com>
 ---
- fs/eventpoll.c | 136 +++++++++++++++++++++++++++++----------------------------
- 1 file changed, 70 insertions(+), 66 deletions(-)
+ fs/eventpoll.c           | 24 ++++++++++++++++++++++++
+ include/linux/syscalls.h |  4 ++++
+ kernel/sys_ni.c          |  3 +++
+ 3 files changed, 31 insertions(+)
 
 diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index d77f944..117ba72 100644
+index 117ba72..ee69fd4 100644
 --- a/fs/eventpoll.c
 +++ b/fs/eventpoll.c
-@@ -1554,15 +1554,12 @@ static int ep_send_events(struct eventpoll *ep,
- 	return ep_scan_ready_list(ep, ep_send_events_proc, &esed, 0, false);
+@@ -2066,6 +2066,30 @@ SYSCALL_DEFINE6(epoll_pwait, int, epfd, struct epoll_event __user *, events,
+ 			      sigmask ? &ksigmask : NULL, sigsetsize);
  }
  
--static inline struct timespec ep_set_mstimeout(long ms)
-+static inline struct timespec ep_set_mstimeout(const struct timespec *ts)
- {
--	struct timespec now, ts = {
--		.tv_sec = ms / MSEC_PER_SEC,
--		.tv_nsec = NSEC_PER_MSEC * (ms % MSEC_PER_SEC),
--	};
-+	struct timespec now;
- 
- 	ktime_get_ts(&now);
--	return timespec_add_safe(now, ts);
-+	return timespec_add_safe(now, *ts);
- }
- 
- /**
-@@ -1573,17 +1570,16 @@ static inline struct timespec ep_set_mstimeout(long ms)
-  * @events: Pointer to the userspace buffer where the ready events should be
-  *          stored.
-  * @maxevents: Size (in terms of number of events) of the caller event buffer.
-- * @timeout: Maximum timeout for the ready events fetch operation, in
-- *           milliseconds. If the @timeout is zero, the function will not block,
-- *           while if the @timeout is less than zero, the function will block
-- *           until at least one event has been retrieved (or an error
-- *           occurred).
-+ * @timeout: Maximum timeout for the ready events fetch operation.  If NULL, or
-+ *           if both tv_sec and tv_nsec are zero, the function will not block.
-+ *           If either one is less than zero, the function will block until at
-+ *           least one event has been retrieved (or an error occurred).
-  *
-  * Returns: Returns the number of ready events which have been fetched, or an
-  *          error code, in case of error.
-  */
- static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
--		   int maxevents, long timeout)
-+		   int maxevents, const struct timespec *timeout)
- {
- 	int res = 0, eavail, timed_out = 0;
- 	unsigned long flags;
-@@ -1591,13 +1587,7 @@ static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
- 	wait_queue_t wait;
- 	ktime_t expires, *to = NULL;
- 
--	if (timeout > 0) {
--		struct timespec end_time = ep_set_mstimeout(timeout);
--
--		slack = select_estimate_accuracy(&end_time);
--		to = &expires;
--		*to = timespec_to_ktime(end_time);
--	} else if (timeout == 0) {
-+	if (!timeout || (timeout->tv_nsec == 0 && timeout->tv_sec == 0)) {
- 		/*
- 		 * Avoid the unnecessary trip to the wait queue loop, if the
- 		 * caller specified a non blocking operation.
-@@ -1605,6 +1595,12 @@ static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
- 		timed_out = 1;
- 		spin_lock_irqsave(&ep->lock, flags);
- 		goto check_events;
-+	} else if (timeout->tv_nsec >= 0 && timeout->tv_sec >= 0) {
-+		struct timespec end_time = ep_set_mstimeout(timeout);
-+
-+		slack = select_estimate_accuracy(&end_time);
-+		to = &expires;
-+		*to = timespec_to_ktime(end_time);
- 	}
- 
- fetch_events:
-@@ -1954,12 +1950,8 @@ error_return:
- 	return error;
- }
- 
--/*
-- * Implement the event wait interface for the eventpoll file. It is the kernel
-- * part of the user space epoll_wait(2).
-- */
--SYSCALL_DEFINE4(epoll_wait, int, epfd, struct epoll_event __user *, events,
--		int, maxevents, int, timeout)
-+static inline int epoll_wait_do(int epfd, struct epoll_event __user *events,
-+				int maxevents, const struct timespec *timeout)
- {
- 	int error;
- 	struct fd f;
-@@ -2002,29 +1994,35 @@ error_fput:
- 
- /*
-  * Implement the event wait interface for the eventpoll file. It is the kernel
-- * part of the user space epoll_pwait(2).
-+ * part of the user space epoll_wait(2).
-  */
--SYSCALL_DEFINE6(epoll_pwait, int, epfd, struct epoll_event __user *, events,
--		int, maxevents, int, timeout, const sigset_t __user *, sigmask,
--		size_t, sigsetsize)
-+SYSCALL_DEFINE4(epoll_wait, int, epfd, struct epoll_event __user *, events,
-+		int, maxevents, int, timeout)
-+{
-+	struct timespec ts = (struct timespec) {
-+	    .tv_sec = timeout / MSEC_PER_SEC,
-+	    .tv_nsec = (timeout % MSEC_PER_SEC) * NSEC_PER_MSEC,
-+	};
-+	return epoll_wait_do(epfd, events, maxevents, &ts);
-+}
-+
-+static inline int epoll_pwait_do(int epfd, struct epoll_event __user *events,
-+				 int maxevents, struct timespec *timeout,
-+				 sigset_t *sigmask, size_t sigsetsize)
- {
- 	int error;
--	sigset_t ksigmask, sigsaved;
-+	sigset_t sigsaved;
- 
- 	/*
- 	 * If the caller wants a certain signal mask to be set during the wait,
- 	 * we apply it here.
- 	 */
- 	if (sigmask) {
--		if (sigsetsize != sizeof(sigset_t))
--			return -EINVAL;
--		if (copy_from_user(&ksigmask, sigmask, sizeof(ksigmask)))
--			return -EFAULT;
- 		sigsaved = current->blocked;
--		set_current_blocked(&ksigmask);
-+		set_current_blocked(sigmask);
- 	}
- 
--	error = sys_epoll_wait(epfd, events, maxevents, timeout);
-+	error = epoll_wait_do(epfd, events, maxevents, timeout);
- 
- 	/*
- 	 * If we changed the signal mask, we need to restore the original one.
-@@ -2044,49 +2042,55 @@ SYSCALL_DEFINE6(epoll_pwait, int, epfd, struct epoll_event __user *, events,
- 	return error;
- }
- 
-+/*
-+ * Implement the event wait interface for the eventpoll file. It is the kernel
-+ * part of the user space epoll_pwait(2).
-+ */
-+SYSCALL_DEFINE6(epoll_pwait, int, epfd, struct epoll_event __user *, events,
-+		int, maxevents, int, timeout, const sigset_t __user *, sigmask,
++SYSCALL_DEFINE6(epoll_pwait1, int, epfd, struct epoll_event __user *, events,
++		int, maxevents,
++		struct timespec __user *, timeout,
++		const sigset_t __user *, sigmask,
 +		size_t, sigsetsize)
 +{
-+	struct timespec ts = (struct timespec) {
-+	    .tv_sec = timeout / MSEC_PER_SEC,
-+	    .tv_nsec = (timeout % MSEC_PER_SEC) * NSEC_PER_MSEC,
-+	};
++	struct timespec ts;
 +	sigset_t ksigmask;
++
++	if (timeout && copy_from_user(&ts, timeout, sizeof(ts)))
++		return -EFAULT;
 +
 +	if (sigmask) {
 +		if (sigsetsize != sizeof(sigset_t))
@@ -206,68 +84,41 @@ index d77f944..117ba72 100644
 +		if (copy_from_user(&ksigmask, sigmask, sizeof(ksigmask)))
 +			return -EFAULT;
 +	}
-+	return epoll_pwait_do(epfd, events, maxevents, &ts,
-+			      sigmask ? &ksigmask : NULL, sigsetsize);
++	return epoll_pwait_do(epfd, events, maxevents,
++			      timeout ? &ts : NULL,
++			      sigmask ? &ksigmask : NULL,
++			      sigsetsize);
 +}
 +
  #ifdef CONFIG_COMPAT
  COMPAT_SYSCALL_DEFINE6(epoll_pwait, int, epfd,
--			struct epoll_event __user *, events,
--			int, maxevents, int, timeout,
--			const compat_sigset_t __user *, sigmask,
--			compat_size_t, sigsetsize)
-+		       struct epoll_event __user *, events,
-+		       int, maxevents, int, timeout,
-+		       const compat_sigset_t __user *, sigmask,
-+		       compat_size_t, sigsetsize)
- {
--	long err;
- 	compat_sigset_t csigmask;
--	sigset_t ksigmask, sigsaved;
-+	sigset_t ksigmask;
+ 		       struct epoll_event __user *, events,
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 85893d7..3e0ed0b 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -630,6 +630,10 @@ asmlinkage long sys_epoll_pwait(int epfd, struct epoll_event __user *events,
+ 				int maxevents, int timeout,
+ 				const sigset_t __user *sigmask,
+ 				size_t sigsetsize);
++asmlinkage long sys_epoll_pwait1(int epfd, struct epoll_event __user *events,
++				 int maxevents, struct timespec __user *ts,
++				 const sigset_t __user *sigmask,
++				 size_t sigsetsize);
+ asmlinkage long sys_gethostname(char __user *name, int len);
+ asmlinkage long sys_sethostname(char __user *name, int len);
+ asmlinkage long sys_setdomainname(char __user *name, int len);
+diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+index 5adcb0a..1044158 100644
+--- a/kernel/sys_ni.c
++++ b/kernel/sys_ni.c
+@@ -229,3 +229,6 @@ cond_syscall(sys_bpf);
+ 
+ /* execveat */
+ cond_syscall(sys_execveat);
 +
-+	struct timespec ts = (struct timespec) {
-+	    .tv_sec = timeout / MSEC_PER_SEC,
-+	    .tv_nsec = (timeout % MSEC_PER_SEC) * NSEC_PER_MSEC,
-+	};
- 
--	/*
--	 * If the caller wants a certain signal mask to be set during the wait,
--	 * we apply it here.
--	 */
- 	if (sigmask) {
- 		if (sigsetsize != sizeof(compat_sigset_t))
- 			return -EINVAL;
- 		if (copy_from_user(&csigmask, sigmask, sizeof(csigmask)))
- 			return -EFAULT;
- 		sigset_from_compat(&ksigmask, &csigmask);
--		sigsaved = current->blocked;
--		set_current_blocked(&ksigmask);
--	}
--
--	err = sys_epoll_wait(epfd, events, maxevents, timeout);
--
--	/*
--	 * If we changed the signal mask, we need to restore the original one.
--	 * In case we've got a signal while waiting, we do not restore the
--	 * signal mask yet, and we allow do_signal() to deliver the signal on
--	 * the way back to userspace, before the signal mask is restored.
--	 */
--	if (sigmask) {
--		if (err == -EINTR) {
--			memcpy(&current->saved_sigmask, &sigsaved,
--			       sizeof(sigsaved));
--			set_restore_sigmask();
--		} else
--			set_current_blocked(&sigsaved);
- 	}
- 
--	return err;
-+	return epoll_pwait_do(epfd, events, maxevents, &ts,
-+			      sigmask ? &ksigmask : NULL, sigsetsize);
- }
- #endif
- 
++/* epoll_pwait1 */
++cond_syscall(sys_epoll_pwait1);
 -- 
 1.9.3
 
