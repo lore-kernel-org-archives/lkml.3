@@ -1,31 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932222AbbAHCb1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 21:31:27 -0500
-Received: from mga09.intel.com ([134.134.136.24]:15922 "EHLO mga09.intel.com"
+	id S1756053AbbAHCbs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 21:31:48 -0500
+Received: from mga02.intel.com ([134.134.136.20]:45888 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932179AbbAHCbX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 21:31:23 -0500
+	id S932179AbbAHCbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 21:31:43 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="509087183"
+   d="scan'208";a="509087255"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Thomas Gleixner <tglx@linutronix.de>,
         Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Len Brown <lenb@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Thierry Reding <treding@nvidia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mike Travis <travis@sgi.com>
+        Borislav Petkov <bp@alien8.de>, Russell King <linux@arm.linux.org.uk>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Will Deacon <will.deacon@arm.com>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Murali Karicheri <m-karicheri2@ti.com>,
+        Srikanth Thokala <sthokal@xilinx.com>
 Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
-        dmaengine@vger.kernel.org
-Subject: [RFC Patch 17/19] resources: Move struct resource_list_entry from ACPI into resource core
-Date: Thu,  8 Jan 2015 10:33:04 +0800
-Message-Id: <1420684386-5975-18-git-send-email-jiang.liu@linux.intel.com>
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Russell King <rmk+kernel@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [RFC Patch 18/19] PCI: Use common resource list management code instead of private implementation
+Date: Thu,  8 Jan 2015 10:33:05 +0800
+Message-Id: <1420684386-5975-19-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1420684386-5975-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1420684386-5975-1-git-send-email-jiang.liu@linux.intel.com>
@@ -33,231 +36,261 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently ACPI, PCI and pnp all implement the same resource list
-management with different data structure. We need to transfer from
-one data structure into another when passing resources from one
-subsystem into another subsystem. Sp move struct resource_list_entry
-from ACPI into resource core, so it could be reused by different
-subystems and avoid the data structure conversion.
+Use common resource list management data structure and interfaces
+instead of private implementation.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- drivers/acpi/acpi_lpss.c     |    6 +++---
- drivers/acpi/acpi_platform.c |    2 +-
- drivers/acpi/resource.c      |   13 ++++--------
- drivers/dma/acpi-dma.c       |    8 +++----
- include/linux/acpi.h         |    6 ------
- include/linux/ioport.h       |   25 ++++++++++++++++++++++
- kernel/resource.c            |   48 ++++++++++++++++++++++++++++++++++++++++++
- 7 files changed, 85 insertions(+), 23 deletions(-)
+ arch/arm/kernel/bios32.c            |    5 ++---
+ arch/x86/pci/bus_numa.c             |    4 ++--
+ drivers/pci/bus.c                   |   18 ++++++------------
+ drivers/pci/host-bridge.c           |    8 ++++----
+ drivers/pci/host/pci-host-generic.c |    4 ++--
+ drivers/pci/host/pci-xgene.c        |    4 ++--
+ drivers/pci/host/pcie-xilinx.c      |    4 ++--
+ drivers/pci/probe.c                 |   10 +++++-----
+ include/linux/pci.h                 |    8 +-------
+ 9 files changed, 26 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-index 4f3febf8a589..39b548dba70b 100644
---- a/drivers/acpi/acpi_lpss.c
-+++ b/drivers/acpi/acpi_lpss.c
-@@ -333,12 +333,12 @@ static int acpi_lpss_create_device(struct acpi_device *adev,
- 		goto err_out;
- 
- 	list_for_each_entry(rentry, &resource_list, node)
--		if (resource_type(&rentry->res) == IORESOURCE_MEM) {
-+		if (resource_type(rentry->res) == IORESOURCE_MEM) {
- 			if (dev_desc->prv_size_override)
- 				pdata->mmio_size = dev_desc->prv_size_override;
- 			else
--				pdata->mmio_size = resource_size(&rentry->res);
--			pdata->mmio_base = ioremap(rentry->res.start,
-+				pdata->mmio_size = resource_size(rentry->res);
-+			pdata->mmio_base = ioremap(rentry->res->start,
- 						   pdata->mmio_size);
- 			break;
- 		}
-diff --git a/drivers/acpi/acpi_platform.c b/drivers/acpi/acpi_platform.c
-index 6ba8beb6b9d2..238e32b9cbb0 100644
---- a/drivers/acpi/acpi_platform.c
-+++ b/drivers/acpi/acpi_platform.c
-@@ -71,7 +71,7 @@ struct platform_device *acpi_create_platform_device(struct acpi_device *adev)
- 		}
- 		count = 0;
- 		list_for_each_entry(rentry, &resource_list, node)
--			resources[count++] = rentry->res;
-+			resources[count++] = *rentry->res;
- 
- 		acpi_dev_free_resource_list(&resource_list);
- 	}
-diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
-index 8ea7c26d6915..c0dc038274d4 100644
---- a/drivers/acpi/resource.c
-+++ b/drivers/acpi/resource.c
-@@ -444,12 +444,7 @@ EXPORT_SYMBOL_GPL(acpi_dev_resource_interrupt);
-  */
- void acpi_dev_free_resource_list(struct list_head *list)
+diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+index a4effd6d8f2f..968b03cb6376 100644
+--- a/arch/arm/kernel/bios32.c
++++ b/arch/arm/kernel/bios32.c
+@@ -422,17 +422,16 @@ static int pcibios_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
+ static int pcibios_init_resources(int busnr, struct pci_sys_data *sys)
  {
--	struct resource_list_entry *rentry, *re;
--
--	list_for_each_entry_safe(rentry, re, list, node) {
--		list_del(&rentry->node);
--		kfree(rentry);
+ 	int ret;
+-	struct pci_host_bridge_window *window;
++	struct resource_list_entry *window;
+ 
+ 	if (list_empty(&sys->resources)) {
+ 		pci_add_resource_offset(&sys->resources,
+ 			 &iomem_resource, sys->mem_offset);
+ 	}
+ 
+-	list_for_each_entry(window, &sys->resources, list) {
++	resource_list_for_each_entry(window, &sys->resources)
+ 		if (resource_type(window->res) == IORESOURCE_IO)
+ 			return 0;
 -	}
-+	resource_list_free_list(list);
- }
- EXPORT_SYMBOL_GPL(acpi_dev_free_resource_list);
  
-@@ -467,14 +462,14 @@ static acpi_status acpi_dev_new_resource_entry(struct resource *r,
+ 	sys->io_res.start = (busnr * SZ_64K) ?  : pcibios_min_io;
+ 	sys->io_res.end = (busnr + 1) * SZ_64K - 1;
+diff --git a/arch/x86/pci/bus_numa.c b/arch/x86/pci/bus_numa.c
+index f3a2cfc14125..6785af30ed39 100644
+--- a/arch/x86/pci/bus_numa.c
++++ b/arch/x86/pci/bus_numa.c
+@@ -31,7 +31,7 @@ void x86_pci_root_bus_resources(int bus, struct list_head *resources)
  {
- 	struct resource_list_entry *rentry;
+ 	struct pci_root_info *info = x86_find_pci_root_info(bus);
+ 	struct pci_root_res *root_res;
+-	struct pci_host_bridge_window *window;
++	struct resource_list_entry *window;
+ 	bool found = false;
  
--	rentry = kmalloc(sizeof(*rentry), GFP_KERNEL);
-+	rentry = resource_list_alloc(NULL, 0);
- 	if (!rentry) {
- 		c->error = -ENOMEM;
- 		return AE_NO_MEMORY;
+ 	if (!info)
+@@ -41,7 +41,7 @@ void x86_pci_root_bus_resources(int bus, struct list_head *resources)
+ 	       bus);
+ 
+ 	/* already added by acpi ? */
+-	list_for_each_entry(window, resources, list)
++	resource_list_for_each_entry(window, resources)
+ 		if (window->res->flags & IORESOURCE_BUS) {
+ 			found = true;
+ 			break;
+diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+index 73aef51a28f0..82bd96b60a0b 100644
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -20,17 +20,16 @@
+ void pci_add_resource_offset(struct list_head *resources, struct resource *res,
+ 			     resource_size_t offset)
+ {
+-	struct pci_host_bridge_window *window;
++	struct resource_list_entry *entry;
+ 
+-	window = kzalloc(sizeof(struct pci_host_bridge_window), GFP_KERNEL);
+-	if (!window) {
++	entry = resource_list_alloc(res, 0);
++	if (!entry) {
+ 		printk(KERN_ERR "PCI: can't add host bridge window %pR\n", res);
+ 		return;
  	}
--	rentry->res = *r;
-+	*rentry->res = *r;
- 	rentry->offset = offset;
--	list_add_tail(&rentry->node, c->list);
-+	resource_list_insert(c->list, rentry, true);
- 	c->count++;
- 	return AE_OK;
+ 
+-	window->res = res;
+-	window->offset = offset;
+-	list_add_tail(&window->list, resources);
++	entry->offset = offset;
++	resource_list_insert(resources, entry, true);
  }
-diff --git a/drivers/dma/acpi-dma.c b/drivers/dma/acpi-dma.c
-index de361a156b34..1ce84abe0924 100644
---- a/drivers/dma/acpi-dma.c
-+++ b/drivers/dma/acpi-dma.c
-@@ -56,10 +56,10 @@ static int acpi_dma_parse_resource_group(const struct acpi_csrt_group *grp,
- 		return 0;
+ EXPORT_SYMBOL(pci_add_resource_offset);
  
- 	list_for_each_entry(rentry, &resource_list, node) {
--		if (resource_type(&rentry->res) == IORESOURCE_MEM)
--			mem = rentry->res.start;
--		else if (resource_type(&rentry->res) == IORESOURCE_IRQ)
--			irq = rentry->res.start;
-+		if (resource_type(rentry->res) == IORESOURCE_MEM)
-+			mem = rentry->res->start;
-+		else if (resource_type(rentry->res) == IORESOURCE_IRQ)
-+			irq = rentry->res->start;
- 	}
+@@ -42,12 +41,7 @@ EXPORT_SYMBOL(pci_add_resource);
  
- 	acpi_dev_free_resource_list(&resource_list);
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 1df4a0211ae5..6d7f7edca22c 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -297,12 +297,6 @@ unsigned long acpi_dev_irq_flags(u8 triggering, u8 polarity, u8 shareable);
- bool acpi_dev_resource_interrupt(struct acpi_resource *ares, int index,
- 				 struct resource *res);
+ void pci_free_resource_list(struct list_head *resources)
+ {
+-	struct pci_host_bridge_window *window, *tmp;
+-
+-	list_for_each_entry_safe(window, tmp, resources, list) {
+-		list_del(&window->list);
+-		kfree(window);
+-	}
++	resource_list_free_list(resources);
+ }
+ EXPORT_SYMBOL(pci_free_resource_list);
  
--struct resource_list_entry {
--	struct list_head node;
--	struct resource res;
--	resource_size_t offset;
+diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
+index 0e5f3c95af5b..3ea13883e6a5 100644
+--- a/drivers/pci/host-bridge.c
++++ b/drivers/pci/host-bridge.c
+@@ -35,10 +35,10 @@ void pcibios_resource_to_bus(struct pci_bus *bus, struct pci_bus_region *region,
+ 			     struct resource *res)
+ {
+ 	struct pci_host_bridge *bridge = find_pci_host_bridge(bus);
+-	struct pci_host_bridge_window *window;
++	struct resource_list_entry *window;
+ 	resource_size_t offset = 0;
+ 
+-	list_for_each_entry(window, &bridge->windows, list) {
++	resource_list_for_each_entry(window, &bridge->windows) {
+ 		if (resource_contains(window->res, res)) {
+ 			offset = window->offset;
+ 			break;
+@@ -60,10 +60,10 @@ void pcibios_bus_to_resource(struct pci_bus *bus, struct resource *res,
+ 			     struct pci_bus_region *region)
+ {
+ 	struct pci_host_bridge *bridge = find_pci_host_bridge(bus);
+-	struct pci_host_bridge_window *window;
++	struct resource_list_entry *window;
+ 	resource_size_t offset = 0;
+ 
+-	list_for_each_entry(window, &bridge->windows, list) {
++	resource_list_for_each_entry(window, &bridge->windows) {
+ 		struct pci_bus_region bus_region;
+ 
+ 		if (resource_type(res) != resource_type(window->res))
+diff --git a/drivers/pci/host/pci-host-generic.c b/drivers/pci/host/pci-host-generic.c
+index 6eb1aa75bd37..16d5d6eeb35a 100644
+--- a/drivers/pci/host/pci-host-generic.c
++++ b/drivers/pci/host/pci-host-generic.c
+@@ -149,14 +149,14 @@ static int gen_pci_parse_request_of_pci_ranges(struct gen_pci *pci)
+ 	struct device *dev = pci->host.dev.parent;
+ 	struct device_node *np = dev->of_node;
+ 	resource_size_t iobase;
+-	struct pci_host_bridge_window *win;
++	struct resource_list_entry *win;
+ 
+ 	err = of_pci_get_host_bridge_resources(np, 0, 0xff, &pci->resources,
+ 					       &iobase);
+ 	if (err)
+ 		return err;
+ 
+-	list_for_each_entry(win, &pci->resources, list) {
++	resource_list_for_each_entry(win, &pci->resources) {
+ 		struct resource *parent, *res = win->res;
+ 
+ 		switch (resource_type(res)) {
+diff --git a/drivers/pci/host/pci-xgene.c b/drivers/pci/host/pci-xgene.c
+index b1d0596457c5..e335b834f950 100644
+--- a/drivers/pci/host/pci-xgene.c
++++ b/drivers/pci/host/pci-xgene.c
+@@ -401,11 +401,11 @@ static int xgene_pcie_map_ranges(struct xgene_pcie_port *port,
+ 				 struct list_head *res,
+ 				 resource_size_t io_base)
+ {
+-	struct pci_host_bridge_window *window;
++	struct resource_list_entry *window;
+ 	struct device *dev = port->dev;
+ 	int ret;
+ 
+-	list_for_each_entry(window, res, list) {
++	resource_list_for_each_entry(window, res) {
+ 		struct resource *res = window->res;
+ 		u64 restype = resource_type(res);
+ 
+diff --git a/drivers/pci/host/pcie-xilinx.c b/drivers/pci/host/pcie-xilinx.c
+index ef3ebaf9a738..253e993a111f 100644
+--- a/drivers/pci/host/pcie-xilinx.c
++++ b/drivers/pci/host/pcie-xilinx.c
+@@ -737,7 +737,7 @@ static int xilinx_pcie_parse_and_add_res(struct xilinx_pcie_port *port)
+ 	resource_size_t offset;
+ 	struct of_pci_range_parser parser;
+ 	struct of_pci_range range;
+-	struct pci_host_bridge_window *win;
++	struct resource_list_entry *win;
+ 	int err = 0, mem_resno = 0;
+ 
+ 	/* Get the ranges */
+@@ -807,7 +807,7 @@ static int xilinx_pcie_parse_and_add_res(struct xilinx_pcie_port *port)
+ 
+ free_resources:
+ 	release_child_resources(&iomem_resource);
+-	list_for_each_entry(win, &port->resources, list)
++	resource_list_for_each_entry(win, &port->resources)
+ 		devm_kfree(dev, win->res);
+ 	pci_free_resource_list(&port->resources);
+ 
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 23212f8ae09b..df6a40932aa0 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1895,7 +1895,7 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	int error;
+ 	struct pci_host_bridge *bridge;
+ 	struct pci_bus *b, *b2;
+-	struct pci_host_bridge_window *window, *n;
++	struct resource_list_entry *window, *n;
+ 	struct resource *res;
+ 	resource_size_t offset;
+ 	char bus_addr[64];
+@@ -1959,8 +1959,8 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 		printk(KERN_INFO "PCI host bridge to bus %s\n", dev_name(&b->dev));
+ 
+ 	/* Add initial resources to the bus */
+-	list_for_each_entry_safe(window, n, resources, list) {
+-		list_move_tail(&window->list, &bridge->windows);
++	resource_list_for_each_entry_safe(window, n, resources) {
++		list_move_tail(&window->node, &bridge->windows);
+ 		res = window->res;
+ 		offset = window->offset;
+ 		if (res->flags & IORESOURCE_BUS)
+@@ -2060,12 +2060,12 @@ void pci_bus_release_busn_res(struct pci_bus *b)
+ struct pci_bus *pci_scan_root_bus(struct device *parent, int bus,
+ 		struct pci_ops *ops, void *sysdata, struct list_head *resources)
+ {
+-	struct pci_host_bridge_window *window;
++	struct resource_list_entry *window;
+ 	bool found = false;
+ 	struct pci_bus *b;
+ 	int max;
+ 
+-	list_for_each_entry(window, resources, list)
++	resource_list_for_each_entry(window, resources)
+ 		if (window->res->flags & IORESOURCE_BUS) {
+ 			found = true;
+ 			break;
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 360a966a97a5..74afd92c05e8 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -395,16 +395,10 @@ static inline int pci_channel_offline(struct pci_dev *pdev)
+ 	return (pdev->error_state != pci_channel_io_normal);
+ }
+ 
+-struct pci_host_bridge_window {
+-	struct list_head list;
+-	struct resource *res;		/* host bridge aperture (CPU address) */
+-	resource_size_t offset;		/* bus address + offset = CPU address */
 -};
 -
- void acpi_dev_free_resource_list(struct list_head *list);
- int acpi_dev_get_resources(struct acpi_device *adev, struct list_head *list,
- 			   int (*preproc)(struct acpi_resource *, void *),
-diff --git a/include/linux/ioport.h b/include/linux/ioport.h
-index 2c5250222278..a6f4841ca40c 100644
---- a/include/linux/ioport.h
-+++ b/include/linux/ioport.h
-@@ -11,6 +11,7 @@
- #ifndef __ASSEMBLY__
- #include <linux/compiler.h>
- #include <linux/types.h>
-+
- /*
-  * Resources are tree-like, allowing
-  * nesting etc..
-@@ -255,6 +256,30 @@ static inline bool resource_overlaps(struct resource *r1, struct resource *r2)
-        return (r1->start <= r2->end && r1->end >= r2->start);
- }
- 
-+/*
-+ * Common resource list management data structure and interfaces to support
-+ * ACPI, PNP and PCI host bridge etc.
-+ */
-+struct resource_list_entry {
-+	struct list_head	node;
-+	struct resource		*res;	/* In master (CPU) address space */
-+	resource_size_t		offset;	/* Translation offset for bridge */
-+	struct resource		__res;	/* Default storage for res */
-+};
-+
-+extern struct resource_list_entry *resource_list_alloc(struct resource *res,
-+						       size_t extra_size);
-+extern void resource_list_free(struct resource_list_entry *entry);
-+extern void resource_list_insert(struct list_head *head,
-+				 struct resource_list_entry *entry, bool tail);
-+extern void resource_list_delete(struct resource_list_entry *entry);
-+extern void resource_list_free_list(struct list_head *head);
-+
-+#define resource_list_for_each_entry(entry, list)	\
-+	list_for_each_entry((entry), (list), node)
-+
-+#define resource_list_for_each_entry_safe(entry, tmp, list)	\
-+	list_for_each_entry_safe((entry), (tmp), (list), node)
- 
- #endif /* __ASSEMBLY__ */
- #endif	/* _LINUX_IOPORT_H */
-diff --git a/kernel/resource.c b/kernel/resource.c
-index 0bcebffc4e77..414183809383 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -1529,6 +1529,54 @@ int iomem_is_exclusive(u64 addr)
- 	return err;
- }
- 
-+struct resource_list_entry *resource_list_alloc(struct resource *res,
-+						size_t extra_size)
-+{
-+	struct resource_list_entry *entry;
-+
-+	entry = kzalloc(sizeof(*entry) + extra_size, GFP_KERNEL);
-+	if (entry) {
-+		INIT_LIST_HEAD(&entry->node);
-+		entry->res = res ? res : &entry->__res;
-+	}
-+
-+	return entry;
-+}
-+EXPORT_SYMBOL(resource_list_alloc);
-+
-+void resource_list_free(struct resource_list_entry *entry)
-+{
-+	kfree(entry);
-+}
-+EXPORT_SYMBOL(resource_list_free);
-+
-+void resource_list_insert(struct list_head *head,
-+			  struct resource_list_entry *entry, bool tail)
-+{
-+	if (tail)
-+		list_add_tail(&entry->node, head);
-+	else
-+		list_add(&entry->node, head);
-+}
-+EXPORT_SYMBOL(resource_list_insert);
-+
-+void resource_list_delete(struct resource_list_entry *entry)
-+{
-+	list_del(&entry->node);
-+}
-+EXPORT_SYMBOL(resource_list_delete);
-+
-+void resource_list_free_list(struct list_head *head)
-+{
-+	struct resource_list_entry *entry, *tmp;
-+
-+	list_for_each_entry_safe(entry, tmp, head, node) {
-+		list_del(&entry->node);
-+		resource_list_free(entry);
-+	}
-+}
-+EXPORT_SYMBOL(resource_list_free_list);
-+
- static int __init strict_iomem(char *str)
- {
- 	if (strstr(str, "relaxed"))
+ struct pci_host_bridge {
+ 	struct device dev;
+ 	struct pci_bus *bus;		/* root bus */
+-	struct list_head windows;	/* pci_host_bridge_windows */
++	struct list_head windows;	/* resource_list_entry */
+ 	void (*release_fn)(struct pci_host_bridge *);
+ 	void *release_data;
+ };
 -- 
 1.7.10.4
 
