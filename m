@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756408AbbAHWC0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 17:02:26 -0500
-Received: from dehamd003.servertools24.de ([31.47.254.18]:41878 "EHLO
-	dehamd003.servertools24.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751684AbbAHWCZ (ORCPT
+	id S1755285AbbAHV5V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 16:57:21 -0500
+Received: from mail.lysator.liu.se ([130.236.254.3]:41689 "EHLO
+	mail.lysator.liu.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684AbbAHV5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 17:02:25 -0500
-X-Greylist: delayed 321 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Jan 2015 17:02:24 EST
-Message-ID: <54AEFCFF.3060406@ladisch.de>
-Date: Thu, 08 Jan 2015 22:56:15 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64;
-	rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Paul Bonser <misterpib@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>
-CC: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH v2] ALSA: usb-audio: Add support for Akai
-	MPC Element USB MIDI controller
-References: <54AE16D8.6080302@gmail.com>
-In-Reply-To: <54AE16D8.6080302@gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-PPP-Message-ID: <20150108215227.330530.63235@dehamd003.servertools24.de>
-X-PPP-Vhost: ladisch.de
+	Thu, 8 Jan 2015 16:57:20 -0500
+From: Peter Rosin <peda@lysator.liu.se>
+To: alsa-devel@alsa-project.org
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Lars-Peter Clausen <lars@metafoo.de>,
+        linux-kernel@vger.kernel.org, Peter Rosin <peda@axentia.se>,
+        stable@vger.kernel.org
+Subject: [PATCH] ASoC: pcm512x: Fix DSP program selection
+Date: Thu,  8 Jan 2015 22:56:30 +0100
+Message-Id: <1420754190-6309-1-git-send-email-peda@lysator.liu.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Bonser wrote:
-> The Akai MPC Element incorrectly reports its bInterfaceClass as 255, but
-> otherwise implements the USB MIDI spec correctly.
->
-> This adds a quirks-table.h entry which allows the device to be
-> recognized as a standard USB MIDI device.
->
-> Signed-off-by: Paul Bonser <misterpib@gmail.com>
-> ---
-> diff --git a/sound/usb/quirks-table.h b/sound/usb/quirks-table.h
-> index 8590a32..e869b6c 100644
-> --- a/sound/usb/quirks-table.h
-> +++ b/sound/usb/quirks-table.h
-> @@ -2516,6 +2516,28 @@ YAMAHA_DEVICE(0x7010, "UB99"),
->  	}
->  },
->
-> +{
-> +	/* Akai MPC Element */
-> +	USB_DEVICE(0x09e8, 0x0021),
-> +	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
-> +		.ifnum = QUIRK_ANY_INTERFACE,
-> +		.type = QUIRK_COMPOSITE,
-> +		.data = & (const struct snd_usb_audio_quirk[]) {
-> +			{
-> +				.ifnum = 0,
-> +				.type = QUIRK_IGNORE_INTERFACE
-> +			},
-> +			{
-> +				.ifnum = 1,
-> +				.type = QUIRK_MIDI_STANDARD_INTERFACE
-> +			},
-> +			{
-> +				.ifnum = -1
-> +			}
-> +		}
-> +	}
-> +},
+From: Peter Rosin <peda@axentia.se>
 
-Why a composite quirk?  Does a single quirk entry not work?
+The DSP programs are listed out of order.
 
+Signed-off-by: Peter Rosin <peda@axentia.se>
+Cc: stable@vger.kernel.org
+---
+ sound/soc/codecs/pcm512x.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Regards,
-Clemens
+diff --git a/sound/soc/codecs/pcm512x.c b/sound/soc/codecs/pcm512x.c
+index 0c8aefab404c..640c99198cda 100644
+--- a/sound/soc/codecs/pcm512x.c
++++ b/sound/soc/codecs/pcm512x.c
+@@ -188,8 +188,8 @@ static const DECLARE_TLV_DB_SCALE(boost_tlv, 0, 80, 0);
+ static const char * const pcm512x_dsp_program_texts[] = {
+ 	"FIR interpolation with de-emphasis",
+ 	"Low latency IIR with de-emphasis",
+-	"Fixed process flow",
+ 	"High attenuation with de-emphasis",
++	"Fixed process flow",
+ 	"Ringing-less low latency FIR",
+ };
+ 
+-- 
+1.7.10.4
+
