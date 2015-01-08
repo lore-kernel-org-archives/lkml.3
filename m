@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757628AbbAHWqw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 17:46:52 -0500
-Received: from mout.kundenserver.de ([212.227.17.10]:56750 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757380AbbAHWqv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 17:46:51 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Baruch Siach <baruch@tkos.co.il>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 0/8] ARM: Conexant Digicolor CX92755 SoC support
-Date: Thu, 08 Jan 2015 23:46:46 +0100
-Message-ID: <5966468.GiJYdzCvnt@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <cover.1420744368.git.baruch@tkos.co.il>
-References: <cover.1420744368.git.baruch@tkos.co.il>
+	id S1757704AbbAHWre (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 17:47:34 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49945 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757678AbbAHWrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 17:47:31 -0500
+Message-ID: <54AF08DC.3000302@ti.com>
+Date: Thu, 8 Jan 2015 17:46:52 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:hQM12wnorMku5WyOhKFeIMoe9vNmo0ymDV5hAMdwO4fL0+uA/MS
- O/6HZr+HTaJEvR3xAbpLSyA5VP0Yccz4wsCmEnPjHSjGHWd7XwflGqgjWfXaNNwNEaIhg47
- ZmD4+p50Lu54MpG13VWTmjegnwd6Xp84UMbxtjnEHf8uxmjIgNWhpUfSQdNSa5DYvB1Lqzk
- PdRJcbAvAMi6fT0csI+AA==
-X-UI-Out-Filterresults: notjunk:1;
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, Will Deacon <will.deacon@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+Subject: Re: [PATCH v3 3/4] of/pci: add of_pci_dma_configure() update dma
+ configuration
+References: <1420656594-8908-1-git-send-email-m-karicheri2@ti.com> <20150108160626.GN11583@arm.com> <54AEDFED.8060008@ti.com> <2057344.eJYxBNosJg@wuerfel>
+In-Reply-To: <2057344.eJYxBNosJg@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 January 2015 21:39:56 Baruch Siach wrote:
-> This series adds initial support for the Conexant CX92755 SoC. The CX92755 is
-> one of the Digicolor series of SoCs, all sharing many of the same peripherals.
-> The code was tested on the CX92755 evaluation kit, AKA Equinox.
-> 
-> Uses attempting to try this code will most likely also want the UART/console
-> driver available from https://patchwork.kernel.org/patch/5515861/.
- 
-Looks great overall now.
+On 01/08/2015 05:25 PM, Arnd Bergmann wrote:
+> On Thursday 08 January 2015 14:52:13 Murali Karicheri wrote:
+>>
+>> Could you add this as as a follow up patch as I don't have a platformm
+>> that support IOMMU and as such my understanding of the IOMMU is limited?
+>>
+>> I can help test the change to make sure it has no side effect on
+>> Keystone that doesn't support IOMMU.
+>
+> I think that's fine. Let's get your series done first and add the
+> DMA aliases for iommus on top once we have worked out what to do.
+>
+> 	Arnd
+Ok.
 
-I have just two more comments in one patch, and one general request:
-
-Please add a patch description for every patch. The text above would
-be a good start for the first patch, but it would be lost in the git
-history if it's only in the cover letter.
-
-other than that, feel free to add my
-
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-
-Once there are no more review comments, please submit the first three
-patches to arm@kernel.org, and send the other patches as separate
-series to the respective maintainers for irqchip and clocksource.
-
-	Arnd
+-- 
+Murali Karicheri
+Linux Kernel, Texas Instruments
