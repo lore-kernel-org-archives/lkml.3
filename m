@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733AbbAHMyj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 07:54:39 -0500
+	id S1756757AbbAHMyn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 07:54:43 -0500
 Received: from mga14.intel.com ([192.55.52.115]:35459 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756700AbbAHMyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 07:54:36 -0500
+	id S1756722AbbAHMyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 07:54:38 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="437999729"
+   d="scan'208";a="437999734"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V4 04/23] perf tools: Add support for Instruction Trace recording
-Date: Thu,  8 Jan 2015 14:52:08 +0200
-Message-Id: <1420721547-26470-5-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V4 05/23] perf record: Add basic Instruction Tracing support
+Date: Thu,  8 Jan 2015 14:52:09 +0200
+Message-Id: <1420721547-26470-6-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1420721547-26470-1-git-send-email-adrian.hunter@intel.com>
 References: <1420721547-26470-1-git-send-email-adrian.hunter@intel.com>
@@ -27,373 +27,212 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for reading from the Instruction
-Tracing mmap and synthesizing Instruction
-Tracing events.
-
-This patch introduces an abstraction for recording
-Instruction Trace data.  Recording is initialized
-by itrace_record__init() which is a weak function
-to be implemented by the architecture to provide
-recording callbacks.  Recording is mainly handled
-by itrace_mmap__read() and
-perf_event__synthesize_itrace() but there are
-callbacks for miscellaneous needs including
-validating and processing user options, populating
-private data in itrace_info_event, and freeing
-the structure when finished.
+Amend the perf record tool to read the
+Instruction Tracing mmap and synthesize
+Instruction Tracing events.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/perf.h        |   2 +
- tools/perf/util/itrace.c | 196 +++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/itrace.h |  59 +++++++++++++-
- tools/perf/util/record.c |  11 ++-
- 4 files changed, 266 insertions(+), 2 deletions(-)
+ tools/perf/builtin-record.c | 99 +++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 86 insertions(+), 13 deletions(-)
 
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 1dabb85..ca4c09d 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -53,8 +53,10 @@ struct record_opts {
- 	bool	     sample_time;
- 	bool	     period;
- 	bool	     sample_intr_regs;
-+	bool	     full_itrace;
- 	unsigned int freq;
- 	unsigned int mmap_pages;
-+	unsigned int itrace_mmap_pages;
- 	unsigned int user_freq;
- 	u64          branch_stack;
- 	u64	     default_interval;
-diff --git a/tools/perf/util/itrace.c b/tools/perf/util/itrace.c
-index 021f49f..d8fc89d 100644
---- a/tools/perf/util/itrace.c
-+++ b/tools/perf/util/itrace.c
-@@ -23,6 +23,10 @@
- #include <linux/bitops.h>
- #include <linux/log2.h>
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 8648c6d..ab8cd02 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -27,6 +27,7 @@
+ #include "util/cpumap.h"
+ #include "util/thread_map.h"
+ #include "util/data.h"
++#include "util/itrace.h"
  
-+#include <stdlib.h>
-+#include <string.h>
-+#include <errno.h>
-+
- #include "../perf.h"
- #include "util.h"
- #include "evlist.h"
-@@ -30,6 +34,9 @@
- #include "thread_map.h"
- #include "itrace.h"
- 
-+#include "event.h"
-+#include "debug.h"
-+
- int itrace_mmap__mmap(struct itrace_mmap *mm, struct itrace_mmap_params *mp,
- 		      void *userpg, int fd)
- {
-@@ -99,3 +106,192 @@ void itrace_mmap_params__set_idx(struct itrace_mmap_params *mp,
- 		mp->tid = evlist->threads->map[idx];
- 	}
+ #include <unistd.h>
+ #include <sched.h>
+@@ -38,6 +39,7 @@ struct record {
+ 	struct record_opts	opts;
+ 	u64			bytes_written;
+ 	struct perf_data_file	file;
++	struct itrace_record	*itr;
+ 	struct perf_evlist	*evlist;
+ 	struct perf_session	*session;
+ 	const char		*progname;
+@@ -110,6 +112,43 @@ out:
+ 	return rc;
  }
-+
-+size_t itrace_record__info_priv_size(struct itrace_record *itr)
+ 
++static int record__process_itrace(struct perf_tool *tool,
++				  union perf_event *event, void *data1,
++				  size_t len1, void *data2, size_t len2)
 +{
-+	if (itr)
-+		return itr->info_priv_size(itr);
-+	return 0;
-+}
++	struct record *rec = container_of(tool, struct record, tool);
++	size_t padding;
++	u8 pad[8] = {0};
 +
-+static int itrace_not_supported(void)
-+{
-+	pr_err("Instruction tracing is not supported on this architecture\n");
-+	return -EINVAL;
-+}
-+
-+int itrace_record__info_fill(struct itrace_record *itr,
-+			     struct perf_session *session,
-+			     struct itrace_info_event *itrace_info,
-+			     size_t priv_size)
-+{
-+	if (itr)
-+		return itr->info_fill(itr, session, itrace_info, priv_size);
-+	return itrace_not_supported();
-+}
-+
-+void itrace_record__free(struct itrace_record *itr)
-+{
-+	if (itr)
-+		itr->free(itr);
-+}
-+
-+int itrace_record__options(struct itrace_record *itr,
-+			   struct perf_evlist *evlist,
-+			   struct record_opts *opts)
-+{
-+	if (itr)
-+		return itr->recording_options(itr, evlist, opts);
-+	return 0;
-+}
-+
-+u64 itrace_record__reference(struct itrace_record *itr)
-+{
-+	if (itr)
-+		return itr->reference(itr);
-+	return 0;
-+}
-+
-+struct itrace_record *__weak
-+itrace_record__init(struct perf_evlist *evlist __maybe_unused, int *err)
-+{
-+	*err = 0;
-+	return NULL;
-+}
-+
-+int perf_event__synthesize_itrace_info(struct itrace_record *itr,
-+				       struct perf_tool *tool,
-+				       struct perf_session *session,
-+				       perf_event__handler_t process)
-+{
-+	union perf_event *ev;
-+	size_t priv_size;
-+	int err;
-+
-+	pr_debug2("Synthesizing itrace information\n");
-+	priv_size = itrace_record__info_priv_size(itr);
-+	ev = zalloc(sizeof(struct itrace_info_event) + priv_size);
-+	if (!ev)
-+		return -ENOMEM;
-+
-+	ev->itrace_info.header.type = PERF_RECORD_ITRACE_INFO;
-+	ev->itrace_info.header.size = sizeof(struct itrace_info_event) +
-+				      priv_size;
-+	err = itrace_record__info_fill(itr, session, &ev->itrace_info,
-+				       priv_size);
-+	if (err)
-+		goto out_free;
-+
-+	err = process(tool, ev, NULL, NULL);
-+out_free:
-+	free(ev);
-+	return err;
-+}
-+
-+int perf_event__synthesize_itrace(struct perf_tool *tool,
-+				  perf_event__handler_t process,
-+				  size_t size, u64 offset, u64 ref, int idx,
-+				  u32 tid, u32 cpu)
-+{
-+	union perf_event ev;
-+
-+	memset(&ev, 0, sizeof(ev));
-+	ev.itrace.header.type = PERF_RECORD_ITRACE;
-+	ev.itrace.header.size = sizeof(ev.itrace);
-+	ev.itrace.size = size;
-+	ev.itrace.offset = offset;
-+	ev.itrace.reference = ref;
-+	ev.itrace.idx = idx;
-+	ev.itrace.tid = tid;
-+	ev.itrace.cpu = cpu;
-+
-+	return process(tool, &ev, NULL, NULL);
-+}
-+
-+int itrace_mmap__read(struct itrace_mmap *mm, struct itrace_record *itr,
-+		      struct perf_tool *tool, process_itrace_t fn)
-+{
-+	u64 head = itrace_mmap__read_head(mm);
-+	u64 old = mm->prev, offset, ref;
-+	unsigned char *data = mm->base;
-+	size_t size, head_off, old_off, len1, len2, padding;
-+	union perf_event ev;
-+	void *data1, *data2;
-+
-+	if (old == head)
-+		return 0;
-+
-+	pr_debug3("itrace idx %d old %#"PRIx64" head %#"PRIx64" diff %#"PRIx64"\n",
-+		  mm->idx, old, head, head - old);
-+
-+	if (mm->mask) {
-+		head_off = head & mm->mask;
-+		old_off = old & mm->mask;
-+	} else {
-+		head_off = head % mm->len;
-+		old_off = old % mm->len;
-+	}
-+
-+	if (head_off > old_off)
-+		size = head_off - old_off;
-+	else
-+		size = mm->len - (old_off - head_off);
-+
-+	ref = itrace_record__reference(itr);
-+
-+	if (head > old || size <= head || mm->mask) {
-+		offset = head - size;
-+	} else {
-+		/*
-+		 * When the buffer size is not a power of 2, 'head' wraps at the
-+		 * highest multiple of the buffer size, so we have to subtract
-+		 * the remainder here.
-+		 */
-+		u64 rem = (0ULL - mm->len) % mm->len;
-+
-+		offset = head - size - rem;
-+	}
-+
-+	if (size > head_off) {
-+		len1 = size - head_off;
-+		data1 = &data[mm->len - len1];
-+		len2 = head_off;
-+		data2 = &data[0];
-+	} else {
-+		len1 = size;
-+		data1 = &data[head_off - len1];
-+		len2 = 0;
-+		data2 = NULL;
-+	}
-+
-+	/* padding must be written by fn() e.g. record__process_itrace() */
-+	padding = size & 7;
++	/* event.itrace.size includes padding, see __itrace_mmap__read() */
++	padding = (len1 + len2) & 7;
 +	if (padding)
 +		padding = 8 - padding;
 +
-+	memset(&ev, 0, sizeof(ev));
-+	ev.itrace.header.type = PERF_RECORD_ITRACE;
-+	ev.itrace.header.size = sizeof(ev.itrace);
-+	ev.itrace.size = size + padding;
-+	ev.itrace.offset = offset;
-+	ev.itrace.reference = ref;
-+	ev.itrace.idx = mm->idx;
-+	ev.itrace.tid = mm->tid;
-+	ev.itrace.cpu = mm->cpu;
++	record__write(rec, event, event->header.size);
++	record__write(rec, data1, len1);
++	record__write(rec, data2, len2);
++	record__write(rec, &pad, padding);
 +
-+	if (fn(tool, &ev, data1, len1, data2, len2))
-+		return -1;
++	return 0;
++}
 +
-+	mm->prev = head;
++static int record__itrace_mmap_read(struct record *rec,
++				    struct itrace_mmap *mm)
++{
++	int ret;
 +
-+	itrace_mmap__write_tail(mm, head);
-+	if (itr->read_finish) {
-+		int err;
++	ret = itrace_mmap__read(mm, rec->itr, &rec->tool,
++				record__process_itrace);
++	if (ret < 0)
++		return ret;
 +
-+		err = itr->read_finish(itr, mm->idx);
-+		if (err < 0)
++	if (ret)
++		rec->samples++;
++
++	return 0;
++}
++
+ static volatile int done = 0;
+ static volatile int signr = -1;
+ static volatile int child_finished = 0;
+@@ -168,13 +207,15 @@ try_again:
+ 		goto out;
+ 	}
+ 
+-	if (perf_evlist__mmap(evlist, opts->mmap_pages, false) < 0) {
++	if (perf_evlist__mmap_ex(evlist, opts->mmap_pages, false,
++				 opts->itrace_mmap_pages, false) < 0) {
+ 		if (errno == EPERM) {
+ 			pr_err("Permission error mapping pages.\n"
+ 			       "Consider increasing "
+ 			       "/proc/sys/kernel/perf_event_mlock_kb,\n"
+ 			       "or try again with a smaller value of -m/--mmap_pages.\n"
+-			       "(current value: %u)\n", opts->mmap_pages);
++			       "(current value: %u,%u)\n",
++			       opts->mmap_pages, opts->itrace_mmap_pages);
+ 			rc = -errno;
+ 		} else {
+ 			pr_err("failed to mmap with %d (%s)\n", errno,
+@@ -257,12 +298,20 @@ static int record__mmap_read_all(struct record *rec)
+ 	int rc = 0;
+ 
+ 	for (i = 0; i < rec->evlist->nr_mmaps; i++) {
++		struct itrace_mmap *mm = &rec->evlist->mmap[i].itrace_mmap;
++
+ 		if (rec->evlist->mmap[i].base) {
+ 			if (record__mmap_read(rec, i) != 0) {
+ 				rc = -1;
+ 				goto out;
+ 			}
+ 		}
++
++		if (mm->base &&
++		    record__itrace_mmap_read(rec, mm) != 0) {
++			rc = -1;
++			goto out;
++		}
+ 	}
+ 
+ 	/*
+@@ -292,6 +341,9 @@ static void record__init_features(struct record *rec)
+ 
+ 	if (!rec->opts.branch_stack)
+ 		perf_header__clear_feat(&session->header, HEADER_BRANCH_STACK);
++
++	if (!rec->opts.full_itrace)
++		perf_header__clear_feat(&session->header, HEADER_ITRACE);
+ }
+ 
+ static volatile int workload_exec_errno;
+@@ -407,6 +459,13 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+ 		}
+ 	}
+ 
++	if (rec->opts.full_itrace) {
++		err = perf_event__synthesize_itrace_info(rec->itr, tool,
++					session, process_synthesized_event);
++		if (err)
++			goto out_delete_session;
++	}
++
+ 	err = perf_event__synthesize_kernel_mmap(tool, process_synthesized_event,
+ 						 machine);
+ 	if (err < 0)
+@@ -505,16 +564,17 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+ 	}
+ 
+ 	if (!quiet) {
+-		fprintf(stderr, "[ perf record: Woken up %ld times to write data ]\n", waking);
+-
+-		/*
+-		 * Approximate RIP event size: 24 bytes.
+-		 */
+-		fprintf(stderr,
+-			"[ perf record: Captured and wrote %.3f MB %s (~%" PRIu64 " samples) ]\n",
+-			(double)rec->bytes_written / 1024.0 / 1024.0,
+-			file->path,
+-			rec->bytes_written / 24);
++		fprintf(stderr, "[ perf record: Woken up %ld times to write data ]\n",
++			waking);
++		fprintf(stderr, "[ perf record: Captured and wrote %.3f MB %s",
++			(double)rec->bytes_written / 1024.0 / 1024.0, file->path);
++		if (rec->opts.full_itrace) {
++			fprintf(stderr, " ]\n");
++		} else {
++			/* Approximate RIP event size: 24 bytes */
++			fprintf(stderr, " (~%" PRIu64 " samples) ]\n",
++				rec->bytes_written / 24);
++		}
+ 	}
+ 
+ out_child:
+@@ -820,7 +880,7 @@ struct option *record_options = __record_options;
+ 
+ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+-	int err = -ENOMEM;
++	int err;
+ 	struct record *rec = &record;
+ 	char errbuf[BUFSIZ];
+ 
+@@ -841,6 +901,14 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		usage_with_options(record_usage, record_options);
+ 	}
+ 
++	if (!rec->itr) {
++		rec->itr = itrace_record__init(rec->evlist, &err);
++		if (err)
 +			return err;
 +	}
 +
-+	return 1;
-+}
-diff --git a/tools/perf/util/itrace.h b/tools/perf/util/itrace.h
-index 00ba409..6eef25c 100644
---- a/tools/perf/util/itrace.h
-+++ b/tools/perf/util/itrace.h
-@@ -18,13 +18,18 @@
- 
- #include <sys/types.h>
- #include <stdbool.h>
--
-+#include <stddef.h>
- #include <linux/perf_event.h>
- #include <linux/types.h>
- 
- #include "../perf.h"
- 
-+union perf_event;
-+struct perf_session;
- struct perf_evlist;
-+struct perf_tool;
-+struct record_opts;
-+struct itrace_info_event;
- 
- /**
-  * struct itrace_mmap - records an mmap of the itrace buffer.
-@@ -70,6 +75,29 @@ struct itrace_mmap_params {
- 	int		cpu;
- };
- 
-+/**
-+ * struct itrace_record - callbacks for recording Instruction Trace data.
-+ * @recording_options: validate and process recording options
-+ * @info_priv_size: return the size of the private data in itrace_info_event
-+ * @info_fill: fill-in the private data in itrace_info_event
-+ * @free: free this itrace record structure
-+ * @reference: provide a 64-bit reference number for itrace_event
-+ * @read_finish: called after reading from an itrace mmap
-+ */
-+struct itrace_record {
-+	int (*recording_options)(struct itrace_record *itr,
-+				 struct perf_evlist *evlist,
-+				 struct record_opts *opts);
-+	size_t (*info_priv_size)(struct itrace_record *itr);
-+	int (*info_fill)(struct itrace_record *itr,
-+			 struct perf_session *session,
-+			 struct itrace_info_event *itrace_info,
-+			 size_t priv_size);
-+	void (*free)(struct itrace_record *itr);
-+	u64 (*reference)(struct itrace_record *itr);
-+	int (*read_finish)(struct itrace_record *itr, int idx);
-+};
++	err = -ENOMEM;
 +
- static inline u64 itrace_mmap__read_head(struct itrace_mmap *mm __maybe_unused)
- {
- 	/* Not yet implemented */
-@@ -93,4 +121,33 @@ void itrace_mmap_params__set_idx(struct itrace_mmap_params *mp,
- 				 struct perf_evlist *evlist, int idx,
- 				 bool per_cpu);
+ 	symbol__init(NULL);
  
-+typedef int (*process_itrace_t)(struct perf_tool *tool, union perf_event *event,
-+				void *data1, size_t len1, void *data2,
-+				size_t len2);
-+
-+int itrace_mmap__read(struct itrace_mmap *mm, struct itrace_record *itr,
-+		      struct perf_tool *tool, process_itrace_t fn);
-+
-+struct itrace_record *itrace_record__init(struct perf_evlist *evlist, int *err);
-+
-+int itrace_record__options(struct itrace_record *itr,
-+			   struct perf_evlist *evlist,
-+			   struct record_opts *opts);
-+size_t itrace_record__info_priv_size(struct itrace_record *itr);
-+int itrace_record__info_fill(struct itrace_record *itr,
-+			     struct perf_session *session,
-+			     struct itrace_info_event *itrace_info,
-+			     size_t priv_size);
-+void itrace_record__free(struct itrace_record *itr);
-+u64 itrace_record__reference(struct itrace_record *itr);
-+
-+int perf_event__synthesize_itrace_info(struct itrace_record *itr,
-+				       struct perf_tool *tool,
-+				       struct perf_session *session,
-+				       perf_event__handler_t process);
-+int perf_event__synthesize_itrace(struct perf_tool *tool,
-+				  perf_event__handler_t process,
-+				  size_t size, u64 offset, u64 ref, int idx,
-+				  u32 tid, u32 cpu);
-+
- #endif
-diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
-index 8acd0df..1887484 100644
---- a/tools/perf/util/record.c
-+++ b/tools/perf/util/record.c
-@@ -119,7 +119,16 @@ void perf_evlist__config(struct perf_evlist *evlist, struct record_opts *opts)
- 			evsel->attr.comm_exec = 1;
- 	}
+ 	if (symbol_conf.kptr_restrict)
+@@ -886,6 +954,10 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (perf_evlist__create_maps(rec->evlist, &rec->opts.target) < 0)
+ 		usage_with_options(record_usage, record_options);
  
--	if (evlist->nr_entries > 1) {
-+	if (opts->full_itrace) {
-+		/*
-+		 * Need to be able to synthesize and parse selected events with
-+		 * arbitrary sample types, which requires always being able to
-+		 * match the id.
-+		 */
-+		use_sample_identifier = true;
-+		evlist__for_each(evlist, evsel)
-+			perf_evsel__set_sample_id(evsel, use_sample_identifier);
-+	} else if (evlist->nr_entries > 1) {
- 		struct perf_evsel *first = perf_evlist__first(evlist);
- 
- 		evlist__for_each(evlist, evsel) {
++	err = itrace_record__options(rec->itr, rec->evlist, &rec->opts);
++	if (err)
++		goto out_symbol_exit;
++
+ 	if (record_opts__config(&rec->opts)) {
+ 		err = -EINVAL;
+ 		goto out_symbol_exit;
+@@ -895,5 +967,6 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
+ out_symbol_exit:
+ 	perf_evlist__delete(rec->evlist);
+ 	symbol__exit();
++	itrace_record__free(rec->itr);
+ 	return err;
+ }
 -- 
 1.9.1
 
