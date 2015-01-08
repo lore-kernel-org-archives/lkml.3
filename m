@@ -1,95 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756773AbbAHNEl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 08:04:41 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:36531 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754725AbbAHNEk (ORCPT
+	id S1756793AbbAHNIV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 08:08:21 -0500
+Received: from outbound-smtp03.blacknight.com ([81.17.249.16]:35528 "EHLO
+	outbound-smtp03.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756728AbbAHNIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 08:04:40 -0500
-Date: Thu, 8 Jan 2015 13:03:25 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, Pavel Machek <pavel@ucw.cz>,
-        Mark Seaborn <mseaborn@chromium.org>,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: DRAM unreliable under specific access patern
-Message-ID: <20150108130325.0592b18b@lxorguk.ukuu.org.uk>
-In-Reply-To: <CALCETrXpJ7CPAKeh9nLA=PoCBT8w8NfhZg5cgUyG9BUtp2Jv+w@mail.gmail.com>
-References: <CAL82V5NN8U4PyiSjLxgpTrgsgkbM7rRCbVF5P-HHyEqphLOy+g@mail.gmail.com>
-	<20141224220818.GA17655@amd>
-	<20150105192329.5f32c155@lxorguk.ukuu.org.uk>
-	<CALCETrXby82sgbGTcSZFj54t=resYcwtPbcFRNh6Ksbr+Ow8HQ@mail.gmail.com>
-	<20150106014718.GA23775@node.dhcp.inet.fi>
-	<CALCETrV1O1MFJeY6WacF+QHdBGG7HoHdVQy=n951=Y+=g+h7mQ@mail.gmail.com>
-	<20150106021836.GA24121@node.dhcp.inet.fi>
-	<CALCETrXpJ7CPAKeh9nLA=PoCBT8w8NfhZg5cgUyG9BUtp2Jv+w@mail.gmail.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	Thu, 8 Jan 2015 08:08:19 -0500
+Message-ID: <54AE8136.2060400@nexus-software.ie>
+Date: Thu, 08 Jan 2015 13:08:06 +0000
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "dvhart@infradead.org" <dvhart@infradead.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] x86: Add Isolated Memory Regions for Quark X1000
+References: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie> <1419873783-5161-2-git-send-email-pure.logic@nexus-software.ie> <AF233D1473C1364ABD51D28909A1B1B7326E0CC8@PGSMSX105.gar.corp.intel.com>
+In-Reply-To: <AF233D1473C1364ABD51D28909A1B1B7326E0CC8@PGSMSX105.gar.corp.intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 5 Jan 2015 18:26:07 -0800
-Andy Lutomirski <luto@amacapital.net> wrote:
+On 08/01/15 00:04, Ong, Boon Leong wrote:
 
-> On Mon, Jan 5, 2015 at 6:18 PM, Kirill A. Shutemov <kirill@shutemov.name> wrote:
-> > On Mon, Jan 05, 2015 at 05:57:24PM -0800, Andy Lutomirski wrote:
-> >> On Mon, Jan 5, 2015 at 5:47 PM, Kirill A. Shutemov <kirill@shutemov.name> wrote:
-> >> > On Mon, Jan 05, 2015 at 11:50:04AM -0800, Andy Lutomirski wrote:
-> >> >> On Mon, Jan 5, 2015 at 11:23 AM, One Thousand Gnomes
-> >> >> <gnomes@lxorguk.ukuu.org.uk> wrote:
-> >> >> >> In the meantime, I created test that actually uses physical memory,
-> >> >> >> 8MB apart, as described in some footnote. It is attached. It should
-> >> >> >> work, but it needs boot with specific config options and specific
-> >> >> >> kernel parameters.
-> >> >> >
-> >> >> > Why not just use hugepages. You know the alignment guarantees for 1GB
-> >> >> > pages and that means you don't even need to be root
-> >> >> >
-> >> >> > In fact - should we be disabling 1GB huge page support by default at this
-> >> >> > point, at least on non ECC boxes ?
-> >> >>
-> >> >> Can you actually damage anyone else's data using a 1 GB hugepage?
-> >> >
-> >> > hugetlbfs is a filesystem: the answer is yes. Although I don't see the
-> >> > issue as a big attach vector.
-> >>
-> >> What I mean is: if I map a 1 GB hugepage and rowhammer it, is it
-> >> likely that the corruption will be confined to the same 1 GB?
-> >
-> > I don't know for sure, but it looks likely to me according to claim in the
-> > paper (8MB). But it still can be sombody else's data: 644 file on
-> > hugetlbfs mmap()ed r/o by anyone.
+Hi Boon Leong - skipping the simple stuff.
 
-Thats less of a concern I think. As far as I can tell it would depend how
-the memory is wired what actually gets hit. I'm not clear if its within
-the range or not.
+>> +/**
+>> + * imr_del_range - Delete an Isolated Memory Region
+>> + * @reg: IMR index to remove
+>> + * @base: Physical base address of region aligned to 4k
+>> + * @size: Physical size of region in bytes
+>> + * @return:	-EINVAL on invalid range or out or range id
+>> + *		-ENODEV if reg is valid but no IMR exists or is locked
+>> + *		0 on success
+>> + */
+>> +int imr_del(int reg, unsigned long base, unsigned long size);
+>
+> How about just offer imr delete based index-only as returned by imr_add()?
+> We just need to check if that IMR is locked. If locked, then bail out.
+> Else, we will zero-out IMR register for that index to remove it.
 
-> > When I read the paper I thought that vdso would be interesting target for
-> > the attack, but having all these constrains in place, it's hard aim the
-> > attack anything widely used.
-> >
-> 
-> The vdso and the vvar page are both at probably-well-known physical
-> addresses, so you can at least target the kernel a little bit.  I
-> *think* that kASLR helps a little bit here.
+Hmm.
 
-SMEP likewise if you were able to use 1GB to corrupt matching lines
-elsewhere in RAM (eg the syscall table), but that would I think depend
-how the RAM is physically configured.
+The MTRR API this is based on allows you to specific an address range 
+and I think that makes sense for an IMR API too because - say you want 
+to tear down the IMR around the kernel .text area - but you don't know 
+which IMR it is.
 
-Thats why the large TLB case worries me. With 4K pages and to an extent
-with 2MB pages its actually quite hard to line up an attack if you know
-something about the target. With 1GB hugepages you control the lower bits
-of the physical address precisely. The question is whether that merely
-enables you to decide where to shoot yourself or it goes beyond that ?
+You'd just do
 
-(Outside HPC anyway: for HPC cases it bites both ways I suspect - you've
-got the ability to ensure you don't hit those access patterns while using
-1GB pages, but also nothing to randomise stuff to make them unlikely if
-you happen to have worst case aligned data).
+unsigned long base  = virt_to_phys(&_text);
+unsigned long size = virt_to_phys(&_sinittext) - base - IMR_ALIGN;
+
+imr_del(-1, base, size);
+
+Rather than having to know which specific index to kill. Also later 
+silicon may have more - or less IMR indices - so deleting based on an 
+address range is a valuable feature I think.
+
+> if (!x86_match_cpu(soc_imr_ids) || !iosf_mbi_available()) {
+> 	pr_info("IMR init failed due to IOSF_MBI not available or SoC is not Quark.\n");
+> 	return -ENODEV;
+> } else {
+> 	imr_dev.num = QUARK_X1000_IMR_NUM;
+> 	imr_dev.reg_base = QUARK_X1000_IMR_REGBASE;
+> }
+
+That works for me.
+
+--
+BOD
 
