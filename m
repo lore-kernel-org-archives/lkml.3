@@ -1,79 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756040AbbAHIZR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 03:25:17 -0500
-Received: from mga01.intel.com ([192.55.52.88]:55938 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753966AbbAHIZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 03:25:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,721,1413270000"; 
-   d="scan'208";a="658598787"
-Date: Thu, 8 Jan 2015 10:25:10 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] gpio: support for GPIO forwarding
-Message-ID: <20150108082510.GA19346@kuha.fi.intel.com>
-References: <1418890998-23811-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1756118AbbAHJAd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 04:00:33 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55555 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756055AbbAHJAa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 04:00:30 -0500
+Message-ID: <54AE3F9E.7060904@pengutronix.de>
+Date: Thu, 08 Jan 2015 09:28:14 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418890998-23811-1-git-send-email-heikki.krogerus@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Wu, Aaron" <Aaron.Wu@analog.com>,
+        "adi-buildroot-devel@lists.sourceforge.net" 
+	<adi-buildroot-devel@lists.sourceforge.net>,
+        "wg@grandegger.com" <wg@grandegger.com>,
+        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] bfin_can: rewrite the blackfin CAN driver into arch independent
+ style
+References: <1419391828-21105-1-git-send-email-Aaron.wu@analog.com> <54AD4461.1040203@pengutronix.de> <649EF91064D35D40B9C93A225BF41674612E3EDD@NWD2MBX7.ad.analog.com>
+In-Reply-To: <649EF91064D35D40B9C93A225BF41674612E3EDD@NWD2MBX7.ad.analog.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="apjeow0XCp8tobw713n1b7bLr0Tv5PnUm"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 18, 2014 at 10:23:18AM +0200, Heikki Krogerus wrote:
-> This makes it possible to assign GPIOs at runtime. The
-> motivation for it is because of need to forward GPIOs from
-> one device to an other. That feature may be useful for
-> example with some mfd devices, but initially it is needed
-> because on some Intel Braswell based ACPI platforms the GPIO
-> resources controlling signals of the USB PHY are given to
-> the controller device object for whatever reason, so the
-> driver of that controller needs be able to pass them to the
-> PHY device somehow.
-> 
-> So basically this is meant to allow patching of bad (bad
-> from Linux kernels point of view) hardware descriptions
-> provided by system fw in the drivers.
-> 
-> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> ---
-> 
-> Hi,
-> 
-> I'm sending this first as a RFC in case you guys have some better
-> idea how to solve our problem. I actually already have couple
-> platforms where the GPIO resources are given to the "wrong" device
-> objects now.
-> 
-> Originally we were thinking about simply handling our problem with
-> hacks to the PHY drivers, basically also checking if the parent has
-> GPIOs. That would only work if the controller is always the parent,
-> which it's not, but even if it was, it would be too risky. The PHY
-> drivers don't know which controller they are attached to, so what is
-> to say that the GPIOs aren't really attached to the controller.
-> 
-> So the safest way to handle our problem is to deal with it in quirks
-> in the controller drivers. Solving it by bouncing the GPIOs did not
-> feel ideal there doesn't seem to be any other way. The API is copied
-> from clkdev (clk_register_clkdev). In the end it's really only one
-> function for adding the lookups and one for removing them.
-> 
-> The way it's implemented is by modifying the current style of handling
-> the lookups a little bit. The per device lookup table is basically
-> reverted back to the single linked-list format since it seems that
-> these lookups may have to be assigned from several sources.
-> 
-> Thanks,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--apjeow0XCp8tobw713n1b7bLr0Tv5PnUm
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Gentle ping on this.
+On 01/08/2015 08:13 AM, Wu, Aaron wrote:
+> Thanks for your comments. I've split it into two parts and submit patch=
+es of V2.
 
--- 
-heikki
+Thanks!
+
+> Do you mind if I fix potential bugs with future patches?=20
+
+Patches, especially bug fixes are always welcome.
+
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--apjeow0XCp8tobw713n1b7bLr0Tv5PnUm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUrj+eAAoJECte4hHFiupUKTEP/0CuZ0sWcX9NYspB1ZL/plDr
+ktujAZq1+eQqNSDYG34wi36e8MszsWnp83itzU1Y6zpVEgsqM2Q2dk+ncC6SrOBS
+W1vIa2LMzXWsrFIpbS2wa9M8Qfpy9WUDdpvEPn6RG4i4oaMD6rO7bb1YIoC8Z/Qb
+C3k2o3C6b7jw/HaE3QtJeEkQNY/F25iS7yu323xJNpKkYAezPYHYYX8lnCF77Yld
+O7nTcO/KiJjO9woUL5CJg1hKPD4/gKIr4z+DkOtN8VHkmsLALhjfidSm1D8PTfmh
+pdV+gXVrtS7nt5ZuEjmBeJr/WkC48y/5/x1s9cZNrqHjX7NzMMVgEkiK/ou9hSXs
+InQowaQnPRr1EXUxWoUSw7N5MeVP48Z4SWTBsU60HsscqsaKMi7fkR7M4Q7ei//F
+L57qXXimmAKOn5gpEJ+Xr32Je2wU+dn1Vd0GKzJE0/iLBAUF2dIOwdTTo5Vax1bI
+K2P+Md3JWulmFrknqMHP59TglueUSE9QMoG0lTTQ82CEy70Mz64yxXjKbZMidWWo
+U5Vs/HEyYSDduUn/xnodm8TeeWKKDi6PdxXpEAb8/hQJjY2JfFNCWYzc1mddpgNB
+ppVQD87Sk0dvU5DNW52o+qoRVhvoC/avR/03tXeuKZbrT7aGdauh+89/juIKf86q
+wsEzxfNFhgkSbC4Kc5LF
+=RCtF
+-----END PGP SIGNATURE-----
+
+--apjeow0XCp8tobw713n1b7bLr0Tv5PnUm--
