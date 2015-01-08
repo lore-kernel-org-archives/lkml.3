@@ -1,180 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023AbbAHEDD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 23:03:03 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:33531 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932127AbbAHEC6 (ORCPT
+	id S1752921AbbAHEYA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 23:24:00 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:6512 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796AbbAHEX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 23:02:58 -0500
-From: Chunyan Zhang <zhang.chunyan@linaro.org>
-To: samuel@sortiz.org
-Cc: arnd@arndb.de, zhang.lyra@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 6/6] irda: vlsi_ir: Replace timeval with ktime_t
-Date: Thu,  8 Jan 2015 12:01:32 +0800
-Message-Id: <1420689692-8760-7-git-send-email-zhang.chunyan@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1420689692-8760-1-git-send-email-zhang.chunyan@linaro.org>
-References: <driver-irda-v2>
- <1420689692-8760-1-git-send-email-zhang.chunyan@linaro.org>
+	Wed, 7 Jan 2015 23:23:58 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 07 Jan 2015 20:16:35 -0800
+Message-ID: <54AE0653.9020002@nvidia.com>
+Date: Thu, 8 Jan 2015 12:23:47 +0800
+From: Vince Hsu <vinceh@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Peter De Schrijver <pdeschrijver@nvidia.com>, Lucas Stach <dev@lynxeye.de>,
+        <swarren@wwwdotorg.org>, <gnurou@gmail.com>, <bskeggs@redhat.com>,
+        <martin.peres@free.fr>, <seven@nimrod-online.com>,
+        <samuel.pitoiset@gmail.com>, <nouveau@lists.freedesktop.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/11] ARM: tegra: add function to control the GPU rail
+ clamp
+References: <1419331204-26679-1-git-send-email-vinceh@nvidia.com> <1419331204-26679-2-git-send-email-vinceh@nvidia.com> <1419426990.2179.7.camel@lynxeye.de> <549B7638.2010405@nvidia.com> <20150105150932.GG12010@ulmo.nvidia.com> <20150107101900.GP10073@tbergstrom-lnx.Nvidia.com> <54AD0F37.5080609@nvidia.com> <20150107141254.GS10073@tbergstrom-lnx.Nvidia.com> <20150107141938.GA7392@nvidia.com> <20150107151206.GG1621@ulmo>
+In-Reply-To: <20150107151206.GG1621@ulmo>
+X-Originating-IP: [10.19.108.126]
+X-ClientProxiedBy: HKMAIL102.nvidia.com (10.18.16.11) To
+ HKMAIL101.nvidia.com (10.18.16.10)
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The vlsi ir driver uses 'timeval', which we try to remove in the kernel
-because all 32-bit time types will break in the year 2038.
 
-This patch also changes do_gettimeofday() to ktime_get() accordingly,
-since ktime_get returns a ktime_t, but do_gettimeofday returns a
-struct timeval, and the other reason is that ktime_get() uses
-the monotonic clock.
+On 01/07/2015 11:12 PM, Thierry Reding wrote:
+> * PGP Signed by an unknown key
+>
+> On Wed, Jan 07, 2015 at 10:19:52PM +0800, Vince Hsu wrote:
+>> On 04:12:54PM Jan 07, Peter De Schrijver wrote:
+>>> On Wed, Jan 07, 2015 at 06:49:27PM +0800, Vince Hsu wrote:
+>>>> On 01/07/2015 06:19 PM, Peter De Schrijver wrote:
+>>>>> On Mon, Jan 05, 2015 at 04:09:33PM +0100, Thierry Reding wrote:
+>>>>>>> Old Signed by an unknown key
+>>>>>> On Thu, Dec 25, 2014 at 10:28:08AM +0800, Vince Hsu wrote:
+>>>>>>> On 12/24/2014 09:16 PM, Lucas Stach wrote:
+>>>>>>>> Am Dienstag, den 23.12.2014, 18:39 +0800 schrieb Vince Hsu:
+>>>>>>>>> The Tegra124 and later Tegra SoCs have a sepatate rail gating register
+>>>>>>>>> to enable/disable the clamp. The original function
+>>>>>>>>> tegra_powergate_remove_clamping() is not sufficient for the enable
+>>>>>>>>> function. So add a new function which is dedicated to the GPU rail
+>>>>>>>>> gating. Also don't refer to the powergate ID since the GPU ID makes no
+>>>>>>>>> sense here.
+>>>>>>>>>
+>>>>>>>>> Signed-off-by: Vince Hsu <vinceh@nvidia.com>
+>>>>>>>> To be honest I don't see the point of this patch.
+>>>>>>>> You are bloating the PMC interface by introducing another exported
+>>>>>>>> function that does nothing different than what the current function
+>>>>>>>> already does.
+>>>>>>>>
+>>>>>>>> If you need a way to assert the clamp I would have expected you to
+>>>>>>>> introduce a common function to do this for all power partitions.
+>>>>>>> I thought about adding an tegra_powergate_assert_clamping(), but that
+>>>>>>> doesn't make sense to all the power partitions except GPU. Note the
+>>>>>>> difference in TRM. Any suggestion for the common function?
+>>>>>> I don't think extending the powergate API is useful at this point. We've
+>>>>>> long had an open TODO item to replace this with a generic API. I did
+>>>>>> some prototyping a while ago to use generic power domains for this, that
+>>>>>> way all the details and dependencies between the partitions could be
+>>>>>> properly modeled.
+>>>>>>
+>>>>>> Can you take a look at my staging/powergate branch here:
+>>>>>>
+>>>>>> 	https://github.com/thierryreding/linux/commits/staging/powergate
+>>>>>>
+>>>>>> and see if you can use that instead? The idea is to completely hide the
+>>>>>> details of power partitions from drivers and use runtime PM instead.
+>>>>>>
+>>>>>> Also adding Peter whom I had discussed this with earlier. Can we finally
+>>>>>> get this converted? I'd rather not keep complicating this custom API to
+>>>>>> avoid making the conversion even more difficult.
+>>>>> Conceptually I fully agree that we should use runtime PM and powerdomains.
+>>>>> However I don't think the implementation you mentioned is correct. The resets
+>>>>> of all modules in a domain need to be asserted and the memory clients need to
+>>>>> be flushed. All this needs to be done with module clocks enabled (resets are
+>>>>> synchronous).  Then all module clocks need to be disabled and then the
+>>>>> partition can be powergated. After ungating, the module resets need to be
+>>>>> deasserted and the FLUSH bit cleared with clocks enabled.
+>>>> Yeah. I plan to have the information of all the clock client of the
+>>>> partitions and
+>>>> the memory clients be defined statically in c source, e.g. pmc-tegra124.c.
+>>>> All modules can declare which domain they belong to in DT. One domain can
+>>>> be really power gated only when no module is awake. Note the clock
+>>>> clients of
+>>>> one domain might not equal to the clocks of the module. The reset is
+>>>> not either.
+>>>> So I don't get the clock and reset from module. How do you think?
+>>>>
+>>> I think it's indeed better to have a direct reference to the required clocks
+>>> to powergate/ungate a domain. As you said, there is no easy way to derive the
+>>> required clocks from the DT module declarations. My suggestion would be to
+>>> have powerdomain definitions in DT and for each domain have references to
+>>> the required clocks and resets.
+>>>
+>> And specify the dependencies between domains in DT?
+> I think the dependencies could be in the driver. Of course the power
+> domains are per-SoC data, so really shouldn't be in the DTS either (the
+> data is all implied by the compatible value) but there's no good way to
+> get at the clocks and resets without DT, so I think that's a reasonable
+> trade-off.
+>
+> It seems to me like there are only two dependencies:
+>
+> 	DIS and DISB depend on SOR
+> 	VE depends on DIS
+>
+> That's according to 5.6.6 "Programming Guide for Power Gating and
+> Ungating" of the Tegra K1 TRM. It also seems like a bunch of modules are
+> part of seemingly unrelated domains. Especially SOR seems to cover a
+> large range of modules (MIPI-CAL, DPAUX, SOR, HDMI, DSI, DSIB and
+> HDA2HDMI).
+>
+> Given that we may want to more fine-grainedly control clocks to save
+> power, don't we need to control clocks and resets within the drivers? I
+> think the runtime PM framework makes sure to call this in the right
+> order, so for suspend, the sequence would be:
+We need to control clocks and resets within the drivers. I believe the
+powergate sequence is just to provide a clean hardware state. The
+driver can do whatever it wants to the clocks and reset as long as
+that's correct procedure.
 
-This patch uses ktime_us_delta to get the elapsed time of microsecond,
-and uses div_s64_rem to get what seconds & microseconds time elapsed
-for printing.
+>
+> 	1) device->suspend
+> 	2) domain->suspend
+>
+> and for resume:
+>
+> 	1) domain->resume
+> 	2) device->resume
+>
+> But then we're back to square one, namely that the MC flush doesn't work
+> properly, since it needs to be implemented in domain->suspend. Does that
+> mean we can't clock-gate modules? In order to ensure a proper powergate
+> sequence, the domain code would need to clk_enable() the module clock to
+> make sure it stays on during the reset sequence. But if the domain code
+> has a reference to the clock, then the driver can't clock-gate the
+> module anymore by calling clk_disable().
+The module can definitely flush its memory client when the driver wants
+to reset the module.
 
-This patch also changes the function 'vlsi_hard_start_xmit' to do the
-same things as the others drivers, that is passing the remaining time
-into udelay() instead of looping until enough time has passed.
+e.g.
+The VENC domain needs to flush swgroup ISP, ISPB, VI for domain gating.
+The ISP module only needs to flush swgroup ISP when reset.
 
-Signed-off-by: Chunyan Zhang <zhang.chunyan@linaro.org>
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
----
- drivers/net/irda/vlsi_ir.c |   46 +++++++++++++-------------------------------
- drivers/net/irda/vlsi_ir.h |    2 +-
- 2 files changed, 14 insertions(+), 34 deletions(-)
+That means we have to define "nvidia,swgroup = <&pmc ISP>" for both
+of the domain VENC and module ISP.
 
-diff --git a/drivers/net/irda/vlsi_ir.c b/drivers/net/irda/vlsi_ir.c
-index ac39d9f..a0849f4 100644
---- a/drivers/net/irda/vlsi_ir.c
-+++ b/drivers/net/irda/vlsi_ir.c
-@@ -33,6 +33,7 @@ MODULE_LICENSE("GPL");
- /********************************************************/
- 
- #include <linux/kernel.h>
-+#include <linux/ktime.h>
- #include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/pci.h>
-@@ -40,9 +41,9 @@ MODULE_LICENSE("GPL");
- #include <linux/netdevice.h>
- #include <linux/skbuff.h>
- #include <linux/delay.h>
--#include <linux/time.h>
- #include <linux/proc_fs.h>
- #include <linux/seq_file.h>
-+#include <linux/math64.h>
- #include <linux/mutex.h>
- #include <asm/uaccess.h>
- #include <asm/byteorder.h>
-@@ -180,8 +181,7 @@ static void vlsi_proc_ndev(struct seq_file *seq, struct net_device *ndev)
- 	vlsi_irda_dev_t *idev = netdev_priv(ndev);
- 	u8 byte;
- 	u16 word;
--	unsigned delta1, delta2;
--	struct timeval now;
-+	s32 sec, usec;
- 	unsigned iobase = ndev->base_addr;
- 
- 	seq_printf(seq, "\n%s link state: %s / %s / %s / %s\n", ndev->name,
-@@ -277,17 +277,9 @@ static void vlsi_proc_ndev(struct seq_file *seq, struct net_device *ndev)
- 	seq_printf(seq, "\nsw-state:\n");
- 	seq_printf(seq, "IrPHY setup: %d baud - %s encoding\n", idev->baud, 
- 		(idev->mode==IFF_SIR)?"SIR":((idev->mode==IFF_MIR)?"MIR":"FIR"));
--	do_gettimeofday(&now);
--	if (now.tv_usec >= idev->last_rx.tv_usec) {
--		delta2 = now.tv_usec - idev->last_rx.tv_usec;
--		delta1 = 0;
--	}
--	else {
--		delta2 = 1000000 + now.tv_usec - idev->last_rx.tv_usec;
--		delta1 = 1;
--	}
--	seq_printf(seq, "last rx: %lu.%06u sec\n",
--		now.tv_sec - idev->last_rx.tv_sec - delta1, delta2);	
-+	sec = div_s64_rem(ktime_us_delta(ktime_get(), idev->last_rx),
-+			  USEC_PER_SEC, &usec);
-+	seq_printf(seq, "last rx: %ul.%06u sec\n", sec, usec);
- 
- 	seq_printf(seq, "RX: packets=%lu / bytes=%lu / errors=%lu / dropped=%lu",
- 		ndev->stats.rx_packets, ndev->stats.rx_bytes, ndev->stats.rx_errors,
-@@ -661,7 +653,7 @@ static void vlsi_rx_interrupt(struct net_device *ndev)
- 		}
- 	}
- 
--	do_gettimeofday(&idev->last_rx); /* remember "now" for later mtt delay */
-+	idev->last_rx = ktime_get(); /* remember "now" for later mtt delay */
- 
- 	vlsi_fill_rx(r);
- 
-@@ -858,9 +850,8 @@ static netdev_tx_t vlsi_hard_start_xmit(struct sk_buff *skb,
- 	unsigned iobase = ndev->base_addr;
- 	u8 status;
- 	u16 config;
--	int mtt;
-+	int mtt, diff;
- 	int len, speed;
--	struct timeval  now, ready;
- 	char *msg = NULL;
- 
- 	speed = irda_get_next_speed(skb);
-@@ -940,21 +931,10 @@ static netdev_tx_t vlsi_hard_start_xmit(struct sk_buff *skb,
- 	spin_unlock_irqrestore(&idev->lock, flags);
- 
- 	if ((mtt = irda_get_mtt(skb)) > 0) {
--	
--		ready.tv_usec = idev->last_rx.tv_usec + mtt;
--		ready.tv_sec = idev->last_rx.tv_sec;
--		if (ready.tv_usec >= 1000000) {
--			ready.tv_usec -= 1000000;
--			ready.tv_sec++;		/* IrLAP 1.1: mtt always < 1 sec */
--		}
--		for(;;) {
--			do_gettimeofday(&now);
--			if (now.tv_sec > ready.tv_sec ||
--			    (now.tv_sec==ready.tv_sec && now.tv_usec>=ready.tv_usec))
--			    	break;
--			udelay(100);
-+		diff = ktime_us_delta(ktime_get(), idev->last_rx);
-+		if (mtt > diff)
-+			udelay(mtt - diff);
- 			/* must not sleep here - called under netif_tx_lock! */
--		}
- 	}
- 
- 	/* tx buffer already owned by CPU due to pci_dma_sync_single_for_cpu()
-@@ -1333,7 +1313,7 @@ static int vlsi_start_hw(vlsi_irda_dev_t *idev)
- 
- 	vlsi_fill_rx(idev->rx_ring);
- 
--	do_gettimeofday(&idev->last_rx);	/* first mtt may start from now on */
-+	idev->last_rx = ktime_get();	/* first mtt may start from now on */
- 
- 	outw(0, iobase+VLSI_PIO_PROMPT);	/* kick hw state machine */
- 
-@@ -1520,7 +1500,7 @@ static int vlsi_open(struct net_device *ndev)
- 	if (!idev->irlap)
- 		goto errout_free_ring;
- 
--	do_gettimeofday(&idev->last_rx);  /* first mtt may start from now on */
-+	idev->last_rx = ktime_get();  /* first mtt may start from now on */
- 
- 	idev->new_baud = 9600;		/* start with IrPHY using 9600(SIR) mode */
- 
-diff --git a/drivers/net/irda/vlsi_ir.h b/drivers/net/irda/vlsi_ir.h
-index f9119c6..f9db2ce 100644
---- a/drivers/net/irda/vlsi_ir.h
-+++ b/drivers/net/irda/vlsi_ir.h
-@@ -723,7 +723,7 @@ typedef struct vlsi_irda_dev {
- 	void			*virtaddr;
- 	struct vlsi_ring	*tx_ring, *rx_ring;
- 
--	struct timeval		last_rx;
-+	ktime_t			last_rx;
- 
- 	spinlock_t		lock;
- 	struct mutex		mtx;
--- 
-1.7.9.5
+Besides that last step in the un-powergating sequence is disabling all
+the module clocks. The module driver has to enable it's module clock
+later if need be. So there is no clock reference problem.
+
+Thanks,
+Vince
+
+>
+> Am I missing something?
+>
+> Thierry
+>
+> * Unknown Key
+> * 0x7F3EB3A1
 
