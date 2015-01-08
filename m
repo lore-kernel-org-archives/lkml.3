@@ -1,99 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979AbbAHWQf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 17:16:35 -0500
-Received: from mail.kernel.org ([198.145.29.136]:41690 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752017AbbAHWQd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 17:16:33 -0500
-Date: Thu, 8 Jan 2015 14:16:30 -0800
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Eric Sandeen <sandeen@sandeen.net>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [PATCH 2/6] f2fs: support goingdown for fs shutdown
-Message-ID: <20150108221630.GA76957@jaegeuk-mac02>
-References: <1420740661-72288-1-git-send-email-jaegeuk@kernel.org>
- <1420740661-72288-2-git-send-email-jaegeuk@kernel.org>
- <54AEE06C.90806@sandeen.net>
- <20150108201843.GA74570@jaegeuk-mac02>
- <54AEE98D.5010103@sandeen.net>
- <20150108205416.GE25000@dastard>
- <20150108211853.GB74570@jaegeuk-mac02>
- <20150108220412.GI25000@dastard>
+	id S1757214AbbAHWRm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 17:17:42 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:61110 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866AbbAHWRl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 17:17:41 -0500
+Date: Thu, 8 Jan 2015 14:17:36 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-pci@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] PCI: keystone: fix incorrect annotations on probe and remove
+Message-ID: <20150108221736.GA39839@dtor-ws>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150108220412.GI25000@dastard>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 09:04:12AM +1100, Dave Chinner wrote:
-> On Thu, Jan 08, 2015 at 01:21:29PM -0800, Jaegeuk Kim wrote:
-> > On Fri, Jan 09, 2015 at 07:54:16AM +1100, Dave Chinner wrote:
-> > > On Thu, Jan 08, 2015 at 02:33:17PM -0600, Eric Sandeen wrote:
-> > > > On 1/8/15 2:18 PM, Jaegeuk Kim wrote:
-> > > > > On Thu, Jan 08, 2015 at 01:54:20PM -0600, Eric Sandeen wrote:
-> > > > >> On 1/8/15 12:10 PM, Jaegeuk Kim wrote:
-> > > > >>> This patch add an ioctl to shutdown f2fs, which stops all the further block
-> > > > >>> writes after this point.
-> > > > >>
-> > > > >> would it make sense to just re-use the xfs ioctl nr, if the semantics are
-> > > > >> the same?
-> > > > > 
-> > > > > The semantics are not same for now.
-> > > > > In order to reuse xfs ioctl, it needs to support options for flushing logs.
-> > > > 
-> > > > the xfs iotl has 3 behaviors optional:
-> > > > 
-> > > > #define XFS_FSOP_GOING_FLAGS_DEFAULT            0x0     /* going down */
-> > > > #define XFS_FSOP_GOING_FLAGS_LOGFLUSH           0x1     /* flush log but not data */
-> > > > #define XFS_FSOP_GOING_FLAGS_NOLOGFLUSH         0x2     /* don't flush log nor data */
-> > > > 
-> > > > if f2fs currently supports a subset, you could just -EOPNOTSUPP on the others.
-> > > 
-> > > No, just do a default shutdown operation if the semantics cannot be
-> > > supported.
-> > > 
-> > > 	- XFS_FSOP_GOING_FLAGS_DEFAULT ==
-> > > 		consistent on disk before shutdown
-> > > 			+ implemented by freeze/thaw/shutdown sequence
-> > > 	- XFS_FSOP_GOING_FLAGS_LOGFLUSH ==
-> > > 		consistent journal on disk before shutdown
-> > > 			+ implemented by journal flush/shutdown sequence
-> 
-> I should point out that this is really "consistent metadata on
-> disk before shutdown", so it really doesn't matter if your
-> filesystem has a journal or not, it can still be implemented.
+Even though platform bus is not hot-pluggable, devices on it can be unbound
+from the driver and bound back to it via sysfs, so we should not be using
+__init annotations on probe() and __exit annotations on remove() methods.
 
-Agreed. I just implemented these three options for f2fs.
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
 
-For the f2fs perspective, DEFAULT conducts
- - flushing all the user and dentry blocks
- - checkpointing and then shutdowning fs
+Not tested, found by casual code inspection.
 
-LOGFLUSH conducts
- - checkpointing and then shutdowning fs
+ drivers/pci/host/pci-keystone.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-NOLOGFLUSH conducts
- - shutdowning fs
+diff --git a/drivers/pci/host/pci-keystone.c b/drivers/pci/host/pci-keystone.c
+index 1b893bc..7b84e1d 100644
+--- a/drivers/pci/host/pci-keystone.c
++++ b/drivers/pci/host/pci-keystone.c
+@@ -332,7 +332,7 @@ static const struct of_device_id ks_pcie_of_match[] = {
+ };
+ MODULE_DEVICE_TABLE(of, ks_pcie_of_match);
+ 
+-static int __exit ks_pcie_remove(struct platform_device *pdev)
++static int ks_pcie_remove(struct platform_device *pdev)
+ {
+ 	struct keystone_pcie *ks_pcie = platform_get_drvdata(pdev);
+ 
+@@ -341,7 +341,7 @@ static int __exit ks_pcie_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static int __init ks_pcie_probe(struct platform_device *pdev)
++static int ks_pcie_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+ 	struct keystone_pcie *ks_pcie;
+@@ -398,9 +398,9 @@ fail_clk:
+ 	return ret;
+ }
+ 
+-static struct platform_driver ks_pcie_driver __refdata = {
++static struct platform_driver ks_pcie_driver = {
+ 	.probe  = ks_pcie_probe,
+-	.remove = __exit_p(ks_pcie_remove),
++	.remove = ks_pcie_remove,
+ 	.driver = {
+ 		.name	= "keystone-pcie",
+ 		.owner	= THIS_MODULE,
+-- 
+2.2.0.rc0.207.ga3a616c
 
-> 
-> Perhaps it woul dbe best to rename them for a generic ioctl
-> to FS_GOING_DOWN_SYNC, FS_GOING_DOWN_METADATA_METASYNC
-> and FS_GOING_DOWN_NOSYNC...
 
-How about FS_GOING_DOWN_FULLSYNC, FS_GOING_DOWN_METASYNC, and
-FS_GOING_DOWN_NOSYNC?
-
-Thanks,
-
-> 
-> Cheers,
-> 
-> Dave.
-> -- 
-> Dave Chinner
-> david@fromorbit.com
+-- 
+Dmitry
