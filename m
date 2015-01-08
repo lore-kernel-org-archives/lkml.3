@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756998AbbAHWyE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 17:54:04 -0500
-Received: from us-mx2.synaptics.com ([192.147.44.131]:25579 "EHLO
-	us-mx1.synaptics.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932434AbbAHWxq (ORCPT
+	id S932617AbbAHWzD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 17:55:03 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:43594 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757189AbbAHWy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 17:53:46 -0500
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Thu, 08 Jan 2015 15:21:14 -0800
-From: Andrew Duggan <aduggan@synaptics.com>
-To: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Andrew Duggan <aduggan@synaptics.com>, Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Subject: [PATCH] HID: rmi: Use hid_report_len to compute the size of reports
-Date: Thu, 8 Jan 2015 14:51:36 -0800
-Message-ID: <1420757496-3955-3-git-send-email-aduggan@synaptics.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1420757496-3955-1-git-send-email-aduggan@synaptics.com>
-References: <1420757496-3955-1-git-send-email-aduggan@synaptics.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.4.10.98]
+	Thu, 8 Jan 2015 17:54:59 -0500
+From: Andy Gross <agross@codeaurora.org>
+To: linux-arm-msm@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        Andy Gross <agross@codeaurora.org>
+Subject: [PATCH 0/2] Add Qualcomm TCSR driver
+Date: Thu,  8 Jan 2015 16:52:55 -0600
+Message-Id: <1420757577-20425-1-git-send-email-agross@codeaurora.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that hid_report_len is in hid.h we can use this function instead of
-duplicating the code which computes it.
+This patch set adds a driver for the TCSR (Top Control and Status Register)
+block that is present in the IPQ8064, APQ8064, and some later processors.  The
+TCSR is responsible for accessing configuration and mux settings for a variety
+of peripherals.
 
-Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
----
- drivers/hid/hid-rmi.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+The initial version of this driver exposes configuration settings for the USB
+PHY selection and ADM DMA CRCI muxing.
 
-diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
-index b08774a..49d4fe4 100644
---- a/drivers/hid/hid-rmi.c
-+++ b/drivers/hid/hid-rmi.c
-@@ -1025,7 +1025,7 @@ static int rmi_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 		goto start;
- 	}
- 
--	data->input_report_size = (input_report->size >> 3) + 1 /* report id */;
-+	data->input_report_size = hid_report_len(input_report);
- 
- 	if (!rmi_check_valid_report_id(hdev, HID_OUTPUT_REPORT,
- 	    RMI_WRITE_REPORT_ID, &output_report)) {
-@@ -1034,8 +1034,7 @@ static int rmi_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 		goto start;
- 	}
- 
--	data->output_report_size = (output_report->size >> 3)
--					+ 1 /* report id */;
-+	data->output_report_size = hid_report_len(output_report);
- 
- 	data->device_flags |= RMI_DEVICE;
- 	alloc_size = data->output_report_size + data->input_report_size;
+Andy Gross (2):
+  soc: qcom: Add TCSR driver
+  soc: qcom: Add device tree binding for TCSR
+
+ .../devicetree/bindings/soc/qcom/qcom,tcsr.txt     |   33 ++++++++
+ drivers/soc/qcom/Kconfig                           |    7 ++
+ drivers/soc/qcom/Makefile                          |    1 +
+ drivers/soc/qcom/qcom_tcsr.c                       |   83 ++++++++++++++++++++
+ include/dt-bindings/soc/qcom,tcsr.h                |   34 ++++++++
+ include/soc/qcom/qcom_tcsr.h                       |   21 +++++
+ 6 files changed, 179 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/soc/qcom/qcom,tcsr.txt
+ create mode 100644 drivers/soc/qcom/qcom_tcsr.c
+ create mode 100644 include/dt-bindings/soc/qcom,tcsr.h
+ create mode 100644 include/soc/qcom/qcom_tcsr.h
+
 -- 
-2.1.0
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
