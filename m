@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840AbbAHMzN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 07:55:13 -0500
+	id S932378AbbAHM5C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 07:57:02 -0500
 Received: from mga14.intel.com ([192.55.52.115]:35459 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932070AbbAHMzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 07:55:09 -0500
+	id S1756828AbbAHMzM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 07:55:12 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="437999860"
+   d="scan'208";a="437999876"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V4 16/23] perf script: Add Instruction Tracing support
-Date: Thu,  8 Jan 2015 14:52:20 +0200
-Message-Id: <1420721547-26470-17-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V4 17/23] perf script: Always allow fields 'addr' and 'cpu' for itrace
+Date: Thu,  8 Jan 2015 14:52:21 +0200
+Message-Id: <1420721547-26470-18-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1420721547-26470-1-git-send-email-adrian.hunter@intel.com>
 References: <1420721547-26470-1-git-send-email-adrian.hunter@intel.com>
@@ -27,103 +27,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for decoding an Instruction Trace.
+If a file contains Instruction Tracing data then always allow
+fields 'addr' and 'cpu' to be selected as options for perf
+script.  This is necessary because Instruction Trace decoding
+may synthesize events with that information.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/Documentation/perf-script.txt | 28 ++++++++++++++++++++++++++++
- tools/perf/builtin-script.c              | 11 +++++++++++
- 2 files changed, 39 insertions(+)
+ tools/perf/builtin-script.c | 28 +++++++++++++++++++++-------
+ 1 file changed, 21 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
-index a21eec0..9a4aea1 100644
---- a/tools/perf/Documentation/perf-script.txt
-+++ b/tools/perf/Documentation/perf-script.txt
-@@ -215,6 +215,34 @@ OPTIONS
- --header-only
- 	Show only perf.data header.
- 
-+-Z::
-+--itrace::
-+	Options for decoding Instruction Tracing data. The options are:
-+
-+		i	synthesize instructions events
-+		b	synthesize branches events
-+		c	synthesize branches events (calls only)
-+		r	synthesize branches events (returns only)
-+		e	synthesize error events
-+		d	create a debug log
-+		g	synthesize a call chain for instructions events
-+
-+	The default is all events i.e. the same as -Zibe
-+
-+	In addition, the period (default 1000) for instructions events can be
-+	specified in units of:
-+
-+		i	instructions (default)
-+		t	ticks
-+		ms	milliseconds
-+		us	microseconds
-+		ns	nanoseconds
-+
-+	Also the call chain size (default 16, max. 1024) for instructions
-+	events can be specified.
-+
-+	To disable decoding entirely, use --no-itrace.
-+
- SEE ALSO
- --------
- linkperf:perf-record[1], linkperf:perf-script-perl[1],
 diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index ce304df..dbffd00 100644
+index dbffd00..8976d9b 100644
 --- a/tools/perf/builtin-script.c
 +++ b/tools/perf/builtin-script.c
-@@ -16,6 +16,7 @@
- #include "util/evsel.h"
- #include "util/sort.h"
- #include "util/data.h"
-+#include "util/itrace.h"
- #include <linux/bitmap.h>
+@@ -147,9 +147,10 @@ static const char *output_field2str(enum perf_output_field field)
  
- static char const		*script_name;
-@@ -1505,6 +1506,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 	char *rec_script_path = NULL;
- 	char *rep_script_path = NULL;
- 	struct perf_session *session;
-+	struct itrace_synth_opts itrace_synth_opts = {0};
- 	char *script_path = NULL;
- 	const char **__argv;
- 	int i, j, err = 0;
-@@ -1519,6 +1521,10 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.attr		 = process_attr,
- 			.tracing_data	 = perf_event__process_tracing_data,
- 			.build_id	 = perf_event__process_build_id,
-+			.id_index	 = perf_event__process_id_index,
-+			.itrace_info	 = perf_event__process_itrace_info,
-+			.itrace		 = perf_event__process_itrace,
-+			.itrace_error	 = perf_event__process_itrace_error,
- 			.ordered_events	 = true,
- 			.ordering_requires_timestamps = true,
- 		},
-@@ -1570,6 +1576,9 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 		    "Show the fork/comm/exit events"),
- 	OPT_BOOLEAN('\0', "show-mmap-events", &script.show_mmap_events,
- 		    "Show the mmap events"),
-+	OPT_CALLBACK_OPTARG('Z', "itrace", &itrace_synth_opts, NULL, "opts",
-+			    "Instruction Tracing options",
-+			    itrace_parse_synth_opts),
- 	OPT_END()
- 	};
- 	const char * const script_usage[] = {
-@@ -1767,6 +1776,8 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+ #define PRINT_FIELD(x)  (output[attr->type].fields & PERF_OUTPUT_##x)
  
- 	script.session = session;
+-static int perf_evsel__check_stype(struct perf_evsel *evsel,
+-				   u64 sample_type, const char *sample_msg,
+-				   enum perf_output_field field)
++static int perf_evsel__do_check_stype(struct perf_evsel *evsel,
++				      u64 sample_type, const char *sample_msg,
++				      enum perf_output_field field,
++				      bool allow_user_set)
+ {
+ 	struct perf_event_attr *attr = &evsel->attr;
+ 	int type = attr->type;
+@@ -159,6 +160,8 @@ static int perf_evsel__check_stype(struct perf_evsel *evsel,
+ 		return 0;
  
-+	session->itrace_synth_opts = &itrace_synth_opts;
+ 	if (output[type].user_set) {
++		if (allow_user_set)
++			return 0;
+ 		evname = perf_evsel__name(evsel);
+ 		pr_err("Samples for '%s' event do not have %s attribute set. "
+ 		       "Cannot print '%s' field.\n",
+@@ -176,10 +179,21 @@ static int perf_evsel__check_stype(struct perf_evsel *evsel,
+ 	return 0;
+ }
+ 
++static int perf_evsel__check_stype(struct perf_evsel *evsel,
++				   u64 sample_type, const char *sample_msg,
++				   enum perf_output_field field)
++{
++	return perf_evsel__do_check_stype(evsel, sample_type, sample_msg, field,
++					  false);
++}
 +
- 	if (cpu_list) {
- 		err = perf_session__cpu_bitmap(session, cpu_list, cpu_bitmap);
- 		if (err < 0)
+ static int perf_evsel__check_attr(struct perf_evsel *evsel,
+ 				  struct perf_session *session)
+ {
+ 	struct perf_event_attr *attr = &evsel->attr;
++	bool allow_user_set;
++
++	allow_user_set = perf_header__has_feat(&session->header, HEADER_ITRACE);
+ 
+ 	if (PRINT_FIELD(TRACE) &&
+ 		!perf_session__has_traces(session, "record -R"))
+@@ -192,8 +206,8 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
+ 	}
+ 
+ 	if (PRINT_FIELD(ADDR) &&
+-		perf_evsel__check_stype(evsel, PERF_SAMPLE_ADDR, "ADDR",
+-					PERF_OUTPUT_ADDR))
++		perf_evsel__do_check_stype(evsel, PERF_SAMPLE_ADDR, "ADDR",
++					   PERF_OUTPUT_ADDR, allow_user_set))
+ 		return -EINVAL;
+ 
+ 	if (PRINT_FIELD(SYM) && !PRINT_FIELD(IP) && !PRINT_FIELD(ADDR)) {
+@@ -230,8 +244,8 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
+ 		return -EINVAL;
+ 
+ 	if (PRINT_FIELD(CPU) &&
+-		perf_evsel__check_stype(evsel, PERF_SAMPLE_CPU, "CPU",
+-					PERF_OUTPUT_CPU))
++		perf_evsel__do_check_stype(evsel, PERF_SAMPLE_CPU, "CPU",
++					   PERF_OUTPUT_CPU, allow_user_set))
+ 		return -EINVAL;
+ 
+ 	if (PRINT_FIELD(PERIOD) &&
 -- 
 1.9.1
 
