@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751372AbbAHFVh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 00:21:37 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:52213 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707AbbAHFVf (ORCPT
+	id S1751638AbbAHFcq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 00:32:46 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:47533 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707AbbAHFcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 00:21:35 -0500
-X-Original-SENDERIP: 10.177.220.203
-X-Original-MAILFROM: namhyung@kernel.org
-Date: Thu, 8 Jan 2015 14:19:33 +0900
-From: Namhyung Kim <namhyung@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC/PATCHSET 00/37] perf tools: Speed-up perf report by using
- multi thread (v1)
-Message-ID: <20150108051933.GB7268@sejong>
-References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
- <20150105184811.GQ2915@two.firstfloor.org>
- <CABPqkBQ_mcMr=mfaFoECm6YFWvgz3JWudQ4wdT2Q61yJZOok1w@mail.gmail.com>
- <20150107071323.GC849@sejong>
- <CABPqkBTamwaC_rueabTkuYpwZNycvejrULSFGQ7npna2gNQwLg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CABPqkBTamwaC_rueabTkuYpwZNycvejrULSFGQ7npna2gNQwLg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 8 Jan 2015 00:32:45 -0500
+Message-ID: <1420694794.5279.33.camel@marge.simpson.net>
+Subject: Re: sched_yield() call on Linux Kernel 2.6.39 is not behaving
+ correct
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Yogesh Ahire <yogesh02061983@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 08 Jan 2015 06:26:34 +0100
+In-Reply-To: <CAH86sKKCbZ7CYDEgAnpiVH+7TZNOjziUYOJSWHEpQyY3eUSniA@mail.gmail.com>
+References: <CAH86sKKCbZ7CYDEgAnpiVH+7TZNOjziUYOJSWHEpQyY3eUSniA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 10:14:56AM -0500, Stephane Eranian wrote:
-> On Wed, Jan 7, 2015 at 2:13 AM, Namhyung Kim <namhyung@kernel.org> wrote:
-> > Hi Stephane,
-> >
-> > On Tue, Jan 06, 2015 at 10:50:44AM -0500, Stephane Eranian wrote:
-> >> We use the pipe mode a lot and this would not work there. So no,
-> >> I don't like the 2 files solution. But I like the idea of using multiple
-> >> threads to speed up processing.
-> >
-> > Actually it's not 2 files, it's 1 + N files. :)  Anyway, I think the
-> > single file + index approach requires seeking to process them, is it
-> > ok for pipe-mode?
-> >
-> There is no seek possible in pipe mode.
+On Wed, 2015-01-07 at 16:30 -0500, Yogesh Ahire wrote: 
+> Hi All,
 > 
-> The way this is done (as I remember) is by creating pseudo-record types
-> and injecting them in the stream.
+> I have a system with multiple CPU cores.  I have multiple threads
+> assigned to particular CPU. Among these threads the main thread calls
+> sched_yield() if it has nothing to do, I am hoping that doing so will
+> give chance to other threads to run. But the strange behavior of
+> sched_yield() is , even if there are ready-to-runs tasks on this CPU
+> waiting for their turn, the task which calls sched_yield() is always
+> running ( get scheduled) and not giving chance to any other task to
+> run. It is consuming 100% of CPU. Is sched_yield() is broken on 2.6
+> Kernel?
 
-Right.  But I have no idea how I can index a live stream and process
-it using multiple threads.
+Nope, your expectation is likely busted.  sched_yield() for a fair class
+task is merely a resched check in CFS.  IFF there's a runnable task
+that's more deserving by the CFS definition thereof, it'll initiate a
+context switch, otherwise it's a non-free noop.  For realtime class
+tasks, behavior is predictable, the scheduler WILL initiate a context
+switch IFF there is a runnable task of >= yielding tasks priority on the
+same CPU.  If you depend on a context switch happening in any other
+circumstance, you're gonna be seriously disappointed.
 
-Thanks,
-Namhyung
+-Mike
+
