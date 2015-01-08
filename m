@@ -1,93 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223AbbAHEgh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 23:36:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59195 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709AbbAHEgg (ORCPT
+	id S1752849AbbAHExO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 23:53:14 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:33134 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194AbbAHExM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 23:36:36 -0500
+	Wed, 7 Jan 2015 23:53:12 -0500
+Date: Wed, 7 Jan 2015 20:53:06 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Calvin Owens <calvinowens@fb.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, kernel-team@fb.com
+Subject: Re: [PATCH v2] ksoftirqd: Enable IRQs and call cond_resched() before
+ poking RCU
+Message-ID: <20150108045306.GJ5280@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1420594659-16996-1-git-send-email-calvinowens@fb.com>
+ <20150107014906.GA27996@mail.thefacebook.com>
+ <20150107021926.GT5280@linux.vnet.ibm.com>
+ <20150107165223.GA21555@linux.vnet.ibm.com>
+ <20150108043329.GB27996@mail.thefacebook.com>
 MIME-Version: 1.0
-In-Reply-To: <CACVXFVO73hw-FWK+-xvuqRrmE3hvWQavLP2ixKwRj9tmFX0tcQ@mail.gmail.com>
-References: <1420472494-25836-1-git-send-email-sasha.levin@oracle.com>
-	<CACVXFVPUF1x8YDwHtYzoC6LiPy22Lr2bZC-N73+NakFMBrEUFw@mail.gmail.com>
-	<54AD6148.6030703@oracle.com>
-	<CACVXFVMcggxG41c5h4-3dY_twZfD3artiD8G=x608ADnNfnn4Q@mail.gmail.com>
-	<54ADED68.7060507@oracle.com>
-	<CACVXFVO73hw-FWK+-xvuqRrmE3hvWQavLP2ixKwRj9tmFX0tcQ@mail.gmail.com>
-Date: Thu, 8 Jan 2015 12:36:33 +0800
-Message-ID: <CACVXFVMZGQD0dZ8pKt_rufX3DOzU6JLWcTu+eZ2oLK--fx2ekg@mail.gmail.com>
-Subject: Re: [PATCH] firmware class: remove from pending list on load failure
-From: Ming Lei <ming.lei@canonical.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150108043329.GB27996@mail.thefacebook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15010804-0025-0000-0000-00000795EBFD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 8, 2015 at 11:06 AM, Ming Lei <ming.lei@canonical.com> wrote:
-> On Thu, Jan 8, 2015 at 10:37 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
->> On 01/07/2015 09:15 PM, Ming Lei wrote:
->>> On Thu, Jan 8, 2015 at 12:39 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
->>>> On 01/06/2015 11:52 PM, Ming Lei wrote:
->>>>> On Mon, Jan 5, 2015 at 11:41 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
->>>>>>> If we failed loading the firmware we have to make sure it leaves the pending
->>>>>>> list if abort wasn't executed for it.
->>>>>>>
->>>>>>> Otherwise we'd free an object still on the pending list and corrupt it.
->>>>>>>
->>>>>>> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
->>>>>>> ---
->>>>>>>  drivers/base/firmware_class.c | 11 ++++++++++-
->>>>>>>  1 file changed, 10 insertions(+), 1 deletion(-)
->>>>>>>
->>>>>>> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
->>>>>>> index 58470c3..8ccf6cf4 100644
->>>>>>> --- a/drivers/base/firmware_class.c
->>>>>>> +++ b/drivers/base/firmware_class.c
->>>>>>> @@ -929,9 +929,18 @@ static int _request_firmware_load(struct firmware_priv *fw_priv,
->>>>>>>         cancel_delayed_work_sync(&fw_priv->timeout_work);
->>>>>>>         if (is_fw_load_aborted(buf))
->>>>>>>                 retval = -EAGAIN;
->>>>>>> -       else if (!buf->data)
->>>>>>> +       else if (!buf->data) {
->>>>>>>                 retval = -ENOMEM;
->>>>>>>
->>>>>>> +               /*
->>>>>>> +                * We failed loading, but abort was never done so we
->>>>>>> +                * need to remove it from the pending list ourselves.
->>>>>>> +                */
->>>>>>> +               mutex_lock(&fw_lock);
->>>>>>> +               list_del_init(&buf->pending_list);
->>>>>>> +               mutex_unlock(&fw_lock);
->>>>> The buf is always removed before the complete_all(), isn't it? Or did
->>>>> you observe the issue?
->>>>
->>>> Not in the case where userspacehelper fails. Yes, this is not a theoretical
->>>> thing and can be easily reproduced.
->>>
->>> OK, I am just curious how it is triggered.
->>>
->>> One situation I thought of is that the request context is interrupted
->>> by signal after wait_for_completion() becomes interruptable, and the
->>> fix should abort the request if retval is -ERESTARTSYS.
->>>
->>> Or could you share how to reproduce if it isn't above case?
->>
->> It's pretty simple, just abort it once with Ctrl-C:
->
-> Looks it is just the case I said, :-)
->
-> Then I suggest you to remove the buf from list in case of
-> 'retval == -ERESTARTSYS', and the return value should be
-> changed to -EINTR.
+On Wed, Jan 07, 2015 at 08:33:29PM -0800, Calvin Owens wrote:
+> On Wednesday 01/07 at 08:52 -0800, Paul E. McKenney wrote:
+> > On Tue, Jan 06, 2015 at 06:19:26PM -0800, Paul E. McKenney wrote:
+> > > On Tue, Jan 06, 2015 at 05:49:06PM -0800, Calvin Owens wrote:
+> > > > While debugging an issue with excessive softirq usage, I encountered the
+> > > > following note in commit 3e339b5dae24a706 ("softirq: Use hotplug thread
+> > > > infrastructure"):
+> > > > 
+> > > >     [ paulmck: Call rcu_note_context_switch() with interrupts enabled. ]
+> > > > 
+> > > > ...but despite this note, the patch still calls RCU with IRQs disabled.
+> > > > 
+> > > > This seemingly innocuous change caused a significant regression in softirq
+> > > > CPU usage on the sending side of a large TCP transfer (~1 GB/s): when
+> > > > introducing 0.01% packet loss, the softirq usage would jump to around 25%,
+> > > > spiking as high as 50%. Before the change, the usage would never exceed 5%.
+> > > > 
+> > > > Moving the call to rcu_note_context_switch() after the cond_sched() call,
+> > > > as it was originally before the hotplug patch, completely eliminated this
+> > > > problem.
+> > > > 
+> > > > Signed-off-by: Calvin Owens <calvinowens@fb.com>
+> > > > ---
+> > > > Changes since v1:
+> > > > 	I mixed up the kernel versions I was patching against, sorry!
+> > > > 
+> > > >  kernel/softirq.c | 6 +++++-
+> > > >  1 file changed, 5 insertions(+), 1 deletion(-)
+> > > > 
+> > > > diff --git a/kernel/softirq.c b/kernel/softirq.c
+> > > > index 501baa9..9e787d8 100644
+> > > > --- a/kernel/softirq.c
+> > > > +++ b/kernel/softirq.c
+> > > > @@ -656,9 +656,13 @@ static void run_ksoftirqd(unsigned int cpu)
+> > > >  		 * in the task stack here.
+> > > >  		 */
+> > > >  		__do_softirq();
+> > > > -		rcu_note_context_switch();
+> > > >  		local_irq_enable();
+> > > >  		cond_resched();
+> > > 
+> > > If this is for 3.20, we can just replace cond_resched() with
+> > > cond_resched_rcu_qs(), and get rid of the direct call to
+> > > rcu_note_context_switch().  This has the benefit of avoiding
+> > > needless rcu_note_context_switch() overhead if cond_resched()
+> > > actually did a reschedule.
+> > > 
+> > > But don't try it in 3.19 or earlier.  ;-)
+> > 
+> > As in the following for 3.20.  Does this version work for you?
+> 
+> That's great, thanks :)
+> 
+> Should this go to stable as well? It is technically a regression, albeit
+> a rather long-standing one.
 
-Thought of the case further, the request still need to be
-aborted in the situation since it doesn't make sense for
-requests on same fw in other contexts to wait any more.
+Your original patch could go into stable, but my updated version depends
+on functionality not present before 3.20.
 
+> My original scenario was a bit contrived, but I tested this on some real
+> loads and it makes a difference: on a heavily loaded Proxygen server,
+> the aggregate softirq CPU usage decreases by roughly 10% (relative)
+> given the same amount of traffic with the patch. It also produces
+> statistically significant performance wins at higher loads on
+> webservers: about a 1% reduction in overall CPU utilization and improved
+> latency metrics.
 
-Thanks
-Ming Lei
+OK, good to know.  I have added this information to the commit log, please
+see below for updated commit.
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+ksoftirqd: Enable IRQs and call cond_resched() before poking RCU
+
+While debugging an issue with excessive softirq usage, I encountered the
+following note in commit 3e339b5dae24a706 ("softirq: Use hotplug thread
+infrastructure"):
+    
+        [ paulmck: Call rcu_note_context_switch() with interrupts enabled. ]
+    
+...but despite this note, the patch still calls RCU with IRQs disabled.
+
+This seemingly innocuous change caused a significant regression in softirq
+CPU usage on the sending side of a large TCP transfer (~1 GB/s): when
+introducing 0.01% packet loss, the softirq usage would jump to around
+25%, spiking as high as 50%. Before the change, the usage would never
+exceed 5%.  On a heavily loaded Proxygen server, the aggregate softirq
+CPU usage decreases by roughly 10% (relative) given the same amount
+of traffic with the patch. It also produces statistically significant
+performance wins at higher loads on webservers: about a 1% reduction in
+overall CPU utilization and improved latency metrics.
+
+Moving the call to rcu_note_context_switch() after the cond_sched() call,
+as it was originally before the hotplug patch, completely eliminated this
+problem, but the new cond_resched_rcu_qs() provides shorter code and
+avoids double RCU notification in the case where cond_resched() really
+did a context switch.
+
+Signed-off-by: Calvin Owens <calvinowens@fb.com>
+[ paulmck: Substituted shiny new cond_resched_rcu_qs() primitive. ]
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+[ paulmck: Added Calvin's measurements on Proxygen server and webservers. ]
+
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 501baa9ac1be..8cdb98847c7b 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -656,9 +656,8 @@ static void run_ksoftirqd(unsigned int cpu)
+ 		 * in the task stack here.
+ 		 */
+ 		__do_softirq();
+-		rcu_note_context_switch();
+ 		local_irq_enable();
+-		cond_resched();
++		cond_resched_rcu_qs();
+ 		return;
+ 	}
+ 	local_irq_enable();
+
