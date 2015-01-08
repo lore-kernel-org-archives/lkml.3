@@ -1,89 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932185AbbAHP6I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 10:58:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48967 "EHLO mx1.redhat.com"
+	id S1755627AbbAHQC0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 11:02:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57662 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753943AbbAHP6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 10:58:06 -0500
-Message-ID: <54AEA8FD.9070500@redhat.com>
-Date: Thu, 08 Jan 2015 10:57:49 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
+	id S1753943AbbAHQCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 11:02:25 -0500
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh\@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "devel\@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "Haiyang Zhang" <haiyangz@microsoft.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] Tools: hv: fix compiler warnings and do minor cleanup
+References: <1418140103-11854-1-git-send-email-vkuznets@redhat.com>
+	<F792CF86EFE20D4AB8064279AFBA51C613E9B62F@SIXPRD3002MB028.064d.mgd.msft.net>
+	<87lhmfhna7.fsf@vitty.brq.redhat.com>
+	<20141210144829.GB17184@kroah.com>
+	<BY2PR0301MB071102AF97B27F11EF91F89CA0620@BY2PR0301MB0711.namprd03.prod.outlook.com>
+Date: Thu, 08 Jan 2015 17:02:15 +0100
+In-Reply-To: <BY2PR0301MB071102AF97B27F11EF91F89CA0620@BY2PR0301MB0711.namprd03.prod.outlook.com>
+	(KY Srinivasan's message of "Wed, 10 Dec 2014 17:50:23 +0000")
+Message-ID: <877fwxqn08.fsf@vitty.brq.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Nicholas Mc Guire <der.herr@hofr.at>
-CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Rashika <rashika.kheria@gmail.com>, Dave Jiang <dave.jiang@intel.com>,
-        dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] ioat: fail self-test if wait_for_completion times
- out
-References: <1420726595-29152-1-git-send-email-der.herr@hofr.at>
-In-Reply-To: <1420726595-29152-1-git-send-email-der.herr@hofr.at>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+KY Srinivasan <kys@microsoft.com> writes:
 
+>> -----Original Message-----
+>> From: devel [mailto:driverdev-devel-bounces@linuxdriverproject.org] On
+>> Behalf Of gregkh@linuxfoundation.org
+>> Sent: Wednesday, December 10, 2014 6:48 AM
+>> To: Vitaly Kuznetsov
+>> Cc: devel@linuxdriverproject.org; Haiyang Zhang; linux-
+>> kernel@vger.kernel.org
+>> Subject: Re: [PATCH 0/5] Tools: hv: fix compiler warnings and do minor
+>> cleanup
+>> 
+>> On Wed, Dec 10, 2014 at 10:22:40AM +0100, Vitaly Kuznetsov wrote:
+>> > Dexuan Cui <decui@microsoft.com> writes:
+>> >
+>> > >> -----Original Message-----
+>> > >> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
+>> > >> Sent: Tuesday, December 9, 2014 23:48 PM
+>> > >> To: KY Srinivasan
+>> > >> Cc: Haiyang Zhang; devel@linuxdriverproject.org; linux-
+>> > >> kernel@vger.kernel.org; Dexuan Cui
+>> > >> Subject: [PATCH 0/5] Tools: hv: fix compiler warnings and do minor
+>> > >> cleanup
+>> > >>
+>> > >> When someone does 'make' in tools/hv/ issues appear:
+>> > >> - hv_fcopy_daemon is not being built;
+>> > >> - lots of compiler warnings.
+>> > >>
+>> > >> This is just a cleanup. Compile-tested by myself on top of linux-
+>> next/master.
+>> > >>
+>> > >> Piggyback this series and send "[PATCH 5/5] Tools: hv: do not add
+>> > >> redundant '/'
+>> > >>  in hv_start_fcopy()"
+>> > >>
+>> > >> Vitaly Kuznetsov (5):
+>> > >>   Tools: hv: add mising fcopyd to the Makefile
+>> > >>   Tools: hv: remove unused bytes_written from kvp_update_file()
+>> > >>   Tools: hv: address compiler warnings for hv_kvp_daemon.c
+>> > >>   Tools: hv: address compiler warnings for hv_fcopy_daemon.c
+>> > >>   Tools: hv: do not add redundant '/' in hv_start_fcopy()
+>> > >>
+>> > >>  tools/hv/Makefile          |  4 ++--
+>> > >>  tools/hv/hv_fcopy_daemon.c | 10 ++--------
+>> > >>  tools/hv/hv_kvp_daemon.c   | 29 +++++++++++++----------------
+>> > >>  3 files changed, 17 insertions(+), 26 deletions(-)
+>> > >>
+>> > >> --
+>> > >> 1.9.3
+>> > >
+>> > > Hi Vitaly,
+>> > > Thanks for the patchset!
+>> > >
+>> > > Acked-by: Dexuan Cui <decui@microsoft.com>
+>> > >
+>> > > PS, I added Greg into the TO list.
+>> > > The hv code in drivers/hv/ and tools/hv/ usually has to go into
+>> > > Greg's tree first.
+>> >
+>> > Well, I don't mind spamming Greg but he's not on the
+>> > scripts/get_maintainer.pl output. In case he's not monitoring the list
+>> > for patches by some other tool (patchwork?) a patch adding him to
+>> > MAINTAINERS would do the job.
+>> >
+>> > Greg, do you want to become an official Hyper-V maintainer in
+>> > MAINTAINERS? I can send a patch then :-)
+>> 
+>> No.  It's up to the "real" maintainers to take the patches and then forward
+>> them on to me for inclusion in the kernel tree.  KY knows this...
+>
+> I will take care of this.
+>
 
-On 01/08/2015 09:16 AM, Nicholas Mc Guire wrote:
-> wait_for_completion_timeout reaching timeout was being ignored,
-> fail the self-test if timeout condition occurs.
-> 
-> v2: fixup of coding style issues.
-> 
-> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+Hi KY,
 
+I just found out these patches never made it to any repo, at least I
+can't see them in char-misc-next. Do I need to resend?
 
-Reviewed-by: Prarit Bhargava <prarit@redhat.com>
+Thanks,
 
-P.
-
-
-> ---
-> 
-> this was only compile tested with
-> x86_64_defconfig + CONFIG_DMA_ENGINE=y + CONFIG_INTEL_IOATDMA=m
-> 
-> patch is against linux-next 3.19.0-rc3 -next-20150108
-> 
->  drivers/dma/ioat/dma_v3.c |    9 ++++++---
->  1 file changed, 6 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
-> index be307182..a26882e 100644
-> --- a/drivers/dma/ioat/dma_v3.c
-> +++ b/drivers/dma/ioat/dma_v3.c
-> @@ -1311,7 +1311,8 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
->  
->  	tmo = wait_for_completion_timeout(&cmp, msecs_to_jiffies(3000));
->  
-> -	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
-> +	if (tmo == 0 ||
-> +	    dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
->  		dev_err(dev, "Self-test xor timed out\n");
->  		err = -ENODEV;
->  		goto dma_unmap;
-> @@ -1377,7 +1378,8 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
->  
->  	tmo = wait_for_completion_timeout(&cmp, msecs_to_jiffies(3000));
->  
-> -	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
-> +	if (tmo == 0 ||
-> +	    dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
->  		dev_err(dev, "Self-test validate timed out\n");
->  		err = -ENODEV;
->  		goto dma_unmap;
-> @@ -1429,7 +1431,8 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
->  
->  	tmo = wait_for_completion_timeout(&cmp, msecs_to_jiffies(3000));
->  
-> -	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
-> +	if (tmo == 0 ||
-> +	    dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
->  		dev_err(dev, "Self-test 2nd validate timed out\n");
->  		err = -ENODEV;
->  		goto dma_unmap;
-> 
+-- 
+  Vitaly
