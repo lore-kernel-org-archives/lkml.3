@@ -1,94 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757377AbbAHTbm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 14:31:42 -0500
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:52786 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752903AbbAHTbk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 14:31:40 -0500
+	id S1757231AbbAHTfK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 14:35:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58436 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751573AbbAHTfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 14:35:09 -0500
+From: Paul Moore <pmoore@redhat.com>
+To: Dave Jones <davej@codemonkey.org.uk>, Stephen Smalley <sds@epoch.ncsc.mil>
+Cc: James Morris <james.l.morris@oracle.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: noisy selinux messages on tmpfs mount.
+Date: Thu, 08 Jan 2015 14:34:57 -0500
+Message-ID: <3227891.DhTeT4XeAv@sifl>
+Organization: Red Hat
+User-Agent: KMail/4.14.3 (Linux/3.16.7-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <20150108190822.GB4365@codemonkey.org.uk>
+References: <20150108190822.GB4365@codemonkey.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20150108184201.GB13974@cloud>
-References: <1420705550-24245-1-git-send-email-famz@redhat.com>
- <1420708372.18399.15.camel@suse.cz> <CALCETrVyPij1Zxwmw7p06UrZjoyYDXqEjmxyQ-KJ8Y7dx7mL3g@mail.gmail.com>
- <20150108184201.GB13974@cloud>
-From: Alexei Starovoitov <ast@plumgrid.com>
-Date: Thu, 8 Jan 2015 11:31:19 -0800
-Message-ID: <CAMEtUuweb4cfC9DsLUmDMVx6Nw1_+0afp8ExeUS49OCARa3D+g@mail.gmail.com>
-Subject: Re: [PATCH 0/3] epoll: Add epoll_pwait1 syscall
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, Miklos Szeredi <mszeredi@suse.cz>,
-        Fam Zheng <famz@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Juri Lelli <juri.lelli@gmail.com>, Zach Brown <zab@zabbo.net>,
-        David Drysdale <drysdale@google.com>,
-        Kees Cook <keescook@chromium.org>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Dario Faggioli <raistlin@linux.it>, "Theodore Ts'o" <tytso@mit.edu>,
-        Peter Zijlstra <peterz@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Fabian Frederick <fabf@skynet.be>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 8, 2015 at 10:42 AM,  <josh@joshtriplett.org> wrote:
->> I'd like to see a more ambitious change, since the timer isn't the
->> only problem like this.  Specifically, I'd like a syscall that does a
->> list of epoll-related things and then waits.  The list of things could
->> include, at least:
->>
->>  - EPOLL_CTL_MOD actions: level-triggered epoll users are likely to
->> want to turn on and off their requests for events on a somewhat
->> regular basis.
->>
->>  - timerfd_settime actions: this allows a single syscall to wait and
->> adjust *both* monotonic and real-time wakeups.
->>
->> Would this make sense?  It could look like:
->>
->> int epoll_mod_and_pwait(int epfd,
->>   struct epoll_event *events, int maxevents,
->>   struct epoll_command *commands, int ncommands,
->>   const sigset_t *sigmask);
->
-> That's a complicated syscall.  (And it also doesn't have room for the
-> flags argument.)
->
-> At that point, why not just have a syscall like this:
->
-> struct syscall {
->         unsigned long num;
->         unsigned long params[6];
-> };
->
-> int sys_many(size_t count, struct syscall *syscalls, int *results, unsigned long flags);
->
-> I think that has been discussed in the past.
->
-> Or, these days, that might be better done via eBPF, which would avoid
-> the need for flags like "return on error"; an eBPF program could decide
-> how to proceed after each call.
+On Thursday, January 08, 2015 02:08:22 PM Dave Jones wrote:
+> systemd has started mounting a tmpfs in /run/user/<uid> every time a
+> session begins.  So after ssh'ing into a box a number of times, dmesg
+> looks like this..
+> 
+> [...] SELinux: initialized (dev tmpfs, type tmpfs), uses transition SIDs
+> [...] SELinux: initialized (dev tmpfs, type tmpfs), uses transition SIDs
 
-I'm afraid that will break seccomp or will make it much more
-complicated.
-Also I think syscall latency with the latest improvements is
-actually quite fast, so chaining of syscalls is probably an overkill.
-Same goes to Andy's argument of doing immediate CTL_MOD.
-Let user space do it. It makes sense to combine things only
-when atomicity is needed. Here it's not the case.
+{snip}
+
+> What's a good solution to stopping this spew ? printk_once doesn't seem like
+> a good fit, in case someone is doing different labelling behaviours between
+> mounts.
+> 
+> Could we only print it if the mount is being done with non-default behaviour
+> perhaps?
+
+I'm very curious to hear Stephen's opinion on the issue, but I wonder how much 
+this would honestly impact us if we removed this message in the case where we 
+mount the filesystem with a known labeling behavior.
+
+-- 
+paul moore
+security @ redhat
+
