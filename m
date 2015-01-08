@@ -1,61 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756306AbbAHPpR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 10:45:17 -0500
-Received: from smtpauth13.mfg.siteprotect.com ([64.26.60.145]:48935 "EHLO
-	smtpauth03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753877AbbAHPpP (ORCPT
+	id S1754642AbbAHPs4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 10:48:56 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:12588 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569AbbAHPsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 10:45:15 -0500
-Date: Thu, 8 Jan 2015 10:44:53 -0500 (EST)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Pavel Machek <pavel@ucw.cz>, Marc Zyngier <marc.zyngier@arm.com>,
-        kernel list <linux-kernel@vger.kernel.org>, vincent.weaver@maine.edu
-Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
- pyaudio (and probably more)
-In-Reply-To: <20150108103911.GQ12302@n2100.arm.linux.org.uk>
-Message-ID: <alpine.DEB.2.10.1501081044470.26196@pianoman.cluster.toy>
-References: <alpine.LFD.2.11.1501041609290.18844@knanqh.ubzr> <20150104212659.GC12302@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1501042343240.18844@knanqh.ubzr> <CAHkRjk6Vg_AR8rFNYzPcnPwfKZqaVuaCoG67CEVPRgp1-bDetA@mail.gmail.com>
- <CA+55aFypmZExpCvD699TQOs1NDK_mT-_rR3UWOdxdzkOKvbdoA@mail.gmail.com> <alpine.LFD.2.11.1501071354130.1322@knanqh.ubzr> <CA+55aFw70ZvHKH+8_aS7E7FZZuuWQA++zGQuSmuvDE3DWU+x3A@mail.gmail.com> <alpine.LFD.2.11.1501071446460.1322@knanqh.ubzr>
- <20150107205346.GO12302@n2100.arm.linux.org.uk> <CAHkRjk6FT+WJ3u9qhfB-EMcqhOHGQSe4dW4MpZF6vE97B0vD0A@mail.gmail.com> <20150108103911.GQ12302@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Thu, 8 Jan 2015 10:48:55 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 08 Jan 2015 07:41:28 -0800
+Date: Thu, 8 Jan 2015 16:48:39 +0100
+From: Thierry Reding <treding@nvidia.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: Paul Walmsley <paul@pwsan.com>, <linux-kernel@vger.kernel.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>, <linux-tegra@vger.kernel.org>,
+        Allen Martin <amartin@nvidia.com>, Stephen Warren <swarren@nvidia.com>,
+        Alexandre Courbot <gnurou@gmail.com>
+Subject: Re: [PATCH] clocksource: tegra: wrap arch/arm-specific sections in
+ CONFIG_ARM
+Message-ID: <20150108154837.GA1608@ulmo.nvidia.com>
+References: <alpine.DEB.2.02.1412092201200.31750@utopia.booyaka.com>
+ <54AE9286.1090800@linaro.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020205.54AEA612.0375,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+In-Reply-To: <54AE9286.1090800@linaro.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [10.2.68.19]
+X-ClientProxiedBy: UKMAIL102.nvidia.com (10.26.138.15) To
+ UKMAIL101.nvidia.com (10.26.138.13)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BXVAT5kNtrzKuDFl"
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Jan 2015, Russell King - ARM Linux wrote:
+--BXVAT5kNtrzKuDFl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> It's not a regression - yet.  No one has shown that userspace has broken
-> according to the definition of the first quote above, and that's the
-> whole point.
+On Thu, Jan 08, 2015 at 03:21:58PM +0100, Daniel Lezcano wrote:
+> On 12/09/2014 11:07 PM, Paul Walmsley wrote:
+> >
+> >Like several of the other files in drivers/clocksource,
+> >tegra20_timer.c contains code that can only compile when CONFIG_ARM is
+> >enabled.  This causes obvious problems when trying to compile this
+> >code for NVIDIA ARM64-based SoCs, such as Tegra132.  The same timer IP
+> >blocks exist, so it seems appropriate to provide support for them.
+> >
+> >So until we figure out a better way to partition this code, wrap the
+> >delay_timer and persistent_clock support code with preprocessor tests
+> >for CONFIG_ARM.  (The delay_timer code should not be needed at all on
+> >ARM64 due to the presence of the ARMv8 architected timer.  The
+> >persistent_clock support code could become important once power
+> >management modes are implemented that turn off the CPU complex.)
+>=20
+> Well actually putting #ifdef macros in the C code should be avoided if
+> possible.
+>=20
+> May be you can replace those macros by:
+>=20
+> if (IS_ENABLED(CONFIG_ARM64)) {
+> 	...
+> }
+>=20
+> ?
 
-How much does one have to regress before it is a problem?  I have two 
-projects I've worked on that "broke" due to this issue.  
+Unfortunately we can't. Some of the symbols in this file are only
+defined in headers specific to ARM and not available on ARM64.
 
-They were minor breakages though.
+Thierry
 
-The "linux_logo" userspace sysinfo tool broke to the extent that it 
-was parsing for the bogomips string in /proc/cpuinfo and printed poorly 
-formatted and/or corrupted text info to screen when it couldn't find it.
+--BXVAT5kNtrzKuDFl
+Content-Type: application/pgp-signature
 
-The "PAPI" library had some really ancient (and poorly 
-thought-out) fallback code that would try to estimate MHz from bogomips 
-if a MHz value was not available via the traditional methods.  This
-failed after the change too, but not many people use PAPI on ARM so it 
-wasn't that big an issue.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-I noticed these problems early, even before the change hit mainline.
-But when I complained I was told in no uncertain terms that the ARM
-maintainers were tired of hearing about bogomips issues and nothing
-could be done to stop the change from getting in.
+iQIcBAEBAgAGBQJUrqbVAAoJEN0jrNd/PrOhK6kP/RHXBVdtLPXfGpRU+JLTVgZH
+kqD4GVu7fg1U+2k4fRhlwc6B8tR/ElT5tBJgbDZ4KVR6oOYOFqziPs6KiHjnwG38
+2AB7XuvXVy69zSc4DBxSa3CTeXNc+dsvS/zKYBzhSNtFGj/+8j26h0tPNHn3kOdP
+9k+dEQclVYOrEsVJ2XkBGhqKqHxVx+LxeI3hBAmZKnv/tnzV/3QhBoSOZFjUFn4X
+NpbdYWtqAcnqKQUsDA5Z4MpYvYyOWdsbAG95dfJPP1R3V/oX8T0OO0wyhlSkArgX
+X65aJiYQACVEJG+neys9HEknb5taZRjSuHAR+1eqMDmX8bbMzURvPpep5vxA1XrF
+OlWB4+IiFyHKUc/MSOnRAzb1EpOQIdv7fwiTRWC7nbsK9b+8ZC77cj4JUNHmkZZn
+m1MdvgWKQxC5xIPKbSnC9zXg15EA17QZef2VnRSalBbo5G9H4S0eSShBPXnAO+dB
+PGhPHjYR7yH0/DS+/bsH7ZUBmBRHW8GO2bwCrtNJrhdixdcuHWdoFgNmf8hjcrJB
+EX+TdPBE5SLebdvR378qfOXQe/2pKlFunL6t3RdLmbHQe8KWcgNpD+3NumTLoV9U
+XuPoJms5InCaZJbuM6Ei53YTvAiocldxmA/SxAIiJP9GPtmGYNjyXFKsablF/uWb
+zjZ9Gb3VUosD10JtPlOR
+=uUAa
+-----END PGP SIGNATURE-----
 
-Vince
+--BXVAT5kNtrzKuDFl--
