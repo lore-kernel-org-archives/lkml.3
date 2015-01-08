@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756711AbbAHPIc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 10:08:32 -0500
-Received: from mail.kernel.org ([198.145.29.136]:47166 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753171AbbAHPIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 10:08:31 -0500
-Date: Thu, 8 Jan 2015 12:08:24 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] perf hists browser: Fix segfault when showing callchain
-Message-ID: <20150108150824.GD15396@kernel.org>
-References: <1419401076-21700-1-git-send-email-namhyung@kernel.org>
+	id S1756770AbbAHPIz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 10:08:55 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:49328 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753114AbbAHPIy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 10:08:54 -0500
+Date: Thu, 8 Jan 2015 16:08:50 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Mark Langsdorf <mlangsdo@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: Linux 3.19-rc3
+Message-ID: <20150108150850.GD5658@dhcp22.suse.cz>
+References: <CA+55aFwsxoyLb9OWMSCL3doe_cz_EQtKsEFCyPUYn_T87pbz0A@mail.gmail.com>
+ <54AE7D53.2020305@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1419401076-21700-1-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <54AE7D53.2020305@redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Dec 24, 2014 at 03:04:36PM +0900, Namhyung Kim escreveu:
-> When perf report on TUI shows callchain it checks first node has
-> siblings to determine whether it needs to print percentage value.  But
-> it missed a case that first node is NULL.  So sometimes it segfaults
-> like below:
+[CCing linux-mm and CMA people]
+[Full message here:
+http://article.gmane.org/gmane.linux.ports.arm.kernel/383669]
 
-Thanks, applied.
- 
->   $ perf top -g
->   perf: Segmentation fault
->   -------- backtrace --------
->   perf[0x4fcefb]
->   /usr/lib/libc.so.6(+0x33b20)[0x7f2a35839b20]
->   perf(rb_next+0x8)[0x47d3d8]
->   perf[0x4f6058]
->   perf[0x4f833b]
->   perf[0x4f8610]
->   perf[0x4f209e]
->   perf(ui_browser__run+0x3a)[0x4f2e6a]
->   perf[0x4f94ee]
->   perf(perf_evlist__tui_browse_hists+0x94)[0x4fbbf4]
->   perf[0x444d10]
->   /usr/lib/libpthread.so.0(+0x7314)[0x7f2a37070314]
->   /usr/lib/libc.so.6(clone+0x6d)[0x7f2a358ee5bd]
-> 
->   $ addr2line -e `which perf` 0x4f6058
->   /home/namhyung/project/linux/tools/perf/ui/browsers/hists.c:553
-> 
-> I don't know why the backtrace didn't print some symbols..
-> 
-> Fixes: 4087d11cd945 ("perf hists browser: Print overhead percent value for first-level callchain")
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/ui/browsers/hists.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-> index e6bb04b5b09b..788506eef567 100644
-> --- a/tools/perf/ui/browsers/hists.c
-> +++ b/tools/perf/ui/browsers/hists.c
-> @@ -550,7 +550,7 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
->  	bool need_percent;
->  
->  	node = rb_first(root);
-> -	need_percent = !!rb_next(node);
-> +	need_percent = node && rb_next(node);
->  
->  	while (node) {
->  		struct callchain_node *child = rb_entry(node, struct callchain_node, rb_node);
-> -- 
-> 2.1.3
+On Thu 08-01-15 06:51:31, Mark Langsdorf wrote:
+[...]
+> [ 1053.968815] active_anon:207417 inactive_anon:25722 isolated_anon:0
+> [ 1053.968815]  active_file:1300 inactive_file:21234 isolated_file:0
+> [ 1053.968815]  unevictable:0 dirty:0 writeback:0 unstable:0
+> [ 1053.968815]  free:1014 slab_reclaimable:1047 slab_unreclaimable:1758
+> [ 1053.968815]  mapped:733 shmem:58 pagetables:267 bounce:0
+> [ 1053.968815]  free_cma:1
+
+Still a lot of pages (~80M) on the file LRU list which should be reclaimable
+because they are not dirty apparently.
+Anon pages can be reclaimed as well because the swap is basically
+unused.
+
+[...]
+> [ 1054.095277] DMA: 109*64kB (UR) 53*128kB (R) 8*256kB (R) 0*512kB 0*1024kB
+> 0*2048kB 1*4096kB (R) 0*8192kB 0*16384kB 1*32768kB (R) 0*65536kB = 52672kB
+> [ 1054.108621] Normal: 191*64kB (MR) 0*128kB 0*256kB 0*512kB 0*1024kB
+> 0*2048kB 0*4096kB 0*8192kB 0*16384kB 0*32768kB 0*65536kB = 12224kB
+[...]
+> [ 1054.142545] Free swap  = 6598400kB
+> [ 1054.145928] Total swap = 8388544kB
+> [ 1054.149317] 262112 pages RAM
+> [ 1054.152180] 0 pages HighMem/MovableOnly
+> [ 1054.155995] 18446744073709544361 pages reserved
+> [ 1054.160505] 8192 pages cma reserved
+
+Besides underflow in the reserved pages accounting mentioned in other
+email the free lists look strange as well. All free blocks with some memory
+are marked as reserved. I would suspect something CMA related.
+
+-- 
+Michal Hocko
+SUSE Labs
