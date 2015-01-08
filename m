@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756855AbbAHPhL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 10:37:11 -0500
-Received: from mail.kernel.org ([198.145.29.136]:48867 "EHLO mail.kernel.org"
+	id S1756916AbbAHPhi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 10:37:38 -0500
+Received: from mail.kernel.org ([198.145.29.136]:48882 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756464AbbAHPhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 10:37:06 -0500
+	id S1754642AbbAHPhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 10:37:10 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Paul Mackerras <paulus@samba.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 2/3] perf callchain: Free callchains when hist entries are deleted
-Date: Thu,  8 Jan 2015 12:36:47 -0300
-Message-Id: <1420731408-8631-3-git-send-email-acme@kernel.org>
+Subject: [PATCH 3/3] perf hists browser: Fix segfault when showing callchain
+Date: Thu,  8 Jan 2015 12:36:48 -0300
+Message-Id: <1420731408-8631-4-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1420731408-8631-1-git-send-email-acme@kernel.org>
 References: <1420731408-8631-1-git-send-email-acme@kernel.org>
@@ -28,87 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung@kernel.org>
 
-Markus reported that "perf top -g" can leak ~300MB per second on his
-machine.  This is partly because it missed to free callchains when hist
-entries are deleted.  Fix it.
+When perf report on TUI shows callchain it checks first node has
+siblings to determine whether it needs to print percentage value.
 
-Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+But it missed a case that first node is NULL.  So sometimes it segfaults
+like below:
+
+  $ perf top -g
+  perf: Segmentation fault
+  -------- backtrace --------
+  perf[0x4fcefb]
+  /usr/lib/libc.so.6(+0x33b20)[0x7f2a35839b20]
+  perf(rb_next+0x8)[0x47d3d8]
+  perf[0x4f6058]
+  perf[0x4f833b]
+  perf[0x4f8610]
+  perf[0x4f209e]
+  perf(ui_browser__run+0x3a)[0x4f2e6a]
+  perf[0x4f94ee]
+  perf(perf_evlist__tui_browse_hists+0x94)[0x4fbbf4]
+  perf[0x444d10]
+  /usr/lib/libpthread.so.0(+0x7314)[0x7f2a37070314]
+  /usr/lib/libc.so.6(clone+0x6d)[0x7f2a358ee5bd]
+
+  $ addr2line -e `which perf` 0x4f6058
+  /home/namhyung/project/linux/tools/perf/ui/browsers/hists.c:553
+
+I don't know why the backtrace didn't print some symbols..
+
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
+Fixes: 4087d11cd945 ("perf hists browser: Print overhead percent value for first-level callchain")
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20141230053813.GD6081@sejong
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1419401076-21700-1-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/callchain.c | 30 ++++++++++++++++++++++++++++++
- tools/perf/util/callchain.h |  2 ++
- tools/perf/util/hist.c      |  1 +
- 3 files changed, 33 insertions(+)
+ tools/perf/ui/browsers/hists.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 64b377e591e4..14e7a123d43b 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -841,3 +841,33 @@ char *callchain_list__sym_name(struct callchain_list *cl,
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index e6bb04b5b09b..788506eef567 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -550,7 +550,7 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
+ 	bool need_percent;
  
- 	return bf;
- }
-+
-+static void free_callchain_node(struct callchain_node *node)
-+{
-+	struct callchain_list *list, *tmp;
-+	struct callchain_node *child;
-+	struct rb_node *n;
-+
-+	list_for_each_entry_safe(list, tmp, &node->val, list) {
-+		list_del(&list->list);
-+		free(list);
-+	}
-+
-+	n = rb_first(&node->rb_root_in);
-+	while (n) {
-+		child = container_of(n, struct callchain_node, rb_node_in);
-+		n = rb_next(n);
-+		rb_erase(&child->rb_node_in, &node->rb_root_in);
-+
-+		free_callchain_node(child);
-+		free(child);
-+	}
-+}
-+
-+void free_callchain(struct callchain_root *root)
-+{
-+	if (!symbol_conf.use_callchain)
-+		return;
-+
-+	free_callchain_node(&root->node);
-+}
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index dbc08cf5f970..c0ec1acc38e4 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -198,4 +198,6 @@ static inline int arch_skip_callchain_idx(struct thread *thread __maybe_unused,
- char *callchain_list__sym_name(struct callchain_list *cl,
- 			       char *bf, size_t bfsize, bool show_dso);
+ 	node = rb_first(root);
+-	need_percent = !!rb_next(node);
++	need_percent = node && rb_next(node);
  
-+void free_callchain(struct callchain_root *root);
-+
- #endif	/* __PERF_CALLCHAIN_H */
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 0ced178ce306..182395546ddc 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -947,6 +947,7 @@ void hist_entry__free(struct hist_entry *he)
- 	zfree(&he->mem_info);
- 	zfree(&he->stat_acc);
- 	free_srcline(he->srcline);
-+	free_callchain(he->callchain);
- 	free(he);
- }
- 
+ 	while (node) {
+ 		struct callchain_node *child = rb_entry(node, struct callchain_node, rb_node);
 -- 
 1.9.3
 
