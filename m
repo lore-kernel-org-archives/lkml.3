@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757564AbbAHWmm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 17:42:42 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:43584 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866AbbAHWmk (ORCPT
+	id S1757610AbbAHWnw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 17:43:52 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:56598 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757412AbbAHWnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 17:42:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <20150108104933.GA25083@sepie.suse.cz>
-References: <20150108104933.GA25083@sepie.suse.cz>
-Date: Thu, 8 Jan 2015 14:42:38 -0800
-X-Google-Sender-Auth: q69z3cfh-ykLyPPhSICi3x3n1Ls
-Message-ID: <CA+55aFxrc1CiyjQfWoZHD6UgwOTgj=NVBXPPsY2eygfPMzgsPg@mail.gmail.com>
-Subject: Re: [GIT PULL] make mrproper fix for v3.19-rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 8 Jan 2015 17:43:33 -0500
+From: Moritz Fischer <moritz.fischer@ettus.com>
+To: dmitry.torokhov@gmail.com
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Moritz Fischer <moritz.fischer@ettus.com>
+Subject: [PATCH v2 0/3] NI Ettus Research USRP E3x0 Button driver
+Date: Thu,  8 Jan 2015 23:43:08 +0100
+Message-Id: <1420756991-16506-1-git-send-email-moritz.fischer@ettus.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 8, 2015 at 2:49 AM, Michal Marek <mmarek@suse.cz> wrote:
->
-> make mrproper / distclean stopped removing the generated debian/
-> directory in v3.16.
+This patchset adds NI Ettus Research USRP E3x0 power button support and
+corresponding devicetree bindings and MAINTAINER entries.
 
-So "make distclean" still doesn't actually clean everything.
+It was developed and tested on our NI Ettus Research USRP E310 embedded
+SDR on top of 3.19-rc3.
 
-I don't personally much care, since I've taught my fingers to just do
+Moritz Fischer (3):
+  input: misc: Support NI Ettus Research USRP E3x0 Button
+  doc: dt: Add documentation for e3x0-button bindings.
+  Update MAINTAINERS file with e3x0-button info.
 
-    git clean -dqfx
+ .../devicetree/bindings/input/e3x0-button.txt      |  25 ++++
+ MAINTAINERS                                        |   8 ++
+ drivers/input/misc/Kconfig                         |  10 ++
+ drivers/input/misc/Makefile                        |   1 +
+ drivers/input/misc/e3x0-button.c                   | 132 +++++++++++++++++++++
+ 5 files changed, 176 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/input/e3x0-button.txt
+ create mode 100644 drivers/input/misc/e3x0-button.c
 
-instead, but since I tested "make distclean" after pulling from you, I
-thought I'd just mention it.
+-- 
+1.9.3
 
-Just do
-
-    make allmodconfig
-    .. build the tree ..
-    make distclean
-    git ls-files -o
-
-to see any files that are left-over despite the distclean ("git
-ls-files -o" basically shows all untracked files - 'o' stands for
-'others' - so anything that isn't in the actual distributed sources
-shows up)
-
-But I really am not sure how much effort we should spend on "make
-distclean", given than "git clean" is so much easier and requires no
-effort at all.
-
-                      Linus
