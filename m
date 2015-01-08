@@ -1,99 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932153AbbAHMZx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 07:25:53 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:5227 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752893AbbAHMZv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 07:25:51 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 08 Jan 2015 04:24:22 -0800
-From: Jim Lin <jilin@nvidia.com>
-To: linus.walleij@linaro.org
-CC: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jim Lin <jilin@nvidia.com>
-Subject: [PATCH 1/1] pinctrl: Fix two deadlocks
-Date: Thu, 8 Jan 2015 20:25:05 +0800
-Message-ID: <1420719905-15994-1-git-send-email-jilin@nvidia.com>
-X-Mailer: git-send-email 1.7.7
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756532AbbAHMgV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 07:36:21 -0500
+Received: from www.osadl.org ([62.245.132.105]:39187 "EHLO www.osadl.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753069AbbAHMgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 07:36:19 -0500
+From: Nicholas Mc Guire <der.herr@hofr.at>
+To: Kalle Valo <kvalo@qca.qualcomm.com>
+Cc: Michal Kazior <michal.kazior@tieto.com>,
+        Ben Greear <greearb@candelatech.com>,
+        Chun-Yeow Yeoh <yeohchunyeow@gmail.com>,
+        Yanbo Li <yanbol@qti.qualcomm.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        ath10k@lists.infradead.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nicholas Mc Guire <der.herr@hofr.at>
+Subject: [PATCH v3] ath10k: fixup wait_for_completion_timeout return handling
+Date: Thu,  8 Jan 2015 13:27:34 +0100
+Message-Id: <1420720054-27870-1-git-send-email-der.herr@hofr.at>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is to fix two deadlock cases.
-Deadlock 1:
-CPU #1
- pinctrl_register-> pinctrl_get ->
- create_pinctrl
- (Holding lock pinctrl_maps_mutex)
- -> get_pinctrl_dev_from_devname
- (Trying to acquire lock pinctrldev_list_mutex)
-CPU #0
- pinctrl_unregister
- (Holding lock pinctrldev_list_mutex)
- -> pinctrl_put ->> pinctrl_free ->
- pinctrl_dt_free_maps -> pinctrl_unregister_map
- (Trying to acquire lock pinctrl_maps_mutex)
+wait_for_completion_timeout does not return negative values so the tests
+for <= 0 are not needed and the case differentiation in the error handling
+path unnecessary.
 
-Simply to say
-CPU#1 is holding lock A and trying to acquire lock B,
-CPU#0 is holding lock B and trying to acquire lock A.
+v2: all wait_for_completion_timeout changes in a single patch
+v3: patch formatting cleanups - no change of actual patch
 
-Deadlock 2:
-CPU #3
- pinctrl_register-> pinctrl_get ->
- create_pinctrl
- (Holding lock pinctrl_maps_mutex)
- -> get_pinctrl_dev_from_devname
- (Trying to acquire lock pinctrldev_list_mutex)
-CPU #2
- pinctrl_unregister
- (Holding lock pctldev->mutex)
- -> pinctrl_put ->> pinctrl_free ->
- pinctrl_dt_free_maps -> pinctrl_unregister_map
- (Trying to acquire lock pinctrl_maps_mutex)
-CPU #0
- tegra_gpio_request
- (Holding lock pinctrldev_list_mutex)
- -> pinctrl_get_device_gpio_range
- (Trying to acquire lock pctldev->mutex)
-
-Simply to say
-CPU#3 is holding lock A and trying to acquire lock D,
-CPU#2 is holding lock B and trying to acquire lock A,
-CPU#0 is holding lock D and trying to acquire lock B.
-
-Signed-off-by: Jim Lin <jilin@nvidia.com>
+Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
 ---
- drivers/pinctrl/core.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+patch was only compile tested x86_64_defconfig + CONFIG_ATH_CARDS=m
+CONFIG_ATH10K=m
 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index e4f65510c87e..89dca77ca038 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -1801,14 +1801,15 @@ void pinctrl_unregister(struct pinctrl_dev *pctldev)
- 	if (pctldev == NULL)
- 		return;
+patch is against linux-next 3.19.0-rc1 -next-20141226
+
+None of the proposed cleanups are critical.
+All changes should only be removing unreachable cases.
+
+ drivers/net/wireless/ath/ath10k/debug.c |    2 +-
+ drivers/net/wireless/ath/ath10k/htc.c   |    6 ++----
+ drivers/net/wireless/ath/ath10k/htt.c   |    2 +-
+ drivers/net/wireless/ath/ath10k/mac.c   |    2 +-
+ 4 files changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/net/wireless/ath/ath10k/debug.c b/drivers/net/wireless/ath/ath10k/debug.c
+index a716758..7e1fe93 100644
+--- a/drivers/net/wireless/ath/ath10k/debug.c
++++ b/drivers/net/wireless/ath/ath10k/debug.c
+@@ -373,7 +373,7 @@ static int ath10k_debug_fw_stats_request(struct ath10k *ar)
  
--	mutex_lock(&pinctrldev_list_mutex);
- 	mutex_lock(&pctldev->mutex);
--
- 	pinctrl_remove_device_debugfs(pctldev);
-+	mutex_unlock(&pctldev->mutex);
+ 		ret = wait_for_completion_timeout(&ar->debug.fw_stats_complete,
+ 						  1*HZ);
+-		if (ret <= 0)
++		if (ret == 0)
+ 			return -ETIMEDOUT;
  
- 	if (!IS_ERR(pctldev->p))
- 		pinctrl_put(pctldev->p);
+ 		spin_lock_bh(&ar->data_lock);
+diff --git a/drivers/net/wireless/ath/ath10k/htc.c b/drivers/net/wireless/ath/ath10k/htc.c
+index f1946a6..2fd9e18 100644
+--- a/drivers/net/wireless/ath/ath10k/htc.c
++++ b/drivers/net/wireless/ath/ath10k/htc.c
+@@ -703,11 +703,9 @@ int ath10k_htc_connect_service(struct ath10k_htc *htc,
+ 	/* wait for response */
+ 	status = wait_for_completion_timeout(&htc->ctl_resp,
+ 					     ATH10K_HTC_CONN_SVC_TIMEOUT_HZ);
+-	if (status <= 0) {
+-		if (status == 0)
+-			status = -ETIMEDOUT;
++	if (status == 0) {
+ 		ath10k_err(ar, "Service connect timeout: %d\n", status);
+-		return status;
++		return -ETIMEDOUT;
+ 	}
  
-+	mutex_lock(&pinctrldev_list_mutex);
-+	mutex_lock(&pctldev->mutex);
- 	/* TODO: check that no pinmuxes are still active? */
- 	list_del(&pctldev->node);
- 	/* Destroy descriptor tree */
+ 	/* we controlled the buffer creation, it's aligned */
+diff --git a/drivers/net/wireless/ath/ath10k/htt.c b/drivers/net/wireless/ath/ath10k/htt.c
+index 56cb4ac..58b6fc1 100644
+--- a/drivers/net/wireless/ath/ath10k/htt.c
++++ b/drivers/net/wireless/ath/ath10k/htt.c
+@@ -102,7 +102,7 @@ int ath10k_htt_setup(struct ath10k_htt *htt)
+ 
+ 	status = wait_for_completion_timeout(&htt->target_version_received,
+ 					     HTT_TARGET_VERSION_TIMEOUT_HZ);
+-	if (status <= 0) {
++	if (status == 0) {
+ 		ath10k_warn(ar, "htt version request timed out\n");
+ 		return -ETIMEDOUT;
+ 	}
+diff --git a/drivers/net/wireless/ath/ath10k/mac.c b/drivers/net/wireless/ath/ath10k/mac.c
+index c400567..f9d7dbb 100644
+--- a/drivers/net/wireless/ath/ath10k/mac.c
++++ b/drivers/net/wireless/ath/ath10k/mac.c
+@@ -2151,7 +2151,7 @@ void ath10k_offchan_tx_work(struct work_struct *work)
+ 
+ 		ret = wait_for_completion_timeout(&ar->offchan_tx_completed,
+ 						  3 * HZ);
+-		if (ret <= 0)
++		if (ret == 0)
+ 			ath10k_warn(ar, "timed out waiting for offchannel skb %p\n",
+ 				    skb);
+ 
 -- 
-1.7.7
+1.7.10.4
 
