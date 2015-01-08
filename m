@@ -1,141 +1,541 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863AbbAHHRa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 02:17:30 -0500
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:54250 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491AbbAHHR3 (ORCPT
+	id S1753153AbbAHHjj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 02:39:39 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:57579 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750962AbbAHHjh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 02:17:29 -0500
-X-Original-SENDERIP: 10.177.220.203
-X-Original-MAILFROM: namhyung@kernel.org
-Date: Thu, 8 Jan 2015 16:15:27 +0900
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Alexis Berlemont <alexis.berlemont@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 29/30] perf tools: Add support to configure builtin
- commands inclusion
-Message-ID: <20150108071527.GE7268@sejong>
-References: <1420212972-21595-1-git-send-email-jolsa@kernel.org>
- <1420212972-21595-30-git-send-email-jolsa@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1420212972-21595-30-git-send-email-jolsa@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 8 Jan 2015 02:39:37 -0500
+From: Sudeep Holla <sudeep.holla@arm.com>
+To: linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org
+Cc: Sudeep Holla <sudeep.holla@arm.com>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: [PATCH RFT] ia64: move cacheinfo sysfs to generic cacheinfo infrastructure
+Date: Thu,  8 Jan 2015 07:39:23 +0000
+Message-Id: <1420702763-9490-1-git-send-email-sudeep.holla@arm.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 02, 2015 at 04:36:11PM +0100, Jiri Olsa wrote:
-> NOTE: hack
-> 
-> Adding support to configure builtin commands inclusion
-> in the build, so we could later disable particular
-> builtin command.
-> 
-> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-> Cc: Alexis Berlemont <alexis.berlemont@gmail.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Borislav Petkov <bp@alien8.de>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Stephane Eranian <eranian@google.com>
-> ---
->  tools/perf/Build                    | 53 ++++++++++++++++++++-----------------
->  tools/perf/Makefile.build           |  3 +++
->  tools/perf/Makefile.perf            |  7 +++--
->  tools/perf/builtin-cmds.h           | 29 ++++++++++++++++++++
->  tools/perf/builtin-help.c           |  1 +
->  tools/perf/config.default           | 23 ++++++++++++++++
->  tools/perf/perf.c                   |  1 +
->  tools/perf/util/generate-cmdlist.sh | 10 +++++++
->  8 files changed, 101 insertions(+), 26 deletions(-)
->  create mode 100644 tools/perf/builtin-cmds.h
->  create mode 100644 tools/perf/config.default
-> 
-> diff --git a/tools/perf/Build b/tools/perf/Build
-> index c95d6378ad65..8e8f2c58f2b0 100644
-> --- a/tools/perf/Build
-> +++ b/tools/perf/Build
-> @@ -1,29 +1,34 @@
-> -perf-y += builtin-bench.o
-> -perf-y += builtin-annotate.o
-> -perf-y += builtin-diff.o
-> -perf-y += builtin-evlist.o
-> -perf-y += builtin-help.o
-> -perf-y += builtin-sched.o
-> -perf-y += builtin-buildid-list.o
-> -perf-y += builtin-buildid-cache.o
-> -perf-y += builtin-list.o
-> -perf-y += builtin-record.o
-> -perf-y += builtin-report.o
-> -perf-y += builtin-stat.o
-> -perf-y += builtin-timechart.o
-> -perf-y += builtin-top.o
-> -perf-y += builtin-script.o
-> -perf-y += builtin-kmem.o
-> -perf-y += builtin-lock.o
-> -perf-y += builtin-kvm.o
-> -perf-y += builtin-inject.o
-> -perf-y += builtin-mem.o
-> -
-> -perf-$(CONFIG_AUDIT) += builtin-trace.o
-> -perf-$(CONFIG_LIBELF) += builtin-probe.o
-> +perf-$(CONFIG_BUILTIN_BENCH)         += builtin-bench.o
-> +perf-$(CONFIG_BUILTIN_ANNOTATE)      += builtin-annotate.o
-> +perf-$(CONFIG_BUILTIN_DIFF)          += builtin-diff.o
-> +perf-$(CONFIG_BUILTIN_EVLIST)        += builtin-evlist.o
-> +perf-$(CONFIG_BUILTIN_HELP)          += builtin-help.o
-> +perf-$(CONFIG_BUILTIN_SCHED)         += builtin-sched.o
-> +perf-$(CONFIG_BUILTIN_BUILDID_LIST)  += builtin-buildid-list.o
-> +perf-$(CONFIG_BUILTIN_BUILDID_CACHE) += builtin-buildid-cache.o
-> +perf-$(CONFIG_BUILTIN_LIST)          += builtin-list.o
-> +perf-$(CONFIG_BUILTIN_RECORD)        += builtin-record.o
-> +perf-$(CONFIG_BUILTIN_REPORT)        += builtin-report.o
-> +perf-$(CONFIG_BUILTIN_STAT)          += builtin-stat.o
-> +perf-$(CONFIG_BUILTIN_TIMECHART)     += builtin-timechart.o
-> +perf-$(CONFIG_BUILTIN_TOP)           += builtin-top.o
-> +perf-$(CONFIG_BUILTIN_SCRIPT)        += builtin-script.o
-> +perf-$(CONFIG_BUILTIN_KMEM)          += builtin-kmem.o
-> +perf-$(CONFIG_BUILTIN_LOCK)          += builtin-lock.o
-> +perf-$(CONFIG_BUILTIN_KVM)           += builtin-kvm.o
-> +perf-$(CONFIG_BUILTIN_INJECT)        += builtin-inject.o
-> +perf-$(CONFIG_BUILTIN_MEM)           += builtin-mem.o
-> +
-> +ifeq ($(CONFIG_AUDIT),y)
-> +perf-$(CONFIG_BUILTIN_TRACE)         += builtin-trace.o
-> +endif
-> +
-> +ifeq ($(CONFIG_LIBELF),y)
-> +perf-$(CONFIG_BUILTIN_PROBE)         += builtin-probe.o
-> +endif
->  
->  perf-y += bench/
+This patch removes the redundant sysfs cacheinfo code by reusing
+the newly introduced generic cacheinfo infrastructure through the
+commit 246246cbde5e ("drivers: base: support cpu cache information
+interface to userspace via sysfs")
 
-I guess it also needs to be changed like below?
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-ia64@vger.kernel.org
+---
+ arch/ia64/kernel/topology.c | 421 ++++++++++++--------------------------------
+ 1 file changed, 111 insertions(+), 310 deletions(-)
 
-   perf-$(CONFIG_BUILTIN_BENCH) += bench/
+Hi,
 
-Thanks,
-Namhyung
+I don't have access to any IA64 machine, I would appreciate any testing.
 
+Regards,
+Sudeep
 
-> -perf-y += tests/
-> +perf-$(CONFIG_BUILTIN_TEST) += tests/
->  
->  perf-y += perf.o
+diff --git a/arch/ia64/kernel/topology.c b/arch/ia64/kernel/topology.c
+index f295f9abba4b..3d6749cb53ec 100644
+--- a/arch/ia64/kernel/topology.c
++++ b/arch/ia64/kernel/topology.c
+@@ -13,6 +13,7 @@
+  *	Populate cpu cache entries in sysfs for cpu cache info
+  */
+ 
++#include <linux/cacheinfo.h>
+ #include <linux/cpu.h>
+ #include <linux/kernel.h>
+ #include <linux/mm.h>
+@@ -21,7 +22,6 @@
+ #include <linux/init.h>
+ #include <linux/bootmem.h>
+ #include <linux/nodemask.h>
+-#include <linux/notifier.h>
+ #include <linux/export.h>
+ #include <asm/mmzone.h>
+ #include <asm/numa.h>
+@@ -103,60 +103,25 @@ subsys_initcall(topology_init);
+ /*
+  * Export cpu cache information through sysfs
+  */
+-
+-/*
+- *  A bunch of string array to get pretty printing
+- */
+-static const char *cache_types[] = {
+-	"",			/* not used */
+-	"Instruction",
+-	"Data",
+-	"Unified"	/* unified */
+-};
+-
+-static const char *cache_mattrib[]={
+-	"WriteThrough",
+-	"WriteBack",
+-	"",		/* reserved */
+-	""		/* reserved */
+-};
+-
+-struct cache_info {
+-	pal_cache_config_info_t	cci;
+-	cpumask_t shared_cpu_map;
+-	int level;
+-	int type;
+-	struct kobject kobj;
+-};
+-
+-struct cpu_cache_info {
+-	struct cache_info *cache_leaves;
+-	int	num_cache_leaves;
+-	struct kobject kobj;
+-};
+-
+-static struct cpu_cache_info	all_cpu_cache_info[NR_CPUS];
+-#define LEAF_KOBJECT_PTR(x,y)    (&all_cpu_cache_info[x].cache_leaves[y])
+-
+ #ifdef CONFIG_SMP
+-static void cache_shared_cpu_map_setup(unsigned int cpu,
+-		struct cache_info * this_leaf)
++static int __cache_cpumap_setup(unsigned int cpu, struct cacheinfo *this_leaf)
+ {
+ 	pal_cache_shared_info_t	csi;
+-	int num_shared, i = 0;
+-	unsigned int j;
++	int num_shared, i = 0, j;
++	enum cache_type type = this_leaf->type;
+ 
+ 	if (cpu_data(cpu)->threads_per_core <= 1 &&
+ 		cpu_data(cpu)->cores_per_socket <= 1) {
+ 		cpu_set(cpu, this_leaf->shared_cpu_map);
+-		return;
++		return 0;
+ 	}
+ 
+-	if (ia64_pal_cache_shared_info(this_leaf->level,
+-					this_leaf->type,
+-					0,
+-					&csi) != PAL_STATUS_SUCCESS)
+-		return;
++	if (type == CACHE_TYPE_UNIFIED)
++		type = CACHE_TYPE_DATA;
++
++	if (ia64_pal_cache_shared_info(this_leaf->level, type, 0,
++				       &csi) != PAL_STATUS_SUCCESS)
++		return -EIO;
+ 
+ 	num_shared = (int) csi.num_shared;
+ 	do {
+@@ -168,305 +133,141 @@ static void cache_shared_cpu_map_setup(unsigned int cpu,
+ 
+ 		i++;
+ 	} while (i < num_shared &&
+-		ia64_pal_cache_shared_info(this_leaf->level,
+-				this_leaf->type,
+-				i,
+-				&csi) == PAL_STATUS_SUCCESS);
+-}
+-#else
+-static void cache_shared_cpu_map_setup(unsigned int cpu,
+-		struct cache_info * this_leaf)
+-{
+-	cpu_set(cpu, this_leaf->shared_cpu_map);
+-	return;
+-}
+-#endif
+-
+-static ssize_t show_coherency_line_size(struct cache_info *this_leaf,
+-					char *buf)
+-{
+-	return sprintf(buf, "%u\n", 1 << this_leaf->cci.pcci_line_size);
++		 ia64_pal_cache_shared_info(this_leaf->level, type, i,
++					    &csi) == PAL_STATUS_SUCCESS);
++	return 0;
+ }
+ 
+-static ssize_t show_ways_of_associativity(struct cache_info *this_leaf,
+-					char *buf)
++static int cache_shared_cpu_map_setup(unsigned int cpu)
+ {
+-	return sprintf(buf, "%u\n", this_leaf->cci.pcci_assoc);
++	unsigned int idx;
++	int ret = 0;
++	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
++	struct cacheinfo *this_leaf = this_cpu_ci->info_list;
++
++	for (idx = 0; idx < this_cpu_ci->num_leaves; idx++, this_leaf++) {
++		ret = __cache_cpumap_setup(cpu, this_leaf);
++		if (ret)
++			break;
++	}
++	return ret;
+ }
+-
+-static ssize_t show_attributes(struct cache_info *this_leaf, char *buf)
++#else
++static int cache_shared_cpu_map_setup(unsigned int cpu)
+ {
+-	return sprintf(buf,
+-			"%s\n",
+-			cache_mattrib[this_leaf->cci.pcci_cache_attr]);
+-}
++	int idx;
++	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
++	struct cacheinfo *this_leaf = this_cpu_ci->info_list;
+ 
+-static ssize_t show_size(struct cache_info *this_leaf, char *buf)
+-{
+-	return sprintf(buf, "%uK\n", this_leaf->cci.pcci_cache_size / 1024);
++	for (idx = 0; idx < this_cpu_ci->num_leaves; idx++, this_leaf++)
++		cpu_set(cpu, this_leaf->shared_cpu_map);
++	return 0;
+ }
++#endif
+ 
+-static ssize_t show_number_of_sets(struct cache_info *this_leaf, char *buf)
++static ssize_t attributes_show(struct device *dev,
++			       struct device_attribute *attr, char *buf)
+ {
+-	unsigned number_of_sets = this_leaf->cci.pcci_cache_size;
+-	number_of_sets /= this_leaf->cci.pcci_assoc;
+-	number_of_sets /= 1 << this_leaf->cci.pcci_line_size;
+-
+-	return sprintf(buf, "%u\n", number_of_sets);
++	struct cacheinfo *this_leaf = dev_get_drvdata(dev);
++	unsigned int ci_attr = this_leaf->attributes;
++	int n = 0;
++
++	if (ci_attr & CACHE_WRITE_THROUGH)
++		n = sprintf(buf, "WriteThrough\n");
++	else if (ci_attr & CACHE_WRITE_BACK)
++		n = sprintf(buf, "WriteBack\n");
++	return n;
+ }
+ 
+-static ssize_t show_shared_cpu_map(struct cache_info *this_leaf, char *buf)
+-{
+-	ssize_t	len;
+-	cpumask_t shared_cpu_map;
+-
+-	cpumask_and(&shared_cpu_map,
+-				&this_leaf->shared_cpu_map, cpu_online_mask);
+-	len = cpumask_scnprintf(buf, NR_CPUS+1, &shared_cpu_map);
+-	len += sprintf(buf+len, "\n");
+-	return len;
+-}
++static DEVICE_ATTR_RO(attributes);
+ 
+-static ssize_t show_type(struct cache_info *this_leaf, char *buf)
++static umode_t
++cache_private_attrs_is_visible(struct kobject *kobj,
++			       struct attribute *attr, int unused)
+ {
+-	int type = this_leaf->type + this_leaf->cci.pcci_unified;
+-	return sprintf(buf, "%s\n", cache_types[type]);
+-}
++	struct device *dev = kobj_to_dev(kobj);
++	struct cacheinfo *this_leaf = dev_get_drvdata(dev);
+ 
+-static ssize_t show_level(struct cache_info *this_leaf, char *buf)
+-{
+-	return sprintf(buf, "%u\n", this_leaf->level);
++	if ((attr == &dev_attr_attributes.attr) && this_leaf->attributes)
++		return attr->mode;
++	return 0;
+ }
+ 
+-struct cache_attr {
+-	struct attribute attr;
+-	ssize_t (*show)(struct cache_info *, char *);
+-	ssize_t (*store)(struct cache_info *, const char *, size_t count);
+-};
+-
+-#ifdef define_one_ro
+-	#undef define_one_ro
+-#endif
+-#define define_one_ro(_name) \
+-	static struct cache_attr _name = \
+-__ATTR(_name, 0444, show_##_name, NULL)
+-
+-define_one_ro(level);
+-define_one_ro(type);
+-define_one_ro(coherency_line_size);
+-define_one_ro(ways_of_associativity);
+-define_one_ro(size);
+-define_one_ro(number_of_sets);
+-define_one_ro(shared_cpu_map);
+-define_one_ro(attributes);
+-
+-static struct attribute * cache_default_attrs[] = {
+-	&type.attr,
+-	&level.attr,
+-	&coherency_line_size.attr,
+-	&ways_of_associativity.attr,
+-	&attributes.attr,
+-	&size.attr,
+-	&number_of_sets.attr,
+-	&shared_cpu_map.attr,
++static struct attribute *cache_priv_attrs[] = {
++	&dev_attr_attributes.attr,
+ 	NULL
+ };
+ 
+-#define to_object(k) container_of(k, struct cache_info, kobj)
+-#define to_attr(a) container_of(a, struct cache_attr, attr)
+-
+-static ssize_t ia64_cache_show(struct kobject * kobj, struct attribute * attr, char * buf)
+-{
+-	struct cache_attr *fattr = to_attr(attr);
+-	struct cache_info *this_leaf = to_object(kobj);
+-	ssize_t ret;
+-
+-	ret = fattr->show ? fattr->show(this_leaf, buf) : 0;
+-	return ret;
+-}
+-
+-static const struct sysfs_ops cache_sysfs_ops = {
+-	.show   = ia64_cache_show
+-};
+-
+-static struct kobj_type cache_ktype = {
+-	.sysfs_ops	= &cache_sysfs_ops,
+-	.default_attrs	= cache_default_attrs,
++static struct attribute_group cache_private_group = {
++	.attrs = cache_priv_attrs,
++	.is_visible = cache_private_attrs_is_visible,
+ };
+ 
+-static struct kobj_type cache_ktype_percpu_entry = {
+-	.sysfs_ops	= &cache_sysfs_ops,
+-};
+-
+-static void cpu_cache_sysfs_exit(unsigned int cpu)
++const struct attribute_group *
++cache_get_priv_group(struct cacheinfo *this_leaf)
+ {
+-	kfree(all_cpu_cache_info[cpu].cache_leaves);
+-	all_cpu_cache_info[cpu].cache_leaves = NULL;
+-	all_cpu_cache_info[cpu].num_cache_leaves = 0;
+-	memset(&all_cpu_cache_info[cpu].kobj, 0, sizeof(struct kobject));
+-	return;
+-}
+-
+-static int cpu_cache_sysfs_init(unsigned int cpu)
+-{
+-	unsigned long i, levels, unique_caches;
+-	pal_cache_config_info_t cci;
+-	int j;
+-	long status;
+-	struct cache_info *this_cache;
+-	int num_cache_leaves = 0;
+-
+-	if ((status = ia64_pal_cache_summary(&levels, &unique_caches)) != 0) {
+-		printk(KERN_ERR "ia64_pal_cache_summary=%ld\n", status);
+-		return -1;
+-	}
+-
+-	this_cache=kzalloc(sizeof(struct cache_info)*unique_caches,
+-			GFP_KERNEL);
+-	if (this_cache == NULL)
+-		return -ENOMEM;
+-
+-	for (i=0; i < levels; i++) {
+-		for (j=2; j >0 ; j--) {
+-			if ((status=ia64_pal_cache_config_info(i,j, &cci)) !=
+-					PAL_STATUS_SUCCESS)
+-				continue;
+-
+-			this_cache[num_cache_leaves].cci = cci;
+-			this_cache[num_cache_leaves].level = i + 1;
+-			this_cache[num_cache_leaves].type = j;
+-
+-			cache_shared_cpu_map_setup(cpu,
+-					&this_cache[num_cache_leaves]);
+-			num_cache_leaves ++;
+-		}
+-	}
+-
+-	all_cpu_cache_info[cpu].cache_leaves = this_cache;
+-	all_cpu_cache_info[cpu].num_cache_leaves = num_cache_leaves;
+-
+-	memset(&all_cpu_cache_info[cpu].kobj, 0, sizeof(struct kobject));
+-
+-	return 0;
++	return &cache_private_group;
+ }
+ 
+-/* Add cache interface for CPU device */
+-static int cache_add_dev(struct device *sys_dev)
++static void ci_leaf_init(struct cacheinfo *this_leaf,
++			 pal_cache_config_info_t *cci,
++			 enum cache_type type, unsigned int level)
+ {
+-	unsigned int cpu = sys_dev->id;
+-	unsigned long i, j;
+-	struct cache_info *this_object;
+-	int retval = 0;
+-	cpumask_t oldmask;
+-
+-	if (all_cpu_cache_info[cpu].kobj.parent)
+-		return 0;
+-
+-	oldmask = current->cpus_allowed;
+-	retval = set_cpus_allowed_ptr(current, cpumask_of(cpu));
+-	if (unlikely(retval))
+-		return retval;
+-
+-	retval = cpu_cache_sysfs_init(cpu);
+-	set_cpus_allowed_ptr(current, &oldmask);
+-	if (unlikely(retval < 0))
+-		return retval;
+-
+-	retval = kobject_init_and_add(&all_cpu_cache_info[cpu].kobj,
+-				      &cache_ktype_percpu_entry, &sys_dev->kobj,
+-				      "%s", "cache");
+-	if (unlikely(retval < 0)) {
+-		cpu_cache_sysfs_exit(cpu);
+-		return retval;
+-	}
+-
+-	for (i = 0; i < all_cpu_cache_info[cpu].num_cache_leaves; i++) {
+-		this_object = LEAF_KOBJECT_PTR(cpu,i);
+-		retval = kobject_init_and_add(&(this_object->kobj),
+-					      &cache_ktype,
+-					      &all_cpu_cache_info[cpu].kobj,
+-					      "index%1lu", i);
+-		if (unlikely(retval)) {
+-			for (j = 0; j < i; j++) {
+-				kobject_put(&(LEAF_KOBJECT_PTR(cpu,j)->kobj));
+-			}
+-			kobject_put(&all_cpu_cache_info[cpu].kobj);
+-			cpu_cache_sysfs_exit(cpu);
+-			return retval;
+-		}
+-		kobject_uevent(&(this_object->kobj), KOBJ_ADD);
+-	}
+-	kobject_uevent(&all_cpu_cache_info[cpu].kobj, KOBJ_ADD);
+-	return retval;
++	unsigned number_of_sets = cci->pcci_cache_size;
++
++	number_of_sets /= cci->pcci_assoc;
++	number_of_sets /= 1 << cci->pcci_line_size;
++	this_leaf->level = level;
++	this_leaf->type = cci->pcci_unified ? CACHE_TYPE_UNIFIED : type;
++	this_leaf->coherency_line_size = cci->pcci_line_size;
++	this_leaf->ways_of_associativity = cci->pcci_assoc;
++	this_leaf->size = cci->pcci_cache_size;
++	this_leaf->attributes = cci->pcci_cache_attr;
++	this_leaf->number_of_sets = number_of_sets;
+ }
+ 
+-/* Remove cache interface for CPU device */
+-static int cache_remove_dev(struct device *sys_dev)
++int init_cache_level(unsigned int cpu)
+ {
+-	unsigned int cpu = sys_dev->id;
+-	unsigned long i;
++	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
++	unsigned long levels, unique_caches;
++	long status;
+ 
+-	for (i = 0; i < all_cpu_cache_info[cpu].num_cache_leaves; i++)
+-		kobject_put(&(LEAF_KOBJECT_PTR(cpu,i)->kobj));
++	if (!this_cpu_ci)
++		return -EINVAL;
+ 
+-	if (all_cpu_cache_info[cpu].kobj.parent) {
+-		kobject_put(&all_cpu_cache_info[cpu].kobj);
+-		memset(&all_cpu_cache_info[cpu].kobj,
+-			0,
+-			sizeof(struct kobject));
++	status = ia64_pal_cache_summary(&levels, &unique_caches);
++	if (status != PAL_STATUS_SUCCESS) {
++		pr_err("ia64_pal_cache_summary = %ld\n", status);
++		return -EIO;
+ 	}
+-
+-	cpu_cache_sysfs_exit(cpu);
++	this_cpu_ci->num_levels = levels;
++	this_cpu_ci->num_leaves = unique_caches;
+ 
+ 	return 0;
+ }
+ 
+-/*
+- * When a cpu is hot-plugged, do a check and initiate
+- * cache kobject if necessary
+- */
+-static int cache_cpu_callback(struct notifier_block *nfb,
+-		unsigned long action, void *hcpu)
+-{
+-	unsigned int cpu = (unsigned long)hcpu;
+-	struct device *sys_dev;
+-
+-	sys_dev = get_cpu_device(cpu);
+-	switch (action) {
+-	case CPU_ONLINE:
+-	case CPU_ONLINE_FROZEN:
+-		cache_add_dev(sys_dev);
+-		break;
+-	case CPU_DEAD:
+-	case CPU_DEAD_FROZEN:
+-		cache_remove_dev(sys_dev);
+-		break;
+-	}
+-	return NOTIFY_OK;
+-}
+-
+-static struct notifier_block cache_cpu_notifier =
+-{
+-	.notifier_call = cache_cpu_callback
+-};
+-
+-static int __init cache_sysfs_init(void)
++int populate_cache_leaves(unsigned int cpu)
+ {
+-	int i;
+-
+-	cpu_notifier_register_begin();
+-
+-	for_each_online_cpu(i) {
+-		struct device *sys_dev = get_cpu_device((unsigned int)i);
+-		cache_add_dev(sys_dev);
++	unsigned int level, idx;
++	s64 status;
++	pal_cache_config_info_t cci;
++	enum cache_type type;
++	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
++	struct cacheinfo *this_leaf = this_cpu_ci->info_list;
++
++	for (idx = 0, level = 1; level <= this_cpu_ci->num_levels &&
++	     idx < this_cpu_ci->num_leaves; idx++, level++) {
++		if (!this_leaf)
++			return -EINVAL;
++
++		type = CACHE_TYPE_INST;
++		status = ia64_pal_cache_config_info(level - 1, type, &cci);
++		if (status == PAL_STATUS_SUCCESS)
++			ci_leaf_init(this_leaf++, &cci, type, level);
++		type = CACHE_TYPE_DATA;
++		status = ia64_pal_cache_config_info(level - 1, type, &cci);
++		if (status == PAL_STATUS_SUCCESS)
++			ci_leaf_init(this_leaf++, &cci, type, level);
+ 	}
+-
+-	__register_hotcpu_notifier(&cache_cpu_notifier);
+-
+-	cpu_notifier_register_done();
+-
+-	return 0;
++	return cache_shared_cpu_map_setup(cpu);
+ }
+-
+-device_initcall(cache_sysfs_init);
+-
+-- 
+1.9.1
+
