@@ -1,133 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757419AbbAHSmQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 13:42:16 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:33418 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844AbbAHSmM (ORCPT
+	id S1756240AbbAHSo0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 13:44:26 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36021 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750844AbbAHSoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 13:42:12 -0500
-Date: Thu, 8 Jan 2015 10:42:01 -0800
-From: josh@joshtriplett.org
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Miklos Szeredi <mszeredi@suse.cz>, Fam Zheng <famz@redhat.com>,
+	Thu, 8 Jan 2015 13:44:24 -0500
+Date: Thu, 8 Jan 2015 18:43:34 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Suzuki Poulose <suzpou01@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "yexl@marvell.com" <yexl@marvell.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Juri Lelli <juri.lelli@gmail.com>, Zach Brown <zab@zabbo.net>,
-        David Drysdale <drysdale@google.com>,
-        Kees Cook <keescook@chromium.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Dario Faggioli <raistlin@linux.it>, "Theodore Ts'o" <tytso@mit.edu>,
-        Peter Zijlstra <peterz@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Fabian Frederick <fabf@skynet.be>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Subject: Re: [PATCH 0/3] epoll: Add epoll_pwait1 syscall
-Message-ID: <20150108184201.GB13974@cloud>
-References: <1420705550-24245-1-git-send-email-famz@redhat.com>
- <1420708372.18399.15.camel@suse.cz>
- <CALCETrVyPij1Zxwmw7p06UrZjoyYDXqEjmxyQ-KJ8Y7dx7mL3g@mail.gmail.com>
+        "leo.yan@linaro.org" <leo.yan@linaro.org>
+Subject: Re: [PATCH 2/2] arm64: Emulate SETEND for AArch32 tasks
+Message-ID: <20150108184258.GB31280@leverpostej>
+References: <1420647405-3907-1-git-send-email-suzuki.poulose@arm.com>
+ <1420647405-3907-3-git-send-email-suzuki.poulose@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrVyPij1Zxwmw7p06UrZjoyYDXqEjmxyQ-KJ8Y7dx7mL3g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1420647405-3907-3-git-send-email-suzuki.poulose@arm.com>
+Thread-Topic: [PATCH 2/2] arm64: Emulate SETEND for AArch32 tasks
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+acceptlanguage: en-GB, en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 08, 2015 at 09:57:24AM -0800, Andy Lutomirski wrote:
-> On Thu, Jan 8, 2015 at 1:12 AM, Miklos Szeredi <mszeredi@suse.cz> wrote:
-> > On Thu, 2015-01-08 at 16:25 +0800, Fam Zheng wrote:
-> >> Applications could use epoll interface when then need to poll a big number of
-> >> files in their main loops, to achieve better performance than ppoll(2). Except
-> >> for one concern: epoll only takes timeout parameters in microseconds, rather
-> >> than nanoseconds.
-> >>
-> >> That is a drawback we should address. For a real case in QEMU, we run into a
-> >> scalability issue with ppoll(2) when many devices are attached to guest, in
-> >> which case many host fds, such as virtual disk images and sockets, need to be
-> >> polled by the main loop. As a result we are looking at switching to epoll, but
-> >> the coarse timeout precision is a trouble, as explained below.
-> >>
-> >> We're already using prctl(PR_SET_TIMERSLACK, 1) which is necessary to implement
-> >> timers in the main loop; and we call ppoll(2) with the next firing timer as
-> >> timeout, so when ppoll(2) returns, we know that we have more work to do (either
-> >> handling IO events, or fire a timer callback). This is natual and efficient,
-> >> except that ppoll(2) itself is slow.
-> >>
-> >> Now that we want to switch to epoll, to speed up the polling. However the timer
-> >> slack setting will be effectively undone, because that way we will have to
-> >> round up the timeout to microseconds honoring timer contract. But consequently,
-> >> this hurts the general responsiveness.
-> >>
-> >> Note: there are two alternatives, without changing kernel:
-> >>
-> >> 1) Leading ppoll(2), with the epollfd only and a nanosecond timeout. It won't
-> >> be slow as one fd is polled. No more scalability issue. And if there are
-> >> events, we know from ppoll(2)'s return, then we do the epoll_wait(2) with
-> >> timeout=0; otherwise, there can't be events for the epoll, skip the following
-> >> epoll_wait and just continue with other work.
-> >>
-> >> 2) Setup and add a timerfd to epoll, then we do epoll_wait(..., timeout=-1).
-> >> The timerfd will hopefully force epoll_wait to return when it timeouts, even if
-> >> no other events have arrived. This will inheritly give us timerfd's precision.
-> >> Note that for each poll, the desired timeout is different because the next
-> >> timer is different, so that, before each epoll_wait(2), there will be a
-> >> timerfd_settime syscall to set it to a proper value.
-> >>
-> >> Unfortunately, both approaches require one more syscall per iteration, compared
-> >> to the original single ppoll(2), cost of which is unneglectable when we talk
-> >> about nanosecond granularity.
+Hi Suzuki,
+
+On Wed, Jan 07, 2015 at 04:16:45PM +0000, Suzuki K. Poulose wrote:
+> From: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
 > 
-> I'd like to see a more ambitious change, since the timer isn't the
-> only problem like this.  Specifically, I'd like a syscall that does a
-> list of epoll-related things and then waits.  The list of things could
-> include, at least:
+> Emulate deprecated 'setend' instruction for AArch32 bit tasks.
 > 
->  - EPOLL_CTL_MOD actions: level-triggered epoll users are likely to
-> want to turn on and off their requests for events on a somewhat
-> regular basis.
+> 	setend [le/be] - Sets the endianness of EL0
 > 
->  - timerfd_settime actions: this allows a single syscall to wait and
-> adjust *both* monotonic and real-time wakeups.
+> The hardware support for the instruction can be enabled by setting the
+> SCTLR_EL1.SED bit. Like the other emulated instructions it is controlled by
+> an entry in /proc/sys/abi/. For more information see :
+> 	Documentation/arm64/legacy_instructions.txt
 > 
-> Would this make sense?  It could look like:
+> The instruction is emulated by setting/clearing the SPSR_EL1.E bit, which
+> will be reflected in the PSTATE.E in AArch32 context.
+
+A "fun" problem with emulating setend is that it will not always work
+unless we emulate the entire instruction set when userspace wants to be
+in an unsupported endianness.
+
+For implementations which are not bi-endian at EL0 (i.e. where
+ID_AA64MMFR0_EL1.BigEndEL0 == 0), SCTLR_EL1.E0E has a fixed value which
+we cannot change. The field names are misleading: in a BE-only system
+ID_AA64MMFR0_EL1.{BigEnd,BigEndEL0} == {0,0} and SCTLR_EL1.{EE,E0E} are
+fixed to {1,1}.
+
+I think we need to detect when EL0 has a fixed endianness such that we
+can treat the setend instruction as undefined. Otherwise we will
+silently fail to change EL0 endianness, advance the PC, and return to
+userspace in the wrong endianness, which will be very painful to debug.
+Userspace has the option of handling the resulting SIGILL in such cases.
+
+That means we need to be able to fail to transition into INSN_EMULATE
+mode as we currently can when transitioning to INSN_HW.
+
+> This patch also restores the native endianness for the execution of signal
+> handlers, since the process could have changed the endianness.
 > 
-> int epoll_mod_and_pwait(int epfd,
->   struct epoll_event *events, int maxevents,
->   struct epoll_command *commands, int ncommands,
->   const sigset_t *sigmask);
+> Signed-off-by: Suzuki K. Poulose <suzuki.poulose@arm.com>
+> ---
+>  Documentation/arm64/legacy_instructions.txt |    5 ++
+>  arch/arm64/Kconfig                          |   10 ++++
+>  arch/arm64/include/asm/ptrace.h             |    7 +++
+>  arch/arm64/kernel/armv8_deprecated.c        |   75 +++++++++++++++++++++++++++
+>  arch/arm64/kernel/signal32.c                |    5 +-
+>  5 files changed, 101 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/arm64/legacy_instructions.txt b/Documentation/arm64/legacy_instructions.txt
+> index a3b3da2..20e5621 100644
+> --- a/Documentation/arm64/legacy_instructions.txt
+> +++ b/Documentation/arm64/legacy_instructions.txt
+> @@ -43,3 +43,8 @@ Default: Undef (0)
+>  Node: /proc/sys/abi/cp15_barrier
+>  Status: Deprecated
+>  Default: Emulate (1)
+> +
+> +* SETEND
+> +Node: /proc/sys/abi/setend
+> +Status: Deprecated
+> +Default: Emulate (1)
 
-That's a complicated syscall.  (And it also doesn't have room for the
-flags argument.)
+Given we can't always emulate SETEND, should we document "Emulate where
+possible" or something to that effect?
 
-At that point, why not just have a syscall like this:
+> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> index b1f9a20..c6d1fd9 100644
+> --- a/arch/arm64/Kconfig
+> +++ b/arch/arm64/Kconfig
+> @@ -540,6 +540,16 @@ config CP15_BARRIER_EMULATION
+>  
+>  	  If unsure, say Y
+>  
+> +config SETEND_EMULATION
+> +	bool "Emulate SETEND instruction"
+> +	help
+> +	  The SETEND instruction alters the data-endianness of the
+> +	  AArch32 EL0, and is deprecated in ARMv8.
+> +
+> +	  Say Y here to enable software emulation of the instruction
+> +	  for AArch32 userspace code.
+> +
+> +	  If unsure, say Y
+>  endif
+>  
+>  endmenu
+> diff --git a/arch/arm64/include/asm/ptrace.h b/arch/arm64/include/asm/ptrace.h
+> index 41ed9e1..d6dd9fd 100644
+> --- a/arch/arm64/include/asm/ptrace.h
+> +++ b/arch/arm64/include/asm/ptrace.h
+> @@ -58,6 +58,13 @@
+>  #define COMPAT_PSR_Z_BIT	0x40000000
+>  #define COMPAT_PSR_N_BIT	0x80000000
+>  #define COMPAT_PSR_IT_MASK	0x0600fc00	/* If-Then execution state mask */
+> +
+> +#ifdef CONFIG_CPU_BIG_ENDIAN
+> +#define COMPAT_PSR_ENDSTATE	COMPAT_PSR_E_BIT
+> +#else
+> +#define COMPAT_PSR_ENDSTATE	0
+> +#endif
+> +
+>  /*
+>   * These are 'magic' values for PTRACE_PEEKUSR that return info about where a
+>   * process is located in memory.
+> diff --git a/arch/arm64/kernel/armv8_deprecated.c b/arch/arm64/kernel/armv8_deprecated.c
+> index 9054447..dc91bac 100644
+> --- a/arch/arm64/kernel/armv8_deprecated.c
+> +++ b/arch/arm64/kernel/armv8_deprecated.c
+> @@ -477,6 +477,7 @@ ret:
+>  }
+>  
+>  #define SCTLR_EL1_CP15BEN 	(1 << 5)
+> +#define SCTLR_EL1_SED		(1 << 8)
+>  
+>  static inline void config_sctlr_el1(u32 clear, u32 set)
+>  {
+> @@ -521,6 +522,77 @@ static struct insn_emulation_ops cp15_barrier_ops = {
+>  	.set_hw_mode = cp15_barrier_set_hw_mode,
+>  };
+>  
+> +static void setend_set_hw_mode(void *enable)
+> +{
+> +	if (enable)
+> +		config_sctlr_el1(SCTLR_EL1_SED, 0);
+> +	else
+> +		config_sctlr_el1(0, SCTLR_EL1_SED);
+> +}
+> +
+> +static int compat_setend_handler(struct pt_regs *regs, u32 endian)
 
-struct syscall {
-	unsigned long num;
-	unsigned long params[6];
-};
+If we s/endian/big_endian/ here we can drop the comments within the
+function as the test will be easier to read. We could also s/u32/bool/.
 
-int sys_many(size_t count, struct syscall *syscalls, int *results, unsigned long flags);
+> +{
+> +	char insn[16] = "setend _e";
 
-I think that has been discussed in the past.
+Elsewhere (e.g. in cp15barrier_handler) we write these out in full
+rather than modifying a string on the stack. I think we should do the
+same here (we can change insn to a char * and assign the full relevant
+string in either branch).
 
-Or, these days, that might be better done via eBPF, which would avoid
-the need for flags like "return on error"; an eBPF program could decide
-how to proceed after each call.
+Doing so will mean grepping for '"setend be"' finds this function, which
+is handy.
 
-- Josh Triplett
+Thanks,
+Mark.
+
+> +
+> +	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, regs, regs->pc);
+> +
+> +	if (endian) {
+> +		/* Big Endian */
+> +		insn[7] = 'b';
+> +		regs->pstate |= COMPAT_PSR_E_BIT;
+> +	} else {
+> +		/* Little Endian */
+> +		insn[7] = 'l';
+> +		regs->pstate &= ~COMPAT_PSR_E_BIT;
+> +	}
+> +
+> +	trace_instruction_emulation(insn, regs->pc);
+> +	pr_warn_ratelimited("\"%s\" (%ld) uses deprecated setend instruction at 0x%llx\n",
+> +			current->comm, (unsigned long)current->pid, regs->pc);
+> +
+> +	return 0;
+> +}
+> +
+> +static int a32_setend_handler(struct pt_regs *regs, u32 instr)
+> +{
+> +	int rc = compat_setend_handler(regs, (instr >> 9) & 1);
+> +	regs->pc += 4;
+> +	return rc;
+> +}
+> +
+> +static int t16_setend_handler(struct pt_regs *regs, u32 instr)
+> +{
+> +	int rc = compat_setend_handler(regs, (instr >> 3) & 1);
+> +	regs->pc += 2;
+> +	return rc;
+> +}
+> +
+> +static struct undef_hook setend_hooks[] = {
+> +	{
+> +		.instr_mask	= 0xfffffdff,
+> +		.instr_val	= 0xf1010000,
+> +		.pstate_mask	= COMPAT_PSR_MODE_MASK,
+> +		.pstate_val	= COMPAT_PSR_MODE_USR,
+> +		.fn		= a32_setend_handler,
+> +	},
+> +	{
+> +		/* Thumb mode */
+> +		.instr_mask	= 0x0000fff7,
+> +		.instr_val	= 0x0000b650,
+> +		.pstate_mask	= (COMPAT_PSR_T_BIT | COMPAT_PSR_MODE_MASK),
+> +		.pstate_val	= (COMPAT_PSR_T_BIT | COMPAT_PSR_MODE_USR),
+> +		.fn		= t16_setend_handler,
+> +	},
+> +	{}
+> +};
+> +
+> +static struct insn_emulation_ops setend_ops = {
+> +	.name = "setend",
+> +	.status = INSN_DEPRECATED,
+> +	.hooks = setend_hooks,
+> +	.set_hw_mode = setend_set_hw_mode,
+> +};
+> +
+>  static int insn_cpu_hotplug_notify(struct notifier_block *b,
+>  			      unsigned long action, void *hcpu)
+>  {
+> @@ -545,6 +617,9 @@ static int __init armv8_deprecated_init(void)
+>  	if (IS_ENABLED(CONFIG_CP15_BARRIER_EMULATION))
+>  		register_insn_emulation(&cp15_barrier_ops);
+>  
+> +	if (IS_ENABLED(CONFIG_SETEND_EMULATION))
+> +		register_insn_emulation(&setend_ops);
+> +
+>  	register_cpu_notifier(&insn_cpu_hotplug_notifier);
+>  	register_insn_emulation_sysctl(ctl_abi);
+>  
+> diff --git a/arch/arm64/kernel/signal32.c b/arch/arm64/kernel/signal32.c
+> index 5a1ba6e..aa763a5 100644
+> --- a/arch/arm64/kernel/signal32.c
+> +++ b/arch/arm64/kernel/signal32.c
+> @@ -440,7 +440,7 @@ static void compat_setup_return(struct pt_regs *regs, struct k_sigaction *ka,
+>  {
+>  	compat_ulong_t handler = ptr_to_compat(ka->sa.sa_handler);
+>  	compat_ulong_t retcode;
+> -	compat_ulong_t spsr = regs->pstate & ~PSR_f;
+> +	compat_ulong_t spsr = regs->pstate & ~(PSR_f | COMPAT_PSR_E_BIT);
+>  	int thumb;
+>  
+>  	/* Check if the handler is written for ARM or Thumb */
+> @@ -454,6 +454,9 @@ static void compat_setup_return(struct pt_regs *regs, struct k_sigaction *ka,
+>  	/* The IT state must be cleared for both ARM and Thumb-2 */
+>  	spsr &= ~COMPAT_PSR_IT_MASK;
+>  
+> +	/* Restore the original endianness */
+> +	spsr |= COMPAT_PSR_ENDSTATE;
+> +
+>  	if (ka->sa.sa_flags & SA_RESTORER) {
+>  		retcode = ptr_to_compat(ka->sa.sa_restorer);
+>  	} else {
+> -- 
+> 1.7.9.5
+> 
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
