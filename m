@@ -1,113 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756822AbbAHNJD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 08:09:03 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:49615 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754937AbbAHNJA (ORCPT
+	id S1756844AbbAHNLz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 08:11:55 -0500
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:36547 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756093AbbAHNLj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 08:09:00 -0500
-Message-ID: <54AE8166.2060908@redhat.com>
-Date: Thu, 08 Jan 2015 14:08:54 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 8 Jan 2015 08:11:39 -0500
+Date: Thu, 8 Jan 2015 13:10:08 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] serial: 8250: Make ISA ports optional
+Message-ID: <20150108131008.16c9a31c@lxorguk.ukuu.org.uk>
+In-Reply-To: <1420513785-23660-1-git-send-email-peter@hurleysoftware.com>
+References: <1420513785-23660-1-git-send-email-peter@hurleysoftware.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Newsgroups: gmane.linux.scsi,gmane.linux.kernel
-To: Fam Zheng <famz@redhat.com>, linux-kernel@vger.kernel.org
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Venkatesh Srinivas <venkateshs@google.com>
-Subject: Re: [PATCH v4] virtio-scsi: Fix the race condition in virtscsi_handle_event
-References: <1420685852-5078-1-git-send-email-famz@redhat.com>
-In-Reply-To: <1420685852-5078-1-git-send-email-famz@redhat.com>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon,  5 Jan 2015 22:09:45 -0500
+Peter Hurley <peter@hurleysoftware.com> wrote:
 
+> Some arches have no need to create unprobed 8250 ports; these phantom
+> ports are primarily required for ISA ports which have no probe
+> mechanism or to provide non-operational ports for userspace to
+> configure (via TIOCSSERIAL and TIOCSERCONFIG ioctls).
+> 
+> Provide CONFIG_SERIAL_8250_PHANTOM_UARTS knob to disable phantom port
+> registration; ie., CONFIG_SERIAL_8250_PHANTOM_UARTS=N only registers
+> probed ports (ACPI/PNP, "serial8250" platform devices, PCI, etc).
 
-On 08/01/2015 03:57, Fam Zheng wrote:
-> There is a race condition in virtscsi_handle_event, when many device
-> hotplug/unplug events flush in quickly.
-> 
-> The scsi_remove_device in virtscsi_handle_transport_reset may trigger
-> the BUG_ON in scsi_target_reap, because the state is altered behind it,
-> probably by scsi_scan_host of another event. I'm able to reproduce it by
-> repeatedly plugging and unplugging a scsi disk with the same lun number.
-> 
-> To fix this, a single thread workqueue (local to the module) is added,
-> which makes the scan work serialized. With this change, the panic goes
-> away.
-> 
-> Signed-off-by: Fam Zheng <famz@redhat.com>
+Just #define serial8250_isa_devs to 0 on such platforms. gcc should then
+be bright enough to do the rest for you.
 
-Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
-
-> ---
-> 
-> v4: Addressing MST's comments:
->     Use ordered workqueue, with WQ_FREEZABLE and WQ_MEM_RECLAIM flags.
->     Coding style fixes.
-> 
-> v3: Fix spacing and destroy order. (MST)
-> ---
->  drivers/scsi/virtio_scsi.c | 14 +++++++++++++-
->  1 file changed, 13 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-> index c52bb5d..0db63b5 100644
-> --- a/drivers/scsi/virtio_scsi.c
-> +++ b/drivers/scsi/virtio_scsi.c
-> @@ -120,6 +120,7 @@ struct virtio_scsi {
->  
->  static struct kmem_cache *virtscsi_cmd_cache;
->  static mempool_t *virtscsi_cmd_pool;
-> +static struct workqueue_struct *virtscsi_scan_wq;
->  
->  static inline struct Scsi_Host *virtio_scsi_host(struct virtio_device *vdev)
->  {
-> @@ -404,7 +405,7 @@ static void virtscsi_complete_event(struct virtio_scsi *vscsi, void *buf)
->  	struct virtio_scsi_event_node *event_node = buf;
->  
->  	if (!vscsi->stop_events)
-> -		queue_work(system_freezable_wq, &event_node->work);
-> +		queue_work(virtscsi_scan_wq, &event_node->work);
->  }
->  
->  static void virtscsi_event_done(struct virtqueue *vq)
-> @@ -1119,6 +1120,14 @@ static int __init init(void)
->  		pr_err("mempool_create() for virtscsi_cmd_pool failed\n");
->  		goto error;
->  	}
-> +
-> +	virtscsi_scan_wq =
-> +		alloc_ordered_workqueue("virtscsi-scan", WQ_FREEZABLE | WQ_MEM_RECLAIM);
-> +	if (!virtscsi_scan_wq) {
-> +		pr_err("create_singlethread_workqueue() for virtscsi_scan_wq failed\n");
-> +		goto error;
-> +	}
-> +
->  	ret = register_virtio_driver(&virtio_scsi_driver);
->  	if (ret < 0)
->  		goto error;
-> @@ -1126,6 +1135,8 @@ static int __init init(void)
->  	return 0;
->  
->  error:
-> +	if (virtscsi_scan_wq)
-> +		destroy_workqueue(virtscsi_scan_wq);
->  	if (virtscsi_cmd_pool) {
->  		mempool_destroy(virtscsi_cmd_pool);
->  		virtscsi_cmd_pool = NULL;
-> @@ -1140,6 +1151,7 @@ error:
->  static void __exit fini(void)
->  {
->  	unregister_virtio_driver(&virtio_scsi_driver);
-> +	destroy_workqueue(virtscsi_scan_wq);
->  	mempool_destroy(virtscsi_cmd_pool);
->  	kmem_cache_destroy(virtscsi_cmd_cache);
->  }
-> 
