@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505AbbAHAjS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 19:39:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34635 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075AbbAHAjR (ORCPT
+	id S1755379AbbAHA7k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 19:59:40 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:1884 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752409AbbAHA7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 19:39:17 -0500
-Date: Wed, 7 Jan 2015 16:39:15 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
-Cc: <ionut.m.alexa@gmail.com>, <mark.yang@spreadtrum.com>,
-        <wei.qiao@spreadtrum.com>, <geng.ren@spreadtrum.com>,
-        <orson.zhai@spreadtrum.com>, <zhizhou.zhang@spreadtrum.com>,
-        <ke.wang@spreadtrum.com>, <zhang.lyra@gmail.com>,
-        <linux-kernel@vger.kernel.org>, Arjan van de Ven <arjan@infradead.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] kernel: async: Fixed the wrong waitting condition of
- wait_event
-Message-Id: <20150107163915.50a71131faf74e0f75562137@linux-foundation.org>
-In-Reply-To: <1420428935-30385-1-git-send-email-chunyan.zhang@spreadtrum.com>
-References: <async>
-	<1420428935-30385-1-git-send-email-chunyan.zhang@spreadtrum.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 7 Jan 2015 19:59:39 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="55718343"
+Message-ID: <54ADD298.9050806@cn.fujitsu.com>
+Date: Thu, 8 Jan 2015 08:43:04 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Brian Norris <computersforpeace@gmail.com>
+CC: <linux-mtd@lists.infradead.org>, <dwmw2@infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [RESEND PATCH 1/3] mtd:mtdblock: remove the needless mtdblks_lock
+References: <547E7348.5020204@cn.fujitsu.com> <20150107205926.GO9759@ld-irv-0074>
+In-Reply-To: <20150107205926.GO9759@ld-irv-0074>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(resend with cc's, sorry)
+Hi Brian,
+On 01/08/2015 04:59 AM, Brian Norris wrote:
 
-On Mon, 5 Jan 2015 11:35:35 +0800 Chunyan Zhang <chunyan.zhang@spreadtrum.com> wrote:
-
-> This patch changes the waitting condition of wait_event in the
-> function 'async_synchronize_cookie_domain'.
+> On Wed, Dec 03, 2014 at 10:19:52AM +0800, Gu Zheng wrote:
+>> The global lock mtdblks_lock was used to protect the original mtdblks
+>> array to avoid race conditions. As the mtdblks array was already gone,
+>> but the mtdblks_lock is left, and it causes latency when open/release dev.
+>> So we need to remove it here.
+>>
+>> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
 > 
-> This function waits until all asynchronous function calls for the certain
-> domain have been done.
-> 
-> But, the function 'lowest_in_progress' returns the lowest *pending*
-> entry's cookie.
-> 
-> So we should make sure that the return value of lowest_in_progress(domain)
-> must be larger than @cookie.
+> Pushed this first patch to l2-mtd.git. Thanks!
 
-I'm having runtime problems with this.  Twice the kernel silently hangs
-late in initcalls and the third time I got a great stream of oopses.
+Thanks.
 
-I'll drop it.  Hopefully you'll be able to work through the bug with
-Arjan and Tejun.
+> 
+> I'm kinda ambivalent about the next two. They don't seem like necessary
+> cleanups, really. With the third patch, I think it's actually pretty
+> important that the caller understand that it's using container_of(). I
+> could be convinced otherwise though...
+
+OK.
+
+Regards,
+Gu
+
+> 
+> Brian
+> 
+
 
