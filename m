@@ -1,48 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757075AbbAHQ4I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 11:56:08 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:58019 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755299AbbAHQ4F (ORCPT
+	id S1756583AbbAHQ5U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 11:57:20 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:52756 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754479AbbAHQ5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 11:56:05 -0500
-Date: Thu, 8 Jan 2015 16:55:57 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Pratyush Anand <panand@redhat.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tixy@linaro.org" <tixy@linaro.org>,
-        "ananth@in.ibm.com" <ananth@in.ibm.com>,
-        "sandeepa.prabhu@linaro.org" <sandeepa.prabhu@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "anil.s.keshavamurthy@intel.com" <anil.s.keshavamurthy@intel.com>,
-        "masami.hiramatsu.pt@hitachi.com" <masami.hiramatsu.pt@hitachi.com>,
-        "wcohen@redhat.com" <wcohen@redhat.com>,
-        "oleg@redhat.com" <oleg@redhat.com>
-Subject: Re: [RFC 2/8] ARM64: Refactor kprobes-arm64
-Message-ID: <20150108165557.GQ11583@arm.com>
-References: <cover.1420038188.git.panand@redhat.com>
- <9a86c217f387f45568c18b724024b0d3e040d2c6.1420038188.git.panand@redhat.com>
+	Thu, 8 Jan 2015 11:57:19 -0500
+Date: Thu, 8 Jan 2015 16:57:05 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Vince Weaver <vince@deater.net>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Pavel Machek <pavel@ucw.cz>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "vincent.weaver@maine.edu" <vincent.weaver@maine.edu>
+Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
+ pyaudio (and probably more)
+Message-ID: <20150108165705.GW12302@n2100.arm.linux.org.uk>
+References: <alpine.LFD.2.11.1501071354130.1322@knanqh.ubzr>
+ <CA+55aFw70ZvHKH+8_aS7E7FZZuuWQA++zGQuSmuvDE3DWU+x3A@mail.gmail.com>
+ <alpine.LFD.2.11.1501071446460.1322@knanqh.ubzr>
+ <20150107205346.GO12302@n2100.arm.linux.org.uk>
+ <CAHkRjk6FT+WJ3u9qhfB-EMcqhOHGQSe4dW4MpZF6vE97B0vD0A@mail.gmail.com>
+ <20150108103911.GQ12302@n2100.arm.linux.org.uk>
+ <alpine.DEB.2.10.1501081044470.26196@pianoman.cluster.toy>
+ <20150108161908.GA17290@e104818-lin.cambridge.arm.com>
+ <20150108163450.GV12302@n2100.arm.linux.org.uk>
+ <20150108164111.GB17290@e104818-lin.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <9a86c217f387f45568c18b724024b0d3e040d2c6.1420038188.git.panand@redhat.com>
+In-Reply-To: <20150108164111.GB17290@e104818-lin.cambridge.arm.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 31, 2014 at 03:21:18PM +0000, Pratyush Anand wrote:
-> Most of the stuff of kprobes-arm64.c can also be used by uprobes.c. So
-> move all those part to common code area. In the process rename kprobe to
-> probe whereever possible.
+On Thu, Jan 08, 2015 at 04:41:12PM +0000, Catalin Marinas wrote:
+> On Thu, Jan 08, 2015 at 04:34:50PM +0000, Russell King - ARM Linux wrote:
+> > On Thu, Jan 08, 2015 at 04:19:08PM +0000, Catalin Marinas wrote:
+> > > I really think we should stop this thread. User ABI breakage fixed now.
+> > 
+> > No.  Vince's email shows a more serious problem.
+> > 
+> > The ABI breakage issue was reported before the patches were apparently
+> > merged, but that information seems to have been lost.  We need to
+> > understand how that happened so similar instances don't happen in the
+> > future.
 > 
-> No functional change.
+> FYI, searching for "Vince Weaver" and "bogomips" found this:
+> 
+> https://lkml.org/lkml/2013/7/11/454
 
-In which case, can you merge this into the kprobes series (which we haven't
-merged yet)?
+Gah.
 
-Will
+It looks like the report was made by hanging it into a totally different
+thread to the patches which caused the problem, and which went nowhere
+near the ARM kernel mailing lists.
+
+At least that explains why people like me who really need to know this
+stuff were not aware of the issue.
+
+One thing I still can't get my head around though is... Vince reported
+the breakage on 11 July 2013, but the patch is dated 30 August and I
+merged it 2 September.  So, how did Vince know about it to report the
+ABI breakage?  Had it been sitting somewhere else?
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
