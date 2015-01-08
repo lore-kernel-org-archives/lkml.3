@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753670AbbAHIOz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 03:14:55 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:35207 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753331AbbAHIOx (ORCPT
+	id S1753873AbbAHIQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 03:16:59 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:58479 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752686AbbAHIQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 03:14:53 -0500
-Date: Thu, 8 Jan 2015 09:14:46 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Sudeep Holla <sudeep.holla@arm.com>
-Cc: linux-kernel@vger.kernel.org, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org
-Subject: Re: [PATCH RFT] s390: move cacheinfo sysfs to generic cacheinfo
- infrastructure
-Message-ID: <20150108081446.GC3997@osiris>
-References: <1420702912-9749-1-git-send-email-sudeep.holla@arm.com>
+	Thu, 8 Jan 2015 03:16:58 -0500
+Date: Thu, 8 Jan 2015 09:16:55 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH 0/8] Atmel System Timer cleanups
+Message-ID: <20150108091655.0dfebcff@bbrezillon>
+In-Reply-To: <1420459605-24561-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1420459605-24561-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420702912-9749-1-git-send-email-sudeep.holla@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15010808-0041-0000-0000-000002C97CC6
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 08, 2015 at 07:41:52AM +0000, Sudeep Holla wrote:
-> This patch removes the redundant sysfs cacheinfo code by reusing
-> the newly introduced generic cacheinfo infrastructure through the
-> commit 246246cbde5e ("drivers: base: support cpu cache information
-> interface to userspace via sysfs")
-> 
-> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Cc: linux390@de.ibm.com
-> Cc: linux-s390@vger.kernel.org
-> ---
->  arch/s390/kernel/cache.c | 388 +++++++++++------------------------------------
->  1 file changed, 92 insertions(+), 296 deletions(-)
-> 
-> Hi Heiko,
-> 
-> If you can give this a quick testing though nothing has changes since
-> you last tested it, that would be good.
-> 
-> If nothing is broken, please feel free to take this through your tree.
-> 
-> Regards,
-> Sudeep
+Hi Alexandre,
 
-Still works. I forwarded your patch with my sign-off to Martin, so he can
-apply it for the next merge window.
+On Mon,  5 Jan 2015 13:06:37 +0100
+Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
 
-Thanks a lot for your work!
-Heiko
+> This patch sets cleans up the system timer driver.
+> 
+> The main goal is to get rid of the mach/ headers dependency. At the same time,
+> it introduces proper probing and locking (using a regmap) for the watchdog
+> driver.
 
+Thanks for this rework!
+
+You can add my:
+
+Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+
+Regards,
+
+Boris
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
