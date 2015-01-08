@@ -1,88 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756506AbbAHLsu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 06:48:50 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:51456 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756019AbbAHLss (ORCPT
+	id S1756567AbbAHLuI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 06:50:08 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:34595 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756105AbbAHLuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 06:48:48 -0500
+	Thu, 8 Jan 2015 06:50:05 -0500
+Date: Thu, 8 Jan 2015 12:49:36 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Kanaka Juvva <kanaka.d.juvva@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH 11/11] perf/x86/intel: Enable conflicting event
+ scheduling for CQM
+Message-ID: <20150108114936.GJ3337@twins.programming.kicks-ass.net>
+References: <1415999712-5850-1-git-send-email-matt@console-pimps.org>
+ <1415999712-5850-12-git-send-email-matt@console-pimps.org>
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <54AE65BB.1020707@redhat.com>
-References: <1420708563-21743-1-git-send-email-famz@redhat.com>
- <1420708563-21743-3-git-send-email-famz@redhat.com> <54AE65BB.1020707@redhat.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Thu, 8 Jan 2015 12:48:27 +0100
-Message-ID: <CAKgNAkiKz1pdt_uYpFDsCNLPr6UBJHZs72o3iAh57+7uG1uksQ@mail.gmail.com>
-Subject: Re: [RESEND PATCH 2/3] epoll: Add implementation for epoll_pwait1
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Fam Zheng <famz@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Miklos Szeredi <mszeredi@suse.cz>, Juri Lelli <juri.lelli@gmail.com>,
-        Zach Brown <zab@zabbo.net>, David Drysdale <drysdale@google.com>,
-        Kees Cook <keescook@chromium.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Dario Faggioli <raistlin@linux.it>, "Theodore Ts'o" <tytso@mit.edu>,
-        Peter Zijlstra <peterz@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Fabian Frederick <fabf@skynet.be>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Stefan Hajnoczi <stefanha@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415999712-5850-12-git-send-email-matt@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 January 2015 at 12:10, Paolo Bonzini <pbonzini@redhat.com> wrote:
->
->
-> On 08/01/2015 10:16, Fam Zheng wrote:
->> Unlike ppoll(2), which accepts a timespec argument "timeout_ts" to
->> specify the timeout, epoll_wait(2) and epoll_pwait(2) expect a
->> microsecond timeout in int type.
->>
->> This is an obstacle for applications in switching from ppoll to epoll,
->> if they want nanosecond resolution in their event loops.
->>
->> Therefore, adding this variation of epoll wait interface, giving user an
->> option with *both* advantages, is a reasonable move: there could be
->> constantly scalable performance polling many fds, while having a
->> nanosecond timeout precision (assuming it has properly set up timer
->> slack with prctl(2)).
->>
->> Signed-off-by: Fam Zheng <famz@redhat.com>
->> ---
->>  fs/eventpoll.c           | 24 ++++++++++++++++++++++++
->>  include/linux/syscalls.h |  4 ++++
->>  kernel/sys_ni.c          |  3 +++
->>  3 files changed, 31 insertions(+)
->
-> As mentioned by Miklos in the non-resent version, please add a flags
-> argument.  Invalid flags should return -EINVAL.
->
-> In fact, we could already use the flags argument to specify an absolute
-> timeout, which is a nice thing to have for QEMU too.
+On Fri, Nov 14, 2014 at 09:15:12PM +0000, Matt Fleming wrote:
+> +/*
+> + * Deallocate the RMIDs from any events that conflict with @event, and
+> + * place them on the back of the group list.
+> + */
+> +static void intel_cqm_sched_out_events(struct perf_event *event)
 
-Nice! It looks like we found this iteration of "failure to include a
-flags argument is a mistake" already!
+I realize this function name is already very long, but how about:
 
-Cheers,
+  intel_cqm_sched_out_conflicting_events()
 
-Michael
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+instead?
