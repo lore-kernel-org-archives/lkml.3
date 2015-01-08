@@ -1,148 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932442AbbAHNe0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 08:34:26 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63255 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755024AbbAHNeZ (ORCPT
+	id S1756537AbbAHNpc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 08:45:32 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:57824 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754074AbbAHNpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 08:34:25 -0500
-Date: Thu, 8 Jan 2015 13:34:05 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Robert Jarzmik <robert.jarzmik@free.fr>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2] mfd: lubbock_io: add lubbock_io board
-Message-ID: <20150108133404.GE10537@leverpostej>
-References: <1420324515-7444-1-git-send-email-robert.jarzmik@free.fr>
+	Thu, 8 Jan 2015 08:45:31 -0500
+Date: Thu, 8 Jan 2015 13:45:21 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Mark Langsdorf <mlangsdo@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Linux 3.19-rc3
+Message-ID: <20150108134520.GC14200@e104818-lin.cambridge.arm.com>
+References: <CA+55aFwsxoyLb9OWMSCL3doe_cz_EQtKsEFCyPUYn_T87pbz0A@mail.gmail.com>
+ <54AE7D53.2020305@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1420324515-7444-1-git-send-email-robert.jarzmik@free.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <54AE7D53.2020305@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Robert,
-
-On Sat, Jan 03, 2015 at 10:35:15PM +0000, Robert Jarzmik wrote:
-> Lubbock () board is the IO motherboard of the Intel PXA25x Development
-> Platform, which supports the Lubbock pxa25x soc board.
+On Thu, Jan 08, 2015 at 12:51:31PM +0000, Mark Langsdorf wrote:
+> On 01/05/2015 07:46 PM, Linus Torvalds wrote:
+> > It's a day delayed - not because of any particular development issues,
+> > but simply because I was tiling a bathroom yesterday. But rc3 is out
+> > there now, and things have stayed reasonably calm. I really hope that
+> > implies that 3.19 is looking good, but it's equally likely that it's
+> > just that people are still recovering from the holiday season.
 > 
-> Historically, this support was in arch/arm/mach-pxa/lubbock.c. When
-> gpio-pxa was moved to drivers/pxa, it became a driver, and its
-> initialization and probing happened at postcore initcall. The lubbock
-> code used to install the chained lubbock interrupt handler at init_irq()
-> time.
+> I'm consistently getting an out of memory killer triggered when
+> compiling the kernel (make -j 16 -s) on a 16 core ARM64 system
+> with 16 GB of memory. This doesn't happen when running a 3.18
+> kernel.
 > 
-> The consequence of the gpio-pxa change is that the installed chained irq
-> handler lubbock_irq_handler() was overwritten in pxa_gpio_probe(_dt)(),
-> removing :
->  - the handler
->  - the falling edge detection setting of GPIO0, which revealed the
->    interrupt request from the lubbock IO board.
-> 
-> As a fix, move the gpio0 chained handler setup to a place where we have
-> the guarantee that pxa_gpio_probe() was called before, so that lubbock
-> handler becomes the true IRQ chained handler of GPIO0, demuxing the
-> lubbock IO board interrupts.
-> 
-> This patch moves all that handling to a mfd driver. It's only purpose
-> for the time being is the interrupt handling, but in the future it
-> should encompass all the motherboard CPLDs handling :
->  - leds
->  - switches
->  - hexleds
-
-Given the addition of an of_device_id table and some (implicit) property
-parsing, this requires a device tree binding document.
-
+> I'm going to start bisecting the failure now, but here's the crash
+> log in case someone can see something obvious in it.
 [...]
+> [ 1053.968815] active_anon:207417 inactive_anon:25722 isolated_anon:0
+> [ 1053.968815]  active_file:1300 inactive_file:21234 isolated_file:0
+> [ 1053.968815]  unevictable:0 dirty:0 writeback:0 unstable:0
+> [ 1053.968815]  free:1014 slab_reclaimable:1047 slab_unreclaimable:1758
+> [ 1053.968815]  mapped:733 shmem:58 pagetables:267 bounce:0
+> [ 1053.968815]  free_cma:1
+> [ 1054.000398] DMA free:52928kB min:4032kB low:4992kB high:6016kB
+> active_anon:3025728kB inactive_anon:612608kB active_file:20992kB
+> inactive_file:323072kB unevictable:0kB isolated(anon):0kB
+> isolated(file):0kB present:4192256kB managed:4177024kB mlocked:0kB
+> dirty:0kB writeback:0kB mapped:15168kB shmem:1792kB
+> slab_reclaimable:26368kB slab_unreclaimable:36160kB kernel_stack:464kB
+> pagetables:6976kB unstable:0kB bounce:0kB free_cma:64kB
+> writeback_tmp:0kB pages_scanned:26151872 all_unreclaimable? yes
+> [ 1054.043628] lowmem_reserve[]: 0 765 765
+> [ 1054.047498] Normal free:12032kB min:12224kB low:15232kB high:18304kB
+> active_anon:10248960kB inactive_anon:1033728kB active_file:62208kB
+> inactive_file:1036032kB unevictable:0kB isolated(anon):0kB
+> isolated(file):0kB present:12582912kB managed:12538176kB mlocked:0kB
+> dirty:0kB writeback:0kB mapped:31744kB shmem:1920kB
+> slab_reclaimable:40640kB slab_unreclaimable:76352kB kernel_stack:2992kB
+> pagetables:10112kB unstable:0kB bounce:0kB free_cma:0kB
+> writeback_tmp:0kB pages_scanned:82150272 all_unreclaimable? yes
+> [ 1054.091760] lowmem_reserve[]: 0 0 0
+> [ 1054.095277] DMA: 109*64kB (UR) 53*128kB (R) 8*256kB (R) 0*512kB
+> 0*1024kB 0*2048kB 1*4096kB (R) 0*8192kB 0*16384kB 1*32768kB (R)
+> 0*65536kB = 52672kB
+> [ 1054.108621] Normal: 191*64kB (MR) 0*128kB 0*256kB 0*512kB 0*1024kB
+> 0*2048kB 0*4096kB 0*8192kB 0*16384kB 0*32768kB 0*65536kB = 12224kB
+> [ 1054.120708] Node 0 hugepages_total=0 hugepages_free=0
+> hugepages_surp=0 hugepages_size=524288kB
+> [ 1054.129280] 43732 total pagecache pages
+> [ 1054.133096] 25736 pages in swap cache
+> [ 1054.136739] Swap cache stats: add 27971, delete 2235, find 0/1
+> [ 1054.142545] Free swap  = 6598400kB
+> [ 1054.145928] Total swap = 8388544kB
+> [ 1054.149317] 262112 pages RAM
+> [ 1054.152180] 0 pages HighMem/MovableOnly
+> [ 1054.155995] 18446744073709544361 pages reserved
 
-> +static int lubbock_probe(struct platform_device *pdev)
-> +{
-> +	struct resource *res;
-> +	struct lubbock *cot;
-> +	int ret;
-> +	unsigned int base_irq = 0;
-> +
-> +	cot = devm_kzalloc(&pdev->dev, sizeof(*cot), GFP_KERNEL);
-> +	if (!cot)
-> +		return -ENOMEM;
-> +	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-> +	if (res)
-> +		cot->irq = (unsigned int)res->start;
-> +	if (!cot->irq)
-> +		return -ENODEV;
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
-> +	if (res)
-> +		base_irq = (unsigned int)res->start;
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	cot->base = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(cot->base))
-> +		return PTR_ERR(cot->base);
-> +
-> +	platform_set_drvdata(pdev, cot);
-> +
-> +	writel(cot->irq_mask, cot->base + COT_IRQ_MASK_EN);
-> +	writel(0, cot->base + COT_IRQ_SET_CLR);
-> +	ret = devm_request_irq(&pdev->dev, cot->irq, lubbock_irq_handler, 0,
-> +			       dev_name(&pdev->dev), cot);
-> +	if (ret == -ENOSYS)
-> +		return -EPROBE_DEFER;
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Couldn't request GPIO : ret = %d\n", ret);
-> +		return ret;
-> +	}
-> +	irq_set_irq_type(cot->irq, IRQ_TYPE_EDGE_FALLING);
+This looks weird (pages reserved = -7255).
 
-Shouldn't that be in the interrupt-specifier when using DT?
+Can you disable (transparent) huge pages? I don't have any better at the
+moment suggestion apart from bisecting.
 
-> +	irq_set_irq_wake(cot->irq, 1);
-> +
-> +	cot->irqdomain =
-> +		irq_domain_add_linear(pdev->dev.of_node, LUBBOCK_NB_IRQ,
-> +				      &lubbock_irq_domain_ops, cot);
-> +	if (!cot->irqdomain)
-> +		return -ENODEV;
-> +
-> +	ret = 0;
-> +	if (base_irq)
-> +		ret = irq_create_strict_mappings(cot->irqdomain, base_irq, 0,
-> +						 LUBBOCK_NB_IRQ);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Couldn't create the irq mapping %d..%d\n",
-> +			base_irq, base_irq + LUBBOCK_NB_IRQ);
-> +		return ret;
-> +	}
-> +
-> +	dev_info(&pdev->dev, "base=%p, irq=%d, base_irq=%d\n",
-> +		 cot->base, cot->irq, base_irq);
-> +
-> +	return 0;
-> +}
-> +
-> +static int lubbock_remove(struct platform_device *pdev)
-> +{
-> +	struct lubbock *cot = platform_get_drvdata(pdev);
-> +
-> +	irq_set_chip_and_handler(cot->irq, NULL, NULL);
-> +	return 0;
-> +}
-> +
-> +static const struct of_device_id lubbock_id_table[] = {
-> +	{ .compatible = "marvell,lubbock_io", },
-
-When PXA25x it was Intel, not Marvell. So I think the vendor prefix
-should be "intel".
-
-Also s/_/-/ in property names and compatible strings please.
-
-Thanks,
-Mark.
+-- 
+Catalin
