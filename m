@@ -1,156 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757227AbbAHRsV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 12:48:21 -0500
-Received: from mail-bn1bon0139.outbound.protection.outlook.com ([157.56.111.139]:61440
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757188AbbAHRsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 12:48:15 -0500
-X-Greylist: delayed 53781 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Jan 2015 12:48:14 EST
-X-WSS-ID: 0NHVDG1-07-HWZ-02
-X-M-MSG: 
-From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-CC: "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Koenig, Christian" <Christian.Koenig@amd.com>,
-        David Airlie <airlied@linux.ie>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Subject: RE: [Regression][v3.17][3.18][3.19-rc3] drm/radeon: re-enable dpm
- by default on BTC
-Thread-Topic: [Regression][v3.17][3.18][3.19-rc3] drm/radeon: re-enable dpm
- by default on BTC
-Thread-Index: AQHQKsyDkXQZKaorv0C9Tt5ssWsoXZy1RGNQgAF5YQD//6yOUA==
-Date: Thu, 8 Jan 2015 17:48:00 +0000
-Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D0635E2A10@satlexdag05.amd.com>
-References: <54ADB86B.10105@canonical.com>
- <A3397C8B8B789E45844E7EC5DEAD89D0635DD4D6@satlexdag06.amd.com>
- <54AEAF92.10507@canonical.com>
-In-Reply-To: <54AEAF92.10507@canonical.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.180.168.240]
-Content-Type: multipart/mixed;
-	boundary="_002_A3397C8B8B789E45844E7EC5DEAD89D0635E2A10satlexdag05amdc_"
+	id S1757191AbbAHRub (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 12:50:31 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:44217 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750782AbbAHRu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 12:50:29 -0500
+X-IronPort-AV: E=Sophos;i="5.07,724,1413244800"; 
+   d="scan'208";a="212806511"
+Message-ID: <54AEC358.9000001@citrix.com>
+Date: Thu, 8 Jan 2015 17:50:16 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Alexander.Deucher@amd.com; 
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(13464003)(199003)(24454002)(479174004)(51704005)(377454003)(164054003)(189002)(1720100001)(568964001)(110136001)(68736005)(120916001)(71186001)(84326002)(97736003)(2900100001)(2950100001)(99396003)(53416004)(2920100001)(102836002)(101416001)(15198665003)(15975445007)(87936001)(50986999)(46102003)(99936001)(33656002)(76176999)(54356999)(77156002)(62966003)(4396001)(20776003)(64706001)(19580395003)(106466001)(105586002)(106116001)(21056001)(512874002)(31966008)(86362001)(84676001)(92566001)(575784001)(2656002)(19580405001)(107046002)(15395725005)(55846006)(10090945008)(16193025007);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB204;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-DmarcAction: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BY2PR02MB204;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR02MB204;
-X-Forefront-PRVS: 0450A714CB
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB204;
-X-OriginatorOrg: amd4.onmicrosoft.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 08 Jan 2015 17:48:03.1936
- (UTC)
-X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.221]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR02MB204
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <xen-devel@lists.xenproject.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: Re: [PATCH 1/2] mm: allow for an alternate set of pages for userspace
+ mappings
+References: <1420730924-22811-1-git-send-email-david.vrabel@citrix.com> <1420730924-22811-2-git-send-email-david.vrabel@citrix.com> <20150108172007.GB32079@phnom.home.cmpxchg.org>
+In-Reply-To: <20150108172007.GB32079@phnom.home.cmpxchg.org>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_A3397C8B8B789E45844E7EC5DEAD89D0635E2A10satlexdag05amdc_
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: base64
+On 08/01/15 17:20, Johannes Weiner wrote:
+> On Thu, Jan 08, 2015 at 03:28:43PM +0000, David Vrabel wrote:
+>> Add an optional array of pages to struct vm_area_struct that can be
+>> used find the page backing a VMA.  This is useful in cases where the
+>> normal mechanisms for finding the page don't work.  This array is only
+>> inspected if the PTE is special.
+>>
+>> Splitting a VMA with such an array of pages is trivially done by
+>> adjusting vma->pages.  The original creator of the VMA must only free
+>> the page array once all sub-VMAs are closed (e.g., by ref-counting in
+>> vm_ops->open and vm_ops->close).
+>>
+>> One use case is a Xen PV guest mapping foreign pages into userspace.
+>>
+>> In a Xen PV guest, the PTEs contain MFNs so get_user_pages() (for
+>> example) must do an MFN to PFN (M2P) lookup before it can get the
+>> page.  For foreign pages (those owned by another guest) the M2P lookup
+>> returns the PFN as seen by the foreign guest (which would be
+>> completely the wrong page for the local guest).
+>>
+>> This cannot be fixed up improving the M2P lookup since one MFN may be
+>> mapped onto two or more pages so getting the right page is impossible
+>> given just the MFN.
+[...]
+>> --- a/include/linux/mm_types.h
+>> +++ b/include/linux/mm_types.h
+>> @@ -309,6 +309,14 @@ struct vm_area_struct {
+>>  #ifdef CONFIG_NUMA
+>>  	struct mempolicy *vm_policy;	/* NUMA policy for the VMA */
+>>  #endif
+>> +	/*
+>> +	 * Array of pages to override the default vm_normal_page()
+>> +	 * result iff the PTE is special.
+>> +	 *
+>> +	 * The memory for this should be refcounted in vm_ops->open
+>> +	 * and vm_ops->close.
+>> +	 */
+>> +	struct page **pages;
+> 
+> Please make this configuration-dependent, not every Linux user should
+> have to pay for a Xen optimization.
 
-PiAtLS0tLU9yaWdpbmFsIE1lc3NhZ2UtLS0tLQ0KPiBGcm9tOiBKb3NlcGggU2FsaXNidXJ5IFtt
-YWlsdG86am9zZXBoLnNhbGlzYnVyeUBjYW5vbmljYWwuY29tXQ0KPiBTZW50OiBUaHVyc2RheSwg
-SmFudWFyeSAwOCwgMjAxNSAxMToyNiBBTQ0KPiBUbzogRGV1Y2hlciwgQWxleGFuZGVyDQo+IENj
-OiBzdGFibGVAdmdlci5rZXJuZWwub3JnOyBMS01MOyBLb2VuaWcsIENocmlzdGlhbjsgRGF2aWQg
-QWlybGllOyBkcmktZGV2ZWwNCj4gU3ViamVjdDogUmU6IFtSZWdyZXNzaW9uXVt2My4xN11bMy4x
-OF1bMy4xOS1yYzNdIGRybS9yYWRlb246IHJlLWVuYWJsZSBkcG0NCj4gYnkgZGVmYXVsdCBvbiBC
-VEMNCj4gDQo+IE9uIDAxLzA3LzIwMTUgMDk6NTEgUE0sIERldWNoZXIsIEFsZXhhbmRlciB3cm90
-ZToNCj4gPg0KPiA+PiAtLS0tLU9yaWdpbmFsIE1lc3NhZ2UtLS0tLQ0KPiA+PiBGcm9tOiBKb3Nl
-cGggU2FsaXNidXJ5IFttYWlsdG86am9zZXBoLnNhbGlzYnVyeUBjYW5vbmljYWwuY29tXQ0KPiA+
-PiBTZW50OiBXZWRuZXNkYXksIEphbnVhcnkgMDcsIDIwMTUgNTo1MSBQTQ0KPiA+PiBUbzogRGV1
-Y2hlciwgQWxleGFuZGVyDQo+ID4+IENjOiBzdGFibGVAdmdlci5rZXJuZWwub3JnOyBMS01MOyBL
-b2VuaWcsIENocmlzdGlhbjsgRGF2aWQgQWlybGllOyBkcmktZGV2ZWwNCj4gPj4gU3ViamVjdDog
-W1JlZ3Jlc3Npb25dW3YzLjE3XVszLjE4XVszLjE5LXJjM10gZHJtL3JhZGVvbjogcmUtZW5hYmxl
-IGRwbQ0KPiBieQ0KPiA+PiBkZWZhdWx0IG9uIEJUQw0KPiA+Pg0KPiA+PiBIaSBBbGV4YW5kZXIs
-DQo+ID4+DQo+ID4+IEEga2VybmVsIGJ1ZyByZXBvcnQgd2FzIG9wZW5lZCBhZ2FpbnN0IFVidW50
-dSBbMF0uICBBZnRlciBhIGtlcm5lbA0KPiA+PiBiaXNlY3QsIGl0IHdhcyBmb3VuZCB0aGF0IHJl
-dmVydGluZyB0aGUgZm9sbG93aW5nIGNvbW1pdCByZXNvbHZlZCB0aGlzIGJ1ZzoNCj4gPj4NCj4g
-Pj4gY29tbWl0IGMwOGFiZjExOTAwZTE5YjE0ZGQzYTBjYzNkMTA1YmQ3NDUxOWNkMTgNCj4gPj4g
-QXV0aG9yOiBBbGV4IERldWNoZXIgPGFsZXhhbmRlci5kZXVjaGVyQGFtZC5jb20+DQo+ID4+IERh
-dGU6ICAgTW9uIEp1bCAxNCAxMjowMTo0MCAyMDE0IC0wNDAwDQo+ID4+DQo+ID4+ICAgICBkcm0v
-cmFkZW9uOiByZS1lbmFibGUgZHBtIGJ5IGRlZmF1bHQgb24gQlRDDQo+ID4+DQo+ID4+IFRoZSBy
-ZWdyZXNzaW9uIHdhcyBpbnRyb2R1Y2VkIGFzIG9mIHYzLjE3LXJjMSBhbmQgc3RpbGwgZXhpc3Rz
-IGluDQo+ID4+IGN1cnJlbnQgbWFpbmxpbmUuICBJdCBoYXMgYWxzbyBtYWRlIGl0J3Mgd2F5IGlu
-dG8gdGhlIHN0YWJsZSByZWxlYXNlcy4NCj4gPj4NCj4gPj4gSSB3YXMgaG9waW5nIHRvIGdldCB5
-b3VyIGZlZWRiYWNrLCBzaW5jZSB5b3UgYXJlIHRoZSBwYXRjaCBhdXRob3IuICBEbw0KPiA+PiB5
-b3UgdGhpbmsgZ2F0aGVyaW5nIGFueSBhZGRpdGlvbmFsIGRhdGEgd2lsbCBoZWxwIGRpYWdub3Nl
-IHRoaXMgaXNzdWUsDQo+ID4+IG9yIHdvdWxkIGl0IGJlIGJlc3QgdG8gc3VibWl0IGEgcmV2ZXJ0
-IHJlcXVlc3Q/DQo+ID4+DQo+ID4gRG9lcyByZXZlcmluZyBiMmRjY2YyNGU3NyBoZWxwPyAgSSdk
-IGhhdGUgdG8gcmV2ZXJ0IHRoaXMgcGF0Y2ggYmVjYXVzZSBpdA0KPiBkaXNhYmxlcyBwb3dlciBt
-YW5hZ2VtZW50IGZvciBhIHdob2xlIGZhbWlseSBvZiBjaGlwcy4gIElmIGl0IGRvZXNuJ3QgaGVs
-cCBJJ2QNCj4gcHJlZmVyIHRvIGp1c3QgYWRkIGEgcXVpcmsgdG8gZGlzYWJsZSBpdCBmb3IgdGhl
-IHNwZWNpZmljIHByb2JsZW1hdGljIGJvYXJkLg0KPiBDb21taXQgYjJkY2NmMjRlNzcgd2FzIGFk
-ZGVkIHRvIG1haW5saW5lIGFzIG9mIHYzLjE4LXJjMSBhbmQgd2FzIG5vdA0KPiBjYydkIHRvIHN0
-YWJsZS4gIFdlIGFyZSBhbHNvIHNlZWluZyB0aGlzIGlzc3VlIGluIHRoZSAzLjEzLnkgc3RhYmxl
-DQo+IGtlcm5lbCwgd2hpY2ggZG9lcyBub3QgaGF2ZSBjb21taXQgYjJkY2NmMjRlNzcgYXBwbGll
-ZC4gIEhvd2V2ZXIsIHdlIGNhbg0KPiB0ZXN0IHJldmVydGluZyBpdCBpbiBtYWlubGluZT8NCg0K
-Tm9wZS4gIFdvbid0IG1ha2UgYSBkaWZmZXJlbmNlLiAgVGhlIGF0dGFjaGVkIHBhdGNoIGFkZHMg
-YSBxdWlyayBsaXN0IGZvciBkcG0gd2hpY2ggd2lsbCBmaXggdGhlIGlzc3VlIGZvciB0aGUgYWZm
-ZWN0ZWQgYm9hcmRzLg0KDQpBbGV4DQoNCj4gDQo+ID4NCj4gPiBBbGV4DQo+ID4NCj4gPj4gVGhh
-bmtzLA0KPiA+Pg0KPiA+PiBKb2UNCj4gPj4NCj4gPj4gWzBdIGh0dHA6Ly9wYWQubHYvMTM4NjUz
-NA0KDQo=
+If the additional field in struct vm_area_struct is a concern, I would
+prefer to use a vm_flag bit and union pages with an existing field.
 
---_002_A3397C8B8B789E45844E7EC5DEAD89D0635E2A10satlexdag05amdc_
-Content-Type: application/octet-stream;
-	name="0001-drm-radeon-add-a-dpm-quirk-list.patch"
-Content-Description: 0001-drm-radeon-add-a-dpm-quirk-list.patch
-Content-Disposition: attachment;
-	filename="0001-drm-radeon-add-a-dpm-quirk-list.patch"; size=2156;
-	creation-date="Thu, 08 Jan 2015 17:45:58 GMT";
-	modification-date="Thu, 08 Jan 2015 17:44:42 GMT"
-Content-Transfer-Encoding: base64
+Perhaps using VM_PFNMAP and reusing vm_file?
 
-RnJvbSAxNzE5OWY0YzZkYjIxZDU4MTYzZTYwNTM4ZGU4NTg1YTRlMWIxMzdjIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBBbGV4IERldWNoZXIgPGFsZXhhbmRlci5kZXVjaGVyQGFtZC5j
-b20+CkRhdGU6IFRodSwgOCBKYW4gMjAxNSAxMDo0NjozMyAtMDUwMApTdWJqZWN0OiBbUEFUQ0hd
-IGRybS9yYWRlb246IGFkZCBhIGRwbSBxdWlyayBsaXN0CgpEaXNhYmxlIGRwbSBvbiBjZXJ0YWlu
-IHByb2JsZW1hdGljIGJvYXJkcyByYXRoZXIgdGhhbgpkaXNhYmxpbmcgZHBtIGZvciB0aGUgZW50
-aXJlIGNoaXAgZmFtaWx5IHNpbmNlIG1vc3QKYm9hcmRzIHdvcmsgZmluZS4KClNpZ25lZC1vZmYt
-Ynk6IEFsZXggRGV1Y2hlciA8YWxleGFuZGVyLmRldWNoZXJAYW1kLmNvbT4KQ2M6IHN0YWJsZUB2
-Z2VyLmtlcm5lbC5vcmcKLS0tCiBkcml2ZXJzL2dwdS9kcm0vcmFkZW9uL3JhZGVvbl9wbS5jIHwg
-MzMgKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrCiAxIGZpbGUgY2hhbmdlZCwgMzMg
-aW5zZXJ0aW9ucygrKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vcmFkZW9u
-X3BtLmMgYi9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL3JhZGVvbl9wbS5jCmluZGV4IDMyNTIyY2Mu
-LmY3ZGE4ZmUgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vcmFkZW9uX3BtLmMK
-KysrIGIvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9yYWRlb25fcG0uYwpAQCAtMTI4Nyw4ICsxMjg3
-LDM5IEBAIGRwbV9mYWlsZWQ6CiAJcmV0dXJuIHJldDsKIH0KIAorc3RydWN0IHJhZGVvbl9kcG1f
-cXVpcmsgeworCXUzMiBjaGlwX3ZlbmRvcjsKKwl1MzIgY2hpcF9kZXZpY2U7CisJdTMyIHN1YnN5
-c192ZW5kb3I7CisJdTMyIHN1YnN5c19kZXZpY2U7Cit9OworCisvKiBjYXJkcyB3aXRoIGRwbSBz
-dGFiaWxpdHkgcHJvYmxlbXMgKi8KK3N0YXRpYyBzdHJ1Y3QgcmFkZW9uX2RwbV9xdWlyayByYWRl
-b25fZHBtX3F1aXJrX2xpc3RbXSA9IHsKKwkvKiBUVVJLUyAtIGh0dHBzOi8vYnVncy5sYXVuY2hw
-YWQubmV0L3VidW50dS8rc291cmNlL2xpbnV4LytidWcvMTM4NjUzNCAqLworCXsgUENJX1ZFTkRP
-Ul9JRF9BVEksIDB4Njc1OSwgMHgxNjgyLCAweDMxOTUgfSwKKwkvKiBUVVJLUyAtIGh0dHBzOi8v
-YnVnemlsbGEua2VybmVsLm9yZy9zaG93X2J1Zy5jZ2k/aWQ9ODM3MzEgKi8KKwl7IFBDSV9WRU5E
-T1JfSURfQVRJLCAweDY4NDAsIDB4MTE3OSwgMHhmYjgxIH0sCisJeyAwLCAwLCAwLCAwIH0sCit9
-OworCiBpbnQgcmFkZW9uX3BtX2luaXQoc3RydWN0IHJhZGVvbl9kZXZpY2UgKnJkZXYpCiB7CisJ
-c3RydWN0IHJhZGVvbl9kcG1fcXVpcmsgKnAgPSByYWRlb25fZHBtX3F1aXJrX2xpc3Q7CisJYm9v
-bCBkaXNhYmxlX2RwbSA9IGZhbHNlOworCisJLyogQXBwbHkgZHBtIHF1aXJrcyAqLworCXdoaWxl
-IChwICYmIHAtPmNoaXBfZGV2aWNlICE9IDApIHsKKwkJaWYgKHJkZXYtPnBkZXYtPnZlbmRvciA9
-PSBwLT5jaGlwX3ZlbmRvciAmJgorCQkgICAgcmRldi0+cGRldi0+ZGV2aWNlID09IHAtPmNoaXBf
-ZGV2aWNlICYmCisJCSAgICByZGV2LT5wZGV2LT5zdWJzeXN0ZW1fdmVuZG9yID09IHAtPnN1YnN5
-c192ZW5kb3IgJiYKKwkJICAgIHJkZXYtPnBkZXYtPnN1YnN5c3RlbV9kZXZpY2UgPT0gcC0+c3Vi
-c3lzX2RldmljZSkgeworCQkJZGlzYWJsZV9kcG0gPSB0cnVlOworCQkJYnJlYWs7CisJCX0KKwkJ
-KytwOworCX0KKwogCS8qIGVuYWJsZSBkcG0gb24gcnY2eHgrICovCiAJc3dpdGNoIChyZGV2LT5m
-YW1pbHkpIHsKIAljYXNlIENISVBfUlY2MTA6CkBAIC0xMzQ0LDYgKzEzNzUsOCBAQCBpbnQgcmFk
-ZW9uX3BtX2luaXQoc3RydWN0IHJhZGVvbl9kZXZpY2UgKnJkZXYpCiAJCQkgKCEocmRldi0+Zmxh
-Z3MgJiBSQURFT05fSVNfSUdQKSkgJiYKIAkJCSAoIXJkZXYtPnNtY19mdykpCiAJCQlyZGV2LT5w
-bS5wbV9tZXRob2QgPSBQTV9NRVRIT0RfUFJPRklMRTsKKwkJZWxzZSBpZiAoZGlzYWJsZV9kcG0g
-JiYgKHJhZGVvbl9kcG0gPT0gLTEpKQorCQkJcmRldi0+cG0ucG1fbWV0aG9kID0gUE1fTUVUSE9E
-X1BST0ZJTEU7CiAJCWVsc2UgaWYgKHJhZGVvbl9kcG0gPT0gMCkKIAkJCXJkZXYtPnBtLnBtX21l
-dGhvZCA9IFBNX01FVEhPRF9QUk9GSUxFOwogCQllbHNlCi0tIAoxLjguMy4xCgo=
-
---_002_A3397C8B8B789E45844E7EC5DEAD89D0635E2A10satlexdag05amdc_--
+David
