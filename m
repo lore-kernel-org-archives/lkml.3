@@ -1,78 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757214AbbAHWRm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 17:17:42 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:61110 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866AbbAHWRl (ORCPT
+	id S932555AbbAHWSX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 17:18:23 -0500
+Received: from smtprelay0229.hostedemail.com ([216.40.44.229]:59250 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754999AbbAHWSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 17:17:41 -0500
-Date: Thu, 8 Jan 2015 14:17:36 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-pci@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] PCI: keystone: fix incorrect annotations on probe and remove
-Message-ID: <20150108221736.GA39839@dtor-ws>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 8 Jan 2015 17:18:21 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:421:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1561:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3622:3865:3867:3868:3872:3873:4321:5007:6119:6261:7903:8957:10004:10400:10848:11232:11658:11914:12517:12519:12679:12740:13069:13311:13357:13972:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: dad39_48568c6a6fe32
+X-Filterd-Recvd-Size: 1183
+Message-ID: <1420755495.11784.15.camel@perches.com>
+Subject: Re: [PATCH] ethernet: atheros: Add nss-gmac driver
+From: Joe Perches <joe@perches.com>
+To: Stephen Wang <wstephen@codeaurora.org>
+Cc: jcliburn@gmail.com, grant.likely@linaro.org, robh+dt@kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        devicetree@vger.kernel.org
+Date: Thu, 08 Jan 2015 14:18:15 -0800
+In-Reply-To: <1420754626-30121-1-git-send-email-wstephen@codeaurora.org>
+References: <y> <1420754626-30121-1-git-send-email-wstephen@codeaurora.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even though platform bus is not hot-pluggable, devices on it can be unbound
-from the driver and bound back to it via sysfs, so we should not be using
-__init annotations on probe() and __exit annotations on remove() methods.
+On Thu, 2015-01-08 at 14:03 -0800, Stephen Wang wrote:
+> This driver adds support for the internal GMACs on IPQ806x SoCs.
+> It supports the device-tree and will register up to 4 ethernet
+> interfaces.
 
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
+Trivial:
 
-Not tested, found by casual code inspection.
-
- drivers/pci/host/pci-keystone.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/pci/host/pci-keystone.c b/drivers/pci/host/pci-keystone.c
-index 1b893bc..7b84e1d 100644
---- a/drivers/pci/host/pci-keystone.c
-+++ b/drivers/pci/host/pci-keystone.c
-@@ -332,7 +332,7 @@ static const struct of_device_id ks_pcie_of_match[] = {
- };
- MODULE_DEVICE_TABLE(of, ks_pcie_of_match);
- 
--static int __exit ks_pcie_remove(struct platform_device *pdev)
-+static int ks_pcie_remove(struct platform_device *pdev)
- {
- 	struct keystone_pcie *ks_pcie = platform_get_drvdata(pdev);
- 
-@@ -341,7 +341,7 @@ static int __exit ks_pcie_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--static int __init ks_pcie_probe(struct platform_device *pdev)
-+static int ks_pcie_probe(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
- 	struct keystone_pcie *ks_pcie;
-@@ -398,9 +398,9 @@ fail_clk:
- 	return ret;
- }
- 
--static struct platform_driver ks_pcie_driver __refdata = {
-+static struct platform_driver ks_pcie_driver = {
- 	.probe  = ks_pcie_probe,
--	.remove = __exit_p(ks_pcie_remove),
-+	.remove = ks_pcie_remove,
- 	.driver = {
- 		.name	= "keystone-pcie",
- 		.owner	= THIS_MODULE,
--- 
-2.2.0.rc0.207.ga3a616c
+You might try running the code through checkpatch.
 
 
--- 
-Dmitry
