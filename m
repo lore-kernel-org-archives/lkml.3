@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661AbbAHDLF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 22:11:05 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:48974 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504AbbAHDLD (ORCPT
+	id S1755520AbbAHDGu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 22:06:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58863 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752791AbbAHDGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 22:11:03 -0500
+	Wed, 7 Jan 2015 22:06:49 -0500
 MIME-Version: 1.0
-In-Reply-To: <54AD731F.3080408@codeaurora.org>
-References: <1420535256-6091-1-git-send-email-js07.lee@gmail.com>
-	<878uhf4457.fsf@rustcorp.com.au>
-	<54AD731F.3080408@codeaurora.org>
-Date: Thu, 8 Jan 2015 12:03:47 +0900
-Message-ID: <CAPP0e=PF0Dne8i=uR4OvLA6ujCwJDv7T6q2m-Jy_6TGYihJeEw@mail.gmail.com>
-Subject: Re: [PATCH] kernel/module.c: Mark module state before set RO and NX regions
-From: Jungseung Lee <js07.lee@gmail.com>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <54ADED68.7060507@oracle.com>
+References: <1420472494-25836-1-git-send-email-sasha.levin@oracle.com>
+	<CACVXFVPUF1x8YDwHtYzoC6LiPy22Lr2bZC-N73+NakFMBrEUFw@mail.gmail.com>
+	<54AD6148.6030703@oracle.com>
+	<CACVXFVMcggxG41c5h4-3dY_twZfD3artiD8G=x608ADnNfnn4Q@mail.gmail.com>
+	<54ADED68.7060507@oracle.com>
+Date: Thu, 8 Jan 2015 11:06:47 +0800
+Message-ID: <CACVXFVO73hw-FWK+-xvuqRrmE3hvWQavLP2ixKwRj9tmFX0tcQ@mail.gmail.com>
+Subject: Re: [PATCH] firmware class: remove from pending list on load failure
+From: Ming Lei <ming.lei@canonical.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-08 2:55 GMT+09:00 Laura Abbott <lauraa@codeaurora.org>:
-> On 1/6/2015 8:16 PM, Rusty Russell wrote:
->>
->> Jungseung Lee <js07.lee@gmail.com> writes:
+On Thu, Jan 8, 2015 at 10:37 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
+> On 01/07/2015 09:15 PM, Ming Lei wrote:
+>> On Thu, Jan 8, 2015 at 12:39 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>>> On 01/06/2015 11:52 PM, Ming Lei wrote:
+>>>> On Mon, Jan 5, 2015 at 11:41 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>>>>>> If we failed loading the firmware we have to make sure it leaves the pending
+>>>>>> list if abort wasn't executed for it.
+>>>>>>
+>>>>>> Otherwise we'd free an object still on the pending list and corrupt it.
+>>>>>>
+>>>>>> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+>>>>>> ---
+>>>>>>  drivers/base/firmware_class.c | 11 ++++++++++-
+>>>>>>  1 file changed, 10 insertions(+), 1 deletion(-)
+>>>>>>
+>>>>>> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+>>>>>> index 58470c3..8ccf6cf4 100644
+>>>>>> --- a/drivers/base/firmware_class.c
+>>>>>> +++ b/drivers/base/firmware_class.c
+>>>>>> @@ -929,9 +929,18 @@ static int _request_firmware_load(struct firmware_priv *fw_priv,
+>>>>>>         cancel_delayed_work_sync(&fw_priv->timeout_work);
+>>>>>>         if (is_fw_load_aborted(buf))
+>>>>>>                 retval = -EAGAIN;
+>>>>>> -       else if (!buf->data)
+>>>>>> +       else if (!buf->data) {
+>>>>>>                 retval = -ENOMEM;
+>>>>>>
+>>>>>> +               /*
+>>>>>> +                * We failed loading, but abort was never done so we
+>>>>>> +                * need to remove it from the pending list ourselves.
+>>>>>> +                */
+>>>>>> +               mutex_lock(&fw_lock);
+>>>>>> +               list_del_init(&buf->pending_list);
+>>>>>> +               mutex_unlock(&fw_lock);
+>>>> The buf is always removed before the complete_all(), isn't it? Or did
+>>>> you observe the issue?
 >>>
->>> In some architectures like arm/arm64, set_memory_*() check module address
->>> and state as well. Mark module state before set RO and NX regions for
->>> the routine is passed.
->>>
->>> It will fix wrong RO/NX protection for loadable kernel modules on
->>> arm/arm64.
+>>> Not in the case where userspacehelper fails. Yes, this is not a theoretical
+>>> thing and can be easily reproduced.
 >>
+>> OK, I am just curious how it is triggered.
 >>
->> This partially reverts commit 4982223e51e8ea9d09bb33c8323b5ec1877b2b51
->> Author: Rusty Russell <rusty@rustcorp.com.au>
->> Date:   Wed May 14 10:54:19 2014 +0930
+>> One situation I thought of is that the request context is interrupted
+>> by signal after wait_for_completion() becomes interruptable, and the
+>> fix should abort the request if retval is -ERESTARTSYS.
 >>
->>      module: set nx before marking module MODULE_STATE_COMING.
->>
->> Laura Abbott (CC'd) was looking at an alternative fix for this.  Laura?
->>
->> Thanks,
->> Rusty.
->>
+>> Or could you share how to reproduce if it isn't above case?
 >
-> Yes, my proposal was to stop using is_module_address and just bounds
-> check against the module ranges[1]. I got bogged down with other
-> tasks and hadn't submitted a patch for review yet.
->
-I got it. I'll prepare bounds check patch for aarch32.
-Thanks,
+> It's pretty simple, just abort it once with Ctrl-C:
 
-> Thanks,
-> Laura
->
-> [1]
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-December/311574.html
->
->
-> --
-> Qualcomm Innovation Center, Inc.
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> a Linux Foundation Collaborative Project
+Looks it is just the case I said, :-)
+
+Then I suggest you to remove the buf from list in case of
+'retval == -ERESTARTSYS', and the return value should be
+changed to -EINTR.
+
+
+Thanks,
+Ming Lei
