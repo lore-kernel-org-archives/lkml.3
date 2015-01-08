@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756770AbbAHPIz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 10:08:55 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:49328 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753114AbbAHPIy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 10:08:54 -0500
-Date: Thu, 8 Jan 2015 16:08:50 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Mark Langsdorf <mlangsdo@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: Linux 3.19-rc3
-Message-ID: <20150108150850.GD5658@dhcp22.suse.cz>
-References: <CA+55aFwsxoyLb9OWMSCL3doe_cz_EQtKsEFCyPUYn_T87pbz0A@mail.gmail.com>
- <54AE7D53.2020305@redhat.com>
+	id S932212AbbAHPJI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 10:09:08 -0500
+Received: from mail.kernel.org ([198.145.29.136]:47235 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753114AbbAHPJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 10:09:05 -0500
+Date: Thu, 8 Jan 2015 12:09:01 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: "perf top -g" leaking ~300MB per second.
+Message-ID: <20150108150901.GE15396@kernel.org>
+References: <20141213084845.GA13453@x4>
+ <20141213090331.GB13453@x4>
+ <20141213152635.GG9845@kernel.org>
+ <548C828B.4040309@gmail.com>
+ <20141230053813.GD6081@sejong>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54AE7D53.2020305@redhat.com>
+In-Reply-To: <20141230053813.GD6081@sejong>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[CCing linux-mm and CMA people]
-[Full message here:
-http://article.gmane.org/gmane.linux.ports.arm.kernel/383669]
+Em Tue, Dec 30, 2014 at 02:38:13PM +0900, Namhyung Kim escreveu:
+> Subject: [PATCH] perf callchain: Free callchains when hist entries are deleted
+ 
+> Markus reported that "perf top -g" can leak ~300MB per second on his
+> machine.  This is partly because it missed to free callchains when
+> hist entries are deleted.  Fix it.
 
-On Thu 08-01-15 06:51:31, Mark Langsdorf wrote:
-[...]
-> [ 1053.968815] active_anon:207417 inactive_anon:25722 isolated_anon:0
-> [ 1053.968815]  active_file:1300 inactive_file:21234 isolated_file:0
-> [ 1053.968815]  unevictable:0 dirty:0 writeback:0 unstable:0
-> [ 1053.968815]  free:1014 slab_reclaimable:1047 slab_unreclaimable:1758
-> [ 1053.968815]  mapped:733 shmem:58 pagetables:267 bounce:0
-> [ 1053.968815]  free_cma:1
+Thanks, applied.
 
-Still a lot of pages (~80M) on the file LRU list which should be reclaimable
-because they are not dirty apparently.
-Anon pages can be reclaimed as well because the swap is basically
-unused.
-
-[...]
-> [ 1054.095277] DMA: 109*64kB (UR) 53*128kB (R) 8*256kB (R) 0*512kB 0*1024kB
-> 0*2048kB 1*4096kB (R) 0*8192kB 0*16384kB 1*32768kB (R) 0*65536kB = 52672kB
-> [ 1054.108621] Normal: 191*64kB (MR) 0*128kB 0*256kB 0*512kB 0*1024kB
-> 0*2048kB 0*4096kB 0*8192kB 0*16384kB 0*32768kB 0*65536kB = 12224kB
-[...]
-> [ 1054.142545] Free swap  = 6598400kB
-> [ 1054.145928] Total swap = 8388544kB
-> [ 1054.149317] 262112 pages RAM
-> [ 1054.152180] 0 pages HighMem/MovableOnly
-> [ 1054.155995] 18446744073709544361 pages reserved
-> [ 1054.160505] 8192 pages cma reserved
-
-Besides underflow in the reserved pages accounting mentioned in other
-email the free lists look strange as well. All free blocks with some memory
-are marked as reserved. I would suspect something CMA related.
-
--- 
-Michal Hocko
-SUSE Labs
+- Arnaldo
