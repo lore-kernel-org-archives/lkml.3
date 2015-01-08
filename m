@@ -1,134 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756272AbbAHKdk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 05:33:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36492 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754317AbbAHKd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 05:33:27 -0500
-From: Vlastimil Babka <vbabka@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Minchan Kim <minchan@kernel.org>, David Rientjes <rientjes@google.com>,
-        Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Michal Hocko <mhocko@suse.cz>
-Subject: [PATCH V5 4/4] mm: microoptimize zonelist operations
-Date: Thu,  8 Jan 2015 11:33:11 +0100
-Message-Id: <1420713191-17509-5-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1420713191-17509-1-git-send-email-vbabka@suse.cz>
-References: <1420713191-17509-1-git-send-email-vbabka@suse.cz>
+	id S1756211AbbAHKh0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 05:37:26 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:34437 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753018AbbAHKhY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 05:37:24 -0500
+Date: Thu, 8 Jan 2015 11:37:08 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Davidlohr Bueso <dave@stgolabs.net>
+Cc: Huang Ying <ying.huang@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, LKP ML <lkp@01.org>
+Subject: Re: [LKP] [mm] c8c06efa8b5: -7.6% unixbench.score
+Message-ID: <20150108103708.GE29390@twins.programming.kicks-ass.net>
+References: <1420684064.6201.86.camel@linux.intel.com>
+ <1420703154.12346.10.camel@stgolabs.net>
+ <1420703414.12346.12.camel@stgolabs.net>
+ <1420707599.12346.14.camel@stgolabs.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1420707599.12346.14.camel@stgolabs.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function next_zones_zonelist() returns zoneref pointer, as well as zone
-pointer via extra parameter. Since the latter can be trivially obtained by
-dereferencing the former, the overhead of the extra parameter is unjustified.
+On Thu, Jan 08, 2015 at 12:59:59AM -0800, Davidlohr Bueso wrote:
+> > > >     721721 ±  1%    +303.6%    2913110 ±  3%  unixbench.time.voluntary_context_switches
+> > > >      11767 ±  0%      -7.6%      10867 ±  1%  unixbench.score
 
-This patch thus removes the zone parameter from next_zones_zonelist(). Both
-callers happen to be in the same header file, so it's simple to add the
-zoneref dereference inline. We save some bytes of code size.
+> heh I was actually looking at the reader code. We really do:
+> 
+> 	/* wait until we successfully acquire the lock */
+> 	set_current_state(TASK_UNINTERRUPTIBLE);
+> 	while (true) {
+> 		if (rwsem_try_write_lock(count, sem))
+> 			break;
+> 		raw_spin_unlock_irq(&sem->wait_lock);
+> 
+> 		/* Block until there are no active lockers. */
+> 		do {
+> 			schedule();
+> 			set_current_state(TASK_UNINTERRUPTIBLE);
+> 		} while ((count = sem->count) & RWSEM_ACTIVE_MASK);
+> 
+> 		raw_spin_lock_irq(&sem->wait_lock);
+> 	}
+> 
+> 
+> Which still has similar issues with even two barriers, I guess for both
+> the rwsem_try_write_lock call (less severe) and count checks. Anyway...
 
-add/remove: 0/0 grow/shrink: 0/3 up/down: 0/-105 (-105)
-function                                     old     new   delta
-nr_free_zone_pages                           129     115     -14
-__alloc_pages_nodemask                      2300    2285     -15
-get_page_from_freelist                      2652    2576     -76
+So its actually scheduling a lot more, this could also mean the opt
+spinning thing isn't working as well (I've no real idea what the
+workload is).
 
-add/remove: 0/0 grow/shrink: 1/0 up/down: 10/0 (10)
-function                                     old     new   delta
-try_to_compact_pages                         569     579     +10
-
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Michal Hocko <mhocko@suse.cz>
----
- include/linux/mmzone.h | 13 +++++++------
- mm/mmzone.c            |  4 +---
- 2 files changed, 8 insertions(+), 9 deletions(-)
-
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index b418297..f279d9c 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -970,7 +970,6 @@ static inline int zonelist_node_idx(struct zoneref *zoneref)
-  * @z - The cursor used as a starting point for the search
-  * @highest_zoneidx - The zone index of the highest zone to return
-  * @nodes - An optional nodemask to filter the zonelist with
-- * @zone - The first suitable zone found is returned via this parameter
-  *
-  * This function returns the next zone at or below a given zone index that is
-  * within the allowed nodemask using a cursor as the starting point for the
-@@ -980,8 +979,7 @@ static inline int zonelist_node_idx(struct zoneref *zoneref)
-  */
- struct zoneref *next_zones_zonelist(struct zoneref *z,
- 					enum zone_type highest_zoneidx,
--					nodemask_t *nodes,
--					struct zone **zone);
-+					nodemask_t *nodes);
- 
- /**
-  * first_zones_zonelist - Returns the first zone at or below highest_zoneidx within the allowed nodemask in a zonelist
-@@ -1000,8 +998,10 @@ static inline struct zoneref *first_zones_zonelist(struct zonelist *zonelist,
- 					nodemask_t *nodes,
- 					struct zone **zone)
- {
--	return next_zones_zonelist(zonelist->_zonerefs, highest_zoneidx, nodes,
--								zone);
-+	struct zoneref *z = next_zones_zonelist(zonelist->_zonerefs,
-+							highest_zoneidx, nodes);
-+	*zone = zonelist_zone(z);
-+	return z;
- }
- 
- /**
-@@ -1018,7 +1018,8 @@ static inline struct zoneref *first_zones_zonelist(struct zonelist *zonelist,
- #define for_each_zone_zonelist_nodemask(zone, z, zlist, highidx, nodemask) \
- 	for (z = first_zones_zonelist(zlist, highidx, nodemask, &zone);	\
- 		zone;							\
--		z = next_zones_zonelist(++z, highidx, nodemask, &zone))	\
-+		z = next_zones_zonelist(++z, highidx, nodemask),	\
-+			zone = zonelist_zone(z))			\
- 
- /**
-  * for_each_zone_zonelist - helper macro to iterate over valid zones in a zonelist at or below a given zone index
-diff --git a/mm/mmzone.c b/mm/mmzone.c
-index bf34fb8..7d87ebb 100644
---- a/mm/mmzone.c
-+++ b/mm/mmzone.c
-@@ -54,8 +54,7 @@ static inline int zref_in_nodemask(struct zoneref *zref, nodemask_t *nodes)
- /* Returns the next zone at or below highest_zoneidx in a zonelist */
- struct zoneref *next_zones_zonelist(struct zoneref *z,
- 					enum zone_type highest_zoneidx,
--					nodemask_t *nodes,
--					struct zone **zone)
-+					nodemask_t *nodes)
- {
- 	/*
- 	 * Find the next suitable zone to use for the allocation.
-@@ -69,7 +68,6 @@ struct zoneref *next_zones_zonelist(struct zoneref *z,
- 				(z->zone && !zref_in_nodemask(z, nodes)))
- 			z++;
- 
--	*zone = zonelist_zone(z);
- 	return z;
- }
- 
--- 
-2.1.2
-
+One thing I noticed is that we set sem->owner very late in comparison
+with the mutex code, this could cause us to break out of the spin loop
+prematurely.
