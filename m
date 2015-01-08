@@ -1,38 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797AbbAHDgT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 22:36:19 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:51228 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640AbbAHDgQ (ORCPT
+	id S1752819AbbAHD4G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 22:56:06 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:45526 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082AbbAHD4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 22:36:16 -0500
-Date: Wed, 7 Jan 2015 21:36:13 -0600
-From: Andy Gross <agross@codeaurora.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: dmaengine@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Archit Taneja <architt@codeaurora.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Patch v2 1/2] dmaengine: Add ADM driver
-Message-ID: <20150108033613.GA2641@qualcomm.com>
-References: <1420687572-7116-1-git-send-email-agross@codeaurora.org>
- <1420687572-7116-2-git-send-email-agross@codeaurora.org>
+	Wed, 7 Jan 2015 22:56:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420687572-7116-2-git-send-email-agross@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+Date: Wed, 7 Jan 2015 19:55:42 -0800
+Message-ID: <CAADnVQ+wys8mD+QoMVsWAWWryfZBgxct_XFZM44Xoz_1dPUAuA@mail.gmail.com>
+Subject: Re: scsi: non atomic allocation in mempool_alloc in atomic context
+To: Christoph Hellwig <hch@lst.de>
+Cc: Jens Axboe <axboe@kernel.dk>, Sasha Levin <sasha.levin@oracle.com>,
+        bvanassche@acm.org, hare@suse.de, JBottomley@parallels.com,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 09:26:11PM -0600, Andy Gross wrote:
+On Mon, Jan 5, 2015 at 11:42 AM, Christoph Hellwig <hch@lst.de> wrote:
+> On Mon, Jan 05, 2015 at 12:38:04PM -0700, Jens Axboe wrote:
+>> That was true in earlier kernels as well, going back a few versions at
+>> least, preempt was disabled on calling __blk_mq_run_hw_queue(). Just
+>> checked, and 3.16 and later have that as the behaviour. The only change
+>> in 3.19 some shuffling around to avoid double preempt_disable in some
+>> cases, it's now using get_cpu() and friends.
+>>
+>> So we probably want do mark that as stable so we reach back to when
+>> scsi-mq was added, unless the originally referenced patch getting rid of
+>> the gfp_t mask didn't have the issue.
+>
+> Before that commit we always passed down GFP_ATOMIC, so we'll only
+> need the patch for 3.19.
 
-I somehow managed to lose my commit message.  I'll fix that in the next set.
-The rest of the patch is fine.
+I'm seeing the same splats... what tree I can pull the fix from ?
 
-> Signed-off-by: Andy Gross <agross@codeaurora.org>
-
-<snip>
+Thanks!
