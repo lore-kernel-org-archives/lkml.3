@@ -1,154 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720AbbAHNLT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 08:11:19 -0500
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:47732 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755470AbbAHNLR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 08:11:17 -0500
-X-Sasl-enc: qqK4B+bTUtcnk4lE2omCz5zs8l2xQJM6H4WBYweegg8F 1420722676
-Message-ID: <1420722674.810.25.camel@stressinduktion.org>
-Subject: Re: [PATCH net] ipv6: Prevent ipv6_find_hdr() from returning ENOENT
- for valid non-first fragments
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Rahul Sharma <rsharma@arista.com>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
-Date: Thu, 08 Jan 2015 14:11:14 +0100
-In-Reply-To: <CAFB3abz_-AbJsrBtwRX5t=TCCfzYsw82WDYH=A7jzA2N8UbAng@mail.gmail.com>
-References: <CAFB3abzYNYqtzd_n+Ym0Lo=DYbV0HPU=Tqw=stALNnu188hMKQ@mail.gmail.com>
-	 <20150106224706.GA7416@salvia>
-	 <CAFB3abwKpR1VqZXUrsexqveAZrA2LTSmTe8a=-H7z2HjAptjwA@mail.gmail.com>
-	 <1420627396.26870.36.camel@stressinduktion.org>
-	 <CAFB3abz_-AbJsrBtwRX5t=TCCfzYsw82WDYH=A7jzA2N8UbAng@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9 (3.12.9-1.fc21) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932425AbbAHNbx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 08:31:53 -0500
+Received: from mail.kapsi.fi ([217.30.184.167]:33550 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754699AbbAHN2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 08:28:05 -0500
+From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+To: swarren@wwwdotorg.org, thierry.reding@gmail.com, gnurou@gmail.com,
+        pdeschrijver@nvidia.com, rjw@rjwysocki.net, viresh.kumar@linaro.org
+Cc: mturquette@linaro.org, pwalmsley@nvidia.com, vinceh@nvidia.com,
+        pgaikwad@nvidia.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, tuomas.tynkkynen@iki.fi,
+        Mikko Perttunen <mikko.perttunen@kapsi.fi>
+Subject: [PATCH v7 00/16] Tegra124 CL-DVFS / DFLL clocksource + cpufreq
+Date: Thu,  8 Jan 2015 15:22:03 +0200
+Message-Id: <1420723339-30735-1-git-send-email-mikko.perttunen@kapsi.fi>
+X-Mailer: git-send-email 2.2.1
+X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
+X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Do, 2015-01-08 at 02:18 +0530, Rahul Sharma wrote:
-> Hi Hannes,
-> 
-> On Wed, Jan 7, 2015 at 4:13 PM, Hannes Frederic Sowa
-> <hannes@stressinduktion.org> wrote:
-> > Hi,
-> >
-> > On Mi, 2015-01-07 at 11:11 +0530, Rahul Sharma wrote:
-> >> On Wed, Jan 7, 2015 at 4:17 AM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
-> >> > On Wed, Jan 07, 2015 at 03:03:20AM +0530, Rahul Sharma wrote:
-> >> >> ipv6_find_hdr() currently assumes that the next-header field in the
-> >> >> fragment header of the non-first fragment is the "protocol number of
-> >> >> the last header" (here last header excludes any extension header
-> >> >> protocol numbers ) which is incorrect as per RFC2460. The next-header
-> >> >> value is the first header of the fragmentable part of the original
-> >> >> packet (which can be extension header as well).
-> >> >> This can create reassembly problems. For example: Fragmented
-> >> >> authenticated OSPFv3 packets (where AH header is inserted before the
-> >> >> protocol header). For the second fragment, the next header value in
-> >> >> the fragment header will be NEXTHDR_AUTH which is correct but
-> >> >> ipv6_find_hdr will return ENOENT since AH is an extension header
-> >> >> resulting in second fragment getting dropped. This check for the
-> >> >> presence of non-extension header needs to be removed.
-> >> >>
-> >> >> Signed-off-by: Rahul Sharma <rsharma@arista.com>
-> >> >> ---
-> >> >> --- linux-3.18.1/net/ipv6/exthdrs_core.c.orig   2015-01-06
-> >> >> 10:25:36.411419863 -0800
-> >> >> +++ linux-3.18.1/net/ipv6/exthdrs_core.c        2015-01-06
-> >> >> 10:51:45.819364986 -0800
-> >> >> @@ -171,10 +171,11 @@ EXPORT_SYMBOL_GPL(ipv6_find_tlv);
-> >> >>   * If the first fragment doesn't contain the final protocol header or
-> >> >>   * NEXTHDR_NONE it is considered invalid.
-> >> >>   *
-> >> >> - * Note that non-1st fragment is special case that "the protocol number
-> >> >> - * of last header" is "next header" field in Fragment header. In this case,
-> >> >> - * *offset is meaningless and fragment offset is stored in *fragoff if fragoff
-> >> >> - * isn't NULL.
-> >> >> + * Note that non-1st fragment is special case that "the protocol number of the
-> >> >> + * first header of the fragmentable part of the original packet" is
-> >> >> + * "next header" field in the Fragment header. In this case, *offset is
-> >> >> + * meaningless and fragment offset is stored in *fragoff if fragoff isn't
-> >> >> + * NULL.
-> >> >>   *
-> >> >>   * if flags is not NULL and it's a fragment, then the frag flag
-> >> >>   * IP6_FH_F_FRAG will be set. If it's an AH header, the
-> >> >> @@ -250,9 +251,7 @@ int ipv6_find_hdr(const struct sk_buff *
-> >> >>
-> >> >>                         _frag_off = ntohs(*fp) & ~0x7;
-> >> >>                         if (_frag_off) {
-> >> >> -                               if (target < 0 &&
-> >> >> -                                   ((!ipv6_ext_hdr(hp->nexthdr)) ||
-> >> >
-> >> > This check assumes that the following headers cannot show up in the
-> >> > fragmented part of the IPv6 packet:
-> >> >
-> >> >  12 bool ipv6_ext_hdr(u8 nexthdr)
-> >> >  13 {
-> >> >  14         /*
-> >> >  15          * find out if nexthdr is an extension header or a protocol
-> >> >  16          */
-> >> >  17         return   (nexthdr == NEXTHDR_HOP)       ||
-> >> >  18                  (nexthdr == NEXTHDR_ROUTING)   ||
-> >> >  19                  (nexthdr == NEXTHDR_FRAGMENT)  ||
-> >> >  20                  (nexthdr == NEXTHDR_AUTH)      ||
-> >> >  21                  (nexthdr == NEXTHDR_NONE)      ||
-> >> >  22                  (nexthdr == NEXTHDR_DEST);
-> >> >
-> >> >> -                                    hp->nexthdr == NEXTHDR_NONE)) {
-> >> >> +                               if (target < 0) {
-> >> >>                                         if (fragoff)
-> >> >>                                                 *fragoff = _frag_off;
-> >> >>                                         return hp->nexthdr;
-> >> >> --
-> >> >> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> >> >> the body of a message to majordomo@vger.kernel.org
-> >> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >>
-> >> I think this is incorrect. Authentication header shows up in the
-> >> fragmentable part of the original IPv6 packet. So, for the non-first
-> >> fragments the next-header field value can be NEXTHDR_AUTH.
-> >
-> > Pablo's mail got me thinking again.
-> >
-> > In general, IPv6 extension headers can appear in any order and stacks
-> > must be process them. Fragmentation adds a limitation, that some
-> > extension headers do not make sense and don't have any effect if they
-> > appear after a fragmentation header (HbH and ROUTING).
-> >
-> > Looking at the rest of the function we don't check for HBHHDR or RTHDR
-> > following a fragmentation header either if we process the first fragment
-> > (core stack only processes HBH if directly following the ipv6 header
-> > anyway).
-> >
-> > So, in my opinion, it is safe to completely remove this check and it
-> > would align if the rest of the extension processing logic. The callers
-> > all seem fine with that.
-> >
-> > Pablo, what do you think?
-> >
-> > Anyway, the patch does not apply cleanly, the patch header is mangled.
-> > Could you check and send again?
-> >
-> > Thanks,
-> > Hannes
-> >
-> >
-> I am not sure if replying on the thread with a patch is a good idea
-> (or should I send a new email). Anyway, let me know if this is works.
-> 
+Hi again! This is v7 of the Tegra124 cpufreq series. Only change since
+v6 is that it's rebased on top of -next and format-patch was called with
+-C and -M.
 
-The patch was identified correctly but the commit message now is
-scrambled, see:
+The series is available in a git repository at
+  git://github.com/cyndis/linux.git cldvfs-v7
 
-http://patchwork.ozlabs.org/patch/426404/
+Tested by me on Jetson-TK1 (rev. D).
 
-Maybe just resend it as "[PATCH net v2]"?
+Original cover letter:
+
+This series implements the DFLL/CL-DVFS clock source for the fast CPU
+cluster on Tegra124, and a cpufreq driver that uses the DFLL for
+clocking the CPU. Most of this is based on Paul Walmsley's public patch
+set from December 2013, which is available at
+http://comments.gmane.org/gmane.linux.ports.tegra/15273
+
+The DFLL clock hardware is a voltage-controlled oscillator plus
+control logic that compares the generated output clock with a
+51 MHz reference clock, and can make decisions to either lower
+or raise the DFLL voltage to keep the output rate close to the
+software-requested rate. The voltage changes are done by
+communicating with an off-chip PMIC via either I2C or PWM.
+As the DFLL oscillator is powered via the CPU rail, using
+the DFLL as the CPU clocksource also gives us dynamic CPU
+voltage scaling.
+
+This series has been tested on the Jetson TK1 (Rev C). Porting this to
+the Venice2 should be simple, though do note that it does not have
+active cooling.
 
 Thanks,
-Hannes
+Tuomas
 
+Mikko Perttunen (1):
+  ARM: tegra: Add CPU regulator to the Jetson TK1 device tree
+
+Paul Walmsley (1):
+  clk: tegra: Add DFLL DVCO reset control for Tegra124
+
+Tuomas Tynkkynen (14):
+  clk: tegra: Add binding for the Tegra124 DFLL clocksource
+  clk: tegra: Add library for the DFLL clock source (open-loop mode)
+  clk: tegra: Add closed loop support for the DFLL
+  clk: tegra: Add functions for parsing CVB tables
+  clk: tegra: Add Tegra124 DFLL clocksource platform driver
+  clk: tegra: Save/restore CCLKG_BURST_POLICY on suspend
+  clk: tegra: Add the DFLL as a possible parent of the cclk_g clock
+  ARM: tegra: Add the DFLL to Tegra124 device tree
+  ARM: tegra: Enable the DFLL on the Jetson TK1
+  cpufreq: tegra124: Add device tree bindings
+  cpufreq: tegra: Rename tegra-cpufreq to tegra20-cpufreq
+  cpufreq: Add cpufreq driver for Tegra124
+  ARM: tegra: Add entries for cpufreq on Tegra124
+  ARM: tegra: enable Tegra124 cpufreq driver by default
+
+ .../bindings/clock/nvidia,tegra124-dfll.txt        |   69 +
+ .../bindings/cpufreq/tegra124-cpufreq.txt          |   44 +
+ arch/arm/boot/dts/tegra124-jetson-tk1.dts          |   14 +-
+ arch/arm/boot/dts/tegra124.dtsi                    |   31 +
+ arch/arm/configs/tegra_defconfig                   |    1 +
+ arch/arm/mach-tegra/Kconfig                        |    1 +
+ drivers/clk/tegra/Makefile                         |    3 +
+ drivers/clk/tegra/clk-dfll.c                       | 1750 ++++++++++++++++++++
+ drivers/clk/tegra/clk-dfll.h                       |   55 +
+ drivers/clk/tegra/clk-tegra-super-gen4.c           |    4 +-
+ drivers/clk/tegra/clk-tegra124-dfll-fcpu.c         |  165 ++
+ drivers/clk/tegra/clk-tegra124.c                   |   61 +
+ drivers/clk/tegra/clk.h                            |    3 +
+ drivers/clk/tegra/cvb.c                            |  133 ++
+ drivers/clk/tegra/cvb.h                            |   67 +
+ drivers/cpufreq/Kconfig.arm                        |   13 +-
+ drivers/cpufreq/Makefile                           |    3 +-
+ drivers/cpufreq/tegra124-cpufreq.c                 |  217 +++
+ .../cpufreq/{tegra-cpufreq.c => tegra20-cpufreq.c} |    0
+ 19 files changed, 2628 insertions(+), 6 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/nvidia,tegra124-dfll.txt
+ create mode 100644 Documentation/devicetree/bindings/cpufreq/tegra124-cpufreq.txt
+ create mode 100644 drivers/clk/tegra/clk-dfll.c
+ create mode 100644 drivers/clk/tegra/clk-dfll.h
+ create mode 100644 drivers/clk/tegra/clk-tegra124-dfll-fcpu.c
+ create mode 100644 drivers/clk/tegra/cvb.c
+ create mode 100644 drivers/clk/tegra/cvb.h
+ create mode 100644 drivers/cpufreq/tegra124-cpufreq.c
+ rename drivers/cpufreq/{tegra-cpufreq.c => tegra20-cpufreq.c} (100%)
+
+-- 
+2.2.1
 
