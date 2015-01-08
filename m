@@ -1,218 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932498AbbAHSGa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 13:06:30 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:53140 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932066AbbAHSG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 13:06:28 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
-        Eduardo Valentin <edubezval@gmail.com>
-CC: <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>
-Subject: [PATCH V2] (gpio-fan): Add thermal control hooks
-Date: Thu, 8 Jan 2015 12:05:03 -0600
-Message-ID: <1420740303-12529-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S932436AbbAHSFR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 13:05:17 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:35363 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932365AbbAHSFP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 13:05:15 -0500
+Message-ID: <54AEC6D5.1050806@linaro.org>
+Date: Fri, 09 Jan 2015 02:05:09 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Feng Kan <fkan@apm.com>
+CC: patches <patches@apm.com>, linux-ide@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Mark Salter <msalter@redhat.com>, tj@kernel.org, hdegoede@redhat.com
+Subject: Re: [PATCH] sata: xgene: add ACPI support for APM X-Gene SATA ports
+References: <1418337070-17644-1-git-send-email-fkan@apm.com>	<CAL85gmAHLk9XCbr-1+USmOKxd5O7iCxWX0vqSRf74Brn2pzESg@mail.gmail.com>	<54AE36AF.3070603@linaro.org> <CAL85gmDbZgM48C5UFgOgLiQhDU6sCmF59O_oaN8thYoYP+DFRA@mail.gmail.com>
+In-Reply-To: <CAL85gmDbZgM48C5UFgOgLiQhDU6sCmF59O_oaN8thYoYP+DFRA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow gpio-fan to be used as thermal cooling device for platforms that
-use GPIO maps to control fans.
+On 2015年01月09日 01:56, Feng Kan wrote:
+> On Wed, Jan 7, 2015 at 11:50 PM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+>> Hi Feng Kan,
+>>
+>> I have some comments below.
+>>
+>>
+>> On 2015年01月08日 01:32, Feng Kan wrote:
+>>>
+>>> Just want to ping this again.
+>>>
+>>> Happy new year
+>>>
+>>> On Thu, Dec 11, 2014 at 2:31 PM, Feng Kan <fkan@apm.com> wrote:
+>>>>
+>>>> This adds ACPI support for the APM X-Gene SATA ports. When the system
+>>>> boots using ACPI table, the SATA ports are able to configure using the
+>>>> values supplied by the ACPI table rather than the DTS.
+>>>>
+>>>> Signed-off-by: Feng Kan <fkan@apm.com>
+>>>> ---
+>>>>    drivers/ata/ahci_xgene.c | 10 ++++++++++
+>>>>    1 file changed, 10 insertions(+)
+>>>>
+>>>> diff --git a/drivers/ata/ahci_xgene.c b/drivers/ata/ahci_xgene.c
+>>>> index d0c851a..4951392 100644
+>>>> --- a/drivers/ata/ahci_xgene.c
+>>>> +++ b/drivers/ata/ahci_xgene.c
+>>>> @@ -22,6 +22,7 @@
+>>>>     * NOTE: PM support is not currently available.
+>>>>     *
+>>>>     */
+>>>> +#include <linux/acpi.h>
+>>>>    #include <linux/module.h>
+>>>>    #include <linux/platform_device.h>
+>>>>    #include <linux/ahci_platform.h>
+>>>> @@ -521,6 +522,14 @@ disable_resources:
+>>>>           return rc;
+>>>>    }
+>>>>
+>>>> +#ifdef CONFIG_ACPI
+>>>> +static const struct acpi_device_id xgene_ahci_acpi_match[] = {
+>>>> +       { "APMC0D0D", },
+>>
+>>
+>> When I was going through the PNP and ACPI ID list in
+>> http://www.uefi.org/PNP_ACPI_Registry, I found that
+>> there is no "APMC" for ACPI ID, I only found that there is
+>> a PNP ID "APM" for Applied Memory Tech company, are
+>> you using PNP ID for this one?
+>>
+>> if not, I think you can send a request to UEFI and
+>> request a new ACPI ID of "APMC" for Applied Micro, and then
+>> submit the patch again.
+>>
+>> How to send a request to register the ACPI ID, you can
+>> refer to:
+>> http://www.uefi.org/PNP_ACPI_Registry
+>
+> Hanjun, the documents are bit out of sync. We have received approval and
+> it is present in the document link below. I can also forward the approval letter
+> if it needed.
+>
+> http://download.microsoft.com/download/7/E/7/7E7662CF-CBEA-470B-A97E-CE7CE0D98DC2/ISA%20PNPID%20List.xlsx
 
-As part of this change, we make the shutdown and remove logic the same
-as well.
+Sorry for missing this link, I think I should report this
+inconsistency to ACPI spec working group and then update it
+accordingly.
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
-
-Changes since v1:
-	- review comments incorporated (hopefully correct)
-	- checkpatch verified
-	- retested :).
-
-V1: https://patchwork.kernel.org/patch/5587061/
-
- .../devicetree/bindings/gpio/gpio-fan.txt          |   13 +++
- drivers/hwmon/gpio-fan.c                           |   83 ++++++++++++++++++--
- 2 files changed, 89 insertions(+), 7 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/gpio/gpio-fan.txt b/Documentation/devicetree/bindings/gpio/gpio-fan.txt
-index 2dd457a3469a..43ca2a45b862 100644
---- a/Documentation/devicetree/bindings/gpio/gpio-fan.txt
-+++ b/Documentation/devicetree/bindings/gpio/gpio-fan.txt
-@@ -11,6 +11,9 @@ Required properties:
- Optional properties:
- - alarm-gpios: This pin going active indicates something is wrong with
-   the fan, and a udev event will be fired.
-+- cooling-cells: If used as a cooling device, must be <2>
-+  Also see: Documentation/devicetree/bindings/thermal/thermal.txt
-+  min and max states are derived from the speed-map of the fan.
- 
- Examples:
- 
-@@ -23,3 +26,13 @@ Examples:
- 				      6000 2>;
- 		alarm-gpios = <&gpio1 15 1>;
- 	};
-+	gpio_fan_cool: gpio_fan {
-+		compatible = "gpio-fan";
-+		gpios = <&gpio2 14 1
-+			 &gpio2 13 1>;
-+		gpio-fan,speed-map =	<0    0>,
-+					<3000 1>,
-+					<6000 2>;
-+		alarm-gpios = <&gpio2 15 1>;
-+		#cooling-cells = <2>; /* min followed by max */
-+	};
-diff --git a/drivers/hwmon/gpio-fan.c b/drivers/hwmon/gpio-fan.c
-index 36abf814b8c7..20232c11b579 100644
---- a/drivers/hwmon/gpio-fan.c
-+++ b/drivers/hwmon/gpio-fan.c
-@@ -34,10 +34,13 @@
- #include <linux/of.h>
- #include <linux/of_platform.h>
- #include <linux/of_gpio.h>
-+#include <linux/thermal.h>
- 
- struct gpio_fan_data {
- 	struct platform_device	*pdev;
- 	struct device		*hwmon_dev;
-+	/* Cooling device if any */
-+	struct thermal_cooling_device *cdev;
- 	struct mutex		lock; /* lock GPIOs operations. */
- 	int			num_ctrl;
- 	unsigned		*ctrl;
-@@ -387,6 +390,53 @@ static int fan_ctrl_init(struct gpio_fan_data *fan_data,
- 	return 0;
- }
- 
-+static int gpio_fan_get_max_state(struct thermal_cooling_device *cdev,
-+				  unsigned long *state)
-+{
-+	struct gpio_fan_data *fan_data = cdev->devdata;
-+
-+	if (!fan_data)
-+		return -EINVAL;
-+
-+	*state = fan_data->num_speed - 1;
-+	return 0;
-+}
-+
-+static int gpio_fan_get_cur_state(struct thermal_cooling_device *cdev,
-+				  unsigned long *state)
-+{
-+	struct gpio_fan_data *fan_data = cdev->devdata;
-+	int r;
-+
-+	if (!fan_data)
-+		return -EINVAL;
-+
-+	r = get_fan_speed_index(fan_data);
-+	if (r < 0)
-+		return r;
-+
-+	*state = r;
-+	return 0;
-+}
-+
-+static int gpio_fan_set_cur_state(struct thermal_cooling_device *cdev,
-+				  unsigned long state)
-+{
-+	struct gpio_fan_data *fan_data = cdev->devdata;
-+
-+	if (!fan_data)
-+		return -EINVAL;
-+
-+	set_fan_speed(fan_data, state);
-+	return 0;
-+}
-+
-+static const struct thermal_cooling_device_ops gpio_fan_cool_ops = {
-+	.get_max_state = gpio_fan_get_max_state,
-+	.get_cur_state = gpio_fan_get_cur_state,
-+	.set_cur_state = gpio_fan_set_cur_state,
-+};
-+
- #ifdef CONFIG_OF_GPIO
- /*
-  * Translate OpenFirmware node properties into platform_data
-@@ -495,6 +545,11 @@ static int gpio_fan_probe(struct platform_device *pdev)
- 	struct gpio_fan_data *fan_data;
- 	struct gpio_fan_platform_data *pdata = dev_get_platdata(&pdev->dev);
- 
-+	fan_data = devm_kzalloc(&pdev->dev, sizeof(struct gpio_fan_data),
-+				GFP_KERNEL);
-+	if (!fan_data)
-+		return -ENOMEM;
-+
- #ifdef CONFIG_OF_GPIO
- 	if (!pdata) {
- 		pdata = devm_kzalloc(&pdev->dev,
-@@ -506,17 +561,20 @@ static int gpio_fan_probe(struct platform_device *pdev)
- 		err = gpio_fan_get_of_pdata(&pdev->dev, pdata);
- 		if (err)
- 			return err;
-+		/* Optional cooling device register for Device tree platforms */
-+		fan_data->cdev =
-+			thermal_of_cooling_device_register(pdev->dev.of_node,
-+							   "gpio-fan", fan_data,
-+							   &gpio_fan_cool_ops);
- 	}
- #else /* CONFIG_OF_GPIO */
- 	if (!pdata)
- 		return -EINVAL;
-+	/* Optional cooling device register for non Device tree platforms */
-+	fan_data->cdev = thermal_cooling_device_register("gpio-fan", fan_data,
-+							 &gpio_fan_cool_ops);
- #endif /* CONFIG_OF_GPIO */
- 
--	fan_data = devm_kzalloc(&pdev->dev, sizeof(struct gpio_fan_data),
--				GFP_KERNEL);
--	if (!fan_data)
--		return -ENOMEM;
--
- 	fan_data->pdev = pdev;
- 	platform_set_drvdata(pdev, fan_data);
- 	mutex_init(&fan_data->lock);
-@@ -550,12 +608,22 @@ static int gpio_fan_probe(struct platform_device *pdev)
- 	return 0;
- }
- 
--static void gpio_fan_shutdown(struct platform_device *pdev)
-+static int gpio_fan_remove(struct platform_device *pdev)
- {
--	struct gpio_fan_data *fan_data = dev_get_drvdata(&pdev->dev);
-+	struct gpio_fan_data *fan_data = platform_get_drvdata(pdev);
-+
-+	if (!IS_ERR(fan_data->cdev))
-+		thermal_cooling_device_unregister(fan_data->cdev);
- 
- 	if (fan_data->ctrl)
- 		set_fan_speed(fan_data, 0);
-+
-+	return 0;
-+}
-+
-+static void gpio_fan_shutdown(struct platform_device *pdev)
-+{
-+	gpio_fan_remove(pdev);
- }
- 
- #ifdef CONFIG_PM_SLEEP
-@@ -589,6 +657,7 @@ static SIMPLE_DEV_PM_OPS(gpio_fan_pm, gpio_fan_suspend, gpio_fan_resume);
- 
- static struct platform_driver gpio_fan_driver = {
- 	.probe		= gpio_fan_probe,
-+	.remove		= gpio_fan_remove,
- 	.shutdown	= gpio_fan_shutdown,
- 	.driver	= {
- 		.name	= "gpio-fan",
--- 
-1.7.9.5
-
+Thanks
+Hanjun
