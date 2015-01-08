@@ -1,114 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755687AbbAGX6q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 18:58:46 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:40543 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751328AbbAGX6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 18:58:44 -0500
-Date: Wed, 7 Jan 2015 17:58:16 -0600
-From: Nishanth Menon <nm@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <balbi@ti.com>
-Subject: Re: [PATCH V2] ARM: dts: am57xx-beagle-x15: Add GPIO controlled fan
- node
-Message-ID: <20150107235815.GA17239@kahuna>
-References: <1417800739-13146-1-git-send-email-nm@ti.com>
- <1417801732-24620-1-git-send-email-nm@ti.com>
- <20150107234442.GI13010@atomide.com>
+	id S1755522AbbAHAFi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 19:05:38 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:22542 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755165AbbAHAFg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 19:05:36 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+tsiS1n7FjgbnC+9czdBUq
+Date: Wed, 7 Jan 2015 16:01:43 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        Paul Walmsley <paul@pwsan.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        OMAP <linux-omap@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/5] ARM: AM43xx: hwmod: add VPFE hwmod entries
+Message-ID: <20150108000143.GL13010@atomide.com>
+References: <1418919854-16164-1-git-send-email-prabhakar.csengg@gmail.com>
+ <1418919854-16164-2-git-send-email-prabhakar.csengg@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150107234442.GI13010@atomide.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1418919854-16164-2-git-send-email-prabhakar.csengg@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15:44-20150107, Tony Lindgren wrote:
-> * Nishanth Menon <nm@ti.com> [141205 09:51]:
-> > TPS gpio now controls a 5v 500mA TL5209 regulator which may be supply
-> > a fan (such as AFB02505HHB) over J1 connector for various purposes.
-> > Provide device tree node to enable the same.
-> > 
-> > Signed-off-by: Nishanth Menon <nm@ti.com>
+* Lad, Prabhakar <prabhakar.csengg@gmail.com> [141218 08:27]:
+> From: Benoit Parrot <bparrot@ti.com>
 > 
-> Applying into omap-for-v3.20/dt thanks.
+> this patch adds VPFE HWMOD data for AM43xx.
 > 
-> Tony
-Could you pick up the very latest rev:
-https://patchwork.kernel.org/patch/5569521/ ?
+> Signed-off-by: Benoit Parrot <bparrot@ti.com>
+> Signed-off-by: Darren Etheridge <detheridge@ti.com>
+> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
+Paul probably wants to queue this, I'll pick the dts
+changes.
 
-> 
-> > ---
-> > 
-> > V2: review comment updates
-> > 	review comments update
-> > 		- Sanitized outlook-ified name back to normal ;) 
-> > 		- removed unnecessary pinctrl-names property.
-> > V1: https://patchwork.kernel.org/patch/5444911/
-> > 
-> > 
-> > Depends on the following:
-> > https://patchwork.kernel.org/patch/5439201/
-> > https://patchwork.kernel.org/patch/5439191/
-> > 
-> > enable and disable can be controlled by (post the RPM, it finds
-> > closest match - even a 1 will do)
-> > 
-> > echo '13000' > /sys/class/hwmon/hwmon0/fan1_target
-> > and
-> > echo '0' > /sys/class/hwmon/hwmon0/fan1_target
-> > 
-> > Test log: http://slexy.org/view/s2T0ajh46z
-> > 
-> > requires CONFIG_GPIO_PALMAS and CONFIG_SENSORS_GPIO_FAN to be operational
-> > Applies on 
-> > https://git.kernel.org/cgit/linux/kernel/git/tmlind/linux-omap.git/log/?h=omap-for-v3.19/dt-v2
-> > 
-> >  arch/arm/boot/dts/am57xx-beagle-x15.dts |   14 ++++++++++++++
-> >  1 file changed, 14 insertions(+)
-> > 
-> > diff --git a/arch/arm/boot/dts/am57xx-beagle-x15.dts b/arch/arm/boot/dts/am57xx-beagle-x15.dts
-> > index 49edbda..4e55e94 100644
-> > --- a/arch/arm/boot/dts/am57xx-beagle-x15.dts
-> > +++ b/arch/arm/boot/dts/am57xx-beagle-x15.dts
-> > @@ -80,6 +80,14 @@
-> >  			default-state = "off";
-> >  		};
-> >  	};
-> > +
-> > +	gpio_fan {
-> > +		/* Based on 5v 500mA AFB02505HHB */
-> > +		compatible = "gpio-fan";
-> > +		gpios =  <&tps659038_gpio 1 GPIO_ACTIVE_HIGH>;
-> > +		gpio-fan,speed-map = <0    0
-> > +				      13000 1>;
-> > +	};
-> >  };
-> >  
-> >  &dra7_pmx_core {
-> > @@ -314,6 +322,12 @@
-> >  			wakeup-source;
-> >  			ti,palmas-long-press-seconds = <12>;
-> >  		};
-> > +
-> > +		tps659038_gpio: tps659038_gpio {
-> > +			compatible = "ti,palmas-gpio";
-> > +			gpio-controller;
-> > +			#gpio-cells = <2>;
-> > +		};
-> >  	};
-> >  
-> >  	tmp102: tmp102@48 {
-> > -- 
-> > 1.7.9.5
-> > 
-
--- 
 Regards,
-Nishanth Menon
+
+Tony
+
+> ---
+>  arch/arm/mach-omap2/omap_hwmod_43xx_data.c | 56 ++++++++++++++++++++++++++++++
+>  arch/arm/mach-omap2/prcm43xx.h             |  3 +-
+>  2 files changed, 58 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-omap2/omap_hwmod_43xx_data.c b/arch/arm/mach-omap2/omap_hwmod_43xx_data.c
+> index fea01aa..bd9067e 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod_43xx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_43xx_data.c
+> @@ -483,6 +483,44 @@ static struct omap_hwmod am43xx_dss_rfbi_hwmod = {
+>  	},
+>  };
+>  
+> +static struct omap_hwmod_class_sysconfig am43xx_vpfe_sysc = {
+> +	.rev_offs       = 0x0,
+> +	.sysc_offs      = 0x104,
+> +	.sysc_flags     = SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE,
+> +	.idlemodes      = (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
+> +				MSTANDBY_FORCE | MSTANDBY_SMART | MSTANDBY_NO),
+> +	.sysc_fields    = &omap_hwmod_sysc_type2,
+> +};
+> +
+> +static struct omap_hwmod_class am43xx_vpfe_hwmod_class = {
+> +	.name           = "vpfe",
+> +	.sysc           = &am43xx_vpfe_sysc,
+> +};
+> +
+> +static struct omap_hwmod am43xx_vpfe0_hwmod = {
+> +	.name           = "vpfe0",
+> +	.class          = &am43xx_vpfe_hwmod_class,
+> +	.clkdm_name     = "l3s_clkdm",
+> +	.prcm           = {
+> +		.omap4  = {
+> +			.modulemode     = MODULEMODE_SWCTRL,
+> +			.clkctrl_offs   = AM43XX_CM_PER_VPFE0_CLKCTRL_OFFSET,
+> +		},
+> +	},
+> +};
+> +
+> +static struct omap_hwmod am43xx_vpfe1_hwmod = {
+> +	.name           = "vpfe1",
+> +	.class          = &am43xx_vpfe_hwmod_class,
+> +	.clkdm_name     = "l3s_clkdm",
+> +	.prcm           = {
+> +		.omap4  = {
+> +			.modulemode     = MODULEMODE_SWCTRL,
+> +			.clkctrl_offs   = AM43XX_CM_PER_VPFE1_CLKCTRL_OFFSET,
+> +		},
+> +	},
+> +};
+> +
+>  /* Interfaces */
+>  static struct omap_hwmod_ocp_if am43xx_l3_main__l4_hs = {
+>  	.master		= &am33xx_l3_main_hwmod,
+> @@ -750,6 +788,22 @@ static struct omap_hwmod_ocp_if am43xx_l4_ls__dss_rfbi = {
+>  	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+>  };
+>  
+> +static struct omap_hwmod_ocp_if am43xx_l3__vpfe0 = {
+> +	.master         = &am33xx_l3_main_hwmod,
+> +	.slave          = &am43xx_vpfe0_hwmod,
+> +	.clk            = "l3_gclk",
+> +	.flags          = OCPIF_SWSUP_IDLE,
+> +	.user           = OCP_USER_MPU,
+> +};
+> +
+> +static struct omap_hwmod_ocp_if am43xx_l3__vpfe1 = {
+> +	.master         = &am33xx_l3_main_hwmod,
+> +	.slave          = &am43xx_vpfe1_hwmod,
+> +	.clk            = "l3_gclk",
+> +	.flags          = OCPIF_SWSUP_IDLE,
+> +	.user           = OCP_USER_MPU,
+> +};
+> +
+>  static struct omap_hwmod_ocp_if *am43xx_hwmod_ocp_ifs[] __initdata = {
+>  	&am33xx_l4_wkup__synctimer,
+>  	&am43xx_l4_ls__timer8,
+> @@ -848,6 +902,8 @@ static struct omap_hwmod_ocp_if *am43xx_hwmod_ocp_ifs[] __initdata = {
+>  	&am43xx_l4_ls__dss,
+>  	&am43xx_l4_ls__dss_dispc,
+>  	&am43xx_l4_ls__dss_rfbi,
+> +	&am43xx_l3__vpfe0,
+> +	&am43xx_l3__vpfe1,
+>  	NULL,
+>  };
+>  
+> diff --git a/arch/arm/mach-omap2/prcm43xx.h b/arch/arm/mach-omap2/prcm43xx.h
+> index ad7b3e9..8aa4c2c 100644
+> --- a/arch/arm/mach-omap2/prcm43xx.h
+> +++ b/arch/arm/mach-omap2/prcm43xx.h
+> @@ -143,5 +143,6 @@
+>  #define AM43XX_CM_PER_USB_OTG_SS1_CLKCTRL_OFFSET        0x0268
+>  #define AM43XX_CM_PER_USBPHYOCP2SCP1_CLKCTRL_OFFSET	0x05C0
+>  #define AM43XX_CM_PER_DSS_CLKCTRL_OFFSET		0x0a20
+> -
+> +#define AM43XX_CM_PER_VPFE0_CLKCTRL_OFFSET		0x0068
+> +#define AM43XX_CM_PER_VPFE1_CLKCTRL_OFFSET		0x0070
+>  #endif
+> -- 
+> 1.9.1
+> 
