@@ -1,125 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366AbbAHKI1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 05:08:27 -0500
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:5323 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752756AbbAHKIZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 05:08:25 -0500
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'chris@printf.net'" <chris@printf.net>,
-        "'ulf.hansson@linaro.org'" <ulf.hansson@linaro.org>,
-        "'tim.kryger@gmail.com'" <tim.kryger@gmail.com>,
-        "'tgih.jun@samsung.com'" <tgih.jun@samsung.com>,
-        "'johan.rudholm@axis.com'" <johan.rudholm@axis.com>,
-        "'linux-mmc@vger.kernel.org'" <linux-mmc@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Thu, 8 Jan 2015 18:08:21 +0800
-Subject: [RFC V2] mmc:change mmc_init workqueue into a freezable workqueue
-Thread-Topic: [RFC V2] mmc:change mmc_init workqueue into a freezable
- workqueue
-Thread-Index: AdArKscTl4nihDsKS+OgMy1GnhD4twAACQSw
-Message-ID: <35FD53F367049845BC99AC72306C23D103EDAF89E193@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103EDAF89E192@CNBJMBX05.corpusers.net>
-In-Reply-To: <35FD53F367049845BC99AC72306C23D103EDAF89E192@CNBJMBX05.corpusers.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754130AbbAHKMf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 05:12:35 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:50245 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391AbbAHKMa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 05:12:30 -0500
 MIME-Version: 1.0
+Date: Thu, 8 Jan 2015 15:42:29 +0530
+Message-ID: <CAACKNgW6S4fFvsczgMODb6NdH+r_H62VAHG+-3uWcK7RFHUUdw@mail.gmail.com>
+Subject: Question regarding Linux Bringup in ARMA9 platform
+From: Abhijit Ray Chaudhury <abhijit.ray.chaudhury@gmail.com>
+To: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm@lists.infradead.org
+Content-Type: multipart/mixed; boundary=001a11c13442192098050c2147bc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix the mmc driver suspend/resume conflict problems,
-mmc workqueue will queue mmc_rescan(), and it will call some
-pm_runtime_* functions, this will conflict with suspend path sometimes,
-and will result in some strange behavior:
+--001a11c13442192098050c2147bc
+Content-Type: text/plain; charset=UTF-8
 
-Suspend path:
-	-000 |context_switch(inline)
-	-000 |__schedule()
-	-001 |schedule_preempt_disabled()
-	-002 |spin_lock(inline)
-	-002 |__mutex_lock_common(inline)
-	-002 |__mutex_lock_slowpath(lock_count = 0xEDCD0F48)
-	-003 |__mutex_fastpath_lock(inline)
-	-003 |mutex_lock(lock = 0xEDCD0F48)
-	-004 |sdhci_do_set_ios(host = 0xEDCD0CC0, ios = 0xEDCD0A70)
-	-005 |sdhci_set_ios(?, ios = 0xEDCD0A70)
-	-006 |mmc_set_ios(host = 0xEDCD0800)
-	-007 |mmc_delay(inline)
-	-007 |mmc_power_off(host = 0xEDCD0800)
-	-008 |mmc_suspend_host(inline)
-	-008 |mmc_suspend_host(host = 0xEDCD0800)
-	-009 |mmc_host_suspend(dev = 0xEDCD0808)
-	-010 |dpm_run_callback(cb = 0xC0627A88, dev = 0xEDCD0808, state = (event = 2), info = 0xC0B6EF9B)
-	-011 |__device_suspend(dev = 0xEDCD0808, state = (event = 2), ?)
-	-012 |device_suspend(inline)
-	-012 |dpm_suspend(state = (event = 2))
-	-013 |suspend_devices_and_enter(state = 3)
-	-014 |enter_state(inline)
-	-014 |pm_suspend(state = 3)
-	-015 |try_to_suspend(?)
-	-016 |static_key_false(inline)
-	-016 |trace_workqueue_execute_end(inline)
-	-016 |process_one_work(worker = 0xD5E87040, work = 0xC0E3FF54)
-	-017 |worker_thread(__worker = 0xD5E87040)
-	-018 |kthread(_create = 0xE9FFBF10)
-	-019 |kernel_thread_exit(asm)
-	 --- |end of frame
+Hi ,
 
-mmc_rescan() resume path:
-	 -000 |context_switch(inline)
-	 -000 |__schedule()
-	 -001 |do_undefinstr(regs = 0xD12242F0)
-	 -002 |__und_svc(asm)
-	  --> |exception
-	  -003 |sdhci_set_power(host = 0xEDCD0CC0, power = 0)
-	  -004 |sdhci_do_set_ios(host = 0xEDCD0CC0, ios = 0xEDCD0A70)
-	  -005 |sdhci_set_ios(?, ios = 0xEDCD0A70)
-	  -006 |mmc_set_ios(host = 0xEDCD0800)
-	  -007 |mmc_delay(inline)
-	  -007 |mmc_power_up(host = 0xEDCD0800)
-	  -008 |mmc_resume_bus(inline)
-	  -008 |mmc_resume_bus(host = 0xEDCD0800)
-	  -009 |mmc_rpm_hold(host = 0xEDCD0800, ?)
-	  -010 |mmc_rescan(work = 0xEDCD0AB0)
-	  -011 |static_key_false(inline)
-	  -011 |trace_workqueue_execute_end(inline)
-	  -011 |process_one_work(worker = 0xE5F0BBC0, work = 0xEDCD0AB0)
-	  -012 |worker_thread(__worker = 0xE5F0BBC0)
-	  -013 |kthread(_create = 0xD03A5F10)
-	  -014 |kernel_thread_exit(asm)
-	   --- |end of frame
+I am trying to bringup linux in ARMA9 platform. I am getting following crash :
 
-most mmc power callback function don't check this special case, and
-will cause problems.
 
-Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
----
- drivers/mmc/core/core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Unhandled fault: alignment exception (0x001) at 0x88042001:
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index a6c139d..ae8757f 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -3881,7 +3881,7 @@ static int __init mmc_init(void)
- {
- 	int ret;
- 
--	workqueue = alloc_ordered_workqueue("kmmcd", 0);
-+	workqueue = alloc_ordered_workqueue("kmmcd", WQ_FREEZABLE);
- 	if (!workqueue)
- 		return -ENOMEM;
- 
--- 
-2.1.3
+ (link_path_walk+0xa4/0x86c)
+(path_lookupat+0x54/0x780)
+(do_path_lookup+0x1c/0x58)
+(user_path_at_empty+0x54/0x88)
+(user_path_at+0x10/0x14)
+(sys_chdir+0x18/0x64)
+(devtmpfsd+0x60/0x2b4)
+(kthread+0x80/0x90)
 
+when kthread tries to mount tempfs and does sys_chdir kernel copies
+the path ("/..") at a kernel buffer starting at 0x88042000. It the
+skips the "/" character. In "
+load_unaligned_zeropad" function it tries to access the content of
+0x88042001 using "ldr" or 32bit access instruction. That causes
+alignment exception and kernel simply panics.
+
+At this stage is it expected that ARM does not generate alignment
+fault ? I can see a fixup code is written inside
+load_unaligned_zeropad function, but fixup is not applicable, as this
+is not page fault exception.
+
+i am attaching the kernel log. Kindly advice what could be going wrong.
+
+Thanks in advance,
+-Abhijit
+
+--001a11c13442192098050c2147bc
+Content-Type: text/plain; charset=US-ASCII; name="linux_boot.txt"
+Content-Disposition: attachment; filename="linux_boot.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i4nz7anl0
+
+VW5jb21wcmVzc2luZyBMaW51eC4uLiBkb25lLCBib290aW5nIHRoZSBrZXJuZWwuDQpCb290aW5n
+IExpbnV4IG9uIHBoeXNpY2FsIENQVSAwDQpMaW51eCB2ZXJzaW9uIDMuNi4wLXVjMCAgKGdjYyB2
+ZXJzaW9uIDQuNy4xIChjcm9zc3Rvb2wtTkcgMS4xNi4wKSApICM3IFBSRUVNUFQgVHVlIEphbiA2
+IDEyOjI5OjEzIElTVCAyMDE1DQpDUFU6IEFSTXY3IFByb2Nlc3NvciBbNDEzZmMwOTBdIHJldmlz
+aW9uIDAgKEFSTXY3KSwgY3I9MTBjNTNjN2YNCkNQVTogUElQVCAvIFZJUFQgbm9uYWxpYXNpbmcg
+ZGF0YSBjYWNoZSwgVklQVCBhbGlhc2luZyBpbnN0cnVjdGlvbiBjYWNoZQ0KTWVtb3J5IHBvbGlj
+eTogRUNDIGRpc2FibGVkLCBEYXRhIGNhY2hlIHdyaXRlYmFjaw0KT24gbm9kZSAwIHRvdGFscGFn
+ZXM6IDY1NTM2DQpmcmVlX2FyZWFfaW5pdF9ub2RlOiBub2RlIDAsIHBnZGF0IDgwMjliZjk4LCBu
+b2RlX21lbV9tYXAgODA1YmUwMDANCiAgTm9ybWFsIHpvbmU6IDUxMiBwYWdlcyB1c2VkIGZvciBt
+ZW1tYXANCiAgTm9ybWFsIHpvbmU6IDAgcGFnZXMgcmVzZXJ2ZWQNCiAgTm9ybWFsIHpvbmU6IDY1
+MDI0IHBhZ2VzLCBMSUZPIGJhdGNoOjE1DQpwY3B1LWFsbG9jOiBzMCByMCBkMzI3NjggdTMyNzY4
+IGFsbG9jPTEqMzI3NjgNCnBjcHUtYWxsb2M6IFswXSAwDQpCdWlsdCAxIHpvbmVsaXN0cyBpbiBa
+b25lIG9yZGVyLCBtb2JpbGl0eSBncm91cGluZyBvZmYuICBUb3RhbCBwYWdlczogNjUwMjQNCktl
+cm5lbCBjb21tYW5kIGxpbmU6IGNvbnNvbGU9dHR5UzAgcm9vdGZzdHlwZT1yb21mcw0KUElEIGhh
+c2ggdGFibGUgZW50cmllczogMTAyNCAob3JkZXI6IDAsIDQwOTYgYnl0ZXMpDQpEZW50cnkgY2Fj
+aGUgaGFzaCB0YWJsZSBlbnRyaWVzOiAzMjc2OCAob3JkZXI6IDUsIDEzMTA3MiBieXRlcykNCklu
+b2RlLWNhY2hlIGhhc2ggdGFibGUgZW50cmllczogMTYzODQgKG9yZGVyOiA0LCA2NTUzNiBieXRl
+cykNCk1lbW9yeTogMjU2TUIgPSAyNTZNQiB0b3RhbA0KTWVtb3J5OiAyNTM5NzZrLzI1Mzk3Nmsg
+YXZhaWxhYmxlLCA4MTY4ayByZXNlcnZlZCwgMEsgaGlnaG1lbQ0KVmlydHVhbCBrZXJuZWwgbWVt
+b3J5IGxheW91dDoNCiAgICB2ZWN0b3IgIDogMHhmZmZmMDAwMCAtIDB4ZmZmZjEwMDAgICAoICAg
+NCBrQikNCiAgICBmaXhtYXAgIDogMHhmZmYwMDAwMCAtIDB4ZmZmZTAwMDAgICAoIDg5NiBrQikN
+CiAgICB2bWFsbG9jIDogMHg5MDgwMDAwMCAtIDB4ZmYwMDAwMDAgICAoMTc2OCBNQikNCiAgICBs
+b3dtZW0gIDogMHg4MDAwMDAwMCAtIDB4OTAwMDAwMDAgICAoIDI1NiBNQikNCiAgICBtb2R1bGVz
+IDogMHg3ZjAwMDAwMCAtIDB4ODAwMDAwMDAgICAoICAxNiBNQikNCiAgICAgIC50ZXh0IDogMHg4
+MDAwODAwMCAtIDB4ODAyNmM3ZmMgICAoMjQ1MCBrQikNCiAgICAgIC5pbml0IDogMHg4MDI2ZDAw
+MCAtIDB4ODAyODFmZTggICAoICA4NCBrQikNCiAgICAgIC5kYXRhIDogMHg4MDI4MjAwMCAtIDB4
+ODAyOWM4NDAgICAoIDEwNyBrQikNCiAgICAgICAuYnNzIDogMHg4MDI5Yzg4MCAtIDB4ODAyZDgw
+MDAgICAoIDIzOCBrQikNCk5SX0lSUVM6NjQNCnNjaGVkX2Nsb2NrOiAzMiBiaXRzIGF0IDEwMCBI
+eiwgcmVzb2x1dGlvbiAxMDAwMDAwMG5zLCB3cmFwcyBldmVyeSA0Mjk0OTY3Mjg2bXMNCkNvbnNv
+bGU6IGNvbG91ciBkdW1teSBkZXZpY2UgODB4MzANCmNvbnNvbGUgW3R0eVMwXSBlbmFibGVkDQpD
+YWxpYnJhdGluZyBkZWxheSBsb29wLi4uIDE2MDcuMjcgQm9nb01JUFMgKGxwaj04MDM2MzUyKQ0K
+cGlkX21heDogZGVmYXVsdDogMzI3NjggbWluaW11bTogMzAxDQpNb3VudC1jYWNoZSBoYXNoIHRh
+YmxlIGVudHJpZXM6IDUxMg0KQ1BVOiBUZXN0aW5nIHdyaXRlIGJ1ZmZlciBjb2hlcmVuY3k6IG9r
+DQpTZXR0aW5nIHVwIHN0YXRpYyBpZGVudGl0eSBtYXAgZm9yIDB4MWQxZDQwIC0gMHgxZDFkZDQN
+CkwzMTAgY2FjaGUgY29udHJvbGxlciBlbmFibGVkDQpsMngwOiA4IHdheXMsIENBQ0hFX0lEIDB4
+NDEwMDk0YzgsIEFVWF9DVFJMIDB4N2U0NjAwMDAsIENhY2hlIHNpemU6IDUyNDI4OCBCDQpVbmhh
+bmRsZWQgZmF1bHQ6IGFsaWdubWVudCBleGNlcHRpb24gKDB4MDAxKSBhdCAweDg4MDQyMDAxDQpJ
+bnRlcm5hbCBlcnJvcjogOiAxIFsjMV0gUFJFRU1QVCBBUk0NCk1vZHVsZXMgbGlua2VkIGluOg0K
+Q1BVOiAwICAgIE5vdCB0YWludGVkICAoMy42LjAtdWMwICM3KQ0KUEMgaXMgYXQgbGlua19wYXRo
+X3dhbGsrMHhhNC8weDg2Yw0KTFIgaXMgYXQgbGlua19wYXRoX3dhbGsrMHg1Yy8weDg2Yw0KcGMg
+OiBbPDgwMDg3NDQ4Pl0gICAgbHIgOiBbPDgwMDg3NDAwPl0gICAgcHNyOiA2MDAwMDE1Mw0Kc3Ag
+OiA4ODA0ZGUxMCAgaXAgOiA4ODA0ZGVkMCAgZnAgOiAwMDAwMDAwMA0KcjEwOiAwMDAwMDAwMCAg
+cjkgOiAwMDAwMDAwMCAgcjggOiA4ODA0MjAwMA0KcjcgOiA4ODA0MjAwMSAgcjYgOiA4ODA0YzAw
+MCAgcjUgOiAwMDAwMDAwMCAgcjQgOiA4ODA0ZGViOA0KcjMgOiAwMDAwMDAwMCAgcjIgOiA4ODA0
+MjAwMSAgcjEgOiAwMDAwMDAwMCAgcjAgOiAwMDAwMDAwMA0KRmxhZ3M6IG5aQ3YgIElSUXMgb24g
+IEZJUXMgb2ZmICBNb2RlIFNWQ18zMiAgSVNBIEFSTSAgU2VnbWVudCBrZXJuZWwNCkNvbnRyb2w6
+IDEwYzUzYzdmICBUYWJsZTogMDAwMDQwNTkgIERBQzogMDAwMDAwMTUNClByb2Nlc3Mga2RldnRt
+cGZzIChwaWQ6IDksIHN0YWNrIGxpbWl0ID0gMHg4ODA0YzJmMCkNClN0YWNrOiAoMHg4ODA0ZGUx
+MCB0byAweDg4MDRlMDAwKQ0KZGUwMDogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgODgwMGFiNDAgODAwNzg5MzQgODgwM2ZjYTAgODgwM2ZjYTANCmRlMjA6IDAwMDAwMDAwIDgw
+MDhmNjEwIDAwMDAwMDAwIDgwMDNiOTYwIDAwMDAwMDJmIDgwMDg3ZmJjIGZmZmZmZjljIDg4MDRk
+ZWI4DQpkZTQwOiAwMDAwMDAwMCAwMDAwMDA0MyBmZmZmZmY5YyA4ODA0MjAwMCAwMDAwMDAwMCA4
+MDA4ODI4MCA4ODA0ZGU2MCA4MDAzYzM3NA0KZGU2MDogMDAwMDAwMDAgODAwOWU3ZWMgODgwNGRl
+NjggODgwMGQ3ODAgNjAwMDAxZDMgODgwMmJmYTQgODgwMGFiYzAgMDAwMDAwMDMNCmRlODA6IDg4
+MDRkZWI4IDg4MDQyMDAwIGZmZmZmZjljIGZmZmZmZjljIDAwMDAwMDAwIDAwMDAwMDAwIDAwMDAw
+MDAwIDgwMDg4OWM4DQpkZWEwOiA4ODA0MjAwMCA4ODA0ZGY2NiAwMDAwMDAwMyA4ODA0ZGYzOCBm
+ZmZmZmY5YyA4MDA4YTgzOCA4ODAwZDgxMCA4ODAxMjgwMA0KZGVjMDogODgwMGQ4MTAgMDAwMDAw
+MDAgMDAwMDAwMjAgODgwMGQ3NTAgODgwMGQ4MTAgODgwMTI4MDAgODgwMTFkNzggMDAwMDEwNTMN
+CmRlZTA6IDAwMDAwMDAyIDAwMDAwMDAxIDAwMDAwMDAwIDgwNmJlODYwIDgwNmJlMDIwIDAwMDAw
+MDAwIDg4MDAxYmMwIDgwMDc5NWEwDQpkZjAwOiA4MDI4YTJlNCAwMDAwMDAwMCA4ODA0MjAwMCAw
+MDAwODAwMCA4ODAyYmZhNCA4ODA0ZGY2NiA4MDEzODllOCAwMDAwMDAxMw0KZGYyMDogMDAwMDAw
+MDAgODAwOGE4N2MgMDAwMDAwMDAgODAyM2I3MzkgMDAwMDAwMDMgODAwN2JlYTAgODAyM2I3Mzkg
+MDAwMDgwMDENCmRmNDA6IDg4MDJiZmE0IDgwMTM4YTQ4IDg4MDRkZjY2IDAwMDAwMDAzIDgwMjhm
+MjAwIDg4MDI4NjMwIGZmZmZmZmZmIDg4MDJhMDAwDQpkZjYwOiAwMDAwMDAwMiA2ZjZkY2EyYyAz
+MDNkNjU2NCAwMDM1MzUzNyAwMDAwMDAwMCAwMDAwMDAwMiA4ODA0ZGY5YyA4MDAzYzcyNA0KZGY4
+MDogODgwNGMwMDAgODgwMjg2MDAgODAyOGYyMDAgODgwNGMwMDAgODgwNGMwMDAgODgwMjg2MDAg
+ODgwNGRmY2MgODAxZDBlZDANCmRmYTA6IDAwMDAwMDEzIDAwMDAwMDAwIDAwMDAwMDAwIDg4MDJi
+Zjc0IDg4MDJiZmE0IDgwMTM4OWU4IDAwMDAwMDEzIDAwMDAwMDAwDQpkZmMwOiAwMDAwMDAwMCAw
+MDAwMDAwMCAwMDAwMDAwMCA4MDAzNDc5OCAwMDAwMDAwMCAwMDAwMDAwMCA4ODAyYmZhNCAwMDAw
+MDAwMA0KZGZlMDogODgwNGRmZTAgODgwNGRmZTAgODgwMmJmNzQgODAwMzQ3MTggODAwMGViYzgg
+ODAwMGViYzggMDAwMDAwMDAgMDAwMDAwMDANCls8ODAwODc0NDg+XSAobGlua19wYXRoX3dhbGsr
+MHhhNC8weDg2YykgZnJvbSBbPDgwMDg4MjgwPl0gKHBhdGhfbG9va3VwYXQrMHg1NC8weDc4MCkN
+Cls8ODAwODgyODA+XSAocGF0aF9sb29rdXBhdCsweDU0LzB4NzgwKSBmcm9tIFs8ODAwODg5Yzg+
+XSAoZG9fcGF0aF9sb29rdXArMHgxYy8weDU4KQ0KWzw4MDA4ODljOD5dIChkb19wYXRoX2xvb2t1
+cCsweDFjLzB4NTgpIGZyb20gWzw4MDA4YTgzOD5dICh1c2VyX3BhdGhfYXRfZW1wdHkrMHg1NC8w
+eDg4KQ0KWzw4MDA4YTgzOD5dICh1c2VyX3BhdGhfYXRfZW1wdHkrMHg1NC8weDg4KSBmcm9tIFs8
+ODAwOGE4N2M+XSAodXNlcl9wYXRoX2F0KzB4MTAvMHgxNCkNCls8ODAwOGE4N2M+XSAodXNlcl9w
+YXRoX2F0KzB4MTAvMHgxNCkgZnJvbSBbPDgwMDdiZWEwPl0gKHN5c19jaGRpcisweDE4LzB4NjQp
+DQpbPDgwMDdiZWEwPl0gKHN5c19jaGRpcisweDE4LzB4NjQpIGZyb20gWzw4MDEzOGE0OD5dIChk
+ZXZ0bXBmc2QrMHg2MC8weDJiNCkNCls8ODAxMzhhNDg+XSAoZGV2dG1wZnNkKzB4NjAvMHgyYjQp
+IGZyb20gWzw4MDAzNDc5OD5dIChrdGhyZWFkKzB4ODAvMHg5MCkNCls8ODAwMzQ3OTg+XSAoa3Ro
+cmVhZCsweDgwLzB4OTApIGZyb20gWzw4MDAwZWJjOD5dIChrZXJuZWxfdGhyZWFkX2V4aXQrMHgw
+LzB4OCkNCkNvZGU6IGUxYTAzMDAwIGUyODExMDA0IGUwODM1MDA1IGUwODcyMDAxIChlNTkyMzAw
+MCkNCi0tLVsgZW5kIHRyYWNlIDFiNzViMzFhMjcxOWVkMWMgXS0tLQ0KS2VybmVsIHBhbmljIC0g
+bm90IHN5bmNpbmc6IEZhdGFsIGV4Y2VwdGlvbg0KDQo=
+--001a11c13442192098050c2147bc--
