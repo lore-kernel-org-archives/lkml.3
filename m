@@ -1,329 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304AbbAHHGK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 02:06:10 -0500
-Received: from mail-bl2on0096.outbound.protection.outlook.com ([65.55.169.96]:8992
+	id S1753431AbbAHHHP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 02:07:15 -0500
+Received: from mail-bl2on0082.outbound.protection.outlook.com ([65.55.169.82]:4704
 	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752979AbbAHHGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 02:06:08 -0500
+	id S1753017AbbAHHHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 02:07:13 -0500
 From: Aaron Wu <Aaron.wu@analog.com>
 To: <mkl@pengutronix.de>, <wg@grandegger.com>, <linux-can@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
 CC: <adi-buildroot-devel@lists.sourceforge.net>,
         Aaron Wu <Aaron.wu@analog.com>
-Subject: [PATCH V2 1/2] bfin_can: rewrite the blackfin style of read/write
-Date: Thu, 8 Jan 2015 14:57:33 +0800
-Message-ID: <1420700254-22529-1-git-send-email-Aaron.wu@analog.com>
+Subject: [PATCH V2 2/2] bfin_can: rewrite the driver to support the common
+Date: Thu, 8 Jan 2015 14:57:34 +0800
+Message-ID: <1420700254-22529-2-git-send-email-Aaron.wu@analog.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1420700254-22529-1-git-send-email-Aaron.wu@analog.com>
+References: <1420700254-22529-1-git-send-email-Aaron.wu@analog.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
 Authentication-Results: spf=pass (sender IP is 137.71.25.57)
  smtp.mailfrom=Aaron.Wu@analog.com; 
-X-Forefront-Antispam-Report: CIP:137.71.25.57;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(189002)(20776003)(47776003)(48376002)(120916001)(36756003)(87936001)(19580405001)(19580395003)(106466001)(89996001)(99396003)(50466002)(107046002)(229853001)(6806004)(4396001)(50226001)(21056001)(77096005)(50986999)(31966008)(46102003)(77156002)(62966003)(64706001)(92566001)(2201001)(86362001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY1PR0301MB0855;H:nwd2mta2.analog.com;FPR:;SPF:Pass;MLV:sfv;PTR:nwd2mail11.analog.com;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:137.71.25.57;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(189002)(199003)(87936001)(6806004)(19580395003)(19580405001)(46102003)(120916001)(99396003)(89996001)(76176999)(50986999)(86362001)(50226001)(20776003)(48376002)(47776003)(64706001)(21056001)(50466002)(229853001)(77096005)(107046002)(2950100001)(4396001)(31966008)(106466001)(77156002)(2201001)(92566001)(36756003)(62966003);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR0301MB0862;H:nwd2mta2.analog.com;FPR:;SPF:Pass;MLV:sfv;PTR:nwd2mail11.analog.com;MX:1;A:1;LANG:en;
 X-DmarcAction: None
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BY1PR0301MB0855;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:DM2PR0301MB0862;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:(601004);SRVR:BY1PR0301MB0855;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DM2PR0301MB0862;
 X-Forefront-PRVS: 0450A714CB
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB0855;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0862;
 X-OriginatorOrg: analog.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 08 Jan 2015 07:06:01.8094
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 08 Jan 2015 07:07:09.0600
  (UTC)
 X-MS-Exchange-CrossTenant-Id: eaa689b4-8f87-40e0-9c6f-7228de4d754a
 X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=eaa689b4-8f87-40e0-9c6f-7228de4d754a;Ip=[137.71.25.57]
 X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY1PR0301MB0855
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: DM2PR0301MB0862
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rewrite the blackfin read/write into common style ones
+Rewrite the driver to comply to common style with MMU 
 
 Signed-off-by: Aaron Wu <Aaron.wu@analog.com>
 ---
- drivers/net/can/bfin_can.c |  126 +++++++++++++++++++++-----------------------
- 1 file changed, 60 insertions(+), 66 deletions(-)
+ drivers/net/can/bfin_can.c |   21 ++++++++-------------
+ 1 file changed, 8 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/net/can/bfin_can.c b/drivers/net/can/bfin_can.c
-index 417d5099..0a5eff4 100644
+index 0a5eff4..1d116a7 100644
 --- a/drivers/net/can/bfin_can.c
 +++ b/drivers/net/can/bfin_can.c
-@@ -78,8 +78,8 @@ static int bfin_can_set_bittiming(struct net_device *dev)
- 	if (priv->can.ctrlmode & CAN_CTRLMODE_3_SAMPLES)
- 		timing |= SAM;
- 
--	bfin_write(&reg->clock, clk);
--	bfin_write(&reg->timing, timing);
-+	writew(clk, &reg->clock);
-+	writew(timing, &reg->timing);
- 
- 	netdev_info(dev, "setting CLOCK=0x%04x TIMING=0x%04x\n", clk, timing);
- 
-@@ -94,16 +94,14 @@ static void bfin_can_set_reset_mode(struct net_device *dev)
- 	int i;
- 
- 	/* disable interrupts */
--	bfin_write(&reg->mbim1, 0);
--	bfin_write(&reg->mbim2, 0);
--	bfin_write(&reg->gim, 0);
-+	writew(0, &reg->mbim1);
-+	writew(0, &reg->mbim2);
-+	writew(0, &reg->gim);
- 
- 	/* reset can and enter configuration mode */
--	bfin_write(&reg->control, SRS | CCR);
--	SSYNC();
--	bfin_write(&reg->control, CCR);
--	SSYNC();
--	while (!(bfin_read(&reg->control) & CCA)) {
-+	writew(SRS | CCR, &reg->control);
-+	writew(CCR, &reg->control);
-+	while (!(readw(&reg->control) & CCA)) {
- 		udelay(10);
- 		if (--timeout == 0) {
- 			netdev_err(dev, "fail to enter configuration mode\n");
-@@ -116,34 +114,33 @@ static void bfin_can_set_reset_mode(struct net_device *dev)
- 	 * by writing to CAN Mailbox Configuration Registers 1 and 2
- 	 * For all bits: 0 - Mailbox disabled, 1 - Mailbox enabled
- 	 */
--	bfin_write(&reg->mc1, 0);
--	bfin_write(&reg->mc2, 0);
-+	writew(0, &reg->mc1);
-+	writew(0, &reg->mc2);
- 
- 	/* Set Mailbox Direction */
--	bfin_write(&reg->md1, 0xFFFF);   /* mailbox 1-16 are RX */
--	bfin_write(&reg->md2, 0);   /* mailbox 17-32 are TX */
-+	writew(0xFFFF, &reg->md1);   /* mailbox 1-16 are RX */
-+	writew(0, &reg->md2);   /* mailbox 17-32 are TX */
- 
- 	/* RECEIVE_STD_CHL */
- 	for (i = 0; i < 2; i++) {
--		bfin_write(&reg->chl[RECEIVE_STD_CHL + i].id0, 0);
--		bfin_write(&reg->chl[RECEIVE_STD_CHL + i].id1, AME);
--		bfin_write(&reg->chl[RECEIVE_STD_CHL + i].dlc, 0);
--		bfin_write(&reg->msk[RECEIVE_STD_CHL + i].amh, 0x1FFF);
--		bfin_write(&reg->msk[RECEIVE_STD_CHL + i].aml, 0xFFFF);
-+		writew(0, &reg->chl[RECEIVE_STD_CHL + i].id0);
-+		writew(AME, &reg->chl[RECEIVE_STD_CHL + i].id1);
-+		writew(0, &reg->chl[RECEIVE_STD_CHL + i].dlc);
-+		writew(0x1FFF, &reg->msk[RECEIVE_STD_CHL + i].amh);
-+		writew(0xFFFF, &reg->msk[RECEIVE_STD_CHL + i].aml);
+@@ -551,16 +551,10 @@ static int bfin_can_probe(struct platform_device *pdev)
+ 		goto exit;
  	}
  
- 	/* RECEIVE_EXT_CHL */
- 	for (i = 0; i < 2; i++) {
--		bfin_write(&reg->chl[RECEIVE_EXT_CHL + i].id0, 0);
--		bfin_write(&reg->chl[RECEIVE_EXT_CHL + i].id1, AME | IDE);
--		bfin_write(&reg->chl[RECEIVE_EXT_CHL + i].dlc, 0);
--		bfin_write(&reg->msk[RECEIVE_EXT_CHL + i].amh, 0x1FFF);
--		bfin_write(&reg->msk[RECEIVE_EXT_CHL + i].aml, 0xFFFF);
-+		writew(0, &reg->chl[RECEIVE_EXT_CHL + i].id0);
-+		writew(AME | IDE, &reg->chl[RECEIVE_EXT_CHL + i].id1);
-+		writew(0, &reg->chl[RECEIVE_EXT_CHL + i].dlc);
-+		writew(0x1FFF, &reg->msk[RECEIVE_EXT_CHL + i].amh);
-+		writew(0xFFFF, &reg->msk[RECEIVE_EXT_CHL + i].aml);
+-	if (!request_mem_region(res_mem->start, resource_size(res_mem),
+-				dev_name(&pdev->dev))) {
+-		err = -EBUSY;
+-		goto exit;
+-	}
+-
+ 	/* request peripheral pins */
+ 	err = peripheral_request_list(pdata, dev_name(&pdev->dev));
+ 	if (err)
+-		goto exit_mem_release;
++		goto exit;
+ 
+ 	dev = alloc_bfin_candev();
+ 	if (!dev) {
+@@ -569,7 +563,13 @@ static int bfin_can_probe(struct platform_device *pdev)
  	}
  
--	bfin_write(&reg->mc2, BIT(TRANSMIT_CHL - 16));
--	bfin_write(&reg->mc1, BIT(RECEIVE_STD_CHL) + BIT(RECEIVE_EXT_CHL));
--	SSYNC();
-+	writew(BIT(TRANSMIT_CHL - 16), &reg->mc2);
-+	writew(BIT(RECEIVE_STD_CHL) + BIT(RECEIVE_EXT_CHL), &reg->mc1);
- 
- 	priv->can.state = CAN_STATE_STOPPED;
+ 	priv = netdev_priv(dev);
+-	priv->membase = (void __iomem *)res_mem->start;
++
++	priv->membase = devm_ioremap_resource(&pdev->dev, res_mem);
++	if (IS_ERR((void *)priv->membase)) {
++		dev_err(&pdev->dev, "Cannot map IO\n");
++		return PTR_ERR((void *)priv->membase);
++	}
++
+ 	priv->rx_irq = rx_irq->start;
+ 	priv->tx_irq = tx_irq->start;
+ 	priv->err_irq = err_irq->start;
+@@ -601,8 +601,6 @@ exit_candev_free:
+ 	free_candev(dev);
+ exit_peri_pin_free:
+ 	peripheral_free_list(pdata);
+-exit_mem_release:
+-	release_mem_region(res_mem->start, resource_size(res_mem));
+ exit:
+ 	return err;
  }
-@@ -157,9 +154,9 @@ static void bfin_can_set_normal_mode(struct net_device *dev)
- 	/*
- 	 * leave configuration mode
- 	 */
--	bfin_write(&reg->control, bfin_read(&reg->control) & ~CCR);
-+	writew(readw(&reg->control) & ~CCR, &reg->control);
+@@ -617,9 +615,6 @@ static int bfin_can_remove(struct platform_device *pdev)
  
--	while (bfin_read(&reg->status) & CCA) {
-+	while (readw(&reg->status) & CCA) {
- 		udelay(10);
- 		if (--timeout == 0) {
- 			netdev_err(dev, "fail to leave configuration mode\n");
-@@ -170,26 +167,25 @@ static void bfin_can_set_normal_mode(struct net_device *dev)
- 	/*
- 	 * clear _All_  tx and rx interrupts
- 	 */
--	bfin_write(&reg->mbtif1, 0xFFFF);
--	bfin_write(&reg->mbtif2, 0xFFFF);
--	bfin_write(&reg->mbrif1, 0xFFFF);
--	bfin_write(&reg->mbrif2, 0xFFFF);
-+	writew(0xFFFF, &reg->mbtif1);
-+	writew(0xFFFF, &reg->mbtif2);
-+	writew(0xFFFF, &reg->mbrif1);
-+	writew(0xFFFF, &reg->mbrif2);
+ 	unregister_candev(dev);
  
- 	/*
- 	 * clear global interrupt status register
- 	 */
--	bfin_write(&reg->gis, 0x7FF); /* overwrites with '1' */
-+	writew(0x7FF, &reg->gis); /* overwrites with '1' */
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	release_mem_region(res->start, resource_size(res));
+-
+ 	peripheral_free_list(priv->pin_list);
  
- 	/*
- 	 * Initialize Interrupts
- 	 * - set bits in the mailbox interrupt mask register
- 	 * - global interrupt mask
- 	 */
--	bfin_write(&reg->mbim1, BIT(RECEIVE_STD_CHL) + BIT(RECEIVE_EXT_CHL));
--	bfin_write(&reg->mbim2, BIT(TRANSMIT_CHL - 16));
-+	writew(BIT(RECEIVE_STD_CHL) + BIT(RECEIVE_EXT_CHL), &reg->mbim1);
-+	writew(BIT(TRANSMIT_CHL - 16), &reg->mbim2);
- 
--	bfin_write(&reg->gim, EPIM | BOIM | RMLIM);
--	SSYNC();
-+	writew(EPIM | BOIM | RMLIM, &reg->gim);
- }
- 
- static void bfin_can_start(struct net_device *dev)
-@@ -226,7 +222,7 @@ static int bfin_can_get_berr_counter(const struct net_device *dev,
- 	struct bfin_can_priv *priv = netdev_priv(dev);
- 	struct bfin_can_regs __iomem *reg = priv->membase;
- 
--	u16 cec = bfin_read(&reg->cec);
-+	u16 cec = readw(&reg->cec);
- 
- 	bec->txerr = cec >> 8;
- 	bec->rxerr = cec;
-@@ -252,28 +248,28 @@ static int bfin_can_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 
- 	/* fill id */
- 	if (id & CAN_EFF_FLAG) {
--		bfin_write(&reg->chl[TRANSMIT_CHL].id0, id);
-+		writew(id, &reg->chl[TRANSMIT_CHL].id0);
- 		val = ((id & 0x1FFF0000) >> 16) | IDE;
- 	} else
- 		val = (id << 2);
- 	if (id & CAN_RTR_FLAG)
- 		val |= RTR;
--	bfin_write(&reg->chl[TRANSMIT_CHL].id1, val | AME);
-+	writew(val | AME, &reg->chl[TRANSMIT_CHL].id1);
- 
- 	/* fill payload */
- 	for (i = 0; i < 8; i += 2) {
- 		val = ((7 - i) < dlc ? (data[7 - i]) : 0) +
- 			((6 - i) < dlc ? (data[6 - i] << 8) : 0);
--		bfin_write(&reg->chl[TRANSMIT_CHL].data[i], val);
-+		writew(val, &reg->chl[TRANSMIT_CHL].data[i]);
- 	}
- 
- 	/* fill data length code */
--	bfin_write(&reg->chl[TRANSMIT_CHL].dlc, dlc);
-+	writew(dlc, &reg->chl[TRANSMIT_CHL].dlc);
- 
- 	can_put_echo_skb(skb, dev, 0);
- 
- 	/* set transmit request */
--	bfin_write(&reg->trs2, BIT(TRANSMIT_CHL - 16));
-+	writew(BIT(TRANSMIT_CHL - 16), &reg->trs2);
- 
- 	return 0;
- }
-@@ -296,26 +292,26 @@ static void bfin_can_rx(struct net_device *dev, u16 isrc)
- 	/* get id */
- 	if (isrc & BIT(RECEIVE_EXT_CHL)) {
- 		/* extended frame format (EFF) */
--		cf->can_id = ((bfin_read(&reg->chl[RECEIVE_EXT_CHL].id1)
-+		cf->can_id = ((readw(&reg->chl[RECEIVE_EXT_CHL].id1)
- 			     & 0x1FFF) << 16)
--			     + bfin_read(&reg->chl[RECEIVE_EXT_CHL].id0);
-+			     + readw(&reg->chl[RECEIVE_EXT_CHL].id0);
- 		cf->can_id |= CAN_EFF_FLAG;
- 		obj = RECEIVE_EXT_CHL;
- 	} else {
- 		/* standard frame format (SFF) */
--		cf->can_id = (bfin_read(&reg->chl[RECEIVE_STD_CHL].id1)
-+		cf->can_id = (readw(&reg->chl[RECEIVE_STD_CHL].id1)
- 			     & 0x1ffc) >> 2;
- 		obj = RECEIVE_STD_CHL;
- 	}
--	if (bfin_read(&reg->chl[obj].id1) & RTR)
-+	if (readw(&reg->chl[obj].id1) & RTR)
- 		cf->can_id |= CAN_RTR_FLAG;
- 
- 	/* get data length code */
--	cf->can_dlc = get_can_dlc(bfin_read(&reg->chl[obj].dlc) & 0xF);
-+	cf->can_dlc = get_can_dlc(readw(&reg->chl[obj].dlc) & 0xF);
- 
- 	/* get payload */
- 	for (i = 0; i < 8; i += 2) {
--		val = bfin_read(&reg->chl[obj].data[i]);
-+		val = readw(&reg->chl[obj].data[i]);
- 		cf->data[7 - i] = (7 - i) < cf->can_dlc ? val : 0;
- 		cf->data[6 - i] = (6 - i) < cf->can_dlc ? (val >> 8) : 0;
- 	}
-@@ -368,7 +364,7 @@ static int bfin_can_err(struct net_device *dev, u16 isrc, u16 status)
- 
- 	if (state != priv->can.state && (state == CAN_STATE_ERROR_WARNING ||
- 				state == CAN_STATE_ERROR_PASSIVE)) {
--		u16 cec = bfin_read(&reg->cec);
-+		u16 cec = readw(&reg->cec);
- 		u8 rxerr = cec;
- 		u8 txerr = cec >> 8;
- 
-@@ -419,23 +415,23 @@ static irqreturn_t bfin_can_interrupt(int irq, void *dev_id)
- 	struct net_device_stats *stats = &dev->stats;
- 	u16 status, isrc;
- 
--	if ((irq == priv->tx_irq) && bfin_read(&reg->mbtif2)) {
-+	if ((irq == priv->tx_irq) && readw(&reg->mbtif2)) {
- 		/* transmission complete interrupt */
--		bfin_write(&reg->mbtif2, 0xFFFF);
-+		writew(0xFFFF, &reg->mbtif2);
- 		stats->tx_packets++;
--		stats->tx_bytes += bfin_read(&reg->chl[TRANSMIT_CHL].dlc);
-+		stats->tx_bytes += readw(&reg->chl[TRANSMIT_CHL].dlc);
- 		can_get_echo_skb(dev, 0);
- 		netif_wake_queue(dev);
--	} else if ((irq == priv->rx_irq) && bfin_read(&reg->mbrif1)) {
-+	} else if ((irq == priv->rx_irq) && readw(&reg->mbrif1)) {
- 		/* receive interrupt */
--		isrc = bfin_read(&reg->mbrif1);
--		bfin_write(&reg->mbrif1, 0xFFFF);
-+		isrc = readw(&reg->mbrif1);
-+		writew(0xFFFF, &reg->mbrif1);
- 		bfin_can_rx(dev, isrc);
--	} else if ((irq == priv->err_irq) && bfin_read(&reg->gis)) {
-+	} else if ((irq == priv->err_irq) && readw(&reg->gis)) {
- 		/* error interrupt */
--		isrc = bfin_read(&reg->gis);
--		status = bfin_read(&reg->esr);
--		bfin_write(&reg->gis, 0x7FF);
-+		isrc = readw(&reg->gis);
-+		status = readw(&reg->esr);
-+		writew(0x7FF, &reg->gis);
- 		bfin_can_err(dev, isrc, status);
- 	} else {
- 		return IRQ_NONE;
-@@ -640,9 +636,8 @@ static int bfin_can_suspend(struct platform_device *pdev, pm_message_t mesg)
- 
- 	if (netif_running(dev)) {
- 		/* enter sleep mode */
--		bfin_write(&reg->control, bfin_read(&reg->control) | SMR);
--		SSYNC();
--		while (!(bfin_read(&reg->intr) & SMACK)) {
-+		writew(readw(&reg->control) | SMR, &reg->control);
-+		while (!(readw(&reg->intr) & SMACK)) {
- 			udelay(10);
- 			if (--timeout == 0) {
- 				netdev_err(dev, "fail to enter sleep mode\n");
-@@ -662,8 +657,7 @@ static int bfin_can_resume(struct platform_device *pdev)
- 
- 	if (netif_running(dev)) {
- 		/* leave sleep mode */
--		bfin_write(&reg->intr, 0);
--		SSYNC();
-+		writew(0, &reg->intr);
- 	}
- 
- 	return 0;
+ 	free_candev(dev);
 -- 
 1.7.9.5
 
