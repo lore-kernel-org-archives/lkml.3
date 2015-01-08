@@ -1,120 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756402AbbAHLcZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 06:32:25 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:57724 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756093AbbAHLcY (ORCPT
+	id S1755406AbbAHLmD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 06:42:03 -0500
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:37418 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436AbbAHLmA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 06:32:24 -0500
-Date: Thu, 8 Jan 2015 11:32:13 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-Subject: Re: [PATCH] perf: drop module reference on event init failure
-Message-ID: <20150108113212.GE11583@arm.com>
-References: <1420642611-22667-1-git-send-email-mark.rutland@arm.com>
+	Thu, 8 Jan 2015 06:42:00 -0500
+Date: Thu, 8 Jan 2015 12:41:54 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+Cc: Vince Hsu <vinceh@nvidia.com>, Lucas Stach <dev@lynxeye.de>,
+        swarren@wwwdotorg.org, gnurou@gmail.com, bskeggs@redhat.com,
+        martin.peres@free.fr, seven@nimrod-online.com,
+        samuel.pitoiset@gmail.com, nouveau@lists.freedesktop.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/11] ARM: tegra: add function to control the GPU rail
+ clamp
+Message-ID: <20150108114153.GL1987@ulmo.nvidia.com>
+References: <1419331204-26679-2-git-send-email-vinceh@nvidia.com>
+ <1419426990.2179.7.camel@lynxeye.de>
+ <549B7638.2010405@nvidia.com>
+ <20150105150932.GG12010@ulmo.nvidia.com>
+ <20150107101900.GP10073@tbergstrom-lnx.Nvidia.com>
+ <54AD0F37.5080609@nvidia.com>
+ <20150107141254.GS10073@tbergstrom-lnx.Nvidia.com>
+ <20150107141938.GA7392@nvidia.com>
+ <20150107151206.GG1621@ulmo>
+ <20150108093205.GV10073@tbergstrom-lnx.Nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Y+Z5jE7Arku/2GrR"
 Content-Disposition: inline
-In-Reply-To: <1420642611-22667-1-git-send-email-mark.rutland@arm.com>
+In-Reply-To: <20150108093205.GV10073@tbergstrom-lnx.Nvidia.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 02:56:51PM +0000, Mark Rutland wrote:
-> When initialising an event, perf_init_event will call try_module_get to
-> ensure that the PMU's module cannot be removed for the lifetime of the
-> event, with __free_event dropping the reference when the event is
-> finally destroyed. If something fails after the event has been
-> initialised, but before the event is installed, perf_event_alloc will
-> drop the reference on the module.
-> 
-> However, if we fail to initialise an event for some reason (e.g. we ask
-> an uncore PMU to perform sampling, and it refuses to initialise the
-> event), we do not drop the refcount. If we try to open such a bogus
-> event without a precise IDR type, we will loop over each PMU in the pmus
-> list, incrementing each of their refcounts without decrementing them.
-> 
-> This patch adds a module_put when pmu->event_init(event) fails, ensuring
-> that the refcounts are balanced in failure cases. As the innards of the
-> precise and search based initialisation look very similar, this logic is
-> hoisted out into a new helper function. While the early return for the
-> failed try_module_get is removed from the search case, this is handled
-> by the remaining return when ret is not -ENOENT.
-> 
-> Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-> ---
->  kernel/events/core.c | 28 ++++++++++++++++------------
->  1 file changed, 16 insertions(+), 12 deletions(-)
 
-Looks like a straightforward fix to me -- does it need to go to stable too?
+--Y+Z5jE7Arku/2GrR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Will Deacon <will.deacon@arm.com>
+On Thu, Jan 08, 2015 at 11:32:06AM +0200, Peter De Schrijver wrote:
+> > > And specify the dependencies between domains in DT?
+> >=20
+> > I think the dependencies could be in the driver. Of course the power
+> > domains are per-SoC data, so really shouldn't be in the DTS either (the
+> > data is all implied by the compatible value) but there's no good way to
+> > get at the clocks and resets without DT, so I think that's a reasonable
+> > trade-off.
+> >=20
+> > It seems to me like there are only two dependencies:
+> >=20
+> > 	DIS and DISB depend on SOR
+> > 	VE depends on DIS
+> >=20
+> > That's according to 5.6.6 "Programming Guide for Power Gating and
+> > Ungating" of the Tegra K1 TRM. It also seems like a bunch of modules are
+> > part of seemingly unrelated domains. Especially SOR seems to cover a
+> > large range of modules (MIPI-CAL, DPAUX, SOR, HDMI, DSI, DSIB and
+> > HDA2HDMI).
+> >=20
+> > Given that we may want to more fine-grainedly control clocks to save
+> > power, don't we need to control clocks and resets within the drivers? I
+> > think the runtime PM framework makes sure to call this in the right
+> > order, so for suspend, the sequence would be:
+> >=20
+> > 	1) device->suspend
+> > 	2) domain->suspend
+> >=20
+> > and for resume:
+> >=20
+> > 	1) domain->resume
+> > 	2) device->resume
+> >=20
+> > But then we're back to square one, namely that the MC flush doesn't work
+> > properly, since it needs to be implemented in domain->suspend. Does that
+> > mean we can't clock-gate modules? In order to ensure a proper powergate
+> > sequence, the domain code would need to clk_enable() the module clock to
+> > make sure it stays on during the reset sequence. But if the domain code
+> > has a reference to the clock, then the driver can't clock-gate the
+> > module anymore by calling clk_disable().
+> >=20
+> > Am I missing something?
+> >=20
+>=20
+> There's a difference between having a reference and actually enabling the
+> clock.
 
-Will
+My point was that as long as anyone was keeping a reference the clock
+couldn't in fact be turned off.
 
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index 4c1ee7f..4faccf3 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -6857,6 +6857,20 @@ void perf_pmu_unregister(struct pmu *pmu)
->  }
->  EXPORT_SYMBOL_GPL(perf_pmu_unregister);
->  
-> +static int perf_try_init_event(struct pmu *pmu, struct perf_event *event)
-> +{
-> +	int ret;
-> +
-> +	if (!try_module_get(pmu->module))
-> +		return -ENODEV;
-> +	event->pmu = pmu;
-> +	ret = pmu->event_init(event);
-> +	if (ret)
-> +		module_put(pmu->module);
-> +
-> +	return ret;
-> +}
-> +
->  struct pmu *perf_init_event(struct perf_event *event)
->  {
->  	struct pmu *pmu = NULL;
-> @@ -6869,24 +6883,14 @@ struct pmu *perf_init_event(struct perf_event *event)
->  	pmu = idr_find(&pmu_idr, event->attr.type);
->  	rcu_read_unlock();
->  	if (pmu) {
-> -		if (!try_module_get(pmu->module)) {
-> -			pmu = ERR_PTR(-ENODEV);
-> -			goto unlock;
-> -		}
-> -		event->pmu = pmu;
-> -		ret = pmu->event_init(event);
-> +		ret = perf_try_init_event(pmu, event);
->  		if (ret)
->  			pmu = ERR_PTR(ret);
->  		goto unlock;
->  	}
->  
->  	list_for_each_entry_rcu(pmu, &pmus, entry) {
-> -		if (!try_module_get(pmu->module)) {
-> -			pmu = ERR_PTR(-ENODEV);
-> -			goto unlock;
-> -		}
-> -		event->pmu = pmu;
-> -		ret = pmu->event_init(event);
-> +		ret = perf_try_init_event(pmu, event);
->  		if (!ret)
->  			goto unlock;
->  
-> -- 
-> 1.9.1
-> 
+> the domain powergate method will only be called when the clocks of
+> all modules in the domain are off.
+
+No, the power domain will be disabled when all devices in the domain are
+idle.
+
+> So the powergate method can then turn them on again, do the module
+> resets and client flushes and then disable them again. Same for
+> ungate. So I don't see a problem here?
+
+I think that could work, but we'd need to make sure that drivers that
+use runtime PM and are connected to a power domain enable clocks only
+after taking a runtime PM reference and disable the clocks before they
+release that reference.
+
+So to simplify things, maybe all clock handling for drivers should be
+moved into runtime PM operations, and whenever the driver needs the
+clock enabled it takes a runtime PM reference. That would ensure that
+clocks aren't accidentally left on.
+
+Thierry
+
+--Y+Z5jE7Arku/2GrR
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUrm0BAAoJEN0jrNd/PrOhxTYP+gKxlkbgHFdzTVIsgFPY1His
+btzOMfADMd/h4tzIxnsgjIFghK15I47GAWJVcKT1xp8xF8vr+QwL0yk43eTa8g6k
+Y2UaDK/K/zSMJxaJXCu4OktzYhfrw7EAs0Jsv2xJ7A7Kr5RVLDJW3zVnD5L563Jf
+K651AdtS3MWS13yd4FASbp/vOEqVYHzo6DvSaknOV32mVt2NmPS/Oo2OHGcwtvQO
+TnAbECPpz5RZz95+dXZ0WL7ljaNsaMXydIe4vHtlp0cyI2sRCmcG9dG/5UjXWFah
+ZcIu4UDePGdD/9fPQNSf37/KMzqbRHhXVHc6t52HXUjWsyc8n/hOmBuIdc+PsW4d
+C3VxKgibJncyKnVdDBrqhcXqZkdW6KXGvzLlOf//TEEQVTqOY4XeqE7B/wza1kV1
+s/KiGPz/d+DQacYKVc0qm2hvMw1AQmXGCjiQFPXKSAZEcVUiMB/KAwc9G1VoUiOa
+1NDjM2J6BsQLv0hwUXMr60jSM/Yxi2Qqa3tZkB7K9gIYy4I683cwNnSx6k2g3SZb
+LAharGVbyWbHiuhROXYWJObRIBNwsuQrScDegn2j1o9oA4Ujo7pibTtCkv8ZbDNz
+JlmmJcAaQt5fmlQoYMgGuZTUUC39/Yq+9VdgdHaHd9FqBar49UNYDI8YXjmqEa25
+LowEYpErJOQCM3YQyzc1
+=gZD8
+-----END PGP SIGNATURE-----
+
+--Y+Z5jE7Arku/2GrR--
