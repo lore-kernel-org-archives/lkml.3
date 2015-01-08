@@ -1,82 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129AbbAHWJD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 17:09:03 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:34637 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017AbbAHWJA (ORCPT
+	id S1757036AbbAHWLl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 17:11:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35526 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752357AbbAHWLj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 17:09:00 -0500
-Message-ID: <1420754931.6338.95.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [RFC][PATCH 6/9] gen_initramfs_list.sh: include xattrs
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Rob Landley <rob@landley.net>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        initramfs <initramfs@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-ima-devel@lists.sourceforge.net,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Fionnuala Gunter <fin@linux.vnet.ibm.com>
-Date: Thu, 08 Jan 2015 17:08:51 -0500
-In-Reply-To: <54AECA32.6000304@landley.net>
-References: <1420663980-20842-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <1420663980-20842-7-git-send-email-zohar@linux.vnet.ibm.com>
-	 <CA+5PVA77x2W9LyHMq1jSW3HKqNgFPz-gPVOH0QtEmmMBwzOx_Q@mail.gmail.com>
-	 <1420729994.6338.52.camel@dhcp-9-2-203-236.watson.ibm.com>
-	 <54AECA32.6000304@landley.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Thu, 8 Jan 2015 17:11:39 -0500
+Message-ID: <54AF0094.6030707@canonical.com>
+Date: Thu, 08 Jan 2015 17:11:32 -0500
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+CC: "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Koenig, Christian" <Christian.Koenig@amd.com>,
+        David Airlie <airlied@linux.ie>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Subject: Re: [Regression][v3.17][3.18][3.19-rc3] drm/radeon: re-enable dpm
+ by default on BTC
+References: <54ADB86B.10105@canonical.com> <A3397C8B8B789E45844E7EC5DEAD89D0635DD4D6@satlexdag06.amd.com> <54AEAF92.10507@canonical.com> <A3397C8B8B789E45844E7EC5DEAD89D0635E2A10@satlexdag05.amd.com> <54AEFD80.5090808@canonical.com> <A3397C8B8B789E45844E7EC5DEAD89D0635E4C92@satlexdag05.amd.com>
+In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D0635E4C92@satlexdag05.amd.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15010822-0021-0000-0000-000003431A58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2015-01-08 at 12:19 -0600, Rob Landley wrote:
-> 
-> But I am curious about how you propose to encode xattrs into the cpio
-> format. (Which Al Viro chose because it's _simple_. There isn't really
-> a
-> controlling spec since Posix decided to deprecated it in 2001 and
-> yank
-> it from SUSv3 onwards. LSB extended several header fields to 8 hex
-> digits instead of 6, but they still have 32 bit timestamps which seems
-> a
-> bit short-sighted. If you're going to define a new rev with a new
-> magic
-> number, there are a couple other things you might wanna fix...)
+On 01/08/2015 05:00 PM, Deucher, Alexander wrote:
+>> -----Original Message-----
+>> From: Joseph Salisbury [mailto:joseph.salisbury@canonical.com]
+>> Sent: Thursday, January 08, 2015 4:58 PM
+>> To: Deucher, Alexander
+>> Cc: stable@vger.kernel.org; LKML; Koenig, Christian; David Airlie; dri-devel
+>> Subject: Re: [Regression][v3.17][3.18][3.19-rc3] drm/radeon: re-enable dpm
+>> by default on BTC
+>>
+>> On 01/08/2015 12:48 PM, Deucher, Alexander wrote:
+>>>> -----Original Message-----
+>>>> From: Joseph Salisbury [mailto:joseph.salisbury@canonical.com]
+>>>> Sent: Thursday, January 08, 2015 11:26 AM
+>>>> To: Deucher, Alexander
+>>>> Cc: stable@vger.kernel.org; LKML; Koenig, Christian; David Airlie; dri-devel
+>>>> Subject: Re: [Regression][v3.17][3.18][3.19-rc3] drm/radeon: re-enable
+>> dpm
+>>>> by default on BTC
+>>>>
+>>>> On 01/07/2015 09:51 PM, Deucher, Alexander wrote:
+>>>>>> -----Original Message-----
+>>>>>> From: Joseph Salisbury [mailto:joseph.salisbury@canonical.com]
+>>>>>> Sent: Wednesday, January 07, 2015 5:51 PM
+>>>>>> To: Deucher, Alexander
+>>>>>> Cc: stable@vger.kernel.org; LKML; Koenig, Christian; David Airlie; dri-
+>> devel
+>>>>>> Subject: [Regression][v3.17][3.18][3.19-rc3] drm/radeon: re-enable
+>> dpm
+>>>> by
+>>>>>> default on BTC
+>>>>>>
+>>>>>> Hi Alexander,
+>>>>>>
+>>>>>> A kernel bug report was opened against Ubuntu [0].  After a kernel
+>>>>>> bisect, it was found that reverting the following commit resolved this
+>> bug:
+>>>>>> commit c08abf11900e19b14dd3a0cc3d105bd74519cd18
+>>>>>> Author: Alex Deucher <alexander.deucher@amd.com>
+>>>>>> Date:   Mon Jul 14 12:01:40 2014 -0400
+>>>>>>
+>>>>>>     drm/radeon: re-enable dpm by default on BTC
+>>>>>>
+>>>>>> The regression was introduced as of v3.17-rc1 and still exists in
+>>>>>> current mainline.  It has also made it's way into the stable releases.
+>>>>>>
+>>>>>> I was hoping to get your feedback, since you are the patch author.  Do
+>>>>>> you think gathering any additional data will help diagnose this issue,
+>>>>>> or would it be best to submit a revert request?
+>>>>>>
+>>>>> Does revering b2dccf24e77 help?  I'd hate to revert this patch because it
+>>>> disables power management for a whole family of chips.  If it doesn't help
+>> I'd
+>>>> prefer to just add a quirk to disable it for the specific problematic board.
+>>>> Commit b2dccf24e77 was added to mainline as of v3.18-rc1 and was not
+>>>> cc'd to stable.  We are also seeing this issue in the 3.13.y stable
+>>>> kernel, which does not have commit b2dccf24e77 applied.  However, we
+>> can
+>>>> test reverting it in mainline?
+>>> Nope.  Won't make a difference.  The attached patch adds a quirk list for
+>> dpm which will fix the issue for the affected boards.
+>>> Alex
+>> Thanks again for the patch, Alex.  The bug reporter has tested a 3.16
+>> kernel with the patch and says it fixes the bug.
+> I'll queue it up for 3.19-fixes and cc stable.
+Great.  Thanks, again!
 
-Sounds like a good opportunity to make the other changes as well.  We
-can include the other changes in this patch set.  Is this (initramfs)
-the right mailing list for this discussion?  Do other people need to be
-included?
 
-> I ask because I maintain a new from-scratch cpio implementation
-> (http://landley.net/hg/toybox/file/1571/toys/posix/cpio.c), so I'd
-> presumably have to add your format extensions to this. Is there any
-> sort
-> of documentation on them?
-> 
-> The toybox config Android is using has this cpio implementation
-> enabled
-> (see
-> https://android.googlesource.com/platform/external/toybox/+/9250c95a8c47/Android.mk)
-> so I'd rather like to get this sort of detail right...
-
-The xattr section, which follows the file name, is of the format:
-<number of xattrs> { <xattr name> <xattr data size> <xattr data> } for
-each xattr, terminated with a NULL byte and padded to a 4 byte boundary.
-
-The header contains an additional field, before the checksum, containing
-the xattr section length, including the NULL byte, but without the
-padding.
-
-Note that gen_init_cpio does not include "security.evm" as it is file
-system dependent.
-
-Mimi
+> Thanks,
+>
+> Alex
+>
+>>
+>>>>> Alex
+>>>>>
+>>>>>> Thanks,
+>>>>>>
+>>>>>> Joe
+>>>>>>
+>>>>>> [0] http://pad.lv/1386534
 
