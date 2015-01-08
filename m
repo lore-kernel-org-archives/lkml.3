@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932166AbbAHQL7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 11:11:59 -0500
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:34756 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754234AbbAHQL5 (ORCPT
+	id S1755712AbbAHQMk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 11:12:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34010 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754271AbbAHQMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 11:11:57 -0500
-Message-ID: <54AEAC47.1040403@hurleysoftware.com>
-Date: Thu, 08 Jan 2015 11:11:51 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
+	Thu, 8 Jan 2015 11:12:38 -0500
+Message-ID: <54AEAC6E.9020807@canonical.com>
+Date: Thu, 08 Jan 2015 11:12:30 -0500
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] serial: 8250: Make ISA ports optional
-References: <1420513785-23660-1-git-send-email-peter@hurleysoftware.com> <20150108131008.16c9a31c@lxorguk.ukuu.org.uk>
-In-Reply-To: <20150108131008.16c9a31c@lxorguk.ukuu.org.uk>
+To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+CC: "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Koenig, Christian" <Christian.Koenig@amd.com>,
+        David Airlie <airlied@linux.ie>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Subject: Re: [Regression][v3.17][3.18][3.19-rc3] drm/radeon: re-enable dpm
+ by default on BTC
+References: <54ADB86B.10105@canonical.com> <A3397C8B8B789E45844E7EC5DEAD89D0635DD4D6@satlexdag06.amd.com>
+In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D0635DD4D6@satlexdag06.amd.com>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2015 08:10 AM, One Thousand Gnomes wrote:
-> On Mon,  5 Jan 2015 22:09:45 -0500
-> Peter Hurley <peter@hurleysoftware.com> wrote:
-> 
->> Some arches have no need to create unprobed 8250 ports; these phantom
->> ports are primarily required for ISA ports which have no probe
->> mechanism or to provide non-operational ports for userspace to
->> configure (via TIOCSSERIAL and TIOCSERCONFIG ioctls).
+On 01/07/2015 09:51 PM, Deucher, Alexander wrote:
+>
+>> -----Original Message-----
+>> From: Joseph Salisbury [mailto:joseph.salisbury@canonical.com]
+>> Sent: Wednesday, January 07, 2015 5:51 PM
+>> To: Deucher, Alexander
+>> Cc: stable@vger.kernel.org; LKML; Koenig, Christian; David Airlie; dri-devel
+>> Subject: [Regression][v3.17][3.18][3.19-rc3] drm/radeon: re-enable dpm by
+>> default on BTC
 >>
->> Provide CONFIG_SERIAL_8250_PHANTOM_UARTS knob to disable phantom port
->> registration; ie., CONFIG_SERIAL_8250_PHANTOM_UARTS=N only registers
->> probed ports (ACPI/PNP, "serial8250" platform devices, PCI, etc).
-> 
-> Just #define serial8250_isa_devs to 0 on such platforms. gcc should then
-> be bright enough to do the rest for you.
+>> Hi Alexander,
+>>
+>> A kernel bug report was opened against Ubuntu [0].  After a kernel
+>> bisect, it was found that reverting the following commit resolved this bug:
+>>
+>> commit c08abf11900e19b14dd3a0cc3d105bd74519cd18
+>> Author: Alex Deucher <alexander.deucher@amd.com>
+>> Date:   Mon Jul 14 12:01:40 2014 -0400
+>>
+>>     drm/radeon: re-enable dpm by default on BTC
+>>
+>> The regression was introduced as of v3.17-rc1 and still exists in
+>> current mainline.  It has also made it's way into the stable releases.
+>>
+>> I was hoping to get your feedback, since you are the patch author.  Do
+>> you think gathering any additional data will help diagnose this issue,
+>> or would it be best to submit a revert request?
+>>
+> Does revering b2dccf24e77 help?  I'd hate to revert this patch because it disables power management for a whole family of chips.  If it doesn't help I'd prefer to just add a quirk to disable it for the specific problematic board.
+We'll test and let you know.  Thanks for the feedback, Alex!
 
-Well, this patch has the "advantage" of allowing the user to override
-the config and create blank ports anyway.
 
-That said, I'm exploring a completely different approach: I've split the
-driver from the port operations. The idea being that the existing
-"universal" driver supports everything it does now, while allowing for
-a new driver(s) to only support a subset.
+>
+> Alex
+>
+>> Thanks,
+>>
+>> Joe
+>>
+>> [0] http://pad.lv/1386534
 
-At this point, I've only done the actual split. So the "universal" driver
-module has:
- * ISA/"serial8250" platform driver
- * PNP init
- * uart driver and console definitions
- * all the existing module parameters
- * all the globals (except the const uart_config[] table)
- * RSA port handling
- * Chained interrupt handling
- * port i/o by timer handling
- * early_serial_setup()
- * sun ttyS shared registration
- * serial8250_ports[] table and how it re-uses existing ports
-
-The "universal" driver also has the sub-driver interface, which is:
- * serial8250_register_8250_port
- * serial8250_unregister_port
- * serial8250_suspend/resume_port
- * serial8250_find_port (hack for 8250_early)
- * serial8250_get_port (hack for runtime pm)
-
-This interface is just storage and minor allocation, since the
-port-reuse behavior will be limited to the "universal" driver.
->From a sub-driver perspective, the shared storage is actually
-a hindrance, so that reduces the requirement to minor allocation.
-
-And that's where I'm stuck at the moment -- how to share ttyS
-minor allocation. ttyS console is a related problem.
-
-Regards,
-Peter Hurley
