@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129AbbAHFFP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 00:05:15 -0500
-Received: from mailout.micron.com ([137.201.242.129]:33081 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250AbbAHFFN (ORCPT
+	id S1751047AbbAHFEa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 00:04:30 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:41440 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705AbbAHFE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 00:05:13 -0500
-From: =?gb2312?B?UGV0ZXIgUGFuIMXLtrAgKHBldGVycGFuZG9uZyk=?= 
-	<peterpandong@micron.com>
-To: Ezequiel Garcia <ezequiel.garcia@imgtec.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "Brian Norris" <computersforpeace@gmail.com>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?gb2312?B?UWkgV2FuZyDN9cbwIChxaXdhbmcp?= <qiwang@micron.com>,
-        =?gb2312?B?RnJhbmsgTGl1IMH1yLogKGZyYW5rbGl1KQ==?= 
-	<frankliu@micron.com>,
-        =?gb2312?B?TWVsYW5pZSBaaGFuZyDVxdHgIChtZWxhbmllemhhbmcp?= 
-	<melaniezhang@micron.com>
-Subject: RE: [PATCH 3/3] mtd: spi-nand: add devicetree binding
-Thread-Topic: [PATCH 3/3] mtd: spi-nand: add devicetree binding
-Thread-Index: AdAq2xIAAWi2EYo2S7+rJwTqE708CAAAgENw//+iloD//1zk8A==
-Date: Thu, 8 Jan 2015 05:04:24 +0000
-Message-ID: <87F60714EC601C4C83DFF1D2E3D390A04AB4EA@NTXXIAMBX02.xacn.micron.com>
-References: <87F60714EC601C4C83DFF1D2E3D390A04AB425@NTXXIAMBX02.xacn.micron.com>
- <54ADF66F.7090400@imgtec.com>
-In-Reply-To: <54ADF66F.7090400@imgtec.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-21232.000
-x-tm-as-result: No--50.509800-0.000000-31
-x-tm-as-user-approved-sender: Yes
-x-tm-as-user-blocked-sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="gb2312"
+	Thu, 8 Jan 2015 00:04:29 -0500
 MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.11.1501072228440.1322@knanqh.ubzr>
+References: <alpine.LFD.2.11.1501041547050.18844@knanqh.ubzr>
+	<CA+55aFy5yB2d-1iXEUtU+puua4TAmV0kZF_7TBhXO1Y4Khqb9Q@mail.gmail.com>
+	<alpine.LFD.2.11.1501041609290.18844@knanqh.ubzr>
+	<20150104212659.GC12302@n2100.arm.linux.org.uk>
+	<alpine.LFD.2.11.1501042343240.18844@knanqh.ubzr>
+	<CAHkRjk6Vg_AR8rFNYzPcnPwfKZqaVuaCoG67CEVPRgp1-bDetA@mail.gmail.com>
+	<CA+55aFypmZExpCvD699TQOs1NDK_mT-_rR3UWOdxdzkOKvbdoA@mail.gmail.com>
+	<alpine.LFD.2.11.1501071354130.1322@knanqh.ubzr>
+	<CA+55aFw70ZvHKH+8_aS7E7FZZuuWQA++zGQuSmuvDE3DWU+x3A@mail.gmail.com>
+	<alpine.LFD.2.11.1501071446460.1322@knanqh.ubzr>
+	<20150107205346.GO12302@n2100.arm.linux.org.uk>
+	<CAHkRjk6FT+WJ3u9qhfB-EMcqhOHGQSe4dW4MpZF6vE97B0vD0A@mail.gmail.com>
+	<CA+55aFz0cjsS4BTwtBt9P1pKHmPjXPYnOvFuP07UVoek7jSYLw@mail.gmail.com>
+	<alpine.LFD.2.11.1501071914250.1322@knanqh.ubzr>
+	<CA+55aFyKz2tZDq6ANjKVmuvipKtjr+UP4c7ypNXtbXBcapOpKg@mail.gmail.com>
+	<alpine.LFD.2.11.1501072228440.1322@knanqh.ubzr>
+Date: Wed, 7 Jan 2015 21:04:28 -0800
+X-Google-Sender-Auth: qJpbapyK6pAUciif6HSETkCFsKA
+Message-ID: <CA+55aFyDQ4Mk8hHOvH-2nhpDgN+gBgiLf6=dLVcjKC5uetqzJw@mail.gmail.com>
+Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
+ pyaudio (and probably more)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pavel Machek <pavel@ucw.cz>, Marc Zyngier <marc.zyngier@arm.com>,
+        kernel list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0855MxI028853
 
-> > This commit adds the devicetree binding document that specifies the
-> > spi nand devices support.
-> >
-> > Signed-off-by: Peter Pan <peterpandong@micron.com>
-> > ---
-> >  Documentation/devicetree/bindings/mtd/spi-nand.txt | 22
-> ++++++++++++++++++++++
-> >  1 file changed, 22 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/mtd/spi-
-> nand.txt
-> >
-> > diff --git a/Documentation/devicetree/bindings/mtd/spi-nand.txt
-> b/Documentation/devicetree/bindings/mtd/spi-nand.txt
-> > new file mode 100644
-> > index 0000000..9dd3efd
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/mtd/spi-nand.txt
-> > @@ -0,0 +1,22 @@
-> > +* NAND driver for MT29F, GD5F and similar SPI NAND flash chips
-> > +
-> > +Required properties:
-> > +- #address-cells, #size-cells : Must be present if the device has
-> sub-nodes
-> > +  representing partitions.
-> > +- compatible : Should be the manufacturer and the name of the chip.
-> Bear in mind
-> >
-> 
-> Unless I'm mistaken, we don't need the chip ID here, as SPI NAND allows
-> to autodetect the device. Any reason why we can't just use a generic
-> compatible "spi-nand" here?
-> --
-> Ezequiel
+On Wed, Jan 7, 2015 at 8:56 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+>>
+>> Yes, I actually would mind, unless you have a damn good reason for it.
+>
+> Consistency.
 
-In fact, I don't know how to autodetect the SPI NAND device. Micron device and
-Gigadevice device have different read ID functions. The Chip ID here is used to
-determine which function to use.
+Fuck no.
 
+"Completely made up number that you cannot explain" is not consistency.
 
-Peter Pan
+The *current* situation is consistency. I can - and have in this very
+thread - explained what bogomips is in just a sentence or two.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+You are just making shit up. Bad shit. Get off the drugs, because it's
+not the good kind.
+
+> On ARM we just can't find the CPU clock in a generic way.
+
+Cry me a river.
+
+So you want to make bogomips a totally random number, that has no
+meaning, no correlation to any clocksource, and no correlation to cpu
+frequency either?
+
+And you argue for this though exactly WHAT? "Consistency".
+
+Bullshit.
+
+This whole thread is now marked as "muted" for me, because I can't
+take the BS any more. You make no sense.
+
+You guys playing games with bogomips was what broke things in the
+first place, and now you want to play *more* games?
+
+You're crazy. Go away. Or don't. I won't be seeing your emails anyway,
+so why would I care?
+
+                            Linus
