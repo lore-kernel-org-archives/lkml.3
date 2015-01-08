@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756920AbbAHQky (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 11:40:54 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:59755 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756752AbbAHQkv (ORCPT
+	id S932258AbbAHQla (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 11:41:30 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:57993 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757014AbbAHQl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 11:40:51 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-76-54aeb3121770
-From: Karol Wrona <k.wrona@samsung.com>
-To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
-        Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>, linux-kernel@vger.kernel.org
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Karol Wrona <wrona.vy@gmail.com>, Karol Wrona <k.wrona@samsung.com>
-Subject: [PATCH 2/2] iio: Deselect IIO_TRIGGER for IIO_KFIFO_BUF
-Date: Thu, 08 Jan 2015 17:40:27 +0100
-Message-id: <1420735227-21091-3-git-send-email-k.wrona@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1420735227-21091-1-git-send-email-k.wrona@samsung.com>
-References: <1420735227-21091-1-git-send-email-k.wrona@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplluLIzCtJLcpLzFFi42I5/e/4FV2hzetCDCa9lLXYOGM9q8WDplVM
-	FqeW7Wey2PX/DbPF2aY37BZLJs9ntZh35B2LxeVdc9gsfu86xm6xZ90WJgcuj52z7rJ7fPgY
-	57FpVSebx5I3h1g9zjcfYfTo27KK0ePzJrkA9igum5TUnMyy1CJ9uwSujFN3xAu2slYcud/M
-	1MC4kqWLkZNDQsBE4tL3b2wQtpjEhXvrgWwuDiGBpYwSb5r/MEI4fUwS028+YgepYhNQl2je
-	sZgZJCEicIFR4vihLSwgDrPAGkaJM2cngFUJCzhI7Ll6C2wHi4CqxOVFE8FsXgFnid5vIJM4
-	gPYpSMyZZAMS5hRwkXh55QRYWAioZPMfnwmMvAsYGVYxiqaWJhcUJ6XnGukVJ+YWl+al6yXn
-	525ihATh1x2MS49ZHWIU4GBU4uH9cH9tiBBrYllxZe4hRgkOZiURXh3PdSFCvCmJlVWpRfnx
-	RaU5qcWHGJk4OKUaGGNN3/gZerCFFnl2VsW0PXsdkH3qzUs1q5a4IItuS66um7sF2a6vkdys
-	ukNo6j35A5WMT2ZtvX7P9YnRjuRKw3z1tpDrF2Zt3m1xICwqbu2Xva3VB7dUF19/n/jq6ATx
-	1hfvkm7c6JW7Pr1H+8+Px4wr7sx7vGPP5pozvcv3LKyt0eUp1opjUFBiKc5INNRiLipOBAD+
-	KtXaIAIAAA==
+	Thu, 8 Jan 2015 11:41:26 -0500
+Date: Thu, 8 Jan 2015 16:41:12 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Vince Weaver <vince@deater.net>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Pavel Machek <pavel@ucw.cz>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "vincent.weaver@maine.edu" <vincent.weaver@maine.edu>
+Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
+ pyaudio (and probably more)
+Message-ID: <20150108164111.GB17290@e104818-lin.cambridge.arm.com>
+References: <CA+55aFypmZExpCvD699TQOs1NDK_mT-_rR3UWOdxdzkOKvbdoA@mail.gmail.com>
+ <alpine.LFD.2.11.1501071354130.1322@knanqh.ubzr>
+ <CA+55aFw70ZvHKH+8_aS7E7FZZuuWQA++zGQuSmuvDE3DWU+x3A@mail.gmail.com>
+ <alpine.LFD.2.11.1501071446460.1322@knanqh.ubzr>
+ <20150107205346.GO12302@n2100.arm.linux.org.uk>
+ <CAHkRjk6FT+WJ3u9qhfB-EMcqhOHGQSe4dW4MpZF6vE97B0vD0A@mail.gmail.com>
+ <20150108103911.GQ12302@n2100.arm.linux.org.uk>
+ <alpine.DEB.2.10.1501081044470.26196@pianoman.cluster.toy>
+ <20150108161908.GA17290@e104818-lin.cambridge.arm.com>
+ <20150108163450.GV12302@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150108163450.GV12302@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-iio kfifo can be used without trigger support so there is no need to build it.
+On Thu, Jan 08, 2015 at 04:34:50PM +0000, Russell King - ARM Linux wrote:
+> On Thu, Jan 08, 2015 at 04:19:08PM +0000, Catalin Marinas wrote:
+> > I really think we should stop this thread. User ABI breakage fixed now.
+> 
+> No.  Vince's email shows a more serious problem.
+> 
+> The ABI breakage issue was reported before the patches were apparently
+> merged, but that information seems to have been lost.  We need to
+> understand how that happened so similar instances don't happen in the
+> future.
 
-Signed-off-by: Karol Wrona <k.wrona@samsung.com>
----
- drivers/iio/Kconfig |    1 -
- 1 file changed, 1 deletion(-)
+FYI, searching for "Vince Weaver" and "bogomips" found this:
 
-diff --git a/drivers/iio/Kconfig b/drivers/iio/Kconfig
-index 50f6599..dfda2c3 100644
---- a/drivers/iio/Kconfig
-+++ b/drivers/iio/Kconfig
-@@ -27,7 +27,6 @@ boolean "IIO callback buffer used for push in-kernel interfaces"
- 	  usage.  That is, those where the data is pushed to the consumer.
- 
- config IIO_KFIFO_BUF
--	select IIO_TRIGGER
- 	tristate "Industrial I/O buffering based on kfifo"
- 	help
- 	  A simple fifo based on kfifo.  Note that this currently provides
+https://lkml.org/lkml/2013/7/11/454
+
 -- 
-1.7.9.5
-
+Catalin
