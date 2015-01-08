@@ -1,42 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756513AbbAHMCH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 07:02:07 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:56046 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754530AbbAHMCF (ORCPT
+	id S1754560AbbAHMKE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 07:10:04 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61158 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750744AbbAHMKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 07:02:05 -0500
+	Thu, 8 Jan 2015 07:10:03 -0500
+Date: Thu, 8 Jan 2015 12:09:34 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: Re: [PATCH] perf: drop module reference on event init failure
+Message-ID: <20150108120934.GB10537@leverpostej>
+References: <1420642611-22667-1-git-send-email-mark.rutland@arm.com>
+ <20150108113212.GE11583@arm.com>
 MIME-Version: 1.0
-In-Reply-To: <1420421851-3281-3-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1420421851-3281-1-git-send-email-iamjoonsoo.kim@lge.com> <1420421851-3281-3-git-send-email-iamjoonsoo.kim@lge.com>
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Thu, 8 Jan 2015 12:01:43 +0000
-X-Google-Sender-Auth: sztRAkKWwp0YZT1171H-lwegHpY
-Message-ID: <CAHkRjk6Lfm4aOHaw6M7ug6DxvmKr1RtuqzfB6k2moJW9VvHAUQ@mail.gmail.com>
-Subject: Re: [PATCH 2/6] mm/slab: remove kmemleak_erase() call
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jesper Dangaard Brouer <brouer@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150108113212.GE11583@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 January 2015 at 01:37, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> We already call kmemleak_no_scan() in initialization step of array cache,
-> so kmemleak doesn't scan array cache. Therefore, we don't need to call
-> kmemleak_erase() here.
->
-> And, this call is the last caller of kmemleak_erase(), so remove
-> kmemleak_erase() definition completely.
+On Thu, Jan 08, 2015 at 11:32:13AM +0000, Will Deacon wrote:
+> On Wed, Jan 07, 2015 at 02:56:51PM +0000, Mark Rutland wrote:
+> > When initialising an event, perf_init_event will call try_module_get to
+> > ensure that the PMU's module cannot be removed for the lifetime of the
+> > event, with __free_event dropping the reference when the event is
+> > finally destroyed. If something fails after the event has been
+> > initialised, but before the event is installed, perf_event_alloc will
+> > drop the reference on the module.
+> > 
+> > However, if we fail to initialise an event for some reason (e.g. we ask
+> > an uncore PMU to perform sampling, and it refuses to initialise the
+> > event), we do not drop the refcount. If we try to open such a bogus
+> > event without a precise IDR type, we will loop over each PMU in the pmus
+> > list, incrementing each of their refcounts without decrementing them.
+> > 
+> > This patch adds a module_put when pmu->event_init(event) fails, ensuring
+> > that the refcounts are balanced in failure cases. As the innards of the
+> > precise and search based initialisation look very similar, this logic is
+> > hoisted out into a new helper function. While the early return for the
+> > failed try_module_get is removed from the search case, this is handled
+> > by the remaining return when ret is not -ENOENT.
+> > 
+> > Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+> > Cc: Will Deacon <will.deacon@arm.com>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Cc: Paul Mackerras <paulus@samba.org>
+> > Cc: Ingo Molnar <mingo@redhat.com>
+> > Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+> > ---
+> >  kernel/events/core.c | 28 ++++++++++++++++------------
+> >  1 file changed, 16 insertions(+), 12 deletions(-)
+> 
+> Looks like a straightforward fix to me -- does it need to go to stable too?
 
-Good point.
+Assuming people are using PMU drivers built as modules on stable
+kernels, then yes. Otherwise it's not strictly necessary as far as I can
+see.
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+The only such driver I'm immediately aware of is for the ARM CCN, but
+it's entirely possible I missed another.
 
--- 
-Catalin
+I guess this fixes c464c76eec4be587 (perf: Allow building PMU drivers as
+modules).
+
+> Acked-by: Will Deacon <will.deacon@arm.com>
+
+Cheers.
+
+Mark.
+
+> 
+> Will
+> 
+> > diff --git a/kernel/events/core.c b/kernel/events/core.c
+> > index 4c1ee7f..4faccf3 100644
+> > --- a/kernel/events/core.c
+> > +++ b/kernel/events/core.c
+> > @@ -6857,6 +6857,20 @@ void perf_pmu_unregister(struct pmu *pmu)
+> >  }
+> >  EXPORT_SYMBOL_GPL(perf_pmu_unregister);
+> >  
+> > +static int perf_try_init_event(struct pmu *pmu, struct perf_event *event)
+> > +{
+> > +	int ret;
+> > +
+> > +	if (!try_module_get(pmu->module))
+> > +		return -ENODEV;
+> > +	event->pmu = pmu;
+> > +	ret = pmu->event_init(event);
+> > +	if (ret)
+> > +		module_put(pmu->module);
+> > +
+> > +	return ret;
+> > +}
+> > +
+> >  struct pmu *perf_init_event(struct perf_event *event)
+> >  {
+> >  	struct pmu *pmu = NULL;
+> > @@ -6869,24 +6883,14 @@ struct pmu *perf_init_event(struct perf_event *event)
+> >  	pmu = idr_find(&pmu_idr, event->attr.type);
+> >  	rcu_read_unlock();
+> >  	if (pmu) {
+> > -		if (!try_module_get(pmu->module)) {
+> > -			pmu = ERR_PTR(-ENODEV);
+> > -			goto unlock;
+> > -		}
+> > -		event->pmu = pmu;
+> > -		ret = pmu->event_init(event);
+> > +		ret = perf_try_init_event(pmu, event);
+> >  		if (ret)
+> >  			pmu = ERR_PTR(ret);
+> >  		goto unlock;
+> >  	}
+> >  
+> >  	list_for_each_entry_rcu(pmu, &pmus, entry) {
+> > -		if (!try_module_get(pmu->module)) {
+> > -			pmu = ERR_PTR(-ENODEV);
+> > -			goto unlock;
+> > -		}
+> > -		event->pmu = pmu;
+> > -		ret = pmu->event_init(event);
+> > +		ret = perf_try_init_event(pmu, event);
+> >  		if (!ret)
+> >  			goto unlock;
+> >  
+> > -- 
+> > 1.9.1
+> > 
+> 
