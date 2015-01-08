@@ -1,73 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583AbbAHQ5U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 11:57:20 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:52756 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754479AbbAHQ5T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 11:57:19 -0500
-Date: Thu, 8 Jan 2015 16:57:05 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Vince Weaver <vince@deater.net>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Pavel Machek <pavel@ucw.cz>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "vincent.weaver@maine.edu" <vincent.weaver@maine.edu>
-Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
- pyaudio (and probably more)
-Message-ID: <20150108165705.GW12302@n2100.arm.linux.org.uk>
-References: <alpine.LFD.2.11.1501071354130.1322@knanqh.ubzr>
- <CA+55aFw70ZvHKH+8_aS7E7FZZuuWQA++zGQuSmuvDE3DWU+x3A@mail.gmail.com>
- <alpine.LFD.2.11.1501071446460.1322@knanqh.ubzr>
- <20150107205346.GO12302@n2100.arm.linux.org.uk>
- <CAHkRjk6FT+WJ3u9qhfB-EMcqhOHGQSe4dW4MpZF6vE97B0vD0A@mail.gmail.com>
- <20150108103911.GQ12302@n2100.arm.linux.org.uk>
- <alpine.DEB.2.10.1501081044470.26196@pianoman.cluster.toy>
- <20150108161908.GA17290@e104818-lin.cambridge.arm.com>
- <20150108163450.GV12302@n2100.arm.linux.org.uk>
- <20150108164111.GB17290@e104818-lin.cambridge.arm.com>
+	id S1756898AbbAHQ6B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 11:58:01 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:55778 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755204AbbAHQ6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 11:58:00 -0500
+Date: Thu, 8 Jan 2015 10:57:22 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: sundeep subbaraya <sundeep.lkml@gmail.com>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: query on DWC3
+Message-ID: <20150108165722.GG31926@saruman>
+Reply-To: <balbi@ti.com>
+References: <CALHRZuotPpSoX9bnQin=93k0Hr7tEp_HZDaaBvfKaPfmoi_EBQ@mail.gmail.com>
+ <A2CA0424C0A6F04399FB9E1CD98E03048450126C@US01WEMBX2.internal.synopsys.com>
+ <CALHRZupFbTxTn9KiUCmvcmgYxUUcNfvAoMqOq=Drq0gZ+H246w@mail.gmail.com>
+ <20141222161123.GE12815@saruman>
+ <20141222161218.GF12815@saruman>
+ <CALHRZuqq5Cc+WsQDzOjKOcF6HNH+OKw_7Pkkp3qssuu7kpSeLw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="L+ofChggJdETEG3Y"
 Content-Disposition: inline
-In-Reply-To: <20150108164111.GB17290@e104818-lin.cambridge.arm.com>
+In-Reply-To: <CALHRZuqq5Cc+WsQDzOjKOcF6HNH+OKw_7Pkkp3qssuu7kpSeLw@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 08, 2015 at 04:41:12PM +0000, Catalin Marinas wrote:
-> On Thu, Jan 08, 2015 at 04:34:50PM +0000, Russell King - ARM Linux wrote:
-> > On Thu, Jan 08, 2015 at 04:19:08PM +0000, Catalin Marinas wrote:
-> > > I really think we should stop this thread. User ABI breakage fixed now.
-> > 
-> > No.  Vince's email shows a more serious problem.
-> > 
-> > The ABI breakage issue was reported before the patches were apparently
-> > merged, but that information seems to have been lost.  We need to
-> > understand how that happened so similar instances don't happen in the
-> > future.
-> 
-> FYI, searching for "Vince Weaver" and "bogomips" found this:
-> 
-> https://lkml.org/lkml/2013/7/11/454
+--L+ofChggJdETEG3Y
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Gah.
+Hi,
 
-It looks like the report was made by hanging it into a totally different
-thread to the patches which caused the problem, and which went nowhere
-near the ARM kernel mailing lists.
+On Tue, Jan 06, 2015 at 12:39:55PM +0530, sundeep subbaraya wrote:
+> >> On Sun, Dec 14, 2014 at 08:39:18AM +0530, sundeep subbaraya wrote:
+> >> > Hi Paul,
+> >> >
+> >> > As per my understanding, for BULK OUT we do queue a request with 512
+> >> > bytes length since we do not
+> >>
+> >> sometimes we _do_ know the size. In case of Mass Storage, we _know_ th=
+at
+> >> the first bulk out transfer will be 31-bytes (CBW), if we were to start
+> >> a 31-byte transfer, we would't receive anything.
+> >>
+> >> > know the length of the transfer Host is going to send. For Control O=
+UT
+> >> > we know the length in wLength of
+> >> > Setup packet, hence I assumed there is no difference in programming
+> >> > model of Control IN and OUT.
+> >>
+> >> there is _no_ difference. It's just that it was agreed that for anythi=
+ng
+> >> other than control ep, the function drivers would take care of it. See
+> >> the uses of quirk_ep_out_aligned_size.
+>=20
+> got it..:)
+>=20
+> >
+> > btw, why are you reimplementing the driver when there's a perfectly good
+> > driver to use in mainline kernel ?
+>=20
+> I am writing a bare metal driver and it didn't work without alignment
+> check mentioned above.
 
-At least that explains why people like me who really need to know this
-stuff were not aware of the issue.
+just make sure you don't copy GPL code into your bare metal driver,
+otherwise your bare metal driver will be GPL by definition. Also, since
+you're not using Linux at all, you should be asking support from
+Synopsys instead, not the Linux USB mailing list.
 
-One thing I still can't get my head around though is... Vince reported
-the breakage on 11 July 2013, but the patch is dated 30 August and I
-merged it 2 September.  So, how did Vince know about it to report the
-ABI breakage?  Had it been sitting somewhere else?
+--=20
+balbi
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+--L+ofChggJdETEG3Y
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUrrbyAAoJEIaOsuA1yqREJJcP/R3REsBR0qbdBWn2/souQ0SX
+EB4E3sgsML6Vlr27LHUvs98ez0yBEkyl373Uytg/XuhNTfekqcExzrC0ijHgaE0C
+mPxqqI1Dpzg5/588s5fZTMHkd3yl/Jzmhy8jgYwm9U8SRM4PLsXSKgKC99Vb3K+K
+CUGUWd2Vqrv2eAaaY+YBzishfmo+oa7ejc/M6ct4KA/HbTXFsqWY6VnTw87WHH+x
+gJE8jRFp7aju2Dod+LWQdTH/b07sw28kNC+bNRZ3Qruw0UHBCCQhZnJiyDNqg2Vw
+nzNKF+flzne4Z8RoxTCffTlIyIDTqsmaXCLguXu9+K+f0tHaLOU8Sh404KpppPxy
+zO6Lsddu581TvdPYK9TAAkOd6OhIdLId0bcWWyPK/ZXv4Oo2hL/gHLkwQRcf3beJ
+wDbe8RmdzGNI8zZ3pUlNUFnqllLU95+0nUodxyP5imrWqQQji4DyOoJKEpTRuCzM
+X9phYeENzcdzWK03TSHYXFopBQASAxxGnSiZeFr2YveYUdha9QvxGl5C75PgK9dp
+T7PTyXinpXgfO2BUw7OzGyusZF0cN0EqHJLKdS+hrO80AIb6QpI3IkXi3EGlQajE
+7NFK+p3B/kSdwWweAhV6Qy/22OsflmY5Njgs+WDeBqgOJRiTmow8J6HkGonRJ8Wj
+gDJXlIh2M+2K7GSf6Wmr
+=OZS1
+-----END PGP SIGNATURE-----
+
+--L+ofChggJdETEG3Y--
