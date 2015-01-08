@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775AbbAHRcK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 12:32:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57750 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751592AbbAHRcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 12:32:08 -0500
-Message-ID: <54AEBEE0.8030100@redhat.com>
-Date: Thu, 08 Jan 2015 23:01:12 +0530
-From: Pratyush Anand <panand@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tixy@linaro.org" <tixy@linaro.org>,
-        "ananth@in.ibm.com" <ananth@in.ibm.com>,
-        "sandeepa.prabhu@linaro.org" <sandeepa.prabhu@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "anil.s.keshavamurthy@intel.com" <anil.s.keshavamurthy@intel.com>,
-        "masami.hiramatsu.pt@hitachi.com" <masami.hiramatsu.pt@hitachi.com>,
-        "wcohen@redhat.com" <wcohen@redhat.com>,
-        "oleg@redhat.com" <oleg@redhat.com>
-Subject: Re: [RFC 1/8] ARM64: Move BRK opcodes defines from kprobes.h to insn.h
-References: <cover.1420038188.git.panand@redhat.com> <5beb1ff58d4928a873be5e898b62d8cc2003ec7c.1420038188.git.panand@redhat.com> <20150108165506.GP11583@arm.com>
-In-Reply-To: <20150108165506.GP11583@arm.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756971AbbAHRc7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 12:32:59 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:58177 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754991AbbAHRc5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 12:32:57 -0500
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/2] genirq: Make irqchip flags work with stacked irq domains
+Date: Thu,  8 Jan 2015 17:32:43 +0000
+Message-Id: <1420738365-22063-1-git-send-email-marc.zyngier@arm.com>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+With the landing of stacked irq domains in 3.19, we have ended up in a
+situation where we have a stack of IRQ controllers, each with their
+set of flags, but the core code is only able to look at the top-most,
+which is not very helpful. This small series is trying to fix this.
 
+The first patch converts all access to desc->irq_data.chip->flags to
+using an accessor, without changing anything else. The second patch
+adds some logic to combine these flags as we allocate the interrupts,
+ultimately storing the resulting set as part of the irq_desc
+structure.
 
-On Thursday 08 January 2015 10:25 PM, Will Deacon wrote:
-> On Wed, Dec 31, 2014 at 03:21:17PM +0000, Pratyush Anand wrote:
->> Its better to keep all BRK opcodes used by kprobes and uprobes at one
->> place. Therefore move these defines to asm/insn.h.
->>
->> Signed-off-by: Pratyush Anand <panand@redhat.com>
->> ---
->>   arch/arm64/include/asm/insn.h | 6 ++++++
->>   arch/arm64/kernel/kprobes.h   | 7 +------
->>   2 files changed, 7 insertions(+), 6 deletions(-)
->>
->> diff --git a/arch/arm64/include/asm/insn.h b/arch/arm64/include/asm/insn.h
->> index e2ff32a93b5c..87fa48746806 100644
->> --- a/arch/arm64/include/asm/insn.h
->> +++ b/arch/arm64/include/asm/insn.h
->> @@ -23,6 +23,12 @@
->>   /* A64 instructions are always 32 bits. */
->>   #define	AARCH64_INSN_SIZE		4
->>
->> +/* BRK opcodes with ESR encoding  */
->> +#define BRK64_ESR_MASK		0xFFFF
->> +#define BRK64_ESR_KPROBES	0x0004
->> +#define BRK64_OPCODE_KPROBES	0xD4200080	/* "brk 0x4" */
->
-> These might be better off in debug-monitors.h, but I guess that's for the
-> kprobes series to sort out.
->
+We end-up with a configuration where the flags can either be located
+in the irq_chip structure (non stacked case), or in the irq_desc
+(stacked case). While this isn't really ideal, this gives at least the
+right level of information to the rest of the IRQ framework.
 
-Agreed.
+Based on 3.19-rc3, and available at:
+git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git irq/stacked-irqchip-flags
 
-~Pratyush
->> +#define ARCH64_NOP_OPCODE	0xD503201F
->
-> We have aarch64_insn_gen_nop for this.
->
-> Will
->
+Marc Zyngier (2):
+  genirq: Abstract access to irq_chip flags
+  genirq: Allow irq_desc to carry the union of stacked irq_chip flags
+
+ include/linux/irq.h     |  4 ++++
+ include/linux/irqdesc.h | 12 ++++++++++++
+ kernel/irq/chip.c       | 10 +++++-----
+ kernel/irq/irqdesc.c    |  3 +++
+ kernel/irq/irqdomain.c  | 20 +++++++++++++++++++-
+ kernel/irq/manage.c     |  6 +++---
+ kernel/irq/pm.c         |  2 +-
+ 7 files changed, 47 insertions(+), 10 deletions(-)
+
+-- 
+2.1.4
+
