@@ -1,53 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792AbbAHQfA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 11:35:00 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:52701 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754479AbbAHQe7 (ORCPT
+	id S1756804AbbAHQgg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 11:36:36 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:35509 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543AbbAHQge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 11:34:59 -0500
-Date: Thu, 8 Jan 2015 16:34:50 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Vince Weaver <vince@deater.net>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Pavel Machek <pavel@ucw.cz>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "vincent.weaver@maine.edu" <vincent.weaver@maine.edu>
-Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
- pyaudio (and probably more)
-Message-ID: <20150108163450.GV12302@n2100.arm.linux.org.uk>
-References: <CAHkRjk6Vg_AR8rFNYzPcnPwfKZqaVuaCoG67CEVPRgp1-bDetA@mail.gmail.com>
- <CA+55aFypmZExpCvD699TQOs1NDK_mT-_rR3UWOdxdzkOKvbdoA@mail.gmail.com>
- <alpine.LFD.2.11.1501071354130.1322@knanqh.ubzr>
- <CA+55aFw70ZvHKH+8_aS7E7FZZuuWQA++zGQuSmuvDE3DWU+x3A@mail.gmail.com>
- <alpine.LFD.2.11.1501071446460.1322@knanqh.ubzr>
- <20150107205346.GO12302@n2100.arm.linux.org.uk>
- <CAHkRjk6FT+WJ3u9qhfB-EMcqhOHGQSe4dW4MpZF6vE97B0vD0A@mail.gmail.com>
- <20150108103911.GQ12302@n2100.arm.linux.org.uk>
- <alpine.DEB.2.10.1501081044470.26196@pianoman.cluster.toy>
- <20150108161908.GA17290@e104818-lin.cambridge.arm.com>
+	Thu, 8 Jan 2015 11:36:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150108161908.GA17290@e104818-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1420685852-5078-1-git-send-email-famz@redhat.com>
+References: <1420685852-5078-1-git-send-email-famz@redhat.com>
+Date: Thu, 8 Jan 2015 08:36:32 -0800
+Message-ID: <CAHdzE-_cEQ4=Dg1BBewD4QR+ph4GDorXTq5dr9iJm2uCWQ+K4w@mail.gmail.com>
+Subject: Re: [PATCH v4] virtio-scsi: Fix the race condition in virtscsi_handle_event
+From: Venkatesh Srinivas <venkateshs@google.com>
+To: Fam Zheng <famz@redhat.com>
+Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 08, 2015 at 04:19:08PM +0000, Catalin Marinas wrote:
-> I really think we should stop this thread. User ABI breakage fixed now.
+On Wed, Jan 7, 2015 at 6:57 PM, Fam Zheng <famz@redhat.com> wrote:
+>
+> There is a race condition in virtscsi_handle_event, when many device
+> hotplug/unplug events flush in quickly.
+>
+> The scsi_remove_device in virtscsi_handle_transport_reset may trigger
+> the BUG_ON in scsi_target_reap, because the state is altered behind it,
+> probably by scsi_scan_host of another event. I'm able to reproduce it by
+> repeatedly plugging and unplugging a scsi disk with the same lun number.
+>
+> To fix this, a single thread workqueue (local to the module) is added,
+> which makes the scan work serialized. With this change, the panic goes
+> away.
+>
+> Signed-off-by: Fam Zheng <famz@redhat.com>
 
-No.  Vince's email shows a more serious problem.
+Reviewed-by: Venkatesh Srinivas <venkateshs@google.com>
 
-The ABI breakage issue was reported before the patches were apparently
-merged, but that information seems to have been lost.  We need to
-understand how that happened so similar instances don't happen in the
-future.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+> ---
+>
+> v4: Addressing MST's comments:
+>     Use ordered workqueue, with WQ_FREEZABLE and WQ_MEM_RECLAIM flags.
+>     Coding style fixes.
+>
+> v3: Fix spacing and destroy order. (MST)
+> ---
+>  drivers/scsi/virtio_scsi.c | 14 +++++++++++++-
+>  1 file changed, 13 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+> index c52bb5d..0db63b5 100644
+> --- a/drivers/scsi/virtio_scsi.c
+> +++ b/drivers/scsi/virtio_scsi.c
+> @@ -120,6 +120,7 @@ struct virtio_scsi {
+>
+>  static struct kmem_cache *virtscsi_cmd_cache;
+>  static mempool_t *virtscsi_cmd_pool;
+> +static struct workqueue_struct *virtscsi_scan_wq;
+>
+>  static inline struct Scsi_Host *virtio_scsi_host(struct virtio_device *vdev)
+>  {
+> @@ -404,7 +405,7 @@ static void virtscsi_complete_event(struct virtio_scsi *vscsi, void *buf)
+>         struct virtio_scsi_event_node *event_node = buf;
+>
+>         if (!vscsi->stop_events)
+> -               queue_work(system_freezable_wq, &event_node->work);
+> +               queue_work(virtscsi_scan_wq, &event_node->work);
+>  }
+>
+>  static void virtscsi_event_done(struct virtqueue *vq)
+> @@ -1119,6 +1120,14 @@ static int __init init(void)
+>                 pr_err("mempool_create() for virtscsi_cmd_pool failed\n");
+>                 goto error;
+>         }
+> +
+> +       virtscsi_scan_wq =
+> +               alloc_ordered_workqueue("virtscsi-scan", WQ_FREEZABLE | WQ_MEM_RECLAIM);
+> +       if (!virtscsi_scan_wq) {
+> +               pr_err("create_singlethread_workqueue() for virtscsi_scan_wq failed\n");
+> +               goto error;
+> +       }
+> +
+>         ret = register_virtio_driver(&virtio_scsi_driver);
+>         if (ret < 0)
+>                 goto error;
+> @@ -1126,6 +1135,8 @@ static int __init init(void)
+>         return 0;
+>
+>  error:
+> +       if (virtscsi_scan_wq)
+> +               destroy_workqueue(virtscsi_scan_wq);
+>         if (virtscsi_cmd_pool) {
+>                 mempool_destroy(virtscsi_cmd_pool);
+>                 virtscsi_cmd_pool = NULL;
+> @@ -1140,6 +1151,7 @@ error:
+>  static void __exit fini(void)
+>  {
+>         unregister_virtio_driver(&virtio_scsi_driver);
+> +       destroy_workqueue(virtscsi_scan_wq);
+>         mempool_destroy(virtscsi_cmd_pool);
+>         kmem_cache_destroy(virtscsi_cmd_cache);
+>  }
+> --
+> 1.9.3
+>
