@@ -1,92 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090AbbAHJbH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 04:31:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34785 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751796AbbAHJbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 04:31:03 -0500
-Date: Thu, 8 Jan 2015 10:30:57 +0100
-From: Jan Kara <jack@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, jack@suse.cz,
-        hch@infradead.org, hannes@cmpxchg.org, linux-fsdevel@vger.kernel.org,
-        vgoyal@redhat.com, lizefan@huawei.com, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, mhocko@suse.cz, clm@fb.com, fengguang.wu@intel.com,
-        david@fromorbit.com
-Subject: Re: [PATCHSET RFC block/for-next] writeback: cgroup writeback support
-Message-ID: <20150108093057.GD14705@quack.suse.cz>
-References: <1420579582-8516-1-git-send-email-tj@kernel.org>
+	id S1756036AbbAHJfH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 04:35:07 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:58936 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752579AbbAHJfE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 04:35:04 -0500
+Date: Thu, 8 Jan 2015 10:31:42 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Cc: LFBDEV <linux-fbdev@vger.kernel.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] fbdev: ssd1307fb: set default height if not found in
+ DT node
+Message-ID: <20150108093142.GM7853@lukather>
+References: <1420705079-3741-1-git-send-email-prabhakar.csengg@gmail.com>
+ <1420705079-3741-2-git-send-email-prabhakar.csengg@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="QyKdZyDmv5hkaBi2"
 Content-Disposition: inline
-In-Reply-To: <1420579582-8516-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1420705079-3741-2-git-send-email-prabhakar.csengg@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
 
-On Tue 06-01-15 16:25:37, Tejun Heo wrote:
-> blkio cgroup (blkcg) is severely crippled in that it can only control
-> read and direct write IOs.  blkcg can't tell which cgroup should be
-> held responsible for a given writeback IO and charges all of them to
-> the root cgroup - all normal write traffic ends up in the root cgroup.
-> Although the problem has been identified years ago, mainly because it
-> interacts with so many subsystems, it hasn't been solved yet.
-> 
-> This patchset finally implements cgroup writeback support so that
-> writeback of a page is attributed to the corresponding blkcg of the
-> memcg that the page belongs to.
-> 
-> Overall design
-> --------------
-> 
-> * This requires cooperation between memcg and blkcg.  The IOs are
->   charged to the blkcg that the page's memcg corresponds to.  This
->   currently works only on the unified hierarchy.
-> 
-> * Each memcg maintains reference counted front and back pointers to
->   the correspending blkcg.  Whenever a page gets dirtied or initiates
->   writeback, it uses the blkcg the front one points to.  The reference
->   counting ensures that the association remains till the page is done
->   and having front and back pointers guarantees that the association
->   can change without being live-locked by pages being contiuously
->   dirtied.
-> 
-> * struct bdi_writeback (wb) was always embedded in struct
->   backing_dev_info (bdi) and the distinction between the two wasn't
->   clear.  This patchset makes wb operate as an independent writeback
-> 
->   execution.  bdi->wb is still embedded and serves the root cgroup but
->   other wb's can be associated with a single bdi each serving a
->   non-root wb.
-> 
-> * All writeback operations are made per-wb instead of per-bdi.
->   bdi-wide operations are split across all member wb's.  If some
->   finite amount needs to be distributed, be it number of pages to
->   writeback or bdi->min/max_ratio, it's distributed according to the
->   bandwidth proportion a wb has in the bdi.
-> 
-> * Non-root wb's host and write back only dirty pages (I_DIRTY_PAGES).
->   I_DIRTY_[DATA]SYNC is always handled by the root wb.
-> 
-> * An inode may have pages dirtied by different memcgs, which naturally
->   means that it should be able to be dirtied against multiple wb's.
->   To support linking an inode against multiple wb's, iwbl
->   (inode_wb_link) is introduced.  An inode has multiple iwbl's
->   associated with it if it's dirty against multiple wb's.
-  Is the ability for inode to belong to multiple memcgs really worth the
-effort? It brings significant complications (see also Dave's email) and
-the last time we were discussing cgroup writeback support the demand from
-users for this was small... How hard would it be to just start with an
-implementation which attaches the inode to the first memcg that dirties it
-(and detaches it when inode gets clean)? And implement sharing of inodes
-among mecgs only if there's a real demand for it?
+--QyKdZyDmv5hkaBi2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-								Honza
+On Thu, Jan 08, 2015 at 08:17:58AM +0000, Lad, Prabhakar wrote:
+> this patch sets the default height if its not found in DT.
+>=20
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+
+Thanks!
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--QyKdZyDmv5hkaBi2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUrk5+AAoJEBx+YmzsjxAg7yYQAI00jJv9PjU+X4UaYlZBIwK6
+oqJy+PXI2S7PIoF4+Aq75yOYcNsfoSy5SDKhJB6s4B+uYHIEzXAxt07mL39B4PrY
+umshUl0AitRXsLgO+dDdqm6N77wDjAMHNOt2chWHRhU2WDA87/zXJjWAbI6KWRHC
+bKe6cGmRjDCR0mu91kxdacxjowEaqbQc9R63N1tJdgS08lnAAVgMJnZTfZhpHiH8
+NkPF9nHLFFqHGQ6ImlEFfalSp5tQiqNENzEOIABKXniVDE8mTgEBLm8xCpvzXFdR
+PoQ7YytPZiI8UAePdhPEPqx00CCza3S8pWGrJZWDzE0582YLRAxNNrRNc4IJGsQs
+Ct5vqch0Shbc1+mwGG5634nSFMODP9JTy3lXQ8wtusN1jxawuhp2F3ci2QxhJ1nd
+tVPufvGBZe35AC5AmlchRAA1S5AZgFKFUxWLz5K1Ez3hvBryeoS60xJsYlJjjibn
+kdmP2khZ00rRtNt/Pazn/tO0C2aWEKdoqZrDXUKF/T6PgDqqkhWEZVdPuL+s3dnt
+RcEMIVMan+jAc8wvq088jhKAOKmhqR8ud6IzxY/eMimC0tzxT0ZpJCBvGG0NKzpr
+1wqx4psb1RZQjEXWARXb6RF7mVzur3Wo/GznvEzKhBOwMJS3hIfYUGSfKQuht6eV
+BMAPy/RWNneBJMUHShVe
+=fu5Y
+-----END PGP SIGNATURE-----
+
+--QyKdZyDmv5hkaBi2--
