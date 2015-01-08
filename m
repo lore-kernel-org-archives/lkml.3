@@ -1,88 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492AbbAHHu3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 02:50:29 -0500
-Received: from smtp2.provo.novell.com ([137.65.250.81]:46887 "EHLO
-	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753588AbbAHHuY (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Thu, 8 Jan 2015 02:50:24 -0500
-Message-ID: <1420703414.12346.12.camel@stgolabs.net>
-Subject: Re: [LKP] [mm] c8c06efa8b5: -7.6% unixbench.score
-From: Davidlohr Bueso <dave@stgolabs.net>
-To: Huang Ying <ying.huang@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, LKP ML <lkp@01.org>
-Date: Wed, 07 Jan 2015 23:50:14 -0800
-In-Reply-To: <1420703154.12346.10.camel@stgolabs.net>
-References: <1420684064.6201.86.camel@linux.intel.com>
-	 <1420703154.12346.10.camel@stgolabs.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1753490AbbAHHxc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 02:53:32 -0500
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:51812 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752646AbbAHHxb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 02:53:31 -0500
+X-Original-SENDERIP: 10.177.220.203
+X-Original-MAILFROM: namhyung@kernel.org
+Date: Thu, 8 Jan 2015 16:51:25 +0900
+From: Namhyung Kim <namhyung@kernel.org>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: acme@redhat.com, peterz@infradead.org, jolsa@kernel.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org,
+        bp@suse.de, linux-arch@vger.kernel.org, Alexey.Brodkin@synopsys.com
+Subject: Re: [PATCH 4/5] perf tools: [uclibc] don't rely on glibc malloc
+ working for sz 0
+Message-ID: <20150108075125.GF7268@sejong>
+References: <1420552335-26886-1-git-send-email-vgupta@synopsys.com>
+ <1420552335-26886-5-git-send-email-vgupta@synopsys.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1420552335-26886-5-git-send-email-vgupta@synopsys.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-07 at 23:45 -0800, Davidlohr Bueso wrote:
-> On Thu, 2015-01-08 at 10:27 +0800, Huang Ying wrote:
-> Cc'ing Peter.
+Hi Vineet,
 
-Err, resending with the complete msg.
-
-> > FYI, we noticed the below changes on
-> > 
-> > commit c8c06efa8b552608493b7066c234cfa82c47fcea ("mm: convert i_mmap_mutex to rwsem")
+On Tue, Jan 06, 2015 at 07:22:14PM +0530, Vineet Gupta wrote:
+> When running perf on ARC (uClibc based userspace), ran into this issue
+> ------------->8----------------
+> 	[ARCLinux]$ ./perf record ls
+> 	bin             etc             perf            sys
+> 	debug           init            perf.data       tmp
+> 	[ perf record: Woken up 1 times to write data ]
+> 	[ perf record: Captured and wrote 0.001 MB perf.data (~24 samples) ]
 > 
-> Same exact everything, except for the lock type. No sharing going on.
+> 	[ARCLinux]$ ./perf report
+> 	incompatible file format (rerun with -v to learn more)
+> ------------->8----------------
 > 
-> > testbox/testcase/testparams: lituya/unixbench/performance-execl
-> > 
-> > 83cde9e8ba95d180  c8c06efa8b552608493b7066c2  
-> > ----------------  --------------------------  
-> >          %stddev     %change         %stddev
-> >              \          |                \  
-> >     721721 ±  1%    +303.6%    2913110 ±  3%  unixbench.time.voluntary_context_switches
-> >      11767 ±  0%      -7.6%      10867 ±  1%  unixbench.score
+> The problem happens in the following call stack when zalloc is called
+> with size zero
 > 
-> And this workload appears to be from execl, right? Make sense with some
-> of those numbers!!
+> glibc default / uClibc with MALLOC_GLIBC_COMPAT are OK, but not if that
+> config option is not enabled.
 > 
-> >  2.323e+08 ±  0%      -7.2%  2.157e+08 ±  1%  unixbench.time.minor_page_faults
-> >        207 ±  0%      -7.0%        192 ±  1%  unixbench.time.user_time
-> >    4923450 ±  0%      -5.7%    4641672 ±  0%  unixbench.time.involuntary_context_switches
-> >        584 ±  0%      -5.2%        554 ±  0%  unixbench.time.percent_of_cpu_this_job_got
-> >        948 ±  0%      -4.9%        902 ±  0%  unixbench.time.system_time
-> >          0 ±  0%      +Inf%     672942 ±  2%  latency_stats.hits.call_rwsem_down_write_failed.vma_adjust.__split_vma.split_vma.mprotect_fixup.SyS_mprotect.system_call_fastpath
+>   cmd_report
+>      perf_session__new
+> 	perf_session__open
+> 	    perf_session__read_header
+> 		read_attr(fd, header, &f_attr)
+> 		nr_ids = f_attr.ids.size / sizeof(u64); <-- 0
+> 		perf_evsel__alloc_id(vsel, 1, nr_ids)
+> 			zalloc(ncpus * nthreads * sizeof(u64)) <-- 0
 > 
-> What does this "hits" thing mean exactly? Since I assume both before and
-> after runs have the same level of concurrency when pounding on mmap
-> operations, I doubt it means that its the amount of calls into the
-> slowpath... in addition the lock is obviously contended so we can forget
-> about anything in the fastpath.
+> header.c: read_attr()
 > 
-> So this is a call_rwsem_down_write_failed() vs __mutex_lock_common()
-> issue.
+> (gdb) p *f_attr
+> $17 = {
+>   attr = {
+>     type = 0,
+>     size = 96,
+>     config = 0,
+>     {
+>       sample_period = 4000,
+>       sample_freq = 4000
+>     },
+> ...
+>   ids = {
+>     offset = 104,
+>     size = 0      <------
+>   }
+> }
 
-It's late, but for some initial thoughts I believe this comes down to
-differences in how mutexes and rwsems deal with ultimately blocking (and
-based on the nasty sched_debug numbers reported by Huang). We now do in
-call_rwsem_down_write_failed:
+Hmm.. okay.  I think we don't need to allocate the id arrays when size
+is 0.  So perf_event__process_attr() will have the same problem IMHO.
+How about this?
 
-	/* wait to be given the lock */
-	while (true) {
-		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-		if (!waiter.task)
-			break;
-		schedule();
-	}
 
-In which that waiter.task check forces us to need the barrier in
-set_task_state() -- while in mutexes we get away with it. We could
-disable preemption during this whole slowpath step and stabilize things,
-just like we do with mutexes.
-
-Thanks,
-Davidlohr
-
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 1e90c8557ede..1d826d63bc20 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -797,6 +797,9 @@ int perf_evsel__enable(struct perf_evsel *evsel, int ncpus, int nthreads)
+ 
+ int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads)
+ {
++	if (ncpus == 0 || nthreads == 0)
++		return 0;
++
+ 	if (evsel->system_wide)
+ 		nthreads = 1;
+ 
