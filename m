@@ -1,56 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755538AbbAHAXI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 19:23:08 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:51157 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752135AbbAHAXG (ORCPT
+	id S1755426AbbAHAWk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 19:22:40 -0500
+Received: from mail-oi0-f45.google.com ([209.85.218.45]:52166 "EHLO
+	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752315AbbAHAWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 19:23:06 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX182jc+xu1KkiOVRCfm3qWRi
-Date: Wed, 7 Jan 2015 16:19:22 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-omap@vger.kernel.org, balbi@ti.com
-Subject: Re: [PATCH V2] ARM: dts: am57xx-beagle-x15: Add GPIO controlled fan
- node
-Message-ID: <20150108001921.GR13010@atomide.com>
-References: <1417800739-13146-1-git-send-email-nm@ti.com>
- <1417801732-24620-1-git-send-email-nm@ti.com>
- <20150107234442.GI13010@atomide.com>
- <20150107235815.GA17239@kahuna>
+	Wed, 7 Jan 2015 19:22:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150107235815.GA17239@kahuna>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20150107204754.191110bihbw3t10q@webmail.upv.es>
+References: <20150107204754.191110bihbw3t10q@webmail.upv.es>
+Date: Wed, 7 Jan 2015 16:22:38 -0800
+X-Google-Sender-Auth: hyuVEz-qIkvBKo_087j3aBwPNz8
+Message-ID: <CAGXu5jKgyU0BF5XW1PU9hvCiPu1rz1SPPKAvmuQ+GenfKvUkfA@mail.gmail.com>
+Subject: Re: [PATH] Fix stack randomization on x86_64 bit
+From: Kees Cook <keescook@chromium.org>
+To: Hector Marco Gisbert <hecmargi@upv.es>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Ismael Ripoll Ripoll <iripoll@disca.upv.es>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [150107 16:01]:
-> On 15:44-20150107, Tony Lindgren wrote:
-> > * Nishanth Menon <nm@ti.com> [141205 09:51]:
-> > > TPS gpio now controls a 5v 500mA TL5209 regulator which may be supply
-> > > a fan (such as AFB02505HHB) over J1 connector for various purposes.
-> > > Provide device tree node to enable the same.
-> > > 
-> > > Signed-off-by: Nishanth Menon <nm@ti.com>
-> > 
-> > Applying into omap-for-v3.20/dt thanks.
-> > 
-> > Tony
-> Could you pick up the very latest rev:
-> https://patchwork.kernel.org/patch/5569521/ ?
+On Wed, Jan 7, 2015 at 11:47 AM, Hector Marco Gisbert <hecmargi@upv.es> wrote:
+>
+> [PATH] Fix stack randomization on x86_64 bit
 
-Yeah sorry just noticed I had tagged two versions,
-will use the v4 instead.
+s/PATH/PATCH/
 
-Regards,
+>
+> The issue is that the stack for processes is not properly randomized on 64
+> bit
+> architectures due to an integer overflow.
+>
+>
+> The affected function is randomize_stack_top() in file "fs/binfmt_elf.c":
+>
+> static unsigned long randomize_stack_top(unsigned long stack_top)
+> {
+>         unsigned int random_variable = 0;
+>
+>         if ((current->flags & PF_RANDOMIZE) &&
+>                 !(current->personality & ADDR_NO_RANDOMIZE)) {
+>                 random_variable = get_random_int() & STACK_RND_MASK;
+>                 random_variable <<= PAGE_SHIFT;
+>         }
+> #ifdef CONFIG_STACK_GROWSUP
+>         return PAGE_ALIGN(stack_top) + random_variable;
+> #else
+>         return PAGE_ALIGN(stack_top) - random_variable;
+> #endif
+> }
+>
+>
+> Note that, it declares the "random_variable" variable as "unsigned int".
+> Since
+> the result of the shifting operation between STACK_RND_MASK (which is
+> 0x3fffff on
+> x86_64, 22 bits) and PAGE_SHIFT (which is 12 on x86_64):
+>
+> random_variable <<= PAGE_SHIFT;
+>
+> then the two leftmost bits are dropped when storing the result in the
+> "random_variable". This variable shall be at least 34 bits long to hold the
+> (22+12) result.
+>
+> These two dropped bits have an impact on the entropy of process stack.
+> Concretely, the total stack entropy is reduced by four: from 2^28 to 2^30
+> (One
+> fourth of expected entropy).
+>
+> This patch restores back the entropy by correcting the types involved in the
+> operations in the functions randomize_stack_top() and
+> stack_maxrandom_size().
+>
+>
+> Signed-off-by: Hector Marco-Gisbert <hecmargi@upv.es>
+> Signed-off-by: Ismael Ripoll <iripoll@upv.es>
 
-Tony
+Good catch!
+
+Reviewed-by: Kees Cook <keescook@chromium.org>
+
+-Kees
+
+>
+>
+> diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
+> index 919b912..df4552b 100644
+> --- a/arch/x86/mm/mmap.c
+> +++ b/arch/x86/mm/mmap.c
+> @@ -35,12 +35,12 @@ struct va_alignment __read_mostly va_align = {
+>         .flags = -1,
+>  };
+>
+> -static unsigned int stack_maxrandom_size(void)
+> +static unsigned long stack_maxrandom_size(void)
+>  {
+> -       unsigned int max = 0;
+> +       unsigned long max = 0;
+>         if ((current->flags & PF_RANDOMIZE) &&
+>                 !(current->personality & ADDR_NO_RANDOMIZE)) {
+> -               max = ((-1U) & STACK_RND_MASK) << PAGE_SHIFT;
+> +               max = ((-1UL) & STACK_RND_MASK) << PAGE_SHIFT;
+>         }
+>
+>         return max;
+> diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+> index d8fc060..ee668b4 100644
+> --- a/fs/binfmt_elf.c
+> +++ b/fs/binfmt_elf.c
+> @@ -554,11 +554,11 @@ out:
+>
+>  static unsigned long randomize_stack_top(unsigned long stack_top)
+>  {
+> -       unsigned int random_variable = 0;
+> +       unsigned long random_variable = 0;
+>
+>         if ((current->flags & PF_RANDOMIZE) &&
+>                 !(current->personality & ADDR_NO_RANDOMIZE)) {
+> -               random_variable = get_random_int() & STACK_RND_MASK;
+> +               random_variable = (unsigned long) get_random_int() &
+> STACK_RND_MASK;
+>                 random_variable <<= PAGE_SHIFT;
+>         }
+>  #ifdef CONFIG_STACK_GROWSUP
+>
+>
+
+
+
+-- 
+Kees Cook
+Chrome OS Security
