@@ -1,139 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932178AbbAHBBl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 20:01:41 -0500
-Received: from ozlabs.org ([103.22.144.67]:49696 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755630AbbAHBBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 20:01:39 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 3/3] module: fix race in kallsyms resolution during module load success.
-Date: Thu,  8 Jan 2015 11:28:07 +1030
-Message-Id: <1420678687-30548-4-git-send-email-rusty@rustcorp.com.au>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1420678687-30548-1-git-send-email-rusty@rustcorp.com.au>
-References: <1420678687-30548-1-git-send-email-rusty@rustcorp.com.au>
+	id S1755628AbbAHBAC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 20:00:02 -0500
+Received: from mailout.micron.com ([137.201.242.129]:21051 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755282AbbAHBAA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jan 2015 20:00:00 -0500
+From: "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: "axboe@kernel.dk" <axboe@kernel.dk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] block: pass correct seed to integrity metadata
+ generation function
+Thread-Topic: [PATCH] block: pass correct seed to integrity metadata
+ generation function
+Thread-Index: AdAbHdTOKR9VxT2kSG67KJv7w9th2QPuuZMjAAFoYKA=
+Date: Thu, 8 Jan 2015 00:59:56 +0000
+Message-ID: <80B89753B40C5141A3E2D53FE7A2A8A994635097@NTXBOIMBX02.micron.com>
+References: <54936D1E.3020700@micron.com> <54ADBC6E.50301@micron.com>
+	<yq14ms25g21.fsf@sermon.lab.mkp.net>
+	<80B89753B40C5141A3E2D53FE7A2A8A994634D2A@NTXBOIMBX02.micron.com>
+	<yq1r3v640pg.fsf@sermon.lab.mkp.net>
+	<80B89753B40C5141A3E2D53FE7A2A8A994634DCA@NTXBOIMBX02.micron.com>
+ <yq1iogi3z0n.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1iogi3z0n.fsf@sermon.lab.mkp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.201.88.182]
+x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-21230.002
+x-tm-as-result: No--34.330800-0.000000-31
+x-tm-as-user-approved-sender: Yes
+x-tm-as-user-blocked-sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kallsyms routines (module_symbol_name, lookup_module_* etc) disable
-preemption to walk the modules rather than taking the module_mutex:
-this is because they are used for symbol resolution during oopses.
 
-This works because there are synchronize_sched() and synchronize_rcu()
-in the unload and failure paths.  However, there's one case which doesn't
-have that: the normal case where module loading succeeds, and we free
-the init section.
 
-We don't want a synchronize_rcu() there, because it would slow down
-module loading: this bug was introduced in 2009 to speed module
-loading in the first place.
+> -----Original Message-----
+> From: Martin K. Petersen [mailto:martin.petersen@oracle.com]
+> Sent: Wednesday, January 07, 2015 4:19 PM
+> To: Sam Bradshaw (sbradshaw)
+> Cc: Martin K. Petersen; axboe@kernel.dk; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] block: pass correct seed to integrity metadata
+> generation function
+> 
+> >>>>> "Sam" == Sam Bradshaw (sbradshaw) <sbradshaw@micron.com> writes:
+> 
+> Sam> Yes.
+> 
+> The seed is just a seed. We happen to set it to the (block layer)
+> sector number if nothing else is provided but it's essentially just an
+> incrementing counter starting at an arbitrary value chosen by the
+> caller.
+> 
+> Since an I/O may get remapped many times as block devices are stacked
+> (DM, MD, stripe splits, partition offset shifts, etc.) the seed is not
+> expected to match the LBA on the storage device. That is almost never
+> the case.
+> 
+> In SCSI we do a remapping pass before submitting a WRITE or upon
+> completion of a READ. You will have to do the same for NVMe.
+> 
+> It was done this way to avoid remapping the ref tag several times. We
+> adjust the seed as the I/O gets sliced and diced and only map the PI
+> pages once to do a single traversal at the bottom of the stack.
+> 
+> For next gen devices we simply pass the seed to the hardware and let it
+> handle the remapping. This saves us having to map the PI pages and pull
+> them through the cache.
 
-Thus, we want to do the free in an RCU callback.  We do this in the
-simplest possible way by allocating a new rcu_head: if we put it in
-the module structure we'd have to worry about that getting freed.
-
-Reported-by: Rui Xiang <rui.xiang@huawei.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
----
- kernel/module.c | 55 ++++++++++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 42 insertions(+), 13 deletions(-)
-
-diff --git a/kernel/module.c b/kernel/module.c
-index 1f85fd5c89d3..ed4ec9c30bd2 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2989,10 +2989,31 @@ static void do_mod_ctors(struct module *mod)
- #endif
- }
- 
-+/* For freeing module_init on success, in case kallsyms traversing */
-+struct mod_initfree {
-+	struct rcu_head rcu;
-+	void *module_init;
-+};
-+
-+static void do_free_init(struct rcu_head *head)
-+{
-+	struct mod_initfree *m = container_of(head, struct mod_initfree, rcu);
-+	module_memfree(m->module_init);
-+	kfree(m);
-+}
-+
- /* This is where the real work happens */
- static int do_init_module(struct module *mod)
- {
- 	int ret = 0;
-+	struct mod_initfree *freeinit;
-+
-+	freeinit = kmalloc(sizeof(*freeinit), GFP_KERNEL);
-+	if (!freeinit) {
-+		ret = -ENOMEM;
-+		goto fail;
-+	}
-+	freeinit->module_init = mod->module_init;
- 
- 	/*
- 	 * We want to find out whether @mod uses async during init.  Clear
-@@ -3005,18 +3026,7 @@ static int do_init_module(struct module *mod)
- 	if (mod->init != NULL)
- 		ret = do_one_initcall(mod->init);
- 	if (ret < 0) {
--		/*
--		 * Init routine failed: abort.  Try to protect us from
--		 * buggy refcounters.
--		 */
--		mod->state = MODULE_STATE_GOING;
--		synchronize_sched();
--		module_put(mod);
--		blocking_notifier_call_chain(&module_notify_list,
--					     MODULE_STATE_GOING, mod);
--		free_module(mod);
--		wake_up_all(&module_wq);
--		return ret;
-+		goto fail_free_freeinit;
- 	}
- 	if (ret > 0) {
- 		pr_warn("%s: '%s'->init suspiciously returned %d, it should "
-@@ -3062,15 +3072,34 @@ static int do_init_module(struct module *mod)
- #endif
- 	unset_module_init_ro_nx(mod);
- 	module_arch_freeing_init(mod);
--	module_memfree(mod->module_init);
- 	mod->module_init = NULL;
- 	mod->init_size = 0;
- 	mod->init_ro_size = 0;
- 	mod->init_text_size = 0;
-+	/*
-+	 * We want to free module_init, but be aware that kallsyms may be
-+	 * walking this with preempt disabled.  In all the failure paths,
-+	 * we call synchronize_rcu/synchronize_sched, but we don't want
-+	 * to slow down the success path, so use actual RCU here.
-+	 */
-+	call_rcu(&freeinit->rcu, do_free_init);
- 	mutex_unlock(&module_mutex);
- 	wake_up_all(&module_wq);
- 
- 	return 0;
-+
-+fail_free_freeinit:
-+	kfree(freeinit);
-+fail:
-+	/* Try to protect us from buggy refcounters. */
-+	mod->state = MODULE_STATE_GOING;
-+	synchronize_sched();
-+	module_put(mod);
-+	blocking_notifier_call_chain(&module_notify_list,
-+				     MODULE_STATE_GOING, mod);
-+	free_module(mod);
-+	wake_up_all(&module_wq);
-+	return ret;
- }
- 
- static int may_init_module(void)
--- 
-2.1.0
+Got it, thanks!
 
