@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756623AbbAHLvg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 06:51:36 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:37562 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756585AbbAHLvf (ORCPT
+	id S1756582AbbAHLva (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 06:51:30 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:59877 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754199AbbAHLv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 06:51:35 -0500
-Date: Thu, 8 Jan 2015 12:51:17 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Kanaka Juvva <kanaka.d.juvva@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH 11/11] perf/x86/intel: Enable conflicting event
- scheduling for CQM
-Message-ID: <20150108115117.GK3337@twins.programming.kicks-ass.net>
-References: <1415999712-5850-1-git-send-email-matt@console-pimps.org>
- <1415999712-5850-12-git-send-email-matt@console-pimps.org>
+	Thu, 8 Jan 2015 06:51:28 -0500
+Date: Thu, 8 Jan 2015 12:51:24 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        "\\\"Rafael J. Wysocki\\\"" <rjw@rjwysocki.net>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Oleg Nesterov <oleg@redhat.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH -v2 5/5] OOM, PM: make OOM detection in the freezer path
+ raceless
+Message-ID: <20150108115124.GA6027@dhcp22.suse.cz>
+References: <20141110163055.GC18373@dhcp22.suse.cz>
+ <1417797707-31699-1-git-send-email-mhocko@suse.cz>
+ <1417797707-31699-6-git-send-email-mhocko@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415999712-5850-12-git-send-email-matt@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1417797707-31699-6-git-send-email-mhocko@suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 09:15:12PM +0000, Matt Fleming wrote:
-> +/*
-> + * Deallocate the RMIDs from any events that conflict with @event, and
-> + * place them on the back of the group list.
-> + */
-> +static void intel_cqm_sched_out_events(struct perf_event *event)
+On Fri 05-12-14 17:41:47, Michal Hocko wrote:
+[...]
+> +bool oom_killer_disable(void)
 > +{
-> +	struct perf_event *group, *g;
-> +	unsigned int rmid;
->  
-> +	lockdep_assert_held(&cache_mutex);
-> +
-> +	list_for_each_entry_safe(group, g, &cache_groups, hw.cqm_groups_entry) {
-> +		if (group == event)
-> +			continue;
-> +
-> +		rmid = group->hw.cqm_rmid;
-> +
-> +		/*
-> +		 * Skip events that don't have a valid RMID.
-> +		 */
-> +		if (!__rmid_valid(rmid))
-> +			continue;
-> +
-> +		/*
-> +		 * No conflict? No problem! Leave the event alone.
-> +		 */
-> +		if (!__conflict_event(group, event))
-> +			continue;
-> +
-> +		intel_cqm_xchg_rmid(group, INVALID_RMID);
-> +		__put_rmid(rmid);
-> +
-> +		list_move_tail(&group->hw.cqm_groups_entry, &cache_groups);
+> +	/*
+> +	 * Make sure to not race with an ongoing OOM killer
+> +	 * and that the current is not the victim.
+> +	 */
+> +	down_write(&oom_sem);
+> +	if (test_thread_flag(TIF_MEMDIE)) {
+> +		up_write(&oom_sem);
+> +		return false;
 > +	}
->  }
+> +
+> +	oom_killer_disabled = true;
+> +	up_write(&oom_sem);
+> +
+> +	wait_event(oom_victims_wait, atomic_read(&oom_victims));
 
-I'm not sure about that list_move_tail() there, is wrecks the rotation
-order and would cause conflicting events to get less than their 'fair'
-share I suspect.
+Ups brainfart... Should be !atomic_read(&oom_victims). Condition says
+for what we are waiting not when we are waiting.
+
+> +
+> +	return true;
+> +}
+[...]
+-- 
+Michal Hocko
+SUSE Labs
