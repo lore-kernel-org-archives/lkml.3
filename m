@@ -1,77 +1,354 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932295AbbAHAty (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jan 2015 19:49:54 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:42367 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932249AbbAHAtu (ORCPT
+	id S1755400AbbAHAug (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jan 2015 19:50:36 -0500
+Received: from mailout.micron.com ([137.201.242.129]:19911 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752253AbbAHAue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jan 2015 19:49:50 -0500
+	Wed, 7 Jan 2015 19:50:34 -0500
+From: =?gb2312?B?UGV0ZXIgUGFuIMXLtrAgKHBldGVycGFuZG9uZyk=?= 
+	<peterpandong@micron.com>
+To: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Ezequiel Garcia <ezequiel.garcia@imgtec.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        =?gb2312?B?UWkgV2FuZyDN9cbwIChxaXdhbmcp?= <qiwang@micron.com>,
+        =?gb2312?B?RnJhbmsgTGl1IMH1yLogKGZyYW5rbGl1KQ==?= 
+	<frankliu@micron.com>,
+        =?gb2312?B?TWVsYW5pZSBaaGFuZyDVxdHgIChtZWxhbmllemhhbmcp?= 
+	<melaniezhang@micron.com>,
+        =?gb2312?B?UGV0ZXIgUGFuIMXLtrAgKHBldGVycGFuZG9uZyk=?= 
+	<peterpandong@micron.com>
+Subject: [PATCH 2/3] mtd: spi-nand: support spi-nand devices
+Thread-Topic: [PATCH 2/3] mtd: spi-nand: support spi-nand devices
+Thread-Index: AdAq2umrFm+h2YfRQAiK3npBobzmqQAAf8Lg
+Date: Thu, 8 Jan 2015 00:49:59 +0000
+Message-ID: <87F60714EC601C4C83DFF1D2E3D390A04AB414@NTXXIAMBX02.xacn.micron.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-21232.000
+x-tm-as-result: No--31.164900-0.000000-31
+x-tm-as-user-approved-sender: Yes
+x-tm-as-user-blocked-sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxZ4YESQ0vr3qO_o_H8AvQPOv500qnbBXdq+4YNsnOPgA@mail.gmail.com>
-References: <20150104190123.GA20153@amd>
-	<alpine.LFD.2.11.1501041438130.18844@knanqh.ubzr>
-	<20150104201026.GA23427@amd>
-	<alpine.LFD.2.11.1501041512440.18844@knanqh.ubzr>
-	<20150104203724.GA16372@amd>
-	<alpine.LFD.2.11.1501041547050.18844@knanqh.ubzr>
-	<CA+55aFy5yB2d-1iXEUtU+puua4TAmV0kZF_7TBhXO1Y4Khqb9Q@mail.gmail.com>
-	<alpine.LFD.2.11.1501041609290.18844@knanqh.ubzr>
-	<20150104212659.GC12302@n2100.arm.linux.org.uk>
-	<alpine.LFD.2.11.1501042343240.18844@knanqh.ubzr>
-	<CAHkRjk6Vg_AR8rFNYzPcnPwfKZqaVuaCoG67CEVPRgp1-bDetA@mail.gmail.com>
-	<CA+55aFypmZExpCvD699TQOs1NDK_mT-_rR3UWOdxdzkOKvbdoA@mail.gmail.com>
-	<alpine.LFD.2.11.1501071354130.1322@knanqh.ubzr>
-	<CA+55aFw70ZvHKH+8_aS7E7FZZuuWQA++zGQuSmuvDE3DWU+x3A@mail.gmail.com>
-	<alpine.LFD.2.11.1501071446460.1322@knanqh.ubzr>
-	<CA+55aFwuO2g1S-bY96V28crMWj+dKXWANzbP28JQjBdTg0rV0w@mail.gmail.com>
-	<alpine.LFD.2.11.1501071618300.1322@knanqh.ubzr>
-	<CA+55aFyrNE9qqBR9Khbj=TuAnjA+UzUhNxFz==SqKuiG5q3uMQ@mail.gmail.com>
-	<alpine.LFD.2.11.1501071700301.1322@knanqh.ubzr>
-	<CA+55aFxZ4YESQ0vr3qO_o_H8AvQPOv500qnbBXdq+4YNsnOPgA@mail.gmail.com>
-Date: Wed, 7 Jan 2015 16:49:48 -0800
-X-Google-Sender-Auth: jkCjBRCyTt2mIWdUaqm5ewsPbv4
-Message-ID: <CA+55aFwh-JKHRoa+wSM5iGJ2nPzDxCE6b8kHbE4Ei8we+ot5Gw@mail.gmail.com>
-Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
- pyaudio (and probably more)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Pavel Machek <pavel@ucw.cz>, Marc Zyngier <marc.zyngier@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t080ogFe027786
 
-On Wed, Jan 7, 2015 at 4:25 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Timing-related things can be similar. The whole "it used to work, now
-> it doesn't" could be an actual race condition - in user space - that
-> just was practically impossible to hit before on a particular machine,
-> and then something changed, and now it's easy to hit. There's nothing
-> we can really do about those kinds of things. It technically *is*
-> still a regression, it's just not one we can fix.
+This commit is to support Micron MT29F and Gigadevice GD5F spi nand
+devices under spi-nand framework.
 
-Side note: this is not a theoretical argument. It has happened. And
-while it's "unfixable", we've actually had situations where it
-happened, and we explicitly tried to work around it.
+Signed-off-by: Peter Pan <peterpandong@micron.com>
+---
+ drivers/mtd/spi-nand/Makefile          |   1 +
+ drivers/mtd/spi-nand/spi-nand-device.c | 281 +++++++++++++++++++++++++++++++++
+ 2 files changed, 282 insertions(+)
+ create mode 100644 drivers/mtd/spi-nand/spi-nand-device.c
 
-The whole "sched_child_runs_first" sysctl isn't just a tunable (yes,
-it can also help on some loads), it's at least partly a result of a
-long-ago bash bug where bash had a race condition with its own
-fork()'ed children finishing and sending a SIGCHLD before bash had
-even had time to fill in the child pid information in its own data
-structures.
-
-So even the "fundamentally impossible to fix" regressions where some
-scheduler detail changed, and it broke actively buggy user space
-programs, we've spent effort to maintain compatibility with those
-buggy applications.
-
-Of course, at some point you do have to make a value judgment on how
-important the app in question is, and how fatal the breakage is.
-
-                             Linus
+diff --git a/drivers/mtd/spi-nand/Makefile b/drivers/mtd/spi-nand/Makefile
+index 6df6a34..e9ff952 100644
+--- a/drivers/mtd/spi-nand/Makefile
++++ b/drivers/mtd/spi-nand/Makefile
+@@ -1,2 +1,3 @@
+ obj-$(CONFIG_MTD_SPI_NAND) += spi-nand-base.o
+ obj-$(CONFIG_MTD_SPI_NAND) += spi-nand-bbt.o
++obj-$(CONFIG_MTD_SPI_NAND) += spi-nand-device.o
+diff --git a/drivers/mtd/spi-nand/spi-nand-device.c b/drivers/mtd/spi-nand/spi-nand-device.c
+new file mode 100644
+index 0000000..0533d1f
+--- /dev/null
++++ b/drivers/mtd/spi-nand/spi-nand-device.c
+@@ -0,0 +1,281 @@
++/*
++ * Copyright (c) 2009-2014 Micron Technology, Inc.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/module.h>
++#include <linux/delay.h>
++#include <linux/mtd/mtd.h>
++#include <linux/mtd/partitions.h>
++#include <linux/mtd/nand.h>
++#include <linux/spi/spi.h>
++#include <linux/mtd/spi-nand.h>
++
++enum spi_nand_device_variant {
++	SPI_NAND_GENERIC,
++	SPI_NAND_MT29F,
++	SPI_NAND_GD5F,
++};
++
++/**
++*  Default OOB area specification layout
++*/
++static struct nand_ecclayout micron_ecc_layout_64 = {
++	.eccbytes = 32,
++	.eccpos = {
++		   8, 9, 10, 11, 12, 13, 14, 15,
++		   24, 25, 26, 27, 28, 29, 30, 21,
++		   40, 41, 42, 43, 44, 45, 46, 47,
++		   56, 57, 58, 59, 60, 61, 62, 63},
++	.oobavail = 30,
++	.oobfree = {
++		{.offset = 2,
++		 .length = 6},
++		{.offset = 16,
++		 .length = 8},
++		{.offset = 32,
++		 .length = 8},
++		{.offset = 48,
++		 .length = 8}, }
++};
++
++static struct nand_ecclayout gd5f_ecc_layout_256 = {
++	.eccbytes = 128,
++	.eccpos = {
++		128, 129, 130, 131, 132, 133, 134, 135,
++		136, 137, 138, 139, 140, 141, 142, 143,
++		144, 145, 146, 147, 148, 149, 150, 151,
++		152, 153, 154, 155, 156, 157, 158, 159,
++		160, 161, 162, 163, 164, 165, 166, 167,
++		168, 169, 170, 171, 172, 173, 174, 175,
++		176, 177, 178, 179, 180, 181, 182, 183,
++		184, 185, 186, 187, 188, 189, 190, 191,
++		192, 193, 194, 195, 196, 197, 198, 199,
++		200, 201, 202, 203, 204, 205, 206, 207,
++		208, 209, 210, 211, 212, 213, 214, 215,
++		216, 217, 218, 219, 220, 221, 222, 223,
++		224, 225, 226, 227, 228, 229, 230, 231,
++		232, 233, 234, 235, 236, 237, 238, 239,
++		240, 241, 242, 243, 244, 245, 246, 247,
++		248, 249, 250, 251, 252, 253, 254, 255
++	},
++	.oobavail = 127,
++	.oobfree = { {1, 127} }
++};
++
++static struct nand_ecclayout gd5f_ecc_layout_128 = {
++	.eccbytes = 64,
++	.eccpos = {
++		64, 65, 66, 67, 68, 69, 70, 72,
++		72, 73, 74, 75, 76, 77, 78, 79,
++		80, 81, 82, 83, 84, 85, 86, 87,
++		88, 89, 90, 91, 92, 93, 94, 95,
++		96, 97, 98, 99, 100, 101, 102, 103,
++		104, 105, 106, 107, 108, 109, 110, 111,
++		112, 113, 114, 115, 116, 117, 118, 119,
++		120, 121, 122, 123, 124, 125, 126, 127,
++	},
++	.oobavail = 62,
++	.oobfree = { {2, 63} }
++};
++
++static int spi_nand_gd5f_read_id(struct spi_nand_chip *chip, u8 *buf)
++{
++	struct spi_device *spi = chip->spi;
++	struct spi_nand_cmd cmd = {0};
++
++	cmd.cmd = SPINAND_CMD_READ_ID;
++	cmd.n_rx = 2;
++	cmd.rx_buf = buf;
++
++	return spi_nand_send_cmd(spi, &cmd);
++}
++
++static int spi_nand_mt29f_read_id(struct spi_nand_chip *chip, u8 *buf)
++{
++	struct spi_device *spi = chip->spi;
++	struct spi_nand_cmd cmd = {0};
++	u8 dummy = 0;
++
++	cmd.cmd = SPINAND_CMD_READ_ID;
++	cmd.n_tx = 1;
++	cmd.tx_buf = &dummy;
++	cmd.n_rx = 2;
++	cmd.rx_buf = buf;
++
++	return spi_nand_send_cmd(spi, &cmd);
++}
++
++static void spi_nand_mt29f_ecc_status(unsigned int status,
++					unsigned int *corrected,
++					unsigned int *ecc_error)
++{
++	unsigned int ecc_status = (status >> SPI_NAND_MT29F_ECC_SHIFT) &
++					     SPI_NAND_MT29F_ECC_MASK;
++
++	*ecc_error = (ecc_status == SPI_NAND_MT29F_ECC_UNCORR);
++	if (*ecc_error == 0)
++		*corrected = ecc_status;
++}
++
++static void spi_nand_gd5f_ecc_status(unsigned int status,
++				     unsigned int *corrected,
++				     unsigned int *ecc_error)
++{
++	unsigned int ecc_status = (status >> SPI_NAND_GD5F_ECC_SHIFT) &
++					     SPI_NAND_GD5F_ECC_MASK;
++
++	*ecc_error = (ecc_status == SPI_NAND_GD5F_ECC_UNCORR);
++	/*TODO fix corrected bits*/
++	if (*ecc_error == 0)
++		*corrected = ecc_status;
++}
++
++static int spi_nand_manufacture_init(struct spi_nand_chip *chip)
++{
++	switch (chip->mfr_id) {
++	case SPINAND_MFR_MICRON:
++		chip->get_ecc_status = spi_nand_mt29f_ecc_status;
++
++		if (chip->page_spare_size == 64)
++			chip->ecclayout = &micron_ecc_layout_64;
++
++		chip->bbt_options |= NAND_BBT_NO_OOB;
++		break;
++	case SPINAND_MFR_GIGADEVICE:
++		chip->get_ecc_status = spi_nand_gd5f_ecc_status;
++		chip->read_cache = spi_nand_read_from_cache_snor_protocol;
++		chip->ecc_strength_ds = 8;
++		chip->ecc_step_ds = chip->page_size >> 2;
++		if (chip->page_spare_size == 128)
++			chip->ecclayout = &gd5f_ecc_layout_128;
++		else if (chip->page_spare_size == 256)
++			chip->ecclayout = &gd5f_ecc_layout_256;
++
++		break;
++	default:
++		break;
++	}
++
++	return 0;
++}
++
++static int spi_nand_device_probe(struct spi_device *spi)
++{
++	struct spi_nand_chip *chip;
++	enum spi_nand_device_variant variant;
++	struct mtd_info *mtd;
++	struct mtd_part_parser_data ppdata;
++	int ret;
++
++	chip = kzalloc(sizeof(struct spi_nand_chip), GFP_KERNEL);
++	if (!chip) {
++		ret = -ENOMEM;
++		goto err1;
++	}
++	chip->spi = spi;
++
++	mtd = kzalloc(sizeof(struct mtd_info), GFP_KERNEL);
++	if (!mtd) {
++		ret = -ENOMEM;
++		goto err2;
++	}
++	mtd->priv = chip;
++	chip->mtd = mtd;
++	spi_set_drvdata(spi, chip);
++	/*
++	 * read ID command format might be different for different manufactory
++	 * such as, Micron SPI NAND need extra one dummy byte after perform
++	 * read ID command but Giga device don't need.
++	 *
++	 * So, specify manufactory of device in device tree is obligatory
++	 */
++	variant = spi_get_device_id(spi)->driver_data;
++	switch (variant) {
++	case SPI_NAND_MT29F:
++		chip->read_id = spi_nand_mt29f_read_id;
++		break;
++	case SPI_NAND_GD5F:
++		chip->read_id = spi_nand_gd5f_read_id;
++		break;
++	default:
++		dev_err(&spi->dev, "unknown device\n");
++		ret = -ENODEV;
++		goto err3;
++	}
++
++	ret = spi_nand_scan_ident(mtd);
++	if (ret)
++		goto err3;
++
++	spi_nand_manufacture_init(chip);
++
++	ret = spi_nand_scan_tail(mtd);
++	if (ret)
++		goto err4;
++
++	ppdata.of_node = chip->spi->dev.of_node;
++
++	ret = mtd_device_parse_register(mtd, NULL, &ppdata, NULL, 0);
++	if (!ret)
++		return 0;
++
++	spi_nand_scan_tail_release(mtd);
++err4:
++	spi_nand_scan_ident_release(mtd);
++err3:
++	kfree(mtd);
++err2:
++	kfree(chip);
++err1:
++	return ret;
++}
++
++
++int spi_nand_device_remove(struct spi_device *spi)
++{
++	struct spi_nand_chip *chip = spi_get_drvdata(spi);
++	struct mtd_info *mtd = chip->mtd;
++
++	spi_nand_release(mtd);
++	kfree(mtd);
++	kfree(chip);
++
++	return 0;
++}
++
++
++const struct spi_device_id spi_nand_id_table[] = {
++	{ "spi-nand", SPI_NAND_GENERIC },
++	{ "mt29f", SPI_NAND_MT29F },
++	{ "gd5f", SPI_NAND_GD5F },
++	{ },
++};
++MODULE_DEVICE_TABLE(spi, spi_nand_id_table);
++
++static struct spi_driver spi_nand_device_driver = {
++	.driver = {
++		.name	= "spi_nand_device",
++		.owner	= THIS_MODULE,
++	},
++	.id_table = spi_nand_id_table,
++	.probe	= spi_nand_device_probe,
++	.remove	= spi_nand_device_remove,
++};
++module_spi_driver(spi_nand_device_driver);
++
++
++MODULE_DESCRIPTION("SPI NAND device");
++MODULE_AUTHOR("Peter Pan<peterpandong@micron.com>");
++MODULE_AUTHOR("Ezequiel Garcia <ezequiel.garcia@imgtec.com>");
++MODULE_LICENSE("GPL v2");
++
+-- 
+1.9.1
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
