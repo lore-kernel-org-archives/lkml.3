@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261AbbAHMzG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 07:55:06 -0500
+	id S932401AbbAHM5Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 07:57:25 -0500
 Received: from mga14.intel.com ([192.55.52.115]:35459 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932070AbbAHMzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 07:55:03 -0500
+	id S932257AbbAHMzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 07:55:06 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="437999815"
+   d="scan'208";a="437999829"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V4 14/23] perf itrace: Add a hashtable for caching decoded instructions
-Date: Thu,  8 Jan 2015 14:52:18 +0200
-Message-Id: <1420721547-26470-15-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V4 15/23] perf tools: Add member to struct dso for an instruction cache
+Date: Thu,  8 Jan 2015 14:52:19 +0200
+Message-Id: <1420721547-26470-16-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1420721547-26470-1-git-send-email-adrian.hunter@intel.com>
 References: <1420721547-26470-1-git-send-email-adrian.hunter@intel.com>
@@ -27,179 +27,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Decoding Instruction Trace data may involve walking object
-code.  Rather than repetitively decoding the same instructions,
-a cache can be used to cache the results.
+Add a member to struct dso that can be used by Instruction
+Trace implementations to hold a cache for decoded instructions.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/itrace.c | 123 +++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/itrace.h |  14 ++++++
- 2 files changed, 137 insertions(+)
+ tools/perf/util/dso.c | 2 ++
+ tools/perf/util/dso.h | 3 +++
+ 2 files changed, 5 insertions(+)
 
-diff --git a/tools/perf/util/itrace.c b/tools/perf/util/itrace.c
-index c3b0993..bdf19d2 100644
---- a/tools/perf/util/itrace.c
-+++ b/tools/perf/util/itrace.c
-@@ -39,6 +39,8 @@
- #include "thread_map.h"
- #include "itrace.h"
- 
-+#include <linux/hash.h>
-+
- #include "event.h"
- #include "session.h"
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index 45be944..73e28ca 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -4,6 +4,7 @@
+ #include "symbol.h"
+ #include "dso.h"
+ #include "machine.h"
++#include "itrace.h"
+ #include "util.h"
  #include "debug.h"
-@@ -919,3 +921,124 @@ int itrace_mmap__read(struct itrace_mmap *mm, struct itrace_record *itr,
  
- 	return 1;
- }
-+
-+/**
-+ * struct itrace_cache - hash table to cache decoded instruction blocks
-+ * @hashtable: the hashtable
-+ * @sz: hashtable size (number of hlists)
-+ * @entry_size: size of an entry
-+ * @limit: limit the number of entries to this maximum, when reached the cache
-+ *         is dropped and caching begins again with an empty cache
-+ * @cnt: current number of entries
-+ * @bits: hashtable size (@sz = 2^@bits)
-+ */
-+struct itrace_cache {
-+	struct hlist_head *hashtable;
-+	size_t sz;
-+	size_t entry_size;
-+	size_t limit;
-+	size_t cnt;
-+	unsigned int bits;
-+};
-+
-+struct itrace_cache *itrace_cache__new(unsigned int bits, size_t entry_size,
-+				       unsigned int limit_percent)
-+{
-+	struct itrace_cache *c;
-+	struct hlist_head *ht;
-+	size_t sz, i;
-+
-+	c = zalloc(sizeof(struct itrace_cache));
-+	if (!c)
-+		return NULL;
-+
-+	sz = 1UL << bits;
-+
-+	ht = calloc(sz, sizeof(struct hlist_head));
-+	if (!ht)
-+		goto out_free;
-+
-+	for (i = 0; i < sz; i++)
-+		INIT_HLIST_HEAD(&ht[i]);
-+
-+	c->hashtable = ht;
-+	c->sz = sz;
-+	c->entry_size = entry_size;
-+	c->limit = (c->sz * limit_percent) / 100;
-+	c->bits = bits;
-+
-+	return c;
-+
-+out_free:
-+	free(c);
-+	return NULL;
-+}
-+
-+static void itrace_cache__drop(struct itrace_cache *c)
-+{
-+	struct itrace_cache_entry *entry;
-+	struct hlist_node *tmp;
-+	size_t i;
-+
-+	if (!c)
-+		return;
-+
-+	for (i = 0; i < c->sz; i++) {
-+		hlist_for_each_entry_safe(entry, tmp, &c->hashtable[i], hash) {
-+			hlist_del(&entry->hash);
-+			itrace_cache__free_entry(c, entry);
-+		}
-+	}
-+
-+	c->cnt = 0;
-+}
-+
-+void itrace_cache__free(struct itrace_cache *c)
-+{
-+	if (!c)
-+		return;
-+
-+	itrace_cache__drop(c);
-+	free(c->hashtable);
-+	free(c);
-+}
-+
-+void *itrace_cache__alloc_entry(struct itrace_cache *c)
-+{
-+	return malloc(c->entry_size);
-+}
-+
-+void itrace_cache__free_entry(struct itrace_cache *c __maybe_unused,
-+			      void *entry)
-+{
-+	free(entry);
-+}
-+
-+int itrace_cache__add(struct itrace_cache *c, u32 key,
-+		      struct itrace_cache_entry *entry)
-+{
-+	if (c->limit && ++c->cnt > c->limit)
-+		itrace_cache__drop(c);
-+
-+	entry->key = key;
-+	hlist_add_head(&entry->hash, &c->hashtable[hash_32(key, c->bits)]);
-+
-+	return 0;
-+}
-+
-+void *itrace_cache__lookup(struct itrace_cache *c, u32 key)
-+{
-+	struct itrace_cache_entry *entry;
-+	struct hlist_head *hlist;
-+
-+	if (!c)
-+		return NULL;
-+
-+	hlist = &c->hashtable[hash_32(key, c->bits)];
-+	hlist_for_each_entry(entry, hlist, hash) {
-+		if (entry->key == key)
-+			return entry;
-+	}
-+
-+	return NULL;
-+}
-diff --git a/tools/perf/util/itrace.h b/tools/perf/util/itrace.h
-index 08247d5..3bd899e 100644
---- a/tools/perf/util/itrace.h
-+++ b/tools/perf/util/itrace.h
-@@ -316,6 +316,20 @@ int itrace_heap__add(struct itrace_heap *heap, unsigned int queue_nr,
- void itrace_heap__pop(struct itrace_heap *heap);
- void itrace_heap__free(struct itrace_heap *heap);
+@@ -914,6 +915,7 @@ void dso__delete(struct dso *dso)
+ 	}
  
-+struct itrace_cache_entry {
-+	struct hlist_node hash;
-+	u32 key;
-+};
-+
-+struct itrace_cache *itrace_cache__new(unsigned int bits, size_t entry_size,
-+				       unsigned int limit_percent);
-+void itrace_cache__free(struct itrace_cache *itrace_cache);
-+void *itrace_cache__alloc_entry(struct itrace_cache *c);
-+void itrace_cache__free_entry(struct itrace_cache *c, void *entry);
-+int itrace_cache__add(struct itrace_cache *c, u32 key,
-+		      struct itrace_cache_entry *entry);
-+void *itrace_cache__lookup(struct itrace_cache *c, u32 key);
-+
- struct itrace_record *itrace_record__init(struct perf_evlist *evlist, int *err);
+ 	dso__data_close(dso);
++	itrace_cache__free(dso->itrace_cache);
+ 	dso_cache__free(&dso->data.cache);
+ 	dso__free_a2l(dso);
+ 	zfree(&dso->symsrc_filename);
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index 3782c82..c27c8fc 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -101,6 +101,8 @@ struct dsos {
+ 	struct rb_root	 root;	/* rbtree root sorted by long name */
+ };
  
- int itrace_record__options(struct itrace_record *itr,
++struct itrace_cache;
++
+ struct dso {
+ 	struct list_head node;
+ 	struct rb_node	 rb_node;	/* rbtree node sorted by long name */
+@@ -130,6 +132,7 @@ struct dso {
+ 	u16		 long_name_len;
+ 	u16		 short_name_len;
+ 	void		*dwfl;			/* DWARF debug info */
++	struct itrace_cache *itrace_cache;
+ 
+ 	/* dso data file */
+ 	struct {
 -- 
 1.9.1
 
