@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932580AbbAHSPl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 13:15:41 -0500
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:34683 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932310AbbAHSPj (ORCPT
+	id S932595AbbAHSQE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 13:16:04 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44865 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457AbbAHSQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 13:15:39 -0500
-Message-ID: <1420740936.5947.70.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: TCP connection issues against Amazon S3
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Erik Grinaker <erik@bengler.no>
-Cc: Yuchung Cheng <ycheng@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Date: Thu, 08 Jan 2015 10:15:36 -0800
-In-Reply-To: <DCC8B9AB-D1D7-4722-9B65-93AB5A559763@bengler.no>
-References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no>
-	 <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no>
-	 <1420564837.32621.30.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no>
-	 <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com>
-	 <03FC652E-AA01-42C7-BD52-019B6D922A9C@bengler.no>
-	 <CAK6E8=cP0BFUob5MVj9M0hC0efgRnUY=JMUPKee+v-4TLvHBgg@mail.gmail.com>
-	 <76DC89D1-CFCE-44B7-994E-4349FEEDEFA6@bengler.no>
-	 <1420575216.5947.12.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <4DA8529D-4EEC-42DA-89B0-DC7746DB2B10@bengler.no>
-	 <3F608393-E5F1-4647-81BF-C6C740100934@bengler.no>
-	 <CAK6E8=cf7cROQ0SON0BihkbOsBB+-sLAbexxgt4_xD+Auqev3Q@mail.gmail.com>
-	 <34CE0233-F881-4F40-B119-AA9D8F7D500F@bengler.no>
-	 <1420646284.5947.19.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <A58F8257-97F8-4662-98FC-7AC57F35A3A4@bengler.no>
-	 <1420666401.5947.35.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <DCC8B9AB-D1D7-4722-9B65-93AB5A559763@bengler.no>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Thu, 8 Jan 2015 13:16:01 -0500
+Date: Thu, 8 Jan 2015 18:15:56 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Ashay Jaiswal <ashayj@codeaurora.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Anirudh Ghayal <aghayal@codeaurora.org>,
+        David Collins <collinsd@codeaurora.org>
+Message-ID: <20150108181556.GR2634@sirena.org.uk>
+References: <1420723465-12045-1-git-send-email-ashayj@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XQVe3nzScD1ikyTV"
+Content-Disposition: inline
+In-Reply-To: <1420723465-12045-1-git-send-email-ashayj@codeaurora.org>
+X-Cookie: What's so funny?
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2] regulator: core: fix race condition in regulator_put()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2015-01-08 at 17:47 +0000, Erik Grinaker wrote:
 
-> FWIW, I've done a bisection, and it’s triggered by this change:
-> 
-> https://github.com/torvalds/linux/commit/4e4f1fc226816905c937f9b29dabe351075dfe0f
+--XQVe3nzScD1ikyTV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Thu, Jan 08, 2015 at 06:54:25PM +0530, Ashay Jaiswal wrote:
+> The regulator framework maintains a list of consumer regulators
+> for a regulator device and protects it from concurrent access using
+> the regulator device's mutex lock.
 
-This totally makes sense, thanks for doing the bisection !
+Applied, thanks but...
 
-> 
-> > We are not going to stick TCP stack to 20th century and buggy peers or
-> > middleboxes, sorry.
-> 
-> That’s fair enough.
+> +	mutex_lock(&rdev->mutex);
+>  	kfree(regulator->supply_name);
+>  	list_del(&regulator->list);
+>  	kfree(regulator);
+>=20
+>  	rdev->open_count--;
+>  	rdev->exclusive =3D 0;
+> +	mutex_unlock(&rdev->mutex);
 
-Strange thing is that sender does not misbehave at the beginning when
-receiver window is still small. Only after a while.
+I'll do a followup which moves the frees out of the locked region
+(reordering things a bit) - they're the main bit I was worried about
+with time, they should be fast since they're just frees but it's easy
+enough to avoid having to think about it.
 
-It would be nice to know more details about sender OS/version.
+--XQVe3nzScD1ikyTV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQEcBAEBAgAGBQJUrslbAAoJECTWi3JdVIfQircH/3PtYm1lJQdpQzy19YAvh8f8
+pOMdz7iFHfqd+1y3qaSVZKiAE/p0qOf6vNEbuAMjlRXL37CUirPY8ktEv8+adirt
+S8MxIEjtNTXACTjKSaPFFSjuL0uMvA/sWxDDCqeqokOEmt4kF8Hjd8ShhfXxtI86
+KHGWkXXMLaw14zynH73//wvCg3wZbufIzPLZMyGeIwTEuLKhdhx8n8HgIqoYzGSs
+RlVqQXt3zSDwsr4/gnzm7vRbPVC879EH9PrWSOojMBRbM7CtfcJHVLUAhleGc8CW
+uUh5p0hdJnQF1T1QlUzElIC6Z4G1WymXodSrs3NX0pAVPvqQ/ClMVU4jleCmyRE=
+=F0SA
+-----END PGP SIGNATURE-----
 
+--XQVe3nzScD1ikyTV--
