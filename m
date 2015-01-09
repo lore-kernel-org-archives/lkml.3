@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757560AbbAIO10 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 09:27:26 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:44994 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756947AbbAIO1Y (ORCPT
+	id S932251AbbAIOb0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 09:31:26 -0500
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:60879 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620AbbAIObZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 09:27:24 -0500
-Date: Fri, 9 Jan 2015 06:27:23 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Jeff Layton <jlayton@primarydata.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        ceph-devel@vger.kernel.org, hch@infradead.org
-Subject: Re: [PATCH v2 02/10] locks: have locks_release_file use
- flock_lock_file to release generic flock locks
-Message-ID: <20150109142723.GA30294@infradead.org>
-References: <1420742065-28423-1-git-send-email-jlayton@primarydata.com>
- <1420742065-28423-3-git-send-email-jlayton@primarydata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420742065-28423-3-git-send-email-jlayton@primarydata.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 9 Jan 2015 09:31:25 -0500
+From: "George G. Davis" <ggdavisiv@gmail.com>
+X-Google-Original-From: "George G. Davis" <george_davis@mentor.com>
+To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        "George G. Davis" <george_davis@mentor.com>
+Subject: [PATCH] drivers: of: Export of_reserved_mem_device_{init,release}
+Date: Fri,  9 Jan 2015 09:29:05 -0500
+Message-Id: <1420813745-130341-1-git-send-email-george_davis@mentor.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 08, 2015 at 10:34:17AM -0800, Jeff Layton wrote:
-> ...instead of open-coding it and removing flock locks directly. This
-> simplifies some coming interim changes in the following patches when
-> we have different file_lock types protected by different spinlocks.
+Export of_reserved_mem_device_{init,release} so that modules
+can initialize and release their assigned per-device cma_area.
 
-It took me quite a while to figure out what's going on here, as this
-adds a call to flock_lock_file, but it still keeps the old open coded
-loop around, just with a slightly different WARN_ON.
+Signed-off-by: George G. Davis <george_davis@mentor.com>
+---
+ drivers/of/of_reserved_mem.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-I'd suggest keeping an open coded loop in locks_remove_flock, which
-should both be more efficient and easier to review.
+diff --git a/drivers/of/of_reserved_mem.c b/drivers/of/of_reserved_mem.c
+index dc566b3..5eeb5b2 100644
+--- a/drivers/of/of_reserved_mem.c
++++ b/drivers/of/of_reserved_mem.c
+@@ -265,6 +265,7 @@ int of_reserved_mem_device_init(struct device *dev)
+ 
+ 	return ret;
+ }
++EXPORT_SYMBOL(of_reserved_mem_device_init);
+ 
+ /**
+  * of_reserved_mem_device_release() - release reserved memory device structures
+@@ -289,3 +290,4 @@ void of_reserved_mem_device_release(struct device *dev)
+ 
+ 	rmem->ops->device_release(rmem, dev);
+ }
++EXPORT_SYMBOL(of_reserved_mem_device_release);
+-- 
+1.9.3
 
