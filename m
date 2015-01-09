@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932460AbbAIPOD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:14:03 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:58832 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932149AbbAIPN7 (ORCPT
+	id S1757867AbbAIPOH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:14:07 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:27883 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932149AbbAIPOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:13:59 -0500
-Date: Fri, 9 Jan 2015 15:13:43 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <robh@kernel.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Lv Zheng <lv.zheng@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [Linaro-acpi] [PATCH v5 18/18] Documentation: ACPI for ARM64
-Message-ID: <20150109151342.GE24408@e104818-lin.cambridge.arm.com>
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>
- <1610983.9vqJdsL27R@wuerfel>
- <20150109103307.GC24408@e104818-lin.cambridge.arm.com>
- <3341506.a2BFqPNg3k@wuerfel>
+	Fri, 9 Jan 2015 10:14:05 -0500
+Message-ID: <54AFF037.1000004@atmel.com>
+Date: Fri, 9 Jan 2015 16:13:59 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3341506.a2BFqPNg3k@wuerfel>
-Thread-Topic: [Linaro-acpi] [PATCH v5 18/18] Documentation: ACPI for ARM64
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Cyrille Pitchen <cyrille.pitchen@atmel.com>, <gregkh@linuxfoundation.org>,
+        <wenyou.yang@atmel.com>, <ludovic.desroches@atmel.com>,
+        <leilei.zhao@atmel.com>, <voice.shen@atmel.com>, <josh.wu@atmel.com>,
+        <linux-serial@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/5] tty/serial: at91: use correct type for dma_sync_*_for_cpu()
+ and dma_sync_*_for_device()
+References: <cover.1418131298.git.cyrille.pitchen@atmel.com> <830a2b33ab0226405dc310c8a6d43731bf4ca8f9.1418131298.git.cyrille.pitchen@atmel.com>
+In-Reply-To: <830a2b33ab0226405dc310c8a6d43731bf4ca8f9.1418131298.git.cyrille.pitchen@atmel.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 10:55:51AM +0000, Arnd Bergmann wrote:
-> On Friday 09 January 2015 10:33:07 Catalin Marinas wrote:
-> > On Wed, Jan 07, 2015 at 07:48:48PM +0000, Arnd Bergmann wrote:
+Le 09/12/2014 14:31, Cyrille Pitchen a écrit :
+> dma_sync_*_for_cpu() and dma_sync_*_for_device() use 'enum dma_data_direction',
+> not 'enum dma_transfer_direction'
 > 
-> > > In other cases that's actually a good thing. One such example is the
-> > > "Principles of ARM Memory Maps" document that tells hardware implementers
-> > > to do a rather complex mapping "To support 36-bit x86 PAE compatible operating
-> > > systems, such as Linux." but makes life much harder in the process than
-> > > any of the random mappings we have seen in the wild.
-> > 
-> > Unfortunately, with any significant amount of RAM (say 16GB), this
-> > document becomes pretty useless. It basically forces you to have a very
-> > sparse physical address map from 0 to over 40-bit. I wouldn't apply the
-> > ARM memory maps doc to server systems.
+> Signed-off-by: Cyrille Pitchen <cyrille.pitchen@atmel.com>
+
+Sure:
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+Here it's difficult to add a "stable" tag as the error was introduced by
+several different patches.
+
+Thanks.
+
+> ---
+>  drivers/tty/serial/atmel_serial.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 > 
-> Are you sure? I was under the impression that this document was targetted
-> specifically at servers.
+> diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+> index 4d848a2..756f567 100644
+> --- a/drivers/tty/serial/atmel_serial.c
+> +++ b/drivers/tty/serial/atmel_serial.c
+> @@ -794,7 +794,7 @@ static void atmel_tx_dma(struct uart_port *port)
+>  			return;
+>  		}
+>  
+> -		dma_sync_sg_for_device(port->dev, sg, 1, DMA_MEM_TO_DEV);
+> +		dma_sync_sg_for_device(port->dev, sg, 1, DMA_TO_DEVICE);
+>  
+>  		atmel_port->desc_tx = desc;
+>  		desc->callback = atmel_complete_tx_dma;
+> @@ -927,7 +927,7 @@ static void atmel_rx_from_dma(struct uart_port *port)
+>  	dma_sync_sg_for_cpu(port->dev,
+>  			    &atmel_port->sg_rx,
+>  			    1,
+> -			    DMA_DEV_TO_MEM);
+> +			    DMA_FROM_DEVICE);
+>  
+>  	/*
+>  	 * ring->head points to the end of data already written by the DMA.
+> @@ -974,7 +974,7 @@ static void atmel_rx_from_dma(struct uart_port *port)
+>  	dma_sync_sg_for_device(port->dev,
+>  			       &atmel_port->sg_rx,
+>  			       1,
+> -			       DMA_DEV_TO_MEM);
+> +			       DMA_FROM_DEVICE);
+>  
+>  	/*
+>  	 * Drop the lock here since it might end up calling
+> 
 
-Ah, sorry for the confusion, I haven't read the latest (apparently from
-2012) update which covers 44 and 48-bit memory maps.
-
-The only downside is that for more than 32GB of RAM (up to 512GB) it
-requires a 40-bit memory map. Given the sparseness, we can't use
-3-levels of page table with 4KB pages which can only cover 39-bit.
-Anyway, not a major issue.
 
 -- 
-Catalin
+Nicolas Ferre
