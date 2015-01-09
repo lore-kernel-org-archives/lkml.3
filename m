@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932405AbbAIOnQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 09:43:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36841 "EHLO mx2.suse.de"
+	id S932522AbbAIOn7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 09:43:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33116 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757247AbbAIOnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 09:43:14 -0500
-Date: Fri, 9 Jan 2015 15:43:11 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] HID
-Message-ID: <alpine.LNX.2.00.1501091504060.15299@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S932336AbbAIOn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 09:43:57 -0500
+Date: Fri, 9 Jan 2015 15:43:32 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Wang Nan <wangnan0@huawei.com>, Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lizefan@huawei.com, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Jiri Olsa <jolsa@kernel.org>
+Subject: Re: [PATCH] perf: fix building error in x86_64 when dwarf unwind is
+ on
+Message-ID: <20150109144332.GB14750@krava.brq.redhat.com>
+References: <1419643571-62764-1-git-send-email-wangnan0@huawei.com>
+ <20141229075607.GC6081@sejong>
+ <54A10D53.2010800@huawei.com>
+ <54AC9FC0.7050902@huawei.com>
+ <20150107054004.GA849@sejong>
+ <20150107083920.GF6243@krava.brq.redhat.com>
+ <54AD2672.1010009@huawei.com>
+ <CAM9d7chGXX68B54igX5O+3ZEu322cW-Xfoz6Wen8=D8iQpyH6g@mail.gmail.com>
+ <54ADDDAF.8060704@huawei.com>
+ <20150108050920.GA7268@sejong>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150108050920.GA7268@sejong>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Thu, Jan 08, 2015 at 02:09:20PM +0900, Namhyung Kim wrote:
 
-please pull from
+SNIP
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
+> > ---
+> > diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+> > index 67a03a82..1f71a32 100644
+> > --- a/tools/perf/Makefile.perf
+> > +++ b/tools/perf/Makefile.perf
+> > @@ -462,10 +462,12 @@ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+> >  # Benchmark modules
+> >  BUILTIN_OBJS += $(OUTPUT)bench/sched-messaging.o
+> >  BUILTIN_OBJS += $(OUTPUT)bench/sched-pipe.o
+> > -ifeq ($(RAW_ARCH),x86_64)
+> > +ifeq ($(ARCH), x86)
+> > +ifeq ($(IS_64_BIT), 1)
+> >  BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy-x86-64-asm.o
+> >  BUILTIN_OBJS += $(OUTPUT)bench/mem-memset-x86-64-asm.o
+> >  endif
+> > +endif
+> >  BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy.o
+> >  BUILTIN_OBJS += $(OUTPUT)bench/futex-hash.o
+> >  BUILTIN_OBJS += $(OUTPUT)bench/futex-wake.o
+> 
+> Looks good to me!
 
-to receive:
+I'm little confused now.. is this on top of your earlier
+patch or this change stands by itself..?
 
+could any of you please resend v2 ? ;-)
 
-=====
-- bounds checking fixes in logitech and roccat drivers, from Peter Wu and
-  Dan Carpenter
-- double-kfree fix in i2c-hid driver on bus shutdown, from Mika Westerberg
-- a couple of various small driver fixes
-- a few device id additions
-=====
-
-Thanks.
-
-----------------------------------------------------------------
-Benjamin Tissoires (1):
-      HID: logitech-hidpp: prefix the name with "Logitech"
-
-Dan Carpenter (1):
-      HID: roccat: potential out of bounds in pyra_sysfs_write_settings()
-
-Daniel Nicoletti (1):
-      HID: Allow HID_BATTERY_STRENGTH to be enabled
-
-Giedrius Statkevièius (1):
-      HID: Add a new id 0x501a for Genius MousePen i608X
-
-Karl Relton (1):
-      HID: add battery quirk for USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ISO keyboard
-
-Mika Westerberg (1):
-      HID: i2c-hid: Do not free buffers in i2c_hid_stop()
-
-Peter Wu (3):
-      HID: logitech-dj: check report length
-      HID: logitech-hidpp: check WTP report length
-      HID: logitech-hidpp: avoid unintended fall-through
-
- drivers/hid/Kconfig              |  3 ++-
- drivers/hid/hid-core.c           |  1 +
- drivers/hid/hid-ids.h            |  1 +
- drivers/hid/hid-input.c          |  3 +++
- drivers/hid/hid-kye.c            |  4 ++++
- drivers/hid/hid-logitech-dj.c    | 16 +++++++++++++++-
- drivers/hid/hid-logitech-hidpp.c | 41 ++++++++++++++++++++++++++++++++++++++++
- drivers/hid/hid-roccat-pyra.c    |  8 ++++++--
- drivers/hid/i2c-hid/i2c-hid.c    |  5 -----
- drivers/hid/usbhid/hid-quirks.c  |  1 +
- 10 files changed, 74 insertions(+), 9 deletions(-)
-
--- 
-Jiri Kosina
-SUSE Labs
+thanks,
+jirka
