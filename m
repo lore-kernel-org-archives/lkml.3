@@ -1,110 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557AbbAIDWW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 22:22:22 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:43501 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050AbbAIDWV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 22:22:21 -0500
-Message-ID: <1420773724.2801.17.camel@cyril>
-Subject: Re: [PATCH 2/2] powerpc: add running_clock for powerpc to prevent
- spurious softlockup warnings
-From: Cyril Bur <cyrilbur@gmail.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        mpe@ellerman.id.au, drjones@redhat.com, dzickus@redhat.com,
-        mingo@kernel.org, uobergfe@redhat.com, chaiw.fnst@cn.fujitsu.com,
-        cl@linu.com, fabf@skynet.be, atomlin@redhat.com, benzh@chromium.org,
-        heiko.carstens@de.ibm.com
-Date: Fri, 09 Jan 2015 14:22:04 +1100
-In-Reply-To: <20150107112024.76aa9217@mschwide>
-References: <1419224764-11384-1-git-send-email-cyrilbur@gmail.com>
-	 <1419224764-11384-3-git-send-email-cyrilbur@gmail.com>
-	 <20150105141013.946b5d15c5d003de8238951c@linux-foundation.org>
-	 <1420512241.2910.41.camel@cyril> <20150107112024.76aa9217@mschwide>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755694AbbAIDay (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 22:30:54 -0500
+Received: from mail.eperm.de ([89.247.134.16]:59412 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753748AbbAIDaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 22:30:52 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
+        Daniel Borkmann <dborkman@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH v8 1/2] crypto: AF_ALG: add AEAD support
+Date: Fri, 09 Jan 2015 04:30:45 +0100
+Message-ID: <1639027.yRSjDuRfFC@tachyon.chronox.de>
+User-Agent: KMail/4.14.3 (Linux/3.17.7-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <20150108110931.GA8568@gondor.apana.org.au>
+References: <33040723.pAXIT3fl8h@tachyon.chronox.de> <6260799.4x68Msg3Li@tachyon.chronox.de> <20150108110931.GA8568@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-07 at 11:20 +0100, Martin Schwidefsky wrote:
-> On Tue, 06 Jan 2015 13:44:01 +1100
-> Cyril Bur <cyrilbur@gmail.com> wrote:
-> 
-> > On Mon, 2015-01-05 at 14:10 -0800, Andrew Morton wrote:
-> > > On Mon, 22 Dec 2014 16:06:04 +1100 Cyril Bur <cyrilbur@gmail.com> wrote:
-> > > 
-> > > > On POWER8 virtualised kernels the VTB register can be read to have a view of
-> > > > time that only increases while the guest is running. This will prevent guests
-> > > > from seeing time jump if a guest is paused for significant amounts of time.
-> > > > 
-> > > > On POWER7 and below virtualised kernels stolen time is subtracted from
-> > > > sched_clock as a best effort approximation. This will not eliminate spurious
-> > > > warnings in the case of a suspended guest but may reduce the occurance in the
-> > > > case of softlockups due to host over commit.
-> > > > 
-> > > > Bare metal kernels should avoid reading the VTB as KVM does not restore sane
-> > > > values when not executing. sched_clock is returned in this case.
-> > > > 
-> > > > --- a/arch/powerpc/kernel/time.c
-> > > > +++ b/arch/powerpc/kernel/time.c
-> > > > @@ -621,6 +621,30 @@ unsigned long long sched_clock(void)
-> > > >  	return mulhdu(get_tb() - boot_tb, tb_to_ns_scale) << tb_to_ns_shift;
-> > > >  }
-> > > >  
-> > > > +unsigned long long running_clock(void)
-> > > 
-> > > Non-kvm kernels don't need this code.  Is there some appropriate
-> > > "#ifdef CONFIG_foo" we can wrap this in?
-> > CONFIG_PSERIES would work, having said that typical compilation for a
-> > powernv kernel almost always includes CONFIG_PSERIES (although it
-> > doesn't need to)... still, your point is valid, will add in v2.
-> > > 
-> > > 
-> > > > +{
-> > > > +	/*
-> > > > +	 * Don't read the VTB as a host since KVM does not switch in host timebase
-> > > > +	 * into the VTB when it takes a guest off the CPU, reading the VTB would
-> > > > +	 * result in reading 'last switched out' guest VTB.
-> > > > +	 */
-> > > > +
-> > > > +	if (firmware_has_feature(FW_FEATURE_LPAR)) {
-> > > > +		if (cpu_has_feature(CPU_FTR_ARCH_207S))
-> > > > +			return mulhdu(get_vtb() - boot_tb, tb_to_ns_scale) << tb_to_ns_shift;
-> > > > +
-> > > > +		/* This is a next best approximation without a VTB. */
-> > > > +		return sched_clock() - cputime_to_nsecs(kcpustat_this_cpu->cpustat[CPUTIME_STEAL]);
-> > > 
-> > > Why is this result dependent on FW_FEATURE_LPAR?  It's all generic code.
-> > Good point, the reason it ended up there is because I wanted to avoid
-> > behaviour changes.
-> > > 
-> > > In fact the kernel/sched/clock.c default implementation of
-> > > running_clock() could use this expression.  Would that be good or bad? :)
-> > For power I'm almost certain it would be fine, on platforms which don't
-> > do stolen time cpustat[CPUTIME_STEAL] should always be zero and if not
-> > then the value should always be sane (although as mentioned in the
-> > comment, not as accurate as using the VTB).
-> > 
-> > Putting it in the default implementation could cause behavioural changes
-> > for x86 and s390, I would want their views on doing that.
-> 
-> I would prefer to make sched_clock do all the work. We have been thinking
-> about steal time vs sched_clock as well, our solution would be to exchange
-> the time source. Right now sched_clock is based on the TOD clock, the code
-> that takes steal time into account would use the CPU timer instead.
-> With the subtraction of kcpustat_this_cpu->cpustat[CPUTIME_STEAL] in
-> common code we would have to add the same value in the sched_clock
-> implementation as the steal time is already included in the CPU timer
-> deltas.
+Am Donnerstag, 8. Januar 2015, 22:09:31 schrieb Herbert Xu:
 
-Thanks for the quick reply Martin,
-Sound like you've got ideas and while I didn't really grasp all of that,
-I gather we best leave the common code as is.
+Hi Herbert,
+
+> On Wed, Jan 07, 2015 at 04:51:38PM +0100, Stephan Mueller wrote:
+> > +		if (!aead_writable(sk)) {
+> > +			/*
+> > +			 * If there is more data to be expected, but we cannot
+> > +			 * write more data, forcefully define that we do not
+> > +			 * expect more data to invoke the AEAD operation. This
+> > +			 * prevents a deadlock in user space.
+> > +			 */
+> > +			ctx->more = 0;
 > 
+> We should return EMSGSIZE here.  Also we should clear out the
+> existing data so that the socket may be reused again.
 
+Is this really wise considering that we want to support a threaded caller? For 
+example, one thread sends data and another reads data. For some reason, the 
+reading thread is throttled or slower than the sender. Now, with the current 
+solution, the sender is put on hold (i.e. throttled) until the reader can 
+catch up. I.e. we have an automated synchronization between sender/receiver.
 
+Thus, when we remove the wait here and return an error, the sender will be 
+shut down and there is no synchronization of the reader/writer any more.
+
+Note, the same applies to the very similar code in aead_sendpage too.
+> 
+> > +	ctx->more = msg->msg_flags & MSG_MORE;
+> > +	if (!ctx->more && !aead_sufficient_data(ctx))
+> > +		err = -EINVAL;
+> 
+> Ditto, we should discard the data that's queued up.  Also perhaps
+> use EBADMSG instead of EINVAL.
+
+Agreed that we should clear out the buffer. I will provide that in the next 
+release for both, the sendmsg and sendpage implementations.
+
+However, I am not sure whether using EBADMSG is a good idea. The error of 
+EBADMSG in the kernel crypto API is only used for integrity errors of AEAD 
+ciphers. But our error case here has nothing to do with the integrity error.
+
+I would be fine with any other error number -- EMSGSIZE as you suggested 
+above?
+> 
+> > +	/*
+> > +	 * Require exactly one IOV block as the AEAD operation is a one shot
+> > +	 * due to the authentication tag.
+> > +	 */
+> > +	if (msg->msg_iter.nr_segs != 1)
+> > +		return -ENOMSG;
+> 
+> Why does the receive buffer have to be contiguous?
+
+I thought for quite some time about how we can use multiple iovecs. But I 
+found no satisfactory solution. The solution I see is described below.
+
+If we consider the skcipher implementation, the code iterates over the iovecs 
+as the outermost loop. In each loop iteration the cipher operation is 
+triggered.
+
+Now in case of AEAD, all provided data the kernel received has to be operated 
+on with exactly one cipher invocation. Looking at skcipher, that would mean 
+that we only perform one loop iteration, i.e. processing exactly one iovec.
+
+A possible solution would be that I use an array of struct af_alg_sgl and 
+iterate over that array for each iovec. Something like the following:
+
+struct aead_ctx {
+...
+	struct af_alg_sgl rsgl[ALG_MAX_PAGES];
+
+for(i = 0; i < ALG_MAX_PAGES; i++) {
+	af_alg_make_sg(rsgl[i], iov[i])
+	scatterwalk_sg_chain(rsgl[i-1].sg rsgl[i]);
+}
+
+But my concern is that with the array of rsgl we occupy a sizable amount of 
+memory as af_alg_sgl again defines arrays of entries.
+
+Do you think whether such approach makes sense? If yes, which limit to the 
+number of rsgl should we apply -- is ALG_MAX_PAGES good?
+
+-- 
+Ciao
+Stephan
