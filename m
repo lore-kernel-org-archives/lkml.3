@@ -1,67 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758205AbbAIPbj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:31:39 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:64557 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932991AbbAIPYq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:24:46 -0500
-Date: Fri, 9 Jan 2015 15:24:42 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Kanaka Juvva <kanaka.d.juvva@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH v4 10/11] perf/x86/intel: Perform rotation on Intel CQM
- RMIDs
-Message-ID: <20150109152442.GG495@console-pimps.org>
-References: <1415999712-5850-1-git-send-email-matt@console-pimps.org>
- <1415999712-5850-11-git-send-email-matt@console-pimps.org>
- <20150106171712.GH3337@twins.programming.kicks-ass.net>
- <20150109121401.GB495@console-pimps.org>
- <20150109130250.GH29390@twins.programming.kicks-ass.net>
+	id S1758034AbbAIPZS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:25:18 -0500
+Received: from mail-by2on0066.outbound.protection.outlook.com ([207.46.100.66]:1472
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933016AbbAIPZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 10:25:12 -0500
+Date: Fri, 9 Jan 2015 07:25:02 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Beniamino Galvani <b.galvani@gmail.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v3 0/7] Pinctrl support for Zynq
+References: <1d59c0972da04ec89dec6c09724986a1@BY2FFO11FD010.protection.gbl>
+ <4d544fe425694a4e8043ddbf604db062@BN1AFFO11FD033.protection.gbl>
+ <CACRpkdaKH21qz_RAcDtw6ycsw+5FD0RXQQs91_tZV53EuKVusQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <20150109130250.GH29390@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdaKH21qz_RAcDtw6ycsw+5FD0RXQQs91_tZV53EuKVusQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21238.000
+X-TM-AS-User-Approved-Sender: Yes;Yes
+Message-ID: <ba4ac5f77c7549f2a264a5a5b1318dc8@BN1BFFO11FD009.protection.gbl>
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=temperror (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(51704005)(199003)(377424004)(377454003)(189002)(164054003)(24454002)(50986999)(74316001)(120916001)(76176999)(87936001)(54356999)(85182001)(19580395003)(50466002)(21056001)(83506001)(19580405001)(2950100001)(77156002)(110136001)(92566001)(46102003)(53416004)(106466001)(23676002)(85202003)(104016003)(4396001)(33646002)(107046002)(20776003)(86362001)(47776003)(62966003)(6806004)(92726002)(108616004)(99396003)(31966008)(107986001)(24736002)(299355004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB010;H:xsj-pvapsmtpgw01;FPR:;SPF:TempError;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB010;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1BFFO11HUB010;
+X-Forefront-PRVS: 04519BA941
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB010;
+X-OriginatorOrg: xilinx.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 09 Jan 2015 15:25:07.3336
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 657af505-d5df-48d0-8300-c31994686c5c
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=657af505-d5df-48d0-8300-c31994686c5c;Ip=[149.199.60.83]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1BFFO11HUB010
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 09 Jan, at 02:02:50PM, Peter Zijlstra wrote:
-> On Fri, Jan 09, 2015 at 12:14:01PM +0000, Matt Fleming wrote:
-> > On Tue, 06 Jan, at 06:17:12PM, Peter Zijlstra wrote:
-> > > 
-> > > afaict the again label will try and steal yet another rmid, if rmids
-> > > don't decay fast enough, we could end up with all rmids on the limbo
-> > > list and none active. Or am I missing something here?
-> > 
-> > You're not missing anything, that's true, we will try and steal more
-> > RMIDs. We could perhaps put a limit on how many RMIDs we're willing to
-> > steal, but I think it should definitely be > 1 because RMIDs can
-> > stabilize out of order.
-> > 
-> > It's worth pointing out that we only steal more RMIDs if the ones on the
-> > limbo list have been queued for the "minimum queue time" - it really is
-> > a last resort.
+On Fri, 2015-01-09 at 09:45AM +0100, Linus Walleij wrote:
+> On Fri, Dec 12, 2014 at 5:37 PM, Sören Brinkmann
+> <soren.brinkmann@xilinx.com> wrote:
 > 
-> Do we really care? Why not just hold up everything until the one(s) we
-> have are low enough?
+> > Argh, this went through the wrong SMTP. I suspect threading is broken
+> > due to that. Let me know if you want me to resend this with intact
+> > threading.
 > 
-> Yes it all blows, but would not some active be better than none active,
-> just because the stupid lines aren't clearing fast enough?
+> I don't care much about the threading, but all messages are quoted-printable
+> which doesn't apply :(
+> 
+> i.e.:
+> 
+> Content-Transfer-Encoding: quoted-printable
+> (...)
+> 
+> + const char *subnode_target_type =3D "pins";
+> =20
+> (...)
+> 
+> Can you resent with more sane encoding? I don't know where this
+> comes from but suspect the Microsoft Exchange SMTP server
+> does this when you use diacritics and german letters...
 
-Right, but now we need a "steal limit", so we know when to stop stealing
-active RMIDs.
+Okay, I'll rebase to the latest pinctrl/devel branch (if needed) and
+send an updated version bypassing exchange. I hope that works then.
 
-	(cqm_max_rmid + 1) / 4 ?
-
-I guess any limit is better than no limit.
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+	Thanks,
+	Sören
