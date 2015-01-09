@@ -1,68 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932284AbbAIOEF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 09:04:05 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:42547 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753311AbbAIOED convert rfc822-to-8bit (ORCPT
+	id S1757581AbbAIOGK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 09:06:10 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46727 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754136AbbAIOGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 09:04:03 -0500
-From: Kalle Valo <kvalo@codeaurora.org>
-To: =?utf-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
-Cc: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>,
-        "linux-wireless\@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] bcma: fix two coding style issues, more than 80 characters per line.
-References: <1419766622-10911-1-git-send-email-oscar.forner.martinez@gmail.com>
-	<87bnmaqxvs.fsf@kamboji.qca.qualcomm.com>
-	<CACna6rzWaHg=M15q=swf+yqMEB3smRRANuLHkSK1dU1MtG8jgg@mail.gmail.com>
-	<87y4peo2of.fsf@kamboji.qca.qualcomm.com>
-	<CACna6rzdtx2pBHE-00uocUEqNrbopShUW83R0dYeQBD26eC=NA@mail.gmail.com>
-Date: Fri, 09 Jan 2015 16:03:55 +0200
-In-Reply-To: <CACna6rzdtx2pBHE-00uocUEqNrbopShUW83R0dYeQBD26eC=NA@mail.gmail.com>
-	(=?utf-8?Q?=22Rafa=C5=82_Mi=C5=82ecki=22's?= message of "Wed, 7 Jan 2015
- 21:54:04 +0100")
-Message-ID: <87387kjbjo.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Fri, 9 Jan 2015 09:06:08 -0500
+Message-ID: <54AFE03D.5040509@pengutronix.de>
+Date: Fri, 09 Jan 2015 15:05:49 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: "Ahmed S. Darwish" <darwish.07@gmail.com>
+CC: Olivier Sobrie <olivier@sobrie.be>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 4/4] can: kvaser_usb: Add support for the Usbcan-II
+ family
+References: <20141223154654.GB6460@vivalin-002> <20150105174910.GA6304@linux> <20150105175206.GB6304@linux> <20150105175713.GC6304@linux> <20150105183131.GD6304@linux> <54AE6FC1.6050007@pengutronix.de> <20150109030657.GA1791@vivalin-002>
+In-Reply-To: <20150109030657.GA1791@vivalin-002>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="KF4kD39KBoUua5OAQf1OMwpNjnjsVE3c2"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafał Miłecki <zajec5@gmail.com> writes:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--KF4kD39KBoUua5OAQf1OMwpNjnjsVE3c2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-> On 7 January 2015 at 19:39, Kalle Valo <kvalo@codeaurora.org> wrote:
->> Rafał Miłecki <zajec5@gmail.com> writes:
->>
->>> On 7 January 2015 at 18:55, Kalle Valo <kvalo@codeaurora.org> wrote:
->>>> Oscar Forner Martinez <oscar.forner.martinez@gmail.com> writes:
->>>>
->>>>> Two lines with more than 80 characters per line have been split in several lines.
->>>>>
->>>>> Signed-off-by: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>
->>>>
->>>> Thanks, applied to wireless-drivers-next.git.
+On 01/09/2015 04:06 AM, Ahmed S. Darwish wrote:
 >>>
->>> Could you still replace it (V4) with an older version (V3)? Before I
->>> explained V3 was OK Oscar already sent this (worse) V4.
+>>> 		cf->can_id |=3D CAN_ERR_CRTL;
+>>> 		cf->data[1] =3D CAN_ERR_CRTL_RX_OVERFLOW;
+>>>
+>>> 		stats->rx_over_errors++;
+>>> 		stats->rx_errors++;
+>>>
+>>> 		netif_rx(skb);
+>>>
+>>> 		stats->rx_packets++;
+>>> 		stats->rx_bytes +=3D cf->can_dlc;
 >>
->> No. I'm not going to rebase a public git tree unless there's a huge
->> disaster.
->
-> I was pretty sure you didn't push it yet, that's why I asked.
+>> Another patch would be not to touch cf after netif_rx(), please
+>> move the stats handling before calling netif_rx(). Same applies to
+>> the kvaser_usb_rx_can_msg() function.
 
-Heh, we got lucky. So I had actually run 'git push' but missed that the
-authenticate had failed. A good thing you pointed out this. So I know
-dropped this patch from my tree and pushed rest of the patches I had
-applied.
+> BTW, is it guaranteed from the SocketCAN stack that netif_rx()
 
-Rafal, is this the patch I should apply:
+netif_rx() is the generic networking stack already.
 
-https://patchwork.kernel.org/patch/5545021/
+> will never return NET_RX_DROPPED? Because if no guarantee
+> exists, I guess below fragment cannot be completely correct?
 
-Please confirm.
+No, it's not guaranteed...
 
--- 
-Kalle Valo
+>=20
+>         stats->rx_packets++;
+>         stats->rx_bytes +=3D cf->can_dlc;
+>         netif_rx(skb);
+>=20
+> On the other hand, I don't see evan a single CAN driver checking
+> netif_rx() return value, so maybe such a check is an overkill...
+
+A quick look shows that almost no ethernet or wireless drivers take care
+about the return value. In case of a RX_DROPPED some increase a drop
+counter, though.
+
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--KF4kD39KBoUua5OAQf1OMwpNjnjsVE3c2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUr+A9AAoJECte4hHFiupUUvIP/RPFuWMts6qYX7knfvztzjjd
+Ogow3/KZF5H9lLWgxQh3sYZ+S6p/BMaSkVLACrPCR8VXyI/uDiSrtsrBkh6T2fk0
+aHu7bxU6UAeBk1cgtMMu3EJZ8aFmLw1r0gi9WQ3TFE68JlFqUQQ63MRVvsEJfMgx
+bWHdIIv9maalC01eEmRtfYHonBJuUJw3zahfbJStHxlgTBjdyG/48tDk4y9jPbCh
+b4Hv+VekDE+tQ58BB7+oTeCoYWfogpTMtu/N+43o2LGwGleW2UQPt8rCC7/wovJW
+Pm4uqpL0kO4B9lpoeLirXxEGhq5m536uqEgWn04obhoTpahRVOWxNUYn2d3wu67L
+P2M6PfJc65WNwbdbh+P36rcmuoMSPabVi5gU/a1HZzoy+S00rF9DYmbedDtTdmkL
+7vynsNWulwgm9HaAU6Y7w2n7qSpzzV+a7L3TpyCbFHb95LxCtD1a+nAwShPC2+ik
+wpHJpxvsS1Ym7hvIRyzpVdVL0P9HO4tEraV1nI1Z5eXUz2czjWJ1c2BmwNirK9Tu
+Pj0HAleSUrXAvdSgK3sgtgg01bH6RF1rQPRq0dAPwDdLKBhDm0+UczWeBGvQR9Vt
+gEWtsghkXEouFlSudqGUNkRRDMH30n/hyL96pQ1iFh8+KGGI6JnO7tw+mwD8nUL9
+wQKIu3jo+dddyBO5RL73
+=7GlW
+-----END PGP SIGNATURE-----
+
+--KF4kD39KBoUua5OAQf1OMwpNjnjsVE3c2--
