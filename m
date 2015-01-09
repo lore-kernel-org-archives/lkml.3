@@ -1,87 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758059AbbAIP0r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:26:47 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:57163 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933132AbbAIP0X (ORCPT
+	id S933015AbbAIP3G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:29:06 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:30770 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758164AbbAIP3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:26:23 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t09FQK3P026015, This message is accepted by code: ctloc85258
-From: Chunhao Lin <hau@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        Chunhao Lin <hau@realtek.com>
-Subject: [PATCH net-next v2 8/8] r8169:update rtl8168f rev.b pcie ephy parameter
-Date: Fri, 9 Jan 2015 23:26:06 +0800
-Message-ID: <1420817166-9868-9-git-send-email-hau@realtek.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1420817166-9868-1-git-send-email-hau@realtek.com>
-References: <1420817166-9868-1-git-send-email-hau@realtek.com>
+	Fri, 9 Jan 2015 10:29:03 -0500
+Message-ID: <54AFF3BA.7090704@atmel.com>
+Date: Fri, 9 Jan 2015 16:28:58 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.94]
+To: Cyrille Pitchen <cyrille.pitchen@atmel.com>, <gregkh@linuxfoundation.org>,
+        <wenyou.yang@atmel.com>, <ludovic.desroches@atmel.com>,
+        <leilei.zhao@atmel.com>, <voice.shen@atmel.com>, <josh.wu@atmel.com>,
+        <linux-serial@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 3/5] tty/serial: at91: fix error handling in atmel_serial_probe()
+References: <cover.1418131298.git.cyrille.pitchen@atmel.com> <95ff85410e2f93993a4f7c5d255c4a88993fd462.1418131298.git.cyrille.pitchen@atmel.com>
+In-Reply-To: <95ff85410e2f93993a4f7c5d255c4a88993fd462.1418131298.git.cyrille.pitchen@atmel.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RTL8168F rev.B does not have to set following two ephy parameters.
-{ 0x06, 0x00c0,	0x0020 }
-{ 0x08, 0x0001,	0x0002 }
+Le 09/12/2014 14:31, Cyrille Pitchen a écrit :
+> -EDEFER error wasn't handle properly by atmel_serial_probe().
+> As an example, when atmel_serial_probe() is called for the first time, we pass
+> the test_and_set_bit() test to check whether the port has already been
+> initalized. Then we call atmel_init_port(), which may return -EDEFER, possibly
+> returned before by clk_get(). Consequently atmel_serial_probe() used to return
+> this error code WITHOUT clearing the port bit in the "atmel_ports_in_use" mask.
+> When atmel_serial_probe() was called for the second time, it used to fail on
+> the test_and_set_bit() function then returning -EBUSY.
+> 
+> When atmel_serial_probe() fails, this patch make it clear the port bit in the
+> "atmel_ports_in_use" mask, if needed, before returning the error code.
+> 
+> Signed-off-by: Cyrille Pitchen <cyrille.pitchen@atmel.com>
 
-Add function rtl_hw_start_8168f_2 to set RTL8168F rev.B ephy parameters,
-instead of using function rtl_hw_start_8168f_1.
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+and you can also add:
+Cc: <stable@vger.kernel.org> # 3.12+
 
-Signed-off-by: Chunhao Lin <hau@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c | 24 +++++++++++++++++++++++-
- 1 file changed, 23 insertions(+), 1 deletion(-)
+Thanks.
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index aa12833..0c870f5 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -5867,6 +5867,26 @@ static void rtl_hw_start_8168f_1(struct rtl8169_private *tp)
- 	RTL_W8(EEE_LED, RTL_R8(EEE_LED) & ~0x07);
- }
- 
-+static void rtl_hw_start_8168f_2(struct rtl8169_private *tp)
-+{
-+	void __iomem *ioaddr = tp->mmio_addr;
-+	static const struct ephy_info e_info_8168f_2[] = {
-+		{ 0x09, 0x0000,	0x0080 },
-+		{ 0x19, 0x0000,	0x0224 },
-+		{ 0x00, 0x0000,	0x0008 },
-+		{ 0x0c, 0x3df0,	0x0200 }
-+	};
-+
-+	rtl_hw_start_8168f(tp);
-+
-+	rtl_ephy_init(tp, e_info_8168f_2, ARRAY_SIZE(e_info_8168f_2));
-+
-+	rtl_w0w1_eri(tp, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0xff00, ERIAR_EXGMAC);
-+
-+	/* Adjust EEE LED frequency */
-+	RTL_W8(EEE_LED, RTL_R8(EEE_LED) & ~0x07);
-+}
-+
- static void rtl_hw_start_8411(struct rtl8169_private *tp)
- {
- 	static const struct ephy_info e_info_8411[] = {
-@@ -6276,9 +6296,11 @@ static void rtl_hw_start_8168(struct net_device *dev)
- 		break;
- 
- 	case RTL_GIGA_MAC_VER_35:
--	case RTL_GIGA_MAC_VER_36:
- 		rtl_hw_start_8168f_1(tp);
- 		break;
-+	case RTL_GIGA_MAC_VER_36:
-+		rtl_hw_start_8168f_2(tp);
-+		break;
- 
- 	case RTL_GIGA_MAC_VER_38:
- 		rtl_hw_start_8411(tp);
+> ---
+>  drivers/tty/serial/atmel_serial.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+> index c6621dc..92a8b26 100644
+> --- a/drivers/tty/serial/atmel_serial.c
+> +++ b/drivers/tty/serial/atmel_serial.c
+> @@ -2565,7 +2565,7 @@ static int atmel_serial_probe(struct platform_device *pdev)
+>  
+>  	ret = atmel_init_port(port, pdev);
+>  	if (ret)
+> -		goto err;
+> +		goto err_clear_bit;
+>  
+>  	if (!atmel_use_pdc_rx(&port->uart)) {
+>  		ret = -ENOMEM;
+> @@ -2628,6 +2628,8 @@ err_alloc_ring:
+>  		clk_put(port->clk);
+>  		port->clk = NULL;
+>  	}
+> +err_clear_bit:
+> +	clear_bit(port->uart.line, atmel_ports_in_use);
+>  err:
+>  	return ret;
+>  }
+> 
+
+
 -- 
-1.9.1
-
+Nicolas Ferre
