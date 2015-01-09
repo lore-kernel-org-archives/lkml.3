@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757466AbbAIMvx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 07:51:53 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:7354 "EHLO SMTP02.CITRIX.COM"
+	id S1757532AbbAIMvz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 07:51:55 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:28036 "EHLO smtp6-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755183AbbAIMvw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 07:51:52 -0500
-X-IronPort-AV: E=Sophos;i="5.07,730,1413244800"; 
-   d="scan'208";a="213986449"
-Message-ID: <54AFCEE5.3060402@citrix.com>
-Date: Fri, 9 Jan 2015 12:51:49 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1755183AbbAIMvy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 07:51:54 -0500
+Date: Fri, 9 Jan 2015 13:54:01 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Jyri Sarha <jsarha@ti.com>, Mark Brown <broonie@kernel.org>,
+        Dave Airlie <airlied@gmail.com>,
+        Andrew Jackson <Andrew.Jackson@arm.com>, alsa-devel@alsa-project.org,
+        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v9 1/4] drm/i2c: tda998x: Add DT support for audio
+Message-ID: <20150109135401.5b270d46@armhf>
+In-Reply-To: <20150109114529.GH12302@n2100.arm.linux.org.uk>
+References: <cover.1420628786.git.moinejf@free.fr>
+	<0084acea5a3475a77531d6a77483f36d3469111a.1420628786.git.moinejf@free.fr>
+	<54AE99F5.1010404@ti.com>
+	<20150108174257.557f7ea5@armhf>
+	<54AFA9B0.6040405@ti.com>
+	<20150109123036.4bc4bbf6@armhf>
+	<20150109114529.GH12302@n2100.arm.linux.org.uk>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-To: Juergen Gross <jgross@suse.com>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
-        <david.vrabel@citrix.com>, <boris.ostrovsky@oracle.com>
-Subject: Re: [Xen-devel] [PATCH 3/3] xen: use correct type for physical addresses
-References: <1420736490-15351-1-git-send-email-jgross@suse.com> <1420736490-15351-4-git-send-email-jgross@suse.com>
-In-Reply-To: <1420736490-15351-4-git-send-email-jgross@suse.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/15 17:01, Juergen Gross wrote:
-> When converting a pfn to a physical address be sure to use 64 bit
-> wide types.
+On Fri, 9 Jan 2015 11:45:29 +0000
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+
+> On Fri, Jan 09, 2015 at 12:30:36PM +0100, Jean-Francois Moine wrote:
+> > In my original version, the audio-ports are a bitmap of the pins, the
+> > bit 0 being the WS used for I2S. A fully wired tda998x would have been
+> > as:
+> > 
+> > 	audio-ports = <0x03>, <0x04>, <0x09>, <0x11>;
+> > 	audio-port-names = "i2s", "spdif", "i2s", "i2s";
+> > 
+> > With the new version, it would simply become:
+> > 
+> > 	audio-inputs = "i2s", "spdif", "i2s", "i2s";
 > 
-> Also avoid invalidating memory for zero sized non-aligned extra
-> memory regions.
-
-"Also" means this bit should be in another patch...
-
-> Signed-off-by: Juergen Gross <jgross@suse.com>
-> Tested-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-> ---
->  arch/x86/xen/setup.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
+> How do you know which i2s inputs to enable?
 > 
-> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-> index feb6d86..8839d7b 100644
-> --- a/arch/x86/xen/setup.c
-> +++ b/arch/x86/xen/setup.c
-> @@ -160,6 +160,8 @@ void __init xen_inv_extra_mem(void)
->  	int i;
->  
->  	for (i = 0; i < XEN_EXTRA_MEM_MAX_REGIONS; i++) {
-> +		if (!xen_extra_mem[i].size)
-> +			continue;
->  		pfn_s = PFN_DOWN(xen_extra_mem[i].start);
->  		pfn_e = PFN_UP(xen_extra_mem[i].start + xen_extra_mem[i].size);
->  		for (pfn = pfn_s; pfn < pfn_e; pfn++)
+> Does it make sense for the audio inputs to be mixed like that?
+> 
+> You will need to enable one i2s for front L+R, and increasingly others
+> for the additional channels.
+> 
+> I think we need to understand exactly how the 998x map I2S inputs to the
+> HDMI channels to avoid making a mistake with the binding; remember, the
+> binding isn't something that can be easily "bug fixed" at a later date
+> as anything we come up with now has to be supported long term by the
+> kernel.
 
-i.e., this hunk should be in a separate path.
+The DT describes the hardware configuration.
 
-David
+A fully wired tda998x could be a chip with the audio pins connected to:
+- a kirkwood-like audio device with one I2S and one S/PDIF output,
+- two other audio devices with one I2S each.
+
+The relation between an audio device and the associated pin is done by
+the definition of the sound card.
+
+With S/PDIF, only one stereo channel may be sent, but with I2S, up to 4
+stereo channels may be sent. These channels are extracted by the
+devices connected on the HDMI bus. There is no mixing.
+An example could be the playing of a multi-language movie: each audio
+channel carries one language. From the computer view, the playing
+application sends each language to one sound card.
+
+So, this means that the tda998x driver should check that S/PDIF and I2S
+are not active at the same time, and it should also do a pin OR/AND on
+I2S start/stop.
+
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
