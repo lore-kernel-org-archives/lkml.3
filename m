@@ -1,69 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933301AbbAIKvG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 05:51:06 -0500
-Received: from sism000.sis.com ([210.242.182.187]:24892 "EHLO sism02.sis.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756177AbbAIKvD convert rfc822-to-8bit (ORCPT
+	id S1757788AbbAIKhG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 05:37:06 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54036 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757766AbbAIKhA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 05:51:03 -0500
-X-Greylist: delayed 884 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Jan 2015 05:51:02 EST
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Fri, 9 Jan 2015 05:37:00 -0500
+Date: Fri, 9 Jan 2015 10:36:16 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: "Suzuki K. Poulose" <Suzuki.Poulose@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "yexl@marvell.com" <yexl@marvell.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "leo.yan@linaro.org" <leo.yan@linaro.org>
+Subject: Re: [PATCH 2/2] arm64: Emulate SETEND for AArch32 tasks
+Message-ID: <20150109103616.GB27421@leverpostej>
+References: <1420647405-3907-1-git-send-email-suzuki.poulose@arm.com>
+ <1420647405-3907-3-git-send-email-suzuki.poulose@arm.com>
+ <20150108184258.GB31280@leverpostej>
+ <54AFAB8C.5040803@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="big5"
-Content-Transfer-Encoding: 8BIT
-Subject: [PATCH 0/2] INPUT/HID: add touch support for SiS touch driver
-Date: Fri, 9 Jan 2015 18:36:10 +0800
-Message-ID: <8322374EB97AA24A95D0DDBFC8F1CA1DBF96E8@SISMBEV01.sis.com.tw>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 0/2] INPUT/HID: add touch support for SiS touch driver
-Thread-Index: AdAr+BWiYhbxNVlVRReOBhTKECqLcQ==
-From: =?big5?B?tL+0QN+7ICh0YW1teV90c2VuZyk=?= <tammy_tseng@sis.com>
-To: <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>
-Cc: <tammy0524@gmail.com>
-X-OriginalArrivalTime: 09 Jan 2015 10:36:11.0829 (UTC) FILETIME=[16365E50:01D02BF8]
-X-TM-AS-Product-Ver: SMEX-10.2.0.3176-7.500.1018-21236.003
-X-TM-AS-Result: No--4.135100-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-Received-IP: 192.168.50.86
-X-Envelope-From: <tammy_tseng@sis.com>
-X-Sherlock-Send: MailFilter (sism02.sis.com)
-X-License: 1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54AFAB8C.5040803@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-This package of patch is to add support for multitouch behavior for SiS touch products.
-The first patch adds i2c multitouch behavior in input/touchscreen.
-The second patch merges char-device for fw-communication functions in hid-multitouch.c and adds files of functions in hid.
+On Fri, Jan 09, 2015 at 10:21:00AM +0000, Suzuki K. Poulose wrote:
+> On 08/01/15 18:43, Mark Rutland wrote:
+> > Hi Suzuki,
+> >
+> > On Wed, Jan 07, 2015 at 04:16:45PM +0000, Suzuki K. Poulose wrote:
+> >> From: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
+> >>
+> >> Emulate deprecated 'setend' instruction for AArch32 bit tasks.
+> >>
+> >> 	setend [le/be] - Sets the endianness of EL0
+> >>
+> >> The hardware support for the instruction can be enabled by setting the
+> >> SCTLR_EL1.SED bit. Like the other emulated instructions it is controlled by
+> >> an entry in /proc/sys/abi/. For more information see :
+> >> 	Documentation/arm64/legacy_instructions.txt
+> >>
+> >> The instruction is emulated by setting/clearing the SPSR_EL1.E bit, which
+> >> will be reflected in the PSTATE.E in AArch32 context.
+> >
+> > A "fun" problem with emulating setend is that it will not always work
+> > unless we emulate the entire instruction set when userspace wants to be
+> > in an unsupported endianness.
+> >
+> > For implementations which are not bi-endian at EL0 (i.e. where
+> > ID_AA64MMFR0_EL1.BigEndEL0 == 0), SCTLR_EL1.E0E has a fixed value which
+> > we cannot change. The field names are misleading: in a BE-only system
+> > ID_AA64MMFR0_EL1.{BigEnd,BigEndEL0} == {0,0} and SCTLR_EL1.{EE,E0E} are
+> > fixed to {1,1}.
+> >
+> > I think we need to detect when EL0 has a fixed endianness such that we
+> > can treat the setend instruction as undefined. Otherwise we will
+> > silently fail to change EL0 endianness, advance the PC, and return to
+> > userspace in the wrong endianness, which will be very painful to debug.
+> > Userspace has the option of handling the resulting SIGILL in such cases.
+> 
+> You are right. I missed this scenario. To add to that things get 
+> complicated when there are heterogeneous CPUs on the system that might 
+> have differing bits for BigEndEL0. I will take a look at this one. 
+> Thanks for pointing this out.
 
-Signed-off-by: Tammy Tseng <tammy_tseng@sis.com>
+As I mention above the naming of {BigEnd,BigEndEL0} is misleading, as
+the describe mixed endian support rather than big endian support.
 
----
-The patch for i2c multitouch driver in input/touchscreen:
+For example, if all CPUs have ID_AA64MMFR0_EL1.BigEndEL0 == 0 the
+endianness at EL0 is fixed, but that endianness may be LE or BE.
 
-linux-3.18.1/drivers/input/touchscreen/Kconfig   |   14 -
- linux-3.18.1/drivers/input/touchscreen/Makefile  |    4 -
- linux-3.18.1/drivers/input/touchscreen/sis_i2c.c | 1725 ----------------------
- linux-3.18.1/drivers/input/touchscreen/sis_i2c.h |  229 ---
- 4 files changed, 1972 deletions(-)
+Thus you will need to check whether any CPU has
+ID_AA64MMFR0_EL1.BigEndEL0 == 0, rather than whether the value of this
+field differs across CPUs.
 
-The patch for hid multitouch driver in hid:
-
-linux-3.18.1/drivers/hid/Kconfig          |  30 +--
- linux-3.18.1/drivers/hid/Makefile         |   1 -
- linux-3.18.1/drivers/hid/hid-ids.h        |   1 -
- linux-3.18.1/drivers/hid/hid-multitouch.c |  19 +-
- linux-3.18.1/drivers/hid/hid-sis_ctrl.c   | 397 ------------------------------
- linux-3.18.1/drivers/hid/hid-sis_ctrl.h   |  19 --
- 6 files changed, 2 insertions(+), 465 deletions(-)
-
-
-Thanks,
-Tammy Tseng
-
+Cheers,
+Mark.
