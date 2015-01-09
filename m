@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492AbbAIVqx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 16:46:53 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:43682 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213AbbAIVqw (ORCPT
+	id S1752624AbbAIVuz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 16:50:55 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60961 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbbAIVux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 16:46:52 -0500
-Date: Fri, 9 Jan 2015 16:46:49 -0500
-From: Tejun Heo <tj@kernel.org>
-To: "Suzuki K. Poulose" <Suzuki.Poulose@arm.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+	Fri, 9 Jan 2015 16:50:53 -0500
+Date: Fri, 9 Jan 2015 21:50:42 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Rich Felker <dalias@aerifal.cx>
+Cc: David Drysdale <drysdale@google.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Meredydd Luff <meredydd@senatehouse.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [Regression] 3.19-rc3 : memcg: Hang in mount memcg
-Message-ID: <20150109214649.GF2785@htj.dyndns.org>
-References: <54B01335.4060901@arm.com>
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, sparclinux@vger.kernel.org
+Subject: Re: [PATCHv10 man-pages 5/5] execveat.2: initial man page for
+ execveat(2)
+Message-ID: <20150109215042.GM22149@ZenIV.linux.org.uk>
+References: <1416830039-21952-1-git-send-email-drysdale@google.com>
+ <1416830039-21952-6-git-send-email-drysdale@google.com>
+ <54AFF813.7050604@gmail.com>
+ <20150109161302.GQ4574@brightrain.aerifal.cx>
+ <CAHse=S88Jy5ZKM_VY5onfvxX7dTMngnxuHfuLeSuzvKvQNP19A@mail.gmail.com>
+ <20150109204815.GR4574@brightrain.aerifal.cx>
+ <20150109205626.GK22149@ZenIV.linux.org.uk>
+ <20150109205926.GT4574@brightrain.aerifal.cx>
+ <20150109210941.GL22149@ZenIV.linux.org.uk>
+ <20150109212852.GU4574@brightrain.aerifal.cx>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54B01335.4060901@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20150109212852.GU4574@brightrain.aerifal.cx>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 05:43:17PM +0000, Suzuki K. Poulose wrote:
-> We have hit a hang on ARM64 defconfig, while running LTP tests on 3.19-rc3.
-> We are
-> in the process of a git bisect and will update the results as and
-> when we find the commit.
-> 
-> During the ksm ltp run, the test hangs trying to mount memcg with the
-> following strace
-> output:
-> 
-> mount("memcg", "/dev/cgroup", "cgroup", 0, "memory") = ? ERESTARTNOINTR (To
-> be restarted)
-> mount("memcg", "/dev/cgroup", "cgroup", 0, "memory") = ? ERESTARTNOINTR (To
-> be restarted)
-> [ ... repeated forever ... ]
-> 
-> At this point, one can try mounting the memcg to verify the problem.
-> # mount -t cgroup -o memory memcg memcg_dir
-> --hangs--
-> 
-> Strangely, if we run the mount command from a cold boot (i.e. without
-> running LTP first),
-> then it succeeds.
+On Fri, Jan 09, 2015 at 04:28:52PM -0500, Rich Felker wrote:
 
-I don't know what LTP is doing and this could actually be hitting on
-an actual bug but if it's trying to move memcg back from unified
-hierarchy to an old one, that might hang - it should prolly made to
-just fail at that point.  Anyways, any chance you can find out what
-happened, in terms of cgroup mounting, to memcg upto that point?
+> The "magic open-once magic symlink" approach is really the cleanest
+> solution I can find. In the case where the interpreter does not open
+> the script, nothing terribly bad happens; the magic symlink just
+> sticks around until _exit or exec. In the case where the interpreter
+> opens it more than once, you get a failure, but as far as I know
+> existing interpreters don't do this, and it's arguably bad design. In
+> any case it's a caught error.
 
-Thanks.
+You know what's cleaner than that?  git revert 27d6ec7ad
+It has just been merged; until 3.19 it's fair game for removal.
 
--- 
-tejun
+And yes, I should've NAKed the damn thing loud and clear, rather than
+asking questions back then, getting no answers and letting it slip.
+Mea culpa.
+
+Back then the procfs-free environments had been pushed as a serious argument
+in favour of merging the damn thing.  Now you guys turn around and say that
+we not only need procfs mounted, we need a yet-to-be-added kludge in there
+to cope with the actual intended uses.
