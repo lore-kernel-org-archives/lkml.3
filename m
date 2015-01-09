@@ -1,103 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757834AbbAIOsC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 09:48:02 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:54380 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757722AbbAIOr7 (ORCPT
+	id S1757300AbbAIOuW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 09:50:22 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50312 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703AbbAIOuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 09:47:59 -0500
-From: Jeff Layton <jeff.layton@primarydata.com>
-X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
-Date: Fri, 9 Jan 2015 06:47:55 -0800
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        ceph-devel@vger.kernel.org
-Subject: Re: [PATCH v2 04/10] locks: move flock locks to file_lock_context
-Message-ID: <20150109064755.1c88bd4d@synchrony.poochiereds.net>
-In-Reply-To: <20150109143155.GB30294@infradead.org>
-References: <1420742065-28423-1-git-send-email-jlayton@primarydata.com>
-	<1420742065-28423-5-git-send-email-jlayton@primarydata.com>
-	<20150109143155.GB30294@infradead.org>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 9 Jan 2015 09:50:21 -0500
+Message-ID: <1420815016.3914.16.camel@pengutronix.de>
+Subject: Re: [PATCH v2] clk: Do not complain about correctly set read-only
+ muxes when assigning clock parents from device tree
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Date: Fri, 09 Jan 2015 15:50:16 +0100
+In-Reply-To: <54AEF788.3060401@codeaurora.org>
+References: <1420559120-17405-1-git-send-email-p.zabel@pengutronix.de>
+	 <54AEF788.3060401@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.9-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Jan 2015 06:31:55 -0800
-Christoph Hellwig <hch@infradead.org> wrote:
+Hi Stephen,
 
-> >  void ceph_count_locks(struct inode *inode, int *fcntl_count, int *flock_count)
-> >  {
-> >  	struct file_lock *lock;
-> > +	struct file_lock_context *ctx;
-> >  
-> >  	*fcntl_count = 0;
-> >  	*flock_count = 0;
-> >  
-> > +	spin_lock(&inode->i_lock);
+Am Donnerstag, den 08.01.2015, 13:32 -0800 schrieb Stephen Boyd:
+[...]
+> Why not do this in the core? As far as I can tell other drivers could
+> run into the same problem, no? Does this work?
 > 
-> Seems like moving the locking around is unrelated to this patch.
+> -----8<-------
 > 
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index f4963b7d4e17..3278645f4729 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -1677,16 +1677,18 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
+>  	if (!clk)
+>  		return 0;
+>  
+> -	/* verify ops for for multi-parent clks */
+> -	if ((clk->num_parents > 1) && (!clk->ops->set_parent))
+> -		return -ENOSYS;
+> -
+>  	/* prevent racing with updates to the clock topology */
+>  	clk_prepare_lock();
+>  
+>  	if (clk->parent == parent)
+>  		goto out;
+>  
+> +	/* verify ops for for multi-parent clks */
+> +	if ((clk->num_parents > 1) && (!clk->ops->set_parent)) {
+> +		ret = -ENOSYS;
+> +		goto out;
+> +	}
+> +
+>  	/* check that we are allowed to re-parent if the clock is in use */
+>  	if ((clk->flags & CLK_SET_PARENT_GATE) && clk->prepare_count) {
+>  		ret = -EBUSY;
 
-Yeah that could be split out into a separate cleanup patch first. I'll
-do that on the next iteration.
+"[PATCH] clk: make set_parent succeed for any clock if the parent to be
+set is the same as the current parent" ?
 
-> > +	list_for_each_entry(fl, &flctx->flc_flock, fl_list) {
-> > +		if (nfs_file_open_context(fl->fl_file)->state != state)
-> > +			continue;
-> > +		spin_unlock(&inode->i_lock);
-> > +		status = ops->recover_lock(state, fl);
-> > +		switch (status) {
-> > +			case 0:
-> > +				break;
-> > +			case -ESTALE:
-> > +			case -NFS4ERR_ADMIN_REVOKED:
-> > +			case -NFS4ERR_STALE_STATEID:
-> > +			case -NFS4ERR_BAD_STATEID:
-> > +			case -NFS4ERR_EXPIRED:
-> > +			case -NFS4ERR_NO_GRACE:
-> > +			case -NFS4ERR_STALE_CLIENTID:
-> > +			case -NFS4ERR_BADSESSION:
-> > +			case -NFS4ERR_BADSLOT:
-> > +			case -NFS4ERR_BAD_HIGH_SLOT:
-> > +			case -NFS4ERR_CONN_NOT_BOUND_TO_SESSION:
-> > +				goto out;
-> > +			default:
-> > +				printk(KERN_ERR "NFS: %s: unhandled error %d\n",
-> > +					 __func__, status);
-> > +			case -ENOMEM:
-> > +			case -NFS4ERR_DENIED:
-> > +			case -NFS4ERR_RECLAIM_BAD:
-> > +			case -NFS4ERR_RECLAIM_CONFLICT:
-> > +				/* kill_proc(fl->fl_pid, SIGLOST, 1); */
-> > +				status = 0;
-> > +		}
-> 
-> Instead of duplicating this huge body of code it seems like a good idea
-> to add a preparatory patch to factor it out into a helper function.
-> 
+It works, but it also changes the API, as it makes
+   clk_set_parent(some_non_mux, its_current_parent)
+succeed instead of return -ENOSYS.
 
-Sigh, I tried to do that first but the result was just too ugly. The
-above logic is too deeply entwined into this function for that to work
-well. I'm not usually a fan of cut and paste, but in this case I think
-it's the best way to do this. The good news is that the duplication
-goes away with the next patch in the series.
+regards
+Philipp
 
-> > +static bool
-> > +is_whole_file_wrlock(struct file_lock *fl)
-> > +{
-> > +	return fl->fl_start == 0 && fl->fl_end == OFFSET_MAX && fl->fl_type == F_WRLCK;
-> > +}
-> 
-> Please break this into multiple lines to stay under 80 characters.
-
-Will do. I've probably violated that rule several times in this series
--- mea culpa. I'll clean that up for the next iteration.
-
--- 
-Jeff Layton <jlayton@primarydata.com>
