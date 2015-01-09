@@ -1,88 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758201AbbAIVcN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 16:32:13 -0500
-Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:36281 "EHLO
-	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752189AbbAIVcL (ORCPT
+	id S1756594AbbAIVe2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 16:34:28 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:49796 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772AbbAIVe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 16:32:11 -0500
-Date: Fri, 9 Jan 2015 16:31:18 -0500
-From: Rich Felker <dalias@aerifal.cx>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, David Drysdale <drysdale@google.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, sparclinux@vger.kernel.org
-Subject: Re: [PATCHv10 man-pages 5/5] execveat.2: initial man page for
- execveat(2)
-Message-ID: <20150109213118.GV4574@brightrain.aerifal.cx>
-References: <1416830039-21952-1-git-send-email-drysdale@google.com>
- <1416830039-21952-6-git-send-email-drysdale@google.com>
- <54AFF813.7050604@gmail.com>
- <20150109161302.GQ4574@brightrain.aerifal.cx>
- <CAHse=S88Jy5ZKM_VY5onfvxX7dTMngnxuHfuLeSuzvKvQNP19A@mail.gmail.com>
- <20150109204815.GR4574@brightrain.aerifal.cx>
- <20150109205626.GK22149@ZenIV.linux.org.uk>
- <20150109205926.GT4574@brightrain.aerifal.cx>
- <877fwvy7ln.fsf@x220.int.ebiederm.org>
+	Fri, 9 Jan 2015 16:34:26 -0500
+Message-ID: <54B048E4.3080102@vanguardiasur.com.ar>
+Date: Fri, 09 Jan 2015 18:32:20 -0300
+From: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
+Organization: VanguardiaSur
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <877fwvy7ln.fsf@x220.int.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6] UBI: Fastmap: Ensure that all fastmap work is done
+ upon WL shutdown
+References: <1416835236-25185-1-git-send-email-richard@nod.at> <1416835236-25185-4-git-send-email-richard@nod.at>
+In-Reply-To: <1416835236-25185-4-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 03:20:04PM -0600, Eric W. Biederman wrote:
-> Rich Felker <dalias@aerifal.cx> writes:
+On 11/24/2014 10:20 AM, Richard Weinberger wrote:
+> ...otherwise the deferred work might run after datastructures
+> got freed and corrupt memory.
 > 
-> > On Fri, Jan 09, 2015 at 08:56:26PM +0000, Al Viro wrote:
-> >> On Fri, Jan 09, 2015 at 03:48:15PM -0500, Rich Felker wrote:
-> >> > I think this is a case that needs to be fixed, though it's hard. The
-> >> > normal correct usage for fexecve is to always pass an O_CLOEXEC file
-> >> > descriptor, and the caller can't really be expected to know whether
-> >> > the file is a script or not. We discussed workarounds before and one
-> >> > idea I proposed was having fexecve provide a "one open only" magic
-> >> > symlink in /proc/self/ to pass to the interpreter. It would behave
-> >> > like an O_PATH file descriptor magic symlink in /proc/self/fd, but
-> >> > would automatically cease to exist on the first open (at which point
-> >> > the interpreter would have a real O_RDONLY file descriptor for the
-> >> > underlying file).
-> >> 
-> >> For fsck sake, folks, if you have bloody /proc, you don't need that shite
-> >> at all!  Just do execve on /proc/self/fd/n, and be done with that.
-> >> 
-> >> The sole excuse for merging that thing in the first place had been
-> >> "would anybody think of children^Wsclerotic^Whardened environments
-> >> where they have no /proc at all".
-> >
-> > That doesn't work. With O_CLOEXEC, /proc/self/fd/n is already gone at
-> > the time the interpreter runs, whether you're using fexecveat or
-> > execve with "/proc/self/fd/n" to implement POSIX fexecve(). That's the
-> > problem. This breaks the intended idiom for fexecve.
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>  drivers/mtd/ubi/wl.c | 3 +++
+>  1 file changed, 3 insertions(+)
 > 
-> O_CLOEXEC with a #! intepreter can not work.  If the file descriptor is
-> closed a #! interpreter can not open it.   So I don't know why or how
-> you want that to work but it is nonsense.
+> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+> index 7f135df..cb2e571 100644
+> --- a/drivers/mtd/ubi/wl.c
+> +++ b/drivers/mtd/ubi/wl.c
+> @@ -2041,6 +2041,9 @@ static void protection_queue_destroy(struct ubi_device *ubi)
+>  void ubi_wl_close(struct ubi_device *ubi)
+>  {
+>  	dbg_wl("close the WL sub-system");
+> +#ifdef CONFIG_MTD_UBI_FASTMAP
+> +	flush_work(&ubi->fm_work);
+> +#endif
+>  	shutdown_work(ubi);
+>  	protection_queue_destroy(ubi);
+>  	tree_destroy(&ubi->used);
+> 
 
-The why is simple: fexecve always expects a close-on-exec file
-descriptor. Otherwise the program being executed would need to take a
-special option telling it to close the spurious fd it inherits. Most
-programs don't have such an option, and there's no way to do it
-without application-specific knowledge.
-
-The how is difficult, but it can be done.
-
-Rich
+IMHO, it's best to avoid nasty ifdefs like this (there are lots of ways
+of getting it cleaner). But I guess it's not a big deal.
+-- 
+Ezequiel Garcia, VanguardiaSur
+www.vanguardiasur.com.ar
