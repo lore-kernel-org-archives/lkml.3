@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757588AbbAIN6c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 08:58:32 -0500
-Received: from mga03.intel.com ([134.134.136.65]:24577 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751873AbbAIN6a convert rfc822-to-8bit (ORCPT
+	id S1757639AbbAIN7D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 08:59:03 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:39876 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754843AbbAIN7B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 08:58:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="438511175"
-From: "Wu, Feng" <feng.wu@intel.com>
-To: "joro@8bytes.org" <joro@8bytes.org>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>, "gleb@kernel.org" <gleb@kernel.org>,
-        "pbonzini@redhat.com" <pbonzini@redhat.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>,
-        "eric.auger@linaro.org" <eric.auger@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "Wu, Feng" <feng.wu@intel.com>
-Subject: RE: [v3 00/26] Add VT-d Posted-Interrupts support
-Thread-Topic: [v3 00/26] Add VT-d Posted-Interrupts support
-Thread-Index: AQHQLApJZJIaOUt9U0eHaK1MrKMJ9Jy3z2hA
-Date: Fri, 9 Jan 2015 13:58:20 +0000
-Message-ID: <E959C4978C3B6342920538CF579893F002336FD8@SHSMSX104.ccr.corp.intel.com>
-References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
- <E959C4978C3B6342920538CF579893F002327907@SHSMSX104.ccr.corp.intel.com>
- <20150109124616.GB17298@8bytes.org>
-In-Reply-To: <20150109124616.GB17298@8bytes.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 9 Jan 2015 08:59:01 -0500
+Message-ID: <54AFDE8D.3000504@arm.com>
+Date: Fri, 09 Jan 2015 13:58:37 +0000
+From: Andrew Jackson <Andrew.Jackson@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jean-Francois Moine <moinejf@free.fr>
+CC: Jyri Sarha <jsarha@ti.com>, Mark Brown <broonie@kernel.org>,
+        Dave Airlie <airlied@gmail.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v9 1/4] drm/i2c: tda998x: Add DT support for audio
+References: <cover.1420628786.git.moinejf@free.fr> <0084acea5a3475a77531d6a77483f36d3469111a.1420628786.git.moinejf@free.fr> <54AE99F5.1010404@ti.com> <20150108174257.557f7ea5@armhf> <54AFA9B0.6040405@ti.com> <20150109123036.4bc4bbf6@armhf> <20150109114529.GH12302@n2100.arm.linux.org.uk> <20150109135401.5b270d46@armhf> <20150109130725.GN12302@n2100.arm.linux.org.uk>
+In-Reply-To: <20150109130725.GN12302@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/09/15 13:07, Russell King - ARM Linux wrote:
+> On Fri, Jan 09, 2015 at 01:54:01PM +0100, Jean-Francois Moine wrote:
+>> On Fri, 9 Jan 2015 11:45:29 +0000
+>> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+>>> I think we need to understand exactly how the 998x map I2S inputs to the
+>>> HDMI channels to avoid making a mistake with the binding; remember, the
+>>> binding isn't something that can be easily "bug fixed" at a later date
+>>> as anything we come up with now has to be supported long term by the
+>>> kernel.
+>>
+>> The DT describes the hardware configuration.
+> 
+> You're missing my point.
+> 
+> How does the driver know which of the I2S pins to enable in I2S mode?
+
+[snip]
+
+> My question is: how do we know which I2S inputs to enable, or are
+> you suggesting that all I2S inputs should be enabled if operating in
+> I2S mode irrespective of whether they may be active?
+> 
+
+Isn't it the case that for I2S:
+
+* Word Select (WS) is always required to disambiguate left/right. So WS need
+  not be specified in any device tree configuration.
+
+* The audio inputs depend on a particular board but at least one is 
+  required.  Fortunately, the TDA998x devices have all the same pin/input
+  numbering so they /could/ be described as i2s0, i2s1, i2s2 and i2s3 as 
+  per J-F's earlier email.  But tt isn't clear from my reading of the 
+  TDA19988 datasheet (for example) whether one can skip channels (so
+  does channel 0 always have to be present?).  If the channels must
+  be enabled from 0 then one could simply specify the number of inputs.
+  (The datasheets that I have don't indicate whether there's any 
+  channel remapping performed internally by the TDA998x).
+
+* What the driver does need to take account of is the number of inputs
+  that are active so that the sound CODEC can be properly configured.
 
 
-> -----Original Message-----
-> From: joro@8bytes.org [mailto:joro@8bytes.org]
-> Sent: Friday, January 09, 2015 8:46 PM
-> To: Wu, Feng
-> Cc: tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com; x86@kernel.org;
-> gleb@kernel.org; pbonzini@redhat.com; dwmw2@infradead.org;
-> alex.williamson@redhat.com; jiang.liu@linux.intel.com; eric.auger@linaro.org;
-> linux-kernel@vger.kernel.org; iommu@lists.linux-foundation.org;
-> kvm@vger.kernel.org
-> Subject: Re: [v3 00/26] Add VT-d Posted-Interrupts support
-> 
-> Hi Feng,
-> 
-> On Tue, Jan 06, 2015 at 01:10:19AM +0000, Wu, Feng wrote:
-> > Ping...
-> >
-> > Hi Joerg & David,
-> >
-> > Could you please have a look at the IOMMU part of this series (patch 02 - 04,
-> patch 06 - 09 , patch 26)?
-> >
-> > Hi Thomas, Ingo, & Peter,
-> >
-> > Could you please have a look at this series, especially for patch 01, 05, 21?
-> 
-> I fear this conflicts somewhat with the irq-domain patches from Jiang
-> Liu. Once we worked this out (should happen soon) I'll have a look at
-> the VT-d posted interrupt patches.
-> 
-> Regards,
-> 
-> 	Joerg
+	Andrew
 
-Thanks a lot for your feedback on this. In fact, my patches is based on Jiang Liu's
-irq-domain patches and has been discussed with Jiang offline. So I don't think
-it will conflicts with Jiang's work. Anyway, any comments are welcome!
-
-Thanks,
-Feng
 
