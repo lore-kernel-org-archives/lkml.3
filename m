@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758561AbbAJAAI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 19:00:08 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:35600 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755333AbbAIX5n (ORCPT
+	id S1758540AbbAIX7q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 18:59:46 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:46272 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755532AbbAIX5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 18:57:43 -0500
+	Fri, 9 Jan 2015 18:57:44 -0500
 From: mathieu.poirier@linaro.org
 To: gregkh@linuxfoundation.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         mathieu.poirier@linaro.org
-Subject: [PATCH 07/11] coresight: remove the unused macro CORESIGHT_DEBUGFS_ENTRY
-Date: Fri,  9 Jan 2015 16:57:18 -0700
-Message-Id: <1420847842-31769-8-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 08/11] coresight: fix typo in comment in of_coresight.c
+Date: Fri,  9 Jan 2015 16:57:19 -0700
+Message-Id: <1420847842-31769-9-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1420847842-31769-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1420847842-31769-1-git-send-email-mathieu.poirier@linaro.org>
@@ -21,37 +21,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xia Kaixu <xiakaixu@huawei.com>
+From: Kaixu Xia <xiakaixu@huawei.com>
 
-Debugfs isn't used for coresight configuration, so the macro
-CORESIGHT_DEBUGFS_ENTRY is unnecessary, just remove it.
+Debugfs isn't used for coresight configuration, so the corresponding
+comments should be changed.
 
-Signed-off-by: Xia Kaixu <xiakaixu@huawei.com>
+Signed-off-by: Kaixu Xia <xiakaixu@huawei.com>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
- include/linux/coresight.h | 9 ---------
- 1 file changed, 9 deletions(-)
+ drivers/coresight/of_coresight.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/coresight.h b/include/linux/coresight.h
-index 5d3c54311f7a..7cbfecbfa643 100644
---- a/include/linux/coresight.h
-+++ b/include/linux/coresight.h
-@@ -179,15 +179,6 @@ struct coresight_device {
- #define sink_ops(csdev)		csdev->ops->sink_ops
- #define link_ops(csdev)		csdev->ops->link_ops
+diff --git a/drivers/coresight/of_coresight.c b/drivers/coresight/of_coresight.c
+index 5030c0734508..8bd524e49518 100644
+--- a/drivers/coresight/of_coresight.c
++++ b/drivers/coresight/of_coresight.c
+@@ -126,7 +126,7 @@ struct coresight_platform_data *of_get_coresight_platform_data(
+ 	if (!pdata)
+ 		return ERR_PTR(-ENOMEM);
  
--#define CORESIGHT_DEBUGFS_ENTRY(__name, __entry_name,			\
--				 __mode, __get, __set, __fmt)		\
--DEFINE_SIMPLE_ATTRIBUTE(__name ## _ops, __get, __set, __fmt);		\
--static const struct coresight_ops_entry __name ## _entry = {		\
--	.name = __entry_name,						\
--	.mode = __mode,							\
--	.ops  = &__name ## _ops						\
--}
--
- /**
-  * struct coresight_ops_sink - basic operations for a sink
-  * Operations available for sinks
+-	/* Use device name as debugfs handle */
++	/* Use device name as sysfs handle */
+ 	pdata->name = dev_name(dev);
+ 
+ 	/* Get the number of input and output port for this component */
 -- 
 1.9.1
 
