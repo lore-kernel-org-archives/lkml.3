@@ -1,274 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758352AbbAIXhn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 18:37:43 -0500
-Received: from mail-oi0-f45.google.com ([209.85.218.45]:36583 "EHLO
-	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754827AbbAIXhm (ORCPT
+	id S1753252AbbAIXpz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 18:45:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38508 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040AbbAIXpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 18:37:42 -0500
+	Fri, 9 Jan 2015 18:45:54 -0500
+Date: Fri, 9 Jan 2015 15:45:53 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Mandeep Sandhu <mandeep.sandhu@cyaninc.com>
+Cc: hjk@hansjkoch.de, linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 1/4] staging: uio: Simplify the lifetime logic of struct
+ uio_device.
+Message-ID: <20150109234553.GA21360@kroah.com>
+References: <1418759544-2610-1-git-send-email-mandeep.sandhu@cyaninc.com>
+ <1418759544-2610-2-git-send-email-mandeep.sandhu@cyaninc.com>
+ <20150109232712.GA1878@kroah.com>
+ <CANg1-_BxJmnpft-=KdxcqvxSLE9AsOJj8j2kAm1vgWqvnc=Gow@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20150107113903.GA29630@red-moon>
-References: <1420562233-2015-1-git-send-email-mathieu.poirier@linaro.org>
-	<1420562233-2015-8-git-send-email-mathieu.poirier@linaro.org>
-	<20150107113903.GA29630@red-moon>
-Date: Fri, 9 Jan 2015 16:37:41 -0700
-Message-ID: <CANLsYkzQXN9xcs1aOGVL-WVV-b+zjWJJ3cFu7nmG6b-G=U+Wtw@mail.gmail.com>
-Subject: Re: [PATCH 7/9] ARM: vexpress/TC2: Add generic power domain awareness
- to scp driver
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANg1-_BxJmnpft-=KdxcqvxSLE9AsOJj8j2kAm1vgWqvnc=Gow@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 January 2015 at 04:39, Lorenzo Pieralisi <lorenzo.pieralisi@arm.com> wrote:
-> Hi Mathieu,
->
-> On Tue, Jan 06, 2015 at 04:37:11PM +0000, mathieu.poirier@linaro.org wrote:
->
-> [...]
->
->> diff --git a/arch/arm/mach-vexpress/spc.c b/arch/arm/mach-vexpress/spc.c
->> index f61158c6ce71..4ff1009f2d16 100644
->> --- a/arch/arm/mach-vexpress/spc.c
->> +++ b/arch/arm/mach-vexpress/spc.c
->> @@ -28,6 +28,8 @@
->>  #include <linux/pm_opp.h>
->>  #include <linux/slab.h>
->>  #include <linux/semaphore.h>
->> +#include <linux/of_platform.h>
->> +#include <linux/pm_domain.h>
->>
->>  #include <asm/cacheflush.h>
->>
->> @@ -92,6 +94,9 @@
->>  #define STAT_ERR(type)               ((1 << 1) << (type << 2))
->>  #define RESPONSE_MASK(type)  (STAT_COMPLETE(type) | STAT_ERR(type))
->>
->> +static atomic_t gpd_A7_cluster_on = ATOMIC_INIT(0);
->> +static atomic_t gpd_A15_cluster_on = ATOMIC_INIT(0);
->> +
->>  struct ve_spc_opp {
->>       unsigned long freq;
->>       unsigned long u_volt;
->> @@ -209,12 +214,19 @@ void ve_spc_set_resume_addr(u32 cluster, u32 cpu, u32 addr)
->>   */
->>  void ve_spc_powerdown(u32 cluster, bool enable)
->>  {
->> +     bool is_a15;
->>       u32 pwdrn_reg;
->>
->>       if (cluster >= MAX_CLUSTERS)
->>               return;
->>
->> -     pwdrn_reg = cluster_is_a15(cluster) ? A15_PWRDN_EN : A7_PWRDN_EN;
->> +     is_a15 = cluster_is_a15(cluster);
->> +     if (is_a15 && atomic_read(&gpd_A15_cluster_on))
->> +             return;
->> +     else if (!is_a15 && atomic_read(&gpd_A7_cluster_on))
->> +             return;
->> +
->> +     pwdrn_reg = is_a15 ? A15_PWRDN_EN : A7_PWRDN_EN;
->>       writel_relaxed(enable, info->baseaddr + pwdrn_reg);
->
-> I do not like this, for multiple reasons.
->
-> (1) It might not do what you want. I am not sure that nuking the power
->     down request is safe. I have to check the power controller behaviour
->     when a core is going through power down sequence but the PWRDN_EN
->     bit is not set. You might end up with cores that are just being
->     reset on pending IRQ (defeating your purpose) or stuck forever.
+On Fri, Jan 09, 2015 at 03:36:34PM -0800, Mandeep Sandhu wrote:
+> >
+> > The subject makes no sense, this has nothing to do with the staging tree
+> > :(
+> 
+> Newbie question. What tree should I base it against?
 
-I understand your concerns.
+my char-misc.git on kernel.org.  Looks like that's not in the
+MAINTAINERS file, care to add that as an entry there?
 
-> (2) It must be done by attaching the power domains to CPUidle states.
->     Idle states are automagically disabled when the domain is turned on, it
->     is cleaner, and more robust than what you do here.
+thanks,
 
-I like that idea.
-
-> On the downside,
->     we have to work together to add power domain information to DT idle
->     states specifications/bindings.
->
->     (see pm_genpd_attach_cpuidle() drivers/base/power/domain.c)
-
-I definitely will.
-
->
-> (3) I do not like the is_a15 comparisons, I think this can be done with
->     cluster indexing the atomic variable, but since you are removing
->     this code ;-) it does not really matter.
-
-Agreed.
-
->
->>  }
->>
->> @@ -447,6 +459,116 @@ static int ve_init_opp_table(struct device *cpu_dev)
->>       return ret;
->>  }
->>
->> +#ifdef CONFIG_PM_GENERIC_DOMAINS_OF
->> +static int scp_power_on_pd_A7(struct generic_pm_domain *domain)
->> +{
->> +     /*
->> +      * Simply tell mcpm we need power.  Nothing else needs to be done
->> +      * as CPUs in the cluster are already powered when we reach this point.
->> +      */
->> +     atomic_set(&gpd_A7_cluster_on, 1);
->> +     return 0;
->> +}
->> +
->> +static int scp_power_off_pd_A7(struct generic_pm_domain *domain)
->> +{
->> +     atomic_set(&gpd_A7_cluster_on, 0);
->> +     return 0;
->> +}
->> +
->> +static int scp_power_on_pd_A15(struct generic_pm_domain *domain)
->> +{
->> +     /*
->> +      * Simply tell mcpm we need power.  Nothing else needs to be done
->> +      * as CPUs in the cluster are already powered when we reach this point.
->> +      */
->> +     atomic_set(&gpd_A15_cluster_on, 1);
->> +     return 0;
->> +}
->> +
->> +static int scp_power_off_pd_A15(struct generic_pm_domain *domain)
->> +{
->> +     atomic_set(&gpd_A15_cluster_on, 0);
->> +     return 0;
->> +}
->> +
->> +static int (*const scp_power_fct[MAX_CLUSTERS * 2])
->> +             (struct generic_pm_domain *domain) = {
->> +             scp_power_on_pd_A15, scp_power_off_pd_A15,
->> +             scp_power_on_pd_A7, scp_power_off_pd_A7};
->
-> I think you can remove the functions above and the corresponding atomic
-> variables, see my comment above.
->
->> +static void scp_init_pd(struct generic_pm_domain *pd,
->> +                         struct device_node *np,
->> +                         struct platform_device *pdev, int cluster)
->> +{
->> +     char name[50];
->> +     int index = cluster * 2;
->> +
->> +     snprintf(name, sizeof(name), "%s-%d", np->name, cluster);
->> +
->> +     pd->name = kstrdup(name, GFP_KERNEL);
->> +     pd->power_on = scp_power_fct[index];
->> +     pd->power_off =  scp_power_fct[index + 1];
->> +     platform_set_drvdata(pdev, pd);
->> +
->> +     pm_genpd_init(pd, NULL, true);
->> +     pm_genpd_poweron(pd);
->> +}
->> +
->> +static __init int ve_spc_gpd_init(void)
->> +{
->> +     struct genpd_onecell_data *data;
->> +     struct generic_pm_domain *pd, **cluster_pds;
->> +     struct platform_device *pdev;
->> +     struct device *dev;
->> +     struct device_node *np;
->> +     int count;
->> +
->> +     np = of_find_compatible_node(NULL, NULL,
->> +                                  "arm,vexpress-power-controller");
->
-> See the bindings discussions, there is not such a thing as
-> vexpress-power-controller.
-
-I looked at other examples that prefixed the "power-controller" part
-with something specific.  In thinking further on it
-"arm,power-controller,v2p-ca15_a7" is likely a better choice.
-
->
->> +     if (!np)
->> +             return -EINVAL;
->> +
->> +     cluster_pds = kzalloc(sizeof(struct generic_pm_domain *) * MAX_CLUSTERS,
->> +                           GFP_KERNEL);
->> +     if (!cluster_pds)
->> +             goto err_cluster_kzalloc;
->
-> You are freeing a pointer that failed to be allocated.
->
->> +
->> +     data = kzalloc(sizeof(struct genpd_onecell_data), GFP_KERNEL);
->> +     if (!data)
->> +             goto err_data;
->
-> Mmm...is that the label you want to jump to ? it fails to put the OF
-> node.
->
->> +
->> +     pdev = of_find_device_by_node(np);
->> +     dev = &pdev->dev;
->> +
->> +     for (count = 0; count < MAX_CLUSTERS; count++) {
->> +             pd = kzalloc(sizeof(struct generic_pm_domain), GFP_KERNEL);
->> +             if (!pd)
->> +                     goto err_pd_kzalloc;
->
-> This label does not free the data pointer. I think you should rework
-> the error exit paths.
->
->> +             scp_init_pd(pd, np, pdev, count);
->> +             cluster_pds[count] = pd;
->> +     }
->> +
->> +     data->num_domains = count;
->> +     data->domains = cluster_pds;
->> +
->> +     of_genpd_add_provider_onecell(np, data);
->> +     return 0;
->> +
->> +err_pd_kzalloc:
->> +     while (--count >= 0)
->> +             kfree(cluster_pds[count]);
->> +
->> +err_cluster_kzalloc:
->> +     of_node_put(np);
->> +err_data:
->> +     kfree(cluster_pds);
->> +     return -ENOMEM;
->> +
->> +}
->> +arch_initcall(ve_spc_gpd_init);
->
-> It should not be an arch initcall, call it from spc_init, and make it an
-> empty static inline if !CONFIG_PM_GENERIC_DOMAINS_OF, eg:
-
-That was my first intention but calling @platform_set_drvdata(); on
-the node returned by @of_find_compatible_node() crashed the system.  I
-will investigate further.
-
->
-> static inline int ve_spc_gpd_init(void)
-> {
->         return -ENOTSUPP;
-> }
->
-> Lorenzo
->
->> +#endif
->> +
->>  int __init ve_spc_init(void __iomem *baseaddr, u32 a15_clusid, int irq)
->>  {
->>       int ret;
->> --
->> 1.9.1
->>
->>
+greg k-h
