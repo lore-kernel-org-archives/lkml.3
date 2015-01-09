@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758252AbbAIVgm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 16:36:42 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:51723 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758219AbbAIVgl (ORCPT
+	id S1753323AbbAIVgT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 16:36:19 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:40277 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751554AbbAIVgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 16:36:41 -0500
-Message-ID: <54B0496B.5080809@vanguardiasur.com.ar>
-Date: Fri, 09 Jan 2015 18:34:35 -0300
-From: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
-Organization: VanguardiaSur
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 9 Jan 2015 16:36:17 -0500
+Date: Fri, 9 Jan 2015 16:36:13 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Jan Kara <jack@suse.cz>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, hch@infradead.org,
+        hannes@cmpxchg.org, linux-fsdevel@vger.kernel.org, vgoyal@redhat.com,
+        lizefan@huawei.com, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        mhocko@suse.cz, clm@fb.com, fengguang.wu@intel.com,
+        david@fromorbit.com
+Subject: Re: [PATCHSET RFC block/for-next] writeback: cgroup writeback support
+Message-ID: <20150109213613.GC2785@htj.dyndns.org>
+References: <1420579582-8516-1-git-send-email-tj@kernel.org>
+ <20150108093057.GD14705@quack.suse.cz>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] UBI: Fastmap: Care about the protection queue
-References: <1416835236-25185-1-git-send-email-richard@nod.at> <1416835236-25185-2-git-send-email-richard@nod.at> <54B046BC.8060802@vanguardiasur.com.ar> <54B0489D.1050905@nod.at>
-In-Reply-To: <54B0489D.1050905@nod.at>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150108093057.GD14705@quack.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, Jan.
 
+On Thu, Jan 08, 2015 at 10:30:57AM +0100, Jan Kara wrote:
+> > * An inode may have pages dirtied by different memcgs, which naturally
+> >   means that it should be able to be dirtied against multiple wb's.
+> >   To support linking an inode against multiple wb's, iwbl
+> >   (inode_wb_link) is introduced.  An inode has multiple iwbl's
+> >   associated with it if it's dirty against multiple wb's.
+>
+>   Is the ability for inode to belong to multiple memcgs really worth the
+> effort? It brings significant complications (see also Dave's email) and
+> the last time we were discussing cgroup writeback support the demand from
+> users for this was small... How hard would it be to just start with an
+> implementation which attaches the inode to the first memcg that dirties it
+> (and detaches it when inode gets clean)? And implement sharing of inodes
+> among mecgs only if there's a real demand for it?
 
-On 01/09/2015 06:31 PM, Richard Weinberger wrote:
-> Am 09.01.2015 um 22:23 schrieb Ezequiel Garcia:
->> On 11/24/2014 10:20 AM, Richard Weinberger wrote:
->>> Fastmap can miss a PEB if it is in the protection queue
->>> and not jet in the used tree.
->>
->> s/jet/yet
->>
->>> Treat every protected PEB as used.
->>>
->>
->> I'm wondering if we can have a detailed description of the issues this
->> commit fixes (if any?). In other words, what's the result of *not*
->> having the patch?
-> 
-> Without this patch fastmap can miss one PEB.
-> As consequence of this during attach the fastmap self-check
-> will detect this inconsistency and will fall back to a full scan.
-> If you try to attach using a custom fastmap implementation (found in
-> bootloaders) which do often not have sophisticated self-checks you'll
-> face a serious data corruption or if you're lucky UBI will crash.
-> 
-> Now clearer? :-)
-> 
+This was something I spent quite some time debating back and forth.
+IMO, the complexity added from having to handle dirtying against
+multiple cgroups isn't that high in the scheme of things.  It enables
+use cases where different regions of an inode are actively shared by
+multiple cgroups and more importantly makes unexpected behaviors a lot
+less likely by aligning what writeback and blkcg sees with memcg's
+perception.  As mentioned in the head message, this gives us the
+ability to hook up dirty ratio handling correctly for each memcg.
+That working properly strongly hinges on everybody involved seeing the
+same picture.
 
-Much better!
+Thanks.
 
-Thanks a lot,
 -- 
-Ezequiel Garcia, VanguardiaSur
-www.vanguardiasur.com.ar
+tejun
