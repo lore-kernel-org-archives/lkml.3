@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755930AbbAIXQl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 18:16:41 -0500
-Received: from mail.ispras.ru ([83.149.199.45]:41457 "EHLO mail.ispras.ru"
+	id S1758303AbbAIXRS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 18:17:18 -0500
+Received: from mail.kernel.org ([198.145.29.136]:49979 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752545AbbAIXQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 18:16:40 -0500
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: [PATCH] usb/kaweth: use GFP_ATOMIC under spin_lock in usb_start_wait_urb()
-Date: Sat, 10 Jan 2015 02:16:22 +0300
-Message-Id: <1420845382-25815-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.9.1
+	id S1758265AbbAIXRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 18:17:16 -0500
+Date: Fri, 9 Jan 2015 20:17:10 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: perf: PERF_FLAG_FD_OUTPUT has been broken since 2.6.35
+Message-ID: <20150109231710.GC12406@kernel.org>
+References: <alpine.DEB.2.11.1501081014460.24664@vincent-weaver-1.umelst.maine.edu>
+ <20150109160051.GK29390@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.11.1501091123040.27178@vincent-weaver-1.umelst.maine.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1501091123040.27178@vincent-weaver-1.umelst.maine.edu>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit e4c7f259c5be ("USB: kaweth.c: use GFP_ATOMIC under spin_lock")
-makes sure that kaweth_internal_control_msg() allocates memory with GFP_ATOMIC,
-but kaweth_internal_control_msg() also calls usb_start_wait_urb()
-that still allocates memory with GFP_NOIO.
+Em Fri, Jan 09, 2015 at 11:26:54AM -0500, Vince Weaver escreveu:
+> 
+> On Fri, 9 Jan 2015, Peter Zijlstra wrote:
+> > > So is this worth fixing seeing as apparently no one uses this feature?
+> > 
+> > I think there's a fair argument for removing it, Ingo, Acme?
+> 
+> could the functionality be replaced with a subsequent call to
+> 	ioctl(PERF_EVENT_IOC_SET_OUTPUT)
+> ?
 
-The patch fixes usb_start_wait_urb() as well.
+That is the only thing tools/perf uses:
 
-Found by Linux Driver Verification project (linuxtesting.org).
-
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/net/usb/kaweth.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/usb/kaweth.c b/drivers/net/usb/kaweth.c
-index dcb6d33141e0..1e9cdca37014 100644
---- a/drivers/net/usb/kaweth.c
-+++ b/drivers/net/usb/kaweth.c
-@@ -1276,7 +1276,7 @@ static int usb_start_wait_urb(struct urb *urb, int timeout, int* actual_length)
-         awd.done = 0;
+[acme@zoo linux]$ find tools/perf -name "*.[chly]" | xargs grep PERF_EVENT_IOC_SET_OUTPUT 
+tools/perf/util/evlist.h: * @refcnt - e.g. code using PERF_EVENT_IOC_SET_OUTPUT to share this
+tools/perf/util/evlist.c:			if (ioctl(fd, PERF_EVENT_IOC_SET_OUTPUT, *output) != 0)
+tools/perf/tests/perf-record.c:	 * (using ioctl(PERF_EVENT_IOC_SET_OUTPUT)).
+[acme@zoo linux]$ find tools/perf -name "*.[chly]" | xargs grep PERF_FLAG_FD_OUTPUT
+[acme@zoo linux]$
  
-         urb->context = &awd;
--        status = usb_submit_urb(urb, GFP_NOIO);
-+        status = usb_submit_urb(urb, GFP_ATOMIC);
-         if (status) {
-                 // something went wrong
-                 usb_free_urb(urb);
--- 
-1.9.1
+> Although I suppose there's a possibility for losing a small amount of data 
+> or some other reason that PERF_FLAG_FD_OUTPUT was introduced in the first 
+> place.
 
+Humm, IIRC tools/perf starts with the event disabled and then asks for
+enable_on_exec when starting workloads but yes, when you're attaching to
+something that is already running you'd take a bit longer to start getting
+samples.
+ 
+> In addition, if we remove PERF_FLAG_FD_OUTPUT would there then be any 
+> reason to keep PERF_FLAG_FD_NO_GROUP around?
+> 
+> Vince
