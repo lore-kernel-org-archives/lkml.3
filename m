@@ -1,609 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876AbbAIEPe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 23:15:34 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:56867 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753061AbbAIEPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 23:15:14 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Vladimir Davydov <vdavydov@parallels.com>,
-        Greg Thelen <gthelen@google.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch 2/2] mm: memcontrol: default hierarchy interface for memory
-Date: Thu,  8 Jan 2015 23:15:04 -0500
-Message-Id: <1420776904-8559-2-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 2.2.0
-In-Reply-To: <1420776904-8559-1-git-send-email-hannes@cmpxchg.org>
-References: <1420776904-8559-1-git-send-email-hannes@cmpxchg.org>
+	id S932333AbbAINux (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 08:50:53 -0500
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:55158 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754480AbbAINuw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 08:50:52 -0500
+Date: Fri, 9 Jan 2015 12:20:04 +0800
+From: Simon Guo <wei.guo.simon@gmail.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        wei.guo.simon@gmail.com
+Subject: [PATCH 3.19.0-rc3 1/1] STAGING: Fix pcl818.c coding style issue
+Message-ID: <20150109042003.GA3970@thunderCat>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce the basic control files to account, partition, and limit
-memory using cgroups in default hierarchy mode.
+Correct coding style problem in pcl818.c. The coding style problems(29 
+warnings detected by checkpatch.pl) includes:
+- line over 80 characters
+- There is space before tabs
+The changed file has been verified with checkpatch.pl to be clean for 
+warnings/errors.
 
-This interface versioning allows us to address fundamental design
-issues in the existing memory cgroup interface, further explained
-below.  The old interface will be maintained indefinitely, but a
-clearer model and improved workload performance should encourage
-existing users to switch over to the new one eventually.
-
-The control files are thus:
-
-  - memory.current shows the current consumption of the cgroup and its
-    descendants, in bytes.
-
-  - memory.low configures the lower end of the cgroup's expected
-    memory consumption range.  The kernel considers memory below that
-    boundary to be a reserve - the minimum that the workload needs in
-    order to make forward progress - and generally avoids reclaiming
-    it, unless there is an imminent risk of entering an OOM situation.
-
-  - memory.high configures the upper end of the cgroup's expected
-    memory consumption range.  A cgroup whose consumption grows beyond
-    this threshold is forced into direct reclaim, to work off the
-    excess and to throttle new allocations heavily, but is generally
-    allowed to continue and the OOM killer is not invoked.
-
-  - memory.max configures the hard maximum amount of memory that the
-    cgroup is allowed to consume before the OOM killer is invoked.
-
-  - memory.events shows event counters that indicate how often the
-    cgroup was reclaimed while below memory.low, how often it was
-    forced to reclaim excess beyond memory.high, how often it hit
-    memory.max, and how often it entered OOM due to memory.max.  This
-    allows users to identify configuration problems when observing a
-    degradation in workload performance.  An overcommitted system will
-    have an increased rate of low boundary breaches, whereas increased
-    rates of high limit breaches, maximum hits, or even OOM situations
-    will indicate internally overcommitted cgroups.
-
-For existing users of memory cgroups, the following deviations from
-the current interface are worth pointing out and explaining:
-
-  - The original lower boundary, the soft limit, is defined as a limit
-    that is per default unset.  As a result, the set of cgroups that
-    global reclaim prefers is opt-in, rather than opt-out.  The costs
-    for optimizing these mostly negative lookups are so high that the
-    implementation, despite its enormous size, does not even provide
-    the basic desirable behavior.  First off, the soft limit has no
-    hierarchical meaning.  All configured groups are organized in a
-    global rbtree and treated like equal peers, regardless where they
-    are located in the hierarchy.  This makes subtree delegation
-    impossible.  Second, the soft limit reclaim pass is so aggressive
-    that it not just introduces high allocation latencies into the
-    system, but also impacts system performance due to overreclaim, to
-    the point where the feature becomes self-defeating.
-
-    The memory.low boundary on the other hand is a top-down allocated
-    reserve.  A cgroup enjoys reclaim protection when it and all its
-    ancestors are below their low boundaries, which makes delegation
-    of subtrees possible.  Secondly, new cgroups have no reserve per
-    default and in the common case most cgroups are eligible for the
-    preferred reclaim pass.  This allows the new low boundary to be
-    efficiently implemented with just a minor addition to the generic
-    reclaim code, without the need for out-of-band data structures and
-    reclaim passes.  Because the generic reclaim code considers all
-    cgroups except for the ones running low in the preferred first
-    reclaim pass, overreclaim of individual groups is eliminated as
-    well, resulting in much better overall workload performance.
-
-  - The original high boundary, the hard limit, is defined as a strict
-    limit that can not budge, even if the OOM killer has to be called.
-    But this generally goes against the goal of making the most out of
-    the available memory.  The memory consumption of workloads varies
-    during runtime, and that requires users to overcommit.  But doing
-    that with a strict upper limit requires either a fairly accurate
-    prediction of the working set size or adding slack to the limit.
-    Since working set size estimation is hard and error prone, and
-    getting it wrong results in OOM kills, most users tend to err on
-    the side of a looser limit and end up wasting precious resources.
-
-    The memory.high boundary on the other hand can be set much more
-    conservatively.  When hit, it throttles allocations by forcing
-    them into direct reclaim to work off the excess, but it never
-    invokes the OOM killer.  As a result, a high boundary that is
-    chosen too aggressively will not terminate the processes, but
-    instead it will lead to gradual performance degradation.  The user
-    can monitor this and make corrections until the minimal memory
-    footprint that still gives acceptable performance is found.
-
-    In extreme cases, with many concurrent allocations and a complete
-    breakdown of reclaim progress within the group, the high boundary
-    can be exceeded.  But even then it's mostly better to satisfy the
-    allocation from the slack available in other groups or the rest of
-    the system than killing the group.  Otherwise, memory.max is there
-    to limit this type of spillover and ultimately contain buggy or
-    even malicious applications.
-
-  - The existing control file names are unwieldy and inconsistent in
-    many different ways.  For example, the upper boundary hit count is
-    exported in the memory.failcnt file, but an OOM event count has to
-    be manually counted by listening to memory.oom_control events, and
-    lower boundary / soft limit events have to be counted by first
-    setting a threshold for that value and then counting those events.
-    Also, usage and limit files encode their units in the filename.
-    That makes the filenames very long, even though this is not
-    information that a user needs to be reminded of every time they
-    type out those names.
-
-    To address these naming issues, as well as to signal clearly that
-    the new interface carries a new configuration model, the naming
-    conventions in it necessarily differ from the old interface.
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Simon Guo <wei.guo.simon@gmail.com>
 ---
- include/linux/memcontrol.h |  32 ++++++
- mm/memcontrol.c            | 247 +++++++++++++++++++++++++++++++++++++++++++--
- mm/vmscan.c                |  22 +++-
- 3 files changed, 287 insertions(+), 14 deletions(-)
+ drivers/staging/comedi/drivers/pcl818.c | 50 ++++++++++++++++++++-------------
+ 1 file changed, 30 insertions(+), 20 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 76b4084b8d08..dc04da2e79e0 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -52,7 +52,27 @@ struct mem_cgroup_reclaim_cookie {
- 	unsigned int generation;
- };
+diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
+index 8edea35..111bee1 100644
+--- a/drivers/staging/comedi/drivers/pcl818.c
++++ b/drivers/staging/comedi/drivers/pcl818.c
+@@ -45,11 +45,11 @@ A word or two about DMA. Driver support DMA operations at two ways:
+     [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
+     [2] - DMA	(0=disable, 1, 3)
+     [3] - 0, 10=10MHz clock for 8254
+-              1= 1MHz clock for 8254
++	      1= 1MHz clock for 8254
+     [4] - 0,  5=A/D input  -5V.. +5V
+-          1, 10=A/D input -10V..+10V
++	  1, 10=A/D input -10V..+10V
+     [5] - 0,  5=D/A output 0-5V  (internal reference -5V)
+-          1, 10=D/A output 0-10V (internal reference -10V)
++	  1, 10=D/A output 0-10V (internal reference -10V)
+ 	  2    =D/A output unknown (external reference)
  
-+enum mem_cgroup_events_index {
-+	MEM_CGROUP_EVENTS_PGPGIN,	/* # of pages paged in */
-+	MEM_CGROUP_EVENTS_PGPGOUT,	/* # of pages paged out */
-+	MEM_CGROUP_EVENTS_PGFAULT,	/* # of page-faults */
-+	MEM_CGROUP_EVENTS_PGMAJFAULT,	/* # of major page-faults */
-+	MEM_CGROUP_EVENTS_NSTATS,
-+	/* default hierarchy events */
-+	MEMCG_LOW = MEM_CGROUP_EVENTS_NSTATS,
-+	MEMCG_HIGH,
-+	MEMCG_MAX,
-+	MEMCG_OOM,
-+	MEMCG_NR_EVENTS,
-+};
-+
- #ifdef CONFIG_MEMCG
-+void mem_cgroup_events(struct mem_cgroup *memcg,
-+		       enum mem_cgroup_events_index idx,
-+		       unsigned int nr);
-+
-+bool mem_cgroup_low(struct mem_cgroup *root, struct mem_cgroup *memcg);
-+
- int mem_cgroup_try_charge(struct page *page, struct mm_struct *mm,
- 			  gfp_t gfp_mask, struct mem_cgroup **memcgp);
- void mem_cgroup_commit_charge(struct page *page, struct mem_cgroup *memcg,
-@@ -174,6 +194,18 @@ void mem_cgroup_split_huge_fixup(struct page *head);
- #else /* CONFIG_MEMCG */
- struct mem_cgroup;
+    Options for PCL-818, PCL-818H:
+@@ -57,44 +57,44 @@ A word or two about DMA. Driver support DMA operations at two ways:
+     [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
+     [2] - DMA	(0=disable, 1, 3)
+     [3] - 0, 10=10MHz clock for 8254
+-              1= 1MHz clock for 8254
++	      1= 1MHz clock for 8254
+     [4] - 0,  5=D/A output 0-5V  (internal reference -5V)
+-          1, 10=D/A output 0-10V (internal reference -10V)
++	  1, 10=D/A output 0-10V (internal reference -10V)
+ 	  2    =D/A output unknown (external reference)
  
-+static inline void mem_cgroup_events(struct mem_cgroup *memcg,
-+				     enum mem_cgroup_events_index idx,
-+				     unsigned int nr)
-+{
-+}
-+
-+static inline bool mem_cgroup_low(struct mem_cgroup *root,
-+				  struct mem_cgroup *memcg)
-+{
-+	return false;
-+}
-+
- static inline int mem_cgroup_try_charge(struct page *page, struct mm_struct *mm,
- 					gfp_t gfp_mask,
- 					struct mem_cgroup **memcgp)
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 20486da85750..fd9e542fc26f 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -97,14 +97,6 @@ static const char * const mem_cgroup_stat_names[] = {
- 	"swap",
- };
+    Options for PCL-818HD, PCL-818HG:
+     [0] - IO Base
+     [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
+     [2] - DMA/FIFO  (-1=use FIFO, 0=disable both FIFO and DMA,
+-                      1=use DMA ch 1, 3=use DMA ch 3)
++		      1=use DMA ch 1, 3=use DMA ch 3)
+     [3] - 0, 10=10MHz clock for 8254
+-              1= 1MHz clock for 8254
++	      1= 1MHz clock for 8254
+     [4] - 0,  5=D/A output 0-5V  (internal reference -5V)
+-          1, 10=D/A output 0-10V (internal reference -10V)
+-   	  2    =D/A output unknown (external reference)
++	  1, 10=D/A output 0-10V (internal reference -10V)
++	  2    =D/A output unknown (external reference)
  
--enum mem_cgroup_events_index {
--	MEM_CGROUP_EVENTS_PGPGIN,	/* # of pages paged in */
--	MEM_CGROUP_EVENTS_PGPGOUT,	/* # of pages paged out */
--	MEM_CGROUP_EVENTS_PGFAULT,	/* # of page-faults */
--	MEM_CGROUP_EVENTS_PGMAJFAULT,	/* # of major page-faults */
--	MEM_CGROUP_EVENTS_NSTATS,
--};
--
- static const char * const mem_cgroup_events_names[] = {
- 	"pgpgin",
- 	"pgpgout",
-@@ -138,7 +130,7 @@ enum mem_cgroup_events_target {
+    Options for PCL-718:
+     [0] - IO Base
+     [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
+     [2] - DMA	(0=disable, 1, 3)
+     [3] - 0, 10=10MHz clock for 8254
+-              1= 1MHz clock for 8254
++	      1= 1MHz clock for 8254
+     [4] -     0=A/D Range is +/-10V
+ 	      1=             +/-5V
+ 	      2=             +/-2.5V
+ 	      3=             +/-1V
+ 	      4=             +/-0.5V
+-	      5=  	     user defined bipolar
++	      5=	     user defined bipolar
+ 	      6=	     0-10V
+ 	      7=	     0-5V
+- 	      8=	     0-2V
++	      8=	     0-2V
+ 	      9=	     0-1V
+ 	     10=	     user defined unipolar
+     [5] - 0,  5=D/A outputs 0-5V  (internal reference -5V)
+-          1, 10=D/A outputs 0-10V (internal reference -10V)
++	  1, 10=D/A outputs 0-10V (internal reference -10V)
+ 	      2=D/A outputs unknown (external reference)
+     [6] - 0, 60=max  60kHz A/D sampling
+-          1,100=max 100kHz A/D sampling (PCL-718 with Option 001 installed)
++	  1,100=max 100kHz A/D sampling (PCL-718 with Option 001 installed)
  
- struct mem_cgroup_stat_cpu {
- 	long count[MEM_CGROUP_STAT_NSTATS];
--	unsigned long events[MEM_CGROUP_EVENTS_NSTATS];
-+	unsigned long events[MEMCG_NR_EVENTS];
- 	unsigned long nr_page_events;
- 	unsigned long targets[MEM_CGROUP_NTARGETS];
- };
-@@ -284,6 +276,10 @@ struct mem_cgroup {
- 	struct page_counter memsw;
- 	struct page_counter kmem;
+ */
  
-+	/* Normal memory consumption range */
-+	unsigned long low;
-+	unsigned long high;
-+
- 	unsigned long soft_limit;
- 
- 	/* vmpressure notifications */
-@@ -2301,6 +2297,8 @@ retry:
- 	if (!(gfp_mask & __GFP_WAIT))
- 		goto nomem;
- 
-+	mem_cgroup_events(mem_over_limit, MEMCG_MAX, 1);
-+
- 	nr_reclaimed = try_to_free_mem_cgroup_pages(mem_over_limit, nr_pages,
- 						    gfp_mask, may_swap);
- 
-@@ -2342,6 +2340,8 @@ retry:
- 	if (fatal_signal_pending(current))
- 		goto bypass;
- 
-+	mem_cgroup_events(mem_over_limit, MEMCG_OOM, 1);
-+
- 	mem_cgroup_oom(mem_over_limit, gfp_mask, get_order(nr_pages));
- nomem:
- 	if (!(gfp_mask & __GFP_NOFAIL))
-@@ -2353,6 +2353,22 @@ done_restock:
- 	css_get_many(&memcg->css, batch);
- 	if (batch > nr_pages)
- 		refill_stock(memcg, batch - nr_pages);
-+	/*
-+	 * If the hierarchy is above the normal consumption range,
-+	 * make the charging task trim the excess.
-+	 */
-+	do {
-+		unsigned long nr_pages = page_counter_read(&memcg->memory);
-+		unsigned long high = ACCESS_ONCE(memcg->high);
-+
-+		if (nr_pages > high) {
-+			mem_cgroup_events(memcg, MEMCG_HIGH, 1);
-+
-+			try_to_free_mem_cgroup_pages(memcg, nr_pages - high,
-+						     gfp_mask, true);
-+		}
-+
-+	} while ((memcg = parent_mem_cgroup(memcg)));
- done:
- 	return ret;
- }
-@@ -4266,7 +4282,7 @@ out_kfree:
- 	return ret;
- }
- 
--static struct cftype mem_cgroup_files[] = {
-+static struct cftype mem_cgroup_legacy_files[] = {
- 	{
- 		.name = "usage_in_bytes",
- 		.private = MEMFILE_PRIVATE(_MEM, RES_USAGE),
-@@ -4542,6 +4558,7 @@ mem_cgroup_css_alloc(struct cgroup_subsys_state *parent_css)
- 	if (parent_css == NULL) {
- 		root_mem_cgroup = memcg;
- 		page_counter_init(&memcg->memory, NULL);
-+		memcg->high = PAGE_COUNTER_MAX;
- 		memcg->soft_limit = PAGE_COUNTER_MAX;
- 		page_counter_init(&memcg->memsw, NULL);
- 		page_counter_init(&memcg->kmem, NULL);
-@@ -4587,6 +4604,7 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
- 
- 	if (parent->use_hierarchy) {
- 		page_counter_init(&memcg->memory, &parent->memory);
-+		memcg->high = PAGE_COUNTER_MAX;
- 		memcg->soft_limit = PAGE_COUNTER_MAX;
- 		page_counter_init(&memcg->memsw, &parent->memsw);
- 		page_counter_init(&memcg->kmem, &parent->kmem);
-@@ -4597,6 +4615,7 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
- 		 */
- 	} else {
- 		page_counter_init(&memcg->memory, NULL);
-+		memcg->high = PAGE_COUNTER_MAX;
- 		memcg->soft_limit = PAGE_COUNTER_MAX;
- 		page_counter_init(&memcg->memsw, NULL);
- 		page_counter_init(&memcg->kmem, NULL);
-@@ -4672,6 +4691,8 @@ static void mem_cgroup_css_reset(struct cgroup_subsys_state *css)
- 	mem_cgroup_resize_limit(memcg, PAGE_COUNTER_MAX);
- 	mem_cgroup_resize_memsw_limit(memcg, PAGE_COUNTER_MAX);
- 	memcg_update_kmem_limit(memcg, PAGE_COUNTER_MAX);
-+	memcg->low = 0;
-+	memcg->high = PAGE_COUNTER_MAX;
- 	memcg->soft_limit = PAGE_COUNTER_MAX;
- }
- 
-@@ -5260,6 +5281,159 @@ static void mem_cgroup_bind(struct cgroup_subsys_state *root_css)
- 		mem_cgroup_from_css(root_css)->use_hierarchy = true;
- }
- 
-+static u64 memory_current_read(struct cgroup_subsys_state *css,
-+			       struct cftype *cft)
-+{
-+	return mem_cgroup_usage(mem_cgroup_from_css(css), false);
-+}
-+
-+static int memory_low_show(struct seq_file *m, void *v)
-+{
-+	struct mem_cgroup *memcg = mem_cgroup_from_css(seq_css(m));
-+	unsigned long low = ACCESS_ONCE(memcg->low);
-+
-+	if (low == 0)
-+		seq_printf(m, "none\n");
-+	else
-+		seq_printf(m, "%llu\n", (u64)low * PAGE_SIZE);
-+
-+	return 0;
-+}
-+
-+static ssize_t memory_low_write(struct kernfs_open_file *of,
-+				char *buf, size_t nbytes, loff_t off)
-+{
-+	struct mem_cgroup *memcg = mem_cgroup_from_css(of_css(of));
-+	unsigned long low;
-+	int err;
-+
-+	buf = strstrip(buf);
-+	if (!strcmp(buf, "none")) {
-+		low = 0;
-+	} else {
-+		err = page_counter_memparse(buf, &low);
-+		if (err)
-+			return err;
-+	}
-+
-+	memcg->low = low;
-+
-+	return nbytes;
-+}
-+
-+static int memory_high_show(struct seq_file *m, void *v)
-+{
-+	struct mem_cgroup *memcg = mem_cgroup_from_css(seq_css(m));
-+	unsigned long high = ACCESS_ONCE(memcg->high);
-+
-+	if (high == PAGE_COUNTER_MAX)
-+		seq_printf(m, "none\n");
-+	else
-+		seq_printf(m, "%llu\n", (u64)high * PAGE_SIZE);
-+
-+	return 0;
-+}
-+
-+static ssize_t memory_high_write(struct kernfs_open_file *of,
-+				 char *buf, size_t nbytes, loff_t off)
-+{
-+	struct mem_cgroup *memcg = mem_cgroup_from_css(of_css(of));
-+	unsigned long high;
-+	int err;
-+
-+	buf = strstrip(buf);
-+	if (!strcmp(buf, "none")) {
-+		high = PAGE_COUNTER_MAX;
-+	} else {
-+		err = page_counter_memparse(buf, &high);
-+		if (err)
-+			return err;
-+	}
-+
-+	memcg->high = high;
-+
-+	return nbytes;
-+}
-+
-+static int memory_max_show(struct seq_file *m, void *v)
-+{
-+	struct mem_cgroup *memcg = mem_cgroup_from_css(seq_css(m));
-+	unsigned long max = ACCESS_ONCE(memcg->memory.limit);
-+
-+	if (max == PAGE_COUNTER_MAX)
-+		seq_printf(m, "none\n");
-+	else
-+		seq_printf(m, "%llu\n", (u64)max * PAGE_SIZE);
-+
-+	return 0;
-+}
-+
-+static ssize_t memory_max_write(struct kernfs_open_file *of,
-+				char *buf, size_t nbytes, loff_t off)
-+{
-+	struct mem_cgroup *memcg = mem_cgroup_from_css(of_css(of));
-+	unsigned long max;
-+	int err;
-+
-+	buf = strstrip(buf);
-+	if (!strcmp(buf, "none")) {
-+		max = PAGE_COUNTER_MAX;
-+	} else {
-+		err = page_counter_memparse(buf, &max);
-+		if (err)
-+			return err;
-+	}
-+
-+	err = mem_cgroup_resize_limit(memcg, max);
-+	if (err)
-+		return err;
-+
-+	return nbytes;
-+}
-+
-+static int memory_events_show(struct seq_file *m, void *v)
-+{
-+	struct mem_cgroup *memcg = mem_cgroup_from_css(seq_css(m));
-+
-+	seq_printf(m, "low %lu\n", mem_cgroup_read_events(memcg, MEMCG_LOW));
-+	seq_printf(m, "high %lu\n", mem_cgroup_read_events(memcg, MEMCG_HIGH));
-+	seq_printf(m, "max %lu\n", mem_cgroup_read_events(memcg, MEMCG_MAX));
-+	seq_printf(m, "oom %lu\n", mem_cgroup_read_events(memcg, MEMCG_OOM));
-+
-+	return 0;
-+}
-+
-+static struct cftype memory_files[] = {
-+	{
-+		.name = "current",
-+		.read_u64 = memory_current_read,
-+	},
-+	{
-+		.name = "low",
-+		.flags = CFTYPE_NOT_ON_ROOT,
-+		.seq_show = memory_low_show,
-+		.write = memory_low_write,
-+	},
-+	{
-+		.name = "high",
-+		.flags = CFTYPE_NOT_ON_ROOT,
-+		.seq_show = memory_high_show,
-+		.write = memory_high_write,
-+	},
-+	{
-+		.name = "max",
-+		.flags = CFTYPE_NOT_ON_ROOT,
-+		.seq_show = memory_max_show,
-+		.write = memory_max_write,
-+	},
-+	{
-+		.name = "events",
-+		.flags = CFTYPE_NOT_ON_ROOT,
-+		.seq_show = memory_events_show,
-+	},
-+	{ }	/* terminate */
-+};
-+
- struct cgroup_subsys memory_cgrp_subsys = {
- 	.css_alloc = mem_cgroup_css_alloc,
- 	.css_online = mem_cgroup_css_online,
-@@ -5270,7 +5444,8 @@ struct cgroup_subsys memory_cgrp_subsys = {
- 	.cancel_attach = mem_cgroup_cancel_attach,
- 	.attach = mem_cgroup_move_task,
- 	.bind = mem_cgroup_bind,
--	.legacy_cftypes = mem_cgroup_files,
-+	.dfl_cftypes = memory_files,
-+	.legacy_cftypes = mem_cgroup_legacy_files,
- 	.early_init = 0,
- };
- 
-@@ -5305,6 +5480,56 @@ static void __init enable_swap_cgroup(void)
- }
- #endif
- 
-+/**
-+ * mem_cgroup_events - count memory events against a cgroup
-+ * @memcg: the memory cgroup
-+ * @idx: the event index
-+ * @nr: the number of events to account for
-+ */
-+void mem_cgroup_events(struct mem_cgroup *memcg,
-+		       enum mem_cgroup_events_index idx,
-+		       unsigned int nr)
-+{
-+	this_cpu_add(memcg->stat->events[idx], nr);
-+}
-+
-+/**
-+ * mem_cgroup_low - check if memory consumption is below the normal range
-+ * @root: the highest ancestor to consider
-+ * @memcg: the memory cgroup to check
-+ *
-+ * Returns %true if memory consumption of @memcg, and that of all
-+ * configurable ancestors up to @root, is below the normal range.
-+ */
-+bool mem_cgroup_low(struct mem_cgroup *root, struct mem_cgroup *memcg)
-+{
-+	if (mem_cgroup_disabled())
-+		return false;
-+
-+	/*
-+	 * The toplevel group doesn't have a configurable range, so
-+	 * it's never low when looked at directly, and it is not
-+	 * considered an ancestor when assessing the hierarchy.
-+	 */
-+
-+	if (memcg == root_mem_cgroup)
-+		return false;
-+
-+	if (page_counter_read(&memcg->memory) > memcg->low)
-+		return false;
-+
-+	while (memcg != root) {
-+		memcg = parent_mem_cgroup(memcg);
-+
-+		if (memcg == root_mem_cgroup)
-+			break;
-+
-+		if (page_counter_read(&memcg->memory) > memcg->low)
-+			return false;
-+	}
-+	return true;
-+}
-+
- #ifdef CONFIG_MEMCG_SWAP
- /**
-  * mem_cgroup_swapout - transfer a memsw charge to swap
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 5e8772b2b9ef..64bf375cbe6f 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -91,6 +91,9 @@ struct scan_control {
- 	/* Can pages be swapped as part of reclaim? */
- 	unsigned int may_swap:1;
- 
-+	/* Can cgroups be reclaimed below their normal consumption range? */
-+	unsigned int may_thrash:1;
-+
- 	unsigned int hibernation_mode:1;
- 
- 	/* One of the zones is ready for compaction */
-@@ -2322,6 +2325,12 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
- 			struct lruvec *lruvec;
- 			int swappiness;
- 
-+			if (mem_cgroup_low(root, memcg)) {
-+				if (!sc->may_thrash)
-+					continue;
-+				mem_cgroup_events(memcg, MEMCG_LOW, 1);
-+			}
-+
- 			lruvec = mem_cgroup_zone_lruvec(zone, memcg);
- 			swappiness = mem_cgroup_swappiness(memcg);
- 
-@@ -2343,8 +2352,7 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
- 				mem_cgroup_iter_break(root, memcg);
+@@ -309,11 +309,19 @@ struct pcl818_private {
+ 	unsigned long dmabuf[2];	/*  pointers to begin of DMA buffers */
+ 	unsigned int hwdmaptr[2];	/*  hardware address of DMA buffers */
+ 	int next_dma_buf;	/*  which DMA buffer will be used next round */
+-	long dma_runs_to_end;	/*  how many we must permorm DMA transfer to end of record */
+-	unsigned long last_dma_run;	/*  how many bytes we must transfer on last DMA page */
+-	unsigned int ns_min;	/*  manimal allowed delay between samples (in us) for actual card */
++	long dma_runs_to_end;	/*  how many we must permorm DMA transfer
++				 *  to end of record
++				 */
++	unsigned long last_dma_run;	/*  how many bytes we must transfer
++					 *  on last DMA page
++					 */
++	unsigned int ns_min;	/*  manimal allowed delay between
++				 *  samples (in us) for actual card
++				 */
+ 	int i8253_osc_base;	/*  1/frequency of on board oscilator in ns */
+-	unsigned int act_chanlist[16];	/*  MUX setting for actual AI operations */
++	unsigned int act_chanlist[16];	/*  MUX setting for actual
++					 *  AI operations
++					 */
+ 	unsigned int act_chanlist_len;	/*  how long is actual MUX list */
+ 	unsigned int act_chanlist_pos;	/*  actual position in MUX list */
+ 	unsigned int ai_data_len;	/*  len of data buffer */
+@@ -687,7 +695,8 @@ static int check_channel_list(struct comedi_device *dev,
  				break;
- 			}
--			memcg = mem_cgroup_iter(root, memcg, &reclaim);
--		} while (memcg);
-+		} while ((memcg = mem_cgroup_iter(root, memcg, &reclaim)));
+ 			nowmustbechan =
+ 			    (CR_CHAN(chansegment[i - 1]) + 1) % s->n_chan;
+-			if (nowmustbechan != CR_CHAN(chanlist[i])) {	/*  channel list isn't continuous :-( */
++			if (nowmustbechan != CR_CHAN(chanlist[i])) {
++				/*  channel list isn't continuous :-( */
+ 				dev_dbg(dev->class_dev,
+ 					"channel list must be continuous! chanlist[%i]=%d but must be %d or %d!\n",
+ 					i, CR_CHAN(chanlist[i]), nowmustbechan,
+@@ -1194,8 +1203,9 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	devpriv->ns_min = board->ns_min;
  
- 		/*
- 		 * Shrink the slab caches in the same proportion that
-@@ -2547,10 +2555,11 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
- static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 					  struct scan_control *sc)
- {
-+	int initial_priority = sc->priority;
- 	unsigned long total_scanned = 0;
- 	unsigned long writeback_threshold;
- 	bool zones_reclaimable;
--
-+retry:
- 	delayacct_freepages_start();
+ 	if (!board->is_818) {
++		/* extended PCL718 to 100kHz DAC */
+ 		if ((it->options[6] == 1) || (it->options[6] == 100))
+-			devpriv->ns_min = 10000;	/* extended PCL718 to 100kHz DAC */
++			devpriv->ns_min = 10000;
+ 	}
  
- 	if (global_reclaim(sc))
-@@ -2600,6 +2609,13 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 	if (sc->compaction_ready)
- 		return 1;
- 
-+	/* Untapped cgroup reserves?  Don't OOM, retry. */
-+	if (!sc->may_thrash) {
-+		sc->priority = initial_priority;
-+		sc->may_thrash = 1;
-+		goto retry;
-+	}
-+
- 	/* Any of the zones still reclaimable?  Don't OOM. */
- 	if (zones_reclaimable)
- 		return 1;
+ 	pcl818_reset(dev);
 -- 
-2.2.0
+1.8.1.2
 
