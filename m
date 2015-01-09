@@ -1,213 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873AbbAIOf0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 09:35:26 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:39606 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751452AbbAIOfZ (ORCPT
+	id S1757623AbbAIOfg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 09:35:36 -0500
+Received: from smtprelay0151.hostedemail.com ([216.40.44.151]:55995 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757190AbbAIOfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 09:35:25 -0500
-Message-ID: <54AFE6E3.4050603@roeck-us.net>
-Date: Fri, 09 Jan 2015 06:34:11 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 9 Jan 2015 09:35:34 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::::::::::::::::::::::::::,RULES_HIT:2:41:355:379:541:599:800:960:966:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1535:1593:1594:1605:1606:1730:1747:1777:1792:1801:2196:2199:2393:2553:2559:2562:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4118:4321:4385:4605:5007:6119:6261:6742:7774:7875:8660:10004:10848:10967:11026:11232:11658:11914:12295:12296:12438:12517:12519:12555:12663:12740:13148:13161:13229:13230:13870:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: limit49_131ae7ef0c037
+X-Filterd-Recvd-Size: 7419
+Date: Fri, 9 Jan 2015 09:35:30 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Laura Abbott <lauraa@codeaurora.org>,
+        "Stefan I. Strogin" <s.strogin@partner.samsung.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, aneesh.kumar@linux.vnet.ibm.com,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Dmitry Safonov <d.safonov@partner.samsung.com>,
+        Pintu Kumar <pintu.k@samsung.com>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        SeongJae Park <sj38.park@gmail.com>, Hui Zhu <zhuhui@xiaomi.com>,
+        Dyasly Sergey <s.dyasly@samsung.com>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>, namhyung@kernel.org
+Subject: Re: [PATCH 0/3] mm: cma: /proc/cmainfo
+Message-ID: <20150109093530.655c845e@gandalf.local.home>
+In-Reply-To: <20150109091904.41294966@gandalf.local.home>
+References: <cover.1419602920.git.s.strogin@partner.samsung.com>
+	<20141229023639.GC27095@bbox>
+	<54A1B11A.6020307@codeaurora.org>
+	<20141230044726.GA22342@bbox>
+	<20150109091904.41294966@gandalf.local.home>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Bartosz Golaszewski <bgolaszewski@baylibre.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Patrick Titiano <ptitiano@baylibre.com>,
-        LM Sensors <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCHv2] hwmon: (ina2xx) implement update_interval attribute
- for ina226
-References: <1420804980-11637-1-git-send-email-bgolaszewski@baylibre.com>
-In-Reply-To: <1420804980-11637-1-git-send-email-bgolaszewski@baylibre.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.54AFE742.0235,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2015 04:03 AM, Bartosz Golaszewski wrote:
-> This attribute allows to configure the update interval of ina226. Although
-> the bus and shunt voltage conversion times remain hardcoded to 1.1 ms, we can
-> now modify said interval by changing the averaging rate.
->
-> While we're at it - add an additional variable to ina2xx_data, which holds
-> the current configuration settings - this way we'll be able to restore the
-> configuration in case of an unexpected chip reset.
->
-> Signed-off-by: Bartosz Golaszewski <bgolaszewski@baylibre.com>
-> ---
->   Documentation/hwmon/ina2xx |   7 +++
->   drivers/hwmon/ina2xx.c     | 140 ++++++++++++++++++++++++++++++++++++++++++---
->   2 files changed, 140 insertions(+), 7 deletions(-)
->
-> diff --git a/Documentation/hwmon/ina2xx b/Documentation/hwmon/ina2xx
-> index 320dd69..450e3cc 100644
-> --- a/Documentation/hwmon/ina2xx
-> +++ b/Documentation/hwmon/ina2xx
-> @@ -48,3 +48,10 @@ The shunt value in micro-ohms can be set via platform data or device tree at
->   compile-time or via the shunt_resistor attribute in sysfs at run-time. Please
->   refer to the Documentation/devicetree/bindings/i2c/ina2xx.txt for bindings
->   if the device tree is used.
-> +
-> +Additionally ina226 supports update_interval attribute as described in
-> +Documentation/hwmon/sysfs-interface. Internally the interval is the sum of
-> +bus and shunt voltage conversion times multiplied by the averaging rate. We
-> +don't touch the conversion times and only modify the number of averages. The
-> +lower limit of the update_interval is 2 ms, the upper limit is 2253 ms.
-> +The actual programmed interval may vary from the desired value.
-> diff --git a/drivers/hwmon/ina2xx.c b/drivers/hwmon/ina2xx.c
-> index 49537ea..ce0319a 100644
-> --- a/drivers/hwmon/ina2xx.c
-> +++ b/drivers/hwmon/ina2xx.c
-> @@ -68,6 +68,21 @@
->
->   #define INA2XX_RSHUNT_DEFAULT		10000
->
-> +/* bit mask for reading the averaging setting in the configuration register */
-> +#define INA226_AVG_RD_MASK		0x0E00
-> +
-> +#define INA226_READ_AVG(reg)		(((reg) & INA226_AVG_RD_MASK) >> 9)
-> +#define INA226_SHIFT_AVG(val)		((val) << 9)
-> +
-> +/* common attrs, ina226 attrs and NULL */
-> +#define INA2XX_MAX_ATTRIBUTE_GROUPS	3
-> +
-> +/*
-> + * Both bus voltage and shunt voltage conversion times for ina226 are set
-> + * to 0b0100 on POR, which translates to 2200 microseconds in total.
-> + */
-> +#define INA226_TOTAL_CONV_TIME_DEFAULT	2200
-> +
->   enum ina2xx_ids { ina219, ina226 };
->
->   struct ina2xx_config {
-> @@ -85,12 +100,14 @@ struct ina2xx_data {
->   	const struct ina2xx_config *config;
->
->   	long rshunt;
-> +	u16 curr_config;
->
->   	struct mutex update_lock;
->   	bool valid;
->   	unsigned long last_updated;
->
->   	int kind;
-> +	const struct attribute_group *groups[INA2XX_MAX_ATTRIBUTE_GROUPS];
->   	u16 regs[INA2XX_MAX_REGISTERS];
->   };
->
-> @@ -115,6 +132,49 @@ static const struct ina2xx_config ina2xx_config[] = {
->   	},
->   };
->
-> +/*
-> + * Available averaging rates for ina226. The indices correspond with
-> + * the bit values expected by the chip (according to the ina226 datasheet,
-> + * table 3 AVG bit settings, found at
-> + * http://www.ti.com/lit/ds/symlink/ina226.pdf.
-> + */
-> +static const int ina226_avg_tab[] = { 1, 4, 16, 64, 128, 256, 512, 1024 };
-> +
-> +static int ina226_avg_bits(int avg)
-> +{
-> +	int i;
-> +
-> +	/* Get the closest average from the tab. */
-> +	for (i = 0; i < ARRAY_SIZE(ina226_avg_tab) - 1; i++) {
-> +		if (avg <= (ina226_avg_tab[i] + ina226_avg_tab[i + 1]) / 2)
-> +			break;
-> +	}
-> +
-> +	return i; /* Return 0b0111 for values greater than 1024. */
-> +}
-> +
-> +static int ina226_reg_to_interval(u16 config)
-> +{
-> +	int avg = ina226_avg_tab[INA226_READ_AVG(config)];
-> +
-> +	/*
-> +	 * Multiply the total conversion time by the number of averages.
-> +	 * Return the result in milliseconds.
-> +	 */
-> +	return DIV_ROUND_CLOSEST(avg * INA226_TOTAL_CONV_TIME_DEFAULT, 1000);
-> +}
-> +
-> +static u16 ina226_interval_to_reg(int interval, u16 config)
-> +{
-> +	int avg, avg_bits;
-> +
-> +	avg = DIV_ROUND_CLOSEST(interval * 1000,
-> +				INA226_TOTAL_CONV_TIME_DEFAULT);
-> +	avg_bits = ina226_avg_bits(avg);
-> +
-> +	return (config & ~INA226_AVG_RD_MASK) | INA226_SHIFT_AVG(avg_bits);
-> +}
-> +
->   static int ina2xx_calibrate(struct ina2xx_data *data)
->   {
->   	return i2c_smbus_write_word_swapped(data->client, INA2XX_CALIBRATION,
-> @@ -131,7 +191,7 @@ static int ina2xx_init(struct ina2xx_data *data)
->
->   	/* device configuration */
->   	ret = i2c_smbus_write_word_swapped(client, INA2XX_CONFIG,
-> -					   data->config->config_default);
-> +					   data->curr_config);
->   	if (ret < 0)
->   		return ret;
->
-> @@ -199,12 +259,12 @@ static struct ina2xx_data *ina2xx_update_device(struct device *dev)
->   {
->   	struct ina2xx_data *data = dev_get_drvdata(dev);
->   	struct ina2xx_data *ret = data;
-> -	int rv;
-> +	int rv, ui;
->
->   	mutex_lock(&data->update_lock);
->
-> -	if (time_after(jiffies, data->last_updated +
-> -		       HZ / INA2XX_CONVERSION_RATE) || !data->valid) {
-> +	ui = ina226_reg_to_interval(data->curr_config) * HZ / 1000;
+On Fri, 9 Jan 2015 09:19:04 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Unfortunately that only applies to INA226 and not INA219, where the time is static
-(at least so far).
+> task: <...>-2880
+>   Event: func: __kmalloc() (74) Total: 53254 Avg: 719 Max: 1095 Min:481
 
-I think we'll need to store the time in ina2xx_data and use the old (constant)
-value for ina219. Maybe add another variable into the configuration data
-for the initial value and copy it from there during probe.
+I forgot to mention that all times are in nanoseconds (or whatever the
+trace clock is set at).
 
-Also, it would be better to use msecs_to_jiffies() for the now dynamic
-conversion to jiffies.
+>           | 
+>           + ftrace_ops_list_func (0xffffffff810c229e)
+>               100% (74) time:53254 max:1095 min:481 avg:719
+>                ftrace_call (0xffffffff81526047)
+>                trace_preempt_on (0xffffffff810d28ff)
+>                preempt_count_sub (0xffffffff81061c62)
+>                __mutex_lock_slowpath (0xffffffff81522807)
+>                __kmalloc (0xffffffff811323f3)
+>                __kmalloc (0xffffffff811323f3)
 
-Thanks,
-Guenter
+The above may be a bit confusing, as the stack trace included more than
+it should have (it's variable and hard to get right).
+ftrace_ops_list_func() did not call kmalloc, but it did call the
+stack trace and was included. You want to look below to find the
+interesting data.
 
+This is still a new feature, and is using some of the kernel tracing
+more than it has been in the past. There's still a few eggs that need
+to be boiled here.
+
+
+>                tracing_buffers_splice_read (0xffffffff810ca23e)
+
+All the kmallocs for this task was called by
+tracing_buffers_splice_read() (hmm, I chose to show you the trace-cmd
+profile on itself. If I had included "-F -c" (follow workload only)  or
+-e sched_switch I would have known which task to look at).
+
+>                 | 
+>                 + set_next_entity (0xffffffff81067027)
+>                 |   66% (49) time:34925 max:1044 min:481 avg:712
+>                 |    __switch_to (0xffffffff810016d7)
+>                 |    trace_hardirqs_on (0xffffffff810d28db)
+>                 |    _raw_spin_unlock_irq (0xffffffff81523a8e)
+>                 |    trace_preempt_on (0xffffffff810d28ff)
+>                 |    preempt_count_sub (0xffffffff81061c62)
+>                 |    __schedule (0xffffffff815204d3)
+>                 |    trace_preempt_on (0xffffffff810d28ff)
+>                 |    buffer_spd_release (0xffffffff810c91fd)
+>                 |    SyS_splice (0xffffffff8115dccf)
+>                 |    system_call_fastpath (0xffffffff81523f92)
+>                 | 
+>                 + do_read_fault.isra.74 (0xffffffff8111431d)
+
+I'm not sure how much I trust this. I don't have FRAME_POINTERS
+enabled, so the stack traces may not be as accurate.
+
+But you get the idea, and this can show you where the slow paths lie.
+
+-- Steve
+
+
+>                 |   24% (18) time:12654 max:1008 min:481 avg:703
+>                 |     | 
+>                 |     + select_task_rq_fair (0xffffffff81067806)
+>                 |     |   89% (16) time:11234 max:1008 min:481 avg:702
+>                 |     |    trace_preempt_on (0xffffffff810d28ff)
+>                 |     |    buffer_spd_release (0xffffffff810c91fd)
+>                 |     |    SyS_splice (0xffffffff8115dccf)
+>                 |     |    system_call_fastpath (0xffffffff81523f92)
+>                 |     | 
+>                 |     + handle_mm_fault (0xffffffff81114df4)
+>                 |         11% (2) time:1420 max:879 min:541 avg:710
+>                 |          trace_preempt_on (0xffffffff810d28ff)
+>                 |          buffer_spd_release (0xffffffff810c91fd)
+>                 |          SyS_splice (0xffffffff8115dccf)
+>                 |          system_call_fastpath (0xffffffff81523f92)
+>                 |       
+>                 | 
+>                 | 
+>                 + update_stats_wait_end (0xffffffff81066c5c)
+>                 |   6% (4) time:3153 max:1095 min:635 avg:788
+>                 |    set_next_entity (0xffffffff81067027)
+>                 |    __switch_to (0xffffffff810016d7)
+>                 |    trace_hardirqs_on (0xffffffff810d28db)
+>                 |    _raw_spin_unlock_irq (0xffffffff81523a8e)
+>                 |    trace_preempt_on (0xffffffff810d28ff)
+>                 |    preempt_count_sub (0xffffffff81061c62)
+>                 |    __schedule (0xffffffff815204d3)
+>                 |    trace_preempt_on (0xffffffff810d28ff)
+>                 |    buffer_spd_release (0xffffffff810c91fd)
+>                 |    SyS_splice (0xffffffff8115dccf)
+>                 |    system_call_fastpath (0xffffffff81523f92)
+>                 | 
+>                 + _raw_spin_unlock (0xffffffff81523af5)
+>                 |   3% (2) time:1854 max:936 min:918 avg:927
+>                 |    do_read_fault.isra.74 (0xffffffff8111431d)
+>                 |    handle_mm_fault (0xffffffff81114df4)
+>                 |    buffer_spd_release (0xffffffff810c91fd)
+>                 |    SyS_splice (0xffffffff8115dccf)
+>                 |    system_call_fastpath (0xffffffff81523f92)
+>                 | 
+>                 + trace_hardirqs_off (0xffffffff810d2891)
+>                     1% (1) time:668 max:668 min:668 avg:668
+>                      kmem_cache_free (0xffffffff81130e48)
+>                      __dequeue_signal (0xffffffff8104c802)
+>                      trace_preempt_on (0xffffffff810d28ff)
+>                      preempt_count_sub (0xffffffff81061c62)
+>                      _raw_spin_unlock_irq (0xffffffff81523a8e)
+>                      recalc_sigpending (0xffffffff8104c5d1)
+>                      __set_task_blocked (0xffffffff8104cd2e)
+>                      trace_preempt_on (0xffffffff810d28ff)
+>                      preempt_count_sub (0xffffffff81061c62)
+>                      preempt_count_sub (0xffffffff81061c62)
+>                      buffer_spd_release (0xffffffff810c91fd)
+>                      SyS_splice (0xffffffff8115dccf)
+>                      system_call_fastpath (0xffffffff81523f92)
+>                   
