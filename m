@@ -1,80 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584AbbAIFTq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 00:19:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59922 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750787AbbAIFTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 00:19:44 -0500
-Message-ID: <54AF64BB.5010609@redhat.com>
-Date: Fri, 09 Jan 2015 10:48:51 +0530
-From: Pratyush Anand <panand@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tixy@linaro.org" <tixy@linaro.org>,
-        "ananth@in.ibm.com" <ananth@in.ibm.com>,
-        "sandeepa.prabhu@linaro.org" <sandeepa.prabhu@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
+	id S1754940AbbAIFVu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 00:21:50 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:59856 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751110AbbAIFVr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 00:21:47 -0500
+X-Originating-IP: 50.43.58.154
+Date: Thu, 8 Jan 2015 21:21:29 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Fam Zheng <famz@redhat.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, Miklos Szeredi <mszeredi@suse.cz>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "anil.s.keshavamurthy@intel.com" <anil.s.keshavamurthy@intel.com>,
-        "masami.hiramatsu.pt@hitachi.com" <masami.hiramatsu.pt@hitachi.com>,
-        "wcohen@redhat.com" <wcohen@redhat.com>,
-        "oleg@redhat.com" <oleg@redhat.com>
-Subject: Re: [RFC 4/8] ARM64: Add instruction_pointer_set function
-References: <cover.1420038188.git.panand@redhat.com> <028aab951a24c56075b1060afa1c2b2d88c09083.1420038188.git.panand@redhat.com> <20150108165909.GR11583@arm.com>
-In-Reply-To: <20150108165909.GR11583@arm.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Juri Lelli <juri.lelli@gmail.com>, Zach Brown <zab@zabbo.net>,
+        David Drysdale <drysdale@google.com>,
+        Kees Cook <keescook@chromium.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Dario Faggioli <raistlin@linux.it>, "Theodore Ts'o" <tytso@mit.edu>,
+        Peter Zijlstra <peterz@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Fabian Frederick <fabf@skynet.be>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Subject: Re: [PATCH 0/3] epoll: Add epoll_pwait1 syscall
+Message-ID: <20150109052129.GA6831@thin>
+References: <1420705550-24245-1-git-send-email-famz@redhat.com>
+ <1420708372.18399.15.camel@suse.cz>
+ <CALCETrVyPij1Zxwmw7p06UrZjoyYDXqEjmxyQ-KJ8Y7dx7mL3g@mail.gmail.com>
+ <20150109011608.GA2924@fam-t430.nay.redhat.com>
+ <CALCETrWHGwPw2cH3RruaCFKj2ND8PdEbdWjTi4OJ8m2eF9fpLw@mail.gmail.com>
+ <20150109015248.GA5034@fam-t430.nay.redhat.com>
+ <CALCETrU+MKWCh1FBqvuf3MGo3dTcmdktcM4aVZZGGUAmDNoWtg@mail.gmail.com>
+ <20150109044908.GA10966@fam-t430.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150109044908.GA10966@fam-t430.nay.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 09, 2015 at 12:49:08PM +0800, Fam Zheng wrote:
+> On Thu, 01/08 18:24, Andy Lutomirski wrote:
+> > On Thu, Jan 8, 2015 at 5:52 PM, Fam Zheng <famz@redhat.com> wrote:
+> > > On Thu, 01/08 17:28, Andy Lutomirski wrote:
+> > >> On Thu, Jan 8, 2015 at 5:25 PM, Fam Zheng <famz@redhat.com> wrote:
+> > >> > On Thu, 01/08 09:57, Andy Lutomirski wrote:
+> > >> >> I'd like to see a more ambitious change, since the timer isn't the
+> > >> >> only problem like this.  Specifically, I'd like a syscall that does a
+> > >> >> list of epoll-related things and then waits.  The list of things could
+> > >> >> include, at least:
+> > >> >>
+> > >> >>  - EPOLL_CTL_MOD actions: level-triggered epoll users are likely to
+> > >> >> want to turn on and off their requests for events on a somewhat
+> > >> >> regular basis.
+> > >> >
+> > >> > This sounds good to me.
+> > >> >
+> > >> >>
+> > >> >>  - timerfd_settime actions: this allows a single syscall to wait and
+> > >> >> adjust *both* monotonic and real-time wakeups.
+> > >> >
+> > >> > I'm not sure, doesn't this break orthogonality between epoll and timerfd?
+> > >>
+> > >> Yes.  It's not very elegant, and more elegant ideas are welcome.
+> > >
+> > > What is the purpose of embedding timerfd operation here? Modifying timerfd
+> > > for each poll doesn't sound a common pattern to me.
+> > 
+> > Setting a timeout is definitely a common pattern, hence this thread.
+> > But the current timeout interface sucks, and people should really use
+> > absolute time.  (My epoll software uses absolute time.)  But then
+> > users need to decide whether to have their timeout based on the
+> > monotonic clock or the realtime clock (or something else entirely).
+> > Some bigger programs may want both -- they may have internal events
+> > queued for certain times and for certain timeouts, and those should
+> > use realtime and monotonic respectively.  Heck, users may also want
+> > separate slack values on those.
+> > 
+> > Timerfd is the only thing we have right now that is anywhere near
+> > flexible enough.  Obviously if epoll became fancy enough, then we
+> > could do away with the timerfd entirely here.
+> > 
+> > >
+> > >>
+> > >> >
+> > >> >>
+> > >> >> Would this make sense?  It could look like:
+> > >> >>
+> > >> >> int epoll_mod_and_pwait(int epfd,
+> > >> >>   struct epoll_event *events, int maxevents,
+> > >> >>   struct epoll_command *commands, int ncommands,
+> > >> >>   const sigset_t *sigmask);
+> > >> >
+> > >> > What about flags?
+> > >> >
+> > >>
+> > >> No room.  Maybe it should just be a struct for everything instead of
+> > >> separate args.
+> > >
+> > > Also no room for timeout. A single struct sounds the only way to go.
+> > 
+> > That's what timerfd is for.  I think it would be a bit weird to
+> > support "timeout" and detailed timerfd control.
+> 
+> I see what you mean. Thanks.
+> 
+> I still don't like hooking timerfd in the interface. Besides the unclean
+> interface, it also feels cubersome and overkill to let users setup and add a
+> dedicated timerfd to implement timeout.
+> 
+> How about this:
+> 
+> int epoll_mod_wait(int epfd, struct epoll_mod_wait_data *data);
+> 
+> struct epoll_mod_wait_data {
+> 	struct epoll_event *events;
+> 	int maxevents;
+> 	struct epoll_mod_cmd {
+> 		int op,
+> 		int fd;
+> 		void *data;
+> 	} *cmds;
+> 	int ncmds;
+> 	int flags;
+> 	sigset_t *sigmask;
+> };
+> 
+> Commands ops are:
+> 
+> 	EPOLL_CTL_ADD
+> 		@fd is the fd to modify; @data is epoll_event.
+> 	EPOLL_CTL_MOD
+> 		@fd is the fd to modify; @data is epoll_event.
+> 	EPOLL_CTL_DEL
+> 		@fd is the fd to modify; @data is epoll_event.
+> 
+> 	EPOLL_CTL_SET_TIMEOUT
+> 		@fd is ignored, @data is timespec.
+> 		Clock type and relative/absolute are selected by flags as below.
+> 
+> Flags are given to override timeout defaults:
+> 	EPOLL_FL_MONOTONIC_CLOCK
+> 		If set, don't use realtime clock, use monotonic clock.
+> 	EPOLL_FL_ABSOLUTE_TIMEOUT
+> 		If set, don't use relative timeout, use absolute timeout.
 
+I'd suggest using an "int clockid" field instead, like timerfd_settime;
+even if it only accepts CLOCK_REALTIME and CLOCK_MONOTONIC, if it needs
+extending in the future, it'd be painful to have to remap new CLOCK_*
+constants into the EPOLL_FL_* namespace.  (I do think dropping timeouts
+in favor of timerfds makes things more nicely orthogonal, but epoll_wait
+already has a timeout parameter, so *shrug*.)
 
-On Thursday 08 January 2015 10:29 PM, Will Deacon wrote:
-> On Wed, Dec 31, 2014 at 03:21:20PM +0000, Pratyush Anand wrote:
->> instruction_pointer_set is needed for uprobe implementation. Hence
->> define it for ARM64.
->>
->> Signed-off-by: Pratyush Anand <panand@redhat.com>
->> ---
->>   arch/arm64/include/asm/ptrace.h | 6 ++++++
->>   1 file changed, 6 insertions(+)
->>
->> diff --git a/arch/arm64/include/asm/ptrace.h b/arch/arm64/include/asm/ptrace.h
->> index 24cc048ac3e7..29d9bf5e3635 100644
->> --- a/arch/arm64/include/asm/ptrace.h
->> +++ b/arch/arm64/include/asm/ptrace.h
->> @@ -206,6 +206,12 @@ static inline int valid_user_regs(struct user_pt_regs *regs)
->>   #define instruction_pointer(regs)	((regs)->pc)
->>   #define stack_pointer(regs)		((regs)->sp)
->>
->> +static inline void instruction_pointer_set(struct pt_regs *regs,
->> +					   unsigned long val)
->> +{
->> +	instruction_pointer(regs) = val;
->> +}
->
-> Do you think we could make use of the asm-generic ptrace header to get
-> this for free? afaict, we just need to implement GET_USP and possibly
-> GET_FP for the compat case (although it may well be that we still handle
-> the compat case entirely separately).
->
+Also, I think that structure has too many levels of indirection; it'd
+produce many unnecessary cache misses; considering you're trying to
+eliminate the overhead of one or two extra syscalls, you don't want to
+introduce a pile of unnecessary cache misses in the processes.  I'd
+suggest inlining cmds as an array at the end of the structure, and
+turning "void *data" into an inline epoll_event.  (Or, you could use
+"events" as an in/out parameter.)
 
-Yes, We can use asm-generic for it.
+You could drop EPOLL_CTL_SET_TIMEOUT, and just include a clockid and
+timespec directly in the top-level structure.
 
-I think , we can also add link_pointer and link_pointer_set in 
-asm-generic/ptrace.h to help with all retprobes.
+And I'd suggest either making flags a top-level parameter or putting it
+at the start of the structure, to make future extension easier.
 
-~Pratyush
-> Will
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+</bikeshed>
+
+- Josh Triplett
