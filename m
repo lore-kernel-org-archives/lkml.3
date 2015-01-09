@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475AbbAILbo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 06:31:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:32782 "EHLO mx2.suse.de"
+	id S932902AbbAIL3A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 06:29:00 -0500
+Received: from mail.us.es ([193.147.175.20]:34068 "EHLO mail.us.es"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756119AbbAILbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 06:31:43 -0500
-Message-ID: <1420803092.13007.9.camel@linux-0dmf.site>
-Subject: Re: [PATCH 0/2] INPUT/HID: add touch support for SiS touch driver
-From: Oliver Neukum <oneukum@suse.de>
-To: =?UTF-8?Q?=E6=9B=BE=E5=A9=B7=E8=91=B3?= "(tammy_tseng)" 
-	<tammy_tseng@sis.com>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        tammy0524@gmail.com
-Date: Fri, 09 Jan 2015 12:31:32 +0100
-In-Reply-To: <8322374EB97AA24A95D0DDBFC8F1CA1DBF96E8@SISMBEV01.sis.com.tw>
-References: <8322374EB97AA24A95D0DDBFC8F1CA1DBF96E8@SISMBEV01.sis.com.tw>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S932787AbbAIL25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 06:28:57 -0500
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus1 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98.5/19899. spamassassin: 3.4.0.  
+ Clear:RC:1(127.0.0.1):SA:0(-104.2/7.5):. 
+ Processed in 2.715403 secs); 09 Jan 2015 11:28:54 -0000
+X-Spam-ASN: 
+X-Envelope-From: pneira@us.es
+Date: Fri, 9 Jan 2015 12:31:45 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Rahul Sharma <rsharma@arista.com>, netdev@vger.kernel.org
+Cc: YOSHIFUJI Hideaki <hideaki.yoshifuji@miraclelinux.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        netfilter-devel@vger.kernel.org
+Subject: Re: [PATCH net v2] ipv6: Prevent ipv6_find_hdr() from returning
+ ENOENT for valid non-first fragments
+Message-ID: <20150109113145.GA4426@salvia>
+References: <CAFB3abzM2ApxMH6C7vSDJ8JikKEkE46bOH3jbsis2NiF-ieUxA@mail.gmail.com>
+ <54AFA502.8090701@miraclelinux.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54AFA502.8090701@miraclelinux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2015-01-09 at 18:36 +0800, 曾婷葳 (tammy_tseng) wrote:
-> Signed-off-by: Tammy Tseng <tammy_tseng@sis.com>
+On Fri, Jan 09, 2015 at 06:53:06PM +0900, YOSHIFUJI Hideaki wrote:
+> Hi,
 > 
-> ---
-> The patch for i2c multitouch driver in input/touchscreen:
+> Rahul Sharma wrote:
+> >ipv6_find_hdr() currently assumes that the next-header field in the
+> >fragment header of the non-first fragment is the "protocol number of
+> >the last header" (here last header excludes any extension header
+> >protocol numbers ) which is incorrect as per RFC2460. The next-header
+> >value is the first header of the fragmentable part of the original
+> >packet (which can be extension header as well).
+> >This can create reassembly problems. For example: Fragmented
+> >authenticated OSPFv3 packets (where AH header is inserted before the
+> >protocol header). For the second fragment, the next header value in
+> >the fragment header will be NEXTHDR_AUTH which is correct but
+> >ipv6_find_hdr will return ENOENT since AH is an extension header
+> >resulting in second fragment getting dropped. This check for the
+> >presence of non-extension header needs to be removed.
+> >
+> >Signed-off-by: Rahul Sharma <rsharma@arista.com>
 > 
-> linux-3.18.1/drivers/input/touchscreen/Kconfig   |   14 -
->  linux-3.18.1/drivers/input/touchscreen/Makefile  |    4 -
->  linux-3.18.1/drivers/input/touchscreen/sis_i2c.c | 1725
-> ----------------------
->  linux-3.18.1/drivers/input/touchscreen/sis_i2c.h |  229 ---
->  4 files changed, 1972 deletions(-)
+> Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
 
-Only deletions and it adds support?
-I guess you mixed up your trees.
+I already mentioned this patch will break ip6tables.
 
-	Regards
-		Oliver
+And it doesn't make sense to me that you still hit the problem with
+nf_defrag_ipv6.
 
-
-
+Could you please hold on with this patch until we clarify what the
+real undelying problem is? Could you send me a pcap trace?
