@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933265AbbAIKuW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 05:50:22 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44554 "EHLO
+	id S932242AbbAIKdC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 05:33:02 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44623 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757445AbbAIKc3 (ORCPT
+	by vger.kernel.org with ESMTP id S1757520AbbAIKca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 05:32:29 -0500
+	Fri, 9 Jan 2015 05:32:30 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 47/78] x86/tls: Don't validate lm in set_thread_area() after all
-Date: Fri,  9 Jan 2015 11:31:56 +0100
-Message-Id: <f057db59a1566548d192ab6ce7c311cffb285a30.1420799385.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Richard Guy Briggs <rgb@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Eric Paris <eparis@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 48/78] audit: change decimal constant to macro for invalid uid
+Date: Fri,  9 Jan 2015 11:31:57 +0100
+Message-Id: <a49482467c6a9a2dbf13a3a002379bc07d983b23.1420799385.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
 References: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
@@ -24,82 +25,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Richard Guy Briggs <rgb@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 3fb2f4237bb452eb4e98f6a5dbd5a445b4fed9d0 upstream.
+commit 42f74461a5b60cf6b42887e6d2ff5b7be4abf1ca upstream.
 
-It turns out that there's a lurking ABI issue.  GCC, when
-compiling this in a 32-bit program:
+SFR reported this 2013-05-15:
 
-struct user_desc desc = {
-	.entry_number    = idx,
-	.base_addr       = base,
-	.limit           = 0xfffff,
-	.seg_32bit       = 1,
-	.contents        = 0, /* Data, grow-up */
-	.read_exec_only  = 0,
-	.limit_in_pages  = 1,
-	.seg_not_present = 0,
-	.useable         = 0,
-};
+> After merging the final tree, today's linux-next build (i386 defconfig)
+> produced this warning:
+>
+> kernel/auditfilter.c: In function 'audit_data_to_entry':
+> kernel/auditfilter.c:426:3: warning: this decimal constant is unsigned only
+> in ISO C90 [enabled by default]
+>
+> Introduced by commit 780a7654cee8 ("audit: Make testing for a valid
+> loginuid explicit") from Linus' tree.
 
-will leave .lm uninitialized.  This means that anything in the
-kernel that reads user_desc.lm for 32-bit tasks is unreliable.
+Replace this decimal constant in the code with a macro to make it more readable
+(add to the unsigned cast to quiet the warning).
 
-Revert the .lm check in set_thread_area().  The value never did
-anything in the first place.
-
-Fixes: 0e58af4e1d21 ("x86/tls: Disallow unusual TLS segments")
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/d7875b60e28c512f6a6fc0baf5714d58e7eaadbb.1418856405.git.luto@amacapital.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/x86/include/uapi/asm/ldt.h | 7 +++++++
- arch/x86/kernel/tls.c           | 6 ------
- 2 files changed, 7 insertions(+), 6 deletions(-)
+ include/uapi/linux/audit.h | 2 ++
+ kernel/auditfilter.c       | 2 +-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/uapi/asm/ldt.h b/arch/x86/include/uapi/asm/ldt.h
-index 46727eb37bfe..6e1aaf73852a 100644
---- a/arch/x86/include/uapi/asm/ldt.h
-+++ b/arch/x86/include/uapi/asm/ldt.h
-@@ -28,6 +28,13 @@ struct user_desc {
- 	unsigned int  seg_not_present:1;
- 	unsigned int  useable:1;
- #ifdef __x86_64__
-+	/*
-+	 * Because this bit is not present in 32-bit user code, user
-+	 * programs can pass uninitialized values here.  Therefore, in
-+	 * any context in which a user_desc comes from a 32-bit program,
-+	 * the kernel must act as though lm == 0, regardless of the
-+	 * actual value.
-+	 */
- 	unsigned int  lm:1;
- #endif
+diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+index 75cef3fd97ad..b7cb978ed579 100644
+--- a/include/uapi/linux/audit.h
++++ b/include/uapi/linux/audit.h
+@@ -374,6 +374,8 @@ struct audit_tty_status {
+ 	__u32		log_passwd;	/* 1 = enabled, 0 = disabled */
  };
-diff --git a/arch/x86/kernel/tls.c b/arch/x86/kernel/tls.c
-index 3e551eee87b9..4e942f31b1a7 100644
---- a/arch/x86/kernel/tls.c
-+++ b/arch/x86/kernel/tls.c
-@@ -55,12 +55,6 @@ static bool tls_desc_okay(const struct user_desc *info)
- 	if (info->seg_not_present)
- 		return false;
  
--#ifdef CONFIG_X86_64
--	/* The L bit makes no sense for data. */
--	if (info->lm)
--		return false;
--#endif
--
- 	return true;
- }
++#define AUDIT_UID_UNSET (unsigned int)-1
++
+ /* audit_rule_data supports filter rules with both integer and string
+  * fields.  It corresponds with AUDIT_ADD_RULE, AUDIT_DEL_RULE and
+  * AUDIT_LIST_RULES requests.
+diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+index f7aee8be7fb2..8a344cebd8bf 100644
+--- a/kernel/auditfilter.c
++++ b/kernel/auditfilter.c
+@@ -423,7 +423,7 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
+ 		f->lsm_rule = NULL;
  
+ 		/* Support legacy tests for a valid loginuid */
+-		if ((f->type == AUDIT_LOGINUID) && (f->val == ~0U)) {
++		if ((f->type == AUDIT_LOGINUID) && (f->val == AUDIT_UID_UNSET)) {
+ 			f->type = AUDIT_LOGINUID_SET;
+ 			f->val = 0;
+ 		}
 -- 
 2.2.1
 
