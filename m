@@ -1,83 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924AbbAICsJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 21:48:09 -0500
-Received: from smtp2.provo.novell.com ([137.65.250.81]:39646 "EHLO
-	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753065AbbAICsF (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Thu, 8 Jan 2015 21:48:05 -0500
-Message-ID: <1420771673.12346.16.camel@stgolabs.net>
-Subject: Re: [LKP] [mm] c8c06efa8b5: -7.6% unixbench.score
-From: Davidlohr Bueso <dave@stgolabs.net>
-To: Huang Ying <ying.huang@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, LKP ML <lkp@01.org>
-Date: Thu, 08 Jan 2015 18:47:53 -0800
-In-Reply-To: <1420684064.6201.86.camel@linux.intel.com>
-References: <1420684064.6201.86.camel@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1754247AbbAID0X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 22:26:23 -0500
+Received: from mail-bl2on0054.outbound.protection.outlook.com ([65.55.169.54]:27697
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752952AbbAID0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 22:26:21 -0500
+X-Greylist: delayed 1866 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Jan 2015 22:26:20 EST
+From: <tthayer@opensource.altera.com>
+To: <bp@alien8.de>, <dougthompson@xmission.com>, <m.chehab@samsung.com>,
+        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <linux@arm.linux.org.uk>, <dinguyen@opensource.altera.com>,
+        <grant.likely@linaro.org>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>,
+        <tthayer@opensource.altera.com>
+Subject: [PATCHv6 0/5] Add Altera peripheral memories to EDAC framework
+Date: Thu, 8 Jan 2015 20:53:51 -0600
+Message-ID: <1420772036-3112-1-git-send-email-tthayer@opensource.altera.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BLUPR05CA0058.namprd05.prod.outlook.com (10.141.20.28) To
+ BY2PR0301MB0629.namprd03.prod.outlook.com (25.160.125.27)
+Authentication-Results: spf=none (sender IP is )
+ smtp.mailfrom=tthayer@opensource.altera.com; 
+X-DmarcAction: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BY2PR0301MB0629;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0629;
+X-Forefront-PRVS: 04519BA941
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(86362001)(48376002)(40100003)(106356001)(50466002)(50986999)(101416001)(97736003)(42186005)(50226001)(4396001)(19580395003)(120916001)(19580405001)(105586002)(122386002)(99396003)(33646002)(229853001)(68736005)(31966008)(107046002)(20776003)(64706001)(66066001)(46102003)(77156002)(2201001)(92566001)(89996001)(21056001)(86152002)(62966003)(47776003)(87976001)(921003)(1121003);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR0301MB0629;H:localhost.localdomain;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0629;
+X-OriginatorOrg: opensource.altera.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 09 Jan 2015 02:54:30.7073 (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0629
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2015-01-08 at 10:27 +0800, Huang Ying wrote:
-> FYI, we noticed the below changes on
-> 
-> commit c8c06efa8b552608493b7066c234cfa82c47fcea ("mm: convert i_mmap_mutex to rwsem")
-> 
-> 
-> testbox/testcase/testparams: lituya/unixbench/performance-execl
-> 
-> 83cde9e8ba95d180  c8c06efa8b552608493b7066c2  
-> ----------------  --------------------------  
->          %stddev     %change         %stddev
->              \          |                \  
->     721721 ±  1%    +303.6%    2913110 ±  3%  unixbench.time.voluntary_context_switches
->      11767 ±  0%      -7.6%      10867 ±  1%  unixbench.score
+From: Thor Thayer <tthayer@opensource.altera.com>
 
-I simply cannot reproduce this, not even on a large box.
+This patch adds the L2 cache and OCRAM peripherals to the EDAC framework
+using the EDAC device framework. The ECC is enabled early in the boot
+process in the platform specific code.
 
-mutex (83cde9e8ba95d180):
-run1:
-Execl Throughput                               3974.3 lps   (30.0 s, 2 samples)
-Voluntary context switches: 377039
+v2 changes:
+- Split On-Chip RAM ECC platform initialization into separate patch from
+  L2 ECC platform initialization.
+- Fix L2 cache dependency comments.
+- Remove OCRAM node from dts and reference prior patch.
 
-run2:
-Execl Throughput                               4115.5 lps   (30.0 s, 2 samples)
-Voluntary context switches: 391260
+v3 changes:
+- Move L2 cache & On-Chip RAM EDAC code into altera_edac.c
+- Remove SDRAM module compile.
 
-run3:
-Execl Throughput                               4000.2 lps   (30.0 s, 2 samples)
-Voluntary context switches: 378674
+v4 changes:
+- Change mask defines to use BIT().
+- Fix comment style to agree with kernel coding style.
+- Better printk description for read != write in trigger.
+- Remove SysFS debugging message.
+- Better dci->mod_name
+- Move gen_pool pointer assignment to end of function.
+- Invert logic to reduce indent in ocram depenency check.
+- Change from dev_err() to edac_printk()
+- Replace magic numbers with defines & comments.
+- Improve error injection test.
+- Change Makefile intermediary name to altr (from alt)
 
-rwsem (c8c06efa8b552608493b7066c2):
-run1:
-Execl Throughput                               4166.0 lps   (30.0 s, 2 samples)
-Voluntary context switches: 385740
+v5 changes:
+- Remove l2cache.h by using if (IS_ENABLED(CONFIG_EDAC_ALTERA_L2C))
+- Remove ocram.h by using if (IS_ENABLED(CONFIG_EDAC_ALTERA_OCRAM))
+- Check prop variable before using. Include io.h.
+- Add defines for better readability. Remove MAINTAINERS changes.
 
-run2:
-Execl Throughput                               4115.5 lps   (30.0 s, 2 samples)
-Voluntary context switches: 391260
+v6 changes:
+- Simplify OCRAM initialization. Remove be32_to_cpup() calls.
+- Remove syscon from L2 Cache. Force L2 Cache on if ECC enabled.
+- Convert to nested ECC in device tree. 
+- Additional comments to clarify debug error injection.
 
-run3:
-Execl Throughput                               4110.5 lps   (29.9 s, 2 samples)
-Voluntary context switches: 387053
+Thor Thayer (5):
+  arm: socfpga: Enable L2 Cache ECC on startup.
+  arm: socfpga: Enable OCRAM ECC on startup.
+  edac: altera: Remove SDRAM module compile
+  edac: altera: Add Altera L2 Cache and OCRAM EDAC Support
+  arm: dts: Add Altera L2 Cache and OCRAM EDAC entries
 
-Since throughput is in the ballpark, so is the benchmark score (in fact
-the rwsem score is slightly better).
+ .../bindings/arm/altera/socfpga-edac.txt           |   46 ++
+ arch/arm/boot/dts/socfpga.dtsi                     |   20 +
+ arch/arm/mach-socfpga/Makefile                     |    2 +
+ arch/arm/mach-socfpga/core.h                       |    2 +
+ arch/arm/mach-socfpga/l2_cache.c                   |   39 ++
+ arch/arm/mach-socfpga/ocram.c                      |   97 ++++
+ arch/arm/mach-socfpga/socfpga.c                    |    4 +-
+ drivers/edac/Kconfig                               |   20 +-
+ drivers/edac/Makefile                              |    5 +-
+ drivers/edac/altera_edac.c                         |  506 +++++++++++++++++++-
+ 10 files changed, 735 insertions(+), 6 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-edac.txt
+ create mode 100644 arch/arm/mach-socfpga/l2_cache.c
+ create mode 100644 arch/arm/mach-socfpga/ocram.c
 
-Is this a one time thing or can you observe it again? Any special things
-you guys are doing when running the benchmark? Here are some things I've
-done: cpu gov set to performance, Unixbench taken from
-(http://byte-unixbench.googlecode.com/files/UnixBench5.1.3.tgz ), used
-default compiler options from unixbench Makefile (that is using the
-solaris 2 option). This pretty much matches the environment info you've
-provided. We've done this lock type comparison exercise plenty of times
-in the past, and I'm a bit surprised to see your numbers.
-
-Thanks,
-Davidlohr
+-- 
+1.7.9.5
 
