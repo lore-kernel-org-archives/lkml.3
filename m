@@ -1,218 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054AbbAIA4a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 19:56:30 -0500
-Received: from nupi.pair.com ([209.68.5.149]:19769 "EHLO nupi.pair.com"
+	id S1752420AbbAIBBF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 20:01:05 -0500
+Received: from mga02.intel.com ([134.134.136.20]:16058 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750876AbbAIA42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 19:56:28 -0500
-X-Greylist: delayed 413 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Jan 2015 19:56:28 EST
-Message-ID: <54AF259A.3070204@flaterco.com>
-Date: Thu, 08 Jan 2015 19:49:30 -0500
-From: David Flater <vger@flaterco.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751738AbbAIBBC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 20:01:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="438262232"
+From: "Ong, Boon Leong" <boon.leong.ong@intel.com>
+To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "dvhart@infradead.org" <dvhart@infradead.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>
+Subject: RE: [PATCH 2/2] platform/x86: Add Intel Galileo platform specific
+ setup
+Thread-Topic: [PATCH 2/2] platform/x86: Add Intel Galileo platform specific
+ setup
+Thread-Index: AQHQI40vC/jPbCARaECVf0xQIEga65y24g1A
+Date: Fri, 9 Jan 2015 01:00:17 +0000
+Message-ID: <AF233D1473C1364ABD51D28909A1B1B7326E3282@PGSMSX105.gar.corp.intel.com>
+References: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie>
+ <1419873783-5161-3-git-send-email-pure.logic@nexus-software.ie>
+In-Reply-To: <1419873783-5161-3-git-send-email-pure.logic@nexus-software.ie>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.205]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Jaroslav Kysela <perex@perex.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Alsa Devel <alsa-devel@alsa-project.org>
-Subject: [PATCH] ALSA: fix emu8000 DRAM sizing for AWE64 Value
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applicable to any kernel since 2013:
+>Subject: [PATCH 2/2] platform/x86: Add Intel Galileo platform specific setup
+>
+[snippet removed]
 
-The special case added in commit 1338fc97d07a did not handle the possibility
-that the address space on an AWE64 Value would wrap around at 512 KiB.  That
-is what it does, so the memory is still not detected on those cards.
+>Since the Quark EFI bringup code configures the system to reset on an IMR
+Typo: bring-up
 
-Fix that with a logic clean-up that eliminates the need for a special case.
-Also log the amount of memory detected at level INFO and add sufficiently
-verbose debugging to diagnose any additional faults of this kind.
+>violation, this means that common operations such as mouting an SD based root
+Typo: mounting
 
-Tested on unexpanded CT4390 (4 MiB), CT4520 (512 KiB), and CT4380 (512 KiB).
-The latter is commonly said to come with 1 MiB of DRAM, but Creative's AWE
-Control app agreed that mine has only 512 KiB.  It has the same memory chip
-as the CT4520.
+[snippet removed]
 
-Signed-off-by: David Flater <dave@flaterco.com>
----
-History:
-2015-01-08  v1 patch sent to LKML, Alsa Devel and maintainers.
+>+config INTEL_GALILEO
+>+	bool "Intel Galileo Platform Support"
+>+	depends on X86_32 && PCI
+>+	select IOSF_MBI
+>+	select IMR
+>+	---help---
+>+	  Intel Galileo platform support. This code is used to tear-down
+>+	  BIOS and Grub Isolated Memory Regions used during bootup.
+Missing dash. Should be "boot-up".
 
-The affected function first appeared in alsa-driver-0.3.0 and was merged in
-linux-2.5.5.  Its somewhat different ancestor was in sound/oss/awe_wave.c.
+[snippet removed]
 
-AFAICT, the manufacturer never disclosed the right way to do it.  In the
-AWE32 Developer's Information Pack (1994-1996) the RAM sizing function was
-implemented in object files with a license that prohibited even disassembly.
+>diff --git a/drivers/platform/x86/intel_galileo.c
+>b/drivers/platform/x86/intel_galileo.c
+>new file mode 100644
+>index 0000000..2a555aa
+>--- /dev/null
+>+++ b/drivers/platform/x86/intel_galileo.c
+>@@ -0,0 +1,175 @@
+>+/*
+>+ * intel_galileo.c - Intel Galileo platform support.
+>+ *
+>+ * Copyright(c) 2013 Intel Corporation.
+>+ * Copyright(c) 2014 Bryan O'Donoghue <pure.logic@nexus-software.ie>
+>+ *
+>+ * This platform code provides an entry point to do Galileo specific
+>+ * setup. Critically IMRs are policed to ensure the EFI provided memory
+Critically --> Critical
 
- sound/isa/sb/emu8000.c | 127 +++++++++++++++++++++++++++++--------------------
- 1 file changed, 76 insertions(+), 51 deletions(-)
+>+ * map informing the kernel of it's available memory is consistent with
+It's --> its
 
-diff --git a/sound/isa/sb/emu8000.c b/sound/isa/sb/emu8000.c
-index 45fcdff..3aa2250 100644
---- a/sound/isa/sb/emu8000.c
-+++ b/sound/isa/sb/emu8000.c
-@@ -378,13 +378,13 @@ init_arrays(struct snd_emu8000 *emu)
- static void
- size_dram(struct snd_emu8000 *emu)
- {
--	int i, size, detected_size;
-+	int i, size;
-+	unsigned short rdback;
- 
- 	if (emu->dram_checked)
- 		return;
- 
- 	size = 0;
--	detected_size = 0;
- 
- 	/* write out a magic number */
- 	snd_emu8000_dma_chan(emu, 0, EMU8000_RAM_WRITE);
-@@ -392,55 +392,81 @@ size_dram(struct snd_emu8000 *emu)
- 	EMU8000_SMALW_WRITE(emu, EMU8000_DRAM_OFFSET);
- 	EMU8000_SMLD_WRITE(emu, UNIQUE_ID1);
- 	snd_emu8000_init_fm(emu); /* This must really be here and not 2 lines back even */
--
--	while (size < EMU8000_MAX_DRAM) {
--
--		size += 512 * 1024;  /* increment 512kbytes */
--
--		/* Write a unique data on the test address.
--		 * if the address is out of range, the data is written on
--		 * 0x200000(=EMU8000_DRAM_OFFSET).  Then the id word is
--		 * changed by this data.
--		 */
--		/*snd_emu8000_dma_chan(emu, 0, EMU8000_RAM_WRITE);*/
--		EMU8000_SMALW_WRITE(emu, EMU8000_DRAM_OFFSET + (size>>1));
--		EMU8000_SMLD_WRITE(emu, UNIQUE_ID2);
--		snd_emu8000_write_wait(emu);
--
--		/*
--		 * read the data on the just written DRAM address
--		 * if not the same then we have reached the end of ram.
--		 */
--		/*snd_emu8000_dma_chan(emu, 0, EMU8000_RAM_READ);*/
--		EMU8000_SMALR_WRITE(emu, EMU8000_DRAM_OFFSET + (size>>1));
--		/*snd_emu8000_read_wait(emu);*/
--		EMU8000_SMLD_READ(emu); /* discard stale data  */
--		if (EMU8000_SMLD_READ(emu) != UNIQUE_ID2)
--			break; /* no memory at this address */
-+	snd_emu8000_write_wait(emu);
-+
-+	/* If that didn't work, we have no RAM at all. */
-+	EMU8000_SMALR_WRITE(emu, EMU8000_DRAM_OFFSET);
-+	rdback = EMU8000_SMLD_READ(emu);
-+	snd_printdd("EMU8000 [0x%lx]: initial discard data = %04hx\n",
-+		emu->port1, rdback);
-+	rdback = EMU8000_SMLD_READ(emu);
-+	snd_printdd("EMU8000 [0x%lx]: initial readback = %04hx\n",
-+		emu->port1, rdback);
-+	if (rdback == UNIQUE_ID1) {
- 		snd_emu8000_read_wait(emu);
- 
- 		/*
--		 * If it is the same it could be that the address just
--		 * wraps back to the beginning; so check to see if the
--		 * initial value has been overwritten.
-+		 * If a write succeeds at the beginning of a 512 KiB page we
-+		 * assume that the whole page is there.
- 		 */
--		EMU8000_SMALR_WRITE(emu, EMU8000_DRAM_OFFSET);
--		EMU8000_SMLD_READ(emu); /* discard stale data  */
--		if (EMU8000_SMLD_READ(emu) != UNIQUE_ID1)
--			break; /* we must have wrapped around */
--		snd_emu8000_read_wait(emu);
--
--		/* Otherwise, it's valid memory. */
--		detected_size = size + 512 * 1024;
--	}
--
--	/* Distinguish 512 KiB from 0. */
--	if (detected_size == 0) {
--		snd_emu8000_read_wait(emu);
--		EMU8000_SMALR_WRITE(emu, EMU8000_DRAM_OFFSET);
--		EMU8000_SMLD_READ(emu); /* discard stale data  */
--		if (EMU8000_SMLD_READ(emu) == UNIQUE_ID1)
--			detected_size = 512 * 1024;
-+		size = 512 * 1024;
-+
-+		while (size < EMU8000_MAX_DRAM) {
-+			/*
-+			 * Write a unique data on the test address.  If the
-+			 * address is out of range, the data is written on
-+			 * 0x200000(=EMU8000_DRAM_OFFSET).  Then the id word
-+			 * is changed by this data.
-+			 */
-+			EMU8000_SMALW_WRITE(emu, EMU8000_DRAM_OFFSET +
-+				(size>>1));
-+			EMU8000_SMLD_WRITE(emu, UNIQUE_ID2);
-+			snd_emu8000_write_wait(emu);
-+
-+			/*
-+			 * Read the data on the just written DRAM address.
-+			 * If not the same then we have reached the end of RAM.
-+			 */
-+			EMU8000_SMALR_WRITE(emu, EMU8000_DRAM_OFFSET +
-+				(size>>1));
-+			rdback = EMU8000_SMLD_READ(emu);
-+			snd_printdd("EMU8000 [0x%lx]: ID2 discard data = %04hx\n",
-+				emu->port1, rdback);
-+			rdback = EMU8000_SMLD_READ(emu);
-+			snd_printdd("EMU8000 [0x%lx]: ID2 readback = %04hx\n",
-+				emu->port1, rdback);
-+			if (rdback != UNIQUE_ID2) {
-+				snd_printdd("EMU8000 [0x%lx]: ID2 break\n",
-+					emu->port1);
-+				break; /* no memory at this address */
-+			}
-+			snd_emu8000_read_wait(emu);
-+
-+			/*
-+			 * If it is the same it could be that the address just
-+			 * wraps back to the beginning, so check to see if the
-+			 * initial value has been overwritten.
-+			 */
-+			EMU8000_SMALR_WRITE(emu, EMU8000_DRAM_OFFSET);
-+			rdback = EMU8000_SMLD_READ(emu);
-+			snd_printdd("EMU8000 [0x%lx]: ID1 discard data = %04hx\n",
-+				emu->port1, rdback);
-+			rdback = EMU8000_SMLD_READ(emu);
-+			snd_printdd("EMU8000 [0x%lx]: ID1 readback = %04hx\n",
-+				emu->port1, rdback);
-+			if (rdback != UNIQUE_ID1) {
-+				snd_printdd("EMU8000 [0x%lx]: ID1 break\n",
-+					emu->port1);
-+				break; /* may have wrapped around */
-+			}
-+			snd_emu8000_read_wait(emu);
-+
-+			/* Otherwise, it's valid memory. */
-+			size += 512 * 1024;
-+		}
-+	} else {
-+		snd_printdd("EMU8000 [0x%lx]: initial test failed\n",
-+			emu->port1);
- 	}
- 
- 	/* wait until FULL bit in SMAxW register is false */
-@@ -454,10 +480,9 @@ size_dram(struct snd_emu8000 *emu)
- 	snd_emu8000_dma_chan(emu, 0, EMU8000_RAM_CLOSE);
- 	snd_emu8000_dma_chan(emu, 1, EMU8000_RAM_CLOSE);
- 
--	snd_printdd("EMU8000 [0x%lx]: %d Kb on-board memory detected\n",
--		    emu->port1, detected_size/1024);
--
--	emu->mem_size = detected_size;
-+	snd_printk(KERN_INFO "sbawe [0x%lx]: %d B on-board DRAM detected\n",
-+		emu->port1, size);
-+	emu->mem_size = size;
- 	emu->dram_checked = 1;
- }
- 
--- 
-1.8.4
+[snippet removed]
 
+>+
+>+enum {
+>+	GALILEO_UNKNOWN = 0,
+>+	GALILEO_QRK_GEN1,
+>+	GALILEO_QRK_GEN2,
+>+};
+Suggest to drop QRK to kill confusion that it is Quark Gen 1 & 2. 
+
+[snippet removed]
+
+>+#ifdef DEBUG
+>+#define SANITY "IMR : sanity error "
+>+
+>+/**
+Per coding style, please just use /* and kill the extra * above and below.
+
+>+ * intel_galileo_imr_sanity
+>+ * Verify IMR sanity with some simple tests to verify
+>+ * overlap, zero sized allocations
+>+ *
+>+ * @base: Physical base address of the kernel text section
+>+ * @size: Extent of kernel memory to be covered from &_text to
+>+&_sinittext
+>+ * @return: none
+>+ */
+>+static void __init
+>+intel_galileo_imr_sanity(unsigned long base, unsigned long size) {
+>+	/* Test zero zero */
+>+	if (imr_add(0, 0, 0, 0, true) == 0)
+>+		pr_err(SANITY "zero sized IMR @ 0x00000000\n");
+
+A side-discussion on imr_add():
+I would think that we should allow 1KiB IMR setting. Current imr_add() logic
+is prohibiting it. So, the 'size' input should be at least 1KiB and imr_add()
+internal logic will adjust 'hi' by -1KiB. Please consider ..  
+  
+>+
+>+	/* Test overlap */
+>+	if (imr_add(base, size, IMR_NON_SMM, IMR_NON_SMM, true) == 0)
+>+		pr_err(SANITY "overlapped IMR @ (0x%08lx - 0x%08lx)\n",
+>+		       base, base + size);
+>+
+>+	/* Try overlap - IMR_ALIGN */
+>+	base = base + size - IMR_ALIGN;
+>+	if (imr_add(base, size, IMR_NON_SMM, IMR_NON_SMM, true) == 0)
+>+		pr_err(SANITY "overlapped IMR @ (0x%08lx - 0x%08lx)\n",
+>+		       base, base + size);
+>+}
+>+#endif
+>+
+>+/**
+>+ * intel_galileo_imr_init
+>+ *
+>+ * Tear down IMRs used during bootup. BIOS and Grub
+boot-up.
+
+>+ * both setup IMRs around compressed kernel, initrd memory
+>+ * that need to be removed before the kernel hands out one
+>+ * of the IMR encased addresses to a downstream DMA agent
+>+ * such as the SD or Ethernet. IMRs on Galileo are setup to
+>+ * immediately reset the system on violation - so if you're
+>+ * running a root filesystem from SD - you'll need the IMRs
+>+ * torn down or you'll find seemingly random resets when using
+>+ * your filesystem.
+>+ */
+>+static void __init intel_galileo_imr_init(void) {
+>+	unsigned long base  = virt_to_phys(&_text);
+>+	unsigned long size = virt_to_phys(&_sinittext) - base - IMR_ALIGN;
+>+	int i, ret;
+>+
+>+	/* Tear down all existing unlocked IMRs */
+>+	for (i = 0; i <= QUARK_X1000_IMR_NUM; i++)
+>+		imr_del(i, 0, 0);
+>+
+>+	/*
+>+	 * Setup an IMR around the physical extent of the kernel
+>+	 * Non-SMM mode core read/write from/to kernel physical region.
+>+	 * IMR locked.
+>+	 */
+>+	ret = imr_add(base, size, IMR_NON_SMM, IMR_NON_SMM, true);
+>+	if (ret)
+>+		pr_err("Unable to setup IMR for kernel: (%p - %p)\n",
+>+			&_text, &__init_begin);
+>+	else
+>+		pr_info("IMR protect kernel memory: %ldk (%p - %p)\n",
+>+			size >> 10, &_text, &__init_begin);
+Perhaps we want to be consistent between using __init_begin & _sinittext?
+
+>+#ifdef DEBUG
+>+	intel_galileo_imr_sanity(base, size);
+>+#endif
+>+}
+>+
+>+/**
+>+ * intel_galileo_init
+>+ *
+>+ * Identify a Galileo Gen1 or Gen2. If found run code to sanitise the
+>+ * kernel memory space of IMRs that are inconsistent with the EFI memory
+>map.
+>+ */
+>+static int __init intel_galileo_init(void) {
+>+	int ret = 0, type = GALILEO_UNKNOWN;
+type is assigned to either GALILEO_GEN1|2 below anyway.
+So, we don't need to declare to UNKNOWN?
+
+[snippet removed]
