@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758210AbbAIRZy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 12:25:54 -0500
-Received: from mga09.intel.com ([134.134.136.24]:37302 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758192AbbAIRZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 12:25:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,731,1413270000"; 
-   d="scan'208";a="635015692"
-From: Andi Kleen <andi@firstfloor.org>
-To: "Michael Kerrisk \(man-pages\)" <mtk.manpages@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm\@kvack.org" <linux-mm@kvack.org>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Qiaowei Ren <qiaowei.ren@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, mpx: Ensure unused arguments of prctl() MPX requests are 0
-References: <54AE5BE8.1050701@gmail.com>
-Date: Fri, 09 Jan 2015 09:25:51 -0800
-In-Reply-To: <54AE5BE8.1050701@gmail.com> (Michael Kerrisk's message of "Thu,
-	08 Jan 2015 11:28:56 +0100")
-Message-ID: <87r3v350io.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1758263AbbAIR1c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 12:27:32 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:50550 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753337AbbAIR1a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 12:27:30 -0500
+Date: Fri, 9 Jan 2015 10:27:26 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] PCI: Generate uppercase hex for modalias var in uevent
+Message-ID: <20150109172726.GC6575@google.com>
+References: <1417538104-27341-1-git-send-email-ricardo.ribalda@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417538104-27341-1-git-send-email-ricardo.ribalda@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
+On Tue, Dec 02, 2014 at 05:35:04PM +0100, Ricardo Ribalda Delgado wrote:
+> Some implementations of modprobe fail to load the driver for a PCI device
+> automatically because the "interface" part of the modalias from the kernel
+> is lowercase, and the modalias from file2alias is uppercase.
+> 
+> The "interface" is the low-order byte of the Class Code, defined in PCI
+> r3.0, Appendix D.  Most interface types defined in the spec do not use
+> alpha characters, so they won't be affected.  For example, 00h, 01h, 10h,
+> 20h, etc. are unaffected.
+> 
+> Print the "interface" byte of the Class Code in uppercase hex, as we
+> already do for the Vendor ID, Device ID, Class, etc.
+> 
+> Commit 89ec3dcf17fd ("PCI: Generate uppercase hex for modalias
+> interface class") fixed only half of the problem. Some udev
+> implementations relays on the uevent file and not in the modalias file.
+> 
+> CC: Bjorn Helgaas <bhelgaas@google.com>
+> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Fixes: d1ded203adf1 ("PCI: add MODALIAS to hotplug event for pci devices")
+> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 
-> From: Michael Kerrisk <mtk.manpages@gmail.com>
->
-> commit fe8c7f5cbf91124987106faa3bdf0c8b955c4cf7 added two new prctl()
-> operations, PR_MPX_ENABLE_MANAGEMENT and PR_MPX_DISABLE_MANAGEMENT.
-> However, no checks were included to ensure that unused arguments
-> are zero, as is done in many existing prctl()s and as should be 
-> done for all new prctl()s. This patch adds the required checks.
+Applied with Greg's ack to pci/enumeration for v3.20, thanks!
 
-This will break the existing gcc run time, which doesn't zero these
-arguments.
-
--ANdi
-
->
-> Signed-off-by: Michael Kerrisk <mtk.manpages@gmail.com>
 > ---
->  kernel/sys.c | 4 ++++
->  1 file changed, 4 insertions(+)
->
-> diff --git a/kernel/sys.c b/kernel/sys.c
-> index a8c9f5a..ea9c881 100644
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -2210,9 +2210,13 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
->  		up_write(&me->mm->mmap_sem);
->  		break;
->  	case PR_MPX_ENABLE_MANAGEMENT:
-> +		if (arg2 || arg3 || arg4 || arg5)
-> +			return -EINVAL;
->  		error = MPX_ENABLE_MANAGEMENT(me);
->  		break;
->  	case PR_MPX_DISABLE_MANAGEMENT:
-> +		if (arg2 || arg3 || arg4 || arg5)
-> +			return -EINVAL;
->  		error = MPX_DISABLE_MANAGEMENT(me);
->  		break;
->  	default:
+> 
+> Modified line is >80 char, but I believe that it is better than breaking
+> the string or indent it bad.
+> 
+>  drivers/pci/pci-driver.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+> index 2b3c894..b720e78 100644
+> --- a/drivers/pci/pci-driver.c
+> +++ b/drivers/pci/pci-driver.c
+> @@ -1389,7 +1389,7 @@ static int pci_uevent(struct device *dev, struct kobj_uevent_env *env)
+>  	if (add_uevent_var(env, "PCI_SLOT_NAME=%s", pci_name(pdev)))
+>  		return -ENOMEM;
+>  
+> -	if (add_uevent_var(env, "MODALIAS=pci:v%08Xd%08Xsv%08Xsd%08Xbc%02Xsc%02Xi%02x",
+> +	if (add_uevent_var(env, "MODALIAS=pci:v%08Xd%08Xsv%08Xsd%08Xbc%02Xsc%02Xi%02X",
+>  			   pdev->vendor, pdev->device,
+>  			   pdev->subsystem_vendor, pdev->subsystem_device,
+>  			   (u8)(pdev->class >> 16), (u8)(pdev->class >> 8),
 > -- 
-> 1.9.3
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+> 2.1.3
+> 
