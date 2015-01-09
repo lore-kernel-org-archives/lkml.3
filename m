@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932565AbbAILpq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 06:45:46 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55084 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932380AbbAILpo (ORCPT
+	id S1757567AbbAILnQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 06:43:16 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:35128 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757096AbbAILnP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 06:45:44 -0500
-Date: Fri, 9 Jan 2015 11:45:29 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Jyri Sarha <jsarha@ti.com>, Mark Brown <broonie@kernel.org>,
-        Dave Airlie <airlied@gmail.com>,
-        Andrew Jackson <Andrew.Jackson@arm.com>, alsa-devel@alsa-project.org,
-        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v9 1/4] drm/i2c: tda998x: Add DT support for audio
-Message-ID: <20150109114529.GH12302@n2100.arm.linux.org.uk>
+	Fri, 9 Jan 2015 06:43:15 -0500
+Date: Fri, 9 Jan 2015 12:45:31 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Jyri Sarha <jsarha@ti.com>, Andrew Jackson <Andrew.Jackson@arm.com>,
+        Mark Brown <broonie@kernel.org>, Dave Airlie <airlied@gmail.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v9 3/4] ASoC: tda998x: add a codec to the HDMI
+ transmitter
+Message-ID: <20150109124531.493bece4@armhf>
+In-Reply-To: <20150109111935.GF12302@n2100.arm.linux.org.uk>
 References: <cover.1420628786.git.moinejf@free.fr>
- <0084acea5a3475a77531d6a77483f36d3469111a.1420628786.git.moinejf@free.fr>
- <54AE99F5.1010404@ti.com>
- <20150108174257.557f7ea5@armhf>
- <54AFA9B0.6040405@ti.com>
- <20150109123036.4bc4bbf6@armhf>
+	<23b36acc1f769418a06f3e929eba288b5911da12.1420628786.git.moinejf@free.fr>
+	<54AD4C77.5000401@arm.com>
+	<20150107154138.GL12302@n2100.arm.linux.org.uk>
+	<20150107190241.27ebac8b@armhf>
+	<54AFAC4C.7010209@ti.com>
+	<20150109111935.GF12302@n2100.arm.linux.org.uk>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150109123036.4bc4bbf6@armhf>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 12:30:36PM +0100, Jean-Francois Moine wrote:
-> In my original version, the audio-ports are a bitmap of the pins, the
-> bit 0 being the WS used for I2S. A fully wired tda998x would have been
-> as:
-> 
-> 	audio-ports = <0x03>, <0x04>, <0x09>, <0x11>;
-> 	audio-port-names = "i2s", "spdif", "i2s", "i2s";
-> 
-> With the new version, it would simply become:
-> 
-> 	audio-inputs = "i2s", "spdif", "i2s", "i2s";
+On Fri, 9 Jan 2015 11:19:35 +0000
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 
-How do you know which i2s inputs to enable?
+> Would it be more sensible to make SND_SOC_TDA998X depend on
+> DRM_I2C_NXP_TDA998X instead, maybe with a 'default y' - which is a
+> kinder way to have SND_SOC_TDA998X be enabled.  If SND_SOC_TDA998X
+> doesn't have a prompt, then it'll automatically enable itself too
+> this way when all its dependencies are satisfied.
 
-Does it make sense for the audio inputs to be mixed like that?
+You are right, I will set back the way I had in the version 3:
 
-You will need to enable one i2s for front L+R, and increasingly others
-for the additional channels.
-
-I think we need to understand exactly how the 998x map I2S inputs to the
-HDMI channels to avoid making a mistake with the binding; remember, the
-binding isn't something that can be easily "bug fixed" at a later date
-as anything we come up with now has to be supported long term by the
-kernel.
+> diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
+> index b33b45d..747e387 100644
+> --- a/sound/soc/codecs/Kconfig
+> +++ b/sound/soc/codecs/Kconfig
+> @@ -352,6 +352,12 @@ config SND_SOC_STAC9766
+>  config SND_SOC_TAS5086
+>  	tristate
+>  
+> +config SND_SOC_TDA998X
+> +	tristate
+> +	default y if DRM_I2C_NXP_TDA998X=y
+> +	default m if DRM_I2C_NXP_TDA998X=m
+> +
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
