@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539AbbAID35 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 22:29:57 -0500
-Received: from mail-bl2on0087.outbound.protection.outlook.com ([65.55.169.87]:13472
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1755599AbbAIDLB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 22:11:01 -0500
+Received: from mail-by2on0069.outbound.protection.outlook.com ([207.46.100.69]:57312
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752907AbbAID3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 22:29:55 -0500
+	id S1752676AbbAIDK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 22:10:59 -0500
 From: <tthayer@opensource.altera.com>
 To: <bp@alien8.de>, <dougthompson@xmission.com>, <m.chehab@samsung.com>,
         <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
@@ -17,9 +17,9 @@ CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
         <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>,
         <tthayer@opensource.altera.com>
-Subject: [PATCHv6 4/5] edac: altera: Add Altera L2 Cache and OCRAM EDAC Support
-Date: Thu, 8 Jan 2015 20:53:55 -0600
-Message-ID: <1420772036-3112-5-git-send-email-tthayer@opensource.altera.com>
+Subject: [PATCHv6 5/5] arm: dts: Add Altera L2 Cache and OCRAM EDAC entries
+Date: Thu, 8 Jan 2015 20:53:56 -0600
+Message-ID: <1420772036-3112-6-git-send-email-tthayer@opensource.altera.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1420772036-3112-1-git-send-email-tthayer@opensource.altera.com>
 References: <1420772036-3112-1-git-send-email-tthayer@opensource.altera.com>
@@ -36,10 +36,10 @@ X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BY2PR0301MB0629;
 X-Exchange-Antispam-Report-Test: UriScan:;
 X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0629;
 X-Forefront-PRVS: 04519BA941
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(86362001)(48376002)(40100003)(106356001)(50466002)(50986999)(76176999)(101416001)(2950100001)(97736003)(42186005)(50226001)(4396001)(19580395003)(120916001)(19580405001)(105586002)(122386002)(99396003)(33646002)(229853001)(68736005)(31966008)(107046002)(20776003)(64706001)(66066001)(46102003)(77156002)(2201001)(92566001)(89996001)(21056001)(86152002)(62966003)(47776003)(87976001)(921003)(217873001)(1121003);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR0301MB0629;H:localhost.localdomain;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(86362001)(48376002)(40100003)(106356001)(50466002)(50986999)(76176999)(101416001)(2950100001)(97736003)(42186005)(50226001)(4396001)(19300405004)(19580395003)(120916001)(19580405001)(105586002)(122386002)(99396003)(33646002)(229853001)(68736005)(31966008)(107046002)(20776003)(15975445007)(64706001)(66066001)(46102003)(77156002)(2201001)(92566001)(89996001)(21056001)(86152002)(62966003)(47776003)(87976001)(921003)(217873001)(562404015)(1121003);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR0301MB0629;H:localhost.localdomain;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
 X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0629;
 X-OriginatorOrg: opensource.altera.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 09 Jan 2015 02:55:09.8638 (UTC)
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 09 Jan 2015 02:55:18.7076 (UTC)
 X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
 X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0629
 Sender: linux-kernel-owner@vger.kernel.org
@@ -48,631 +48,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thor Thayer <tthayer@opensource.altera.com>
 
-Adding L2 Cache and On-Chip RAM EDAC support for the
-Altera SoCs using the EDAC device  model. The SDRAM
-controller is using the Memory Controller model.
-
-Each type of ECC is individually configurable.
-
-The SDRAM ECC is a separate Kconfig option because:
-1) the SDRAM preparation can take almost 2 seconds on boot and some
-customers need a faster boot time.
-2) the SDRAM has an ECC initialization dependency on the preloader
-which is outside the kernel. It is desirable to be able to turn the
-SDRAM on & off separately.
+Adding the device tree entries and bindings needed to support
+the Altera L2 cache and On-Chip RAM EDAC. This patch relies upon
+an earlier patch to declare and setup On-chip RAM properly.
+http://www.spinics.net/lists/devicetree/msg51117.html
 
 Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
 ---
-v2: Fix L2 dependency comments.
+v2: Remove OCRAM declaration and reference prior patch.
 
-v3: Move OCRAM and L2 cache EDAC functions into altera_edac.c
-    instead of separate files.
+v3-5: No Change
 
-v4: Change mask defines to use BIT().
-    Fix comment style to agree with kernel coding style.
-    Better printk description for read != write in trigger.
-    Remove SysFS debugging message.
-    Better dci->mod_name
-    Move gen_pool pointer assignment to end of function.
-    Invert logic to reduce indent in ocram depenency check.
-    Change from dev_err() to edac_printk()
-    Replace magic numbers with defines & comments.
-    Improve error injection test.
-    Change Makefile intermediary name to altr (from alt)
-
-v5: No change.
-
-v6: Convert to nested EDAC in device tree. Force L2 cache
-    on for L2Cache ECC & remove L2 cache syscon for checking
-    enable bit. Update year in header.
+v6: Change to nested EDAC device nodes based on community
+    feedback. Remove L2 syscon. Use consolidated binding.
 ---
- drivers/edac/Kconfig       |   16 ++
- drivers/edac/Makefile      |    5 +-
- drivers/edac/altera_edac.c |  506 +++++++++++++++++++++++++++++++++++++++++++-
- 3 files changed, 524 insertions(+), 3 deletions(-)
+ .../bindings/arm/altera/socfpga-edac.txt           |   46 ++++++++++++++++++++
+ arch/arm/boot/dts/socfpga.dtsi                     |   20 +++++++++
+ 2 files changed, 66 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-edac.txt
 
-diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
-index 4d7285e..edf97ed 100644
---- a/drivers/edac/Kconfig
-+++ b/drivers/edac/Kconfig
-@@ -385,4 +385,20 @@ config EDAC_ALTERA_MC
- 	  preloader must initialize the SDRAM before loading
- 	  the kernel.
+diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-edac.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-edac.txt
+new file mode 100644
+index 0000000..4bf32e1
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/altera/socfpga-edac.txt
+@@ -0,0 +1,46 @@
++Altera SoCFPGA Error Detection and Correction [EDAC]
++
++Required Properties:
++- compatible : Should be "altr,edac"
++- #address-cells: must be 1
++- #size-cells: must be 1
++- ranges : standard definition, should translate from local addresses
++
++Subcomponents:
++
++L2 Cache ECC
++Required Properties:
++- compatible : Should be "altr,l2-edac"
++- reg : Address and size for ECC error interrupt clear registers.
++- interrupts : Should be single bit error interrupt, then double bit error
++	interrupt. Note the rising edge type.
++
++On Chip RAM ECC
++Required Properties:
++- compatible : Should be "altr,ocram-edac"
++- reg : Address and size for ECC error interrupt clear registers.
++- iram : phandle to On-Chip RAM definition.
++- interrupts : Should be single bit error interrupt, then double bit error
++	interrupt. Note the rising edge type.
++
++Example:
++
++	soc_ecc {
++		compatible = "altr,edac";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++
++		l2edac@ffd08140 {
++			compatible = "altr,l2-edac";
++			reg = <0xffd08140 0x4>;
++			interrupts = <0 36 1>, <0 37 1>;
++		};
++
++		ocramedac@ffd08144 {
++			compatible = "altr,ocram-edac";
++			reg = <0xffd08144 0x4>;
++			iram = <&ocram>;
++			interrupts = <0 178 1>, <0 179 1>;
++		};
++	};
+diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+index 252c3d1..e546e47 100644
+--- a/arch/arm/boot/dts/socfpga.dtsi
++++ b/arch/arm/boot/dts/socfpga.dtsi
+@@ -618,6 +618,26 @@
+ 			interrupts = <0 39 4>;
+ 		};
  
-+config EDAC_ALTERA_L2C
-+	bool "Altera L2 Cache EDAC"
-+	depends on EDAC_MM_EDAC=y && ARCH_SOCFPGA
-+	select CACHE_L2X0
-+	help
-+	  Support for error detection and correction on the
-+	  Altera L2 cache Memory for Altera SoCs. This option
-+          requires L2 cache so it will force that selection.
-+
-+config EDAC_ALTERA_OCRAM
-+	bool "Altera On-Chip RAM EDAC"
-+	depends on EDAC_MM_EDAC=y && ARCH_SOCFPGA && SRAM && GENERIC_ALLOCATOR
-+	help
-+	  Support for error detection and correction on the
-+	  Altera On-Chip RAM Memory for Altera SoCs.
-+
- endif # EDAC
-diff --git a/drivers/edac/Makefile b/drivers/edac/Makefile
-index d40c69a..b9a67c0 100644
---- a/drivers/edac/Makefile
-+++ b/drivers/edac/Makefile
-@@ -66,4 +66,7 @@ obj-$(CONFIG_EDAC_OCTEON_L2C)		+= octeon_edac-l2c.o
- obj-$(CONFIG_EDAC_OCTEON_LMC)		+= octeon_edac-lmc.o
- obj-$(CONFIG_EDAC_OCTEON_PCI)		+= octeon_edac-pci.o
- 
--obj-$(CONFIG_EDAC_ALTERA_MC)		+= altera_edac.o
-+altr_edac-y				:= altera_edac.o
-+obj-$(CONFIG_EDAC_ALTERA_MC)		+= altr_edac.o
-+obj-$(CONFIG_EDAC_ALTERA_L2C)		+= altr_edac.o
-+obj-$(CONFIG_EDAC_ALTERA_OCRAM)		+= altr_edac.o
-diff --git a/drivers/edac/altera_edac.c b/drivers/edac/altera_edac.c
-index 3c4929f..083cd20 100644
---- a/drivers/edac/altera_edac.c
-+++ b/drivers/edac/altera_edac.c
-@@ -1,5 +1,5 @@
- /*
-- *  Copyright Altera Corporation (C) 2014. All rights reserved.
-+ *  Copyright Altera Corporation (C) 2014-2015. All rights reserved.
-  *  Copyright 2011-2012 Calxeda, Inc.
-  *
-  * This program is free software; you can redistribute it and/or modify it
-@@ -17,8 +17,10 @@
-  * Adapted from the highbank_mc_edac driver.
-  */
- 
-+#include <asm/cacheflush.h>
- #include <linux/ctype.h>
- #include <linux/edac.h>
-+#include <linux/genalloc.h>
- #include <linux/interrupt.h>
- #include <linux/kernel.h>
- #include <linux/mfd/syscon.h>
-@@ -33,6 +35,7 @@
- 
- #define EDAC_MOD_STR		"altera_edac"
- #define EDAC_VERSION		"1"
-+#define EDAC_DEVICE		"ALTR_MEM"
- 
- /* SDRAM Controller CtrlCfg Register */
- #define CTLCFG_OFST             0x00
-@@ -107,6 +110,33 @@ struct altr_sdram_mc_data {
- 	struct regmap *mc_vbase;
- };
- 
-+/************************** EDAC Device Defines **************************/
-+
-+/* OCRAM ECC Management Group Defines */
-+#define ALTR_MAN_GRP_OCRAM_ECC_OFFSET   0x04
-+#define ALTR_OCR_ECC_EN_MASK            BIT(0)
-+#define ALTR_OCR_ECC_INJS_MASK          BIT(1)
-+#define ALTR_OCR_ECC_INJD_MASK          BIT(2)
-+#define ALTR_OCR_ECC_SERR_MASK          BIT(3)
-+#define ALTR_OCR_ECC_DERR_MASK          BIT(4)
-+
-+/* L2 ECC Management Group Defines */
-+#define ALTR_MAN_GRP_L2_ECC_OFFSET      0x00
-+#define ALTR_L2_ECC_EN_MASK             BIT(0)
-+#define ALTR_L2_ECC_INJS_MASK           BIT(1)
-+#define ALTR_L2_ECC_INJD_MASK           BIT(2)
-+
-+#define ALTR_UE_TRIGGER_CHAR            'U'   /* Trigger for UE */
-+#define ALTR_TRIGGER_READ_WRD_CNT       32    /* Line size x 4 */
-+#define ALTR_TRIG_OCRAM_BYTE_SIZE       128   /* Line size x 4 */
-+#define ALTR_TRIG_L2C_BYTE_SIZE         4096  /* Full Page */
-+
-+/*********************** EDAC Memory Controller Functions ****************/
-+
-+/* The SDRAM controller uses the EDAC Memory Controller framework.       */
-+
-+#ifdef CONFIG_EDAC_ALTERA_MC
-+
- static irqreturn_t altr_sdram_mc_err_handler(int irq, void *dev_id)
- {
- 	struct mem_ctl_info *mci = dev_id;
-@@ -405,6 +435,478 @@ static struct platform_driver altr_sdram_edac_driver = {
- 
- module_platform_driver(altr_sdram_edac_driver);
- 
-+#endif		/* #ifdef CONFIG_EDAC_ALTERA_MC */
-+/************************* EDAC Parent Probe *************************/
-+
-+static const struct of_device_id altr_edac_device_of_match[];
-+
-+static const struct of_device_id altr_edac_of_match[] = {
-+	{ .compatible = "altr,edac" },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, altr_edac_of_match);
-+
-+static int altr_edac_probe(struct platform_device *pdev)
-+{
-+	of_platform_populate(pdev->dev.of_node, altr_edac_device_of_match,
-+			     NULL, &pdev->dev);
-+	return 0;
-+}
-+
-+static struct platform_driver altr_edac_driver = {
-+	.probe =  altr_edac_probe,
-+	.driver = {
-+		.name = "altr_edac",
-+		.of_match_table = altr_edac_of_match,
-+	},
-+};
-+module_platform_driver(altr_edac_driver);
-+
-+/************************* EDAC Device Functions *************************/
-+
-+/*
-+ * EDAC Device Functions (shared between various IPs).
-+ * The discrete memories use the EDAC Device framework. The probe
-+ * and error handling functions are very similar between memories
-+ * so they are shared. The memory allocation and free for EDAC trigger
-+ * testing are different for each memory.
-+ */
-+
-+const struct edac_device_prv_data ocramecc_data;
-+const struct edac_device_prv_data l2ecc_data;
-+
-+struct edac_device_prv_data {
-+	int (*setup)(struct platform_device *pdev, void __iomem *base);
-+	int ce_clear_mask;
-+	int ue_clear_mask;
-+#ifdef CONFIG_EDAC_DEBUG
-+	struct edac_dev_sysfs_attribute *eccmgr_sysfs_attr;
-+	void * (*alloc_mem)(size_t size, void **other);
-+	void (*free_mem)(void *p, size_t size, void *other);
-+	int ecc_enable_mask;
-+	int ce_set_mask;
-+	int ue_set_mask;
-+	int trig_alloc_sz;
-+#endif
-+};
-+
-+struct altr_edac_device_dev {
-+	void __iomem *base;
-+	int sb_irq;
-+	int db_irq;
-+	const struct edac_device_prv_data *data;
-+	char *edac_dev_name;
-+};
-+
-+static irqreturn_t altr_edac_device_handler(int irq, void *dev_id)
-+{
-+	struct edac_device_ctl_info *dci = dev_id;
-+	struct altr_edac_device_dev *drvdata = dci->pvt_info;
-+	const struct edac_device_prv_data *priv = drvdata->data;
-+
-+	if (irq == drvdata->sb_irq) {
-+		if (priv->ce_clear_mask)
-+			writel(priv->ce_clear_mask, drvdata->base);
-+		edac_device_handle_ce(dci, 0, 0, drvdata->edac_dev_name);
-+	}
-+	if (irq == drvdata->db_irq) {
-+		if (priv->ue_clear_mask)
-+			writel(priv->ue_clear_mask, drvdata->base);
-+		edac_device_handle_ue(dci, 0, 0, drvdata->edac_dev_name);
-+		panic("\nEDAC:ECC_DEVICE[Uncorrectable errors]\n");
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
-+#ifdef CONFIG_EDAC_DEBUG
-+ssize_t altr_edac_device_trig(struct edac_device_ctl_info *edac_dci,
-+			      const char *buffer, size_t count)
-+{
-+	u32 *ptemp, i, error_mask;
-+	int result = 0;
-+	unsigned long flags;
-+	struct altr_edac_device_dev *drvdata = edac_dci->pvt_info;
-+	const struct edac_device_prv_data *priv = drvdata->data;
-+	void *generic_ptr = edac_dci->dev;
-+
-+	if (!priv->alloc_mem)
-+		return -ENOMEM;
-+
-+	/*
-+	 * Note that generic_ptr is initialized to the device * but in
-+	 * some alloc_functions, this is overridden and returns data.
-+	 */
-+	ptemp = priv->alloc_mem(priv->trig_alloc_sz, &generic_ptr);
-+	if (!ptemp) {
-+		edac_printk(KERN_ERR, EDAC_DEVICE,
-+			    "Inject: Buffer Allocation error\n");
-+		return -ENOMEM;
-+	}
-+
-+	if (buffer[0] == ALTR_UE_TRIGGER_CHAR)
-+		error_mask = priv->ue_set_mask;
-+	else
-+		error_mask = priv->ce_set_mask;
-+
-+	edac_printk(KERN_ALERT, EDAC_DEVICE,
-+		    "Trigger Error Mask (0x%X)\n", error_mask);
-+
-+	local_irq_save(flags);
-+	/* write ECC corrupted data out. */
-+	for (i = 0; i < (priv->trig_alloc_sz / sizeof(*ptemp)); i++) {
-+		/* Read data so we're in the correct state */
-+		rmb();
-+		if (ACCESS_ONCE(ptemp[i]))
-+			result = -1;
-+		/* Toggle Error bit (it is latched), leave ECC enabled */
-+		writel(error_mask, drvdata->base);
-+		writel(priv->ecc_enable_mask, drvdata->base);
-+		ptemp[i] = i;
-+	}
-+	/* Ensure it has been written out */
-+	wmb();
-+	local_irq_restore(flags);
-+
-+	if (result)
-+		edac_printk(KERN_ERR, EDAC_DEVICE, "Mem Not Cleared\n");
-+
-+	/* Read out written data. ECC error caused here */
-+	for (i = 0; i < ALTR_TRIGGER_READ_WRD_CNT; i++)
-+		if (ACCESS_ONCE(ptemp[i]) != i)
-+			edac_printk(KERN_ERR, EDAC_DEVICE,
-+				    "Read doesn't match written data\n");
-+
-+	if (priv->free_mem)
-+		priv->free_mem(ptemp, priv->trig_alloc_sz, generic_ptr);
-+
-+	return count;
-+}
-+
-+static void altr_set_sysfs_attr(struct edac_device_ctl_info *edac_dci,
-+				const struct edac_device_prv_data *priv)
-+{
-+	struct edac_dev_sysfs_attribute *ecc_attr = priv->eccmgr_sysfs_attr;
-+
-+	if (ecc_attr)
-+		edac_dci->sysfs_attributes = ecc_attr;
-+}
-+#else
-+static void altr_set_sysfs_attr(struct edac_device_ctl_info *edac_dci,
-+				const struct edac_device_prv_data *priv)
-+{}
-+#endif	/* #ifdef CONFIG_EDAC_DEBUG */
-+
-+static const struct of_device_id altr_edac_device_of_match[] = {
-+#ifdef CONFIG_EDAC_ALTERA_L2C
-+	{ .compatible = "altr,l2-edac", .data = (void *)&l2ecc_data },
-+#endif
-+#ifdef CONFIG_EDAC_ALTERA_OCRAM
-+	{ .compatible = "altr,ocram-edac", .data = (void *)&ocramecc_data },
-+#endif
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, altr_edac_device_of_match);
-+
-+/*
-+ * altr_edac_device_probe()
-+ *	This is a generic EDAC device driver that will support
-+ *	various Altera memory devices such as the L2 cache ECC and
-+ *	OCRAM ECC as well as the memories for other peripherals.
-+ *	Module specific initialization is done by passing the
-+ *	function index in the device tree.
-+ */
-+static int altr_edac_device_probe(struct platform_device *pdev)
-+{
-+	struct edac_device_ctl_info *dci;
-+	struct altr_edac_device_dev *drvdata;
-+	struct resource *r;
-+	int res = 0;
-+	struct device_node *np = pdev->dev.of_node;
-+	char *ecc_name = (char *)np->name;
-+	static int dev_instance;
-+
-+	if (!devres_open_group(&pdev->dev, NULL, GFP_KERNEL)) {
-+		edac_printk(KERN_ERR, EDAC_DEVICE,
-+			    "Unable to open devm\n");
-+		return -ENOMEM;
-+	}
-+
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!r) {
-+		edac_printk(KERN_ERR, EDAC_DEVICE,
-+			    "Unable to get mem resource\n");
-+		return -EPROBE_DEFER;
-+	}
-+
-+	if (!devm_request_mem_region(&pdev->dev, r->start, resource_size(r),
-+				     dev_name(&pdev->dev))) {
-+		edac_printk(KERN_ERR, EDAC_DEVICE,
-+			    "%s:Error requesting mem region\n", ecc_name);
-+		return -EBUSY;
-+	}
-+
-+	dci = edac_device_alloc_ctl_info(sizeof(*drvdata), ecc_name,
-+					 1, ecc_name, 1, 0, NULL, 0,
-+					 dev_instance++);
-+
-+	if (!dci) {
-+		edac_printk(KERN_ERR, EDAC_DEVICE,
-+			    "%s: Unable to allocate EDAC device\n", ecc_name);
-+		return -ENOMEM;
-+	}
-+
-+	drvdata = dci->pvt_info;
-+	dci->dev = &pdev->dev;
-+	platform_set_drvdata(pdev, dci);
-+	drvdata->edac_dev_name = ecc_name;
-+
-+	drvdata->base = devm_ioremap(&pdev->dev, r->start, resource_size(r));
-+	if (!drvdata->base)
-+		goto err;
-+
-+	/* Get driver specific data for this EDAC device */
-+	drvdata->data = of_match_node(altr_edac_device_of_match, np)->data;
-+
-+	/* Check specific dependencies for the module */
-+	if (drvdata->data->setup) {
-+		res = drvdata->data->setup(pdev, drvdata->base);
-+		if (res < 0)
-+			goto err;
-+	}
-+
-+	drvdata->sb_irq = platform_get_irq(pdev, 0);
-+	res = devm_request_irq(&pdev->dev, drvdata->sb_irq,
-+			       altr_edac_device_handler,
-+			       0, dev_name(&pdev->dev), dci);
-+	if (res < 0)
-+		goto err;
-+
-+	drvdata->db_irq = platform_get_irq(pdev, 1);
-+	res = devm_request_irq(&pdev->dev, drvdata->db_irq,
-+			       altr_edac_device_handler,
-+			       0, dev_name(&pdev->dev), dci);
-+	if (res < 0)
-+		goto err;
-+
-+	dci->mod_name = "Altera EDAC Memory";
-+	dci->dev_name = drvdata->edac_dev_name;
-+
-+	altr_set_sysfs_attr(dci, drvdata->data);
-+
-+	if (edac_device_add_device(dci))
-+		goto err;
-+
-+	devres_close_group(&pdev->dev, NULL);
-+
-+	return 0;
-+err:
-+	edac_printk(KERN_ERR, EDAC_DEVICE,
-+		    "%s:Error setting up EDAC device: %d\n", ecc_name, res);
-+	devres_release_group(&pdev->dev, NULL);
-+	edac_device_free_ctl_info(dci);
-+
-+	return res;
-+}
-+
-+static int altr_edac_device_remove(struct platform_device *pdev)
-+{
-+	struct edac_device_ctl_info *dci = platform_get_drvdata(pdev);
-+
-+	edac_device_del_device(&pdev->dev);
-+	edac_device_free_ctl_info(dci);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver altr_edac_device_driver = {
-+	.probe =  altr_edac_device_probe,
-+	.remove = altr_edac_device_remove,
-+	.driver = {
-+		.name = "altr_edac_device",
-+		.of_match_table = altr_edac_device_of_match,
-+	},
-+};
-+module_platform_driver(altr_edac_device_driver);
-+
-+/*********************** OCRAM EDAC Device Functions *********************/
-+
-+#ifdef CONFIG_EDAC_ALTERA_OCRAM
-+
-+#ifdef CONFIG_EDAC_DEBUG
-+static void *ocram_alloc_mem(size_t size, void **other)
-+{
-+	struct device_node *np;
-+	struct gen_pool *gp;
-+	void *sram_addr;
-+
-+	np = of_find_compatible_node(NULL, NULL, "altr,ocram-edac");
-+	if (!np)
-+		return NULL;
-+
-+	gp = of_get_named_gen_pool(np, "iram", 0);
-+	if (!gp) {
-+		of_node_put(np);
-+		return NULL;
-+	}
-+	of_node_put(np);
-+
-+	sram_addr = (void *)gen_pool_alloc(gp, size / sizeof(size_t));
-+	if (!sram_addr)
-+		return NULL;
-+
-+	memset(sram_addr, 0, size);
-+	wmb();	/* Ensure data is written out */
-+
-+	*other = gp;	/* Remember this handle for freeing  later */
-+
-+	return sram_addr;
-+}
-+
-+static void ocram_free_mem(void *p, size_t size, void *other)
-+{
-+	gen_pool_free((struct gen_pool *)other, (u32)p, size / sizeof(size_t));
-+}
-+
-+static struct edac_dev_sysfs_attribute altr_ocr_sysfs_attributes[] = {
-+	{
-+		.attr = { .name = "altr_ocram_trigger",
-+			  .mode = (S_IRUGO | S_IWUSR) },
-+		.show = NULL,
-+		.store = altr_edac_device_trig
-+	},
-+	{
-+		.attr = {.name = NULL }
-+	}
-+};
-+#endif	/* #ifdef CONFIG_EDAC_DEBUG */
-+
-+/*
-+ * altr_ocram_dependencies()
-+ *	Test for OCRAM cache ECC dependencies upon entry because
-+ *	platform specific startup should have initialized the
-+ *	On-Chip RAM memory and enabled the ECC.
-+ *	Can't turn on ECC here because accessing un-initialized
-+ *	memory will cause CE/UE errors possibly causing an ABORT.
-+ */
-+static int altr_ocram_dependencies(struct platform_device *pdev,
-+				   void __iomem *base)
-+{
-+	u32 control;
-+
-+	control = readl(base) & ALTR_OCR_ECC_EN_MASK;
-+	if (control)
-+		return 0;
-+
-+	edac_printk(KERN_ERR, EDAC_DEVICE,
-+		    "OCRAM: No ECC present or ECC disabled.\n");
-+	return -ENODEV;
-+}
-+
-+const struct edac_device_prv_data ocramecc_data = {
-+	.setup = altr_ocram_dependencies,
-+	.ce_clear_mask = (ALTR_OCR_ECC_EN_MASK | ALTR_OCR_ECC_SERR_MASK),
-+	.ue_clear_mask = (ALTR_OCR_ECC_EN_MASK | ALTR_OCR_ECC_DERR_MASK),
-+#ifdef CONFIG_EDAC_DEBUG
-+	.eccmgr_sysfs_attr = altr_ocr_sysfs_attributes,
-+	.alloc_mem = ocram_alloc_mem,
-+	.free_mem = ocram_free_mem,
-+	.ecc_enable_mask = ALTR_OCR_ECC_EN_MASK,
-+	.ce_set_mask = (ALTR_OCR_ECC_EN_MASK | ALTR_OCR_ECC_INJS_MASK),
-+	.ue_set_mask = (ALTR_OCR_ECC_EN_MASK | ALTR_OCR_ECC_INJD_MASK),
-+	.trig_alloc_sz = ALTR_TRIG_OCRAM_BYTE_SIZE,
-+#endif
-+};
-+
-+#endif	/* #ifdef CONFIG_EDAC_ALTERA_OCRAM */
-+
-+/********************* L2 Cache EDAC Device Functions ********************/
-+
-+#ifdef CONFIG_EDAC_ALTERA_L2C
-+
-+#ifdef CONFIG_EDAC_DEBUG
-+static void *l2_alloc_mem(size_t size, void **other)
-+{
-+	struct device *dev = *other;
-+	void *ptemp = devm_kzalloc(dev, size, GFP_KERNEL);
-+
-+	if (!ptemp)
-+		return NULL;
-+
-+	/* Make sure everything is written out */
-+	wmb();
-+
-+	/*
-+	 * Clean all cache levels up to LoC (includes L2)
-+	 * This ensures the corrupted data is written into
-+	 * L2 cache for readback test (which causes ECC error).
-+	 */
-+	flush_cache_all();
-+
-+	return ptemp;
-+}
-+
-+static void l2_free_mem(void *p, size_t size, void *other)
-+{
-+	struct device *dev = other;
-+
-+	if (dev && p)
-+		devm_kfree(dev, p);
-+}
-+
-+static struct edac_dev_sysfs_attribute altr_l2_sysfs_attributes[] = {
-+	{
-+		.attr = { .name = "altr_l2_trigger",
-+			  .mode = (S_IRUGO | S_IWUSR) },
-+		.show = NULL,
-+		.store = altr_edac_device_trig
-+	},
-+	{
-+		.attr = {.name = NULL }
-+	}
-+};
-+#endif	/* #ifdef CONFIG_EDAC_DEBUG */
-+
-+/*
-+ * altr_l2_dependencies()
-+ *	Test for L2 cache ECC dependencies upon entry because
-+ *	platform specific startup should have initialized the L2
-+ *	memory and enabled the ECC.
-+ *	Bail if ECC is not enabled.
-+ *	Note that L2 Cache Enable is forced at build time.
-+ */
-+static int altr_l2_dependencies(struct platform_device *pdev,
-+				void __iomem *base)
-+{
-+	u32 control;
-+
-+	control = readl(base) & ALTR_L2_ECC_EN_MASK;
-+	if (!control) {
-+		edac_printk(KERN_ERR, EDAC_DEVICE,
-+			    "L2: No ECC present, or ECC disabled\n");
-+		return -ENODEV;
-+	}
-+
-+	return 0;
-+}
-+
-+const struct edac_device_prv_data l2ecc_data = {
-+	.setup = altr_l2_dependencies,
-+	.ce_clear_mask = 0,
-+	.ue_clear_mask = 0,
-+#ifdef CONFIG_EDAC_DEBUG
-+	.eccmgr_sysfs_attr = altr_l2_sysfs_attributes,
-+	.alloc_mem = l2_alloc_mem,
-+	.free_mem = l2_free_mem,
-+	.ecc_enable_mask = ALTR_L2_ECC_EN_MASK,
-+	.ce_set_mask = (ALTR_L2_ECC_EN_MASK | ALTR_L2_ECC_INJS_MASK),
-+	.ue_set_mask = (ALTR_L2_ECC_EN_MASK | ALTR_L2_ECC_INJD_MASK),
-+	.trig_alloc_sz = ALTR_TRIG_L2C_BYTE_SIZE,
-+#endif
-+};
-+
-+#endif	/* #ifdef CONFIG_EDAC_ALTERA_L2C */
-+
- MODULE_LICENSE("GPL v2");
- MODULE_AUTHOR("Thor Thayer");
--MODULE_DESCRIPTION("EDAC Driver for Altera SDRAM Controller");
-+MODULE_DESCRIPTION("EDAC Driver for Altera Memories");
++		soc_ecc {
++			compatible = "altr,edac";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++
++			l2edac@ffd08140 {
++				compatible = "altr,l2-edac";
++				reg = <0xffd08140 0x4>;
++				interrupts = <0 36 1>, <0 37 1>;
++			};
++
++			ocramedac@ffd08144 {
++				compatible = "altr,ocram-edac";
++				reg = <0xffd08144 0x4>;
++				iram = <&ocram>;
++				interrupts = <0 178 1>, <0 179 1>;
++			};
++		};
++
+ 		L2: l2-cache@fffef000 {
+ 			compatible = "arm,pl310-cache";
+ 			reg = <0xfffef000 0x1000>;
 -- 
 1.7.9.5
 
