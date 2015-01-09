@@ -1,55 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755662AbbAIC1I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 21:27:08 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:57229 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752907AbbAIC1E (ORCPT
+	id S1755912AbbAIC3R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 21:29:17 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:2875 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039AbbAIC3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 21:27:04 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t092QujT023231, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next v2 2/2 RESEND] r8152: check the status before submitting rx
-Date: Fri, 9 Jan 2015 10:26:36 +0800
-Message-ID: <1394712342-15778-116-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <1394712342-15778-114-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-114-Taiwan-albertk@realtek.com>
+	Thu, 8 Jan 2015 21:29:14 -0500
+Message-ID: <54AF3CDF.9000004@huawei.com>
+Date: Fri, 9 Jan 2015 10:28:47 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.73]
+To: <masami.hiramatsu.pt@hitachi.com>, <tixy@linaro.org>,
+        <linux@arm.linux.org.uk>
+CC: <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v19 01/11] ARM: probes: move all probe code to dedicate
+ directory
+References: <1420457284-76923-1-git-send-email-wangnan0@huawei.com> <1420457350-77053-1-git-send-email-wangnan0@huawei.com>
+In-Reply-To: <1420457350-77053-1-git-send-email-wangnan0@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.90]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't submit the rx if the device is unplugged, stopped, or
-linking down.
+On 2015/1/5 19:29, Wang Nan wrote:
+> In discussion on LKML (https://lkml.org/lkml/2014/11/28/158), Russell
+> King suggests to move all probe related code to arch/arm/probes. This
+> patch does the work. Due to dependency on 'arch/arm/kernel/patch.h', this
+> patch also moves patch.h to 'arch/arm/include/asm/patch.h', and related
+> '#include' directives are also midified to '#include <asm/patch.h>'.
+> 
+> Following is an overview of this patch:
+> 
+>  ./arch/arm/kernel/               ./arch/arm/probes/
+>  |-- Makefile                     |-- Makefile
+>  |-- probes-arm.c          ==>    |-- decode-arm.c
+>  |-- probes-arm.h          ==>    |-- decode-arm.h
+>  |-- probes-thumb.c        ==>    |-- decode-thumb.c
+>  |-- probes-thumb.h        ==>    |-- decode-thumb.h
+>  |-- probes.c              ==>    |-- decode.c
+>  |-- probes.h              ==>    |-- decode.h
+>  |                                |-- kprobes
+>  |                                |   |-- Makefile
+>  |-- kprobes-arm.c         ==>    |   |-- actions-arm.c
+>  |-- kprobes-common.c      ==>    |   |-- actions-common.c
+>  |-- kprobes-thumb.c       ==>    |   |-- actions-thumb.c
+>  |-- kprobes.c             ==>    |   |-- core.c
+>  |-- kprobes.h             ==>    |   |-- core.h
+>  |-- kprobes-test-arm.c    ==>    |   |-- test-arm.c
+>  |-- kprobes-test.c        ==>    |   |-- test-core.c
+>  |-- kprobes-test.h        ==>    |   |-- test-core.h
+>  |-- kprobes-test-thumb.c  ==>    |   `-- test-thumb.c
+>  |                                `-- uprobes
+>  |                                    |-- Makefile
+>  |-- uprobes-arm.c         ==>        |-- actions-arm.c
+>  |-- uprobes.c             ==>        |-- core.c
+>  |-- uprobes.h             ==>        `-- core.h
+>  |
+>  `-- patch.h               ==>    arch/arm/include/asm/patch.h
+> 
+> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 5 +++++
- 1 file changed, 5 insertions(+)
+Hi,
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index cd93388..b23426e 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -1789,6 +1789,11 @@ int r8152_submit_rx(struct r8152 *tp, struct rx_agg *agg, gfp_t mem_flags)
- {
- 	int ret;
- 
-+	/* The rx would be stopped, so skip submitting */
-+	if (test_bit(RTL8152_UNPLUG, &tp->flags) ||
-+	    !test_bit(WORK_ENABLE, &tp->flags) || !netif_carrier_ok(tp->netdev))
-+		return 0;
-+
- 	usb_fill_bulk_urb(agg->urb, tp->udev, usb_rcvbulkpipe(tp->udev, 1),
- 			  agg->head, agg_buf_sz,
- 			  (usb_complete_t)read_bulk_callback, agg);
--- 
-2.1.0
+Thanks to Tixy and his test robot, a bug is found in this patch: I forgot to change
+arch/arm/kernel/kgdb.c, which also includes patch.h. A small code modification
+is required.
+
+I have posted a new version of this patch by replying.
+
+Tixy, could you please collect it into your git repository and help me test it
+again?
+
+http://lists.infradead.org/pipermail/linux-arm-kernel/2015-January/314520.html
+
+Thanks.
+
 
