@@ -1,68 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290AbbAICHB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 21:07:01 -0500
-Received: from ozlabs.org ([103.22.144.67]:33353 "EHLO ozlabs.org"
+	id S1753962AbbAICJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 21:09:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49483 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751890AbbAICG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 21:06:59 -0500
-Date: Fri, 9 Jan 2015 13:06:50 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
-        <dri-devel@lists.freedesktop.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ville =?UTF-8?B?U3lyasOkbMOk?= <ville.syrjala@linux.intel.com>,
-        Jani Nikula <jani.nikula@intel.com>, Rob Clark <robdclark@gmail.com>
-Subject: linux-next: manual merge of the drm-intel tree with the
- drm-intel-fixes tree
-Message-ID: <20150109130650.4f7a7a29@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1753751AbbAICJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 21:09:56 -0500
+Date: Fri, 9 Jan 2015 10:09:10 +0800
+From: Baoquan He <bhe@redhat.com>
+To: hpa@zytor.com
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        x86@kernel.org, vgoyal@redhat.com, keescook@chromium.org,
+        ak@linux.intel.com, ebiederm@xmission.com, kexec@lists.infradead.org,
+        whissi@whissi.de, kumagai-atsushi@mxc.nes.nec.co.jp,
+        stable@vger.kernel.org
+Subject: Re: [resend Patch v3 1/2] kaslr: check if kernel location is changed
+Message-ID: <20150109020910.GA22338@dhcp-16-116.nay.redhat.com>
+References: <1412060896-1902-1-git-send-email-bhe@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/arOovnPoy53f0mfGef.8aBA"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412060896-1902-1-git-send-email-bhe@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/arOovnPoy53f0mfGef.8aBA
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi hpa,
 
-Hi all,
+Ping.
 
-Today's linux-next merge of the drm-intel tree got a conflict in
-drivers/gpu/drm/i915/intel_runtime_pm.c between commit 7f1241ed1a06
-("drm/i915: Kill check_power_well() calls") from the drm-intel-fixes
-tree and commit e2c719b75c8c ("drm/i915: tame the chattermouth (v2)")
-from the drm-intel tree.
+Do you have further plan or idea on this issue? Or could you
+please merge this patch to fix reported bug for now?
 
-I fixed it up (the former removed the code modified by the latter) and
-can carry the fix as necessary (no action is required).
+Thanks
+Baoquan
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/arOovnPoy53f0mfGef.8aBA
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUrze+AAoJEMDTa8Ir7ZwVPLgP/j0zZchZKy3gxk1erwvpuMM9
-vNCGFjymWlAQE2dc3rwosNIp4hqSLEdbVI7/XbZO4cbwpafHGQNXCj20CUj0ICnp
-AAD49MV1Cf/vWrm2cGeSBEb8Ud/yuRxqD2vF+o1XHc02PzEvYKwbgrwZjyKWEY7m
-W5o8M5byZ6fjhfIFf6Uy5laWKGAohftkrRT7FnZCx8zPKK5yKZlx3kV5DiyYg/f1
-6NqJrrjqyjvieoUXm4FzXydc6LhUUxKCLr4HHg3NIHTb/xYv8C4pDSdO2IIO5WLR
-34E264Hv+pOpio+Uj98Z9svpSyndyim+lDb+8yJzAsYGwoYAJUEVZegrY8eyUE95
-+3GliTYsMuMB3f4UwkEUqe8Ma1Mqe09GU+wFcBtpECEV1Bssjt1F0XNR3HHAX7jT
-XaLxT8ablu1u1LezCWUBuu4/uv7qOokbzhPwE2iJJcaNqsuyAFIOboplXgFXF8hy
-1JM+6cCXX9dTZUwT+VtRG+Ou0m1YfhoXP3YqUe/P2V1D6RC4hkElth2Nia9Q0uV8
-TGHCmnXCsAoAOQyBmLAvvkcCdSiW7BUhRU+eQWymOb0AZyDjVhIuYFly/nv2HXo/
-cfkOstxA2HeMVvmaoVEU3y+sv//MEJdAAjCiw+iwLFZf1WeKjL1pLDp47ffAQ1t8
-CKT1zk/eSn4c9kH4rPo3
-=508J
------END PGP SIGNATURE-----
-
---Sig_/arOovnPoy53f0mfGef.8aBA--
+On 09/30/14 at 03:08pm, Baoquan He wrote:
+> Function handle_relocations() is used to do the relocations handling
+> for i686 and kaslr of x86_64. For 32 bit the relocation handling is
+> mandotary to perform. For x86_64 only when kaslr is enabled and a
+> random kernel location is chosen successfully the relocation handling
+> shound be done. However previous implementation only compared the
+> kernel loading address and LOAD_PHYSICAL_ADDR where kernel were
+> compiled to run at. This would casue system to be exceptional in
+> few conditions like when delta between load address and compiled
+> address is bigger than what 32bit signed relocations can handle.
+> Also there will be limitations that delta can't be too big otherwise
+> kernel text virtual addresses will overflow in module address space.
+> 
+> So in this patch check if kernel location is changed after
+> choose_kernel_location() when x86_64. If and only if in x86_64
+> and kernel location is changed, we say a kaslr random kernel
+> location is chosen, then the relocation handling is needed.
+> 
+> Signed-off-by: Baoquan He <bhe@redhat.com>
+> Acked-by: Vivek Goyal <vgoyal@redhat.com>
+> Acked-by: Kees Cook <keescook@chromium.org>
+> Tested-by: Thomas D. <whissi@whissi.de>
+> Cc: stable@vger.kernel.org
+> ---
+>  arch/x86/boot/compressed/misc.c | 26 ++++++++++++++++++++++----
+>  1 file changed, 22 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+> index 57ab74d..3bb2a17 100644
+> --- a/arch/x86/boot/compressed/misc.c
+> +++ b/arch/x86/boot/compressed/misc.c
+> @@ -230,8 +230,9 @@ static void error(char *x)
+>  		asm("hlt");
+>  }
+>  
+> -#if CONFIG_X86_NEED_RELOCS
+> -static void handle_relocations(void *output, unsigned long output_len)
+> +#ifdef CONFIG_X86_NEED_RELOCS
+> +static void handle_relocations(void *output_orig, void *output,
+> +			       unsigned long output_len)
+>  {
+>  	int *reloc;
+>  	unsigned long delta, map, ptr;
+> @@ -239,6 +240,20 @@ static void handle_relocations(void *output, unsigned long output_len)
+>  	unsigned long max_addr = min_addr + output_len;
+>  
+>  	/*
+> +	* 32bit always requires relocations to be performed. For x86_64,
+> +	* relocations need to be performed only if kaslr has chosen a
+> +	* different load address then kernel was originally loaded at.
+> +	*
+> +	* If we are here, either kaslr is not configured in or kaslr is disabled
+> +	* or kaslr has chosen not to change the load location of kernel. Don't
+> +	* perform any relocations.
+> +	*/
+> +#if CONFIG_X86_64
+> +	if (output_orig == output)
+> +		return;
+> +#endif
+> +
+> +	/*
+>  	 * Calculate the delta between where vmlinux was linked to load
+>  	 * and where it was actually loaded.
+>  	 */
+> @@ -299,7 +314,8 @@ static void handle_relocations(void *output, unsigned long output_len)
+>  #endif
+>  }
+>  #else
+> -static inline void handle_relocations(void *output, unsigned long output_len)
+> +static inline void handle_relocations(void *output_orig, void *output,
+> +				      unsigned long output_len)
+>  { }
+>  #endif
+>  
+> @@ -360,6 +376,8 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+>  				  unsigned char *output,
+>  				  unsigned long output_len)
+>  {
+> +	unsigned char *output_orig = output;
+> +
+>  	real_mode = rmode;
+>  
+>  	sanitize_boot_params(real_mode);
+> @@ -402,7 +420,7 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+>  	debug_putstr("\nDecompressing Linux... ");
+>  	decompress(input_data, input_len, NULL, NULL, output, NULL, error);
+>  	parse_elf(output);
+> -	handle_relocations(output, output_len);
+> +	handle_relocations(output_orig, output, output_len);
+>  	debug_putstr("done.\nBooting the kernel.\n");
+>  	return output;
+>  }
+> -- 
+> 1.8.5.3
+> 
