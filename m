@@ -1,46 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756779AbbAIKP0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 05:15:26 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:60807 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755848AbbAIKPY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 05:15:24 -0500
-Message-ID: <54AFAA29.9040803@ti.com>
-Date: Fri, 9 Jan 2015 12:15:05 +0200
-From: Jyri Sarha <jsarha@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1756944AbbAIKTn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 05:19:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59103 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756037AbbAIKTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 05:19:42 -0500
+Date: Fri, 9 Jan 2015 11:19:32 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH] perf tools: Fix __machine__findnew_thread() error path
+Message-ID: <20150109101932.GB25793@krava.redhat.com>
+References: <1420763892-15535-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Jean-Francois Moine <moinejf@free.fr>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Dave Airlie <airlied@gmail.com>,
-        Andrew Jackson <Andrew.Jackson@arm.com>, <alsa-devel@alsa-project.org>,
-        <devicetree@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v9 0/4] ASoC: tda998x: add a codec to the HDMI transmitter
-References: <cover.1420628786.git.moinejf@free.fr> <54AE99D0.1050205@ti.com> <20150108200526.GD2634@sirena.org.uk>
-In-Reply-To: <20150108200526.GD2634@sirena.org.uk>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420763892-15535-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2015 10:05 PM, Mark Brown wrote:
-> On Thu, Jan 08, 2015 at 04:53:04PM +0200, Jyri Sarha wrote:
->
->> BTW, the HDMI codec is now completely unused, since my OMAP4+ HDMI audio
->> patches were merged (it uses dummy codec) and my BBB HDMI audio patches were
->> never merged.
->
-> Might those BBB ones turn up sometime?
->
+On Fri, Jan 09, 2015 at 09:38:12AM +0900, Namhyung Kim wrote:
+> When thread__init_map_groups() fails, a new thread should be removed
+> from the rbtree since it's gonna be freed.  Also update last match cache
+> only if the function succeeded.
+> 
+> Reported-by: David Ahern <dsahern@gmail.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 
-My intention is to take Jean-Francoises patches into use (I am currently 
-working on it). I abandon my generic hdmi codec for now.
-In any case I should not need the dummy HDMI codec for anything.
+Acked-by: Jiri Olsa <jolsa@kernel.org>
 
-Best regards,
-Jyri
+jirka
