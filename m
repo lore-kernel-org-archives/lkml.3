@@ -1,114 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757738AbbAIPQi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:16:38 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:59605 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192AbbAIPQg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:16:36 -0500
+	id S1757873AbbAIPRM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:17:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37484 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755206AbbAIPRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 10:17:10 -0500
+Message-ID: <54AFF0F4.1030608@suse.com>
+Date: Fri, 09 Jan 2015 16:17:08 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <1418719298-25314-2-git-send-email-tomeu.vizoso@collabora.com>
-References: <1418719298-25314-1-git-send-email-tomeu.vizoso@collabora.com> <1418719298-25314-2-git-send-email-tomeu.vizoso@collabora.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Fri, 9 Jan 2015 09:16:14 -0600
-Message-ID: <CAL_JsqLRWLrNHbtOxWMm1MnkuppAL9CJh4BGk2RgyrniFuxo0g@mail.gmail.com>
-Subject: Re: [PATCH v5 1/3] of: Add binding for NVIDIA Tegra ACTMON node
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Mikko Perttunen <mikko.perttunen@kapsi.fi>,
-        Arto Merilainen <amerilainen@nvidia.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        boris.ostrovsky@oracle.com
+Subject: Re: [PATCH 2/3] xen: correct race in alloc_p2m_pmd()
+References: <1420736490-15351-1-git-send-email-jgross@suse.com> <1420736490-15351-3-git-send-email-jgross@suse.com> <54AFEF2A.3090403@citrix.com>
+In-Reply-To: <54AFEF2A.3090403@citrix.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 2:41 AM, Tomeu Vizoso
-<tomeu.vizoso@collabora.com> wrote:
-> This block gathers statistics about various counters and can be configured to
-> fire interrupts when thresholds are crossed.
+On 01/09/2015 04:09 PM, David Vrabel wrote:
+> On 08/01/15 17:01, Juergen Gross wrote:
+>> When allocating a new pmd for the linear mapped p2m list a check is
+>> done for not introducing another pmd when this just happened on
+>> another cpu. In this case the old pte pointer was returned which
+>> points to the p2m_missing or p2m_identity page. The correct value
+>> would be the pointer to the found new page.
 >
-> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+> Looking at the check I don't see how it works at all.
 >
-> ---
+> alloc_p2m() looks up the address of the PTE page
 >
-> v2:     * Add operating-points property
-> ---
->  .../devicetree/bindings/arm/tegra/actmon.txt       | 38 ++++++++++++++++++++++
->  1 file changed, 38 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/arm/tegra/actmon.txt
+> 	ptep = lookup_address(addr, &level);
+> 	pte_pg = (pte_t *)((unsigned long)ptep & ~(PAGE_SIZE - 1));
 >
-> diff --git a/Documentation/devicetree/bindings/arm/tegra/actmon.txt b/Documentation/devicetree/bindings/arm/tegra/actmon.txt
-> new file mode 100644
-> index 0000000..b4069df
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/tegra/actmon.txt
-> @@ -0,0 +1,38 @@
-> +Tegra124 Activity Monitor driver
-> +
-> +Required properties:
-> +
-> +- compatible: should be "nvidia,tegra124-actmon"
-> +- reg: offset and length of the register set for the device
-> +- interrupts: standard interrupt property
-> +- clocks: Must contain a phandle and clock specifier pair for each entry in clock-names. See ../clock/clock-bindings.txt for details.
-> +- clock-names: Must include the following entries:
-> +  - actmon
-> +  - emc
-> +- resets: Must contain an entry for each entry in reset-names. See ../reset/reset.txt for details.
-> +- reset-names: Must include the following entries:
-> +  - actmon
-> +- operating-points: Supported operating points. See ../power/opp.txt for details.
-
-FYI, we are looking to deprecate this and do something more
-extensible[1]. I'm not saying don't use this, but input on the new one
-would be helpful. This is also the 2nd bus scaling binding I've
-reviewed this week (Exynos being the other). I like the simplicity of
-this, but would like something common even more.
-
-This somewhat seems like it is in the wrong place. Is this for scaling
-internal buses or DDR? Is it the activity monitor that also does the
-frequency changes? I would expect the DDR controller to do that and
-then the OPPs should be part of the DDR controller.
-
-Rob
-
-[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-December/308629.html
-
-> +
-> +Example:
-> +       actmon@6000c800 {
-> +               compatible = "nvidia,tegra124-actmon";
-> +               reg = <0x0 0x6000c800 0x0 0x400>;
-> +               interrupts = <GIC_SPI 45 IRQ_TYPE_LEVEL_HIGH>;
-> +               clocks = <&tegra_car TEGRA124_CLK_ACTMON>,
-> +                        <&tegra_car TEGRA124_CLK_EMC>;
-> +               clock-names = "actmon", "emc";
-> +               resets = <&tegra_car 119>;
-> +               reset-names = "actmon";
-> +               operating-points = <
-> +                       /* kHz  uV */
-> +                       102000  800000
-> +                       204000  800000
-> +                       300000  820000
-> +                       396000  850000
-> +                       528000  880000
-> +                       600000  910000
-> +                       792000  980000
-> +                       924000  1010000
-> +               >;
-> +       };
-> --
-> 1.9.3
+> But the check under the lock that is still true does:
 >
+> 	ptechk = lookup_address(vaddr, &level);
+> 	if (ptechk == pte_pg) {
+>
+> So I don't see how this works unless (by chance) we happen to get the
+> first entry in the PTE page.
+
+The check under lock tests vaddr which is pmd aligned.
+
+> It also doesn't handle racing with p2m_missing_pte to p2m_identity_pte
+> (or vice-versa) change.
+
+The change is always and only for missing/identity to individual pmd.
+There is no transition between all missing and identity pmds.
+
+> Something like:
+>
+> 	ptechk = lookup_address(vaddr, &level);
+> 	ptechk = (pte_t *)((unsigned long)ptechk & ~(PAGE_SIZE - 1));
+> 	if (ptechk == p2m_missing_pte || ptechk == p2m_identity) {
+>                set_pmd(..)
+>
+> Perhaps?
+
+Would work, but is more complicated than needed. :-)
+
+
+Juergen
+
+>
+> David
+>
+>> --- a/arch/x86/xen/p2m.c
+>> +++ b/arch/x86/xen/p2m.c
+>> @@ -440,10 +440,9 @@ EXPORT_SYMBOL_GPL(get_phys_to_machine);
+>>    * a new pmd is to replace p2m_missing_pte or p2m_identity_pte by a individual
+>>    * pmd. In case of PAE/x86-32 there are multiple pmds to allocate!
+>>    */
+>> -static pte_t *alloc_p2m_pmd(unsigned long addr, pte_t *ptep, pte_t *pte_pg)
+>> +static pte_t *alloc_p2m_pmd(unsigned long addr, pte_t *pte_pg)
+>>   {
+>>   	pte_t *ptechk;
+>> -	pte_t *pteret = ptep;
+>>   	pte_t *pte_newpg[PMDS_PER_MID_PAGE];
+>>   	pmd_t *pmdp;
+>>   	unsigned int level;
+>> @@ -477,8 +476,6 @@ static pte_t *alloc_p2m_pmd(unsigned long addr, pte_t *ptep, pte_t *pte_pg)
+>>   		if (ptechk == pte_pg) {
+>>   			set_pmd(pmdp,
+>>   				__pmd(__pa(pte_newpg[i]) | _KERNPG_TABLE));
+>> -			if (vaddr == (addr & ~(PMD_SIZE - 1)))
+>> -				pteret = pte_offset_kernel(pmdp, addr);
+>>   			pte_newpg[i] = NULL;
+>>   		}
+>>
+>> @@ -492,7 +489,7 @@ static pte_t *alloc_p2m_pmd(unsigned long addr, pte_t *ptep, pte_t *pte_pg)
+>>   		vaddr += PMD_SIZE;
+>>   	}
+>>
+>> -	return pteret;
+>> +	return lookup_address(addr, &level);
+>>   }
+>>
+>>   /*
+>> @@ -521,7 +518,7 @@ static bool alloc_p2m(unsigned long pfn)
+>>
+>>   	if (pte_pg == p2m_missing_pte || pte_pg == p2m_identity_pte) {
+>>   		/* PMD level is missing, allocate a new one */
+>> -		ptep = alloc_p2m_pmd(addr, ptep, pte_pg);
+>> +		ptep = alloc_p2m_pmd(addr, pte_pg);
+>>   		if (!ptep)
+>>   			return false;
+>>   	}
+>>
+>
+>
+
