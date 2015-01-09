@@ -1,72 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756210AbbAIOHr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 09:07:47 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:52266 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752602AbbAIOHq (ORCPT
+	id S1757569AbbAIOJM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 09:09:12 -0500
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:36276 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003AbbAIOJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 09:07:46 -0500
-Date: Fri, 9 Jan 2015 06:07:34 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Davidlohr Bueso <dave@stgolabs.net>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, bobby.prani@gmail.com,
-        borntraeger@de.ibm.com
-Subject: Re: [PATCH tip/core/rcu 01/14] rcu: Protect rcu_boost() lockless
- accesses with ACCESS_ONCE()
-Message-ID: <20150109140734.GS5280@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20150107173215.GA897@linux.vnet.ibm.com>
- <1420651953-2651-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20150108094102.GD29390@twins.programming.kicks-ass.net>
- <20150108152230.GL5280@linux.vnet.ibm.com>
- <1420785714.25454.1.camel@stgolabs.net>
- <20150109134954.GO5280@linux.vnet.ibm.com>
- <20150109135614.GI29390@twins.programming.kicks-ass.net>
+	Fri, 9 Jan 2015 09:09:09 -0500
+Date: Fri, 9 Jan 2015 15:09:04 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Anatol Pomozov <anatol.pomozov@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, John Stultz <john.stultz@linaro.org>,
+        Paul Walmsley <paul@pwsan.com>, marc.zyngier@arm.com
+Subject: Re: [PATCH] timekeeping: Move persistent clock registration code
+ from ARM to kernel
+Message-ID: <20150109140902.GA7526@ulmo.nvidia.com>
+References: <20141110095325.GC12126@ulmo>
+ <CAOMFOmXpAm5iKCLFyorTW+n9YmgZMmrDGGe736tJX8C6BYQv-A@mail.gmail.com>
+ <alpine.DEB.2.11.1411132334400.3935@nanos>
+ <CAOMFOmVziftM=pWGG-L9J-E6AHYAK7k9bmBcpS1adPboLciX9g@mail.gmail.com>
+ <alpine.DEB.2.11.1411150115390.3909@nanos>
+ <CAOMFOmV5=tes6Ak1eUKb2qircp8ba6jt6v-bg66Kp_-jYk9m2w@mail.gmail.com>
+ <alpine.DEB.2.11.1411150154280.3909@nanos>
+ <alpine.DEB.2.11.1411150212210.3909@nanos>
+ <20150109094913.GB27845@ulmo>
+ <20150109135907.GF12942@leverpostej>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ew6BAiZeqk4r7MaW"
 Content-Disposition: inline
-In-Reply-To: <20150109135614.GI29390@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15010914-0005-0000-0000-000007E4DEAE
+In-Reply-To: <20150109135907.GF12942@leverpostej>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 02:56:14PM +0100, Peter Zijlstra wrote:
-> On Fri, Jan 09, 2015 at 05:49:54AM -0800, Paul E. McKenney wrote:
-> > > That reminds me, I think the new conversion for stores will most likely
-> > > introduce silly arg bugs:
-> > > 
-> > > -       ACCESS_ONCE(a) = b;
-> > > +       ASSIGN_ONCE(b, a);
-> > 
-> > I was planning to do mine by hand for this sort of reason.
-> > 
-> > Or are you thinking of something more subtle than the case where
-> > "b" is an unparenthesized comma-separated expression?
-> 
-> I think he's revering to the wrong way around-ness of the thing.
-> 
-> Its a bit of a mixed bag on assignments, but for instance
-> rcu_assign_pointer() takes them the right way around, as does
-> atomic_set().
-> 
-> So yes, I think the ASSIGN_ONCE() thing got the arguments the wrong way
-> around.
 
-Ah, yes, I had forgotten about this point.
+--ew6BAiZeqk4r7MaW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> We could maybe still change it, before its in too long ?
+On Fri, Jan 09, 2015 at 01:59:07PM +0000, Mark Rutland wrote:
+> On Fri, Jan 09, 2015 at 09:49:14AM +0000, Thierry Reding wrote:
+> > On Sat, Nov 15, 2014 at 02:38:00AM +0100, Thomas Gleixner wrote:
+> > > On Sat, 15 Nov 2014, Thomas Gleixner wrote:
+> > > > On Fri, 14 Nov 2014, Anatol Pomozov wrote:
+> > > > > On Fri, Nov 14, 2014 at 4:18 PM, Thomas Gleixner <tglx@linutronix=
+=2Ede> wrote:
+> > > > > >> So what I suppose to do with my patch? If it does not work cou=
+ld
+> > > > > >> anyone provide patch that removes ARM arch dependency from
+> > > > > >> tegra20_timer.c?
+> > > > > >
+> > > > > > Huch? You want other people to solve your problems?
+> > > > >=20
+> > > > > This is not the point. I provided patch that fixes the issue. Oth=
+er
+> > > > > people said that they have ideas how to do it different (and bett=
+er)
+> > > > > way. So I am asking to share these ideas represented as a patch.
+> > > >=20
+> > > > That's not the way it works.
+> > > >=20
+> > > > You sent a patch to solve an problem which you are facing.
+> > > >=20
+> > > > Now the people who review the patch think that there is a better
+> > > > approach than moving code from arm/ to the timekeeping core code.
+> > > >=20
+> > > > So it's up to you to come up with a patch which solves the problem =
+in
+> > > > the right way.
+> > >=20
+> > > And just for the record this whole thing is just hilarious.
+> > >=20
+> > > ARM64 selects ARM_ARCH_TIMER which registers the architected timer as
+> > > the primary clocksource.
+> > >=20
+> > > Now that timer has the following flag set:
+> > >=20
+> > >     CLOCK_SOURCE_SUSPEND_NONSTOP
+> > >=20
+> > > And that flag causes the core timekeeping code to use the clocksource
+> > > to figure out the time which the machine spent in suspend.
+> >=20
+> > As I understand it the architected timer will be turned off along with
+> > the rest of the CPU complex on Tegra. I'm not sure if that's specific to
+> > Tegra or something that other SoCs may do as well.
+>=20
+> That doesn't sound right to me: the architecture specifies that the
+> system counter must be implemented in an always-on power domain.
+>=20
+> Note that that only applies to the counter, not the timers (as the
+> comparators can be turned off with the CPUs).
 
-I would be in favor.  Any objections?  ;-)
+I'll let Paul comment on this, since I don't know the intimate details.
+Of course if the system counter is indeed active across suspend/resume
+then it doesn't seem like we'd need the Tegra timer at all on 64-bit.
+Unless of course if we use it for something else.
 
-							Thanx, Paul
+Thierry
 
+--ew6BAiZeqk4r7MaW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUr+D+AAoJEN0jrNd/PrOhmx8QALdxEZj6dRHdO0uIdaRYLH+P
+xlRpN+ClAhVje3e+++oFoJ18Zw+RYuR2b5riBn07PULG9qxpvCnSg77rCZziSEzZ
+RXTYplY27VB+VFwOsmeVPS28c3YxXAPNJxpDZM1ibnzF2htg9gKNoDBiepV63BKv
+eSRf212/Fgc09z/Yyr7LaVFdFElOySNh5717S3m8x8MLkLQnMloorZy1qlnp4DGm
+KV3m9QLUcnFfCJXna4YHzTAIaWfipX0CmXC+vWH15nZtexdV+yJXSJAx1Ak1vSpY
+3RtSJ3asLoSVqfNFEZtvI9cgNMoXTsg4hpNnmjO9zsv7RTMgWSR5XwqYJIhkU6HF
+opiP5EPeaG5ZTBbVOL6gw8XSCQsbJyOYRjDQRa4V/H83CcJQa2MnAWtizURGXcZx
+ln2/ML2C5z8ILQOee/wRH7F8jmHrjktC3PFns0ffFlihZEt/K7+5kxT0KeHxQF+q
+auYCirqgeul6pqcBpperZ6bI15shDMyZldeEup7eT6Mwn2NOApGLd+m7QQHF3kQj
+lRpS+gfurwZ5FaK1tIjGejebB+L9vJcuTirKGSbF2sABC7eVyat6m8h4fj7EhTa8
+TGyEhWWcji2LmMglTIk4NZ9lGPrCWKBU+HpSGDT9HVjElfnHjV0EERP4Yt8icC1T
+nuYNUxQNoi2wAJHNd5Mo
+=5LVO
+-----END PGP SIGNATURE-----
+
+--ew6BAiZeqk4r7MaW--
