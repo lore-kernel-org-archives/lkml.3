@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754925AbbAIDeL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 22:34:11 -0500
-Received: from resqmta-ch2-11v.sys.comcast.net ([69.252.207.43]:53771 "EHLO
-	resqmta-ch2-11v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752964AbbAIDeK (ORCPT
+	id S1755865AbbAIDfB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 22:35:01 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:48199 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754785AbbAIDe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 22:34:10 -0500
-Date: Thu, 8 Jan 2015 21:34:07 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Davidlohr Bueso <dave@stgolabs.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Jesper Dangaard Brouer <brouer@redhat.com>, rostedt@goodmis.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/2] mm/slub: optimize alloc/free fastpath by removing
- preemption on/off
-In-Reply-To: <20150108074447.GA25453@js1304-P5Q-DELUXE>
-Message-ID: <alpine.DEB.2.11.1501082133350.22140@gentwo.org>
-References: <1420421765-3209-1-git-send-email-iamjoonsoo.kim@lge.com> <1420513392.24290.2.camel@stgolabs.net> <20150106080948.GA18346@js1304-P5Q-DELUXE> <1420563737.24290.7.camel@stgolabs.net> <20150108074447.GA25453@js1304-P5Q-DELUXE>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 8 Jan 2015 22:34:59 -0500
+From: Cyril Bur <cyrilbur@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: mpe@ellerman.id.au, drjones@redhat.com, dzickus@redhat.com,
+        akpm@linux-foundation.org, mingo@kernel.org, uobergfe@redhat.com,
+        chaiw.fnst@cn.fujitsu.com, fabf@skynet.be, atomlin@redhat.com,
+        benzh@chromium.org, schwidefsky@de.ibm.com,
+        Cyril Bur <cyrilbur@gmail.com>
+Subject: [PATCH v2 0/2] Quieten softlockup detector on virtualised kernels
+Date: Fri,  9 Jan 2015 14:34:36 +1100
+Message-Id: <1420774478-16760-1-git-send-email-cyrilbur@gmail.com>
+X-Mailer: git-send-email 1.9.1
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15010903-0033-0000-0000-000000E60354
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Jan 2015, Joonsoo Kim wrote:
+When the hypervisor pauses a virtualised kernel the kernel will observe a jump
+in timebase, this can cause spurious messages from the softlockup detector.
 
-> > You'd need a smp_wmb() in between tid and c in the loop then, which
-> > looks quite unpleasant. All in all disabling preemption isn't really
-> > that expensive, and you should redo your performance number if you go
-> > this way.
->
-> This barrier() is not for read/write synchronization between cpus.
-> All read/write operation to cpu_slab would happen on correct cpu in
-> successful case. What I'd need to guarantee here is to prevent
-> reordering between fetching operation for correctness of algorithm. In
-> this case, barrier() seems enough to me. Am I wrong?
+Whilst these messages are harmless, they are accompanied with a stack trace
+which causes undue concern and more problematically the stack trace in the
+guest has nothing to do with the observed problem and can only be misleading.
 
-You are right.
+Futhermore, on POWER8 this is completely avoidable with the introduction of
+the Virtual Time Base (VTB) register.
+
+V2:
+	Remove the export of running_clock
+	Added #ifdef CONFIG_PPC_PSERIES and optimised the non lpar + vtb cases.
+	Replaced the use of sched_clock_with local_clock it was used originally in
+the softlockup detector.
+
+Cyril Bur (2):
+  Add another clock for use with the soft lockup watchdog.
+  powerpc: add running_clock for powerpc to prevent spurious softlockup
+    warnings
+
+ arch/powerpc/kernel/time.c | 32 ++++++++++++++++++++++++++++++++
+ include/linux/sched.h      |  1 +
+ kernel/sched/clock.c       | 13 +++++++++++++
+ kernel/watchdog.c          |  2 +-
+ 4 files changed, 47 insertions(+), 1 deletion(-)
+
+-- 
+1.9.1
 
