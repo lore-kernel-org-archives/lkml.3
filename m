@@ -1,162 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976AbbAIEth (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 23:49:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55314 "EHLO mx1.redhat.com"
+	id S1756003AbbAIEwt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 23:52:49 -0500
+Received: from mga02.intel.com ([134.134.136.20]:20552 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754231AbbAIEtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 23:49:35 -0500
-Date: Fri, 9 Jan 2015 12:49:08 +0800
-From: Fam Zheng <famz@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Miklos Szeredi <mszeredi@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Juri Lelli <juri.lelli@gmail.com>, Zach Brown <zab@zabbo.net>,
-        David Drysdale <drysdale@google.com>,
-        Kees Cook <keescook@chromium.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Dario Faggioli <raistlin@linux.it>, "Theodore Ts'o" <tytso@mit.edu>,
-        Peter Zijlstra <peterz@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Fabian Frederick <fabf@skynet.be>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Subject: Re: [PATCH 0/3] epoll: Add epoll_pwait1 syscall
-Message-ID: <20150109044908.GA10966@fam-t430.nay.redhat.com>
-References: <1420705550-24245-1-git-send-email-famz@redhat.com>
- <1420708372.18399.15.camel@suse.cz>
- <CALCETrVyPij1Zxwmw7p06UrZjoyYDXqEjmxyQ-KJ8Y7dx7mL3g@mail.gmail.com>
- <20150109011608.GA2924@fam-t430.nay.redhat.com>
- <CALCETrWHGwPw2cH3RruaCFKj2ND8PdEbdWjTi4OJ8m2eF9fpLw@mail.gmail.com>
- <20150109015248.GA5034@fam-t430.nay.redhat.com>
- <CALCETrU+MKWCh1FBqvuf3MGo3dTcmdktcM4aVZZGGUAmDNoWtg@mail.gmail.com>
+	id S1752753AbbAIEwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 23:52:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="438319895"
+Date: Fri, 9 Jan 2015 12:52:13 +0800
+From: kbuild test robot <fengguang.wu@intel.com>
+To: Praveen Madhavan <praveenm@chelsio.com>
+Cc: kbuild-all@01.org, "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Hariprasad Shenai <hariprasad@chelsio.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [net-next:master 62/63] drivers/scsi/csiostor/csio_hw.c:2012:5:
+ sparse: symbol 'csio_hw_prep_fw' was not declared. Should it be static?
+Message-ID: <201501091252.dqPVA7db%fengguang.wu@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrU+MKWCh1FBqvuf3MGo3dTcmdktcM4aVZZGGUAmDNoWtg@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: fengguang.wu@intel.com
+X-SA-Exim-Scanned: No (on bee); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 01/08 18:24, Andy Lutomirski wrote:
-> On Thu, Jan 8, 2015 at 5:52 PM, Fam Zheng <famz@redhat.com> wrote:
-> > On Thu, 01/08 17:28, Andy Lutomirski wrote:
-> >> On Thu, Jan 8, 2015 at 5:25 PM, Fam Zheng <famz@redhat.com> wrote:
-> >> > On Thu, 01/08 09:57, Andy Lutomirski wrote:
-> >> >> I'd like to see a more ambitious change, since the timer isn't the
-> >> >> only problem like this.  Specifically, I'd like a syscall that does a
-> >> >> list of epoll-related things and then waits.  The list of things could
-> >> >> include, at least:
-> >> >>
-> >> >>  - EPOLL_CTL_MOD actions: level-triggered epoll users are likely to
-> >> >> want to turn on and off their requests for events on a somewhat
-> >> >> regular basis.
-> >> >
-> >> > This sounds good to me.
-> >> >
-> >> >>
-> >> >>  - timerfd_settime actions: this allows a single syscall to wait and
-> >> >> adjust *both* monotonic and real-time wakeups.
-> >> >
-> >> > I'm not sure, doesn't this break orthogonality between epoll and timerfd?
-> >>
-> >> Yes.  It's not very elegant, and more elegant ideas are welcome.
-> >
-> > What is the purpose of embedding timerfd operation here? Modifying timerfd
-> > for each poll doesn't sound a common pattern to me.
-> 
-> Setting a timeout is definitely a common pattern, hence this thread.
-> But the current timeout interface sucks, and people should really use
-> absolute time.  (My epoll software uses absolute time.)  But then
-> users need to decide whether to have their timeout based on the
-> monotonic clock or the realtime clock (or something else entirely).
-> Some bigger programs may want both -- they may have internal events
-> queued for certain times and for certain timeouts, and those should
-> use realtime and monotonic respectively.  Heck, users may also want
-> separate slack values on those.
-> 
-> Timerfd is the only thing we have right now that is anywhere near
-> flexible enough.  Obviously if epoll became fancy enough, then we
-> could do away with the timerfd entirely here.
-> 
-> >
-> >>
-> >> >
-> >> >>
-> >> >> Would this make sense?  It could look like:
-> >> >>
-> >> >> int epoll_mod_and_pwait(int epfd,
-> >> >>   struct epoll_event *events, int maxevents,
-> >> >>   struct epoll_command *commands, int ncommands,
-> >> >>   const sigset_t *sigmask);
-> >> >
-> >> > What about flags?
-> >> >
-> >>
-> >> No room.  Maybe it should just be a struct for everything instead of
-> >> separate args.
-> >
-> > Also no room for timeout. A single struct sounds the only way to go.
-> 
-> That's what timerfd is for.  I think it would be a bit weird to
-> support "timeout" and detailed timerfd control.
+tree:   git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git master
+head:   fb57720daf6e56ba453414b5e8dd9cb3c0c80257
+commit: f40e74ffa3de44f7ef4c09653b070dd115ab7fbe [62/63] csiostor:firmware upgrade fix
+reproduce:
+  # apt-get install sparse
+  git checkout f40e74ffa3de44f7ef4c09653b070dd115ab7fbe
+  make ARCH=x86_64 allmodconfig
+  make C=1 CF=-D__CHECK_ENDIAN__
 
-I see what you mean. Thanks.
 
-I still don't like hooking timerfd in the interface. Besides the unclean
-interface, it also feels cubersome and overkill to let users setup and add a
-dedicated timerfd to implement timeout.
+sparse warnings: (new ones prefixed by >>)
 
-How about this:
+   drivers/scsi/csiostor/csio_hw.c:259:17: sparse: cast to restricted __le32
+   drivers/scsi/csiostor/csio_hw.c:536:31: sparse: incorrect type in assignment (different base types)
+   drivers/scsi/csiostor/csio_hw.c:536:31:    expected unsigned int [unsigned] [usertype] <noident>
+   drivers/scsi/csiostor/csio_hw.c:536:31:    got restricted __be32 [usertype] <noident>
+>> drivers/scsi/csiostor/csio_hw.c:2012:5: sparse: symbol 'csio_hw_prep_fw' was not declared. Should it be static?
 
-int epoll_mod_wait(int epfd, struct epoll_mod_wait_data *data);
+Please review and possibly fold the followup patch.
 
-struct epoll_mod_wait_data {
-	struct epoll_event *events;
-	int maxevents;
-	struct epoll_mod_cmd {
-		int op,
-		int fd;
-		void *data;
-	} *cmds;
-	int ncmds;
-	int flags;
-	sigset_t *sigmask;
-};
-
-Commands ops are:
-
-	EPOLL_CTL_ADD
-		@fd is the fd to modify; @data is epoll_event.
-	EPOLL_CTL_MOD
-		@fd is the fd to modify; @data is epoll_event.
-	EPOLL_CTL_DEL
-		@fd is the fd to modify; @data is epoll_event.
-
-	EPOLL_CTL_SET_TIMEOUT
-		@fd is ignored, @data is timespec.
-		Clock type and relative/absolute are selected by flags as below.
-
-Flags are given to override timeout defaults:
-	EPOLL_FL_MONOTONIC_CLOCK
-		If set, don't use realtime clock, use monotonic clock.
-	EPOLL_FL_ABSOLUTE_TIMEOUT
-		If set, don't use relative timeout, use absolute timeout.
-
-Thanks,
-Fam
+---
+0-DAY kernel test infrastructure                Open Source Technology Center
+http://lists.01.org/mailman/listinfo/kbuild                 Intel Corporation
