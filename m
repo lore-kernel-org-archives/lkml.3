@@ -1,40 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933092AbbAIPlv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:41:51 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:60075 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754583AbbAIPlu (ORCPT
+	id S933121AbbAIPmF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:42:05 -0500
+Received: from smtp-out-098.synserver.de ([212.40.185.98]:1066 "EHLO
+	smtp-out-245.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933095AbbAIPmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:41:50 -0500
-Message-ID: <54AFF6BC.20007@cogentembedded.com>
-Date: Fri, 09 Jan 2015 18:41:48 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 9 Jan 2015 10:42:01 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 7736
+Message-ID: <54AFF6C4.9020306@metafoo.de>
+Date: Fri, 09 Jan 2015 16:41:56 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-To: Chunhao Lin <hau@realtek.com>, netdev@vger.kernel.org
-CC: nic_swsd@realtek.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next v2 1/8] r8169:change rtl8168dp jumbo frame patch
-References: <1420817166-9868-1-git-send-email-hau@realtek.com> <1420817166-9868-2-git-send-email-hau@realtek.com>
-In-Reply-To: <1420817166-9868-2-git-send-email-hau@realtek.com>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Jonathan Cameron <jic23@kernel.org>,
+        Hartmut Knaack <knaack.h@gmx.de>, Peter Meerwald <pmeerw@pmeerw.net>
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] iio: Simplify IIO provider access locking mechanism
+References: <1420817893-5858-1-git-send-email-iivanov@mm-sol.com>
+In-Reply-To: <1420817893-5858-1-git-send-email-iivanov@mm-sol.com>
 Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 1/9/2015 6:25 PM, Chunhao Lin wrote:
-
-> RTL8168DP jumbo frame patch is the same as RTL8168C. So, for RTL8168DP,
-> change to use RTL8168C jumbo frame patch. Also reomve uncessary function
-
-    s/reomve uncessary/remove unnecessary/.
-
-> "r8168dp_hw_jumbo_enable" and "r8168dp_hw_jumbo_disable".
+On 01/09/2015 04:38 PM, Ivan T. Ivanov wrote:
+> Instead of checking whether provider module is still
+> loaded on every access to device just lock module to
+> memory when client get reference to provider device.
 >
-> Signed-off-by: Chunhao Lin <hau@realtek.com>
 
-WBR, Sergei
+This has nothing to do with the module, it's about the device. In the Linux 
+device driver model as device can be unbound at any time and the IIO 
+framework needs to handle this.
 
+- Lars
