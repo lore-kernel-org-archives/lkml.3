@@ -1,104 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757476AbbAILRr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 06:17:47 -0500
-Received: from outbound-smtp03.blacknight.com ([81.17.249.16]:42280 "EHLO
-	outbound-smtp03.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752904AbbAILRq (ORCPT
+	id S932709AbbAILT4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 06:19:56 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:54941 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755109AbbAILTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 06:17:46 -0500
-Message-ID: <54AFB8D7.6020306@nexus-software.ie>
-Date: Fri, 09 Jan 2015 11:17:43 +0000
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 9 Jan 2015 06:19:54 -0500
+Date: Fri, 9 Jan 2015 11:19:35 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jyri Sarha <jsarha@ti.com>
+Cc: Jean-Francois Moine <moinejf@free.fr>,
+        Andrew Jackson <Andrew.Jackson@arm.com>,
+        Mark Brown <broonie@kernel.org>, Dave Airlie <airlied@gmail.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v9 3/4] ASoC: tda998x: add a codec to the HDMI transmitter
+Message-ID: <20150109111935.GF12302@n2100.arm.linux.org.uk>
+References: <cover.1420628786.git.moinejf@free.fr>
+ <23b36acc1f769418a06f3e929eba288b5911da12.1420628786.git.moinejf@free.fr>
+ <54AD4C77.5000401@arm.com>
+ <20150107154138.GL12302@n2100.arm.linux.org.uk>
+ <20150107190241.27ebac8b@armhf>
+ <54AFAC4C.7010209@ti.com>
 MIME-Version: 1.0
-To: Darren Hart <dvhart@infradead.org>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] platform/x86: Add Intel Galileo platform specific
- setup
-References: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie> <1419873783-5161-3-git-send-email-pure.logic@nexus-software.ie> <20150109044613.GB9311@vmdeb7>
-In-Reply-To: <20150109044613.GB9311@vmdeb7>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54AFAC4C.7010209@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/15 04:46, Darren Hart wrote:
->> +	/* Try overlap - IMR_ALIGN */
->> +	base = base + size - IMR_ALIGN;
->> +	if (imr_add(base, size, IMR_NON_SMM, IMR_NON_SMM, true) == 0)
->> +		pr_err(SANITY "overlapped IMR @ (0x%08lx - 0x%08lx)\n",
->> +		       base, base + size);
->> +}
->> +#endif
->
-> I'd rather see this as CONFIG_DEBUG_IMR under Kernel Hacking.
->
-> What about this sanity test is galileo specific?
+On Fri, Jan 09, 2015 at 12:24:12PM +0200, Jyri Sarha wrote:
+> I think that would still fail if DRM and TDA998x is built in and SND_SOC is
+> built as modules. A request_module() call before tda9998x_codec_register()
+> should help.
 
-Exactly nothing.
+That doesn't fix the problem.  If the DRM driver is built in, but the
+codec is not, and the DRM driver has a reference to
+tda9998x_codec_register(), then the vmlinux file will fail to link,
+and you'll never get the opportunity to call request_module().
 
-I think it's a fair point to make this
-* CONFIG_DEBUG_IMR
-* Embedded in the IMR init code
+> Or could could write:
+> 
+> select SND_SOC_TDA998X if (SND_SOC=DRM_I2C_NXP_TDA998X || SND_SOC=y)
 
->> +	/* BIOS releases 0.7.5 and 0.8.0 do not provide DMI strings */
->> +	if (system_id != NULL) {
->> +		type = (int)system_id->driver_data;
->> +	} else {
->> +		pr_info("Galileo Gen1 BIOS version <= 0.8.0\n");
->> +		type = GALILEO_QRK_GEN1;
->
-> So this will load on any Quark device, Galileo or not, that doesn't provide a
-> system_id. Is there any reason we need to support 0.8.0 and earlier firmware?
+I'm not sure that's right either.
 
-Every Galileo Gen1 device ships with firmware version 0.7.5. You can do 
-an EFI capsule update to 0.8.0 which still isn't DMI-enabled - or you 
-can go and get a firmware greater than 0.9.0 and get DMI strings.
+Let's go back and think about this: why should SND_SOC_TDA998X be
+*selected*.  Let me put that a different way: why should this symbol
+be forced on just because we're building the DRM TDA998x driver?
 
-> I'd prefer not to successfully load a driver on the wrong platform because we
-> assume the user knows what they are doing :-) This effective converts this from
-> a "platform driver" to a "board file" - the bad kind.
+Would it be more sensible to make SND_SOC_TDA998X depend on
+DRM_I2C_NXP_TDA998X instead, maybe with a 'default y' - which is a
+kinder way to have SND_SOC_TDA998X be enabled.  If SND_SOC_TDA998X
+doesn't have a prompt, then it'll automatically enable itself too
+this way when all its dependencies are satisfied.
 
-That would be a problem if there were any other X1000 boards that don't 
-provide DMI strings but only Galileo Gen1 out of the box is DMI 
-deprived, so for that reason I think falling back to assume Gen1 when 
-you've identified a Quark X1000 is the right thing to do.
+IMHO "select" is a very over-used, and in many cases an evil
+construct because its very hard to avoid breaking dependencies
+with it.
 
-Right now the only Quark X1000 devices that real users in the field have 
-are Galileo boards which either identify with DMI strings (Gen2 and 
-upgraded Gen1 boards) - or don't identify with DMI strings Gen1 @ 0.7.5 
-and 0.8.0
-
-Also consider that any new X1000 based systems running Linux will be 
-based on the latest reference firmware from Intel which provides DMI 
-identifiers, so Galileo Gen3 if it is in the making will have a DMI 
-string to identify itself as a Gen3, same with a Gen2 and upgraded Gen1.
-
-The only X1000 based boards without DMI strings are going to be Galileo 
-Gen1 devices @ firmware version 0.7.5 and 0.8.0, so I don't think we 
-will end up in a situation of loading the wrong platform code, rather 
-we'll accommodate the older firmware this way
-
-All that said - there *is* an alternative for 0.7.5 and 0.8.0 firmware 
-but, I know you won't like it.
-
-Prior to 0.9.0 firmware Galileo boards were identified by
-
-1. Mapping a section of SPI flash
-2. Finding a specific header at a know location on SPI flash
-3. Extracting a unique platform ID field from that header
-4. Examining that platform ID field and loading Galileo specific drivers 
-if found
-
-So in theory we could go this route if you feel that fallback the 
-fallback described above isn't robust enough.
-
-I'm OK to add that code in for V2 and we can decide which is the more 
-desirable way to do it - fallback or extract of platform id from SPI 
-flash and then finalise at V3
-
---
-BOD
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
