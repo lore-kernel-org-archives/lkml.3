@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398AbbAIVkb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 16:40:31 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:57003 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636AbbAIVka (ORCPT
+	id S1758282AbbAIVlR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 16:41:17 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:54751 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752261AbbAIVlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 16:40:30 -0500
-Message-ID: <54B04A50.8040307@vanguardiasur.com.ar>
-Date: Fri, 09 Jan 2015 18:38:24 -0300
+	Fri, 9 Jan 2015 16:41:13 -0500
+Message-ID: <54B04A7C.4000301@vanguardiasur.com.ar>
+Date: Fri, 09 Jan 2015 18:39:08 -0300
 From: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
 Organization: VanguardiaSur
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
 To: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com
 CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: Fastmap update v2 (pile 1)
-References: <1416835236-25185-1-git-send-email-richard@nod.at>
-In-Reply-To: <1416835236-25185-1-git-send-email-richard@nod.at>
+Subject: Re: [PATCH 3/6] UBI: Fastmap: Ensure that all fastmap work is done
+ upon WL shutdown
+References: <1416835236-25185-1-git-send-email-richard@nod.at> <1416835236-25185-4-git-send-email-richard@nod.at> <54B048E4.3080102@vanguardiasur.com.ar> <54B04A34.7030008@nod.at>
+In-Reply-To: <54B04A34.7030008@nod.at>
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
 
-On 11/24/2014 10:20 AM, Richard Weinberger wrote:
-> Artem,
+
+On 01/09/2015 06:37 PM, Richard Weinberger wrote:
+> Am 09.01.2015 um 22:32 schrieb Ezequiel Garcia:
+>> On 11/24/2014 10:20 AM, Richard Weinberger wrote:
+>>> ...otherwise the deferred work might run after datastructures
+>>> got freed and corrupt memory.
+>>>
+>>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>>> ---
+>>>  drivers/mtd/ubi/wl.c | 3 +++
+>>>  1 file changed, 3 insertions(+)
+>>>
+>>> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+>>> index 7f135df..cb2e571 100644
+>>> --- a/drivers/mtd/ubi/wl.c
+>>> +++ b/drivers/mtd/ubi/wl.c
+>>> @@ -2041,6 +2041,9 @@ static void protection_queue_destroy(struct ubi_device *ubi)
+>>>  void ubi_wl_close(struct ubi_device *ubi)
+>>>  {
+>>>  	dbg_wl("close the WL sub-system");
+>>> +#ifdef CONFIG_MTD_UBI_FASTMAP
+>>> +	flush_work(&ubi->fm_work);
+>>> +#endif
+>>>  	shutdown_work(ubi);
+>>>  	protection_queue_destroy(ubi);
+>>>  	tree_destroy(&ubi->used);
+>>>
+>>
+>> IMHO, it's best to avoid nasty ifdefs like this (there are lots of ways
+>> of getting it cleaner). But I guess it's not a big deal.
 > 
-> as requested I'm resending my fastmap work in smaller pieces.
-> This is pile 1 of 7.
-> Rebasing my patches to ubifs.git was a massive PITA because the
-> logging style changes touched a lot of code and almost every patch
-> failed to apply and needed inspection by hand.
-> The first patches are bug fixes, the latter introduce cleanups
-> and new features.
-> After all bugfixes are mainline I'll make sure that all needed
-> fixes go into -stable.
+> I agree that's why I've cleaned up the vast majority of all ifdefs in a later cleanup
+> commit. My original plan was to have first pure bug fixes and then cleanups to make
+> backporting of my patches easy.
 > 
 
-Maybe it would be clearer if you could point out exactly which of these
-are considered bugfixes.
-
-For bugfixes, having a detailed explanation of the problem the commit is
-meant to fix would be better as well.
-
-This patchset seems to have stalled, so perhaps having this information
-would help Artem to pick the ones that you point as fixes, before we
-miss another cycle.
-
-Would it help if we test the whole series? (any specific test in mind?)
-
-Thanks a lot for the work, it is really appreciated.
+Ah, yes, backporting is a good point.
 -- 
 Ezequiel Garcia, VanguardiaSur
 www.vanguardiasur.com.ar
