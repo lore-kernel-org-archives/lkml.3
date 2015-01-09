@@ -1,101 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757410AbbAINHl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 08:07:41 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55381 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752886AbbAINHj (ORCPT
+	id S1757306AbbAINLE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 08:11:04 -0500
+Received: from casper.infradead.org ([85.118.1.10]:52648 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752146AbbAINLC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 08:07:39 -0500
-Date: Fri, 9 Jan 2015 13:07:25 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Jyri Sarha <jsarha@ti.com>, Mark Brown <broonie@kernel.org>,
-        Dave Airlie <airlied@gmail.com>,
-        Andrew Jackson <Andrew.Jackson@arm.com>, alsa-devel@alsa-project.org,
-        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v9 1/4] drm/i2c: tda998x: Add DT support for audio
-Message-ID: <20150109130725.GN12302@n2100.arm.linux.org.uk>
-References: <cover.1420628786.git.moinejf@free.fr>
- <0084acea5a3475a77531d6a77483f36d3469111a.1420628786.git.moinejf@free.fr>
- <54AE99F5.1010404@ti.com>
- <20150108174257.557f7ea5@armhf>
- <54AFA9B0.6040405@ti.com>
- <20150109123036.4bc4bbf6@armhf>
- <20150109114529.GH12302@n2100.arm.linux.org.uk>
- <20150109135401.5b270d46@armhf>
+	Fri, 9 Jan 2015 08:11:02 -0500
+Date: Fri, 9 Jan 2015 14:10:45 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com,
+        markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
+        acme@infradead.org
+Subject: Re: [PATCH v8 12/14] x86: perf: intel_pt: Intel PT PMU driver
+Message-ID: <20150109131045.GM3337@twins.programming.kicks-ass.net>
+References: <1415972627-37514-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1415972627-37514-13-git-send-email-alexander.shishkin@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150109135401.5b270d46@armhf>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1415972627-37514-13-git-send-email-alexander.shishkin@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 01:54:01PM +0100, Jean-Francois Moine wrote:
-> On Fri, 9 Jan 2015 11:45:29 +0000
-> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> > I think we need to understand exactly how the 998x map I2S inputs to the
-> > HDMI channels to avoid making a mistake with the binding; remember, the
-> > binding isn't something that can be easily "bug fixed" at a later date
-> > as anything we come up with now has to be supported long term by the
-> > kernel.
-> 
-> The DT describes the hardware configuration.
+On Fri, Nov 14, 2014 at 03:43:45PM +0200, Alexander Shishkin wrote:
+> +static void pt_handle_status(struct pt *pt)
+> +{
+> +	struct pt_buffer *buf = perf_get_aux(&pt->handle);
+> +	int advance = 0;
+> +	u64 status;
+> +
+> +	rdmsrl(MSR_IA32_RTIT_STATUS, status);
+> +
+> +	if (status & RTIT_STATUS_ERROR) {
+> +		pr_err_ratelimited("ToPA ERROR encountered, trying to recover\n");
+> +		pt_topa_dump(buf);
+> +		status &= ~RTIT_STATUS_ERROR;
+> +	}
+> +
+> +	if (status & RTIT_STATUS_STOPPED) {
+> +		status &= ~RTIT_STATUS_STOPPED;
+> +
+> +		/*
+> +		 * On systems that only do single-entry ToPA, hitting STOP
+> +		 * means we are already losing data; need to let the decoder
+> +		 * know.
+> +		 */
+> +		if (!pt_cap_get(PT_CAP_topa_multiple_entries) ||
+> +		    buf->output_off == sizes(TOPA_ENTRY(buf->cur, buf->cur_idx)->size)) {
+> +			local_inc(&buf->lost);
+> +			advance++;
+> +		}
+> +	}
+> +
+> +	/*
+> +	 * Also on single-entry ToPA implementations, interrupt will come
+> +	 * before the output reaches its output region's boundary.
+> +	 */
 
-You're missing my point.
+My understanding was that, while yes it will attempt to generate the
+interrupt early, there is absolutely no guarantee it will in fact arrive
+in time or even it if does, guarantee that there is buffer left by the
+time you're ready to read it.
 
-How does the driver know which of the I2S pins to enable in I2S mode?
+> +	if (!pt_cap_get(PT_CAP_topa_multiple_entries) && !buf->snapshot &&
+> +	    pt_buffer_region_size(buf) - buf->output_off <= TOPA_PMI_MARGIN) {
 
-> A fully wired tda998x could be a chip with the audio pins connected to:
-> - a kirkwood-like audio device with one I2S and one S/PDIF output,
-> - two other audio devices with one I2S each.
+Now this check appears to indeed cater for this scenario where the
+buffer is overran, right?
 
-I don't think it's that simple.  Since there is only one WS input to
-the 998x, the four I2S sources would need to synchronise somehow, and
-since the I2S source generates WS, connecting the 998x to multiple
-independent I2S sources, each with their own WS output, presents a
-hardware problem.
-
-> With S/PDIF, only one stereo channel may be sent, but with I2S, up to 4
-> stereo channels may be sent.
-
-That statement is not entirely accurate.  Yes, with S/PDIF, only one
-PCM L+R channel can be sent.  However, S/PDIF also supports sending
-more channels using "non-audio" streams, with the data encoded as
-MPEG or AAC.  This uses the HDMI data islands which would've been
-occupied by the Front L+R PCM channel.
-
-> These channels are extracted by the devices connected on the HDMI bus.
-
-That's incorrect.  Please read the HDMI 1.3 specification; channels are
-allocated for Front L+R, Centre, Sub, Rear L+R and there's no
-identification to indicate that there are two Front L+R channels which
-are different languages.
-
-If you feel differently, please provide a reference to the HDMI
-specification which describes this feature.
-
-> An example could be the playing of a multi-language movie: each audio
-> channel carries one language. From the computer view, the playing
-> application sends each language to one sound card.
-
-The selection of the language is done at the player, not by the display
-device.
-
-> So, this means that the tda998x driver should check that S/PDIF and I2S
-> are not active at the same time, and it should also do a pin OR/AND on
-> I2S start/stop.
-
-That's correct: the TDA998x can operate in one of two modes: either
-S/PDIF _or_ I2S, but never both.
-
-My question is: how do we know which I2S inputs to enable, or are
-you suggesting that all I2S inputs should be enabled if operating in
-I2S mode irrespective of whether they may be active?
-
--- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
+> +		void *head = pt_buffer_region(buf);
+> +
+> +		/* everything within this margin needs to be zeroed out */
+> +		memset(head + buf->output_off, 0,
+> +		       pt_buffer_region_size(buf) -
+> +		       buf->output_off);
+> +		advance++;
+> +	}
+> +
+> +	if (advance)
+> +		pt_buffer_advance(buf);
+> +
+> +	wrmsrl(MSR_IA32_RTIT_STATUS, status);
+> +}
