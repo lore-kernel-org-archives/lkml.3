@@ -1,103 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614AbbAIV3n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 16:29:43 -0500
-Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:36263 "EHLO
-	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730AbbAIV3l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 16:29:41 -0500
-Date: Fri, 9 Jan 2015 16:28:52 -0500
-From: Rich Felker <dalias@aerifal.cx>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: David Drysdale <drysdale@google.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, sparclinux@vger.kernel.org
-Subject: Re: [PATCHv10 man-pages 5/5] execveat.2: initial man page for
- execveat(2)
-Message-ID: <20150109212852.GU4574@brightrain.aerifal.cx>
-References: <1416830039-21952-1-git-send-email-drysdale@google.com>
- <1416830039-21952-6-git-send-email-drysdale@google.com>
- <54AFF813.7050604@gmail.com>
- <20150109161302.GQ4574@brightrain.aerifal.cx>
- <CAHse=S88Jy5ZKM_VY5onfvxX7dTMngnxuHfuLeSuzvKvQNP19A@mail.gmail.com>
- <20150109204815.GR4574@brightrain.aerifal.cx>
- <20150109205626.GK22149@ZenIV.linux.org.uk>
- <20150109205926.GT4574@brightrain.aerifal.cx>
- <20150109210941.GL22149@ZenIV.linux.org.uk>
+	id S1752612AbbAIV3J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 16:29:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44784 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750772AbbAIV3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 16:29:08 -0500
+Date: Fri, 9 Jan 2015 22:29:05 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Josh Poimboeuf <jpoimboe@redhat.com>
+cc: Seth Jennings <sjenning@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        live-patching@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] livepatch: fix deferred module patching order
+In-Reply-To: <47ab47fd3a2e7794edfe9b45b163582eee0a925c.1420833475.git.jpoimboe@redhat.com>
+Message-ID: <alpine.LNX.2.00.1501092228010.15299@pobox.suse.cz>
+References: <47ab47fd3a2e7794edfe9b45b163582eee0a925c.1420833475.git.jpoimboe@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150109210941.GL22149@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 09:09:41PM +0000, Al Viro wrote:
-> On Fri, Jan 09, 2015 at 03:59:26PM -0500, Rich Felker wrote:
+On Fri, 9 Jan 2015, Josh Poimboeuf wrote:
+
+> When applying multiple patches to a module, if the module is loaded
+> after the patches are loaded, the patches are applied in reverse order:
 > 
-> > > For fsck sake, folks, if you have bloody /proc, you don't need that shite
-> > > at all!  Just do execve on /proc/self/fd/n, and be done with that.
-> > > 
-> > > The sole excuse for merging that thing in the first place had been
-> > > "would anybody think of children^Wsclerotic^Whardened environments
-> > > where they have no /proc at all".
-> > 
-> > That doesn't work. With O_CLOEXEC, /proc/self/fd/n is already gone at
-> > the time the interpreter runs, whether you're using fexecveat or
-> > execve with "/proc/self/fd/n" to implement POSIX fexecve(). That's the
-> > problem. This breaks the intended idiom for fexecve.
+>   $ insmod patch1.ko
+>   [   43.172992] livepatch: enabling patch 'patch1'
 > 
-> Just what will your magical symlink do in case when the file is opened,
-> unlinked and marked O_CLOEXEC?  When should actual freeing of disk blocks,
-> etc. happen?  And no, you can't assume that interpreter will open the
-> damn thing even once - there's nothing to oblige it to do so.
+>   $ insmod patch2.ko
+>   [   46.571563] livepatch: enabling patch 'patch2'
+> 
+>   $ modprobe nfsd
+>   [   52.888922] livepatch: applying patch 'patch2' to loading module 'nfsd'
+>   [   52.899847] livepatch: applying patch 'patch1' to loading module 'nfsd'
+> 
+> Fix the loading order by storing the klp_patches list in queue order.
+> 
+> Signed-off-by: Josh Poimboeuf <jpoimboe@redhat.com>
 
-Unlinking is not relevant. Magical symlinks refer to open file
-descriptions (either real ones or O_PATH inode-reference-only ones),
-not files. There is no new complexity proposed for freeing disk blocks
-here. Semantics are identical to existing O_PATH inode references.
+Applied and pushed out, thanks.
 
-> Al, more and more tempted to ask reverting the whole thing - this hardcoded
-> /dev/fd/... (in fs/exec.c, no less) is disgraceful enough, but threats of
-> even more revolting kludges in the name of "intended idiom for fexecve"...
-
-If you have a multithreaded process that's executing an external
-program via fexecve, then unless it has specialized knowledge about
-what other parts of the program/libraries are doing, it needs to be
-using O_CLOEXEC for the file descriptor. Otherwise, the file
-descriptor could be leaked to child processes started by other
-threads. This is what I mean by the "intended idiom". Note that it's
-easier to use pathnames instead of fexecve, but doing so may not be an
-option if the program needs to verify the file before exec'ing it.
-
-This issue can be avoided if you're going to fork-and-fexecve rather
-than replacing the calling process, since after forking it's safe to
-remove the close-on-exec flag. But then you still have the issue that
-the child process, after exec, keeps a spurious file descriptor to its
-own process image (executable file) open which it can never close
-(because it doesn't know the number). This could eventually lead to fd
-exhaustion after many generations.
-
-The "magic open-once magic symlink" approach is really the cleanest
-solution I can find. In the case where the interpreter does not open
-the script, nothing terribly bad happens; the magic symlink just
-sticks around until _exit or exec. In the case where the interpreter
-opens it more than once, you get a failure, but as far as I know
-existing interpreters don't do this, and it's arguably bad design. In
-any case it's a caught error.
-
-Rich
+-- 
+Jiri Kosina
+SUSE Labs
