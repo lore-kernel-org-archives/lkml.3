@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932940AbbAIMe6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 07:34:58 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60288 "EHLO
+	id S932755AbbAIMgX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 07:36:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60324 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932755AbbAIMez (ORCPT
+	with ESMTP id S932251AbbAIMgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 07:34:55 -0500
-Date: Fri, 9 Jan 2015 04:34:19 -0800
-From: tip-bot for Tetsuo Handa <tipbot@zytor.com>
-Message-ID: <tip-7f1a169b88f513e32a432ca0f85bfd282d117bd6@git.kernel.org>
-Cc: torvalds@linux-foundation.org, tglx@linutronix.de, peterz@infradead.org,
-        hpa@zytor.com, penguin-kernel@I-love.SAKURA.ne.jp,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, bsegall@google.com,
-        pjt@google.com
-Reply-To: hpa@zytor.com, penguin-kernel@I-love.SAKURA.ne.jp,
-        peterz@infradead.org, tglx@linutronix.de,
-        torvalds@linux-foundation.org, pjt@google.com, bsegall@google.com,
-        mingo@kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <201412252210.GCC30204.SOMVFFOtQJFLOH@I-love.SAKURA.ne.jp>
-References: <201412252210.GCC30204.SOMVFFOtQJFLOH@I-love.SAKURA.ne.jp>
+	Fri, 9 Jan 2015 07:36:22 -0500
+Date: Fri, 9 Jan 2015 04:34:37 -0800
+From: tip-bot for Chris Wilson <tipbot@zytor.com>
+Message-ID: <tip-a63b03e2d2477586440741677ecac45bcf28d7b1@git.kernel.org>
+Cc: hpa@zytor.com, dave@stgolabs.net, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        chris@chris-wilson.co.uk, daniel.vetter@ffwll.ch, mingo@kernel.org,
+        tglx@linutronix.de
+Reply-To: tglx@linutronix.de, mingo@kernel.org, chris@chris-wilson.co.uk,
+        daniel.vetter@ffwll.ch, peterz@infradead.org,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        dave@stgolabs.net, hpa@zytor.com
+In-Reply-To: <1420540175-30204-1-git-send-email-chris@chris-wilson.co.uk>
+References: <1420540175-30204-1-git-send-email-chris@chris-wilson.co.uk>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched/fair:
-  Fix RCU stall upon -ENOMEM in sched_create_group()
-Git-Commit-ID: 7f1a169b88f513e32a432ca0f85bfd282d117bd6
+Subject: [tip:locking/urgent] mutex:
+  Always clear owner field upon mutex_unlock()
+Git-Commit-ID: a63b03e2d2477586440741677ecac45bcf28d7b1
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,78 +36,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7f1a169b88f513e32a432ca0f85bfd282d117bd6
-Gitweb:     http://git.kernel.org/tip/7f1a169b88f513e32a432ca0f85bfd282d117bd6
-Author:     Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-AuthorDate: Thu, 25 Dec 2014 15:51:21 +0900
+Commit-ID:  a63b03e2d2477586440741677ecac45bcf28d7b1
+Gitweb:     http://git.kernel.org/tip/a63b03e2d2477586440741677ecac45bcf28d7b1
+Author:     Chris Wilson <chris@chris-wilson.co.uk>
+AuthorDate: Tue, 6 Jan 2015 10:29:35 +0000
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 9 Jan 2015 11:19:00 +0100
+CommitDate: Fri, 9 Jan 2015 11:20:39 +0100
 
-sched/fair: Fix RCU stall upon -ENOMEM in sched_create_group()
+mutex: Always clear owner field upon mutex_unlock()
 
-When alloc_fair_sched_group() in sched_create_group() fails,
-free_sched_group() is called, and free_fair_sched_group() is called by
-free_sched_group(). Since destroy_cfs_bandwidth() is called by
-free_fair_sched_group() without calling init_cfs_bandwidth(),
-RCU stall occurs at hrtimer_cancel():
+Currently if DEBUG_MUTEXES is enabled, the mutex->owner field is only
+cleared iff debug_locks is active. This exposes a race to other users of
+the field where the mutex->owner may be still set to a stale value,
+potentially upsetting mutex_spin_on_owner() among others.
 
-  INFO: rcu_sched self-detected stall on CPU { 1}  (t=60000 jiffies g=13074 c=13073 q=0)
-  Task dump for CPU 1:
-  (fprintd)       R  running task        0  6249      1 0x00000088
-  ...
-  Call Trace:
-   <IRQ>  [<ffffffff81094988>] sched_show_task+0xa8/0x110
-   [<ffffffff81097acd>] dump_cpu_task+0x3d/0x50
-   [<ffffffff810c3a80>] rcu_dump_cpu_stacks+0x90/0xd0
-   [<ffffffff810c7751>] rcu_check_callbacks+0x491/0x700
-   [<ffffffff810cbf2b>] update_process_times+0x4b/0x80
-   [<ffffffff810db046>] tick_sched_handle.isra.20+0x36/0x50
-   [<ffffffff810db0a2>] tick_sched_timer+0x42/0x70
-   [<ffffffff810ccb19>] __run_hrtimer+0x69/0x1a0
-   [<ffffffff810db060>] ? tick_sched_handle.isra.20+0x50/0x50
-   [<ffffffff810ccedf>] hrtimer_interrupt+0xef/0x230
-   [<ffffffff810452cb>] local_apic_timer_interrupt+0x3b/0x70
-   [<ffffffff8164a465>] smp_apic_timer_interrupt+0x45/0x60
-   [<ffffffff816485bd>] apic_timer_interrupt+0x6d/0x80
-   <EOI>  [<ffffffff810cc588>] ? lock_hrtimer_base.isra.23+0x18/0x50
-   [<ffffffff81193cf1>] ? __kmalloc+0x211/0x230
-   [<ffffffff810cc9d2>] hrtimer_try_to_cancel+0x22/0xd0
-   [<ffffffff81193cf1>] ? __kmalloc+0x211/0x230
-   [<ffffffff810ccaa2>] hrtimer_cancel+0x22/0x30
-   [<ffffffff810a3cb5>] free_fair_sched_group+0x25/0xd0
-   [<ffffffff8108df46>] free_sched_group+0x16/0x40
-   [<ffffffff810971bb>] sched_create_group+0x4b/0x80
-   [<ffffffff810aa383>] sched_autogroup_create_attach+0x43/0x1c0
-   [<ffffffff8107dc9c>] sys_setsid+0x7c/0x110
-   [<ffffffff81647729>] system_call_fastpath+0x12/0x17
-
-Check whether init_cfs_bandwidth() was called before calling
-destroy_cfs_bandwidth().
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-[ Move the check into destroy_cfs_bandwidth() to aid compilability. ]
+References: https://bugs.freedesktop.org/show_bug.cgi?id=87955
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Paul Turner <pjt@google.com>
-Cc: Ben Segall <bsegall@google.com>
+Acked-by: Davidlohr Bueso <dave@stgolabs.net>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/201412252210.GCC30204.SOMVFFOtQJFLOH@I-love.SAKURA.ne.jp
+Link: http://lkml.kernel.org/r/1420540175-30204-1-git-send-email-chris@chris-wilson.co.uk
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ kernel/locking/mutex-debug.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 6b99659..40667cb 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4005,6 +4005,10 @@ void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b, bool force)
+diff --git a/kernel/locking/mutex-debug.c b/kernel/locking/mutex-debug.c
+index 5cf6731..3ef3736 100644
+--- a/kernel/locking/mutex-debug.c
++++ b/kernel/locking/mutex-debug.c
+@@ -80,13 +80,13 @@ void debug_mutex_unlock(struct mutex *lock)
+ 			DEBUG_LOCKS_WARN_ON(lock->owner != current);
  
- static void destroy_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
- {
-+	/* init_cfs_bandwidth() was not called */
-+	if (!cfs_b->throttled_cfs_rq.next)
-+		return;
-+
- 	hrtimer_cancel(&cfs_b->period_timer);
- 	hrtimer_cancel(&cfs_b->slack_timer);
+ 		DEBUG_LOCKS_WARN_ON(!lock->wait_list.prev && !lock->wait_list.next);
+-		mutex_clear_owner(lock);
+ 	}
+ 
+ 	/*
+ 	 * __mutex_slowpath_needs_to_unlock() is explicitly 0 for debug
+ 	 * mutexes so that we can do it here after we've verified state.
+ 	 */
++	mutex_clear_owner(lock);
+ 	atomic_set(&lock->count, 1);
  }
+ 
