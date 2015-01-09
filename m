@@ -1,123 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758155AbbAISyb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 13:54:31 -0500
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:43669 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758110AbbAISy3 (ORCPT
+	id S1758038AbbAIS4x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 13:56:53 -0500
+Received: from exprod5og105.obsmtp.com ([64.18.0.180]:41705 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751220AbbAIS4w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 13:54:29 -0500
+	Fri, 9 Jan 2015 13:56:52 -0500
 MIME-Version: 1.0
-In-Reply-To: <20150109121950.GD13637@pd.tnic>
-References: <1420734315-30943-1-git-send-email-dvlasenk@redhat.com>
- <1420734315-30943-4-git-send-email-dvlasenk@redhat.com> <20150109121950.GD13637@pd.tnic>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Fri, 9 Jan 2015 19:54:08 +0100
-Message-ID: <CAK1hOcMsGJ7geRAzfazPLZitcO0o9XYRPJDYa8sJHR4i6DPL-g@mail.gmail.com>
-Subject: Re: [PATCH 3/4] x86: open-code register save/restore in
- trace_hardirqs thunks
-To: Borislav Petkov <bp@alien8.de>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1894616.4yY7dajl4R@wuerfel>
+References: <1412726809-7525-1-git-send-email-fkan@apm.com>
+	<1412726809-7525-5-git-send-email-fkan@apm.com>
+	<1894616.4yY7dajl4R@wuerfel>
+Date: Fri, 9 Jan 2015 10:56:51 -0800
+Message-ID: <CAL85gmCOXKiHEO=URrAGBNZpJpen5P5PH1xDoF1-jasj0iDg4Q@mail.gmail.com>
+Subject: Re: [PATCH 4/6] i2c: busses: add SLIMpro I2C device driver on APM
+ X-Gene platform
+From: Feng Kan <fkan@apm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        patches <patches@apm.com>, linux-i2c@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hieu Le <hnle@apm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Borislav, thank you for testing and finding it.
-
-On Fri, Jan 9, 2015 at 1:19 PM, Borislav Petkov <bp@alien8.de> wrote:
-> Hmm, this patch breaks booting my kvm guest: it stops booting at some
-> point and restarts itself after a couple of seconds.
+On Tue, Nov 11, 2014 at 1:51 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 07 October 2014 17:06:47 Feng Kan wrote:
+>> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+>> index 2e45ae3..a03042c 100644
+>> --- a/drivers/i2c/busses/Kconfig
+>> +++ b/drivers/i2c/busses/Kconfig
+>> @@ -1009,6 +1009,15 @@ config I2C_CROS_EC_TUNNEL
+>>         connected there. This will work whatever the interface used to
+>>         talk to the EC (SPI, I2C or LPC).
+>>
+>> +config I2C_XGENE_SLIMPRO
+>> +     tristate "APM X-Gene SoC I2C SLIMpro devices support"
+>> +     depends on ARCH_XGENE && XGENE_SLIMPRO_MBOX
 >
-> The monitor says rIP points to ffffffff8167ae30 which is this:
+> Why this dependency on XGENE_SLIMPRO_MBOX?
 >
-> ffffffff8167ae30 <async_page_fault>:
-> ffffffff8167ae30:       ff 15 fa 62 31 00       callq  *0x3162fa(%rip)        # ffffffff81991130 <pv_irq_ops+0x30>
-> ffffffff8167ae36:       48 83 ec 78             sub    $0x78,%rsp
-> ffffffff8167ae3a:       e8 d1 01 00 00          callq  ffffffff8167b010 <error_entry>
-> ffffffff8167ae3f:       48 89 e7                mov    %rsp,%rdi
-> ffffffff8167ae42:       48 8b 74 24 78          mov    0x78(%rsp),%rsi
-> ffffffff8167ae47:       48 c7 44 24 78 ff ff    movq   $0xffffffffffffffff,0x78(%rsp)
-> ffffffff8167ae4e:       ff ff
-> ffffffff8167ae50:       e8 9b 9e 9c ff          callq  ffffffff81044cf0 <do_async_page_fault>
-> ffffffff8167ae55:       e9 76 02 00 00          jmpq   ffffffff8167b0d0 <error_exit>
-> ffffffff8167ae5a:       66 0f 1f 44 00 00       nopw   0x0(%rax,%rax,1)
-
-I just looked at disassembly of thunk_64.o
-before and after the patch. Here's what I see:
-
-Before:
-
-Disassembly of section .text:
-0000000000000000 <restore-0x30>:
-   0:   48 83 ec 48             sub    $0x48,%rsp
-   4:   48 89 7c 24 40          mov    %rdi,0x40(%rsp)
-   9:   48 89 74 24 38          mov    %rsi,0x38(%rsp)
-   e:   48 89 54 24 30          mov    %rdx,0x30(%rsp)
-  13:   48 89 4c 24 28          mov    %rcx,0x28(%rsp)
-  18:   48 89 44 24 20          mov    %rax,0x20(%rsp)
-  1d:   4c 89 44 24 18          mov    %r8,0x18(%rsp)
-  22:   4c 89 4c 24 10          mov    %r9,0x10(%rsp)
-  27:   4c 89 54 24 08          mov    %r10,0x8(%rsp)
-  2c:   4c 89 1c 24             mov    %r11,(%rsp)
-0000000000000030 <restore>:
-  30:   4c 8b 1c 24             mov    (%rsp),%r11
-  34:   4c 8b 54 24 08          mov    0x8(%rsp),%r10
-  39:   4c 8b 4c 24 10          mov    0x10(%rsp),%r9
-  3e:   4c 8b 44 24 18          mov    0x18(%rsp),%r8
-  43:   48 8b 44 24 20          mov    0x20(%rsp),%rax
-  48:   48 8b 4c 24 28          mov    0x28(%rsp),%rcx
-  4d:   48 8b 54 24 30          mov    0x30(%rsp),%rdx
-  52:   48 8b 74 24 38          mov    0x38(%rsp),%rsi
-  57:   48 8b 7c 24 40          mov    0x40(%rsp),%rdi
-  5c:   48 83 c4 48             add    $0x48,%rsp
-  60:   c3                      retq
-
-After:
-
-Disassembly of section .text:
-0000000000000000 <restore>:
-   0:   4c 8b 1c 24             mov    (%rsp),%r11
-   4:   4c 8b 54 24 08          mov    0x8(%rsp),%r10
-   9:   4c 8b 4c 24 10          mov    0x10(%rsp),%r9
-   e:   4c 8b 44 24 18          mov    0x18(%rsp),%r8
-  13:   48 8b 44 24 20          mov    0x20(%rsp),%rax
-  18:   48 8b 4c 24 28          mov    0x28(%rsp),%rcx
-  1d:   48 8b 54 24 30          mov    0x30(%rsp),%rdx
-  22:   48 8b 74 24 38          mov    0x38(%rsp),%rsi
-  27:   48 8b 7c 24 40          mov    0x40(%rsp),%rdi
-  2c:   48 03 24 25 48 00 00    add    0x48,%rsp
-  33:   00
-  34:   c3                      retq
-
-IOW, my patch, on the level of generated assembly, results only in removal
-of unreachable "SAVE_ARGS" thing.
-
-I looked into git history all the way back to 2005. The part
-
-+       /* SAVE_ARGS below is used only for the .cfi directives it contains. */
-+       CFI_STARTPROC
-+       SAVE_ARGS
-+restore:
-
-was there in the very first git commit.
-
-I don't see how this SAVE_ARGS can affect anything. It *is* unreachable,
-right?
-
-Does kvm guest code really parse and use CFI data in its operation?
-That's the only way the breakage can be explained.
-
-In order to narrow it down, can you, instead of my patch, try
-just deleting this one line, and see whether breakage appears?
-
-Thanks!
--- 
-vda
+> Better replace it with a dependency on MAILBOX.
+Arnd, just a question. Is this because this possibly help with future
+compatibility by choosing a more broad dependency?
+>
+>> +     } else {
+>> +             spin_lock_irqsave(&ctx->lock, flags);
+>> +             ctx->i2c_rx_poll = 1;
+>> +             for (count = SLIMPRO_I2C_WAIT_COUNT; count > 0; count--) {
+>> +                     if (ctx->i2c_rx_poll == 0)
+>> +                             break;
+>> +                     udelay(100);
+>> +             }
+>
+> No, you can't block the CPU for an extended amount of time with
+> interrupts disabled. Please kill this code.
+>
+>> +     ctx->resp_msg = data;
+>> +     if (ctx->mbox_client.tx_block)
+>> +             init_completion(&ctx->rd_complete);
+>
+> reinit_completion()?
+>
+>> +static int slimpro_i2c_blkrd(struct slimpro_i2c_dev *ctx, u32 chip, u32 addr,
+>> +                             u32 addrlen, u32 protocol, u32 readlen,
+>> +                             u32 with_data_len, void *data)
+>> +{
+>> +     dma_addr_t paddr;
+>> +     u32 msg[3];
+>> +     int rc;
+>> +
+>> +     paddr = dma_map_single(ctx->dev, ctx->dma_buffer, readlen,
+>> +                            DMA_FROM_DEVICE);
+>
+> ctx->dev is probably the wrong device here. The i2c controller is not
+> DMA capable itself, you need to have a pointer to the device that actually
+> performs the DMA here.
+>
+>
+>> +     /* Request mailbox channel */
+>> +     cl->dev = &pdev->dev;
+>> +     cl->rx_callback = slimpro_i2c_rx_cb;
+>> +     cl->tx_done = slimpro_i2c_tx_done;
+>> +     cl->tx_block = true;
+>> +     cl->tx_tout = SLIMPRO_OP_TO_MS;
+>> +     cl->knows_txdone = false;
+>> +     cl->chan_name = "i2c-slimpro";
+>> +     ctx->mbox_chan = mbox_request_channel(cl);
+>
+> This is not the correct interface.
+>
+>> +     rc = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64));
+>> +     if (rc)
+>> +             dev_warn(&pdev->dev, "Unable to set dma mask\n");
+>
+> Are you sure that this is the correct device to perform the DMA?
+>
+> Moreover, the mask doesn't match the usage: the slimpro_i2c_blkrd
+> function passes in only the lower 32 bit of the address, which would
+> be DMA_BIT_MASK(32).
+>
+>> +#ifdef CONFIG_OF
+>> +static struct of_device_id xgene_slimpro_i2c_id[] = {
+>> +     {.compatible = "apm,xgene-slimpro-i2c" },
+>> +     {},
+>> +};
+>> +MODULE_DEVICE_TABLE(of, xgene_slimpro_i2c_dt_ids);
+>> +#endif
+>> +
+>> +static struct platform_driver xgene_slimpro_i2c_driver = {
+>> +     .probe  = xgene_slimpro_i2c_probe,
+>> +     .remove = xgene_slimpro_i2c_remove,
+>> +     .driver = {
+>> +             .name   = XGENE_SLIMPRO_I2C,
+>> +             .owner  = THIS_MODULE,
+>> +             .of_match_table = of_match_ptr(xgene_slimpro_i2c_id)
+>> +     },
+>> +};
+>
+> The driver only supports DT, so just drop the #ifdef and the of_match_ptr().
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
