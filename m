@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757150AbbAIMd2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 07:33:28 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60209 "EHLO
+	id S932746AbbAIMdu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 07:33:50 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60227 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757074AbbAIMd0 (ORCPT
+	with ESMTP id S932710AbbAIMdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 07:33:26 -0500
-Date: Fri, 9 Jan 2015 04:32:49 -0800
-From: tip-bot for Andi Kleen <tipbot@zytor.com>
-Message-ID: <tip-5306c31c5733cb4a79cc002e0c3ad256fd439614@git.kernel.org>
-Cc: zheng.z.yan@intel.com, peterz@infradead.org, ak@linux.intel.com,
-        hpa@zytor.com, stable@vger.kernel.org, eranian@google.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        andreas@oehler-net.de, mingo@kernel.org, acme@kernel.org
-Reply-To: peterz@infradead.org, zheng.z.yan@intel.com, eranian@google.com,
-        ak@linux.intel.com, hpa@zytor.com, stable@vger.kernel.org,
-        mingo@kernel.org, andreas@oehler-net.de, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, acme@kernel.org
-In-Reply-To: <1420583675-9163-1-git-send-email-andi@firstfloor.org>
-References: <1420583675-9163-1-git-send-email-andi@firstfloor.org>
+	Fri, 9 Jan 2015 07:33:47 -0500
+Date: Fri, 9 Jan 2015 04:33:07 -0800
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-536ebe9ca999f6d0903d91698678ccc1742e8dd9@git.kernel.org>
+Cc: sedat.dilek@gmail.com, torvalds@linux-foundation.org,
+        viro@zeniv.linux.org.uk, tglx@linutronix.de, peterz@infradead.org,
+        tiwai@suse.de, mingo@kernel.org, hpa@zytor.com, eparis@redhat.com,
+        yuanhan.liu@linux.intel.com, linux-kernel@vger.kernel.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, tiwai@suse.de,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        tglx@linutronix.de, viro@zeniv.linux.org.uk, sedat.dilek@gmail.com,
+        linux-kernel@vger.kernel.org, yuanhan.liu@linux.intel.com,
+        eparis@redhat.com
+In-Reply-To: <20141216152838.GZ3337@twins.programming.kicks-ass.net>
+References: <20141216152838.GZ3337@twins.programming.kicks-ass.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf/x86/uncore/hsw-ep:
-  Handle systems with only two SBOXes
-Git-Commit-ID: 5306c31c5733cb4a79cc002e0c3ad256fd439614
+Subject: [tip:sched/urgent] sched, fanotify: Deal with nested sleeps
+Git-Commit-ID: 536ebe9ca999f6d0903d91698678ccc1742e8dd9
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,92 +36,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5306c31c5733cb4a79cc002e0c3ad256fd439614
-Gitweb:     http://git.kernel.org/tip/5306c31c5733cb4a79cc002e0c3ad256fd439614
-Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Tue, 6 Jan 2015 14:34:35 -0800
+Commit-ID:  536ebe9ca999f6d0903d91698678ccc1742e8dd9
+Gitweb:     http://git.kernel.org/tip/536ebe9ca999f6d0903d91698678ccc1742e8dd9
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Tue, 16 Dec 2014 16:28:38 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 9 Jan 2015 11:12:30 +0100
+CommitDate: Fri, 9 Jan 2015 11:18:12 +0100
 
-perf/x86/uncore/hsw-ep: Handle systems with only two SBOXes
+sched, fanotify: Deal with nested sleeps
 
-There was another report of a boot failure with a #GP fault in the
-uncore SBOX initialization. The earlier work around was not enough
-for this system.
+As per e23738a7300a ("sched, inotify: Deal with nested sleeps").
 
-The boot was failing while trying to initialize the third SBOX.
+fanotify_read is a wait loop with sleeps in. Wait loops rely on
+task_struct::state and sleeps do too, since that's the only means of
+actually sleeping. Therefore the nested sleeps destroy the wait loop
+state and the wait loop breaks the sleep functions that assume
+TASK_RUNNING (mutex_lock).
 
-This patch detects parts with only two SBOXes and limits the number
-of SBOX units to two there.
+Fix this by using the new woken_wake_function and wait_woken() stuff,
+which registers wakeups in wait and thereby allows shrinking the
+task_state::state changes to the actual sleep part.
 
-Stable material, as it affects boot problems on 3.18.
-
-Tested-by: Andreas Oehler <andreas@oehler-net.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Reported-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: <stable@vger.kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Yan, Zheng <zheng.z.yan@intel.com>
-Link: http://lkml.kernel.org/r/1420583675-9163-1-git-send-email-andi@firstfloor.org
+Cc: Takashi Iwai <tiwai@suse.de>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Eric Paris <eparis@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Paris <eparis@redhat.com>
+Link: http://lkml.kernel.org/r/20141216152838.GZ3337@twins.programming.kicks-ass.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.h       |  2 +-
- arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c | 17 +++++++++++++++++
- 2 files changed, 18 insertions(+), 1 deletion(-)
+ fs/notify/fanotify/fanotify_user.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index 18eb78b..863d9b0 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -17,7 +17,7 @@
- #define UNCORE_PCI_DEV_TYPE(data)	((data >> 8) & 0xff)
- #define UNCORE_PCI_DEV_IDX(data)	(data & 0xff)
- #define UNCORE_EXTRA_PCI_DEV		0xff
--#define UNCORE_EXTRA_PCI_DEV_MAX	2
-+#define UNCORE_EXTRA_PCI_DEV_MAX	3
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index c991616..bff8567 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -259,16 +259,15 @@ static ssize_t fanotify_read(struct file *file, char __user *buf,
+ 	struct fsnotify_event *kevent;
+ 	char __user *start;
+ 	int ret;
+-	DEFINE_WAIT(wait);
++	DEFINE_WAIT_FUNC(wait, woken_wake_function);
  
- /* support up to 8 sockets */
- #define UNCORE_SOCKET_MAX		8
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c b/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
-index 745b158..21af6149e 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
-@@ -891,6 +891,7 @@ void snbep_uncore_cpu_init(void)
- enum {
- 	SNBEP_PCI_QPI_PORT0_FILTER,
- 	SNBEP_PCI_QPI_PORT1_FILTER,
-+	HSWEP_PCI_PCU_3,
- };
+ 	start = buf;
+ 	group = file->private_data;
  
- static int snbep_qpi_hw_config(struct intel_uncore_box *box, struct perf_event *event)
-@@ -2026,6 +2027,17 @@ void hswep_uncore_cpu_init(void)
- {
- 	if (hswep_uncore_cbox.num_boxes > boot_cpu_data.x86_max_cores)
- 		hswep_uncore_cbox.num_boxes = boot_cpu_data.x86_max_cores;
+ 	pr_debug("%s: group=%p\n", __func__, group);
+ 
++	add_wait_queue(&group->notification_waitq, &wait);
+ 	while (1) {
+-		prepare_to_wait(&group->notification_waitq, &wait, TASK_INTERRUPTIBLE);
+-
+ 		mutex_lock(&group->notification_mutex);
+ 		kevent = get_one_event(group, count);
+ 		mutex_unlock(&group->notification_mutex);
+@@ -289,7 +288,8 @@ static ssize_t fanotify_read(struct file *file, char __user *buf,
+ 
+ 			if (start != buf)
+ 				break;
+-			schedule();
 +
-+	/* Detect 6-8 core systems with only two SBOXes */
-+	if (uncore_extra_pci_dev[0][HSWEP_PCI_PCU_3]) {
-+		u32 capid4;
-+
-+		pci_read_config_dword(uncore_extra_pci_dev[0][HSWEP_PCI_PCU_3],
-+				      0x94, &capid4);
-+		if (((capid4 >> 6) & 0x3) == 0)
-+			hswep_uncore_sbox.num_boxes = 2;
-+	}
-+
- 	uncore_msr_uncores = hswep_msr_uncores;
- }
++			wait_woken(&wait, TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
+ 			continue;
+ 		}
  
-@@ -2287,6 +2299,11 @@ static DEFINE_PCI_DEVICE_TABLE(hswep_uncore_pci_ids) = {
- 		.driver_data = UNCORE_PCI_DEV_DATA(UNCORE_EXTRA_PCI_DEV,
- 						   SNBEP_PCI_QPI_PORT1_FILTER),
- 	},
-+	{ /* PCU.3 (for Capability registers) */
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x2fc0),
-+		.driver_data = UNCORE_PCI_DEV_DATA(UNCORE_EXTRA_PCI_DEV,
-+						   HSWEP_PCI_PCU_3),
-+	},
- 	{ /* end: all zeroes */ }
- };
+@@ -318,8 +318,8 @@ static ssize_t fanotify_read(struct file *file, char __user *buf,
+ 		buf += ret;
+ 		count -= ret;
+ 	}
++	remove_wait_queue(&group->notification_waitq, &wait);
  
+-	finish_wait(&group->notification_waitq, &wait);
+ 	if (start != buf && ret != -EFAULT)
+ 		ret = buf - start;
+ 	return ret;
