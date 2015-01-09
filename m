@@ -1,97 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909AbbAIBxL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 20:53:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44684 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751198AbbAIBxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 20:53:08 -0500
-Date: Fri, 9 Jan 2015 09:52:48 +0800
-From: Fam Zheng <famz@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Miklos Szeredi <mszeredi@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Juri Lelli <juri.lelli@gmail.com>, Zach Brown <zab@zabbo.net>,
-        David Drysdale <drysdale@google.com>,
-        Kees Cook <keescook@chromium.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Dario Faggioli <raistlin@linux.it>, "Theodore Ts'o" <tytso@mit.edu>,
-        Peter Zijlstra <peterz@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Fabian Frederick <fabf@skynet.be>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Subject: Re: [PATCH 0/3] epoll: Add epoll_pwait1 syscall
-Message-ID: <20150109015248.GA5034@fam-t430.nay.redhat.com>
-References: <1420705550-24245-1-git-send-email-famz@redhat.com>
- <1420708372.18399.15.camel@suse.cz>
- <CALCETrVyPij1Zxwmw7p06UrZjoyYDXqEjmxyQ-KJ8Y7dx7mL3g@mail.gmail.com>
- <20150109011608.GA2924@fam-t430.nay.redhat.com>
- <CALCETrWHGwPw2cH3RruaCFKj2ND8PdEbdWjTi4OJ8m2eF9fpLw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrWHGwPw2cH3RruaCFKj2ND8PdEbdWjTi4OJ8m2eF9fpLw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753091AbbAIBzE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 20:55:04 -0500
+Received: from regular1.263xmail.com ([211.150.99.137]:46918 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751389AbbAIBzB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 20:55:01 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-ADDR-CHECKED: 0
+X-RL-SENDER: jay.xu@rock-chips.com
+X-FST-TO: lgirdwood@gmail.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: jay.xu@rock-chips.com
+X-UNIQUE-TAG: <3b8634f1e7b144c623b17c8c1f2d0ded>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Jianqun Xu <jay.xu@rock-chips.com>
+To: lgirdwood@gmail.com, heiko@sntech.de, broonie@kernel.org, perex@perex.cz,
+        tiwai@suse.de, sonnyrao@chromium.org
+Cc: linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        Jianqun Xu <jay.xu@rock-chips.com>
+Subject: [PATCH] ASoC: rockchip: i2s: add rockchip_dmaengine_pcm_config
+Date: Fri,  9 Jan 2015 09:52:49 +0800
+Message-Id: <1420768369-6681-1-git-send-email-jay.xu@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 01/08 17:28, Andy Lutomirski wrote:
-> On Thu, Jan 8, 2015 at 5:25 PM, Fam Zheng <famz@redhat.com> wrote:
-> > On Thu, 01/08 09:57, Andy Lutomirski wrote:
-> >> I'd like to see a more ambitious change, since the timer isn't the
-> >> only problem like this.  Specifically, I'd like a syscall that does a
-> >> list of epoll-related things and then waits.  The list of things could
-> >> include, at least:
-> >>
-> >>  - EPOLL_CTL_MOD actions: level-triggered epoll users are likely to
-> >> want to turn on and off their requests for events on a somewhat
-> >> regular basis.
-> >
-> > This sounds good to me.
-> >
-> >>
-> >>  - timerfd_settime actions: this allows a single syscall to wait and
-> >> adjust *both* monotonic and real-time wakeups.
-> >
-> > I'm not sure, doesn't this break orthogonality between epoll and timerfd?
-> 
-> Yes.  It's not very elegant, and more elegant ideas are welcome.
+This patch makes snd_dmaengine_pcm_register with rockchip_dmaengine_pcm_config,
+which configure the parameters of period and buffer match to rockchip DMAC.
 
-What is the purpose of embedding timerfd operation here? Modifying timerfd
-for each poll doesn't sound a common pattern to me.
+=======================
+without rockchip_dmaengine_pcm_config, and test with command -
+aplay -D hw:0,0 /tmp/a, there are the error dump:
+[  134.899396] dma-pl330 ffb20000.dma-controller: fill_queue:2251 Bad Desc(7)
+[  134.906270] dma-pl330 ffb20000.dma-controller: fill_queue:2251 Bad Desc(8)
+[  134.913141] dma-pl330 ffb20000.dma-controller: fill_queue:2251 Bad Desc(9)
 
-> 
-> >
-> >>
-> >> Would this make sense?  It could look like:
-> >>
-> >> int epoll_mod_and_pwait(int epfd,
-> >>   struct epoll_event *events, int maxevents,
-> >>   struct epoll_command *commands, int ncommands,
-> >>   const sigset_t *sigmask);
-> >
-> > What about flags?
-> >
-> 
-> No room.  Maybe it should just be a struct for everything instead of
-> separate args.
+And bellow sound from DMA debugger:
+"I debugged it a little and it looks like what is happening is that requests
+which aren't a multiple of burst size * burst length are coming in.  Right
+now the i2s block is setting a burst size of 4 and burst length of 4, but
+the dmaengine code has no idea about this restriction.  I was able to
+eliminate the messages by changing burst length to 1 in the i2s driver.
+This fix would always work as long as we're sending a multiple of 4 bytes
+(which so far seems to be the case)"
 
-Also no room for timeout. A single struct sounds the only way to go.
+This patch can make the length of dma buffer is aligned to a multiple of burst size
+and burst length.
 
-Fam
+Signed-off-by: Jianqun Xu <jay.xu@rock-chips.com>
+---
+ sound/soc/rockchip/rockchip_i2s.c | 21 ++++++++++++++++++++-
+ 1 file changed, 20 insertions(+), 1 deletion(-)
+
+diff --git a/sound/soc/rockchip/rockchip_i2s.c b/sound/soc/rockchip/rockchip_i2s.c
+index c74ba37..bdd1021 100644
+--- a/sound/soc/rockchip/rockchip_i2s.c
++++ b/sound/soc/rockchip/rockchip_i2s.c
+@@ -408,6 +408,24 @@ static const struct regmap_config rockchip_i2s_regmap_config = {
+ 	.cache_type = REGCACHE_FLAT,
+ };
+ 
++static const struct snd_pcm_hardware rockchip_pcm_hardware = {
++	.info			= SNDRV_PCM_INFO_MMAP |
++				  SNDRV_PCM_INFO_MMAP_VALID |
++				  SNDRV_PCM_INFO_INTERLEAVED,
++	.period_bytes_min	= 1024,
++	.period_bytes_max	= PAGE_SIZE,
++	.periods_min		= 3,
++	.periods_max		= 8,
++	.buffer_bytes_max	= 8 * PAGE_SIZE,
++	.fifo_size		= 16,
++};
++
++static const struct snd_dmaengine_pcm_config rockchip_dmaengine_pcm_config = {
++	.pcm_hardware = &rockchip_pcm_hardware,
++	.prepare_slave_config = snd_dmaengine_pcm_prepare_slave_config,
++	.prealloc_buffer_size = PAGE_SIZE * 8,
++};
++
+ static int rockchip_i2s_probe(struct platform_device *pdev)
+ {
+ 	struct rk_i2s_dev *i2s;
+@@ -478,7 +496,8 @@ static int rockchip_i2s_probe(struct platform_device *pdev)
+ 		goto err_suspend;
+ 	}
+ 
+-	ret = snd_dmaengine_pcm_register(&pdev->dev, NULL, 0);
++	ret = snd_dmaengine_pcm_register(&pdev->dev,
++					 &rockchip_dmaengine_pcm_config, 0);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Could not register PCM\n");
+ 		goto err_pcm_register;
+-- 
+1.9.1
+
+
