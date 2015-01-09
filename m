@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313AbbAINOG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 08:14:06 -0500
-Received: from laurent.telenet-ops.be ([195.130.137.89]:53755 "EHLO
-	laurent.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756873AbbAINMj (ORCPT
+	id S1757396AbbAINMl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 08:12:41 -0500
+Received: from baptiste.telenet-ops.be ([195.130.132.51]:57567 "EHLO
+	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755309AbbAINMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 08:12:39 -0500
+	Fri, 9 Jan 2015 08:12:38 -0500
 From: Geert Uytterhoeven <geert+renesas@glider.be>
 To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
 Cc: Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@kernel.org>,
@@ -15,9 +15,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@kernel.org>,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH v3 2/4] drivers: bus: Sort Makefile entries alphabetically
-Date: Fri,  9 Jan 2015 14:12:33 +0100
-Message-Id: <1420809155-4015-3-git-send-email-geert+renesas@glider.be>
+Subject: [PATCH v3 3/4] drivers: bus: Add Simple Power-Managed Bus DT Bindings
+Date: Fri,  9 Jan 2015 14:12:34 +0100
+Message-Id: <1420809155-4015-4-git-send-email-geert+renesas@glider.be>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1420809155-4015-1-git-send-email-geert+renesas@glider.be>
 References: <1420809155-4015-1-git-send-email-geert+renesas@glider.be>
@@ -30,41 +30,75 @@ Tested-by: Ulrich Hecht <ulrich.hecht+renesas@gmail.com>
 ---
 v3:
   - Add Tested-by,
+  - Document required properties inherited from "simple-bus",
+  - Document required "reg" property for "renesas,bsc",
+  - Move "ranges" before "reg" in the example,
 
 v2:
   - New.
 ---
- drivers/bus/Makefile | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ .../devicetree/bindings/bus/simple-pm-bus.txt      | 52 ++++++++++++++++++++++
+ 1 file changed, 52 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/bus/simple-pm-bus.txt
 
-diff --git a/drivers/bus/Makefile b/drivers/bus/Makefile
-index 2973c18cbcc27816..3cfaf2c7f25ac4f0 100644
---- a/drivers/bus/Makefile
-+++ b/drivers/bus/Makefile
-@@ -2,16 +2,16 @@
- # Makefile for the bus drivers.
- #
- 
-+# Interconnect bus drivers for ARM platforms
-+obj-$(CONFIG_ARM_CCI)		+= arm-cci.o
-+obj-$(CONFIG_ARM_CCN)		+= arm-ccn.o
+diff --git a/Documentation/devicetree/bindings/bus/simple-pm-bus.txt b/Documentation/devicetree/bindings/bus/simple-pm-bus.txt
+new file mode 100644
+index 0000000000000000..d03abf7fd8e3997a
+--- /dev/null
++++ b/Documentation/devicetree/bindings/bus/simple-pm-bus.txt
+@@ -0,0 +1,52 @@
++Simple Power-Managed Bus
++========================
 +
- obj-$(CONFIG_BRCMSTB_GISB_ARB)	+= brcmstb_gisb.o
--obj-$(CONFIG_IMX_WEIM)	+= imx-weim.o
--obj-$(CONFIG_MVEBU_MBUS) += mvebu-mbus.o
--obj-$(CONFIG_OMAP_OCP2SCP)	+= omap-ocp2scp.o
-+obj-$(CONFIG_IMX_WEIM)		+= imx-weim.o
-+obj-$(CONFIG_MVEBU_MBUS) 	+= mvebu-mbus.o
- 
- # Interconnect bus driver for OMAP SoCs.
- obj-$(CONFIG_OMAP_INTERCONNECT)	+= omap_l3_smx.o omap_l3_noc.o
- 
--# Interconnect bus drivers for ARM platforms
--obj-$(CONFIG_ARM_CCI)		+= arm-cci.o
--obj-$(CONFIG_ARM_CCN)		+= arm-ccn.o
--
-+obj-$(CONFIG_OMAP_OCP2SCP)	+= omap-ocp2scp.o
- obj-$(CONFIG_VEXPRESS_CONFIG)	+= vexpress-config.o
++A Simple Power-Managed Bus is a transparent bus that doesn't need a real
++driver, as it's typically initialized by the boot loader.
++
++However, its bus controller is part of a PM domain, or under the control of a
++functional clock.  Hence, the bus controller's PM domain and/or clock must be
++enabled for child devices connected to the bus (either on-SoC or externally)
++to function.
++
++
++Generic compatible values and properties
++----------------------------------------
++
++Required properties:
++  - compatible: Must be at least one of the vendor-specific compatible values
++		from a vendor-specific section below, and "simple-bus" as a
++		fallback.
++  - #address-cells, #size-cells, ranges: Must describe the mapping between
++		parent address and child address spaces.
++
++Optional platform-specific properties for clock or PM domain control (at least
++one of them is required):
++  - clocks: Must contain a reference to the functional clock(s),
++  - power-domains: Must contain a reference to the PM domain.
++
++
++Vendor-specific compatible values and properties
++------------------------------------------------
++
++Renesas Bus State Controller (BSC):
++  - compatible: Must be an SoC-specific value, and "renesas,bsc" as a fallback.
++                SoC-specific values can be:
++		"renesas,bsc-r8a73a4" for R-Mobile APE6 (r8a73a4)
++		"renesas,bsc-sh73a0" for SH-Mobile AG5 (sh73a0)
++  - reg: Must contain the base address and length to access the bus controller.
++  - interrupts: Must contain a reference to the BSC interrupt, if available.
++
++
++Example:
++
++	bsc: bus@fec10000 {
++		compatible = "renesas,bsc-sh73a0", "renesas,bsc", "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges = <0 0 0x20000000>;
++		reg = <0xfec10000 0x400>;
++		interrupts = <0 39 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&zb_clk>;
++		power-domains = <&pd_a4s>;
++	};
 -- 
 1.9.1
 
