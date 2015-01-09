@@ -1,115 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932394AbbAIJtU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 04:49:20 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:35922 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755685AbbAIJtR (ORCPT
+	id S932446AbbAIJtp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 04:49:45 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:58480 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932113AbbAIJtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 04:49:17 -0500
-Date: Fri, 9 Jan 2015 10:49:14 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Anatol Pomozov <anatol.pomozov@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, Mark Rutland <mark.rutland@arm.com>,
-        John Stultz <john.stultz@linaro.org>, Paul Walmsley <paul@pwsan.com>
-Subject: Re: [PATCH] timekeeping: Move persistent clock registration code
- from ARM to kernel
-Message-ID: <20150109094913.GB27845@ulmo>
-References: <1415388855-35074-1-git-send-email-anatol.pomozov@gmail.com>
- <20141110095325.GC12126@ulmo>
- <CAOMFOmXpAm5iKCLFyorTW+n9YmgZMmrDGGe736tJX8C6BYQv-A@mail.gmail.com>
- <alpine.DEB.2.11.1411132334400.3935@nanos>
- <CAOMFOmVziftM=pWGG-L9J-E6AHYAK7k9bmBcpS1adPboLciX9g@mail.gmail.com>
- <alpine.DEB.2.11.1411150115390.3909@nanos>
- <CAOMFOmV5=tes6Ak1eUKb2qircp8ba6jt6v-bg66Kp_-jYk9m2w@mail.gmail.com>
- <alpine.DEB.2.11.1411150154280.3909@nanos>
- <alpine.DEB.2.11.1411150212210.3909@nanos>
+	Fri, 9 Jan 2015 04:49:43 -0500
+Date: Fri, 9 Jan 2015 09:49:34 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Vince Weaver <vince@deater.net>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "vincent.weaver@maine.edu" <vincent.weaver@maine.edu>
+Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
+ pyaudio (and probably more)
+Message-ID: <20150109094933.GA24408@e104818-lin.cambridge.arm.com>
+References: <alpine.LFD.2.11.1501071446460.1322@knanqh.ubzr>
+ <20150107205346.GO12302@n2100.arm.linux.org.uk>
+ <CAHkRjk6FT+WJ3u9qhfB-EMcqhOHGQSe4dW4MpZF6vE97B0vD0A@mail.gmail.com>
+ <20150108103911.GQ12302@n2100.arm.linux.org.uk>
+ <alpine.DEB.2.10.1501081044470.26196@pianoman.cluster.toy>
+ <20150108161908.GA17290@e104818-lin.cambridge.arm.com>
+ <20150108163450.GV12302@n2100.arm.linux.org.uk>
+ <20150108164111.GB17290@e104818-lin.cambridge.arm.com>
+ <20150108165705.GW12302@n2100.arm.linux.org.uk>
+ <20150108224614.GA5034@amd>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="z6Eq5LdranGa6ru8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1411150212210.3909@nanos>
+In-Reply-To: <20150108224614.GA5034@amd>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 08, 2015 at 10:46:14PM +0000, Pavel Machek wrote:
+> On Thu 2015-01-08 16:57:05, Russell King - ARM Linux wrote:
+> > On Thu, Jan 08, 2015 at 04:41:12PM +0000, Catalin Marinas wrote:
+> > > On Thu, Jan 08, 2015 at 04:34:50PM +0000, Russell King - ARM Linux wrote:
+> > > > On Thu, Jan 08, 2015 at 04:19:08PM +0000, Catalin Marinas wrote:
+> > > > > I really think we should stop this thread. User ABI breakage fixed now.
+> > > > 
+> > > > No.  Vince's email shows a more serious problem.
+> > > > 
+> > > > The ABI breakage issue was reported before the patches were apparently
+> > > > merged, but that information seems to have been lost.  We need to
+> > > > understand how that happened so similar instances don't happen in the
+> > > > future.
+> > > 
+> > > FYI, searching for "Vince Weaver" and "bogomips" found this:
+> > > 
+> > > https://lkml.org/lkml/2013/7/11/454
+> > 
+> > Gah.
+> > 
+> > It looks like the report was made by hanging it into a totally different
+> > thread to the patches which caused the problem, and which went nowhere
+> > near the ARM kernel mailing lists.
+> 
+> This went at least to Will Deacon and Nicolas Pitre.
+> 
+> https://lkml.org/lkml/2013/5/15/217
+> 
+> So AFAICT yes, we knowingly broke at least
+> com.securiteinfo.android.bogomips application.
 
---z6Eq5LdranGa6ru8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hmm, "BogoMIPS is a tool used to create a web page about Android
+Benchmarks". And a stupid table here:
+https://www.securiteinfo.com/divers/android_bogomips_benchmark.shtml.
+Even though it's against the user ABI kernel policy, I must say I'm glad
+we broke this one ;).
 
-On Sat, Nov 15, 2014 at 02:38:00AM +0100, Thomas Gleixner wrote:
-> On Sat, 15 Nov 2014, Thomas Gleixner wrote:
-> > On Fri, 14 Nov 2014, Anatol Pomozov wrote:
-> > > On Fri, Nov 14, 2014 at 4:18 PM, Thomas Gleixner <tglx@linutronix.de>=
- wrote:
-> > > >> So what I suppose to do with my patch? If it does not work could
-> > > >> anyone provide patch that removes ARM arch dependency from
-> > > >> tegra20_timer.c?
-> > > >
-> > > > Huch? You want other people to solve your problems?
-> > >=20
-> > > This is not the point. I provided patch that fixes the issue. Other
-> > > people said that they have ideas how to do it different (and better)
-> > > way. So I am asking to share these ideas represented as a patch.
-> >=20
-> > That's not the way it works.
-> >=20
-> > You sent a patch to solve an problem which you are facing.
-> >=20
-> > Now the people who review the patch think that there is a better
-> > approach than moving code from arm/ to the timekeeping core code.
-> >=20
-> > So it's up to you to come up with a patch which solves the problem in
-> > the right way.
->=20
-> And just for the record this whole thing is just hilarious.
->=20
-> ARM64 selects ARM_ARCH_TIMER which registers the architected timer as
-> the primary clocksource.
->=20
-> Now that timer has the following flag set:
->=20
->     CLOCK_SOURCE_SUSPEND_NONSTOP
->=20
-> And that flag causes the core timekeeping code to use the clocksource
-> to figure out the time which the machine spent in suspend.
+pyaudio is a valid complaint though (and not about the bogomips value
+but about the presence of the "bogomips" string).
 
-As I understand it the architected timer will be turned off along with
-the rest of the CPU complex on Tegra. I'm not sure if that's specific to
-Tegra or something that other SoCs may do as well.
-
-Cc'ing Paul who's more familiar with the details.
-
-Thierry
-
---z6Eq5LdranGa6ru8
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUr6QZAAoJEN0jrNd/PrOh8b4QAKk1T/OmshnEPpXYuzDRjfj4
-szabobtW+o0t17bRZCOybVhj4hgGQNcUTrv9ukPWAPClrLWfnnD5E07CwEd8IbcQ
-qon4NBtzorzo0Q2N9n5oRsYVOKmeg5lRuhvblsXZnlFlv6t28Fc/9bO7ysze5Uch
-hPABsTZtRnADI4VJ8D2ijXWhOwnjuN8uTAawfe4I5kuKzOKLMC1auzyfovGhpUCE
-EKYMdb5PazXUnyJ7dWI2fFDK5QhUusTxHaVzDzgLhAJf/Q2FajZaliFr6nrf139X
-pIwZwqANNXtsSxFIvZI08jQFzzKxy4qzdtqleII6bjoA+so9Nupl46hNrTedrAsJ
-DY+1mn3z1a0AEo3QezqYMSkjLkinjvyW6YUmxUPFWJM4RrLa5BYyhVSTTnpCYb4G
-c3bad6axkRidnmEOTDp+K5htNKQnXYtApgYivD3LJDK7ZnYGXQdK7WljkFUQuGgP
-yUQboMxU2z36hUJWKaaoRooKDfnMaNXJH8JeBK2K/r+rKA79D4qUqOTVDc4QDigK
-ZgjgWvTJCPYmDMg7ma3nJfLUBo+lkt0PbVX1U6SfOhsoBBv58NQYORnw0jDRWuCr
-tloJhCc1KkiDzgeCx8HPLwPs7a/lWFd763lfYq2BlG3X3Xs6+3cmbZWE+saAAuzf
-3WHXykTzV2+2G7NCwue+
-=2rps
------END PGP SIGNATURE-----
-
---z6Eq5LdranGa6ru8--
+-- 
+Catalin
