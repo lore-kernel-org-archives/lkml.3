@@ -1,19 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933100AbbAIKsI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 05:48:08 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44602 "EHLO
+	id S932301AbbAIKdv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 05:33:51 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44725 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757500AbbAIKc3 (ORCPT
+	by vger.kernel.org with ESMTP id S1752904AbbAIKcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 05:32:29 -0500
+	Fri, 9 Jan 2015 05:32:35 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Yan, Zheng" <zheng.z.yan@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Kan Liang <kan.liang@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Andi Kleen <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>,
+        Mark Davies <junk@eslaf.co.uk>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, Ingo Molnar <mingo@kernel.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 10/78] ceph: fix null pointer dereference in discard_cap_releases()
-Date: Fri,  9 Jan 2015 11:31:19 +0100
-Message-Id: <fda703283f5e154cb64928e66f3898505e7b4d1c.1420799385.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 11/78] perf/x86/intel: Protect LBR and extra_regs against KVM lying
+Date: Fri,  9 Jan 2015 11:31:20 +0100
+Message-Id: <304ed40ae03a8e72934efc935247780d1b0ada66.1420799385.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
 References: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
@@ -23,56 +30,180 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+From: Kan Liang <kan.liang@intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 00bd8edb861eb41d274938cfc0338999d9c593a3 upstream.
+commit 338b522ca43cfd32d11a370f4203bcd089c6c877 upstream.
 
-send_mds_reconnect() may call discard_cap_releases() after all
-release messages have been dropped by cleanup_cap_releases()
+With -cpu host, KVM reports LBR and extra_regs support, if the host has
+support.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+When the guest perf driver tries to access LBR or extra_regs MSR,
+it #GPs all MSR accesses,since KVM doesn't handle LBR and extra_regs support.
+So check the related MSRs access right once at initialization time to avoid
+the error access at runtime.
+
+For reproducing the issue, please build the kernel with CONFIG_KVM_INTEL = y
+(for host kernel).
+And CONFIG_PARAVIRT = n and CONFIG_KVM_GUEST = n (for guest kernel).
+Start the guest with -cpu host.
+Run perf record with --branch-any or --branch-filter in guest to trigger LBR
+Run perf stat offcore events (E.g. LLC-loads/LLC-load-misses ...) in guest to
+trigger offcore_rsp #GP
+
+Signed-off-by: Kan Liang <kan.liang@intel.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+Cc: Mark Davies <junk@eslaf.co.uk>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Yan, Zheng <zheng.z.yan@intel.com>
+Link: http://lkml.kernel.org/r/1405365957-20202-1-git-send-email-kan.liang@intel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/ceph/mds_client.c | 21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c       |  3 ++
+ arch/x86/kernel/cpu/perf_event.h       | 12 ++++---
+ arch/x86/kernel/cpu/perf_event_intel.c | 66 +++++++++++++++++++++++++++++++++-
+ 3 files changed, 75 insertions(+), 6 deletions(-)
 
-diff --git a/fs/ceph/mds_client.c b/fs/ceph/mds_client.c
-index 788901552eb1..6f1161324f91 100644
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -1420,15 +1420,18 @@ static void discard_cap_releases(struct ceph_mds_client *mdsc,
- 	dout("discard_cap_releases mds%d\n", session->s_mds);
- 	spin_lock(&session->s_cap_lock);
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 5edd3c0b437a..c7106f116fb0 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -118,6 +118,9 @@ static int x86_pmu_extra_regs(u64 config, struct perf_event *event)
+ 			continue;
+ 		if (event->attr.config1 & ~er->valid_mask)
+ 			return -EINVAL;
++		/* Check if the extra msrs can be safely accessed*/
++		if (!er->extra_msr_access)
++			return -ENXIO;
  
--	/* zero out the in-progress message */
--	msg = list_first_entry(&session->s_cap_releases,
--			       struct ceph_msg, list_head);
--	head = msg->front.iov_base;
--	num = le32_to_cpu(head->num);
--	dout("discard_cap_releases mds%d %p %u\n", session->s_mds, msg, num);
--	head->num = cpu_to_le32(0);
--	msg->front.iov_len = sizeof(*head);
--	session->s_num_cap_releases += num;
-+	if (!list_empty(&session->s_cap_releases)) {
-+		/* zero out the in-progress message */
-+		msg = list_first_entry(&session->s_cap_releases,
-+					struct ceph_msg, list_head);
-+		head = msg->front.iov_base;
-+		num = le32_to_cpu(head->num);
-+		dout("discard_cap_releases mds%d %p %u\n",
-+		     session->s_mds, msg, num);
-+		head->num = cpu_to_le32(0);
-+		msg->front.iov_len = sizeof(*head);
-+		session->s_num_cap_releases += num;
+ 		reg->idx = er->idx;
+ 		reg->config = event->attr.config1;
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index cc16faae0538..53bd2726f4cd 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -279,14 +279,16 @@ struct extra_reg {
+ 	u64			config_mask;
+ 	u64			valid_mask;
+ 	int			idx;  /* per_xxx->regs[] reg index */
++	bool			extra_msr_access;
+ };
+ 
+ #define EVENT_EXTRA_REG(e, ms, m, vm, i) {	\
+-	.event = (e),		\
+-	.msr = (ms),		\
+-	.config_mask = (m),	\
+-	.valid_mask = (vm),	\
+-	.idx = EXTRA_REG_##i,	\
++	.event = (e),			\
++	.msr = (ms),			\
++	.config_mask = (m),		\
++	.valid_mask = (vm),		\
++	.idx = EXTRA_REG_##i,		\
++	.extra_msr_access = true,	\
+ 	}
+ 
+ #define INTEL_EVENT_EXTRA_REG(event, msr, vm, idx)	\
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 959bbf204dae..02554ddf8481 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2144,6 +2144,41 @@ static void intel_snb_check_microcode(void)
+ 	}
+ }
+ 
++/*
++ * Under certain circumstances, access certain MSR may cause #GP.
++ * The function tests if the input MSR can be safely accessed.
++ */
++static bool check_msr(unsigned long msr, u64 mask)
++{
++	u64 val_old, val_new, val_tmp;
++
++	/*
++	 * Read the current value, change it and read it back to see if it
++	 * matches, this is needed to detect certain hardware emulators
++	 * (qemu/kvm) that don't trap on the MSR access and always return 0s.
++	 */
++	if (rdmsrl_safe(msr, &val_old))
++		return false;
++
++	/*
++	 * Only change the bits which can be updated by wrmsrl.
++	 */
++	val_tmp = val_old ^ mask;
++	if (wrmsrl_safe(msr, val_tmp) ||
++	    rdmsrl_safe(msr, &val_new))
++		return false;
++
++	if (val_new != val_tmp)
++		return false;
++
++	/* Here it's sure that the MSR can be safely accessed.
++	 * Restore the old value and return.
++	 */
++	wrmsrl(msr, val_old);
++
++	return true;
++}
++
+ static __init void intel_sandybridge_quirk(void)
+ {
+ 	x86_pmu.check_microcode = intel_snb_check_microcode;
+@@ -2207,7 +2242,8 @@ __init int intel_pmu_init(void)
+ 	union cpuid10_ebx ebx;
+ 	struct event_constraint *c;
+ 	unsigned int unused;
+-	int version;
++	struct extra_reg *er;
++	int version, i;
+ 
+ 	if (!cpu_has(&boot_cpu_data, X86_FEATURE_ARCH_PERFMON)) {
+ 		switch (boot_cpu_data.x86) {
+@@ -2515,6 +2551,34 @@ __init int intel_pmu_init(void)
+ 		}
+ 	}
+ 
++	/*
++	 * Access LBR MSR may cause #GP under certain circumstances.
++	 * E.g. KVM doesn't support LBR MSR
++	 * Check all LBT MSR here.
++	 * Disable LBR access if any LBR MSRs can not be accessed.
++	 */
++	if (x86_pmu.lbr_nr && !check_msr(x86_pmu.lbr_tos, 0x3UL))
++		x86_pmu.lbr_nr = 0;
++	for (i = 0; i < x86_pmu.lbr_nr; i++) {
++		if (!(check_msr(x86_pmu.lbr_from + i, 0xffffUL) &&
++		      check_msr(x86_pmu.lbr_to + i, 0xffffUL)))
++			x86_pmu.lbr_nr = 0;
 +	}
- 
- 	/* requeue completed messages */
- 	while (!list_empty(&session->s_cap_releases_done)) {
++
++	/*
++	 * Access extra MSR may cause #GP under certain circumstances.
++	 * E.g. KVM doesn't support offcore event
++	 * Check all extra_regs here.
++	 */
++	if (x86_pmu.extra_regs) {
++		for (er = x86_pmu.extra_regs; er->msr; er++) {
++			er->extra_msr_access = check_msr(er->msr, 0x1ffUL);
++			/* Disable LBR select mapping */
++			if ((er->idx == EXTRA_REG_LBR) && !er->extra_msr_access)
++				x86_pmu.lbr_sel_map = NULL;
++		}
++	}
++
+ 	/* Support full width counters using alternative MSR range */
+ 	if (x86_pmu.intel_cap.full_width_write) {
+ 		x86_pmu.max_period = x86_pmu.cntval_mask;
 -- 
 2.2.1
 
