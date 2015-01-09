@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757945AbbAIRjd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 12:39:33 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:35295 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752158AbbAIRjb (ORCPT
+	id S1757966AbbAIRlE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 12:41:04 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:37101 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049AbbAIRlB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 12:39:31 -0500
-Message-ID: <54B0123C.9070800@arm.com>
-Date: Fri, 09 Jan 2015 17:39:08 +0000
-From: Andrew Jackson <Andrew.Jackson@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 9 Jan 2015 12:41:01 -0500
+Date: Fri, 9 Jan 2015 18:40:58 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
+        s.nawrocki@samsung.com
+Subject: Re: [PATCH/RFC v10 02/19] Documentation: leds: Add description of
+ LED Flash class extension
+Message-ID: <20150109174058.GC18076@amd>
+References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
+ <1420816989-1808-3-git-send-email-j.anaszewski@samsung.com>
 MIME-Version: 1.0
-To: Jean-Francois Moine <moinejf@free.fr>, Mark Brown <broonie@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Dave Airlie <airlied@gmail.com>, Jyri Sarha <jsarha@ti.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v9 3/4] ASoC: tda998x: add a codec to the HDMI transmitter
-References: <cover.1420628786.git.moinejf@free.fr> <23b36acc1f769418a06f3e929eba288b5911da12.1420628786.git.moinejf@free.fr>
-In-Reply-To: <23b36acc1f769418a06f3e929eba288b5911da12.1420628786.git.moinejf@free.fr>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420816989-1808-3-git-send-email-j.anaszewski@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/15 10:51, Jean-Francois Moine wrote:
-> This patch adds a CODEC to the NXP TDA998x HDMI transmitter.
+Hi!
+
+> The documentation being added contains overall description of the
+> LED Flash Class and the related sysfs attributes.
 > 
-> The CODEC handles both I2S and S/PDIF inputs.
-> It maintains the audio format and rate constraints according
-> to the HDMI device parameters (EDID) and sets dynamically the input
-> ports in the TDA998x I2C driver on start/stop audio streaming.
-> 
-> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
-> ---
+> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Bryan Wu <cooloney@gmail.com>
+> Cc: Richard Purdie <rpurdie@rpsys.net>
 
-[snip]
+> +In order to enable support for flash LEDs CONFIG_LEDS_CLASS_FLASH symbol
+> +must be defined in the kernel config. A flash LED driver must register
+> +in the LED subsystem with led_classdev_flash_register function to gain flash
+> +related capabilities.
+> +
+> +There are flash LED devices which can control more than one LED and allow for
+> +strobing the sub-leds synchronously. A LED will be strobed synchronously with
+> +the one whose identifier is written to the flash_sync_strobe sysfs attribute.
+> +The list of available sub-led identifiers can be read from the
 
-> +static int tda998x_codec_startup(struct snd_pcm_substream *substream,
-> +                                struct snd_soc_dai *dai)
-> +{
-> +       struct snd_pcm_runtime *runtime = substream->runtime;
-> +       struct snd_pcm_hw_constraint_list *rate_constraints;
-> +       u8 *sad;                /* Short Audio Descriptor (3 bytes) */
+sub-LED?
 
-[...]
+> +	- flash_fault - bitmask of flash faults that may have occurred
+> +			possible flags are:
+> +		* 0x01 - flash controller voltage to the flash LED has exceeded
+> +			 the limit specific to the flash controller
+> +		* 0x02 - the flash strobe was still on when the timeout set by
+> +			 the user has expired; not all flash controllers may
+> +			 set this in all such conditions
+> +		* 0x04 - the flash controller has overheated
+> +		* 0x08 - the short circuit protection of the flash controller
+> +			 has been triggered
+> +		* 0x10 - current in the LED power supply has exceeded the limit
+> +			 specific to the flash controller
+> +		* 0x20 - the flash controller has detected a short or open
+> +			 circuit condition on the indicator LED
+> +		* 0x40 - flash controller voltage to the flash LED has been
+> +			 below the minimum limit specific to the flash
+> +		* 0x80 - the input voltage of the flash controller is below
+> +			 the limit under which strobing the flash at full
+> +			 current will not be possible. The condition persists
+> +			 until this flag is no longer set
+> +		* 0x100 - the temperature of the LED has exceeded its allowed
+> +			  upper limit
 
-> +       snd_pcm_hw_constraint_minmax(runtime,
-> +                               SNDRV_PCM_HW_PARAM_CHANNELS,
-> +                               1, sad[SAD_MX_CHAN_I]);
+Did not everyone agree that text strings are preferable to bitmasks?
 
-In the light of our discussions elsewhere [1], shouldn't this
-be constrained by the number of hardware channels that the TDA998x
-supports too?  That is, the maximum number of channels should
-be the lesser of sd[SAD_MX_CHAN_I] and number_of_I2S channels 
-(or S/PDIF channels if so configured).
+									Pavel
 
-	Andrew
-
-[1] http://mailman.alsa-project.org/pipermail/alsa-devel/2015-January/086090.html
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
