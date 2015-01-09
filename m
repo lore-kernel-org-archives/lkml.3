@@ -1,56 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757551AbbAINHo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 08:07:44 -0500
-Received: from cirse-out.extra.cea.fr ([132.167.192.142]:50263 "EHLO
-	cirse-out.extra.cea.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757019AbbAINHl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757410AbbAINHl (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 9 Jan 2015 08:07:41 -0500
-Date: Fri, 9 Jan 2015 14:07:23 +0100
-From: Dominique Martinet <dominique.martinet@cea.fr>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
-        Latchesar Ionkov <lucho@ionkov.net>,
-        <v9fs-developer@lists.sourceforge.net>,
-        <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fs/9p: Initialize status in v9fs_file_do_lock.
-Message-ID: <20150109130723.GA3183@u-isr-ctg-01>
-References: <1420804567-15371-1-git-send-email-dominique.martinet@cea.fr>
- <20150109123353.GA24928@node.dhcp.inet.fi>
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55381 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752886AbbAINHj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 08:07:39 -0500
+Date: Fri, 9 Jan 2015 13:07:25 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Jyri Sarha <jsarha@ti.com>, Mark Brown <broonie@kernel.org>,
+        Dave Airlie <airlied@gmail.com>,
+        Andrew Jackson <Andrew.Jackson@arm.com>, alsa-devel@alsa-project.org,
+        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v9 1/4] drm/i2c: tda998x: Add DT support for audio
+Message-ID: <20150109130725.GN12302@n2100.arm.linux.org.uk>
+References: <cover.1420628786.git.moinejf@free.fr>
+ <0084acea5a3475a77531d6a77483f36d3469111a.1420628786.git.moinejf@free.fr>
+ <54AE99F5.1010404@ti.com>
+ <20150108174257.557f7ea5@armhf>
+ <54AFA9B0.6040405@ti.com>
+ <20150109123036.4bc4bbf6@armhf>
+ <20150109114529.GH12302@n2100.arm.linux.org.uk>
+ <20150109135401.5b270d46@armhf>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150109123353.GA24928@node.dhcp.inet.fi>
+In-Reply-To: <20150109135401.5b270d46@armhf>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kirill A. Shutemov wrote on Fri, Jan 09, 2015 at 02:33:53PM +0200:
-> On Fri, Jan 09, 2015 at 12:56:07PM +0100, Dominique Martinet wrote:
-> > If p9_client_lock_dotl returns an error, status is possibly never filled
-> > but will be used in the following switch.
-> > Initializing it to P9_LOCK_ERROR makes sur we will return an error and
-> > cleanup (and not hit the default case).
+On Fri, Jan 09, 2015 at 01:54:01PM +0100, Jean-Francois Moine wrote:
+> On Fri, 9 Jan 2015 11:45:29 +0000
+> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> > I think we need to understand exactly how the 998x map I2S inputs to the
+> > HDMI channels to avoid making a mistake with the binding; remember, the
+> > binding isn't something that can be easily "bug fixed" at a later date
+> > as anything we come up with now has to be supported long term by the
+> > kernel.
 > 
-> That's what my patch[1] fixes.
-> 
-> http://marc.info/?i=1419858019-116944-1-git-send-email-kirill.shutemov%40linux.intel.com
+> The DT describes the hardware configuration.
 
-Actually, it's slightly different and still worth adding (mine if we
-apply your's first and your's if we apply mine first - don't think
-they'll conflict. I even reworded the (too old!) commit message to fit
-with your patch :))
+You're missing my point.
 
-Your patch will not BUG() if status is junk, BUT if status uninitialized
-value is 0 and p9_client_lock_dotl then we'll return res=0 (success) and
-not unlock before returning. My patch makes sure we'll return -ENOLCK.
+How does the driver know which of the I2S pins to enable in I2S mode?
 
-Likewise, if we only apply my patch then a rogue server could BUG() a
-client, so we want your's anyway.
+> A fully wired tda998x could be a chip with the audio pins connected to:
+> - a kirkwood-like audio device with one I2S and one S/PDIF output,
+> - two other audio devices with one I2S each.
+
+I don't think it's that simple.  Since there is only one WS input to
+the 998x, the four I2S sources would need to synchronise somehow, and
+since the I2S source generates WS, connecting the 998x to multiple
+independent I2S sources, each with their own WS output, presents a
+hardware problem.
+
+> With S/PDIF, only one stereo channel may be sent, but with I2S, up to 4
+> stereo channels may be sent.
+
+That statement is not entirely accurate.  Yes, with S/PDIF, only one
+PCM L+R channel can be sent.  However, S/PDIF also supports sending
+more channels using "non-audio" streams, with the data encoded as
+MPEG or AAC.  This uses the HDMI data islands which would've been
+occupied by the Front L+R PCM channel.
+
+> These channels are extracted by the devices connected on the HDMI bus.
+
+That's incorrect.  Please read the HDMI 1.3 specification; channels are
+allocated for Front L+R, Centre, Sub, Rear L+R and there's no
+identification to indicate that there are two Front L+R channels which
+are different languages.
+
+If you feel differently, please provide a reference to the HDMI
+specification which describes this feature.
+
+> An example could be the playing of a multi-language movie: each audio
+> channel carries one language. From the computer view, the playing
+> application sends each language to one sound card.
+
+The selection of the language is done at the player, not by the display
+device.
+
+> So, this means that the tda998x driver should check that S/PDIF and I2S
+> are not active at the same time, and it should also do a pin OR/AND on
+> I2S start/stop.
+
+That's correct: the TDA998x can operate in one of two modes: either
+S/PDIF _or_ I2S, but never both.
+
+My question is: how do we know which I2S inputs to enable, or are
+you suggesting that all I2S inputs should be enabled if operating in
+I2S mode irrespective of whether they may be active?
 
 -- 
-Dominique Martinet,
-CEA
-
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
