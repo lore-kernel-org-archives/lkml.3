@@ -1,160 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757923AbbAIPy4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:54:56 -0500
-Received: from mga01.intel.com ([192.55.52.88]:45948 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751247AbbAIPyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:54:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,731,1413270000"; 
-   d="scan'208";a="659390253"
-Date: Fri, 9 Jan 2015 23:54:30 +0800
-From: kbuild test robot <fengguang.wu@intel.com>
-To: "Sumit.Saxena@avagotech.com" <Sumit.Saxena@avagotech.com>
-Cc: kbuild-all@01.org, Christoph Hellwig <hch@lst.de>,
-        Sumit Saxena <sumit.saxena@avagotech.com>,
-        Chaitra Basappa <chaitra.basappa@avagotech.com>,
-        Kashyap Desai <kashyap.desai@avagotech.com>,
-        Uday Lingala <uday.lingala@avagotech.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        megaraidlinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [hch-scsi-queue:scsi-for-3.20 39/42]
- drivers/scsi/megaraid/megaraid_sas_base.c:1701:6: sparse: symbol
- 'megasas_complete_outstanding_ioctls' was not declared. Should it be static?
-Message-ID: <201501092322.aenpxV0o%fengguang.wu@intel.com>
+	id S1757960AbbAIPzG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:55:06 -0500
+Received: from smtp-out-098.synserver.de ([212.40.185.98]:1047 "EHLO
+	smtp-out-098.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757234AbbAIPzE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 10:55:04 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 9680
+Message-ID: <54AFF9D3.7000007@metafoo.de>
+Date: Fri, 09 Jan 2015 16:54:59 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: fengguang.wu@intel.com
-X-SA-Exim-Scanned: No (on bee); SAEximRunCond expanded to false
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] iio: Simplify IIO provider access locking mechanism
+References: <1420817893-5858-1-git-send-email-iivanov@mm-sol.com>	 <54AFF6C4.9020306@metafoo.de> <1420818639.28652.5.camel@mm-sol.com>
+In-Reply-To: <1420818639.28652.5.camel@mm-sol.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tree:   git://git.infradead.org/users/hch/scsi-queue.git scsi-for-3.20
-head:   0128d5cf8f85c93b3c70ff03299c2839f3e6d21e
-commit: c8dd61eff2780c481fcf919c1572e16e397c714e [39/42] megaraid_sas: complete outstanding IOCTLs before killing adapter
-reproduce:
-  # apt-get install sparse
-  git checkout c8dd61eff2780c481fcf919c1572e16e397c714e
-  make ARCH=x86_64 allmodconfig
-  make C=1 CF=-D__CHECK_ENDIAN__
+On 01/09/2015 04:50 PM, Ivan T. Ivanov wrote:
+>
+> On Fri, 2015-01-09 at 16:41 +0100, Lars-Peter Clausen wrote:
+>> On 01/09/2015 04:38 PM, Ivan T. Ivanov wrote:
+>>> Instead of checking whether provider module is still
+>>> loaded on every access to device just lock module to
+>>> memory when client get reference to provider device.
+>>>
+>>
+>> This has nothing to do with the module, it's about the device. In the Linux
+>> device driver model as device can be unbound at any time and the IIO
+>> framework needs to handle this.
+>>
+>
+> Hm. Probably i am missing something here, but is this
+> still true if we have reference to device structure?
 
+Yes, that only prevents the memory of device from being freed. But the 
+device can still be unbound from the driver.
 
-sparse warnings: (new ones prefixed by >>)
+Think of e.g. a USB device that is pulled from the USB connector. Nothing 
+you can do in software about having the device disappear.
 
-   drivers/scsi/megaraid/megaraid_sas_base.c:923:26: sparse: invalid assignment: |=
-   drivers/scsi/megaraid/megaraid_sas_base.c:923:26:    left side has type unsigned short
-   drivers/scsi/megaraid/megaraid_sas_base.c:923:26:    right side has type restricted __le16
-   drivers/scsi/megaraid/megaraid_sas_base.c:1002:25: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1002:25:    expected unsigned short [unsigned] [usertype] flags
-   drivers/scsi/megaraid/megaraid_sas_base.c:1002:25:    got restricted __le16 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1003:33: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1003:33:    expected unsigned int [unsigned] [usertype] abort_context
-   drivers/scsi/megaraid/megaraid_sas_base.c:1003:33:    got restricted __le32 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1004:42: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1004:42:    expected unsigned int [unsigned] [usertype] abort_mfi_phys_addr_lo
-   drivers/scsi/megaraid/megaraid_sas_base.c:1004:42:    got restricted __le32 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1006:42: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1006:42:    expected unsigned int [unsigned] [usertype] abort_mfi_phys_addr_hi
-   drivers/scsi/megaraid/megaraid_sas_base.c:1006:42:    got restricted __le32 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1054:50: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1054:50:    expected unsigned int [unsigned] [usertype] length
-   drivers/scsi/megaraid/megaraid_sas_base.c:1054:50:    got restricted __le32 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1055:53: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1055:53:    expected unsigned int [unsigned] [usertype] phys_addr
-   drivers/scsi/megaraid/megaraid_sas_base.c:1055:53:    got restricted __le32 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1083:50: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1083:50:    expected unsigned int [unsigned] [usertype] length
-   drivers/scsi/megaraid/megaraid_sas_base.c:1083:50:    got restricted __le32 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1084:53: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1084:53:    expected unsigned long long [unsigned] [usertype] phys_addr
-   drivers/scsi/megaraid/megaraid_sas_base.c:1084:53:    got restricted __le64 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1111:55: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1111:55:    expected unsigned int [unsigned] [usertype] length
-   drivers/scsi/megaraid/megaraid_sas_base.c:1111:55:    got restricted __le32 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1113:58: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1113:58:    expected unsigned long long [unsigned] [usertype] phys_addr
-   drivers/scsi/megaraid/megaraid_sas_base.c:1113:58:    got restricted __le64 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1115:53: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1115:53:    expected unsigned int [unsigned] [usertype] flag
-   drivers/scsi/megaraid/megaraid_sas_base.c:1115:53:    got restricted __le32 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1224:22: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1224:22:    expected unsigned short [unsigned] [usertype] flags
-   drivers/scsi/megaraid/megaraid_sas_base.c:1224:22:    got restricted __le16 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1225:30: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1225:30:    expected unsigned int [unsigned] [usertype] data_xfer_len
-   drivers/scsi/megaraid/megaraid_sas_base.c:1225:30:    got restricted __le32 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1237:40: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1237:40:    expected unsigned short [unsigned] [usertype] timeout
-   drivers/scsi/megaraid/megaraid_sas_base.c:1237:40:    got restricted __le16 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1244:30: sparse: invalid assignment: |=
-   drivers/scsi/megaraid/megaraid_sas_base.c:1244:30:    left side has type unsigned short
-   drivers/scsi/megaraid/megaraid_sas_base.c:1244:30:    right side has type restricted __le16
-   drivers/scsi/megaraid/megaraid_sas_base.c:1248:30: sparse: invalid assignment: |=
-   drivers/scsi/megaraid/megaraid_sas_base.c:1248:30:    left side has type unsigned short
-   drivers/scsi/megaraid/megaraid_sas_base.c:1248:30:    right side has type restricted __le16
-   drivers/scsi/megaraid/megaraid_sas_base.c:1265:39: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1265:39:    expected unsigned int [unsigned] [usertype] sense_buf_phys_addr_hi
-   drivers/scsi/megaraid/megaraid_sas_base.c:1265:39:    got restricted __le32 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1267:39: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1267:39:    expected unsigned int [unsigned] [usertype] sense_buf_phys_addr_lo
-   drivers/scsi/megaraid/megaraid_sas_base.c:1267:39:    got restricted __le32 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1319:21: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1319:21:    expected unsigned short [unsigned] [usertype] flags
-   drivers/scsi/megaraid/megaraid_sas_base.c:1319:21:    got restricted __le16 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1327:33: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1327:33:    expected unsigned int [unsigned] [usertype] lba_count
-   drivers/scsi/megaraid/megaraid_sas_base.c:1327:33:    got restricted __le32 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1328:36: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1328:36:    expected unsigned int [unsigned] [usertype] start_lba_lo
-   drivers/scsi/megaraid/megaraid_sas_base.c:1328:36:    got restricted __le32 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1332:36: sparse: invalid assignment: &=
-   drivers/scsi/megaraid/megaraid_sas_base.c:1332:36:    left side has type unsigned int
-   drivers/scsi/megaraid/megaraid_sas_base.c:1332:36:    right side has type restricted __le32
-   drivers/scsi/megaraid/megaraid_sas_base.c:1339:33: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1339:33:    expected unsigned int [unsigned] [usertype] lba_count
-   drivers/scsi/megaraid/megaraid_sas_base.c:1339:33:    got restricted __le32 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1341:36: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1341:36:    expected unsigned int [unsigned] [usertype] start_lba_lo
-   drivers/scsi/megaraid/megaraid_sas_base.c:1341:36:    got restricted __le32 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1351:33: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1351:33:    expected unsigned int [unsigned] [usertype] lba_count
-   drivers/scsi/megaraid/megaraid_sas_base.c:1351:33:    got restricted __le32 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1356:36: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1356:36:    expected unsigned int [unsigned] [usertype] start_lba_lo
-   drivers/scsi/megaraid/megaraid_sas_base.c:1356:36:    got restricted __le32 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1366:33: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1366:33:    expected unsigned int [unsigned] [usertype] lba_count
-   drivers/scsi/megaraid/megaraid_sas_base.c:1366:33:    got restricted __le32 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1371:36: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1371:36:    expected unsigned int [unsigned] [usertype] start_lba_lo
-   drivers/scsi/megaraid/megaraid_sas_base.c:1371:36:    got restricted __le32 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1376:36: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1376:36:    expected unsigned int [unsigned] [usertype] start_lba_hi
-   drivers/scsi/megaraid/megaraid_sas_base.c:1376:36:    got restricted __le32 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1387:29: sparse: invalid assignment: |=
-   drivers/scsi/megaraid/megaraid_sas_base.c:1387:29:    left side has type unsigned short
-   drivers/scsi/megaraid/megaraid_sas_base.c:1387:29:    right side has type restricted __le16
-   drivers/scsi/megaraid/megaraid_sas_base.c:1391:29: sparse: invalid assignment: |=
-   drivers/scsi/megaraid/megaraid_sas_base.c:1391:29:    left side has type unsigned short
-   drivers/scsi/megaraid/megaraid_sas_base.c:1391:29:    right side has type restricted __le16
-   drivers/scsi/megaraid/megaraid_sas_base.c:1407:38: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1407:38:    expected unsigned int [unsigned] [usertype] sense_buf_phys_addr_lo
-   drivers/scsi/megaraid/megaraid_sas_base.c:1407:38:    got restricted __le32 [usertype] <noident>
->> drivers/scsi/megaraid/megaraid_sas_base.c:1701:6: sparse: symbol 'megasas_complete_outstanding_ioctls' was not declared. Should it be static?
-   drivers/scsi/megaraid/megaraid_sas_base.c:1868:37: sparse: incorrect type in assignment (different base types)
-   drivers/scsi/megaraid/megaraid_sas_base.c:1868:37:    expected unsigned int [unsigned] [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1868:37:    got restricted __le32 [usertype] <noident>
-   drivers/scsi/megaraid/megaraid_sas_base.c:1863:6: sparse: symbol 'megasas_do_ocr' was not declared. Should it be static?
-   drivers/scsi/megaraid/megaraid_sas_base.c:2177:5: sparse: too many warnings
+- Lars
 
-Please review and possibly fold the followup patch.
-
----
-0-DAY kernel test infrastructure                Open Source Technology Center
-http://lists.01.org/mailman/listinfo/kbuild                 Intel Corporation
