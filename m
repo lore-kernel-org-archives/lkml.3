@@ -1,69 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932985AbbAIQBJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 11:01:09 -0500
-Received: from casper.infradead.org ([85.118.1.10]:53854 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752184AbbAIQBH (ORCPT
+	id S1757953AbbAIQDg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 11:03:36 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:58968 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752060AbbAIQDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 11:01:07 -0500
-Date: Fri, 9 Jan 2015 17:00:51 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-Subject: Re: perf: PERF_FLAG_FD_OUTPUT has been broken since 2.6.35
-Message-ID: <20150109160051.GK29390@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.11.1501081014460.24664@vincent-weaver-1.umelst.maine.edu>
+	Fri, 9 Jan 2015 11:03:34 -0500
+Date: Fri, 9 Jan 2015 16:03:20 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: "leif.lindholm@linaro.org" <leif.lindholm@linaro.org>,
+        "roy.franz@linaro.org" <roy.franz@linaro.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "bp@alien8.de" <bp@alien8.de>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        "geoff.levand@linaro.org" <geoff.levand@linaro.org>,
+        "dyoung@redhat.com" <dyoung@redhat.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 8/8] arm64/efi: remove idmap manipulations from UEFI
+ code
+Message-ID: <20150109160320.GJ11258@arm.com>
+References: <1420742914-2404-1-git-send-email-ard.biesheuvel@linaro.org>
+ <1420742914-2404-9-git-send-email-ard.biesheuvel@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1501081014460.24664@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1420742914-2404-9-git-send-email-ard.biesheuvel@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 08, 2015 at 10:22:37AM -0500, Vince Weaver wrote:
-> Hello,
+On Thu, Jan 08, 2015 at 06:48:34PM +0000, Ard Biesheuvel wrote:
+> Now that we have moved the call to SetVirtualAddressMap() to the stub,
+> UEFI has no use for the ID map, so we can drop the code that installs
+> ID mappings for UEFI memory regions.
 > 
-> I was working on improving the manpage by working out how the 
-> perf_event_open() PERF_FLAG_FD_OUTPUT flag works.
-> 
-> It turns out it doesn't.
-> 
-> In kernel/events/core.c when opening a file this is done:
-> 
->         if (output_event) {
->            err = perf_event_set_output(event, output_event);
->            if (err)
->               goto err_context;
->         }
-> 
-> 	and perf_event_set_output() does:
-> 
->                 if (output_event->cpu == -1 && output_event->ctx != event->ctx) {
->                    goto out;
->                 }
-> 
-> 	But event->ctx is always NULL; it does not get set to ctx until
-> 	after the call to perf_event_set_output().
-> 
-> 	It looks like this was broken back in 2.6.35 days with the change:
-> 
-> 		commit ac9721f3f54b27a16c7e1afb2481e7ee95a70318
-> 		Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> 		Date:   Thu May 27 12:54:41 2010 +0200
-> 
-> 		perf_events: Fix races and clean up perf_event and perf_mmap_data interaction
-> 
-> So is this worth fixing seeing as apparently no one uses this feature?
+> Acked-by: Leif Lindholm <leif.lindholm@linaro.org>
+> Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+> ---
+>  arch/arm64/include/asm/efi.h |  2 --
+>  arch/arm64/include/asm/mmu.h |  2 --
+>  arch/arm64/kernel/efi.c      | 32 +-------------------------------
+>  arch/arm64/kernel/setup.c    |  1 -
+>  arch/arm64/mm/mmu.c          | 12 ------------
+>  5 files changed, 1 insertion(+), 48 deletions(-)
 
-I think there's a fair argument for removing it, Ingo, Acme?
+Looks like a good cleanup!
 
-> As an aside, added error reporting is *really* needed as I had to sprinkle
-> all of events/core.c with printk() calls to even begin to understand why
-> I was getting the EINVAL result.
+Acked-by: Will Deacon <will.deacon@arm.com>
 
-Yes, let me see if I can find someone to work on that :/
+Will
+
+> diff --git a/arch/arm64/include/asm/efi.h b/arch/arm64/include/asm/efi.h
+> index effef3713c5a..7baf2cc04e1e 100644
+> --- a/arch/arm64/include/asm/efi.h
+> +++ b/arch/arm64/include/asm/efi.h
+> @@ -6,11 +6,9 @@
+>  
+>  #ifdef CONFIG_EFI
+>  extern void efi_init(void);
+> -extern void efi_idmap_init(void);
+>  extern void efi_virtmap_init(void);
+>  #else
+>  #define efi_init()
+> -#define efi_idmap_init()
+>  #define efi_virtmap_init()
+>  #endif
+>  
+> diff --git a/arch/arm64/include/asm/mmu.h b/arch/arm64/include/asm/mmu.h
+> index 5fd40c43be80..3d311761e3c2 100644
+> --- a/arch/arm64/include/asm/mmu.h
+> +++ b/arch/arm64/include/asm/mmu.h
+> @@ -31,8 +31,6 @@ extern void paging_init(void);
+>  extern void setup_mm_for_reboot(void);
+>  extern void __iomem *early_io_map(phys_addr_t phys, unsigned long virt);
+>  extern void init_mem_pgprot(void);
+> -/* create an identity mapping for memory (or io if map_io is true) */
+> -extern void create_id_mapping(phys_addr_t addr, phys_addr_t size, int map_io);
+>  extern void create_pgd_mapping(struct mm_struct *mm, phys_addr_t phys,
+>  			       unsigned long virt, phys_addr_t size,
+>  			       pgprot_t prot);
+> diff --git a/arch/arm64/kernel/efi.c b/arch/arm64/kernel/efi.c
+> index 4a5d7343dddd..a98415b5979c 100644
+> --- a/arch/arm64/kernel/efi.c
+> +++ b/arch/arm64/kernel/efi.c
+> @@ -54,27 +54,6 @@ static int __init is_normal_ram(efi_memory_desc_t *md)
+>  	return 0;
+>  }
+>  
+> -static void __init efi_setup_idmap(void)
+> -{
+> -	struct memblock_region *r;
+> -	efi_memory_desc_t *md;
+> -	u64 paddr, npages, size;
+> -
+> -	for_each_memblock(memory, r)
+> -		create_id_mapping(r->base, r->size, 0);
+> -
+> -	/* map runtime io spaces */
+> -	for_each_efi_memory_desc(&memmap, md) {
+> -		if (!(md->attribute & EFI_MEMORY_RUNTIME) || is_normal_ram(md))
+> -			continue;
+> -		paddr = md->phys_addr;
+> -		npages = md->num_pages;
+> -		memrange_efi_to_native(&paddr, &npages);
+> -		size = npages << PAGE_SHIFT;
+> -		create_id_mapping(paddr, size, 1);
+> -	}
+> -}
+> -
+>  /*
+>   * Translate a EFI virtual address into a physical address: this is necessary,
+>   * as some data members of the EFI system table are virtually remapped after
+> @@ -236,16 +215,6 @@ void __init efi_init(void)
+>  	reserve_regions();
+>  }
+>  
+> -void __init efi_idmap_init(void)
+> -{
+> -	if (!efi_enabled(EFI_BOOT))
+> -		return;
+> -
+> -	/* boot time idmap_pg_dir is incomplete, so fill in missing parts */
+> -	efi_setup_idmap();
+> -	early_memunmap(memmap.map, memmap.map_end - memmap.map);
+> -}
+> -
+>  /*
+>   * Enable the UEFI Runtime Services if all prerequisites are in place, i.e.,
+>   * non-early mapping of the UEFI system table and virtual mappings for all
+> @@ -386,4 +355,5 @@ void __init efi_virtmap_init(void)
+>  		create_pgd_mapping(&efi_mm, paddr, md->virt_addr, size, prot);
+>  	}
+>  	set_bit(EFI_VIRTMAP, &efi.flags);
+> +	early_memunmap(memmap.map, memmap.map_end - memmap.map);
+>  }
+> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+> index beac8188fdbd..199d1b7809d7 100644
+> --- a/arch/arm64/kernel/setup.c
+> +++ b/arch/arm64/kernel/setup.c
+> @@ -402,7 +402,6 @@ void __init setup_arch(char **cmdline_p)
+>  	request_standard_resources();
+>  
+>  	efi_virtmap_init();
+> -	efi_idmap_init();
+>  	early_ioremap_reset();
+>  
+>  	unflatten_device_tree();
+> diff --git a/arch/arm64/mm/mmu.c b/arch/arm64/mm/mmu.c
+> index 3f3d5aa4a8b1..328638548871 100644
+> --- a/arch/arm64/mm/mmu.c
+> +++ b/arch/arm64/mm/mmu.c
+> @@ -271,18 +271,6 @@ static void __init create_mapping(phys_addr_t phys, unsigned long virt,
+>  			 size, PAGE_KERNEL_EXEC);
+>  }
+>  
+> -void __init create_id_mapping(phys_addr_t addr, phys_addr_t size, int map_io)
+> -{
+> -	if ((addr >> PGDIR_SHIFT) >= ARRAY_SIZE(idmap_pg_dir)) {
+> -		pr_warn("BUG: not creating id mapping for %pa\n", &addr);
+> -		return;
+> -	}
+> -	__create_mapping(&init_mm, &idmap_pg_dir[pgd_index(addr)],
+> -			 addr, addr, size,
+> -			 map_io ? __pgprot(PROT_DEVICE_nGnRE)
+> -				: PAGE_KERNEL_EXEC);
+> -}
+> -
+>  void __init create_pgd_mapping(struct mm_struct *mm, phys_addr_t phys,
+>  			       unsigned long virt, phys_addr_t size,
+>  			       pgprot_t prot)
+> -- 
+> 1.8.3.2
+> 
+> 
