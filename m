@@ -1,70 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490AbbAIG15 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 01:27:57 -0500
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:39559 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750928AbbAIG14 (ORCPT
+	id S1754616AbbAIGe1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 01:34:27 -0500
+Received: from out4133-34.mail.aliyun.com ([42.120.133.34]:18251 "EHLO
+	out4133-34.mail.aliyun.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750928AbbAIGe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 01:27:56 -0500
-Date: Fri, 9 Jan 2015 14:24:44 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC] usb: dwc3: add DWC3_SKIP_USB3PHY and DWC3_SKIP_USB2_PHY
- quirks
-Message-ID: <20150109142444.49e0ff2f@xhacker>
-In-Reply-To: <20150108170815.GJ31926@saruman>
-References: <20141208213551.38860f81@xhacker>
-	<20150108170815.GJ31926@saruman>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Fri, 9 Jan 2015 01:34:26 -0500
+X-Alimail-AntiSpam: AC=PASS;BC=-1|-1;BR=01201311R111e4;FP=0|-1|-1|-1|0|-1|-1|-1;HT=r41g03016;MF=hillf.zj@alibaba-inc.com;PH=DS;RN=10;RT=10;SR=0;
+Reply-To: "Hillf Danton" <hillf.zj@alibaba-inc.com>
+From: "Hillf Danton" <hillf.zj@alibaba-inc.com>
+To: "'Vladimir Davydov'" <vdavydov@parallels.com>
+Cc: "Andrew Morton" <akpm@linux-foundation.org>,
+        "'Johannes Weiner'" <hannes@cmpxchg.org>,
+        "'Michal Hocko'" <mhocko@suse.cz>,
+        "'Greg Thelen'" <gthelen@google.com>,
+        "'Glauber Costa'" <glommer@gmail.com>,
+        "'Dave Chinner'" <david@fromorbit.com>,
+        "'Alexander Viro'" <viro@zeniv.linux.org.uk>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH -mm v3 3/9] vmscan: per memory cgroup slab shrinkers
+Date: Fri, 09 Jan 2015 14:33:46 +0800
+Message-ID: <063c01d02bd6$38c64ce0$aa52e6a0$@alibaba-inc.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain;
+	charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-09_03:2015-01-07,2015-01-09,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1501090053
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AdAr1Q+flfVN5SFRTRi7mkF/91CLyg==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
-
-On Thu, 8 Jan 2015 09:08:15 -0800
-Felipe Balbi <balbi@ti.com> wrote:
-
-> Hi,
+>  static bool shrink_zone(struct zone *zone, struct scan_control *sc,
+>  			bool is_classzone)
+>  {
+> +	struct reclaim_state *reclaim_state = current->reclaim_state;
+>  	unsigned long nr_reclaimed, nr_scanned;
+>  	bool reclaimable = false;
 > 
-> On Mon, Dec 08, 2014 at 09:35:51PM +0800, Jisheng Zhang wrote:
-> > On platforms which has native usb hosts/phys and pci-dwc3 controller,
-> > the dwc3 core may get the wrong usb2_phy and usb3_phy by
-> > devm_usb_get_phy(). It depends on which usb phy driver is initialized
-> > firstly, the usb_phy_generic or the native/real usb phy driver.
+> @@ -2318,16 +2357,22 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
 > 
-> why are you initializing generic PHY if you have a real PHY ?
-
-we have two kind of usb hosts: the native usb hosts which can be probed via. DT
-and the usb hosts from pci-dwc3. The former has real phy and the latter doesn't.
-
+>  		memcg = mem_cgroup_iter(root, NULL, &reclaim);
+>  		do {
+> -			unsigned long lru_pages;
+> +			unsigned long lru_pages, scanned;
+>  			struct lruvec *lruvec;
+>  			int swappiness;
 > 
-> > Before all old USB phy library usage removed, the solution I can have
-> > is to add DWC3_SKIP_USB3PHY and DWC3_SKIP_USB2_PHY quirks and set them
-> > in dwc3-pci.
-> > Could such modification can be accepted? If not, could you please give
-> > alternative suggestions?
+>  			lruvec = mem_cgroup_zone_lruvec(zone, memcg);
+>  			swappiness = mem_cgroup_swappiness(memcg);
+> +			scanned = sc->nr_scanned;
 > 
-> we will not accept a quirk to skip PHYs, sorry. A better way of handling
-> this needs to be found.
+>  			shrink_lruvec(lruvec, swappiness, sc, &lru_pages);
+>  			zone_lru_pages += lru_pages;
 > 
+> +			if (memcg && is_classzone)
+> +				shrink_slab(sc->gfp_mask, zone_to_nid(zone),
+> +					    memcg, sc->nr_scanned - scanned,
+> +					    lru_pages);
+> +
+Looks sc->nr_reclaimed has to be updated for "limit reclaim".
 
-OK, Got your points. It seems we need to deprecate old usb phy library usage
-early.
+Hillf
+>  			/*
+>  			 * Direct reclaim and kswapd have to scan all memory
+>  			 * cgroups to fulfill the overall scan target for the
+> @@ -2350,19 +2395,14 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
+>  		 * Shrink the slab caches in the same proportion that
+>  		 * the eligible LRU pages were scanned.
+>  		 */
+> -		if (global_reclaim(sc) && is_classzone) {
+> -			struct reclaim_state *reclaim_state;
+> -
+> -			shrink_node_slabs(sc->gfp_mask, zone_to_nid(zone),
+> -					  sc->nr_scanned - nr_scanned,
+> -					  zone_lru_pages);
+> -
+> -			reclaim_state = current->reclaim_state;
+> -			if (reclaim_state) {
+> -				sc->nr_reclaimed +=
+> -					reclaim_state->reclaimed_slab;
+> -				reclaim_state->reclaimed_slab = 0;
+> -			}
+> +		if (global_reclaim(sc) && is_classzone)
+> +			shrink_slab(sc->gfp_mask, zone_to_nid(zone), NULL,
+> +				    sc->nr_scanned - nr_scanned,
+> +				    zone_lru_pages);
+> +
+> +		if (reclaim_state) {
+> +			sc->nr_reclaimed += reclaim_state->reclaimed_slab;
+> +			reclaim_state->reclaimed_slab = 0;
+>  		}
+> 
+>  		vmpressure(sc->gfp_mask, sc->target_mem_cgroup,
+> --
+> 1.7.10.4
 
-Thanks,
-Jisheng
