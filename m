@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758029AbbAIPOe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:14:34 -0500
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:32955 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757247AbbAIPOb (ORCPT
+	id S1757986AbbAIPM6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:12:58 -0500
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:36902 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757951AbbAIPMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:14:31 -0500
+	Fri, 9 Jan 2015 10:12:53 -0500
 From: Maxime COQUELIN <maxime.coquelin@st.com>
 To: Jonathan Corbet <corbet@lwn.net>, Rob Herring <robh+dt@kernel.org>,
         Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
@@ -20,40 +20,78 @@ To: Jonathan Corbet <corbet@lwn.net>, Rob Herring <robh+dt@kernel.org>,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, kernel@stlinux.com
 Cc: lee.jones@linaro.org, peter.griffin@linaro.org
-Subject: [PATCH 0/3] Add STiH418 SoC and reference board support
-Date: Fri,  9 Jan 2015 16:11:43 +0100
-Message-Id: <1420816306-11305-1-git-send-email-maxime.coquelin@st.com>
+Subject: [PATCH 1/3] ARM: STi: Add STiH418 SoC support
+Date: Fri,  9 Jan 2015 16:11:44 +0100
+Message-Id: <1420816306-11305-2-git-send-email-maxime.coquelin@st.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1420816306-11305-1-git-send-email-maxime.coquelin@st.com>
+References: <1420816306-11305-1-git-send-email-maxime.coquelin@st.com>
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
  definitions=2015-01-09_05:2015-01-09,2015-01-09,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series adds basic support to the STMicroelectronics STiH407 SoC and its
-B2199 reference board. The STiH418 is a quad-core ARM Cortex-A9 CPU aimed at
-UHD STB market.
+This patch adds support to STiH418 SoC.
 
-Maxime Coquelin (3):
-  ARM: STi: Add STiH418 SoC support
-  ARM: dts: Add STiH418 SoC support
-  ARM: dts: STiH418: Add B2199 board support
-
- Documentation/arm/sti/stih418-overview.txt    |  20 ++
- Documentation/devicetree/bindings/arm/sti.txt |   4 +
- arch/arm/boot/dts/Makefile                    |   3 +-
- arch/arm/boot/dts/stih418-b2199.dts           |  78 ++++++
- arch/arm/boot/dts/stih418-clock.dtsi          | 348 ++++++++++++++++++++++++++
- arch/arm/boot/dts/stih418.dtsi                |  99 ++++++++
- arch/arm/mach-sti/board-dt.c                  |   1 +
- include/dt-bindings/clock/stih418-clks.h      |  34 +++
- 8 files changed, 586 insertions(+), 1 deletion(-)
+Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+---
+ Documentation/arm/sti/stih418-overview.txt    | 20 ++++++++++++++++++++
+ Documentation/devicetree/bindings/arm/sti.txt |  4 ++++
+ arch/arm/mach-sti/board-dt.c                  |  1 +
+ 3 files changed, 25 insertions(+)
  create mode 100644 Documentation/arm/sti/stih418-overview.txt
- create mode 100644 arch/arm/boot/dts/stih418-b2199.dts
- create mode 100644 arch/arm/boot/dts/stih418-clock.dtsi
- create mode 100644 arch/arm/boot/dts/stih418.dtsi
- create mode 100644 include/dt-bindings/clock/stih418-clks.h
 
+diff --git a/Documentation/arm/sti/stih418-overview.txt b/Documentation/arm/sti/stih418-overview.txt
+new file mode 100644
+index 0000000..1cd8fc8
+--- /dev/null
++++ b/Documentation/arm/sti/stih418-overview.txt
+@@ -0,0 +1,20 @@
++			STiH418 Overview
++			================
++
++Introduction
++------------
++
++    The STiH418 is the new generation of SoC for UHDp60 set-top boxes
++    and server/connected client application for satellite, cable, terrestrial
++    and IP-STB markets.
++
++    Features
++    - ARM Cortex-A9 1.5 GHz quad core CPU (28nm)
++    - SATA2, USB 3.0, PCIe, Gbit Ethernet
++    - HEVC L5.1 Main 10
++    - VP9
++
++  Document Author
++  ---------------
++
++  Maxime Coquelin <maxime.coquelin@st.com>, (c) 2015 ST Microelectronics
+diff --git a/Documentation/devicetree/bindings/arm/sti.txt b/Documentation/devicetree/bindings/arm/sti.txt
+index 92f16c7..d70ec35 100644
+--- a/Documentation/devicetree/bindings/arm/sti.txt
++++ b/Documentation/devicetree/bindings/arm/sti.txt
+@@ -13,3 +13,7 @@ Boards with the ST STiH407 SoC shall have the following properties:
+ Required root node property:
+ compatible = "st,stih407";
+ 
++Boards with the ST STiH418 SoC shall have the following properties:
++Required root node property:
++compatible = "st,stih418";
++
+diff --git a/arch/arm/mach-sti/board-dt.c b/arch/arm/mach-sti/board-dt.c
+index 3cf6ef8..b067390 100644
+--- a/arch/arm/mach-sti/board-dt.c
++++ b/arch/arm/mach-sti/board-dt.c
+@@ -18,6 +18,7 @@ static const char *stih41x_dt_match[] __initdata = {
+ 	"st,stih415",
+ 	"st,stih416",
+ 	"st,stih407",
++	"st,stih418",
+ 	NULL
+ };
+ 
 -- 
 1.9.1
 
