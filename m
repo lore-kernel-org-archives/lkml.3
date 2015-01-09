@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757660AbbAIKxV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 05:53:21 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44517 "EHLO
+	id S933265AbbAIKuW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 05:50:22 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44554 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757396AbbAIKc3 (ORCPT
+	by vger.kernel.org with ESMTP id S1757445AbbAIKc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Jan 2015 05:32:29 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
-        Mike Snitzer <snitzer@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 46/78] dm space map metadata: fix sm_bootstrap_get_nr_blocks()
-Date: Fri,  9 Jan 2015 11:31:55 +0100
-Message-Id: <f55c16cdf8a425447bf529756e3b5d895fc2d1e9.1420799385.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 47/78] x86/tls: Don't validate lm in set_thread_area() after all
+Date: Fri,  9 Jan 2015 11:31:56 +0100
+Message-Id: <f057db59a1566548d192ab6ce7c311cffb285a30.1420799385.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
 References: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
@@ -23,46 +24,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit c1c6156fe4d4577444b769d7edd5dd503e57bbc9 upstream.
+commit 3fb2f4237bb452eb4e98f6a5dbd5a445b4fed9d0 upstream.
 
-This function isn't right and it causes a static checker warning:
+It turns out that there's a lurking ABI issue.  GCC, when
+compiling this in a 32-bit program:
 
-	drivers/md/dm-thin.c:3016 maybe_resize_data_dev()
-	error: potentially using uninitialized 'sb_data_size'.
+struct user_desc desc = {
+	.entry_number    = idx,
+	.base_addr       = base,
+	.limit           = 0xfffff,
+	.seg_32bit       = 1,
+	.contents        = 0, /* Data, grow-up */
+	.read_exec_only  = 0,
+	.limit_in_pages  = 1,
+	.seg_not_present = 0,
+	.useable         = 0,
+};
 
-It should set "*count" and return zero on success the same as the
-sm_metadata_get_nr_blocks() function does earlier.
+will leave .lm uninitialized.  This means that anything in the
+kernel that reads user_desc.lm for 32-bit tasks is unreliable.
 
-Fixes: 3241b1d3e0aa ('dm: add persistent data library')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Revert the .lm check in set_thread_area().  The value never did
+anything in the first place.
+
+Fixes: 0e58af4e1d21 ("x86/tls: Disallow unusual TLS segments")
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/d7875b60e28c512f6a6fc0baf5714d58e7eaadbb.1418856405.git.luto@amacapital.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/md/persistent-data/dm-space-map-metadata.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/x86/include/uapi/asm/ldt.h | 7 +++++++
+ arch/x86/kernel/tls.c           | 6 ------
+ 2 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/md/persistent-data/dm-space-map-metadata.c b/drivers/md/persistent-data/dm-space-map-metadata.c
-index 579b58200bf2..d9a5aa532017 100644
---- a/drivers/md/persistent-data/dm-space-map-metadata.c
-+++ b/drivers/md/persistent-data/dm-space-map-metadata.c
-@@ -564,7 +564,9 @@ static int sm_bootstrap_get_nr_blocks(struct dm_space_map *sm, dm_block_t *count
- {
- 	struct sm_metadata *smm = container_of(sm, struct sm_metadata, sm);
+diff --git a/arch/x86/include/uapi/asm/ldt.h b/arch/x86/include/uapi/asm/ldt.h
+index 46727eb37bfe..6e1aaf73852a 100644
+--- a/arch/x86/include/uapi/asm/ldt.h
++++ b/arch/x86/include/uapi/asm/ldt.h
+@@ -28,6 +28,13 @@ struct user_desc {
+ 	unsigned int  seg_not_present:1;
+ 	unsigned int  useable:1;
+ #ifdef __x86_64__
++	/*
++	 * Because this bit is not present in 32-bit user code, user
++	 * programs can pass uninitialized values here.  Therefore, in
++	 * any context in which a user_desc comes from a 32-bit program,
++	 * the kernel must act as though lm == 0, regardless of the
++	 * actual value.
++	 */
+ 	unsigned int  lm:1;
+ #endif
+ };
+diff --git a/arch/x86/kernel/tls.c b/arch/x86/kernel/tls.c
+index 3e551eee87b9..4e942f31b1a7 100644
+--- a/arch/x86/kernel/tls.c
++++ b/arch/x86/kernel/tls.c
+@@ -55,12 +55,6 @@ static bool tls_desc_okay(const struct user_desc *info)
+ 	if (info->seg_not_present)
+ 		return false;
  
--	return smm->ll.nr_blocks;
-+	*count = smm->ll.nr_blocks;
-+
-+	return 0;
+-#ifdef CONFIG_X86_64
+-	/* The L bit makes no sense for data. */
+-	if (info->lm)
+-		return false;
+-#endif
+-
+ 	return true;
  }
  
- static int sm_bootstrap_get_nr_free(struct dm_space_map *sm, dm_block_t *count)
 -- 
 2.2.1
 
