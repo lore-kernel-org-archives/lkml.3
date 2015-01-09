@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757510AbbAIJ6v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 04:58:51 -0500
-Received: from exprod7og112.obsmtp.com ([64.18.2.177]:59095 "HELO
-	exprod7og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754786AbbAIJ6t (ORCPT
+	id S1757287AbbAIJzK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 04:55:10 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:55695 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756611AbbAIJzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 04:58:49 -0500
-X-Greylist: delayed 338 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Jan 2015 04:58:49 EST
-Message-ID: <54AFA502.8090701@miraclelinux.com>
-Date: Fri, 09 Jan 2015 18:53:06 +0900
-From: YOSHIFUJI Hideaki <hideaki.yoshifuji@miraclelinux.com>
-Organization: MIRACLE LINUX CORPORATION
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Rahul Sharma <rsharma@arista.com>, netdev@vger.kernel.org
-CC: hideaki.yoshifuji@miraclelinux.com, linux-kernel@vger.kernel.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        netfilter-devel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: Re: [PATCH net v2] ipv6: Prevent ipv6_find_hdr() from returning ENOENT
- for valid non-first fragments
-References: <CAFB3abzM2ApxMH6C7vSDJ8JikKEkE46bOH3jbsis2NiF-ieUxA@mail.gmail.com>
-In-Reply-To: <CAFB3abzM2ApxMH6C7vSDJ8JikKEkE46bOH3jbsis2NiF-ieUxA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 9 Jan 2015 04:55:04 -0500
+From: "pi-cheng.chen" <pi-cheng.chen@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: "pi-cheng.chen" <pi-cheng.chen@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>, linaro-kernel@lists.linaro.org,
+        Eddie Huang <eddie.huang@mediatek.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>
+Subject: [PATCH 0/2] cpufreq: add cpufreq driver for Mediatek MT8173 SoC
+Date: Fri,  9 Jan 2015 17:54:49 +0800
+Message-Id: <1420797291-15972-1-git-send-email-pi-cheng.chen@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+MT8173 is a ARMv8 based SoC with 2 CA53 + 2 CA57 cores and 2 clusters.
+All CPUs in a single cluster share the same power and clock domain. This
+series tries to add cpufreq driver support for MT8173 SoC by using DT
+based cpufreq driver.
 
-Rahul Sharma wrote:
-> ipv6_find_hdr() currently assumes that the next-header field in the
-> fragment header of the non-first fragment is the "protocol number of
-> the last header" (here last header excludes any extension header
-> protocol numbers ) which is incorrect as per RFC2460. The next-header
-> value is the first header of the fragmentable part of the original
-> packet (which can be extension header as well).
-> This can create reassembly problems. For example: Fragmented
-> authenticated OSPFv3 packets (where AH header is inserted before the
-> protocol header). For the second fragment, the next header value in
-> the fragment header will be NEXTHDR_AUTH which is correct but
-> ipv6_find_hdr will return ENOENT since AH is an extension header
-> resulting in second fragment getting dropped. This check for the
-> presence of non-extension header needs to be removed.
->
-> Signed-off-by: Rahul Sharma <rsharma@arista.com>
+Currently the DT based cpufreq driver is missing some way to check which
+CPUs share clocks. In the 1st patch, CPU clock/power domain information is
+added to the platform_data of cpufreq-dt so that cpufreq-dt driver could
+check which CPUs share clock/power.
 
-Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+When doing DVFS on MT8173 SoC, 2 rules should be followed to make sure the
+SoC works properly:
+1. When doing frequency scaling of CPUs, the clock source should be switched
+   to another PLL, then switched back to the orignal until it's stable.
+2. When doing voltage scaling of CA57 cluster, Vproc and Vsram need to be
+   controlled concurrently and 2 limitations should be followed:
+   a. Vsram > Vproc
+   b. Vsram - Vproc < 200 mV
+
+To address these needs, we use cpufreq-dt but do voltage scaling in the
+cpufreq notifier.
+
+pi-cheng.chen (2):
+  cpufreq-dt: check CPU clock/power domain during initializing
+  cpufreq: add cpufreq driver for Mediatek MT8173 SoC
+
+ drivers/cpufreq/Kconfig.arm      |   6 +
+ drivers/cpufreq/Makefile         |   1 +
+ drivers/cpufreq/cpufreq-dt.c     |  15 ++
+ drivers/cpufreq/mt8173-cpufreq.c | 459 +++++++++++++++++++++++++++++++++++++++
+ include/linux/cpufreq-dt.h       |   6 +
+ 5 files changed, 487 insertions(+)
+ create mode 100644 drivers/cpufreq/mt8173-cpufreq.c
 
 -- 
-Hideaki Yoshifuji <hideaki.yoshifuji@miraclelinux.com>
-Technical Division, MIRACLE LINUX CORPORATION
+1.9.1
+
