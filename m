@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933441AbbAIK6k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 05:58:40 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44499 "EHLO
+	id S933457AbbAIK6l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 05:58:41 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44503 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757113AbbAIKc3 (ORCPT
+	by vger.kernel.org with ESMTP id S1757225AbbAIKc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Jan 2015 05:32:29 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
+Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 35/78] ALSA: usb-audio: Don't resubmit pending URBs at MIDI error recovery
-Date: Fri,  9 Jan 2015 11:31:44 +0100
-Message-Id: <4c8cb0ee48a5e126b14cd2c957e20bc0722c0258.1420799385.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 36/78] isofs: Fix infinite looping over CE entries
+Date: Fri,  9 Jan 2015 11:31:45 +0100
+Message-Id: <fbce0d7dc8965c9fb8d411862040239d4a768c71.1420799385.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
 References: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
@@ -23,73 +23,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Jan Kara <jack@suse.cz>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 66139a48cee1530c91f37c145384b4ee7043f0b7 upstream.
+commit f54e18f1b831c92f6512d2eedb224cd63d607d3d upstream.
 
-In snd_usbmidi_error_timer(), the driver tries to resubmit MIDI input
-URBs to reactivate the MIDI stream, but this causes the error when
-some of URBs are still pending like:
+Rock Ridge extensions define so called Continuation Entries (CE) which
+define where is further space with Rock Ridge data. Corrupted isofs
+image can contain arbitrarily long chain of these, including a one
+containing loop and thus causing kernel to end in an infinite loop when
+traversing these entries.
 
- WARNING: CPU: 0 PID: 0 at ../drivers/usb/core/urb.c:339 usb_submit_urb+0x5f/0x70()
- URB ef705c40 submitted while active
- CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.16.6-2-desktop #1
- Hardware name: FOXCONN TPS01/TPS01, BIOS 080015  03/23/2010
-  c0984bfa f4009ed4 c078deaf f4009ee4 c024c884 c09a135c f4009f00 00000000
-  c0984bfa 00000153 c061ac4f c061ac4f 00000009 00000001 ef705c40 e854d1c0
-  f4009eec c024c8d3 00000009 f4009ee4 c09a135c f4009f00 f4009f04 c061ac4f
- Call Trace:
-  [<c0205df6>] try_stack_unwind+0x156/0x170
-  [<c020482a>] dump_trace+0x5a/0x1b0
-  [<c0205e56>] show_trace_log_lvl+0x46/0x50
-  [<c02049d1>] show_stack_log_lvl+0x51/0xe0
-  [<c0205eb7>] show_stack+0x27/0x50
-  [<c078deaf>] dump_stack+0x45/0x65
-  [<c024c884>] warn_slowpath_common+0x84/0xa0
-  [<c024c8d3>] warn_slowpath_fmt+0x33/0x40
-  [<c061ac4f>] usb_submit_urb+0x5f/0x70
-  [<f7974104>] snd_usbmidi_submit_urb+0x14/0x60 [snd_usbmidi_lib]
-  [<f797483a>] snd_usbmidi_error_timer+0x6a/0xa0 [snd_usbmidi_lib]
-  [<c02570c0>] call_timer_fn+0x30/0x130
-  [<c0257442>] run_timer_softirq+0x1c2/0x260
-  [<c0251493>] __do_softirq+0xc3/0x270
-  [<c0204732>] do_softirq_own_stack+0x22/0x30
-  [<c025186d>] irq_exit+0x8d/0xa0
-  [<c0795228>] smp_apic_timer_interrupt+0x38/0x50
-  [<c0794a3c>] apic_timer_interrupt+0x34/0x3c
-  [<c0673d9e>] cpuidle_enter_state+0x3e/0xd0
-  [<c028bb8d>] cpu_idle_loop+0x29d/0x3e0
-  [<c028bd23>] cpu_startup_entry+0x53/0x60
-  [<c0bfac1e>] start_kernel+0x415/0x41a
+Limit the traversal to 32 entries which should be more than enough space
+to store all the Rock Ridge data.
 
-For avoiding these errors, check the pending URBs and skip
-resubmitting such ones.
-
-Reported-and-tested-by: Stefan Seyfried <stefan.seyfried@googlemail.com>
-Acked-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: P J P <ppandit@redhat.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- sound/usb/midi.c | 2 ++
- 1 file changed, 2 insertions(+)
+ fs/isofs/rock.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/sound/usb/midi.c b/sound/usb/midi.c
-index b901f468b67a..c7aa71ee775b 100644
---- a/sound/usb/midi.c
-+++ b/sound/usb/midi.c
-@@ -364,6 +364,8 @@ static void snd_usbmidi_error_timer(unsigned long data)
- 		if (in && in->error_resubmit) {
- 			in->error_resubmit = 0;
- 			for (j = 0; j < INPUT_URBS; ++j) {
-+				if (atomic_read(&in->urbs[j]->use_count))
-+					continue;
- 				in->urbs[j]->dev = umidi->dev;
- 				snd_usbmidi_submit_urb(in->urbs[j], GFP_ATOMIC);
- 			}
+diff --git a/fs/isofs/rock.c b/fs/isofs/rock.c
+index f488bbae541a..bb63254ed848 100644
+--- a/fs/isofs/rock.c
++++ b/fs/isofs/rock.c
+@@ -30,6 +30,7 @@ struct rock_state {
+ 	int cont_size;
+ 	int cont_extent;
+ 	int cont_offset;
++	int cont_loops;
+ 	struct inode *inode;
+ };
+ 
+@@ -73,6 +74,9 @@ static void init_rock_state(struct rock_state *rs, struct inode *inode)
+ 	rs->inode = inode;
+ }
+ 
++/* Maximum number of Rock Ridge continuation entries */
++#define RR_MAX_CE_ENTRIES 32
++
+ /*
+  * Returns 0 if the caller should continue scanning, 1 if the scan must end
+  * and -ve on error.
+@@ -105,6 +109,8 @@ static int rock_continue(struct rock_state *rs)
+ 			goto out;
+ 		}
+ 		ret = -EIO;
++		if (++rs->cont_loops >= RR_MAX_CE_ENTRIES)
++			goto out;
+ 		bh = sb_bread(rs->inode->i_sb, rs->cont_extent);
+ 		if (bh) {
+ 			memcpy(rs->buffer, bh->b_data + rs->cont_offset,
 -- 
 2.2.1
 
