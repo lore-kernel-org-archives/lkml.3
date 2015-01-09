@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087AbbAIRwZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 12:52:25 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38690 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750955AbbAIRwX (ORCPT
+	id S1758021AbbAIRxZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 12:53:25 -0500
+Received: from mail-we0-f180.google.com ([74.125.82.180]:63536 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757174AbbAIRxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 12:52:23 -0500
-Date: Fri, 9 Jan 2015 18:52:20 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
-        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
-        s.nawrocki@samsung.com, Andrzej Hajda <a.hajda@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH/RFC v10 09/19] DT: Add documentation for the mfd Maxim
- max77693
-Message-ID: <20150109175220.GF18076@amd>
-References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
- <1420816989-1808-10-git-send-email-j.anaszewski@samsung.com>
+	Fri, 9 Jan 2015 12:53:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420816989-1808-10-git-send-email-j.anaszewski@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1420813745-130341-1-git-send-email-george_davis@mentor.com>
+References: <1420813745-130341-1-git-send-email-george_davis@mentor.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Fri, 9 Jan 2015 11:53:01 -0600
+Message-ID: <CAL_JsqJaT-Y7DHQS5ZZ0TP6r0iPDbUZwU-Kec5MSE7DOPgZxCg@mail.gmail.com>
+Subject: Re: [PATCH] drivers: of: Export of_reserved_mem_device_{init,release}
+To: "George G. Davis" <ggdavisiv@gmail.com>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        "George G. Davis" <george_davis@mentor.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2015-01-09 16:22:59, Jacek Anaszewski wrote:
-> This patch adds device tree binding documentation for
-> the flash cell of the Maxim max77693 multifunctional device.
-> 
-> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
-> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+On Fri, Jan 9, 2015 at 8:29 AM, George G. Davis <ggdavisiv@gmail.com> wrote:
+> Export of_reserved_mem_device_{init,release} so that modules
+> can initialize and release their assigned per-device cma_area.
 
-Acked-by: Pavel Machek <pavel@ucw.cz>
+I believe the original intent was for the core bus code to call these
+functions. While the commit adding them says "automated assignment"
+that part did not go in. As it stands, there are no in tree users of
+these functions.
 
-> diff --git a/Documentation/devicetree/bindings/mfd/max77693.txt b/Documentation/devicetree/bindings/mfd/max77693.txt
-> index 01e9f30..ef184f0 100644
-> --- a/Documentation/devicetree/bindings/mfd/max77693.txt
-> +++ b/Documentation/devicetree/bindings/mfd/max77693.txt
-> @@ -41,7 +41,52 @@ Optional properties:
->  	 To get more informations, please refer to documentaion.
->  	[*] refer Documentation/devicetree/bindings/pwm/pwm.txt
->  
-> +- led : the LED submodule device node
-> +
-> +There are two led outputs available - fled1 and fled2. Each of them can
+Marek, comments?
 
-led->LED (around 4x).
+Rob
 
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+>
+> Signed-off-by: George G. Davis <george_davis@mentor.com>
+> ---
+>  drivers/of/of_reserved_mem.c | 2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/drivers/of/of_reserved_mem.c b/drivers/of/of_reserved_mem.c
+> index dc566b3..5eeb5b2 100644
+> --- a/drivers/of/of_reserved_mem.c
+> +++ b/drivers/of/of_reserved_mem.c
+> @@ -265,6 +265,7 @@ int of_reserved_mem_device_init(struct device *dev)
+>
+>         return ret;
+>  }
+> +EXPORT_SYMBOL(of_reserved_mem_device_init);
+>
+>  /**
+>   * of_reserved_mem_device_release() - release reserved memory device structures
+> @@ -289,3 +290,4 @@ void of_reserved_mem_device_release(struct device *dev)
+>
+>         rmem->ops->device_release(rmem, dev);
+>  }
+> +EXPORT_SYMBOL(of_reserved_mem_device_release);
+> --
+> 1.9.3
+>
