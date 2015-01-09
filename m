@@ -1,83 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757106AbbAIOb6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 09:31:58 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:45719 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105AbbAIOb4 (ORCPT
+	id S1757781AbbAIOjN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 09:39:13 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:56589 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752739AbbAIOjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 09:31:56 -0500
-Date: Fri, 9 Jan 2015 06:31:55 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Jeff Layton <jlayton@primarydata.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        ceph-devel@vger.kernel.org, hch@infradead.org
-Subject: Re: [PATCH v2 04/10] locks: move flock locks to file_lock_context
-Message-ID: <20150109143155.GB30294@infradead.org>
-References: <1420742065-28423-1-git-send-email-jlayton@primarydata.com>
- <1420742065-28423-5-git-send-email-jlayton@primarydata.com>
+	Fri, 9 Jan 2015 09:39:11 -0500
+Message-ID: <54AFE664.6010002@profitbricks.com>
+Date: Fri, 09 Jan 2015 15:32:04 +0100
+From: Sebastian Parschauer <sebastian.riemer@profitbricks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420742065-28423-5-git-send-email-jlayton@primarydata.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Jens Axboe <axboe@kernel.dk>
+CC: Eduardo Otubo <eduardo.otubo@profitbricks.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        virtualization@lists.linux-foundation.org
+Subject: blk-mq v3.18: Oops during virtio_blk hot-unplug
+Content-Type: multipart/mixed;
+ boundary="------------020408070804070601090307"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  void ceph_count_locks(struct inode *inode, int *fcntl_count, int *flock_count)
->  {
->  	struct file_lock *lock;
-> +	struct file_lock_context *ctx;
->  
->  	*fcntl_count = 0;
->  	*flock_count = 0;
->  
-> +	spin_lock(&inode->i_lock);
+This is a multi-part message in MIME format.
+--------------020408070804070601090307
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 
-Seems like moving the locking around is unrelated to this patch.
+Hi Jens,
 
-> +	list_for_each_entry(fl, &flctx->flc_flock, fl_list) {
-> +		if (nfs_file_open_context(fl->fl_file)->state != state)
-> +			continue;
-> +		spin_unlock(&inode->i_lock);
-> +		status = ops->recover_lock(state, fl);
-> +		switch (status) {
-> +			case 0:
-> +				break;
-> +			case -ESTALE:
-> +			case -NFS4ERR_ADMIN_REVOKED:
-> +			case -NFS4ERR_STALE_STATEID:
-> +			case -NFS4ERR_BAD_STATEID:
-> +			case -NFS4ERR_EXPIRED:
-> +			case -NFS4ERR_NO_GRACE:
-> +			case -NFS4ERR_STALE_CLIENTID:
-> +			case -NFS4ERR_BADSESSION:
-> +			case -NFS4ERR_BADSLOT:
-> +			case -NFS4ERR_BAD_HIGH_SLOT:
-> +			case -NFS4ERR_CONN_NOT_BOUND_TO_SESSION:
-> +				goto out;
-> +			default:
-> +				printk(KERN_ERR "NFS: %s: unhandled error %d\n",
-> +					 __func__, status);
-> +			case -ENOMEM:
-> +			case -NFS4ERR_DENIED:
-> +			case -NFS4ERR_RECLAIM_BAD:
-> +			case -NFS4ERR_RECLAIM_CONFLICT:
-> +				/* kill_proc(fl->fl_pid, SIGLOST, 1); */
-> +				status = 0;
-> +		}
+my colleague Eduardo is sporadically seeing an Oops in blk-mq while
+running continuous virtio_blk hot-plug/hot-unplug tests with I/O to the
+device within an x86_64 QEMU/KVM 2.0 Debian Wheezy VM.
 
-Instead of duplicating this huge body of code it seems like a good idea
-to add a preparatory patch to factor it out into a helper function.
+Please find the call trace attached and the full log here:
+http://paste.ubuntu.com/9691873/
 
-> +static bool
-> +is_whole_file_wrlock(struct file_lock *fl)
-> +{
-> +	return fl->fl_start == 0 && fl->fl_end == OFFSET_MAX && fl->fl_type == F_WRLCK;
-> +}
+The kernel image has been taken from here and is the mainline kernel
+from tag v3.18:
+http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.18-vivid/
 
-Please break this into multiple lines to stay under 80 characters.
+Is there still an issue with block queue freezing?
+
+We are seeing a similar issue with v3.16 but more often as some block
+queue freezing fixes have been added in v3.17.
+
+All kernels without blk-mq used by virtio_blk (< v3.13) work fine.
+
+Cheers,
+Sebastian
+
+--------------020408070804070601090307
+Content-Type: text/plain; charset=UTF-8;
+ name="blk-mq_3.18_virtio_blk_hot-unplug_oops.txt"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="blk-mq_3.18_virtio_blk_hot-unplug_oops.txt"
+
+WyAgMTY1LjYzMDUwOF0gQlVHOiB1bmFibGUgdG8gaGFuZGxlIGtlcm5lbCBOVUxMIHBvaW50
+ZXIgZGVyZWZlcmVuY2UgYXQgICAgICAgICAgIChudWxsKQpbICAxNjUuNjMxMDI3XSBJUDog
+WzxmZmZmZmZmZjgxN2IxMDM1Pl0gX19tdXRleF9sb2NrX3Nsb3dwYXRoKzB4NzUvMHgxMDAK
+WyAgMTY1LjYzMTIxOV0gUEdEIDM2OGEyMDY3IFBVRCA3OTdkMzA2NyBQTUQgMCAKWyAgMTY1
+LjYzMTQ1NF0gT29wczogMDAwMiBbIzFdIFNNUCAKWyAgMTY1LjYzMTYzMl0gTW9kdWxlcyBs
+aW5rZWQgaW46IHBhcnBvcnRfcGMgODI1MF9maW50ZWsgcHZwYW5pYyBwYXJwb3J0IHNuZF9w
+Y20gc25kX3RpbWVyIHNuZCBzb3VuZGNvcmUgaTJjX3BpaXg0IGpveWRldiBwY3Nwa3IgcHNt
+b3VzZSBzZXJpb19yYXcgZXZidWcgbWFjX2hpZCBoaWRfZ2VuZXJpYyB1c2JoaWQgaGlkIGZs
+b3BweQpbICAxNjUuNjMyMDEwXSBDUFU6IDAgUElEOiAyMjgzOCBDb21tOiBkZCBOb3QgdGFp
+bnRlZCAzLjE4LjAtMDMxODAwLWdlbmVyaWMgIzIwMTQxMjA3MTkzNQpbICAxNjUuNjMyMDEw
+XSBIYXJkd2FyZSBuYW1lOiBRRU1VIFN0YW5kYXJkIFBDIChpNDQwRlggKyBQSUlYLCAxOTk2
+KSwgQklPUyBCb2NocyAwMS8wMS8yMDExClsgIDE2NS42MzMwNDVdIHRhc2s6IGZmZmY4ODAw
+Njg1YjY0MDAgdGk6IGZmZmY4ODAwN2FmYzAwMDAgdGFzay50aTogZmZmZjg4MDA3YWZjMDAw
+MApbICAxNjUuNjMzMDQ1XSBSSVA6IDAwMTA6WzxmZmZmZmZmZjgxN2IxMDM1Pl0gIFs8ZmZm
+ZmZmZmY4MTdiMTAzNT5dIF9fbXV0ZXhfbG9ja19zbG93cGF0aCsweDc1LzB4MTAwClsgIDE2
+NS42MzMwNDVdIFJTUDogMDAxODpmZmZmODgwMDdhZmMzYzM4ICBFRkxBR1M6IDAwMDEwMjk3
+ClsgIDE2NS42MzMwNDVdIFJBWDogMDAwMDAwMDAwMDAwMDAwMCBSQlg6IGZmZmY4ODAwMzZi
+MWZhMDggUkNYOiAwMDAwMDAwMGMwMDAwMTAwClsgIDE2NS42MzMwNDVdIFJEWDogZmZmZjg4
+MDA3YWZjM2M0MCBSU0k6IGZmZmY4ODAwNjg1YjY0MDAgUkRJOiBmZmZmODgwMDM2YjFmYTBj
+ClsgIDE2NS42MzMwNDVdIFJCUDogZmZmZjg4MDA3YWZjM2M4OCBSMDg6IGZmZmY4ODAwN2Fm
+YzAwMDAgUjA5OiAwMDAwMDAwMDAwMDAwMDAwClsgIDE2NS42MzMwNDVdIFIxMDogMDAwMDAw
+MDAwMDAwMDAwMSBSMTE6IDAwMDAwMDAwMDAwMDAyNDYgUjEyOiBmZmZmODgwMDY4NWI2NDAw
+ClsgIDE2NS42MzMwNDVdIFIxMzogZmZmZjg4MDAzNmIxZmEwYyBSMTQ6IDAwMDAwMDAwZmZm
+ZmZmZmYgUjE1OiBmZmZmODgwMDM2YjFmYTEwClsgIDE2NS42MzMwNDVdIEZTOiAgMDAwMDdm
+Y2UzOTM1MjcwMCgwMDAwKSBHUzpmZmZmODgwMDdmYzAwMDAwKDAwMDApIGtubEdTOjAwMDAw
+MDAwMDAwMDAwMDAKWyAgMTY1LjYzMzA0NV0gQ1M6ICAwMDEwIERTOiAwMDAwIEVTOiAwMDAw
+IENSMDogMDAwMDAwMDA4MDA1MDAzMwpbICAxNjUuNjMzMDQ1XSBDUjI6IDAwMDAwMDAwMDAw
+MDAwMDAgQ1IzOiAwMDAwMDAwMDdhZTViMDAwIENSNDogMDAwMDAwMDAwMDA0MDZmMApbICAx
+NjUuNjMzMDQ1XSBTdGFjazoKWyAgMTY1LjYzMzA0NV0gIGZmZmY4ODAwMzZkNTUyZDggZmZm
+Zjg4MDAzNmIxZmExMCAwMDAwMDAwMDAwMDAwMDAwIGZmZmY4ODAwN2I1Y2YwYzAKWyAgMTY1
+LjYzMzA0NV0gIGZmZmY4ODAwN2FmYzNjOTggZmZmZjg4MDAzNmIxZmEwOCBmZmZmODgwMDM2
+ZDU1MmQ4IGZmZmY4ODAwMzZiMWY5ZDAKWyAgMTY1LjYzMzA0NV0gIGZmZmY4ODAwNzk1ZjMw
+MDAgZmZmZjg4MDA3YjVjZjBjMCBmZmZmODgwMDdhZmMzY2E4IGZmZmZmZmZmODE3YjEwZTMK
+WyAgMTY1LjYzMzA0NV0gQ2FsbCBUcmFjZToKWyAgMTY1LjYzMzA0NV0gIFs8ZmZmZmZmZmY4
+MTdiMTBlMz5dIG11dGV4X2xvY2srMHgyMy8weDM3ClsgIDE2NS42MzMwNDVdICBbPGZmZmZm
+ZmZmODEzNzk3MDY+XSBibGtfbXFfZnJlZV9xdWV1ZSsweDI2LzB4MWEwClsgIDE2NS42MzMw
+NDVdICBbPGZmZmZmZmZmODEzNmZlMjI+XSBibGtfcmVsZWFzZV9xdWV1ZSsweGEyLzB4MTAw
+ClsgIDE2NS42MzMwNDVdICBbPGZmZmZmZmZmODEzOWY4YTI+XSBrb2JqZWN0X2NsZWFudXAr
+MHg4Mi8weDFjMApbICAxNjUuNjMzMDQ1XSAgWzxmZmZmZmZmZjgxMzlmNzMwPl0ga29iamVj
+dF9wdXQrMHgzMC8weDcwClsgIDE2NS42MzMwNDVdICBbPGZmZmZmZmZmODEzNjk0OTU+XSBi
+bGtfcHV0X3F1ZXVlKzB4MTUvMHgyMApbICAxNjUuNjMzMDQ1XSAgWzxmZmZmZmZmZjgxMzdl
+MDMzPl0gZGlza19yZWxlYXNlKzB4OTMvMHhkMApbICAxNjUuNjMzMDQ1XSAgWzxmZmZmZmZm
+ZjgxNGQyN2RlPl0gZGV2aWNlX3JlbGVhc2UrMHgzZS8weGMwClsgIDE2NS42MzMwNDVdICBb
+PGZmZmZmZmZmODEzOWY4YTI+XSBrb2JqZWN0X2NsZWFudXArMHg4Mi8weDFjMApbICAxNjUu
+NjMzMDQ1XSAgWzxmZmZmZmZmZjgxMzlmNzMwPl0ga29iamVjdF9wdXQrMHgzMC8weDcwClsg
+IDE2NS42MzMwNDVdICBbPGZmZmZmZmZmODEzN2M3OTc+XSBwdXRfZGlzaysweDE3LzB4MjAK
+WyAgMTY1LjYzMzA0NV0gIFs8ZmZmZmZmZmY4MTIyNzhhNT5dIF9fYmxrZGV2X3B1dCsweDEy
+NS8weDFiMApbICAxNjUuNjMzMDQ1XSAgWzxmZmZmZmZmZjgxMjI3OThiPl0gYmxrZGV2X3B1
+dCsweDViLzB4MTYwClsgIDE2NS42MzMwNDVdICBbPGZmZmZmZmZmODEyMjdhYjU+XSBibGtk
+ZXZfY2xvc2UrMHgyNS8weDMwClsgIDE2NS42MzMwNDVdICBbPGZmZmZmZmZmODExZjEyOWQ+
+XSBfX2ZwdXQrMHhiZC8weDI1MApbICAxNjUuNjMzMDQ1XSAgWzxmZmZmZmZmZjgxMWYxNDdl
+Pl0gX19fX2ZwdXQrMHhlLzB4MTAKWyAgMTY1LjYzMzA0NV0gIFs8ZmZmZmZmZmY4MTA5MWJj
+Nz5dIHRhc2tfd29ya19ydW4rMHhhNy8weGUwClsgIDE2NS42MzMwNDVdICBbPGZmZmZmZmZm
+ODEwMTQwNzc+XSBkb19ub3RpZnlfcmVzdW1lKzB4YzcvMHhkMApbICAxNjUuNjMzMDQ1XSAg
+WzxmZmZmZmZmZjgxN2IzNTRmPl0gaW50X3NpZ25hbCsweDEyLzB4MTcKWyAgMTY1LjYzMzA0
+NV0gQ29kZTogMDAgMDAgOGIgMDMgODMgZjggMDEgMGYgODQgOTkgMDAgMDAgMDAgNDggOGIg
+NDMgMTAgNDggOGQgNTUgYjggNGMgOGQgN2IgMDggNDEgYmUgZmYgZmYgZmYgZmYgNDggODkg
+NTMgMTAgNGMgODkgN2QgYjggNDggODkgNDUgYzAgPDQ4PiA4OSAxMCA0YyA4OSA2NSBjOCBl
+YiAxZiA2NiA5MCA0YyA4OSBlZiA0OSBjNyAwNCAyNCAwMiAwMCAwMCAKWyAgMTY1LjYzMzA0
+NV0gUklQICBbPGZmZmZmZmZmODE3YjEwMzU+XSBfX211dGV4X2xvY2tfc2xvd3BhdGgrMHg3
+NS8weDEwMApbICAxNjUuNjMzMDQ1XSAgUlNQIDxmZmZmODgwMDdhZmMzYzM4PgpbICAxNjUu
+NjMzMDQ1XSBDUjI6IDAwMDAwMDAwMDAwMDAwMDAK
+--------------020408070804070601090307--
