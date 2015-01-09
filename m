@@ -1,132 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945AbbAIVae (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 16:30:34 -0500
-Received: from mailsec111.isp.belgacom.be ([195.238.20.107]:32433 "EHLO
-	mailsec111.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751792AbbAIVac convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 16:30:32 -0500
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=o+amxqHLy7+dd/uQ+LUqZyoNQm/aGJUjZTPtnbq5Ku0= c=1 sm=2
- a=IkcTkHD0fZMA:10 a=6YCocSk3GrGVLoOECC8A:9 a=QEXdDO2ut3YA:10
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtoFAHdHsFTD7hTU/2dsb2JhbABcgwaBKoMFsDgCAQEGmDECgRVDAQEBAQF9hAwBAQEDASMEUgULBQQCGAICGA4CAlcGARIRiBMMmhucaoZTjQMBAQEBBgEBAQEegSGEZIlBMweCaIFBBYU1jkyNPYd5IoIygT09MYJDAQEB
-Date: Fri, 9 Jan 2015 22:30:30 +0100 (CET)
-From: Fabian Frederick <fabf@skynet.be>
-Reply-To: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org, Vlastimil Babka <vbabka@suse.cz>
-Cc: linux-mm@kvack.org
-Message-ID: <1453795579.577520.1420839030684.open-xchange@webmail.nmp.proximus.be>
-In-Reply-To: <54AC1991.9060908@suse.cz>
-References: <1420301068-19447-1-git-send-email-fabf@skynet.be> <54AC1991.9060908@suse.cz>
-Subject: Re: [PATCH 1/1 linux-next] mm,compaction: move
- suitable_migration_target() under CONFIG_COMPACTION
+	id S1757563AbbAIVbO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 16:31:14 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752616AbbAIVbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 16:31:13 -0500
+Message-ID: <54B0489D.1050905@nod.at>
+Date: Fri, 09 Jan 2015 22:31:09 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3
-Importance: Medium
-X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
+To: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>, dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] UBI: Fastmap: Care about the protection queue
+References: <1416835236-25185-1-git-send-email-richard@nod.at> <1416835236-25185-2-git-send-email-richard@nod.at> <54B046BC.8060802@vanguardiasur.com.ar>
+In-Reply-To: <54B046BC.8060802@vanguardiasur.com.ar>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am 09.01.2015 um 22:23 schrieb Ezequiel Garcia:
+> On 11/24/2014 10:20 AM, Richard Weinberger wrote:
+>> Fastmap can miss a PEB if it is in the protection queue
+>> and not jet in the used tree.
+> 
+> s/jet/yet
+> 
+>> Treat every protected PEB as used.
+>>
+> 
+> I'm wondering if we can have a detailed description of the issues this
+> commit fixes (if any?). In other words, what's the result of *not*
+> having the patch?
 
+Without this patch fastmap can miss one PEB.
+As consequence of this during attach the fastmap self-check
+will detect this inconsistency and will fall back to a full scan.
+If you try to attach using a custom fastmap implementation (found in
+bootloaders) which do often not have sophisticated self-checks you'll
+face a serious data corruption or if you're lucky UBI will crash.
 
-> On 06 January 2015 at 18:21 Vlastimil Babka <vbabka@suse.cz> wrote:
->
->
-> On 01/03/2015 05:04 PM, Fabian Frederick wrote:
-> > suitable_migration_target() is only used by isolate_freepages()
-> > Define it under CONFIG_COMPACTION || CONFIG_CMA is not needed.
-> >
-> > Fix the following warning:
-> > mm/compaction.c:311:13: warning: 'suitable_migration_target' defined
-> > but not used [-Wunused-function]
-> >
-> > Signed-off-by: Fabian Frederick <fabf@skynet.be>
->
-> I agree, I would just move it to the section where isolation_suitable() and
-> related others are, maybe at the end of this section below
-> update_pageblock_skip()?
+Now clearer? :-)
 
-Yes of course, that would solve the warning as well.
-
-Fabian
->
-> Vlastimil
-
->
-> > ---
-> >  mm/compaction.c | 44 ++++++++++++++++++++++----------------------
-> >  1 file changed, 22 insertions(+), 22 deletions(-)
-> >
-> > diff --git a/mm/compaction.c b/mm/compaction.c
-> > index 546e571..38b151c 100644
-> > --- a/mm/compaction.c
-> > +++ b/mm/compaction.c
-> > @@ -307,28 +307,6 @@ static inline bool compact_should_abort(struct
-> > compact_control *cc)
-> >     return false;
-> >  }
-> > 
-> > -/* Returns true if the page is within a block suitable for migration to */
-> > -static bool suitable_migration_target(struct page *page)
-> > -{
-> > -   /* If the page is a large free page, then disallow migration */
-> > -   if (PageBuddy(page)) {
-> > -           /*
-> > -            * We are checking page_order without zone->lock taken. But
-> > -            * the only small danger is that we skip a potentially suitable
-> > -            * pageblock, so it's not worth to check order for valid range.
-> > -            */
-> > -           if (page_order_unsafe(page) >= pageblock_order)
-> > -                   return false;
-> > -   }
-> > -
-> > -   /* If the block is MIGRATE_MOVABLE or MIGRATE_CMA, allow migration */
-> > -   if (migrate_async_suitable(get_pageblock_migratetype(page)))
-> > -           return true;
-> > -
-> > -   /* Otherwise skip the block */
-> > -   return false;
-> > -}
-> > -
-> >  /*
-> >   * Isolate free pages onto a private freelist. If @strict is true, will
-> >abort
-> >   * returning 0 on any invalid PFNs or non-free pages inside of the
-> >pageblock
-> > @@ -802,6 +780,28 @@ isolate_migratepages_range(struct compact_control *cc,
-> > unsigned long start_pfn,
-> > 
-> >  #endif /* CONFIG_COMPACTION || CONFIG_CMA */
-> >  #ifdef CONFIG_COMPACTION
-> > +/* Returns true if the page is within a block suitable for migration to */
-> > +static bool suitable_migration_target(struct page *page)
-> > +{
-> > +   /* If the page is a large free page, then disallow migration */
-> > +   if (PageBuddy(page)) {
-> > +           /*
-> > +            * We are checking page_order without zone->lock taken. But
-> > +            * the only small danger is that we skip a potentially suitable
-> > +            * pageblock, so it's not worth to check order for valid range.
-> > +            */
-> > +           if (page_order_unsafe(page) >= pageblock_order)
-> > +                   return false;
-> > +   }
-> > +
-> > +   /* If the block is MIGRATE_MOVABLE or MIGRATE_CMA, allow migration */
-> > +   if (migrate_async_suitable(get_pageblock_migratetype(page)))
-> > +           return true;
-> > +
-> > +   /* Otherwise skip the block */
-> > +   return false;
-> > +}
-> > +
-> >  /*
-> >   * Based on information in the current compact_control, find blocks
-> >   * suitable for isolating free pages from and then isolate them.
-> >
->
+Thanks,
+//richard
