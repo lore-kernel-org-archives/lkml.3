@@ -1,85 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757867AbbAIPOH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:14:07 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:27883 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932149AbbAIPOF (ORCPT
+	id S1757738AbbAIPQi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:16:38 -0500
+Received: from mail-we0-f177.google.com ([74.125.82.177]:59605 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752192AbbAIPQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:14:05 -0500
-Message-ID: <54AFF037.1000004@atmel.com>
-Date: Fri, 9 Jan 2015 16:13:59 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 9 Jan 2015 10:16:36 -0500
 MIME-Version: 1.0
-To: Cyrille Pitchen <cyrille.pitchen@atmel.com>, <gregkh@linuxfoundation.org>,
-        <wenyou.yang@atmel.com>, <ludovic.desroches@atmel.com>,
-        <leilei.zhao@atmel.com>, <voice.shen@atmel.com>, <josh.wu@atmel.com>,
-        <linux-serial@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/5] tty/serial: at91: use correct type for dma_sync_*_for_cpu()
- and dma_sync_*_for_device()
-References: <cover.1418131298.git.cyrille.pitchen@atmel.com> <830a2b33ab0226405dc310c8a6d43731bf4ca8f9.1418131298.git.cyrille.pitchen@atmel.com>
-In-Reply-To: <830a2b33ab0226405dc310c8a6d43731bf4ca8f9.1418131298.git.cyrille.pitchen@atmel.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+In-Reply-To: <1418719298-25314-2-git-send-email-tomeu.vizoso@collabora.com>
+References: <1418719298-25314-1-git-send-email-tomeu.vizoso@collabora.com> <1418719298-25314-2-git-send-email-tomeu.vizoso@collabora.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Fri, 9 Jan 2015 09:16:14 -0600
+Message-ID: <CAL_JsqLRWLrNHbtOxWMm1MnkuppAL9CJh4BGk2RgyrniFuxo0g@mail.gmail.com>
+Subject: Re: [PATCH v5 1/3] of: Add binding for NVIDIA Tegra ACTMON node
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Mikko Perttunen <mikko.perttunen@kapsi.fi>,
+        Arto Merilainen <amerilainen@nvidia.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 09/12/2014 14:31, Cyrille Pitchen a écrit :
-> dma_sync_*_for_cpu() and dma_sync_*_for_device() use 'enum dma_data_direction',
-> not 'enum dma_transfer_direction'
-> 
-> Signed-off-by: Cyrille Pitchen <cyrille.pitchen@atmel.com>
-
-Sure:
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-Here it's difficult to add a "stable" tag as the error was introduced by
-several different patches.
-
-Thanks.
-
+On Tue, Dec 16, 2014 at 2:41 AM, Tomeu Vizoso
+<tomeu.vizoso@collabora.com> wrote:
+> This block gathers statistics about various counters and can be configured to
+> fire interrupts when thresholds are crossed.
+>
+> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+>
 > ---
->  drivers/tty/serial/atmel_serial.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
-> index 4d848a2..756f567 100644
-> --- a/drivers/tty/serial/atmel_serial.c
-> +++ b/drivers/tty/serial/atmel_serial.c
-> @@ -794,7 +794,7 @@ static void atmel_tx_dma(struct uart_port *port)
->  			return;
->  		}
->  
-> -		dma_sync_sg_for_device(port->dev, sg, 1, DMA_MEM_TO_DEV);
-> +		dma_sync_sg_for_device(port->dev, sg, 1, DMA_TO_DEVICE);
->  
->  		atmel_port->desc_tx = desc;
->  		desc->callback = atmel_complete_tx_dma;
-> @@ -927,7 +927,7 @@ static void atmel_rx_from_dma(struct uart_port *port)
->  	dma_sync_sg_for_cpu(port->dev,
->  			    &atmel_port->sg_rx,
->  			    1,
-> -			    DMA_DEV_TO_MEM);
-> +			    DMA_FROM_DEVICE);
->  
->  	/*
->  	 * ring->head points to the end of data already written by the DMA.
-> @@ -974,7 +974,7 @@ static void atmel_rx_from_dma(struct uart_port *port)
->  	dma_sync_sg_for_device(port->dev,
->  			       &atmel_port->sg_rx,
->  			       1,
-> -			       DMA_DEV_TO_MEM);
-> +			       DMA_FROM_DEVICE);
->  
->  	/*
->  	 * Drop the lock here since it might end up calling
-> 
+>
+> v2:     * Add operating-points property
+> ---
+>  .../devicetree/bindings/arm/tegra/actmon.txt       | 38 ++++++++++++++++++++++
+>  1 file changed, 38 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/arm/tegra/actmon.txt
+>
+> diff --git a/Documentation/devicetree/bindings/arm/tegra/actmon.txt b/Documentation/devicetree/bindings/arm/tegra/actmon.txt
+> new file mode 100644
+> index 0000000..b4069df
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/tegra/actmon.txt
+> @@ -0,0 +1,38 @@
+> +Tegra124 Activity Monitor driver
+> +
+> +Required properties:
+> +
+> +- compatible: should be "nvidia,tegra124-actmon"
+> +- reg: offset and length of the register set for the device
+> +- interrupts: standard interrupt property
+> +- clocks: Must contain a phandle and clock specifier pair for each entry in clock-names. See ../clock/clock-bindings.txt for details.
+> +- clock-names: Must include the following entries:
+> +  - actmon
+> +  - emc
+> +- resets: Must contain an entry for each entry in reset-names. See ../reset/reset.txt for details.
+> +- reset-names: Must include the following entries:
+> +  - actmon
+> +- operating-points: Supported operating points. See ../power/opp.txt for details.
 
+FYI, we are looking to deprecate this and do something more
+extensible[1]. I'm not saying don't use this, but input on the new one
+would be helpful. This is also the 2nd bus scaling binding I've
+reviewed this week (Exynos being the other). I like the simplicity of
+this, but would like something common even more.
 
--- 
-Nicolas Ferre
+This somewhat seems like it is in the wrong place. Is this for scaling
+internal buses or DDR? Is it the activity monitor that also does the
+frequency changes? I would expect the DDR controller to do that and
+then the OPPs should be part of the DDR controller.
+
+Rob
+
+[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-December/308629.html
+
+> +
+> +Example:
+> +       actmon@6000c800 {
+> +               compatible = "nvidia,tegra124-actmon";
+> +               reg = <0x0 0x6000c800 0x0 0x400>;
+> +               interrupts = <GIC_SPI 45 IRQ_TYPE_LEVEL_HIGH>;
+> +               clocks = <&tegra_car TEGRA124_CLK_ACTMON>,
+> +                        <&tegra_car TEGRA124_CLK_EMC>;
+> +               clock-names = "actmon", "emc";
+> +               resets = <&tegra_car 119>;
+> +               reset-names = "actmon";
+> +               operating-points = <
+> +                       /* kHz  uV */
+> +                       102000  800000
+> +                       204000  800000
+> +                       300000  820000
+> +                       396000  850000
+> +                       528000  880000
+> +                       600000  910000
+> +                       792000  980000
+> +                       924000  1010000
+> +               >;
+> +       };
+> --
+> 1.9.3
+>
