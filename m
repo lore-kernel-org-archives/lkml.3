@@ -1,30 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756747AbbAIMco (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 07:32:44 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60179 "EHLO
+	id S932819AbbAIMeU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 07:34:20 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60255 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754680AbbAIMcn (ORCPT
+	with ESMTP id S932755AbbAIMeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 07:32:43 -0500
-Date: Fri, 9 Jan 2015 04:31:46 -0800
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-0f363b250b15af0f218bb2876d101fe5cd413f8b@git.kernel.org>
-Cc: mingo@kernel.org, dave.hansen@linux.intel.com, acme@redhat.com,
-        torvalds@linux-foundation.org, jolsa@redhat.com, eranian@google.com,
-        jkenisto@us.ibm.com, linux-kernel@vger.kernel.org, kan.liang@intel.com,
-        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
-        ak@linux.intel.com, peterz@infradead.org, hpa@zytor.com
-Reply-To: eranian@google.com, jkenisto@us.ibm.com,
-        linux-kernel@vger.kernel.org, ak@linux.intel.com, kan.liang@intel.com,
-        tglx@linutronix.de, masami.hiramatsu.pt@hitachi.com, hpa@zytor.com,
-        peterz@infradead.org, mingo@kernel.org, dave.hansen@linux.intel.com,
-        jolsa@redhat.com, torvalds@linux-foundation.org, acme@redhat.com
-In-Reply-To: <20141216104614.GV3337@twins.programming.kicks-ass.net>
-References: <20141216104614.GV3337@twins.programming.kicks-ass.net>
+	Fri, 9 Jan 2015 07:34:11 -0500
+Date: Fri, 9 Jan 2015 04:32:11 -0800
+From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
+Message-ID: <tip-88a7c26af8dab2f2d69f5a6067eb670694ec38c0@git.kernel.org>
+Cc: namhyung@gmail.com, acme@kernel.org, linux@arm.linux.org.uk,
+        catalin.marinas@arm.com, efault@gmx.de, eranian@google.com,
+        msalter@redhat.com, luto@amacapital.net, jolsa@kernel.org,
+        torvalds@linux-foundation.org, dsahern@gmail.com, tglx@linutronix.de,
+        will.deacon@arm.com, mingo@kernel.org, hpa@zytor.com,
+        jean.pihet@linaro.org, fengguang.wu@intel.com, arjan@linux.intel.com,
+        peterz@infradead.org, linux-kernel@vger.kernel.org
+Reply-To: namhyung@gmail.com, linux@arm.linux.org.uk, acme@kernel.org,
+        luto@amacapital.net, msalter@redhat.com, eranian@google.com,
+        efault@gmx.de, catalin.marinas@arm.com, torvalds@linux-foundation.org,
+        jolsa@kernel.org, tglx@linutronix.de, will.deacon@arm.com,
+        dsahern@gmail.com, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, arjan@linux.intel.com, fengguang.wu@intel.com,
+        jean.pihet@linaro.org, hpa@zytor.com
+In-Reply-To: <e431cd4c18c2e1c44c774f10758527fb2d1025c4.1420396372.git.luto@amacapital.net>
+References: <e431cd4c18c2e1c44c774f10758527fb2d1025c4.1420396372.git.luto@amacapital.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] x86: Fix off-by-one in instruction decoder
-Git-Commit-ID: 0f363b250b15af0f218bb2876d101fe5cd413f8b
+Subject: [tip:perf/urgent] perf: Move task_pt_regs sampling into arch code
+Git-Commit-ID: 88a7c26af8dab2f2d69f5a6067eb670694ec38c0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,47 +41,220 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0f363b250b15af0f218bb2876d101fe5cd413f8b
-Gitweb:     http://git.kernel.org/tip/0f363b250b15af0f218bb2876d101fe5cd413f8b
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Tue, 16 Dec 2014 11:46:14 +0100
+Commit-ID:  88a7c26af8dab2f2d69f5a6067eb670694ec38c0
+Gitweb:     http://git.kernel.org/tip/88a7c26af8dab2f2d69f5a6067eb670694ec38c0
+Author:     Andy Lutomirski <luto@amacapital.net>
+AuthorDate: Sun, 4 Jan 2015 10:36:19 -0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 9 Jan 2015 11:12:26 +0100
+CommitDate: Fri, 9 Jan 2015 11:12:28 +0100
 
-x86: Fix off-by-one in instruction decoder
+perf: Move task_pt_regs sampling into arch code
 
-Stephane reported that the PEBS fixup was broken by the recent commit to
-the instruction decoder. The thing had an off-by-one which resulted in
-not being able to decode the last instruction and always bail.
+On x86_64, at least, task_pt_regs may be only partially initialized
+in many contexts, so x86_64 should not use it without extra care
+from interrupt context, let alone NMI context.
 
-Reported-by: Stephane Eranian <eranian@google.com>
-Fixes: 6ba48ff46f76 ("x86: Remove arbitrary instruction size limit in instruction decoder")
+This will allow x86_64 to override the logic and will supply some
+scratch space to use to make a cleaner copy of user regs.
+
+Tested-by: Jiri Olsa <jolsa@kernel.org>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: stable@vger.kernel.org # 3.18
-Cc: <ak@linux.intel.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Liang Kan <kan.liang@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Jim Keniston <jkenisto@us.ibm.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: chenggang.qcg@taobao.com
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Jean Pihet <jean.pihet@linaro.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Link: http://lkml.kernel.org/r/20141216104614.GV3337@twins.programming.kicks-ass.net
+Cc: Mark Salter <msalter@redhat.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Link: http://lkml.kernel.org/r/e431cd4c18c2e1c44c774f10758527fb2d1025c4.1420396372.git.luto@amacapital.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/lib/insn.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/kernel/perf_regs.c   |  8 ++++++++
+ arch/arm64/kernel/perf_regs.c |  8 ++++++++
+ arch/x86/kernel/perf_regs.c   | 16 ++++++++++++++++
+ include/linux/perf_event.h    | 12 +++++++-----
+ include/linux/perf_regs.h     | 16 ++++++++++++++++
+ kernel/events/core.c          | 19 ++++++++-----------
+ 6 files changed, 63 insertions(+), 16 deletions(-)
 
-diff --git a/arch/x86/lib/insn.c b/arch/x86/lib/insn.c
-index 2480978..1313ae6 100644
---- a/arch/x86/lib/insn.c
-+++ b/arch/x86/lib/insn.c
-@@ -28,7 +28,7 @@
+diff --git a/arch/arm/kernel/perf_regs.c b/arch/arm/kernel/perf_regs.c
+index 6e4379c..592dda3 100644
+--- a/arch/arm/kernel/perf_regs.c
++++ b/arch/arm/kernel/perf_regs.c
+@@ -28,3 +28,11 @@ u64 perf_reg_abi(struct task_struct *task)
+ {
+ 	return PERF_SAMPLE_REGS_ABI_32;
+ }
++
++void perf_get_regs_user(struct perf_regs *regs_user,
++			struct pt_regs *regs,
++			struct pt_regs *regs_user_copy)
++{
++	regs_user->regs = task_pt_regs(current);
++	regs_user->abi = perf_reg_abi(current);
++}
+diff --git a/arch/arm64/kernel/perf_regs.c b/arch/arm64/kernel/perf_regs.c
+index 6762ad7..3f62b35 100644
+--- a/arch/arm64/kernel/perf_regs.c
++++ b/arch/arm64/kernel/perf_regs.c
+@@ -50,3 +50,11 @@ u64 perf_reg_abi(struct task_struct *task)
+ 	else
+ 		return PERF_SAMPLE_REGS_ABI_64;
+ }
++
++void perf_get_regs_user(struct perf_regs *regs_user,
++			struct pt_regs *regs,
++			struct pt_regs *regs_user_copy)
++{
++	regs_user->regs = task_pt_regs(current);
++	regs_user->abi = perf_reg_abi(current);
++}
+diff --git a/arch/x86/kernel/perf_regs.c b/arch/x86/kernel/perf_regs.c
+index e309cc5..3bbbb1a 100644
+--- a/arch/x86/kernel/perf_regs.c
++++ b/arch/x86/kernel/perf_regs.c
+@@ -78,6 +78,14 @@ u64 perf_reg_abi(struct task_struct *task)
+ {
+ 	return PERF_SAMPLE_REGS_ABI_32;
+ }
++
++void perf_get_regs_user(struct perf_regs *regs_user,
++			struct pt_regs *regs,
++			struct pt_regs *regs_user_copy)
++{
++	regs_user->regs = task_pt_regs(current);
++	regs_user->abi = perf_reg_abi(current);
++}
+ #else /* CONFIG_X86_64 */
+ #define REG_NOSUPPORT ((1ULL << PERF_REG_X86_DS) | \
+ 		       (1ULL << PERF_REG_X86_ES) | \
+@@ -102,4 +110,12 @@ u64 perf_reg_abi(struct task_struct *task)
+ 	else
+ 		return PERF_SAMPLE_REGS_ABI_64;
+ }
++
++void perf_get_regs_user(struct perf_regs *regs_user,
++			struct pt_regs *regs,
++			struct pt_regs *regs_user_copy)
++{
++	regs_user->regs = task_pt_regs(current);
++	regs_user->abi = perf_reg_abi(current);
++}
+ #endif /* CONFIG_X86_32 */
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 486e84c..4f7a61c 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -79,11 +79,6 @@ struct perf_branch_stack {
+ 	struct perf_branch_entry	entries[0];
+ };
  
- /* Verify next sizeof(t) bytes can be on the same instruction */
- #define validate_next(t, insn, n)	\
--	((insn)->next_byte + sizeof(t) + n < (insn)->end_kaddr)
-+	((insn)->next_byte + sizeof(t) + n <= (insn)->end_kaddr)
+-struct perf_regs {
+-	__u64		abi;
+-	struct pt_regs	*regs;
+-};
+-
+ struct task_struct;
  
- #define __get_next(t, insn)	\
- 	({ t r = *(t*)insn->next_byte; insn->next_byte += sizeof(t); r; })
+ /*
+@@ -610,7 +605,14 @@ struct perf_sample_data {
+ 		u32	reserved;
+ 	}				cpu_entry;
+ 	struct perf_callchain_entry	*callchain;
++
++	/*
++	 * regs_user may point to task_pt_regs or to regs_user_copy, depending
++	 * on arch details.
++	 */
+ 	struct perf_regs		regs_user;
++	struct pt_regs			regs_user_copy;
++
+ 	struct perf_regs		regs_intr;
+ 	u64				stack_user_size;
+ } ____cacheline_aligned;
+diff --git a/include/linux/perf_regs.h b/include/linux/perf_regs.h
+index 3c73d5f..a5f98d5 100644
+--- a/include/linux/perf_regs.h
++++ b/include/linux/perf_regs.h
+@@ -1,11 +1,19 @@
+ #ifndef _LINUX_PERF_REGS_H
+ #define _LINUX_PERF_REGS_H
+ 
++struct perf_regs {
++	__u64		abi;
++	struct pt_regs	*regs;
++};
++
+ #ifdef CONFIG_HAVE_PERF_REGS
+ #include <asm/perf_regs.h>
+ u64 perf_reg_value(struct pt_regs *regs, int idx);
+ int perf_reg_validate(u64 mask);
+ u64 perf_reg_abi(struct task_struct *task);
++void perf_get_regs_user(struct perf_regs *regs_user,
++			struct pt_regs *regs,
++			struct pt_regs *regs_user_copy);
+ #else
+ static inline u64 perf_reg_value(struct pt_regs *regs, int idx)
+ {
+@@ -21,5 +29,13 @@ static inline u64 perf_reg_abi(struct task_struct *task)
+ {
+ 	return PERF_SAMPLE_REGS_ABI_NONE;
+ }
++
++static inline void perf_get_regs_user(struct perf_regs *regs_user,
++				      struct pt_regs *regs,
++				      struct pt_regs *regs_user_copy)
++{
++	regs_user->regs = task_pt_regs(current);
++	regs_user->abi = perf_reg_abi(current);
++}
+ #endif /* CONFIG_HAVE_PERF_REGS */
+ #endif /* _LINUX_PERF_REGS_H */
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 4c1ee7f..882f835 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -4461,18 +4461,14 @@ perf_output_sample_regs(struct perf_output_handle *handle,
+ }
+ 
+ static void perf_sample_regs_user(struct perf_regs *regs_user,
+-				  struct pt_regs *regs)
++				  struct pt_regs *regs,
++				  struct pt_regs *regs_user_copy)
+ {
+-	if (!user_mode(regs)) {
+-		if (current->mm)
+-			regs = task_pt_regs(current);
+-		else
+-			regs = NULL;
+-	}
+-
+-	if (regs) {
+-		regs_user->abi  = perf_reg_abi(current);
++	if (user_mode(regs)) {
++		regs_user->abi = perf_reg_abi(current);
+ 		regs_user->regs = regs;
++	} else if (current->mm) {
++		perf_get_regs_user(regs_user, regs, regs_user_copy);
+ 	} else {
+ 		regs_user->abi = PERF_SAMPLE_REGS_ABI_NONE;
+ 		regs_user->regs = NULL;
+@@ -4951,7 +4947,8 @@ void perf_prepare_sample(struct perf_event_header *header,
+ 	}
+ 
+ 	if (sample_type & (PERF_SAMPLE_REGS_USER | PERF_SAMPLE_STACK_USER))
+-		perf_sample_regs_user(&data->regs_user, regs);
++		perf_sample_regs_user(&data->regs_user, regs,
++				      &data->regs_user_copy);
+ 
+ 	if (sample_type & PERF_SAMPLE_REGS_USER) {
+ 		/* regs dump ABI info */
