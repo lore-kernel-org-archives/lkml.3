@@ -1,88 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757429AbbAIJ4t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 04:56:49 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:55456 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754803AbbAIJ4q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 04:56:46 -0500
-Date: Fri, 9 Jan 2015 10:56:43 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Oded Gabbay <oded.gabbay@amd.com>
-Cc: Christian =?utf-8?B?S8O2bmln?= <christian.koenig@amd.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        David Airlie <airlied@linux.ie>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Dana Elifaz <Dana.Elifaz@amd.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org,
-        Alexander Deucher <Alexander.Deucher@amd.com>,
-        iommu@lists.linux-foundation.org, Arnd Bergmann <arnd@arndb.de>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH 0/2] Change order of linkage in kernel makefiles for
- amdkfd
-Message-ID: <20150109095642.GD27845@ulmo>
-References: <1419246435-7050-1-git-send-email-oded.gabbay@amd.com>
- <1621810.aTt9O4Ghzs@avalon>
- <549FEB52.4020103@amd.com>
- <1678486.9ZXZnn5och@avalon>
- <54A12028.7020303@amd.com>
- <20150105154657.GJ12010@ulmo.nvidia.com>
- <54AE910E.5060803@amd.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="KdquIMZPjGJQvRdI"
+	id S1757464AbbAIJ50 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 04:57:26 -0500
+Received: from mail.emea.novell.com ([130.57.118.101]:41768 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756012AbbAIJ5V convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Fri, 9 Jan 2015 04:57:21 -0500
+Message-Id: <54AFB410020000780005306E@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Fri, 09 Jan 2015 09:57:20 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Juergen Gross" <JGross@suse.com>
+Cc: <david.vrabel@citrix.com>, "xen-devel" <xen-devel@lists.xenproject.org>,
+        <boris.ostrovsky@oracle.com>, <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 3/3] xen: use correct type for physical
+ addresses
+References: <1420736490-15351-1-git-send-email-jgross@suse.com>
+ <1420736490-15351-4-git-send-email-jgross@suse.com>
+In-Reply-To: <1420736490-15351-4-git-send-email-jgross@suse.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <54AE910E.5060803@amd.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> On 08.01.15 at 18:01, <JGross@suse.com> wrote:
+> --- a/arch/x86/xen/setup.c
+> +++ b/arch/x86/xen/setup.c
+> @@ -140,7 +140,7 @@ static void __init xen_del_extra_mem(u64 start, u64 size)
+>  unsigned long __ref xen_chk_extra_mem(unsigned long pfn)
+>  {
+>  	int i;
+> -	unsigned long addr = PFN_PHYS(pfn);
+> +	u64 addr = PFN_PHYS(pfn);
 
---KdquIMZPjGJQvRdI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Isn't phys_addr_t the type to use here?
 
-On Thu, Jan 08, 2015 at 04:15:42PM +0200, Oded Gabbay wrote:
-> Hi Thierry,
-> Generally I agree with the issues you describe in the current design.
-> One task in our 2015 workplan is to change the whole method amdkfd is
-> loaded, so it can independently load at any time, regardless of the order of
-> loading between it and radeon and amd_iommu_v2. To reach that goal, I assume
-> we will have to use some form of deferred probing.
+> @@ -284,7 +286,7 @@ static void __init xen_update_mem_tables(unsigned long pfn, unsigned long mfn)
+>  	}
+>  
+>  	/* Update kernel mapping, but not for highmem. */
+> -	if ((pfn << PAGE_SHIFT) >= __pa(high_memory))
+> +	if (PFN_PHYS(pfn) >= (u64)(__pa(high_memory)))
 
-Sounds good.
+I don't think you really need the cast on the right side - __pa()
+should be returning a value of suitable type (and unsigned long
+would be sufficient for anything up to and including high_memory).
 
-> However, for the moment, this is the best band-aid I could think of, and
-> choosing between this band-aid or no band-aid at all, I prefer the former
-> any day.
+Jan
 
-Looking at the patches, the dependency is documented in the Makefile. I
-guess that's fine as a temporary band-aid.
-
-Thierry
-
---KdquIMZPjGJQvRdI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUr6XaAAoJEN0jrNd/PrOh9O8QAJldCX8K4vY+KWwbCDHfUUfo
-llQLJs6E+9IkbGsD+btOjJYEPyBrlSxZ/C4GNBHIM7x+Uypj6BdCHT877nm3/Vkq
-9AJcfWK3dK3zXvAXgOrQDDNMg4gpLOsUSWEuIC8/7eORP8LEM0zHhC/ZFBYxHm8Z
-0Qlgva7qXesF73/mSSPgX1o/shEP4/5Vje9u7HG5hqedeYYyGmSPBVJnkMXmDYMa
-hhM7pvtY6PhsxCdYzasAIr6LpkEdp0yRyrfS2or6TlfAoSRpPaXwjCFYVD/R2yjD
-uy+kcTBeBsNvvyvh4MEttU2yXBBqF2dD6Mg7z6wl9sau2QeHtWw2QB803RQ4qhXE
-IvJei79GR0MVb9rsliVTeHCjbPl0dS5yCgSTQAhqIfYyP4O0eoB9zicYCxOVz4Wg
-a+YSkRfvwAQwYOQLjEa3puTeEYCfuGRD8Y/5iwSFd/Zas5B53yn4lg0hXVbyu2kq
-65hxnUlu3OjNnPg9daXcTCbcidORChaasjfi30yET4B4wwuzyCIc7Lde3MwwayiH
-mgWAxeXkyRrjdY1w1SpdBjS4TftuEZcAAWuB7Ge+V4Qpn8y7Yi7IFgbFD17u9Ouq
-YM+sqo2aTatckYPhqIeYgEzc7C+yzVXWzGxSm7ZsMCyw2PeqN0O1gtFbfFX7u4Up
-nZA4K56/xnAvDruakUpS
-=3gCS
------END PGP SIGNATURE-----
-
---KdquIMZPjGJQvRdI--
