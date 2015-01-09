@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756487AbbAIJci (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 04:32:38 -0500
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:54155 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756340AbbAIJcd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 04:32:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <1420481779-22841-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1420481779-22841-1-git-send-email-soren.brinkmann@xilinx.com>
-Date: Fri, 9 Jan 2015 10:32:32 +0100
-Message-ID: <CACRpkda5mAtves=PZibd6jdVP1ztM0EYA+cnw7Gs+mSVXTkqpw@mail.gmail.com>
-Subject: Re: [PATCH RESEND v3] gpio: lib-sysfs: Add 'wakeup' attribute
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>, linux-api@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1756827AbbAIJf3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 04:35:29 -0500
+Received: from mail.kernel.org ([198.145.29.136]:58822 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753588AbbAIJfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 04:35:01 -0500
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net, xfs@oss.sgi.com
+Cc: Jaegeuk Kim <jaegeuk@kernel.org>, Dave Chinner <david@fromorbit.com>
+Subject: [PATCH 1/2] xfs: introduce a generic shutdown ioctl
+Date: Fri,  9 Jan 2015 01:34:35 -0800
+Message-Id: <1420796076-82847-1-git-send-email-jaegeuk@kernel.org>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 5, 2015 at 7:16 PM, Soren Brinkmann
-<soren.brinkmann@xilinx.com> wrote:
+This patch introduces a generic ioctl for fs shutdown used by xfs.
 
-> Add an attribute 'wakeup' to the GPIO sysfs interface which allows
-> marking/unmarking a GPIO as wake IRQ.
-> The file 'wakeup' is created in each exported GPIOs directory, if an IRQ
-> is associated with that GPIO and the irqchip implements set_wake().
-> Writing 'enabled' to that file will enable wake for that GPIO, while
-> writing 'disabled' will disable wake.
-> Reading that file will return either 'disabled' or 'enabled' depening on
-> the currently set flag for the GPIO's IRQ.
->
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
-> v3:
->  - add documentation
-> v2:
->  - fix error path to unlock mutex before return
+Cc: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+---
+ fs/xfs/xfs_fs.h         | 8 ++++----
+ include/uapi/linux/fs.h | 8 ++++++++
+ 2 files changed, 12 insertions(+), 4 deletions(-)
 
-Finally applied for v3.20.
+diff --git a/fs/xfs/xfs_fs.h b/fs/xfs/xfs_fs.h
+index 18dc721..fe0eeee 100644
+--- a/fs/xfs/xfs_fs.h
++++ b/fs/xfs/xfs_fs.h
+@@ -484,9 +484,9 @@ typedef struct xfs_swapext
+ /*
+  * Flags for going down operation
+  */
+-#define XFS_FSOP_GOING_FLAGS_DEFAULT		0x0	/* going down */
+-#define XFS_FSOP_GOING_FLAGS_LOGFLUSH		0x1	/* flush log but not data */
+-#define XFS_FSOP_GOING_FLAGS_NOLOGFLUSH		0x2	/* don't flush log nor data */
++#define XFS_FSOP_GOING_FLAGS_DEFAULT	FS_GOING_DOWN_FULLSYNC
++#define XFS_FSOP_GOING_FLAGS_LOGFLUSH	FS_GOING_DOWN_METASYNC
++#define XFS_FSOP_GOING_FLAGS_NOLOGFLUSH	FS_GOING_DOWN_NOSYNC
+ 
+ /*
+  * ioctl commands that are used by Linux filesystems
+@@ -555,7 +555,7 @@ typedef struct xfs_swapext
+ #define XFS_IOC_ATTRLIST_BY_HANDLE   _IOW ('X', 122, struct xfs_fsop_attrlist_handlereq)
+ #define XFS_IOC_ATTRMULTI_BY_HANDLE  _IOW ('X', 123, struct xfs_fsop_attrmulti_handlereq)
+ #define XFS_IOC_FSGEOMETRY	     _IOR ('X', 124, struct xfs_fsop_geom)
+-#define XFS_IOC_GOINGDOWN	     _IOR ('X', 125, __uint32_t)
++#define XFS_IOC_GOINGDOWN	     FS_IOC_SHUTDOWN
+ /*	XFS_IOC_GETFSUUID ---------- deprecated 140	 */
+ 
+ 
+diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
+index 3735fa0..a4e4be5 100644
+--- a/include/uapi/linux/fs.h
++++ b/include/uapi/linux/fs.h
+@@ -157,6 +157,7 @@ struct inodes_stat_t {
+ #define FIFREEZE	_IOWR('X', 119, int)	/* Freeze */
+ #define FITHAW		_IOWR('X', 120, int)	/* Thaw */
+ #define FITRIM		_IOWR('X', 121, struct fstrim_range)	/* Trim */
++#define FS_IOC_SHUTDOWN	_IOR('X', 125, __u32)	/* Shutdown */
+ 
+ #define	FS_IOC_GETFLAGS			_IOR('f', 1, long)
+ #define	FS_IOC_SETFLAGS			_IOW('f', 2, long)
+@@ -205,4 +206,11 @@ struct inodes_stat_t {
+ #define SYNC_FILE_RANGE_WRITE		2
+ #define SYNC_FILE_RANGE_WAIT_AFTER	4
+ 
++/*
++ * Flags for going down operation used by FS_IOC_GOINGDOWN
++ */
++#define FS_GOING_DOWN_FULLSYNC	0x0	/* going down with full sync */
++#define FS_GOING_DOWN_METASYNC	0x1	/* going down with metadata */
++#define FS_GOING_DOWN_NOSYNC	0x2	/* going down */
++
+ #endif /* _UAPI_LINUX_FS_H */
+-- 
+2.1.1
 
-Sorry for being a bit conservative and picky at times...
-
-Yours,
-Linus Walleij
