@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757090AbbAIKWQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 05:22:16 -0500
-Received: from smtp-3.sys.kth.se ([130.237.48.192]:37039 "EHLO
-	smtp-3.sys.kth.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755848AbbAIKWO (ORCPT
+	id S1757185AbbAIKWp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 05:22:45 -0500
+Received: from mailgw01.mediatek.com ([210.61.82.183]:53945 "EHLO
+	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756397AbbAIKWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 05:22:14 -0500
-X-KTH-Auth: niso [89.233.231.155]
-X-KTH-mail-from: niso@kth.se
-Date: Fri, 9 Jan 2015 11:22:06 +0100
-From: Niklas =?iso-8859-1?Q?S=F6derlund?= <niso@kth.se>
-To: linux-kernel@vger.kernel.org, laurent.pinchart@ideasonboard.com,
-        linus.walleij@linaro.org
-Cc: devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
-        magnus.damm@gmail.com
-Subject: Re: [PATCH 0/4] sh-pfc: Add emev2 pinmux support
-Message-ID: <20150109102206.GB30143@bigcity.berto.se>
-References: <1418414497-23741-1-git-send-email-niso@kth.se>
+	Fri, 9 Jan 2015 05:22:44 -0500
+X-Listener-Flag: 11101
+Subject: Re: [PATCH] pinctrl: pass -DDEBUG in subdirs
+From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-gpio@vger.kernel.org>
+In-Reply-To: <1420796506-10402-1-git-send-email-linus.walleij@linaro.org>
+References: <1420796506-10402-1-git-send-email-linus.walleij@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 9 Jan 2015 18:22:36 +0800
+Message-ID: <1420798956.23114.18.camel@mtksdaap41>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1418414497-23741-1-git-send-email-niso@kth.se>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus and Laurent,
 
-I know we are coming out of the holiday season so here is a humble ping
-on this patchset.
+On Fri, 2015-01-09 at 10:41 +0100, Linus Walleij wrote:
+> When drivers are compiled in subdirectories the -DDEBUG flag need
+> to be passed in the individual Makefiles.
 
-* Niklas Söderlund <niso@kth.se> [2014-12-12 21:01:33 +0100]:
+Hi,
 
-> Greetings,
->
-> This patchset introduces pinmux support for the EMMA Mobile EV2 board to
-> the sh-pfc pin-controller driver. Devicetree bindings for gpio and the
-> populated serial connector are also defined in 3/4 and 4/4.
->
-> Comments are welcome!
->
-> Regards
-> // Niklas
->
-> Niklas Söderlund (4):
->   sh-pfc: add macro to define pinmux without function
->   sh-pfc: Add emev2 pinmux support
->   ARM: shmobile: emev2: Add PFC information to emev2.dtsi
->   ARM: shmobile: emev2-kzm9d: Add PFC information for uart1
->
->  .../bindings/pinctrl/renesas,pfc-pinctrl.txt       |    1 +
->  arch/arm/boot/dts/emev2-kzm9d.dts                  |   13 +
->  arch/arm/boot/dts/emev2.dtsi                       |   11 +
->  drivers/pinctrl/sh-pfc/Kconfig                     |    5 +
->  drivers/pinctrl/sh-pfc/Makefile                    |    1 +
->  drivers/pinctrl/sh-pfc/core.c                      |    9 +
->  drivers/pinctrl/sh-pfc/core.h                      |    1 +
->  drivers/pinctrl/sh-pfc/pfc-emev2.c                 | 1915 ++++++++++++++++++++
->  drivers/pinctrl/sh-pfc/sh_pfc.h                    |    2 +
->  9 files changed, 1958 insertions(+)
->  create mode 100644 drivers/pinctrl/sh-pfc/pfc-emev2.c
->
-> --
-> 2.1.3
->
+It will be easy to forget adding this when adding new subdirectories.
+Can we do this instead?
+
+diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
+index af365c5..36f1d620 100644
+--- a/drivers/pinctrl/Makefile
++++ b/drivers/pinctrl/Makefile
+@@ -1,6 +1,6 @@
+ # generic pinmux support
+
+-ccflags-$(CONFIG_DEBUG_PINCTRL)        += -DDEBUG
++subdir-ccflags-$(CONFIG_DEBUG_PINCTRL) += -DDEBUG
+
+Joe.C
+
+
+
