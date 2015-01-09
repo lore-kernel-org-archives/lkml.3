@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757369AbbAIQgu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 11:36:50 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:37676 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894AbbAIQgs (ORCPT
+	id S1757887AbbAIQhe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 11:37:34 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:24148 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987AbbAIQhd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 11:36:48 -0500
-From: jitendra kumar khasdev <jkhasdev@gmail.com>
-To: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        jitendra kumar khasdev <jkhasdev@gmail.com>
-Subject: [PATCH v5] Staging: comedi: fix line over 80 characters warning
-Date: Fri,  9 Jan 2015 22:05:56 +0530
-Message-Id: <1420821356-5724-1-git-send-email-jkhasdev@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 9 Jan 2015 11:37:33 -0500
+From: Ethan Zhao <ethan.zhao@oracle.com>
+To: jeffrey.t.kirsher@intel.com, jesse.brandeburg@intel.com,
+        bruce.w.allan@intel.com, carolyn.wyborny@intel.com,
+        donald.c.skidmore@intel.com, gregory.v.rose@intel.com,
+        matthew.vick@intel.com, john.ronciak@intel.com,
+        mitch.a.williams@intel.com
+Cc: linux.nics@intel.com, e1000-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ethan.kernel@gmail.com, brian.maly@oracle.com,
+        Ethan Zhao <ethan.zhao@oracle.com>
+Subject: [PATCH] i40e: don't enable and init FCOE by default when do PF reset
+Date: Sat, 10 Jan 2015 01:37:46 +0900
+Message-Id: <1420821466-5747-1-git-send-email-ethan.zhao@oracle.com>
+X-Mailer: git-send-email 1.8.3.1
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is patch to file pcl812.c that fix line over 80
-characters warning which is found by checkpatch.pl tool.
+While do PF reset with function i40e_reset_and_rebuild(), it will
+call i40e_init_pf_fcoe() by default if FCOE is defined, thus if the
+PF is resetted, FCOE will be enabled whatever it was - enabled or
+not.
 
-Signed-off-by: Jitendra kumar khasdev <jkhasdev@gmail.com>
+Such bug might be hit when PF resumes from suspend, run diagnostic
+test with ethtool, setup VLAN etc.
+
+Passed building with v3.19-rc3.
+
+Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
 ---
- drivers/staging/comedi/drivers/pcl812.c | 20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
+ drivers/net/ethernet/intel/i40e/i40e_main.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/pcl812.c b/drivers/staging/comedi/drivers/pcl812.c
-index ac243ca..3eac017 100644
---- a/drivers/staging/comedi/drivers/pcl812.c
-+++ b/drivers/staging/comedi/drivers/pcl812.c
-@@ -507,20 +507,26 @@ static const struct pcl812_board boardtypes[] = {
- };
+diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c b/drivers/net/ethernet/intel/i40e/i40e_main.c
+index a5f2660..a2572cc 100644
+--- a/drivers/net/ethernet/intel/i40e/i40e_main.c
++++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
+@@ -6180,9 +6180,12 @@ static void i40e_reset_and_rebuild(struct i40e_pf *pf, bool reinit)
+ 	}
+ #endif /* CONFIG_I40E_DCB */
+ #ifdef I40E_FCOE
+-	ret = i40e_init_pf_fcoe(pf);
+-	if (ret)
+-		dev_info(&pf->pdev->dev, "init_pf_fcoe failed: %d\n", ret);
++	if (pf->flags & I40E_FLAG_FCOE_ENABLED) {
++		ret = i40e_init_pf_fcoe(pf);
++		if (ret)
++			dev_info(&pf->pdev->dev,
++				 "init_pf_fcoe failed: %d\n", ret);
++	}
  
- struct pcl812_private {
--	unsigned char dma;	/*  >0 use dma ( usedDMA channel) */
-+	unsigned char dma;		/*  >0 use dma ( usedDMA channel) */
- 	unsigned char range_correction;	/*  =1 we must add 1 to range number */
- 	unsigned int last_ai_chanspec;
--	unsigned char mode_reg_int;	/*  there is stored INT number for some card */
-+	unsigned char mode_reg_int;	/*  there is stored INT number for
-+					 *  some card
-+					 */
- 	unsigned int ai_poll_ptr;	/*  how many sampes transfer poll */
- 	unsigned int dmapages;
- 	unsigned int hwdmasize;
- 	unsigned long dmabuf[2];	/*  PTR to DMA buf */
- 	unsigned int hwdmaptr[2];	/*  HW PTR to DMA buf */
- 	unsigned int dmabytestomove[2];	/*  how many bytes DMA transfer */
--	int next_dma_buf;	/*  which buffer is next to use */
--	unsigned int dma_runs_to_end;	/*  how many times we must switch DMA buffers */
--	unsigned int last_dma_run;	/*  how many bytes to transfer on last DMA buffer */
--	unsigned int max_812_ai_mode0_rangewait;	/*  setling time for gain */
-+	int next_dma_buf;		/*  which buffer is next to use */
-+	unsigned int dma_runs_to_end;	/*  how many times we must switch
-+					 *  DMA buffers
-+					 */
-+	unsigned int last_dma_run;	/*  how many bytes to transfer on
-+					 *  last DMA buffer
-+					 */
-+	unsigned int max_812_ai_mode0_rangewait;    /* setling time for gain */
- 	unsigned int divisor1;
- 	unsigned int divisor2;
- 	unsigned int use_diff:1;
-@@ -1235,7 +1241,7 @@ static int pcl812_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		for (i = 0; i < 2; i++) {
- 			unsigned long dmabuf;
- 
--			dmabuf =  __get_dma_pages(GFP_KERNEL, devpriv->dmapages);
-+			dmabuf = __get_dma_pages(GFP_KERNEL, devpriv->dmapages);
- 			if (!dmabuf)
- 				return -ENOMEM;
- 
+ #endif
+ 	/* do basic switch setup */
 -- 
-1.9.1
+1.8.3.1
 
