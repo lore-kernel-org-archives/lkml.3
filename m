@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533AbbAIC1A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 21:27:00 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:57227 "EHLO
+	id S1755662AbbAIC1I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 21:27:08 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:57229 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753500AbbAIC05 (ORCPT
+	with ESMTP id S1752907AbbAIC1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 21:26:57 -0500
+	Thu, 8 Jan 2015 21:27:04 -0500
 Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t092Qsuv023224, This message is accepted by code: ctloc85258
+X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t092QujT023231, This message is accepted by code: ctloc85258
 From: Hayes Wang <hayeswang@realtek.com>
 To: <netdev@vger.kernel.org>
 CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next v2 1/2 RESEND] r8152: call rtl_start_rx after netif_carrier_on
-Date: Fri, 9 Jan 2015 10:26:35 +0800
-Message-ID: <1394712342-15778-115-Taiwan-albertk@realtek.com>
+Subject: [PATCH net-next v2 2/2 RESEND] r8152: check the status before submitting rx
+Date: Fri, 9 Jan 2015 10:26:36 +0800
+Message-ID: <1394712342-15778-116-Taiwan-albertk@realtek.com>
 X-Mailer: Microsoft Office Outlook 11
 In-Reply-To: <1394712342-15778-114-Taiwan-albertk@realtek.com>
 References: <1394712342-15778-114-Taiwan-albertk@realtek.com>
@@ -26,35 +26,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove rtl_start_rx() from rtl_enable() and put it after calling
-netif_carrier_on().
+Don't submit the rx if the device is unplugged, stopped, or
+linking down.
 
 Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 ---
- drivers/net/usb/r8152.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/usb/r8152.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
 diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 57ec23e..cd93388 100644
+index cd93388..b23426e 100644
 --- a/drivers/net/usb/r8152.c
 +++ b/drivers/net/usb/r8152.c
-@@ -2059,7 +2059,7 @@ static int rtl_enable(struct r8152 *tp)
+@@ -1789,6 +1789,11 @@ int r8152_submit_rx(struct r8152 *tp, struct rx_agg *agg, gfp_t mem_flags)
+ {
+ 	int ret;
  
- 	rxdy_gated_en(tp, false);
- 
--	return rtl_start_rx(tp);
-+	return 0;
- }
- 
- static int rtl8152_enable(struct r8152 *tp)
-@@ -2874,6 +2874,7 @@ static void set_carrier(struct r8152 *tp)
- 			tp->rtl_ops.enable(tp);
- 			set_bit(RTL8152_SET_RX_MODE, &tp->flags);
- 			netif_carrier_on(netdev);
-+			rtl_start_rx(tp);
- 		}
- 	} else {
- 		if (tp->speed & LINK_STATUS) {
++	/* The rx would be stopped, so skip submitting */
++	if (test_bit(RTL8152_UNPLUG, &tp->flags) ||
++	    !test_bit(WORK_ENABLE, &tp->flags) || !netif_carrier_ok(tp->netdev))
++		return 0;
++
+ 	usb_fill_bulk_urb(agg->urb, tp->udev, usb_rcvbulkpipe(tp->udev, 1),
+ 			  agg->head, agg_buf_sz,
+ 			  (usb_complete_t)read_bulk_callback, agg);
 -- 
 2.1.0
 
