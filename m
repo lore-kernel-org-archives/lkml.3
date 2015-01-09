@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758247AbbAIWUb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 17:20:31 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:36619 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820AbbAIWU3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 17:20:29 -0500
+	id S1758179AbbAIWU2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 17:20:28 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751820AbbAIWU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 17:20:27 -0500
+Message-ID: <54B05428.60303@nod.at>
+Date: Fri, 09 Jan 2015 23:20:24 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>, dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: Fastmap update v2 (pile 1)
+References: <1416835236-25185-1-git-send-email-richard@nod.at> <54B04A50.8040307@vanguardiasur.com.ar> <54B04E65.60306@nod.at> <54B051B3.3050308@vanguardiasur.com.ar>
+In-Reply-To: <54B051B3.3050308@vanguardiasur.com.ar>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-Date: Fri, 09 Jan 2015 23:19:50 +0100
-From: Stefan Agner <stefan@agner.ch>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: jslaby@suse.cz, jingchang.lu@freescale.com, shawn.guo@linaro.org,
-        linux-serial@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] serial: =?UTF-8?Q?fsl=5Flpuart=3A=20fix=20various?=
- =?UTF-8?Q?=20DMA=20related=20issues?=
-In-Reply-To: <20150109221432.GA4056@kroah.com>
-References: <1417134205-4400-1-git-send-email-stefan@agner.ch>
- <677f2c62b6b6c1fe8e16cd38d5f20d47@agner.ch>
- <20141212143244.GA2219@kroah.com>
- <f6255321feb06d32f257b7b41d5d58a3@agner.ch>
- <20150109221432.GA4056@kroah.com>
-Message-ID: <742637f13bc97ecaadd1d264cd0ad4cc@agner.ch>
-User-Agent: Roundcube Webmail/1.0.3
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Fri Jan  9 23:18:55 2015
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 54b053cf12811240015707
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015-01-09 23:14, Greg KH wrote:
-> On Fri, Dec 12, 2014 at 05:19:02PM +0100, Stefan Agner wrote:
->> On 2014-12-12 15:32, Greg KH wrote:
->> > On Fri, Dec 12, 2014 at 02:44:06PM +0100, Stefan Agner wrote:
->> >> Any thoughts on this patchset? Would have hopped that it makes it into
->> >> 3.19 as those are mostly fixes.
->> >
->> > "mostly"?
->> >
->>
->> Well, all of them fix a bug, but PATCH 2/4 does this by also moving DMA
->> allocation to probe. I would really have to split up that patch and make
->> two incremental steps (split-up of RX/TX DMA allocation to make each
->> single action revert-able and move to probe). But this would lead to
->> more changed lines in total. The patchset as is already somewhat tested
->> since we use it in our 3.18 BSP, whereas a new set would not be tested.
->>
->> One could also argument, it only affects fsl_lpuart (UART in rather not
->> very widespread SoC's Freescale Vybrid and LS1021a).
->>
->>
->> > I'll get to these after 3.19-rc1 is out, but it really looks like these
->> > will be for 3.20-rc1, unless you break them up into "bugfix only" type
->> > patches.
->>
->>
->> PATCH 1/4 fixes a bug which happens on a normal console rather often on
->> my setup. So if you decide that patchset is for 3.20-rc1, that one would
->> be nice to have in 3.19 as well...
+Am 09.01.2015 um 23:09 schrieb Ezequiel Garcia:
+>> All of Pile1, 2, 3 and 4. :-)
+>> One or tow patches are preparations for the real fix but obviously you'll need them
+>> too.
+>> The rest are enhancements and cleanups.
 > 
-> Please redo this patchset then, makeing it obvious that some are fixes,
-> and need to go for 3.19 and others are ok for 3.20.  As it is, the
-> changelog entries do not look like anything here is for 3.19, sorry.
+> What do you mean by "the rest"?
+
+Pile 5, 6, and 7.
+
+>> As I wrote before I've structured the patch set in a way to make backporting easy.
+>>
+>>> For bugfixes, having a detailed explanation of the problem the commit is
+>>> meant to fix would be better as well.
+>>
+>> Okay, I'll add the horror stories to these patches.
+>>
 > 
+> I know it's a real pain, but if you can add a Fixes: tag, it would
+> certainly help Artem track down the bug. The good thing is that you get
+> the -stable hassle for free.
 
-Ok, will create a patchset with 1 and 3 for 3.19 (since this two really
-lead to reproducible kernel traces), and the rest for 3.20. Do you
-prefer to have the patches in a single patchset (with 3 moved to 2) or
-should I create two patchsets?
+We cannot tag these as stable, first I have to inject old fastamp fixes
+into -stable.
+Two years ago Artem and I decided that fastmap as experimental feature does
+not need -stable backports. It turned out that this was horrible wrong
+and stupid.
 
---
-Stefan
+>>> This patchset seems to have stalled, so perhaps having this information
+>>> would help Artem to pick the ones that you point as fixes, before we
+>>> miss another cycle.
+>>
+>> The question is, shall I wait for Artem or resend again?
+> 
+> Hm, well, given we are just a handful of developers, and we are all time
+> constrained, maybe we could focus on the first two piles for now:
+> 
+> Pile 1, November 24, https://lkml.org/lkml/2014/11/24/324
+> Pile 2, November 30, https://lkml.org/lkml/2014/11/30/50
 
+Hmm, I'm not sure whether it is a good idea to resend Pile1 and Pile2.
+I've currently around 50 patches on linux-mtd floating around (nett, without resends).
+I fear it will just increase the mess we already have.
+
+I really would like to hear what Artems plans are.
+Actually I resent and split up the first series upon his request.
+
+Thanks,
+//richard
