@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933209AbbAIPuc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:50:32 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:64944 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933077AbbAIPu3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:50:29 -0500
+	id S933055AbbAIPuR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:50:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38286 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932413AbbAIPuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 10:50:16 -0500
+Message-ID: <54AFF8B5.8050305@suse.cz>
+Date: Fri, 09 Jan 2015 16:50:13 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1501061627150.18120@linuxheads99>
-References: <1420575219-27061-1-git-send-email-atull@opensource.altera.com>
- <1420575219-27061-2-git-send-email-atull@opensource.altera.com>
- <CAL_JsqKRe2YquSmi01wa5b=Ctns+1ek-PdSHDLuxyCfKasTw5g@mail.gmail.com> <alpine.DEB.2.02.1501061627150.18120@linuxheads99>
-From: Rob Herring <robherring2@gmail.com>
-Date: Fri, 9 Jan 2015 09:50:07 -0600
-Message-ID: <CAL_Jsq+pn5MW6veUivEL49FLSQxZOWRq0gU9Q6iD5jzurKK3rQ@mail.gmail.com>
-Subject: Re: [PATCH v8 1/4] doc: add bindings document for altera fpga manager
-To: atull <atull@opensource.altera.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Simek <monstr@monstr.eu>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Pavel Machek <pavel@denx.de>, Mark Brown <broonie@kernel.org>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>, Kyle Teske <kyle.teske@ni.com>,
-        Nicolas Pitre <nico@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
-        David Miller <davem@davemloft.net>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devel@driverdev.osuosl.org,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>,
-        "yvanderv@opensource.altera.com" <yvanderv@opensource.altera.com>
-Content-Type: text/plain; charset=UTF-8
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Andy Lutomirski <luto@amacapital.net>
+CC: "Kirill A. Shutemov" <kirill@shutemov.name>, Pavel Machek <pavel@ucw.cz>,
+        Mark Seaborn <mseaborn@chromium.org>,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: DRAM unreliable under specific access patern
+References: <CAL82V5NN8U4PyiSjLxgpTrgsgkbM7rRCbVF5P-HHyEqphLOy+g@mail.gmail.com>	<20141224220818.GA17655@amd>	<20150105192329.5f32c155@lxorguk.ukuu.org.uk>	<CALCETrXby82sgbGTcSZFj54t=resYcwtPbcFRNh6Ksbr+Ow8HQ@mail.gmail.com>	<20150106014718.GA23775@node.dhcp.inet.fi>	<CALCETrV1O1MFJeY6WacF+QHdBGG7HoHdVQy=n951=Y+=g+h7mQ@mail.gmail.com>	<20150106021836.GA24121@node.dhcp.inet.fi>	<CALCETrXpJ7CPAKeh9nLA=PoCBT8w8NfhZg5cgUyG9BUtp2Jv+w@mail.gmail.com> <20150108130325.0592b18b@lxorguk.ukuu.org.uk>
+In-Reply-To: <20150108130325.0592b18b@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 6, 2015 at 4:34 PM, atull <atull@opensource.altera.com> wrote:
-> On Tue, 6 Jan 2015, Rob Herring wrote:
->
->> On Tue, Jan 6, 2015 at 2:13 PM,  <atull@opensource.altera.com> wrote:
->> > From: Alan Tull <atull@opensource.altera.com>
+On 01/08/2015 02:03 PM, One Thousand Gnomes wrote:
+> On Mon, 5 Jan 2015 18:26:07 -0800
+> Andy Lutomirski <luto@amacapital.net> wrote:
+> 
+> Thats less of a concern I think. As far as I can tell it would depend how
+> the memory is wired what actually gets hit. I'm not clear if its within
+> the range or not.
+> 
+>> > When I read the paper I thought that vdso would be interesting target for
+>> > the attack, but having all these constrains in place, it's hard aim the
+>> > attack anything widely used.
 >> >
->> > New bindings document for Altera fpga manager.
->> >
->> > Signed-off-by: Alan Tull <atull@opensource.altera.com>
->>
->> Acked-by: Rob Herring <robh@kernel.org>
->>
->> Like I said, this binding doesn't look like it will change other than
->> perhaps additional optional properties, so it can go into
->> Documentation. Perhaps .../bindings/fpga/. I'm happy to merge this
->> thru DT tree if you want.
->>
->> Rob
->
-> Thanks, that would be great.  Yes ../bindings/fpga sounds good.
->
-> Do you want me to send you a patch with the updated path?
+>> 
+>> The vdso and the vvar page are both at probably-well-known physical
+>> addresses, so you can at least target the kernel a little bit.  I
+>> *think* that kASLR helps a little bit here.
+> 
+> SMEP likewise if you were able to use 1GB to corrupt matching lines
+> elsewhere in RAM (eg the syscall table), but that would I think depend
+> how the RAM is physically configured.
+> 
+> Thats why the large TLB case worries me. With 4K pages and to an extent
+> with 2MB pages its actually quite hard to line up an attack if you know
+> something about the target. With 1GB hugepages you control the lower bits
+> of the physical address precisely. The question is whether that merely
+> enables you to decide where to shoot yourself or it goes beyond that ?
 
-Yes, please.
+I haven't read the details yet to judge if it's feasible in this case, but even
+without hugepages, it's possible (albeit elaborately) to control physical
+mapping from userspace. I've done this in the past, to have optimal mapping
+(basically page coloring) to L2/L3 caches. It was done by allocating bunch of
+memory, determining its physical addresses from /proc/self/pagemap, and then
+rearanging it via mremap.
 
-Rob
+Then it's also quite trivial to induce cache misses without clflush, using just
+few addresses that map to the same cache set, without having to cycle throuh
+more memory than the cache size is.
+
+But as I said, I haven't read the details here to see if the required access
+pattern to corrupt ram can be combined with these kinds of tricks...
+
+> (Outside HPC anyway: for HPC cases it bites both ways I suspect - you've
+> got the ability to ensure you don't hit those access patterns while using
+> 1GB pages, but also nothing to randomise stuff to make them unlikely if
+> you happen to have worst case aligned data).
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
