@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932912AbbAIKlV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 05:41:21 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:58299 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932290AbbAIKlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 05:41:19 -0500
-Date: Fri, 9 Jan 2015 11:41:17 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH 2/4] x86: ia32entry.S: fix wrong symbolic constant usage:
- R11->ARGOFFSET
-Message-ID: <20150109104117.GB13637@pd.tnic>
-References: <1420734315-30943-1-git-send-email-dvlasenk@redhat.com>
- <1420734315-30943-3-git-send-email-dvlasenk@redhat.com>
+	id S932397AbbAIKoc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 05:44:32 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:34844 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932403AbbAIKo2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 05:44:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1420734315-30943-3-git-send-email-dvlasenk@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1418719298-25314-4-git-send-email-tomeu.vizoso@collabora.com>
+References: <1418719298-25314-1-git-send-email-tomeu.vizoso@collabora.com> <1418719298-25314-4-git-send-email-tomeu.vizoso@collabora.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Fri, 9 Jan 2015 19:44:07 +0900
+Message-ID: <CAAVeFuK49SWCV3a3qKp2Mbo5GoMVQejuGwGFi-Ux4pXDFLi7cg@mail.gmail.com>
+Subject: Re: [PATCH v5 3/3] ARM: tegra: Add Tegra124 ACTMON support
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Mikko Perttunen <mikko.perttunen@kapsi.fi>,
+        Arto Merilainen <amerilainen@nvidia.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 08, 2015 at 05:25:13PM +0100, Denys Vlasenko wrote:
-> The values of these two constants are the same, the meaning is different.
-> 
-> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-> CC: Linus Torvalds <torvalds@linux-foundation.org>
-> CC: Oleg Nesterov <oleg@redhat.com>
-> CC: "H. Peter Anvin" <hpa@zytor.com>
-> CC: Andy Lutomirski <luto@amacapital.net>
-> CC: Frederic Weisbecker <fweisbec@gmail.com>
-> CC: X86 ML <x86@kernel.org>
-> CC: Alexei Starovoitov <ast@plumgrid.com>
-> CC: Will Drewry <wad@chromium.org>
-> CC: Kees Cook <keescook@chromium.org>
-> CC: linux-kernel@vger.kernel.org
-> ---
+On Tue, Dec 16, 2014 at 5:41 PM, Tomeu Vizoso
+<tomeu.vizoso@collabora.com> wrote:
+> Add device node for the ACTMON block to the Tegra124 device tree.
 
-Acked-by: Borislav Petkov <bp@suse.de>
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
