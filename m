@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933161AbbAIPoQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:44:16 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:57387 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756671AbbAIPoK (ORCPT
+	id S1758062AbbAIPqw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:46:52 -0500
+Received: from mail-oi0-f49.google.com ([209.85.218.49]:50166 "EHLO
+	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932914AbbAIPoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:44:10 -0500
+	Fri, 9 Jan 2015 10:44:13 -0500
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Linus Walleij <linus.walleij@linaro.org>, Rob Herring <robh+dt@kernel.org>,
         Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>
@@ -22,10 +22,12 @@ Cc: =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
         Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org
-Subject: [PATCH v4 0/7] pinctrl support for Zynq
-Date: Fri,  9 Jan 2015 07:43:44 -0800
-Message-Id: <1420818231-13451-1-git-send-email-soren.brinkmann@xilinx.com>
+Subject: [PATCH v4 1/7] pinctrl: pinconf-generic: Infer map type from DT property
+Date: Fri,  9 Jan 2015 07:43:45 -0800
+Message-Id: <1420818231-13451-2-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 2.2.1.1.gb42cc81
+In-Reply-To: <1420818231-13451-1-git-send-email-soren.brinkmann@xilinx.com>
+References: <1420818231-13451-1-git-send-email-soren.brinkmann@xilinx.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -33,47 +35,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+With the new 'groups' property, the DT parser can infer the map type
+from the fact whether 'pins' or 'groups' is used to specify the pin
+group to work on.
+To maintain backwards compatibitliy with current usage of the DT
+binding, this is only done when PIN_MAP_TYPE_INVALID is passed to the
+parsing function as type.
+Also, a new helper 'pinconf_generic_dt_node_to_map_all()' is introduced,
+which can be used by drivers as generic callback for dt_node_to_map() to
+leverage the new feature.
 
-I rebased my branch onto your current pinctrl/devel. Other than that
-this should be exactly what has been sent out as v3. This time I'll use
-the gmail SMTP again, which hopefully resolves the encoding issue.
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Tested-by: Andreas Färber <afaerber@suse.de>
+---
+Changes since v2:
+ - rename dt_pin_specifier to subnode_target_type
+ - add additional comment in header file explaining passing an invalid
+   map type
+ - mention map_all() helper in commit message
+Changes since RFC v2:
+ - none
+---
+ drivers/pinctrl/pinconf-generic.c       | 17 ++++++++++++++---
+ include/linux/pinctrl/pinconf-generic.h | 11 +++++++++++
+ 2 files changed, 25 insertions(+), 3 deletions(-)
 
-	Thanks,
-	Sören
-
-Soren Brinkmann (7):
-  pinctrl: pinconf-generic: Infer map type from DT property
-  pinctrl: pinconf-generic: Allow driver to specify DT params
-  pinctrl: zynq: Document DT binding
-  pinctrl: Add driver for Zynq
-  ARM: zynq: Enable pinctrl
-  ARM: zynq: DT: Add pinctrl information
-  pinctrl: qcom-spmi-gpio: Migrate to pinconf-generic
-
- .../bindings/pinctrl/xlnx,zynq-pinctrl.txt         |  104 ++
- arch/arm/boot/dts/zynq-7000.dtsi                   |    8 +-
- arch/arm/boot/dts/zynq-zc702.dts                   |  181 +++
- arch/arm/boot/dts/zynq-zc706.dts                   |  152 +++
- arch/arm/mach-zynq/Kconfig                         |    2 +
- drivers/pinctrl/Kconfig                            |    8 +
- drivers/pinctrl/Makefile                           |    1 +
- drivers/pinctrl/nomadik/pinctrl-abx500.c           |    2 +-
- drivers/pinctrl/pinconf-generic.c                  |  199 ++--
- drivers/pinctrl/pinconf.c                          |    4 +-
- drivers/pinctrl/pinconf.h                          |   22 +-
- drivers/pinctrl/pinctrl-rockchip.c                 |    2 +-
- drivers/pinctrl/pinctrl-tz1090-pdc.c               |    2 +-
- drivers/pinctrl/pinctrl-tz1090.c                   |    2 +-
- drivers/pinctrl/pinctrl-zynq.c                     | 1176 ++++++++++++++++++++
- drivers/pinctrl/qcom/pinctrl-spmi-gpio.c           |  125 +--
- drivers/pinctrl/sh-pfc/pinctrl.c                   |    2 +-
- include/linux/pinctrl/pinconf-generic.h            |   29 +
- include/linux/pinctrl/pinctrl.h                    |    9 +
- 19 files changed, 1808 insertions(+), 222 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pinctrl/xlnx,zynq-pinctrl.txt
- create mode 100644 drivers/pinctrl/pinctrl-zynq.c
-
+diff --git a/drivers/pinctrl/pinconf-generic.c b/drivers/pinctrl/pinconf-generic.c
+index f78b416d7984..21b3d90ebb2d 100644
+--- a/drivers/pinctrl/pinconf-generic.c
++++ b/drivers/pinctrl/pinconf-generic.c
+@@ -264,6 +264,7 @@ int pinconf_generic_dt_subnode_to_map(struct pinctrl_dev *pctldev,
+ 	unsigned reserve;
+ 	struct property *prop;
+ 	const char *group;
++	const char *subnode_target_type = "pins";
+ 
+ 	ret = of_property_read_string(np, "function", &function);
+ 	if (ret < 0) {
+@@ -284,10 +285,20 @@ int pinconf_generic_dt_subnode_to_map(struct pinctrl_dev *pctldev,
+ 		reserve++;
+ 	if (num_configs)
+ 		reserve++;
++
+ 	ret = of_property_count_strings(np, "pins");
+ 	if (ret < 0) {
+-		dev_err(dev, "could not parse property pins\n");
+-		goto exit;
++		ret = of_property_count_strings(np, "groups");
++		if (ret < 0) {
++			dev_err(dev, "could not parse property pins/groups\n");
++			goto exit;
++		}
++		if (type == PIN_MAP_TYPE_INVALID)
++			type = PIN_MAP_TYPE_CONFIGS_GROUP;
++		subnode_target_type = "groups";
++	} else {
++		if (type == PIN_MAP_TYPE_INVALID)
++			type = PIN_MAP_TYPE_CONFIGS_PIN;
+ 	}
+ 	reserve *= ret;
+ 
+@@ -296,7 +307,7 @@ int pinconf_generic_dt_subnode_to_map(struct pinctrl_dev *pctldev,
+ 	if (ret < 0)
+ 		goto exit;
+ 
+-	of_property_for_each_string(np, "pins", prop, group) {
++	of_property_for_each_string(np, subnode_target_type, prop, group) {
+ 		if (function) {
+ 			ret = pinctrl_utils_add_map_mux(pctldev, map,
+ 					reserved_maps, num_maps, group,
+diff --git a/include/linux/pinctrl/pinconf-generic.h b/include/linux/pinctrl/pinconf-generic.h
+index d578a60eff23..83c89f5ab705 100644
+--- a/include/linux/pinctrl/pinconf-generic.h
++++ b/include/linux/pinctrl/pinconf-generic.h
+@@ -174,6 +174,17 @@ static inline int pinconf_generic_dt_node_to_map_pin(
+ 			PIN_MAP_TYPE_CONFIGS_PIN);
+ }
+ 
++static inline int pinconf_generic_dt_node_to_map_all(
++		struct pinctrl_dev *pctldev, struct device_node *np_config,
++		struct pinctrl_map **map, unsigned *num_maps)
++{
++	/*
++	 * passing the type as PIN_MAP_TYPE_INVALID causes the underlying parser
++	 * to infer the map type from the DT properties used.
++	 */
++	return pinconf_generic_dt_node_to_map(pctldev, np_config, map, num_maps,
++			PIN_MAP_TYPE_INVALID);
++}
+ #endif
+ 
+ #endif /* CONFIG_GENERIC_PINCONF */
 -- 
 2.2.1.1.gb42cc81
 
