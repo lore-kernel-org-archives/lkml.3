@@ -1,283 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932775AbbAILDm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 06:03:42 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:41897 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757507AbbAILDk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 06:03:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <1417131990-17954-3-git-send-email-rjui@broadcom.com>
-References: <rjui@broadcom.com>
-	<1417131990-17954-1-git-send-email-rjui@broadcom.com>
-	<1417131990-17954-3-git-send-email-rjui@broadcom.com>
-Date: Fri, 9 Jan 2015 12:03:39 +0100
-Message-ID: <CACRpkdbZx1hcvd-q9AL3FPQRqU+wJjeSV8AdSno5PVr+fqhpRQ@mail.gmail.com>
-Subject: Re: [PATCH 2/4] pinctrl: cygnus: add initial pinctrl support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Ray Jui <rjui@broadcom.com>, Sherman Yin <syin@broadcom.com>,
-        Simon Arlott <simon@fire.lp0.eu>, Chris Boot <bootc@bootc.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Scott Branden <sbranden@broadcom.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S932810AbbAILGK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 06:06:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60693 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757134AbbAILGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 06:06:07 -0500
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, "\\\"Rafael J. Wysocki\\\"" <rjw@rjwysocki.net>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Oleg Nesterov <oleg@redhat.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>, <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org
+Subject: [PATCH -v3 0/5] OOM vs PM freezer fixes
+Date: Fri,  9 Jan 2015 12:05:50 +0100
+Message-Id: <1420801555-22659-1-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 28, 2014 at 12:46 AM, Ray Jui <rjui@broadcom.com> wrote:
+Hi,
+this is an updated version of the patchset previous posted here:
+http://marc.info/?l=linux-mm&m=141779771518056&w=2. 
+Changes since then are:
+- cleanups, doc and function renames as per Tejun
+- __thaw_task moved to mark_tsk_oom_victim and frozen() check removed
+  as it would be racy and it is not necessary anyway - per Tejun
+- obvious typo in wait_event condition
+- oom_killer_enable moved to thaw_processes before user tasks are thawed
+  rather than thaw_kernel_threads which is even not called from s2ram resume
+  path - per Tejun
+- oom_killer_disable moved to freeze_processes to be more in sync with
+  the enable.
 
-> This adds the initial driver support for the Broadcom Cygnus pinctrl
-> controller. The Cygnus pinctrl controller supports group based
-> alternate function configuration
->
-> Signed-off-by: Ray Jui <rjui@broadcom.com>
-> Reviewed-by: Scott Branden <sbranden@broadcom.com>
-> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-> ---
->  drivers/pinctrl/Kconfig              |    7 +
->  drivers/pinctrl/Makefile             |    1 +
->  drivers/pinctrl/pinctrl-bcm-cygnus.c |  753 ++++++++++++++++++++++++++++++++++
+I have tested the series in KVM with 100M RAM:
+- many small tasks (20M anon mmap) which are triggering OOM continually
+- s2ram which resumes automatically is triggered in a loop
+	echo processors > /sys/power/pm_test
+	while true
+	do
+		echo mem > /sys/power/state
+		sleep 1s
+	done
+- simple module which allocates and frees 20M in 8K chunks. If it sees
+  freezing(current) then it tries another round of allocation before calling
+  try_to_freeze
+- debugging messages of PM stages and OOM killer enable/disable/fail added
+  and unmark_oom_victim is delayed by 1s after it clears TIF_MEMDIE and before
+  it wakes up waiters.
+- rebased on top of the current mmotm which means some necessary updates
+  in mm/oom_kill.c. mark_tsk_oom_victim is now called under task_lock but
+  I think this should be OK because __thaw_task shouldn't interfere with any
+  locking down wake_up_process. Oleg?
 
-With the proliferation of Broadcom drivers, please first send a
-patch moving pinctrl-bcm281xx.c and pinctrl-bcm2835.c to
-drivers/pinctrl/broadcom or something, so we can collect them
-there.
+As expected there are no OOM killed tasks after oom is disabled and
+allocations requested by the kernel thread are failing after all the
+tasks are frozen and OOM disabled. I wasn't able to catch a race where
+oom_killer_disable would really have to wait but I kinda expected the
+race is really unlikely.
 
-I don't know if the hardware has any similarity though, so invite
-the authors of the previous drivers to review this code.
+[  242.609330] Killed process 2992 (mem_eater) total-vm:24412kB, anon-rss:2164kB, file-rss:4kB
+[  243.628071] Unmarking 2992 OOM victim. oom_victims: 1
+[  243.636072] (elapsed 2.837 seconds) done.
+[  243.641985] Trying to disable OOM killer
+[  243.643032] Waiting for concurent OOM victims
+[  243.644342] OOM killer disabled
+[  243.645447] Freezing remaining freezable tasks ... (elapsed 0.005 seconds) done.
+[  243.652983] Suspending console(s) (use no_console_suspend to debug)
+[  243.903299] kmem_eater: page allocation failure: order:1, mode:0x204010
+[...]
+[  243.992600] PM: suspend of devices complete after 336.667 msecs
+[  243.993264] PM: late suspend of devices complete after 0.660 msecs
+[  243.994713] PM: noirq suspend of devices complete after 1.446 msecs
+[  243.994717] ACPI: Preparing to enter system sleep state S3
+[  243.994795] PM: Saving platform NVS memory
+[  243.994796] Disabling non-boot CPUs ...
 
-> +config PINCTRL_BCM_CYGNUS
-> +       bool "Broadcom Cygnus pinctrl driver"
-> +       depends on (ARCH_BCM_CYGNUS || COMPILE_TEST)
-> +       select PINMUX
-> +       select PINCONF
-> +       select GENERIC_PINCONF
+The first 2 patches are simple cleanups for OOM. They should go in
+regardless the rest IMO.
+Patches 3 and 4 are trivial printk -> pr_info conversion and they should
+go in ditto.
+The main patch is the last one and I would appreciate acks from Tejun
+and Rafael. I think the OOM part should be OK (except for __thaw_task
+vs. task_lock where a look from Oleg would appreciated) but I am not
+so sure I haven't screwed anything in the freezer code. I have found
+several surprises there.
 
-Nice that you use GENERIC_PINCONF! :)
+The patchset is based on the current mmotm tree (mmotm-2015-01-07-17-07).
+I think it make more sense if it is routed via Andrew due to dependences on
+other OOM killer patches.
 
-> +/*
-> + * Cygnus pinctrl core
-> + *
-> + * @pctl: pointer to pinctrl_dev
-> + * @dev: pointer to the device
-> + * @base: I/O register base for Cygnus pinctrl configuration
-> + *
-> + */
-> +struct cygnus_pinctrl {
-> +       struct pinctrl_dev *pctl;
-> +       struct device *dev;
-> +       void __iomem *base;
-> +
-> +       const struct pinctrl_pin_desc *pins;
-> +       unsigned num_pins;
+Shortlog says:
+Michal Hocko (5):
+      oom: add helpers for setting and clearing TIF_MEMDIE
+      oom: thaw the OOM victim if it is frozen
+      PM: convert printk to pr_* equivalent
+      sysrq: convert printk to pr_* equivalent
+      oom, PM: make OOM detection in the freezer path raceless
 
-Why is this not simply just a part of struct pinctrl_desc?
-Why does it have to be multiplied here?
+And diffstat:
+ drivers/staging/android/lowmemorykiller.c |   7 +-
+ drivers/tty/sysrq.c                       |  23 ++---
+ include/linux/oom.h                       |  18 ++--
+ kernel/exit.c                             |   3 +-
+ kernel/power/process.c                    |  76 +++++----------
+ mm/memcontrol.c                           |   4 +-
+ mm/oom_kill.c                             | 149 ++++++++++++++++++++++++++----
+ mm/page_alloc.c                           |  17 +---
+ 8 files changed, 185 insertions(+), 112 deletions(-)
 
-> +/*
-> + * List of groups of pins
-> + */
-> +static const unsigned gpio0_pins[] = { 12 };
-> +static const unsigned gpio1_pins[] = { 13 };
-> +static const unsigned gpio2_pins[] = { 14 };
-> +static const unsigned gpio3_pins[] = { 15 };
-> +static const unsigned gpio4_pins[] = { 16 };
-> +static const unsigned gpio5_pins[] = { 17 };
-> +static const unsigned gpio6_pins[] = { 18 };
-> +static const unsigned gpio7_pins[] = { 19 };
-> +static const unsigned gpio8_pins[] = { 20 };
-> +static const unsigned gpio9_pins[] = { 21 };
-> +static const unsigned gpio10_pins[] = { 22 };
-> +static const unsigned gpio11_pins[] = { 23 };
-> +static const unsigned gpio12_pins[] = { 24 };
-> +static const unsigned gpio13_pins[] = { 25 };
-> +static const unsigned gpio14_pins[] = { 26 };
-> +static const unsigned gpio15_pins[] = { 27 };
-> +static const unsigned gpio16_pins[] = { 28 };
-> +static const unsigned gpio17_pins[] = { 29 };
-> +static const unsigned gpio18_pins[] = { 30 };
-> +static const unsigned gpio19_pins[] = { 31 };
-> +static const unsigned gpio20_pins[] = { 32 };
-> +static const unsigned gpio21_pins[] = { 33 };
-> +static const unsigned gpio22_pins[] = { 34 };
-> +static const unsigned gpio23_pins[] = { 35 };
-
-Have you considered implementing .gpio_request_enable()
-and .gpio_disable_free() to get around having to have one
-group for each GPIO line?
-
-> +static const unsigned pwm0_pins[] = { 38 };
-> +static const unsigned pwm1_pins[] = { 39 };
-> +static const unsigned pwm2_pins[] = { 40 };
-> +static const unsigned pwm3_pins[] = { 41 };
-> +static const unsigned sdio0_pins[] = { 94, 95, 96, 97, 98, 99 };
-> +static const unsigned smart_card0_pins[] = { 42, 43, 44, 46, 47 };
-> +static const unsigned smart_card1_pins[] = { 48, 49, 50, 52, 53 };
-> +static const unsigned spi0_pins[] = { 54, 55, 56, 57 };
-> +static const unsigned spi1_pins[] = { 58, 59, 60, 61 };
-> +static const unsigned spi2_pins[] = { 62, 63, 64, 65 };
-> +static const unsigned spi3_pins[] = { 66, 67, 68, 69 };
-> +static const unsigned d1w_pins[] = { 10, 11 };
-> +static const unsigned lcd_pins[] = { 126, 127, 128, 129, 130, 131, 132,        133,
-> +       134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147,
-> +       148, 149, 150, 151, 152, 153, 154, 155 };
-> +static const unsigned uart0_pins[] = { 70, 71, 72, 73 };
-> +static const unsigned uart1_dte_pins[] = { 75, 76, 77, 78 };
-> +static const unsigned uart1_pins[] = { 74, 79, 80, 81 };
-> +static const unsigned uart3_pins[] = { 82, 83 };
-> +static const unsigned qspi_pins[] = { 104, 105, 106, 107 };
-> +static const unsigned nand_pins[] = { 110, 111, 112, 113, 114, 115, 116, 117,
-> +       118, 119, 120, 121, 122, 123, 124, 125 };
-> +static const unsigned sdio0_cd_pins[] = { 103 };
-> +static const unsigned sdio0_mmc_pins[] = { 100, 101, 102 };
-> +static const unsigned can0_spi4_pins[] = { 86, 87 };
-> +static const unsigned can1_spi4_pins[] = { 88, 89 };
-> +static const unsigned sdio1_cd_pins[] = { 93 };
-> +static const unsigned sdio1_led_pins[] = { 84, 85 };
-> +static const unsigned sdio1_mmc_pins[] = { 90, 91, 92 };
-> +static const unsigned camera_led_pins[] = { 156, 157, 158, 159, 160 };
-> +static const unsigned camera_rgmii_pins[] = { 169, 170, 171, 169, 170, 171,
-> +       172, 173 };
-> +static const unsigned camera_sram_rgmii_pins[] = { 161, 162, 163, 164, 165,
-> +       166, 167, 168 };
-> +static const unsigned qspi_gpio_pins[] = { 108, 109 };
-> +static const unsigned smart_card0_fcb_pins[] = { 45 };
-> +static const unsigned smart_card1_fcb_pins[] = { 51 };
-> +static const unsigned gpio0_3p3_pins[] = { 176 };
-> +static const unsigned gpio1_3p3_pins[] = { 177 };
-> +static const unsigned gpio2_3p3_pins[] = { 178 };
-
-Looks good...
-
-> +/*
-> + * List of groups names. Need to match the order in cygnus_pin_groups
-> + */
-> +static const char * const cygnus_pin_group_names[] = {
-> +       "gpio0",
-> +       "gpio1",
-> +       "gpio2",
-> +       "gpio3",
-> +       "gpio4",
-> +       "gpio5",
-> +       "gpio6",
-> +       "gpio7",
-> +       "gpio8",
-> +       "gpio9",
-> +       "gpio10",
-> +       "gpio11",
-> +       "gpio12",
-> +       "gpio13",
-> +       "gpio14",
-> +       "gpio15",
-> +       "gpio16",
-> +       "gpio17",
-> +       "gpio18",
-> +       "gpio19",
-> +       "gpio20",
-> +       "gpio21",
-> +       "gpio22",
-> +       "gpio23",
-> +       "pwm0",
-> +       "pwm1",
-> +       "pwm2",
-> +       "pwm3",
-> +       "sdio0",
-> +       "smart_card0",
-> +       "smart_card1",
-> +       "spi0",
-> +       "spi1",
-> +       "spi2",
-> +       "spi3",
-> +       "d1w",
-> +       "lcd",
-> +       "uart0",
-> +       "uart1_dte",
-> +       "uart1",
-> +       "uart3",
-> +       "qspi",
-> +       "nand",
-> +       "sdio0_cd",
-> +       "sdio0_mmc",
-> +       "can0_spi4",
-> +       "can1_spi4",
-> +       "sdio1_cd",
-> +       "sdio1_led",
-> +       "sdio1_mmc",
-> +       "camera_led",
-> +       "camera_rgmii",
-> +       "camera_sram_rgmii",
-> +       "qspi_gpio",
-> +       "smart_card0_fcb",
-> +       "smart_card1_fcb",
-> +       "gpio0_3p3",
-> +       "gpio1_3p3",
-> +       "gpio2_3p3",
-> +};
-
-This looks very much like function names as noted in the binding.
-I would say, suffix every group with _grp or something so it's not
-as confusing. Remember, spi0 is a function of the SoC,
-pins {1,2} is just a group of pins that it may appear on.
-
-> +#define CYGNUS_PIN_FUNCTION(fcn_name, mux_val)                 \
-> +{                                                              \
-> +       .name = #fcn_name,                                      \
-> +       .group_names = cygnus_pin_group_names,                  \
-> +       .num_groups = ARRAY_SIZE(cygnus_pin_group_names),       \
-> +       .mux = mux_val,                                         \
-> +}
-> +
-> +/*
-> + * Cygnus has 4 alternate functions. All groups can be configured to any of
-> + * the 4 alternate functions
-> + */
-> +static const struct cygnus_pin_function cygnus_pin_functions[] = {
-> +       CYGNUS_PIN_FUNCTION(alt1, 0),
-> +       CYGNUS_PIN_FUNCTION(alt2, 1),
-> +       CYGNUS_PIN_FUNCTION(alt3, 2),
-> +       CYGNUS_PIN_FUNCTION(alt4, 3),
-> +};
-
-These are not functions. These are per-pin mux ways.
-
-Re-read the documentation of what a function is: it is not something
-abstract like "alternative something" but something very direct like
-uart0 or spi0.
-
-> +static int cygnus_dt_node_to_map(struct pinctrl_dev *pctrl_dev,
-> +               struct device_node *np, struct pinctrl_map **map,
-> +               unsigned *num_maps)
-> +{
-
-After Sören Brinkmanns patches youy should be able to use core
-functions for this and avoid this code altogether.
-
-> +       num_groups = of_property_count_strings(np, "brcm,groups");
-
-As mentioned, just "groups".
-
-> +       ret = of_property_read_string(np, "brcm,function", &function_name);
-
-As mentioned, just "function".
-
-> +       ret = pinctrl_utils_reserve_map(pctrl_dev, map, &reserved_maps,
-> +                       num_maps, num_groups);
-
-Good use of utilities!
-
-Apart from this things look nice.
-
-The main comment to address is the definition of functions.
-
-Yours,
-Linus Walleij
