@@ -1,63 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932635AbbAINvJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 08:51:09 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58830 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932353AbbAINvG (ORCPT
+	id S1756901AbbAIN4Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 08:56:16 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:49516 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887AbbAIN4O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 08:51:06 -0500
-Date: Fri, 9 Jan 2015 13:50:45 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stephen Wang <wstephen@codeaurora.org>
-Cc: "jcliburn@gmail.com" <jcliburn@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+	Fri, 9 Jan 2015 08:56:14 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Rob Herring <robh@kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Simon Horman <horms@verge.net.au>,
+        ALSA Development Mailing List <alsa-devel@alsa-project.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] ethernet: atheros: Add nss-gmac driver
-Message-ID: <20150109135045.GE12942@leverpostej>
-References: <y>
- <1420754626-30121-1-git-send-email-wstephen@codeaurora.org>
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Olof Johansson <olof@lixom.net>,
+        Simon Horman <horms+renesas@verge.net.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v5][resend v4] of: replace Asahi Kasei Corp vendor prefix
+Date: Fri, 09 Jan 2015 14:55:40 +0100
+Message-ID: <5363275.ZK3ulH6EUO@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAL_Jsq+GjM+3M63amyh3Rvijkz7Lch_cdUt9vScc9wZeOubOPA@mail.gmail.com>
+References: <878ulzx6hr.wl%kuninori.morimoto.gx@gmail.com> <871tn4uv0j.wl%kuninori.morimoto.gx@renesas.com> <CAL_Jsq+GjM+3M63amyh3Rvijkz7Lch_cdUt9vScc9wZeOubOPA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420754626-30121-1-git-send-email-wstephen@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:LtgamboPz8PwhYJPI/DAYdNkjy6+bJnK1NDLIiDWCwrV7V0KjIB
+ h4e9lPpI7MSwE2CqTUsicKwtamUle0O1SQeQU5zPAErV7gRmf6IMlNShJJ+NDW/VMeBmE++
+ cuBhy6JRcj+3cIUA1qIFhEHO1JR+zg72aoGeLGmVVvviiG3IQUJEeWuSj1wM3GT6OitnfqD
+ 1opoWSr/0wpcVVPZf/6sQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 08, 2015 at 10:03:46PM +0000, Stephen Wang wrote:
-> This driver adds support for the internal GMACs on IPQ806x SoCs.
-> It supports the device-tree and will register up to 4 ethernet
-> interfaces.
+On Friday 09 January 2015 07:46:16 Rob Herring wrote:
+> On Fri, Jan 9, 2015 at 4:07 AM, Kuninori Morimoto
+> <kuninori.morimoto.gx@renesas.com> wrote:
+> >
+> > Hi Stephen
+> >
+> > Thank you for your feedback
+> >
+> >> > I'm sending this "of: replace Asahi Kasei Corp vendor prefix" during
+> >> > half-year (since Jun 2014) , many times. But, no-one care it.
+> >> > I don't know who is the best maintainer.
+> >> >  - Stephen : because it has Tegra ?
+> >> >  - Olof    : because it has Tegra (= ARM) ?
+> >> >  - Arnd    : because it has Tegra (= ARM) ?
+> >> >  - Matthias: because it has Tegra (= ARM SoC) ?
+> >> >  - Rob     : because DT ?
+> >> >  - Andrew  : Last chance ?
+> >> >
+> >> > But, could you please care this patch ?
+> >> > I will re-send it again
+> >>
+> >> It doesn't seem to be ack'd by any of the DT maintainers. Retro-actively
+> >> changing a DT vendor name would need that, I think.
+> >
+> > Rob ?
+> > I had sent this patch to him since half-years ago, many times...
+> > Or other maintainer ?
+> >
+> >> Thierry and Alex (both Tegra maintainers) appear to have ack'd it, so it
+> >> seems they expect it to go through some tree other than Tegra. Weren't
+> >> there a bunch of related patches along with this (e.g. updating relevant
+> >> drivers to support both prefixes?) so it was expected this patch would
+> >> be applied together with them?
+> >
+> > I guess they expected it goes to DT branch (?)
+> > This is only 1 patch. it doesn't have related patch-set
 > 
-> Signed-off-by: Stephen Wang <wstephen@codeaurora.org>
-> ---
->  drivers/net/ethernet/atheros/Kconfig               |   10 +
->  drivers/net/ethernet/atheros/Makefile              |    1 +
->  drivers/net/ethernet/atheros/nss-gmac/LICENSE.txt  |   14 +
->  drivers/net/ethernet/atheros/nss-gmac/Makefile     |   19 +
->  .../atheros/nss-gmac/exports/nss_gmac_api_if.h     |  126 ++
->  .../atheros/nss-gmac/include/msm_nss_gmac.h        |  338 ++++
->  .../atheros/nss-gmac/include/msm_nss_macsec.h      |   73 +
->  .../atheros/nss-gmac/include/nss_gmac_clocks.h     |  100 +
->  .../atheros/nss-gmac/include/nss_gmac_dev.h        | 2136 ++++++++++++++++++++
->  .../nss-gmac/include/nss_gmac_network_interface.h  |   63 +
->  .../net/ethernet/atheros/nss-gmac/nss_gmac_ctrl.c  | 1210 +++++++++++
->  .../net/ethernet/atheros/nss-gmac/nss_gmac_dev.c   | 1963 ++++++++++++++++++
->  .../ethernet/atheros/nss-gmac/nss_gmac_ethtool.c   |  526 +++++
->  .../net/ethernet/atheros/nss-gmac/nss_gmac_init.c  | 1131 +++++++++++
->  .../ethernet/atheros/nss-gmac/nss_gmac_mdiobus.c   |  187 ++
->  .../atheros/nss-gmac/nss_gmac_tx_rx_offload.c      | 1175 +++++++++++
+> It is in my queue. If the users of it are fine with breaking things,
+> who am I to argue with them.
 
-Device tree bindings _must_ be documented, yet this standalone patch
-adds nothing to Documentation/devicetree/bindings per the diffstat
-above. So trivial NAK until there's a patch documenting that.
+It's an i2c device, so it won't break, based on the implementation
+we use in the kernel that ignores the vendor part when the part number
+matches the i2c driver name.
 
-See Documentation/devicetree/bindings/submitting-patches.txt 
+I also don't think we need to worry about any non-Linux operating
+systems on this board that might share the same dts file.
 
-Thanks,
-Mark.
+	Arnd
