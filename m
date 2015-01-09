@@ -1,74 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157AbbAIBYk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 20:24:40 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:49679 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123AbbAIBYj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 20:24:39 -0500
-From: Mitchel Humpherys <mitchelh@codeaurora.org>
-To: devel@driverdev.osuosl.org, Android Kernel Team <kernel-team@android.com>,
-        Colin Cross <ccross@android.com>
-Cc: linux-kernel@vger.kernel.org, Laura Abbott <lauraa@codeaurora.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Mitchel Humpherys <mitchelh@codeaurora.org>
-Subject: [PATCH] staging: ion: always initialize the free list parameters
-Date: Thu,  8 Jan 2015 17:24:27 -0800
-Message-Id: <1420766667-5538-1-git-send-email-mitchelh@codeaurora.org>
-X-Mailer: git-send-email 2.2.1
+	id S1752633AbbAIB0U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 20:26:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36991 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751023AbbAIB0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 20:26:18 -0500
+Date: Fri, 9 Jan 2015 09:25:56 +0800
+From: Fam Zheng <famz@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Miklos Szeredi <mszeredi@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Juri Lelli <juri.lelli@gmail.com>, Zach Brown <zab@zabbo.net>,
+        David Drysdale <drysdale@google.com>,
+        Kees Cook <keescook@chromium.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Dario Faggioli <raistlin@linux.it>, "Theodore Ts'o" <tytso@mit.edu>,
+        Peter Zijlstra <peterz@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Fabian Frederick <fabf@skynet.be>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Subject: Re: [PATCH 0/3] epoll: Add epoll_pwait1 syscall
+Message-ID: <20150109011608.GA2924@fam-t430.nay.redhat.com>
+References: <1420705550-24245-1-git-send-email-famz@redhat.com>
+ <1420708372.18399.15.camel@suse.cz>
+ <CALCETrVyPij1Zxwmw7p06UrZjoyYDXqEjmxyQ-KJ8Y7dx7mL3g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVyPij1Zxwmw7p06UrZjoyYDXqEjmxyQ-KJ8Y7dx7mL3g@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we initialize the heap free_lock and free list size in
-ion_heap_init_deferred_free, which is only called when the
-ION_HEAP_FLAG_DEFER_FREE heap flag is given.  However, the lock and size
-are used in the shrinker path as well as the deferred free path, and we
-can register a shrinker *without* enabling deferred freeing.  So, if a
-heap provides a shrinker but *doesn't* set the DEFER_FREE flag we will
-use these parameters uninitialized (resulting in a spinlock bug and
-broken shrinker accounting).
+On Thu, 01/08 09:57, Andy Lutomirski wrote:
+> On Thu, Jan 8, 2015 at 1:12 AM, Miklos Szeredi <mszeredi@suse.cz> wrote:
+> > On Thu, 2015-01-08 at 16:25 +0800, Fam Zheng wrote:
+> >> Applications could use epoll interface when then need to poll a big number of
+> >> files in their main loops, to achieve better performance than ppoll(2). Except
+> >> for one concern: epoll only takes timeout parameters in microseconds, rather
+> >> than nanoseconds.
+> >>
+> >> That is a drawback we should address. For a real case in QEMU, we run into a
+> >> scalability issue with ppoll(2) when many devices are attached to guest, in
+> >> which case many host fds, such as virtual disk images and sockets, need to be
+> >> polled by the main loop. As a result we are looking at switching to epoll, but
+> >> the coarse timeout precision is a trouble, as explained below.
+> >>
+> >> We're already using prctl(PR_SET_TIMERSLACK, 1) which is necessary to implement
+> >> timers in the main loop; and we call ppoll(2) with the next firing timer as
+> >> timeout, so when ppoll(2) returns, we know that we have more work to do (either
+> >> handling IO events, or fire a timer callback). This is natual and efficient,
+> >> except that ppoll(2) itself is slow.
+> >>
+> >> Now that we want to switch to epoll, to speed up the polling. However the timer
+> >> slack setting will be effectively undone, because that way we will have to
+> >> round up the timeout to microseconds honoring timer contract. But consequently,
+> >> this hurts the general responsiveness.
+> >>
+> >> Note: there are two alternatives, without changing kernel:
+> >>
+> >> 1) Leading ppoll(2), with the epollfd only and a nanosecond timeout. It won't
+> >> be slow as one fd is polled. No more scalability issue. And if there are
+> >> events, we know from ppoll(2)'s return, then we do the epoll_wait(2) with
+> >> timeout=0; otherwise, there can't be events for the epoll, skip the following
+> >> epoll_wait and just continue with other work.
+> >>
+> >> 2) Setup and add a timerfd to epoll, then we do epoll_wait(..., timeout=-1).
+> >> The timerfd will hopefully force epoll_wait to return when it timeouts, even if
+> >> no other events have arrived. This will inheritly give us timerfd's precision.
+> >> Note that for each poll, the desired timeout is different because the next
+> >> timer is different, so that, before each epoll_wait(2), there will be a
+> >> timerfd_settime syscall to set it to a proper value.
+> >>
+> >> Unfortunately, both approaches require one more syscall per iteration, compared
+> >> to the original single ppoll(2), cost of which is unneglectable when we talk
+> >> about nanosecond granularity.
+> 
+> I'd like to see a more ambitious change, since the timer isn't the
+> only problem like this.  Specifically, I'd like a syscall that does a
+> list of epoll-related things and then waits.  The list of things could
+> include, at least:
+> 
+>  - EPOLL_CTL_MOD actions: level-triggered epoll users are likely to
+> want to turn on and off their requests for events on a somewhat
+> regular basis.
 
-Fix these problems by initializing the free list parameters directly in
-ion_device_add_heap, which is always called no matter which heap
-features are being used.
+This sounds good to me.
 
-Signed-off-by: Mitchel Humpherys <mitchelh@codeaurora.org>
----
- drivers/staging/android/ion/ion.c      | 3 +++
- drivers/staging/android/ion/ion_heap.c | 2 --
- 2 files changed, 3 insertions(+), 2 deletions(-)
+> 
+>  - timerfd_settime actions: this allows a single syscall to wait and
+> adjust *both* monotonic and real-time wakeups.
 
-diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
-index 296d347660fc..b8f1c491553e 100644
---- a/drivers/staging/android/ion/ion.c
-+++ b/drivers/staging/android/ion/ion.c
-@@ -1508,6 +1508,9 @@ void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
- 		pr_err("%s: can not add heap with invalid ops struct.\n",
- 		       __func__);
- 
-+	spin_lock_init(&heap->free_lock);
-+	heap->free_list_size = 0;
-+
- 	if (heap->flags & ION_HEAP_FLAG_DEFER_FREE)
- 		ion_heap_init_deferred_free(heap);
- 
-diff --git a/drivers/staging/android/ion/ion_heap.c b/drivers/staging/android/ion/ion_heap.c
-index 4605e04712aa..fd13d05b538a 100644
---- a/drivers/staging/android/ion/ion_heap.c
-+++ b/drivers/staging/android/ion/ion_heap.c
-@@ -253,8 +253,6 @@ int ion_heap_init_deferred_free(struct ion_heap *heap)
- 	struct sched_param param = { .sched_priority = 0 };
- 
- 	INIT_LIST_HEAD(&heap->free_list);
--	heap->free_list_size = 0;
--	spin_lock_init(&heap->free_lock);
- 	init_waitqueue_head(&heap->waitqueue);
- 	heap->task = kthread_run(ion_heap_deferred_free, heap,
- 				 "%s", heap->name);
--- 
-Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
+I'm not sure, doesn't this break orthogonality between epoll and timerfd?
 
+> 
+> Would this make sense?  It could look like:
+> 
+> int epoll_mod_and_pwait(int epfd,
+>   struct epoll_event *events, int maxevents,
+>   struct epoll_command *commands, int ncommands,
+>   const sigset_t *sigmask);
+
+What about flags?
+
+Fam
