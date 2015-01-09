@@ -1,25 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932682AbbAIKiZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 05:38:25 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44606 "EHLO
+	id S933143AbbAIKsN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 05:48:13 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44545 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757502AbbAIKc3 (ORCPT
+	by vger.kernel.org with ESMTP id S1757437AbbAIKc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Jan 2015 05:32:29 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Aaron Tomlin <atomlin@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Sterling Alexander <stalexan@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 70/78] exit: pidns: alloc_pid() leaks pid_namespace if child_reaper is exiting
-Date: Fri,  9 Jan 2015 11:32:19 +0100
-Message-Id: <259c1c876ea03d24f0d8eaccb122a7733607bd34.1420799385.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 71/78] udf: Verify symlink size before loading it
+Date: Fri,  9 Jan 2015 11:32:20 +0100
+Message-Id: <2bf2e3b94225c76d7990acc7579fecd6306d0a3a.1420799385.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
 References: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
@@ -29,47 +23,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Jan Kara <jack@suse.cz>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 24c037ebf5723d4d9ab0996433cee4f96c292a4d upstream.
+commit a1d47b262952a45aae62bd49cfaf33dd76c11a2c upstream.
 
-alloc_pid() does get_pid_ns() beforehand but forgets to put_pid_ns() if it
-fails because disable_pid_allocation() was called by the exiting
-child_reaper.
+UDF specification allows arbitrarily large symlinks. However we support
+only symlinks at most one block large. Check the length of the symlink
+so that we don't access memory beyond end of the symlink block.
 
-We could simply move get_pid_ns() down to successful return, but this fix
-tries to be as trivial as possible.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Aaron Tomlin <atomlin@redhat.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: Sterling Alexander <stalexan@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Carl Henrik Lunde <chlunde@gmail.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- kernel/pid.c | 2 ++
- 1 file changed, 2 insertions(+)
+ fs/udf/symlink.c | 17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/pid.c b/kernel/pid.c
-index 9b9a26698144..82430c858d69 100644
---- a/kernel/pid.c
-+++ b/kernel/pid.c
-@@ -341,6 +341,8 @@ out:
+diff --git a/fs/udf/symlink.c b/fs/udf/symlink.c
+index d7c6dbe4194b..d89f324bc387 100644
+--- a/fs/udf/symlink.c
++++ b/fs/udf/symlink.c
+@@ -80,11 +80,17 @@ static int udf_symlink_filler(struct file *file, struct page *page)
+ 	struct inode *inode = page->mapping->host;
+ 	struct buffer_head *bh = NULL;
+ 	unsigned char *symlink;
+-	int err = -EIO;
++	int err;
+ 	unsigned char *p = kmap(page);
+ 	struct udf_inode_info *iinfo;
+ 	uint32_t pos;
  
- out_unlock:
- 	spin_unlock_irq(&pidmap_lock);
-+	put_pid_ns(ns);
++	/* We don't support symlinks longer than one block */
++	if (inode->i_size > inode->i_sb->s_blocksize) {
++		err = -ENAMETOOLONG;
++		goto out_unmap;
++	}
 +
- out_free:
- 	while (++i <= ns->level)
- 		free_pidmap(pid->numbers + i);
+ 	iinfo = UDF_I(inode);
+ 	pos = udf_block_map(inode, 0);
+ 
+@@ -94,8 +100,10 @@ static int udf_symlink_filler(struct file *file, struct page *page)
+ 	} else {
+ 		bh = sb_bread(inode->i_sb, pos);
+ 
+-		if (!bh)
+-			goto out;
++		if (!bh) {
++			err = -EIO;
++			goto out_unlock_inode;
++		}
+ 
+ 		symlink = bh->b_data;
+ 	}
+@@ -109,9 +117,10 @@ static int udf_symlink_filler(struct file *file, struct page *page)
+ 	unlock_page(page);
+ 	return 0;
+ 
+-out:
++out_unlock_inode:
+ 	up_read(&iinfo->i_data_sem);
+ 	SetPageError(page);
++out_unmap:
+ 	kunmap(page);
+ 	unlock_page(page);
+ 	return err;
 -- 
 2.2.1
 
