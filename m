@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758132AbbAIP5s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:57:48 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:58954 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755069AbbAIP5q (ORCPT
+	id S932942AbbAIP67 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:58:59 -0500
+Received: from casper.infradead.org ([85.118.1.10]:53833 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932475AbbAIP64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:57:46 -0500
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCH 5/5] arm64: make sys_call_table const
-Date: Fri,  9 Jan 2015 15:57:28 +0000
-Message-Id: <1420819048-3515-6-git-send-email-catalin.marinas@arm.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1420819048-3515-1-git-send-email-catalin.marinas@arm.com>
-References: <1420819048-3515-1-git-send-email-catalin.marinas@arm.com>
+	Fri, 9 Jan 2015 10:58:56 -0500
+Date: Fri, 9 Jan 2015 16:58:35 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Kanaka Juvva <kanaka.d.juvva@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v4 10/11] perf/x86/intel: Perform rotation on Intel CQM
+ RMIDs
+Message-ID: <20150109155835.GJ29390@twins.programming.kicks-ass.net>
+References: <1415999712-5850-1-git-send-email-matt@console-pimps.org>
+ <1415999712-5850-11-git-send-email-matt@console-pimps.org>
+ <20150106171712.GH3337@twins.programming.kicks-ass.net>
+ <20150109121401.GB495@console-pimps.org>
+ <20150109130250.GH29390@twins.programming.kicks-ass.net>
+ <20150109152442.GG495@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150109152442.GG495@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Rutland <mark.rutland@arm.com>
+On Fri, Jan 09, 2015 at 03:24:42PM +0000, Matt Fleming wrote:
+> On Fri, 09 Jan, at 02:02:50PM, Peter Zijlstra wrote:
+> > On Fri, Jan 09, 2015 at 12:14:01PM +0000, Matt Fleming wrote:
+> > > On Tue, 06 Jan, at 06:17:12PM, Peter Zijlstra wrote:
+> > > > 
+> > > > afaict the again label will try and steal yet another rmid, if rmids
+> > > > don't decay fast enough, we could end up with all rmids on the limbo
+> > > > list and none active. Or am I missing something here?
+> > > 
+> > > You're not missing anything, that's true, we will try and steal more
+> > > RMIDs. We could perhaps put a limit on how many RMIDs we're willing to
+> > > steal, but I think it should definitely be > 1 because RMIDs can
+> > > stabilize out of order.
+> > > 
+> > > It's worth pointing out that we only steal more RMIDs if the ones on the
+> > > limbo list have been queued for the "minimum queue time" - it really is
+> > > a last resort.
+> > 
+> > Do we really care? Why not just hold up everything until the one(s) we
+> > have are low enough?
+> > 
+> > Yes it all blows, but would not some active be better than none active,
+> > just because the stupid lines aren't clearing fast enough?
+> 
+> Right, but now we need a "steal limit", so we know when to stop stealing
+> active RMIDs.
+> 
+> 	(cqm_max_rmid + 1) / 4 ?
+> 
+> I guess any limit is better than no limit.
 
-As with x86, mark the sys_call_table const such that it will be placed
-in the .rodata section. This will cause attempts to modify the table
-(accidental or deliberate) to fail when strict page permissions are in
-place. In the absence of strict page permissions, there should be no
-functional change.
-
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
----
- arch/arm64/kernel/sys.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm64/kernel/sys.c b/arch/arm64/kernel/sys.c
-index dec351a9f3d6..75151aaf1a52 100644
---- a/arch/arm64/kernel/sys.c
-+++ b/arch/arm64/kernel/sys.c
-@@ -49,7 +49,7 @@ asmlinkage long sys_rt_sigreturn_wrapper(void);
-  * The sys_call_table array must be 4K aligned to be accessible from
-  * kernel/entry.S.
-  */
--void *sys_call_table[__NR_syscalls] __aligned(4096) = {
-+void * const sys_call_table[__NR_syscalls] __aligned(4096) = {
- 	[0 ... __NR_syscalls - 1] = sys_ni_syscall,
- #include <asm/unistd.h>
- };
+Yeah, that'll work, when the free+limbo count is 1/4th the total we
+should stop pulling more plugs.
