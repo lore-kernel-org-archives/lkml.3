@@ -1,93 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932828AbbAILQt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 06:16:49 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52305 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932671AbbAILQq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 06:16:46 -0500
-Date: Fri, 9 Jan 2015 11:16:42 +0000
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Bo Shen <voice.shen@atmel.com>
-Cc: Mark Brown <broonie@kernel.org>, alsa-devel@alsa-project.org,
-        linux-arm-kernel@lists.infradead.org, linux-sound@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH] ASoC: wm8904: fix runtime warning
-Message-ID: <20150109111642.GU14516@opensource.wolfsonmicro.com>
-References: <1420793620-2866-1-git-send-email-voice.shen@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420793620-2866-1-git-send-email-voice.shen@atmel.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S932977AbbAILRX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 06:17:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60872 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932338AbbAILRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 06:17:22 -0500
+From: Michal Marek <mmarek@suse.cz>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: [PATCH] x86: Fix make clean
+Date: Fri,  9 Jan 2015 12:17:15 +0100
+Message-Id: <1420802235-8707-1-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 04:53:40PM +0800, Bo Shen wrote:
-> As the commit 5fe5b76 (ASoC: dapm: Do not pretend to support
-> controls for non mixer/mux widgets) remove the fake control.
-> 
-> Then, the wm8904 throw out the following warning at runtime.
-> --->8---
-> wm8904 1-001a: Control not supported for path ADCL -> [Left] -> AIFOUTL
-> wm8904 1-001a: ASoC: no dapm match for ADCL --> Left --> AIFOUTL
-> wm8904 1-001a: ASoC: Failed to add route ADCL -> Left -> AIFOUTL
-> wm8904 1-001a: Control not supported for path ADCR -> [Right] -> AIFOUTL
-> wm8904 1-001a: ASoC: no dapm match for ADCR --> Right --> AIFOUTL
-> wm8904 1-001a: ASoC: Failed to add route ADCR -> Right -> AIFOUTL
-> wm8904 1-001a: Control not supported for path ADCL -> [Left] -> AIFOUTR
-> wm8904 1-001a: ASoC: no dapm match for ADCL --> Left --> AIFOUTR
-> wm8904 1-001a: ASoC: Failed to add route ADCL -> Left -> AIFOUTR
-> wm8904 1-001a: Control not supported for path ADCR -> [Right] -> AIFOUTR
-> wm8904 1-001a: ASoC: no dapm match for ADCR --> Right --> AIFOUTR
-> wm8904 1-001a: ASoC: Failed to add route ADCR -> Right -> AIFOUTR
-> wm8904 1-001a: Control not supported for path AIFINR -> [Right] -> DACL
-> wm8904 1-001a: ASoC: no dapm match for AIFINR --> Right --> DACL
-> wm8904 1-001a: ASoC: Failed to add route AIFINR -> Right -> DACL
-> wm8904 1-001a: Control not supported for path AIFINL -> [Left] -> DACL
-> wm8904 1-001a: ASoC: no dapm match for AIFINL --> Left --> DACL
-> wm8904 1-001a: ASoC: Failed to add route AIFINL -> Left -> DACL
-> wm8904 1-001a: Control not supported for path AIFINR -> [Right] -> DACR
-> wm8904 1-001a: ASoC: no dapm match for AIFINR --> Right --> DACR
-> wm8904 1-001a: ASoC: Failed to add route AIFINR -> Right -> DACR
-> wm8904 1-001a: Control not supported for path AIFINL -> [Left] -> DACR
-> wm8904 1-001a: ASoC: no dapm match for AIFINL --> Left --> DACR
-> wm8904 1-001a: ASoC: Failed to add route AIFINL -> Left -> DACR
-> ---8<---
-> 
-> This patch is used to remove these warning.
-> 
-> Signed-off-by: Bo Shen <voice.shen@atmel.com>
-> ---
-> 
->  sound/soc/codecs/wm8904.c | 16 ++++++++--------
->  1 file changed, 8 insertions(+), 8 deletions(-)
-> 
-> diff --git a/sound/soc/codecs/wm8904.c b/sound/soc/codecs/wm8904.c
-> index 4d2d2b1..38582d7 100644
-> --- a/sound/soc/codecs/wm8904.c
-> +++ b/sound/soc/codecs/wm8904.c
-> @@ -1076,10 +1076,10 @@ static const struct snd_soc_dapm_route adc_intercon[] = {
->  	{ "Right Capture PGA", NULL, "Right Capture Mux" },
->  	{ "Right Capture PGA", NULL, "Right Capture Inverting Mux" },
->  
-> -	{ "AIFOUTL", "Left",  "ADCL" },
-> -	{ "AIFOUTL", "Right", "ADCR" },
-> -	{ "AIFOUTR", "Left",  "ADCL" },
-> -	{ "AIFOUTR", "Right", "ADCR" },
-> +	{ "AIFOUTL", NULL, "ADCL" },
-> +	{ "AIFOUTL", NULL, "ADCR" },
-> +	{ "AIFOUTR", NULL, "ADCL" },
-> +	{ "AIFOUTR", NULL, "ADCR" },
+The $(targets) variable should not depend on the configuration, so that
+make clean always cleans every possible generated file. Where this is
+impractical, list the potential products of a build in $(clean-files).
 
-Is this the right fix here? I am not super familiar with the
-driver but it appears to contain an "AIFOUTL Mux" control which
-is not connected to anything. Looks like maybe this is a mistake
-the mux is indeded to be included in the path? Feels like we
-should either remove the control as well or hook it into the
-path.
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+---
+ arch/x86/boot/Makefile       | 2 +-
+ arch/x86/kernel/cpu/Makefile | 2 +-
+ arch/x86/vdso/Makefile       | 3 ++-
+ 3 files changed, 4 insertions(+), 3 deletions(-)
 
-Thanks,
-Charles
+diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
+index 5b016e2..b93cc4d 100644
+--- a/arch/x86/boot/Makefile
++++ b/arch/x86/boot/Makefile
+@@ -47,10 +47,10 @@ $(obj)/cpu.o: $(obj)/cpustr.h
+ 
+ quiet_cmd_cpustr = CPUSTR  $@
+       cmd_cpustr = $(obj)/mkcpustr > $@
+-targets += cpustr.h
+ $(obj)/cpustr.h: $(obj)/mkcpustr FORCE
+ 	$(call if_changed,cpustr)
+ endif
++targets += cpustr.h
+ 
+ # ---------------------------------------------------------------------------
+ 
+diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+index e27b49d..6e864cf 100644
+--- a/arch/x86/kernel/cpu/Makefile
++++ b/arch/x86/kernel/cpu/Makefile
+@@ -62,7 +62,7 @@ quiet_cmd_mkcapflags = MKCAP   $@
+ 
+ cpufeature = $(src)/../../include/asm/cpufeature.h
+ 
+-targets += capflags.c
+ $(obj)/capflags.c: $(cpufeature) $(src)/mkcapflags.sh FORCE
+ 	$(call if_changed,mkcapflags)
+ endif
++targets += capflags.c
+diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
+index 5a4affe..f971e20 100644
+--- a/arch/x86/vdso/Makefile
++++ b/arch/x86/vdso/Makefile
+@@ -205,4 +205,5 @@ $(vdso_img_insttargets): install_%: $(obj)/%.dbg $(MODLIB)/vdso FORCE
+ PHONY += vdso_install $(vdso_img_insttargets)
+ vdso_install: $(vdso_img_insttargets) FORCE
+ 
+-clean-files := vdso32-syscall* vdso32-sysenter* vdso32-int80*
++clean-files := vdso-image-* vdso32-syscall* vdso32-sysenter* vdso32-int80* \
++               *.so *.so.dbg
+-- 
+1.9.2
+
