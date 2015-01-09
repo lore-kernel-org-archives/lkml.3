@@ -1,48 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612AbbAIV3J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 16:29:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44784 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750772AbbAIV3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 16:29:08 -0500
-Date: Fri, 9 Jan 2015 22:29:05 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Josh Poimboeuf <jpoimboe@redhat.com>
-cc: Seth Jennings <sjenning@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        live-patching@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] livepatch: fix deferred module patching order
-In-Reply-To: <47ab47fd3a2e7794edfe9b45b163582eee0a925c.1420833475.git.jpoimboe@redhat.com>
-Message-ID: <alpine.LNX.2.00.1501092228010.15299@pobox.suse.cz>
-References: <47ab47fd3a2e7794edfe9b45b163582eee0a925c.1420833475.git.jpoimboe@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752945AbbAIVae (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 16:30:34 -0500
+Received: from mailsec111.isp.belgacom.be ([195.238.20.107]:32433 "EHLO
+	mailsec111.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751792AbbAIVac convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 16:30:32 -0500
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=o+amxqHLy7+dd/uQ+LUqZyoNQm/aGJUjZTPtnbq5Ku0= c=1 sm=2
+ a=IkcTkHD0fZMA:10 a=6YCocSk3GrGVLoOECC8A:9 a=QEXdDO2ut3YA:10
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtoFAHdHsFTD7hTU/2dsb2JhbABcgwaBKoMFsDgCAQEGmDECgRVDAQEBAQF9hAwBAQEDASMEUgULBQQCGAICGA4CAlcGARIRiBMMmhucaoZTjQMBAQEBBgEBAQEegSGEZIlBMweCaIFBBYU1jkyNPYd5IoIygT09MYJDAQEB
+Date: Fri, 9 Jan 2015 22:30:30 +0100 (CET)
+From: Fabian Frederick <fabf@skynet.be>
+Reply-To: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org, Vlastimil Babka <vbabka@suse.cz>
+Cc: linux-mm@kvack.org
+Message-ID: <1453795579.577520.1420839030684.open-xchange@webmail.nmp.proximus.be>
+In-Reply-To: <54AC1991.9060908@suse.cz>
+References: <1420301068-19447-1-git-send-email-fabf@skynet.be> <54AC1991.9060908@suse.cz>
+Subject: Re: [PATCH 1/1 linux-next] mm,compaction: move
+ suitable_migration_target() under CONFIG_COMPACTION
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+Importance: Medium
+X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Jan 2015, Josh Poimboeuf wrote:
 
-> When applying multiple patches to a module, if the module is loaded
-> after the patches are loaded, the patches are applied in reverse order:
-> 
->   $ insmod patch1.ko
->   [   43.172992] livepatch: enabling patch 'patch1'
-> 
->   $ insmod patch2.ko
->   [   46.571563] livepatch: enabling patch 'patch2'
-> 
->   $ modprobe nfsd
->   [   52.888922] livepatch: applying patch 'patch2' to loading module 'nfsd'
->   [   52.899847] livepatch: applying patch 'patch1' to loading module 'nfsd'
-> 
-> Fix the loading order by storing the klp_patches list in queue order.
-> 
-> Signed-off-by: Josh Poimboeuf <jpoimboe@redhat.com>
 
-Applied and pushed out, thanks.
+> On 06 January 2015 at 18:21 Vlastimil Babka <vbabka@suse.cz> wrote:
+>
+>
+> On 01/03/2015 05:04 PM, Fabian Frederick wrote:
+> > suitable_migration_target() is only used by isolate_freepages()
+> > Define it under CONFIG_COMPACTION || CONFIG_CMA is not needed.
+> >
+> > Fix the following warning:
+> > mm/compaction.c:311:13: warning: 'suitable_migration_target' defined
+> > but not used [-Wunused-function]
+> >
+> > Signed-off-by: Fabian Frederick <fabf@skynet.be>
+>
+> I agree, I would just move it to the section where isolation_suitable() and
+> related others are, maybe at the end of this section below
+> update_pageblock_skip()?
 
--- 
-Jiri Kosina
-SUSE Labs
+Yes of course, that would solve the warning as well.
+
+Fabian
+>
+> Vlastimil
+
+>
+> > ---
+> >  mm/compaction.c | 44 ++++++++++++++++++++++----------------------
+> >  1 file changed, 22 insertions(+), 22 deletions(-)
+> >
+> > diff --git a/mm/compaction.c b/mm/compaction.c
+> > index 546e571..38b151c 100644
+> > --- a/mm/compaction.c
+> > +++ b/mm/compaction.c
+> > @@ -307,28 +307,6 @@ static inline bool compact_should_abort(struct
+> > compact_control *cc)
+> >     return false;
+> >  }
+> > 
+> > -/* Returns true if the page is within a block suitable for migration to */
+> > -static bool suitable_migration_target(struct page *page)
+> > -{
+> > -   /* If the page is a large free page, then disallow migration */
+> > -   if (PageBuddy(page)) {
+> > -           /*
+> > -            * We are checking page_order without zone->lock taken. But
+> > -            * the only small danger is that we skip a potentially suitable
+> > -            * pageblock, so it's not worth to check order for valid range.
+> > -            */
+> > -           if (page_order_unsafe(page) >= pageblock_order)
+> > -                   return false;
+> > -   }
+> > -
+> > -   /* If the block is MIGRATE_MOVABLE or MIGRATE_CMA, allow migration */
+> > -   if (migrate_async_suitable(get_pageblock_migratetype(page)))
+> > -           return true;
+> > -
+> > -   /* Otherwise skip the block */
+> > -   return false;
+> > -}
+> > -
+> >  /*
+> >   * Isolate free pages onto a private freelist. If @strict is true, will
+> >abort
+> >   * returning 0 on any invalid PFNs or non-free pages inside of the
+> >pageblock
+> > @@ -802,6 +780,28 @@ isolate_migratepages_range(struct compact_control *cc,
+> > unsigned long start_pfn,
+> > 
+> >  #endif /* CONFIG_COMPACTION || CONFIG_CMA */
+> >  #ifdef CONFIG_COMPACTION
+> > +/* Returns true if the page is within a block suitable for migration to */
+> > +static bool suitable_migration_target(struct page *page)
+> > +{
+> > +   /* If the page is a large free page, then disallow migration */
+> > +   if (PageBuddy(page)) {
+> > +           /*
+> > +            * We are checking page_order without zone->lock taken. But
+> > +            * the only small danger is that we skip a potentially suitable
+> > +            * pageblock, so it's not worth to check order for valid range.
+> > +            */
+> > +           if (page_order_unsafe(page) >= pageblock_order)
+> > +                   return false;
+> > +   }
+> > +
+> > +   /* If the block is MIGRATE_MOVABLE or MIGRATE_CMA, allow migration */
+> > +   if (migrate_async_suitable(get_pageblock_migratetype(page)))
+> > +           return true;
+> > +
+> > +   /* Otherwise skip the block */
+> > +   return false;
+> > +}
+> > +
+> >  /*
+> >   * Based on information in the current compact_control, find blocks
+> >   * suitable for isolating free pages from and then isolate them.
+> >
+>
