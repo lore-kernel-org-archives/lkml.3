@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933541AbbAILA1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 06:00:27 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44486 "EHLO
+	id S932412AbbAIKe1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 05:34:27 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44648 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756730AbbAIKc2 (ORCPT
+	by vger.kernel.org with ESMTP id S1757526AbbAIKca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 05:32:28 -0500
+	Fri, 9 Jan 2015 05:32:30 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 13/78] s390/3215: fix tty output containing tabs
-Date: Fri,  9 Jan 2015 11:31:22 +0100
-Message-Id: <a611d4e3b0f5aace35a0c2577548f0e46d46910e.1420799385.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ronald Wahl <ronald.wahl@raritan.com>,
+        Felipe Balbi <balbi@ti.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 14/78] usb: gadget: at91_udc: move prepare clk into process context
+Date: Fri,  9 Jan 2015 11:31:23 +0100
+Message-Id: <f9a0da24705a166ea76c1a74cf3c4a77d22d8cc5.1420799385.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
 References: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
@@ -23,75 +23,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Ronald Wahl <ronald.wahl@raritan.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit e512d56c799517f33b301d81e9a5e0ebf30c2d1e upstream.
+commit b2ba27a5c56ff7204d8a8684893d64d4afe2cee5 upstream.
 
-git commit 37f81fa1f63ad38e16125526bb2769ae0ea8d332
-"n_tty: do O_ONLCR translation as a single write"
-surfaced a bug in the 3215 device driver. In combination this
-broke tab expansion for tty ouput.
+Commit 7628083227b6bc4a7e33d7c381d7a4e558424b6b (usb: gadget: at91_udc:
+prepare clk before calling enable) added clock preparation in interrupt
+context. This is not allowed as it might sleep. Also setting the clock
+rate is unsafe to call from there for the same reason. Move clock
+preparation and setting clock rate into process context (at91udc_probe).
 
-The cause is an asymmetry in the behaviour of tty3215_ops->write
-vs tty3215_ops->put_char. The put_char function scans for '\t'
-but the write function does not.
-
-As the driver has logic for the '\t' expansion remove XTABS
-from c_oflag of the initial termios as well.
-
-Reported-by: Stephen Powell <zlinuxman@wowway.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Ronald Wahl <ronald.wahl@raritan.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/s390/char/con3215.c | 20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+ drivers/usb/gadget/at91_udc.c | 44 +++++++++++++++++++++++++++++++------------
+ 1 file changed, 32 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/s390/char/con3215.c b/drivers/s390/char/con3215.c
-index 9a408f6e95db..19915c5b256f 100644
---- a/drivers/s390/char/con3215.c
-+++ b/drivers/s390/char/con3215.c
-@@ -1029,12 +1029,26 @@ static int tty3215_write(struct tty_struct * tty,
- 			 const unsigned char *buf, int count)
- {
- 	struct raw3215_info *raw;
-+	int i, written;
+diff --git a/drivers/usb/gadget/at91_udc.c b/drivers/usb/gadget/at91_udc.c
+index dfd29438a11e..e3101cec93c9 100644
+--- a/drivers/usb/gadget/at91_udc.c
++++ b/drivers/usb/gadget/at91_udc.c
+@@ -871,12 +871,10 @@ static void clk_on(struct at91_udc *udc)
+ 		return;
+ 	udc->clocked = 1;
  
- 	if (!tty)
- 		return 0;
- 	raw = (struct raw3215_info *) tty->driver_data;
--	raw3215_write(raw, buf, count);
--	return count;
-+	written = count;
-+	while (count > 0) {
-+		for (i = 0; i < count; i++)
-+			if (buf[i] == '\t' || buf[i] == '\n')
-+				break;
-+		raw3215_write(raw, buf, i);
-+		count -= i;
-+		buf += i;
-+		if (count > 0) {
-+			raw3215_putchar(raw, *buf);
-+			count--;
-+			buf++;
-+		}
-+	}
-+	return written;
+-	if (IS_ENABLED(CONFIG_COMMON_CLK)) {
+-		clk_set_rate(udc->uclk, 48000000);
+-		clk_prepare_enable(udc->uclk);
+-	}
+-	clk_prepare_enable(udc->iclk);
+-	clk_prepare_enable(udc->fclk);
++	if (IS_ENABLED(CONFIG_COMMON_CLK))
++		clk_enable(udc->uclk);
++	clk_enable(udc->iclk);
++	clk_enable(udc->fclk);
+ }
+ 
+ static void clk_off(struct at91_udc *udc)
+@@ -885,10 +883,10 @@ static void clk_off(struct at91_udc *udc)
+ 		return;
+ 	udc->clocked = 0;
+ 	udc->gadget.speed = USB_SPEED_UNKNOWN;
+-	clk_disable_unprepare(udc->fclk);
+-	clk_disable_unprepare(udc->iclk);
++	clk_disable(udc->fclk);
++	clk_disable(udc->iclk);
+ 	if (IS_ENABLED(CONFIG_COMMON_CLK))
+-		clk_disable_unprepare(udc->uclk);
++		clk_disable(udc->uclk);
  }
  
  /*
-@@ -1182,7 +1196,7 @@ static int __init tty3215_init(void)
- 	driver->subtype = SYSTEM_TYPE_TTY;
- 	driver->init_termios = tty_std_termios;
- 	driver->init_termios.c_iflag = IGNBRK | IGNPAR;
--	driver->init_termios.c_oflag = ONLCR | XTABS;
-+	driver->init_termios.c_oflag = ONLCR;
- 	driver->init_termios.c_lflag = ISIG;
- 	driver->flags = TTY_DRIVER_REAL_RAW;
- 	tty_set_operations(driver, &tty3215_ops);
+@@ -1781,14 +1779,24 @@ static int at91udc_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/* don't do anything until we have both gadget driver and VBUS */
++	if (IS_ENABLED(CONFIG_COMMON_CLK)) {
++		clk_set_rate(udc->uclk, 48000000);
++		retval = clk_prepare(udc->uclk);
++		if (retval)
++			goto fail1;
++	}
++	retval = clk_prepare(udc->fclk);
++	if (retval)
++		goto fail1a;
++
+ 	retval = clk_prepare_enable(udc->iclk);
+ 	if (retval)
+-		goto fail1;
++		goto fail1b;
+ 	at91_udp_write(udc, AT91_UDP_TXVC, AT91_UDP_TXVC_TXVDIS);
+ 	at91_udp_write(udc, AT91_UDP_IDR, 0xffffffff);
+ 	/* Clear all pending interrupts - UDP may be used by bootloader. */
+ 	at91_udp_write(udc, AT91_UDP_ICR, 0xffffffff);
+-	clk_disable_unprepare(udc->iclk);
++	clk_disable(udc->iclk);
+ 
+ 	/* request UDC and maybe VBUS irqs */
+ 	udc->udp_irq = platform_get_irq(pdev, 0);
+@@ -1796,7 +1804,7 @@ static int at91udc_probe(struct platform_device *pdev)
+ 			0, driver_name, udc);
+ 	if (retval < 0) {
+ 		DBG("request irq %d failed\n", udc->udp_irq);
+-		goto fail1;
++		goto fail1c;
+ 	}
+ 	if (gpio_is_valid(udc->board.vbus_pin)) {
+ 		retval = gpio_request(udc->board.vbus_pin, "udc_vbus");
+@@ -1849,6 +1857,13 @@ fail3:
+ 		gpio_free(udc->board.vbus_pin);
+ fail2:
+ 	free_irq(udc->udp_irq, udc);
++fail1c:
++	clk_unprepare(udc->iclk);
++fail1b:
++	clk_unprepare(udc->fclk);
++fail1a:
++	if (IS_ENABLED(CONFIG_COMMON_CLK))
++		clk_unprepare(udc->uclk);
+ fail1:
+ 	if (IS_ENABLED(CONFIG_COMMON_CLK) && !IS_ERR(udc->uclk))
+ 		clk_put(udc->uclk);
+@@ -1897,6 +1912,11 @@ static int __exit at91udc_remove(struct platform_device *pdev)
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	release_mem_region(res->start, resource_size(res));
+ 
++	if (IS_ENABLED(CONFIG_COMMON_CLK))
++		clk_unprepare(udc->uclk);
++	clk_unprepare(udc->fclk);
++	clk_unprepare(udc->iclk);
++
+ 	clk_put(udc->iclk);
+ 	clk_put(udc->fclk);
+ 	if (IS_ENABLED(CONFIG_COMMON_CLK))
 -- 
 2.2.1
 
