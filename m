@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757604AbbAINqk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 08:46:40 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49922 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753251AbbAINqj (ORCPT
+	id S1757196AbbAINuG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 08:50:06 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:53663 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790AbbAINuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 08:46:39 -0500
+	Fri, 9 Jan 2015 08:50:03 -0500
+Date: Fri, 9 Jan 2015 05:49:54 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Davidlohr Bueso <dave@stgolabs.net>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH tip/core/rcu 01/14] rcu: Protect rcu_boost() lockless
+ accesses with ACCESS_ONCE()
+Message-ID: <20150109134954.GO5280@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20150107173215.GA897@linux.vnet.ibm.com>
+ <1420651953-2651-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20150108094102.GD29390@twins.programming.kicks-ass.net>
+ <20150108152230.GL5280@linux.vnet.ibm.com>
+ <1420785714.25454.1.camel@stgolabs.net>
 MIME-Version: 1.0
-In-Reply-To: <871tn4uv0j.wl%kuninori.morimoto.gx@renesas.com>
-References: <878ulzx6hr.wl%kuninori.morimoto.gx@gmail.com> <20140922130026.GK3290@leverpostej>
- <CAMuHMdX22z97SbGS1HDiYfJ1PXxyEN2S8D7w4sr+4bUwD+mJZw@mail.gmail.com>
- <20140922132743.GM3290@leverpostej> <87y4rfhmgl.wl%kuninori.morimoto.gx@renesas.com>
- <1415845309.4269.6.camel@perches.com> <20141113025105.GA16652@verge.net.au>
- <87vbmjhj00.wl%kuninori.morimoto.gx@renesas.com> <20141113110740.GE3815@sirena.org.uk>
- <87k32yd0bd.wl%kuninori.morimoto.gx@renesas.com> <20141114093554.GC3810@ulmo>
- <87y4ra8xac.wl%kuninori.morimoto.gx@renesas.com> <5469CD47.3040409@cogentembedded.com>
- <877fytxsde.wl%kuninori.morimoto.gx@renesas.com> <87egsob2cl.wl%kuninori.morimoto.gx@renesas.com>
- <5478603D.1080404@cogentembedded.com> <87d282sl6w.wl%kuninori.morimoto.gx@renesas.com>
- <87lhm7t37l.wl%kuninori.morimoto.gx@renesas.com> <87egr4vcxu.wl%kuninori.morimoto.gx@renesas.com>
- <54AF5AB0.2050208@wwwdotorg.org> <871tn4uv0j.wl%kuninori.morimoto.gx@renesas.com>
-From: Rob Herring <robh@kernel.org>
-Date: Fri, 9 Jan 2015 07:46:16 -0600
-X-Google-Sender-Auth: dRsDE2esXwWiXqzhqYcbz2k0_d4
-Message-ID: <CAL_Jsq+GjM+3M63amyh3Rvijkz7Lch_cdUt9vScc9wZeOubOPA@mail.gmail.com>
-Subject: Re: [PATCH v5][resend v4] of: replace Asahi Kasei Corp vendor prefix
-To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mark Brown <broonie@kernel.org>,
-        ALSA Development Mailing List <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Simon Horman <horms@verge.net.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420785714.25454.1.camel@stgolabs.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15010913-0013-0000-0000-000007C38AB4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 9, 2015 at 4:07 AM, Kuninori Morimoto
-<kuninori.morimoto.gx@renesas.com> wrote:
->
-> Hi Stephen
->
-> Thank you for your feedback
->
->> > I'm sending this "of: replace Asahi Kasei Corp vendor prefix" during
->> > half-year (since Jun 2014) , many times. But, no-one care it.
->> > I don't know who is the best maintainer.
->> >  - Stephen : because it has Tegra ?
->> >  - Olof    : because it has Tegra (= ARM) ?
->> >  - Arnd    : because it has Tegra (= ARM) ?
->> >  - Matthias: because it has Tegra (= ARM SoC) ?
->> >  - Rob     : because DT ?
->> >  - Andrew  : Last chance ?
->> >
->> > But, could you please care this patch ?
->> > I will re-send it again
->>
->> It doesn't seem to be ack'd by any of the DT maintainers. Retro-actively
->> changing a DT vendor name would need that, I think.
->
-> Rob ?
-> I had sent this patch to him since half-years ago, many times...
-> Or other maintainer ?
->
->> Thierry and Alex (both Tegra maintainers) appear to have ack'd it, so it
->> seems they expect it to go through some tree other than Tegra. Weren't
->> there a bunch of related patches along with this (e.g. updating relevant
->> drivers to support both prefixes?) so it was expected this patch would
->> be applied together with them?
->
-> I guess they expected it goes to DT branch (?)
-> This is only 1 patch. it doesn't have related patch-set
+On Thu, Jan 08, 2015 at 10:41:54PM -0800, Davidlohr Bueso wrote:
+> On Thu, 2015-01-08 at 07:22 -0800, Paul E. McKenney wrote:
+> > > Didn't we just obsolete ACCESS_ONCE with that {READ,WRITE}_ONCE stuff?
+> > 
+> > Indeed we did!  But that was after I did this commit back on October 29th.
+> > 
+> > I am planning a bulk change to READ_ONCE() and ASSIGN_ONCE() either as
+> > the last patch for 3.20 or as the first one for 3.21.  Probably as the
+> > first for 3.21 to minimize rebasing hassles with any needed 3.20 fixes.
+> 
+> That reminds me, I think the new conversion for stores will most likely
+> introduce silly arg bugs:
+> 
+> -       ACCESS_ONCE(a) = b;
+> +       ASSIGN_ONCE(b, a);
 
-It is in my queue. If the users of it are fine with breaking things,
-who am I to argue with them.
+I was planning to do mine by hand for this sort of reason.
 
-Rob
+Or are you thinking of something more subtle than the case where
+"b" is an unparenthesized comma-separated expression?
+
+							Thanx, Paul
+
