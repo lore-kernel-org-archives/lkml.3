@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757629AbbAINNa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 08:13:30 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55402 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757560AbbAINN2 (ORCPT
+	id S932463AbbAINP1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 08:15:27 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:62518 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757160AbbAINP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 08:13:28 -0500
-Date: Fri, 9 Jan 2015 13:13:22 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mason <mpeg.blue@free.fr>
-Cc: Linux ARM <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: ioremap vs remap_pfn_range, VMSPLIT, etc
-Message-ID: <20150109131322.GO12302@n2100.arm.linux.org.uk>
-References: <54AFD09E.1010806@free.fr>
+	Fri, 9 Jan 2015 08:15:26 -0500
+Message-ID: <54AFD468.2020609@gmail.com>
+Date: Fri, 09 Jan 2015 14:15:20 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54AFD09E.1010806@free.fr>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Vince Weaver <vincent.weaver@maine.edu>
+CC: mtk.manpages@gmail.com, xmtk.manpages@gmail.com, linux-man@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: Re: [patch] perf_event_open.2 clarify the PERF_FLAG_FD_* flags
+References: <alpine.DEB.2.11.1501081201020.25399@vincent-weaver-1.umelst.maine.edu>
+In-Reply-To: <alpine.DEB.2.11.1501081201020.25399@vincent-weaver-1.umelst.maine.edu>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 01:59:10PM +0100, Mason wrote:
-> Hello everyone,
+Hi Vince,
+
+On 01/08/2015 06:04 PM, Vince Weaver wrote:
 > 
-> Yesterday, I used /dev/mem to mmap 2 GB and (to my surprise) it worked.
-> Specifically, I opened /dev/mem O_RDWR | O_SYNC
-> then called
->   mmap(NULL, 1U<<31, PROT_WRITE, MAP_SHARED, fd, 0x80000000);
+> This change clarifies the behavior of the PERF_FLAG_FD_OUTPUT and
+> PERF_FLAG_FD_NO_GROUP flags to perf_event_open(), and removes
+> the related FIXME comments.
 
-So you asked to map 2GB starting at 2GB physical.
+Patch applied. Thank you!
 
-> And mmap returned a valid pointer.
+> While writing tests to validate the behavior of these flags I
+> discovered that PERF_FLAG_FD_OUTPUT has been broken since the
+> 2.6.35 kernel release.
 
-And that mapping would have been created to map physical addresses
-0x80000000-0xffffffff inclusive.
+Sigh!
 
-> I was expecting it to fail.
+Cheers,
+
+Michael
+
+
+> Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
 > 
-> - the kernel is configured with VMSPLIT_3G (3G/1G user/kernel)
+> diff --git a/man2/perf_event_open.2 b/man2/perf_event_open.2
+> index 8bde791..7181c29 100644
+> --- a/man2/perf_event_open.2
+> +++ b/man2/perf_event_open.2
+> @@ -149,14 +149,17 @@ then
+>  .BR execve (2).
+>  .TP
+>  .BR PERF_FLAG_FD_NO_GROUP
+> -.\" FIXME . The following sentence is unclear
+> -This flag allows creating an event as part of an event group but
+> -having no group leader.
+> -It is unclear why this is useful.
+> -.\" FIXME . So, why is it useful?
+> -.TP
+> -.BR PERF_FLAG_FD_OUTPUT
+> -This flag reroutes the output from an event to the group leader.
+> +This flag tells the event to ignore the
+> +.IR group_fd
+> +parameter except for the purpose of setting up output redirection
+> +using the
+> +.B PERF_FLAG_FD_OUTPUT
+> +flag.
+> +.TP
+> +.BR PERF_FLAG_FD_OUTPUT " (broken since Linux 2.6.35)."
+> +This flag re-routes the event's sampled output to instead
+> +be included in the mmap buffer of the event specified by
+> +.IR group_fd .
+>  .TP
+>  .BR PERF_FLAG_PID_CGROUP " (since Linux 2.6.39)."
+>  This flag activates per-container system-wide monitoring.
+> 
 
-This has no bearing on the above.
-
-> - the kernel manages 256 MB RAM
-> - there is roughly 750 MB of VMALLOC space, no highmem
-
-vmalloc has no bearing on the above, mmap() doesn't allocate anything
-into vmalloc space.
-
-> If I requested the same mapping *within the kernel* using ioremap,
-> would that fail because of limited VMALLOC space?
-
-Correct.
-
-> Moving to arch-specific questions (namely ARM Cortex-A9).
-> If I understand correctly (which is very possibly NOT the case)
-> the CPU has two registers pointing to page tables, one for
-> the current process, one for the kernel. And the CPU automatically
-> picks the correct one, based on the active context?
-> It would seem possible to have a full 4G for process, and a full 4G
-> for the kernel, using that method, no? (Like Ingo's old 4G/4G split).
-> Without the performance overhead of fiddling with the page tables.
-> What am I missing?
-
-It's possible to use both, but the CPU selects the page table register
-according to the virtual address.  So it's not possible to have 4G for
-both.  There's only a restricted set of options:  2G / 2G, where the
-bottom 2G of virtual space uses TTBR0 and the upper 2G uses TTBR1.
-1G / 3G (1G for TTBR0, 3G for TTBR1).
-
-We don't use it because most people run with 3G for userspace, which
-isn't supported in hardware.
 
 -- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
