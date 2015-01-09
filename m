@@ -1,76 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246AbbAIAqc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 19:46:32 -0500
-Received: from mga03.intel.com ([134.134.136.65]:21847 "EHLO mga03.intel.com"
+	id S1752054AbbAIA4a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 19:56:30 -0500
+Received: from nupi.pair.com ([209.68.5.149]:19769 "EHLO nupi.pair.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750949AbbAIAqQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 19:46:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="509612666"
-Message-ID: <1420764374.6201.116.camel@linux.intel.com>
-Subject: Re: [LKP] [xen] 054954eb051f: -49.7% kernel-size.bss
-From: Huang Ying <ying.huang@linux.intel.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Juergen Gross <jgross@suse.com>, LKP ML <lkp@01.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 09 Jan 2015 08:46:14 +0800
-In-Reply-To: <54AE9781.5050501@citrix.com>
-References: <1420685923.6201.91.camel@linux.intel.com>
-	 <54AE9781.5050501@citrix.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1750876AbbAIA42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 19:56:28 -0500
+X-Greylist: delayed 413 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Jan 2015 19:56:28 EST
+Message-ID: <54AF259A.3070204@flaterco.com>
+Date: Thu, 08 Jan 2015 19:49:30 -0500
+From: David Flater <vger@flaterco.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Takashi Iwai <tiwai@suse.de>
+CC: Jaroslav Kysela <perex@perex.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Alsa Devel <alsa-devel@alsa-project.org>
+Subject: [PATCH] ALSA: fix emu8000 DRAM sizing for AWE64 Value
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2015-01-08 at 14:43 +0000, David Vrabel wrote:
-> On 08/01/15 02:58, Huang Ying wrote:
-> > FYI, we noticed the below changes on
-> > 
-> > commit 054954eb051f35e74b75a566a96fe756015352c8 ("xen: switch to linear virtual mapped sparse p2m list")
-> > 
-> > testbox/testcase/testparams: vm-kbuild-yocto-ia32/boot/1
-> > 
-> > 0aad5689837c882d  054954eb051f35e74b75a566a9  
-> > ----------------  --------------------------  
-> >          %stddev     %change         %stddev
-> >              \          |                \  
-> >    4161536 ±  0%     -49.7%    2093056 ±  0%  kernel-size.bss
-> 
-> This is a good thing, right?
+Applicable to any kernel since 2013:
 
-Yes.  I think so.
+The special case added in commit 1338fc97d07a did not handle the possibility
+that the address space on an AWE64 Value would wrap around at 512 KiB.  That
+is what it does, so the memory is still not detected on those cards.
 
-> >                                     kernel-size.bss
-> > 
-> >   4.5e+06 *+-*--*--*-*--*--*--*--*--*--*--*-*--*--*--*----------------------+
-> >           |                                             *..*..              |
-> >           |                                                   *..*.*..*..*..*
-> >     4e+06 ++                                                                |
-> >           |                                                                 |
-> >           |                                                                 |
-> >   3.5e+06 ++                                                                |
-> >           |                                                                 |
-> >     3e+06 ++                                                                |
-> >           |                                                                 |
-> >           |                                                                 |
-> >   2.5e+06 ++                                                                |
-> >           |                                                                 |
-> >           O  O  O  O O  O  O  O  O  O  O  O O  O  O  O  O  O  O  O O        |
-> >     2e+06 ++----------------------------------------------------------------+
-> 
-> I have no idea what this graph is supposed to be showing.
-> 
+Fix that with a logic clean-up that eliminates the need for a special case.
+Also log the amount of memory detected at level INFO and add sufficiently
+verbose debugging to diagnose any additional faults of this kind.
 
-It shows the kernel-size.bss during bisection.  From it, it can be seen
-that the bisect should be good, the good value points are separated with
-the bad value points clearly.
+Tested on unexpanded CT4390 (4 MiB), CT4520 (512 KiB), and CT4380 (512 KiB).
+The latter is commonly said to come with 1 MiB of DRAM, but Creative's AWE
+Control app agreed that mine has only 512 KiB.  It has the same memory chip
+as the CT4520.
 
-Best Regards,
-Huang, Ying
+Signed-off-by: David Flater <dave@flaterco.com>
+---
+History:
+2015-01-08  v1 patch sent to LKML, Alsa Devel and maintainers.
 
+The affected function first appeared in alsa-driver-0.3.0 and was merged in
+linux-2.5.5.  Its somewhat different ancestor was in sound/oss/awe_wave.c.
+
+AFAICT, the manufacturer never disclosed the right way to do it.  In the
+AWE32 Developer's Information Pack (1994-1996) the RAM sizing function was
+implemented in object files with a license that prohibited even disassembly.
+
+ sound/isa/sb/emu8000.c | 127 +++++++++++++++++++++++++++++--------------------
+ 1 file changed, 76 insertions(+), 51 deletions(-)
+
+diff --git a/sound/isa/sb/emu8000.c b/sound/isa/sb/emu8000.c
+index 45fcdff..3aa2250 100644
+--- a/sound/isa/sb/emu8000.c
++++ b/sound/isa/sb/emu8000.c
+@@ -378,13 +378,13 @@ init_arrays(struct snd_emu8000 *emu)
+ static void
+ size_dram(struct snd_emu8000 *emu)
+ {
+-	int i, size, detected_size;
++	int i, size;
++	unsigned short rdback;
+ 
+ 	if (emu->dram_checked)
+ 		return;
+ 
+ 	size = 0;
+-	detected_size = 0;
+ 
+ 	/* write out a magic number */
+ 	snd_emu8000_dma_chan(emu, 0, EMU8000_RAM_WRITE);
+@@ -392,55 +392,81 @@ size_dram(struct snd_emu8000 *emu)
+ 	EMU8000_SMALW_WRITE(emu, EMU8000_DRAM_OFFSET);
+ 	EMU8000_SMLD_WRITE(emu, UNIQUE_ID1);
+ 	snd_emu8000_init_fm(emu); /* This must really be here and not 2 lines back even */
+-
+-	while (size < EMU8000_MAX_DRAM) {
+-
+-		size += 512 * 1024;  /* increment 512kbytes */
+-
+-		/* Write a unique data on the test address.
+-		 * if the address is out of range, the data is written on
+-		 * 0x200000(=EMU8000_DRAM_OFFSET).  Then the id word is
+-		 * changed by this data.
+-		 */
+-		/*snd_emu8000_dma_chan(emu, 0, EMU8000_RAM_WRITE);*/
+-		EMU8000_SMALW_WRITE(emu, EMU8000_DRAM_OFFSET + (size>>1));
+-		EMU8000_SMLD_WRITE(emu, UNIQUE_ID2);
+-		snd_emu8000_write_wait(emu);
+-
+-		/*
+-		 * read the data on the just written DRAM address
+-		 * if not the same then we have reached the end of ram.
+-		 */
+-		/*snd_emu8000_dma_chan(emu, 0, EMU8000_RAM_READ);*/
+-		EMU8000_SMALR_WRITE(emu, EMU8000_DRAM_OFFSET + (size>>1));
+-		/*snd_emu8000_read_wait(emu);*/
+-		EMU8000_SMLD_READ(emu); /* discard stale data  */
+-		if (EMU8000_SMLD_READ(emu) != UNIQUE_ID2)
+-			break; /* no memory at this address */
++	snd_emu8000_write_wait(emu);
++
++	/* If that didn't work, we have no RAM at all. */
++	EMU8000_SMALR_WRITE(emu, EMU8000_DRAM_OFFSET);
++	rdback = EMU8000_SMLD_READ(emu);
++	snd_printdd("EMU8000 [0x%lx]: initial discard data = %04hx\n",
++		emu->port1, rdback);
++	rdback = EMU8000_SMLD_READ(emu);
++	snd_printdd("EMU8000 [0x%lx]: initial readback = %04hx\n",
++		emu->port1, rdback);
++	if (rdback == UNIQUE_ID1) {
+ 		snd_emu8000_read_wait(emu);
+ 
+ 		/*
+-		 * If it is the same it could be that the address just
+-		 * wraps back to the beginning; so check to see if the
+-		 * initial value has been overwritten.
++		 * If a write succeeds at the beginning of a 512 KiB page we
++		 * assume that the whole page is there.
+ 		 */
+-		EMU8000_SMALR_WRITE(emu, EMU8000_DRAM_OFFSET);
+-		EMU8000_SMLD_READ(emu); /* discard stale data  */
+-		if (EMU8000_SMLD_READ(emu) != UNIQUE_ID1)
+-			break; /* we must have wrapped around */
+-		snd_emu8000_read_wait(emu);
+-
+-		/* Otherwise, it's valid memory. */
+-		detected_size = size + 512 * 1024;
+-	}
+-
+-	/* Distinguish 512 KiB from 0. */
+-	if (detected_size == 0) {
+-		snd_emu8000_read_wait(emu);
+-		EMU8000_SMALR_WRITE(emu, EMU8000_DRAM_OFFSET);
+-		EMU8000_SMLD_READ(emu); /* discard stale data  */
+-		if (EMU8000_SMLD_READ(emu) == UNIQUE_ID1)
+-			detected_size = 512 * 1024;
++		size = 512 * 1024;
++
++		while (size < EMU8000_MAX_DRAM) {
++			/*
++			 * Write a unique data on the test address.  If the
++			 * address is out of range, the data is written on
++			 * 0x200000(=EMU8000_DRAM_OFFSET).  Then the id word
++			 * is changed by this data.
++			 */
++			EMU8000_SMALW_WRITE(emu, EMU8000_DRAM_OFFSET +
++				(size>>1));
++			EMU8000_SMLD_WRITE(emu, UNIQUE_ID2);
++			snd_emu8000_write_wait(emu);
++
++			/*
++			 * Read the data on the just written DRAM address.
++			 * If not the same then we have reached the end of RAM.
++			 */
++			EMU8000_SMALR_WRITE(emu, EMU8000_DRAM_OFFSET +
++				(size>>1));
++			rdback = EMU8000_SMLD_READ(emu);
++			snd_printdd("EMU8000 [0x%lx]: ID2 discard data = %04hx\n",
++				emu->port1, rdback);
++			rdback = EMU8000_SMLD_READ(emu);
++			snd_printdd("EMU8000 [0x%lx]: ID2 readback = %04hx\n",
++				emu->port1, rdback);
++			if (rdback != UNIQUE_ID2) {
++				snd_printdd("EMU8000 [0x%lx]: ID2 break\n",
++					emu->port1);
++				break; /* no memory at this address */
++			}
++			snd_emu8000_read_wait(emu);
++
++			/*
++			 * If it is the same it could be that the address just
++			 * wraps back to the beginning, so check to see if the
++			 * initial value has been overwritten.
++			 */
++			EMU8000_SMALR_WRITE(emu, EMU8000_DRAM_OFFSET);
++			rdback = EMU8000_SMLD_READ(emu);
++			snd_printdd("EMU8000 [0x%lx]: ID1 discard data = %04hx\n",
++				emu->port1, rdback);
++			rdback = EMU8000_SMLD_READ(emu);
++			snd_printdd("EMU8000 [0x%lx]: ID1 readback = %04hx\n",
++				emu->port1, rdback);
++			if (rdback != UNIQUE_ID1) {
++				snd_printdd("EMU8000 [0x%lx]: ID1 break\n",
++					emu->port1);
++				break; /* may have wrapped around */
++			}
++			snd_emu8000_read_wait(emu);
++
++			/* Otherwise, it's valid memory. */
++			size += 512 * 1024;
++		}
++	} else {
++		snd_printdd("EMU8000 [0x%lx]: initial test failed\n",
++			emu->port1);
+ 	}
+ 
+ 	/* wait until FULL bit in SMAxW register is false */
+@@ -454,10 +480,9 @@ size_dram(struct snd_emu8000 *emu)
+ 	snd_emu8000_dma_chan(emu, 0, EMU8000_RAM_CLOSE);
+ 	snd_emu8000_dma_chan(emu, 1, EMU8000_RAM_CLOSE);
+ 
+-	snd_printdd("EMU8000 [0x%lx]: %d Kb on-board memory detected\n",
+-		    emu->port1, detected_size/1024);
+-
+-	emu->mem_size = detected_size;
++	snd_printk(KERN_INFO "sbawe [0x%lx]: %d B on-board DRAM detected\n",
++		emu->port1, size);
++	emu->mem_size = size;
+ 	emu->dram_checked = 1;
+ }
+ 
+-- 
+1.8.4
 
