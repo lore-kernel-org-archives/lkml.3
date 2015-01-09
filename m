@@ -1,131 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932972AbbAIPxn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:53:43 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:36989 "EHLO mail.skyhub.de"
+	id S1757777AbbAIPyx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:54:53 -0500
+Received: from mga11.intel.com ([192.55.52.93]:47683 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752200AbbAIPxk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:53:40 -0500
-Date: Fri, 9 Jan 2015 16:53:35 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        =?utf-8?B?RnLDqWTDqXJpYw==?= Weisbecker <fweisbec@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>, kvm list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/3] x86_64,entry: Remove the syscall exit audit and
- schedule optimizations
-Message-ID: <20150109155334.GE13637@pd.tnic>
-References: <cover.1415403984.git.luto@amacapital.net>
- <1072a16a8d4ad1b11b8062f76e3236b9771b0fb6.1415403984.git.luto@amacapital.net>
+	id S1751247AbbAIPyv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 10:54:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="438556966"
+Date: Fri, 9 Jan 2015 23:54:30 +0800
+From: kbuild test robot <fengguang.wu@intel.com>
+To: "Sumit.Saxena@avagotech.com" <Sumit.Saxena@avagotech.com>
+Cc: kbuild-all@01.org, Christoph Hellwig <hch@lst.de>,
+        Sumit Saxena <sumit.saxena@avagotech.com>,
+        Chaitra Basappa <chaitra.basappa@avagotech.com>,
+        Kashyap Desai <kashyap.desai@avagotech.com>,
+        Uday Lingala <uday.lingala@avagotech.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        megaraidlinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH hch-scsi-queue] megaraid_sas:
+ megasas_complete_outstanding_ioctls() can be static
+Message-ID: <20150109155430.GA124315@lkp-sb04>
+References: <201501092322.aenpxV0o%fengguang.wu@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1072a16a8d4ad1b11b8062f76e3236b9771b0fb6.1415403984.git.luto@amacapital.net>
+In-Reply-To: <201501092322.aenpxV0o%fengguang.wu@intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: fengguang.wu@intel.com
+X-SA-Exim-Scanned: No (on bee); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 03:58:19PM -0800, Andy Lutomirski wrote:
-> We used to optimize rescheduling and audit on syscall exit.  Now that
-> the full slow path is reasonably fast, remove these optimizations.
-> 
-> This adds something like 10ns to the previously optimized paths on my
-> computer, presumably due mostly to SAVE_REST / RESTORE_REST.
-> 
-> I think that we should eventually replace both the syscall and
-> non-paranoid interrupt exit slow paths with a pair of C functions
-> along the lines of the syscall entry hooks.
-> 
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->  arch/x86/kernel/entry_64.S | 52 +++++-----------------------------------------
->  1 file changed, 5 insertions(+), 47 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index a5afdf0f7fa4..222dc5c45ac3 100644
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -427,15 +427,12 @@ system_call_fastpath:
->   * Has incomplete stack frame and undefined top of stack.
->   */
->  ret_from_sys_call:
-> -	movl $_TIF_ALLWORK_MASK,%edi
-> -	/* edi:	flagmask */
-> -sysret_check:
-> +	testl $_TIF_ALLWORK_MASK,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-> +	jnz int_ret_from_sys_call_fixup	/* Go the the slow path */
-> +
->  	LOCKDEP_SYS_EXIT
->  	DISABLE_INTERRUPTS(CLBR_NONE)
->  	TRACE_IRQS_OFF
-> -	movl TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET),%edx
-> -	andl %edi,%edx
-> -	jnz  sysret_careful
->  	CFI_REMEMBER_STATE
->  	/*
->  	 * sysretq will re-enable interrupts:
-> @@ -449,49 +446,10 @@ sysret_check:
->  	USERGS_SYSRET64
->  
->  	CFI_RESTORE_STATE
-> -	/* Handle reschedules */
-> -	/* edx:	work, edi: workmask */
-> -sysret_careful:
-> -	bt $TIF_NEED_RESCHED,%edx
-> -	jnc sysret_signal
-> -	TRACE_IRQS_ON
-> -	ENABLE_INTERRUPTS(CLBR_NONE)
-> -	pushq_cfi %rdi
-> -	SCHEDULE_USER
-> -	popq_cfi %rdi
-> -	jmp sysret_check
->  
-> -	/* Handle a signal */
-> -sysret_signal:
-> -	TRACE_IRQS_ON
-> -	ENABLE_INTERRUPTS(CLBR_NONE)
-> -#ifdef CONFIG_AUDITSYSCALL
-> -	bt $TIF_SYSCALL_AUDIT,%edx
-> -	jc sysret_audit
-> -#endif
-> -	/*
-> -	 * We have a signal, or exit tracing or single-step.
-> -	 * These all wind up with the iret return path anyway,
-> -	 * so just join that path right now.
-> -	 */
-> +int_ret_from_sys_call_fixup:
->  	FIXUP_TOP_OF_STACK %r11, -ARGOFFSET
-> -	jmp int_check_syscall_exit_work
-> -
-> -#ifdef CONFIG_AUDITSYSCALL
-> -	/*
-> -	 * Return fast path for syscall audit.  Call __audit_syscall_exit()
-> -	 * directly and then jump back to the fast path with TIF_SYSCALL_AUDIT
-> -	 * masked off.
-> -	 */
-> -sysret_audit:
-> -	movq RAX-ARGOFFSET(%rsp),%rsi	/* second arg, syscall return value */
-> -	cmpq $-MAX_ERRNO,%rsi	/* is it < -MAX_ERRNO? */
-> -	setbe %al		/* 1 if so, 0 if not */
-> -	movzbl %al,%edi		/* zero-extend that into %edi */
-> -	call __audit_syscall_exit
-> -	movl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),%edi
-> -	jmp sysret_check
-> -#endif	/* CONFIG_AUDITSYSCALL */
-> +	jmp int_ret_from_sys_call
+drivers/scsi/megaraid/megaraid_sas_base.c:1701:6: sparse: symbol 'megasas_complete_outstanding_ioctls' was not declared. Should it be static?
 
-Ok, dumb question: what is replacing that audit functionality now?
-Or are we remaining with the single path down syscall_trace_leave()?
-AFAICT, the intention is to direct everything to int_ret_from_sys_call
-after the syscall has been done so that paths can get simplified. Which
-is a good thing, AFAICT.
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+---
+ megaraid_sas_base.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Acked-by: Borislav Petkov <bp@suse.de>
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
+index d4e9c4e..031921e7 100644
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -1698,7 +1698,7 @@ static int megasas_slave_alloc(struct scsi_device *sdev)
+ * @instance:				Adapter soft state
+ *
+ */
+-void megasas_complete_outstanding_ioctls(struct megasas_instance *instance)
++static void megasas_complete_outstanding_ioctls(struct megasas_instance *instance)
+ {
+ 	int i;
+ 	struct megasas_cmd *cmd_mfi;
