@@ -1,164 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758334AbbAIXSg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 18:18:36 -0500
-Received: from mail-yk0-f176.google.com ([209.85.160.176]:34983 "EHLO
-	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568AbbAIXSe (ORCPT
+	id S1758366AbbAIXTz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 18:19:55 -0500
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:47496 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752568AbbAIXTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 18:18:34 -0500
-Date: Fri, 9 Jan 2015 18:18:23 -0500
-From: "George G. Davis" <ggdavisiv@gmail.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        "George G. Davis" <george_davis@mentor.com>
-Subject: Re: [PATCH] drivers: of: Export of_reserved_mem_device_{init,release}
-Message-ID: <20150109231823.GA86855@gandalf.middle.earth.net>
-References: <1420813745-130341-1-git-send-email-george_davis@mentor.com>
- <CAL_JsqJaT-Y7DHQS5ZZ0TP6r0iPDbUZwU-Kec5MSE7DOPgZxCg@mail.gmail.com>
- <20150109183310.GA38065@gandalf.middle.earth.net>
- <20150109220552.GA86398@gandalf.middle.earth.net>
- <CAL_JsqLKMw4bvov+t7SkEsY5Gu_rrJ5yDKhB6BckuTFfD4-MSA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL_JsqLKMw4bvov+t7SkEsY5Gu_rrJ5yDKhB6BckuTFfD4-MSA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 9 Jan 2015 18:19:53 -0500
+From: Shrikrishna Khare <skhare@vmware.com>
+To: sbhatewara@vmware.com, pv-drivers@vmware.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Shrikrishna Khare <skhare@vmware.com>,
+        Srividya Murali <smurali@vmware.com>
+Subject: [PATCH net-next] Driver: Vmxnet3: Reinitialize vmxnet3 backend on wakeup from hibernate
+Date: Fri,  9 Jan 2015 15:19:14 -0800
+Message-Id: <1420845554-491-1-git-send-email-skhare@vmware.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 04:29:43PM -0600, Rob Herring wrote:
-> On Fri, Jan 9, 2015 at 4:05 PM, George G. Davis <ggdavisiv@gmail.com> wrote:
-> > On Fri, Jan 09, 2015 at 01:33:10PM -0500, George G. Davis wrote:
-> >> On Fri, Jan 09, 2015 at 11:53:01AM -0600, Rob Herring wrote:
-> >> > On Fri, Jan 9, 2015 at 8:29 AM, George G. Davis <ggdavisiv@gmail.com> wrote:
-> >> > > Export of_reserved_mem_device_{init,release} so that modules
-> >> > > can initialize and release their assigned per-device cma_area.
-> >> >
-> >> > I believe the original intent was for the core bus code to call these
-> >> > functions. While the commit adding them says "automated assignment"
-> >> > that part did not go in.
-> >>
-> >> I suspected that there may have been a bit of missing magic.  The only
-> >> use of these functions that I was able to find was in an earlier out of
-> >> tree patch series where these functions were called from the s5p-mfc
-> >> driver:
-> >>
-> >> http://lists.linaro.org/pipermail/linaro-mm-sig/2014-August/004140.html
-> >>
-> >> I agree that "automated assignment" via core bus code would be a better
-> >> solution but I don't know where to add the calls.
-> >
-> > How about something like the following for automated assignment?:
-> 
-> It seems Grant wasn't happy about the core code doing this[1].
+Failing to reinitialize on wakeup results in loss of network connectivity for
+vmxnet3 interface.
 
-For what it's worth, I was rather liking the automagic assignments since
-no driver changes were necessary for that approach but I do agree with
-the rationale for not adding it to core bus code.
+Signed-off-by: Srividya Murali <smurali@vmware.com>
+Signed-off-by: Shrikrishna Khare <skhare@vmware.com>
+Reviewed-by: Shreyas N Bhatewara <sbhatewara@vmware.com>
+---
+ drivers/net/vmxnet3/vmxnet3_drv.c |   44 +++++++++++++++++++++----------------
+ drivers/net/vmxnet3/vmxnet3_int.h |    4 +-
+ 2 files changed, 27 insertions(+), 21 deletions(-)
 
-> So I
-> guess your original patch was okay except you should use
-> EXPORT_SYMBOL_GPL. I can fix that up if you agree.
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index 7af1f5c..3143981 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -3290,27 +3290,15 @@ skip_arp:
+ static int
+ vmxnet3_resume(struct device *device)
+ {
+-	int err, i = 0;
++	int err;
+ 	unsigned long flags;
+ 	struct pci_dev *pdev = to_pci_dev(device);
+ 	struct net_device *netdev = pci_get_drvdata(pdev);
+ 	struct vmxnet3_adapter *adapter = netdev_priv(netdev);
+-	struct Vmxnet3_PMConf *pmConf;
+ 
+ 	if (!netif_running(netdev))
+ 		return 0;
+ 
+-	/* Destroy wake-up filters. */
+-	pmConf = adapter->pm_conf;
+-	memset(pmConf, 0, sizeof(*pmConf));
+-
+-	adapter->shared->devRead.pmConfDesc.confVer = cpu_to_le32(1);
+-	adapter->shared->devRead.pmConfDesc.confLen = cpu_to_le32(sizeof(
+-								  *pmConf));
+-	adapter->shared->devRead.pmConfDesc.confPA =
+-		cpu_to_le64(adapter->pm_conf_pa);
+-
+-	netif_device_attach(netdev);
+ 	pci_set_power_state(pdev, PCI_D0);
+ 	pci_restore_state(pdev);
+ 	err = pci_enable_device_mem(pdev);
+@@ -3319,15 +3307,31 @@ vmxnet3_resume(struct device *device)
+ 
+ 	pci_enable_wake(pdev, PCI_D0, 0);
+ 
++	vmxnet3_alloc_intr_resources(adapter);
++
++	/* During hibernate and suspend, device has to be reinitialized as the
++	 * device state need not be preserved.
++	 */
++
++	/* Need not check adapter state as other reset tasks cannot run during
++	 * device resume.
++	 */
+ 	spin_lock_irqsave(&adapter->cmd_lock, flags);
+ 	VMXNET3_WRITE_BAR1_REG(adapter, VMXNET3_REG_CMD,
+-			       VMXNET3_CMD_UPDATE_PMCFG);
++			       VMXNET3_CMD_QUIESCE_DEV);
+ 	spin_unlock_irqrestore(&adapter->cmd_lock, flags);
+-	vmxnet3_alloc_intr_resources(adapter);
+-	vmxnet3_request_irqs(adapter);
+-	for (i = 0; i < adapter->num_rx_queues; i++)
+-		napi_enable(&adapter->rx_queue[i].napi);
+-	vmxnet3_enable_all_intrs(adapter);
++	vmxnet3_tq_cleanup_all(adapter);
++	vmxnet3_rq_cleanup_all(adapter);
++
++	vmxnet3_reset_dev(adapter);
++	err = vmxnet3_activate_dev(adapter);
++	if (err != 0) {
++		netdev_err(netdev,
++			   "failed to re-activate on resume, error: %d", err);
++		vmxnet3_force_close(adapter);
++		return err;
++	}
++	netif_device_attach(netdev);
+ 
+ 	return 0;
+ }
+@@ -3335,6 +3339,8 @@ vmxnet3_resume(struct device *device)
+ static const struct dev_pm_ops vmxnet3_pm_ops = {
+ 	.suspend = vmxnet3_suspend,
+ 	.resume = vmxnet3_resume,
++	.freeze = vmxnet3_suspend,
++	.restore = vmxnet3_resume,
+ };
+ #endif
+ 
+diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
+index 048f020..6297d9f 100644
+--- a/drivers/net/vmxnet3/vmxnet3_int.h
++++ b/drivers/net/vmxnet3/vmxnet3_int.h
+@@ -69,10 +69,10 @@
+ /*
+  * Version numbers
+  */
+-#define VMXNET3_DRIVER_VERSION_STRING   "1.3.1.0-k"
++#define VMXNET3_DRIVER_VERSION_STRING   "1.3.2.0-k"
+ 
+ /* a 32-bit int, each byte encode a verion number in VMXNET3_DRIVER_VERSION */
+-#define VMXNET3_DRIVER_VERSION_NUM      0x01030100
++#define VMXNET3_DRIVER_VERSION_NUM      0x01030200
+ 
+ #if defined(CONFIG_PCI_MSI)
+ 	/* RSS only makes sense if MSI-X is supported. */
+-- 
+1.7.4.1
 
-Yes, please go ahead.
-
-
-Thanks!
-
---
-Regards,
-George
-
-> 
-> Rob
-> 
-> 
-> [1] https://lkml.org/lkml/2014/3/2/30
-> 
-> >
-> > diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> > index 9421fed..231b427 100644
-> > --- a/drivers/base/platform.c
-> > +++ b/drivers/base/platform.c
-> > @@ -14,6 +14,7 @@
-> >  #include <linux/platform_device.h>
-> >  #include <linux/of_device.h>
-> >  #include <linux/of_irq.h>
-> > +#include <linux/of_reserved_mem.h>
-> >  #include <linux/module.h>
-> >  #include <linux/init.h>
-> >  #include <linux/dma-mapping.h>
-> > @@ -509,9 +510,12 @@ static int platform_drv_probe(struct device *_dev)
-> >
-> >         ret = dev_pm_domain_attach(_dev, true);
-> >         if (ret != -EPROBE_DEFER) {
-> > +               of_reserved_mem_device_init(_dev);
-> >                 ret = drv->probe(dev);
-> > -               if (ret)
-> > +               if (ret) {
-> > +                       of_reserved_mem_device_release(_dev);
-> >                         dev_pm_domain_detach(_dev, true);
-> > +               }
-> >         }
-> >
-> >         if (drv->prevent_deferred_probe && ret == -EPROBE_DEFER) {
-> > @@ -534,6 +538,7 @@ static int platform_drv_remove(struct device *_dev)
-> >         int ret;
-> >
-> >         ret = drv->remove(dev);
-> > +       of_reserved_mem_device_release(_dev);
-> >         dev_pm_domain_detach(_dev, true);
-> >
-> >         return ret;
-> >
-> >
-> > --
-> > Regards,
-> > George
-> >>
-> >> > As it stands, there are no in tree users of
-> >> > these functions.
-> >> >
-> >> > Marek, comments?
-> >>
-> >> Thanks!
-> >>
-> >> --
-> >> Regards,
-> >> George
-> >>
-> >> >
-> >> > Rob
-> >> >
-> >> > >
-> >> > > Signed-off-by: George G. Davis <george_davis@mentor.com>
-> >> > > ---
-> >> > >  drivers/of/of_reserved_mem.c | 2 ++
-> >> > >  1 file changed, 2 insertions(+)
-> >> > >
-> >> > > diff --git a/drivers/of/of_reserved_mem.c b/drivers/of/of_reserved_mem.c
-> >> > > index dc566b3..5eeb5b2 100644
-> >> > > --- a/drivers/of/of_reserved_mem.c
-> >> > > +++ b/drivers/of/of_reserved_mem.c
-> >> > > @@ -265,6 +265,7 @@ int of_reserved_mem_device_init(struct device *dev)
-> >> > >
-> >> > >         return ret;
-> >> > >  }
-> >> > > +EXPORT_SYMBOL(of_reserved_mem_device_init);
-> >> > >
-> >> > >  /**
-> >> > >   * of_reserved_mem_device_release() - release reserved memory device structures
-> >> > > @@ -289,3 +290,4 @@ void of_reserved_mem_device_release(struct device *dev)
-> >> > >
-> >> > >         rmem->ops->device_release(rmem, dev);
-> >> > >  }
-> >> > > +EXPORT_SYMBOL(of_reserved_mem_device_release);
-> >> > > --
-> >> > > 1.9.3
-> >> > >
