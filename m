@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757415AbbAIJ4I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 04:56:08 -0500
-Received: from casper.infradead.org ([85.118.1.10]:51406 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757349AbbAIJ4H (ORCPT
+	id S1757429AbbAIJ4t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 04:56:49 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:55456 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754803AbbAIJ4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 04:56:07 -0500
-Date: Fri, 9 Jan 2015 10:56:03 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vaibhav Shinde <v.bhav.shinde@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        tj@kernel.org, Davidlohr Bueso <dave@stgolabs.net>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: Preemptionirqsoff latency issue
-Message-ID: <20150109095603.GB22386@worktop.programming.kicks-ass.net>
-References: <CAB5gottA3D_eJsHcGwO62fJtEqMqivX2kS5D-JhHphW9ADV88A@mail.gmail.com>
+	Fri, 9 Jan 2015 04:56:46 -0500
+Date: Fri, 9 Jan 2015 10:56:43 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Oded Gabbay <oded.gabbay@amd.com>
+Cc: Christian =?utf-8?B?S8O2bmln?= <christian.koenig@amd.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        David Airlie <airlied@linux.ie>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Dana Elifaz <Dana.Elifaz@amd.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org,
+        Alexander Deucher <Alexander.Deucher@amd.com>,
+        iommu@lists.linux-foundation.org, Arnd Bergmann <arnd@arndb.de>,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH 0/2] Change order of linkage in kernel makefiles for
+ amdkfd
+Message-ID: <20150109095642.GD27845@ulmo>
+References: <1419246435-7050-1-git-send-email-oded.gabbay@amd.com>
+ <1621810.aTt9O4Ghzs@avalon>
+ <549FEB52.4020103@amd.com>
+ <1678486.9ZXZnn5och@avalon>
+ <54A12028.7020303@amd.com>
+ <20150105154657.GJ12010@ulmo.nvidia.com>
+ <54AE910E.5060803@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KdquIMZPjGJQvRdI"
 Content-Disposition: inline
-In-Reply-To: <CAB5gottA3D_eJsHcGwO62fJtEqMqivX2kS5D-JhHphW9ADV88A@mail.gmail.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <54AE910E.5060803@amd.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 02:31:35PM +0530, Vaibhav Shinde wrote:
-> Hi All,
-> 
-> I have been checking preemption/irqs off latency with ftrace to find out
-> the reason for scheduling latency for my application -
-> 
-> echo 0 > options/function-trace
-> echo preemptirqsoff > current_tracer
-> echo 1 > tracing_on
-> echo 0 > tracing_max_latency
-> ./a.out                          /* Running my application */
-> echo 0 > tracing_on
-> 
-> #
-> # preemptirqsoff latency trace v1.1.5 on 3.10.33-g36cc57c-dirty
-> # --------------------------------------------------------------------
-> # latency: 5184 us, #4/4, CPU#0 | (M:preempt VP:0, KP:0, SP:0 HP:0 #P:1)
-> #    -----------------
-> #    | task: kworker/0:3-67 (uid:0 nice:0 policy:0 rt_prio:0)
-> #    -----------------
-> #  => started at: __mutex_lock_slowpath
-> #  => ended at:   schedule_preempt_disabled
-> #
-> #
-> #                  _------=> CPU#
-> #                 / _-----=> irqs-off
-> #                | / _----=> need-resched
-> #                || / _---=> hardirq/softirq
-> #                ||| / _--=> preempt-depth
-> #                |||| /     delay
-> #  cmd     pid   ||||| time  |   caller
-> #     \   /      |||||  \    |   /
-> kworker/-67      0...1    1us!: __mutex_lock_slowpath
-> kworker/-67      0.N.1 5183us+: schedule_preempt_disabled
-> kworker/-67      0.N.1 5186us+: trace_preempt_on <-schedule_preempt_disabled
-> kworker/-67      0.N.1 5223us : <stack trace>
-> => sub_preempt_count
-> => schedule_preempt_disabled
-> => __mutex_lock_slowpath
-> => mutex_lock
-> 
-> 
-> - As per the traces, I am getting a preemption off in mutex_lock for
-> 5184ms, which is really big value.
-> - The mutext lock is called from my code,
-> - what could be the issue that caused such a big latency ?
 
-mutex_lock will spin wait for the owner of the lock IFF the owner is on
-(another) CPU and the current CPU doesn't need to resched. And from the
-trace we can see N (need_resched) is only set at the 5ms and then we
-call schedule_preempt_disable() almost immediately.
+--KdquIMZPjGJQvRdI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-If you're interested in scheduling latency you should be looking at the
-delay between tasks waking up and tasks getting on the CPU. The above
-few lines simply do not provide enough information.
+On Thu, Jan 08, 2015 at 04:15:42PM +0200, Oded Gabbay wrote:
+> Hi Thierry,
+> Generally I agree with the issues you describe in the current design.
+> One task in our 2015 workplan is to change the whole method amdkfd is
+> loaded, so it can independently load at any time, regardless of the order of
+> loading between it and radeon and amd_iommu_v2. To reach that goal, I assume
+> we will have to use some form of deferred probing.
+
+Sounds good.
+
+> However, for the moment, this is the best band-aid I could think of, and
+> choosing between this band-aid or no band-aid at all, I prefer the former
+> any day.
+
+Looking at the patches, the dependency is documented in the Makefile. I
+guess that's fine as a temporary band-aid.
+
+Thierry
+
+--KdquIMZPjGJQvRdI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUr6XaAAoJEN0jrNd/PrOh9O8QAJldCX8K4vY+KWwbCDHfUUfo
+llQLJs6E+9IkbGsD+btOjJYEPyBrlSxZ/C4GNBHIM7x+Uypj6BdCHT877nm3/Vkq
+9AJcfWK3dK3zXvAXgOrQDDNMg4gpLOsUSWEuIC8/7eORP8LEM0zHhC/ZFBYxHm8Z
+0Qlgva7qXesF73/mSSPgX1o/shEP4/5Vje9u7HG5hqedeYYyGmSPBVJnkMXmDYMa
+hhM7pvtY6PhsxCdYzasAIr6LpkEdp0yRyrfS2or6TlfAoSRpPaXwjCFYVD/R2yjD
+uy+kcTBeBsNvvyvh4MEttU2yXBBqF2dD6Mg7z6wl9sau2QeHtWw2QB803RQ4qhXE
+IvJei79GR0MVb9rsliVTeHCjbPl0dS5yCgSTQAhqIfYyP4O0eoB9zicYCxOVz4Wg
+a+YSkRfvwAQwYOQLjEa3puTeEYCfuGRD8Y/5iwSFd/Zas5B53yn4lg0hXVbyu2kq
+65hxnUlu3OjNnPg9daXcTCbcidORChaasjfi30yET4B4wwuzyCIc7Lde3MwwayiH
+mgWAxeXkyRrjdY1w1SpdBjS4TftuEZcAAWuB7Ge+V4Qpn8y7Yi7IFgbFD17u9Ouq
+YM+sqo2aTatckYPhqIeYgEzc7C+yzVXWzGxSm7ZsMCyw2PeqN0O1gtFbfFX7u4Up
+nZA4K56/xnAvDruakUpS
+=3gCS
+-----END PGP SIGNATURE-----
+
+--KdquIMZPjGJQvRdI--
