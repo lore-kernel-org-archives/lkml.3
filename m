@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757737AbbAIO4t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 09:56:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58553 "EHLO mx1.redhat.com"
+	id S1757825AbbAIO5O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 09:57:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38147 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754583AbbAIO4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 09:56:47 -0500
-Message-ID: <54AFEC00.80507@redhat.com>
-Date: Fri, 09 Jan 2015 15:56:00 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1757789AbbAIO5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 09:57:11 -0500
+Date: Fri, 9 Jan 2015 09:56:51 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Cyril Bur <cyrilbur@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mpe@ellerman.id.au, drjones@redhat.com,
+        akpm@linux-foundation.org, mingo@kernel.org, uobergfe@redhat.com,
+        chaiw.fnst@cn.fujitsu.com, cl@linu.com, fabf@skynet.be,
+        atomlin@redhat.com, benzh@chromium.org, mtosatti@redhat.com
+Subject: Re: [PATCH 0/2] Quieten softlockup detector on virtualised kernels
+Message-ID: <20150109145651.GE116159@redhat.com>
+References: <1419224764-11384-1-git-send-email-cyrilbur@gmail.com>
+ <20150105165057.GU116159@redhat.com>
+ <1420502015.2910.6.camel@cyril>
+ <20150106150157.GF116159@redhat.com>
+ <1420773300.2801.13.camel@cyril>
 MIME-Version: 1.0
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>,
-        Feng Wu <feng.wu@intel.com>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        gleb@kernel.org, dwmw2@infradead.org, joro@8bytes.org,
-        alex.williamson@redhat.com, jiang.liu@linux.intel.com,
-        eric.auger@linaro.org, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org, kvm@vger.kernel.org
-Subject: Re: [v3 13/26] KVM: Define a new interface kvm_find_dest_vcpu() for
- VT-d PI
-References: <1418397300-10870-1-git-send-email-feng.wu@intel.com> <1418397300-10870-14-git-send-email-feng.wu@intel.com> <20150109145435.GA22469@potion.brq.redhat.com>
-In-Reply-To: <20150109145435.GA22469@potion.brq.redhat.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420773300.2801.13.camel@cyril>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 09, 2015 at 02:15:00PM +1100, Cyril Bur wrote:
+> > 
+> > I am not too familar with it, but the kernel/watchdog.c code has calls to
+> > kvm_check_and_clear_guest_paused(), which is probably a good place to
+> > start.
+> > 
+> Ah yes that, I did initially have a look at what it does when I
+> undertook to solve the problem on power and I suppose the two solutions
+> are similar in that they both just use a virtualised time source. The
+> similarities stop there though, the paravirtualised clock that x86 uses
+> provides (as the name of the function implies) a 'was paused' flag.
+> Obviously the flag isn't something the vtb register on power8 can
+> provide and since we have a vtb, its preferable to use that.
+> Perhaps x86 can do something with running_clock?
 
+Marcello?  Drew?
 
-On 09/01/2015 15:54, Radim Krčmář wrote:
-> There are two points relevant to this patch in new KVM's implementation,
-> ("KVM: x86: amend APIC lowest priority arbitration",
->  https://lkml.org/lkml/2015/1/9/362)
+Cheers,
+Don
+
 > 
-> 1) lowest priority depends on TPR
-> 2) there is no need for balancing
+> Regards,
 > 
-> (1) has to be considered with PI as well.
-
-The chipset doesn't support it. :(
-
-> I kept (2) to avoid whining from people building on that behaviour, but
-> lowest priority backed by PI could be transparent without it.
+> Cyril
 > 
-> Patch below removes the balancing, but I am not sure this is a price we
-> allowed ourselves to pay ... what are your opinions?
-
-I wouldn't mind, but it requires a lot of benchmarking.
-
-Paolo
+> > Cheers,
+> > Don
+> > 
+> > > 
+> > > > Not sure if that is useful or could be incoporated into the power8 code.
+> > > > Though to be honest I am curious if the steal_time code could be ported to
+> > > > your solution as it seems the watchdog code could remove all the
+> > > > steal_time warts.
+> > > Happy to help sus out the situation here, again, if you could pass on
+> > > what the x86 guys are working on, thanks.
+> > > 
+> > > 
+> > > Thanks,
+> > > 
+> > > Cyril
+> > > > I have cc'd Marcelo into this discussion as he was the last person I
+> > > > remember talking with about this problem.
+> > > > 
+> > > > Cheers,
+> > > > Don
+> > > 
+> > > 
+> 
+> 
+> 
