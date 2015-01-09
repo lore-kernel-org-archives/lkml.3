@@ -1,134 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757311AbbAIRHX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 12:07:23 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:46036 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755086AbbAIRHU (ORCPT
+	id S1757611AbbAIRIx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 12:08:53 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:60515 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691AbbAIRIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 12:07:20 -0500
-Message-ID: <54B00ABD.4030304@gmail.com>
-Date: Fri, 09 Jan 2015 20:07:09 +0300
-From: Dmitry Osipenko <digetx@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 9 Jan 2015 12:08:51 -0500
+Date: Fri, 9 Jan 2015 11:08:49 -0600
+From: Andy Gross <agross@codeaurora.org>
+To: Archit Taneja <architt@codeaurora.org>
+Cc: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org,
+        Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Patch v2 1/2] dmaengine: Add ADM driver
+Message-ID: <20150109170849.GA16970@qualcomm.com>
+References: <1420687572-7116-1-git-send-email-agross@codeaurora.org>
+ <1420687572-7116-2-git-send-email-agross@codeaurora.org>
+ <54AF5B3C.7070305@codeaurora.org>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: linux-arm-kernel@lists.infradead.org, Alexandre Courbot <gnurou@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Sekhar Nori <nsekhar@ti.com>, linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>, stable@vger.kernel.org,
-        Joseph Lo <josephl@nvidia.com>, linux-tegra@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Subject: Re: [PATCH] ARM: tegra: Use PMC scratch register 40 for tegra_resume()
- location store
-References: <1419202392-1159-1-git-send-email-digetx@gmail.com> <54984429.8040905@wwwdotorg.org> <5498549B.8070101@gmail.com> <54985C30.7020605@wwwdotorg.org> <20150108105742.GI1987@ulmo.nvidia.com> <20150108123709.GX10073@tbergstrom-lnx.Nvidia.com> <20150109095134.GC27845@ulmo> <20150109102922.GC10073@tbergstrom-lnx.Nvidia.com> <54B00864.7040102@wwwdotorg.org>
-In-Reply-To: <54B00864.7040102@wwwdotorg.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54AF5B3C.7070305@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-09.01.2015 19:57, Stephen Warren пишет:
-> On 01/09/2015 03:29 AM, Peter De Schrijver wrote:
->> On Fri, Jan 09, 2015 at 10:51:35AM +0100, Thierry Reding wrote:
->>> * PGP Signed by an unknown key
->>>
->>> On Thu, Jan 08, 2015 at 02:37:09PM +0200, Peter De Schrijver wrote:
->>>> On Thu, Jan 08, 2015 at 11:57:43AM +0100, Thierry Reding wrote:
->>>>>> Old Signed by an unknown key
->>>>>
->>>>> On Mon, Dec 22, 2014 at 11:00:16AM -0700, Stephen Warren wrote:
->>>>>> On 12/22/2014 10:27 AM, Dmitry Osipenko wrote:
->>>>>>> 22.12.2014 19:17, Stephen Warren пишет:
->>>>>>>> On 12/21/2014 03:52 PM, Dmitry Osipenko wrote:
->>>>>>>>> Commit 7232398abc6a ("ARM: tegra: Convert PMC to a driver") changed
->>>>>>>>> tegra_resume()
->>>>>>>>> location storing from late to early and as result broke suspend on
->>>>>>>>> tegra20.
->>>>>>>>> PMC scratch register 41 was used by tegra lp1 suspend core code for
->>>>>>>>> storing
->>>>>>>>> physical memory address of common resume function and in the same time
->>>>>>>>> used by
->>>>>>>>> tegra20 cpuidle driver for storing cpu1 "resettable" status, so it implied
->>>>>>>>> strict order of scratch register use. Fix it by using scratch 40
->>>>>>>>> instead of 41
->>>>>>>>> for tegra_resume() location store.
->>>>>>>>
->>>>>>>> You likely can't simply change the PMC scratch register usage arbitrarily;
->>>>>>>> specific registers are designated for specific purposes, and code
->>>>>>>> outside the
->>>>>>>> Linux kernel (bootloaders, LP0 resume code, secure monitors, etc.) may
->>>>>>>> depend on
->>>>>>>> those specific values being in those registers. Without significant
->>>>>>>> research,
->>>>>>>> I'd suggest not changing the PMC scratch register usage.
->>>>>>>
->>>>>>> Sure, that's why I asked to verify if scratch register 40 is in use in the
->>>>>>> comment after commit message.
->>>>>>
->>>>>> Sorry, I didn't notice that.
->>>>>>
->>>>>>> I've checked that u-boot doesn't use it (since
->>>>>>> upstream kernel doesn't care about any other bootloader), but no idea about
->>>>>>> secure monitor. It's definitely safer to avoid changing scratch regs
->>>>>>> usage, I
->>>>>>> thought that proposed solution would be best from the pure code point of
->>>>>>> view.
->>>>>>> So, I'm considering your answer as a rejection of the patch (please, let
->>>>>>> me know
->>>>>>> if I'm wrong) and will prepare another one. Btw, it would be nice to have
->>>>>>> scratch registers usage publicly documented somewhere (on "Tegra Public
->>>>>>> Application Notes" webpage for example), if it's possible, of course.
->>>>>>
->>>>>> At this stage in Tegra20 development, I think it'd be best to avoid changing
->>>>>> any scratch register usage if at all possible.
->>>>>
->>>>> Sorry, I had completely missed this discussion. When looking at the code
->>>>> it doesn't look like this particular "resettable" status needs to be
->>>>> stored in a PMC scratch register. It can't be stored in RAM because that
->>>>> goes into self-refresh as part of LP1, but how about just putting it
->>>>> into IRAM? That stays on in both LP1 and LP2, so should be suitable for
->>>>> this use-case. It would make the code slightly more complex but using a
->>>>> single scratch register for multiple purposes sounds brittle and easy to
->>>>> break (as evidenced by the offending commit).
->>>>>
->>>>> Otherwise it would seem that PMC_SCRATCH40 is only used to store EMC
->>>>> configuration data across LP0 suspend/resume, so I wouldn't think it'd
->>>>> cause problems if we used that instead of PMC_SCRATCH41 to store the
->>>>> "resettable" state.
->>>>>
->>>>
->>>> No. Usually the scratch registers for EMC config data are setup once by the
->>>> bootloader and never touched by the kernel after that. So I would not
->>>> recommend reusing those registers for different purposes.
->>>
->>> Right, I misread the code in the downstream kernel. Though it's not the
->>> bootloader that does it (at least on Tegra20), but some early code in
->>> the kernel.
->>>
->>> IRAM sounds like a good candidate still. Or do you know of anything that
->>> would exclude IRAM as storage location for this data?
->>
->> No. I can't think of a reason this flag could not be in IRAM.
+On Fri, Jan 09, 2015 at 10:08:20AM +0530, Archit Taneja wrote:
+> Hi,
 > 
-> The only thing you might want to watch out for is whether something else is
-> using IRAM. For example, our product SW stacks use the AVP as a media
-> co-processor and that runs at least some of its code from IRAM. To support
-> something similar, you'd need to make sure to save/restore the IRAM content when
-> using it for other purposes rather than just blindly over-writing it (and of
-> course synchronize with any driver for the AVP execution, to ensure it was shut
-> down first and brought back up last after any power saving event). Of course, we
-> don't actually support loading code onto the AVP upstream at the moment, so
-> perhaps we can defer handling that for now.
+> On 01/08/2015 08:56 AM, Andy Gross wrote:
+> >Signed-off-by: Andy Gross <agross@codeaurora.org>
+> <snip>
 > 
+> >+static struct dma_async_tx_descriptor *adm_prep_slave_sg(struct dma_chan *chan,
+> >+	struct scatterlist *sgl, unsigned int sg_len,
+> >+	enum dma_transfer_direction direction, unsigned long flags,
+> >+	void *context)
+> >+{
+> >+	struct adm_chan *achan = to_adm_chan(chan);
+> >+	struct adm_device *adev = achan->adev;
+> >+	struct adm_async_desc *async_desc;
+> >+	struct scatterlist *sg;
+> >+	u32 i;
+> >+	u32 single_count = 0, box_count = 0, desc_offset = 0, crci = 0;
+> >+	struct adm_desc_hw_box *box_desc;
+> >+	struct adm_desc_hw_single *single_desc;
+> >+	void *desc;
+> >+	u32 *cple, *last_cmd;
+> >+	u32 burst;
+> >+	int blk_size = -EINVAL;
+> 
+> blk_size should be set to 0 here. Otherwise async_desc->blk_size
+> takes -EINVAL when no flow control.
 
-Sure, currently I placed "resettable" variable in IRAM reset handler area for
-that reason. As I wrote before, I'll give patch more polish and send after.
+We only use the blk_size value in the start_dma function, and only if
+device_fc=1.  So for no flow control, any value is acceptable.  You can't prep a
+descriptor with a bad blk_size and flow control on.  So we're covered both ways.
+
+> 
+> >+
+> >+
+> >+	if (!is_slave_direction(direction)) {
+> >+		dev_err(adev->dev, "invalid dma direction\n");
+> >+		return NULL;
+> >+	}
+> >+
+> >+	/*
+> >+	 * get burst value from slave configuration
+> >+	 * If zero, default to maximum burst size
+> >+	 * If larger than the max transfer size, set to ADM_MAX_XFER
+> >+	 */
+> >+	burst = (direction == DMA_MEM_TO_DEV) ?
+> >+		achan->slave.dst_maxburst :
+> >+		achan->slave.src_maxburst;
+> >+
+> >+	if (!burst || burst > ADM_MAX_XFER)
+> >+		burst = ADM_MAX_XFER;
+> >+
+> >+	/* if using flow control, validate burst and crci values */
+> >+	if (achan->slave.device_fc) {
+> >+
+> >+		blk_size = adm_get_blksize(burst);
+> >+		if (blk_size < 0) {
+> >+			dev_err(adev->dev, "invalid burst value w/ crci: %d\n",
+> >+				burst);
+> >+			return ERR_PTR(-EINVAL);
+> >+		}
+> >+
+> >+		crci = achan->slave.slave_id;
+> >+		if (!(crci & 0xf)) {
+> 
+> This check isn't sufficient for the crci to lie between 1 and 15.
+> slave_id passed as, say, 0xf5, will be valid.
+
+True.  The real range would be 0x10->0x1F, as bit 8 denotes the mux setting.
+I'll put in a check here.
+
+> 
+> <snip>
+> 
+> 
+> >+/**
+> >+ * adm_dma_irq - irq handler for ADM controller
+> >+ * @irq: IRQ of interrupt
+> >+ * @data: callback data
+> >+ *
+> >+ * IRQ handler for the bam controller
+> >+ */
+> >+static irqreturn_t adm_dma_irq(int irq, void *data)
+> >+{
+> >+	struct adm_device *adev = data;
+> >+	u32 srcs, i;
+> >+	struct adm_async_desc *async_desc;
+> >+	unsigned long flags;
+> >+
+> >+	srcs = readl_relaxed(adev->regs +
+> >+			HI_SEC_DOMAIN_IRQ_STATUS(adev->ee));
+> >+
+> >+	for (i = 0; i < 16; i++) {
+> 
+> we could use adev->num_channels here instead of 16.
+
+Right.  will fix.
+
+
+> <snip>
+> 
+> >+
+> >+static int adm_dma_probe(struct platform_device *pdev)
+> >+{
+> >+	struct adm_device *adev;
+> >+	struct resource *iores;
+> >+	int ret;
+> >+	u32 i;
+> >+
+> >+	adev = devm_kzalloc(&pdev->dev, sizeof(*adev), GFP_KERNEL);
+> >+	if (!adev)
+> >+		return -ENOMEM;
+> >+
+> >+	adev->dev = &pdev->dev;
+> >+
+> >+	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> >+	adev->regs = devm_ioremap_resource(&pdev->dev, iores);
+> >+	if (IS_ERR(adev->regs))
+> >+		return PTR_ERR(adev->regs);
+> >+
+> >+	adev->irq = platform_get_irq(pdev, 0);
+> >+	if (adev->irq < 0)
+> >+		return adev->irq;
+> >+
+> >+	ret = of_property_read_u32(pdev->dev.of_node, "qcom,ee", &adev->ee);
+> >+	if (ret) {
+> >+		dev_err(adev->dev, "Execution environment unspecified\n");
+> >+		return ret;
+> >+	}
+> >+
+> >+	adev->core_clk = devm_clk_get(adev->dev, "core");
+> >+	if (IS_ERR(adev->core_clk))
+> >+		return PTR_ERR(adev->core_clk);
+> >+
+> >+	ret = clk_prepare_enable(adev->core_clk);
+> >+	if (ret) {
+> >+		dev_err(adev->dev, "failed to prepare/enable core clock\n");
+> >+		return ret;
+> >+	}
+> >+
+> >+	adev->iface_clk = devm_clk_get(adev->dev, "iface");
+> >+	if (IS_ERR(adev->iface_clk))
+> >+		return PTR_ERR(adev->iface_clk);
+> >+
+> 
+> An error here or below would leave core_clk on.
+
+Will fix, thanks.
+
+> >+		dev_err(adev->dev, "failed to get ADM0 C2 reset\n");
+> >+		return PTR_ERR(adev->c2_reset);
+> >+	}
+> 
+> All the devm_reset_control_get() failures should disable the clocks too.
+
+Thanks, I'll fix that up.
+
 
 -- 
-Dmitry
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
+
