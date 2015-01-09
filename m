@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933202AbbAIKuO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 05:50:14 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44553 "EHLO
+	id S932750AbbAIKib (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 05:38:31 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44557 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757453AbbAIKc3 (ORCPT
+	by vger.kernel.org with ESMTP id S1757455AbbAIKc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Jan 2015 05:32:29 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 54/78] mnt: Implicitly add MNT_NODEV on remount when it was implicitly added by mount
-Date: Fri,  9 Jan 2015 11:32:03 +0100
-Message-Id: <a4c2b660f35a1f1201cea27d5fbad41482b191fc.1420799385.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 55/78] mnt: Update unprivileged remount test
+Date: Fri,  9 Jan 2015 11:32:04 +0100
+Message-Id: <c7c5d7123d0b13ed4f4631061080f7b1d6dcfd98.1420799385.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
 References: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
@@ -29,41 +29,281 @@ From: "Eric W. Biederman" <ebiederm@xmission.com>
 
 ===============
 
-commit 3e1866410f11356a9fd869beb3e95983dc79c067 upstream.
+commit 4a44a19b470a886997d6647a77bb3e38dcbfa8c5 upstream.
 
-Now that remount is properly enforcing the rule that you can't remove
-nodev at least sandstorm.io is breaking when performing a remount.
+- MNT_NODEV should be irrelevant except when reading back mount flags,
+  no longer specify MNT_NODEV on remount.
 
-It turns out that there is an easy intuitive solution implicitly
-add nodev on remount when nodev was implicitly added on mount.
+- Test MNT_NODEV on devpts where it is meaningful even for unprivileged mounts.
 
-Tested-by: Cedric Bosdonnat <cbosdonnat@suse.com>
-Tested-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+- Add a test to verify that remount of a prexisting mount with the same flags
+  is allowed and does not change those flags.
+
+- Cleanup up the definitions of MS_REC, MS_RELATIME, MS_STRICTATIME that are used
+  when the code is built in an environment without them.
+
+- Correct the test error messages when tests fail.  There were not 5 tests
+  that tested MS_RELATIME.
+
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/namespace.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ .../selftests/mount/unprivileged-remount-test.c    | 172 +++++++++++++++++----
+ 1 file changed, 142 insertions(+), 30 deletions(-)
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index d00750d2f91e..6b42c6d1590e 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -1858,7 +1858,13 @@ static int do_remount(struct path *path, int flags, int mnt_flags,
+diff --git a/tools/testing/selftests/mount/unprivileged-remount-test.c b/tools/testing/selftests/mount/unprivileged-remount-test.c
+index 1b3ff2fda4d0..9669d375625a 100644
+--- a/tools/testing/selftests/mount/unprivileged-remount-test.c
++++ b/tools/testing/selftests/mount/unprivileged-remount-test.c
+@@ -6,6 +6,8 @@
+ #include <sys/types.h>
+ #include <sys/mount.h>
+ #include <sys/wait.h>
++#include <sys/vfs.h>
++#include <sys/statvfs.h>
+ #include <stdlib.h>
+ #include <unistd.h>
+ #include <fcntl.h>
+@@ -32,11 +34,14 @@
+ # define CLONE_NEWPID 0x20000000
+ #endif
+ 
++#ifndef MS_REC
++# define MS_REC 16384
++#endif
+ #ifndef MS_RELATIME
+-#define MS_RELATIME (1 << 21)
++# define MS_RELATIME (1 << 21)
+ #endif
+ #ifndef MS_STRICTATIME
+-#define MS_STRICTATIME (1 << 24)
++# define MS_STRICTATIME (1 << 24)
+ #endif
+ 
+ static void die(char *fmt, ...)
+@@ -87,6 +92,45 @@ static void write_file(char *filename, char *fmt, ...)
  	}
- 	if ((mnt->mnt.mnt_flags & MNT_LOCK_NODEV) &&
- 	    !(mnt_flags & MNT_NODEV)) {
--		return -EPERM;
-+		/* Was the nodev implicitly added in mount? */
-+		if ((mnt->mnt_ns->user_ns != &init_user_ns) &&
-+		    !(sb->s_type->fs_flags & FS_USERNS_DEV_MOUNT)) {
-+			mnt_flags |= MNT_NODEV;
-+		} else {
-+			return -EPERM;
+ }
+ 
++static int read_mnt_flags(const char *path)
++{
++	int ret;
++	struct statvfs stat;
++	int mnt_flags;
++
++	ret = statvfs(path, &stat);
++	if (ret != 0) {
++		die("statvfs of %s failed: %s\n",
++			path, strerror(errno));
++	}
++	if (stat.f_flag & ~(ST_RDONLY | ST_NOSUID | ST_NODEV | \
++			ST_NOEXEC | ST_NOATIME | ST_NODIRATIME | ST_RELATIME | \
++			ST_SYNCHRONOUS | ST_MANDLOCK)) {
++		die("Unrecognized mount flags\n");
++	}
++	mnt_flags = 0;
++	if (stat.f_flag & ST_RDONLY)
++		mnt_flags |= MS_RDONLY;
++	if (stat.f_flag & ST_NOSUID)
++		mnt_flags |= MS_NOSUID;
++	if (stat.f_flag & ST_NODEV)
++		mnt_flags |= MS_NODEV;
++	if (stat.f_flag & ST_NOEXEC)
++		mnt_flags |= MS_NOEXEC;
++	if (stat.f_flag & ST_NOATIME)
++		mnt_flags |= MS_NOATIME;
++	if (stat.f_flag & ST_NODIRATIME)
++		mnt_flags |= MS_NODIRATIME;
++	if (stat.f_flag & ST_RELATIME)
++		mnt_flags |= MS_RELATIME;
++	if (stat.f_flag & ST_SYNCHRONOUS)
++		mnt_flags |= MS_SYNCHRONOUS;
++	if (stat.f_flag & ST_MANDLOCK)
++		mnt_flags |= ST_MANDLOCK;
++
++	return mnt_flags;
++}
++
+ static void create_and_enter_userns(void)
+ {
+ 	uid_t uid;
+@@ -118,7 +162,8 @@ static void create_and_enter_userns(void)
+ }
+ 
+ static
+-bool test_unpriv_remount(int mount_flags, int remount_flags, int invalid_flags)
++bool test_unpriv_remount(const char *fstype, const char *mount_options,
++			 int mount_flags, int remount_flags, int invalid_flags)
+ {
+ 	pid_t child;
+ 
+@@ -151,9 +196,11 @@ bool test_unpriv_remount(int mount_flags, int remount_flags, int invalid_flags)
+ 			strerror(errno));
+ 	}
+ 
+-	if (mount("testing", "/tmp", "ramfs", mount_flags, NULL) != 0) {
+-		die("mount of /tmp failed: %s\n",
+-			strerror(errno));
++	if (mount("testing", "/tmp", fstype, mount_flags, mount_options) != 0) {
++		die("mount of %s with options '%s' on /tmp failed: %s\n",
++		    fstype,
++		    mount_options? mount_options : "",
++		    strerror(errno));
+ 	}
+ 
+ 	create_and_enter_userns();
+@@ -181,62 +228,127 @@ bool test_unpriv_remount(int mount_flags, int remount_flags, int invalid_flags)
+ 
+ static bool test_unpriv_remount_simple(int mount_flags)
+ {
+-	return test_unpriv_remount(mount_flags, mount_flags, 0);
++	return test_unpriv_remount("ramfs", NULL, mount_flags, mount_flags, 0);
+ }
+ 
+ static bool test_unpriv_remount_atime(int mount_flags, int invalid_flags)
+ {
+-	return test_unpriv_remount(mount_flags, mount_flags, invalid_flags);
++	return test_unpriv_remount("ramfs", NULL, mount_flags, mount_flags,
++				   invalid_flags);
++}
++
++static bool test_priv_mount_unpriv_remount(void)
++{
++	pid_t child;
++	int ret;
++	const char *orig_path = "/dev";
++	const char *dest_path = "/tmp";
++	int orig_mnt_flags, remount_mnt_flags;
++
++	child = fork();
++	if (child == -1) {
++		die("fork failed: %s\n",
++			strerror(errno));
++	}
++	if (child != 0) { /* parent */
++		pid_t pid;
++		int status;
++		pid = waitpid(child, &status, 0);
++		if (pid == -1) {
++			die("waitpid failed: %s\n",
++				strerror(errno));
 +		}
++		if (pid != child) {
++			die("waited for %d got %d\n",
++				child, pid);
++		}
++		if (!WIFEXITED(status)) {
++			die("child did not terminate cleanly\n");
++		}
++		return WEXITSTATUS(status) == EXIT_SUCCESS ? true : false;
++	}
++
++	orig_mnt_flags = read_mnt_flags(orig_path);
++
++	create_and_enter_userns();
++	ret = unshare(CLONE_NEWNS);
++	if (ret != 0) {
++		die("unshare(CLONE_NEWNS) failed: %s\n",
++			strerror(errno));
++	}
++
++	ret = mount(orig_path, dest_path, "bind", MS_BIND | MS_REC, NULL);
++	if (ret != 0) {
++		die("recursive bind mount of %s onto %s failed: %s\n",
++			orig_path, dest_path, strerror(errno));
++	}
++
++	ret = mount(dest_path, dest_path, "none",
++		    MS_REMOUNT | MS_BIND | orig_mnt_flags , NULL);
++	if (ret != 0) {
++		/* system("cat /proc/self/mounts"); */
++		die("remount of /tmp failed: %s\n",
++		    strerror(errno));
++	}
++
++	remount_mnt_flags = read_mnt_flags(dest_path);
++	if (orig_mnt_flags != remount_mnt_flags) {
++		die("Mount flags unexpectedly changed during remount of %s originally mounted on %s\n",
++			dest_path, orig_path);
++	}
++	exit(EXIT_SUCCESS);
+ }
+ 
+ int main(int argc, char **argv)
+ {
+-	if (!test_unpriv_remount_simple(MS_RDONLY|MS_NODEV)) {
++	if (!test_unpriv_remount_simple(MS_RDONLY)) {
+ 		die("MS_RDONLY malfunctions\n");
  	}
- 	if ((mnt->mnt.mnt_flags & MNT_LOCK_NOSUID) &&
- 	    !(mnt_flags & MNT_NOSUID)) {
+-	if (!test_unpriv_remount_simple(MS_NODEV)) {
++	if (!test_unpriv_remount("devpts", "newinstance", MS_NODEV, MS_NODEV, 0)) {
+ 		die("MS_NODEV malfunctions\n");
+ 	}
+-	if (!test_unpriv_remount_simple(MS_NOSUID|MS_NODEV)) {
++	if (!test_unpriv_remount_simple(MS_NOSUID)) {
+ 		die("MS_NOSUID malfunctions\n");
+ 	}
+-	if (!test_unpriv_remount_simple(MS_NOEXEC|MS_NODEV)) {
++	if (!test_unpriv_remount_simple(MS_NOEXEC)) {
+ 		die("MS_NOEXEC malfunctions\n");
+ 	}
+-	if (!test_unpriv_remount_atime(MS_RELATIME|MS_NODEV,
+-				       MS_NOATIME|MS_NODEV))
++	if (!test_unpriv_remount_atime(MS_RELATIME,
++				       MS_NOATIME))
+ 	{
+ 		die("MS_RELATIME malfunctions\n");
+ 	}
+-	if (!test_unpriv_remount_atime(MS_STRICTATIME|MS_NODEV,
+-				       MS_NOATIME|MS_NODEV))
++	if (!test_unpriv_remount_atime(MS_STRICTATIME,
++				       MS_NOATIME))
+ 	{
+ 		die("MS_STRICTATIME malfunctions\n");
+ 	}
+-	if (!test_unpriv_remount_atime(MS_NOATIME|MS_NODEV,
+-				       MS_STRICTATIME|MS_NODEV))
++	if (!test_unpriv_remount_atime(MS_NOATIME,
++				       MS_STRICTATIME))
+ 	{
+-		die("MS_RELATIME malfunctions\n");
++		die("MS_NOATIME malfunctions\n");
+ 	}
+-	if (!test_unpriv_remount_atime(MS_RELATIME|MS_NODIRATIME|MS_NODEV,
+-				       MS_NOATIME|MS_NODEV))
++	if (!test_unpriv_remount_atime(MS_RELATIME|MS_NODIRATIME,
++				       MS_NOATIME))
+ 	{
+-		die("MS_RELATIME malfunctions\n");
++		die("MS_RELATIME|MS_NODIRATIME malfunctions\n");
+ 	}
+-	if (!test_unpriv_remount_atime(MS_STRICTATIME|MS_NODIRATIME|MS_NODEV,
+-				       MS_NOATIME|MS_NODEV))
++	if (!test_unpriv_remount_atime(MS_STRICTATIME|MS_NODIRATIME,
++				       MS_NOATIME))
+ 	{
+-		die("MS_RELATIME malfunctions\n");
++		die("MS_STRICTATIME|MS_NODIRATIME malfunctions\n");
+ 	}
+-	if (!test_unpriv_remount_atime(MS_NOATIME|MS_NODIRATIME|MS_NODEV,
+-				       MS_STRICTATIME|MS_NODEV))
++	if (!test_unpriv_remount_atime(MS_NOATIME|MS_NODIRATIME,
++				       MS_STRICTATIME))
+ 	{
+-		die("MS_RELATIME malfunctions\n");
++		die("MS_NOATIME|MS_DIRATIME malfunctions\n");
+ 	}
+-	if (!test_unpriv_remount(MS_STRICTATIME|MS_NODEV, MS_NODEV,
+-				 MS_NOATIME|MS_NODEV))
++	if (!test_unpriv_remount("ramfs", NULL, MS_STRICTATIME, 0, MS_NOATIME))
+ 	{
+ 		die("Default atime malfunctions\n");
+ 	}
++	if (!test_priv_mount_unpriv_remount()) {
++		die("Mount flags unexpectedly changed after remount\n");
++	}
+ 	return EXIT_SUCCESS;
+ }
 -- 
 2.2.1
 
