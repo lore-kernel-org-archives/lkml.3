@@ -1,88 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757937AbbAIQbh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 11:31:37 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:57445 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756468AbbAIQbg (ORCPT
+	id S1757955AbbAIQby (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 11:31:54 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56329 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752563AbbAIQbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 11:31:36 -0500
-From: Kalle Valo <kvalo@codeaurora.org>
-To: David Miller <davem@davemloft.net>
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull-request: wireless-drivers 2015-01-09
-Date: Fri, 09 Jan 2015 18:31:30 +0200
-Message-ID: <87lhlbj4pp.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Fri, 9 Jan 2015 11:31:52 -0500
+Date: Fri, 9 Jan 2015 17:31:49 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Mark Seaborn <mseaborn@chromium.org>,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: DRAM unreliable under specific access patern
+Message-ID: <20150109163149.GA18076@amd>
+References: <CAL82V5NN8U4PyiSjLxgpTrgsgkbM7rRCbVF5P-HHyEqphLOy+g@mail.gmail.com>
+ <20141224220818.GA17655@amd>
+ <20150105192329.5f32c155@lxorguk.ukuu.org.uk>
+ <CALCETrXby82sgbGTcSZFj54t=resYcwtPbcFRNh6Ksbr+Ow8HQ@mail.gmail.com>
+ <20150106014718.GA23775@node.dhcp.inet.fi>
+ <CALCETrV1O1MFJeY6WacF+QHdBGG7HoHdVQy=n951=Y+=g+h7mQ@mail.gmail.com>
+ <20150106021836.GA24121@node.dhcp.inet.fi>
+ <CALCETrXpJ7CPAKeh9nLA=PoCBT8w8NfhZg5cgUyG9BUtp2Jv+w@mail.gmail.com>
+ <20150108130325.0592b18b@lxorguk.ukuu.org.uk>
+ <54AFF8B5.8050305@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54AFF8B5.8050305@suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+Hi!
 
-here are few more fixes to 3.19. Please let me know if there are any
-problems.
+> Then it's also quite trivial to induce cache misses without clflush, using just
+> few addresses that map to the same cache set, without having to cycle throuh
+> more memory than the cache size is.
 
-Kalle
-
-The following changes since commit 7ce67a38f799d1fb332f672b117efbadedaa5352:
-
-  net: ethernet: cpsw: fix hangs with interrupts (2015-01-04 22:18:34 -0500)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/kvalo/wireless-drivers.git tags/wireless-drivers-for-davem-2015-01-09
-
-for you to fetch changes up to c702674f99e612a22cf6e8f9b4bec341257970c0:
-
-  Merge tag 'iwlwifi-for-kalle-2015-01-05' of https://git.kernel.org/pub/scm/linux/kernel/git/iwlwifi/iwlwifi-fixes (2015-01-05 12:07:04 +0200)
-
-----------------------------------------------------------------
-
-* rtlwifi: fix a regression in large skb allocation failure
-
-iwlwifi:
-
-* fix for 7265D NVM check
-* fixes for scan: fix long scanning times and network discovery
-* new firmware API for iwlmvm supported devices
-* fixes in rate control
-
-----------------------------------------------------------------
-Arik Nemtsov (1):
-      iwlwifi: pcie: correctly define 7265-D cfg
-
-David Spinadel (2):
-      iwlwifi: mvm: add a flag to enable match found notification
-      iwlwifi: mvm: scan dwell time corrections
-
-Emmanuel Grumbach (2):
-      iwlwifi: 7000: fix reported firmware name for 7265D
-      iwlwifi: bump firmware API for mvm devices to 12
-
-Eyal Shapira (2):
-      iwlwifi: mvm: fix Rx with both chains
-      iwlwifi: mvm: fix out of bounds access to tid_to_mac80211_ac
-
-Kalle Valo (1):
-      Merge tag 'iwlwifi-for-kalle-2015-01-05' of https://git.kernel.org/.../iwlwifi/iwlwifi-fixes
-
-Larry Finger (1):
-      rtlwifi: Fix error when accessing unmapped memory in skb
-
- drivers/net/wireless/iwlwifi/iwl-7000.c        |    6 ++---
- drivers/net/wireless/iwlwifi/iwl-8000.c        |    2 +-
- drivers/net/wireless/iwlwifi/iwl-fw-file.h     |    4 +++
- drivers/net/wireless/iwlwifi/mvm/fw-api-scan.h |    2 ++
- drivers/net/wireless/iwlwifi/mvm/scan.c        |   19 ++++++++++----
- drivers/net/wireless/iwlwifi/mvm/tx.c          |    8 ++++--
- drivers/net/wireless/iwlwifi/mvm/utils.c       |    2 +-
- drivers/net/wireless/iwlwifi/pcie/drv.c        |    4 ++-
- drivers/net/wireless/rtlwifi/pci.c             |   32 ++++++++++++++++++------
- 9 files changed, 58 insertions(+), 21 deletions(-)
-
+Hmm. If you can do "clflush" without "clflush", and result is no more
+then 10 times slower than "clflush", you can probably break it. Might
+need two DIMMs so that you can use one to flush caches while
+row-hammering the other one.
+									Pavel
 -- 
-Kalle Valo
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
