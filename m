@@ -1,82 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932890AbbAIPte (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:49:34 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:58909 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757246AbbAIPtc (ORCPT
+	id S933209AbbAIPuc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:50:32 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:64944 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933077AbbAIPu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:49:32 -0500
-Date: Fri, 9 Jan 2015 15:49:24 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: "leif.lindholm@linaro.org" <leif.lindholm@linaro.org>,
-        "roy.franz@linaro.org" <roy.franz@linaro.org>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "bp@alien8.de" <bp@alien8.de>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        "geoff.levand@linaro.org" <geoff.levand@linaro.org>,
-        "dyoung@redhat.com" <dyoung@redhat.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 7/8] arm64/efi: remove free_boot_services() and friends
-Message-ID: <20150109154924.GH11258@arm.com>
-References: <1420742914-2404-1-git-send-email-ard.biesheuvel@linaro.org>
- <1420742914-2404-8-git-send-email-ard.biesheuvel@linaro.org>
+	Fri, 9 Jan 2015 10:50:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420742914-2404-8-git-send-email-ard.biesheuvel@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <alpine.DEB.2.02.1501061627150.18120@linuxheads99>
+References: <1420575219-27061-1-git-send-email-atull@opensource.altera.com>
+ <1420575219-27061-2-git-send-email-atull@opensource.altera.com>
+ <CAL_JsqKRe2YquSmi01wa5b=Ctns+1ek-PdSHDLuxyCfKasTw5g@mail.gmail.com> <alpine.DEB.2.02.1501061627150.18120@linuxheads99>
+From: Rob Herring <robherring2@gmail.com>
+Date: Fri, 9 Jan 2015 09:50:07 -0600
+Message-ID: <CAL_Jsq+pn5MW6veUivEL49FLSQxZOWRq0gU9Q6iD5jzurKK3rQ@mail.gmail.com>
+Subject: Re: [PATCH v8 1/4] doc: add bindings document for altera fpga manager
+To: atull <atull@opensource.altera.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Simek <monstr@monstr.eu>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Pavel Machek <pavel@denx.de>, Mark Brown <broonie@kernel.org>,
+        Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>, Kyle Teske <kyle.teske@ni.com>,
+        Nicolas Pitre <nico@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
+        David Miller <davem@davemloft.net>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devel@driverdev.osuosl.org,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Dinh Nguyen <dinguyen@opensource.altera.com>,
+        "yvanderv@opensource.altera.com" <yvanderv@opensource.altera.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 08, 2015 at 06:48:33PM +0000, Ard Biesheuvel wrote:
-> Now that we are calling SetVirtualAddressMap() from the stub, there is no
-> need to reserve boot-only memory regions, which implies that there is also
-> no reason to free them again later.
-> 
-> Acked-by: Leif Lindholm <leif.lindholm@linaro.org>
-> Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-> ---
->  arch/arm64/kernel/efi.c | 123 +-----------------------------------------------
->  1 file changed, 1 insertion(+), 122 deletions(-)
+On Tue, Jan 6, 2015 at 4:34 PM, atull <atull@opensource.altera.com> wrote:
+> On Tue, 6 Jan 2015, Rob Herring wrote:
+>
+>> On Tue, Jan 6, 2015 at 2:13 PM,  <atull@opensource.altera.com> wrote:
+>> > From: Alan Tull <atull@opensource.altera.com>
+>> >
+>> > New bindings document for Altera fpga manager.
+>> >
+>> > Signed-off-by: Alan Tull <atull@opensource.altera.com>
+>>
+>> Acked-by: Rob Herring <robh@kernel.org>
+>>
+>> Like I said, this binding doesn't look like it will change other than
+>> perhaps additional optional properties, so it can go into
+>> Documentation. Perhaps .../bindings/fpga/. I'm happy to merge this
+>> thru DT tree if you want.
+>>
+>> Rob
+>
+> Thanks, that would be great.  Yes ../bindings/fpga sounds good.
+>
+> Do you want me to send you a patch with the updated path?
 
-[...]
+Yes, please.
 
-> -static void __init free_boot_services(void)
-> -{
-> -	u64 total_freed = 0;
-> -	u64 keep_end, free_start, free_end;
-> -	efi_memory_desc_t *md;
-> -
-> -	/*
-> -	 * If kernel uses larger pages than UEFI, we have to be careful
-> -	 * not to inadvertantly free memory we want to keep if there is
-> -	 * overlap at the kernel page size alignment. We do not want to
-> -	 * free is_reserve_region() memory nor the UEFI memmap itself.
-> -	 *
-> -	 * The memory map is sorted, so we keep track of the end of
-> -	 * any previous region we want to keep, remember any region
-> -	 * we want to free and defer freeing it until we encounter
-> -	 * the next region we want to keep. This way, before freeing
-> -	 * it, we can clip it as needed to avoid freeing memory we
-> -	 * want to keep for UEFI.
-> -	 */
-> -
-> -	keep_end = 0;
-> -	free_start = 0;
-> -
-> -	for_each_efi_memory_desc(&memmap, md) {
-> -		u64 paddr, npages, size;
-
-I'm glad to see the back of this function, thanks.
-
-Acked-by: Will Deacon <will.deacon@arm.com>
-
-Will
+Rob
