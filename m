@@ -1,182 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757468AbbAINmm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 08:42:42 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:34801 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756861AbbAINmk (ORCPT
+	id S1757594AbbAINoZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 08:44:25 -0500
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:35203 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755469AbbAINoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 08:42:40 -0500
-Date: Fri, 9 Jan 2015 15:42:31 +0200
-From: "Ahmed S. Darwish" <darwish.07@gmail.com>
-To: Vishal Goel <goel.cool@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        casey@schaufler-ca.com
-Subject: Re: Fix for synchronization issue in IPV6 implementation in smack
- module(v3.18)
-Message-ID: <20150109134231.GA18921@vivalin-002>
-References: <CABP0=5eXSCW=yp8iqyXNzXMsYNM7L0T0TFefrOZsj2wpbakfXQ@mail.gmail.com>
+	Fri, 9 Jan 2015 08:44:24 -0500
+Date: Fri, 9 Jan 2015 14:44:19 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Paul Walmsley <paul@pwsan.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-tegra@vger.kernel.org,
+        Allen Martin <amartin@nvidia.com>, Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <treding@nvidia.com>,
+        Alexandre Courbot <gnurou@gmail.com>, pwalmsley@nvidia.com
+Subject: Re: [PATCH] clocksource: tegra: wrap arch/arm-specific sections in
+ CONFIG_ARM
+Message-ID: <20150109134417.GA5429@ulmo.nvidia.com>
+References: <alpine.DEB.2.02.1412092201200.31750@utopia.booyaka.com>
+ <54AEB719.5060103@linaro.org>
+ <alpine.DEB.2.02.1501090135280.28771@utopia.booyaka.com>
+ <54AF91CC.2090007@linaro.org>
+ <20150109122120.GJ16465@ulmo>
+ <54AFD688.5000304@linaro.org>
+ <20150109133349.GA27876@ulmo>
+ <54AFD9DF.9090205@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wRRV7LY7NUeQGEoC"
 Content-Disposition: inline
-In-Reply-To: <CABP0=5eXSCW=yp8iqyXNzXMsYNM7L0T0TFefrOZsj2wpbakfXQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <54AFD9DF.9090205@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vishal,
 
-On Thu, Jan 08, 2015 at 10:11:52PM +0530, Vishal Goel wrote:
->  [PATCH] This patch fixes the synchronization issue in IPv6
->  implementation. Previously there was no synchronization mechanism used while
->  accessing(adding/reading/deletion) smk_ipv6_port_list. It could be possible
->  that when one thread is reading the list, at the same time another thread is
->  adding/deleting in the list.So it is possible that reader thread will read
->  the inaccurate or incomplete list. So to make sure that reader thread will
->  read the accurate list, rcu mechanism has been used while accessing the
->  list.RCU allows readers to access a data structure even when it is in the
->  process of being updated
-> 
-> Signed-off-by: Vishal Goel <vishal.goel@samsung.com>
->             Himanshu Shukla <himanshu.sh@samsung.com>
+--wRRV7LY7NUeQGEoC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The legality of your patches are blurry. You're sending from
-a personal email, while having Signed-off-by signatures by your
-employer.
+On Fri, Jan 09, 2015 at 02:38:39PM +0100, Daniel Lezcano wrote:
+> On 01/09/2015 02:33 PM, Thierry Reding wrote:
+> >On Fri, Jan 09, 2015 at 02:24:24PM +0100, Daniel Lezcano wrote:
+> >>On 01/09/2015 01:21 PM, Thierry Reding wrote:
+[...]
+> >>>How about we do something like the attached patch instead for now. That
+> >>>avoids any #ifdef'ery and still we don't attempt (and fail) to build t=
+he
+> >>>driver on 64-bit ARM.
+> >>>
+> >>>With that applied we can incrementally make the changes to untangle the
+> >>>ARM-specific parts and when the driver can build on 64-bit ARM we simp=
+ly
+> >>>select TEGRA_TIMER via Kconfig.
+> >>
+> >>Yes, that is exactly what I was thinking about after sending the previo=
+us
+> >>email. And by this way, you also fixed the Kconfig option selection log=
+ic.
+> >
+> >Great. Will you give your Acked-by so that I can take that patch through
+> >the Tegra tree to resolve the build dependency?
+>=20
+> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-You **really** need to add a "From: XXX@samsung.com" header on
-the very first line of your emails if this is a sponsored work.
-Kindly check Documentation/SubmittingPatches for further details.
+Thanks,
+Thierry
 
-Beside the above:
+--wRRV7LY7NUeQGEoC
+Content-Type: application/pgp-signature
 
-- Your patches are not applicable to the tree since they're
-  white-spaces mangled. You're using Gmail's web interface, which
-  is well known at converting tabs to white-spaces. Check
-  Documentation/email-clients.txt for further details.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-- Please fix you Subject line. Make it something in the form of:
-  [PATCH 1/3] smack: Fix xxx
+iQIcBAEBAgAGBQJUr9sxAAoJEN0jrNd/PrOhPZ4P/RSrBkLBsWSduN+rh+SOohlk
+plSDjOuWMrDPKPXkVgTZvSntpx/zRDQV4fw74toYS/BW+ftp1wmhFLVCNPv2uBGm
+bj323LhglHa1raRrNfJmUBFLIiXVu6MXuvikT5EE7iLDGmw1CwFhWgFhjLncmRFT
+ERpf8nhm5bVhPgmaVM59z+fDY89WjlNrox7tGbMQptbp2jejCmuFop2UqRy30OyD
+317OHXYmK1QuiWg6J4IP/x6psIyNYawkCo1dwJo1wjxvzd/Iyxrso5PYnWPmgnzp
+Os5CWm4amtBKLsdJMMrMCAxNXM1Nlvcq8Vx5aQTIYWo0QzJgTECP5w8aHaSl5B+8
+Qzk1Rzx+CqOgnfhYKWs4jExG0sEeuITdxzZ0SL8ZOFJ2H5DgKZMesZApP+xS4Mqn
+dA35fnP4gfvZ47cugV0CUmd1zT+5DjdYlomt1+VNnyy8lmSvfeggYve/kC5Xy1LG
+K5xj/BAvXzDdxuqG/+xiyjmwYsaQpgBUI3VD25HPa4P9vAHCip7WMlW++n75izf2
+MUg/lArP2cXuo6McUFUQF9LT/Rc2thRCqNRZDdcheZGZ/5iTUtudPlopaFdoFMga
+z5pVeRRjOb48oxs11OWkAwuMpx/HxIn2PThpyPNSBF/2+TG5oYRKdeeYCaFKRZHH
+ODZazRYGBnYe9ZkRUNqq
+=RIXo
+-----END PGP SIGNATURE-----
 
-- No need for "[PATCH]" in the commit log body, only in the
-  subject line.
-
-- Please make the commit message more comprehensible. Check
-  the kernel git log history for good examples. A grammar
-  check will also be nice; there are a number of free good
-  tools on the web.
-
-- Add "Signed-off-by" headers for each developer. In the patch
-  above, you'll need _two_ "Signed-off-by" lines.
-
-- You're sending multiple related patches, but posting each one
-  in its own thread. This will make it very very hard for review,
-  especially in a very busy list like LKML. Please send related
-  patches in an "email thread", with clear sequence numbers.
-
-  (e.g., your follow-up patch titled as "In Ref to previous 3
-  patches:Fix for synchronization..." is completely bogus.)
-
-Happy kernel coding :-)
-
-Regards,
-Darwish
-
-> ---
->  security/smack/smack_lsm.c | 21 +++++++++++++++------
->  1 file changed, 15 insertions(+), 6 deletions(-)
-> 
-> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-> index d515ec2..b3427ee 100644
-> --- a/security/smack/smack_lsm.c
-> +++ b/security/smack/smack_lsm.c
-> @@ -52,6 +52,7 @@
->  #define SMK_RECEIVING  1
->  #define SMK_SENDING    2
-> 
-> +DEFINE_MUTEX(smack_ipv6_lock);
->  LIST_HEAD(smk_ipv6_port_list);
-> 
->  #ifdef CONFIG_SECURITY_SMACK_BRINGUP
-> @@ -2232,17 +2233,20 @@ static void smk_ipv6_port_label(struct socket
-> *sock, struct sockaddr *address)
->              * on the bound socket. Take the changes to the port
->              * as well.
->              */
-> -           list_for_each_entry(spp, &smk_ipv6_port_list, list) {
-> +           rcu_read_lock();
-> +           list_for_each_entry_rcu(spp, &smk_ipv6_port_list, list) {
->                   if (sk != spp->smk_sock)
->                         continue;
->                   spp->smk_in = ssp->smk_in;
->                   spp->smk_out = ssp->smk_out;
-> +                 rcu_read_unlock();
->                   return;
->             }
->             /*
->              * A NULL address is only used for updating existing
->              * bound entries. If there isn't one, it's OK.
->              */
-> +           rcu_read_unlock();
->             return;
->       }
-> 
-> @@ -2258,16 +2262,18 @@ static void smk_ipv6_port_label(struct socket
-> *sock, struct sockaddr *address)
->        * Look for an existing port list entry.
->        * This is an indication that a port is getting reused.
->        */
-> -     list_for_each_entry(spp, &smk_ipv6_port_list, list) {
-> +     rcu_read_lock();
-> +     list_for_each_entry_rcu(spp, &smk_ipv6_port_list, list) {
->             if (spp->smk_port != port)
->                   continue;
->             spp->smk_port = port;
->             spp->smk_sock = sk;
->             spp->smk_in = ssp->smk_in;
->             spp->smk_out = ssp->smk_out;
-> +           rcu_read_unlock();
->             return;
->       }
-> -
-> +     rcu_read_unlock();
->       /*
->        * A new port entry is required.
->        */
-> @@ -2280,7 +2286,9 @@ static void smk_ipv6_port_label(struct socket
-> *sock, struct sockaddr *address)
->       spp->smk_in = ssp->smk_in;
->       spp->smk_out = ssp->smk_out;
-> 
-> -     list_add(&spp->list, &smk_ipv6_port_list);
-> +     mutex_lock(&smack_ipv6_lock);
-> +     list_add_rcu(&spp->list, &smk_ipv6_port_list);
-> +     mutex_unlock(&smack_ipv6_lock);
->       return;
->  }
-> 
-> @@ -2335,8 +2343,8 @@ static int smk_ipv6_port_check(struct sock *sk,
-> struct sockaddr_in6 *address,
->             skp = &smack_known_web;
->             goto auditout;
->       }
-> -
-> -     list_for_each_entry(spp, &smk_ipv6_port_list, list) {
-> +     rcu_read_lock();
-> +     list_for_each_entry_rcu(spp, &smk_ipv6_port_list, list) {
->             if (spp->smk_port != port)
->                   continue;
->             object = spp->smk_in;
-> @@ -2344,6 +2352,7 @@ static int smk_ipv6_port_check(struct sock *sk,
-> struct sockaddr_in6 *address,
->                   ssp->smk_packet = spp->smk_out;
->             break;
->       }
-> +     rcu_read_unlock();
-> 
->  auditout:
-> 
-> --
-> 1.8.3.2
-> --
+--wRRV7LY7NUeQGEoC--
