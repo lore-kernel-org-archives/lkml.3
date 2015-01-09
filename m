@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757382AbbAIKbD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 05:31:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59871 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756412AbbAIKbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 05:31:01 -0500
-Date: Fri, 9 Jan 2015 11:30:59 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-cc: Peter Wu <peter@lekensteyn.nl>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] HID: logitech-hidpp: store the name of the device in
- struct hidpp
-In-Reply-To: <1420745832-7549-1-git-send-email-benjamin.tissoires@redhat.com>
-Message-ID: <alpine.LNX.2.00.1501091130360.15299@pobox.suse.cz>
-References: <1420745832-7549-1-git-send-email-benjamin.tissoires@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S933174AbbAIKuJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 05:50:09 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44539 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757433AbbAIKc3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 05:32:29 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Yuri Chislov <yuri.chislov@gmail.com>,
+        Dmitry Kozlov <xeb@mail.ru>, Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 01/78] ipv6: gre: fix wrong skb->protocol in WCCP
+Date: Fri,  9 Jan 2015 11:31:10 +0100
+Message-Id: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.2.1
+In-Reply-To: <cover.1420799385.git.jslaby@suse.cz>
+References: <cover.1420799385.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Jan 2015, Benjamin Tissoires wrote:
+From: Yuri Chislov <yuri.chislov@gmail.com>
 
-> If a disconnect occurs while getting the actual name of the device
-> (which can take several HID transactions), the name of the device will
-> be the hid name, provided by the Unifying Receiver.
-> This means that in some cases, the user space will see a different
-> name that what it usually sees when there is no disconnect.
-> 
-> We should store the name of the device in the struct hidpp. That way,
-> if a disconnect occurs while we are accessing the name,
-> hidpp_connect_event() can fail, and the input node is not created.
-> 
-> The input node will be created only if we have a connection which
-> lasts long enough to retrieve all the requested information:
-> name, protocol, and specific configuration.
-> 
-> Reviewed-by: Peter Wu <peter@lekensteyn.nl>
-> Tested-by: Peter Wu <peter@lekensteyn.nl>
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Applied to for-3.20/logitech.
+===============
 
-Thanks,
+[ Upstream commit be6572fdb1bfbe23b2624d477de50af50b02f5d6 ]
 
+When using GRE redirection in WCCP, it sets the wrong skb->protocol,
+that is, ETH_P_IP instead of ETH_P_IPV6 for the encapuslated traffic.
+
+Fixes: c12b395a4664 ("gre: Support GRE over IPv6")
+Cc: Dmitry Kozlov <xeb@mail.ru>
+Signed-off-by: Yuri Chislov <yuri.chislov@gmail.com>
+Tested-by: Yuri Chislov <yuri.chislov@gmail.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ net/ipv6/ip6_gre.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/net/ipv6/ip6_gre.c b/net/ipv6/ip6_gre.c
+index 88774ccb3dda..7d640f276e87 100644
+--- a/net/ipv6/ip6_gre.c
++++ b/net/ipv6/ip6_gre.c
+@@ -511,11 +511,11 @@ static int ip6gre_rcv(struct sk_buff *skb)
+ 
+ 		skb->protocol = gre_proto;
+ 		/* WCCP version 1 and 2 protocol decoding.
+-		 * - Change protocol to IP
++		 * - Change protocol to IPv6
+ 		 * - When dealing with WCCPv2, Skip extra 4 bytes in GRE header
+ 		 */
+ 		if (flags == 0 && gre_proto == htons(ETH_P_WCCP)) {
+-			skb->protocol = htons(ETH_P_IP);
++			skb->protocol = htons(ETH_P_IPV6);
+ 			if ((*(h + offset) & 0xF0) != 0x40)
+ 				offset += 4;
+ 		}
 -- 
-Jiri Kosina
-SUSE Labs
+2.2.1
+
