@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758340AbbAIU7z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 15:59:55 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44982 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736AbbAIU7x (ORCPT
+	id S1758391AbbAIVBJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 16:01:09 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:58244 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753233AbbAIVBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 15:59:53 -0500
-Message-ID: <54B0417B.6030409@wwwdotorg.org>
-Date: Fri, 09 Jan 2015 14:00:43 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Paul Walmsley <paul@pwsan.com>, Thierry Reding <thierry.reding@gmail.com>
-CC: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Bill Huang <bilhuang@nvidia.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        Allen Martin <amartin@nvidia.com>,
-        Paul Walmsley <pwalmsley@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 4/4] clk: tegra: Add support for the Tegra132 CAR IP block
-References: <20141216203813.22980.2301.stgit@chromeos-P9X79> <20141216203829.22980.64446.stgit@chromeos-P9X79> <20150109111954.GB16465@ulmo> <alpine.DEB.2.02.1501092030180.28771@utopia.booyaka.com>
-In-Reply-To: <alpine.DEB.2.02.1501092030180.28771@utopia.booyaka.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	Fri, 9 Jan 2015 16:01:07 -0500
+Message-ID: <1420837263.31986.0.camel@gmail.com>
+Subject: Re: noisy selinux messages on tmpfs mount.
+From: Dominick Grift <dac.override@gmail.com>
+To: Paul Moore <pmoore@redhat.com>
+Cc: Dave Jones <davej@codemonkey.org.uk>, Stephen Smalley <sds@epoch.ncsc.mil>,
+        James Morris <james.l.morris@oracle.com>,
+        selinux <selinux@tycho.nsa.gov>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Fri, 09 Jan 2015 22:01:03 +0100
+In-Reply-To: <6645675.NppomaThWx@sifl>
+References: <20150108190822.GB4365@codemonkey.org.uk>
+	 <CAB9W1A2nTN2DJ699BXL_r_aXCk-O9-KrTLSi731isQWpPUmkwg@mail.gmail.com>
+	 <20150109191329.GA19400@codemonkey.org.uk> <6645675.NppomaThWx@sifl>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.9 (3.12.9-1.fc21) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2015 01:52 PM, Paul Walmsley wrote:
-> Hi Thierry
->
-> On Fri, 9 Jan 2015, Thierry Reding wrote:
->
->> On Tue, Dec 16, 2014 at 12:38:29PM -0800, Paul Walmsley wrote:
->>>
->>> This patch is based on several patches from others:
->>>
->>> 1. a  patch from Peter De Schrijver:
->>>
->>> http://lkml.iu.edu/hypermail/linux/kernel/1407.1/06094.html
->>>
->>> 2. a patch from Bill Huang ("clk: tegra: enable cclk_g at boot on
->>> Tegra132"), and
->>>
->>> 3. a patch from Allen Martin ("clk: Enable tegra clock driver for
->>> tegra132").
->>
->> Doesn't this technically require Signed-off-bys from each of the above,
->> then?
->
-> I don't think so.  Documentation/SubmittingPatches states:
+On Fri, 2015-01-09 at 15:55 -0500, Paul Moore wrote:
+> On Friday, January 09, 2015 02:13:29 PM Dave Jones wrote:
+> > On Fri, Jan 09, 2015 at 08:06:49AM -0500, Stephen Smalley wrote:
+> >  > We already reduced that message to KERN_DEBUG.  Is that not sufficient?
+> > 
+> > That doesn't really help with the flooding of dmesg, so no.
+> > I should also note that it's not just logging in that creates a new
+> > session, it also seems to be getting triggered by cron jobs, or
+> > whatever the systemd replacement is.
+> 
+> I wonder if this is cron/systemd/whatever creating a new namespace and 
+> mounting a new tmpfs in the namespace?  If yes, I wonder if we could limit the 
+> messages to the initial namespace ... ?
+> 
 
-It's certainly been deemed acceptable in the past, if admittedly not 
-optimal, for the person who is the "exit point" of an 
-organization/company for the patch to be the only person to sign it off. 
-The reason being they're vouching that the Certificate of Origin applies 
-to all the company-sponsored work internal to the organization.
+It is systemd logind creating sessions (e.g. creating /run/user/$UID and
+mounting a tmpfs on it)
+
+
+
+
