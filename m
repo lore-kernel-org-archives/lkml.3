@@ -1,80 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932946AbbAIQFZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 11:05:25 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47172 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932677AbbAIQFX (ORCPT
+	id S1757350AbbAIQJU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 11:09:20 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:49974 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752232AbbAIQJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 11:05:23 -0500
-Date: Fri, 9 Jan 2015 16:04:49 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, Rob Herring <robh@kernel.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Simon Horman <horms@verge.net.au>,
-        ALSA Development Mailing List <alsa-devel@alsa-project.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Olof Johansson <olof@lixom.net>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Message-ID: <20150109160449.GG2634@sirena.org.uk>
-References: <878ulzx6hr.wl%kuninori.morimoto.gx@gmail.com>
- <871tn4uv0j.wl%kuninori.morimoto.gx@renesas.com>
- <CAL_Jsq+GjM+3M63amyh3Rvijkz7Lch_cdUt9vScc9wZeOubOPA@mail.gmail.com>
- <5363275.ZK3ulH6EUO@wuerfel>
+	Fri, 9 Jan 2015 11:09:18 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Wa3xFDkrbo+Lac6I"
-Content-Disposition: inline
-In-Reply-To: <5363275.ZK3ulH6EUO@wuerfel>
-X-Cookie: What's so funny?
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v5][resend v4] of: replace Asahi Kasei Corp vendor prefix
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20150109155334.GE13637@pd.tnic>
+References: <cover.1415403984.git.luto@amacapital.net> <1072a16a8d4ad1b11b8062f76e3236b9771b0fb6.1415403984.git.luto@amacapital.net>
+ <20150109155334.GE13637@pd.tnic>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 9 Jan 2015 08:08:55 -0800
+Message-ID: <CALCETrW8oH65mHsEj+MaWnZYYCR3m1VFFF4J5PYidNqbQHV9Rg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] x86_64,entry: Remove the syscall exit audit and
+ schedule optimizations
+To: Borislav Petkov <bp@alien8.de>
+Cc: X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, kvm list <kvm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 9, 2015 at 7:53 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Fri, Nov 07, 2014 at 03:58:19PM -0800, Andy Lutomirski wrote:
+>> We used to optimize rescheduling and audit on syscall exit.  Now that
+>> the full slow path is reasonably fast, remove these optimizations.
+>>
+>> This adds something like 10ns to the previously optimized paths on my
+>> computer, presumably due mostly to SAVE_REST / RESTORE_REST.
+>>
+>> I think that we should eventually replace both the syscall and
+>> non-paranoid interrupt exit slow paths with a pair of C functions
+>> along the lines of the syscall entry hooks.
+>>
+>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> ---
+>>  arch/x86/kernel/entry_64.S | 52 +++++-----------------------------------------
+>>  1 file changed, 5 insertions(+), 47 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+>> index a5afdf0f7fa4..222dc5c45ac3 100644
+>> --- a/arch/x86/kernel/entry_64.S
+>> +++ b/arch/x86/kernel/entry_64.S
+>> @@ -427,15 +427,12 @@ system_call_fastpath:
+>>   * Has incomplete stack frame and undefined top of stack.
+>>   */
+>>  ret_from_sys_call:
+>> -     movl $_TIF_ALLWORK_MASK,%edi
+>> -     /* edi: flagmask */
+>> -sysret_check:
+>> +     testl $_TIF_ALLWORK_MASK,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+>> +     jnz int_ret_from_sys_call_fixup /* Go the the slow path */
+>> +
+>>       LOCKDEP_SYS_EXIT
+>>       DISABLE_INTERRUPTS(CLBR_NONE)
+>>       TRACE_IRQS_OFF
+>> -     movl TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET),%edx
+>> -     andl %edi,%edx
+>> -     jnz  sysret_careful
+>>       CFI_REMEMBER_STATE
+>>       /*
+>>        * sysretq will re-enable interrupts:
+>> @@ -449,49 +446,10 @@ sysret_check:
+>>       USERGS_SYSRET64
+>>
+>>       CFI_RESTORE_STATE
+>> -     /* Handle reschedules */
+>> -     /* edx: work, edi: workmask */
+>> -sysret_careful:
+>> -     bt $TIF_NEED_RESCHED,%edx
+>> -     jnc sysret_signal
+>> -     TRACE_IRQS_ON
+>> -     ENABLE_INTERRUPTS(CLBR_NONE)
+>> -     pushq_cfi %rdi
+>> -     SCHEDULE_USER
+>> -     popq_cfi %rdi
+>> -     jmp sysret_check
+>>
+>> -     /* Handle a signal */
+>> -sysret_signal:
+>> -     TRACE_IRQS_ON
+>> -     ENABLE_INTERRUPTS(CLBR_NONE)
+>> -#ifdef CONFIG_AUDITSYSCALL
+>> -     bt $TIF_SYSCALL_AUDIT,%edx
+>> -     jc sysret_audit
+>> -#endif
+>> -     /*
+>> -      * We have a signal, or exit tracing or single-step.
+>> -      * These all wind up with the iret return path anyway,
+>> -      * so just join that path right now.
+>> -      */
+>> +int_ret_from_sys_call_fixup:
+>>       FIXUP_TOP_OF_STACK %r11, -ARGOFFSET
+>> -     jmp int_check_syscall_exit_work
+>> -
+>> -#ifdef CONFIG_AUDITSYSCALL
+>> -     /*
+>> -      * Return fast path for syscall audit.  Call __audit_syscall_exit()
+>> -      * directly and then jump back to the fast path with TIF_SYSCALL_AUDIT
+>> -      * masked off.
+>> -      */
+>> -sysret_audit:
+>> -     movq RAX-ARGOFFSET(%rsp),%rsi   /* second arg, syscall return value */
+>> -     cmpq $-MAX_ERRNO,%rsi   /* is it < -MAX_ERRNO? */
+>> -     setbe %al               /* 1 if so, 0 if not */
+>> -     movzbl %al,%edi         /* zero-extend that into %edi */
+>> -     call __audit_syscall_exit
+>> -     movl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),%edi
+>> -     jmp sysret_check
+>> -#endif       /* CONFIG_AUDITSYSCALL */
+>> +     jmp int_ret_from_sys_call
+>
+> Ok, dumb question: what is replacing that audit functionality now?
+> Or are we remaining with the single path down syscall_trace_leave()?
+> AFAICT, the intention is to direct everything to int_ret_from_sys_call
+> after the syscall has been done so that paths can get simplified. Which
+> is a good thing, AFAICT.
 
---Wa3xFDkrbo+Lac6I
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Exactly.  int_ret_from_sys_call calls into the audit code in
+syscall_trace_leave.  IIRC the current code sometimes calls the audit
+exit hook twice, which seems like a bug to me.
 
-On Fri, Jan 09, 2015 at 02:55:40PM +0100, Arnd Bergmann wrote:
+--Andy
 
-> It's an i2c device, so it won't break, based on the implementation
-> we use in the kernel that ignores the vendor part when the part number
-> matches the i2c driver name.
+>
+> Acked-by: Borislav Petkov <bp@suse.de>
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
 
-Plus this update is actually changing the board DT file have the ID
-which we've always had in the driver, the driver has always used the new
-string and never the ak, based one that the device tree is registering.
 
---Wa3xFDkrbo+Lac6I
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUr/wgAAoJECTWi3JdVIfQ+nMH/Rulo4/Hc9qtxPbaFs+Rvvtb
-6BlpNHZzOskKWRqBDvu2Uy45o6ymjLP8jO5iC2C3C1IlN6NEn/7e6XngwnAFUIRb
-7ai38qiqZJWnRd8BZp0YBIL2eDBVC0GHvllGoXGdp/+8aVBQnkmm8Ixc6z77JREX
-i1VKyZMBiWlM+Zjucxn+n9jKKr8bYkyaTpK3h64axDmlg9JYmAqOPPANvvm+6QMj
-SgVaymyzHWJb5Wm2ePecLdkjdNdBcn7EVp/cw9RoHFpZSBNAcpEX2yOP4+AzCI1S
-uo4SrEaUXxde1VDtleJ3A5FTFAar1VjXsRQeb3QjBnvuD00Y4TZH1RHkVtmm1wU=
-=lkgW
------END PGP SIGNATURE-----
-
---Wa3xFDkrbo+Lac6I--
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
