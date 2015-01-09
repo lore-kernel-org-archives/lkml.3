@@ -1,101 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756081AbbAIInd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 03:43:33 -0500
-Received: from mail-bl2on0132.outbound.protection.outlook.com ([65.55.169.132]:21001
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754304AbbAIInc convert rfc822-to-8bit (ORCPT
+	id S1756331AbbAIIpW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 03:45:22 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:34193 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754575AbbAIIpS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 03:43:32 -0500
-From: "fugang.duan@freescale.com" <fugang.duan@freescale.com>
-To: Stefan Agner <stefan@agner.ch>
-CC: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "luwei.zhou@freescale.com" <luwei.zhou@freescale.com>,
-        "LW@karo-electronics.de" <LW@karo-electronics.de>,
-        "Frank.Li@freescale.com" <Frank.Li@freescale.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>
-Subject: RE: [PATCH] net: fec: Fix dual ethernet issue in VFxx
-Thread-Topic: [PATCH] net: fec: Fix dual ethernet issue in VFxx
-Thread-Index: AQHQKbelVfGyJmUy502usKjZPMiTlZyzLTOAgAC8ltCAAIyuAIABGwRggAEFVoCAAHtY0IAAZSWAgAAEpwA=
-Date: Fri, 9 Jan 2015 08:43:29 +0000
-Message-ID: <BLUPR03MB373C95CD17B1CBBCE2DF72EF5440@BLUPR03MB373.namprd03.prod.outlook.com>
-References: <1420552052-4697-1-git-send-email-bhuvanchandra.dv@toradex.com>
- <43ef2a336673e63b89abaf1a71df29e0@agner.ch>
- <BLUPR03MB373B990180F59D2515E9065F5460@BLUPR03MB373.namprd03.prod.outlook.com>
- <fe59d331ecef890284cd005ae62bc236@agner.ch>
- <BLUPR03MB3737C3BCB45CA74A4073E85F5470@BLUPR03MB373.namprd03.prod.outlook.com>
- <971bb29592c6ff4e786a988d850e1956@agner.ch>
- <BLUPR03MB37305F1987D65A4E0A24F3CF5440@BLUPR03MB373.namprd03.prod.outlook.com>
- <cc982a9f7e35329fd4f43ba706087351@agner.ch>
-In-Reply-To: <cc982a9f7e35329fd4f43ba706087351@agner.ch>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.51]
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=fugang.duan@freescale.com; 
-x-dmarcaction: None
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:CY1PR0301MB1226;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1226;
-x-forefront-prvs: 04519BA941
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(377454003)(189002)(377424004)(51704005)(24454002)(106356001)(46102003)(92566001)(68736005)(99286002)(105586002)(2900100001)(31966008)(2950100001)(74316001)(107046002)(76576001)(106116001)(110136001)(102836002)(77096005)(66066001)(97736003)(50986999)(87936001)(120916001)(122556002)(19580395003)(93886004)(54206007)(2656002)(62966003)(40100003)(76176999)(77156002)(4396001)(86362001)(101416001)(21056001)(20776003)(64706001)(54356999)(33656002)(19580405001)(54606007)(99396003);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB1226;H:BLUPR03MB373.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-originalarrivaltime: 09 Jan 2015 08:43:29.0713
- (UTC)
-X-MS-Exchange-CrossTenant-fromentityheader: Hosted
-X-MS-Exchange-CrossTenant-id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: CY1PR0301MB1226
+	Fri, 9 Jan 2015 03:45:18 -0500
+X-AuditID: cbfee68e-f79b46d000002b74-bc-54af951c95a9
+From: Beomho Seo <beomho.seo@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, sre@kernel.org
+Cc: lee.jone@linaro.org, broonie@kernel.org, dbaryshkov@gmail.com,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        cw00.choi@samsung.com, inki.dae@samsung.com, sw0312.kim@samsung.com,
+        Beomho Seo <beomho.seo@samsung.com>
+Subject: [PATCH v2 0/3] power: rt5033: Add Richtek RT533 drivers
+Date: Fri, 09 Jan 2015 17:45:10 +0900
+Message-id: <1420793114-20586-1-git-send-email-beomho.seo@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsWyRsSkUFdm6voQg/OreSxOf9rGbjH14RM2
+	i+tfnrNaTHryntli/pFzrBb9bxayWpx7tZLRYtL9CSwW7/ecYbS4vGsOm8Xn3iOMFkuvX2Sy
+	mDB9LYtF694j7Band5dYzJj8ks1BwGPNvDWMHpf7epk8ds66y+6xcvkXNo9NqzrZPO5c28Pm
+	0bdlFaPH501yARxRXDYpqTmZZalF+nYJXBntd6ayFfzirNj+tIG5gfECexcjB4eEgInEruUc
+	XYycQKaYxIV769m6GLk4hASWMkrMv/OCCSJhIjHtzhNGiMQiRom5H7+wQDhtTBI33vWwglSx
+	CWhKvJ9yhQXEFhHIkNjeMYUZpIhZYBmTxLnWQ8wgCWEBB4mjTdvAxrIIqEqsb90C1swr4Cbx
+	cuFTFoiTFCTmTLIB6ZUQuMUucfzBUjaIegGJb5MPQdXISmw6wAxxnaTEwRU3WCYwCi5gZFjF
+	KJpakFxQnJReZKRXnJhbXJqXrpecn7uJERgtp/8969vBePOA9SFGAQ5GJR7eDXLrQ4RYE8uK
+	K3MPMZoCbZjILCWanA+MybySeENjMyMLUxNTYyNzSzMlcd4EqZ/BQgLpiSWp2ampBalF8UWl
+	OanFhxiZODilGhid/rbe/VXLtPTj/z9usxdHs/EoVxjWMdkrzW68fuXRvO1TptYf5ZRV9kvc
+	ku+UvGR3W3byjwnudpzK313OnlfJmJw+6UYCl1H1pK+e1poqi+qvm6ff400VnF/wbYuF++ST
+	BjmdG/frW+xjO/1qLl+pVnjfat0q8ZZTi//M4eicy5mrfV76+m0lluKMREMt5qLiRAARdQKI
+	kQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJIsWRmVeSWpSXmKPExsVy+t9jAV2ZqetDDJZMZ7Y4/Wkbu8XUh0/Y
+	LK5/ec5qMenJe2aL+UfOsVr0v1nIanHu1UpGi0n3J7BYvN9zhtHi8q45bBafe48wWiy9fpHJ
+	YsL0tSwWrXuPsFuc3l1iMWPySzYHAY8189Ywelzu62Xy2DnrLrvHyuVf2Dw2repk87hzbQ+b
+	R9+WVYwenzfJBXBENTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoq
+	ufgE6Lpl5gC9oKRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHMaL8zla3g
+	F2fF9qcNzA2MF9i7GDk5JARMJKbdecIIYYtJXLi3nq2LkYtDSGARo8Tcj19YIJw2Jokb73pY
+	QarYBDQl3k+5wgJiiwhkSGzvmMIMUsQssIxJ4lzrIWaQhLCAg8TRpm1MIDaLgKrE+tYtYM28
+	Am4SLxc+BWrmAFqnIDFnks0ERu4FjAyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYKj8Zn0
+	DsZVDRaHGAU4GJV4eDfIrQ8RYk0sK67MPcQowcGsJMJ7aAJQiDclsbIqtSg/vqg0J7X4EKMp
+	0PKJzFKiyfnARJFXEm9obGJmZGlkbmhhZGyuJM6rZN8WIiSQnliSmp2aWpBaBNPHxMEp1cAo
+	cGP/vA43tg4+m/bVyqbWgR+tlpbpCT1oOxg7xTGP2e+XDletUJ2Gae/Z37vYg/qZzfPvTZQp
+	SrIUiGi39E0WOrSm5VhUesclwX07l38otmusdNl6T07t8Z89fyv783+cyU16dTRre5jwbFaO
+	mD2rUne0n+Rd+erkPTVLvflrLuvPENoleESJpTgj0VCLuag4EQA6uFak3AIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefan Agner <stefan@agner.ch> Sent: Friday, January 09, 2015 4:22 PM
-> To: Duan Fugang-B38611
-> Cc: Bhuvanchandra DV; linux-kernel@vger.kernel.org; Zhou Luwei-B45643;
-> LW@karo-electronics.de; Li Frank-B20596; davem@davemloft.net; u.kleine-
-> koenig@pengutronix.de; shawn.guo@linaro.org
-> Subject: RE: [PATCH] net: fec: Fix dual ethernet issue in VFxx
-> 
-> On 2015-01-09 04:00, fugang.duan@freescale.com wrote:
-> > From: Stefan Agner <stefan@agner.ch> Sent: Friday, January 09, 2015
-> > 2:59 AM
-> >> To: Duan Fugang-B38611
-> >> Cc: Bhuvanchandra DV; linux-kernel@vger.kernel.org; Zhou
-> >> Luwei-B45643; LW@karo-electronics.de; Li Frank-B20596;
-> >> davem@davemloft.net; u.kleine- koenig@pengutronix.de;
-> >> shawn.guo@linaro.org
-> >> Subject: RE: [PATCH] net: fec: Fix dual ethernet issue in VFxx
-> >>
-[snip]
-> 
-> Currently, MAC1 is broken in case 3 on Vybrid (as well as i.MX6XS and
-> i.MX7, because the FEC_QUIRK_ENET_MAC is enabled for all of them).
-> 
-> > For all these cases, your above patches cannot handle these.
-> 
-> Yes, in it's current state, I agree. A new revision is required.
-> 
-> > So I still insist to add another property for this to avoid the
-> > existing dts files change.
-> 
-> But I don't think adding another device tree property is helping here.
-> There is already a device tree standard how to describe the MDIO buses,
-> why not just make use of them?
-> 
-> I will create a v2 patchset, so we have a new base to discuss this
-> further.
-> 
-Don't invent new property, and compatible with above four cases (avoid existing dts changing), it is difficult.
-Looking forward to your next patchset.
+This patchset adds driver for Richtek rt5033 chip The chip contains
+switching charge mode Li-Ion/Li-Polymer battery charger, fuelgauge.
+Additionally, This includes document for device tree of RT5033 device.
 
-Regards,
-Andy
+RT5033 core driver is applied by Lee Jones.
+RT5033 regulator driver have been merged by Mark Brown. commit is below,
+
+commit b1917578fd5d8efa67afa05a0d6d7e323f2802da
+
+Changes in v2:
+- Revise binding documentation..
+ 
+Beomho Seo (3):
+  power: rt5033_battery: Add RT5033 Fuel gauge device driver
+  power: rt5033_charger: Add RT5033 charger device driver
+  Documentation: Add documentation for rt5033 multifunction device
+
+ Documentation/devicetree/bindings/mfd/rt5033.txt   |  101 ++++
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ drivers/power/Kconfig                              |   16 +
+ drivers/power/Makefile                             |    2 +
+ drivers/power/rt5033_battery.c                     |  177 +++++++
+ drivers/power/rt5033_charger.c                     |  485 ++++++++++++++++++++
+ 6 files changed, 782 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/rt5033.txt
+ create mode 100644 drivers/power/rt5033_battery.c
+ create mode 100644 drivers/power/rt5033_charger.c
+
+-- 
+1.7.9.5
+
