@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932779AbbAILdH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 06:33:07 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:58619 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756879AbbAILdF (ORCPT
+	id S933017AbbAILeU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 06:34:20 -0500
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:45034 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932585AbbAILeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 06:33:05 -0500
-Date: Fri, 9 Jan 2015 11:32:55 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Murali Karicheri <m-karicheri2@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [PATCH v3 3/4] of/pci: add of_pci_dma_configure() update dma
- configuration
-Message-ID: <20150109113254.GA11258@arm.com>
-References: <1420656594-8908-1-git-send-email-m-karicheri2@ti.com>
- <20150108160626.GN11583@arm.com>
- <54AEDFED.8060008@ti.com>
- <2057344.eJYxBNosJg@wuerfel>
+	Fri, 9 Jan 2015 06:34:16 -0500
+Message-Id: <1420803255.1978819.211762005.707EFFB9@webmail.messagingengine.com>
+X-Sasl-Enc: 7xaouhewtTATD5ioIaovasdarPCiEtVQUMb2Bh4arPk9 1420803255
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Rahul Sharma <rsharma@arista.com>, Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2057344.eJYxBNosJg@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Mailer: MessagingEngine.com Webmail Interface - ajax-210a55cc
+In-Reply-To: <CAFB3abwrjp61LLOk3RWwXYEq1g4QZUC8OTKuO2cAr+GbV3n4rw@mail.gmail.com>
+References: <CAFB3abzYNYqtzd_n+Ym0Lo=DYbV0HPU=Tqw=stALNnu188hMKQ@mail.gmail.com>
+ <20150106224706.GA7416@salvia>
+ <CAFB3abwKpR1VqZXUrsexqveAZrA2LTSmTe8a=-H7z2HjAptjwA@mail.gmail.com>
+ <1420627396.26870.36.camel@stressinduktion.org>
+ <20150108205328.GA3361@salvia>
+ <1420756756.1755002.211556745.0418D128@webmail.messagingengine.com>
+ <20150109000546.GA3488@salvia>
+ <CAFB3abwrjp61LLOk3RWwXYEq1g4QZUC8OTKuO2cAr+GbV3n4rw@mail.gmail.com>
+Subject: Re: [PATCH net] ipv6: Prevent ipv6_find_hdr() from returning ENOENT for
+ valid non-first fragments
+Date: Fri, 09 Jan 2015 12:34:15 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 08, 2015 at 10:25:15PM +0000, Arnd Bergmann wrote:
-> On Thursday 08 January 2015 14:52:13 Murali Karicheri wrote:
-> > 
-> > Could you add this as as a follow up patch as I don't have a platformm 
-> > that support IOMMU and as such my understanding of the IOMMU is limited?
-> > 
-> > I can help test the change to make sure it has no side effect on 
-> > Keystone that doesn't support IOMMU.
+
+
+On Fri, Jan 9, 2015, at 08:18, Rahul Sharma wrote:
+> Hi Pablo,
 > 
-> I think that's fine. Let's get your series done first and add the
-> DMA aliases for iommus on top once we have worked out what to do.
+> On Fri, Jan 9, 2015 at 5:35 AM, Pablo Neira Ayuso <pablo@netfilter.org>
+> wrote:
+> > On Thu, Jan 08, 2015 at 11:39:16PM +0100, Hannes Frederic Sowa wrote:
+> >> Hi Pablo,
+> >>
+> >> On Thu, Jan 8, 2015, at 21:53, Pablo Neira Ayuso wrote:
+> >> > I'm afraid we cannot just get rid of that !ipv6_ext_hdr() check. The
+> >> > ipv6_find_hdr() function is designed to return the transport protocol.
+> >> > After the proposed change, it will return extension header numbers.
+> >> > This will break existing ip6tables rulesets since the `-p' option
+> >> > relies on this function to match the transport protocol.
+> >> >
+> >> > Note that the AH header is skipped (see code a bit below this
+> >> > problematic fragmentation handling) so the follow up header after the
+> >> > AH header is returned as the transport header.
+> >> >
+> >> > We can probably return the AH protocol number for non-1st fragments.
+> >> > However, that would be something new to ip6tables since nobody has
+> >> > ever seen packet matching `-p ah' rules. Thus, we restore control to
+> >> > the user to allow this, but we would accept all kind of fragmented AH
+> >> > traffic through the firewall since we cannot know what transport
+> >> > protocol contains from non-1st fragments (unless I'm missing anything,
+> >> > I need to have a closer look at this again tomorrow with fresher
+> >> > mind).
+> >>
+> >> The code in question is guarded by (_frag_off != 0), so we are
+> >> definitely processing a non-1st fragment currently. The -p match would
+> >> happen at the time when the packet is reassembled and thus ipv6_find_hdr
+> >> will find the real transport (final) header at this point (I hope I
+> >> followed the code correctly here).
+> >
+> > Then, Rahul should get things working by modprobing nf_defrag_ipv6.
+> 
+> I already had nf_defrag_ipv6 installed when the issue occured. But I
+> see ip6table_raw_hook returning NF_DROP for the second fragment.
 
-Yeah, I'm fine with that too. I think we're going to be working on this for
-a while, so doing it bit-by-bit makes a lot of sense.
+That's what I expected. I think the change only affects hooks before
+reassembly.
+Pablo, do we care about that, otherwise we should start audit the
+callers?
 
-Will
+Bye,
+Hannes
