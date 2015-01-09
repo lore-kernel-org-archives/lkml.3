@@ -1,95 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755272AbbAIHHK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 02:07:10 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:44276 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658AbbAIHHI convert rfc822-to-8bit (ORCPT
+	id S1755703AbbAIHS2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 02:18:28 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:37126 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754079AbbAIHSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 02:07:08 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: [PATCH 3/6] btwilink: add minimal device tree support
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <1420775239-24745-1-git-send-email-gigi.joseph@ti.com>
-Date: Thu, 8 Jan 2015 23:07:01 -0800
-Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        BlueZ development <linux-bluetooth@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, Gigi Joseph <gigi.joseph@ti.com>,
-        Eyal Reizer <eyalr@ti.com>, bvijay <bvijay@ti.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C03A9F83-A4A3-424A-B50C-D6A9630705C8@holtmann.org>
-References: <1420775239-24745-1-git-send-email-gigi.joseph@ti.com>
-To: Gigi Joseph <gigi.joseph@gmail.com>
-X-Mailer: Apple Mail (2.1993)
+	Fri, 9 Jan 2015 02:18:25 -0500
+MIME-Version: 1.0
+In-Reply-To: <20150109000546.GA3488@salvia>
+References: <CAFB3abzYNYqtzd_n+Ym0Lo=DYbV0HPU=Tqw=stALNnu188hMKQ@mail.gmail.com>
+	<20150106224706.GA7416@salvia>
+	<CAFB3abwKpR1VqZXUrsexqveAZrA2LTSmTe8a=-H7z2HjAptjwA@mail.gmail.com>
+	<1420627396.26870.36.camel@stressinduktion.org>
+	<20150108205328.GA3361@salvia>
+	<1420756756.1755002.211556745.0418D128@webmail.messagingengine.com>
+	<20150109000546.GA3488@salvia>
+Date: Fri, 9 Jan 2015 12:48:24 +0530
+Message-ID: <CAFB3abwrjp61LLOk3RWwXYEq1g4QZUC8OTKuO2cAr+GbV3n4rw@mail.gmail.com>
+Subject: Re: [PATCH net] ipv6: Prevent ipv6_find_hdr() from returning ENOENT
+ for valid non-first fragments
+From: Rahul Sharma <rsharma@arista.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gigi,
+Hi Pablo,
 
-> Add minimal device tree support to the btwilink driver that is used
-> for binding bluetooth with the ti-st shared transport driver.
-> 
-> Signed-off-by: Eyal Reizer <eyalr@ti.com>
-> Signed-off-by: bvijay <bvijay@ti.com>
-> Signed-off-by: Gigi Joseph <gigi.joseph@ti.com>
-> ---
-> drivers/bluetooth/btwilink.c | 11 +++++++++++
-> 1 file changed, 11 insertions(+)
-> 
-> diff --git a/drivers/bluetooth/btwilink.c b/drivers/bluetooth/btwilink.c
-> index 55c135b..95adec3 100644
-> --- a/drivers/bluetooth/btwilink.c
-> +++ b/drivers/bluetooth/btwilink.c
-> @@ -30,6 +30,7 @@
-> 
-> #include <linux/ti_wilink_st.h>
-> #include <linux/module.h>
-> +#include <linux/of.h>
-> 
-> /* Bluetooth Driver Version */
-> #define VERSION               "1.0"
-> @@ -286,6 +287,14 @@ static int ti_st_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
-> 	return 0;
-> }
-> 
-> +static const struct of_device_id btwilink_of_match[] = {
-> +{
-> +	.compatible = "btwilink",
-> +	},
-> +	{}
-> +};
+On Fri, Jan 9, 2015 at 5:35 AM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+> On Thu, Jan 08, 2015 at 11:39:16PM +0100, Hannes Frederic Sowa wrote:
+>> Hi Pablo,
+>>
+>> On Thu, Jan 8, 2015, at 21:53, Pablo Neira Ayuso wrote:
+>> > I'm afraid we cannot just get rid of that !ipv6_ext_hdr() check. The
+>> > ipv6_find_hdr() function is designed to return the transport protocol.
+>> > After the proposed change, it will return extension header numbers.
+>> > This will break existing ip6tables rulesets since the `-p' option
+>> > relies on this function to match the transport protocol.
+>> >
+>> > Note that the AH header is skipped (see code a bit below this
+>> > problematic fragmentation handling) so the follow up header after the
+>> > AH header is returned as the transport header.
+>> >
+>> > We can probably return the AH protocol number for non-1st fragments.
+>> > However, that would be something new to ip6tables since nobody has
+>> > ever seen packet matching `-p ah' rules. Thus, we restore control to
+>> > the user to allow this, but we would accept all kind of fragmented AH
+>> > traffic through the firewall since we cannot know what transport
+>> > protocol contains from non-1st fragments (unless I'm missing anything,
+>> > I need to have a closer look at this again tomorrow with fresher
+>> > mind).
+>>
+>> The code in question is guarded by (_frag_off != 0), so we are
+>> definitely processing a non-1st fragment currently. The -p match would
+>> happen at the time when the packet is reassembled and thus ipv6_find_hdr
+>> will find the real transport (final) header at this point (I hope I
+>> followed the code correctly here).
+>
+> Then, Rahul should get things working by modprobing nf_defrag_ipv6.
 
-this formatting is bogus. Please construct it similar to what other drivers are doing.
+I already had nf_defrag_ipv6 installed when the issue occured. But I
+see ip6table_raw_hook returning NF_DROP for the second fragment.
 
-static const struct .. = {
-	{ .compatible = ".." },
-
-	{ }	/* Terminating entry */
-};
-
-And add an extra empty line before MODULE_DEVICE_TABLE.
-
-> +MODULE_DEVICE_TABLE(of, btwilink_of_match);
-> +
-> static int bt_ti_probe(struct platform_device *pdev)
-> {
-> 	static struct ti_st *hst;
-> @@ -349,6 +358,8 @@ static struct platform_driver btwilink_driver = {
-> 	.remove = bt_ti_remove,
-> 	.driver = {
-> 		.name = "btwilink",
-> +		.owner = THIS_MODULE,
-> +		.of_match_table = of_match_ptr(btwilink_of_match),
-> 	},
-> };
-
-Regards
-
-Marcel
-
+Thanks,
+Rahul
