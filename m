@@ -1,106 +1,426 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091AbbAIBzE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 20:55:04 -0500
-Received: from regular1.263xmail.com ([211.150.99.137]:46918 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389AbbAIBzB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 20:55:01 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-ADDR-CHECKED: 0
-X-RL-SENDER: jay.xu@rock-chips.com
-X-FST-TO: lgirdwood@gmail.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: jay.xu@rock-chips.com
-X-UNIQUE-TAG: <3b8634f1e7b144c623b17c8c1f2d0ded>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Jianqun Xu <jay.xu@rock-chips.com>
-To: lgirdwood@gmail.com, heiko@sntech.de, broonie@kernel.org, perex@perex.cz,
-        tiwai@suse.de, sonnyrao@chromium.org
-Cc: linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        Jianqun Xu <jay.xu@rock-chips.com>
-Subject: [PATCH] ASoC: rockchip: i2s: add rockchip_dmaengine_pcm_config
-Date: Fri,  9 Jan 2015 09:52:49 +0800
-Message-Id: <1420768369-6681-1-git-send-email-jay.xu@rock-chips.com>
+	id S1755383AbbAIDl1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 22:41:27 -0500
+Received: from mail-bn1on0140.outbound.protection.outlook.com ([157.56.110.140]:31744
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752782AbbAIDlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 22:41:25 -0500
+From: Robin Gong <b38343@freescale.com>
+To: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <lgirdwood@gmail.com>, <broonie@kernel.org>, <b38343@freescale.com>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v1] regulator: pfuze100-regulator: add pfuze3000 support
+Date: Fri, 9 Jan 2015 09:57:33 +0800
+Message-ID: <1420768653-1760-1-git-send-email-b38343@freescale.com>
 X-Mailer: git-send-email 1.9.1
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=yibin.gong@freescale.com; 
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(189002)(199003)(575784001)(92566001)(104016003)(47776003)(20776003)(2201001)(33646002)(46102003)(107046002)(229853001)(50226001)(64706001)(4396001)(36756003)(77096005)(89996001)(31966008)(62966003)(68736005)(77156002)(50466002)(106466001)(48376002)(81156004)(87936001)(105606002)(19580395003)(19580405001)(6806004)(69596002)(21056001)(85426001)(120916001)(99396003)(84676001)(97736003)(7049001)(50986999)(42262002)(2101003)(357404004);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0775;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-DmarcAction: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BY2PR0301MB0775;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0775;
+X-Forefront-PRVS: 04519BA941
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0775;
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 09 Jan 2015 03:07:20.6980
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.158.2]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0775
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes snd_dmaengine_pcm_register with rockchip_dmaengine_pcm_config,
-which configure the parameters of period and buffer match to rockchip DMAC.
+Add pfuze3000 chip support.
 
-=======================
-without rockchip_dmaengine_pcm_config, and test with command -
-aplay -D hw:0,0 /tmp/a, there are the error dump:
-[  134.899396] dma-pl330 ffb20000.dma-controller: fill_queue:2251 Bad Desc(7)
-[  134.906270] dma-pl330 ffb20000.dma-controller: fill_queue:2251 Bad Desc(8)
-[  134.913141] dma-pl330 ffb20000.dma-controller: fill_queue:2251 Bad Desc(9)
-
-And bellow sound from DMA debugger:
-"I debugged it a little and it looks like what is happening is that requests
-which aren't a multiple of burst size * burst length are coming in.  Right
-now the i2s block is setting a burst size of 4 and burst length of 4, but
-the dmaengine code has no idea about this restriction.  I was able to
-eliminate the messages by changing burst length to 1 in the i2s driver.
-This fix would always work as long as we're sending a multiple of 4 bytes
-(which so far seems to be the case)"
-
-This patch can make the length of dma buffer is aligned to a multiple of burst size
-and burst length.
-
-Signed-off-by: Jianqun Xu <jay.xu@rock-chips.com>
+Signed-off-by: Robin Gong <b38343@freescale.com>
 ---
- sound/soc/rockchip/rockchip_i2s.c | 21 ++++++++++++++++++++-
- 1 file changed, 20 insertions(+), 1 deletion(-)
+ .../devicetree/bindings/regulator/pfuze100.txt     |  94 ++++++++++++++-
+ drivers/regulator/pfuze100-regulator.c             | 134 +++++++++++++++++++--
+ include/linux/regulator/pfuze100.h                 |  14 +++
+ 3 files changed, 232 insertions(+), 10 deletions(-)
 
-diff --git a/sound/soc/rockchip/rockchip_i2s.c b/sound/soc/rockchip/rockchip_i2s.c
-index c74ba37..bdd1021 100644
---- a/sound/soc/rockchip/rockchip_i2s.c
-+++ b/sound/soc/rockchip/rockchip_i2s.c
-@@ -408,6 +408,24 @@ static const struct regmap_config rockchip_i2s_regmap_config = {
- 	.cache_type = REGCACHE_FLAT,
+diff --git a/Documentation/devicetree/bindings/regulator/pfuze100.txt b/Documentation/devicetree/bindings/regulator/pfuze100.txt
+index 34ef5d1..9b40db8 100644
+--- a/Documentation/devicetree/bindings/regulator/pfuze100.txt
++++ b/Documentation/devicetree/bindings/regulator/pfuze100.txt
+@@ -1,7 +1,7 @@
+ PFUZE100 family of regulators
+ 
+ Required properties:
+-- compatible: "fsl,pfuze100" or "fsl,pfuze200"
++- compatible: "fsl,pfuze100", "fsl,pfuze200", "fsl,pfuze3000"
+ - reg: I2C slave address
+ 
+ Required child node:
+@@ -14,6 +14,8 @@ Required child node:
+   sw1ab,sw1c,sw2,sw3a,sw3b,sw4,swbst,vsnvs,vrefddr,vgen1~vgen6
+   --PFUZE200
+   sw1ab,sw2,sw3a,sw3b,swbst,vsnvs,vrefddr,vgen1~vgen6
++  --PFUZE3000
++  sw1a,sw1b,sw2,sw3,swbst,vsnvs,vrefddr,vldo1,vldo2,vccsd,v33,vldo3,vldo4
+ 
+ Each regulator is defined using the standard binding for regulators.
+ 
+@@ -205,3 +207,93 @@ Example 2: PFUZE200
+ 			};
+ 		};
+ 	};
++
++Example 3: PFUZE3000
++
++	pmic: pfuze3000@08 {
++		compatible = "fsl,pfuze3000";
++		reg = <0x08>;
++
++		regulators {
++			sw1a_reg: sw1a {
++				regulator-min-microvolt = <700000>;
++				regulator-max-microvolt = <1475000>;
++				regulator-boot-on;
++				regulator-always-on;
++				regulator-ramp-delay = <6250>;
++			};
++			/* use sw1c_reg to align with pfuze100/pfuze200 */
++			sw1c_reg: sw1b {
++				regulator-min-microvolt = <700000>;
++				regulator-max-microvolt = <1475000>;
++				regulator-boot-on;
++				regulator-always-on;
++				regulator-ramp-delay = <6250>;
++			};
++
++			sw2_reg: sw2 {
++				regulator-min-microvolt = <2500000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			sw3a_reg: sw3 {
++				regulator-min-microvolt = <900000>;
++				regulator-max-microvolt = <1650000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			swbst_reg: swbst {
++				regulator-min-microvolt = <5000000>;
++				regulator-max-microvolt = <5150000>;
++			};
++
++			snvs_reg: vsnvs {
++				regulator-min-microvolt = <1000000>;
++				regulator-max-microvolt = <3000000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			vref_reg: vrefddr {
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			vgen1_reg: vldo1 {
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++			};
++
++			vgen2_reg: vldo2 {
++				regulator-min-microvolt = <800000>;
++				regulator-max-microvolt = <1550000>;
++			};
++
++			vgen3_reg: vccsd {
++				regulator-min-microvolt = <2850000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++			};
++
++			vgen4_reg: v33 {
++				regulator-min-microvolt = <2850000>;
++				regulator-max-microvolt = <3300000>;
++			};
++
++			vgen5_reg: vldo3 {
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++			};
++
++			vgen6_reg: vldo4 {
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++			};
++		};
++	};
+diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
+index c879dff..8cc8d18 100644
+--- a/drivers/regulator/pfuze100-regulator.c
++++ b/drivers/regulator/pfuze100-regulator.c
+@@ -56,7 +56,7 @@
+ #define PFUZE100_VGEN5VOL	0x70
+ #define PFUZE100_VGEN6VOL	0x71
+ 
+-enum chips { PFUZE100, PFUZE200 };
++enum chips { PFUZE100, PFUZE200, PFUZE3000 = 3 };
+ 
+ struct pfuze_regulator {
+ 	struct regulator_desc desc;
+@@ -80,9 +80,18 @@ static const int pfuze100_vsnvs[] = {
+ 	1000000, 1100000, 1200000, 1300000, 1500000, 1800000, 3000000,
  };
  
-+static const struct snd_pcm_hardware rockchip_pcm_hardware = {
-+	.info			= SNDRV_PCM_INFO_MMAP |
-+				  SNDRV_PCM_INFO_MMAP_VALID |
-+				  SNDRV_PCM_INFO_INTERLEAVED,
-+	.period_bytes_min	= 1024,
-+	.period_bytes_max	= PAGE_SIZE,
-+	.periods_min		= 3,
-+	.periods_max		= 8,
-+	.buffer_bytes_max	= 8 * PAGE_SIZE,
-+	.fifo_size		= 16,
++static const int pfuze3000_sw2lo[] = {
++	1500000, 1550000, 1600000, 1650000, 1700000, 1750000, 1800000, 1850000,
 +};
 +
-+static const struct snd_dmaengine_pcm_config rockchip_dmaengine_pcm_config = {
-+	.pcm_hardware = &rockchip_pcm_hardware,
-+	.prepare_slave_config = snd_dmaengine_pcm_prepare_slave_config,
-+	.prealloc_buffer_size = PAGE_SIZE * 8,
++static const int pfuze3000_sw2hi[] = {
++	2500000, 2800000, 2850000, 3000000, 3100000, 3150000, 3200000, 3300000,
 +};
 +
- static int rockchip_i2s_probe(struct platform_device *pdev)
- {
- 	struct rk_i2s_dev *i2s;
-@@ -478,7 +496,8 @@ static int rockchip_i2s_probe(struct platform_device *pdev)
- 		goto err_suspend;
+ static const struct i2c_device_id pfuze_device_id[] = {
+ 	{.name = "pfuze100", .driver_data = PFUZE100},
+ 	{.name = "pfuze200", .driver_data = PFUZE200},
++	{.name = "pfuze3000", .driver_data = PFUZE3000},
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, pfuze_device_id);
+@@ -90,6 +99,7 @@ MODULE_DEVICE_TABLE(i2c, pfuze_device_id);
+ static const struct of_device_id pfuze_dt_ids[] = {
+ 	{ .compatible = "fsl,pfuze100", .data = (void *)PFUZE100},
+ 	{ .compatible = "fsl,pfuze200", .data = (void *)PFUZE200},
++	{ .compatible = "fsl,pfuze3000", .data = (void *)PFUZE3000},
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(of, pfuze_dt_ids);
+@@ -219,6 +229,60 @@ static struct regulator_ops pfuze100_swb_regulator_ops = {
+ 		.stby_mask = 0x20,	\
  	}
  
--	ret = snd_dmaengine_pcm_register(&pdev->dev, NULL, 0);
-+	ret = snd_dmaengine_pcm_register(&pdev->dev,
-+					 &rockchip_dmaengine_pcm_config, 0);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Could not register PCM\n");
- 		goto err_pcm_register;
++#define PFUZE3000_VCC_REG(_chip, _name, base, min, max, step)	{	\
++	.desc = {	\
++		.name = #_name,	\
++		.n_voltages = ((max) - (min)) / (step) + 1,	\
++		.ops = &pfuze100_ldo_regulator_ops,	\
++		.type = REGULATOR_VOLTAGE,	\
++		.id = _chip ## _ ## _name,	\
++		.owner = THIS_MODULE,	\
++		.min_uV = (min),	\
++		.uV_step = (step),	\
++		.vsel_reg = (base),	\
++		.vsel_mask = 0x3,	\
++		.enable_reg = (base),	\
++		.enable_mask = 0x10,	\
++	},	\
++	.stby_reg = (base),	\
++	.stby_mask = 0x20,	\
++}
++
++
++#define PFUZE3000_SW2_REG(_chip, _name, base, min, max, step)	{	\
++	.desc = {	\
++		.name = #_name,\
++		.n_voltages = ((max) - (min)) / (step) + 1,	\
++		.ops = &pfuze100_sw_regulator_ops,	\
++		.type = REGULATOR_VOLTAGE,	\
++		.id = _chip ## _ ## _name,	\
++		.owner = THIS_MODULE,	\
++		.min_uV = (min),	\
++		.uV_step = (step),	\
++		.vsel_reg = (base) + PFUZE100_VOL_OFFSET,	\
++		.vsel_mask = 0x7,	\
++	},	\
++	.stby_reg = (base) + PFUZE100_STANDBY_OFFSET,	\
++	.stby_mask = 0x7,	\
++}
++
++#define PFUZE3000_SW3_REG(_chip, _name, base, min, max, step)	{	\
++	.desc = {	\
++		.name = #_name,\
++		.n_voltages = ((max) - (min)) / (step) + 1,	\
++		.ops = &pfuze100_sw_regulator_ops,	\
++		.type = REGULATOR_VOLTAGE,	\
++		.id = _chip ## _ ## _name,	\
++		.owner = THIS_MODULE,	\
++		.min_uV = (min),	\
++		.uV_step = (step),	\
++		.vsel_reg = (base) + PFUZE100_VOL_OFFSET,	\
++		.vsel_mask = 0xf,	\
++	},	\
++	.stby_reg = (base) + PFUZE100_STANDBY_OFFSET,	\
++	.stby_mask = 0xf,	\
++}
++
+ /* PFUZE100 */
+ static struct pfuze_regulator pfuze100_regulators[] = {
+ 	PFUZE100_SW_REG(PFUZE100, SW1AB, PFUZE100_SW1ABVOL, 300000, 1875000, 25000),
+@@ -254,6 +318,22 @@ static struct pfuze_regulator pfuze200_regulators[] = {
+ 	PFUZE100_VGEN_REG(PFUZE200, VGEN6, PFUZE100_VGEN6VOL, 1800000, 3300000, 100000),
+ };
+ 
++static struct pfuze_regulator pfuze3000_regulators[] = {
++	PFUZE100_SW_REG(PFUZE3000, SW1A, PFUZE100_SW1ABVOL, 700000, 1475000, 25000),
++	PFUZE100_SW_REG(PFUZE3000, SW1B, PFUZE100_SW1CVOL, 700000, 1475000, 25000),
++	PFUZE100_SWB_REG(PFUZE3000, SW2, PFUZE100_SW2VOL, 0x7, pfuze3000_sw2lo),
++	PFUZE3000_SW3_REG(PFUZE3000, SW3, PFUZE100_SW3AVOL, 900000, 1650000, 50000),
++	PFUZE100_SWB_REG(PFUZE3000, SWBST, PFUZE100_SWBSTCON1, 0x3, pfuze100_swbst),
++	PFUZE100_SWB_REG(PFUZE3000, VSNVS, PFUZE100_VSNVSVOL, 0x7, pfuze100_vsnvs),
++	PFUZE100_FIXED_REG(PFUZE3000, VREFDDR, PFUZE100_VREFDDRCON, 750000),
++	PFUZE100_VGEN_REG(PFUZE3000, VLDO1, PFUZE100_VGEN1VOL, 1800000, 3300000, 100000),
++	PFUZE100_VGEN_REG(PFUZE3000, VLDO2, PFUZE100_VGEN2VOL, 800000, 1550000, 50000),
++	PFUZE3000_VCC_REG(PFUZE3000, VCCSD, PFUZE100_VGEN3VOL, 2850000, 3300000, 150000),
++	PFUZE3000_VCC_REG(PFUZE3000, V33, PFUZE100_VGEN4VOL, 2850000, 3300000, 150000),
++	PFUZE100_VGEN_REG(PFUZE3000, VLDO3, PFUZE100_VGEN5VOL, 1800000, 3300000, 100000),
++	PFUZE100_VGEN_REG(PFUZE3000, VLDO4, PFUZE100_VGEN6VOL, 1800000, 3300000, 100000),
++};
++
+ static struct pfuze_regulator *pfuze_regulators;
+ 
+ #ifdef CONFIG_OF
+@@ -294,6 +374,24 @@ static struct of_regulator_match pfuze200_matches[] = {
+ 	{ .name = "vgen6",	},
+ };
+ 
++/* PFUZE3000 */
++static struct of_regulator_match pfuze3000_matches[] = {
++
++	{ .name = "sw1a",	},
++	{ .name = "sw1b",	},
++	{ .name = "sw2",	},
++	{ .name = "sw3",	},
++	{ .name = "swbst",	},
++	{ .name = "vsnvs",	},
++	{ .name = "vrefddr",	},
++	{ .name = "vldo1",	},
++	{ .name = "vldo2",	},
++	{ .name = "vccsd",	},
++	{ .name = "v33",	},
++	{ .name = "vldo3",	},
++	{ .name = "vldo4",	},
++};
++
+ static struct of_regulator_match *pfuze_matches;
+ 
+ static int pfuze_parse_regulators_dt(struct pfuze_chip *chip)
+@@ -313,6 +411,11 @@ static int pfuze_parse_regulators_dt(struct pfuze_chip *chip)
+ 	}
+ 
+ 	switch (chip->chip_id) {
++	case PFUZE3000:
++		pfuze_matches = pfuze3000_matches;
++		ret = of_regulator_match(dev, parent, pfuze3000_matches,
++					 ARRAY_SIZE(pfuze3000_matches));
++		break;
+ 	case PFUZE200:
+ 		pfuze_matches = pfuze200_matches;
+ 		ret = of_regulator_match(dev, parent, pfuze200_matches,
+@@ -378,7 +481,8 @@ static int pfuze_identify(struct pfuze_chip *pfuze_chip)
+ 		 * as ID=8 in PFUZE100
+ 		 */
+ 		dev_info(pfuze_chip->dev, "Assuming misprogrammed ID=0x8");
+-	} else if ((value & 0x0f) != pfuze_chip->chip_id) {
++	} else if ((value & 0x0f) != pfuze_chip->chip_id &&
++		   (value & 0xf0) >> 4 != pfuze_chip->chip_id) {
+ 		/* device id NOT match with your setting */
+ 		dev_warn(pfuze_chip->dev, "Illegal ID: %x\n", value);
+ 		return -ENODEV;
+@@ -417,7 +521,7 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
+ 	int i, ret;
+ 	const struct of_device_id *match;
+ 	u32 regulator_num;
+-	u32 sw_check_start, sw_check_end;
++	u32 sw_check_start, sw_check_end, sw_hi = 0x40;
+ 
+ 	pfuze_chip = devm_kzalloc(&client->dev, sizeof(*pfuze_chip),
+ 			GFP_KERNEL);
+@@ -458,13 +562,19 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
+ 
+ 	/* use the right regulators after identify the right device */
+ 	switch (pfuze_chip->chip_id) {
++	case PFUZE3000:
++		pfuze_regulators = pfuze3000_regulators;
++		regulator_num = ARRAY_SIZE(pfuze3000_regulators);
++		sw_check_start = PFUZE3000_SW2;
++		sw_check_end = PFUZE3000_SW2;
++		sw_hi = 1 << 3;
++		break;
+ 	case PFUZE200:
+ 		pfuze_regulators = pfuze200_regulators;
+ 		regulator_num = ARRAY_SIZE(pfuze200_regulators);
+ 		sw_check_start = PFUZE200_SW2;
+ 		sw_check_end = PFUZE200_SW3B;
+ 		break;
+-
+ 	case PFUZE100:
+ 	default:
+ 		pfuze_regulators = pfuze100_regulators;
+@@ -474,7 +584,8 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
+ 		break;
+ 	}
+ 	dev_info(&client->dev, "pfuze%s found.\n",
+-		(pfuze_chip->chip_id == PFUZE100) ? "100" : "200");
++		(pfuze_chip->chip_id == PFUZE100) ? "100" :
++		((pfuze_chip->chip_id == PFUZE200) ? "200" : "3000"));
+ 
+ 	memcpy(pfuze_chip->regulator_descs, pfuze_regulators,
+ 		sizeof(pfuze_chip->regulator_descs));
+@@ -498,10 +609,15 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
+ 		/* SW2~SW4 high bit check and modify the voltage value table */
+ 		if (i >= sw_check_start && i <= sw_check_end) {
+ 			regmap_read(pfuze_chip->regmap, desc->vsel_reg, &val);
+-			if (val & 0x40) {
+-				desc->min_uV = 800000;
+-				desc->uV_step = 50000;
+-				desc->n_voltages = 51;
++			if (val & sw_hi) {
++				if (pfuze_chip->chip_id == PFUZE3000) {
++					desc->volt_table = pfuze3000_sw2hi;
++					desc->n_voltages = ARRAY_SIZE(pfuze3000_sw2hi);
++				} else {
++					desc->min_uV = 800000;
++					desc->uV_step = 50000;
++					desc->n_voltages = 51;
++				}
+ 			}
+ 		}
+ 
+diff --git a/include/linux/regulator/pfuze100.h b/include/linux/regulator/pfuze100.h
+index 364f7a7..70c6c66 100644
+--- a/include/linux/regulator/pfuze100.h
++++ b/include/linux/regulator/pfuze100.h
+@@ -49,6 +49,20 @@
+ #define PFUZE200_VGEN5		11
+ #define PFUZE200_VGEN6		12
+ 
++#define PFUZE3000_SW1A		0
++#define PFUZE3000_SW1B		1
++#define PFUZE3000_SW2		2
++#define PFUZE3000_SW3		3
++#define PFUZE3000_SWBST		4
++#define PFUZE3000_VSNVS		5
++#define PFUZE3000_VREFDDR	6
++#define PFUZE3000_VLDO1		7
++#define PFUZE3000_VLDO2		8
++#define PFUZE3000_VCCSD		9
++#define PFUZE3000_V33		10
++#define PFUZE3000_VLDO3		11
++#define PFUZE3000_VLDO4		12
++
+ struct regulator_init_data;
+ 
+ struct pfuze_regulator_platform_data {
 -- 
 1.9.1
-
 
