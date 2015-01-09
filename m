@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758312AbbAIU6w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 15:58:52 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:25469 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233AbbAIU6u (ORCPT
+	id S1758318AbbAIU72 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 15:59:28 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34070 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233AbbAIU70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 15:58:50 -0500
-To: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-Cc: martin.petersen@oracle.com, jejb@kernel.org, hch@infradead.org,
-        linux-scsi@vger.kernel.org, JBottomley@Parallels.com,
-        Sathya.Prakash@avagotech.com, Nagalakshmi.Nandigama@avagotech.com,
-        linux-kernel@vger.kernel.org, Elliott@hp.com
-Subject: Re: [PATCH 09/22] [SCSI] mpt2sas, mpt3sas: Added a support to set cpu affinity for each MSIX vector enabled by the HBA
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <1420635329-2268-1-git-send-email-Sreekanth.Reddy@avagotech.com>
-Date: Fri, 09 Jan 2015 15:58:16 -0500
-In-Reply-To: <1420635329-2268-1-git-send-email-Sreekanth.Reddy@avagotech.com>
-	(Sreekanth Reddy's message of "Wed, 7 Jan 2015 18:25:29 +0530")
-Message-ID: <yq1twzzzn6f.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Fri, 9 Jan 2015 15:59:26 -0500
+Date: Fri, 9 Jan 2015 21:59:23 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
+        s.nawrocki@samsung.com, Sakari Ailus <sakari.ailus@linux.intel.com>
+Subject: Re: [PATCH/RFC v10 18/19] leds: max77693: add support for V4L2 Flash
+ sub-device
+Message-ID: <20150109205923.GS18076@amd>
+References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
+ <1420816989-1808-19-git-send-email-j.anaszewski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420816989-1808-19-git-send-email-j.anaszewski@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Sreekanth" == Sreekanth Reddy <sreekanth.reddy@avagotech.com> writes:
+On Fri 2015-01-09 16:23:08, Jacek Anaszewski wrote:
+> Add support for V4L2 Flash sub-device to the max77693 LED Flash class
+> driver. The support allows for V4L2 Flash sub-device to take the control
+> of the LED Flash class device.
+> 
+> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-Sreekanth> Change_set: 1. Added affinity_hint varable of type
-Sreekanth> cpumask_var_t in adapter_reply_queue structure. And allocated
-Sreekanth> a memory for this varable by calling alloc_cpumask_var.
-Sreekanth> 2. Call the API irq_set_affinity_hint for each MSIx vector to
-Sreekanth> affiniate it with calculated cpus at driver inilization time.
-Sreekanth> 3. While freeing the MSIX vector, call this same API to
-Sreekanth> release the cpu affinity mask for each MSIx vector by
-Sreekanth> providing the NULL value in cpumask argument.  4. then call
-Sreekanth> the free_cpumask_var API to free the memory allocated in step
-Sreekanth> 2.
-
-(Still dreaming of a combined mpt2sas and mpt3sas so I wouldn't have to
-review everything twice).
-
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+Acked-by: Pavel Machek <pavel@ucw.cz>
 
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
