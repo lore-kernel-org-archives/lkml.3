@@ -1,49 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757563AbbAIVbO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 16:31:14 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752616AbbAIVbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 16:31:13 -0500
-Message-ID: <54B0489D.1050905@nod.at>
-Date: Fri, 09 Jan 2015 22:31:09 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1758201AbbAIVcN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 16:32:13 -0500
+Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:36281 "EHLO
+	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189AbbAIVcL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 16:32:11 -0500
+Date: Fri, 9 Jan 2015 16:31:18 -0500
+From: Rich Felker <dalias@aerifal.cx>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, David Drysdale <drysdale@google.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, sparclinux@vger.kernel.org
+Subject: Re: [PATCHv10 man-pages 5/5] execveat.2: initial man page for
+ execveat(2)
+Message-ID: <20150109213118.GV4574@brightrain.aerifal.cx>
+References: <1416830039-21952-1-git-send-email-drysdale@google.com>
+ <1416830039-21952-6-git-send-email-drysdale@google.com>
+ <54AFF813.7050604@gmail.com>
+ <20150109161302.GQ4574@brightrain.aerifal.cx>
+ <CAHse=S88Jy5ZKM_VY5onfvxX7dTMngnxuHfuLeSuzvKvQNP19A@mail.gmail.com>
+ <20150109204815.GR4574@brightrain.aerifal.cx>
+ <20150109205626.GK22149@ZenIV.linux.org.uk>
+ <20150109205926.GT4574@brightrain.aerifal.cx>
+ <877fwvy7ln.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
-To: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>, dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] UBI: Fastmap: Care about the protection queue
-References: <1416835236-25185-1-git-send-email-richard@nod.at> <1416835236-25185-2-git-send-email-richard@nod.at> <54B046BC.8060802@vanguardiasur.com.ar>
-In-Reply-To: <54B046BC.8060802@vanguardiasur.com.ar>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <877fwvy7ln.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 09.01.2015 um 22:23 schrieb Ezequiel Garcia:
-> On 11/24/2014 10:20 AM, Richard Weinberger wrote:
->> Fastmap can miss a PEB if it is in the protection queue
->> and not jet in the used tree.
+On Fri, Jan 09, 2015 at 03:20:04PM -0600, Eric W. Biederman wrote:
+> Rich Felker <dalias@aerifal.cx> writes:
 > 
-> s/jet/yet
+> > On Fri, Jan 09, 2015 at 08:56:26PM +0000, Al Viro wrote:
+> >> On Fri, Jan 09, 2015 at 03:48:15PM -0500, Rich Felker wrote:
+> >> > I think this is a case that needs to be fixed, though it's hard. The
+> >> > normal correct usage for fexecve is to always pass an O_CLOEXEC file
+> >> > descriptor, and the caller can't really be expected to know whether
+> >> > the file is a script or not. We discussed workarounds before and one
+> >> > idea I proposed was having fexecve provide a "one open only" magic
+> >> > symlink in /proc/self/ to pass to the interpreter. It would behave
+> >> > like an O_PATH file descriptor magic symlink in /proc/self/fd, but
+> >> > would automatically cease to exist on the first open (at which point
+> >> > the interpreter would have a real O_RDONLY file descriptor for the
+> >> > underlying file).
+> >> 
+> >> For fsck sake, folks, if you have bloody /proc, you don't need that shite
+> >> at all!  Just do execve on /proc/self/fd/n, and be done with that.
+> >> 
+> >> The sole excuse for merging that thing in the first place had been
+> >> "would anybody think of children^Wsclerotic^Whardened environments
+> >> where they have no /proc at all".
+> >
+> > That doesn't work. With O_CLOEXEC, /proc/self/fd/n is already gone at
+> > the time the interpreter runs, whether you're using fexecveat or
+> > execve with "/proc/self/fd/n" to implement POSIX fexecve(). That's the
+> > problem. This breaks the intended idiom for fexecve.
 > 
->> Treat every protected PEB as used.
->>
-> 
-> I'm wondering if we can have a detailed description of the issues this
-> commit fixes (if any?). In other words, what's the result of *not*
-> having the patch?
+> O_CLOEXEC with a #! intepreter can not work.  If the file descriptor is
+> closed a #! interpreter can not open it.   So I don't know why or how
+> you want that to work but it is nonsense.
 
-Without this patch fastmap can miss one PEB.
-As consequence of this during attach the fastmap self-check
-will detect this inconsistency and will fall back to a full scan.
-If you try to attach using a custom fastmap implementation (found in
-bootloaders) which do often not have sophisticated self-checks you'll
-face a serious data corruption or if you're lucky UBI will crash.
+The why is simple: fexecve always expects a close-on-exec file
+descriptor. Otherwise the program being executed would need to take a
+special option telling it to close the spurious fd it inherits. Most
+programs don't have such an option, and there's no way to do it
+without application-specific knowledge.
 
-Now clearer? :-)
+The how is difficult, but it can be done.
 
-Thanks,
-//richard
+Rich
