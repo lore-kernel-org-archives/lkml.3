@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933357AbbAIKyy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 05:54:54 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44502 "EHLO
+	id S933441AbbAIK6k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 05:58:40 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44499 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757260AbbAIKc3 (ORCPT
+	by vger.kernel.org with ESMTP id S1757113AbbAIKc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Jan 2015 05:32:29 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 34/78] ALSA: hda - Fix built-in mic at resume on Lenovo Ideapad S210
-Date: Fri,  9 Jan 2015 11:31:43 +0100
-Message-Id: <79864defd7264151ece663eed424a71d5450db4b.1420799385.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 35/78] ALSA: usb-audio: Don't resubmit pending URBs at MIDI error recovery
+Date: Fri,  9 Jan 2015 11:31:44 +0100
+Message-Id: <4c8cb0ee48a5e126b14cd2c957e20bc0722c0258.1420799385.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
 References: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
@@ -29,31 +29,67 @@ From: Takashi Iwai <tiwai@suse.de>
 
 ===============
 
-commit fedb2245cbb8d823e449ebdd48ba9bb35c071ce0 upstream.
+commit 66139a48cee1530c91f37c145384b4ee7043f0b7 upstream.
 
-The built-in mic boost volume gets almost muted after suspend/resume
-on Lenovo Ideapad S210.
+In snd_usbmidi_error_timer(), the driver tries to resubmit MIDI input
+URBs to reactivate the MIDI stream, but this causes the error when
+some of URBs are still pending like:
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=88121
-Reported-and-tested-by: Roman Kagan <rkagan@mail.ru>
+ WARNING: CPU: 0 PID: 0 at ../drivers/usb/core/urb.c:339 usb_submit_urb+0x5f/0x70()
+ URB ef705c40 submitted while active
+ CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.16.6-2-desktop #1
+ Hardware name: FOXCONN TPS01/TPS01, BIOS 080015  03/23/2010
+  c0984bfa f4009ed4 c078deaf f4009ee4 c024c884 c09a135c f4009f00 00000000
+  c0984bfa 00000153 c061ac4f c061ac4f 00000009 00000001 ef705c40 e854d1c0
+  f4009eec c024c8d3 00000009 f4009ee4 c09a135c f4009f00 f4009f04 c061ac4f
+ Call Trace:
+  [<c0205df6>] try_stack_unwind+0x156/0x170
+  [<c020482a>] dump_trace+0x5a/0x1b0
+  [<c0205e56>] show_trace_log_lvl+0x46/0x50
+  [<c02049d1>] show_stack_log_lvl+0x51/0xe0
+  [<c0205eb7>] show_stack+0x27/0x50
+  [<c078deaf>] dump_stack+0x45/0x65
+  [<c024c884>] warn_slowpath_common+0x84/0xa0
+  [<c024c8d3>] warn_slowpath_fmt+0x33/0x40
+  [<c061ac4f>] usb_submit_urb+0x5f/0x70
+  [<f7974104>] snd_usbmidi_submit_urb+0x14/0x60 [snd_usbmidi_lib]
+  [<f797483a>] snd_usbmidi_error_timer+0x6a/0xa0 [snd_usbmidi_lib]
+  [<c02570c0>] call_timer_fn+0x30/0x130
+  [<c0257442>] run_timer_softirq+0x1c2/0x260
+  [<c0251493>] __do_softirq+0xc3/0x270
+  [<c0204732>] do_softirq_own_stack+0x22/0x30
+  [<c025186d>] irq_exit+0x8d/0xa0
+  [<c0795228>] smp_apic_timer_interrupt+0x38/0x50
+  [<c0794a3c>] apic_timer_interrupt+0x34/0x3c
+  [<c0673d9e>] cpuidle_enter_state+0x3e/0xd0
+  [<c028bb8d>] cpu_idle_loop+0x29d/0x3e0
+  [<c028bd23>] cpu_startup_entry+0x53/0x60
+  [<c0bfac1e>] start_kernel+0x415/0x41a
+
+For avoiding these errors, check the pending URBs and skip
+resubmitting such ones.
+
+Reported-and-tested-by: Stefan Seyfried <stefan.seyfried@googlemail.com>
+Acked-by: Clemens Ladisch <clemens@ladisch.de>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- sound/pci/hda/patch_realtek.c | 1 +
- 1 file changed, 1 insertion(+)
+ sound/usb/midi.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 8be86358f640..09193457d0b0 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4147,6 +4147,7 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x17aa, 0x2212, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
- 	SND_PCI_QUIRK(0x17aa, 0x2214, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
- 	SND_PCI_QUIRK(0x17aa, 0x2215, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
-+	SND_PCI_QUIRK(0x17aa, 0x3977, "IdeaPad S210", ALC283_FIXUP_INT_MIC),
- 	SND_PCI_QUIRK(0x17aa, 0x3978, "IdeaPad Y410P", ALC269_FIXUP_NO_SHUTUP),
- 	SND_PCI_QUIRK(0x17aa, 0x5013, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
- 	SND_PCI_QUIRK(0x17aa, 0x501a, "Thinkpad", ALC283_FIXUP_INT_MIC),
+diff --git a/sound/usb/midi.c b/sound/usb/midi.c
+index b901f468b67a..c7aa71ee775b 100644
+--- a/sound/usb/midi.c
++++ b/sound/usb/midi.c
+@@ -364,6 +364,8 @@ static void snd_usbmidi_error_timer(unsigned long data)
+ 		if (in && in->error_resubmit) {
+ 			in->error_resubmit = 0;
+ 			for (j = 0; j < INPUT_URBS; ++j) {
++				if (atomic_read(&in->urbs[j]->use_count))
++					continue;
+ 				in->urbs[j]->dev = umidi->dev;
+ 				snd_usbmidi_submit_urb(in->urbs[j], GFP_ATOMIC);
+ 			}
 -- 
 2.2.1
 
