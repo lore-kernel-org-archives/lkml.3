@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758282AbbAIVlR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 16:41:17 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:54751 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261AbbAIVlN (ORCPT
+	id S1758096AbbAIVlJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 16:41:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36921 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752261AbbAIVlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 16:41:13 -0500
-Message-ID: <54B04A7C.4000301@vanguardiasur.com.ar>
-Date: Fri, 09 Jan 2015 18:39:08 -0300
-From: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
-Organization: VanguardiaSur
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 9 Jan 2015 16:41:07 -0500
+Date: Fri, 9 Jan 2015 13:41:06 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Francesco Ruggeri <fruggeri@aristanetworks.com>,
+        Francesco Ruggeri <fruggeri@arista.com>
+Subject: Re: [PATCH] Revert "tty: Fix pty master poll() after slave closes v2"
+Message-ID: <20150109214106.GA7952@kroah.com>
+References: <1419941829-6536-1-git-send-email-peter@hurleysoftware.com>
+ <54A29B0A.3060707@hurleysoftware.com>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] UBI: Fastmap: Ensure that all fastmap work is done
- upon WL shutdown
-References: <1416835236-25185-1-git-send-email-richard@nod.at> <1416835236-25185-4-git-send-email-richard@nod.at> <54B048E4.3080102@vanguardiasur.com.ar> <54B04A34.7030008@nod.at>
-In-Reply-To: <54B04A34.7030008@nod.at>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54A29B0A.3060707@hurleysoftware.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 01/09/2015 06:37 PM, Richard Weinberger wrote:
-> Am 09.01.2015 um 22:32 schrieb Ezequiel Garcia:
->> On 11/24/2014 10:20 AM, Richard Weinberger wrote:
->>> ...otherwise the deferred work might run after datastructures
->>> got freed and corrupt memory.
->>>
->>> Signed-off-by: Richard Weinberger <richard@nod.at>
->>> ---
->>>  drivers/mtd/ubi/wl.c | 3 +++
->>>  1 file changed, 3 insertions(+)
->>>
->>> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
->>> index 7f135df..cb2e571 100644
->>> --- a/drivers/mtd/ubi/wl.c
->>> +++ b/drivers/mtd/ubi/wl.c
->>> @@ -2041,6 +2041,9 @@ static void protection_queue_destroy(struct ubi_device *ubi)
->>>  void ubi_wl_close(struct ubi_device *ubi)
->>>  {
->>>  	dbg_wl("close the WL sub-system");
->>> +#ifdef CONFIG_MTD_UBI_FASTMAP
->>> +	flush_work(&ubi->fm_work);
->>> +#endif
->>>  	shutdown_work(ubi);
->>>  	protection_queue_destroy(ubi);
->>>  	tree_destroy(&ubi->used);
->>>
->>
->> IMHO, it's best to avoid nasty ifdefs like this (there are lots of ways
->> of getting it cleaner). But I guess it's not a big deal.
+On Tue, Dec 30, 2014 at 07:31:06AM -0500, Peter Hurley wrote:
+> On 12/30/2014 07:17 AM, Peter Hurley wrote:
+> > This reverts commit c4dc304677e8d566572c4738d95c48be150c6606.
+> > This fix is superseded by commit 52bce7f8d4fc633c9a9d0646eef58ba6ae9a3b73,
+> > 'pty, n_tty: Simplify input processing on final close'.
+> > 
+> > The final close now waits for input processing to complete before
+> > destroying the pty, so poll() does not need to special case this
+> > condition.
 > 
-> I agree that's why I've cleaned up the vast majority of all ifdefs in a later cleanup
-> commit. My original plan was to have first pure bug fixes and then cleanups to make
-> backporting of my patches easy.
+> Greg,
 > 
+> As noted in this commit log, commit c4dc304677e8d566572c4738d95c48be150c6606,
+> 'tty: Fix pty master poll() after slave closes v2', is not required
+> after commit 52bce7f8d4fc633c9a9d0646eef58ba6ae9a3b73,
+> 'pty, n_tty: Simplify input processing on final close'
+> 
+> However, 'tty: Fix pty master poll() after slave closes v2' is appropriate
+> for stable back to v3.12.
 
-Ah, yes, backporting is a good point.
--- 
-Ezequiel Garcia, VanguardiaSur
-www.vanguardiasur.com.ar
+I don't understand, what needs to go to a stable tree and what doesn't?
+
+confused,
+
+greg k-h
