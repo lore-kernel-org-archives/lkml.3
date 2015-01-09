@@ -1,163 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757623AbbAIOfg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 09:35:36 -0500
-Received: from smtprelay0151.hostedemail.com ([216.40.44.151]:55995 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757190AbbAIOfe (ORCPT
+	id S1757707AbbAIOgu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 09:36:50 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:65037 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751845AbbAIOgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 09:35:34 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::::::::::::::::::::::::::,RULES_HIT:2:41:355:379:541:599:800:960:966:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1535:1593:1594:1605:1606:1730:1747:1777:1792:1801:2196:2199:2393:2553:2559:2562:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4118:4321:4385:4605:5007:6119:6261:6742:7774:7875:8660:10004:10848:10967:11026:11232:11658:11914:12295:12296:12438:12517:12519:12555:12663:12740:13148:13161:13229:13230:13870:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: limit49_131ae7ef0c037
-X-Filterd-Recvd-Size: 7419
-Date: Fri, 9 Jan 2015 09:35:30 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Laura Abbott <lauraa@codeaurora.org>,
-        "Stefan I. Strogin" <s.strogin@partner.samsung.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, aneesh.kumar@linux.vnet.ibm.com,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Dmitry Safonov <d.safonov@partner.samsung.com>,
-        Pintu Kumar <pintu.k@samsung.com>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        SeongJae Park <sj38.park@gmail.com>, Hui Zhu <zhuhui@xiaomi.com>,
-        Dyasly Sergey <s.dyasly@samsung.com>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>, namhyung@kernel.org
-Subject: Re: [PATCH 0/3] mm: cma: /proc/cmainfo
-Message-ID: <20150109093530.655c845e@gandalf.local.home>
-In-Reply-To: <20150109091904.41294966@gandalf.local.home>
-References: <cover.1419602920.git.s.strogin@partner.samsung.com>
-	<20141229023639.GC27095@bbox>
-	<54A1B11A.6020307@codeaurora.org>
-	<20141230044726.GA22342@bbox>
-	<20150109091904.41294966@gandalf.local.home>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Fri, 9 Jan 2015 09:36:48 -0500
+Message-ID: <54AFE775.3090209@gmail.com>
+Date: Fri, 09 Jan 2015 17:36:37 +0300
+From: Dmitry Osipenko <digetx@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+To: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Sekhar Nori <nsekhar@ti.com>, linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>, stable@vger.kernel.org,
+        Joseph Lo <josephl@nvidia.com>, linux-tegra@vger.kernel.org,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Subject: Re: [PATCH] ARM: tegra: Use PMC scratch register 40 for tegra_resume()
+ location store
+References: <1419202392-1159-1-git-send-email-digetx@gmail.com> <54984429.8040905@wwwdotorg.org> <5498549B.8070101@gmail.com> <54985C30.7020605@wwwdotorg.org> <20150108105742.GI1987@ulmo.nvidia.com> <20150108123709.GX10073@tbergstrom-lnx.Nvidia.com> <20150109095134.GC27845@ulmo> <20150109102922.GC10073@tbergstrom-lnx.Nvidia.com>
+In-Reply-To: <20150109102922.GC10073@tbergstrom-lnx.Nvidia.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Jan 2015 09:19:04 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
+09.01.2015 13:29, Peter De Schrijver пишет:
+> On Fri, Jan 09, 2015 at 10:51:35AM +0100, Thierry Reding wrote:
+>> * PGP Signed by an unknown key
+>>
+>> On Thu, Jan 08, 2015 at 02:37:09PM +0200, Peter De Schrijver wrote:
+>>> On Thu, Jan 08, 2015 at 11:57:43AM +0100, Thierry Reding wrote:
+>>>>> Old Signed by an unknown key
+>>>>
+>>>> On Mon, Dec 22, 2014 at 11:00:16AM -0700, Stephen Warren wrote:
+>>>>> On 12/22/2014 10:27 AM, Dmitry Osipenko wrote:
+>>>>>> 22.12.2014 19:17, Stephen Warren пишет:
+>>>>>>> On 12/21/2014 03:52 PM, Dmitry Osipenko wrote:
+>>>>>>>> Commit 7232398abc6a ("ARM: tegra: Convert PMC to a driver") changed
+>>>>>>>> tegra_resume()
+>>>>>>>> location storing from late to early and as result broke suspend on tegra20.
+>>>>>>>> PMC scratch register 41 was used by tegra lp1 suspend core code for storing
+>>>>>>>> physical memory address of common resume function and in the same time used by
+>>>>>>>> tegra20 cpuidle driver for storing cpu1 "resettable" status, so it implied
+>>>>>>>> strict order of scratch register use. Fix it by using scratch 40 instead of 41
+>>>>>>>> for tegra_resume() location store.
+>>>>>>>
+>>>>>>> You likely can't simply change the PMC scratch register usage arbitrarily;
+>>>>>>> specific registers are designated for specific purposes, and code outside the
+>>>>>>> Linux kernel (bootloaders, LP0 resume code, secure monitors, etc.) may depend on
+>>>>>>> those specific values being in those registers. Without significant research,
+>>>>>>> I'd suggest not changing the PMC scratch register usage.
+>>>>>>
+>>>>>> Sure, that's why I asked to verify if scratch register 40 is in use in the
+>>>>>> comment after commit message.
+>>>>>
+>>>>> Sorry, I didn't notice that.
+>>>>>
+>>>>>> I've checked that u-boot doesn't use it (since
+>>>>>> upstream kernel doesn't care about any other bootloader), but no idea about
+>>>>>> secure monitor. It's definitely safer to avoid changing scratch regs usage, I
+>>>>>> thought that proposed solution would be best from the pure code point of view.
+>>>>>> So, I'm considering your answer as a rejection of the patch (please, let me know
+>>>>>> if I'm wrong) and will prepare another one. Btw, it would be nice to have
+>>>>>> scratch registers usage publicly documented somewhere (on "Tegra Public
+>>>>>> Application Notes" webpage for example), if it's possible, of course.
+>>>>>
+>>>>> At this stage in Tegra20 development, I think it'd be best to avoid changing
+>>>>> any scratch register usage if at all possible.
+>>>>
+>>>> Sorry, I had completely missed this discussion. When looking at the code
+>>>> it doesn't look like this particular "resettable" status needs to be
+>>>> stored in a PMC scratch register. It can't be stored in RAM because that
+>>>> goes into self-refresh as part of LP1, but how about just putting it
+>>>> into IRAM? That stays on in both LP1 and LP2, so should be suitable for
+>>>> this use-case. It would make the code slightly more complex but using a
+>>>> single scratch register for multiple purposes sounds brittle and easy to
+>>>> break (as evidenced by the offending commit).
+>>>>
+>>>> Otherwise it would seem that PMC_SCRATCH40 is only used to store EMC
+>>>> configuration data across LP0 suspend/resume, so I wouldn't think it'd
+>>>> cause problems if we used that instead of PMC_SCRATCH41 to store the
+>>>> "resettable" state.
+>>>>
+>>>
+>>> No. Usually the scratch registers for EMC config data are setup once by the
+>>> bootloader and never touched by the kernel after that. So I would not
+>>> recommend reusing those registers for different purposes.
+>>
+>> Right, I misread the code in the downstream kernel. Though it's not the
+>> bootloader that does it (at least on Tegra20), but some early code in
+>> the kernel.
+>>
+>> IRAM sounds like a good candidate still. Or do you know of anything that
+>> would exclude IRAM as storage location for this data?
+> 
+> No. I can't think of a reason this flag could not be in IRAM.
+> 
+> Cheers,
+> 
+> Peter.
+> 
 
-> task: <...>-2880
->   Event: func: __kmalloc() (74) Total: 53254 Avg: 719 Max: 1095 Min:481
+IRAM is a good candidate. Just tested draft patch version in QEMU, will give it
+more testing and polish during weekend and send next week.
 
-I forgot to mention that all times are in nanoseconds (or whatever the
-trace clock is set at).
-
->           | 
->           + ftrace_ops_list_func (0xffffffff810c229e)
->               100% (74) time:53254 max:1095 min:481 avg:719
->                ftrace_call (0xffffffff81526047)
->                trace_preempt_on (0xffffffff810d28ff)
->                preempt_count_sub (0xffffffff81061c62)
->                __mutex_lock_slowpath (0xffffffff81522807)
->                __kmalloc (0xffffffff811323f3)
->                __kmalloc (0xffffffff811323f3)
-
-The above may be a bit confusing, as the stack trace included more than
-it should have (it's variable and hard to get right).
-ftrace_ops_list_func() did not call kmalloc, but it did call the
-stack trace and was included. You want to look below to find the
-interesting data.
-
-This is still a new feature, and is using some of the kernel tracing
-more than it has been in the past. There's still a few eggs that need
-to be boiled here.
-
-
->                tracing_buffers_splice_read (0xffffffff810ca23e)
-
-All the kmallocs for this task was called by
-tracing_buffers_splice_read() (hmm, I chose to show you the trace-cmd
-profile on itself. If I had included "-F -c" (follow workload only)  or
--e sched_switch I would have known which task to look at).
-
->                 | 
->                 + set_next_entity (0xffffffff81067027)
->                 |   66% (49) time:34925 max:1044 min:481 avg:712
->                 |    __switch_to (0xffffffff810016d7)
->                 |    trace_hardirqs_on (0xffffffff810d28db)
->                 |    _raw_spin_unlock_irq (0xffffffff81523a8e)
->                 |    trace_preempt_on (0xffffffff810d28ff)
->                 |    preempt_count_sub (0xffffffff81061c62)
->                 |    __schedule (0xffffffff815204d3)
->                 |    trace_preempt_on (0xffffffff810d28ff)
->                 |    buffer_spd_release (0xffffffff810c91fd)
->                 |    SyS_splice (0xffffffff8115dccf)
->                 |    system_call_fastpath (0xffffffff81523f92)
->                 | 
->                 + do_read_fault.isra.74 (0xffffffff8111431d)
-
-I'm not sure how much I trust this. I don't have FRAME_POINTERS
-enabled, so the stack traces may not be as accurate.
-
-But you get the idea, and this can show you where the slow paths lie.
-
--- Steve
-
-
->                 |   24% (18) time:12654 max:1008 min:481 avg:703
->                 |     | 
->                 |     + select_task_rq_fair (0xffffffff81067806)
->                 |     |   89% (16) time:11234 max:1008 min:481 avg:702
->                 |     |    trace_preempt_on (0xffffffff810d28ff)
->                 |     |    buffer_spd_release (0xffffffff810c91fd)
->                 |     |    SyS_splice (0xffffffff8115dccf)
->                 |     |    system_call_fastpath (0xffffffff81523f92)
->                 |     | 
->                 |     + handle_mm_fault (0xffffffff81114df4)
->                 |         11% (2) time:1420 max:879 min:541 avg:710
->                 |          trace_preempt_on (0xffffffff810d28ff)
->                 |          buffer_spd_release (0xffffffff810c91fd)
->                 |          SyS_splice (0xffffffff8115dccf)
->                 |          system_call_fastpath (0xffffffff81523f92)
->                 |       
->                 | 
->                 | 
->                 + update_stats_wait_end (0xffffffff81066c5c)
->                 |   6% (4) time:3153 max:1095 min:635 avg:788
->                 |    set_next_entity (0xffffffff81067027)
->                 |    __switch_to (0xffffffff810016d7)
->                 |    trace_hardirqs_on (0xffffffff810d28db)
->                 |    _raw_spin_unlock_irq (0xffffffff81523a8e)
->                 |    trace_preempt_on (0xffffffff810d28ff)
->                 |    preempt_count_sub (0xffffffff81061c62)
->                 |    __schedule (0xffffffff815204d3)
->                 |    trace_preempt_on (0xffffffff810d28ff)
->                 |    buffer_spd_release (0xffffffff810c91fd)
->                 |    SyS_splice (0xffffffff8115dccf)
->                 |    system_call_fastpath (0xffffffff81523f92)
->                 | 
->                 + _raw_spin_unlock (0xffffffff81523af5)
->                 |   3% (2) time:1854 max:936 min:918 avg:927
->                 |    do_read_fault.isra.74 (0xffffffff8111431d)
->                 |    handle_mm_fault (0xffffffff81114df4)
->                 |    buffer_spd_release (0xffffffff810c91fd)
->                 |    SyS_splice (0xffffffff8115dccf)
->                 |    system_call_fastpath (0xffffffff81523f92)
->                 | 
->                 + trace_hardirqs_off (0xffffffff810d2891)
->                     1% (1) time:668 max:668 min:668 avg:668
->                      kmem_cache_free (0xffffffff81130e48)
->                      __dequeue_signal (0xffffffff8104c802)
->                      trace_preempt_on (0xffffffff810d28ff)
->                      preempt_count_sub (0xffffffff81061c62)
->                      _raw_spin_unlock_irq (0xffffffff81523a8e)
->                      recalc_sigpending (0xffffffff8104c5d1)
->                      __set_task_blocked (0xffffffff8104cd2e)
->                      trace_preempt_on (0xffffffff810d28ff)
->                      preempt_count_sub (0xffffffff81061c62)
->                      preempt_count_sub (0xffffffff81061c62)
->                      buffer_spd_release (0xffffffff810c91fd)
->                      SyS_splice (0xffffffff8115dccf)
->                      system_call_fastpath (0xffffffff81523f92)
->                   
+-- 
+Dmitry
