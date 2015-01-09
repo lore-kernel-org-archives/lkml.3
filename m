@@ -1,120 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787AbbAIXH3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 18:07:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38161 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362AbbAIXH1 (ORCPT
+	id S1753463AbbAIXNK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 18:13:10 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:62716 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752362AbbAIXNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 18:07:27 -0500
-Date: Fri, 9 Jan 2015 15:07:26 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Sudeep Dutt <sudeep.dutt@intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Jonathan Corbet <corbet@lwn.net>,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Dave Jiang <dave.jiang@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>
-Subject: Re: [PATCH char-misc-next 04/13] misc: mic: SCIF Peer Bus
-Message-ID: <20150109230726.GC3614@kroah.com>
-References: <cover.1418237176.git.sudeep.dutt@intel.com>
- <a6cd58c4c752a4848d078af397ecf341158c2725.1418237176.git.sudeep.dutt@intel.com>
+	Fri, 9 Jan 2015 18:13:08 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jon Masters <jcm@redhat.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Al Stone <al.stone@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v5 18/18] Documentation: ACPI for ARM64
+Date: Sat, 10 Jan 2015 00:12:17 +0100
+Message-ID: <5078266.iyOixLMQK8@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54AC0F34.6040500@redhat.com>
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <20150106141630.GG8829@e104818-lin.cambridge.arm.com> <54AC0F34.6040500@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <a6cd58c4c752a4848d078af397ecf341158c2725.1418237176.git.sudeep.dutt@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:lkpbTVAsA7pakm7EL8epjoMUqrv6kH9c29fayH3S4UOWXYPAldL
+ tzjcADwBuSQpIEDNhvuboNabSm5laJqKWQH5rLc9AcO/nRxSow1Zta3Lyxs4UEyLjPvxuYq
+ Ls3hHIl3DR65C2IV1aNhLTh5JePn3vyGPHXgHXszjT3HfwOj7fzZondQmoigCNSvNZ/SaS5
+ U00MHDrLw+dpRtgZxELTQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 10, 2014 at 11:47:44AM -0800, Sudeep Dutt wrote:
-> The SCIF peer bus is used to register and unregister SCIF peer devices
-> internally by the SCIF driver to signify the addition and removal of
-> peer nodes respectively from the SCIF network. This simplifies remote node
-> handling within SCIF and will also be used to support device probe/remove
-> for SCIF client drivers (e.g. netdev over SCIF)
+On Tuesday 06 January 2015 11:37:08 Jon Masters wrote:
+> On 01/06/2015 09:16 AM, Catalin Marinas wrote:
+> > On Tue, Jan 06, 2015 at 02:05:12PM +0000, Arnd Bergmann wrote:
+> >> On Tuesday 06 January 2015 11:29:29 Catalin Marinas wrote:
+> >>>>>> We will work on this both on ASWG and linux ACPI driver side, as Dong
+> >>>>>> and Charles pointed out, _OSI things can be solved in ACPI spec, when
+> >>>>>> that is done, we can modify the kernel driver to fix the problems above.
+> >>>>>
+> >>>>> Which driver?
+> >>>>
+> >>>> the ACPICA core driver as you suggested, sorry for the confusion.
+> >>>>
+> >>>>> What about ACPI_OS_NAME? Would you suggest it is fine to report
+> >>>>> "Microsoft Windows NT" on an ARM system? That _OS_ not _OSI.
+> >>>>
+> >>>> No, not at all. I prefer "Linux"
+> >>>> In include/acpi/acconfig.h, when ACPI_OS_NAME defined, it says:
+> >>>> "OS name, used for the _OS object.  The _OS object is essentially
+> >>>> obsolete,..."
+> >>>> for some legacy reasons, we needed  "Microsoft Windows NT", but ACPI
+> >>>> for ARM64 on linux is totally new, I think we can change it to
+> >>>> "Linux" when CONFIG_ARM64 as you suggested.
+> >>>
+> >>> We could ignore this change for now if we don't expect the _OS object to
+> >>> be used at all. But do we have any other way to check the AML code for
+> >>> this? Would FWTS catch such obsolete cases?
+> >>
+> >> How about just leaving it out? It's clearly not used for anything
+> >> good, so I don't see the point in passing either Linux or "Microsoft
+> >> Windows NT" here.
+> > 
+> > Do you mean defining it to NULL (so it ends up as NULL in
+> > acpi_gbl_pre_defined_names) or removing "_OS_" entirely from that array?
+> > I really can't tell what the implications are.
 > 
-> Reviewed-by: Nikhil Rao <nikhil.rao@intel.com>
-> Reviewed-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
-> Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
-> ---
->  drivers/misc/mic/scif/scif_peer_bus.h |  63 +++++++++++++++++
->  drivers/misc/mic/scif/scif_peer_bus.c | 124 ++++++++++++++++++++++++++++++++++
->  2 files changed, 187 insertions(+)
->  create mode 100644 drivers/misc/mic/scif/scif_peer_bus.h
->  create mode 100644 drivers/misc/mic/scif/scif_peer_bus.c
+> Setting it to NULL is almost certainly (99%+ likely IMO) going to result
+> in some firmware crashing nastily somewhere.
 > 
-> diff --git a/drivers/misc/mic/scif/scif_peer_bus.h b/drivers/misc/mic/scif/scif_peer_bus.h
-> new file mode 100644
-> index 0000000..27ed508
-> --- /dev/null
-> +++ b/drivers/misc/mic/scif/scif_peer_bus.h
-> @@ -0,0 +1,63 @@
-> +/*
-> + * Intel MIC Platform Software Stack (MPSS)
-> + *
-> + * Copyright(c) 2014 Intel Corporation.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License, version 2, as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-> + * General Public License for more details.
-> + *
-> + * Intel SCIF driver.
-> + */
-> +#ifndef _SCIF_PEER_BUS_H_
-> +#define _SCIF_PEER_BUS_H_
-> +
-> +#include <linux/device.h>
-> +#include <linux/mic_common.h>
-> +
-> +/*
-> + * Peer devices show up as PCIe devices for the mgmt node but not the cards.
-> + * The mgmt node discovers all the cards on the PCIe bus and informs the other
-> + * cards about their peers. Upon notification of a peer a node adds a peer
-> + * device to the peer bus to maintain symmetry in the way devices are
-> + * discovered across all nodes in the SCIF network.
-> + */
-> +/**
-> + * scif_peer_dev - representation of a peer SCIF device
-> + * @dev: underlying device
-> + * @dnode - The destination node which this device will communicate with.
-> + */
-> +struct scif_peer_dev {
-> +	struct device dev;
-> +	u8 dnode;
-> +};
-> +
-> +/**
-> + * scif_peer_driver - operations for a scif_peer I/O driver
-> + * @driver: underlying device driver (populate name and owner).
-> + * @id_table: the ids serviced by this driver.
-> + * @probe: the function to call when a device is found.  Returns 0 or -errno.
-> + * @remove: the function to call when a device is removed.
-> + */
-> +struct scif_peer_driver {
-> +	struct device_driver driver;
-> +	const struct scif_peer_dev_id *id_table;
-> +
-> +	int (*probe)(struct scif_peer_dev *dev);
-> +	void (*remove)(struct scif_peer_dev *dev);
-> +};
-> +
-> +int scif_peer_register_driver(struct scif_peer_driver *driver);
-> +void scif_peer_unregister_driver(struct scif_peer_driver *driver);
-> +struct scif_dev;
-> +struct scif_peer_dev *
-> +scif_peer_register_device(struct scif_dev *sdev);
+> I think I've mentioned before that we're using the ACPI patches in an
+> early access program for partners that we announced last year. I've
+> pinged the team internally and asked that we swiftly change to use
+> whatever name is agreed in this thread so that we can get a lot of other
+> folks to begin testing with a correctly reported OS name.
 
-Odd formatting, don't you think?
+If we have to put something in there, I'd vote for keeping the current
+string.  It's not clear whether Microsoft would follow the change to
+use "Linux" as the _OS_ string, and we probably don't want them to
+use incompatible IDs here.
 
-Please put your "predeclare scif_dev" on an earlier line by itself, as
-this is a mess.
-
-thanks,
-
-greg k-h
+	Arnd
