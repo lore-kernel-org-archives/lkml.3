@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933236AbbAIKuS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 05:50:18 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44559 "EHLO
+	id S933114AbbAIKsK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 05:48:10 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44542 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757452AbbAIKc3 (ORCPT
+	by vger.kernel.org with ESMTP id S1757436AbbAIKc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Jan 2015 05:32:29 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 66/78] userns: Unbreak the unprivileged remount tests
-Date: Fri,  9 Jan 2015 11:32:15 +0100
-Message-Id: <dc7a80cc0095cd6d8a69d79eace72b2c6ed48364.1420799385.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Richard Guy Briggs <rgb@redhat.com>,
+        Paul Moore <pmoore@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 67/78] audit: restore AUDIT_LOGINUID unset ABI
+Date: Fri,  9 Jan 2015 11:32:16 +0100
+Message-Id: <5055918c73271c6c52aadeae2adf1920a13e1e36.1420799385.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
 References: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
@@ -23,98 +23,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Richard Guy Briggs <rgb@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit db86da7cb76f797a1a8b445166a15cb922c6ff85 upstream.
+commit 041d7b98ffe59c59fdd639931dea7d74f9aa9a59 upstream.
 
-A security fix in caused the way the unprivileged remount tests were
-using user namespaces to break.  Tweak the way user namespaces are
-being used so the test works again.
+A regression was caused by commit 780a7654cee8:
+	 audit: Make testing for a valid loginuid explicit.
+(which in turn attempted to fix a regression caused by e1760bd)
 
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+When audit_krule_to_data() fills in the rules to get a listing, there was a
+missing clause to convert back from AUDIT_LOGINUID_SET to AUDIT_LOGINUID.
+
+This broke userspace by not returning the same information that was sent and
+expected.
+
+The rule:
+	auditctl -a exit,never -F auid=-1
+gives:
+	auditctl -l
+		LIST_RULES: exit,never f24=0 syscall=all
+when it should give:
+		LIST_RULES: exit,never auid=-1 (0xffffffff) syscall=all
+
+Tag it so that it is reported the same way it was set.  Create a new
+private flags audit_krule field (pflags) to store it that won't interact with
+the public one from the API.
+
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- .../selftests/mount/unprivileged-remount-test.c    | 32 ++++++++++++++++------
- 1 file changed, 24 insertions(+), 8 deletions(-)
+ include/linux/audit.h |  4 ++++
+ kernel/auditfilter.c  | 10 ++++++++++
+ 2 files changed, 14 insertions(+)
 
-diff --git a/tools/testing/selftests/mount/unprivileged-remount-test.c b/tools/testing/selftests/mount/unprivileged-remount-test.c
-index 9669d375625a..517785052f1c 100644
---- a/tools/testing/selftests/mount/unprivileged-remount-test.c
-+++ b/tools/testing/selftests/mount/unprivileged-remount-test.c
-@@ -53,17 +53,14 @@ static void die(char *fmt, ...)
- 	exit(EXIT_FAILURE);
- }
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 4fb28b23a4a4..c25cb64db967 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -46,6 +46,7 @@ struct audit_tree;
  
--static void write_file(char *filename, char *fmt, ...)
-+static void vmaybe_write_file(bool enoent_ok, char *filename, char *fmt, va_list ap)
- {
- 	char buf[4096];
- 	int fd;
- 	ssize_t written;
- 	int buf_len;
--	va_list ap;
+ struct audit_krule {
+ 	int			vers_ops;
++	u32			pflags;
+ 	u32			flags;
+ 	u32			listnr;
+ 	u32			action;
+@@ -63,6 +64,9 @@ struct audit_krule {
+ 	u64			prio;
+ };
  
--	va_start(ap, fmt);
- 	buf_len = vsnprintf(buf, sizeof(buf), fmt, ap);
--	va_end(ap);
- 	if (buf_len < 0) {
- 		die("vsnprintf failed: %s\n",
- 		    strerror(errno));
-@@ -74,6 +71,8 @@ static void write_file(char *filename, char *fmt, ...)
++/* Flag to indicate legacy AUDIT_LOGINUID unset usage */
++#define AUDIT_LOGINUID_LEGACY		0x1
++
+ struct audit_field {
+ 	u32				type;
+ 	u32				val;
+diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+index 8a344cebd8bf..dfd2f4af81a9 100644
+--- a/kernel/auditfilter.c
++++ b/kernel/auditfilter.c
+@@ -426,6 +426,7 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
+ 		if ((f->type == AUDIT_LOGINUID) && (f->val == AUDIT_UID_UNSET)) {
+ 			f->type = AUDIT_LOGINUID_SET;
+ 			f->val = 0;
++			entry->rule.pflags |= AUDIT_LOGINUID_LEGACY;
+ 		}
  
- 	fd = open(filename, O_WRONLY);
- 	if (fd < 0) {
-+		if ((errno == ENOENT) && enoent_ok)
-+			return;
- 		die("open of %s failed: %s\n",
- 		    filename, strerror(errno));
- 	}
-@@ -92,6 +91,26 @@ static void write_file(char *filename, char *fmt, ...)
- 	}
- }
+ 		err = audit_field_valid(entry, f);
+@@ -601,6 +602,13 @@ static struct audit_rule_data *audit_krule_to_data(struct audit_krule *krule)
+ 			data->buflen += data->values[i] =
+ 				audit_pack_string(&bufp, krule->filterkey);
+ 			break;
++		case AUDIT_LOGINUID_SET:
++			if (krule->pflags & AUDIT_LOGINUID_LEGACY && !f->val) {
++				data->fields[i] = AUDIT_LOGINUID;
++				data->values[i] = AUDIT_UID_UNSET;
++				break;
++			}
++			/* fallthrough if set */
+ 		default:
+ 			data->values[i] = f->val;
+ 		}
+@@ -617,6 +625,7 @@ static int audit_compare_rule(struct audit_krule *a, struct audit_krule *b)
+ 	int i;
  
-+static void maybe_write_file(char *filename, char *fmt, ...)
-+{
-+	va_list ap;
-+
-+	va_start(ap, fmt);
-+	vmaybe_write_file(true, filename, fmt, ap);
-+	va_end(ap);
-+
-+}
-+
-+static void write_file(char *filename, char *fmt, ...)
-+{
-+	va_list ap;
-+
-+	va_start(ap, fmt);
-+	vmaybe_write_file(false, filename, fmt, ap);
-+	va_end(ap);
-+
-+}
-+
- static int read_mnt_flags(const char *path)
- {
- 	int ret;
-@@ -144,13 +163,10 @@ static void create_and_enter_userns(void)
- 			strerror(errno));
- 	}
- 
-+	maybe_write_file("/proc/self/setgroups", "deny");
- 	write_file("/proc/self/uid_map", "0 %d 1", uid);
- 	write_file("/proc/self/gid_map", "0 %d 1", gid);
- 
--	if (setgroups(0, NULL) != 0) {
--		die("setgroups failed: %s\n",
--			strerror(errno));
--	}
- 	if (setgid(0) != 0) {
- 		die ("setgid(0) failed %s\n",
- 			strerror(errno));
+ 	if (a->flags != b->flags ||
++	    a->pflags != b->pflags ||
+ 	    a->listnr != b->listnr ||
+ 	    a->action != b->action ||
+ 	    a->field_count != b->field_count)
+@@ -735,6 +744,7 @@ struct audit_entry *audit_dupe_rule(struct audit_krule *old)
+ 	new = &entry->rule;
+ 	new->vers_ops = old->vers_ops;
+ 	new->flags = old->flags;
++	new->pflags = old->pflags;
+ 	new->listnr = old->listnr;
+ 	new->action = old->action;
+ 	for (i = 0; i < AUDIT_BITMASK_SIZE; i++)
 -- 
 2.2.1
 
