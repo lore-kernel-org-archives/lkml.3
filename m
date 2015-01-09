@@ -1,103 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757805AbbAIPKT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:10:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37367 "EHLO mx2.suse.de"
+	id S1757394AbbAIPKA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:10:00 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:31682 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757663AbbAIPKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:10:16 -0500
-From: Michal Marek <mmarek@suse.cz>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        tomoyo-dev-en@lists.sourceforge.jp
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] tomoyo: Do not generate empty policy files
-Date: Fri,  9 Jan 2015 16:08:54 +0100
-Message-Id: <1420816134-12758-4-git-send-email-mmarek@suse.cz>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1420816134-12758-1-git-send-email-mmarek@suse.cz>
-References: <1420816134-12758-1-git-send-email-mmarek@suse.cz>
+	id S1752182AbbAIPJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 10:09:59 -0500
+X-IronPort-AV: E=Sophos;i="5.07,731,1413244800"; 
+   d="scan'208";a="213381963"
+Message-ID: <54AFEF2A.3090403@citrix.com>
+Date: Fri, 9 Jan 2015 15:09:30 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+MIME-Version: 1.0
+To: Juergen Gross <jgross@suse.com>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
+        <boris.ostrovsky@oracle.com>
+Subject: Re: [PATCH 2/3] xen: correct race in alloc_p2m_pmd()
+References: <1420736490-15351-1-git-send-email-jgross@suse.com> <1420736490-15351-3-git-send-email-jgross@suse.com>
+In-Reply-To: <1420736490-15351-3-git-send-email-jgross@suse.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Makefile automatically generates the tomoyo policy files, which are
-not removed by make clean (because they could have been provided by the
-user). Instead of generating the missing files, use /dev/null if a
-given file is not provided. Store the default exception_policy in
-exception_policy.conf.default.
+On 08/01/15 17:01, Juergen Gross wrote:
+> When allocating a new pmd for the linear mapped p2m list a check is
+> done for not introducing another pmd when this just happened on
+> another cpu. In this case the old pte pointer was returned which
+> points to the p2m_missing or p2m_identity page. The correct value
+> would be the pointer to the found new page.
 
-Signed-off-by: Michal Marek <mmarek@suse.cz>
----
- security/tomoyo/.gitignore                         |  2 +-
- security/tomoyo/Makefile                           | 30 ++--------------------
- .../tomoyo/policy/exception_policy.conf.default    |  2 ++
- 3 files changed, 5 insertions(+), 29 deletions(-)
- create mode 100644 security/tomoyo/policy/exception_policy.conf.default
+Looking at the check I don't see how it works at all.
 
-diff --git a/security/tomoyo/.gitignore b/security/tomoyo/.gitignore
-index 5caf1a6..dc0f220 100644
---- a/security/tomoyo/.gitignore
-+++ b/security/tomoyo/.gitignore
-@@ -1,2 +1,2 @@
- builtin-policy.h
--policy/
-+policy/*.conf
-diff --git a/security/tomoyo/Makefile b/security/tomoyo/Makefile
-index ccca034..65dbcb2 100644
---- a/security/tomoyo/Makefile
-+++ b/security/tomoyo/Makefile
-@@ -1,41 +1,15 @@
- obj-y = audit.o common.o condition.o domain.o environ.o file.o gc.o group.o load_policy.o memory.o mount.o network.o realpath.o securityfs_if.o tomoyo.o util.o
- 
--$(obj)/policy/profile.conf:
--	@mkdir -p $(obj)/policy/
--	@echo Creating an empty policy/profile.conf
--	@touch $@
--
--$(obj)/policy/exception_policy.conf:
--	@mkdir -p $(obj)/policy/
--	@echo Creating a default policy/exception_policy.conf
--	@echo initialize_domain /sbin/modprobe from any >> $@
--	@echo initialize_domain /sbin/hotplug from any >> $@
--
--$(obj)/policy/domain_policy.conf:
--	@mkdir -p $(obj)/policy/
--	@echo Creating an empty policy/domain_policy.conf
--	@touch $@
--
--$(obj)/policy/manager.conf:
--	@mkdir -p $(obj)/policy/
--	@echo Creating an empty policy/manager.conf
--	@touch $@
--
--$(obj)/policy/stat.conf:
--	@mkdir -p $(obj)/policy/
--	@echo Creating an empty policy/stat.conf
--	@touch $@
--
- targets += builtin-policy.h
- define do_policy
- echo "static char tomoyo_builtin_$(1)[] __initdata ="; \
--$(objtree)/scripts/basic/bin2c <$(obj)/policy/$(1).conf; \
-+$(objtree)/scripts/basic/bin2c <$(firstword $(wildcard $(obj)/policy/$(1).conf $(srctree)/$(src)/policy/$(1).conf.default) /dev/null); \
- echo ";"
- endef
- quiet_cmd_policy  = POLICY  $@
-       cmd_policy  = ($(call do_policy,profile); $(call do_policy,exception_policy); $(call do_policy,domain_policy); $(call do_policy,manager); $(call do_policy,stat)) >$@
- 
--$(obj)/builtin-policy.h: $(obj)/policy/profile.conf $(obj)/policy/exception_policy.conf $(obj)/policy/domain_policy.conf $(obj)/policy/manager.conf $(obj)/policy/stat.conf
-+$(obj)/builtin-policy.h: $(wildcard $(obj)/policy/*.conf $(src)/policy/*.conf.default) FORCE
- 	$(call if_changed,policy)
- 
- $(obj)/common.o: $(obj)/builtin-policy.h
-diff --git a/security/tomoyo/policy/exception_policy.conf.default b/security/tomoyo/policy/exception_policy.conf.default
-new file mode 100644
-index 0000000..2678df4
---- /dev/null
-+++ b/security/tomoyo/policy/exception_policy.conf.default
-@@ -0,0 +1,2 @@
-+initialize_domain /sbin/modprobe from any
-+initialize_domain /sbin/hotplug from any
--- 
-2.1.2
+alloc_p2m() looks up the address of the PTE page
+
+	ptep = lookup_address(addr, &level);
+	pte_pg = (pte_t *)((unsigned long)ptep & ~(PAGE_SIZE - 1));
+
+But the check under the lock that is still true does:
+
+	ptechk = lookup_address(vaddr, &level);
+	if (ptechk == pte_pg) {
+
+So I don't see how this works unless (by chance) we happen to get the
+first entry in the PTE page.
+
+It also doesn't handle racing with p2m_missing_pte to p2m_identity_pte
+(or vice-versa) change.
+
+Something like:
+
+	ptechk = lookup_address(vaddr, &level);
+	ptechk = (pte_t *)((unsigned long)ptechk & ~(PAGE_SIZE - 1));
+	if (ptechk == p2m_missing_pte || ptechk == p2m_identity) {
+              set_pmd(..)
+
+Perhaps?
+
+David
+
+> --- a/arch/x86/xen/p2m.c
+> +++ b/arch/x86/xen/p2m.c
+> @@ -440,10 +440,9 @@ EXPORT_SYMBOL_GPL(get_phys_to_machine);
+>   * a new pmd is to replace p2m_missing_pte or p2m_identity_pte by a individual
+>   * pmd. In case of PAE/x86-32 there are multiple pmds to allocate!
+>   */
+> -static pte_t *alloc_p2m_pmd(unsigned long addr, pte_t *ptep, pte_t *pte_pg)
+> +static pte_t *alloc_p2m_pmd(unsigned long addr, pte_t *pte_pg)
+>  {
+>  	pte_t *ptechk;
+> -	pte_t *pteret = ptep;
+>  	pte_t *pte_newpg[PMDS_PER_MID_PAGE];
+>  	pmd_t *pmdp;
+>  	unsigned int level;
+> @@ -477,8 +476,6 @@ static pte_t *alloc_p2m_pmd(unsigned long addr, pte_t *ptep, pte_t *pte_pg)
+>  		if (ptechk == pte_pg) {
+>  			set_pmd(pmdp,
+>  				__pmd(__pa(pte_newpg[i]) | _KERNPG_TABLE));
+> -			if (vaddr == (addr & ~(PMD_SIZE - 1)))
+> -				pteret = pte_offset_kernel(pmdp, addr);
+>  			pte_newpg[i] = NULL;
+>  		}
+>  
+> @@ -492,7 +489,7 @@ static pte_t *alloc_p2m_pmd(unsigned long addr, pte_t *ptep, pte_t *pte_pg)
+>  		vaddr += PMD_SIZE;
+>  	}
+>  
+> -	return pteret;
+> +	return lookup_address(addr, &level);
+>  }
+>  
+>  /*
+> @@ -521,7 +518,7 @@ static bool alloc_p2m(unsigned long pfn)
+>  
+>  	if (pte_pg == p2m_missing_pte || pte_pg == p2m_identity_pte) {
+>  		/* PMD level is missing, allocate a new one */
+> -		ptep = alloc_p2m_pmd(addr, ptep, pte_pg);
+> +		ptep = alloc_p2m_pmd(addr, pte_pg);
+>  		if (!ptep)
+>  			return false;
+>  	}
+> 
 
