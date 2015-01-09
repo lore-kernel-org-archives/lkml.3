@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933373AbbAIKyz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 05:54:55 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44509 "EHLO
+	id S1757553AbbAIKcb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 05:32:31 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44483 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757389AbbAIKc3 (ORCPT
+	by vger.kernel.org with ESMTP id S1751726AbbAIKc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 05:32:29 -0500
+	Fri, 9 Jan 2015 05:32:28 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Weijie Yang <weijie.yang@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Dan Streetman <ddstreet@ieee.org>, Minchan Kim <minchan@kernel.org>,
-        Bob Liu <bob.liu@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 16/78] mm: frontswap: invalidate expired data on a dup-store failure
-Date: Fri,  9 Jan 2015 11:31:25 +0100
-Message-Id: <94724f27bf02e417629d93101a3fbb0dcfe86c28.1420799385.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 17/78] mm/vmpressure.c: fix race in vmpressure_work_fn()
+Date: Fri,  9 Jan 2015 11:31:26 +0100
+Message-Id: <5a40e10cc3479a28bac0d4ca3134df7052cb46df.1420799385.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
 References: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
@@ -29,56 +25,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Weijie Yang <weijie.yang@samsung.com>
+From: Andrew Morton <akpm@linux-foundation.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit fb993fa1a2f669215fa03a09eed7848f2663e336 upstream.
+commit 91b57191cfd152c02ded0745250167d0263084f8 upstream.
 
-If a frontswap dup-store failed, it should invalidate the expired page
-in the backend, or it could trigger some data corruption issue.
-Such as:
- 1. use zswap as the frontswap backend with writeback feature
- 2. store a swap page(version_1) to entry A, success
- 3. dup-store a newer page(version_2) to the same entry A, fail
- 4. use __swap_writepage() write version_2 page to swapfile, success
- 5. zswap do shrink, writeback version_1 page to swapfile
- 6. version_2 page is overwrited by version_1, data corrupt.
+In some android devices, there will be a "divide by zero" exception.
+vmpr->scanned could be zero before spin_lock(&vmpr->sr_lock).
 
-This patch fixes this issue by invalidating expired data immediately
-when meet a dup-store failure.
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=88051
 
-Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Seth Jennings <sjennings@variantweb.net>
-Cc: Dan Streetman <ddstreet@ieee.org>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Bob Liu <bob.liu@oracle.com>
+[akpm@linux-foundation.org: neaten]
+Reported-by: ji_ang <ji_ang@163.com>
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- mm/frontswap.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ mm/vmpressure.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/mm/frontswap.c b/mm/frontswap.c
-index c30eec536f03..f2a3571c6e22 100644
---- a/mm/frontswap.c
-+++ b/mm/frontswap.c
-@@ -244,8 +244,10 @@ int __frontswap_store(struct page *page)
- 		  the (older) page from frontswap
- 		 */
- 		inc_frontswap_failed_stores();
--		if (dup)
-+		if (dup) {
- 			__frontswap_clear(sis, offset);
-+			frontswap_ops->invalidate_page(type, offset);
-+		}
- 	}
- 	if (frontswap_writethrough_enabled)
- 		/* report failure so swap also writes to swap device */
+diff --git a/mm/vmpressure.c b/mm/vmpressure.c
+index e0f62837c3f4..c98b14ee69d6 100644
+--- a/mm/vmpressure.c
++++ b/mm/vmpressure.c
+@@ -164,6 +164,7 @@ static void vmpressure_work_fn(struct work_struct *work)
+ 	unsigned long scanned;
+ 	unsigned long reclaimed;
+ 
++	spin_lock(&vmpr->sr_lock);
+ 	/*
+ 	 * Several contexts might be calling vmpressure(), so it is
+ 	 * possible that the work was rescheduled again before the old
+@@ -172,11 +173,12 @@ static void vmpressure_work_fn(struct work_struct *work)
+ 	 * here. No need for any locks here since we don't care if
+ 	 * vmpr->reclaimed is in sync.
+ 	 */
+-	if (!vmpr->scanned)
++	scanned = vmpr->scanned;
++	if (!scanned) {
++		spin_unlock(&vmpr->sr_lock);
+ 		return;
++	}
+ 
+-	spin_lock(&vmpr->sr_lock);
+-	scanned = vmpr->scanned;
+ 	reclaimed = vmpr->reclaimed;
+ 	vmpr->scanned = 0;
+ 	vmpr->reclaimed = 0;
 -- 
 2.2.1
 
