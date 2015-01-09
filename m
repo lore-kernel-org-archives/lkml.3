@@ -1,93 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757306AbbAINLE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 08:11:04 -0500
-Received: from casper.infradead.org ([85.118.1.10]:52648 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752146AbbAINLC (ORCPT
+	id S1756688AbbAINMn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 08:12:43 -0500
+Received: from baptiste.telenet-ops.be ([195.130.132.51]:57579 "EHLO
+	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755308AbbAINMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 08:11:02 -0500
-Date: Fri, 9 Jan 2015 14:10:45 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com, adrian.hunter@intel.com,
-        markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
-        acme@infradead.org
-Subject: Re: [PATCH v8 12/14] x86: perf: intel_pt: Intel PT PMU driver
-Message-ID: <20150109131045.GM3337@twins.programming.kicks-ass.net>
-References: <1415972627-37514-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1415972627-37514-13-git-send-email-alexander.shishkin@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415972627-37514-13-git-send-email-alexander.shishkin@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 9 Jan 2015 08:12:38 -0500
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-sh@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH v3 0/4] drivers: bus: Add Simple Power-Managed Bus
+Date: Fri,  9 Jan 2015 14:12:31 +0100
+Message-Id: <1420809155-4015-1-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 14, 2014 at 03:43:45PM +0200, Alexander Shishkin wrote:
-> +static void pt_handle_status(struct pt *pt)
-> +{
-> +	struct pt_buffer *buf = perf_get_aux(&pt->handle);
-> +	int advance = 0;
-> +	u64 status;
-> +
-> +	rdmsrl(MSR_IA32_RTIT_STATUS, status);
-> +
-> +	if (status & RTIT_STATUS_ERROR) {
-> +		pr_err_ratelimited("ToPA ERROR encountered, trying to recover\n");
-> +		pt_topa_dump(buf);
-> +		status &= ~RTIT_STATUS_ERROR;
-> +	}
-> +
-> +	if (status & RTIT_STATUS_STOPPED) {
-> +		status &= ~RTIT_STATUS_STOPPED;
-> +
-> +		/*
-> +		 * On systems that only do single-entry ToPA, hitting STOP
-> +		 * means we are already losing data; need to let the decoder
-> +		 * know.
-> +		 */
-> +		if (!pt_cap_get(PT_CAP_topa_multiple_entries) ||
-> +		    buf->output_off == sizes(TOPA_ENTRY(buf->cur, buf->cur_idx)->size)) {
-> +			local_inc(&buf->lost);
-> +			advance++;
-> +		}
-> +	}
-> +
-> +	/*
-> +	 * Also on single-entry ToPA implementations, interrupt will come
-> +	 * before the output reaches its output region's boundary.
-> +	 */
+	Hi Simon, Magnus,
 
-My understanding was that, while yes it will attempt to generate the
-interrupt early, there is absolutely no guarantee it will in fact arrive
-in time or even it if does, guarantee that there is buffer left by the
-time you're ready to read it.
+The Renesas Bus State Controller (BSC) provides an external bus for
+connecting multiple external devices to an SoC, driving several chip
+select lines, for e.g. NOR FLASH, Ethernet and USB.
+On the kzm9g and ape6evm development boards, an smsc9220 Ethernet
+controller is connnected to the BSC of an SH-Mobile AG5 (sh73a0) resp.
+R-Mobile APE6 (r8a73a4) SoC.
 
-> +	if (!pt_cap_get(PT_CAP_topa_multiple_entries) && !buf->snapshot &&
-> +	    pt_buffer_region_size(buf) - buf->output_off <= TOPA_PMI_MARGIN) {
+The BSC is a fairly simple memory-mapped bus, hence a "simple-bus"
+compatibility seems suitable.  However, the BSC is special in two
+ways:
+  1. It is part of a PM domain (A4S),
+  2. It has a gateable functional clock (ZB).
+Before a device connected to the BSC can be accessed, the PM domain
+containing the BSC must be powered on, and the functional clock
+driving the BSC must be enabled.
 
-Now this check appears to indeed cater for this scenario where the
-buffer is overran, right?
+Both special properties can be described in DT in a standardized way
+("power-domains = <&pd_a4s>" and "clocks = <&zb_clk>", cfr. the
+example in the DT binding documentation).  Externally connected
+devices are described as children of the BSC node.
 
-> +		void *head = pt_buffer_region(buf);
-> +
-> +		/* everything within this margin needs to be zeroed out */
-> +		memset(head + buf->output_off, 0,
-> +		       pt_buffer_region_size(buf) -
-> +		       buf->output_off);
-> +		advance++;
-> +	}
-> +
-> +	if (advance)
-> +		pt_buffer_advance(buf);
-> +
-> +	wrmsrl(MSR_IA32_RTIT_STATUS, status);
-> +}
+Unfortunately this doesn't mean everything will work out-of-the-box.
+There are two problems:
+  1. Without a device driver bound to the bus device, this device is
+     not attached to the PM domain. And although a child device is
+     present and active, the PM domain may be powered down, as it's
+     considered unused by the PM domain core.
+  2. Without a device driver calling pm_runtime_enable(), its
+     functional clock is not enabled. Once runtime PM is enabled, the
+     R-Mobile PM domain platform driver manages the functional clock
+     using runtime PM.
+
+As none of the above is really bus hardware-specific (PM domains and
+functional clocks in clock domains are handled from genpd and platform
+code), this series adds a Simple Power-Managed Bus driver for
+transparent busses, which just enables runtime PM for the bus device.
+Due to the child-parent relationship of devices connected to the bus,
+as long as the device drivers for the child devices are runtime PM
+enabled, the bus's PM domain will be powered, and the bus's clock will
+be enabled automatically when needed, for both runtime PM and s2ram.
+
+Currently this driver supports the Renesas Bus State Controller only,
+but support for other SoCs and other bus controllers can easily be
+added later by adding more compatible values.
+Note that this driver cannot just bind against "simple-bus", as that
+may prevent a device-specific driver from taking precedence.
+
+This was tested on sh73a0/kzm9g-multiplatform (by me), and on
+r8a73a4/ape6evm-multiplatform (by Ulrich Hecht). Without this,
+Ethernet doesn't work, as the ZB clock is disabled by
+clk_disable_unused().
+
+As drivers/bus doesn't have a maintainer, and this driver is needed to
+move two shmobile platforms away from legacy to multiplatform, I think
+this can go in through Simon's shmobile tree.  There are no conflicts
+with today's linux-next.
+
+Changes compared to v2:
+  - Document required properties inherited from "simple-bus",
+  - Document required "reg" property for "renesas,bsc",
+  - Move "ranges" before "reg" in the example,
+  - Add Tested-by,
+  - Split-off sh73a0/kzm9g and r8a73a4/ape6evm DTS updates.
+
+Changes compared to v1 (more detailed change logs in the individual
+patches):
+  - Added sorting of drivers/bus Kconfig and Makefile entries,
+  - Added DT binding documentation,
+  - Rename from "Renesas Bus State Controller Driver" (renesas-bsc) to
+    "Simple Power-Managed Bus Driver" (simple-pm-bus),
+  - Postponed adding power-domains properties to the dtsi,
+  - Added updates for r8a73a4/ape6evm.
+
+Thanks for applying!
+
+Geert Uytterhoeven (4):
+  drivers: bus: Sort Kconfig entries alphabetically
+  drivers: bus: Sort Makefile entries alphabetically
+  drivers: bus: Add Simple Power-Managed Bus DT Bindings
+  drivers: bus: Add Simple Power-Managed Bus Driver
+
+ .../devicetree/bindings/bus/simple-pm-bus.txt      | 52 +++++++++++++++++++++
+ drivers/bus/Kconfig                                | 53 ++++++++++++++--------
+ drivers/bus/Makefile                               | 15 +++---
+ drivers/bus/simple-pm-bus.c                        | 51 +++++++++++++++++++++
+ 4 files changed, 144 insertions(+), 27 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/bus/simple-pm-bus.txt
+ create mode 100644 drivers/bus/simple-pm-bus.c
+
+-- 
+1.9.1
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
