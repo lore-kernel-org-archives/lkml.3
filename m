@@ -1,74 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758341AbbAIVZT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 16:25:19 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:52176 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758316AbbAIVZO (ORCPT
+	id S1758286AbbAIVXn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 16:23:43 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:55735 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758265AbbAIVXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 16:25:14 -0500
-Message-ID: <54B046BC.8060802@vanguardiasur.com.ar>
-Date: Fri, 09 Jan 2015 18:23:08 -0300
-From: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
-Organization: VanguardiaSur
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 9 Jan 2015 16:23:40 -0500
+Date: Fri, 9 Jan 2015 16:23:36 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, jack@suse.cz,
+        hch@infradead.org, hannes@cmpxchg.org, linux-fsdevel@vger.kernel.org,
+        vgoyal@redhat.com, lizefan@huawei.com, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, mhocko@suse.cz, clm@fb.com, fengguang.wu@intel.com
+Subject: Re: [PATCHSET RFC block/for-next] writeback: cgroup writeback support
+Message-ID: <20150109212336.GB2785@htj.dyndns.org>
+References: <1420579582-8516-1-git-send-email-tj@kernel.org>
+ <20150106214426.GA24106@htj.dyndns.org>
+ <20150107234532.GD25000@dastard>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] UBI: Fastmap: Care about the protection queue
-References: <1416835236-25185-1-git-send-email-richard@nod.at> <1416835236-25185-2-git-send-email-richard@nod.at>
-In-Reply-To: <1416835236-25185-2-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150107234532.GD25000@dastard>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2014 10:20 AM, Richard Weinberger wrote:
-> Fastmap can miss a PEB if it is in the protection queue
-> and not jet in the used tree.
+Hello, Dave.
 
-s/jet/yet
-
-> Treat every protected PEB as used.
+On Thu, Jan 08, 2015 at 10:45:32AM +1100, Dave Chinner wrote:
+> > Complications mostly arise from filesystems and inodes having to deal
+> > with multiple split bdi's instead of one, but those are mostly
+> > straight-forward 1:N mapping issues.  It does get tedious here and
+> > there but doesn't complicate the overall picture.
 > 
+> Some filesystems don't track metadata-dirty inode state in the bdi
+> lists, and instead track that in their own lists (usually deep
+> inside the journalling subsystem). i.e. I_DIRTY_PAGES are the only
+> dirty state that is tracked in the VFS. i.e. inode metadata
+> writeback will still be considered global, but pages won't be. Hence
+> you might get pages written back quickly, but the inodes are going
+> to remain dirty and unreclaimable until the filesystem flushes some
+> time in the future after the journal is committed and the inode
+> written...
 
-I'm wondering if we can have a detailed description of the issues this
-commit fixes (if any?). In other words, what's the result of *not*
-having the patch?
+I'm not sure I'm following.  What writeback layer provides is cgroup
+awareness when dealing with I_DIRTY_PAGES.  Metadata writebacks will
+become automatically cgroup-aware to the extent they go through
+regular page dirtying mechanism.  If some don't go through that
+channel (e.g. journals shouldn't to avoid priority inversion), it's
+upto the specific filesystem to decide how to handle them.  In most
+cases, I imagine they'd be sent down as originating from the root
+cgroup, ie, as the system cost.  Specific filesystems can be more
+sophisticated, I suppose.
 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->  drivers/mtd/ubi/fastmap.c | 13 +++++++++++++
->  1 file changed, 13 insertions(+)
-> 
-> diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
-> index b56672b..db3defd 100644
-> --- a/drivers/mtd/ubi/fastmap.c
-> +++ b/drivers/mtd/ubi/fastmap.c
-> @@ -1196,6 +1196,19 @@ static int ubi_write_fastmap(struct ubi_device *ubi,
->  		fm_pos += sizeof(*fec);
->  		ubi_assert(fm_pos <= ubi->fm_size);
->  	}
-> +
-> +	for (i = 0; i < UBI_PROT_QUEUE_LEN; i++) {
-> +		list_for_each_entry(wl_e, &ubi->pq[i], u.list) {
-> +			fec = (struct ubi_fm_ec *)(fm_raw + fm_pos);
-> +
-> +			fec->pnum = cpu_to_be32(wl_e->pnum);
-> +			fec->ec = cpu_to_be32(wl_e->ec);
-> +
-> +			used_peb_count++;
-> +			fm_pos += sizeof(*fec);
-> +			ubi_assert(fm_pos <= ubi->fm_size);
-> +		}
-> +	}
->  	fmh->used_peb_count = cpu_to_be32(used_peb_count);
->  
->  	for (node = rb_first(&ubi->scrub); node; node = rb_next(node)) {
-> 
+Ultimately, the only thing which matters is with which cgroup a bio is
+associated when issued.  What's implemented in this patchset is
+propagation of memcg tags for pagecache pages.  If necessary, further
+mechanisms can be added, but this should cover the basics.
 
+> There has also been talk of allowing filesystems to directly track
+> dirty page state as well - the discussion came out of the way tux3
+> was tracking and committing delta changes to file data. Now that
+> hasn't gone anywhere, but I'm wondering what impact this patch set
+> would have on such proposals?
+
+Would such a filesystem take over writeback mechanism too?  The
+implemented mechanism is fairly modular and the counterparts in each
+filesystem should be able to use them the same way the core writeback
+code does.  I'm afraid I can't say much without knowing further
+details.
+
+> Similarly, I'm concerned about additional overhead in the writeback
+> path - we can easily drive the flusher thread to be CPU bound on IO
+> subsystems that have decent bandwidth (low GB/s), so adding more
+> overhead to every page we have to flush is going to reduce
+> performance on these systems. Do you have any idea what impact
+> just enabling the memcg/blkcg tracking has on writeback performance
+> and CPU consumption?
+
+I measured avg sys+user time of 50 iterations of
+
+  fs_mark -d /mnt/tmp/ -s 104857600 -n 32
+
+on an ext2 on a ramdisk, which should put the hot path part - page
+faulting and inode dirtying - under spotlight.  cgroup writeback
+enabled but not used case consumes around 1% more cpu time - AVG 6.616
+STDEV 0.050 w/o this patchset, AVG 6.682 STDEV 0.046 with.  This is an
+extreme case and while it isn't free the overhead is fairly low.
+
+> A further complication for data writeback is that some filesystems
+> do their own adjacent page write clustering own inside their own
+> ->writepages/->writepage implementations. Both ext4 and XFS do this,
+> and it makes no sense from a system and filesystem performance
+> perspective to turn sequential ranges of dirty pages into much
+> slower, semi-random IO just because the pages belong to different
+> memcgs. It's not a good idea to compromise bulk writeback
+> throughput under memory pressure just because a different memcgs
+> write to the same files, so what is going to be the impact of
+> filesystems ignoring memcg ownership during writeback clustering?
+
+I don't think that's a good idea.  Implementing that isn't hard.
+Range writeback can simply avoid skipping pages from different
+cgroups; however, different cgroups can have vastly different
+characteristics.  One may be configured to have a majority of the
+available bandwidth while another has to scrap by with few hundreds of
+k's per sec.  Initiating write out on pages which belong to the former
+from the writeback of the latter may cause serious priority inversion
+issues.
+
+Maybe we can think of optimizations down the road but I'd strongly
+prefer to stick to simple and clear divisions among cgroups.  Also, a
+file highly interleaved by multiple cgroups isn't a particularly
+likely use case.
+
+> Finally, distros are going to ship with this always enabled, so what
+> is the overall increase in the size of the struct inode on a 64
+> bit system with it enabled?
+
+This was in the head message, but, to repeat, two more pointers if
+!CONFIG_IMA, which is the case for fedora at least.  If CONFIG_IMA is
+enabled, it becomes three pointers.  In my test setup, before the
+patchset or CONFIG_CGROUP_WRITEBACK disabled, it's 544 bytes and w/
+CONFIG_CGROUP_WRITEBACK 560.
+
+Thanks.
 
 -- 
-Ezequiel Garcia, VanguardiaSur
-www.vanguardiasur.com.ar
+tejun
