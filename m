@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757957AbbAISxu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 13:53:50 -0500
-Received: from smtprelay.synopsys.com ([198.182.47.9]:52386 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139AbbAISxr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 13:53:47 -0500
-X-Greylist: delayed 394 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Jan 2015 13:53:47 EST
-From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-To: "acme@redhat.com" <acme@redhat.com>
-CC: "mingo@kernel.org" <mingo@kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bp@suse.de" <bp@suse.de>, "jolsa@kernel.org" <jolsa@kernel.org>,
-        "linux-perf-users@vger.kernel.org" <linux-perf-users@vger.kernel.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH 0/5] Perf fixes for ARC + uClibc
-Thread-Topic: [PATCH 0/5] Perf fixes for ARC + uClibc
-Thread-Index: AQHQKbgHeWsSw6r9cEq+IB1YZuKcqpy4FSKA
-Date: Fri, 9 Jan 2015 18:47:08 +0000
-Message-ID: <1420829227.5917.5.camel@synopsys.com>
-References: <1420552335-26886-1-git-send-email-vgupta@synopsys.com>
-	 <20150106151329.GD2517@redhat.com>
-	 <C2D7FE5348E1B147BCA15975FBA2307565BCA4D7@IN01WEMBXA.internal.synopsys.com>
-In-Reply-To: <C2D7FE5348E1B147BCA15975FBA2307565BCA4D7@IN01WEMBXA.internal.synopsys.com>
-Reply-To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-Accept-Language: en-US, ru-RU
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.225.15.208]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <A5AB0857DFB8D84981436CA330C02280@internal.synopsys.com>
-Content-Transfer-Encoding: 7BIT
+	id S1757885AbbAISrS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 13:47:18 -0500
+Received: from www.sr71.net ([198.145.64.142]:38122 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751069AbbAISrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 13:47:16 -0500
+Message-ID: <54B02232.1030609@sr71.net>
+Date: Fri, 09 Jan 2015 10:47:14 -0800
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: linux-kernel@vger.kernel.org, tglx@linutronix.de, x86@kernel.org,
+        dave.hansen@linux.intel.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] x86 mpx: fix potential performance issue on unmaps
+References: <20141222200803.D316DA2A@viggo.jf.intel.com> <20141222200805.13639956@viggo.jf.intel.com> <20141223091440.GA9112@gmail.com>
+In-Reply-To: <20141223091440.GA9112@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+On 12/23/2014 01:14 AM, Ingo Molnar wrote:
+>> >  {
+>> > -	mpx_notify_unmap(mm, vma, start, end);
+>> > +	/*
+>> > +	 * mpx_notify_unmap() goes and reads a rarely-hot
+>> > +	 * cacheline in the mm_struct.  That can be expensive
+>> > +	 * enough to be seen in profiles.
+>> > +	 *
+>> > +	 * The mpx_notify_unmap() call and its contents have been
+>> > +	 * observed to affect munmap() performance on hardware
+>> > +	 * where MPX is not present.
+>> > +	 *
+>> > +	 * The unlikely() optimizes for the fast case: no MPX
+>> > +	 * in the CPU, or no MPX use in the process.  Even if
+>> > +	 * we get this wrong (in the unlikely event that MPX
+>> > +	 * is widely enabled on some system) the overhead of
+>> > +	 * MPX itself (reading bounds tables) is expected to
+>> > +	 * overwhelm the overhead of getting this unlikely()
+>> > +	 * consistently wrong.
+>> > +	 */
+>> > +	if (unlikely(cpu_feature_enabled(X86_FEATURE_MPX)))
+>> > +		mpx_notify_unmap(mm, vma, start, end);
+>> >  }
+> Hm, so this patch still does not help people who have an MPX 
+> capable CPU but don't have (or don't have many) MPX using apps. 
+> What about them?
 
-On Wed, 2015-01-07 at 07:38 +0000, Vineet Gupta wrote:
-> On Tuesday 06 January 2015 08:43 PM, Arnaldo Carvalho de Melo wrote:
-> 
-> > Em Tue, Jan 06, 2015 at 07:22:10PM +0530, Vineet Gupta escreveu:
-> > > > Hi,
-> > > > 
-> > > > This series based off linux-next of 20150105 allows us to build/use perf
-> > > > for ARC with uClibc based userland.
-> > Do you have some ready made ARC VM image with devel tools I could use with qemu?
-> > 
-> > - Arnaldo
-> >  
-> 
-> FWIW, most of the issues I posted fixes for can be reproduced with
-> building perf with ARC buildroot !
-> 
-> git://github.com:foss-for-synopsys-dwc-arc-processors/buildroot.git
+Sorry for the delayed resposne.
 
-To reproduce described build problems (covered in patches 1, 2, 3, 5) you may indeed use Buildroot.
-Just get the most recent release from here http://buildroot.uclibc.org/downloads/buildroot-2014.11.tar.gz
-and use load following configuration in "menuconfig":
---->---
-BR2_arcle=y
-BR2_TOOLCHAIN_BUILDROOT_LARGEFILE=y
-BR2_LINUX_KERNEL=y
-BR2_LINUX_KERNEL_DEFCONFIG="fpga"
-BR2_PACKAGE_PERF=y
-BR2_TARGET_ROOTFS_INITRAMFS=y 
---->---
+The performance regression, as far as I could tell, was the result of a
+consistent branch misprediction near the read of mm->bd_addr.  I believe
+the CPU was able to better predict cpu_feature_enabled() than the
+contents of mm->bd_addr.
 
-Then say "make" and you'll see the problem.
-If you experience any problems trying to follow my advice please let me
-know and I'll try to help you.
+In running this on a CPU which actually contains MPX, I wasn't able to
+see the same regression.  The same branch was getting predicted correctly.
 
--Alexey
+I also have a patch to add a global, boot-time MPX disable.  It will
+clear out the X86_FEATURE_MPX at __setup time.  While not optimal, this
+would at least let someone who did not have any MPX apps avoid any
+potential issues.  I was planning on submitting that patch for 3.20.
+
