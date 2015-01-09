@@ -1,93 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752235AbbAIVRS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 16:17:18 -0500
-Received: from mail113-251.mail.alibaba.com ([205.204.113.251]:55480 "EHLO
-	us-alimail-mta1.hst.scl.en.alidc.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750772AbbAIVRR (ORCPT
+	id S1758310AbbAIVZD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 16:25:03 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:34723 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752205AbbAIVZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 16:17:17 -0500
-X-Alimail-AntiSpam: AC=CONTINUE;BC=0.07422295|-1;FP=0|0|0|0|0|-1|-1|-1;HT=r41f05020;MF=gang.chen@sunrus.com.cn;PH=DS;RN=6;RT=6;SR=0;
-Message-ID: <54B046F0.8030808@sunrus.com.cn>
-Date: Sat, 10 Jan 2015 05:24:00 +0800
-From: Chen Gang S <gang.chen@sunrus.com.cn>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 9 Jan 2015 16:25:00 -0500
+Date: Fri, 9 Jan 2015 13:24:51 -0800
+From: Calvin Owens <calvinowens@fb.com>
+To: Paul Moore <paul@paul-moore.com>
+CC: Eric Paris <eparis@redhat.com>, <rgb@redhat.com>, <ebiederm@xmission.com>,
+        <linux-kernel@vger.kernel.org>, <kernel-team@fb.com>,
+        <stable@vger.kernel.org>, <linux-audit@redhat.com>
+Subject: Re: [PATCH][RESEND 2] Revert "AUDIT: Allow login in non-init
+ namespaces"
+Message-ID: <20150109212451.GG27996@mail.thefacebook.com>
+References: <1415148371-11742-1-git-send-email-calvinowens@fb.com>
+ <20141118203221.GA1687992@mail.thefacebook.com>
+ <20150109014448.GF27996@mail.thefacebook.com>
+ <1569326.X07DWxmoQX@sifl>
 MIME-Version: 1.0
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-CC: Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        holzheu@linux.vnet.ibm.com, linux-s390@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] s390: include: timex: Use macro CLOCK_STORE_SIZE instead
- of hard code number
-References: <54A55954.6000002@sunrus.com.cn>	<20150102094625.GA4059@osiris>	<54A76584.6020700@sunrus.com.cn>	<20150105095948.0612e7bc@mschwide>	<54AD4677.6040009@sunrus.com.cn> <20150107163617.190b5992@mschwide>
-In-Reply-To: <20150107163617.190b5992@mschwide>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <1569326.X07DWxmoQX@sifl>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-09_07:2015-01-09,2015-01-09,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.925924926977281 urlsuspect_oldscore=0.925924926977281
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.925924926977281 spamscore=0
+ recipient_to_sender_domain_totalscore=2 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1501090178
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/7/15 23:36, Martin Schwidefsky wrote:
-> On Wed, 07 Jan 2015 22:45:11 +0800
-> Chen Gang S <gang.chen@sunrus.com.cn> wrote:
+On Friday 01/09 at 15:33 -0500, Paul Moore wrote:
+> On Thursday, January 08, 2015 05:44:48 PM Calvin Owens wrote:
+> > This reverts 543bc6a1a987 "AUDIT: Allow login in non-init namespaces".
+> > 
+> > This commit incorrectly assumes that libpam treats -ECONNREFUSED as
+> > an indicator that audit is disabled, and -EPERM or any other error
+> > as a fatal error that prevents the login from continuing.
+> > 
+> > The opposite is in fact true: -EPERM allows the login to continue,
+> > and -ECONNREFUSED causes it to refuse the login. This behavior has
+> > been unchanged in upstream linux-pam since at least 2008.
+> > 
+> > Reverting this change allows libpam to again work as expected in
+> > non-init user namespaces.
+> > 
+> > Signed-off-by: Calvin Owens <calvinowens@fb.com>
+> > Cc: stable@vger.kernel.org
+> > ---
+> > Relevant code in linux-pam:
+> > https://urldefense.proofpoint.com/v1/url?u=https://git.fedorahosted.org/cgit/linux-pam.git/tree/libpam/pam_audit.c%23n56&k=ZVNjlDMF0FElm4dQtryO4A%3D%3D%0A&r=oEb120Cp%2FehdhuY2M7qjelK5yT8IPB5WC2nEG4obDh4%3D%0A&m=vyJMOR0vSvoBryKRT8mBRsUpUQElUD3Fa4ZBI5Vaf%2BA%3D%0A&s=4f34b8ee3ea296b034ab84da1d7f0b738cd431081878afd6f85203507a722ebe
+> > 
+> >  kernel/audit.c | 12 +-----------
+> >  1 file changed, 1 insertion(+), 11 deletions(-)
+> >
+> > diff --git a/kernel/audit.c b/kernel/audit.c
+> > index 80983df..656e8ce 100644
+> > --- a/kernel/audit.c
+> > +++ b/kernel/audit.c
+> > @@ -640,18 +640,8 @@ static int audit_netlink_ok(struct sk_buff *skb, u16
+> > msg_type) int err = 0;
+> > 
+> >  	/* Only support initial user namespace for now. */
+> > -	/*
+> > -	 * We return ECONNREFUSED because it tricks userspace into thinking
+> > -	 * that audit was not configured into the kernel.  Lots of users
+> > -	 * configure their PAM stack (because that's what the distro does)
+> > -	 * to reject login if unable to send messages to audit.  If we return
+> > -	 * ECONNREFUSED the PAM stack thinks the kernel does not have audit
+> > -	 * configured in and will let login proceed.  If we return EPERM
+> > -	 * userspace will reject all logins.  This should be removed when we
+> > -	 * support non init namespaces!!
+> > -	 */
+> >  	if (current_user_ns() != &init_user_ns)
+> > -		return -ECONNREFUSED;
+> > +		return -EPERM;
 > 
->> On 01/05/2015 04:59 PM, Martin Schwidefsky wrote:
->>> On Sat, 03 Jan 2015 11:44:04 +0800
->>> Chen Gang <gang.chen@sunrus.com.cn> wrote:
->>>
->>>>
->>>> Thank you for your work.
->>>>
->>>> In honest, originally, I was not sure whether it would cause bug (do not
->>>> know gcc would generic incorrect code for it). :-)
->>>
->>> Even if the code happened to be correct it does not matter. The intention
->>> of the sizeof() has been to get to the correct 16, not 8. The fix is
->>> fine as it is.
->>>
->>
->> Excuse me, my English is not quite well, I am not quite sure about what
->> you said (might misunderstand what you said), so I provide the related
->> information below for confirmation, please check, thanks.
->>
->> sizeof(clk) is for a pointer, not for an array (for C language, it
->> treats array parameter as a pointer), the related demo is below:
+> While I haven't had reason to test this code lately, last I knew it was 
+> working, what problems are you seeing Calvin?  Also, with what distribution?
+
+An SSH authentication setup in LXC containers on CentOS broke with the
+original patch. My revert made it work again. I can dig up more detail
+about the specific setup if you're interested.
+
+Thanks,
+Calvin
+ 
+> -- 
+> paul moore
+> www.paul-moore.com
 > 
-> And your patch fixes this problem. My comment was in regard to the
-> impact of the original bug. As the typeof construct is used to
-> prevent the compiler from over-optimizing, the code can come out
-> correct even if the bug is present.
-> 
-
-OK, thank you for your reply.
-
-In honest, I still not quite understand your meaning, I guess it is only
-because of my poor English, and it doesn't matter for others members, so
-not need additional reply for it (but welcome reply).
-
-For details (please check, if still interest):
-
-  > And your patch fixes this problem. My comment was in regard to the
-  > impact of the original bug.
-
-    I can understand the 2 contents above.
-
-  >                             As the typeof construct is used to
-  > prevent the compiler from over-optimizing,
-
-    I can understand, yeah, typeof() is useful for declaring an array.
-
-  >                                            the code can come out
-  > correct even if the bug is present.
-  > 
-
-    Sorry, I can not understand: I know every words, and it seems I can
-    understand the whole sentence, but for me, it seems have a conflict
-    meaning with the original sentences.
-
-
-Thanks.
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
