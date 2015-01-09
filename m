@@ -1,92 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757940AbbAIRLz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 12:11:55 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47260 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757897AbbAIRLw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 12:11:52 -0500
-Date: Fri, 9 Jan 2015 17:11:31 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Tawfik Bayouk <tawfik@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        devicetree <devicetree@vger.kernel.org>,
-        Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        Mark Rutland <mark.rutland@arm.com>, Nadav Haklai <nadavh@marvell.com>,
-        linux-ide@vger.kernel.org, Lior Amsalem <alior@marvell.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Tejun Heo <tj@kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Message-ID: <20150109171131.GH2634@sirena.org.uk>
-References: <1420799989-10645-1-git-send-email-gregory.clement@free-electrons.com>
- <1420799989-10645-3-git-send-email-gregory.clement@free-electrons.com>
- <54AFF7E3.4070506@redhat.com>
- <54AFFFDC.7020307@free-electrons.com>
- <CAGb2v674q4Cjp9qy9CbUXe2j5pT_ez98CKxXHC8u4Diap2TT1A@mail.gmail.com>
+	id S1757898AbbAIROK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 12:14:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36417 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751761AbbAIROG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 12:14:06 -0500
+Message-ID: <54B00C39.1070809@redhat.com>
+Date: Fri, 09 Jan 2015 22:43:29 +0530
+From: Pratyush Anand <panand@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FOk1sPzRVyI5JND9"
-Content-Disposition: inline
-In-Reply-To: <CAGb2v674q4Cjp9qy9CbUXe2j5pT_ez98CKxXHC8u4Diap2TT1A@mail.gmail.com>
-X-Cookie: What's so funny?
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 2/4] Documentation: bindings: Add the regulator
- property to the sub-nodes AHCI bindings
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: William Cohen <wcohen@redhat.com>, Steve Capper <steve.capper@linaro.org>,
+        David Long <dave.long@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: Query: ARM64: Behavior of el1_dbg exception while executing el0_dbg
+References: <54AE830E.1090000@redhat.com> <20150108162312.GO11583@arm.com> <54AEBE45.9080203@redhat.com> <20150109154635.GG11258@arm.com>
+In-Reply-To: <20150109154635.GG11258@arm.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---FOk1sPzRVyI5JND9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Sat, Jan 10, 2015 at 12:29:32AM +0800, Chen-Yu Tsai wrote:
+On Friday 09 January 2015 09:16 PM, Will Deacon wrote:
+> On Thu, Jan 08, 2015 at 05:28:37PM +0000, Pratyush Anand wrote:
+>> On Thursday 08 January 2015 09:53 PM, Will Deacon wrote:
+>>> On Thu, Jan 08, 2015 at 01:15:58PM +0000, Pratyush Anand wrote:
+>>>> I am trying to test following scenario, which seems valid to me. But I
+>>>> am very new to ARM64 as well as to debugging tools, so seeking expert's
+>>>> comment here.
+>>>>
+>>>> -- I have inserted a kprobe to the function uprobe_breakpoint_handler
+>>>> which is called from elo_dbg
+>>>> (el0_dbg->do_debug_exception->brk_handler->call_break_hook->uprobe_breakpoint_handler)
+>>>>
+>>>> -- kprobe is enabled.
+>>>>
+>>>> -- an uprobe is inserted into a test application and enabled.
+>>>>
+>>>> So, when uprobe is enabled and test code execution reaches to probe
+>>>> instruction, it executes uprobe breakpoint instruction and el0_dbg
+>>>> exception is raised.
+>>>>
+>>>> When control reaches to start of uprobe_breakpoint_handler and it
+>>>> executes first instruction (which has been replaced with a kprobe
+>>>> breakpoint instruction), el1_dbg exception is raised.
+>>>
+>>> Hmm, debug exceptions should be masked at this point so I don't see why
+>>> you're taking the second debug exception.
+>>>
+>>
+>> So, you mean to say that when an exception which has been taken from
+>> lower exception level (EL0) is being executed, then we keep masked also
+>> the exception from current exception level (EL1)...
+>
+> Yeah, if you look at entry.S then you'll see that neither el0_dbg or el1_dbg
+> re-enable debug exceptions (masked automatically by the CPU after taking the
+> exception) until *after* the handling has completed. This is to prevent
+> recursive debug exceptions, which I don't see how we can reasonable handle.
 
-> Since the AHCI library code already supports the generic phy subsystem,
-> with one phy possible for each port node, you could possibly add a
-> generic phy that just takes a regulator, and hook it up that way.
+May be I am missing something, but my observation on silicon is 
+different. Please have a look at git log of HEAD of following branch, 
+which says that el1_dbg exception has been raised while el0_dbg was 
+executing. Do not know what I am missing..
 
-> I don't know if the extra layer of indirection is good or not.
-> Just offering an alternative.
+https://github.com/pratyushanand/linux/tree/ml_arm64_uprobe_devel_debug_kprobe_insertion_at_uprobe_breakpoint_handler
 
-Or if the supply is for the device at the other end of the link (which
-is what it sounded like) then use that.  This just sounds like the same
-problem we have for all the enumerable buses in embedded systems where
-we need to be able to understand that the device exists prior to it
-being fully ready to appear in the system.  Having the link/slot be a
-device in Linux does indeed seem to be a common way people think about
-doing this, it sounds like for this one it might be the most direct.
 
---FOk1sPzRVyI5JND9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+>
+>> If, so then how to handle it. One way is that I assign a __kprobe
+>> qualifier to uprobe_breakpoint_handler and uprobe_single_step_handler,
+>> so that an user can not insert a kprobe there. But, that does not seem
+>> to be a good idea, because it will only prevent these two functions to
+>> be probed. What about the functions which is being called by these
+>> functions like uprobe_pre_sstep_notifier & uprobe_post_sstep_notifier
+>> which lie in generic kernel code. So, may be we need something in
+>> debug-monitor, which handles this situation, no?
+>
+> I'm not sure how to solve it, but we certainly can't allow debug exceptions
+> to trigger on the debug exception handling path. The first thing to do would
+> be finding out where they are getting re-enabled.
 
-iQEcBAEBAgAGBQJUsAvCAAoJECTWi3JdVIfQTM4H/2UO7wLAPT10oLokFxKC8HXb
-KP7QN4TELOy1HDifgnj3/qSDMrRehT51hVPq90sFgdzzop/FxEupk+AabC71nm32
-w9ggTQejndTbFqr2rRHEKLiMLSvlPWi7kjXTvTSLb3nR0+CTR9cr82dvAbzUgyKo
-FqvJNZ0DAZrvRnia0roNSslFrVsjZmf+jMFLSA9CbmQ2hKOD1BqIUpe0L4L2R+w9
-W/hzs/R89kBcwTfHTvoPD11Omqzz0yT2gIiwGTA5Kh/cKAt5hlclwkmbQagjNGKE
-sUdte9p/y32SLpS90qT3hYrQsFk5tYTzlFlKkpIBRpFFk4Fh1kaRpO0FDs8+vHo=
-=4wRN
------END PGP SIGNATURE-----
+As of now I will put uprobe_breakpoint_handler and 
+uprobe_single_step_handler symbols under NOKPROBE_SYMBOL.
 
---FOk1sPzRVyI5JND9--
+Other than these, we should also put functions like brk_handler, 
+do_dbg_exception (all those which comes in debug exception handling 
+path) under NOKPROBE_SYMBOL, as they have been done in 
+arch/x86/kernel/traps.c
+
+In my opinion uprobe_pre_sstep_notifier and uprobe_post_sstep_notifier 
+should also be put under NOKPROBE_SYMBOL. Adding linux-kernel to comment.
+
+~Pratyush
+>
+> Will
+>
