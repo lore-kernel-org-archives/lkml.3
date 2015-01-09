@@ -1,176 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758051AbbAIP0C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:26:02 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:23490 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932480AbbAIPZO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:25:14 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-98-54aff2d82715
-From: Jacek Anaszewski <j.anaszewski@samsung.com>
-To: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: devicetree@vger.kernel.org, kyungmin.park@samsung.com,
-        b.zolnierkie@samsung.com, pavel@ucw.cz, cooloney@gmail.com,
-        rpurdie@rpsys.net, sakari.ailus@iki.fi, s.nawrocki@samsung.com,
-        Jacek Anaszewski <j.anaszewski@samsung.com>,
-        Sakari Ailus <sakari.ailus@linux.intel.com>
-Subject: [PATCH/RFC v10 19/19] leds: aat1290: add support for V4L2 Flash
- sub-device
-Date: Fri, 09 Jan 2015 16:23:09 +0100
-Message-id: <1420816989-1808-20-git-send-email-j.anaszewski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
-References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBLMWRmVeSWpSXmKPExsVy+t9jQd0bn9aHGDR81bLYOGM9q8XRnROZ
-	LOYfOcdq0Xv1OaPF2aY37BaXd81hs9j6Zh2jRc+GrawWd08dZbPYvespq8XhN+2sFmf2r2Sz
-	+LTlG5MDr8fOWXfZPQ5/XcjiMe9koMee+T9YPfq2rGL0WLH6O7vH501yAexRXDYpqTmZZalF
-	+nYJXBkf//9kK1gjX7Fh2wbWBsY1Ul2MnBwSAiYS7b/nMkLYYhIX7q1n62Lk4hASmM4o0fXv
-	MzuE084ksaL9KjtIFZuAocTPF6+Zuhg5OEQEoiUuHasHqWEWmM4kse5tMxtIjbBAqMSZnUvB
-	bBYBVYl1D++xgNi8Ah4SL7fsBeuVEFCQmDPJBsTkBAq3/HYCMYUE3CXeXDWcwMi7gJFhFaNo
-	akFyQXFSeq6RXnFibnFpXrpecn7uJkZweD6T3sG4qsHiEKMAB6MSD+8GufUhQqyJZcWVuYcY
-	JTiYlUR4GzYDhXhTEiurUovy44tKc1KLDzFKc7AoifMq2beFCAmkJ5akZqemFqQWwWSZODil
-	GhjdGZuDa+dW67FySLdY39BfPt/hAmuT553+HOsE6X/TlqXo9Hpvl31v8m1NwaeIorLtsqzW
-	EsdzXLW77iTlCkcbbAh6cv0Yy8fQYytlpNUvTZ7dPVlwE6PH5dVfrtoYunurtz58nxu4cLJW
-	W4nY92vuD65bGhUq/NIPqZpw/eoKxQmFjx2nvVdiKc5INNRiLipOBACmH9ocSwIAAA==
+	id S932813AbbAIPYR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:24:17 -0500
+Received: from mail-by2on0080.outbound.protection.outlook.com ([207.46.100.80]:54304
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932754AbbAIPYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 10:24:12 -0500
+Date: Fri, 9 Jan 2015 07:24:07 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Alexandre Courbot <gnurou@gmail.com>, <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH RESEND v3] gpio: lib-sysfs: Add 'wakeup' attribute
+References: <1420481779-22841-1-git-send-email-soren.brinkmann@xilinx.com>
+ <CACRpkda5mAtves=PZibd6jdVP1ztM0EYA+cnw7Gs+mSVXTkqpw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkda5mAtves=PZibd6jdVP1ztM0EYA+cnw7Gs+mSVXTkqpw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21238.000
+X-TM-AS-User-Approved-Sender: Yes;Yes
+Message-ID: <1bc11e16c89049708a9273d00ac75d2b@BL2FFO11FD047.protection.gbl>
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(377424004)(24454002)(189002)(51704005)(377454003)(199003)(108616004)(31966008)(76176999)(110136001)(85182001)(86362001)(47776003)(85202003)(20776003)(104016003)(19580395003)(4396001)(19580405001)(83506001)(74316001)(54356999)(6806004)(50986999)(106466001)(92566001)(53416004)(21056001)(2950100001)(107046002)(87936001)(50466002)(23676002)(46102003)(62966003)(99396003)(120916001)(77156002)(92726002)(107986001)(24736002)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB063;H:xsj-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB063;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BL2FFO11HUB063;
+X-Forefront-PRVS: 04519BA941
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB063;
+X-OriginatorOrg: xilinx.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 09 Jan 2015 15:24:09.1954
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 657af505-d5df-48d0-8300-c31994686c5c
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=657af505-d5df-48d0-8300-c31994686c5c;Ip=[149.199.60.83]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BL2FFO11HUB063
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for V4L2 Flash sub-device to the aat1290 LED Flash class
-driver. The support allows for V4L2 Flash sub-device to take the control
-of the LED Flash class device.
+On Fri, 2015-01-09 at 10:32AM +0100, Linus Walleij wrote:
+> On Mon, Jan 5, 2015 at 7:16 PM, Soren Brinkmann
+> <soren.brinkmann@xilinx.com> wrote:
+> 
+> > Add an attribute 'wakeup' to the GPIO sysfs interface which allows
+> > marking/unmarking a GPIO as wake IRQ.
+> > The file 'wakeup' is created in each exported GPIOs directory, if an IRQ
+> > is associated with that GPIO and the irqchip implements set_wake().
+> > Writing 'enabled' to that file will enable wake for that GPIO, while
+> > writing 'disabled' will disable wake.
+> > Reading that file will return either 'disabled' or 'enabled' depening on
+> > the currently set flag for the GPIO's IRQ.
+> >
+> > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> > Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
+> > ---
+> > v3:
+> >  - add documentation
+> > v2:
+> >  - fix error path to unlock mutex before return
+> 
+> Finally applied for v3.20.
+> 
+> Sorry for being a bit conservative and picky at times...
 
-Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Bryan Wu <cooloney@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Cc: Sakari Ailus <sakari.ailus@linux.intel.com>
----
- drivers/leds/leds-aat1290.c |   62 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 62 insertions(+)
+Thank you.
 
-diff --git a/drivers/leds/leds-aat1290.c b/drivers/leds/leds-aat1290.c
-index 0a3c9b4..0974868 100644
---- a/drivers/leds/leds-aat1290.c
-+++ b/drivers/leds/leds-aat1290.c
-@@ -20,6 +20,7 @@
- #include <linux/of_gpio.h>
- #include <linux/platform_device.h>
- #include <linux/slab.h>
-+#include <media/v4l2-flash.h>
- #include <linux/workqueue.h>
- 
- #define AAT1290_MOVIE_MODE_CURRENT_ADDR	17
-@@ -67,6 +68,7 @@ struct aat1290_led {
- 	struct mutex lock;
- 
- 	struct led_classdev_flash fled_cdev;
-+	struct v4l2_flash *v4l2_flash;
- 
- 	int flen_gpio;
- 	int en_set_gpio;
-@@ -280,11 +282,44 @@ static void aat1290_init_flash_settings(struct aat1290_led *led,
- 	setting->val = setting->max;
- }
- 
-+#if IS_ENABLED(CONFIG_V4L2_FLASH_LED_CLASS)
-+static void aat1290_init_v4l2_ctrl_config(struct aat1290_led_settings *s,
-+					struct v4l2_flash_ctrl_config *config)
-+{
-+	struct led_flash_setting *setting;
-+	struct v4l2_ctrl_config *c;
-+
-+	c = &config->intensity;
-+	setting = &s->torch_brightness;
-+	c->min = setting->min;
-+	c->max = setting->max;
-+	c->step = setting->step;
-+	c->def = setting->val;
-+
-+	c = &config->flash_timeout;
-+	setting = &s->flash_timeout;
-+	c->min = setting->min;
-+	c->max = setting->max;
-+	c->step = setting->step;
-+	c->def = setting->val;
-+
-+	config->has_external_strobe = false;
-+}
-+#else
-+#define aat1290_init_v4l2_ctrl_config(s, config)
-+#endif
-+
- static const struct led_flash_ops flash_ops = {
- 	.strobe_set = aat1290_led_flash_strobe_set,
- 	.timeout_set = aat1290_led_flash_timeout_set,
- };
- 
-+#if IS_ENABLED(CONFIG_V4L2_FLASH_LED_CLASS)
-+static const struct v4l2_flash_ops v4l2_flash_ops = {
-+	.external_strobe_set = NULL,
-+};
-+#endif
-+
- static int aat1290_led_probe(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
-@@ -292,6 +327,9 @@ static int aat1290_led_probe(struct platform_device *pdev)
- 	struct aat1290_led *led;
- 	struct led_classdev *led_cdev;
- 	struct led_classdev_flash *fled_cdev;
-+#if IS_ENABLED(CONFIG_V4L2_FLASH_LED_CLASS)
-+	struct v4l2_flash_ctrl_config v4l2_flash_config;
-+#endif
- 	struct aat1290_led_settings settings;
- 	int flen_gpio, enset_gpio, ret;
- 
-@@ -342,6 +380,9 @@ static int aat1290_led_probe(struct platform_device *pdev)
- 
- 	fled_cdev->timeout = settings.flash_timeout;
- 
-+	/* Init V4L2 Flash controls basing on initialized settings */
-+	aat1290_init_v4l2_ctrl_config(&settings, &v4l2_flash_config);
-+
- 	/* Init led class */
- 	led_cdev = &fled_cdev->led_cdev;
- 	led_cdev->name = led->label;
-@@ -361,13 +402,34 @@ static int aat1290_led_probe(struct platform_device *pdev)
- 
- 	mutex_init(&led->lock);
- 
-+	of_node_get(dev_node);
-+	led_cdev->dev->of_node = dev_node;
-+
-+	/* Create V4L2 Flash subdev. */
-+	led->v4l2_flash = v4l2_flash_init(fled_cdev,
-+					  &v4l2_flash_ops,
-+					  &v4l2_flash_config);
-+	if (IS_ERR(led->v4l2_flash)) {
-+		ret = PTR_ERR(led->v4l2_flash);
-+		goto error_v4l2_flash_init;
-+	}
-+
- 	return 0;
-+
-+error_v4l2_flash_init:
-+	of_node_put(dev_node);
-+	led_classdev_flash_unregister(fled_cdev);
-+	mutex_destroy(&led->lock);
-+
-+	return ret;
- }
- 
- static int aat1290_led_remove(struct platform_device *pdev)
- {
- 	struct aat1290_led *led = platform_get_drvdata(pdev);
- 
-+	v4l2_flash_release(led->v4l2_flash);
-+	of_node_put(led->fled_cdev.led_cdev.dev->of_node);
- 	led_classdev_flash_unregister(&led->fled_cdev);
- 	cancel_work_sync(&led->work_brightness_set);
- 
--- 
-1.7.9.5
-
+	Sören
