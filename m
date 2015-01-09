@@ -1,31 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757669AbbAIQQw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 11:16:52 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:37375 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757070AbbAIQQt (ORCPT
+	id S1757819AbbAIQRD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 11:17:03 -0500
+Received: from smtp-out-098.synserver.de ([212.40.185.98]:1046 "EHLO
+	smtp-out-098.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757718AbbAIQQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 11:16:49 -0500
-Date: Fri, 9 Jan 2015 16:16:45 +0000
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: roy.franz@linaro.org, matt.fleming@intel.com, will.deacon@arm.com,
-        catalin.marinas@arm.com, linux-arm-kernel@lists.infradead.org,
-        linux-efi@vger.kernel.org, bp@alien8.de, msalter@redhat.com,
-        geoff.levand@linaro.org, dyoung@redhat.com, mark.rutland@arm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 0/8] arm64: stable UEFI virtual mappings for kexec
-Message-ID: <20150109161645.GS3827@bivouac.eciton.net>
-References: <1420742914-2404-1-git-send-email-ard.biesheuvel@linaro.org>
+	Fri, 9 Jan 2015 11:16:59 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 16598
+Message-ID: <54AFFEF9.5080408@metafoo.de>
+Date: Fri, 09 Jan 2015 17:16:57 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420742914-2404-1-git-send-email-ard.biesheuvel@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] iio: Simplify IIO provider access locking mechanism
+References: <1420817893-5858-1-git-send-email-iivanov@mm-sol.com>		 <54AFF6C4.9020306@metafoo.de> <1420818639.28652.5.camel@mm-sol.com>	 <54AFF9D3.7000007@metafoo.de> <1420820083.28652.7.camel@mm-sol.com>
+In-Reply-To: <1420820083.28652.7.camel@mm-sol.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the series:
-Tested-by: Leif Lindholm <leif.lindholm@linaro.org>
+On 01/09/2015 05:14 PM, Ivan T. Ivanov wrote:
+>
+> On Fri, 2015-01-09 at 16:54 +0100, Lars-Peter Clausen wrote:
+>> On 01/09/2015 04:50 PM, Ivan T. Ivanov wrote:
+>>> On Fri, 2015-01-09 at 16:41 +0100, Lars-Peter Clausen wrote:
+>>>> On 01/09/2015 04:38 PM, Ivan T. Ivanov wrote:
+>>>>> Instead of checking whether provider module is still
+>>>>> loaded on every access to device just lock module to
+>>>>> memory when client get reference to provider device.
+>>>>>
+>>>>
+>>>> This has nothing to do with the module, it's about the device. In the Linux
+>>>> device driver model as device can be unbound at any time and the IIO
+>>>> framework needs to handle this.
+>>>>
+>>>
+>>> Hm. Probably i am missing something here, but is this
+>>> still true if we have reference to device structure?
+>>
+>> Yes, that only prevents the memory of device from being freed. But the
+>> device can still be unbound from the driver.
+>>
+>> Think of e.g. a USB device that is pulled from the USB connector. Nothing
+>> you can do in software about having the device disappear.
+>>
+>
+> Agree, but I think that the patch is still valid. Module
+> have to be pinned in memory as long as there are device
+> driver users.
+
+No, the idea of the Linux driver model is that you can remove the module of 
+a driver at any time, which will unbind the device from the driver. Once you 
+reinsert the module the device will be re-bound to the driver.
+
+- Lars
+
