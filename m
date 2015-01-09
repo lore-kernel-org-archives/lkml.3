@@ -1,80 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933055AbbAIPuR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:50:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38286 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932413AbbAIPuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:50:16 -0500
-Message-ID: <54AFF8B5.8050305@suse.cz>
-Date: Fri, 09 Jan 2015 16:50:13 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Andy Lutomirski <luto@amacapital.net>
-CC: "Kirill A. Shutemov" <kirill@shutemov.name>, Pavel Machek <pavel@ucw.cz>,
-        Mark Seaborn <mseaborn@chromium.org>,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: DRAM unreliable under specific access patern
-References: <CAL82V5NN8U4PyiSjLxgpTrgsgkbM7rRCbVF5P-HHyEqphLOy+g@mail.gmail.com>	<20141224220818.GA17655@amd>	<20150105192329.5f32c155@lxorguk.ukuu.org.uk>	<CALCETrXby82sgbGTcSZFj54t=resYcwtPbcFRNh6Ksbr+Ow8HQ@mail.gmail.com>	<20150106014718.GA23775@node.dhcp.inet.fi>	<CALCETrV1O1MFJeY6WacF+QHdBGG7HoHdVQy=n951=Y+=g+h7mQ@mail.gmail.com>	<20150106021836.GA24121@node.dhcp.inet.fi>	<CALCETrXpJ7CPAKeh9nLA=PoCBT8w8NfhZg5cgUyG9BUtp2Jv+w@mail.gmail.com> <20150108130325.0592b18b@lxorguk.ukuu.org.uk>
-In-Reply-To: <20150108130325.0592b18b@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=windows-1252
+	id S933248AbbAIPun (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:50:43 -0500
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:52790 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933077AbbAIPuj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 10:50:39 -0500
+X-Sasl-enc: v8zxnR/FV4cAdQvIHUEIcRYP9lE1mwB8Sk4nAaYg6ZDV 1420818638
+Message-ID: <1420818636.31075.15.camel@stressinduktion.org>
+Subject: Re: [PATCH net] ipv6: Prevent ipv6_find_hdr() from returning ENOENT
+ for valid non-first fragments
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Rahul Sharma <rsharma@arista.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
+Date: Fri, 09 Jan 2015 16:50:36 +0100
+In-Reply-To: <20150109114506.GA4857@salvia>
+References: <CAFB3abzYNYqtzd_n+Ym0Lo=DYbV0HPU=Tqw=stALNnu188hMKQ@mail.gmail.com>
+	 <20150106224706.GA7416@salvia>
+	 <CAFB3abwKpR1VqZXUrsexqveAZrA2LTSmTe8a=-H7z2HjAptjwA@mail.gmail.com>
+	 <1420627396.26870.36.camel@stressinduktion.org>
+	 <20150108205328.GA3361@salvia>
+	 <1420756756.1755002.211556745.0418D128@webmail.messagingengine.com>
+	 <20150109000546.GA3488@salvia>
+	 <CAFB3abwrjp61LLOk3RWwXYEq1g4QZUC8OTKuO2cAr+GbV3n4rw@mail.gmail.com>
+	 <1420803255.1978819.211762005.707EFFB9@webmail.messagingengine.com>
+	 <20150109114506.GA4857@salvia>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.9 (3.12.9-1.fc21) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2015 02:03 PM, One Thousand Gnomes wrote:
-> On Mon, 5 Jan 2015 18:26:07 -0800
-> Andy Lutomirski <luto@amacapital.net> wrote:
+On Fr, 2015-01-09 at 12:45 +0100, Pablo Neira Ayuso wrote:
+> Hi Hannes,
 > 
-> Thats less of a concern I think. As far as I can tell it would depend how
-> the memory is wired what actually gets hit. I'm not clear if its within
-> the range or not.
+> On Fri, Jan 09, 2015 at 12:34:15PM +0100, Hannes Frederic Sowa wrote:
+> > On Fri, Jan 9, 2015, at 08:18, Rahul Sharma wrote:
+> > > Hi Pablo,
+> > > 
+> > > On Fri, Jan 9, 2015 at 5:35 AM, Pablo Neira Ayuso <pablo@netfilter.org>
+> > > wrote:
+> > > > On Thu, Jan 08, 2015 at 11:39:16PM +0100, Hannes Frederic Sowa wrote:
+> > > >> Hi Pablo,
+> > > >>
+> > > >> On Thu, Jan 8, 2015, at 21:53, Pablo Neira Ayuso wrote:
+> > > >> > I'm afraid we cannot just get rid of that !ipv6_ext_hdr() check. The
+> > > >> > ipv6_find_hdr() function is designed to return the transport protocol.
+> > > >> > After the proposed change, it will return extension header numbers.
+> > > >> > This will break existing ip6tables rulesets since the `-p' option
+> > > >> > relies on this function to match the transport protocol.
+> > > >> >
+> > > >> > Note that the AH header is skipped (see code a bit below this
+> > > >> > problematic fragmentation handling) so the follow up header after the
+> > > >> > AH header is returned as the transport header.
+> > > >> >
+> > > >> > We can probably return the AH protocol number for non-1st fragments.
+> > > >> > However, that would be something new to ip6tables since nobody has
+> > > >> > ever seen packet matching `-p ah' rules. Thus, we restore control to
+> > > >> > the user to allow this, but we would accept all kind of fragmented AH
+> > > >> > traffic through the firewall since we cannot know what transport
+> > > >> > protocol contains from non-1st fragments (unless I'm missing anything,
+> > > >> > I need to have a closer look at this again tomorrow with fresher
+> > > >> > mind).
+> > > >>
+> > > >> The code in question is guarded by (_frag_off != 0), so we are
+> > > >> definitely processing a non-1st fragment currently. The -p match would
+> > > >> happen at the time when the packet is reassembled and thus ipv6_find_hdr
+> > > >> will find the real transport (final) header at this point (I hope I
+> > > >> followed the code correctly here).
+> > > >
+> > > > Then, Rahul should get things working by modprobing nf_defrag_ipv6.
+> > > 
+> > > I already had nf_defrag_ipv6 installed when the issue occured. But I
+> > > see ip6table_raw_hook returning NF_DROP for the second fragment.
+> > 
+> > That's what I expected. I think the change only affects hooks before
+> > reassembly.
 > 
->> > When I read the paper I thought that vdso would be interesting target for
->> > the attack, but having all these constrains in place, it's hard aim the
->> > attack anything widely used.
->> >
->> 
->> The vdso and the vvar page are both at probably-well-known physical
->> addresses, so you can at least target the kernel a little bit.  I
->> *think* that kASLR helps a little bit here.
-> 
-> SMEP likewise if you were able to use 1GB to corrupt matching lines
-> elsewhere in RAM (eg the syscall table), but that would I think depend
-> how the RAM is physically configured.
-> 
-> Thats why the large TLB case worries me. With 4K pages and to an extent
-> with 2MB pages its actually quite hard to line up an attack if you know
-> something about the target. With 1GB hugepages you control the lower bits
-> of the physical address precisely. The question is whether that merely
-> enables you to decide where to shoot yourself or it goes beyond that ?
+> reassembly happens at NF_IP6_PRI_CONNTRACK_DEFRAG (-400), so that
+> happens before NF_IP6_PRI_RAW (-300) in IPv6 which is where the raw
+> table is placed.
 
-I haven't read the details yet to judge if it's feasible in this case, but even
-without hugepages, it's possible (albeit elaborately) to control physical
-mapping from userspace. I've done this in the past, to have optimal mapping
-(basically page coloring) to L2/L3 caches. It was done by allocating bunch of
-memory, determining its physical addresses from /proc/self/pagemap, and then
-rearanging it via mremap.
+I tried to reproduce it, but couldn't get non-1st fragments getting
+dropped during traversal of the raw table. They get dropped earlier at
+during reassembly or pass.
 
-Then it's also quite trivial to induce cache misses without clflush, using just
-few addresses that map to the same cache set, without having to cycle throuh
-more memory than the cache size is.
+I agree with Pablo, I also would like to see more data.
 
-But as I said, I haven't read the details here to see if the required access
-pattern to corrupt ram can be combined with these kinds of tricks...
+Thanks,
+Hannes
 
-> (Outside HPC anyway: for HPC cases it bites both ways I suspect - you've
-> got the ability to ensure you don't hit those access patterns while using
-> 1GB pages, but also nothing to randomise stuff to make them unlikely if
-> you happen to have worst case aligned data).
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
 
