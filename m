@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985AbbAIDqh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 22:46:37 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:34684 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753352AbbAIDqg (ORCPT
+	id S932122AbbAIDrd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 22:47:33 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:65158 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658AbbAIDrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 22:46:36 -0500
+	Thu, 8 Jan 2015 22:47:31 -0500
 From: Gigi Joseph <gigi.joseph@gmail.com>
 X-Google-Original-From: Gigi Joseph <gigi.joseph@ti.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Enric Balletbo i Serra <eballetbo@iseebcn.com>,
-        Robin van der Gracht <robin@protonic.nl>, linux-kernel@vger.kernel.org
-Cc: Gigi Joseph <gigi.joseph@ti.com>, Eyal Reizer <eyalr@ti.com>
-Subject: [PATCH 2/6] st_kim: allow suspend if callback is not registered
-Date: Fri,  9 Jan 2015 03:46:24 +0000
-Message-Id: <1420775184-24704-1-git-send-email-gigi.joseph@ti.com>
+To: Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Cc: Gigi Joseph <gigi.joseph@ti.com>, Eyal Reizer <eyalr@ti.com>,
+        bvijay <bvijay@ti.com>
+Subject: [PATCH 3/6] btwilink: add minimal device tree support
+Date: Fri,  9 Jan 2015 03:47:19 +0000
+Message-Id: <1420775239-24745-1-git-send-email-gigi.joseph@ti.com>
 X-Mailer: git-send-email 2.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Suspend/resume was failing if callbacks were not registered.
-As it is ok not to do anything when suspending fix this
-so it soen't return an error and allow the system to suspend.
+Add minimal device tree support to the btwilink driver that is used
+for binding bluetooth with the ti-st shared transport driver.
 
 Signed-off-by: Eyal Reizer <eyalr@ti.com>
+Signed-off-by: bvijay <bvijay@ti.com>
 Signed-off-by: Gigi Joseph <gigi.joseph@ti.com>
 ---
- drivers/misc/ti-st/st_kim.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/bluetooth/btwilink.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
-index 68a0b58..f2c1071 100644
---- a/drivers/misc/ti-st/st_kim.c
-+++ b/drivers/misc/ti-st/st_kim.c
-@@ -908,7 +908,7 @@ static int kim_suspend(struct platform_device *pdev, pm_message_t state)
- 	if (pdata->suspend)
- 		return pdata->suspend(pdev, state);
+diff --git a/drivers/bluetooth/btwilink.c b/drivers/bluetooth/btwilink.c
+index 55c135b..95adec3 100644
+--- a/drivers/bluetooth/btwilink.c
++++ b/drivers/bluetooth/btwilink.c
+@@ -30,6 +30,7 @@
  
--	return -EOPNOTSUPP;
-+	return 0;
+ #include <linux/ti_wilink_st.h>
+ #include <linux/module.h>
++#include <linux/of.h>
+ 
+ /* Bluetooth Driver Version */
+ #define VERSION               "1.0"
+@@ -286,6 +287,14 @@ static int ti_st_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
+ 	return 0;
  }
  
- static int kim_resume(struct platform_device *pdev)
-@@ -925,7 +925,7 @@ static int kim_resume(struct platform_device *pdev)
- 	if (pdata->resume)
- 		return pdata->resume(pdev);
++static const struct of_device_id btwilink_of_match[] = {
++{
++	.compatible = "btwilink",
++	},
++	{}
++};
++MODULE_DEVICE_TABLE(of, btwilink_of_match);
++
+ static int bt_ti_probe(struct platform_device *pdev)
+ {
+ 	static struct ti_st *hst;
+@@ -349,6 +358,8 @@ static struct platform_driver btwilink_driver = {
+ 	.remove = bt_ti_remove,
+ 	.driver = {
+ 		.name = "btwilink",
++		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(btwilink_of_match),
+ 	},
+ };
  
--	return -EOPNOTSUPP;
-+	return 0;
- }
- 
- /**********************************************************************/
 -- 
 1.9.1
 
