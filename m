@@ -1,85 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912AbbAIC3R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 21:29:17 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:2875 "EHLO
+	id S1753093AbbAICks (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 21:40:48 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:9668 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039AbbAIC3O (ORCPT
+	with ESMTP id S1751151AbbAICkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 21:29:14 -0500
-Message-ID: <54AF3CDF.9000004@huawei.com>
-Date: Fri, 9 Jan 2015 10:28:47 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Thu, 8 Jan 2015 21:40:47 -0500
+Message-ID: <54AF3FA0.8010808@huawei.com>
+Date: Fri, 9 Jan 2015 10:40:32 +0800
+From: hujianyang <hujianyang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: <masami.hiramatsu.pt@hitachi.com>, <tixy@linaro.org>,
-        <linux@arm.linux.org.uk>
-CC: <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v19 01/11] ARM: probes: move all probe code to dedicate
- directory
-References: <1420457284-76923-1-git-send-email-wangnan0@huawei.com> <1420457350-77053-1-git-send-email-wangnan0@huawei.com>
-In-Reply-To: <1420457350-77053-1-git-send-email-wangnan0@huawei.com>
-Content-Type: text/plain; charset="GB2312"
+To: Seunghun Lee <waydi1@gmail.com>
+CC: <miklos@szeredi.hu>, <linux-unionfs@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] ovl: Fix condition check for workdir
+References: <1420720880-28459-1-git-send-email-waydi1@gmail.com>
+In-Reply-To: <1420720880-28459-1-git-send-email-waydi1@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.90]
+X-Originating-IP: [10.111.68.144]
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/1/5 19:29, Wang Nan wrote:
-> In discussion on LKML (https://lkml.org/lkml/2014/11/28/158), Russell
-> King suggests to move all probe related code to arch/arm/probes. This
-> patch does the work. Due to dependency on 'arch/arm/kernel/patch.h', this
-> patch also moves patch.h to 'arch/arm/include/asm/patch.h', and related
-> '#include' directives are also midified to '#include <asm/patch.h>'.
+On 2015/1/8 20:41, Seunghun Lee wrote:
+> When file system is mounted read-only workdir is not needed.
 > 
-> Following is an overview of this patch:
+> Signed-off-by: Seunghun Lee <waydi1@gmail.com>
+> ---
+>  fs/overlayfs/super.c | 35 +++++++++++++++++++++++------------
+>  1 file changed, 23 insertions(+), 12 deletions(-)
 > 
->  ./arch/arm/kernel/               ./arch/arm/probes/
->  |-- Makefile                     |-- Makefile
->  |-- probes-arm.c          ==>    |-- decode-arm.c
->  |-- probes-arm.h          ==>    |-- decode-arm.h
->  |-- probes-thumb.c        ==>    |-- decode-thumb.c
->  |-- probes-thumb.h        ==>    |-- decode-thumb.h
->  |-- probes.c              ==>    |-- decode.c
->  |-- probes.h              ==>    |-- decode.h
->  |                                |-- kprobes
->  |                                |   |-- Makefile
->  |-- kprobes-arm.c         ==>    |   |-- actions-arm.c
->  |-- kprobes-common.c      ==>    |   |-- actions-common.c
->  |-- kprobes-thumb.c       ==>    |   |-- actions-thumb.c
->  |-- kprobes.c             ==>    |   |-- core.c
->  |-- kprobes.h             ==>    |   |-- core.h
->  |-- kprobes-test-arm.c    ==>    |   |-- test-arm.c
->  |-- kprobes-test.c        ==>    |   |-- test-core.c
->  |-- kprobes-test.h        ==>    |   |-- test-core.h
->  |-- kprobes-test-thumb.c  ==>    |   `-- test-thumb.c
->  |                                `-- uprobes
->  |                                    |-- Makefile
->  |-- uprobes-arm.c         ==>        |-- actions-arm.c
->  |-- uprobes.c             ==>        |-- core.c
->  |-- uprobes.h             ==>        `-- core.h
->  |
->  `-- patch.h               ==>    arch/arm/include/asm/patch.h
+> diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
+> index 84f3144..4e50617 100644
+> --- a/fs/overlayfs/super.c
+> +++ b/fs/overlayfs/super.c
+> @@ -30,6 +30,7 @@ struct ovl_config {
+>  	char *lowerdir;
+>  	char *upperdir;
+>  	char *workdir;
+> +	bool is_rw;
+>  };
+>  
+>  /* private information held for overlayfs's superblock */
+> @@ -515,10 +516,11 @@ static int ovl_show_options(struct seq_file *m, struct dentry *dentry)
+>  	struct ovl_fs *ufs = sb->s_fs_info;
+>  
+>  	seq_printf(m, ",lowerdir=%s", ufs->config.lowerdir);
+> -	if (ufs->config.upperdir) {
+> +	if (ufs->config.upperdir)
+>  		seq_printf(m, ",upperdir=%s", ufs->config.upperdir);
+> +	if (ufs->config.is_rw)
+>  		seq_printf(m, ",workdir=%s", ufs->config.workdir);
+> -	}
+> +
+>  	return 0;
+>  }
+>  
+> @@ -822,16 +824,27 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
+>  
+>  	sb->s_stack_depth = 0;
+>  	if (ufs->config.upperdir) {
+> -		/* FIXME: workdir is not needed for a R/O mount */
+> +		err = ovl_mount_dir(ufs->config.upperdir, &upperpath);
+> +		if (err)
+> +			goto out_free_config;
+> +
+> +		sb->s_stack_depth = upperpath.mnt->mnt_sb->s_stack_depth;
+> +	}
+> +
+> +	/* If the upper fs is r/o or nonexistent, we mark overlayfs r/o too */
+> +	if (!upperpath.mnt || (upperpath.mnt->mnt_sb->s_flags & MS_RDONLY)) {
+> +		ufs->config.is_rw = false;
+> +		sb->s_flags |= MS_RDONLY;
+> +	} else {
+> +		ufs->config.is_rw = true;
+> +	}
+
+Hi Seunghun,
+
+A partition can be mounted with ro flag. I think workdir is not
+needed in this way either.
+
+> +
+> +	if (ufs->config.is_rw) {
+>  		if (!ufs->config.workdir) {
+>  			pr_err("overlayfs: missing 'workdir'\n");
+>  			goto out_free_config;
+>  		}
+>  
+> -		err = ovl_mount_dir(ufs->config.upperdir, &upperpath);
+> -		if (err)
+> -			goto out_free_config;
+> -
+>  		err = ovl_mount_dir(ufs->config.workdir, &workpath);
+>  		if (err)
+>  			goto out_put_upperpath;
+> @@ -844,8 +857,8 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
+>  			pr_err("overlayfs: workdir and upperdir must be separate subtrees\n");
+>  			goto out_put_workpath;
+>  		}
+> -		sb->s_stack_depth = upperpath.mnt->mnt_sb->s_stack_depth;
+>  	}
+> +
+>  	err = -ENOMEM;
+>  	lowertmp = kstrdup(ufs->config.lowerdir, GFP_KERNEL);
+>  	if (!lowertmp)
+> @@ -884,7 +897,9 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
+>  			pr_err("overlayfs: failed to clone upperpath\n");
+>  			goto out_put_lowerpath;
+>  		}
+> +	}
+>  
+> +	if (ufs->config.is_rw) {
+>  		ufs->workdir = ovl_workdir_create(ufs->upper_mnt, workpath.dentry);
+>  		err = PTR_ERR(ufs->workdir);
+>  		if (IS_ERR(ufs->workdir)) {
+> @@ -914,10 +929,6 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
+>  		ufs->numlower++;
+>  	}
+>  
+> -	/* If the upper fs is r/o or nonexistent, we mark overlayfs r/o too */
+> -	if (!ufs->upper_mnt || (ufs->upper_mnt->mnt_sb->s_flags & MS_RDONLY))
+> -		sb->s_flags |= MS_RDONLY;
+> -
+>  	sb->s_d_op = &ovl_dentry_operations;
+>  
+>  	err = -ENOMEM;
 > 
-> Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-Hi,
-
-Thanks to Tixy and his test robot, a bug is found in this patch: I forgot to change
-arch/arm/kernel/kgdb.c, which also includes patch.h. A small code modification
-is required.
-
-I have posted a new version of this patch by replying.
-
-Tixy, could you please collect it into your git repository and help me test it
-again?
-
-http://lists.infradead.org/pipermail/linux-arm-kernel/2015-January/314520.html
-
-Thanks.
 
 
