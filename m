@@ -1,47 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756303AbbAIWT3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 17:19:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37413 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851AbbAIWT1 (ORCPT
+	id S1758247AbbAIWUb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 17:20:31 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:36619 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820AbbAIWU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 17:19:27 -0500
-Date: Fri, 9 Jan 2015 14:19:27 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Cyrille Pitchen <cyrille.pitchen@atmel.com>, wenyou.yang@atmel.com,
-        ludovic.desroches@atmel.com, leilei.zhao@atmel.com,
-        voice.shen@atmel.com, josh.wu@atmel.com, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/5] tty/serial: at91: use correct type for
- dma_sync_*_for_cpu() and dma_sync_*_for_device()
-Message-ID: <20150109221927.GA19100@kroah.com>
-References: <cover.1418131298.git.cyrille.pitchen@atmel.com>
- <830a2b33ab0226405dc310c8a6d43731bf4ca8f9.1418131298.git.cyrille.pitchen@atmel.com>
- <54AFF037.1000004@atmel.com>
+	Fri, 9 Jan 2015 17:20:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54AFF037.1000004@atmel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Date: Fri, 09 Jan 2015 23:19:50 +0100
+From: Stefan Agner <stefan@agner.ch>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: jslaby@suse.cz, jingchang.lu@freescale.com, shawn.guo@linaro.org,
+        linux-serial@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] serial: =?UTF-8?Q?fsl=5Flpuart=3A=20fix=20various?=
+ =?UTF-8?Q?=20DMA=20related=20issues?=
+In-Reply-To: <20150109221432.GA4056@kroah.com>
+References: <1417134205-4400-1-git-send-email-stefan@agner.ch>
+ <677f2c62b6b6c1fe8e16cd38d5f20d47@agner.ch>
+ <20141212143244.GA2219@kroah.com>
+ <f6255321feb06d32f257b7b41d5d58a3@agner.ch>
+ <20150109221432.GA4056@kroah.com>
+Message-ID: <742637f13bc97ecaadd1d264cd0ad4cc@agner.ch>
+User-Agent: Roundcube Webmail/1.0.3
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Fri Jan  9 23:18:55 2015
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 54b053cf12811240015707
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 04:13:59PM +0100, Nicolas Ferre wrote:
-> Le 09/12/2014 14:31, Cyrille Pitchen a écrit :
-> > dma_sync_*_for_cpu() and dma_sync_*_for_device() use 'enum dma_data_direction',
-> > not 'enum dma_transfer_direction'
-> > 
-> > Signed-off-by: Cyrille Pitchen <cyrille.pitchen@atmel.com>
+On 2015-01-09 23:14, Greg KH wrote:
+> On Fri, Dec 12, 2014 at 05:19:02PM +0100, Stefan Agner wrote:
+>> On 2014-12-12 15:32, Greg KH wrote:
+>> > On Fri, Dec 12, 2014 at 02:44:06PM +0100, Stefan Agner wrote:
+>> >> Any thoughts on this patchset? Would have hopped that it makes it into
+>> >> 3.19 as those are mostly fixes.
+>> >
+>> > "mostly"?
+>> >
+>>
+>> Well, all of them fix a bug, but PATCH 2/4 does this by also moving DMA
+>> allocation to probe. I would really have to split up that patch and make
+>> two incremental steps (split-up of RX/TX DMA allocation to make each
+>> single action revert-able and move to probe). But this would lead to
+>> more changed lines in total. The patchset as is already somewhat tested
+>> since we use it in our 3.18 BSP, whereas a new set would not be tested.
+>>
+>> One could also argument, it only affects fsl_lpuart (UART in rather not
+>> very widespread SoC's Freescale Vybrid and LS1021a).
+>>
+>>
+>> > I'll get to these after 3.19-rc1 is out, but it really looks like these
+>> > will be for 3.20-rc1, unless you break them up into "bugfix only" type
+>> > patches.
+>>
+>>
+>> PATCH 1/4 fixes a bug which happens on a normal console rather often on
+>> my setup. So if you decide that patchset is for 3.20-rc1, that one would
+>> be nice to have in 3.19 as well...
 > 
-> Sure:
-> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Please redo this patchset then, makeing it obvious that some are fixes,
+> and need to go for 3.19 and others are ok for 3.20.  As it is, the
+> changelog entries do not look like anything here is for 3.19, sorry.
 > 
-> Here it's difficult to add a "stable" tag as the error was introduced by
-> several different patches.
 
-So that means it's not ok for older kernels?  That doesn't make sense...
+Ok, will create a patchset with 1 and 3 for 3.19 (since this two really
+lead to reproducible kernel traces), and the rest for 3.20. Do you
+prefer to have the patches in a single patchset (with 3 moved to 2) or
+should I create two patchsets?
+
+--
+Stefan
 
