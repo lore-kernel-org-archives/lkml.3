@@ -1,50 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708AbbAIAAT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 19:00:19 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:64171 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754827AbbAIAAF (ORCPT
+	id S1756366AbbAIACN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 19:02:13 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:50314 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755021AbbAIACL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 19:00:05 -0500
-From: Moritz Fischer <moritz.fischer@ettus.com>
-To: dmitry.torokhov@gmail.com
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Moritz Fischer <moritz.fischer@ettus.com>
-Subject: [PATCH v3 3/3] Update MAINTAINERS file with e3x0-button info.
-Date: Fri,  9 Jan 2015 00:59:31 +0100
-Message-Id: <1420761571-22903-4-git-send-email-moritz.fischer@ettus.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1420761571-22903-1-git-send-email-moritz.fischer@ettus.com>
-References: <1420761571-22903-1-git-send-email-moritz.fischer@ettus.com>
+	Thu, 8 Jan 2015 19:02:11 -0500
+Date: Fri, 9 Jan 2015 01:00:57 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Stephen Wang <wstephen@codeaurora.org>
+Cc: jcliburn@gmail.com, grant.likely@linaro.org, robh+dt@kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH] ethernet: atheros: Add nss-gmac driver
+Message-ID: <20150109000057.GB11396@electric-eye.fr.zoreil.com>
+References: <y>
+ <1420754626-30121-1-git-send-email-wstephen@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420754626-30121-1-git-send-email-wstephen@codeaurora.org>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Moritz Fischer <moritz.fischer@ettus.com>
----
- MAINTAINERS | 8 ++++++++
- 1 file changed, 8 insertions(+)
+Stephen Wang <wstephen@codeaurora.org> :
+> This driver adds support for the internal GMACs on IPQ806x SoCs.
+> It supports the device-tree and will register up to 4 ethernet
+> interfaces.
+> 
+> Signed-off-by: Stephen Wang <wstephen@codeaurora.org>
+> ---
+[...]
+> +/*
+> + * NSS GMAC data plane ops, default would be slowpath and can be override by
+> + * nss-drv
+> + */
+> +struct nss_gmac_data_plane_ops {
+> +	int (*open)(void *ctx, uint32_t tx_desc_ring, uint32_t rx_desc_ring,
+> +							uint32_t mode);
+> +	int (*close)(void *ctx);
+> +	int (*link_state)(void *ctx, uint32_t link_state);
+> +	int (*mac_addr)(void *ctx, uint8_t *addr);
+> +	int (*change_mtu)(void *ctx, uint32_t mtu);
+> +	int (*xmit)(void *ctx, struct sk_buff *os_buf);
+> +};
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index ddb9ac8..65358d1 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -3466,6 +3466,14 @@ M:	"Maciej W. Rozycki" <macro@linux-mips.org>
- S:	Maintained
- F:	drivers/tty/serial/dz.*
- 
-+E3X0 POWER BUTTON DRIVER
-+M:	Moritz Fischer <moritz.fischer@ettus.com>
-+L:	usrp-users@lists.ettus.com
-+W:	http://www.ettus.com
-+S:	Supported
-+F:	drivers/input/misc/e3x0-button.c
-+F:	Documentation/devicetree/bindings/input/e3x0-button.txt
-+
- E4000 MEDIA DRIVER
- M:	Antti Palosaari <crope@iki.fi>
- L:	linux-media@vger.kernel.org
+Weak types.
+
+[...]
+> +/*
+> + * nss_gmac_register_offload()
+> + *
+> + * @param[netdev] netdev instance that is going to register
+> + * @param[dp_ops] dataplan ops for chaning mac addr/mtu/link status
+> + * @param[ctx] passing the ctx of this nss_phy_if to gmac
+> + *
+> + * @return Return SUCCESS or FAILURE
+> + */
+> +int nss_gmac_override_data_plane(struct net_device *netdev,
+> +				struct nss_gmac_data_plane_ops *dp_ops,
+> +				void *ctx)
+> +{
+> +	struct nss_gmac_dev *gmacdev = (struct nss_gmac_dev *)netdev_priv(netdev);
+> +
+> +	BUG_ON(!gmacdev);
+> +
+> +	if (!dp_ops->open || !dp_ops->close || !dp_ops->link_state
+> +		|| !dp_ops->mac_addr || !dp_ops->change_mtu || !dp_ops->xmit) {
+> +		netdev_dbg(netdev, "%s: All the op functions must be present, reject this registeration",
+> +								__func__);
+> +		return NSS_GMAC_FAILURE;
+> +	}
+> +
+> +	/*
+> +	 * If this gmac is up, close the netdev to force TX/RX stop
+> +	 */
+> +	if (test_bit(__NSS_GMAC_UP, &gmacdev->flags))
+> +		nss_gmac_linux_close(netdev);
+> +
+> +	/* Recored the data_plane_ctx, data_plane_ops */
+> +	gmacdev->data_plane_ctx = ctx;
+> +	gmacdev->data_plane_ops = dp_ops;
+> +	gmacdev->first_linkup_done = 0;
+> +
+> +	return NSS_GMAC_SUCCESS;
+> +}
+> +EXPORT_SYMBOL(nss_gmac_override_data_plane);
+
+Why is this hook needed ?
+
 -- 
-1.9.3
-
+Ueimor
