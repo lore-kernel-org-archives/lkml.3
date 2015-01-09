@@ -1,123 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757781AbbAIOjN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 09:39:13 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:56589 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752739AbbAIOjL (ORCPT
+	id S1757622AbbAIOcX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 09:32:23 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:32418 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752220AbbAIOcT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 09:39:11 -0500
-Message-ID: <54AFE664.6010002@profitbricks.com>
-Date: Fri, 09 Jan 2015 15:32:04 +0100
-From: Sebastian Parschauer <sebastian.riemer@profitbricks.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: Eduardo Otubo <eduardo.otubo@profitbricks.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        virtualization@lists.linux-foundation.org
-Subject: blk-mq v3.18: Oops during virtio_blk hot-unplug
-Content-Type: multipart/mixed;
- boundary="------------020408070804070601090307"
+	Fri, 9 Jan 2015 09:32:19 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f4-b7f126d000001e9a-af-54afe67004fb
+Content-transfer-encoding: 8BIT
+Message-id: <1420813934.7331.2.camel@AMDC1943>
+Subject: Re: [PATCH] dmaengine: k3: Fix duplicated function name and
+ allmodconfig build
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Date: Fri, 09 Jan 2015 15:32:14 +0100
+In-reply-to: <1419858090-7682-1-git-send-email-k.kozlowski@samsung.com>
+References: <1419858090-7682-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: Evolution 3.10.4-0ubuntu2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOLMWRmVeSWpSXmKPExsVy+t/xq7oFz9aHGGyYKmAxfeoFRovVU/+y
+	WlzeNYfNYuumvcwWL/v2sziwejzZdJHRY/Gel0wenzfJBTBHcdmkpOZklqUW6dslcGU0fJrM
+	XrBRoGJHZydrA+MV3i5GTg4JAROJ690X2SBsMYkL99YD2VwcQgJLGSW+rdzEBJLgFRCU+DH5
+	HksXIwcHs4C8xJFL2SBhZgF1iUnzFjGD2EICnxkl/u6EKteT+DZrESOILSwQKTGx7xxYnE3A
+	WGLz8iVgu0QEtCUmzjnIDLKLWWASo0Tz8UawQSwCqhKrX64Ba+YUcJeYc3wuO8QCN4kfT88y
+	g9wgIaAs0djvNoFRYBaS62YhXDcLyXULGJlXMYqmliYXFCel5xrqFSfmFpfmpesl5+duYoQE
+	7pcdjIuPWR1iFOBgVOLh3aG6PkSINbGsuDL3EKMEB7OSCG/DZqAQb0piZVVqUX58UWlOavEh
+	RiYOTqkGxo37Jp3docMnmtI/6d7MjbV7//I82yCy0X5u77Y3WZ0JsyJ29d/JnMRi/DXeTaXA
+	X33lvrvyV07s53h8dYMj43fxkK1yW1UWcTn9jZla8eCTQ/3ybz4NDWsnbdrcnW+Q3/59A9ND
+	v2qxxudsR0u6QoK2iHDUzLOdO+WSU+JtpX0zI+SkjdMmRiqxFGckGmoxFxUnAgBW/5ohOgIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020408070804070601090307
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+On pon, 2014-12-29 at 14:01 +0100, Krzysztof Kozlowski wrote:
+> While splitting device control in db08425ebd51 ("dmaengine: k3:
+> Split device_control") new function with the same 'k3_dma_resume' name
+> was added, leading to build error:
+> 
+> drivers/dma/k3dma.c:823:12: error: conflicting types for ‘k3_dma_resume’
+> drivers/dma/k3dma.c:625:12: note: previous definition of ‘k3_dma_resume’ was here
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-Hi Jens,
+Knock, knock.
+Anyone care to pick it up? This is not a serious issue, the patch is
+just to fix compiling (ARM, all{mod,yes}config on current next).
 
-my colleague Eduardo is sporadically seeing an Oops in blk-mq while
-running continuous virtio_blk hot-plug/hot-unplug tests with I/O to the
-device within an x86_64 QEMU/KVM 2.0 Debian Wheezy VM.
+Best regards,
+Krzysztof
 
-Please find the call trace attached and the full log here:
-http://paste.ubuntu.com/9691873/
+> ---
+>  drivers/dma/k3dma.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/dma/k3dma.c b/drivers/dma/k3dma.c
+> index 49be7f687c4c..a4ff7e9e68be 100644
+> --- a/drivers/dma/k3dma.c
+> +++ b/drivers/dma/k3dma.c
+> @@ -601,7 +601,7 @@ static int k3_dma_terminate_all(struct dma_chan *chan)
+>  	return 0;
+>  }
+>  
+> -static int k3_dma_pause(struct dma_chan *chan)
+> +static int k3_dma_transfer_pause(struct dma_chan *chan)
+>  {
+>  	struct k3_dma_chan *c = to_k3_chan(chan);
+>  	struct k3_dma_dev *d = to_k3_dma(chan->device);
+> @@ -622,7 +622,7 @@ static int k3_dma_pause(struct dma_chan *chan)
+>  	return 0;
+>  }
+>  
+> -static int k3_dma_resume(struct dma_chan *chan)
+> +static int k3_dma_transfer_resume(struct dma_chan *chan)
+>  {
+>  	struct k3_dma_chan *c = to_k3_chan(chan);
+>  	struct k3_dma_dev *d = to_k3_dma(chan->device);
+> @@ -735,8 +735,8 @@ static int k3_dma_probe(struct platform_device *op)
+>  	d->slave.device_prep_slave_sg = k3_dma_prep_slave_sg;
+>  	d->slave.device_issue_pending = k3_dma_issue_pending;
+>  	d->slave.device_config = k3_dma_config;
+> -	d->slave.device_pause = k3_dma_pause;
+> -	d->slave.device_resume = k3_dma_resume;
+> +	d->slave.device_pause = k3_dma_transfer_pause;
+> +	d->slave.device_resume = k3_dma_transfer_resume;
+>  	d->slave.device_terminate_all = k3_dma_terminate_all;
+>  	d->slave.copy_align = DMA_ALIGN;
+>  
 
-The kernel image has been taken from here and is the mainline kernel
-from tag v3.18:
-http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.18-vivid/
-
-Is there still an issue with block queue freezing?
-
-We are seeing a similar issue with v3.16 but more often as some block
-queue freezing fixes have been added in v3.17.
-
-All kernels without blk-mq used by virtio_blk (< v3.13) work fine.
-
-Cheers,
-Sebastian
-
---------------020408070804070601090307
-Content-Type: text/plain; charset=UTF-8;
- name="blk-mq_3.18_virtio_blk_hot-unplug_oops.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="blk-mq_3.18_virtio_blk_hot-unplug_oops.txt"
-
-WyAgMTY1LjYzMDUwOF0gQlVHOiB1bmFibGUgdG8gaGFuZGxlIGtlcm5lbCBOVUxMIHBvaW50
-ZXIgZGVyZWZlcmVuY2UgYXQgICAgICAgICAgIChudWxsKQpbICAxNjUuNjMxMDI3XSBJUDog
-WzxmZmZmZmZmZjgxN2IxMDM1Pl0gX19tdXRleF9sb2NrX3Nsb3dwYXRoKzB4NzUvMHgxMDAK
-WyAgMTY1LjYzMTIxOV0gUEdEIDM2OGEyMDY3IFBVRCA3OTdkMzA2NyBQTUQgMCAKWyAgMTY1
-LjYzMTQ1NF0gT29wczogMDAwMiBbIzFdIFNNUCAKWyAgMTY1LjYzMTYzMl0gTW9kdWxlcyBs
-aW5rZWQgaW46IHBhcnBvcnRfcGMgODI1MF9maW50ZWsgcHZwYW5pYyBwYXJwb3J0IHNuZF9w
-Y20gc25kX3RpbWVyIHNuZCBzb3VuZGNvcmUgaTJjX3BpaXg0IGpveWRldiBwY3Nwa3IgcHNt
-b3VzZSBzZXJpb19yYXcgZXZidWcgbWFjX2hpZCBoaWRfZ2VuZXJpYyB1c2JoaWQgaGlkIGZs
-b3BweQpbICAxNjUuNjMyMDEwXSBDUFU6IDAgUElEOiAyMjgzOCBDb21tOiBkZCBOb3QgdGFp
-bnRlZCAzLjE4LjAtMDMxODAwLWdlbmVyaWMgIzIwMTQxMjA3MTkzNQpbICAxNjUuNjMyMDEw
-XSBIYXJkd2FyZSBuYW1lOiBRRU1VIFN0YW5kYXJkIFBDIChpNDQwRlggKyBQSUlYLCAxOTk2
-KSwgQklPUyBCb2NocyAwMS8wMS8yMDExClsgIDE2NS42MzMwNDVdIHRhc2s6IGZmZmY4ODAw
-Njg1YjY0MDAgdGk6IGZmZmY4ODAwN2FmYzAwMDAgdGFzay50aTogZmZmZjg4MDA3YWZjMDAw
-MApbICAxNjUuNjMzMDQ1XSBSSVA6IDAwMTA6WzxmZmZmZmZmZjgxN2IxMDM1Pl0gIFs8ZmZm
-ZmZmZmY4MTdiMTAzNT5dIF9fbXV0ZXhfbG9ja19zbG93cGF0aCsweDc1LzB4MTAwClsgIDE2
-NS42MzMwNDVdIFJTUDogMDAxODpmZmZmODgwMDdhZmMzYzM4ICBFRkxBR1M6IDAwMDEwMjk3
-ClsgIDE2NS42MzMwNDVdIFJBWDogMDAwMDAwMDAwMDAwMDAwMCBSQlg6IGZmZmY4ODAwMzZi
-MWZhMDggUkNYOiAwMDAwMDAwMGMwMDAwMTAwClsgIDE2NS42MzMwNDVdIFJEWDogZmZmZjg4
-MDA3YWZjM2M0MCBSU0k6IGZmZmY4ODAwNjg1YjY0MDAgUkRJOiBmZmZmODgwMDM2YjFmYTBj
-ClsgIDE2NS42MzMwNDVdIFJCUDogZmZmZjg4MDA3YWZjM2M4OCBSMDg6IGZmZmY4ODAwN2Fm
-YzAwMDAgUjA5OiAwMDAwMDAwMDAwMDAwMDAwClsgIDE2NS42MzMwNDVdIFIxMDogMDAwMDAw
-MDAwMDAwMDAwMSBSMTE6IDAwMDAwMDAwMDAwMDAyNDYgUjEyOiBmZmZmODgwMDY4NWI2NDAw
-ClsgIDE2NS42MzMwNDVdIFIxMzogZmZmZjg4MDAzNmIxZmEwYyBSMTQ6IDAwMDAwMDAwZmZm
-ZmZmZmYgUjE1OiBmZmZmODgwMDM2YjFmYTEwClsgIDE2NS42MzMwNDVdIEZTOiAgMDAwMDdm
-Y2UzOTM1MjcwMCgwMDAwKSBHUzpmZmZmODgwMDdmYzAwMDAwKDAwMDApIGtubEdTOjAwMDAw
-MDAwMDAwMDAwMDAKWyAgMTY1LjYzMzA0NV0gQ1M6ICAwMDEwIERTOiAwMDAwIEVTOiAwMDAw
-IENSMDogMDAwMDAwMDA4MDA1MDAzMwpbICAxNjUuNjMzMDQ1XSBDUjI6IDAwMDAwMDAwMDAw
-MDAwMDAgQ1IzOiAwMDAwMDAwMDdhZTViMDAwIENSNDogMDAwMDAwMDAwMDA0MDZmMApbICAx
-NjUuNjMzMDQ1XSBTdGFjazoKWyAgMTY1LjYzMzA0NV0gIGZmZmY4ODAwMzZkNTUyZDggZmZm
-Zjg4MDAzNmIxZmExMCAwMDAwMDAwMDAwMDAwMDAwIGZmZmY4ODAwN2I1Y2YwYzAKWyAgMTY1
-LjYzMzA0NV0gIGZmZmY4ODAwN2FmYzNjOTggZmZmZjg4MDAzNmIxZmEwOCBmZmZmODgwMDM2
-ZDU1MmQ4IGZmZmY4ODAwMzZiMWY5ZDAKWyAgMTY1LjYzMzA0NV0gIGZmZmY4ODAwNzk1ZjMw
-MDAgZmZmZjg4MDA3YjVjZjBjMCBmZmZmODgwMDdhZmMzY2E4IGZmZmZmZmZmODE3YjEwZTMK
-WyAgMTY1LjYzMzA0NV0gQ2FsbCBUcmFjZToKWyAgMTY1LjYzMzA0NV0gIFs8ZmZmZmZmZmY4
-MTdiMTBlMz5dIG11dGV4X2xvY2srMHgyMy8weDM3ClsgIDE2NS42MzMwNDVdICBbPGZmZmZm
-ZmZmODEzNzk3MDY+XSBibGtfbXFfZnJlZV9xdWV1ZSsweDI2LzB4MWEwClsgIDE2NS42MzMw
-NDVdICBbPGZmZmZmZmZmODEzNmZlMjI+XSBibGtfcmVsZWFzZV9xdWV1ZSsweGEyLzB4MTAw
-ClsgIDE2NS42MzMwNDVdICBbPGZmZmZmZmZmODEzOWY4YTI+XSBrb2JqZWN0X2NsZWFudXAr
-MHg4Mi8weDFjMApbICAxNjUuNjMzMDQ1XSAgWzxmZmZmZmZmZjgxMzlmNzMwPl0ga29iamVj
-dF9wdXQrMHgzMC8weDcwClsgIDE2NS42MzMwNDVdICBbPGZmZmZmZmZmODEzNjk0OTU+XSBi
-bGtfcHV0X3F1ZXVlKzB4MTUvMHgyMApbICAxNjUuNjMzMDQ1XSAgWzxmZmZmZmZmZjgxMzdl
-MDMzPl0gZGlza19yZWxlYXNlKzB4OTMvMHhkMApbICAxNjUuNjMzMDQ1XSAgWzxmZmZmZmZm
-ZjgxNGQyN2RlPl0gZGV2aWNlX3JlbGVhc2UrMHgzZS8weGMwClsgIDE2NS42MzMwNDVdICBb
-PGZmZmZmZmZmODEzOWY4YTI+XSBrb2JqZWN0X2NsZWFudXArMHg4Mi8weDFjMApbICAxNjUu
-NjMzMDQ1XSAgWzxmZmZmZmZmZjgxMzlmNzMwPl0ga29iamVjdF9wdXQrMHgzMC8weDcwClsg
-IDE2NS42MzMwNDVdICBbPGZmZmZmZmZmODEzN2M3OTc+XSBwdXRfZGlzaysweDE3LzB4MjAK
-WyAgMTY1LjYzMzA0NV0gIFs8ZmZmZmZmZmY4MTIyNzhhNT5dIF9fYmxrZGV2X3B1dCsweDEy
-NS8weDFiMApbICAxNjUuNjMzMDQ1XSAgWzxmZmZmZmZmZjgxMjI3OThiPl0gYmxrZGV2X3B1
-dCsweDViLzB4MTYwClsgIDE2NS42MzMwNDVdICBbPGZmZmZmZmZmODEyMjdhYjU+XSBibGtk
-ZXZfY2xvc2UrMHgyNS8weDMwClsgIDE2NS42MzMwNDVdICBbPGZmZmZmZmZmODExZjEyOWQ+
-XSBfX2ZwdXQrMHhiZC8weDI1MApbICAxNjUuNjMzMDQ1XSAgWzxmZmZmZmZmZjgxMWYxNDdl
-Pl0gX19fX2ZwdXQrMHhlLzB4MTAKWyAgMTY1LjYzMzA0NV0gIFs8ZmZmZmZmZmY4MTA5MWJj
-Nz5dIHRhc2tfd29ya19ydW4rMHhhNy8weGUwClsgIDE2NS42MzMwNDVdICBbPGZmZmZmZmZm
-ODEwMTQwNzc+XSBkb19ub3RpZnlfcmVzdW1lKzB4YzcvMHhkMApbICAxNjUuNjMzMDQ1XSAg
-WzxmZmZmZmZmZjgxN2IzNTRmPl0gaW50X3NpZ25hbCsweDEyLzB4MTcKWyAgMTY1LjYzMzA0
-NV0gQ29kZTogMDAgMDAgOGIgMDMgODMgZjggMDEgMGYgODQgOTkgMDAgMDAgMDAgNDggOGIg
-NDMgMTAgNDggOGQgNTUgYjggNGMgOGQgN2IgMDggNDEgYmUgZmYgZmYgZmYgZmYgNDggODkg
-NTMgMTAgNGMgODkgN2QgYjggNDggODkgNDUgYzAgPDQ4PiA4OSAxMCA0YyA4OSA2NSBjOCBl
-YiAxZiA2NiA5MCA0YyA4OSBlZiA0OSBjNyAwNCAyNCAwMiAwMCAwMCAKWyAgMTY1LjYzMzA0
-NV0gUklQICBbPGZmZmZmZmZmODE3YjEwMzU+XSBfX211dGV4X2xvY2tfc2xvd3BhdGgrMHg3
-NS8weDEwMApbICAxNjUuNjMzMDQ1XSAgUlNQIDxmZmZmODgwMDdhZmMzYzM4PgpbICAxNjUu
-NjMzMDQ1XSBDUjI6IDAwMDAwMDAwMDAwMDAwMDAK
---------------020408070804070601090307--
