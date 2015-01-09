@@ -1,93 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756311AbbAIJc3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 04:32:29 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:58812 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754505AbbAIJc1 (ORCPT
+	id S1756487AbbAIJci (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 04:32:38 -0500
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:54155 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756340AbbAIJcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 04:32:27 -0500
+	Fri, 9 Jan 2015 04:32:33 -0500
 MIME-Version: 1.0
-Date: Fri, 9 Jan 2015 15:02:25 +0530
-Message-ID: <CABP0=5fBZS0xrUZCaPQYhNan0JgxUTTRPGFbWFiaE0KR5L1h9g@mail.gmail.com>
-Subject: Fix for different protocol issue in ipv6 implementation in smack
- module(kernel ver- 3.19)
-From: Vishal Goel <goel.cool@gmail.com>
-To: Casey Schaufler <casey@schaufler-ca.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "vishal.goel@samsung.com" <vishal.goel@samsung.com>
+In-Reply-To: <1420481779-22841-1-git-send-email-soren.brinkmann@xilinx.com>
+References: <1420481779-22841-1-git-send-email-soren.brinkmann@xilinx.com>
+Date: Fri, 9 Jan 2015 10:32:32 +0100
+Message-ID: <CACRpkda5mAtves=PZibd6jdVP1ztM0EYA+cnw7Gs+mSVXTkqpw@mail.gmail.com>
+Subject: Re: [PATCH RESEND v3] gpio: lib-sysfs: Add 'wakeup' attribute
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Alexandre Courbot <gnurou@gmail.com>, linux-api@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH]  This patch fixes the issue when 2 servers uses same IP and
- port but different protocols(Udp and tcp). And they are using different
- SMACK64IPIN labels.Tcp server is using "test" and udp server is using
- "test-in". Now when we try to run tcp client with SMACK64IPOUT label as
- "test", then connection denied error comes. It should not happen since both
- tcp server and client labels are same. This happens because there is no check
- for protocol in smk_ipv6_port_label() function.It checks whether there is an
- existing port entry on the basis of port only.So it updates the previous
- port  entry in the list. Due to which smack label gets changed for previous
- entry  in the "smk_ipv6_port_list" list and permission denied error comes.
- Now a  check has been added for socket type also.Now if 2 processes uses same
- port  but different protocols (tcp or udp), then 2 different port entries
- will be  added in the list. Similarly which checking smack access in
- smk_ipv6_port_check() function,  port entry is searched on the basis of both
- port and protocol.
+On Mon, Jan 5, 2015 at 7:16 PM, Soren Brinkmann
+<soren.brinkmann@xilinx.com> wrote:
 
-Signed-off-by: Vishal Goel <vishal.goel@samsung.com>
-                Himanshu Shukla <himanshu.sh@samsung.com>
----
- security/smack/smack.h     | 1 +
- security/smack/smack_lsm.c | 5 +++--
- 2 files changed, 4 insertions(+), 2 deletions(-)
+> Add an attribute 'wakeup' to the GPIO sysfs interface which allows
+> marking/unmarking a GPIO as wake IRQ.
+> The file 'wakeup' is created in each exported GPIOs directory, if an IRQ
+> is associated with that GPIO and the irqchip implements set_wake().
+> Writing 'enabled' to that file will enable wake for that GPIO, while
+> writing 'disabled' will disable wake.
+> Reading that file will return either 'disabled' or 'enabled' depening on
+> the currently set flag for the GPIO's IRQ.
+>
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
+> ---
+> v3:
+>  - add documentation
+> v2:
+>  - fix error path to unlock mutex before return
 
-diff --git a/security/smack/smack.h b/security/smack/smack.h
-index b828a37..e8c6477 100644
---- a/security/smack/smack.h
-+++ b/security/smack/smack.h
-@@ -135,6 +135,7 @@ struct smk_port_label {
-        unsigned short          smk_port;       /* the port number */
-        struct smack_known      *smk_in;        /* inbound label */
-        struct smack_known      *smk_out;       /* outgoing label */
-+       short                   sock_type;      /*Socket type*/
- };
+Finally applied for v3.20.
 
- /*
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index 87f0f0a..3d6af90 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -2265,7 +2265,7 @@ static void smk_ipv6_port_label(struct socket
-*sock, struct sockaddr *address)
-         */
-        rcu_read_lock();
-        list_for_each_entry_rcu(spp, &smk_ipv6_port_list, list) {
--               if (spp->smk_port != port)
-+               if (spp->smk_port != port || spp->sock_type != sock->type)
-                        continue;
-                spp->smk_port = port;
-                spp->smk_sock = sk;
-@@ -2286,6 +2286,7 @@ static void smk_ipv6_port_label(struct socket
-*sock, struct sockaddr *address)
-        spp->smk_sock = sk;
-        spp->smk_in = ssp->smk_in;
-        spp->smk_out = ssp->smk_out;
-+       spp->sock_type = sock->type;
+Sorry for being a bit conservative and picky at times...
 
-        mutex_lock(&smack_ipv6_lock);
-        list_add_rcu(&spp->list, &smk_ipv6_port_list);
-@@ -2347,7 +2348,7 @@ static int smk_ipv6_port_check(struct sock *sk,
-struct sockaddr_in6 *address,
-
-        rcu_read_lock();
-        list_for_each_entry_rcu(spp, &smk_ipv6_port_list, list) {
--               if (spp->smk_port != port)
-+               if (spp->smk_port != port || spp->sock_type != sk->sk_type)
-                        continue;
-                object = spp->smk_in;
-                if (act == SMK_CONNECTING)
--- 
-1.8.3.2
+Yours,
+Linus Walleij
