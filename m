@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847AbbAIBl5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 20:41:57 -0500
-Received: from mail.kernel.org ([198.145.29.136]:48157 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751151AbbAIBl4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 20:41:56 -0500
-Date: Thu, 8 Jan 2015 17:41:51 -0800
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, Eric Sandeen <sandeen@sandeen.net>,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: [PATCH] xfs: use generic FS_IOC_GOINGDOWN for ioctl
-Message-ID: <20150109014151.GB79749@jaegeuk-mac02>
-References: <1420740661-72288-1-git-send-email-jaegeuk@kernel.org>
- <1420740661-72288-2-git-send-email-jaegeuk@kernel.org>
- <54AEE06C.90806@sandeen.net>
- <20150108201843.GA74570@jaegeuk-mac02>
- <54AEE98D.5010103@sandeen.net>
- <20150108205416.GE25000@dastard>
- <20150108211853.GB74570@jaegeuk-mac02>
- <20150108220412.GI25000@dastard>
- <20150108221630.GA76957@jaegeuk-mac02>
+	id S1753198AbbAIBo7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 20:44:59 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:8030 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751123AbbAIBo5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 20:44:57 -0500
+Date: Thu, 8 Jan 2015 17:44:48 -0800
+From: Calvin Owens <calvinowens@fb.com>
+To: Eric Paris <eparis@redhat.com>, <rgb@redhat.com>, <ebiederm@xmission.com>,
+        <paul@paul-moore.com>
+CC: <linux-kernel@vger.kernel.org>, <kernel-team@fb.com>,
+        <stable@vger.kernel.org>, <linux-audit@redhat.com>
+Subject: [PATCH][RESEND 2] Revert "AUDIT: Allow login in non-init namespaces"
+Message-ID: <20150109014448.GF27996@mail.thefacebook.com>
+References: <1415148371-11742-1-git-send-email-calvinowens@fb.com>
+ <20141118203221.GA1687992@mail.thefacebook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <20150108221630.GA76957@jaegeuk-mac02>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141118203221.GA1687992@mail.thefacebook.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-09_01:2015-01-07,2015-01-09,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.925924926977281 urlsuspect_oldscore=0.925924926977281
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.925924926977281 spamscore=0
+ recipient_to_sender_domain_totalscore=2 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1501090010
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch uses XFS_IOC_GOINGDOWN for a generic ioctl command, FS_IOC_GOINGDOWN.
+This reverts 543bc6a1a987 "AUDIT: Allow login in non-init namespaces".
 
-Cc: Dave Chinner <david@fromorbit.com>
-Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+This commit incorrectly assumes that libpam treats -ECONNREFUSED as
+an indicator that audit is disabled, and -EPERM or any other error
+as a fatal error that prevents the login from continuing.
+
+The opposite is in fact true: -EPERM allows the login to continue,
+and -ECONNREFUSED causes it to refuse the login. This behavior has
+been unchanged in upstream linux-pam since at least 2008.
+
+Reverting this change allows libpam to again work as expected in
+non-init user namespaces.
+
+Signed-off-by: Calvin Owens <calvinowens@fb.com>
+Cc: stable@vger.kernel.org
 ---
- fs/xfs/xfs_fs.h    | 2 +-
- fs/xfs/xfs_fsops.c | 6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+Relevant code in linux-pam:
+https://git.fedorahosted.org/cgit/linux-pam.git/tree/libpam/pam_audit.c#n56
 
-diff --git a/fs/xfs/xfs_fs.h b/fs/xfs/xfs_fs.h
-index 18dc721..487a92c 100644
---- a/fs/xfs/xfs_fs.h
-+++ b/fs/xfs/xfs_fs.h
-@@ -555,7 +555,7 @@ typedef struct xfs_swapext
- #define XFS_IOC_ATTRLIST_BY_HANDLE   _IOW ('X', 122, struct xfs_fsop_attrlist_handlereq)
- #define XFS_IOC_ATTRMULTI_BY_HANDLE  _IOW ('X', 123, struct xfs_fsop_attrmulti_handlereq)
- #define XFS_IOC_FSGEOMETRY	     _IOR ('X', 124, struct xfs_fsop_geom)
--#define XFS_IOC_GOINGDOWN	     _IOR ('X', 125, __uint32_t)
-+#define XFS_IOC_GOINGDOWN	     FS_IOC_GOINGDOWN
- /*	XFS_IOC_GETFSUUID ---------- deprecated 140	 */
+ kernel/audit.c | 12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
+
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 80983df..656e8ce 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -640,18 +640,8 @@ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
+ 	int err = 0;
  
+ 	/* Only support initial user namespace for now. */
+-	/*
+-	 * We return ECONNREFUSED because it tricks userspace into thinking
+-	 * that audit was not configured into the kernel.  Lots of users
+-	 * configure their PAM stack (because that's what the distro does)
+-	 * to reject login if unable to send messages to audit.  If we return
+-	 * ECONNREFUSED the PAM stack thinks the kernel does not have audit
+-	 * configured in and will let login proceed.  If we return EPERM
+-	 * userspace will reject all logins.  This should be removed when we
+-	 * support non init namespaces!!
+-	 */
+ 	if (current_user_ns() != &init_user_ns)
+-		return -ECONNREFUSED;
++		return -EPERM;
  
-diff --git a/fs/xfs/xfs_fsops.c b/fs/xfs/xfs_fsops.c
-index fdc6422..f403664 100644
---- a/fs/xfs/xfs_fsops.c
-+++ b/fs/xfs/xfs_fsops.c
-@@ -793,7 +793,7 @@ xfs_fs_goingdown(
- 	__uint32_t	inflags)
- {
- 	switch (inflags) {
--	case XFS_FSOP_GOING_FLAGS_DEFAULT: {
-+	case FS_GOING_DOWN_FULLSYNC: {
- 		struct super_block *sb = freeze_bdev(mp->m_super->s_bdev);
- 
- 		if (sb && !IS_ERR(sb)) {
-@@ -803,10 +803,10 @@ xfs_fs_goingdown(
- 
- 		break;
- 	}
--	case XFS_FSOP_GOING_FLAGS_LOGFLUSH:
-+	case FS_GOING_DOWN_METASYNC:
- 		xfs_force_shutdown(mp, SHUTDOWN_FORCE_UMOUNT);
- 		break;
--	case XFS_FSOP_GOING_FLAGS_NOLOGFLUSH:
-+	case FS_GOING_DOWN_NOSYNC:
- 		xfs_force_shutdown(mp,
- 				SHUTDOWN_FORCE_UMOUNT | SHUTDOWN_LOG_IO_ERROR);
- 		break;
+ 	switch (msg_type) {
+ 	case AUDIT_LIST:
 -- 
 2.1.1
-
