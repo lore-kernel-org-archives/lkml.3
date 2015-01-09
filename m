@@ -1,79 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522AbbAIWeE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 17:34:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37727 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753132AbbAIWeC (ORCPT
+	id S1758044AbbAIWjd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 17:39:33 -0500
+Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:36317 "EHLO
+	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752259AbbAIWjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 17:34:02 -0500
-Date: Fri, 9 Jan 2015 14:34:01 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Stefan Agner <stefan@agner.ch>
-Cc: jslaby@suse.cz, jingchang.lu@freescale.com, shawn.guo@linaro.org,
-        linux-serial@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] serial: fsl_lpuart: fix various DMA related issues
-Message-ID: <20150109223401.GA15118@kroah.com>
-References: <1417134205-4400-1-git-send-email-stefan@agner.ch>
- <677f2c62b6b6c1fe8e16cd38d5f20d47@agner.ch>
- <20141212143244.GA2219@kroah.com>
- <f6255321feb06d32f257b7b41d5d58a3@agner.ch>
- <20150109221432.GA4056@kroah.com>
- <742637f13bc97ecaadd1d264cd0ad4cc@agner.ch>
+	Fri, 9 Jan 2015 17:39:31 -0500
+Date: Fri, 9 Jan 2015 17:38:43 -0500
+From: Rich Felker <dalias@aerifal.cx>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, David Drysdale <drysdale@google.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, sparclinux@vger.kernel.org
+Subject: Re: [PATCHv10 man-pages 5/5] execveat.2: initial man page for
+ execveat(2)
+Message-ID: <20150109223843.GX4574@brightrain.aerifal.cx>
+References: <1416830039-21952-6-git-send-email-drysdale@google.com>
+ <54AFF813.7050604@gmail.com>
+ <20150109161302.GQ4574@brightrain.aerifal.cx>
+ <CAHse=S88Jy5ZKM_VY5onfvxX7dTMngnxuHfuLeSuzvKvQNP19A@mail.gmail.com>
+ <20150109204815.GR4574@brightrain.aerifal.cx>
+ <20150109205626.GK22149@ZenIV.linux.org.uk>
+ <20150109205926.GT4574@brightrain.aerifal.cx>
+ <20150109210941.GL22149@ZenIV.linux.org.uk>
+ <20150109212852.GU4574@brightrain.aerifal.cx>
+ <87lhlbvbzs.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <742637f13bc97ecaadd1d264cd0ad4cc@agner.ch>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <87lhlbvbzs.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 11:19:50PM +0100, Stefan Agner wrote:
-> On 2015-01-09 23:14, Greg KH wrote:
-> > On Fri, Dec 12, 2014 at 05:19:02PM +0100, Stefan Agner wrote:
-> >> On 2014-12-12 15:32, Greg KH wrote:
-> >> > On Fri, Dec 12, 2014 at 02:44:06PM +0100, Stefan Agner wrote:
-> >> >> Any thoughts on this patchset? Would have hopped that it makes it into
-> >> >> 3.19 as those are mostly fixes.
-> >> >
-> >> > "mostly"?
-> >> >
-> >>
-> >> Well, all of them fix a bug, but PATCH 2/4 does this by also moving DMA
-> >> allocation to probe. I would really have to split up that patch and make
-> >> two incremental steps (split-up of RX/TX DMA allocation to make each
-> >> single action revert-able and move to probe). But this would lead to
-> >> more changed lines in total. The patchset as is already somewhat tested
-> >> since we use it in our 3.18 BSP, whereas a new set would not be tested.
-> >>
-> >> One could also argument, it only affects fsl_lpuart (UART in rather not
-> >> very widespread SoC's Freescale Vybrid and LS1021a).
-> >>
-> >>
-> >> > I'll get to these after 3.19-rc1 is out, but it really looks like these
-> >> > will be for 3.20-rc1, unless you break them up into "bugfix only" type
-> >> > patches.
-> >>
-> >>
-> >> PATCH 1/4 fixes a bug which happens on a normal console rather often on
-> >> my setup. So if you decide that patchset is for 3.20-rc1, that one would
-> >> be nice to have in 3.19 as well...
-> > 
-> > Please redo this patchset then, makeing it obvious that some are fixes,
-> > and need to go for 3.19 and others are ok for 3.20.  As it is, the
-> > changelog entries do not look like anything here is for 3.19, sorry.
-> > 
+On Fri, Jan 09, 2015 at 04:13:27PM -0600, Eric W. Biederman wrote:
+> Rich Felker <dalias@aerifal.cx> writes:
 > 
-> Ok, will create a patchset with 1 and 3 for 3.19 (since this two really
-> lead to reproducible kernel traces), and the rest for 3.20. Do you
-> prefer to have the patches in a single patchset (with 3 moved to 2) or
-> should I create two patchsets?
+> > On Fri, Jan 09, 2015 at 09:09:41PM +0000, Al Viro wrote:
+> 
+> > The "magic open-once magic symlink" approach is really the cleanest
+> > solution I can find. In the case where the interpreter does not open
+> > the script, nothing terribly bad happens; the magic symlink just
+> > sticks around until _exit or exec. In the case where the interpreter
+> > opens it more than once, you get a failure, but as far as I know
+> > existing interpreters don't do this, and it's arguably bad design. In
+> > any case it's a caught error.
+> 
+> And it doesn't work without introducing security vulnerabilities into
+> the kernel, because it breaks close-on-exec semantics.
 
-What would you want if you were in my shoes and had to maintain two
-different branches?
+I'm curious what those security vulnerabilities would be. The standard
+issue with close-on-exec failure (e.g. races) is the leaking of
+arbitrary file descriptors (typically, ones opened by other threads or
+other unrelated portions of the program) to resources the new process
+should not have. "Leaking" of an inode-reference-only (no permissions)
+O_PATH fd or pseudo-fd to the script that's to be run does not seem
+like a vulnerability to me, and it would only be "leaked" if the
+interpreter does something unexpected.
 
-(hint, two different patchsets...)
+> All you have to do is pick a file descriptor, good canidates are 0 and
+> 255 and make it a convention that that file descriptor is used for
+> fexecve.  At least when you want to support scripts.  Otherwise you can
+> set close-on-exec.
 
-greg k-h
+0 is obviously not a candidate; it's stdin. 255 is also not a
+candidate though. Consider for example something like irssi's /upgrade
+that's going to have the child inheriting an arbitrary set of file
+descriptors that need to keep their original numbers, possibly
+including 255. Imposing a script in between should not cause arbitrary
+file descriptors to be lost.
+
+> That results in no accumulation of file descriptors  because everyone
+> always uses the same file descriptor.
+> 
+> Regardless you don't have a patch and you aren't proposing code and the
+> code isn't actually broken so please go away.
+
+I'm not proposing code because I'm a libc developer not a kernel
+developer. I know what's needed for userspace to provide a conforming
+fexecve to applications, not how to implement that on the kernel side,
+although I'm trying to provide constructive ideas. The hostility is
+really not necessary.
+
+Rich
