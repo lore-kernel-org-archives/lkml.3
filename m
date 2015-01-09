@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757172AbbAINGv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 08:06:51 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:43069 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754924AbbAINGu (ORCPT
+	id S1757551AbbAINHo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 08:07:44 -0500
+Received: from cirse-out.extra.cea.fr ([132.167.192.142]:50263 "EHLO
+	cirse-out.extra.cea.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757019AbbAINHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 08:06:50 -0500
+	Fri, 9 Jan 2015 08:07:41 -0500
+Date: Fri, 9 Jan 2015 14:07:23 +0100
+From: Dominique Martinet <dominique.martinet@cea.fr>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
+        Latchesar Ionkov <lucho@ionkov.net>,
+        <v9fs-developer@lists.sourceforge.net>,
+        <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fs/9p: Initialize status in v9fs_file_do_lock.
+Message-ID: <20150109130723.GA3183@u-isr-ctg-01>
+References: <1420804567-15371-1-git-send-email-dominique.martinet@cea.fr>
+ <20150109123353.GA24928@node.dhcp.inet.fi>
 MIME-Version: 1.0
-In-Reply-To: <2354586.80TRdrKbtf@sifl>
-References: <20150108190822.GB4365@codemonkey.org.uk>
-	<3227891.DhTeT4XeAv@sifl>
-	<2354586.80TRdrKbtf@sifl>
-Date: Fri, 9 Jan 2015 08:06:49 -0500
-Message-ID: <CAB9W1A2nTN2DJ699BXL_r_aXCk-O9-KrTLSi731isQWpPUmkwg@mail.gmail.com>
-Subject: Re: noisy selinux messages on tmpfs mount.
-From: Stephen Smalley <stephen.smalley@gmail.com>
-To: Paul Moore <pmoore@redhat.com>
-Cc: Dave Jones <davej@codemonkey.org.uk>, selinux <selinux@tycho.nsa.gov>,
-        James Morris <james.l.morris@oracle.com>,
-        Stephen Smalley <sds@epoch.ncsc.mil>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20150109123353.GA24928@node.dhcp.inet.fi>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We already reduced that message to KERN_DEBUG.  Is that not sufficient?
+Kirill A. Shutemov wrote on Fri, Jan 09, 2015 at 02:33:53PM +0200:
+> On Fri, Jan 09, 2015 at 12:56:07PM +0100, Dominique Martinet wrote:
+> > If p9_client_lock_dotl returns an error, status is possibly never filled
+> > but will be used in the following switch.
+> > Initializing it to P9_LOCK_ERROR makes sur we will return an error and
+> > cleanup (and not hit the default case).
+> 
+> That's what my patch[1] fixes.
+> 
+> http://marc.info/?i=1419858019-116944-1-git-send-email-kirill.shutemov%40linux.intel.com
 
-On Thu, Jan 8, 2015 at 2:39 PM, Paul Moore <pmoore@redhat.com> wrote:
-> On Thursday, January 08, 2015 02:34:57 PM Paul Moore wrote:
->> On Thursday, January 08, 2015 02:08:22 PM Dave Jones wrote:
->> > systemd has started mounting a tmpfs in /run/user/<uid> every time a
->> > session begins.  So after ssh'ing into a box a number of times, dmesg
->> > looks like this..
->> >
->> > [...] SELinux: initialized (dev tmpfs, type tmpfs), uses transition SIDs
->> > [...] SELinux: initialized (dev tmpfs, type tmpfs), uses transition SIDs
->>
->> {snip}
->>
->> > What's a good solution to stopping this spew ? printk_once doesn't seem
->> > like a good fit, in case someone is doing different labelling behaviours
->> > between mounts.
->> >
->> > Could we only print it if the mount is being done with non-default
->> > behaviour perhaps?
->>
->> I'm very curious to hear Stephen's opinion on the issue, but I wonder how
->> much this would honestly impact us if we removed this message in the case
->> where we mount the filesystem with a known labeling behavior.
->
-> [NOTE: adding the SELinux list to the CC line.]
->
-> --
-> paul moore
-> security @ redhat
->
-> _______________________________________________
-> Selinux mailing list
-> Selinux@tycho.nsa.gov
-> To unsubscribe, send email to Selinux-leave@tycho.nsa.gov.
-> To get help, send an email containing "help" to Selinux-request@tycho.nsa.gov.
+Actually, it's slightly different and still worth adding (mine if we
+apply your's first and your's if we apply mine first - don't think
+they'll conflict. I even reworded the (too old!) commit message to fit
+with your patch :))
+
+Your patch will not BUG() if status is junk, BUT if status uninitialized
+value is 0 and p9_client_lock_dotl then we'll return res=0 (success) and
+not unlock before returning. My patch makes sure we'll return -ENOLCK.
+
+Likewise, if we only apply my patch then a rogue server could BUG() a
+client, so we want your's anyway.
+
+-- 
+Dominique Martinet,
+CEA
+
