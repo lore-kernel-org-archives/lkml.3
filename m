@@ -1,66 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757417AbbAIQsX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 11:48:23 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55965 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751954AbbAIQsW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 11:48:22 -0500
-Date: Fri, 9 Jan 2015 16:48:01 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>,
-        Tim Sander <tim@krieglstein.org>, Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH 3.19-rc2 v13 4/5] ARM: Add support for on-demand
- backtrace of other CPUs
-Message-ID: <20150109164801.GW12302@n2100.arm.linux.org.uk>
-References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
- <1420469699-25350-1-git-send-email-daniel.thompson@linaro.org>
- <1420469699-25350-5-git-send-email-daniel.thompson@linaro.org>
- <20150105101925.64e8ecec@gandalf.local.home>
+	id S1755561AbbAIQxI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 11:53:08 -0500
+Received: from mail.efficios.com ([78.47.125.74]:52307 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750987AbbAIQxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 11:53:06 -0500
+Date: Fri, 9 Jan 2015 16:53:08 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Peter Zijlstra <peterz@infradead.org>, Davidlohr Bueso <dave@stgolabs.net>,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby prani <bobby.prani@gmail.com>,
+        borntraeger@de.ibm.com
+Message-ID: <926765904.37296.1420822388866.JavaMail.zimbra@efficios.com>
+In-Reply-To: <20150109140734.GS5280@linux.vnet.ibm.com>
+References: <20150107173215.GA897@linux.vnet.ibm.com> <1420651953-2651-1-git-send-email-paulmck@linux.vnet.ibm.com> <20150108094102.GD29390@twins.programming.kicks-ass.net> <20150108152230.GL5280@linux.vnet.ibm.com> <1420785714.25454.1.camel@stgolabs.net> <20150109134954.GO5280@linux.vnet.ibm.com> <20150109135614.GI29390@twins.programming.kicks-ass.net> <20150109140734.GS5280@linux.vnet.ibm.com>
+Subject: Re: [PATCH tip/core/rcu 01/14] rcu: Protect rcu_boost() lockless
+ accesses with ACCESS_ONCE()
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150105101925.64e8ecec@gandalf.local.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [173.246.22.116]
+X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF34 (Linux)/8.0.7_GA_6021)
+Thread-Topic: Protect rcu_boost() lockless accesses with ACCESS_ONCE()
+Thread-Index: YYdkI8VCyt/354ohu0nnaaCH3EWD6g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 05, 2015 at 10:19:25AM -0500, Steven Rostedt wrote:
-> On Mon,  5 Jan 2015 14:54:58 +0000
-> Daniel Thompson <daniel.thompson@linaro.org> wrote:
-> > +/* For reliability, we're prepared to waste bits here. */
-> > +static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
-> > +static  cpumask_t printtrace_mask;
-> > +
-> > +#define NMI_BUF_SIZE		4096
-> > +
-> > +struct nmi_seq_buf {
-> > +	unsigned char		buffer[NMI_BUF_SIZE];
-> > +	struct seq_buf		seq;
-> > +};
+----- Original Message -----
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> To: "Peter Zijlstra" <peterz@infradead.org>
+> Cc: "Davidlohr Bueso" <dave@stgolabs.net>, linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+> dipankar@in.ibm.com, akpm@linux-foundation.org, "mathieu desnoyers" <mathieu.desnoyers@efficios.com>,
+> josh@joshtriplett.org, tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+> dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com, "bobby prani" <bobby.prani@gmail.com>,
+> borntraeger@de.ibm.com
+> Sent: Friday, January 9, 2015 9:07:34 AM
+> Subject: Re: [PATCH tip/core/rcu 01/14] rcu: Protect rcu_boost() lockless accesses with ACCESS_ONCE()
+> 
+> On Fri, Jan 09, 2015 at 02:56:14PM +0100, Peter Zijlstra wrote:
+> > On Fri, Jan 09, 2015 at 05:49:54AM -0800, Paul E. McKenney wrote:
+> > > > That reminds me, I think the new conversion for stores will most likely
+> > > > introduce silly arg bugs:
+> > > > 
+> > > > -       ACCESS_ONCE(a) = b;
+> > > > +       ASSIGN_ONCE(b, a);
+> > > 
+> > > I was planning to do mine by hand for this sort of reason.
+> > > 
+> > > Or are you thinking of something more subtle than the case where
+> > > "b" is an unparenthesized comma-separated expression?
+> > 
+> > I think he's revering to the wrong way around-ness of the thing.
+> > 
+> > Its a bit of a mixed bag on assignments, but for instance
+> > rcu_assign_pointer() takes them the right way around, as does
+> > atomic_set().
+> > 
+> > So yes, I think the ASSIGN_ONCE() thing got the arguments the wrong way
+> > around.
+> 
+> Ah, yes, I had forgotten about this point.
+> 
+> > We could maybe still change it, before its in too long ?
+> 
+> I would be in favor.  Any objections?  ;-)
 
-Am I missing something or does this limit us to 4096 characters of
-backtrace output per CPU?
+Agreed. The target argument should be the first parameter. Also,
+do you plan to make ASSIGN_ONCE() evaluate to something or void ?
+In userland liburcu CMM_STORE_SHARED(), which evaluates to the value
+used as input, we hit warnings with static checkers due to unused
+value, which is unfortunate. Not sure if the checkers should be
+thought better, or if evaluating to void is the right approach there.
 
-> This is the same code as in x86. I wonder if we should move the
-> duplicate code into kernel/printk/ and have it compiled if the arch
-> requests it (CONFIG_ARCH_WANT_NMI_PRINTK or something). That way we
-> don't have 20 copies of the same nmi_vprintk() and later find that we
-> need to change it, and have to change it in 20 different archs.
+Thanks,
 
-Agreed, though I wonder about the buffer size.
+Mathieu
+
+
+> 
+> 							Thanx, Paul
+> 
+> 
 
 -- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
