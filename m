@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929AbbAIBaw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 20:30:52 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:59357 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123AbbAIBau (ORCPT
+	id S1753173AbbAIBbe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 20:31:34 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:52900 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318AbbAIBbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 20:30:50 -0500
-Date: Fri, 9 Jan 2015 10:30:36 +0900
+	Thu, 8 Jan 2015 20:31:32 -0500
+Date: Fri, 9 Jan 2015 10:31:19 +0900
 From: Gyungoh Yoo <gyungoh@gmail.com>
 To: sameo@linux.intel.com, lee.jones@linaro.org, grant.likely@linaro.org,
         robh+dt@kernel.org, jg1.han@samsung.com, cooloney@gmail.com,
@@ -23,14 +23,15 @@ Cc: akpm@linux-foundation.org, jic23@kernel.org,
         tomi.valkeinen@ti.com, jack.yoo@skyworksinc.com,
         linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org
-Subject: Re: [PATCH v10 3/6] devicetree: mfd: Add new SKY81452 mfd binding
-Message-ID: <20150109013036.GA2907@jack-ThinkPad-T520>
+Subject: Re: [PATCH v10 4/6] devicetree: backlight: Add new SKY81452
+ backlight binding
+Message-ID: <20150109013119.GB2907@jack-ThinkPad-T520>
 References: <1420597167-3188-1-git-send-email-jack.yoo@skyworksinc.com>
- <1420597167-3188-4-git-send-email-jack.yoo@skyworksinc.com>
+ <1420597167-3188-5-git-send-email-jack.yoo@skyworksinc.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1420597167-3188-4-git-send-email-jack.yoo@skyworksinc.com>
+In-Reply-To: <1420597167-3188-5-git-send-email-jack.yoo@skyworksinc.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -38,11 +39,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 DT Ack please.
 
-On Wed, Jan 07, 2015 at 11:19:24AM +0900, gyungoh@gmail.com wrote:
+On Wed, Jan 07, 2015 at 11:19:25AM +0900, gyungoh@gmail.com wrote:
 > From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 > 
 > Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
-> Acked-by: Lee Jones <lee.jones@linaro.org>
+> Acked-by: Bryan Wu <cooloney@gmail.com>
 > ---
 > Changes v10:
 > Nothing
@@ -51,6 +52,8 @@ On Wed, Jan 07, 2015 at 11:19:24AM +0900, gyungoh@gmail.com wrote:
 > Nothing
 > 
 > Changes v8:
+> Renamed property names for backlight with vendor prefix
+> Modified gpio-enable property to generic property for GPIO
 > Made up the example for backlight DT
 > 
 > Changes v7:
@@ -60,8 +63,7 @@ On Wed, Jan 07, 2015 at 11:19:24AM +0900, gyungoh@gmail.com wrote:
 > Nothing
 > 
 > Changes v5:
-> Changed DT for regulator : 'lout' node should be defined under 'regulator'
-> Removed compatible string from sky81452-regulator driver
+> Nothing
 > 
 > Changes v4:
 > Nothing
@@ -72,51 +74,44 @@ On Wed, Jan 07, 2015 at 11:19:24AM +0900, gyungoh@gmail.com wrote:
 > Changes v2:
 > Added reg attribute for I2C slave address
 > 
->  Documentation/devicetree/bindings/mfd/sky81452.txt | 36 ++++++++++++++++++++++
->  1 file changed, 36 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mfd/sky81452.txt
+>  .../video/backlight/sky81452-backlight.txt         | 29 ++++++++++++++++++++++
+>  1 file changed, 29 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
 > 
-> diff --git a/Documentation/devicetree/bindings/mfd/sky81452.txt b/Documentation/devicetree/bindings/mfd/sky81452.txt
+> diff --git a/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
 > new file mode 100644
-> index 0000000..ab71473
+> index 0000000..8daebf5
 > --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mfd/sky81452.txt
-> @@ -0,0 +1,36 @@
-> +SKY81452 bindings
+> +++ b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+> @@ -0,0 +1,29 @@
+> +SKY81452-backlight bindings
 > +
 > +Required properties:
-> +- compatible	: Must be "skyworks,sky81452"
-> +- reg		: I2C slave address
+> +- compatible		: Must be "skyworks,sky81452-backlight"
 > +
-> +Required child nodes:
-> +- backlight	: container node for backlight following the binding
-> +		in video/backlight/sky81452-backlight.txt
-> +- regulator	: container node for regulators following the binding
-> +		in regulator/sky81452-regulator.txt
+> +Optional properties:
+> +- name			: Name of backlight device. Default is 'lcd-backlight'.
+> +- gpios			: GPIO to use to EN pin.
+> +			See Documentation/devicetree/bindings/gpio/gpio.txt
+> +- skyworks,en-channels	: Enable mask for current sink channel 1 to 6.
+> +- skyworks,ignore-pwm	: Ignore both PWM input
+> +- skyworks,dpwm-mode	: Enable DPWM dimming mode, otherwise Analog dimming.
+> +- skyworks,phase-shift	: Enable phase shift mode
+> +- skyworks,ovp-level	: Over-voltage protection level.
+> +			Should be between 14 or 28V.
+> +- skyworks,short-detection-threshold	: It should be one of 4, 5, 6 and 7V.
+> +- skyworks,current-limit	: It should be 2300mA or 2750mA.
 > +
 > +Example:
 > +
-> +	sky81452@2c {
-> +		compatible = "skyworks,sky81452";
-> +		reg = <0x2c>;
-> +
-> +		backlight {
-> +			compatible = "skyworks,sky81452-backlight";
-> +			name = "pwm-backlight";
-> +			skyworks,en-channels = <0x3f>;
-> +			skyworks,ignore-pwm;
-> +			skyworks,phase-shift;
-> +			skyworks,ovp-level = <20>;
-> +			skyworks,current-limit = <2300>;
-> +		};
-> +
-> +		regulator {
-> +			lout {
-> +				regulator-name = "sky81452-lout";
-> +				regulator-min-microvolt = <4500000>;
-> +				regulator-max-microvolt = <8000000>;
-> +			};
-> +		};
+> +	backlight {
+> +		compatible = "skyworks,sky81452-backlight";
+> +		name = "pwm-backlight";
+> +		skyworks,en-channels = <0x3f>;
+> +		skyworks,ignore-pwm;
+> +		skyworks,phase-shift;
+> +		skyworks,ovp-level = <20>;
+> +		skyworks,current-limit = <2300>;
 > +	};
 > -- 
 > 1.9.1
