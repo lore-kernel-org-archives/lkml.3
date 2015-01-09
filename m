@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932559AbbAIMWx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 07:22:53 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:46870 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932415AbbAIMWw (ORCPT
+	id S1756412AbbAIM3T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 07:29:19 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:50868 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754680AbbAIM3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 07:22:52 -0500
-Date: Fri, 9 Jan 2015 12:22:30 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Robin Gong <b38343@freescale.com>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        lgirdwood@gmail.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20150109122230.GF2634@sirena.org.uk>
-References: <1420768653-1760-1-git-send-email-b38343@freescale.com>
+	Fri, 9 Jan 2015 07:29:18 -0500
+Date: Fri, 9 Jan 2015 12:22:39 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Kanaka Juvva <kanaka.d.juvva@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v4 10/11] perf/x86/intel: Perform rotation on Intel CQM
+ RMIDs
+Message-ID: <20150109122239.GC495@console-pimps.org>
+References: <1415999712-5850-1-git-send-email-matt@console-pimps.org>
+ <1415999712-5850-11-git-send-email-matt@console-pimps.org>
+ <20150106173641.GI3337@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EayLFxZlehsTnYZR"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1420768653-1760-1-git-send-email-b38343@freescale.com>
-X-Cookie: What's so funny?
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v1] regulator: pfuze100-regulator: add pfuze3000 support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20150106173641.GI3337@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 06 Jan, at 06:36:41PM, Peter Zijlstra wrote:
+> On Fri, Nov 14, 2014 at 09:15:11PM +0000, Matt Fleming wrote:
+> > @@ -417,17 +857,38 @@ static u64 intel_cqm_event_count(struct perf_event *event)
+> >  	if (!cqm_group_leader(event))
+> >  		return 0;
+> >  
+> > -	on_each_cpu_mask(&cqm_cpumask, __intel_cqm_event_count, &rr, 1);
+> > +	/*
+> > +	 * Notice that we don't perform the reading of an RMID
+> > +	 * atomically, because we can't hold a spin lock across the
+> > +	 * IPIs.
+> > +	 *
+> > +	 * Speculatively perform the read, since @event might be
+> > +	 * assigned a different (possibly invalid) RMID while we're
+> > +	 * busying performing the IPI calls. It's therefore necessary to
+> > +	 * check @event's RMID afterwards, and if it has changed,
+> > +	 * discard the result of the read.
+> > +	 */
+> > +	raw_spin_lock_irqsave(&cache_lock, flags);
+> > +	rr.rmid = event->hw.cqm_rmid;
+> > +	raw_spin_unlock_irqrestore(&cache_lock, flags);
+> 
+> You don't actually have to hold the lock here, only ACCESS_ONCE() or
+> whatever newfangled thing replaced that.
+ 
+Remind me again, are accesses to 'int' guaranteed to be atomic? There's
+no way to read a partial value?
 
---EayLFxZlehsTnYZR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Fri, Jan 09, 2015 at 09:57:33AM +0800, Robin Gong wrote:
-> Add pfuze3000 chip support.
-
-Applied, thanks.
-
---EayLFxZlehsTnYZR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUr8gFAAoJECTWi3JdVIfQaDAH/A/2addM/wxdkTvaMsghS24F
-qckR/0Bf12dS1hPE8xTO+AofXMSGWuGitFBvlr1M7otAH0Ngc7a6jijx1juN9Zd6
-0mx5hQlkhr99EFAGKFtCZFtzWJSHBJRCQ8Bppai5btxKdzaSbTep8D2TC0J9Vopi
-7mRTqD8zvz6HavGiBK3hacYhlOOtZ6JcouT4Gbi+WuV8yID88HtMqLp6owESg3qb
-VltJhhRyUBEX4Asw7HBNa0XNK841ekBW2iYD76+rZoW21Lx10elRXKukAFUfATVZ
-dTeBShCb3QzsPdVobFWLwFHIWUSMhARG0ScUJ5Xo2uXJ9uGMUggm71eYNrFrsxQ=
-=nez5
------END PGP SIGNATURE-----
-
---EayLFxZlehsTnYZR--
+-- 
+Matt Fleming, Intel Open Source Technology Center
