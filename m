@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758362AbbAIVAM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 16:00:12 -0500
-Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:36245 "EHLO
-	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758343AbbAIVAJ (ORCPT
+	id S932304AbbAIU74 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 15:59:56 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34087 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752061AbbAIU7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 16:00:09 -0500
-Date: Fri, 9 Jan 2015 15:59:26 -0500
-From: Rich Felker <dalias@aerifal.cx>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: David Drysdale <drysdale@google.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, sparclinux@vger.kernel.org
-Subject: Re: [PATCHv10 man-pages 5/5] execveat.2: initial man page for
- execveat(2)
-Message-ID: <20150109205926.GT4574@brightrain.aerifal.cx>
-References: <1416830039-21952-1-git-send-email-drysdale@google.com>
- <1416830039-21952-6-git-send-email-drysdale@google.com>
- <54AFF813.7050604@gmail.com>
- <20150109161302.GQ4574@brightrain.aerifal.cx>
- <CAHse=S88Jy5ZKM_VY5onfvxX7dTMngnxuHfuLeSuzvKvQNP19A@mail.gmail.com>
- <20150109204815.GR4574@brightrain.aerifal.cx>
- <20150109205626.GK22149@ZenIV.linux.org.uk>
+	Fri, 9 Jan 2015 15:59:53 -0500
+Date: Fri, 9 Jan 2015 21:59:50 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
+        s.nawrocki@samsung.com, Sakari Ailus <sakari.ailus@linux.intel.com>
+Subject: Re: [PATCH/RFC v10 19/19] leds: aat1290: add support for V4L2 Flash
+ sub-device
+Message-ID: <20150109205950.GT18076@amd>
+References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
+ <1420816989-1808-20-git-send-email-j.anaszewski@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150109205626.GK22149@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1420816989-1808-20-git-send-email-j.anaszewski@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 08:56:26PM +0000, Al Viro wrote:
-> On Fri, Jan 09, 2015 at 03:48:15PM -0500, Rich Felker wrote:
-> > I think this is a case that needs to be fixed, though it's hard. The
-> > normal correct usage for fexecve is to always pass an O_CLOEXEC file
-> > descriptor, and the caller can't really be expected to know whether
-> > the file is a script or not. We discussed workarounds before and one
-> > idea I proposed was having fexecve provide a "one open only" magic
-> > symlink in /proc/self/ to pass to the interpreter. It would behave
-> > like an O_PATH file descriptor magic symlink in /proc/self/fd, but
-> > would automatically cease to exist on the first open (at which point
-> > the interpreter would have a real O_RDONLY file descriptor for the
-> > underlying file).
+On Fri 2015-01-09 16:23:09, Jacek Anaszewski wrote:
+> Add support for V4L2 Flash sub-device to the aat1290 LED Flash class
+> driver. The support allows for V4L2 Flash sub-device to take the control
+> of the LED Flash class device.
 > 
-> For fsck sake, folks, if you have bloody /proc, you don't need that shite
-> at all!  Just do execve on /proc/self/fd/n, and be done with that.
-> 
-> The sole excuse for merging that thing in the first place had been
-> "would anybody think of children^Wsclerotic^Whardened environments
-> where they have no /proc at all".
+> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Bryan Wu <cooloney@gmail.com>
+> Cc: Richard Purdie <rpurdie@rpsys.net>
+> Cc: Sakari Ailus <sakari.ailus@linux.intel.com>
 
-That doesn't work. With O_CLOEXEC, /proc/self/fd/n is already gone at
-the time the interpreter runs, whether you're using fexecveat or
-execve with "/proc/self/fd/n" to implement POSIX fexecve(). That's the
-problem. This breaks the intended idiom for fexecve.
+Acked-by: Pavel Machek <pavel@ucw.cz>
 
-Rich
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
