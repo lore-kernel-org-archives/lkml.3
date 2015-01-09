@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288AbbAIMD0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 07:03:26 -0500
-Received: from 8bytes.org ([81.169.241.247]:60310 "EHLO theia.8bytes.org"
+	id S932661AbbAIMGO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 07:06:14 -0500
+Received: from nautica.notk.org ([91.121.71.147]:37651 "EHLO nautica.notk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932077AbbAIMDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 07:03:23 -0500
-Date: Fri, 9 Jan 2015 13:03:21 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Yinghai Lu <yinghai@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        Tony Luck <tony.luck@intel.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: Re: [Patch v2 00/16] Refine IR initialization flow and fixes bugs
- related to X2APIC
-Message-ID: <20150109120321.GA17298@8bytes.org>
-References: <1420615903-28253-1-git-send-email-jiang.liu@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420615903-28253-1-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753943AbbAIMGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 07:06:14 -0500
+From: Dominique Martinet <dominique.martinet@cea.fr>
+To: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
+        Latchesar Ionkov <lucho@ionkov.net>
+Cc: v9fs-developer@lists.sourceforge.net,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Dominique Martinet <dominique.martinet@cea.fr>
+Subject: [PATCH] net/9p: Initialize opts->privport as it should be.
+Date: Fri,  9 Jan 2015 13:05:56 +0100
+Message-Id: <1420805156-16555-1-git-send-email-dominique.martinet@cea.fr>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 03:31:27PM +0800, Jiang Liu wrote:
-> This patch set is based on v3.19-rc3. And you may access it at:
-> https://github.com/jiangliu/linux.git ir_init_v2
+We're currently using an uninitialized value if option privport is not set,
+thus (almost) always using a privileged port.
 
-I tested this branch on an AMD system, everything looks good so far. I
-couldn't find any regressions. So feel free to add my
+Signed-off-by: Dominique Martinet <dominique.martinet@cea.fr>
+---
+ net/9p/trans_fd.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Tested-by: Joerg Roedel <jroedel@suse.de>
-
-
-Regards,
-
-	Joerg
+diff --git a/net/9p/trans_fd.c b/net/9p/trans_fd.c
+index 80d08f6..748703e 100644
+--- a/net/9p/trans_fd.c
++++ b/net/9p/trans_fd.c
+@@ -734,6 +734,7 @@ static int parse_opts(char *params, struct p9_fd_opts *opts)
+ 	opts->port = P9_PORT;
+ 	opts->rfd = ~0;
+ 	opts->wfd = ~0;
++	opts->privport = 0;
+ 
+ 	if (!params)
+ 		return 0;
+-- 
+1.9.3
 
