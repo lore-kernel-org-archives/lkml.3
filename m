@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932755AbbAIMgX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 07:36:23 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60324 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932251AbbAIMgW (ORCPT
+	id S932954AbbAIMkc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 07:40:32 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:55834 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932437AbbAIMk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 07:36:22 -0500
-Date: Fri, 9 Jan 2015 04:34:37 -0800
-From: tip-bot for Chris Wilson <tipbot@zytor.com>
-Message-ID: <tip-a63b03e2d2477586440741677ecac45bcf28d7b1@git.kernel.org>
-Cc: hpa@zytor.com, dave@stgolabs.net, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        chris@chris-wilson.co.uk, daniel.vetter@ffwll.ch, mingo@kernel.org,
-        tglx@linutronix.de
-Reply-To: tglx@linutronix.de, mingo@kernel.org, chris@chris-wilson.co.uk,
-        daniel.vetter@ffwll.ch, peterz@infradead.org,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        dave@stgolabs.net, hpa@zytor.com
-In-Reply-To: <1420540175-30204-1-git-send-email-chris@chris-wilson.co.uk>
-References: <1420540175-30204-1-git-send-email-chris@chris-wilson.co.uk>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/urgent] mutex:
-  Always clear owner field upon mutex_unlock()
-Git-Commit-ID: a63b03e2d2477586440741677ecac45bcf28d7b1
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 9 Jan 2015 07:40:29 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMFK4TMNuQEao5n3XPjn4ZSkX0eTtfkWO+h=bPbyHthyJYebPw@mail.gmail.com>
+References: <1419259269-23820-1-git-send-email-dforsi@gmail.com>
+	<CAMFK4TMNuQEao5n3XPjn4ZSkX0eTtfkWO+h=bPbyHthyJYebPw@mail.gmail.com>
+Date: Fri, 9 Jan 2015 13:40:28 +0100
+Message-ID: <CAMFK4TPQVMy0K_SLcF9q=2f1buaisg6C6ozFoAp3L7saEqidng@mail.gmail.com>
+Subject: Fwd: [RFC PATCH 0/2] USB: input: yealink.c: update key mappings
+From: Henk <henk.vergonet@gmail.com>
+To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a63b03e2d2477586440741677ecac45bcf28d7b1
-Gitweb:     http://git.kernel.org/tip/a63b03e2d2477586440741677ecac45bcf28d7b1
-Author:     Chris Wilson <chris@chris-wilson.co.uk>
-AuthorDate: Tue, 6 Jan 2015 10:29:35 +0000
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 9 Jan 2015 11:20:39 +0100
+Hi Danielle,
 
-mutex: Always clear owner field upon mutex_unlock()
+Thanks for the '#' fix!
 
-Currently if DEBUG_MUTEXES is enabled, the mutex->owner field is only
-cleared iff debug_locks is active. This exposes a race to other users of
-the field where the mutex->owner may be still set to a stale value,
-potentially upsetting mutex_spin_on_owner() among others.
+> DRIVER_VERSION should be updated?
+Yes seems logical, considering that the API has changed slightly by
+using NUMERIC scan commands. I would suggest:
 
-References: https://bugs.freedesktop.org/show_bug.cgi?id=87955
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Acked-by: Davidlohr Bueso <dave@stgolabs.net>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1420540175-30204-1-git-send-email-chris@chris-wilson.co.uk
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/locking/mutex-debug.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+#define DRIVER_VERSION "yld-20141222"
 
-diff --git a/kernel/locking/mutex-debug.c b/kernel/locking/mutex-debug.c
-index 5cf6731..3ef3736 100644
---- a/kernel/locking/mutex-debug.c
-+++ b/kernel/locking/mutex-debug.c
-@@ -80,13 +80,13 @@ void debug_mutex_unlock(struct mutex *lock)
- 			DEBUG_LOCKS_WARN_ON(lock->owner != current);
- 
- 		DEBUG_LOCKS_WARN_ON(!lock->wait_list.prev && !lock->wait_list.next);
--		mutex_clear_owner(lock);
- 	}
- 
- 	/*
- 	 * __mutex_slowpath_needs_to_unlock() is explicitly 0 for debug
- 	 * mutexes so that we can do it here after we've verified state.
- 	 */
-+	mutex_clear_owner(lock);
- 	atomic_set(&lock->count, 1);
- }
- 
+So users something is new and can track changes to your patches more easily.
+
+> are both patches suitable for stable?
+
+I would have no objection to that :)
+
+Regards,
+Henk Vergonet
+
+On Mon, Dec 22, 2014 at 3:41 PM, Daniele Forsi <dforsi@gmail.com> wrote:
+>
+> Hello,
+>
+> I have an Yealink USB phone which is handled by the yealink.c driver but the
+> '#' key returns an unexpected value and keys labeled "RING" and "MUTE" do not
+> return any value to userspace.
+>
+> In the first patch of this series I replace the combination KEY_LEFTSHIFT and
+> KEY_3 with KEY_NUMERIC_POUND and I also replace other keys for internal consistency
+> and with the cm109.c driver, which according to the comment in the code is derived
+> from this one, is this the right approach?
+>
+> In the second patch I add two additional keys which could be handled by userspace:
+>  "RING" whose purpose according to the user manual is to cycle all available ringtones
+>  "MUTE" whose purpose is to mute the USB microphone
+> which KEY_* values should be used for them?
+>
+> I have two more questions:
+> DRIVER_VERSION should be updated?
+> are both patches suitable for stable?
+>
+> Daniele Forsi (2):
+>   USB: input: yealink.c: use KEY_NUMERIC_* for numeric keys, star and
+>     pound
+>   USB: input: yealink.c: add mapping for "RING" and "MUTE" keys
+>
+>  drivers/input/misc/yealink.c | 43 +++++++++++++++++++------------------------
+>  1 file changed, 19 insertions(+), 24 deletions(-)
+>
+> --
+> 2.1.3
+>
