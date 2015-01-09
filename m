@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758014AbbAITqC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 14:46:02 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:54703 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064AbbAITqA (ORCPT
+	id S1758090AbbAITso (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 14:48:44 -0500
+Received: from utopia.booyaka.com ([74.50.51.50]:43808 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752016AbbAITsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 14:46:00 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Robin Murphy <robin.murphy@arm.com>
-Cc: will.deacon@arm.com, m.szyprowski@samsung.com, bhelgaas@google.com,
-        joro@8bytes.org, gregkh@linuxfoundation.org,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RESEND] dma-mapping: tidy up dma_parms default handling
-Date: Fri, 09 Jan 2015 20:45:49 +0100
-Message-ID: <2031542.TLqIP3YVGc@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <ffdc5455d698d2525f2d126d0adabf9418fd76b1.1418990609.git.robin.murphy@arm.com>
-References: <ffdc5455d698d2525f2d126d0adabf9418fd76b1.1418990609.git.robin.murphy@arm.com>
+	Fri, 9 Jan 2015 14:48:43 -0500
+Date: Fri, 9 Jan 2015 19:48:42 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+cc: Mark Rutland <mark.rutland@arm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Anatol Pomozov <anatol.pomozov@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, John Stultz <john.stultz@linaro.org>,
+        marc.zyngier@arm.com, pdeschrijver@nvidia.com
+Subject: Re: [PATCH] timekeeping: Move persistent clock registration code
+ from ARM to kernel
+In-Reply-To: <20150109140902.GA7526@ulmo.nvidia.com>
+Message-ID: <alpine.DEB.2.02.1501091709400.28771@utopia.booyaka.com>
+References: <20141110095325.GC12126@ulmo> <CAOMFOmXpAm5iKCLFyorTW+n9YmgZMmrDGGe736tJX8C6BYQv-A@mail.gmail.com> <alpine.DEB.2.11.1411132334400.3935@nanos> <CAOMFOmVziftM=pWGG-L9J-E6AHYAK7k9bmBcpS1adPboLciX9g@mail.gmail.com> <alpine.DEB.2.11.1411150115390.3909@nanos>
+ <CAOMFOmV5=tes6Ak1eUKb2qircp8ba6jt6v-bg66Kp_-jYk9m2w@mail.gmail.com> <alpine.DEB.2.11.1411150154280.3909@nanos> <alpine.DEB.2.11.1411150212210.3909@nanos> <20150109094913.GB27845@ulmo> <20150109135907.GF12942@leverpostej>
+ <20150109140902.GA7526@ulmo.nvidia.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:9WG52/sdWpl/rJNHANNvxus8OdRWN1W2XAyLJLdyoo4Wfh6VWdP
- YCd0RgaNFY49Zenm4hE3t5/RdiUOrmqY0aVZr1iU3qpqtpi5Y6xjxmGZDdIUY+RQdmJE4kr
- SCKgYJ0rh3HdYPx9zjBFAvKWgKI1CH6w3FU5UM/cwN7iAc6DAOIm7ztCCgqqa6HU368N0/T
- 1UKvBwpuqe7mZr3B5paWQ==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 09 January 2015 16:56:03 Robin Murphy wrote:
+Hi
+
+On Fri, 9 Jan 2015, Thierry Reding wrote:
+
+> On Fri, Jan 09, 2015 at 01:59:07PM +0000, Mark Rutland wrote:
+> > On Fri, Jan 09, 2015 at 09:49:14AM +0000, Thierry Reding wrote:
+> >
+> > > As I understand it the architected timer will be turned off along with
+> > > the rest of the CPU complex on Tegra. I'm not sure if that's specific to
+> > > Tegra or something that other SoCs may do as well.
+> > 
+> > That doesn't sound right to me: the architecture specifies that the
+> > system counter must be implemented in an always-on power domain.
+> > 
+> > Note that that only applies to the counter, not the timers (as the
+> > comparators can be turned off with the CPUs).
 > 
-> This one's a bit tricky to find a home for - I think technically it's 
-> probably an IOMMU patch, but then the long-underlying problem doesn't
-> seem to have blown up anything until arm64, and my motivation is to
-> make bits of Juno work, which seems to nudge it towards arm64/arm-soc
-> territory. Could anyone suggest which tree is most appropriate?
+> I'll let Paul comment on this, since I don't know the intimate details.
 
-I have a set of patches touching various dma-mapping.h related bits
-across architectures and in ARM in particular. Your patch fits into
-that series, and I guess we could either have it in my asm-generic
-tree or in Andrew Morton's mm tree. Possibly also arm-soc for practical
-reasons, although it really doesn't belong in there.
+I believe Mark's comments are accurate.
 
-	Arnd
+In Linux terms, when deep CPU power management states are in use, the ARM 
+architected "timer" is useful as a clocksource, but useless as a wakeup 
+source (a clockevent device).
+
+Regarding clocksources, my personal view is that the SoC timer IP 
+blocks should be exposed as a clocksource option if the timer IP blocks 
+are present in the hardware.  That written, I would expect that most 
+production implementations will use the ARM architected "timer" as the 
+clocksource.
+
+
+- Paul
