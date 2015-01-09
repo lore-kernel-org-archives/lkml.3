@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932789AbbAIQEz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 11:04:55 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:36283 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293AbbAIQEx (ORCPT
+	id S932946AbbAIQFZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 11:05:25 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47172 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932677AbbAIQFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 11:04:53 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-a8-54affc220cdf
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Kukjin Kim <kgene@kernel.org>, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [RESEND PATCH] ARM: EXYNOS: Add missing static to file-scope
- declarations
-Date: Fri, 09 Jan 2015 17:04:36 +0100
-Message-id: <1420819476-23344-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHJMWRmVeSWpSXmKPExsVy+t/xy7pKf9aHGCyYZm3x+oWhRf/j18wW
-	mx5fY7W4vGsOm8WM8/uYHFg9Nq3qZPPYvKTeo2/LKkaPz5vkAliiuGxSUnMyy1KL9O0SuDJe
-	nTjNVHCOt+LhisMsDYyXubsYOTkkBEwk3rw7xgxhi0lcuLeerYuRi0NIYCmjxL3n+5khnD4m
-	iS2da9lBqtgEjCU2L18CViUi0MUoMWvLbzaQBLOAocTPd3/AioQFQiTWTF8PFmcRUJV4cmU+
-	I4jNK+Au0fH8NxPEOjmJk8cms05g5F7AyLCKUTS1NLmgOCk911CvODG3uDQvXS85P3cTIyQM
-	vuxgXHzM6hCjAAejEg/vDtX1IUKsiWXFlbmHGCU4mJVEeBs2A4V4UxIrq1KL8uOLSnNSiw8x
-	MnFwSjUwCmrdlJn2QtY03LCyliEyfOvVNzt4jP5WL4g6kPxKoTvTzX7CzGkzzpi9kbLrn3+E
-	rdVg8dZ9k558DfCU5Toq/WHZQUUpA1HVoqSD1y95ZO7Jje1XfHW/1XF707ZlG56YOj5vy/0W
-	V/bjZWX1lXUJRYu2X0gtSmUU1pCoKNFo5J2vXzw3a1uoEktxRqKhFnNRcSIAZn4ihOEBAAA=
+	Fri, 9 Jan 2015 11:05:23 -0500
+Date: Fri, 9 Jan 2015 16:04:49 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Rob Herring <robh@kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Simon Horman <horms@verge.net.au>,
+        ALSA Development Mailing List <alsa-devel@alsa-project.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Olof Johansson <olof@lixom.net>,
+        Simon Horman <horms+renesas@verge.net.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Message-ID: <20150109160449.GG2634@sirena.org.uk>
+References: <878ulzx6hr.wl%kuninori.morimoto.gx@gmail.com>
+ <871tn4uv0j.wl%kuninori.morimoto.gx@renesas.com>
+ <CAL_Jsq+GjM+3M63amyh3Rvijkz7Lch_cdUt9vScc9wZeOubOPA@mail.gmail.com>
+ <5363275.ZK3ulH6EUO@wuerfel>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Wa3xFDkrbo+Lac6I"
+Content-Disposition: inline
+In-Reply-To: <5363275.ZK3ulH6EUO@wuerfel>
+X-Cookie: What's so funny?
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v5][resend v4] of: replace Asahi Kasei Corp vendor prefix
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'pm_data', 'exynos_release_ret_regs' and
-'exynos5420_release_ret_regs' are not exported nor used outside of
-suspend.c file. Make them static.
 
-This fixes following sparse warnings:
-arch/arm/mach-exynos/suspend.c:83:23: warning: symbol 'pm_data' was not declared. Should it be static?
-arch/arm/mach-exynos/suspend.c:106:14: warning: symbol 'exynos_release_ret_regs' was not declared. Should it be static?
-arch/arm/mach-exynos/suspend.c:117:14: warning: symbol 'exynos5420_release_ret_regs' was not declared. Should it be static?
+--Wa3xFDkrbo+Lac6I
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- arch/arm/mach-exynos/suspend.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+On Fri, Jan 09, 2015 at 02:55:40PM +0100, Arnd Bergmann wrote:
 
-diff --git a/arch/arm/mach-exynos/suspend.c b/arch/arm/mach-exynos/suspend.c
-index 342797b9bf3b..fef091f8e59f 100644
---- a/arch/arm/mach-exynos/suspend.c
-+++ b/arch/arm/mach-exynos/suspend.c
-@@ -75,7 +75,7 @@ struct exynos_pm_data {
- 	int (*cpu_suspend)(unsigned long);
- };
- 
--struct exynos_pm_data *pm_data;
-+static struct exynos_pm_data *pm_data;
- 
- static int exynos5420_cpu_state;
- static unsigned int exynos_pmu_spare3;
-@@ -98,7 +98,7 @@ static const struct exynos_wkup_irq exynos5250_wkup_irq[] = {
- 	{ /* sentinel */ },
- };
- 
--unsigned int exynos_release_ret_regs[] = {
-+static unsigned int exynos_release_ret_regs[] = {
- 	S5P_PAD_RET_MAUDIO_OPTION,
- 	S5P_PAD_RET_GPIO_OPTION,
- 	S5P_PAD_RET_UART_OPTION,
-@@ -109,7 +109,7 @@ unsigned int exynos_release_ret_regs[] = {
- 	REG_TABLE_END,
- };
- 
--unsigned int exynos5420_release_ret_regs[] = {
-+static unsigned int exynos5420_release_ret_regs[] = {
- 	EXYNOS_PAD_RET_DRAM_OPTION,
- 	EXYNOS_PAD_RET_MAUDIO_OPTION,
- 	EXYNOS_PAD_RET_JTAG_OPTION,
--- 
-1.9.1
+> It's an i2c device, so it won't break, based on the implementation
+> we use in the kernel that ignores the vendor part when the part number
+> matches the i2c driver name.
 
+Plus this update is actually changing the board DT file have the ID
+which we've always had in the driver, the driver has always used the new
+string and never the ak, based one that the device tree is registering.
+
+--Wa3xFDkrbo+Lac6I
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUr/wgAAoJECTWi3JdVIfQ+nMH/Rulo4/Hc9qtxPbaFs+Rvvtb
+6BlpNHZzOskKWRqBDvu2Uy45o6ymjLP8jO5iC2C3C1IlN6NEn/7e6XngwnAFUIRb
+7ai38qiqZJWnRd8BZp0YBIL2eDBVC0GHvllGoXGdp/+8aVBQnkmm8Ixc6z77JREX
+i1VKyZMBiWlM+Zjucxn+n9jKKr8bYkyaTpK3h64axDmlg9JYmAqOPPANvvm+6QMj
+SgVaymyzHWJb5Wm2ePecLdkjdNdBcn7EVp/cw9RoHFpZSBNAcpEX2yOP4+AzCI1S
+uo4SrEaUXxde1VDtleJ3A5FTFAar1VjXsRQeb3QjBnvuD00Y4TZH1RHkVtmm1wU=
+=lkgW
+-----END PGP SIGNATURE-----
+
+--Wa3xFDkrbo+Lac6I--
