@@ -1,66 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756419AbbAIMmM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 07:42:12 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:65423 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754808AbbAIMmK (ORCPT
+	id S1756912AbbAIMpt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 07:45:49 -0500
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:43733 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754799AbbAIMpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 07:42:10 -0500
+	Fri, 9 Jan 2015 07:45:47 -0500
+Message-ID: <54AFCD52.4050302@st.com>
+Date: Fri, 9 Jan 2015 13:45:06 +0100
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <CAMFK4TM4zVNWBt14vS3T=eQMtwM2OMLW4Wf5dfHS1vKVoPrQiw@mail.gmail.com>
-References: <1419259269-23820-1-git-send-email-dforsi@gmail.com>
-	<1419259269-23820-3-git-send-email-dforsi@gmail.com>
-	<CAMFK4TM4zVNWBt14vS3T=eQMtwM2OMLW4Wf5dfHS1vKVoPrQiw@mail.gmail.com>
-Date: Fri, 9 Jan 2015 13:42:09 +0100
-Message-ID: <CAMFK4TOjQaCWbhyNbe7MrDg+12WY0TMTh_=s3QsziJVu=XgH6A@mail.gmail.com>
-Subject: Fwd: [RFC PATCH 2/2] USB: input: yealink.c: add mapping for "RING"
- and "MUTE" keys
-From: Henk <henk.vergonet@gmail.com>
-To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Peter Griffin <peter.griffin@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <srinivas.kandagatla@gmail.com>, <patrice.chotard@st.com>,
+        <peppe.cavallaro@st.com>, <kishon@ti.com>, <arnd@arndb.de>
+Cc: <lee.jones@linaro.org>, <devicetree@vger.kernel.org>,
+        <netdev@vger.kernel.org>
+Subject: Re: [PATCH v2 0/7] Fix sti drivers whcih mix reg address spaces
+References: <1420643052-4506-1-git-send-email-peter.griffin@linaro.org>
+In-Reply-To: <1420643052-4506-1-git-send-email-peter.griffin@linaro.org>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-09_04:2015-01-09,2015-01-09,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Henk Vergonet <henk.vergonet@gmail.com>
+Hi Peter,
+
+On 01/07/2015 04:04 PM, Peter Griffin wrote:
+> Hi folks,
+>
+> A V2 of this old series incorporating Arnd and Lees Feedback form v1.
+>
+> Following on from Arnds comments about the picophy driver here
+> https://lkml.org/lkml/2014/11/13/161, this series fixes the
+> remaining upstreamed drivers for STI, which are mixing address spaces
+> in the reg property. We do this in a way similar to the keystone
+> and bcm7445 platforms, by having sysconfig phandle/ offset pair
+> (where only one register is required). Or phandle / integer array
+> where multiple offsets in the same bank are needed).
+>
+> This series breaks DT compatability! But the platform support
+> is WIP and only being used by the few developers who are upstreaming
+> support for it. I've made each change to the driver / dt doc / dt
+> file as a single atomic commit so the kernel will remain bisectable.
+>
+> This series then also enables the picophy driver, and adds back in
+> the ehci/ohci dt nodes for stih410 which make use of the picophy.
+>
+> regards,
+>
+> Peter.
+>
+> Changes since v1:
+> - Add missing space after */ (Lee)
+> - Change comment to "indexed from" rather than "not indexed from" (Lee)
+> - Change naming to phy1, phy2 rather than phy@1 phy@2 if there is no reg property (Arnd / Grant)
+> - Rebased on v3.19-rc3 (me)
+> - Checkpatch "no space before tabs" warning in stih41*.dtsi (me)
+>
+> Peter Griffin (7):
+>    phy: phy-stih407-usb: Pass sysconfig register offsets via syscfg
+>      property.
+>    phy: miphy365x: Pass sysconfig register offsets via syscfg dt
+>      property.
+>    ARM: STi: DT: STiH407: Add usb2 picophy dt nodes
+>    ARM: STi: DT: STiH410: Add usb2 picophy dt nodes
+>    ARM: STi: DT: STiH410: Add DT nodes for the ehci and ohci usb
+>      controllers.
+>    ARM: multi_v7_defconfig: Enable stih407 usb picophy
+>    stmmac: dwmac-sti: Pass sysconfig register offset via syscon dt
+>      property.
+>
+>   .../devicetree/bindings/net/sti-dwmac.txt          | 14 ++---
+>   .../devicetree/bindings/phy/phy-miphy365x.txt      | 15 ++---
+>   .../devicetree/bindings/phy/phy-stih407-usb.txt    | 10 +---
+>   arch/arm/boot/dts/stih407-family.dtsi              |  9 +++
+>   arch/arm/boot/dts/stih410.dtsi                     | 70 ++++++++++++++++++++++
+>   arch/arm/boot/dts/stih415.dtsi                     | 12 ++--
+>   arch/arm/boot/dts/stih416.dtsi                     | 22 +++----
+>   arch/arm/configs/multi_v7_defconfig                |  1 +
+>   drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c    | 13 ++--
+>   drivers/phy/phy-miphy365x.c                        | 29 ++++-----
+>   drivers/phy/phy-stih407-usb.c                      | 25 ++++----
+>   11 files changed, 143 insertions(+), 77 deletions(-)
+>
+
+Thanks! The series looks good to me.
+
+DT patches applied to sti-dt-for-v3.20 branch,
+and defconfig patch applied to sti-defconfig-for-v3.20.
 
 
-On Mon, Dec 22, 2014 at 3:41 PM, Daniele Forsi <dforsi@gmail.com> wrote:
->
-> According to the user manual of the "VOIP-3 SKY" USB phone, the RING
-> key is used to select different ring tones and the MUTE key is used
-> to mute the microphone.
->
-> Signed-off-by: Daniele Forsi <dforsi@gmail.com>
-> ---
->  drivers/input/misc/yealink.c | 4 ++++
->  1 file changed, 4 insertions(+)
->
-> diff --git a/drivers/input/misc/yealink.c b/drivers/input/misc/yealink.c
-> index e9403da..0b86c49 100644
-> --- a/drivers/input/misc/yealink.c
-> +++ b/drivers/input/misc/yealink.c
-> @@ -189,7 +189,9 @@ static int setChar(struct yealink_dev *yld, int el, int chr)
->   * USB-P1K button layout:
->   *
->   *             up
-> + *            ring
->   *       IN           OUT
-> + *            mute
->   *            down
->   *
->   *     pickup   C    hangup
-> @@ -207,7 +209,9 @@ static int map_p1k_to_key(int scancode)
->         switch(scancode) {              /* phone key:   */
->         case 0x23: return KEY_LEFT;     /*   IN         */
->         case 0x33: return KEY_UP;       /*   up         */
-> +       case 0x44: return KEY_SOUND;    /*   ring       */
->         case 0x04: return KEY_RIGHT;    /*   OUT        */
-> +       case 0x41: return KEY_MICMUTE;  /*   mute       */
->         case 0x24: return KEY_DOWN;     /*   down       */
->         case 0x03: return KEY_ENTER;    /*   pickup     */
->         case 0x14: return KEY_BACKSPACE; /*  C          */
-> --
-> 2.1.3
->
+Regards,
+Maxime
