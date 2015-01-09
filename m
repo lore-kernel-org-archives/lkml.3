@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838AbbAIO1H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 09:27:07 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:33936 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223AbbAIO1E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 09:27:04 -0500
-Date: Fri, 9 Jan 2015 14:27:00 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Kanaka Juvva <kanaka.d.juvva@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH 11/11] perf/x86/intel: Enable conflicting event
- scheduling for CQM
-Message-ID: <20150109142700.GF495@console-pimps.org>
-References: <1415999712-5850-1-git-send-email-matt@console-pimps.org>
- <1415999712-5850-12-git-send-email-matt@console-pimps.org>
- <20150108115117.GK3337@twins.programming.kicks-ass.net>
+	id S1757635AbbAIOqU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 09:46:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34146 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751567AbbAIOqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 09:46:19 -0500
+Message-ID: <54AFE53A.4020004@redhat.com>
+Date: Fri, 09 Jan 2015 08:27:06 -0600
+From: Mark Langsdorf <mlangsdo@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150108115117.GK3337@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steve Capper <steve.capper@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        vishnu.ps@samsung.com
+Subject: Re: Linux 3.19-rc3
+References: <CA+55aFwsxoyLb9OWMSCL3doe_cz_EQtKsEFCyPUYn_T87pbz0A@mail.gmail.com>	<54AE7D53.2020305@redhat.com>	<20150109121348.GD12942@leverpostej> <CAPvkgC23LHhs7Tw4rdAPFooimonji8R7kEAbWYRKPJwouwUzBA@mail.gmail.com>
+In-Reply-To: <CAPvkgC23LHhs7Tw4rdAPFooimonji8R7kEAbWYRKPJwouwUzBA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 08 Jan, at 12:51:17PM, Peter Zijlstra wrote:
-> On Fri, Nov 14, 2014 at 09:15:12PM +0000, Matt Fleming wrote:
-> > +/*
-> > + * Deallocate the RMIDs from any events that conflict with @event, and
-> > + * place them on the back of the group list.
-> > + */
-> > +static void intel_cqm_sched_out_events(struct perf_event *event)
-> > +{
-> > +	struct perf_event *group, *g;
-> > +	unsigned int rmid;
-> >  
-> > +	lockdep_assert_held(&cache_mutex);
-> > +
-> > +	list_for_each_entry_safe(group, g, &cache_groups, hw.cqm_groups_entry) {
-> > +		if (group == event)
-> > +			continue;
-> > +
-> > +		rmid = group->hw.cqm_rmid;
-> > +
-> > +		/*
-> > +		 * Skip events that don't have a valid RMID.
-> > +		 */
-> > +		if (!__rmid_valid(rmid))
-> > +			continue;
-> > +
-> > +		/*
-> > +		 * No conflict? No problem! Leave the event alone.
-> > +		 */
-> > +		if (!__conflict_event(group, event))
-> > +			continue;
-> > +
-> > +		intel_cqm_xchg_rmid(group, INVALID_RMID);
-> > +		__put_rmid(rmid);
-> > +
-> > +		list_move_tail(&group->hw.cqm_groups_entry, &cache_groups);
-> > +	}
-> >  }
-> 
-> I'm not sure about that list_move_tail() there, is wrecks the rotation
-> order and would cause conflicting events to get less than their 'fair'
-> share I suspect.
+On 01/09/2015 08:19 AM, Steve Capper wrote:
+> On 9 January 2015 at 12:13, Mark Rutland <mark.rutland@arm.com> wrote:
+>> On Thu, Jan 08, 2015 at 12:51:31PM +0000, Mark Langsdorf wrote:
+>>> I'm consistently getting an out of memory killer triggered when
+>>> compiling the kernel (make -j 16 -s) on a 16 core ARM64 system
+>>> with 16 GB of memory. This doesn't happen when running a 3.18
+>>> kernel.
+>>>
+>>> I'm going to start bisecting the failure now, but here's the crash
+>>> log in case someone can see something obvious in it.
+>>
+>> FWIW I've just reproduced this with v3.19-rc3 defconfig +
+>> CONFIG_ARM64_64K_PAGES=y by attempting a git clone of mainline. My
+>> system has 16GB of RAM and 6 CPUs.
+>>
+>> I have a similarly dodgy looking number of pages reserved
+>> (18446744073709544451 A.K.A. -7165). Log below.
+>>
+>
+> I think the negative page reserved count is a consequence of another bug.
+>
+> We have the following reporting code in lib/show_mem.c:
+> #ifdef CONFIG_CMA
+>          printk("%lu pages reserved\n", (reserved - totalcma_pages));
+>          printk("%lu pages cma reserved\n", totalcma_pages);
+> #else
+>
+> With totalcma_pages being reported as 8192, that would account for the
+> -7000ish values reported.
+>
+> That change appears to have come from:
+> 49abd8c lib/show_mem.c: add cma reserved information
+>
+> Is the quickest way to exacerbate this OOM a kernel compile?
 
-Good point, this is just plain wrong. 
+I haven't really tried to characterize this. Compiling a kernel
+on a 64K page machine causes a failure reasonably quickly and
+doesn't require a lot of thought. I think that time spent finding
+a faster reproducer wouldn't pay off.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Also, contrary to last night's report and in line with Linus'
+assumption, the failure still occurs with 4K pages. It just
+takes substantially longer to occur.
+
+--Mark Langsdorf
