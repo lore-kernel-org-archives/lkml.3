@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758096AbbAIVlJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 16:41:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36921 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261AbbAIVlH (ORCPT
+	id S1752492AbbAIVqx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 16:46:53 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:43682 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751213AbbAIVqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 16:41:07 -0500
-Date: Fri, 9 Jan 2015 13:41:06 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Francesco Ruggeri <fruggeri@aristanetworks.com>,
-        Francesco Ruggeri <fruggeri@arista.com>
-Subject: Re: [PATCH] Revert "tty: Fix pty master poll() after slave closes v2"
-Message-ID: <20150109214106.GA7952@kroah.com>
-References: <1419941829-6536-1-git-send-email-peter@hurleysoftware.com>
- <54A29B0A.3060707@hurleysoftware.com>
+	Fri, 9 Jan 2015 16:46:52 -0500
+Date: Fri, 9 Jan 2015 16:46:49 -0500
+From: Tejun Heo <tj@kernel.org>
+To: "Suzuki K. Poulose" <Suzuki.Poulose@arm.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [Regression] 3.19-rc3 : memcg: Hang in mount memcg
+Message-ID: <20150109214649.GF2785@htj.dyndns.org>
+References: <54B01335.4060901@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54A29B0A.3060707@hurleysoftware.com>
+In-Reply-To: <54B01335.4060901@arm.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 30, 2014 at 07:31:06AM -0500, Peter Hurley wrote:
-> On 12/30/2014 07:17 AM, Peter Hurley wrote:
-> > This reverts commit c4dc304677e8d566572c4738d95c48be150c6606.
-> > This fix is superseded by commit 52bce7f8d4fc633c9a9d0646eef58ba6ae9a3b73,
-> > 'pty, n_tty: Simplify input processing on final close'.
-> > 
-> > The final close now waits for input processing to complete before
-> > destroying the pty, so poll() does not need to special case this
-> > condition.
+On Fri, Jan 09, 2015 at 05:43:17PM +0000, Suzuki K. Poulose wrote:
+> We have hit a hang on ARM64 defconfig, while running LTP tests on 3.19-rc3.
+> We are
+> in the process of a git bisect and will update the results as and
+> when we find the commit.
 > 
-> Greg,
+> During the ksm ltp run, the test hangs trying to mount memcg with the
+> following strace
+> output:
 > 
-> As noted in this commit log, commit c4dc304677e8d566572c4738d95c48be150c6606,
-> 'tty: Fix pty master poll() after slave closes v2', is not required
-> after commit 52bce7f8d4fc633c9a9d0646eef58ba6ae9a3b73,
-> 'pty, n_tty: Simplify input processing on final close'
+> mount("memcg", "/dev/cgroup", "cgroup", 0, "memory") = ? ERESTARTNOINTR (To
+> be restarted)
+> mount("memcg", "/dev/cgroup", "cgroup", 0, "memory") = ? ERESTARTNOINTR (To
+> be restarted)
+> [ ... repeated forever ... ]
 > 
-> However, 'tty: Fix pty master poll() after slave closes v2' is appropriate
-> for stable back to v3.12.
+> At this point, one can try mounting the memcg to verify the problem.
+> # mount -t cgroup -o memory memcg memcg_dir
+> --hangs--
+> 
+> Strangely, if we run the mount command from a cold boot (i.e. without
+> running LTP first),
+> then it succeeds.
 
-I don't understand, what needs to go to a stable tree and what doesn't?
+I don't know what LTP is doing and this could actually be hitting on
+an actual bug but if it's trying to move memcg back from unified
+hierarchy to an old one, that might hang - it should prolly made to
+just fail at that point.  Anyways, any chance you can find out what
+happened, in terms of cgroup mounting, to memcg upto that point?
 
-confused,
+Thanks.
 
-greg k-h
+-- 
+tejun
