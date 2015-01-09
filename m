@@ -1,43 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264AbbAIXdg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 18:33:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38427 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752461AbbAIXdf (ORCPT
+	id S1753712AbbAIXgi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 18:36:38 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:46965 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753309AbbAIXgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 18:33:35 -0500
-Date: Fri, 9 Jan 2015 15:33:34 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ganesh Mahendran <opensource.ganesh@gmail.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs/debugfs: add get/set for atomic_long types
-Message-ID: <20150109233334.GC2447@kroah.com>
-References: <1418302030-11428-1-git-send-email-opensource.ganesh@gmail.com>
+	Fri, 9 Jan 2015 18:36:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418302030-11428-1-git-send-email-opensource.ganesh@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20150109232712.GA1878@kroah.com>
+References: <1418759544-2610-1-git-send-email-mandeep.sandhu@cyaninc.com>
+	<1418759544-2610-2-git-send-email-mandeep.sandhu@cyaninc.com>
+	<20150109232712.GA1878@kroah.com>
+Date: Fri, 9 Jan 2015 15:36:34 -0800
+Message-ID: <CANg1-_BxJmnpft-=KdxcqvxSLE9AsOJj8j2kAm1vgWqvnc=Gow@mail.gmail.com>
+Subject: Re: [PATCH 1/4] staging: uio: Simplify the lifetime logic of struct uio_device.
+From: Mandeep Sandhu <mandeep.sandhu@cyaninc.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: hjk@hansjkoch.de, linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 08:47:10PM +0800, Ganesh Mahendran wrote:
-> debugfs currently can not create attributes that set/get
-> atomic_long_t values.
-> 
-> This patch adds support for this through a new
-> debugfs_create_atomic_long_t() function.
-> 
-> Signed-off-by: Ganesh Mahendran <opensource.ganesh@gmail.com>
-> ---
->  fs/debugfs/file.c       |   45 +++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/debugfs.h |    2 ++
->  2 files changed, 47 insertions(+)
+>
+> The subject makes no sense, this has nothing to do with the staging tree
+> :(
 
-I want to see the patch that uses this before I can accept this.
+Newbie question. What tree should I base it against?
 
-thanks,
-
-greg k-h
+Thanks,
+-mandeep
