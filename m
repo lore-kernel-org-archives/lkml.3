@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933050AbbAILfE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 06:35:04 -0500
-Received: from mail-we0-f175.google.com ([74.125.82.175]:55718 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932870AbbAILe7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 06:34:59 -0500
-Date: Fri, 9 Jan 2015 12:34:56 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, xen-devel@lists.xenproject.org,
-        linux-acpi@vger.kernel.org, linux-pm <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] treewide: Convert clockevents_notify to use int cpu
-Message-ID: <20150109113452.GF16465@ulmo>
-References: <1418254133.18092.22.camel@perches.com>
+	id S932910AbbAILeE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 06:34:04 -0500
+Received: from mail.us.es ([193.147.175.20]:35657 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757119AbbAILeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 06:34:01 -0500
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus4 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98.5/19899. spamassassin: 3.4.0.  
+ Clear:RC:1(127.0.0.1):SA:0(-104.2/7.5):. 
+ Processed in 1.98015 secs); 09 Jan 2015 11:34:00 -0000
+X-Spam-ASN: 
+X-Envelope-From: pneira@us.es
+Date: Fri, 9 Jan 2015 12:36:48 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Rahul Sharma <rsharma@arista.com>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
+Subject: Re: [PATCH net] ipv6: Prevent ipv6_find_hdr() from returning ENOENT
+ for valid non-first fragments
+Message-ID: <20150109113648.GA4462@salvia>
+References: <CAFB3abzYNYqtzd_n+Ym0Lo=DYbV0HPU=Tqw=stALNnu188hMKQ@mail.gmail.com>
+ <20150106224706.GA7416@salvia>
+ <CAFB3abwKpR1VqZXUrsexqveAZrA2LTSmTe8a=-H7z2HjAptjwA@mail.gmail.com>
+ <1420627396.26870.36.camel@stressinduktion.org>
+ <20150108205328.GA3361@salvia>
+ <1420756756.1755002.211556745.0418D128@webmail.messagingengine.com>
+ <20150109000546.GA3488@salvia>
+ <CAFB3abwrjp61LLOk3RWwXYEq1g4QZUC8OTKuO2cAr+GbV3n4rw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DEueqSqTbz/jWVG1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1418254133.18092.22.camel@perches.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAFB3abwrjp61LLOk3RWwXYEq1g4QZUC8OTKuO2cAr+GbV3n4rw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 09, 2015 at 12:48:24PM +0530, Rahul Sharma wrote:
+> Hi Pablo,
+> 
+> On Fri, Jan 9, 2015 at 5:35 AM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+> > On Thu, Jan 08, 2015 at 11:39:16PM +0100, Hannes Frederic Sowa wrote:
+> >> Hi Pablo,
+> >>
+> >> On Thu, Jan 8, 2015, at 21:53, Pablo Neira Ayuso wrote:
+> >> > I'm afraid we cannot just get rid of that !ipv6_ext_hdr() check. The
+> >> > ipv6_find_hdr() function is designed to return the transport protocol.
+> >> > After the proposed change, it will return extension header numbers.
+> >> > This will break existing ip6tables rulesets since the `-p' option
+> >> > relies on this function to match the transport protocol.
+> >> >
+> >> > Note that the AH header is skipped (see code a bit below this
+> >> > problematic fragmentation handling) so the follow up header after the
+> >> > AH header is returned as the transport header.
+> >> >
+> >> > We can probably return the AH protocol number for non-1st fragments.
+> >> > However, that would be something new to ip6tables since nobody has
+> >> > ever seen packet matching `-p ah' rules. Thus, we restore control to
+> >> > the user to allow this, but we would accept all kind of fragmented AH
+> >> > traffic through the firewall since we cannot know what transport
+> >> > protocol contains from non-1st fragments (unless I'm missing anything,
+> >> > I need to have a closer look at this again tomorrow with fresher
+> >> > mind).
+> >>
+> >> The code in question is guarded by (_frag_off != 0), so we are
+> >> definitely processing a non-1st fragment currently. The -p match would
+> >> happen at the time when the packet is reassembled and thus ipv6_find_hdr
+> >> will find the real transport (final) header at this point (I hope I
+> >> followed the code correctly here).
+> >
+> > Then, Rahul should get things working by modprobing nf_defrag_ipv6.
+> 
+> I already had nf_defrag_ipv6 installed when the issue occured. But I
+> see ip6table_raw_hook returning NF_DROP for the second fragment.
 
---DEueqSqTbz/jWVG1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Wed, Dec 10, 2014 at 03:28:53PM -0800, Joe Perches wrote:
-[...]
->  arch/arm/mach-tegra/cpuidle-tegra114.c |  4 ++--
->  arch/arm/mach-tegra/cpuidle-tegra20.c  |  8 ++++----
->  arch/arm/mach-tegra/cpuidle-tegra30.c  |  8 ++++----
-[...]
-
-Acked-by: Thierry Reding <treding@nvidia.com>
-
---DEueqSqTbz/jWVG1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUr7zcAAoJEN0jrNd/PrOhrsAP/iWqYSubPYR6Plip5QDe/QoP
-9bcbtfr5b+PsC/H1evIRrWKNo5E68ZZNJpA4FfPSGs1NAqqfl0/7fG1s6j2E38dG
-UWwLGFQ/tzRJht0SzbehEIef8ZZ0w2Y9dmVoriQoQq0FjHJqbG3zf2tsPFkztIvI
-+zaOSc/FHTH6lN2fjqbySFT6+NF32Hx4IoO4pKrp2upqMh7LiWaAt6h6RE8Xb84o
-3eu0Ooyqc8g1vHmZu4vGB7eQsHHF3l3DBEdKLrnXaJXd92RlzQFy/rhoN2A+rClr
-kadKPbfH8HV4ENG1l5j2fPhzx/rsZMI1KLgKssm1xbGF8tPUromdroL3VuayI+y8
-WEO2LoXUb3RH5zh6QarQvZyCPzDba5s33sk8Z03NoazTtp1ldAE29UAORrzfdEFq
-YCDExJsxFZwYT1bkTvlMKjeL22SAh3LKiJuTCerqGvRZkAwVZnmdsTmnxjcotWRC
-SZvIJjoAbkanqyUZN7Jrz6Txl37ZPET6dZxFcqLXDoiPfAJ3H3rYVp8d6fSejcH5
-N2x8wGwwkWLQScxRVRv0aQsERpT6UHfYyADVBMPIKz2OhRXoy0nCSdFtB7KsY43r
-FxeOEM9JQvuuIiH/NsoNR19613E7pboA00siPF8QPyIE93JB9rSIQgqkK4SbbnL0
-Iumq7l9GgNhbA6mm931L
-=XFHi
------END PGP SIGNATURE-----
-
---DEueqSqTbz/jWVG1--
+That's strange, this doesn't make sense to me. Could you enable
+pr_debug() debugging in nf_ct_frag6_gather() to check why this packet
+was not defragmented?
