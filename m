@@ -1,101 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756912AbbAIMpt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 07:45:49 -0500
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:43733 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754799AbbAIMpr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 07:45:47 -0500
-Message-ID: <54AFCD52.4050302@st.com>
-Date: Fri, 9 Jan 2015 13:45:06 +0100
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1757134AbbAIMqU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 07:46:20 -0500
+Received: from 8bytes.org ([81.169.241.247]:60533 "EHLO theia.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756992AbbAIMqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 07:46:18 -0500
+Date: Fri, 9 Jan 2015 13:46:16 +0100
+From: "joro@8bytes.org" <joro@8bytes.org>
+To: "Wu, Feng" <feng.wu@intel.com>
+Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>, "gleb@kernel.org" <gleb@kernel.org>,
+        "pbonzini@redhat.com" <pbonzini@redhat.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>,
+        "eric.auger@linaro.org" <eric.auger@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [v3 00/26] Add VT-d Posted-Interrupts support
+Message-ID: <20150109124616.GB17298@8bytes.org>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
+ <E959C4978C3B6342920538CF579893F002327907@SHSMSX104.ccr.corp.intel.com>
 MIME-Version: 1.0
-To: Peter Griffin <peter.griffin@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <srinivas.kandagatla@gmail.com>, <patrice.chotard@st.com>,
-        <peppe.cavallaro@st.com>, <kishon@ti.com>, <arnd@arndb.de>
-Cc: <lee.jones@linaro.org>, <devicetree@vger.kernel.org>,
-        <netdev@vger.kernel.org>
-Subject: Re: [PATCH v2 0/7] Fix sti drivers whcih mix reg address spaces
-References: <1420643052-4506-1-git-send-email-peter.griffin@linaro.org>
-In-Reply-To: <1420643052-4506-1-git-send-email-peter.griffin@linaro.org>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-09_04:2015-01-09,2015-01-09,1970-01-01 signatures=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E959C4978C3B6342920538CF579893F002327907@SHSMSX104.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+Hi Feng,
 
-On 01/07/2015 04:04 PM, Peter Griffin wrote:
-> Hi folks,
->
-> A V2 of this old series incorporating Arnd and Lees Feedback form v1.
->
-> Following on from Arnds comments about the picophy driver here
-> https://lkml.org/lkml/2014/11/13/161, this series fixes the
-> remaining upstreamed drivers for STI, which are mixing address spaces
-> in the reg property. We do this in a way similar to the keystone
-> and bcm7445 platforms, by having sysconfig phandle/ offset pair
-> (where only one register is required). Or phandle / integer array
-> where multiple offsets in the same bank are needed).
->
-> This series breaks DT compatability! But the platform support
-> is WIP and only being used by the few developers who are upstreaming
-> support for it. I've made each change to the driver / dt doc / dt
-> file as a single atomic commit so the kernel will remain bisectable.
->
-> This series then also enables the picophy driver, and adds back in
-> the ehci/ohci dt nodes for stih410 which make use of the picophy.
->
-> regards,
->
-> Peter.
->
-> Changes since v1:
-> - Add missing space after */ (Lee)
-> - Change comment to "indexed from" rather than "not indexed from" (Lee)
-> - Change naming to phy1, phy2 rather than phy@1 phy@2 if there is no reg property (Arnd / Grant)
-> - Rebased on v3.19-rc3 (me)
-> - Checkpatch "no space before tabs" warning in stih41*.dtsi (me)
->
-> Peter Griffin (7):
->    phy: phy-stih407-usb: Pass sysconfig register offsets via syscfg
->      property.
->    phy: miphy365x: Pass sysconfig register offsets via syscfg dt
->      property.
->    ARM: STi: DT: STiH407: Add usb2 picophy dt nodes
->    ARM: STi: DT: STiH410: Add usb2 picophy dt nodes
->    ARM: STi: DT: STiH410: Add DT nodes for the ehci and ohci usb
->      controllers.
->    ARM: multi_v7_defconfig: Enable stih407 usb picophy
->    stmmac: dwmac-sti: Pass sysconfig register offset via syscon dt
->      property.
->
->   .../devicetree/bindings/net/sti-dwmac.txt          | 14 ++---
->   .../devicetree/bindings/phy/phy-miphy365x.txt      | 15 ++---
->   .../devicetree/bindings/phy/phy-stih407-usb.txt    | 10 +---
->   arch/arm/boot/dts/stih407-family.dtsi              |  9 +++
->   arch/arm/boot/dts/stih410.dtsi                     | 70 ++++++++++++++++++++++
->   arch/arm/boot/dts/stih415.dtsi                     | 12 ++--
->   arch/arm/boot/dts/stih416.dtsi                     | 22 +++----
->   arch/arm/configs/multi_v7_defconfig                |  1 +
->   drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c    | 13 ++--
->   drivers/phy/phy-miphy365x.c                        | 29 ++++-----
->   drivers/phy/phy-stih407-usb.c                      | 25 ++++----
->   11 files changed, 143 insertions(+), 77 deletions(-)
->
+On Tue, Jan 06, 2015 at 01:10:19AM +0000, Wu, Feng wrote:
+> Ping...
+> 
+> Hi Joerg & David,
+> 
+> Could you please have a look at the IOMMU part of this series (patch 02 - 04, patch 06 - 09 , patch 26)?
+> 
+> Hi Thomas, Ingo, & Peter,
+> 
+> Could you please have a look at this series, especially for patch 01, 05, 21?
 
-Thanks! The series looks good to me.
-
-DT patches applied to sti-dt-for-v3.20 branch,
-and defconfig patch applied to sti-defconfig-for-v3.20.
-
+I fear this conflicts somewhat with the irq-domain patches from Jiang
+Liu. Once we worked this out (should happen soon) I'll have a look at
+the VT-d posted interrupt patches.
 
 Regards,
-Maxime
+
+	Joerg
+
