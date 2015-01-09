@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758001AbbAIPM7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:12:59 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:27584 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756671AbbAIPMw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:12:52 -0500
-Message-ID: <54AFEFEF.90407@atmel.com>
-Date: Fri, 9 Jan 2015 16:12:47 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752655AbbAIPNn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:13:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50978 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752060AbbAIPNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 10:13:41 -0500
+Date: Fri, 9 Jan 2015 16:12:59 +0100
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Feng Wu <feng.wu@intel.com>, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, gleb@kernel.org, dwmw2@infradead.org,
+        joro@8bytes.org, alex.williamson@redhat.com, jiang.liu@linux.intel.com,
+        eric.auger@linaro.org, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org, kvm@vger.kernel.org
+Subject: Re: [v3 13/26] KVM: Define a new interface kvm_find_dest_vcpu() for
+ VT-d PI
+Message-ID: <20150109151258.GC9877@potion.brq.redhat.com>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
+ <1418397300-10870-14-git-send-email-feng.wu@intel.com>
+ <20150109145435.GA22469@potion.brq.redhat.com>
+ <54AFEC00.80507@redhat.com>
 MIME-Version: 1.0
-To: Cyrille Pitchen <cyrille.pitchen@atmel.com>, <gregkh@linuxfoundation.org>,
-        <wenyou.yang@atmel.com>, <ludovic.desroches@atmel.com>,
-        <leilei.zhao@atmel.com>, <voice.shen@atmel.com>, <josh.wu@atmel.com>,
-        <linux-serial@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/5] tty/serial: at91: enable peripheral clock before
- accessing I/O registers
-References: <cover.1418131298.git.cyrille.pitchen@atmel.com> <01544ce7fecbc7323106666f91fdeffe35eef33a.1418131298.git.cyrille.pitchen@atmel.com>
-In-Reply-To: <01544ce7fecbc7323106666f91fdeffe35eef33a.1418131298.git.cyrille.pitchen@atmel.com>
-Content-Type: text/plain; charset="windows-1252"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+In-Reply-To: <54AFEC00.80507@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 09/12/2014 14:31, Cyrille Pitchen a �crit :
-> atmel_serial_probe() calls atmel_init_port(). In turn, atmel_init_port() calls
-> clk_disable_unprepare() to disable the peripheral clock before returning.
+2015-01-09 15:56+0100, Paolo Bonzini:
 > 
-> Later atmel_serial_probe() accesses some I/O registers such as the Mode and
-> Control registers for RS485 support then the Name and Version registers, through a call to
-> atmel_get_ip_name(), but at that moment the peripheral clock was still
-> disabled.
 > 
-> Signed-off-by: Cyrille Pitchen <cyrille.pitchen@atmel.com>
-
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-and you can add also:
-Cc: <stable@vger.kernel.org> # 3.12+
-
-> ---
->  drivers/tty/serial/atmel_serial.c | 12 ++++++++++++
->  1 file changed, 12 insertions(+)
+> On 09/01/2015 15:54, Radim Krčmář wrote:
+> > There are two points relevant to this patch in new KVM's implementation,
+> > ("KVM: x86: amend APIC lowest priority arbitration",
+> >  https://lkml.org/lkml/2015/1/9/362)
+> > 
+> > 1) lowest priority depends on TPR
+> > 2) there is no need for balancing
+> > 
+> > (1) has to be considered with PI as well.
 > 
-> diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
-> index 756f567..c6621dc 100644
-> --- a/drivers/tty/serial/atmel_serial.c
-> +++ b/drivers/tty/serial/atmel_serial.c
-> @@ -2596,6 +2596,12 @@ static int atmel_serial_probe(struct platform_device *pdev)
->  	device_init_wakeup(&pdev->dev, 1);
->  	platform_set_drvdata(pdev, port);
->  
-> +	/*
-> +	 * The peripheral clock has been disabled by atmel_init_port():
-> +	 * enable it before accessing I/O registers
-> +	 */
-> +	clk_prepare_enable(port->clk);
-> +
->  	if (rs485_enabled) {
->  		UART_PUT_MR(&port->uart, ATMEL_US_USMODE_NORMAL);
->  		UART_PUT_CR(&port->uart, ATMEL_US_RTSEN);
-> @@ -2606,6 +2612,12 @@ static int atmel_serial_probe(struct platform_device *pdev)
->  	 */
->  	atmel_get_ip_name(&port->uart);
->  
-> +	/*
-> +	 * The peripheral clock can now safely be disabled till the port
-> +	 * is used
-> +	 */
-> +	clk_disable_unprepare(port->clk);
-> +
->  	return 0;
->  
->  err_add_port:
+> The chipset doesn't support it. :(
+
+I meant that we need to recompute PI entries for lowest priority
+interrupts every time guest's TPR changes.
+
+Luckily, Linux doesn't use TPR, but other OS might be a reason to drop
+lowest priority from PI optimizations.  (Or make it more complicated.)
+
+> > I kept (2) to avoid whining from people building on that behaviour, but
+> > lowest priority backed by PI could be transparent without it.
+> > 
+> > Patch below removes the balancing, but I am not sure this is a price we
+> > allowed ourselves to pay ... what are your opinions?
 > 
+> I wouldn't mind, but it requires a lot of benchmarking.
 
-
--- 
-Nicolas Ferre
+(I was afraid it would come to that.)
