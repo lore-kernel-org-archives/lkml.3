@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233AbbAITfe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 14:35:34 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:39566 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489AbbAITfc (ORCPT
+	id S1752366AbbAITi6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 14:38:58 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:47997 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064AbbAITi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 14:35:32 -0500
-Message-ID: <54B02D7F.7040501@cogentembedded.com>
-Date: Fri, 09 Jan 2015 22:35:27 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 9 Jan 2015 14:38:57 -0500
 MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org
-CC: linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        linux-mips@linux-mips.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 02/11] i2c: add quirk checks to core
-References: <1420824103-24169-1-git-send-email-wsa@the-dreams.de> <1420824103-24169-3-git-send-email-wsa@the-dreams.de>
-In-Reply-To: <1420824103-24169-3-git-send-email-wsa@the-dreams.de>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141210144921.GC17184@kroah.com>
+References: <1418194573-1271-1-git-send-email-shalinmehta85@gmail.com>
+	<20141210070957.GN22149@ZenIV.linux.org.uk>
+	<20141210144921.GC17184@kroah.com>
+Date: Fri, 9 Jan 2015 21:38:56 +0200
+Message-ID: <CANZNk80x4nTrdy+pv0n8_mXCuU-x2AYidCgAD5D7hipHV2gcbA@mail.gmail.com>
+Subject: Re: [PATCH] staging: lustre: Fix the warning messages about casting
+ without __user macro
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        OSUOSL Drivers <devel@driverdev.osuosl.org>, bergwolf@gmail.com,
+        "Dilger, Andreas" <andreas.dilger@intel.com>, peterz@infradead.org,
+        Shalin Mehta <shalinmehta85@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        majordomo@vger.kernel.org, gdonald@gmail.com, tranmanphong@gmail.com,
+        "HPDD-discuss@ml01.01.org" <HPDD-discuss@ml01.01.org>,
+        massa.nomura@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 01/09/2015 08:21 PM, Wolfram Sang wrote:
-
-> Let the core do the checks if HW quirks prevent a transfer. Saves code
-> from drivers and adds consistency.
-
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-> ---
->   drivers/i2c/i2c-core.c | 53 ++++++++++++++++++++++++++++++++++++++++++++++++++
->   1 file changed, 53 insertions(+)
+2014-12-10 16:49 GMT+02:00 Greg KH <gregkh@linuxfoundation.org>:
+> On Wed, Dec 10, 2014 at 07:09:59AM +0000, Al Viro wrote:
+>> On Tue, Dec 09, 2014 at 10:56:12PM -0800, Shalin Mehta wrote:
+>> > From: Shalin Mehta <shalinmehta85@gmail.com>
+>> >
+>> > This issue is showed up while compiling with sparse. The iov_base in struct iovec struct explicitly declares that the assigned value should be user space pointer with __user macro. Where as here, the __user macro isn't used while casting.
+>>
+>> ... and pointers are not user space ones at all.  Which is to say, quit
+>> messing with casts; it's not struct iovec.  Proper fix is to replace
+>> it here (and in almost all places throughout drivers/staging/lustre) with
+>> struct kvec.  And yes, such a patch had been sent.  Still not applied,
+>> AFAICS...
 >
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index 39d25a8cb1ad..7b10a19abf5b 100644
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -2063,6 +2063,56 @@ module_exit(i2c_exit);
->    * ----------------------------------------------------
->    */
->
-> +/* Check if val is exceeding the quirk IFF quirk is non 0 */
-> +#define i2c_quirk_exceeded(val, quirk) ((quirk) && ((val) > (quirk)))
-> +
-> +static int i2c_quirk_error(struct i2c_adapter *adap, struct i2c_msg *msg, char *err_msg)
-> +{
-> +	dev_err(&adap->dev, "quirk: %s (addr 0x%04x, size %u)\n", err_msg, msg->addr, msg->len);
-> +	return -EOPNOTSUPP;
-> +}
+> Yeah, it's in the merge window and I'll pick new staging patches back up
+> when 3.19-rc1 is released.
 
-    Always returning the same value doesn't make much sense. Are you trying to 
-save space on the call sites?
+Hi Greg,
+Still no commits for
+drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c since Sun Nov
+23 (staging: lustre: Coalesce string fragments) in linux-next. Maybe
+the aforementioned commit got missed for merging?
 
-[...]
-> @@ -2080,6 +2130,9 @@ int __i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
->   	unsigned long orig_jiffies;
->   	int ret, try;
->
-> +	if (adap->quirks && i2c_check_for_quirks(adap, msgs, num))
-
-    So, you only check for non-zero result of this function? Perhaps it makes 
-sense to return true/false instead?
-
-> +		return -EOPNOTSUPP;
-> +
-
-WBR, Sergei
-
+-- 
+Andrey Utkin
