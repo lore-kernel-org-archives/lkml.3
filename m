@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757361AbbAIOp3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 09:45:29 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:44724 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511AbbAIOp2 (ORCPT
+	id S1757769AbbAIOrC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 09:47:02 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:49028 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752179AbbAIOq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 09:45:28 -0500
+	Fri, 9 Jan 2015 09:46:59 -0500
+Date: Fri, 9 Jan 2015 06:46:58 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Jeff Layton <jeff.layton@primarydata.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, ceph-devel@vger.kernel.org
+Subject: Re: [PATCH v2 02/10] locks: have locks_release_file use
+ flock_lock_file to release generic flock locks
+Message-ID: <20150109144658.GA12860@infradead.org>
+References: <1420742065-28423-1-git-send-email-jlayton@primarydata.com>
+ <1420742065-28423-3-git-send-email-jlayton@primarydata.com>
+ <20150109142723.GA30294@infradead.org>
+ <20150109064257.02f28d85@synchrony.poochiereds.net>
 MIME-Version: 1.0
-In-Reply-To: <54AFE6E3.4050603@roeck-us.net>
-References: <1420804980-11637-1-git-send-email-bgolaszewski@baylibre.com>
-	<54AFE6E3.4050603@roeck-us.net>
-Date: Fri, 9 Jan 2015 15:45:27 +0100
-Message-ID: <CAMpxmJV7O_DqTx66N5t2dWc8JqpqFmvQS+figEOVm9P4DYoZNg@mail.gmail.com>
-Subject: Re: [PATCHv2] hwmon: (ina2xx) implement update_interval attribute for ina226
-From: Bartosz Golaszewski <bgolaszewski@baylibre.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Patrick Titiano <ptitiano@baylibre.com>,
-        LM Sensors <lm-sensors@lm-sensors.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150109064257.02f28d85@synchrony.poochiereds.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-09 15:34 GMT+01:00 Guenter Roeck <linux@roeck-us.net>:
-> Unfortunately that only applies to INA226 and not INA219, where the time is
-> static
-> (at least so far).
+On Fri, Jan 09, 2015 at 06:42:57AM -0800, Jeff Layton wrote:
+> > I'd suggest keeping an open coded loop in locks_remove_flock, which
+> > should both be more efficient and easier to review.
+> > 
+> 
+> I don't know. On the one hand, I rather like keeping all of the lock
+> removal logic in a single spot. On the other hand, we do take and drop
+> the i_lock/flc_lock more than once with this scheme if there are both
+> flock locks and leases present at the time of the close. Open coding
+> the loops would allow us to do that just once.
+> 
+> I'll ponder it a bit more for the next iteration...
 
-Oops, I must have missed this one.
-
-> I think we'll need to store the time in ina2xx_data and use the old
-> (constant)
-> value for ina219. Maybe add another variable into the configuration data
-> for the initial value and copy it from there during probe.
-
-I tried to avoid adding another variable used by ina226 only, but
-well. It's kind of dull that these chips are supported by a single
-driver - their configuration register layout is completely different.
-
-Bart
+FYI, I like the split into locks_remove_flock, it's just that
+flock_lock_file is giant mess.  If it helps you feel free to keep
+it as-is for now and just document what you did in the changelog in
+detail.
