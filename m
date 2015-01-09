@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757568AbbAIM7w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 07:59:52 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:54392 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755183AbbAIM7w (ORCPT
+	id S1757074AbbAINCX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 08:02:23 -0500
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:33704 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098AbbAINCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 07:59:52 -0500
-Date: Fri, 9 Jan 2015 13:59:30 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Kanaka Juvva <kanaka.d.juvva@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH v4 10/11] perf/x86/intel: Perform rotation on Intel CQM
- RMIDs
-Message-ID: <20150109125930.GG29390@twins.programming.kicks-ass.net>
-References: <1415999712-5850-1-git-send-email-matt@console-pimps.org>
- <1415999712-5850-11-git-send-email-matt@console-pimps.org>
- <20150106173641.GI3337@twins.programming.kicks-ass.net>
- <20150109122239.GC495@console-pimps.org>
+	Fri, 9 Jan 2015 08:02:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150109122239.GC495@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <54AD3692.7040903@supelec.fr>
+References: <54AD2C56.10700@gmail.com> <54AD3692.7040903@supelec.fr>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Fri, 9 Jan 2015 14:02:01 +0100
+Message-ID: <CAKgNAkjzoJ8REzE8HQUZwrHjZaW+AqDB+4PTtBWH-K2atUipzA@mail.gmail.com>
+Subject: Re: Request for review of adjtimex(2) man page
+To: Laurent Georget <laurent.georget@supelec.fr>
+Cc: lkml <linux-kernel@vger.kernel.org>, Petr Gajdos <PGajdos@suse.cz>,
+        John Stultz <john.stultz@linaro.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Jeff Epler <jepler@unpythonic.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 12:22:39PM +0000, Matt Fleming wrote:
-> On Tue, 06 Jan, at 06:36:41PM, Peter Zijlstra wrote:
-> > On Fri, Nov 14, 2014 at 09:15:11PM +0000, Matt Fleming wrote:
-> > > @@ -417,17 +857,38 @@ static u64 intel_cqm_event_count(struct perf_event *event)
-> > >  	if (!cqm_group_leader(event))
-> > >  		return 0;
-> > >  
-> > > -	on_each_cpu_mask(&cqm_cpumask, __intel_cqm_event_count, &rr, 1);
-> > > +	/*
-> > > +	 * Notice that we don't perform the reading of an RMID
-> > > +	 * atomically, because we can't hold a spin lock across the
-> > > +	 * IPIs.
-> > > +	 *
-> > > +	 * Speculatively perform the read, since @event might be
-> > > +	 * assigned a different (possibly invalid) RMID while we're
-> > > +	 * busying performing the IPI calls. It's therefore necessary to
-> > > +	 * check @event's RMID afterwards, and if it has changed,
-> > > +	 * discard the result of the read.
-> > > +	 */
-> > > +	raw_spin_lock_irqsave(&cache_lock, flags);
-> > > +	rr.rmid = event->hw.cqm_rmid;
-> > > +	raw_spin_unlock_irqrestore(&cache_lock, flags);
-> > 
-> > You don't actually have to hold the lock here, only ACCESS_ONCE() or
-> > whatever newfangled thing replaced that.
->  
-> Remind me again, are accesses to 'int' guaranteed to be atomic? There's
-> no way to read a partial value?
+Hi Laurent,
 
-Yah, assuming natural alignment, loads from ints (and any other native
-machine word size) are atomic.
+On 7 January 2015 at 14:37, Laurent Georget <laurent.georget@supelec.fr> wrote:
+> Hello,
+>
+>
+>>I've added a large number
+>> of FIXMEs in the draft below, and would be happy if anyone can supply
+>> some content to fill any of the gaps.
+>
+> Isn't the man page going to be very long and hard to read if we explain all
+> the NTP internals in adjtimex.2?
+
+That's not my intention. But in various places it would be useful for
+the reader to know where they can go for further information.
+
+> I think we could create a second man page
+> (for instance ntp.7) in section 7 to provide extensive explanations and refer
+> to it from adjtimex.2. Does that seem okay?
+
+Maybe. But I'm not sure that it's needed. See above.
+
+>> .BR STA_PLL
+>> Enable phase-locked loop (PLL) updates (read-write) via
+>> .\" FIXME Any pointer to further information about what this means?
+>> .\"       (It was not immediately obvious from a scan of the RFC, whether
+>> .\"       this is described in the RFC.)
+>> .BR ADJ_OFFSET .
+>
+>> .BR STA_FLL
+>> Select frequency-locked loop (FLL) mode (read-write).
+>> .\" FIXME Any pointer to further information about what this means?
+>> .\"       (It was not immediately obvious from a scan of the RFC, whether
+>> .\"       this is described in the RFC.)
+>
+> In this particular case, for example, PLL and FLL are the two modes by which
+> the clock offset can be controlled. Roughly speaking, PLL is phase locking
+> (the clock time is adjusted to the source time) and FLL is frequency locking
+> (the clock frequency is adjusted to the source frequency). Is that level of
+> details be sufficient for adjtimex.2?
+>
+> Valuable resources that go beyond the content of the RFC are publications and
+> presentations from Pr. David Mills (http://www.eecis.udel.edu/~mills/) like
+> http://www.eecis.udel.edu/~mills/database/brief/clock/clock.pdf.
+
+Thanks for the pointers.
+
+Cheers,
+
+Michael
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
