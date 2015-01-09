@@ -1,157 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756622AbbAIMHV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 07:07:21 -0500
-Received: from nautica.notk.org ([91.121.71.147]:37664 "EHLO nautica.notk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754244AbbAIMHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 07:07:19 -0500
-From: Dominique Martinet <dominique.martinet@cea.fr>
-To: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
-        Latchesar Ionkov <lucho@ionkov.net>
-Cc: v9fs-developer@lists.sourceforge.net,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org,
-        Dominique Martinet <dominique.martinet@cea.fr>
-Subject: [PATCH] net/9p: add a privport option for RDMA transport.
-Date: Fri,  9 Jan 2015 13:07:00 +0100
-Message-Id: <1420805220-16639-1-git-send-email-dominique.martinet@cea.fr>
-X-Mailer: git-send-email 1.7.10.4
+	id S1757016AbbAIMQw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 07:16:52 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:26063 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754753AbbAIMQu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 07:16:50 -0500
+Date: Fri, 9 Jan 2015 20:13:06 +0800
+From: Jisheng Zhang <jszhang@marvell.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "antoine.tenart@free-electrons.com" 
+	<antoine.tenart@free-electrons.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH 3/3] clk: berlin: bg2q: remove non-exist "smemc" gate
+ clock
+Message-ID: <20150109201306.4d1a296b@xhacker>
+In-Reply-To: <54AD431F.6060403@gmail.com>
+References: <1420016272-6789-1-git-send-email-jszhang@marvell.com>
+	<1420016272-6789-4-git-send-email-jszhang@marvell.com>
+	<54AD3EAE.6090009@gmail.com>
+	<20150107222209.64ed24a0@xhacker>
+	<54AD431F.6060403@gmail.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-09_04:2015-01-09,2015-01-09,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1501090104
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RDMA can use the same kind of weak security as TCP by checking the
-client can bind to a privileged port, which is better than nothing
-if TAUTH isn't implemented.
+Dear Sebastian,
 
-Signed-off-by: Dominique Martinet <dominique.martinet@cea.fr>
----
+On Wed, 7 Jan 2015 06:30:55 -0800
+Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
 
-Please note that this does NOT checkpatch because option tokens
-"Opt_foo" are considered CamelCase.
-To make this pass one would need to submit a first patch that'd "fix"
-token names all around 9p code (net and fs), I'd rather stay coherent
-and keep it as is for now.
+> On 07.01.2015 15:22, Jisheng Zhang wrote:
+> > Dear Sebastian,
+> >
+> > On Wed, 7 Jan 2015 06:11:58 -0800
+> > Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
+> >
+> >> On 31.12.2014 09:57, Jisheng Zhang wrote:
+> >>> The "smemc" clock is removed on BG2Q SoCs. In fact, bit19 of clkenable
+> >>> register is for nfc. Current code use bit19 for non-exist "smemc"
+> >>> incorrectly, this prevents eMMC from working due to the sdhci's
+> >>> "core" clk is still gated.
+> >>>
+> >>> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+> >>> Cc: stable@vger.kernel.org # 3.16+
+> >>> ---
+> >>>    drivers/clk/berlin/bg2q.c | 1 -
+> >>>    1 file changed, 1 deletion(-)
+> >>>
+> >>> diff --git a/drivers/clk/berlin/bg2q.c b/drivers/clk/berlin/bg2q.c
+> >>> index 21784e4..440ef81 100644
+> >>> --- a/drivers/clk/berlin/bg2q.c
+> >>> +++ b/drivers/clk/berlin/bg2q.c
+> >>> @@ -285,7 +285,6 @@ static const struct berlin2_gate_data bg2q_gates[]
+> >>> __initconst = { { "pbridge",	"perif",	15,
+> >>> CLK_IGNORE_UNUSED }, { "sdio",	"perif",	16,
+> >>> CLK_IGNORE_UNUSED }, { "nfc",	"perif",	18 },
+> >
+> > The nfc here is really confusing, we call it as nfccore internally. Is it
+> > better to rename it as nfccore?
+> 
+> I guess it comes from some early Marvell BSP code, if there is no
+> issues with the name, e.g. something already depends on "nfc", feel
+> free to rename it to something more meaningful.
 
-I tried to stick to keep code similar to the tcp equivalent, but happy
-to make any change deemed useful.
+In BG2, mrvl call the clock as nfccore. The code use "nfc" for it.
+The situation is similar for usbcore, satacore etc. So keep the name here,
+what do you think?
 
- net/9p/trans_rdma.c | 52 ++++++++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 44 insertions(+), 8 deletions(-)
+> 
+> >>> -	{ "smemc",	"perif",	19 },
+> >>
+> >> Jisheng,
+> >>
+> >> if bit 19 is for nfc, how does that work out with bit 18 which is
+> >> still assigned to nfc? Can you re-evaluate clkenable registers for
+> >
+> > bit 19 is for nfcEcc, the "io" clock; bit 18 is for nfcCore, the "core"
+> > clock.
+> 
+> Ok, then both bits should be dealt with accordingly, i.e. rename
+> "smemc" to "nfcecc" and use it in the corresponding dts node.
+> 
+> If this clk_gate just disables a clock that is fed into another
+> gateable clock module, I can live with removing it - although I
+> still think it is best to leave the clk_gate in place and pick
+> another name that does not collide with any other clock name.
 
-diff --git a/net/9p/trans_rdma.c b/net/9p/trans_rdma.c
-index 14ad43b..3533d2a 100644
---- a/net/9p/trans_rdma.c
-+++ b/net/9p/trans_rdma.c
-@@ -139,6 +139,7 @@ struct p9_rdma_opts {
- 	int sq_depth;
- 	int rq_depth;
- 	long timeout;
-+	int privport;
- };
- 
- /*
-@@ -146,7 +147,10 @@ struct p9_rdma_opts {
-  */
- enum {
- 	/* Options that take integer arguments */
--	Opt_port, Opt_rq_depth, Opt_sq_depth, Opt_timeout, Opt_err,
-+	Opt_port, Opt_rq_depth, Opt_sq_depth, Opt_timeout,
-+	/* Options that take no argument */
-+	Opt_privport,
-+	Opt_err,
- };
- 
- static match_table_t tokens = {
-@@ -154,6 +158,7 @@ static match_table_t tokens = {
- 	{Opt_sq_depth, "sq=%u"},
- 	{Opt_rq_depth, "rq=%u"},
- 	{Opt_timeout, "timeout=%u"},
-+	{Opt_privport, "privport"},
- 	{Opt_err, NULL},
- };
- 
-@@ -175,6 +180,7 @@ static int parse_opts(char *params, struct p9_rdma_opts *opts)
- 	opts->sq_depth = P9_RDMA_SQ_DEPTH;
- 	opts->rq_depth = P9_RDMA_RQ_DEPTH;
- 	opts->timeout = P9_RDMA_TIMEOUT;
-+	opts->privport = 0;
- 
- 	if (!params)
- 		return 0;
-@@ -193,13 +199,13 @@ static int parse_opts(char *params, struct p9_rdma_opts *opts)
- 		if (!*p)
- 			continue;
- 		token = match_token(p, tokens, args);
--		if (token == Opt_err)
--			continue;
--		r = match_int(&args[0], &option);
--		if (r < 0) {
--			p9_debug(P9_DEBUG_ERROR,
--				 "integer field, but no integer?\n");
--			continue;
-+		if ((token != Opt_err) && (token != Opt_privport)) {
-+			r = match_int(&args[0], &option);
-+			if (r < 0) {
-+				p9_debug(P9_DEBUG_ERROR,
-+					 "integer field, but no integer?\n");
-+				continue;
-+			}
- 		}
- 		switch (token) {
- 		case Opt_port:
-@@ -214,6 +220,9 @@ static int parse_opts(char *params, struct p9_rdma_opts *opts)
- 		case Opt_timeout:
- 			opts->timeout = option;
- 			break;
-+		case Opt_privport:
-+			opts->privport = 1;
-+			break;
- 		default:
- 			continue;
- 		}
-@@ -607,6 +616,23 @@ static int rdma_cancelled(struct p9_client *client, struct p9_req_t *req)
- 	return 0;
- }
- 
-+static int p9_rdma_bind_privport(struct p9_trans_rdma *rdma)
-+{
-+	struct sockaddr_in cl = {
-+		.sin_family = AF_INET,
-+		.sin_addr.s_addr = htonl(INADDR_ANY),
-+	};
-+	int port, err = -EINVAL;
-+
-+	for (port = P9_DEF_MAX_RESVPORT; port >= P9_DEF_MIN_RESVPORT; port--) {
-+		cl.sin_port = htons((ushort)port);
-+		err = rdma_bind_addr(rdma->cm_id, (struct sockaddr *)&cl);
-+		if (err != -EADDRINUSE)
-+			break;
-+	}
-+	return err;
-+}
-+
- /**
-  * trans_create_rdma - Transport method for creating atransport instance
-  * @client: client instance
-@@ -642,6 +668,16 @@ rdma_create_trans(struct p9_client *client, const char *addr, char *args)
- 	/* Associate the client with the transport */
- 	client->trans = rdma;
- 
-+	/* Bind to a privileged port if we need to */
-+	if (opts.privport) {
-+		err = p9_rdma_bind_privport(rdma);
-+		if (err < 0) {
-+			pr_err("%s (%d): problem binding to privport: %d\n",
-+			       __func__, task_pid_nr(current), -err);
-+			goto error;
-+		}
-+	}
-+
- 	/* Resolve the server's address */
- 	rdma->addr.sin_family = AF_INET;
- 	rdma->addr.sin_addr.s_addr = in_aton(addr);
--- 
-1.9.3
+The nfcecc is already defined in the bg2q_divs, the gate bit is correct there.
 
+> 
+> >> BG2Q and fix it up accordingly? I'd suggest to still disable as many
+> >
+> > I'll recheck the clk driver for BG2Q.
+> 
+
+I checked the clk driver for BG2Q one by one. The only problem is the "smemc"
+issue. Removing it is the only thing we need to do. So I think we can use the
+patch I sent.
+
+Thanks,
+Jisheng
