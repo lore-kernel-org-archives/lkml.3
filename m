@@ -1,134 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932943AbbAIQLS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 11:11:18 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:38615 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752043AbbAIQLQ (ORCPT
+	id S932544AbbAIQXA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 11:23:00 -0500
+Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:36216 "EHLO
+	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752232AbbAIQWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 11:11:16 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <songjun.wu@atmel.com>, <balbi@ti.com>, <linux-usb@vger.kernel.org>
-CC: <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, <stable@vger.kernel.org>
-Subject: [RESEND PATCH] USB: gadget: udc: atmel: fix possible oops when unloading module
-Date: Fri, 9 Jan 2015 17:11:24 +0100
-Message-ID: <1420819884-29124-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20150108171523.GL31926@saruman>
-References: <20150108171523.GL31926@saruman>
+	Fri, 9 Jan 2015 11:22:54 -0500
+X-Greylist: delayed 520 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Jan 2015 11:22:52 EST
+Date: Fri, 9 Jan 2015 11:13:03 -0500
+From: Rich Felker <dalias@aerifal.cx>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: David Drysdale <drysdale@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        x86@kernel.org, linux-arch@vger.kernel.org, linux-api@vger.kernel.org,
+        sparclinux@vger.kernel.org
+Subject: Re: [PATCHv10 man-pages 5/5] execveat.2: initial man page for
+ execveat(2)
+Message-ID: <20150109161302.GQ4574@brightrain.aerifal.cx>
+References: <1416830039-21952-1-git-send-email-drysdale@google.com>
+ <1416830039-21952-6-git-send-email-drysdale@google.com>
+ <54AFF813.7050604@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54AFF813.7050604@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Songjun Wu <songjun.wu@atmel.com>
+On Fri, Jan 09, 2015 at 04:47:31PM +0100, Michael Kerrisk (man-pages) wrote:
+> On 11/24/2014 12:53 PM, David Drysdale wrote:
+> > Signed-off-by: David Drysdale <drysdale@google.com>
+> > ---
+> >  man2/execveat.2 | 153 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> >  1 file changed, 153 insertions(+)
+> >  create mode 100644 man2/execveat.2
+> 
+> David,
+> 
+> Thanks for the very nicely prepared man page. I've done 
+> a few very light edits, and will release the version below 
+> with the next man-pages release.
+> 
+> I have one question. In the message accompanying
+> commit 51f39a1f0cea1cacf8c787f652f26dfee9611874 you wrote:
+> 
+>   The filename fed to the executed program as argv[0] (or the name of the
+>   script fed to a script interpreter) will be of the form "/dev/fd/<fd>"
+>   (for an empty filename) or "/dev/fd/<fd>/<filename>", effectively
+>   reflecting how the executable was found.  This does however mean that
+>   execution of a script in a /proc-less environment won't work; also, script
+>   execution via an O_CLOEXEC file descriptor fails (as the file will not be
+>   accessible after exec).
+> 
+> How does one produce this situation where the execed program sees 
+> argv[0] as a /dev/fd path? (i.e., what would the execveat()
+> call look like?) I tried to produce this scenario, but could not.
 
-When unloading the module 'g_hid.ko', the urb request will be dequeued and the
-completion routine will be excuted. If there is no urb packet, the urb request
-will not be added to the endpoint queue and the completion routine pointer in
-urb request is NULL.
-Accessing to this NULL function pointer will cause the Oops issue reported
-below.
-Add the code to check if the urb request is in the endpoint queue
-or not. If the urb request is not in the endpoint queue, a negative
-error code will be returned.
+I think this is wrong. argv[0] is an arbitrary string provided by the
+caller and would never be derived from the fd passed. It's AT_EXECFN,
+/proc/self/exe, and filenames shown elsewhere in /proc that may be
+derived in odd ways.
 
-Here is the Oops log:
+I would also move the text about O_CLOEXEC to a BUGS or NOTES section
+rather than the main description. The long-term intent should be that
+script execution this way should work. IIRC this was discussed earlier
+in the thread.
 
-Unable to handle kernel NULL pointer dereference at virtual address 00000000
-pgd = dedf0000
-[00000000] *pgd=3ede5831, *pte=00000000, *ppte=00000000
-Internal error: Oops: 80000007 [#1] ARM
-Modules linked in: g_hid(-) usb_f_hid libcomposite
-CPU: 0 PID: 923 Comm: rmmod Not tainted 3.18.0+ #2
-Hardware name: Atmel SAMA5 (Device Tree)
-task: df6b1100 ti: dedf6000 task.ti: dedf6000
-PC is at 0x0
-LR is at usb_gadget_giveback_request+0xc/0x10
-pc : [<00000000>]    lr : [<c02ace88>]    psr: 60000093
-sp : dedf7eb0  ip : df572634  fp : 00000000
-r10: 00000000  r9 : df52e210  r8 : 60000013
-r7 : df6a9858  r6 : df52e210  r5 : df6a9858  r4 : df572600
-r3 : 00000000  r2 : ffffff98  r1 : df572600  r0 : df6a9868
-Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 10c53c7d  Table: 3edf0059  DAC: 00000015
-Process rmmod (pid: 923, stack limit = 0xdedf6230)
-Stack: (0xdedf7eb0 to 0xdedf8000)
-7ea0:                                     00000000 c02adbbc df572580 deced608
-7ec0: df572600 df6a9868 df572634 c02aed3c df577c00 c01b8608 00000000 df6be27c
-7ee0: 00200200 00100100 bf0162f4 c000e544 dedf6000 00000000 00000000 bf010c00
-7f00: bf0162cc bf00159c 00000000 df572980 df52e218 00000001 df5729b8 bf0031d0
-[..]
-[<c02ace88>] (usb_gadget_giveback_request) from [<c02adbbc>] (request_complete+0x64/0x88)
-[<c02adbbc>] (request_complete) from [<c02aed3c>] (usba_ep_dequeue+0x70/0x128)
-[<c02aed3c>] (usba_ep_dequeue) from [<bf010c00>] (hidg_unbind+0x50/0x7c [usb_f_hid])
-[<bf010c00>] (hidg_unbind [usb_f_hid]) from [<bf00159c>] (remove_config.isra.6+0x98/0x9c [libcomposite])
-[<bf00159c>] (remove_config.isra.6 [libcomposite]) from [<bf0031d0>] (__composite_unbind+0x34/0x98 [libcomposite])
-[<bf0031d0>] (__composite_unbind [libcomposite]) from [<c02acee0>] (usb_gadget_remove_driver+0x50/0x78)
-[<c02acee0>] (usb_gadget_remove_driver) from [<c02ad570>] (usb_gadget_unregister_driver+0x64/0x94)
-[<c02ad570>] (usb_gadget_unregister_driver) from [<bf0160c0>] (hidg_cleanup+0x10/0x34 [g_hid])
-[<bf0160c0>] (hidg_cleanup [g_hid]) from [<c0056748>] (SyS_delete_module+0x118/0x19c)
-[<c0056748>] (SyS_delete_module) from [<c000e3c0>] (ret_fast_syscall+0x0/0x30)
-Code: bad PC value
-
-Signed-off-by: Songjun Wu <songjun.wu@atmel.com>
-[nicolas.ferre@atmel.com: reworked the commit message]
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Fixes: 914a3f3b3754 ("USB: add atmel_usba_udc driver")
-Cc: <stable@vger.kernel.org> # 2.6.x-ish
----
-Felipe,
-
-I tried to collect all the information needed. Please tell me if it's what you
-expect from us.
-
-Songjun,
-
-I took a summary of your previous emails + the Oops log without breaking lines.
-The "Fixes" tag goes into the last part of the email. Thanks a lot for your
-fix.
-
-Bye,
-
-
- drivers/usb/gadget/udc/atmel_usba_udc.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/usb/gadget/udc/atmel_usba_udc.c b/drivers/usb/gadget/udc/atmel_usba_udc.c
-index ce882371786b..48629cc3d6f8 100644
---- a/drivers/usb/gadget/udc/atmel_usba_udc.c
-+++ b/drivers/usb/gadget/udc/atmel_usba_udc.c
-@@ -828,7 +828,7 @@ static int usba_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
- {
- 	struct usba_ep *ep = to_usba_ep(_ep);
- 	struct usba_udc *udc = ep->udc;
--	struct usba_request *req = to_usba_req(_req);
-+	struct usba_request *req;
- 	unsigned long flags;
- 	u32 status;
- 
-@@ -837,6 +837,16 @@ static int usba_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
- 
- 	spin_lock_irqsave(&udc->lock, flags);
- 
-+	list_for_each_entry(req, &ep->queue, queue) {
-+		if (&req->req == _req)
-+			break;
-+	}
-+
-+	if (&req->req != _req) {
-+		spin_unlock_irqrestore(&udc->lock, flags);
-+		return -EINVAL;
-+	}
-+
- 	if (req->using_dma) {
- 		/*
- 		 * If this request is currently being transferred,
--- 
-2.1.3
-
+Rich
