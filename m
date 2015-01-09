@@ -1,121 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108AbbAIIJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 03:09:59 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:35999 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754859AbbAIIJ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 03:09:57 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Tejun Heo <tj@kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] vmscan: force scan offline memory cgroups
-Date: Fri, 9 Jan 2015 11:09:43 +0300
-Message-ID: <1420790983-20270-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20150108170349.GA32079@phnom.home.cmpxchg.org>
-References: <20150108170349.GA32079@phnom.home.cmpxchg.org>
+	id S1755926AbbAIIUw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 03:20:52 -0500
+Received: from mga03.intel.com ([134.134.136.65]:59606 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754785AbbAIIUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 03:20:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,729,1413270000"; 
+   d="scan'208";a="659185403"
+From: Jani Nikula <jani.nikula@linux.intel.com>
+To: Jeremiah Mahler <jmmahler@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [BUG] drm/i915: backlight off after resume
+In-Reply-To: <20150109040647.GA1355@hudson.localdomain>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <20150109040647.GA1355@hudson.localdomain>
+User-Agent: Notmuch/0.19~rc1+1~g08b4944 (http://notmuchmail.org) Emacs/24.4.1 (x86_64-pc-linux-gnu)
+Date: Fri, 09 Jan 2015 10:21:26 +0200
+Message-ID: <87fvbkz7nd.fsf@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Originating-IP: [81.5.99.36]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit b2052564e66d ("mm: memcontrol: continue cache reclaim from
-offlined groups") pages charged to a memory cgroup are not reparented
-when the cgroup is removed. Instead, they are supposed to be reclaimed
-in a regular way, along with pages accounted to online memory cgroups.
+On Fri, 09 Jan 2015, Jeremiah Mahler <jmmahler@gmail.com> wrote:
+> Jani, all,
+>
+> On a Lenovo X1 Carbon if the display is off when suspend is entered
+> it will be off when it is resumed.  A key must be pressed to restore
+> normal brightness.
 
-However, an lruvec of an offline memory cgroup will sooner or later get
-so small that it will be scanned only at low scan priorities (see
-get_scan_count()). Therefore, if there are enough reclaimable pages in
-big lruvecs, pages accounted to offline memory cgroups will never be
-scanned at all, wasting memory.
+Please file a bug on [1] and attach dmesg with drm.debug=14 set, from
+boot to reproducing the problem.
 
-Fix this by unconditionally forcing scanning dead lruvecs from kswapd.
+Thanks for the report.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
-Changes in v2:
- - code style fixes (Johannes)
+BR,
+Jani.
 
- include/linux/memcontrol.h |    6 ++++++
- mm/memcontrol.c            |   14 ++++++++++++++
- mm/vmscan.c                |    8 ++++++--
- 3 files changed, 26 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 76b4084b8d08..68f3b44ef27c 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -102,6 +102,7 @@ void mem_cgroup_iter_break(struct mem_cgroup *, struct mem_cgroup *);
-  * For memory reclaim.
-  */
- int mem_cgroup_inactive_anon_is_low(struct lruvec *lruvec);
-+bool mem_cgroup_lruvec_online(struct lruvec *lruvec);
- int mem_cgroup_select_victim_node(struct mem_cgroup *memcg);
- unsigned long mem_cgroup_get_lru_size(struct lruvec *lruvec, enum lru_list);
- void mem_cgroup_update_lru_size(struct lruvec *, enum lru_list, int);
-@@ -266,6 +267,11 @@ mem_cgroup_inactive_anon_is_low(struct lruvec *lruvec)
- 	return 1;
- }
- 
-+bool mem_cgroup_lruvec_online(struct lruvec *lruvec)
-+{
-+	return true;
-+}
-+
- static inline unsigned long
- mem_cgroup_get_lru_size(struct lruvec *lruvec, enum lru_list lru)
- {
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index bfa1a849d113..67c936bbaa13 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1367,6 +1367,20 @@ int mem_cgroup_inactive_anon_is_low(struct lruvec *lruvec)
- 	return inactive * inactive_ratio < active;
- }
- 
-+bool mem_cgroup_lruvec_online(struct lruvec *lruvec)
-+{
-+	struct mem_cgroup_per_zone *mz;
-+	struct mem_cgroup *memcg;
-+
-+	if (mem_cgroup_disabled())
-+		return true;
-+
-+	mz = container_of(lruvec, struct mem_cgroup_per_zone, lruvec);
-+	memcg = mz->memcg;
-+
-+	return !!(memcg->css.flags & CSS_ONLINE);
-+}
-+
- #define mem_cgroup_from_counter(counter, member)	\
- 	container_of(counter, struct mem_cgroup, member)
- 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index e29f411b38ac..38173d9a2a87 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1935,8 +1935,12 @@ static void get_scan_count(struct lruvec *lruvec, int swappiness,
- 	 * latencies, so it's better to scan a minimum amount there as
- 	 * well.
- 	 */
--	if (current_is_kswapd() && !zone_reclaimable(zone))
--		force_scan = true;
-+	if (current_is_kswapd()) {
-+		if (!zone_reclaimable(zone))
-+			force_scan = true;
-+		if (!mem_cgroup_lruvec_online(lruvec))
-+			force_scan = true;
-+	}
- 	if (!global_reclaim(sc))
- 		force_scan = true;
- 
+[1] https://bugs.freedesktop.org/enter_bug.cgi?product=DRI&component=DRM/Intel
+
+>
+>   xset dpms force off
+>   sleep 1
+>   sudo systemctl suspend
+>   (resume)
+>   (screen off, press any key)
+>
+> The behavior I am accustomed to is for it to resume with the screen on.
+> All of my other machines behave this way and the X1 Carbon behaved this
+> way in the past.
+>
+> I performed a bisect and found that the following commit introduced the
+> problem.
+>
+>   From 6dda730e55f412a6dfb181cae6784822ba463847 Mon Sep 17 00:00:00 2001
+>   From: Jani Nikula <jani.nikula@intel.com>
+>   Date: Tue, 24 Jun 2014 18:27:40 +0300
+>   Subject: [PATCH] drm/i915: respect the VBT minimum backlight brightness
+>   
+>   Historically we've exposed the full backlight PWM duty cycle range to
+>   the userspace, in the name of "mechanism, not policy". However, it turns
+>   out there are both panels and board designs where there is a minimum
+>   duty cycle that is required for proper operation. The minimum duty cycle
+>   is available in the VBT.
+>   
+>   The backlight class sysfs interface does not make any promises to the
+>   userspace about the physical meaning of the range
+>   0..max_brightness. Specifically there is no guarantee that 0 means off;
+>   indeed for acpi_backlight 0 usually is not off, but the minimum
+>   acceptable value.
+>   
+>   Respect the minimum backlight, and expose the range acceptable to the
+>   hardware as 0..max_brightness to the userspace via the backlight class
+>   device; 0 means the minimum acceptable enabled value. To switch off the
+>   backlight, the user must disable the encoder.
+>   
+>   As a side effect, make the backlight class device max brightness and
+>   physical PWM modulation frequency (i.e. max duty cycle)
+>   independent. This allows a follow-up patch to virtualize the max value
+>   exposed to the userspace.
+>   
+>   Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+>   Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+>   [danvet: s/BUG_ON/WARN_ON/]
+>   Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+>
+> -- 
+> - Jeremiah Mahler
+
 -- 
-1.7.10.4
-
+Jani Nikula, Intel Open Source Technology Center
