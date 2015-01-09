@@ -1,71 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757572AbbAIPvn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:51:43 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:60493 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192AbbAIPvl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:51:41 -0500
-X-IronPort-AV: E=Sophos;i="5.07,731,1413244800"; 
-   d="scan'208";a="214080532"
-Message-ID: <54AFF909.3090909@citrix.com>
-Date: Fri, 9 Jan 2015 16:51:37 +0100
-From: =?windows-1252?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S932972AbbAIPxn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:53:43 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:36989 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752200AbbAIPxk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 10:53:40 -0500
+Date: Fri, 9 Jan 2015 16:53:35 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        =?utf-8?B?RnLDqWTDqXJpYw==?= Weisbecker <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, kvm list <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3/3] x86_64,entry: Remove the syscall exit audit and
+ schedule optimizations
+Message-ID: <20150109155334.GE13637@pd.tnic>
+References: <cover.1415403984.git.luto@amacapital.net>
+ <1072a16a8d4ad1b11b8062f76e3236b9771b0fb6.1415403984.git.luto@amacapital.net>
 MIME-Version: 1.0
-To: Bob Liu <bob.liu@oracle.com>, <xen-devel@lists.xen.org>
-CC: <konrad.wilk@oracle.com>, <linux-kernel@vger.kernel.org>,
-        <david.vrabel@citrix.com>, <junxiao.bi@oracle.com>
-Subject: Re: [PATCH] xen/blkfront: restart request queue when there is enough
- persistent_gnts_c
-References: <1420550343-14013-1-git-send-email-bob.liu@oracle.com>
-In-Reply-To: <1420550343-14013-1-git-send-email-bob.liu@oracle.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1072a16a8d4ad1b11b8062f76e3236b9771b0fb6.1415403984.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-El 06/01/15 a les 14.19, Bob Liu ha escrit:
-> When there is no enough free grants, gnttab_alloc_grant_references()
-> will fail and block request queue will stop.
-> If the system is always lack of grants, blkif_restart_queue_callback() can't be
-> scheduled and block request queue can't be restart(block I/O hang).
+On Fri, Nov 07, 2014 at 03:58:19PM -0800, Andy Lutomirski wrote:
+> We used to optimize rescheduling and audit on syscall exit.  Now that
+> the full slow path is reasonably fast, remove these optimizations.
 > 
-> But when there are former requests complete, some grants may free to
-> persistent_gnts_c, we can give the request queue another chance to restart and
-> avoid block hang.
+> This adds something like 10ns to the previously optimized paths on my
+> computer, presumably due mostly to SAVE_REST / RESTORE_REST.
 > 
-> Reported-by: Junxiao Bi <junxiao.bi@oracle.com>
-> Signed-off-by: Bob Liu <bob.liu@oracle.com>
+> I think that we should eventually replace both the syscall and
+> non-paranoid interrupt exit slow paths with a pair of C functions
+> along the lines of the syscall entry hooks.
+> 
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 > ---
->  drivers/block/xen-blkfront.c |   11 +++++++++++
->  1 file changed, 11 insertions(+)
+>  arch/x86/kernel/entry_64.S | 52 +++++-----------------------------------------
+>  1 file changed, 5 insertions(+), 47 deletions(-)
 > 
-> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-> index 2236c6f..dd30f99 100644
-> --- a/drivers/block/xen-blkfront.c
-> +++ b/drivers/block/xen-blkfront.c
-> @@ -1125,6 +1125,17 @@ static void blkif_completion(struct blk_shadow *s, struct blkfront_info *info,
->  			}
->  		}
->  	}
+> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+> index a5afdf0f7fa4..222dc5c45ac3 100644
+> --- a/arch/x86/kernel/entry_64.S
+> +++ b/arch/x86/kernel/entry_64.S
+> @@ -427,15 +427,12 @@ system_call_fastpath:
+>   * Has incomplete stack frame and undefined top of stack.
+>   */
+>  ret_from_sys_call:
+> -	movl $_TIF_ALLWORK_MASK,%edi
+> -	/* edi:	flagmask */
+> -sysret_check:
+> +	testl $_TIF_ALLWORK_MASK,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+> +	jnz int_ret_from_sys_call_fixup	/* Go the the slow path */
 > +
-> +	/*
-> +	 * Request queue would be stopped if failed to alloc enough grants and
-> +	 * won't be restarted until gnttab_free_count >= info->callback->count.
-> +	 *
-> +	 * But there is another case, once we have enough persistent grants we
-> +	 * can try to restart the request queue instead of continue to wait for
-> +	 * 'gnttab_free_count'.
-> +	 */
-> +	if (info->persistent_gnts_c >= info->callback.count)
-> +		schedule_work(&info->work);
+>  	LOCKDEP_SYS_EXIT
+>  	DISABLE_INTERRUPTS(CLBR_NONE)
+>  	TRACE_IRQS_OFF
+> -	movl TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET),%edx
+> -	andl %edi,%edx
+> -	jnz  sysret_careful
+>  	CFI_REMEMBER_STATE
+>  	/*
+>  	 * sysretq will re-enable interrupts:
+> @@ -449,49 +446,10 @@ sysret_check:
+>  	USERGS_SYSRET64
+>  
+>  	CFI_RESTORE_STATE
+> -	/* Handle reschedules */
+> -	/* edx:	work, edi: workmask */
+> -sysret_careful:
+> -	bt $TIF_NEED_RESCHED,%edx
+> -	jnc sysret_signal
+> -	TRACE_IRQS_ON
+> -	ENABLE_INTERRUPTS(CLBR_NONE)
+> -	pushq_cfi %rdi
+> -	SCHEDULE_USER
+> -	popq_cfi %rdi
+> -	jmp sysret_check
+>  
+> -	/* Handle a signal */
+> -sysret_signal:
+> -	TRACE_IRQS_ON
+> -	ENABLE_INTERRUPTS(CLBR_NONE)
+> -#ifdef CONFIG_AUDITSYSCALL
+> -	bt $TIF_SYSCALL_AUDIT,%edx
+> -	jc sysret_audit
+> -#endif
+> -	/*
+> -	 * We have a signal, or exit tracing or single-step.
+> -	 * These all wind up with the iret return path anyway,
+> -	 * so just join that path right now.
+> -	 */
+> +int_ret_from_sys_call_fixup:
+>  	FIXUP_TOP_OF_STACK %r11, -ARGOFFSET
+> -	jmp int_check_syscall_exit_work
+> -
+> -#ifdef CONFIG_AUDITSYSCALL
+> -	/*
+> -	 * Return fast path for syscall audit.  Call __audit_syscall_exit()
+> -	 * directly and then jump back to the fast path with TIF_SYSCALL_AUDIT
+> -	 * masked off.
+> -	 */
+> -sysret_audit:
+> -	movq RAX-ARGOFFSET(%rsp),%rsi	/* second arg, syscall return value */
+> -	cmpq $-MAX_ERRNO,%rsi	/* is it < -MAX_ERRNO? */
+> -	setbe %al		/* 1 if so, 0 if not */
+> -	movzbl %al,%edi		/* zero-extend that into %edi */
+> -	call __audit_syscall_exit
+> -	movl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),%edi
+> -	jmp sysret_check
+> -#endif	/* CONFIG_AUDITSYSCALL */
+> +	jmp int_ret_from_sys_call
 
-I guess I'm missing something here, but blkif_completion is called by
-blkif_interrupt, which in turn calls kick_pending_request_queues when
-finished, which IMHO should be enough to restart the processing of requests.
+Ok, dumb question: what is replacing that audit functionality now?
+Or are we remaining with the single path down syscall_trace_leave()?
+AFAICT, the intention is to direct everything to int_ret_from_sys_call
+after the syscall has been done so that paths can get simplified. Which
+is a good thing, AFAICT.
 
-Roger.
+Acked-by: Borislav Petkov <bp@suse.de>
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
