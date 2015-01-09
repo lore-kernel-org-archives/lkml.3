@@ -1,118 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757707AbbAIOgu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 09:36:50 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:65037 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845AbbAIOgs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 09:36:48 -0500
-Message-ID: <54AFE775.3090209@gmail.com>
-Date: Fri, 09 Jan 2015 17:36:37 +0300
-From: Dmitry Osipenko <digetx@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S932398AbbAIOiX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 09:38:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39072 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750989AbbAIOiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 09:38:20 -0500
+From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
+        Gleb Natapov <gleb@kernel.org>, Feng Wu <feng.wu@intel.com>
+Subject: [PATCH] KVM: x86: amend APIC lowest priority arbitration
+Date: Fri,  9 Jan 2015 15:37:26 +0100
+Message-Id: <1420814246-19033-1-git-send-email-rkrcmar@redhat.com>
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Sekhar Nori <nsekhar@ti.com>, linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>, stable@vger.kernel.org,
-        Joseph Lo <josephl@nvidia.com>, linux-tegra@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Subject: Re: [PATCH] ARM: tegra: Use PMC scratch register 40 for tegra_resume()
- location store
-References: <1419202392-1159-1-git-send-email-digetx@gmail.com> <54984429.8040905@wwwdotorg.org> <5498549B.8070101@gmail.com> <54985C30.7020605@wwwdotorg.org> <20150108105742.GI1987@ulmo.nvidia.com> <20150108123709.GX10073@tbergstrom-lnx.Nvidia.com> <20150109095134.GC27845@ulmo> <20150109102922.GC10073@tbergstrom-lnx.Nvidia.com>
-In-Reply-To: <20150109102922.GC10073@tbergstrom-lnx.Nvidia.com>
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-09.01.2015 13:29, Peter De Schrijver пишет:
-> On Fri, Jan 09, 2015 at 10:51:35AM +0100, Thierry Reding wrote:
->> * PGP Signed by an unknown key
->>
->> On Thu, Jan 08, 2015 at 02:37:09PM +0200, Peter De Schrijver wrote:
->>> On Thu, Jan 08, 2015 at 11:57:43AM +0100, Thierry Reding wrote:
->>>>> Old Signed by an unknown key
->>>>
->>>> On Mon, Dec 22, 2014 at 11:00:16AM -0700, Stephen Warren wrote:
->>>>> On 12/22/2014 10:27 AM, Dmitry Osipenko wrote:
->>>>>> 22.12.2014 19:17, Stephen Warren пишет:
->>>>>>> On 12/21/2014 03:52 PM, Dmitry Osipenko wrote:
->>>>>>>> Commit 7232398abc6a ("ARM: tegra: Convert PMC to a driver") changed
->>>>>>>> tegra_resume()
->>>>>>>> location storing from late to early and as result broke suspend on tegra20.
->>>>>>>> PMC scratch register 41 was used by tegra lp1 suspend core code for storing
->>>>>>>> physical memory address of common resume function and in the same time used by
->>>>>>>> tegra20 cpuidle driver for storing cpu1 "resettable" status, so it implied
->>>>>>>> strict order of scratch register use. Fix it by using scratch 40 instead of 41
->>>>>>>> for tegra_resume() location store.
->>>>>>>
->>>>>>> You likely can't simply change the PMC scratch register usage arbitrarily;
->>>>>>> specific registers are designated for specific purposes, and code outside the
->>>>>>> Linux kernel (bootloaders, LP0 resume code, secure monitors, etc.) may depend on
->>>>>>> those specific values being in those registers. Without significant research,
->>>>>>> I'd suggest not changing the PMC scratch register usage.
->>>>>>
->>>>>> Sure, that's why I asked to verify if scratch register 40 is in use in the
->>>>>> comment after commit message.
->>>>>
->>>>> Sorry, I didn't notice that.
->>>>>
->>>>>> I've checked that u-boot doesn't use it (since
->>>>>> upstream kernel doesn't care about any other bootloader), but no idea about
->>>>>> secure monitor. It's definitely safer to avoid changing scratch regs usage, I
->>>>>> thought that proposed solution would be best from the pure code point of view.
->>>>>> So, I'm considering your answer as a rejection of the patch (please, let me know
->>>>>> if I'm wrong) and will prepare another one. Btw, it would be nice to have
->>>>>> scratch registers usage publicly documented somewhere (on "Tegra Public
->>>>>> Application Notes" webpage for example), if it's possible, of course.
->>>>>
->>>>> At this stage in Tegra20 development, I think it'd be best to avoid changing
->>>>> any scratch register usage if at all possible.
->>>>
->>>> Sorry, I had completely missed this discussion. When looking at the code
->>>> it doesn't look like this particular "resettable" status needs to be
->>>> stored in a PMC scratch register. It can't be stored in RAM because that
->>>> goes into self-refresh as part of LP1, but how about just putting it
->>>> into IRAM? That stays on in both LP1 and LP2, so should be suitable for
->>>> this use-case. It would make the code slightly more complex but using a
->>>> single scratch register for multiple purposes sounds brittle and easy to
->>>> break (as evidenced by the offending commit).
->>>>
->>>> Otherwise it would seem that PMC_SCRATCH40 is only used to store EMC
->>>> configuration data across LP0 suspend/resume, so I wouldn't think it'd
->>>> cause problems if we used that instead of PMC_SCRATCH41 to store the
->>>> "resettable" state.
->>>>
->>>
->>> No. Usually the scratch registers for EMC config data are setup once by the
->>> bootloader and never touched by the kernel after that. So I would not
->>> recommend reusing those registers for different purposes.
->>
->> Right, I misread the code in the downstream kernel. Though it's not the
->> bootloader that does it (at least on Tegra20), but some early code in
->> the kernel.
->>
->> IRAM sounds like a good candidate still. Or do you know of anything that
->> would exclude IRAM as storage location for this data?
-> 
-> No. I can't think of a reason this flag could not be in IRAM.
-> 
-> Cheers,
-> 
-> Peter.
-> 
+Lowest priority should take the task priority into account.
 
-IRAM is a good candidate. Just tested draft patch version in QEMU, will give it
-more testing and polish during weekend and send next week.
+SDM 10.6.2.4 Lowest Priority Delivery Mode.
+(Too long to quote; second and last paragraphs are relevant.)
 
+Before this patch, we strived to have the same amount of handled
+lowest-priority interrupts on all VCPUs.
+This is only a complication, but kept for compatibility.
+
+Real modern Intels can't send lowest priority IPIs and the chipset
+directs external ones using processors' TPR.
+AMD still has rough edges.
+
+Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
+---
+ arch/x86/kvm/lapic.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index a688fbffb34e..5b9d8c589bba 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -833,7 +833,15 @@ static int __apic_accept_irq(struct kvm_lapic *apic, int delivery_mode,
+ 
+ int kvm_apic_compare_prio(struct kvm_vcpu *vcpu1, struct kvm_vcpu *vcpu2)
+ {
+-	return vcpu1->arch.apic_arb_prio - vcpu2->arch.apic_arb_prio;
++	/* XXX: AMD (2:16.6.2 Lowest Priority Messages and Arbitration)
++	 *      - uses the APR register (which also considers ISR and IRR),
++	 *      - chooses the highest APIC ID when APRs are identical,
++	 *      - and allows a focus processor.
++	 * XXX: pseudo-balancing with apic_arb_prio is a KVM-specific feature
++	 */
++	int tpr = kvm_apic_get_reg(vcpu1->arch.apic, APIC_TASKPRI) -
++	          kvm_apic_get_reg(vcpu2->arch.apic, APIC_TASKPRI);
++	return tpr ? : vcpu1->arch.apic_arb_prio - vcpu2->arch.apic_arb_prio;
+ }
+ 
+ static void kvm_ioapic_send_eoi(struct kvm_lapic *apic, int vector)
 -- 
-Dmitry
+2.2.0
+
