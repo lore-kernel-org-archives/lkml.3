@@ -1,55 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757889AbbAIPKw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:10:52 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:17505 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753053AbbAIPKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:10:51 -0500
-X-IronPort-AV: E=Sophos;i="5.07,731,1413244800"; 
-   d="scan'208";a="213382684"
-Message-ID: <54AFEF78.8050603@citrix.com>
-Date: Fri, 9 Jan 2015 15:10:48 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1757911AbbAIPL2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:11:28 -0500
+Received: from mail-oi0-f50.google.com ([209.85.218.50]:47545 "EHLO
+	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754989AbbAIPLY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 10:11:24 -0500
+Message-ID: <54AFEF9A.5030000@gmail.com>
+Date: Fri, 09 Jan 2015 09:11:22 -0600
+From: Paul Bonser <misterpib@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>, David Vrabel <david.vrabel@citrix.com>,
-        Juergen Gross <JGross@suse.com>
-CC: xen-devel <xen-devel@lists.xenproject.org>, <boris.ostrovsky@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 3/3] xen: use correct type for physical addresses
-References: <1420736490-15351-1-git-send-email-jgross@suse.com>	<1420736490-15351-4-git-send-email-jgross@suse.com>	<54AFB410020000780005306E@mail.emea.novell.com>	<54AFCED7.7040407@citrix.com> <54AFDE2B0200007800053248@mail.emea.novell.com>
-In-Reply-To: <54AFDE2B0200007800053248@mail.emea.novell.com>
-Content-Type: text/plain; charset="windows-1252"
+To: Takashi Iwai <tiwai@suse.de>, Clemens Ladisch <clemens@ladisch.de>
+CC: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH v2] ALSA: usb-audio: Add support for Akai
+ MPC Element USB MIDI controller
+References: <54AE16D8.6080302@gmail.com>	<54AEFCFF.3060406@ladisch.de>	<54AF24D6.6010701@gmail.com>	<54AF95EA.90505@ladisch.de> <s5h7fwwcksc.wl-tiwai@suse.de>
+In-Reply-To: <s5h7fwwcksc.wl-tiwai@suse.de>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/15 12:56, Jan Beulich wrote:
->>>> On 09.01.15 at 13:51, <david.vrabel@citrix.com> wrote:
->> On 09/01/15 09:57, Jan Beulich wrote:
->>>>>> On 08.01.15 at 18:01, <JGross@suse.com> wrote:
->>>> @@ -284,7 +286,7 @@ static void __init xen_update_mem_tables(unsigned long pfn, unsigned long mfn)
->>>>  	}
->>>>  
->>>>  	/* Update kernel mapping, but not for highmem. */
->>>> -	if ((pfn << PAGE_SHIFT) >= __pa(high_memory))
->>>> +	if (PFN_PHYS(pfn) >= (u64)(__pa(high_memory)))
+
+
+On 01/09/2015 04:26 AM, Takashi Iwai wrote:
+> At Fri, 09 Jan 2015 09:48:42 +0100,
+> Clemens Ladisch wrote:
+>>
+>> Paul Bonser wrote:
+>>> On 01/08/2015 03:56 PM, Clemens Ladisch wrote:
+>>>> Paul Bonser wrote:
+>>>>> The Akai MPC Element incorrectly reports its bInterfaceClass as 255, but
+>>>>> otherwise implements the USB MIDI spec correctly.
+>>>>>
+>>>>> This adds a quirks-table.h entry which allows the device to be
+>>>>> recognized as a standard USB MIDI device.
+>>>>>
+>>>>> +++ b/sound/usb/quirks-table.h
+>>>>> +{
+>>>>> +	/* Akai MPC Element */
+>>>>> +	USB_DEVICE(0x09e8, 0x0021),
+>>>>> +	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
+>>>>> +		.ifnum = QUIRK_ANY_INTERFACE,
+>>>>> +		.type = QUIRK_COMPOSITE,
+>>>>> +		.data = & (const struct snd_usb_audio_quirk[]) {
+>>>>> +			{
+>>>>> +				.ifnum = 0,
+>>>>> +				.type = QUIRK_IGNORE_INTERFACE
+>>>>> +			},
+>>>>> +			{
+>>>>> +				.ifnum = 1,
+>>>>> +				.type = QUIRK_MIDI_STANDARD_INTERFACE
+>>>>> +			},
+>>>>> +			{
+>>>>> +				.ifnum = -1
+>>>>> +			}
+>>>>> +		}
+>>>>> +	}
+>>>>> +},
+>>>>
+>>>> Why a composite quirk?  Does a single quirk entry not work?
 >>>
->>> I don't think you really need the cast on the right side - __pa()
->>> should be returning a value of suitable type (and unsigned long
->>> would be sufficient for anything up to and including high_memory).
+>>> A single quirk entry results in an error message in dmesg:
+>>> "snd-usb-audio: probe of 3-2:1.0 failed with error -5"
 >>
->> I'd prefer:
->>
->>     if (pfn >= PFN_DOWN(__pa(high_memory))
+>> That message is normal for unhandled interfaces.
 > 
-> Even better indeed. Just one more point: Strictly speaking
-> __pa(high_memory) is invalid, as __pa() is defined for low
-> memory only. Hence perhaps PFN_UP(__pa(high_memory - 1))?
+> It's still not good to show a message, so using QUIRK_IGNORE_INTERFACE
+> is good enough as a workaround.  So I applied it as is to for-next
+> branch now.  Though...
+> 
+>> Does it actually prevent the device from working?
+> 
+> ... it's still interesting why it needs a special handling.  If we
+> find out more and have a better fix, let's put on top of the current
+> patch.
 
-Yes.
+Interface 0 is the empty audio control interface (with no endpoints)
+that standard USB MIDI devices have, but as with interface 1, it has its
+bInterfaceClass set to 255 instead of 1.
 
-David
+As far as I can tell the error does not prevent the device itself from
+working. I tried using QUIRK_AUDIO_STANDARD_INTERFACE and I believe it
+had the same error. I'm guessing this is because it has no endpoints, so
+the driver doesn't know what to do with it?
