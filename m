@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757532AbbAIMvz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 07:51:55 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:28036 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755183AbbAIMvy convert rfc822-to-8bit (ORCPT
+	id S1757243AbbAIMzM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 07:55:12 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:43791 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755469AbbAIMzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 07:51:54 -0500
-Date: Fri, 9 Jan 2015 13:54:01 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Jyri Sarha <jsarha@ti.com>, Mark Brown <broonie@kernel.org>,
-        Dave Airlie <airlied@gmail.com>,
-        Andrew Jackson <Andrew.Jackson@arm.com>, alsa-devel@alsa-project.org,
-        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v9 1/4] drm/i2c: tda998x: Add DT support for audio
-Message-ID: <20150109135401.5b270d46@armhf>
-In-Reply-To: <20150109114529.GH12302@n2100.arm.linux.org.uk>
-References: <cover.1420628786.git.moinejf@free.fr>
-	<0084acea5a3475a77531d6a77483f36d3469111a.1420628786.git.moinejf@free.fr>
-	<54AE99F5.1010404@ti.com>
-	<20150108174257.557f7ea5@armhf>
-	<54AFA9B0.6040405@ti.com>
-	<20150109123036.4bc4bbf6@armhf>
-	<20150109114529.GH12302@n2100.arm.linux.org.uk>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; arm-unknown-linux-gnueabihf)
+	Fri, 9 Jan 2015 07:55:10 -0500
+Date: Fri, 9 Jan 2015 12:55:07 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Kanaka Juvva <kanaka.d.juvva@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v4 10/11] perf/x86/intel: Perform rotation on Intel CQM
+ RMIDs
+Message-ID: <20150109125507.GD495@console-pimps.org>
+References: <1415999712-5850-1-git-send-email-matt@console-pimps.org>
+ <1415999712-5850-11-git-send-email-matt@console-pimps.org>
+ <20150107121617.GF25325@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150107121617.GF25325@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Jan 2015 11:45:29 +0000
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-
-> On Fri, Jan 09, 2015 at 12:30:36PM +0100, Jean-Francois Moine wrote:
-> > In my original version, the audio-ports are a bitmap of the pins, the
-> > bit 0 being the WS used for I2S. A fully wired tda998x would have been
-> > as:
-> > 
-> > 	audio-ports = <0x03>, <0x04>, <0x09>, <0x11>;
-> > 	audio-port-names = "i2s", "spdif", "i2s", "i2s";
-> > 
-> > With the new version, it would simply become:
-> > 
-> > 	audio-inputs = "i2s", "spdif", "i2s", "i2s";
+On Wed, 07 Jan, at 01:16:17PM, Peter Zijlstra wrote:
+> On Fri, Nov 14, 2014 at 09:15:11PM +0000, Matt Fleming wrote:
+>  +	/*
+> > +	 * A reasonable upper limit on the max threshold is the number
+> > +	 * of lines tagged per RMID if all RMIDs have the same number of
+> > +	 * lines tagged in the LLC.
+> > +	 *
+> > +	 * For a 35MB LLC and 56 RMIDs, this is ~1.8% of the LLC.
+> > +	 */
+> > +	__intel_cqm_max_threshold =
+> > +		boot_cpu_data.x86_cache_size * 1024 / (cqm_max_rmid + 1);
 > 
-> How do you know which i2s inputs to enable?
-> 
-> Does it make sense for the audio inputs to be mixed like that?
-> 
-> You will need to enable one i2s for front L+R, and increasingly others
-> for the additional channels.
-> 
-> I think we need to understand exactly how the 998x map I2S inputs to the
-> HDMI channels to avoid making a mistake with the binding; remember, the
-> binding isn't something that can be easily "bug fixed" at a later date
-> as anything we come up with now has to be supported long term by the
-> kernel.
+> Seeing how a percentage is without unit, the 35MB figure seems
+> pointless.
+ 
+It's only an example to demonstrate that this fudge calculation makes
+sense on the current class of CQM-enabled hardware.
 
-The DT describes the hardware configuration.
+> Also, why would a flat distribution be a good measure for 'empty'? I
+> would think that would in fact constitute in use.
+ 
+It's not, it's a good measure for 'full'. This is the *max* threshold.
+When searching for RMIDs to stabilize we'll stop searching if
+__intel_cqm_threshold == __intel_cqm_max_threshold, since that indicates
+all our RMIDs have *so* many lines tagged that it's unlikely increasing
+__intel_cqm_threshold any further would be a win.
 
-A fully wired tda998x could be a chip with the audio pins connected to:
-- a kirkwood-like audio device with one I2S and one S/PDIF output,
-- two other audio devices with one I2S each.
+Suppose all our RMIDs associated cachelines, if any RMID (say, RMID_A)
+has more lines tagged than the above flat distribution that means at
+least one RMID must have less than the above value (RMID_B), so we'd
+really hope for the lesser RMID to be become free sooner - we'd rather
+pick RMID_B than bump the threshold value and risk picking RMID_A, since
+the higher the threshold value, the "dirtier" we allow our RMIDs to be
+when we reuse them.
 
-The relation between an audio device and the associated pin is done by
-the definition of the sound card.
+And very dirty RMIDs skew your monitoring results because they introduce
+noise into your data.
 
-With S/PDIF, only one stereo channel may be sent, but with I2S, up to 4
-stereo channels may be sent. These channels are extracted by the
-devices connected on the HDMI bus. There is no mixing.
-An example could be the playing of a multi-language movie: each audio
-channel carries one language. From the computer view, the playing
-application sends each language to one sound card.
+> Should we make this 1/16th of this figure or any other random fraction <
+> 1 ?
 
-So, this means that the tda998x driver should check that S/PDIF and I2S
-are not active at the same time, and it should also do a pin OR/AND on
-I2S start/stop.
+I don't see how that'd be better than the above, but since I introduced
+this code at your request, I'm not going to fight too hard.
 
 -- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+Matt Fleming, Intel Open Source Technology Center
