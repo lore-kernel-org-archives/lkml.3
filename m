@@ -1,138 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840AbbAIUrh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 15:47:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36335 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951AbbAIUrg (ORCPT
+	id S1755890AbbAIUtJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 15:49:09 -0500
+Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:36226 "EHLO
+	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752612AbbAIUtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 15:47:36 -0500
-Date: Fri, 9 Jan 2015 12:47:35 -0800
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Vitaly Kuznetsov <vkuznets@redhat.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] Tools: hv: fix compiler warnings and do minor cleanup
-Message-ID: <20150109204735.GA1194@kroah.com>
-References: <1418140103-11854-1-git-send-email-vkuznets@redhat.com>
- <F792CF86EFE20D4AB8064279AFBA51C613E9B62F@SIXPRD3002MB028.064d.mgd.msft.net>
- <87lhmfhna7.fsf@vitty.brq.redhat.com>
- <20141210144829.GB17184@kroah.com>
- <BY2PR0301MB071102AF97B27F11EF91F89CA0620@BY2PR0301MB0711.namprd03.prod.outlook.com>
- <877fwxqn08.fsf@vitty.brq.redhat.com>
- <BN1PR0301MB0707072CBA0483E06C6FE6E1A0470@BN1PR0301MB0707.namprd03.prod.outlook.com>
+	Fri, 9 Jan 2015 15:49:05 -0500
+Date: Fri, 9 Jan 2015 15:48:15 -0500
+From: Rich Felker <dalias@aerifal.cx>
+To: David Drysdale <drysdale@google.com>
+Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, sparclinux@vger.kernel.org
+Subject: Re: [PATCHv10 man-pages 5/5] execveat.2: initial man page for
+ execveat(2)
+Message-ID: <20150109204815.GR4574@brightrain.aerifal.cx>
+References: <1416830039-21952-1-git-send-email-drysdale@google.com>
+ <1416830039-21952-6-git-send-email-drysdale@google.com>
+ <54AFF813.7050604@gmail.com>
+ <20150109161302.GQ4574@brightrain.aerifal.cx>
+ <CAHse=S88Jy5ZKM_VY5onfvxX7dTMngnxuHfuLeSuzvKvQNP19A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BN1PR0301MB0707072CBA0483E06C6FE6E1A0470@BN1PR0301MB0707.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAHse=S88Jy5ZKM_VY5onfvxX7dTMngnxuHfuLeSuzvKvQNP19A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 08, 2015 at 05:04:20PM +0000, KY Srinivasan wrote:
+On Fri, Jan 09, 2015 at 05:46:28PM +0000, David Drysdale wrote:
+> > It's AT_EXECFN,
+> > /proc/self/exe, and filenames shown elsewhere in /proc that may be
+> > derived in odd ways.
+> >
+> > I would also move the text about O_CLOEXEC to a BUGS or NOTES section
+> > rather than the main description. The long-term intent should be that
+> > script execution this way should work. IIRC this was discussed earlier
+> > in the thread.
 > 
-> 
-> > -----Original Message-----
-> > From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
-> > Sent: Thursday, January 8, 2015 8:02 AM
-> > To: KY Srinivasan
-> > Cc: gregkh@linuxfoundation.org; devel@linuxdriverproject.org; Haiyang
-> > Zhang; linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCH 0/5] Tools: hv: fix compiler warnings and do minor
-> > cleanup
-> > 
-> > KY Srinivasan <kys@microsoft.com> writes:
-> > 
-> > >> -----Original Message-----
-> > >> From: devel [mailto:driverdev-devel-bounces@linuxdriverproject.org]
-> > >> On Behalf Of gregkh@linuxfoundation.org
-> > >> Sent: Wednesday, December 10, 2014 6:48 AM
-> > >> To: Vitaly Kuznetsov
-> > >> Cc: devel@linuxdriverproject.org; Haiyang Zhang; linux-
-> > >> kernel@vger.kernel.org
-> > >> Subject: Re: [PATCH 0/5] Tools: hv: fix compiler warnings and do
-> > >> minor cleanup
-> > >>
-> > >> On Wed, Dec 10, 2014 at 10:22:40AM +0100, Vitaly Kuznetsov wrote:
-> > >> > Dexuan Cui <decui@microsoft.com> writes:
-> > >> >
-> > >> > >> -----Original Message-----
-> > >> > >> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
-> > >> > >> Sent: Tuesday, December 9, 2014 23:48 PM
-> > >> > >> To: KY Srinivasan
-> > >> > >> Cc: Haiyang Zhang; devel@linuxdriverproject.org; linux-
-> > >> > >> kernel@vger.kernel.org; Dexuan Cui
-> > >> > >> Subject: [PATCH 0/5] Tools: hv: fix compiler warnings and do
-> > >> > >> minor cleanup
-> > >> > >>
-> > >> > >> When someone does 'make' in tools/hv/ issues appear:
-> > >> > >> - hv_fcopy_daemon is not being built;
-> > >> > >> - lots of compiler warnings.
-> > >> > >>
-> > >> > >> This is just a cleanup. Compile-tested by myself on top of
-> > >> > >> linux-
-> > >> next/master.
-> > >> > >>
-> > >> > >> Piggyback this series and send "[PATCH 5/5] Tools: hv: do not
-> > >> > >> add redundant '/'
-> > >> > >>  in hv_start_fcopy()"
-> > >> > >>
-> > >> > >> Vitaly Kuznetsov (5):
-> > >> > >>   Tools: hv: add mising fcopyd to the Makefile
-> > >> > >>   Tools: hv: remove unused bytes_written from kvp_update_file()
-> > >> > >>   Tools: hv: address compiler warnings for hv_kvp_daemon.c
-> > >> > >>   Tools: hv: address compiler warnings for hv_fcopy_daemon.c
-> > >> > >>   Tools: hv: do not add redundant '/' in hv_start_fcopy()
-> > >> > >>
-> > >> > >>  tools/hv/Makefile          |  4 ++--
-> > >> > >>  tools/hv/hv_fcopy_daemon.c | 10 ++--------
-> > >> > >>  tools/hv/hv_kvp_daemon.c   | 29 +++++++++++++----------------
-> > >> > >>  3 files changed, 17 insertions(+), 26 deletions(-)
-> > >> > >>
-> > >> > >> --
-> > >> > >> 1.9.3
-> > >> > >
-> > >> > > Hi Vitaly,
-> > >> > > Thanks for the patchset!
-> > >> > >
-> > >> > > Acked-by: Dexuan Cui <decui@microsoft.com>
-> > >> > >
-> > >> > > PS, I added Greg into the TO list.
-> > >> > > The hv code in drivers/hv/ and tools/hv/ usually has to go into
-> > >> > > Greg's tree first.
-> > >> >
-> > >> > Well, I don't mind spamming Greg but he's not on the
-> > >> > scripts/get_maintainer.pl output. In case he's not monitoring the
-> > >> > list for patches by some other tool (patchwork?) a patch adding him
-> > >> > to MAINTAINERS would do the job.
-> > >> >
-> > >> > Greg, do you want to become an official Hyper-V maintainer in
-> > >> > MAINTAINERS? I can send a patch then :-)
-> > >>
-> > >> No.  It's up to the "real" maintainers to take the patches and then
-> > >> forward them on to me for inclusion in the kernel tree.  KY knows this...
-> > >
-> > > I will take care of this.
-> > >
-> > 
-> > Hi KY,
-> > 
-> > I just found out these patches never made it to any repo, at least I can't see
-> > them in char-misc-next. Do I need to resend?
-> 
-> Greg,
-> 
-> I have signed off on these patches. Do you want us to resend them. On a different note, I too have a
-> Few patches that I sent some weeks ago. Should I be resending them as well.
+> I may be misremembering, but I thought we hoped to be able to fix
+> execveat of a script without /proc in future, but didn't expect to fix
+> execveat of a script via an O_CLOEXEC fd (because in the latter
+> case the fd gets closed before the script interpreter runs, so even
+> if the interpreter (or a special filesystem) does clever things for names
+> starting with "/dev/fd/..." the file descriptor is already gone).
 
-Please resend everything, there has been a mess of different patches and
-discussions and I can't figure out what should be applied and what
-should not.  I'll guess at a few easy ones, but getting the "correct"
-ones from you is the best thing.
+I think this is a case that needs to be fixed, though it's hard. The
+normal correct usage for fexecve is to always pass an O_CLOEXEC file
+descriptor, and the caller can't really be expected to know whether
+the file is a script or not. We discussed workarounds before and one
+idea I proposed was having fexecve provide a "one open only" magic
+symlink in /proc/self/ to pass to the interpreter. It would behave
+like an O_PATH file descriptor magic symlink in /proc/self/fd, but
+would automatically cease to exist on the first open (at which point
+the interpreter would have a real O_RDONLY file descriptor for the
+underlying file).
 
-thanks,
-
-greg k-h
+Rich
