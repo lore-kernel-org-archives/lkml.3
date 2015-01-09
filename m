@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757003AbbAIADL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 19:03:11 -0500
-Received: from mail.us.es ([193.147.175.20]:41750 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752785AbbAIADI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 19:03:08 -0500
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.98.5/19898. spamassassin: 3.4.0.  
- Clear:RC:1(127.0.0.1):SA:0(-104.0/7.5):. 
- Processed in 2.651723 secs); 09 Jan 2015 00:03:04 -0000
-X-Spam-ASN: AS12715 87.216.0.0/16
-X-Envelope-From: pneira@us.es
-Date: Fri, 9 Jan 2015 01:05:46 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Rahul Sharma <rsharma@arista.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
-Subject: Re: [PATCH net] ipv6: Prevent ipv6_find_hdr() from returning ENOENT
- for valid non-first fragments
-Message-ID: <20150109000546.GA3488@salvia>
-References: <CAFB3abzYNYqtzd_n+Ym0Lo=DYbV0HPU=Tqw=stALNnu188hMKQ@mail.gmail.com>
- <20150106224706.GA7416@salvia>
- <CAFB3abwKpR1VqZXUrsexqveAZrA2LTSmTe8a=-H7z2HjAptjwA@mail.gmail.com>
- <1420627396.26870.36.camel@stressinduktion.org>
- <20150108205328.GA3361@salvia>
- <1420756756.1755002.211556745.0418D128@webmail.messagingengine.com>
+	id S932188AbbAIAHI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 19:07:08 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:49656 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011AbbAIAHG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 19:07:06 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Andy Gross <agross@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        devicetree@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        linux-kernel@vger.kernel.org,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Subject: Re: [PATCH 1/2] soc: qcom: Add TCSR driver
+Date: Fri, 09 Jan 2015 01:06:56 +0100
+Message-ID: <4757751.7cLGsvPiZX@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1420757577-20425-2-git-send-email-agross@codeaurora.org>
+References: <1420757577-20425-1-git-send-email-agross@codeaurora.org> <1420757577-20425-2-git-send-email-agross@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420756756.1755002.211556745.0418D128@webmail.messagingengine.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:bmPzYv8R9NJWw88iU+w4UkV9wC8LvSOHOlHBzJDu/VmG1j1ZIwt
+ 8Oi9r35eLrdtTrRYCkHkOc0wf3JnxR32EwKsguN29wBfCDZXVAZ+BmuQ6u2aXg4tnSvREB6
+ 2GX4yyPdDm5UmsefrKC5QUemQII8KS+E+Fa4zQw3IXb2SDrNl2Xa3jd59HWRUc7Pf0sIknD
+ Z5dg7c0zSaG2ClRlN/9Sg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 08, 2015 at 11:39:16PM +0100, Hannes Frederic Sowa wrote:
-> Hi Pablo,
+On Thursday 08 January 2015 16:52:56 Andy Gross wrote:
+> This patch adds support for the TCSR (Top Control and Status Register) IP block
+> that is present in the Qualcomm IPQ8064, APQ8064, and some later processors.
+> This block contains additional configuration and mux settings for various
+> peripherals in the system, including the ADM DMA block and USB controller.
 > 
-> On Thu, Jan 8, 2015, at 21:53, Pablo Neira Ayuso wrote:
-> > I'm afraid we cannot just get rid of that !ipv6_ext_hdr() check. The
-> > ipv6_find_hdr() function is designed to return the transport protocol.
-> > After the proposed change, it will return extension header numbers.
-> > This will break existing ip6tables rulesets since the `-p' option
-> > relies on this function to match the transport protocol.
-> >
-> > Note that the AH header is skipped (see code a bit below this
-> > problematic fragmentation handling) so the follow up header after the
-> > AH header is returned as the transport header.
-> > 
-> > We can probably return the AH protocol number for non-1st fragments.
-> > However, that would be something new to ip6tables since nobody has
-> > ever seen packet matching `-p ah' rules. Thus, we restore control to
-> > the user to allow this, but we would accept all kind of fragmented AH
-> > traffic through the firewall since we cannot know what transport
-> > protocol contains from non-1st fragments (unless I'm missing anything,
-> > I need to have a closer look at this again tomorrow with fresher
-> > mind).
+> Signed-off-by: Andy Gross <agross@codeaurora.org>
 > 
-> The code in question is guarded by (_frag_off != 0), so we are
-> definitely processing a non-1st fragment currently. The -p match would
-> happen at the time when the packet is reassembled and thus ipv6_find_hdr
-> will find the real transport (final) header at this point (I hope I
-> followed the code correctly here).
 
-Then, Rahul should get things working by modprobing nf_defrag_ipv6.
+It sounds like this is a collection of random registers. Have you considered
+making it a syscon node instead?
+
+	Arnd
