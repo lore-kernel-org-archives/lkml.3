@@ -1,107 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609AbbAICJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 21:09:28 -0500
-Received: from utopia.booyaka.com ([74.50.51.50]:35126 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752907AbbAICJ1 (ORCPT
+	id S1753275AbbAICL5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 21:11:57 -0500
+Received: from outbound-smtp04.blacknight.com ([81.17.249.35]:52080 "EHLO
+	outbound-smtp04.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752377AbbAICL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 21:09:27 -0500
-Date: Fri, 9 Jan 2015 02:09:25 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-tegra@vger.kernel.org, Allen Martin <amartin@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <treding@nvidia.com>,
-        Alexandre Courbot <gnurou@gmail.com>, pwalmsley@nvidia.com
-Subject: Re: [PATCH] clocksource: tegra: wrap arch/arm-specific sections in
- CONFIG_ARM
-In-Reply-To: <54AEB719.5060103@linaro.org>
-Message-ID: <alpine.DEB.2.02.1501090135280.28771@utopia.booyaka.com>
-References: <alpine.DEB.2.02.1412092201200.31750@utopia.booyaka.com> <54AEB719.5060103@linaro.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 8 Jan 2015 21:11:56 -0500
+Message-ID: <54AF38EA.6090005@nexus-software.ie>
+Date: Fri, 09 Jan 2015 02:11:54 +0000
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=US-ASCII
-Content-ID: <alpine.DEB.2.02.1501090143282.28771@utopia.booyaka.com>
+To: "Ong, Boon Leong" <boon.leong.ong@intel.com>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "dvhart@infradead.org" <dvhart@infradead.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>
+Subject: Re: [PATCH 2/2] platform/x86: Add Intel Galileo platform specific
+ setup
+References: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie> <1419873783-5161-3-git-send-email-pure.logic@nexus-software.ie> <AF233D1473C1364ABD51D28909A1B1B7326E3282@PGSMSX105.gar.corp.intel.com>
+In-Reply-To: <AF233D1473C1364ABD51D28909A1B1B7326E3282@PGSMSX105.gar.corp.intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Daniel
+On 09/01/15 01:00, Ong, Boon Leong wrote:
 
-On Thu, 8 Jan 2015, Daniel Lezcano wrote:
+>> +static void __init
+>> +intel_galileo_imr_sanity(unsigned long base, unsigned long size) {
+>> +	/* Test zero zero */
+>> +	if (imr_add(0, 0, 0, 0, true) == 0)
+>> +		pr_err(SANITY "zero sized IMR @ 0x00000000\n");
+>
+> A side-discussion on imr_add():
+> I would think that we should allow 1KiB IMR setting. Current imr_add() logic
+> is prohibiting it.
 
-> On 12/09/2014 11:07 PM, Paul Walmsley wrote:
-> > 
-> > Like several of the other files in drivers/clocksource,
-> > tegra20_timer.c contains code that can only compile when CONFIG_ARM is
-> > enabled.  This causes obvious problems when trying to compile this
-> > code for NVIDIA ARM64-based SoCs, such as Tegra132.  The same timer IP
-> > blocks exist, so it seems appropriate to provide support for them.
-> > 
-> > So until we figure out a better way to partition this code, wrap the
-> > delay_timer and persistent_clock support code with preprocessor tests
-> > for CONFIG_ARM.
-> >
-> >  (The delay_timer code should not be needed at all on
-> > ARM64 due to the presence of the ARMv8 architected timer.  The
-> > persistent_clock support code could become important once power
-> > management modes are implemented that turn off the CPU complex.)
-> 
-> IIUC, the cpuidle driver is not yet ready, right ?
-> 
-> If it is the case, this driver is not needed yet, no ?
+Hi Boon Leong. Ermm, it does allow 1 KiB IMR regions. The following code 
+works on the unmodifed V1 driver.
 
-The point of the patch is to allow the hardware drivers selected by 
-CONFIG_ARCH_TEGRA to build for an arm64 kernel, just as they build for 
-32-bit ARM.  
+/* Test 1 KiB works */
+idx = imr_add(0, IMR_ALIGN, IMR_READ_ACCESS_ALL,
+               IMR_WRITE_ACCESS_ALL,false);
+if (idx < 0)
+	pr_err(SANITY "Couldn't add an IMR @ 0x%04x bytes\n", IMR_ALIGN);
 
-There's nothing CPUIdle-specific about the patch - that is, this timer can 
-be selected as a clockevent and clocksource provider without the use of 
-CPUIdle - although low-power PM idle is likely to be a primary use-case.
+Note IMR_ALIGN is 0x400
 
-> Perhaps you can rework a bit this driver in the meantime to have a better fix
-> than disabling the code with macros ?
+I'll add that test to the set of sanity tests in V2 just to put your 
+mind at ease though.
 
-I'm happy to do that, but it would be nice to get the driver compiling 
-first for ARM64 :-)
+ > So, the 'size' input should be at least 1KiB and imr_add()
+ > internal logic will adjust 'hi' by -1KiB. Please consider ..
 
-> Otherwise, please try at least to group the code into a minimal set of macros.
+Hmm.
 
-So, would it be accurate to say that you would prefer a patch that changes 
-more lines of code, but minimizes preprocessor directives, to the current 
-patch?
+Actually I had a response all typed out for you why I didn't want an API 
+to presume to modify the size of my input from the user's POV but, 
+thinking about it twice - I agree with you.
 
-> One comment below.
+V2 will subtract IMR_ALIGN (0x400) bytes from the size.
 
-> > diff --git a/drivers/clocksource/tegra20_timer.c
-> > b/drivers/clocksource/tegra20_timer.c
-> > index d2616ef16770..83a8f5c9e139 100644
-> > --- a/drivers/clocksource/tegra20_timer.c
-> > +++ b/drivers/clocksource/tegra20_timer.c
-> > @@ -29,8 +29,10 @@
-> >   #include <linux/sched_clock.h>
-> >   #include <linux/delay.h>
-> > 
-> > +#ifdef CONFIG_ARM
-> >   #include <asm/mach/time.h>
-> >   #include <asm/smp_twd.h>
-> 
-> Is smp_twd.h really needed ?
-> 
-> > +#endif
+It's stupid to have to subtract IMR_ALIGN bytes on the input - and 
+assumes the user of the API understands how the hardware works - but, of 
+course the point of an API is so that the user of it doesn't *have* to 
+understand that.
 
-No, it can be removed.  
+Good call.
 
-Would you be willing to ack or merge a revision of this patch with 
-
-1. the #include <asm/smp_twd.h> removed
-
-2. a larger number of changed lines, in order to minimize the number of 
-new #ifdefs?
-
-
-
-
-- Paul
+--
+BOD
