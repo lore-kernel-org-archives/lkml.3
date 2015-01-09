@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757340AbbAIQZM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 11:25:12 -0500
-Received: from smtprelay0151.hostedemail.com ([216.40.44.151]:37881 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751659AbbAIQZL (ORCPT
+	id S1757709AbbAIQ0G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 11:26:06 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:62714 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755561AbbAIQ0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 11:25:11 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2892:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:5007:6119:6248:6261:7514:7774:7875:7903:8829:10004:10400:10848:10967:11232:11639:11658:11914:12043:12517:12519:12663:12740:13069:13161:13229:13311:13357:13618:14096:14097:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: nail57_66d3facf40616
-X-Filterd-Recvd-Size: 2256
-Date: Fri, 9 Jan 2015 11:25:05 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Vaibhav Shinde <v.bhav.shinde@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, tj@kernel.org,
-        Davidlohr Bueso <dave@stgolabs.net>
-Subject: Re: Preemptionirqsoff latency issue
-Message-ID: <20150109112505.4ed9de41@gandalf.local.home>
-In-Reply-To: <CAB5gotu75cXeHKhn-GShOTKW7=2bVdYfeUpxM7kCSTRWRsC79Q@mail.gmail.com>
-References: <CAB5gottA3D_eJsHcGwO62fJtEqMqivX2kS5D-JhHphW9ADV88A@mail.gmail.com>
-	<20150109095603.GB22386@worktop.programming.kicks-ass.net>
-	<CAB5gotu75cXeHKhn-GShOTKW7=2bVdYfeUpxM7kCSTRWRsC79Q@mail.gmail.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Fri, 9 Jan 2015 11:26:04 -0500
+From: Vince Weaver <vincent.weaver@maine.edu>
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Fri, 9 Jan 2015 11:26:54 -0500 (EST)
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: Re: perf: PERF_FLAG_FD_OUTPUT has been broken since 2.6.35
+In-Reply-To: <20150109160051.GK29390@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.11.1501091123040.27178@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.11.1501081014460.24664@vincent-weaver-1.umelst.maine.edu> <20150109160051.GK29390@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Jan 2015 20:19:51 +0530
-Vaibhav Shinde <v.bhav.shinde@gmail.com> wrote:
 
-> Hi Peter,
+On Fri, 9 Jan 2015, Peter Zijlstra wrote:
+> > So is this worth fixing seeing as apparently no one uses this feature?
 > 
-> Thanks for you reply.
-> 
-> I am interested in scheduling latency, and using ftrace I see for my
-> application suffering from it, that's why I am digging in preemption/irq
-> disable time which might cause the latency.
-> 
-> My app runs on cpu0, while other cpus looks idle; as per my understanding
-> from your comment owner of the mutex is on the cpu other than cpu0, and
-> which is causing wait spin on cpu0.
-> Can this be the reason why latency is caused ?
-> If so, then I think I need to take care of the mutex lock which is called
-> from my code.
-> 
+> I think there's a fair argument for removing it, Ingo, Acme?
 
-If you download and install the latest trace-cmd, you may be able to
-get more information with its new command "profile".
+could the functionality be replaced with a subsequent call to
+	ioctl(PERF_EVENT_IOC_SET_OUTPUT)
+?
 
- # trace-cmd profile -o  file  workload
+Although I suppose there's a possibility for losing a small amount of data 
+or some other reason that PERF_FLAG_FD_OUTPUT was introduced in the first 
+place.
 
-Then look at the output in file.
+In addition, if we remove PERF_FLAG_FD_OUTPUT would there then be any 
+reason to keep PERF_FLAG_FD_NO_GROUP around?
 
-To limit the running to tracing only the workload:
-
- # trace-cmd profile -o file -F -c workload
-
-You'll need to use the latest that's in my repo. Use the master branch,
-as it has all the above features.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git
-
--- Steve
+Vince
