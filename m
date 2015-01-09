@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758135AbbAIRqx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 12:46:53 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:50059 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757761AbbAIRqu (ORCPT
+	id S1758159AbbAIRrU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 12:47:20 -0500
+Received: from mail-oi0-f44.google.com ([209.85.218.44]:55618 "EHLO
+	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757761AbbAIRq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 12:46:50 -0500
+	Fri, 9 Jan 2015 12:46:56 -0500
+Date: Fri, 9 Jan 2015 10:46:52 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Chuansheng Liu <chuansheng.liu@intel.com>, rjw@rjwysocki.net,
+        mister.freeman@laposte.net, aaron.lu@intel.com, tj@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] PCI: Add disabling pm async quirk for JMicron chips
+Message-ID: <20150109174652.GE6575@google.com>
+References: <1417763857-11993-1-git-send-email-chuansheng.liu@intel.com>
+ <Pine.LNX.4.44L0.1412051415180.13167-100000@ida.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20150109161302.GQ4574@brightrain.aerifal.cx>
-References: <1416830039-21952-1-git-send-email-drysdale@google.com>
- <1416830039-21952-6-git-send-email-drysdale@google.com> <54AFF813.7050604@gmail.com>
- <20150109161302.GQ4574@brightrain.aerifal.cx>
-From: David Drysdale <drysdale@google.com>
-Date: Fri, 9 Jan 2015 17:46:28 +0000
-Message-ID: <CAHse=S88Jy5ZKM_VY5onfvxX7dTMngnxuHfuLeSuzvKvQNP19A@mail.gmail.com>
-Subject: Re: [PATCHv10 man-pages 5/5] execveat.2: initial man page for execveat(2)
-To: Rich Felker <dalias@aerifal.cx>
-Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, sparclinux@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1412051415180.13167-100000@ida.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 9, 2015 at 4:13 PM, Rich Felker <dalias@aerifal.cx> wrote:
-> On Fri, Jan 09, 2015 at 04:47:31PM +0100, Michael Kerrisk (man-pages) wrote:
->> On 11/24/2014 12:53 PM, David Drysdale wrote:
->> > Signed-off-by: David Drysdale <drysdale@google.com>
->> > ---
->> >  man2/execveat.2 | 153 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->> >  1 file changed, 153 insertions(+)
->> >  create mode 100644 man2/execveat.2
->>
->> David,
->>
->> Thanks for the very nicely prepared man page. I've done
->> a few very light edits, and will release the version below
->> with the next man-pages release.
->>
->> I have one question. In the message accompanying
->> commit 51f39a1f0cea1cacf8c787f652f26dfee9611874 you wrote:
->>
->>   The filename fed to the executed program as argv[0] (or the name of the
->>   script fed to a script interpreter) will be of the form "/dev/fd/<fd>"
->>   (for an empty filename) or "/dev/fd/<fd>/<filename>", effectively
->>   reflecting how the executable was found.  This does however mean that
->>   execution of a script in a /proc-less environment won't work; also, script
->>   execution via an O_CLOEXEC file descriptor fails (as the file will not be
->>   accessible after exec).
->>
->> How does one produce this situation where the execed program sees
->> argv[0] as a /dev/fd path? (i.e., what would the execveat()
->> call look like?) I tried to produce this scenario, but could not.
->
-> I think this is wrong. argv[0] is an arbitrary string provided by the
-> caller and would never be derived from the fd passed.
+On Fri, Dec 05, 2014 at 02:18:40PM -0500, Alan Stern wrote:
+> On Fri, 5 Dec 2014, Chuansheng Liu wrote:
+> 
+> > Some history from
+> > commit e6b7e41cdd8c ("ata: Disabling the async PM for JMicron chip 363/361")
+> > ==
+> > Since v3.15, the PM feature of async noirq
+> > commit 76569faa62c4 ("PM / sleep: Asynchronous threads for resume_noirq") is introduced.
+> > 
+> > Then Jay hit one system resuming issue that one of the JMicron controller
+> > can not be powered up successfully.
+> > 
+> > His device tree is like below:
+> >                  +-1c.4-[02]--+-00.0  JMicron Technology Corp. JMB363 SATA/IDE Controller
+> >                  |            \-00.1  JMicron Technology Corp. JMB363 SATA/IDE Controller
+> > 
+> > After investigation, we found the the Micron chip 363 included
+> > one SATA controller(0000:02:00.0) and one PATA controller(0000:02:00.1),
+> > these two controllers do not have parent-children relationship,
+> > but the PATA controller only can be powered on after the SATA controller
+> > has finished the powering on.
+> > 
+> > If we enabled the async noirq(), then the below error is hit during noirq
+> > phase:
+> > pata_jmicron 0000:02:00.1: Refused to change power state, currently in D3
+> > Here for JMicron chip 363/361, we need forcedly to disable the async method.
+> 
+> You know, this is exactly why device_pm_wait_for_dev() exists -- so 
+> that asynchronous power-management operations can wait for other 
+> devices even when there's no parent-child relation.
+> 
+> You should try to use device_pm_wait_for_dev() instead of disabling 
+> async suspend/resume.
 
-Yeah, I think I just wrote that wrong, it's only relevant for scripts.
-As Rich says, for normal binaries argv[0] is just the argv[0] that
-was passed into the execve[at] call.  For a script, the code in
-fs/binfmt_script.c will remove the original argv[0] and put the
-interpreter name and the script filename (e.g. "/bin/sh",
-"/dev/fd/6/script") in as 2 arguments in its place.
+Dropping this patch for now, waiting for a response to Alan's suggestion.
 
-[As an aside, IIRC the filename does get put into the new
-process's memory, up above the environment strings -- but
-that copy isn't visible via argv nor envp.]
-
-> It's AT_EXECFN,
-> /proc/self/exe, and filenames shown elsewhere in /proc that may be
-> derived in odd ways.
->
-> I would also move the text about O_CLOEXEC to a BUGS or NOTES section
-> rather than the main description. The long-term intent should be that
-> script execution this way should work. IIRC this was discussed earlier
-> in the thread.
-
-I may be misremembering, but I thought we hoped to be able to fix
-execveat of a script without /proc in future, but didn't expect to fix
-execveat of a script via an O_CLOEXEC fd (because in the latter
-case the fd gets closed before the script interpreter runs, so even
-if the interpreter (or a special filesystem) does clever things for names
-starting with "/dev/fd/..." the file descriptor is already gone).
+Bjorn
