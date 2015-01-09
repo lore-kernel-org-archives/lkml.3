@@ -1,97 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933248AbbAIPun (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:50:43 -0500
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:52790 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933077AbbAIPuj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:50:39 -0500
-X-Sasl-enc: v8zxnR/FV4cAdQvIHUEIcRYP9lE1mwB8Sk4nAaYg6ZDV 1420818638
-Message-ID: <1420818636.31075.15.camel@stressinduktion.org>
-Subject: Re: [PATCH net] ipv6: Prevent ipv6_find_hdr() from returning ENOENT
- for valid non-first fragments
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Rahul Sharma <rsharma@arista.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
-Date: Fri, 09 Jan 2015 16:50:36 +0100
-In-Reply-To: <20150109114506.GA4857@salvia>
-References: <CAFB3abzYNYqtzd_n+Ym0Lo=DYbV0HPU=Tqw=stALNnu188hMKQ@mail.gmail.com>
-	 <20150106224706.GA7416@salvia>
-	 <CAFB3abwKpR1VqZXUrsexqveAZrA2LTSmTe8a=-H7z2HjAptjwA@mail.gmail.com>
-	 <1420627396.26870.36.camel@stressinduktion.org>
-	 <20150108205328.GA3361@salvia>
-	 <1420756756.1755002.211556745.0418D128@webmail.messagingengine.com>
-	 <20150109000546.GA3488@salvia>
-	 <CAFB3abwrjp61LLOk3RWwXYEq1g4QZUC8OTKuO2cAr+GbV3n4rw@mail.gmail.com>
-	 <1420803255.1978819.211762005.707EFFB9@webmail.messagingengine.com>
-	 <20150109114506.GA4857@salvia>
+	id S933270AbbAIPus (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:50:48 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:57897 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933077AbbAIPuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 10:50:46 -0500
+Message-ID: <1420818639.28652.5.camel@mm-sol.com>
+Subject: Re: [PATCH] iio: Simplify IIO provider access locking mechanism
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 09 Jan 2015 17:50:39 +0200
+In-Reply-To: <54AFF6C4.9020306@metafoo.de>
+References: <1420817893-5858-1-git-send-email-iivanov@mm-sol.com>
+	 <54AFF6C4.9020306@metafoo.de>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9 (3.12.9-1.fc21) 
+X-Mailer: Evolution 3.13.7-fta1.2~trusty 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fr, 2015-01-09 at 12:45 +0100, Pablo Neira Ayuso wrote:
-> Hi Hannes,
-> 
-> On Fri, Jan 09, 2015 at 12:34:15PM +0100, Hannes Frederic Sowa wrote:
-> > On Fri, Jan 9, 2015, at 08:18, Rahul Sharma wrote:
-> > > Hi Pablo,
-> > > 
-> > > On Fri, Jan 9, 2015 at 5:35 AM, Pablo Neira Ayuso <pablo@netfilter.org>
-> > > wrote:
-> > > > On Thu, Jan 08, 2015 at 11:39:16PM +0100, Hannes Frederic Sowa wrote:
-> > > >> Hi Pablo,
-> > > >>
-> > > >> On Thu, Jan 8, 2015, at 21:53, Pablo Neira Ayuso wrote:
-> > > >> > I'm afraid we cannot just get rid of that !ipv6_ext_hdr() check. The
-> > > >> > ipv6_find_hdr() function is designed to return the transport protocol.
-> > > >> > After the proposed change, it will return extension header numbers.
-> > > >> > This will break existing ip6tables rulesets since the `-p' option
-> > > >> > relies on this function to match the transport protocol.
-> > > >> >
-> > > >> > Note that the AH header is skipped (see code a bit below this
-> > > >> > problematic fragmentation handling) so the follow up header after the
-> > > >> > AH header is returned as the transport header.
-> > > >> >
-> > > >> > We can probably return the AH protocol number for non-1st fragments.
-> > > >> > However, that would be something new to ip6tables since nobody has
-> > > >> > ever seen packet matching `-p ah' rules. Thus, we restore control to
-> > > >> > the user to allow this, but we would accept all kind of fragmented AH
-> > > >> > traffic through the firewall since we cannot know what transport
-> > > >> > protocol contains from non-1st fragments (unless I'm missing anything,
-> > > >> > I need to have a closer look at this again tomorrow with fresher
-> > > >> > mind).
-> > > >>
-> > > >> The code in question is guarded by (_frag_off != 0), so we are
-> > > >> definitely processing a non-1st fragment currently. The -p match would
-> > > >> happen at the time when the packet is reassembled and thus ipv6_find_hdr
-> > > >> will find the real transport (final) header at this point (I hope I
-> > > >> followed the code correctly here).
-> > > >
-> > > > Then, Rahul should get things working by modprobing nf_defrag_ipv6.
-> > > 
-> > > I already had nf_defrag_ipv6 installed when the issue occured. But I
-> > > see ip6table_raw_hook returning NF_DROP for the second fragment.
+
+On Fri, 2015-01-09 at 16:41 +0100, Lars-Peter Clausen wrote:
+> On 01/09/2015 04:38 PM, Ivan T. Ivanov wrote:
+> > Instead of checking whether provider module is still
+> > loaded on every access to device just lock module to
+> > memory when client get reference to provider device.
 > > 
-> > That's what I expected. I think the change only affects hooks before
-> > reassembly.
 > 
-> reassembly happens at NF_IP6_PRI_CONNTRACK_DEFRAG (-400), so that
-> happens before NF_IP6_PRI_RAW (-300) in IPv6 which is where the raw
-> table is placed.
+> This has nothing to do with the module, it's about the device. In the Linux
+> device driver model as device can be unbound at any time and the IIO
+> framework needs to handle this.
+> 
 
-I tried to reproduce it, but couldn't get non-1st fragments getting
-dropped during traversal of the raw table. They get dropped earlier at
-during reassembly or pass.
+Hm. Probably i am missing something here, but is this
+still true if we have reference to device structure?
 
-I agree with Pablo, I also would like to see more data.
-
-Thanks,
-Hannes
-
-
+Regards,
+Ivan
