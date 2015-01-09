@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757134AbbAIMqU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 07:46:20 -0500
-Received: from 8bytes.org ([81.169.241.247]:60533 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756992AbbAIMqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 07:46:18 -0500
-Date: Fri, 9 Jan 2015 13:46:16 +0100
-From: "joro@8bytes.org" <joro@8bytes.org>
-To: "Wu, Feng" <feng.wu@intel.com>
-Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>, "gleb@kernel.org" <gleb@kernel.org>,
-        "pbonzini@redhat.com" <pbonzini@redhat.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>,
-        "eric.auger@linaro.org" <eric.auger@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [v3 00/26] Add VT-d Posted-Interrupts support
-Message-ID: <20150109124616.GB17298@8bytes.org>
-References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
- <E959C4978C3B6342920538CF579893F002327907@SHSMSX104.ccr.corp.intel.com>
+	id S1757260AbbAIMsr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 07:48:47 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:44960 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754840AbbAIMsq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 07:48:46 -0500
+Date: Fri, 9 Jan 2015 13:48:24 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com,
+        markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
+        acme@infradead.org
+Subject: Re: [PATCH v8 12/14] x86: perf: intel_pt: Intel PT PMU driver
+Message-ID: <20150109124824.GL3337@twins.programming.kicks-ass.net>
+References: <1415972627-37514-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1415972627-37514-13-git-send-email-alexander.shishkin@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <E959C4978C3B6342920538CF579893F002327907@SHSMSX104.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1415972627-37514-13-git-send-email-alexander.shishkin@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Feng,
+On Fri, Nov 14, 2014 at 03:43:45PM +0200, Alexander Shishkin wrote:
+> +static void pt_event_stop(struct perf_event *event, int mode)
+> +{
+> +	struct pt *pt = this_cpu_ptr(&pt_ctx);
+> +
+> +	ACCESS_ONCE(pt->handle_nmi) = 0;
 
-On Tue, Jan 06, 2015 at 01:10:19AM +0000, Wu, Feng wrote:
-> Ping...
-> 
-> Hi Joerg & David,
-> 
-> Could you please have a look at the IOMMU part of this series (patch 02 - 04, patch 06 - 09 , patch 26)?
-> 
-> Hi Thomas, Ingo, & Peter,
-> 
-> Could you please have a look at this series, especially for patch 01, 05, 21?
-
-I fear this conflicts somewhat with the irq-domain patches from Jiang
-Liu. Once we worked this out (should happen soon) I'll have a look at
-the VT-d posted interrupt patches.
-
-Regards,
-
-	Joerg
-
+Why is this needed? Will the hardware still generate interrupts if you
+stop the PT thing?
