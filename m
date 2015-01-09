@@ -1,82 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753231AbbAIWnl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 17:43:41 -0500
-Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:36335 "EHLO
-	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261AbbAIWni (ORCPT
+	id S1753233AbbAIWrK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 17:47:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37870 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751842AbbAIWrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 17:43:38 -0500
-Date: Fri, 9 Jan 2015 17:42:52 -0500
-From: Rich Felker <dalias@aerifal.cx>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: David Drysdale <drysdale@google.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, sparclinux@vger.kernel.org
-Subject: Re: [PATCHv10 man-pages 5/5] execveat.2: initial man page for
- execveat(2)
-Message-ID: <20150109224252.GY4574@brightrain.aerifal.cx>
-References: <20150109161302.GQ4574@brightrain.aerifal.cx>
- <CAHse=S88Jy5ZKM_VY5onfvxX7dTMngnxuHfuLeSuzvKvQNP19A@mail.gmail.com>
- <20150109204815.GR4574@brightrain.aerifal.cx>
- <20150109205626.GK22149@ZenIV.linux.org.uk>
- <20150109205926.GT4574@brightrain.aerifal.cx>
- <20150109210941.GL22149@ZenIV.linux.org.uk>
- <20150109212852.GU4574@brightrain.aerifal.cx>
- <20150109215042.GM22149@ZenIV.linux.org.uk>
- <20150109221728.GW4574@brightrain.aerifal.cx>
- <20150109223300.GO22149@ZenIV.linux.org.uk>
+	Fri, 9 Jan 2015 17:47:08 -0500
+Date: Fri, 9 Jan 2015 14:47:07 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: xiaomin1 <xiaoming.wang@intel.com>
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, chuansheng.liu@intel.com,
+        Zhang Dongxing <dongxing.zhang@intel.com>
+Subject: Re: [PATCH] move file->f_op->open out of mutex (misc_mtx) in
+ misc_open
+Message-ID: <20150109224707.GA3026@kroah.com>
+References: <1420504447-9670-1-git-send-email-xiaoming.wang@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150109223300.GO22149@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1420504447-9670-1-git-send-email-xiaoming.wang@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 10:33:00PM +0000, Al Viro wrote:
-> On Fri, Jan 09, 2015 at 05:17:28PM -0500, Rich Felker wrote:
-> > > Back then the procfs-free environments had been pushed as a serious argument
-> > > in favour of merging the damn thing.  Now you guys turn around and say that
-> > > we not only need procfs mounted, we need a yet-to-be-added kludge in there
-> > > to cope with the actual intended uses.
-> > 
-> > Reverting does not fix the problem. There is no way to make fexecve
-> > work for scripts without kernel support, and the needed kernel support
-> > without fexecve would be even nastier, since handling of /proc/self/fd
-> > magic-symlinks would need to be special-cased. The added fexecveat
-> > syscall supports fully /proc-less operation for non-scripts.
+On Tue, Jan 06, 2015 at 08:34:07AM +0800, xiaomin1 wrote:
+> misc_mtx was used to mutex misc_list.
+> But file->f_op->open may be blocked by downloading
+> firmware in some devices' open.
+> So move file->f_op->open out of mutex (misc_mtx)
+> in misc_open to avoid this block.
+> It also make code more efficiency.
 > 
-> Oh, yes it does.  It's not *our* problem if it's out of tree and not
-> a part of ABI.  That way if you need it, *you* get to come up with clean
-> implementation.  If it's in-tree you get leverage to push ugly kludges
-> further in.  And frankly, I don't trust you to abstain from using that
-> leverage in rather nasty ways.
-> 
-> Out of curiosity, how would you expect that "open only once" to work?
-> All reliable variants I see are beyond sick...
+> Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
+> Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
+> ---
+>  drivers/char/misc.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 
-Here's a very simple way it could work -- it could put the O_PATH fd
-on a previously-unused fd number, and put a special flag on the fd,
-like FD_CLOEXEC, but that causes the kernel to close it whenever it's
-opened. The pathname passed could then simply be /dev/fd/%d or
-/proc/self/fd/%d, and although this is presently dependent on /proc
-being mounted, virtual /dev/fd/* could someday be something completely
-independent of procfs. The kernel keeps all the freedom to choose how
-to pass the name to the interpreter. I'm not proposing any kernel
-API/ABI lock-in and I'm with you in opposing such lock-in.
 
-Rich
+Please fix up your "From:" line to match your signed-off-by line, as I
+can't take it the way you sent this.
+
+greg k-h
