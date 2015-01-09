@@ -1,59 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757157AbbAIN4u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 08:56:50 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:50613 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752669AbbAIN4t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 08:56:49 -0500
-Date: Fri, 9 Jan 2015 14:56:14 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Davidlohr Bueso <dave@stgolabs.net>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, bobby.prani@gmail.com,
-        borntraeger@de.ibm.com
-Subject: Re: [PATCH tip/core/rcu 01/14] rcu: Protect rcu_boost() lockless
- accesses with ACCESS_ONCE()
-Message-ID: <20150109135614.GI29390@twins.programming.kicks-ass.net>
-References: <20150107173215.GA897@linux.vnet.ibm.com>
- <1420651953-2651-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20150108094102.GD29390@twins.programming.kicks-ass.net>
- <20150108152230.GL5280@linux.vnet.ibm.com>
- <1420785714.25454.1.camel@stgolabs.net>
- <20150109134954.GO5280@linux.vnet.ibm.com>
+	id S1757511AbbAIN5h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 08:57:37 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:38622 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751748AbbAIN5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 08:57:35 -0500
+Message-ID: <54AFDE4A.2000205@ti.com>
+Date: Fri, 9 Jan 2015 19:27:30 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150109134954.GO5280@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>
+CC: <nm@ti.com>, <balbi@ti.com>, <george.cherian@ti.com>, <nsekhar@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] phy: ti-pipe3: Disable clocks on system suspend
+References: <1418990720-3638-1-git-send-email-rogerq@ti.com> <1418990720-3638-2-git-send-email-rogerq@ti.com>
+In-Reply-To: <1418990720-3638-2-git-send-email-rogerq@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 05:49:54AM -0800, Paul E. McKenney wrote:
-> > That reminds me, I think the new conversion for stores will most likely
-> > introduce silly arg bugs:
-> > 
-> > -       ACCESS_ONCE(a) = b;
-> > +       ASSIGN_ONCE(b, a);
+Hi Roger,
+
+On Friday 19 December 2014 05:35 PM, Roger Quadros wrote:
+> On system suspend, the runtime_suspend() driver hook doesn't get
+> called and so the clocks are not disabled in the driver.
+> This causes the L3INIT_960M_GFCLK and L3INIT_480M_GFCLK to remain
+> active on the DRA7 platform while in system suspend.
 > 
-> I was planning to do mine by hand for this sort of reason.
+> Add suspend/resume hooks to the driver.
+> In case of pcie-phy, the runtime_suspend hook gets called after
+
+This contradicts with the first line of your commit message. Is pcie-phy driver
+is an exception?
+
+Thanks
+Kishon
+
+> the suspend hook so we introduce a flag phy->enabled to keep
+> track if our clocks are enabled or not to prevent multiple
+> enable/disables.
 > 
-> Or are you thinking of something more subtle than the case where
-> "b" is an unparenthesized comma-separated expression?
-
-I think he's revering to the wrong way around-ness of the thing.
-
-Its a bit of a mixed bag on assignments, but for instance
-rcu_assign_pointer() takes them the right way around, as does
-atomic_set().
-
-So yes, I think the ASSIGN_ONCE() thing got the arguments the wrong way
-around.
-
-We could maybe still change it, before its in too long ?
+> Move enabling/disabling clock code into helper functions.
+> 
+> Reported-by: Nishant Menon <nm@ti.com>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>  drivers/phy/phy-ti-pipe3.c | 99 +++++++++++++++++++++++++++++++++++-----------
+>  1 file changed, 77 insertions(+), 22 deletions(-)
+> 
+> diff --git a/drivers/phy/phy-ti-pipe3.c b/drivers/phy/phy-ti-pipe3.c
+> index 1387b4d..e60ff14 100644
+> --- a/drivers/phy/phy-ti-pipe3.c
+> +++ b/drivers/phy/phy-ti-pipe3.c
+> @@ -28,6 +28,7 @@
+>  #include <linux/delay.h>
+>  #include <linux/phy/omap_control_phy.h>
+>  #include <linux/of_platform.h>
+> +#include <linux/spinlock.h>
+>  
+>  #define	PLL_STATUS		0x00000004
+>  #define	PLL_GO			0x00000008
+> @@ -83,6 +84,8 @@ struct ti_pipe3 {
+>  	struct clk		*div_clk;
+>  	struct pipe3_dpll_map	*dpll_map;
+>  	u8			id;
+> +	bool enabled;
+> +	spinlock_t lock;	/* serialize clock enable/disable */
+>  };
+>  
+>  static struct pipe3_dpll_map dpll_map_usb[] = {
+> @@ -303,6 +306,7 @@ static int ti_pipe3_probe(struct platform_device *pdev)
+>  		return -ENOMEM;
+>  
+>  	phy->dev		= &pdev->dev;
+> +	spin_lock_init(&phy->lock);
+>  
+>  	if (!of_device_is_compatible(node, "ti,phy-pipe3-pcie")) {
+>  		match = of_match_device(of_match_ptr(ti_pipe3_id_table),
+> @@ -425,24 +429,14 @@ static int ti_pipe3_remove(struct platform_device *pdev)
+>  
+>  #ifdef CONFIG_PM
+>  
+> -static int ti_pipe3_runtime_suspend(struct device *dev)
+> +static int ti_pipe3_enable_clocks(struct ti_pipe3 *phy)
+>  {
+> -	struct ti_pipe3	*phy = dev_get_drvdata(dev);
+> -
+> -	if (!IS_ERR(phy->wkupclk))
+> -		clk_disable_unprepare(phy->wkupclk);
+> -	if (!IS_ERR(phy->refclk))
+> -		clk_disable_unprepare(phy->refclk);
+> -	if (!IS_ERR(phy->div_clk))
+> -		clk_disable_unprepare(phy->div_clk);
+> -
+> -	return 0;
+> -}
+> +	int ret = 0;
+> +	unsigned long flags;
+>  
+> -static int ti_pipe3_runtime_resume(struct device *dev)
+> -{
+> -	u32 ret = 0;
+> -	struct ti_pipe3	*phy = dev_get_drvdata(dev);
+> +	spin_lock_irqsave(&phy->lock, flags);
+> +	if (phy->enabled)
+> +		goto err1;
+>  
+>  	if (!IS_ERR(phy->refclk)) {
+>  		ret = clk_prepare_enable(phy->refclk);
+> @@ -467,6 +461,9 @@ static int ti_pipe3_runtime_resume(struct device *dev)
+>  			goto err3;
+>  		}
+>  	}
+> +
+> +	phy->enabled = true;
+> +	spin_unlock_irqrestore(&phy->lock, flags);
+>  	return 0;
+>  
+>  err3:
+> @@ -478,19 +475,77 @@ err2:
+>  		clk_disable_unprepare(phy->refclk);
+>  
+>  err1:
+> +	spin_unlock_irqrestore(&phy->lock, flags);
+> +	return ret;
+> +}
+> +
+> +static void ti_pipe3_disable_clocks(struct ti_pipe3 *phy)
+> +{
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&phy->lock, flags);
+> +	if (!phy->enabled) {
+> +		spin_unlock_irqrestore(&phy->lock, flags);
+> +		return;
+> +	}
+> +
+> +	if (!IS_ERR(phy->wkupclk))
+> +		clk_disable_unprepare(phy->wkupclk);
+> +	if (!IS_ERR(phy->refclk))
+> +		clk_disable_unprepare(phy->refclk);
+> +	if (!IS_ERR(phy->div_clk))
+> +		clk_disable_unprepare(phy->div_clk);
+> +	phy->enabled = false;
+> +	spin_unlock_irqrestore(&phy->lock, flags);
+> +}
+> +
+> +static int ti_pipe3_runtime_suspend(struct device *dev)
+> +{
+> +	struct ti_pipe3	*phy = dev_get_drvdata(dev);
+> +
+> +	ti_pipe3_disable_clocks(phy);
+> +	return 0;
+> +}
+> +
+> +static int ti_pipe3_runtime_resume(struct device *dev)
+> +{
+> +	struct ti_pipe3	*phy = dev_get_drvdata(dev);
+> +	int ret = 0;
+> +
+> +	ret = ti_pipe3_enable_clocks(phy);
+>  	return ret;
+>  }
+>  
+> +static int ti_pipe3_suspend(struct device *dev)
+> +{
+> +	struct ti_pipe3	*phy = dev_get_drvdata(dev);
+> +
+> +	ti_pipe3_disable_clocks(phy);
+> +	return 0;
+> +}
+> +
+> +static int ti_pipe3_resume(struct device *dev)
+> +{
+> +	struct ti_pipe3	*phy = dev_get_drvdata(dev);
+> +	int ret;
+> +
+> +	ret = ti_pipe3_enable_clocks(phy);
+> +	if (ret)
+> +		return ret;
+> +
+> +	pm_runtime_disable(dev);
+> +	pm_runtime_set_active(dev);
+> +	pm_runtime_enable(dev);
+> +	return 0;
+> +}
+> +#endif
+> +
+>  static const struct dev_pm_ops ti_pipe3_pm_ops = {
+>  	SET_RUNTIME_PM_OPS(ti_pipe3_runtime_suspend,
+>  			   ti_pipe3_runtime_resume, NULL)
+> +	SET_SYSTEM_SLEEP_PM_OPS(ti_pipe3_suspend, ti_pipe3_resume)
+>  };
+>  
+> -#define DEV_PM_OPS     (&ti_pipe3_pm_ops)
+> -#else
+> -#define DEV_PM_OPS     NULL
+> -#endif
+> -
+>  #ifdef CONFIG_OF
+>  static const struct of_device_id ti_pipe3_id_table[] = {
+>  	{
+> @@ -518,7 +573,7 @@ static struct platform_driver ti_pipe3_driver = {
+>  	.remove		= ti_pipe3_remove,
+>  	.driver		= {
+>  		.name	= "ti-pipe3",
+> -		.pm	= DEV_PM_OPS,
+> +		.pm	= &ti_pipe3_pm_ops,
+>  		.of_match_table = of_match_ptr(ti_pipe3_id_table),
+>  	},
+>  };
+> 
