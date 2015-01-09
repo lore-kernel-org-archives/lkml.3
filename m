@@ -1,105 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933393AbbAIKzb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 05:55:31 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:62948 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932338AbbAIKz1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 05:55:27 -0500
-Message-ID: <54AFB389.4030807@huawei.com>
-Date: Fri, 9 Jan 2015 18:55:05 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S933401AbbAIKzr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 05:55:47 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:50330 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932867AbbAIKzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 05:55:45 -0500
+Date: Fri, 9 Jan 2015 11:55:41 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH 3/4] x86: open-code register save/restore in
+ trace_hardirqs thunks
+Message-ID: <20150109105541.GC13637@pd.tnic>
+References: <1420734315-30943-1-git-send-email-dvlasenk@redhat.com>
+ <1420734315-30943-4-git-send-email-dvlasenk@redhat.com>
 MIME-Version: 1.0
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-CC: <masami.hiramatsu.pt@hitachi.com>, <linux@arm.linux.org.uk>,
-        <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v20 08/11] ARM: kprobes: enable OPTPROBES for ARM 32
-References: <1420457376-77366-1-git-send-email-wangnan0@huawei.com>	 <1420785456-21900-1-git-send-email-wangnan0@huawei.com> <1420799154.4160.19.camel@linaro.org>
-In-Reply-To: <1420799154.4160.19.camel@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.90]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1420734315-30943-4-git-send-email-dvlasenk@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/1/9 18:25, Jon Medhurst (Tixy) wrote:
-> On Fri, 2015-01-09 at 14:37 +0800, Wang Nan wrote:
->> This patch introduce kprobeopt for ARM 32.
->>
->> Limitations:
->>  - Currently only kernel compiled with ARM ISA is supported.
->>
->>  - Offset between probe point and optinsn slot must not larger than
->>    32MiB. Masami Hiramatsu suggests replacing 2 words, it will make
->>    things complex. Futher patch can make such optimization.
->>
->> Kprobe opt on ARM is relatively simpler than kprobe opt on x86 because
->> ARM instruction is always 4 bytes aligned and 4 bytes long. This patch
->> replace probed instruction by a 'b', branch to trampoline code and then
->> calls optimized_callback(). optimized_callback() calls opt_pre_handler()
->> to execute kprobe handler. It also emulate/simulate replaced instruction.
->>
->> When unregistering kprobe, the deferred manner of unoptimizer may leave
->> branch instruction before optimizer is called. Different from x86_64,
->> which only copy the probed insn after optprobe_template_end and
->> reexecute them, this patch call singlestep to emulate/simulate the insn
->> directly. Futher patch can optimize this behavior.
->>
->> Signed-off-by: Wang Nan <wangnan0@huawei.com>
->> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
->> Reviewed-by: Jon Medhurst (Tixy) <tixy@linaro.org>
->> Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
->> Cc: Will Deacon <will.deacon@arm.com>
->> ---
+On Thu, Jan 08, 2015 at 05:25:14PM +0100, Denys Vlasenko wrote:
+> This is a preparatory patch for change in "struct pt_regs"
+> handling in entry_64.S.
 > 
-> [...]
+> trace_hardirqs thunks were (ab)using a part of pt_regs
+> handling code, namely SAVE_ARGS/RESTORE_ARGS macros,
+> to save/restore registers across C function calls.
 > 
->> +asm (
->> +			".global optprobe_template_entry\n"
->> +			"optprobe_template_entry:\n"
->> +			".global optprobe_template_sub_sp\n"
->> +			"optprobe_template_sub_sp:"
->> +			"	sub	sp, sp, #0xff\n"
->> +			"	stmia	sp, {r0 - r14} \n"
->> +			".global optprobe_template_add_sp\n"
->> +			"optprobe_template_add_sp:"
->> +			"	add	r3, sp, #0xff\n"
->> +			"	str	r3, [sp, #52]\n"
->> +			"	mrs	r4, cpsr\n"
->> +			"	str	r4, [sp, #64]\n"
->> +			"	mov	r1, sp\n"
->> +			"	ldr	r0, 1f\n"
->> +			"	ldr	r2, 2f\n"
->> +			/*
->> +			 * AEABI requires an 8-bytes alignment stack. If
->> +			 * SP % 8 != 0 (SP % 4 == 0 should be ensured),
->> +			 * alloc more bytes here.
->> +			 */
->> +			"	and	r4, sp, #4\n"
->> +			"	sub	sp, sp, r4\n"
->> +#if __LINUX_ARM_ARCH__ >= 5
->> +			"	blx	r2\n"
->> +#else
->> +			"	mov     lr, pc\n"
->> +			"	bx	r2\n"
+> Since SAVE_ARGS is going to be changed, open-code
+> register saving/restoring here.
 > 
-> I think the BX instruction is not supported for ARMv4 chips that don't
-> have Thumb support (e.g. SA110), at least an old ARM ARM I have says BX
-> is supported on "Version 5 and above, and T variants of version 4".
-> Though building assabet_defconfig with kprobes enabled doesn't produce
-> an error for the BX instruction (!?)
+> Incidentally, this removes a bit of dead code:
+> one SAVE_ARGS was used just to emit a CFI annotation,
+> but it also generated unreachable assembly insns.
 > 
-> To be safe I would be tempted to use "mov pc, r2" instead. Again, if you
-> agree, I'll change this in the patch in the branch I'm putting together.
+> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+> CC: Linus Torvalds <torvalds@linux-foundation.org>
+> CC: Oleg Nesterov <oleg@redhat.com>
+> CC: "H. Peter Anvin" <hpa@zytor.com>
+> CC: Andy Lutomirski <luto@amacapital.net>
+> CC: Frederic Weisbecker <fweisbec@gmail.com>
+> CC: X86 ML <x86@kernel.org>
+> CC: Alexei Starovoitov <ast@plumgrid.com>
+> CC: Will Drewry <wad@chromium.org>
+> CC: Kees Cook <keescook@chromium.org>
+> CC: linux-kernel@vger.kernel.org
+> ---
+>  arch/x86/lib/thunk_64.S | 29 ++++++++++++++++++++++++-----
+>  1 file changed, 24 insertions(+), 5 deletions(-)
 > 
-> [...]
-> 
-Sure. I tested a function pointer calling and found that gcc generates
-'mov pc, r2', and there is no need for ISA switching.
+> diff --git a/arch/x86/lib/thunk_64.S b/arch/x86/lib/thunk_64.S
+> index b30b5eb..03a3883 100644
+> --- a/arch/x86/lib/thunk_64.S
+> +++ b/arch/x86/lib/thunk_64.S
+> @@ -16,10 +16,20 @@
+>  \name:
+>  	CFI_STARTPROC
+>  
+> -	/* this one pushes 9 elems, the next one would be %rIP */
+> -	SAVE_ARGS
+> +	subq  $9*8, %rsp
+> +	CFI_ADJUST_CFA_OFFSET 9*8
+> +	movq_cfi r11, 0*8
+> +	movq_cfi r10, 1*8
+> +	movq_cfi r9,  2*8
+> +	movq_cfi r8,  3*8
+> +	movq_cfi rax, 4*8
+> +	movq_cfi rcx, 5*8
+> +	movq_cfi rdx, 6*8
+> +	movq_cfi rsi, 7*8
+> +	movq_cfi rdi, 8*8
+>  
+>  	.if \put_ret_addr_in_rdi
+> +	/* 9*8(%rsp) is return addr on stack */
+>  	movq_cfi_restore 9*8, rdi
+>  	.endif
+>  
+> @@ -45,11 +55,20 @@
+>  #endif
+>  #endif
+>  
+> -	/* SAVE_ARGS below is used only for the .cfi directives it contains. */
+>  	CFI_STARTPROC
+> -	SAVE_ARGS
+> +	CFI_ADJUST_CFA_OFFSET 9*8
+>  restore:
+> -	RESTORE_ARGS
+> +	movq_cfi_restore 0*8, r11
+> +	movq_cfi_restore 1*8, r10
+> +	movq_cfi_restore 2*8, r9
+> +	movq_cfi_restore 3*8, r8
+> +	movq_cfi_restore 4*8, rax
+> +	movq_cfi_restore 5*8, rcx
+> +	movq_cfi_restore 6*8, rdx
+> +	movq_cfi_restore 7*8, rsi
+> +	movq_cfi_restore 8*8, rdi
+> +	addq 9*8, %rsp
+> +	CFI_ADJUST_CFA_OFFSET -9*8
 
+The only nitpick I'd have with this is can we keep the register
+saving/restoring order in the code the same as in the SAVE_/RESTORE_ARGS
+macros?
+
+SAVE_ARGS starts with the highest offset 9*8, rdi and ends at 0*8 and
+r11 and RESTORE_ARGS does that in reverse.
+
+Also, can you post the struct pt_regs change too so that we know where
+this is going?
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
