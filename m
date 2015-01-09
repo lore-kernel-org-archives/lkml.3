@@ -1,91 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757750AbbAIN7t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 08:59:49 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58994 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757730AbbAIN7s (ORCPT
+	id S1757705AbbAIN72 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 08:59:28 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:38759 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757188AbbAIN70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 08:59:48 -0500
-Date: Fri, 9 Jan 2015 13:59:07 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Anatol Pomozov <anatol.pomozov@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, John Stultz <john.stultz@linaro.org>,
-        Paul Walmsley <paul@pwsan.com>, marc.zyngier@arm.com
-Subject: Re: [PATCH] timekeeping: Move persistent clock registration code
- from ARM to kernel
-Message-ID: <20150109135907.GF12942@leverpostej>
-References: <1415388855-35074-1-git-send-email-anatol.pomozov@gmail.com>
- <20141110095325.GC12126@ulmo>
- <CAOMFOmXpAm5iKCLFyorTW+n9YmgZMmrDGGe736tJX8C6BYQv-A@mail.gmail.com>
- <alpine.DEB.2.11.1411132334400.3935@nanos>
- <CAOMFOmVziftM=pWGG-L9J-E6AHYAK7k9bmBcpS1adPboLciX9g@mail.gmail.com>
- <alpine.DEB.2.11.1411150115390.3909@nanos>
- <CAOMFOmV5=tes6Ak1eUKb2qircp8ba6jt6v-bg66Kp_-jYk9m2w@mail.gmail.com>
- <alpine.DEB.2.11.1411150154280.3909@nanos>
- <alpine.DEB.2.11.1411150212210.3909@nanos>
- <20150109094913.GB27845@ulmo>
+	Fri, 9 Jan 2015 08:59:26 -0500
+Message-ID: <54AFDEB9.3060402@ti.com>
+Date: Fri, 9 Jan 2015 19:29:21 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150109094913.GB27845@ulmo>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>
+CC: <nm@ti.com>, <balbi@ti.com>, <george.cherian@ti.com>, <nsekhar@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] phy: ti-pipe3: Fix SATA across suspend/resume
+References: <1418990720-3638-1-git-send-email-rogerq@ti.com> <1418990720-3638-3-git-send-email-rogerq@ti.com> <54AE6758.7030501@ti.com>
+In-Reply-To: <54AE6758.7030501@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 09:49:14AM +0000, Thierry Reding wrote:
-> On Sat, Nov 15, 2014 at 02:38:00AM +0100, Thomas Gleixner wrote:
-> > On Sat, 15 Nov 2014, Thomas Gleixner wrote:
-> > > On Fri, 14 Nov 2014, Anatol Pomozov wrote:
-> > > > On Fri, Nov 14, 2014 at 4:18 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > > > >> So what I suppose to do with my patch? If it does not work could
-> > > > >> anyone provide patch that removes ARM arch dependency from
-> > > > >> tegra20_timer.c?
-> > > > >
-> > > > > Huch? You want other people to solve your problems?
-> > > > 
-> > > > This is not the point. I provided patch that fixes the issue. Other
-> > > > people said that they have ideas how to do it different (and better)
-> > > > way. So I am asking to share these ideas represented as a patch.
-> > > 
-> > > That's not the way it works.
-> > > 
-> > > You sent a patch to solve an problem which you are facing.
-> > > 
-> > > Now the people who review the patch think that there is a better
-> > > approach than moving code from arm/ to the timekeeping core code.
-> > > 
-> > > So it's up to you to come up with a patch which solves the problem in
-> > > the right way.
-> > 
-> > And just for the record this whole thing is just hilarious.
-> > 
-> > ARM64 selects ARM_ARCH_TIMER which registers the architected timer as
-> > the primary clocksource.
-> > 
-> > Now that timer has the following flag set:
-> > 
-> >     CLOCK_SOURCE_SUSPEND_NONSTOP
-> > 
-> > And that flag causes the core timekeeping code to use the clocksource
-> > to figure out the time which the machine spent in suspend.
+Hi Roger,
+
+On Thursday 08 January 2015 04:47 PM, Roger Quadros wrote:
+> Failed test case: Boot without SATA drive connected. Suspend/resume
+> the board and then connect SATA drive. It fails to enumerate.
 > 
-> As I understand it the architected timer will be turned off along with
-> the rest of the CPU complex on Tegra. I'm not sure if that's specific to
-> Tegra or something that other SoCs may do as well.
+> Due to Errata i783 "SATA Lockup After SATA DPLL Unlock/Relock"
+> we can't allow SATA DPLL to be in the unlocked state.
+> The SATA refclk (sata_ref_clk) is the source of the SATA_DPLL.
+> Till now this clock was controlled by the AHCI SATA driver and was being
+> shut off  during system suspend (if the SATA drive was not already attached)
+> causing the SATA DPLL to be unlocked and so causing errata i783.
+> 
+> To prevent sata_ref_clk from being disabled, we move the control of
+> this clock from the SATA AHCI driver to the SATA PHY driver and prevent
+> it from being disabled.
+> 
+> This also fixes the issue of SATA not working on OMAP5/DRA7 when
+> AHCI platform driver is built as a module.
 
-That doesn't sound right to me: the architecture specifies that the
-system counter must be implemented in an always-on power domain.
+I feel the dt patches and the PHY patches can go separately. Can you split and
+re-send?
 
-Note that that only applies to the counter, not the timers (as the
-comparators can be turned off with the CPUs).
+Thanks
+Kishon
 
-Mark.
+> 
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+> v2: don't bail out for missing refclk on SATA phy to work with older broken DTBs.
+> 
+>  arch/arm/boot/dts/dra7.dtsi  |  4 ++--
+>  arch/arm/boot/dts/omap5.dtsi |  4 ++--
+>  drivers/phy/phy-ti-pipe3.c   | 57 +++++++++++++++++++++++++++++++-------------
+>  3 files changed, 45 insertions(+), 20 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+> index 22771bc..8d2a635 100644
+> --- a/arch/arm/boot/dts/dra7.dtsi
+> +++ b/arch/arm/boot/dts/dra7.dtsi
+> @@ -1090,8 +1090,8 @@
+>  				      <0x4A096800 0x40>; /* pll_ctrl */
+>  				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
+>  				ctrl-module = <&omap_control_sata>;
+> -				clocks = <&sys_clkin1>;
+> -				clock-names = "sysclk";
+> +				clocks = <&sys_clkin1>, <&sata_ref_clk>;
+> +				clock-names = "sysclk", "refclk";
+>  				#phy-cells = <0>;
+>  			};
+>  
+> diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+> index b321fdf..bb498e7 100644
+> --- a/arch/arm/boot/dts/omap5.dtsi
+> +++ b/arch/arm/boot/dts/omap5.dtsi
+> @@ -929,8 +929,8 @@
+>  				      <0x4A096800 0x40>; /* pll_ctrl */
+>  				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
+>  				ctrl-module = <&omap_control_sata>;
+> -				clocks = <&sys_clkin>;
+> -				clock-names = "sysclk";
+> +				clocks = <&sys_clkin>, <&sata_ref_clk>;
+> +				clock-names = "sysclk", "refclk";
+>  				#phy-cells = <0>;
+>  			};
+>  		};
+> diff --git a/drivers/phy/phy-ti-pipe3.c b/drivers/phy/phy-ti-pipe3.c
+> index e60ff14..456dec2 100644
+> --- a/drivers/phy/phy-ti-pipe3.c
+> +++ b/drivers/phy/phy-ti-pipe3.c
+> @@ -85,6 +85,7 @@ struct ti_pipe3 {
+>  	struct pipe3_dpll_map	*dpll_map;
+>  	u8			id;
+>  	bool enabled;
+> +	bool refclk_enabled;	/* this flag is needed specifically for SATA */
+>  	spinlock_t lock;	/* serialize clock enable/disable */
+>  };
+>  
+> @@ -333,21 +334,24 @@ static int ti_pipe3_probe(struct platform_device *pdev)
+>  		}
+>  	}
+>  
+> +	phy->refclk = devm_clk_get(phy->dev, "refclk");
+> +	if (IS_ERR(phy->refclk)) {
+> +		dev_err(&pdev->dev, "unable to get refclk\n");
+> +		/* older DTBs have missing refclk in SATA PHY
+> +		 * so don't bail out in case of SATA PHY.
+> +		 */
+> +		if (!of_device_is_compatible(node, "ti,phy-pipe3-sata"))
+> +			return PTR_ERR(phy->refclk);
+> +	}
+> +
+>  	if (!of_device_is_compatible(node, "ti,phy-pipe3-sata")) {
+>  		phy->wkupclk = devm_clk_get(phy->dev, "wkupclk");
+>  		if (IS_ERR(phy->wkupclk)) {
+>  			dev_err(&pdev->dev, "unable to get wkupclk\n");
+>  			return PTR_ERR(phy->wkupclk);
+>  		}
+> -
+> -		phy->refclk = devm_clk_get(phy->dev, "refclk");
+> -		if (IS_ERR(phy->refclk)) {
+> -			dev_err(&pdev->dev, "unable to get refclk\n");
+> -			return PTR_ERR(phy->refclk);
+> -		}
+>  	} else {
+>  		phy->wkupclk = ERR_PTR(-ENODEV);
+> -		phy->refclk = ERR_PTR(-ENODEV);
+>  	}
+>  
+>  	if (of_device_is_compatible(node, "ti,phy-pipe3-pcie")) {
+> @@ -428,6 +432,29 @@ static int ti_pipe3_remove(struct platform_device *pdev)
+>  }
+>  
+>  #ifdef CONFIG_PM
+> +static int ti_pipe3_enable_refclk(struct ti_pipe3 *phy)
+> +{
+> +	if (!IS_ERR(phy->refclk) && !phy->refclk_enabled) {
+> +		int ret;
+> +
+> +		ret = clk_prepare_enable(phy->refclk);
+> +		if (ret) {
+> +			dev_err(phy->dev, "Failed to enable refclk %d\n", ret);
+> +			return ret;
+> +		}
+> +		phy->refclk_enabled = true;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static void ti_pipe3_disable_refclk(struct ti_pipe3 *phy)
+> +{
+> +	if (!IS_ERR(phy->refclk))
+> +		clk_disable_unprepare(phy->refclk);
+> +
+> +	phy->refclk_enabled = false;
+> +}
+>  
+>  static int ti_pipe3_enable_clocks(struct ti_pipe3 *phy)
+>  {
+> @@ -438,13 +465,9 @@ static int ti_pipe3_enable_clocks(struct ti_pipe3 *phy)
+>  	if (phy->enabled)
+>  		goto err1;
+>  
+> -	if (!IS_ERR(phy->refclk)) {
+> -		ret = clk_prepare_enable(phy->refclk);
+> -		if (ret) {
+> -			dev_err(phy->dev, "Failed to enable refclk %d\n", ret);
+> -			goto err1;
+> -		}
+> -	}
+> +	ret = ti_pipe3_enable_refclk(phy);
+> +	if (ret)
+> +		goto err1;
+>  
+>  	if (!IS_ERR(phy->wkupclk)) {
+>  		ret = clk_prepare_enable(phy->wkupclk);
+> @@ -474,6 +497,7 @@ err2:
+>  	if (!IS_ERR(phy->refclk))
+>  		clk_disable_unprepare(phy->refclk);
+>  
+> +	ti_pipe3_disable_refclk(phy);
+>  err1:
+>  	spin_unlock_irqrestore(&phy->lock, flags);
+>  	return ret;
+> @@ -491,8 +515,9 @@ static void ti_pipe3_disable_clocks(struct ti_pipe3 *phy)
+>  
+>  	if (!IS_ERR(phy->wkupclk))
+>  		clk_disable_unprepare(phy->wkupclk);
+> -	if (!IS_ERR(phy->refclk))
+> -		clk_disable_unprepare(phy->refclk);
+> +	/* Don't disable refclk for SATA PHY due to Errata i783 */
+> +	if (!of_device_is_compatible(phy->dev->of_node, "ti,phy-pipe3-sata"))
+> +		ti_pipe3_disable_refclk(phy);
+>  	if (!IS_ERR(phy->div_clk))
+>  		clk_disable_unprepare(phy->div_clk);
+>  	phy->enabled = false;
+> 
