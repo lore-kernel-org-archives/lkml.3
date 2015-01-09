@@ -1,124 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518AbbAICQm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 21:16:42 -0500
-Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:5177 "EHLO
-	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751890AbbAICQl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 21:16:41 -0500
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
-CC: "'Will Deacon'" <will.deacon@arm.com>,
-        "'Ard Biesheuvel'" <ard.biesheuvel@linaro.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'akinobu.mita@gmail.com'" <akinobu.mita@gmail.com>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'Joe Perches'" <joe@perches.com>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 9 Jan 2015 10:16:32 +0800
-Subject: RE: [RFC V6 2/3] arm:add bitrev.h file to support rbit instruction
-Thread-Topic: [RFC V6 2/3] arm:add bitrev.h file to support rbit instruction
-Thread-Index: AdArcq8uzjbeRP0XTp2yrVmbjjbdhgAPqq6A
-Message-ID: <35FD53F367049845BC99AC72306C23D103EDAF89E195@CNBJMBX05.corpusers.net>
-References: <20141030120127.GC32589@arm.com>
- <CAKv+Gu9g5Q6fjPUy+P8YxkeDrH+bdO4kKGnxTQZRFhQpgPxaPA@mail.gmail.com>
- <20141030135749.GE32589@arm.com>
- <35FD53F367049845BC99AC72306C23D103E010D18272@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18273@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18275@CNBJMBX05.corpusers.net>
- <20141113235322.GC4042@n2100.arm.linux.org.uk>
- <35FD53F367049845BC99AC72306C23D103E010D1829B@CNBJMBX05.corpusers.net>
- <20141114095812.GG4042@n2100.arm.linux.org.uk>
- <35FD53F367049845BC99AC72306C23D103E688B313C6@CNBJMBX05.corpusers.net>
- <20150108184059.GZ12302@n2100.arm.linux.org.uk>
-In-Reply-To: <20150108184059.GZ12302@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753870AbbAICR4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 21:17:56 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:57391 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751151AbbAICRz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jan 2015 21:17:55 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgMTALM5r1R5LLLkPGdsb2JhbABcgwaBKoI2g3mtFwaYJgICAQECgRZEAQEBAQEGAQEBATg7hAwBAQEDATocGAsFCwgDGAklDwUlAwcaE4gkB8cyAQEIAgEfGIVtiXQHhCkFhTGSCIEPgnGFe4d0hCQqMYJDAQEB
+Date: Fri, 9 Jan 2015 13:17:50 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>
+Cc: linux-fsdevel@vger.kernel.org, Eric Sandeen <sandeen@sandeen.net>,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [PATCH v2] xfs: use generic FS_IOC_GOINGDOWN for ioctl
+Message-ID: <20150109021750.GO25000@dastard>
+References: <1420740661-72288-2-git-send-email-jaegeuk@kernel.org>
+ <54AEE06C.90806@sandeen.net>
+ <20150108201843.GA74570@jaegeuk-mac02>
+ <54AEE98D.5010103@sandeen.net>
+ <20150108205416.GE25000@dastard>
+ <20150108211853.GB74570@jaegeuk-mac02>
+ <20150108220412.GI25000@dastard>
+ <20150108221630.GA76957@jaegeuk-mac02>
+ <20150109014151.GB79749@jaegeuk-mac02>
+ <20150109014833.GA80010@jaegeuk-mac02>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150109014833.GA80010@jaegeuk-mac02>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk]
-> Sent: Friday, January 09, 2015 2:41 AM
-> To: Wang, Yalin
-> Cc: 'Will Deacon'; 'Ard Biesheuvel'; 'linux-kernel@vger.kernel.org';
-> 'akinobu.mita@gmail.com'; 'linux-mm@kvack.org'; 'Joe Perches'; 'linux-arm-
-> kernel@lists.infradead.org'
-> Subject: Re: [RFC V6 2/3] arm:add bitrev.h file to support rbit instruction
+On Thu, Jan 08, 2015 at 05:48:33PM -0800, Jaegeuk Kim wrote:
+> Change log from v1:
+>  o remove the obsolete options.
 > 
-> On Mon, Nov 17, 2014 at 10:38:58AM +0800, Wang, Yalin wrote:
-> > Joe has submitted patches to maintainers, So we need wait for them to
-> > be accepted .
+> -- >8 --
 > 
-> I ran these patches through my autobuilder, and while most builds didn't
-> seem to be a problem, the randconfigs found errors:
+> This patch uses XFS_IOC_GOINGDOWN for a generic ioctl command, FS_IOC_GOINGDOWN.
+
+Please send the initial rename patch and the XFS changing patches as
+a linked series to the same mailing lists.
+
+> Cc: Dave Chinner <david@fromorbit.com>
+> Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+> ---
+>  fs/xfs/xfs_fs.h    | 9 +--------
+>  fs/xfs/xfs_fsops.c | 6 +++---
+>  2 files changed, 4 insertions(+), 11 deletions(-)
 > 
-> /tmp/ccbiuDjS.s:137: Error: selected processor does not support ARM mode
-> `rbit r3,r2'
-> /tmp/ccbiuDjS.s:145: Error: selected processor does not support ARM mode
-> `rbit r0,r1'
-> make[4]: *** [drivers/iio/amplifiers/ad8366.o] Error 1
-> 
-> /tmp/ccFhnoO3.s:6789: Error: selected processor does not support ARM mode
-> `rbit r2,r2'
-> make[4]: *** [drivers/mtd/devices/docg3.o] Error 1
-> 
-> /tmp/cckMf2pp.s:239: Error: selected processor does not support ARM mode
-> `rbit ip,ip'
-> /tmp/cckMf2pp.s:241: Error: selected processor does not support ARM mode
-> `rbit r2,r2'
-> /tmp/cckMf2pp.s:248: Error: selected processor does not support ARM mode
-> `rbit lr,lr'
-> /tmp/cckMf2pp.s:250: Error: selected processor does not support ARM mode
-> `rbit r3,r3'
-> make[5]: *** [drivers/video/fbdev/nvidia/nvidia.o] Error 1
-> 
-> /tmp/ccTgULsO.s:1151: Error: selected processor does not support ARM mode
-> `rbit r1,r1'
-> /tmp/ccTgULsO.s:1158: Error: selected processor does not support ARM mode
-> `rbit r0,r0'
-> /tmp/ccTgULsO.s:1164: Error: selected processor does not support ARM mode
-> `rbit ip,ip'
-> /tmp/ccTgULsO.s:1166: Error: selected processor does not support ARM mode
-> `rbit r3,r3'
-> /tmp/ccTgULsO.s:1227: Error: selected processor does not support ARM mode
-> `rbit r5,r5'
-> /tmp/ccTgULsO.s:1229: Error: selected processor does not support ARM mode
-> `rbit lr,lr'
-> /tmp/ccTgULsO.s:1236: Error: selected processor does not support ARM mode
-> `rbit r0,r0'
-> /tmp/ccTgULsO.s:1238: Error: selected processor does not support ARM mode
-> `rbit r3,r3'
-> make[5]: *** [drivers/video/fbdev/nvidia/nv_accel.o] Error 1
-> 
-> The root cause is that the kernel being built is supposed to support both
-> ARMv7 and ARMv6K CPUs.  However, "rbit" is only available on
-> ARMv6T2 (thumb2) and ARMv7, and not plain ARMv6 or ARMv6K CPUs.
-> 
-In the patch that you applied:
-8205/1 	add bitrev.h file to support rbit instruction
+> diff --git a/fs/xfs/xfs_fs.h b/fs/xfs/xfs_fs.h
+> index 18dc721..a44f528 100644
+> --- a/fs/xfs/xfs_fs.h
+> +++ b/fs/xfs/xfs_fs.h
+> @@ -482,13 +482,6 @@ typedef struct xfs_swapext
+>  } xfs_swapext_t;
+>  
+>  /*
+> - * Flags for going down operation
+> - */
+> -#define XFS_FSOP_GOING_FLAGS_DEFAULT		0x0	/* going down */
+> -#define XFS_FSOP_GOING_FLAGS_LOGFLUSH		0x1	/* flush log but not data */
+> -#define XFS_FSOP_GOING_FLAGS_NOLOGFLUSH		0x2	/* don't flush log nor data */
 
-I have add :
-+	select HAVE_ARCH_BITREVERSE if ((CPU_V7M || CPU_V7) && !CPU_V6)
+We are going to need those to remain as we have to support them
+forever more.
 
-If you build kernel support ARMv6K, should CONFIG_CPU_V6=y, isn't it ?
-Then will not build hardware rbit instruction, isn't it ?
+i.e.
 
-Thanks
+#define XFS_FSOP_GOING_FLAGS_DEFAULT	FS_SHUTDOWN_FULLSYNC
+#define XFS_FSOP_GOING_FLAGS_LOGFLUSH	FS_SHUTDOWN_METASYNC
+#define XFS_FSOP_GOING_FLAGS_NOLOGFLUSH	FS_SHUTDOWN_NOSYNC
 
+> -
+> -/*
+>   * ioctl commands that are used by Linux filesystems
+>   */
+>  #define XFS_IOC_GETXFLAGS	FS_IOC_GETFLAGS
+> @@ -555,7 +548,7 @@ typedef struct xfs_swapext
+>  #define XFS_IOC_ATTRLIST_BY_HANDLE   _IOW ('X', 122, struct xfs_fsop_attrlist_handlereq)
+>  #define XFS_IOC_ATTRMULTI_BY_HANDLE  _IOW ('X', 123, struct xfs_fsop_attrmulti_handlereq)
+>  #define XFS_IOC_FSGEOMETRY	     _IOR ('X', 124, struct xfs_fsop_geom)
+> -#define XFS_IOC_GOINGDOWN	     _IOR ('X', 125, __uint32_t)
+> +#define XFS_IOC_GOINGDOWN	     FS_IOC_GOINGDOWN
+>  /*	XFS_IOC_GETFSUUID ---------- deprecated 140	 */
 
+Can we call the new ioctl name FS_IOC_SHUTDOWN?
 
+Cheers,
 
-
-
-
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
