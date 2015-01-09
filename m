@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755703AbbAIHS2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 02:18:28 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:37126 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754079AbbAIHSZ (ORCPT
+	id S1755590AbbAIIC3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 03:02:29 -0500
+Received: from smtp-out-084.synserver.de ([212.40.185.84]:1106 "EHLO
+	smtp-out-084.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658AbbAIIC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 02:18:25 -0500
+	Fri, 9 Jan 2015 03:02:28 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 21981
+Message-ID: <54AF8B0C.2050301@metafoo.de>
+Date: Fri, 09 Jan 2015 09:02:20 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <20150109000546.GA3488@salvia>
-References: <CAFB3abzYNYqtzd_n+Ym0Lo=DYbV0HPU=Tqw=stALNnu188hMKQ@mail.gmail.com>
-	<20150106224706.GA7416@salvia>
-	<CAFB3abwKpR1VqZXUrsexqveAZrA2LTSmTe8a=-H7z2HjAptjwA@mail.gmail.com>
-	<1420627396.26870.36.camel@stressinduktion.org>
-	<20150108205328.GA3361@salvia>
-	<1420756756.1755002.211556745.0418D128@webmail.messagingengine.com>
-	<20150109000546.GA3488@salvia>
-Date: Fri, 9 Jan 2015 12:48:24 +0530
-Message-ID: <CAFB3abwrjp61LLOk3RWwXYEq1g4QZUC8OTKuO2cAr+GbV3n4rw@mail.gmail.com>
-Subject: Re: [PATCH net] ipv6: Prevent ipv6_find_hdr() from returning ENOENT
- for valid non-first fragments
-From: Rahul Sharma <rsharma@arista.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Jianqun Xu <jay.xu@rock-chips.com>, lgirdwood@gmail.com, heiko@sntech.de,
+        broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
+        sonnyrao@chromium.org
+CC: linux-rockchip@lists.infradead.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [alsa-devel] [PATCH] ASoC: rockchip: i2s: add rockchip_dmaengine_pcm_config
+References: <1420768369-6681-1-git-send-email-jay.xu@rock-chips.com>
+In-Reply-To: <1420768369-6681-1-git-send-email-jay.xu@rock-chips.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pablo,
-
-On Fri, Jan 9, 2015 at 5:35 AM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
-> On Thu, Jan 08, 2015 at 11:39:16PM +0100, Hannes Frederic Sowa wrote:
->> Hi Pablo,
->>
->> On Thu, Jan 8, 2015, at 21:53, Pablo Neira Ayuso wrote:
->> > I'm afraid we cannot just get rid of that !ipv6_ext_hdr() check. The
->> > ipv6_find_hdr() function is designed to return the transport protocol.
->> > After the proposed change, it will return extension header numbers.
->> > This will break existing ip6tables rulesets since the `-p' option
->> > relies on this function to match the transport protocol.
->> >
->> > Note that the AH header is skipped (see code a bit below this
->> > problematic fragmentation handling) so the follow up header after the
->> > AH header is returned as the transport header.
->> >
->> > We can probably return the AH protocol number for non-1st fragments.
->> > However, that would be something new to ip6tables since nobody has
->> > ever seen packet matching `-p ah' rules. Thus, we restore control to
->> > the user to allow this, but we would accept all kind of fragmented AH
->> > traffic through the firewall since we cannot know what transport
->> > protocol contains from non-1st fragments (unless I'm missing anything,
->> > I need to have a closer look at this again tomorrow with fresher
->> > mind).
->>
->> The code in question is guarded by (_frag_off != 0), so we are
->> definitely processing a non-1st fragment currently. The -p match would
->> happen at the time when the packet is reassembled and thus ipv6_find_hdr
->> will find the real transport (final) header at this point (I hope I
->> followed the code correctly here).
+On 01/09/2015 02:52 AM, Jianqun Xu wrote:
+> This patch makes snd_dmaengine_pcm_register with rockchip_dmaengine_pcm_config,
+> which configure the parameters of period and buffer match to rockchip DMAC.
 >
-> Then, Rahul should get things working by modprobing nf_defrag_ipv6.
+> =======================
+> without rockchip_dmaengine_pcm_config, and test with command -
+> aplay -D hw:0,0 /tmp/a, there are the error dump:
+> [  134.899396] dma-pl330 ffb20000.dma-controller: fill_queue:2251 Bad Desc(7)
+> [  134.906270] dma-pl330 ffb20000.dma-controller: fill_queue:2251 Bad Desc(8)
+> [  134.913141] dma-pl330 ffb20000.dma-controller: fill_queue:2251 Bad Desc(9)
+>
+> And bellow sound from DMA debugger:
+> "I debugged it a little and it looks like what is happening is that requests
+> which aren't a multiple of burst size * burst length are coming in.  Right
+> now the i2s block is setting a burst size of 4 and burst length of 4, but
+> the dmaengine code has no idea about this restriction.  I was able to
+> eliminate the messages by changing burst length to 1 in the i2s driver.
+> This fix would always work as long as we're sending a multiple of 4 bytes
+> (which so far seems to be the case)"
+>
+> This patch can make the length of dma buffer is aligned to a multiple of burst size
+> and burst length.
 
-I already had nf_defrag_ipv6 installed when the issue occured. But I
-see ip6table_raw_hook returning NF_DROP for the second fragment.
+No, all it does it sets the maximum size to something that is aligned, an 
+application can still choose something else.
 
-Thanks,
-Rahul
+And this is the wrong approach anyway, we don't want to have new 
+snd_pcm_hardware for drivers using generic dmaengine PCM driver.
+
+The right approach is to modify the dmaengine PCM driver to set a constraint 
+that makes sure that the period size is a multiple of the burst size.
+
+- Lars
