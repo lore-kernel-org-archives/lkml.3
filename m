@@ -1,83 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932446AbbAIJtp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 04:49:45 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:58480 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932113AbbAIJtn (ORCPT
+	id S932519AbbAIJu3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 04:50:29 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:17661 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932455AbbAIJu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 04:49:43 -0500
-Date: Fri, 9 Jan 2015 09:49:34 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Vince Weaver <vince@deater.net>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "vincent.weaver@maine.edu" <vincent.weaver@maine.edu>
-Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
- pyaudio (and probably more)
-Message-ID: <20150109094933.GA24408@e104818-lin.cambridge.arm.com>
-References: <alpine.LFD.2.11.1501071446460.1322@knanqh.ubzr>
- <20150107205346.GO12302@n2100.arm.linux.org.uk>
- <CAHkRjk6FT+WJ3u9qhfB-EMcqhOHGQSe4dW4MpZF6vE97B0vD0A@mail.gmail.com>
- <20150108103911.GQ12302@n2100.arm.linux.org.uk>
- <alpine.DEB.2.10.1501081044470.26196@pianoman.cluster.toy>
- <20150108161908.GA17290@e104818-lin.cambridge.arm.com>
- <20150108163450.GV12302@n2100.arm.linux.org.uk>
- <20150108164111.GB17290@e104818-lin.cambridge.arm.com>
- <20150108165705.GW12302@n2100.arm.linux.org.uk>
- <20150108224614.GA5034@amd>
+	Fri, 9 Jan 2015 04:50:27 -0500
+Message-ID: <54AFA44D.1080500@huawei.com>
+Date: Fri, 9 Jan 2015 17:50:05 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150108224614.GA5034@amd>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+CC: <masami.hiramatsu.pt@hitachi.com>, <linux@arm.linux.org.uk>,
+        <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH v20 01/11] ARM: probes: move all probe code to dedicate
+ directory
+References: <1420457350-77053-1-git-send-email-wangnan0@huawei.com>	 <1420769989-29208-1-git-send-email-wangnan0@huawei.com> <1420796864.4160.6.camel@linaro.org>
+In-Reply-To: <1420796864.4160.6.camel@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.90]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020202.54AFA476.00B1,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: d2b419d0aeccd164ff2a28d9c52e46f9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 08, 2015 at 10:46:14PM +0000, Pavel Machek wrote:
-> On Thu 2015-01-08 16:57:05, Russell King - ARM Linux wrote:
-> > On Thu, Jan 08, 2015 at 04:41:12PM +0000, Catalin Marinas wrote:
-> > > On Thu, Jan 08, 2015 at 04:34:50PM +0000, Russell King - ARM Linux wrote:
-> > > > On Thu, Jan 08, 2015 at 04:19:08PM +0000, Catalin Marinas wrote:
-> > > > > I really think we should stop this thread. User ABI breakage fixed now.
-> > > > 
-> > > > No.  Vince's email shows a more serious problem.
-> > > > 
-> > > > The ABI breakage issue was reported before the patches were apparently
-> > > > merged, but that information seems to have been lost.  We need to
-> > > > understand how that happened so similar instances don't happen in the
-> > > > future.
-> > > 
-> > > FYI, searching for "Vince Weaver" and "bogomips" found this:
-> > > 
-> > > https://lkml.org/lkml/2013/7/11/454
-> > 
-> > Gah.
-> > 
-> > It looks like the report was made by hanging it into a totally different
-> > thread to the patches which caused the problem, and which went nowhere
-> > near the ARM kernel mailing lists.
+On 2015/1/9 17:47, Jon Medhurst (Tixy) wrote:
+> On Fri, 2015-01-09 at 10:19 +0800, Wang Nan wrote:
+>> In discussion on LKML (https://lkml.org/lkml/2014/11/28/158), Russell
+>> King suggests to move all probe related code to arch/arm/probes. This
+>> patch does the work. Due to dependency on 'arch/arm/kernel/patch.h', this
+>> patch also moves patch.h to 'arch/arm/include/asm/patch.h', and related
+>> '#include' directives are also midified to '#include <asm/patch.h>'.
+>>
+>> Following is an overview of this patch:
+>>
+>>  ./arch/arm/kernel/               ./arch/arm/probes/
+>>  |-- Makefile                     |-- Makefile
+>>  |-- probes-arm.c          ==>    |-- decode-arm.c
+>>  |-- probes-arm.h          ==>    |-- decode-arm.h
+>>  |-- probes-thumb.c        ==>    |-- decode-thumb.c
+>>  |-- probes-thumb.h        ==>    |-- decode-thumb.h
+>>  |-- probes.c              ==>    |-- decode.c
+>>  |-- probes.h              ==>    |-- decode.h
+>>  |                                |-- kprobes
+>>  |                                |   |-- Makefile
+>>  |-- kprobes-arm.c         ==>    |   |-- actions-arm.c
+>>  |-- kprobes-common.c      ==>    |   |-- actions-common.c
+>>  |-- kprobes-thumb.c       ==>    |   |-- actions-thumb.c
+>>  |-- kprobes.c             ==>    |   |-- core.c
+>>  |-- kprobes.h             ==>    |   |-- core.h
+>>  |-- kprobes-test-arm.c    ==>    |   |-- test-arm.c
+>>  |-- kprobes-test.c        ==>    |   |-- test-core.c
+>>  |-- kprobes-test.h        ==>    |   |-- test-core.h
+>>  |-- kprobes-test-thumb.c  ==>    |   `-- test-thumb.c
+>>  |                                `-- uprobes
+>>  |                                    |-- Makefile
+>>  |-- uprobes-arm.c         ==>        |-- actions-arm.c
+>>  |-- uprobes.c             ==>        |-- core.c
+>>  |-- uprobes.h             ==>        `-- core.h
+>>  |
+>>  `-- patch.h               ==>    arch/arm/include/asm/patch.h
+>>
+>> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+>> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> ---
 > 
-> This went at least to Will Deacon and Nicolas Pitre.
+> Might have been good to mention what's changed in this version, I worked
+> out its kgdb.c, comments below...
 > 
-> https://lkml.org/lkml/2013/5/15/217
+> [...]
 > 
-> So AFAICT yes, we knowingly broke at least
-> com.securiteinfo.android.bogomips application.
+>> diff --git a/arch/arm/kernel/kgdb.c b/arch/arm/kernel/kgdb.c
+>> index 07db2f8..f3eb83f 100644
+>> --- a/arch/arm/kernel/kgdb.c
+>> +++ b/arch/arm/kernel/kgdb.c
+>> @@ -16,7 +16,7 @@
+>>  
+>>  #include <asm/traps.h>
+>>  
+>> -#include "patch.h"
+>> +#include <asm/patch.h>
+> 
+> To keep alphabetical ordering of headers this should be above the
+> #include <asm/traps.h>
+> 
+> Don't bother resending the patch, I'll just update the patch in the git
+> branch I'm putting together.
+> 
+Thanks a lot!
 
-Hmm, "BogoMIPS is a tool used to create a web page about Android
-Benchmarks". And a stupid table here:
-https://www.securiteinfo.com/divers/android_bogomips_benchmark.shtml.
-Even though it's against the user ABI kernel policy, I must say I'm glad
-we broke this one ;).
-
-pyaudio is a valid complaint though (and not about the bogomips value
-but about the presence of the "bogomips" string).
-
--- 
-Catalin
