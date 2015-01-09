@@ -1,88 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757520AbbAILmT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 06:42:19 -0500
-Received: from mail.us.es ([193.147.175.20]:37951 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756861AbbAILmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 06:42:17 -0500
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus5 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.98.5/19899. spamassassin: 3.4.0.  
- Clear:RC:1(127.0.0.1):SA:0(-104.2/7.5):. 
- Processed in 1.880735 secs); 09 Jan 2015 11:42:14 -0000
-X-Spam-ASN: 
-X-Envelope-From: pneira@us.es
-Date: Fri, 9 Jan 2015 12:45:06 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Rahul Sharma <rsharma@arista.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
-Subject: Re: [PATCH net] ipv6: Prevent ipv6_find_hdr() from returning ENOENT
- for valid non-first fragments
-Message-ID: <20150109114506.GA4857@salvia>
-References: <CAFB3abzYNYqtzd_n+Ym0Lo=DYbV0HPU=Tqw=stALNnu188hMKQ@mail.gmail.com>
- <20150106224706.GA7416@salvia>
- <CAFB3abwKpR1VqZXUrsexqveAZrA2LTSmTe8a=-H7z2HjAptjwA@mail.gmail.com>
- <1420627396.26870.36.camel@stressinduktion.org>
- <20150108205328.GA3361@salvia>
- <1420756756.1755002.211556745.0418D128@webmail.messagingengine.com>
- <20150109000546.GA3488@salvia>
- <CAFB3abwrjp61LLOk3RWwXYEq1g4QZUC8OTKuO2cAr+GbV3n4rw@mail.gmail.com>
- <1420803255.1978819.211762005.707EFFB9@webmail.messagingengine.com>
+	id S932338AbbAILpV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 06:45:21 -0500
+Received: from forward4l.mail.yandex.net ([84.201.143.137]:52186 "EHLO
+	forward4l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755343AbbAILpT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 06:45:19 -0500
+Authentication-Results: smtp3m.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Subject: [PATCH] sched/dl: Prevent initialization of already set dl_timer
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>, Kirill Tkhai <ktkhai@parallels.com>,
+        Ingo Molnar <mingo@redhat.com>, Luca Abeni <luca.abeni@unitn.it>,
+        Juri Lelli <juri.lelli@gmail.com>
+Date: Fri, 09 Jan 2015 14:45:13 +0300
+Message-ID: <20150109114440.8605.19481.stgit@localhost>
+User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420803255.1978819.211762005.707EFFB9@webmail.messagingengine.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hannes,
+__setparam_dl() may be called for a task which is already of
+deadline class. If the task is throttled, we corrupt its dl_timer
+when we are doing hrtimer_init() in init_dl_task_timer().
 
-On Fri, Jan 09, 2015 at 12:34:15PM +0100, Hannes Frederic Sowa wrote:
-> On Fri, Jan 9, 2015, at 08:18, Rahul Sharma wrote:
-> > Hi Pablo,
-> > 
-> > On Fri, Jan 9, 2015 at 5:35 AM, Pablo Neira Ayuso <pablo@netfilter.org>
-> > wrote:
-> > > On Thu, Jan 08, 2015 at 11:39:16PM +0100, Hannes Frederic Sowa wrote:
-> > >> Hi Pablo,
-> > >>
-> > >> On Thu, Jan 8, 2015, at 21:53, Pablo Neira Ayuso wrote:
-> > >> > I'm afraid we cannot just get rid of that !ipv6_ext_hdr() check. The
-> > >> > ipv6_find_hdr() function is designed to return the transport protocol.
-> > >> > After the proposed change, it will return extension header numbers.
-> > >> > This will break existing ip6tables rulesets since the `-p' option
-> > >> > relies on this function to match the transport protocol.
-> > >> >
-> > >> > Note that the AH header is skipped (see code a bit below this
-> > >> > problematic fragmentation handling) so the follow up header after the
-> > >> > AH header is returned as the transport header.
-> > >> >
-> > >> > We can probably return the AH protocol number for non-1st fragments.
-> > >> > However, that would be something new to ip6tables since nobody has
-> > >> > ever seen packet matching `-p ah' rules. Thus, we restore control to
-> > >> > the user to allow this, but we would accept all kind of fragmented AH
-> > >> > traffic through the firewall since we cannot know what transport
-> > >> > protocol contains from non-1st fragments (unless I'm missing anything,
-> > >> > I need to have a closer look at this again tomorrow with fresher
-> > >> > mind).
-> > >>
-> > >> The code in question is guarded by (_frag_off != 0), so we are
-> > >> definitely processing a non-1st fragment currently. The -p match would
-> > >> happen at the time when the packet is reassembled and thus ipv6_find_hdr
-> > >> will find the real transport (final) header at this point (I hope I
-> > >> followed the code correctly here).
-> > >
-> > > Then, Rahul should get things working by modprobing nf_defrag_ipv6.
-> > 
-> > I already had nf_defrag_ipv6 installed when the issue occured. But I
-> > see ip6table_raw_hook returning NF_DROP for the second fragment.
-> 
-> That's what I expected. I think the change only affects hooks before
-> reassembly.
+It seems that__setparam_dl() is not the place where we want
+to use cancel_dl_timer(). It may unlock rq while the call chain
+is long, and some of previous functions in the chain may be
+unhappy for this reason (now and in the future). So, we just
+try to cancel the timer, and in some situations we fail to do that.
 
-reassembly happens at NF_IP6_PRI_CONNTRACK_DEFRAG (-400), so that
-happens before NF_IP6_PRI_RAW (-300) in IPv6 which is where the raw
-table is placed.
+If hrtimer_try_to_cancel() fails, than the handler is being
+executed on other processor, and it's waiting for rq->lock.
+The most probably the handler will take the lock right after
+we release it.
+
+So, let's pass the actions, which we do here usually here,
+to the handler. It will unthrottle and queue us properly.
+
+Reported-and-tested-by: Luca Abeni <luca.abeni@unitn.it>
+Fixes: 67dfa1b756f2 "sched/deadline: Implement cancel_dl_timer() to use ..."
+Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+---
+ include/linux/sched/deadline.h |    2 ++
+ kernel/sched/core.c            |   21 +++++++++++++++++----
+ kernel/sched/deadline.c        |   10 +---------
+ kernel/sched/sched.h           |    1 -
+ 4 files changed, 20 insertions(+), 14 deletions(-)
+
+diff --git a/include/linux/sched/deadline.h b/include/linux/sched/deadline.h
+index 9d303b8..c70a7fc 100644
+--- a/include/linux/sched/deadline.h
++++ b/include/linux/sched/deadline.h
+@@ -21,4 +21,6 @@ static inline int dl_task(struct task_struct *p)
+ 	return dl_prio(p->prio);
+ }
+ 
++extern enum hrtimer_restart dl_task_timer(struct hrtimer *timer);
++
+ #endif /* _SCHED_DEADLINE_H */
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index c0accc0..8fc8a2d 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1840,6 +1840,7 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
+ 
+ 	RB_CLEAR_NODE(&p->dl.rb_node);
+ 	hrtimer_init(&p->dl.dl_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	p->dl.dl_timer.function = dl_task_timer;
+ 	__dl_clear_params(p);
+ 
+ 	INIT_LIST_HEAD(&p->rt.run_list);
+@@ -3250,16 +3251,28 @@ static void
+ __setparam_dl(struct task_struct *p, const struct sched_attr *attr)
+ {
+ 	struct sched_dl_entity *dl_se = &p->dl;
++        struct hrtimer *timer = &dl_se->dl_timer;
++	struct rq *rq = task_rq(p);
++
++	/*
++	 * There may be a race with dl_task_timer. If it's pending and
++	 * we've failed to cancel it, timer's handler will unthrottle
++	 * the task right after p's rq is unlocked.
++	 */
++	if (!hrtimer_active(timer) || hrtimer_try_to_cancel(timer) != -1) {
++		dl_se->dl_throttled = 0;
++		dl_se->dl_new = 1;
++		dl_se->dl_yielded = 0;
++	} else {
++		dl_se->deadline = rq_clock(rq) + attr->sched_deadline;
++		dl_se->runtime = attr->sched_runtime;
++	}
+ 
+-	init_dl_task_timer(dl_se);
+ 	dl_se->dl_runtime = attr->sched_runtime;
+ 	dl_se->dl_deadline = attr->sched_deadline;
+ 	dl_se->dl_period = attr->sched_period ?: dl_se->dl_deadline;
+ 	dl_se->flags = attr->sched_flags;
+ 	dl_se->dl_bw = to_ratio(dl_se->dl_period, dl_se->dl_runtime);
+-	dl_se->dl_throttled = 0;
+-	dl_se->dl_new = 1;
+-	dl_se->dl_yielded = 0;
+ }
+ 
+ /*
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index e5db8c6..8649bd6 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -500,7 +500,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
+  * updating (and the queueing back to dl_rq) will be done by the
+  * next call to enqueue_task_dl().
+  */
+-static enum hrtimer_restart dl_task_timer(struct hrtimer *timer)
++enum hrtimer_restart dl_task_timer(struct hrtimer *timer)
+ {
+ 	struct sched_dl_entity *dl_se = container_of(timer,
+ 						     struct sched_dl_entity,
+@@ -559,14 +559,6 @@ static enum hrtimer_restart dl_task_timer(struct hrtimer *timer)
+ 	return HRTIMER_NORESTART;
+ }
+ 
+-void init_dl_task_timer(struct sched_dl_entity *dl_se)
+-{
+-	struct hrtimer *timer = &dl_se->dl_timer;
+-
+-	hrtimer_init(timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+-	timer->function = dl_task_timer;
+-}
+-
+ static
+ int dl_runtime_exceeded(struct rq *rq, struct sched_dl_entity *dl_se)
+ {
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 9a2a45c..ad3a2f0 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1257,7 +1257,6 @@ extern void init_rt_bandwidth(struct rt_bandwidth *rt_b, u64 period, u64 runtime
+ 
+ extern struct dl_bandwidth def_dl_bandwidth;
+ extern void init_dl_bandwidth(struct dl_bandwidth *dl_b, u64 period, u64 runtime);
+-extern void init_dl_task_timer(struct sched_dl_entity *dl_se);
+ 
+ unsigned long to_ratio(u64 period, u64 runtime);
+ 
+
