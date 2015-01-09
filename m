@@ -1,66 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757819AbbAIQRD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 11:17:03 -0500
-Received: from smtp-out-098.synserver.de ([212.40.185.98]:1046 "EHLO
-	smtp-out-098.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757718AbbAIQQ7 (ORCPT
+	id S1757224AbbAIQTc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 11:19:32 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56132 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159AbbAIQTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 11:16:59 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 16598
-Message-ID: <54AFFEF9.5080408@metafoo.de>
-Date: Fri, 09 Jan 2015 17:16:57 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	Fri, 9 Jan 2015 11:19:30 -0500
+Date: Fri, 9 Jan 2015 17:19:05 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Stefan Agner <stefan@agner.ch>
+Cc: davem@davemloft.net, shawn.guo@linaro.org, u.kleine-koenig@pengutronix.de,
+        fugang.duan@freescale.com, mark.rutland@arm.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, B38611@freescale.com, LW@KARO-electronics.de,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
+Subject: Re: [PATCH v2] net: fec: fix MDIO bus assignement for dual fec SoC's
+Message-ID: <20150109161905.GL23940@pengutronix.de>
+References: <1420812103-5865-1-git-send-email-stefan@agner.ch>
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iio: Simplify IIO provider access locking mechanism
-References: <1420817893-5858-1-git-send-email-iivanov@mm-sol.com>		 <54AFF6C4.9020306@metafoo.de> <1420818639.28652.5.camel@mm-sol.com>	 <54AFF9D3.7000007@metafoo.de> <1420820083.28652.7.camel@mm-sol.com>
-In-Reply-To: <1420820083.28652.7.camel@mm-sol.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420812103-5865-1-git-send-email-stefan@agner.ch>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 17:15:35 up 86 days,  3:29, 98 users,  load average: 0.00, 0.04,
+ 0.09
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2015 05:14 PM, Ivan T. Ivanov wrote:
->
-> On Fri, 2015-01-09 at 16:54 +0100, Lars-Peter Clausen wrote:
->> On 01/09/2015 04:50 PM, Ivan T. Ivanov wrote:
->>> On Fri, 2015-01-09 at 16:41 +0100, Lars-Peter Clausen wrote:
->>>> On 01/09/2015 04:38 PM, Ivan T. Ivanov wrote:
->>>>> Instead of checking whether provider module is still
->>>>> loaded on every access to device just lock module to
->>>>> memory when client get reference to provider device.
->>>>>
->>>>
->>>> This has nothing to do with the module, it's about the device. In the Linux
->>>> device driver model as device can be unbound at any time and the IIO
->>>> framework needs to handle this.
->>>>
->>>
->>> Hm. Probably i am missing something here, but is this
->>> still true if we have reference to device structure?
->>
->> Yes, that only prevents the memory of device from being freed. But the
->> device can still be unbound from the driver.
->>
->> Think of e.g. a USB device that is pulled from the USB connector. Nothing
->> you can do in software about having the device disappear.
->>
->
-> Agree, but I think that the patch is still valid. Module
-> have to be pinned in memory as long as there are device
-> driver users.
+On Fri, Jan 09, 2015 at 03:01:43PM +0100, Stefan Agner wrote:
+> On i.MX28, the MDIO bus is shared between the two FEC instances.
+> The driver makes sure that the second FEC uses the MDIO bus of the
+> first FEC. This is done conditionally if FEC_QUIRK_ENET_MAC is set.
+> However, in newer designs, such as Vybrid or i.MX6SX, each FEC MAC
+> has its own MDIO bus. Simply removing the quirk FEC_QUIRK_ENET_MAC
+> is not an option since other logic, triggered by this quirk, is
+> still needed.
+> 
+> Furthermore, there are board designs which use the same MDIO bus
+> for both PHY's even though the second bus would be available on the
+> SoC side. Such layout are popular since it saves pins on SoC side.
+> Due to the above quirk, those boards currently do work fine. The
+> boards in the mainline tree with such a layout are:
+> - Freescale Vybrid Tower with TWR-SER2 (vf610-twr.dts)
+> - Freescale i.MX6 SoloX SDB Board (imx6sx-sdb.dts)
+> 
+> This patch adds a new quirk FEC_QUIRK_SINGLE_MDIO for i.MX28, which
+> makes sure that the MDIO bus of the first FEC is used in any case.
+> 
+> However, the boards above do have a SoC with a MDIO bus for each FEC
+> instance. But the PHY's are not connected in a 1:1 configuration. A
+> proper device tree description is needed to allow the driver to
+> figure out where to find its PHY. This patch fixes that shortcoming
+> by adding a MDIO bus child node to the first FEC instance, along
+> with the two PHY's on that bus, and making use of the phy-handle
+> property to add a reference to the PHY's.
+> 
+> Signed-off-by: Stefan Agner <stefan@agner.ch>
+> Signed-off-by: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
+> ---
+> Yes, this breaks existing device trees, but it does this because
+> those device trees were lacking proper description of the HW...
+> IMHO, in this case, this is acceptable. We also do this in other
+> cases, e.g. in the gic_arch_extn killing patchset:
+> http://archive.arm.linux.org.uk/lurker/message/20150107.174235.3fc3a92f.en.html
+> 
+> Also, the two boards we are breaking are not very widespread:
+> The Vybrid Tower is generally not very widespread and there is only
+> the TWR-VF65GS10-PRO variant with TWR-SER2 affected. And the SoloX
+> SDB board is not even generally available yet...
+> 
+> If we don't want to break the board, we could add the
+> FEC_QUIRK_SINGLE_MDIO to Vybrid or/and i.MX6SX too. But then, we
+> need to make the quirk conditional: If a MDIO node or phy-
+> handle is specified, we should rely on the device tree information.
+> However, this solution adds new code and complexity. Using the
+> quirk for those SoC's just feels wrong. So I strongly advocate
+> for the breaking variant.
 
-No, the idea of the Linux driver model is that you can remove the module of 
-a driver at any time, which will unbind the device from the driver. Once you 
-reinsert the module the device will be re-bound to the driver.
+IMO that's one step into the right direction. Describing the phys in the
+device tree is absolutely necessary for the soloX boards since otherwise
+it's pure luck when the MACs are connected to the right phys. I share
+your opinion that it's best to break these two device trees.
 
-- Lars
+Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
 
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
