@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932601AbbAIJxA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 04:53:00 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:58492 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932202AbbAIJw5 (ORCPT
+	id S1757510AbbAIJ6v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 04:58:51 -0500
+Received: from exprod7og112.obsmtp.com ([64.18.2.177]:59095 "HELO
+	exprod7og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754786AbbAIJ6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 04:52:57 -0500
-Message-ID: <54AFA4EE.5080906@arm.com>
-Date: Fri, 09 Jan 2015 09:52:46 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	Fri, 9 Jan 2015 04:58:49 -0500
+X-Greylist: delayed 338 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Jan 2015 04:58:49 EST
+Message-ID: <54AFA502.8090701@miraclelinux.com>
+Date: Fri, 09 Jan 2015 18:53:06 +0900
+From: YOSHIFUJI Hideaki <hideaki.yoshifuji@miraclelinux.com>
+Organization: MIRACLE LINUX CORPORATION
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] genirq: Make irqchip flags work with stacked irq
- domains
-References: <1420738365-22063-1-git-send-email-marc.zyngier@arm.com> <54AF45E0.2080803@linux.intel.com>
-In-Reply-To: <54AF45E0.2080803@linux.intel.com>
-Content-Type: text/plain; charset=windows-1252
+To: Rahul Sharma <rsharma@arista.com>, netdev@vger.kernel.org
+CC: hideaki.yoshifuji@miraclelinux.com, linux-kernel@vger.kernel.org,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        netfilter-devel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: Re: [PATCH net v2] ipv6: Prevent ipv6_find_hdr() from returning ENOENT
+ for valid non-first fragments
+References: <CAFB3abzM2ApxMH6C7vSDJ8JikKEkE46bOH3jbsis2NiF-ieUxA@mail.gmail.com>
+In-Reply-To: <CAFB3abzM2ApxMH6C7vSDJ8JikKEkE46bOH3jbsis2NiF-ieUxA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiang,
+Hi,
 
-On 09/01/15 03:07, Jiang Liu wrote:
-> On 2015/1/9 1:32, Marc Zyngier wrote:
->> With the landing of stacked irq domains in 3.19, we have ended up in a
->> situation where we have a stack of IRQ controllers, each with their
->> set of flags, but the core code is only able to look at the top-most,
->> which is not very helpful. This small series is trying to fix this.
->>
->> The first patch converts all access to desc->irq_data.chip->flags to
->> using an accessor, without changing anything else. The second patch
->> adds some logic to combine these flags as we allocate the interrupts,
->> ultimately storing the resulting set as part of the irq_desc
->> structure.
->>
->> We end-up with a configuration where the flags can either be located
->> in the irq_chip structure (non stacked case), or in the irq_desc
->> (stacked case). While this isn't really ideal, this gives at least the
->> right level of information to the rest of the IRQ framework.
-> Hi Mark,
-> 	By this way, we need to aggregate irq_chip flags for every
-> irq. How about changing irq_desc_get_chip_flags(struct irq_desc *desc)
-> to irq_desc_check_chip_flags(struct irq_desc *desc, unsigned int flags)
-> which dynamically walks the stacked irqchips?
+Rahul Sharma wrote:
+> ipv6_find_hdr() currently assumes that the next-header field in the
+> fragment header of the non-first fragment is the "protocol number of
+> the last header" (here last header excludes any extension header
+> protocol numbers ) which is incorrect as per RFC2460. The next-header
+> value is the first header of the fragmentable part of the original
+> packet (which can be extension header as well).
+> This can create reassembly problems. For example: Fragmented
+> authenticated OSPFv3 packets (where AH header is inserted before the
+> protocol header). For the second fragment, the next header value in
+> the fragment header will be NEXTHDR_AUTH which is correct but
+> ipv6_find_hdr will return ENOENT since AH is an extension header
+> resulting in second fragment getting dropped. This check for the
+> presence of non-extension header needs to be removed.
+>
+> Signed-off-by: Rahul Sharma <rsharma@arista.com>
 
-That was the other option, but I felt that going through the list of
-irqchips was not a very nice idea performance wise. This is used is some
-moderately hot paths (cond_unmask_eoi_irq, for example), and I wondered
-if we wanted to pay this price at runtime...
+Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
 
-Thoughts?
-
-Thanks,
-
-	M.
 -- 
-Jazz is not dead. It just smells funny...
+Hideaki Yoshifuji <hideaki.yoshifuji@miraclelinux.com>
+Technical Division, MIRACLE LINUX CORPORATION
