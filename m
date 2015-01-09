@@ -1,282 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755964AbbAIDpT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 22:45:19 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:53358 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755804AbbAIDpP (ORCPT
+	id S1755985AbbAIDqh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 22:46:37 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:34684 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753352AbbAIDqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 22:45:15 -0500
+	Thu, 8 Jan 2015 22:46:36 -0500
 From: Gigi Joseph <gigi.joseph@gmail.com>
 X-Google-Original-From: Gigi Joseph <gigi.joseph@ti.com>
-To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Robin van der Gracht <robin@protonic.nl>,
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Wolfram Sang <wsa@the-dreams.de>,
         Enric Balletbo i Serra <eballetbo@iseebcn.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Cc: Gigi Joseph <gigi.joseph@ti.com>, Eyal Reizer <eyalr@ti.com>,
-        bvijay <bvijay@ti.com>
-Subject: [PATCH 1/6] ti-st: add device tree support
-Date: Fri,  9 Jan 2015 03:45:02 +0000
-Message-Id: <1420775102-24664-1-git-send-email-gigi.joseph@ti.com>
+        Robin van der Gracht <robin@protonic.nl>, linux-kernel@vger.kernel.org
+Cc: Gigi Joseph <gigi.joseph@ti.com>, Eyal Reizer <eyalr@ti.com>
+Subject: [PATCH 2/6] st_kim: allow suspend if callback is not registered
+Date: Fri,  9 Jan 2015 03:46:24 +0000
+Message-Id: <1420775184-24704-1-git-send-email-gigi.joseph@ti.com>
 X-Mailer: git-send-email 2.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using device tree, driver configuration data need to be read from
-device node.
-Add support for getting the platform data information from the device
-tree information stored in the .dtb file in case it exists.
+Suspend/resume was failing if callbacks were not registered.
+As it is ok not to do anything when suspending fix this
+so it soen't return an error and allow the system to suspend.
 
 Signed-off-by: Eyal Reizer <eyalr@ti.com>
-Signed-off-by: bvijay <bvijay@ti.com>
-Diff rendering mode:inlineside by side
-
 Signed-off-by: Gigi Joseph <gigi.joseph@ti.com>
 ---
- drivers/misc/ti-st/st_kim.c  | 97 ++++++++++++++++++++++++++++++++++++++++----
- drivers/misc/ti-st/st_ll.c   | 17 +++++++-
- include/linux/ti_wilink_st.h |  1 +
- 3 files changed, 105 insertions(+), 10 deletions(-)
+ drivers/misc/ti-st/st_kim.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
-index e4b7ee4f..68a0b58 100644
+index 68a0b58..f2c1071 100644
 --- a/drivers/misc/ti-st/st_kim.c
 +++ b/drivers/misc/ti-st/st_kim.c
-@@ -36,7 +36,8 @@
- #include <linux/skbuff.h>
- #include <linux/ti_wilink_st.h>
- #include <linux/module.h>
--
-+#include <linux/of.h>
-+#include <linux/of_device.h>
- 
- #define MAX_ST_DEVICES	3	/* Imagine 1 on each UART for now */
- static struct platform_device *st_kim_devices[MAX_ST_DEVICES];
-@@ -44,6 +45,9 @@ static struct platform_device *st_kim_devices[MAX_ST_DEVICES];
- /**********************************************************************/
- /* internal functions */
- 
-+struct ti_st_plat_data	*dt_pdata;
-+static struct ti_st_plat_data *get_platform_data(struct device *dev);
-+
- /**
-  * st_get_plat_device -
-  *	function which returns the reference to the platform device
-@@ -462,7 +466,12 @@ long st_kim_start(void *kim_data)
- 	struct kim_data_s	*kim_gdata = (struct kim_data_s *)kim_data;
- 
- 	pr_info(" %s", __func__);
--	pdata = kim_gdata->kim_pdev->dev.platform_data;
-+	if (kim_gdata->kim_pdev->dev.of_node) {
-+		pr_debug("use device tree data");
-+		pdata = dt_pdata;
-+	} else {
-+		pdata = kim_gdata->kim_pdev->dev.platform_data;
-+	}
- 
- 	do {
- 		/* platform specific enabling code here */
-@@ -522,12 +531,18 @@ long st_kim_stop(void *kim_data)
- {
- 	long err = 0;
- 	struct kim_data_s	*kim_gdata = (struct kim_data_s *)kim_data;
--	struct ti_st_plat_data	*pdata =
--		kim_gdata->kim_pdev->dev.platform_data;
-+	struct ti_st_plat_data	*pdata;
- 	struct tty_struct	*tty = kim_gdata->core_data->tty;
- 
- 	reinit_completion(&kim_gdata->ldisc_installed);
- 
-+	if (kim_gdata->kim_pdev->dev.of_node) {
-+		pr_debug("use device tree data");
-+		pdata = dt_pdata;
-+	} else
-+		pdata = kim_gdata->kim_pdev->dev.platform_data;
-+
-+
- 	if (tty) {	/* can be called before ldisc is installed */
- 		/* Flush any pending characters in the driver and discipline. */
- 		tty_ldisc_flush(tty);
-@@ -715,13 +730,53 @@ static const struct file_operations list_debugfs_fops = {
-  * board-*.c file
-  */
- 
-+static const struct of_device_id kim_of_match[] = {
-+{
-+	.compatible = "kim",
-+	},
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, kim_of_match);
-+
-+static struct ti_st_plat_data *get_platform_data(struct device *dev)
-+{
-+	struct device_node *np = dev->of_node;
-+	const u32 *dt_property;
-+	int len;
-+
-+	dt_pdata = kzalloc(sizeof(*dt_pdata), GFP_KERNEL);
-+
-+	if (!dt_pdata)
-+		pr_err("Can't allocate device_tree platform data\n");
-+
-+	dt_property = of_get_property(np, "dev_name", &len);
-+	if (dt_property)
-+		memcpy(&dt_pdata->dev_name, dt_property, len);
-+	of_property_read_u32(np, "nshutdown_gpio",
-+			     (u32 *)&dt_pdata->nshutdown_gpio);
-+	of_property_read_u32(np, "flow_cntrl", (u32 *)&dt_pdata->flow_cntrl);
-+	of_property_read_u32(np, "baud_rate", (u32 *)&dt_pdata->baud_rate);
-+
-+	return dt_pdata;
-+}
-+
- static struct dentry *kim_debugfs_dir;
- static int kim_probe(struct platform_device *pdev)
- {
- 	struct kim_data_s	*kim_gdata;
--	struct ti_st_plat_data	*pdata = pdev->dev.platform_data;
-+	struct ti_st_plat_data	*pdata;
- 	int err;
- 
-+	if (pdev->dev.of_node)
-+		pdata = get_platform_data(&pdev->dev);
-+	else
-+		pdata = pdev->dev.platform_data;
-+
-+	if (pdata == NULL) {
-+		dev_err(&pdev->dev, "Platform Data is missing\n");
-+		return -ENXIO;
-+	}
-+
- 	if ((pdev->id != -1) && (pdev->id < MAX_ST_DEVICES)) {
- 		/* multiple devices could exist */
- 		st_kim_devices[pdev->id] = pdev;
-@@ -806,9 +861,16 @@ err_core_init:
- static int kim_remove(struct platform_device *pdev)
- {
- 	/* free the GPIOs requested */
--	struct ti_st_plat_data	*pdata = pdev->dev.platform_data;
-+	struct ti_st_plat_data	*pdata;
- 	struct kim_data_s	*kim_gdata;
- 
-+	if (pdev->dev.of_node) {
-+		pr_debug("use device tree data");
-+		pdata = dt_pdata;
-+	} else {
-+		pdata = pdev->dev.platform_data;
-+	}
-+
- 	kim_gdata = platform_get_drvdata(pdev);
- 
- 	/* Free the Bluetooth/FM/GPIO
-@@ -826,12 +888,22 @@ static int kim_remove(struct platform_device *pdev)
- 
- 	kfree(kim_gdata);
- 	kim_gdata = NULL;
-+	kfree(dt_pdata);
-+	dt_pdata = NULL;
-+
- 	return 0;
- }
- 
- static int kim_suspend(struct platform_device *pdev, pm_message_t state)
- {
--	struct ti_st_plat_data	*pdata = pdev->dev.platform_data;
-+	struct ti_st_plat_data	*pdata;
-+
-+	if (pdev->dev.of_node) {
-+		pr_debug("use device tree data");
-+		pdata = dt_pdata;
-+	} else {
-+		pdata = pdev->dev.platform_data;
-+	}
- 
+@@ -908,7 +908,7 @@ static int kim_suspend(struct platform_device *pdev, pm_message_t state)
  	if (pdata->suspend)
  		return pdata->suspend(pdev, state);
-@@ -841,7 +913,14 @@ static int kim_suspend(struct platform_device *pdev, pm_message_t state)
+ 
+-	return -EOPNOTSUPP;
++	return 0;
+ }
  
  static int kim_resume(struct platform_device *pdev)
- {
--	struct ti_st_plat_data	*pdata = pdev->dev.platform_data;
-+	struct ti_st_plat_data	*pdata;
-+
-+	if (pdev->dev.of_node) {
-+		pr_debug("use device tree data");
-+		pdata = dt_pdata;
-+	} else {
-+		pdata = pdev->dev.platform_data;
-+	}
- 
+@@ -925,7 +925,7 @@ static int kim_resume(struct platform_device *pdev)
  	if (pdata->resume)
  		return pdata->resume(pdev);
-@@ -858,6 +937,8 @@ static struct platform_driver kim_platform_driver = {
- 	.resume = kim_resume,
- 	.driver = {
- 		.name = "kim",
-+		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(kim_of_match),
- 	},
- };
  
-diff --git a/drivers/misc/ti-st/st_ll.c b/drivers/misc/ti-st/st_ll.c
-index 93b4d67..518e1b7 100644
---- a/drivers/misc/ti-st/st_ll.c
-+++ b/drivers/misc/ti-st/st_ll.c
-@@ -26,6 +26,7 @@
- #include <linux/ti_wilink_st.h>
+-	return -EOPNOTSUPP;
++	return 0;
+ }
  
  /**********************************************************************/
-+
- /* internal functions */
- static void send_ll_cmd(struct st_data_s *st_data,
- 	unsigned char cmd)
-@@ -53,7 +54,13 @@ static void ll_device_want_to_sleep(struct st_data_s *st_data)
- 
- 	/* communicate to platform about chip asleep */
- 	kim_data = st_data->kim_data;
--	pdata = kim_data->kim_pdev->dev.platform_data;
-+	if (kim_data->kim_pdev->dev.of_node) {
-+		pr_debug("use device tree data");
-+		pdata = dt_pdata;
-+	} else {
-+		pdata = kim_data->kim_pdev->dev.platform_data;
-+	}
-+
- 	if (pdata->chip_asleep)
- 		pdata->chip_asleep(NULL);
- }
-@@ -86,7 +93,13 @@ static void ll_device_want_to_wakeup(struct st_data_s *st_data)
- 
- 	/* communicate to platform about chip wakeup */
- 	kim_data = st_data->kim_data;
--	pdata = kim_data->kim_pdev->dev.platform_data;
-+	if (kim_data->kim_pdev->dev.of_node) {
-+		pr_debug("use device tree data");
-+		pdata = dt_pdata;
-+	} else {
-+		pdata = kim_data->kim_pdev->dev.platform_data;
-+	}
-+
- 	if (pdata->chip_awake)
- 		pdata->chip_awake(NULL);
- }
-diff --git a/include/linux/ti_wilink_st.h b/include/linux/ti_wilink_st.h
-index 884d626..9072d9f 100644
---- a/include/linux/ti_wilink_st.h
-+++ b/include/linux/ti_wilink_st.h
-@@ -86,6 +86,7 @@ struct st_proto_s {
- extern long st_register(struct st_proto_s *);
- extern long st_unregister(struct st_proto_s *);
- 
-+extern struct ti_st_plat_data   *dt_pdata;
- 
- /*
-  * header information used by st_core.c
 -- 
 1.9.1
 
