@@ -1,126 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526AbbAIUwe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 15:52:34 -0500
-Received: from utopia.booyaka.com ([74.50.51.50]:44128 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751788AbbAIUwc (ORCPT
+	id S1753005AbbAIUyi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 15:54:38 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33332 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632AbbAIUyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 15:52:32 -0500
-Date: Fri, 9 Jan 2015 20:52:31 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Bill Huang <bilhuang@nvidia.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        Allen Martin <amartin@nvidia.com>,
-        Paul Walmsley <pwalmsley@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 4/4] clk: tegra: Add support for the Tegra132 CAR IP
- block
-In-Reply-To: <20150109111954.GB16465@ulmo>
-Message-ID: <alpine.DEB.2.02.1501092030180.28771@utopia.booyaka.com>
-References: <20141216203813.22980.2301.stgit@chromeos-P9X79> <20141216203829.22980.64446.stgit@chromeos-P9X79> <20150109111954.GB16465@ulmo>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 9 Jan 2015 15:54:36 -0500
+Date: Fri, 9 Jan 2015 21:54:32 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
+        s.nawrocki@samsung.com, Hans Verkuil <hans.verkuil@cisco.com>
+Subject: Re: [PATCH/RFC v10 15/19] media: Add registration helpers for V4L2
+ flash sub-devices
+Message-ID: <20150109205432.GP18076@amd>
+References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
+ <1420816989-1808-16-git-send-email-j.anaszewski@samsung.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420816989-1808-16-git-send-email-j.anaszewski@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry
-
-On Fri, 9 Jan 2015, Thierry Reding wrote:
-
-> On Tue, Dec 16, 2014 at 12:38:29PM -0800, Paul Walmsley wrote:
-> > 
-> > This patch is based on several patches from others:
-> > 
-> > 1. a  patch from Peter De Schrijver:
-> > 
-> > http://lkml.iu.edu/hypermail/linux/kernel/1407.1/06094.html
-> > 
-> > 2. a patch from Bill Huang ("clk: tegra: enable cclk_g at boot on
-> > Tegra132"), and
-> > 
-> > 3. a patch from Allen Martin ("clk: Enable tegra clock driver for
-> > tegra132").
+On Fri 2015-01-09 16:23:05, Jacek Anaszewski wrote:
+> This patch adds helper functions for registering/unregistering
+> LED Flash class devices as V4L2 sub-devices. The functions should
+> be called from the LED subsystem device driver. In case the
+> support for V4L2 Flash sub-devices is disabled in the kernel
+> config the functions' empty versions will be used.
 > 
-> Doesn't this technically require Signed-off-bys from each of the above,
-> then?
+> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Sakari Ailus <sakari.ailus@iki.fi>
+> Cc: Hans Verkuil <hans.verkuil@cisco.com>
 
-I don't think so.  Documentation/SubmittingPatches states:
+Acked-by: Pavel Machek <pavel@ucw.cz>
 
----
-The rules are pretty simple: if you can certify the below:
+> +	/*
+> +	 * Indicator leds, unlike torch leds, are turned on/off basing
+> on
 
-        Developer's Certificate of Origin 1.1
+leds -> LEDs.
 
-        By making a contribution to this project, I certify that:
+> +	 * the state of V4L2_CID_FLASH_INDICATOR_INTENSITY control only.
+> +	 * Therefore it must be possible to set it to 0 level which in
+> +	 * the LED subsystem reflects LED_OFF state.
+> +	 */
+> +	if (cdata_id != INDICATOR_INTENSITY)
+> +		++__intensity;
 
-        (a) The contribution was created in whole or in part by me and I
-            have the right to submit it under the open source license
-            indicated in the file; or
+And normally we'd do i++ instead of ++i, and avoid __ for local
+variables...?
 
-        (b) The contribution is based upon previous work that, to the best
-            of my knowledge, is covered under an appropriate open source
-            license and I have the right under that license to submit that
-            work with modifications, whether created in whole or in part
-            by me, under the same open source license (unless I am
-            permitted to submit under a different license), as indicated
-            in the file; or
+> +/**
+> + * struct v4l2_flash_ctrl_config - V4L2 Flash controls initialization data
+> + * @intensity:			constraints for the led in a non-flash mode
+> + * @flash_intensity:		V4L2_CID_FLASH_INTENSITY settings constraints
+> + * @flash_timeout:		V4L2_CID_FLASH_TIMEOUT constraints
+> + * @flash_faults:		possible flash faults
+> + * @has_external_strobe:	external strobe capability
+> + * @indicator_led:		signifies that a led is of indicator type
+> + */
+> +struct v4l2_flash_ctrl_config {
+> +	struct v4l2_ctrl_config intensity;
+> +	struct v4l2_ctrl_config flash_intensity;
+> +	struct v4l2_ctrl_config flash_timeout;
+> +	u32 flash_faults;
+> +	bool has_external_strobe:1;
+> +	bool indicator_led:1;
+> +};
 
-        (c) The contribution was provided directly to me by some other
-            person who certified (a), (b) or (c) and I have not modified
-            it.
-
-	(d) I understand and agree that this project and the contribution
-	    are public and that a record of the contribution (including 
-	    all personal information I submit with it, including my sign-off) 
-	    is maintained indefinitely and may be redistributed consistent 
-	    with this project or the open source license(s) involved.
----
-
-My Signed-off-by: is based on paragraphs (a), (b), and (d).
-
-The intention of my statement is to ensure that credit is appropriately 
-provided to everyone who I drew significant inspiration or code from, and 
-that such credit makes it into the official commits (e.g., is not dropped 
-when the patches are applied.)  However, the patch that I sent is 
-differs from the patches that I reviewed while preparing it.
-
-Of course, if anyone would like to add Acked-by or Reviewed-by tags, etc., 
-or comment if I've misunderstood something technically etc., that's 
-definitely welcome.
-
-> > diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
-> [...]
-> > +/**
-> > + * tegra124_132_clock_init_pre - clock initialization preamble for T124/T132
-> > + * @np: struct device_node * of the DT node for the SoC CAR IP block
-> > + *
-> > + * Register most of the clocks controlled by the CAR IP block, along
-> > + * with a few clocks controlled by the PMC IP block.  Everything in
-> > + * this function should be common to Tegra124 and Tegra132.  XXX The
-> > + * PMC clock initialization should probably be moved to PMC-specific
-> > + * driver code.  No return value.
-> > + */
-> > +static void __init tegra124_132_clock_init_pre(struct device_node *np)
-> 
-> I would've personally named this tegra124_clock_init_pre(). In the past
-> we've named these functions after the first chip that needed them and if
-> later chips remained compatible they would simply use the one from an
-> earlier chip. That's consistent with the naming of compatible strings
-> and doesn't require changes to the function names if yet another SoC
-> generation were to need the same functionality.
-
-Yes, I agree it's unwieldy.  It would be nice to find some concise way to 
-refer to "the family of NVIDIA SoCs that includes T124 and T132".  Maybe 
-tegra124_family_clock_init_pre() might be a better choice...
-
-
-- Paul
+I don't think you are supposed to do boolean bit arrays.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
