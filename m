@@ -1,97 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135AbbAIEHJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 23:07:09 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:38480 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754759AbbAIEHG (ORCPT
+	id S1755453AbbAIEGx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 23:06:53 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:45240 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752753AbbAIEGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 23:07:06 -0500
-Message-ID: <54AF53BD.5070303@huawei.com>
-Date: Fri, 9 Jan 2015 12:06:21 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Thu, 8 Jan 2015 23:06:51 -0500
+Date: Thu, 8 Jan 2015 20:06:47 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Jani Nikula <jani.nikula@linux.intel.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: [BUG] drm/i915: backlight off after resume
+Message-ID: <20150109040647.GA1355@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>, <paulmck@linux.vnet.ibm.com>,
-        <mathieu.desnoyers@efficios.com>,
-        xiakaixu 00238161 <xiakaixu@huawei.com>
-Subject: Re: [PATCH 1/2] tracing: Move enabling tracepoints to just after
- rcu_init()
-References: <E1Y9QLr-0000h7-Qw@feisty.vs19.net>
-In-Reply-To: 20141215153743.427704960@goodmis.org
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.90]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020203.54AF53CE.0070,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 29a38bc1690dc2ec4f8c64daf7367b02
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven Rostedt,
+Jani, all,
 
-During studying your code we find a problem, please see below.
+On a Lenovo X1 Carbon if the display is off when suspend is entered
+it will be off when it is resumed.  A key must be pressed to restore
+normal brightness.
 
-> 
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> Enabling tracepoints at boot up can be very useful. The tracepoint
-> can be initialized right after RCU has been. There's no need to
-> wait for the early_initcall() to be called. That's too late for some
-> things that can use tracepoints for debugging. Move the logic to
-> enable tracepoints out of the initcalls and into init/main.c to
-> right after rcu_init().
-> 
-> This also allows trace_printk() to be used early too.
-> 
-> Link: http://lkml.kernel.org/r/alpine.DEB.2.11.1412121539300.16494@nanos
-> Link: http://lkml.kernel.org/r/20141214164104.307127356@goodmis.org
-> 
-> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-> Tested-by: Thomas Gleixner <tglx@linutronix.de>
-> Acked-by: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+  xset dpms force off
+  sleep 1
+  sudo systemctl suspend
+  (resume)
+  (screen off, press any key)
 
-[...]
+The behavior I am accustomed to is for it to resume with the screen on.
+All of my other machines behave this way and the X1 Carbon behaved this
+way in the past.
 
-> +void __init trace_init(void)
-> +{
-> +	tracer_alloc_buffers();
-> +	init_ftrace_syscalls();
-> +	trace_event_init();	
-> +}
-> +
+I performed a bisect and found that the following commit introduced the
+problem.
 
-[...]
+  From 6dda730e55f412a6dfb181cae6784822ba463847 Mon Sep 17 00:00:00 2001
+  From: Jani Nikula <jani.nikula@intel.com>
+  Date: Tue, 24 Jun 2014 18:27:40 +0300
+  Subject: [PATCH] drm/i915: respect the VBT minimum backlight brightness
+  
+  Historically we've exposed the full backlight PWM duty cycle range to
+  the userspace, in the name of "mechanism, not policy". However, it turns
+  out there are both panels and board designs where there is a minimum
+  duty cycle that is required for proper operation. The minimum duty cycle
+  is available in the VBT.
+  
+  The backlight class sysfs interface does not make any promises to the
+  userspace about the physical meaning of the range
+  0..max_brightness. Specifically there is no guarantee that 0 means off;
+  indeed for acpi_backlight 0 usually is not off, but the minimum
+  acceptable value.
+  
+  Respect the minimum backlight, and expose the range acceptable to the
+  hardware as 0..max_brightness to the userspace via the backlight class
+  device; 0 means the minimum acceptable enabled value. To switch off the
+  backlight, the user must disable the encoder.
+  
+  As a side effect, make the backlight class device max brightness and
+  physical PWM modulation frequency (i.e. max duty cycle)
+  independent. This allows a follow-up patch to virtualize the max value
+  exposed to the userspace.
+  
+  Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+  Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+  [danvet: s/BUG_ON/WARN_ON/]
+  Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-> +
-> +void __init trace_event_init(void)
-> +{
-> +	event_trace_memsetup();
-> +	init_ftrace_syscalls();
-> +	event_trace_enable();
-> +}
-> +
-
-init_ftrace_syscalls() get called twice by trace_init() and trace_event_init(), some resources are wasted.
-At lease one of them can be removed.
-
-In addition, could you please have a look at my early kprobe patch series?
-
-http://lists.infradead.org/pipermail/linux-arm-kernel/2015-January/313835.html
-
-Which enables kprobe very early, even before memory initialized. I think it is possible to combine these
-early tracing facilities together.
-
-Thank you!
-
-
+-- 
+- Jeremiah Mahler
