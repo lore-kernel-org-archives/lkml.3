@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932678AbbAIQKo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 11:10:44 -0500
-Received: from mail-by2on0071.outbound.protection.outlook.com ([207.46.100.71]:15456
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752200AbbAIQKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 11:10:43 -0500
-X-Greylist: delayed 1136 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Jan 2015 11:10:43 EST
-From: <dinguyen@opensource.altera.com>
-To: <dwmw2@infradead.org>
-CC: <dinh.linux@gmail.com>, <computersforpeace@gmail.com>,
-        <yamada.m@jp.panasonic.com>, <josh@joshtriplett.org>,
-        <shijie8@gmail.com>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>,
-        Graham Moore <grmoore@opensource.altera.com>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>
-Subject: [PATCH] mtd: denali: fix incorrect bitmask error in denali_setup_dma
-Date: Fri, 9 Jan 2015 09:32:35 -0600
-Message-ID: <1420817555-22828-1-git-send-email-dinguyen@opensource.altera.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S933089AbbAIPfP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:35:15 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:38500 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753AbbAIPfM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 10:35:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BY1PR00CA0040.namprd00.prod.outlook.com (25.160.102.50) To
- BN3PR0301MB1185.namprd03.prod.outlook.com (25.160.156.147)
-Authentication-Results: spf=none (sender IP is )
- smtp.mailfrom=dinguyen@opensource.altera.com; 
-X-DmarcAction: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BN3PR0301MB1185;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:(601004);SRVR:BN3PR0301MB1185;
-X-Forefront-PRVS: 04519BA941
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(229853001)(86152002)(21056001)(92566001)(81156004)(106356001)(50986999)(87976001)(99396003)(107046002)(120916001)(2351001)(47776003)(68736005)(122386002)(20776003)(46102003)(105586002)(4396001)(53416004)(50226001)(19580405001)(19580395003)(62966003)(77156002)(40100003)(33646002)(110136001)(31966008)(69596002)(101416001)(66066001)(86362001)(42186005)(50466002)(89996001)(48376002)(97736003);DIR:OUT;SFP:1101;SCL:1;SRVR:BN3PR0301MB1185;H:linux-builds1.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1185;
-X-OriginatorOrg: opensource.altera.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 09 Jan 2015 15:37:00.7874 (UTC)
-X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN3PR0301MB1185
+In-Reply-To: <2083932.v1GzgAfexK@wuerfel>
+References: <1420656594-8908-1-git-send-email-m-karicheri2@ti.com>
+ <3861625.CJ6m15sZMh@wuerfel> <54AED9EC.1020703@ti.com> <2083932.v1GzgAfexK@wuerfel>
+From: Rob Herring <robherring2@gmail.com>
+Date: Fri, 9 Jan 2015 09:34:50 -0600
+Message-ID: <CAL_JsqLG2OQL2TMMrXi4U0PU1vNzgodUehoZwpds5z8JKsB1jQ@mail.gmail.com>
+Subject: Re: [PATCH v3 2/4] of: move of_dma_configure() to device,c to help re-use
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Murali Karicheri <m-karicheri2@ti.com>, Joerg Roedel <joro@8bytes.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Graham Moore <grmoore@opensource.altera.com>
+On Thu, Jan 8, 2015 at 4:24 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Thursday 08 January 2015 14:26:36 Murali Karicheri wrote:
+>> On 01/08/2015 03:40 AM, Arnd Bergmann wrote:
+>> > On Wednesday 07 January 2015 17:37:56 Rob Herring wrote:
+>> >> On Wed, Jan 7, 2015 at 12:49 PM, Murali Karicheri<m-karicheri2@ti.com>  wrote:
+>> >>
+>> >>> +       ret = of_dma_get_range(np,&dma_addr,&paddr,&size);
+>> >>> +       if (ret<  0) {
+>> >>> +               dma_addr = offset = 0;
+>> >>> +               size = dev->coherent_dma_mask + 1;
+>> >>
+>> >> If coherent_dma_mask is DMA_BIT_MASK(64), then you will overflow and
+>> >> have a size of 0. There may also be a problem when the mask is only
+>> >> 32-bit type.
+>> >
+>> > The mask is always a 64-bit type, it's not optional. But you are right,
+>> > the 64-bit mask case is broken, so I guess we have to fix it differently
+>> > by always passing the smaller value into arch_setup_dma_ops and
+>> > adapting that function instead.
+>> Arnd,
+>>
+>> What is the smaller value you are referring to in the below code?
+>> between *dev->dma_mask and size from DT? But overflow can still happen
+>> when size is to be calculated in arch_setup_dma_ops() for Non DT case or
+>> when DT size is configured to be equivalent of DMA_BIT_MASK(64) + 1. Can
+>> we discuss the code change you have in mind when you get a chance?
+>
+> I meant changing every function that the size values gets passed into
+> to take a mask like 0xffffffff instead of a size like 0x100000000, so
+> we can represent a 64-bit capable bus correctly.
 
-commit "3157d1ed2309 mtd: denali: remove unnecessary casts" introduced
-an error by using a wrong bitmask.
+Or you could special case a size of 0 to mean all/max? I'm not sure if
+we need to handle size=0 for other reasons beyond just wrong DT data.
 
-A uint16_t cast was replaced with & 0xff, should be & 0xffff.
+> This means we also need to adapt the value returned from of_dma_get_range.
+> A minor complication here is that the DT properties sometimes already
+> contain the mask value, in particular when we want to represent a
+> full mapping like
+>
+>         bus {
+>                 #address-cells = <1>;
+>                 #size-cells = <1>;
+>                 dma-ranges = <0 0 0xffffffff>; /* all 4 GB, DMA_BIT_MASK(32) */
 
-Signed-off-by: Graham Moore <grmoore@opensource.altera.com>
-Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
----
- drivers/mtd/nand/denali.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This is wrong though, right? The DT should be size. Certainly, this
+could be a valid size, but that would not make the mask 0xfffffffe. We
+would still want it to be 0xffffffff.
 
-diff --git a/drivers/mtd/nand/denali.c b/drivers/mtd/nand/denali.c
-index b3b7ca1..5e397fb 100644
---- a/drivers/mtd/nand/denali.c
-+++ b/drivers/mtd/nand/denali.c
-@@ -1041,7 +1041,7 @@ static void denali_setup_dma(struct denali_nand_info *denali, int op)
- 	index_addr(denali, mode | ((addr >> 16) << 8), 0x2200);
- 
- 	/* 3. set memory low address bits 23:8 */
--	index_addr(denali, mode | ((addr & 0xff) << 8), 0x2300);
-+	index_addr(denali, mode | ((addr & 0xffff) << 8), 0x2300);
- 
- 	/* 4. interrupt when complete, burst len = 64 bytes */
- 	index_addr(denali, mode | 0x14000, 0x2400);
--- 
-1.7.9.5
+We could do a fixup for these cases adding 1 if bit 0 is set (or not
+subtracting 1 if we want the mask).
 
+Rob
