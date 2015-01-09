@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757225AbbAIM4d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 07:56:33 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:34252 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756194AbbAIM4b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 07:56:31 -0500
-Date: Fri, 9 Jan 2015 12:56:27 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Kanaka Juvva <kanaka.d.juvva@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH 11/11] perf/x86/intel: Enable conflicting event
- scheduling for CQM
-Message-ID: <20150109125627.GE495@console-pimps.org>
-References: <1415999712-5850-1-git-send-email-matt@console-pimps.org>
- <1415999712-5850-12-git-send-email-matt@console-pimps.org>
- <20150108114936.GJ3337@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757558AbbAIM5E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 07:57:04 -0500
+Received: from mail.emea.novell.com ([130.57.118.101]:48717 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756799AbbAIM5C convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Fri, 9 Jan 2015 07:57:02 -0500
+Message-Id: <54AFDE2B0200007800053248@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Fri, 09 Jan 2015 12:56:59 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "David Vrabel" <david.vrabel@citrix.com>,
+        "Juergen Gross" <JGross@suse.com>
+Cc: "xen-devel" <xen-devel@lists.xenproject.org>, <boris.ostrovsky@oracle.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 3/3] xen: use correct type for physical
+ addresses
+References: <1420736490-15351-1-git-send-email-jgross@suse.com>
+ <1420736490-15351-4-git-send-email-jgross@suse.com>
+ <54AFB410020000780005306E@mail.emea.novell.com>
+ <54AFCED7.7040407@citrix.com>
+In-Reply-To: <54AFCED7.7040407@citrix.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20150108114936.GJ3337@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 08 Jan, at 12:49:36PM, Peter Zijlstra wrote:
-> On Fri, Nov 14, 2014 at 09:15:12PM +0000, Matt Fleming wrote:
-> > +/*
-> > + * Deallocate the RMIDs from any events that conflict with @event, and
-> > + * place them on the back of the group list.
-> > + */
-> > +static void intel_cqm_sched_out_events(struct perf_event *event)
+>>> On 09.01.15 at 13:51, <david.vrabel@citrix.com> wrote:
+> On 09/01/15 09:57, Jan Beulich wrote:
+>>>>> On 08.01.15 at 18:01, <JGross@suse.com> wrote:
+>>> @@ -284,7 +286,7 @@ static void __init xen_update_mem_tables(unsigned long pfn, unsigned long mfn)
+>>>  	}
+>>>  
+>>>  	/* Update kernel mapping, but not for highmem. */
+>>> -	if ((pfn << PAGE_SHIFT) >= __pa(high_memory))
+>>> +	if (PFN_PHYS(pfn) >= (u64)(__pa(high_memory)))
+>> 
+>> I don't think you really need the cast on the right side - __pa()
+>> should be returning a value of suitable type (and unsigned long
+>> would be sufficient for anything up to and including high_memory).
 > 
-> I realize this function name is already very long, but how about:
+> I'd prefer:
 > 
->   intel_cqm_sched_out_conflicting_events()
-> 
-> instead?
+>     if (pfn >= PFN_DOWN(__pa(high_memory))
 
-Sure. I'll make the change.
+Even better indeed. Just one more point: Strictly speaking
+__pa(high_memory) is invalid, as __pa() is defined for low
+memory only. Hence perhaps PFN_UP(__pa(high_memory - 1))?
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Jan
+
