@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758109AbbAISBI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 13:01:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56968 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750976AbbAISBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 13:01:06 -0500
-Date: Fri, 9 Jan 2015 18:59:36 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Pratyush Anand <panand@redhat.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        tixy@linaro.org, ananth@in.ibm.com, sandeepa.prabhu@linaro.org,
-        catalin.marinas@arm.com, will.deacon@arm.com,
-        linux-kernel@vger.kernel.org, anil.s.keshavamurthy@intel.com,
-        masami.hiramatsu.pt@hitachi.com, wcohen@redhat.com
-Subject: Re: [RFC 8/8] ARM64: Add uprobe support
-Message-ID: <20150109175936.GB13161@redhat.com>
-References: <cover.1420038188.git.panand@redhat.com> <0694af6935f9c6873ef8d25ad51630a40a74a116.1420038188.git.panand@redhat.com>
+	id S1758069AbbAIR7w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 12:59:52 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39691 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757947AbbAIR7u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 12:59:50 -0500
+Date: Fri, 9 Jan 2015 18:59:47 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
+        s.nawrocki@samsung.com, Chanwoo Choi <cw00.choi@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH/RFC v10 07/19] mfd: max77693: Adjust FLASH_EN_SHIFT and
+ TORCH_EN_SHIFT macros
+Message-ID: <20150109175947.GI18076@amd>
+References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
+ <1420816989-1808-8-git-send-email-j.anaszewski@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <0694af6935f9c6873ef8d25ad51630a40a74a116.1420038188.git.panand@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1420816989-1808-8-git-send-email-j.anaszewski@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/31, Pratyush Anand wrote:
->
-> +int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
-> +		unsigned long addr)
-> +{
-> +	probe_opcode_t insn;
-> +
-> +	insn = *(probe_opcode_t *)(&auprobe->insn[0]);
-> +
-> +	switch (arm_probe_decode_insn(insn, &auprobe->ainsn)) {
-> +	case INSN_REJECTED:
-> +		return -EINVAL;
-> +
-> +	case INSN_GOOD_NO_SLOT:
-> +		auprobe->simulate = true;
-> +		if (auprobe->ainsn.prepare)
-> +			auprobe->ainsn.prepare(insn, &auprobe->ainsn);
-> +		break;
-> +
-> +	case INSN_GOOD:
-> +	default:
-> +		break;
-> +	}
-> +
-> +	return 0;
-> +}
+On Fri 2015-01-09 16:22:57, Jacek Anaszewski wrote:
+> Modify FLASH_EN_SHIFT and TORCH_EN_SHIFT macros to work properly
+> when passed enum max77693_fled values (0 for FLED1 and 1 for FLED2)
+> from leds-max77693 driver.
+> 
+> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Chanwoo Choi <cw00.choi@samsung.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
 
-forgot to mention... shouldn't it also check IS_ALIGNED(addr, AARCH64_INSN_SIZE) ?
+Acked-by: Pavel Machek <pavel@ucw.cz>
 
-I do not know if unaligned insn address is valid on arm64 or not, but please
-note that at least it should not cross the page boundary, set_swbp() needs to
-write AARCH64_INSN_SIZE == UPROBE_SWBP_INSN bytes and it assumes that this
-should fit the single page.
-
-Oleg.
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
