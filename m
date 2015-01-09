@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310AbbAILjk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 06:39:40 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:54328 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755101AbbAILjh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 06:39:37 -0500
-Date: Fri, 9 Jan 2015 12:39:34 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH] clk: tegra: Fix order of arguments in WARN
-Message-ID: <20150109113933.GG16465@ulmo>
-References: <1412061720-10402-1-git-send-email-tomeu.vizoso@collabora.com>
+	id S1757520AbbAILmT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 06:42:19 -0500
+Received: from mail.us.es ([193.147.175.20]:37951 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756861AbbAILmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 06:42:17 -0500
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus5 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98.5/19899. spamassassin: 3.4.0.  
+ Clear:RC:1(127.0.0.1):SA:0(-104.2/7.5):. 
+ Processed in 1.880735 secs); 09 Jan 2015 11:42:14 -0000
+X-Spam-ASN: 
+X-Envelope-From: pneira@us.es
+Date: Fri, 9 Jan 2015 12:45:06 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Rahul Sharma <rsharma@arista.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
+Subject: Re: [PATCH net] ipv6: Prevent ipv6_find_hdr() from returning ENOENT
+ for valid non-first fragments
+Message-ID: <20150109114506.GA4857@salvia>
+References: <CAFB3abzYNYqtzd_n+Ym0Lo=DYbV0HPU=Tqw=stALNnu188hMKQ@mail.gmail.com>
+ <20150106224706.GA7416@salvia>
+ <CAFB3abwKpR1VqZXUrsexqveAZrA2LTSmTe8a=-H7z2HjAptjwA@mail.gmail.com>
+ <1420627396.26870.36.camel@stressinduktion.org>
+ <20150108205328.GA3361@salvia>
+ <1420756756.1755002.211556745.0418D128@webmail.messagingengine.com>
+ <20150109000546.GA3488@salvia>
+ <CAFB3abwrjp61LLOk3RWwXYEq1g4QZUC8OTKuO2cAr+GbV3n4rw@mail.gmail.com>
+ <1420803255.1978819.211762005.707EFFB9@webmail.messagingengine.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DNUSDXU7R7AVVM8C"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1412061720-10402-1-git-send-email-tomeu.vizoso@collabora.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1420803255.1978819.211762005.707EFFB9@webmail.messagingengine.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Hannes,
 
---DNUSDXU7R7AVVM8C
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jan 09, 2015 at 12:34:15PM +0100, Hannes Frederic Sowa wrote:
+> On Fri, Jan 9, 2015, at 08:18, Rahul Sharma wrote:
+> > Hi Pablo,
+> > 
+> > On Fri, Jan 9, 2015 at 5:35 AM, Pablo Neira Ayuso <pablo@netfilter.org>
+> > wrote:
+> > > On Thu, Jan 08, 2015 at 11:39:16PM +0100, Hannes Frederic Sowa wrote:
+> > >> Hi Pablo,
+> > >>
+> > >> On Thu, Jan 8, 2015, at 21:53, Pablo Neira Ayuso wrote:
+> > >> > I'm afraid we cannot just get rid of that !ipv6_ext_hdr() check. The
+> > >> > ipv6_find_hdr() function is designed to return the transport protocol.
+> > >> > After the proposed change, it will return extension header numbers.
+> > >> > This will break existing ip6tables rulesets since the `-p' option
+> > >> > relies on this function to match the transport protocol.
+> > >> >
+> > >> > Note that the AH header is skipped (see code a bit below this
+> > >> > problematic fragmentation handling) so the follow up header after the
+> > >> > AH header is returned as the transport header.
+> > >> >
+> > >> > We can probably return the AH protocol number for non-1st fragments.
+> > >> > However, that would be something new to ip6tables since nobody has
+> > >> > ever seen packet matching `-p ah' rules. Thus, we restore control to
+> > >> > the user to allow this, but we would accept all kind of fragmented AH
+> > >> > traffic through the firewall since we cannot know what transport
+> > >> > protocol contains from non-1st fragments (unless I'm missing anything,
+> > >> > I need to have a closer look at this again tomorrow with fresher
+> > >> > mind).
+> > >>
+> > >> The code in question is guarded by (_frag_off != 0), so we are
+> > >> definitely processing a non-1st fragment currently. The -p match would
+> > >> happen at the time when the packet is reassembled and thus ipv6_find_hdr
+> > >> will find the real transport (final) header at this point (I hope I
+> > >> followed the code correctly here).
+> > >
+> > > Then, Rahul should get things working by modprobing nf_defrag_ipv6.
+> > 
+> > I already had nf_defrag_ipv6 installed when the issue occured. But I
+> > see ip6table_raw_hook returning NF_DROP for the second fragment.
+> 
+> That's what I expected. I think the change only affects hooks before
+> reassembly.
 
-On Tue, Sep 30, 2014 at 09:22:00AM +0200, Tomeu Vizoso wrote:
-> As previously the names of the present clock and its parent were swapped.
->=20
-> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-
-Acked-by: Thierry Reding <treding@nvidia.com>
-
---DNUSDXU7R7AVVM8C
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUr731AAoJEN0jrNd/PrOh6ggP/0t9tGBdQV9faj1NFaVhslJw
-v8OFPF7J4eGfhuNJOgPC1nkBSuBrage5CG7rKV2sBp4pY1qUF7CbId8wSPpcnOCE
-TJlxc7H0YLRMTGLtwovDdS3Xc/v/78SqSKjgSyMqBrAwGNK6eN7y0cEgjPSZYHqa
-Vu0TkO1mxRbPB96FJQ1Xq05GbTK1hjaIgm6+VJWU+GzMZBn/9P2JwYdWk5vdC9DK
-cil2bcWvXq8jXt9uITtphS/lB4xGFLwM9sujX1TrG/on3XgHoioXZttZbsN3hZWt
-EPO/Av8ZmINDFKG+d1yJ/h/1tAkz/VErXq58kqhyXtFGTqoUMsX0Rz826laAonKg
-KXeZBr/MS9naRYNW/Z8NnuQ+Oz82k168UXWkPQqfOK9ZR+noemrBiG38EGadX/3t
-0TgqzXC1p9djyxW+ThB6xWBTiJqBc+2VPV6fGGDhBbVIuXiGrgP4lkttSjdDmijR
-gcgZfkg9omcaWv5RFBRNga30XY8d3PhHXdSl1W+YPtf6KLFLUcYTHgbm709r3vGf
-xsDveonfCd4QTWYJ8OiswjOCpGW05tCQRi1r2Hw1FmqV0NX6wc3gtuu6sJATknh/
-x/wmPM60d7UMGj+kpTf2mVe6SkImIDmMQLQoyHY6qWAT20nq+Wvwp4eg7Ifo7cfG
-9uMciCg4YCKNjo7tT8jJ
-=hDQ9
------END PGP SIGNATURE-----
-
---DNUSDXU7R7AVVM8C--
+reassembly happens at NF_IP6_PRI_CONNTRACK_DEFRAG (-400), so that
+happens before NF_IP6_PRI_RAW (-300) in IPv6 which is where the raw
+table is placed.
