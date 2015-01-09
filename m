@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757641AbbAIKxT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 05:53:19 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44523 "EHLO
+	id S1757699AbbAIKkX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 05:40:23 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44593 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757400AbbAIKc3 (ORCPT
+	by vger.kernel.org with ESMTP id S1757492AbbAIKc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Jan 2015 05:32:29 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 49/78] isofs: Fix unchecked printing of ER records
-Date: Fri,  9 Jan 2015 11:31:58 +0100
-Message-Id: <2329c797a9dc66982946026cbc1783e072ab8e33.1420799385.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 50/78] KEYS: Fix stale key registration at error path
+Date: Fri,  9 Jan 2015 11:31:59 +0100
+Message-Id: <d9135d9e6aa11beb51b98342efb1a87987269622.1420799385.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
 References: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
@@ -23,39 +23,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+From: Takashi Iwai <tiwai@suse.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 4e2024624e678f0ebb916e6192bd23c1f9fdf696 upstream.
+commit b26bdde5bb27f3f900e25a95e33a0c476c8c2c48 upstream.
 
-We didn't check length of rock ridge ER records before printing them.
-Thus corrupted isofs image can cause us to access and print some memory
-behind the buffer with obvious consequences.
+When loading encrypted-keys module, if the last check of
+aes_get_sizes() in init_encrypted() fails, the driver just returns an
+error without unregistering its key type.  This results in the stale
+entry in the list.  In addition to memory leaks, this leads to a kernel
+crash when registering a new key type later.
 
-Reported-and-tested-by: Carl Henrik Lunde <chlunde@ping.uio.no>
-Signed-off-by: Jan Kara <jack@suse.cz>
+This patch fixes the problem by swapping the calls of aes_get_sizes()
+and register_key_type(), and releasing resources properly at the error
+paths.
+
+Bugzilla: https://bugzilla.opensuse.org/show_bug.cgi?id=908163
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/isofs/rock.c | 3 +++
- 1 file changed, 3 insertions(+)
+ security/keys/encrypted-keys/encrypted.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/fs/isofs/rock.c b/fs/isofs/rock.c
-index bb63254ed848..735d7522a3a9 100644
---- a/fs/isofs/rock.c
-+++ b/fs/isofs/rock.c
-@@ -362,6 +362,9 @@ repeat:
- 			rs.cont_size = isonum_733(rr->u.CE.size);
- 			break;
- 		case SIG('E', 'R'):
-+			/* Invalid length of ER tag id? */
-+			if (rr->u.ER.len_id + offsetof(struct rock_ridge, u.ER.data) > rr->len)
-+				goto out;
- 			ISOFS_SB(inode->i_sb)->s_rock = 1;
- 			printk(KERN_DEBUG "ISO 9660 Extensions: ");
- 			{
+diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
+index 9e1e005c7596..c4c8df4b214d 100644
+--- a/security/keys/encrypted-keys/encrypted.c
++++ b/security/keys/encrypted-keys/encrypted.c
+@@ -1018,10 +1018,13 @@ static int __init init_encrypted(void)
+ 	ret = encrypted_shash_alloc();
+ 	if (ret < 0)
+ 		return ret;
++	ret = aes_get_sizes();
++	if (ret < 0)
++		goto out;
+ 	ret = register_key_type(&key_type_encrypted);
+ 	if (ret < 0)
+ 		goto out;
+-	return aes_get_sizes();
++	return 0;
+ out:
+ 	encrypted_shash_release();
+ 	return ret;
 -- 
 2.2.1
 
