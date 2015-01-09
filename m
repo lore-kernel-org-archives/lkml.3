@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932398AbbAIOiX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 09:38:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39072 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750989AbbAIOiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757745AbbAIOiW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 09:38:22 -0500
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:40811 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967AbbAIOiU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Jan 2015 09:38:20 -0500
-From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: kvm@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
-        Gleb Natapov <gleb@kernel.org>, Feng Wu <feng.wu@intel.com>
-Subject: [PATCH] KVM: x86: amend APIC lowest priority arbitration
-Date: Fri,  9 Jan 2015 15:37:26 +0100
-Message-Id: <1420814246-19033-1-git-send-email-rkrcmar@redhat.com>
 MIME-Version: 1.0
+In-Reply-To: <87387kjbjo.fsf@kamboji.qca.qualcomm.com>
+References: <1419766622-10911-1-git-send-email-oscar.forner.martinez@gmail.com>
+	<87bnmaqxvs.fsf@kamboji.qca.qualcomm.com>
+	<CACna6rzWaHg=M15q=swf+yqMEB3smRRANuLHkSK1dU1MtG8jgg@mail.gmail.com>
+	<87y4peo2of.fsf@kamboji.qca.qualcomm.com>
+	<CACna6rzdtx2pBHE-00uocUEqNrbopShUW83R0dYeQBD26eC=NA@mail.gmail.com>
+	<87387kjbjo.fsf@kamboji.qca.qualcomm.com>
+Date: Fri, 9 Jan 2015 15:38:19 +0100
+Message-ID: <CACna6rz6xGLKxVHMka-PTOM0ybi_fbu1-AtUqF9jU2aFHZRODQ@mail.gmail.com>
+Subject: Re: [PATCH v4] bcma: fix two coding style issues, more than 80
+ characters per line.
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Kalle Valo <kvalo@codeaurora.org>
+Cc: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lowest priority should take the task priority into account.
+On 9 January 2015 at 15:03, Kalle Valo <kvalo@codeaurora.org> wrote:
+> Rafał Miłecki <zajec5@gmail.com> writes:
+>
+>> On 7 January 2015 at 19:39, Kalle Valo <kvalo@codeaurora.org> wrote:
+>>> Rafał Miłecki <zajec5@gmail.com> writes:
+>>>
+>>>> On 7 January 2015 at 18:55, Kalle Valo <kvalo@codeaurora.org> wrote:
+>>>>> Oscar Forner Martinez <oscar.forner.martinez@gmail.com> writes:
+>>>>>
+>>>>>> Two lines with more than 80 characters per line have been split in several lines.
+>>>>>>
+>>>>>> Signed-off-by: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>
+>>>>>
+>>>>> Thanks, applied to wireless-drivers-next.git.
+>>>>
+>>>> Could you still replace it (V4) with an older version (V3)? Before I
+>>>> explained V3 was OK Oscar already sent this (worse) V4.
+>>>
+>>> No. I'm not going to rebase a public git tree unless there's a huge
+>>> disaster.
+>>
+>> I was pretty sure you didn't push it yet, that's why I asked.
+>
+> Heh, we got lucky. So I had actually run 'git push' but missed that the
+> authenticate had failed. A good thing you pointed out this. So I know
+> dropped this patch from my tree and pushed rest of the patches I had
+> applied.
+>
+> Rafal, is this the patch I should apply:
+>
+> https://patchwork.kernel.org/patch/5545021/
+>
+> Please confirm.
 
-SDM 10.6.2.4 Lowest Priority Delivery Mode.
-(Too long to quote; second and last paragraphs are relevant.)
+That's correct.
 
-Before this patch, we strived to have the same amount of handled
-lowest-priority interrupts on all VCPUs.
-This is only a complication, but kept for compatibility.
-
-Real modern Intels can't send lowest priority IPIs and the chipset
-directs external ones using processors' TPR.
-AMD still has rough edges.
-
-Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
----
- arch/x86/kvm/lapic.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-index a688fbffb34e..5b9d8c589bba 100644
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -833,7 +833,15 @@ static int __apic_accept_irq(struct kvm_lapic *apic, int delivery_mode,
- 
- int kvm_apic_compare_prio(struct kvm_vcpu *vcpu1, struct kvm_vcpu *vcpu2)
- {
--	return vcpu1->arch.apic_arb_prio - vcpu2->arch.apic_arb_prio;
-+	/* XXX: AMD (2:16.6.2 Lowest Priority Messages and Arbitration)
-+	 *      - uses the APR register (which also considers ISR and IRR),
-+	 *      - chooses the highest APIC ID when APRs are identical,
-+	 *      - and allows a focus processor.
-+	 * XXX: pseudo-balancing with apic_arb_prio is a KVM-specific feature
-+	 */
-+	int tpr = kvm_apic_get_reg(vcpu1->arch.apic, APIC_TASKPRI) -
-+	          kvm_apic_get_reg(vcpu2->arch.apic, APIC_TASKPRI);
-+	return tpr ? : vcpu1->arch.apic_arb_prio - vcpu2->arch.apic_arb_prio;
- }
- 
- static void kvm_ioapic_send_eoi(struct kvm_lapic *apic, int vector)
 -- 
-2.2.0
-
+Rafał
