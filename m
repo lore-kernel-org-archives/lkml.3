@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757553AbbAIKcb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 05:32:31 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44483 "EHLO
+	id S1757571AbbAIKcd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 05:32:33 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44489 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751726AbbAIKc2 (ORCPT
+	by vger.kernel.org with ESMTP id S1752904AbbAIKc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Jan 2015 05:32:28 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
+Cc: linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Kelley Nielsen <kelleynnn@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 17/78] mm/vmpressure.c: fix race in vmpressure_work_fn()
-Date: Fri,  9 Jan 2015 11:31:26 +0100
-Message-Id: <5a40e10cc3479a28bac0d4ca3134df7052cb46df.1420799385.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 18/78] mm: fix swapoff hang after page migration and fork
+Date: Fri,  9 Jan 2015 11:31:27 +0100
+Message-Id: <0315eaed91c9cbf0e26aa0bdcef213e45e9c44a3.1420799385.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
 References: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
@@ -25,57 +26,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Morton <akpm@linux-foundation.org>
+From: Hugh Dickins <hughd@google.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 91b57191cfd152c02ded0745250167d0263084f8 upstream.
+commit 2022b4d18a491a578218ce7a4eca8666db895a73 upstream.
 
-In some android devices, there will be a "divide by zero" exception.
-vmpr->scanned could be zero before spin_lock(&vmpr->sr_lock).
+I've been seeing swapoff hangs in recent testing: it's cycling around
+trying unsuccessfully to find an mm for some remaining pages of swap.
 
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=88051
+I have been exercising swap and page migration more heavily recently,
+and now notice a long-standing error in copy_one_pte(): it's trying to
+add dst_mm to swapoff's mmlist when it finds a swap entry, but is doing
+so even when it's a migration entry or an hwpoison entry.
 
-[akpm@linux-foundation.org: neaten]
-Reported-by: ji_ang <ji_ang@163.com>
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>
+Which wouldn't matter much, except it adds dst_mm next to src_mm,
+assuming src_mm is already on the mmlist: which may not be so.  Then if
+pages are later swapped out from dst_mm, swapoff won't be able to find
+where to replace them.
+
+There's already a !non_swap_entry() test for stats: move that up before
+the swap_duplicate() and the addition to mmlist.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: Kelley Nielsen <kelleynnn@gmail.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- mm/vmpressure.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ mm/memory.c | 26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/mm/vmpressure.c b/mm/vmpressure.c
-index e0f62837c3f4..c98b14ee69d6 100644
---- a/mm/vmpressure.c
-+++ b/mm/vmpressure.c
-@@ -164,6 +164,7 @@ static void vmpressure_work_fn(struct work_struct *work)
- 	unsigned long scanned;
- 	unsigned long reclaimed;
+diff --git a/mm/memory.c b/mm/memory.c
+index b5901068495f..827a7ed7f5a2 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -808,20 +808,20 @@ copy_one_pte(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ 		if (!pte_file(pte)) {
+ 			swp_entry_t entry = pte_to_swp_entry(pte);
  
-+	spin_lock(&vmpr->sr_lock);
- 	/*
- 	 * Several contexts might be calling vmpressure(), so it is
- 	 * possible that the work was rescheduled again before the old
-@@ -172,11 +173,12 @@ static void vmpressure_work_fn(struct work_struct *work)
- 	 * here. No need for any locks here since we don't care if
- 	 * vmpr->reclaimed is in sync.
- 	 */
--	if (!vmpr->scanned)
-+	scanned = vmpr->scanned;
-+	if (!scanned) {
-+		spin_unlock(&vmpr->sr_lock);
- 		return;
-+	}
+-			if (swap_duplicate(entry) < 0)
+-				return entry.val;
+-
+-			/* make sure dst_mm is on swapoff's mmlist. */
+-			if (unlikely(list_empty(&dst_mm->mmlist))) {
+-				spin_lock(&mmlist_lock);
+-				if (list_empty(&dst_mm->mmlist))
+-					list_add(&dst_mm->mmlist,
+-						 &src_mm->mmlist);
+-				spin_unlock(&mmlist_lock);
+-			}
+-			if (likely(!non_swap_entry(entry)))
++			if (likely(!non_swap_entry(entry))) {
++				if (swap_duplicate(entry) < 0)
++					return entry.val;
++
++				/* make sure dst_mm is on swapoff's mmlist. */
++				if (unlikely(list_empty(&dst_mm->mmlist))) {
++					spin_lock(&mmlist_lock);
++					if (list_empty(&dst_mm->mmlist))
++						list_add(&dst_mm->mmlist,
++							 &src_mm->mmlist);
++					spin_unlock(&mmlist_lock);
++				}
+ 				rss[MM_SWAPENTS]++;
+-			else if (is_migration_entry(entry)) {
++			} else if (is_migration_entry(entry)) {
+ 				page = migration_entry_to_page(entry);
  
--	spin_lock(&vmpr->sr_lock);
--	scanned = vmpr->scanned;
- 	reclaimed = vmpr->reclaimed;
- 	vmpr->scanned = 0;
- 	vmpr->reclaimed = 0;
+ 				if (PageAnon(page))
 -- 
 2.2.1
 
