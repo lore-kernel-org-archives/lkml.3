@@ -1,97 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756366AbbAIACN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jan 2015 19:02:13 -0500
-Received: from violet.fr.zoreil.com ([92.243.8.30]:50314 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755021AbbAIACL (ORCPT
+	id S1755731AbbAIAF2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jan 2015 19:05:28 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:63359 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166AbbAIAF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jan 2015 19:02:11 -0500
-Date: Fri, 9 Jan 2015 01:00:57 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Stephen Wang <wstephen@codeaurora.org>
-Cc: jcliburn@gmail.com, grant.likely@linaro.org, robh+dt@kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH] ethernet: atheros: Add nss-gmac driver
-Message-ID: <20150109000057.GB11396@electric-eye.fr.zoreil.com>
-References: <y>
- <1420754626-30121-1-git-send-email-wstephen@codeaurora.org>
+	Thu, 8 Jan 2015 19:05:26 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: Rob Herring <robherring2@gmail.com>, Joerg Roedel <joro@8bytes.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v3 2/4] of: move of_dma_configure() to device,c to help re-use
+Date: Fri, 09 Jan 2015 01:05:11 +0100
+Message-ID: <2405706.Bhe0GramZJ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54AF165F.7070909@ti.com>
+References: <1420656594-8908-1-git-send-email-m-karicheri2@ti.com> <2083932.v1GzgAfexK@wuerfel> <54AF165F.7070909@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420754626-30121-1-git-send-email-wstephen@codeaurora.org>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:1HQCtwJiGu6yOKbteQBVzeGf+LzEER6Ddlycn/NvGtWtW12TKX+
+ ctlhKpdBwCwKNmHilU9qZtLSfKCWqZK6XnYBBlwafwqXAcacu8/myKGzVXCI/ZIhM9zklLz
+ Y28pYzFJ5B0drT0bNNk/z95lXw6kSOYZdJdqFxOZxiYMaLkEut9eXyJ9DAacpUP/W361uTF
+ QgZf2OF8Mw+geh+Dz2w1A==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Wang <wstephen@codeaurora.org> :
-> This driver adds support for the internal GMACs on IPQ806x SoCs.
-> It supports the device-tree and will register up to 4 ethernet
-> interfaces.
+On Thursday 08 January 2015 18:44:31 Murali Karicheri wrote:
+> The grep of dma-ranges for arch/arm shows the size used is mask + 1 as
 > 
-> Signed-off-by: Stephen Wang <wstephen@codeaurora.org>
-> ---
-[...]
-> +/*
-> + * NSS GMAC data plane ops, default would be slowpath and can be override by
-> + * nss-drv
-> + */
-> +struct nss_gmac_data_plane_ops {
-> +	int (*open)(void *ctx, uint32_t tx_desc_ring, uint32_t rx_desc_ring,
-> +							uint32_t mode);
-> +	int (*close)(void *ctx);
-> +	int (*link_state)(void *ctx, uint32_t link_state);
-> +	int (*mac_addr)(void *ctx, uint8_t *addr);
-> +	int (*change_mtu)(void *ctx, uint32_t mtu);
-> +	int (*xmit)(void *ctx, struct sk_buff *os_buf);
-> +};
+> ./boot/dts/keystone.dtsi:               dma-ranges = <0x80000000 0x8 0x00000000 
+> 0x80000000>;
+> ./boot/dts/keystone.dtsi:                       dma-ranges;
+> ./boot/dts/keystone.dtsi:                       dma-ranges;
+> ./boot/dts/r8a7790.dtsi:                dma-ranges = <0x42000000 0 0x40000000 0 
+> 0x40000000 0 0x80000000
+> ./boot/dts/integratorap.dts:    dma-ranges = <0x80000000 0x0 0x80000000>;
+> ./boot/dts/r8a7791.dtsi:                dma-ranges = <0x42000000 0 0x40000000 0 
+> 0x40000000 0 0x80000000
+> ./boot/dts/.k2hk-evm.dtb.dts.tmp:  dma-ranges = <0x80000000 0x8 
+> 0x00000000 0x80000000>;
+> ./boot/dts/.k2hk-evm.dtb.dts.tmp:   dma-ranges;
+> ./boot/dts/.k2l-evm.dtb.dts.tmp:  dma-ranges = <0x80000000 0x8 
+> 0x00000000 0x80000000>;
+> ./boot/dts/.k2l-evm.dtb.dts.tmp:   dma-ranges;
+> ./boot/dts/.k2e-evm.dtb.dts.tmp:  dma-ranges = <0x80000000 0x8 
+> 0x00000000 0x80000000>;
+> ./boot/dts/.k2e-evm.dtb.dts.tmp:   dma-ranges;
+> ./boot/dts/.k2e-evm.dtb.dts.tmp:   dma-ranges;
+> ./boot/dts/k2e.dtsi:                    dma-ranges;
+> ./boot/dts/k2e.dtsi:                    dma-ranges;
+> 
+> So for ARM 32 the below case doesn't seem to apply.
+> 
 
-Weak types.
+Ah, I guess that is because an empty dma-ranges property serves the same
+purpose.
 
-[...]
-> +/*
-> + * nss_gmac_register_offload()
-> + *
-> + * @param[netdev] netdev instance that is going to register
-> + * @param[dp_ops] dataplan ops for chaning mac addr/mtu/link status
-> + * @param[ctx] passing the ctx of this nss_phy_if to gmac
-> + *
-> + * @return Return SUCCESS or FAILURE
-> + */
-> +int nss_gmac_override_data_plane(struct net_device *netdev,
-> +				struct nss_gmac_data_plane_ops *dp_ops,
-> +				void *ctx)
-> +{
-> +	struct nss_gmac_dev *gmacdev = (struct nss_gmac_dev *)netdev_priv(netdev);
-> +
-> +	BUG_ON(!gmacdev);
-> +
-> +	if (!dp_ops->open || !dp_ops->close || !dp_ops->link_state
-> +		|| !dp_ops->mac_addr || !dp_ops->change_mtu || !dp_ops->xmit) {
-> +		netdev_dbg(netdev, "%s: All the op functions must be present, reject this registeration",
-> +								__func__);
-> +		return NSS_GMAC_FAILURE;
-> +	}
-> +
-> +	/*
-> +	 * If this gmac is up, close the netdev to force TX/RX stop
-> +	 */
-> +	if (test_bit(__NSS_GMAC_UP, &gmacdev->flags))
-> +		nss_gmac_linux_close(netdev);
-> +
-> +	/* Recored the data_plane_ctx, data_plane_ops */
-> +	gmacdev->data_plane_ctx = ctx;
-> +	gmacdev->data_plane_ops = dp_ops;
-> +	gmacdev->first_linkup_done = 0;
-> +
-> +	return NSS_GMAC_SUCCESS;
-> +}
-> +EXPORT_SYMBOL(nss_gmac_override_data_plane);
-
-Why is this hook needed ?
-
--- 
-Ueimor
+	Arnd
