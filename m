@@ -1,64 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758099AbbAIRXE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 12:23:04 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47299 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757914AbbAIRXB (ORCPT
+	id S1758153AbbAIRXp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 12:23:45 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:63910 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755843AbbAIRXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 12:23:01 -0500
-Date: Fri, 9 Jan 2015 17:22:41 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Peter Rosin <peda@lysator.liu.se>
-Cc: alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Jaroslav Kysela <perex@perex.cz>, Lars-Peter Clausen <lars@metafoo.de>,
-        linux-kernel@vger.kernel.org, Peter Rosin <peda@axentia.se>,
-        stable@vger.kernel.org
-Message-ID: <20150109172241.GM2634@sirena.org.uk>
-References: <1420754190-6309-1-git-send-email-peda@lysator.liu.se>
+	Fri, 9 Jan 2015 12:23:42 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LEhai0xmYcLK0HEx"
-Content-Disposition: inline
-In-Reply-To: <1420754190-6309-1-git-send-email-peda@lysator.liu.se>
-X-Cookie: What's so funny?
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: pcm512x: Fix DSP program selection
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <871tn7zsie.fsf@kamboji.qca.qualcomm.com>
+References: <1420230361-1862-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<871tn7zsie.fsf@kamboji.qca.qualcomm.com>
+Date: Fri, 9 Jan 2015 18:23:40 +0100
+Message-ID: <CAKXHbyM2JXBgknL+WqVqkLcPMfWHHF4D8j44Cqenj76Gvd8PXQ@mail.gmail.com>
+Subject: Re: [PATCH] net: wireless: rtlwifi: btcoexist: halbtc8821a2ant:
+ Remove some unused functions
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Kalle Valo <kvalo@codeaurora.org>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi All
 
---LEhai0xmYcLK0HEx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes I use sed as Julian said. I have it as part of my git send-email
+script, until a few week ago, it was enough that I removed the
+"drivers/" and changed all "/" to ": "
+I have now been expanded my sed pipe a lot (tell me if anyone is interested).
+But a real script to do this would have been very good I think!
 
-On Thu, Jan 08, 2015 at 10:56:30PM +0100, Peter Rosin wrote:
-> From: Peter Rosin <peda@axentia.se>
->=20
-> The DSP programs are listed out of order.
+It may be, there was some mail problems during the holiday season :-(
+There is not a total consensus on how patcher will was designed.
+I have previously received complaints that I made for large patches of
+too many files.
+Have since tried to make small patches, and it also fit better to have
+more specific paths in the subject line.
 
-Applied, thanks.
+But I'll try to gather all in one patchset instead this weekend.
 
---LEhai0xmYcLK0HEx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Kind regards
+Rickard Strandqvist
 
-iQEcBAEBAgAGBQJUsA5gAAoJECTWi3JdVIfQin4H/3nFDYiHBbkQFmkVFt8Kf7S1
-Sp2fqd9nNFQUBkoF47kAzj8J+H7Ra+64jQYL4W5Uupxjrx2pHnVS7RRa0yC1c2xn
-Dea3SlafPWTg2NtEYRWtdpaGkCma1WFGJYNqHTN9l/+xkMGOFwG8JLEZPc1xP5x+
-xCfCZSzUGPWs8c6369FzSvxsExXbJR1q2dZEv+b5bk6ZbuzpCrbeHN+BZRpvY6y8
-oP7IWVRZ+6mmmdxP7YFPcui6/aepiSHa25EnlkN+s/vfHT4C/Q3GOSBHicuEceZp
-yj0U13yxMrm3mYWwQP+vI4aWwvQ+9dlqoR66+G3QOc7UIZ/PQF/jNKzSAYERcbE=
-=NYwO
------END PGP SIGNATURE-----
 
---LEhai0xmYcLK0HEx--
+
+2015-01-06 19:14 GMT+01:00 Kalle Valo <kvalo@codeaurora.org>:
+> Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> writes:
+>
+>> Removes some functions that are not used anywhere:
+>> ex_halbtc8821a2ant_periodical() ex_halbtc8821a2ant_halt_notify()
+>> ex_halbtc8821a2ant_bt_info_notify()
+>> ex_halbtc8821a2ant_special_packet_notify()
+>> ex_halbtc8821a2ant_connect_notify() ex_halbtc8821a2ant_scan_notify()
+>> ex_halbtc8821a2ant_lps_notify() ex_halbtc8821a2ant_ips_notify()
+>> ex_halbtc8821a2ant_display_coex_info() ex_halbtc8821a2ant_init_coex_dm()
+>> ex_halbtc8821a2ant_init_hwconfig()
+>>
+>> This was partially found by using a static code analysis program called cppcheck.
+>>
+>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>
+> Rickard, I have dropped all your patches because I lost track which I
+> should apply and which not and I do not want to waste half an hour
+> figuring out. Please resend the ones which are still valid.
+>
+> And to make it easier for everyone please group these wireless-drivers
+> cleanup patches into a larger patchset (like 10-15 patches max per
+> patchset). That way it's a lot easier for me tomanage them. Sending one
+> patch a day is not recommended, especially when we are talking trivial
+> cleanup patches like this.
+>
+> --
+> Kalle Valo
