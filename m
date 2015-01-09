@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933419AbbAIK6A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 05:58:00 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:47333 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757389AbbAIK56 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 05:57:58 -0500
+	id S933425AbbAIK6Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 05:58:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58768 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932463AbbAIK6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 05:58:22 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1417824042-539-1-git-send-email-linux@rasmusvillemoes.dk>
+References: <1417824042-539-1-git-send-email-linux@rasmusvillemoes.dk>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: dhowells@redhat.com, Rusty Russell <rusty@rustcorp.com.au>,
+        d.kasatkin@samsung.com, linux-kernel@vger.kernel.org,
+        keyrings@linux-nfs.org
+Subject: Re: [PATCH 1/2] MPILIB: Fix comparison of negative MPIs
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdVeEmKiqGTOmevaBDbJ=nBTbSi6d6Xrm0eyvbMTtyU=sA@mail.gmail.com>
-References: <1418842153-17113-1-git-send-email-geert+renesas@glider.be>
-	<CAMuHMdVeEmKiqGTOmevaBDbJ=nBTbSi6d6Xrm0eyvbMTtyU=sA@mail.gmail.com>
-Date: Fri, 9 Jan 2015 11:57:57 +0100
-X-Google-Sender-Auth: 8z-QJd2o9bpV1inQ-HdQLN73qAE
-Message-ID: <CAO3366x64phBJ=tHOK03P6Ok_6LxiyLyC9LhjcocuqTx=86cfA@mail.gmail.com>
-Subject: Re: [PATCH v2 0/8] Add Simple Power-Managed Bus Support
-From: Ulrich Hecht <ulrich.hecht+renesas@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Laurent Pinchart <Laurent.pinchart@ideasonboard.com>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <2179.1420801081.1@warthog.procyon.org.uk>
+Date: Fri, 09 Jan 2015 10:58:01 +0000
+Message-ID: <2180.1420801081@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 8, 2015 at 8:28 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> On Wed, Dec 17, 2014 at 7:49 PM, Geert Uytterhoeven
-> <geert+renesas@glider.be> wrote:
->> The Renesas Bus State Controller (BSC) provides an external bus for
->> connecting multiple external devices to an SoC, driving several chip
->> select lines, for e.g. NOR FLASH, Ethernet and USB.
->> On the kzm9g and ape6evm development boards, an smsc9220 Ethernet
->> controller is connnected to the BSC of an SH-Mobile AG5 (sh73a0) resp.
->> R-Mobile APE6 (r8a73a4) SoC.
->
-> [...]
->
->> This was tested on sh73a0/kzm9g-multiplatform. Without this, Ethernet
->> doesn't work, as the ZB clock is disabled by clk_disable_unused().
->> Testing on r8a73a4/ape6evm-multiplatform would be appreciated.
->
-> Has anyone tried this on r8a73a4/ape6evm-multiplatform?
+I think you're right - *adding* the two sizes makes no sense.  cc'ing Dmitry
+also for his check.
 
-Works like a charm.
+David
 
-Tested-by: Ulrich Hecht <ulrich.hecht+renesas@gmail.com>
 
-CU
-Uli
+Rasmus Villemoes <linux@rasmusvillemoes.dk> wrote:
+
+> If u and v both represent negative integers and their limb counts
+> happen to differ, mpi_cmp will always return a positive value - this
+> is obviously bogus. u is smaller than v if and only if it is larger in
+> absolute value.
+> 
+> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+> ---
+>  lib/mpi/mpi-cmp.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/lib/mpi/mpi-cmp.c b/lib/mpi/mpi-cmp.c
+> index 1871e7b61ca0..3801694240d8 100644
+> --- a/lib/mpi/mpi-cmp.c
+> +++ b/lib/mpi/mpi-cmp.c
+> @@ -57,7 +57,7 @@ int mpi_cmp(MPI u, MPI v)
+>  	if (usize != vsize && !u->sign && !v->sign)
+>  		return usize - vsize;
+>  	if (usize != vsize && u->sign && v->sign)
+> -		return vsize + usize;
+> +		return vsize - usize;
+>  	if (!usize)
+>  		return 0;
+>  	cmp = mpihelp_cmp(u->d, v->d, usize);
+> -- 
+> 2.1.3
+> 
