@@ -1,183 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274AbbAII7L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 03:59:11 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:52690 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752296AbbAII7J (ORCPT
+	id S1756212AbbAIJC5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 04:02:57 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:55631 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753588AbbAIJCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 03:59:09 -0500
-Date: Fri, 9 Jan 2015 11:58:55 +0300
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Hillf Danton <hillf.zj@alibaba-inc.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "'Johannes Weiner'" <hannes@cmpxchg.org>,
-        "'Michal Hocko'" <mhocko@suse.cz>,
-        "'Greg Thelen'" <gthelen@google.com>,
-        "'Glauber Costa'" <glommer@gmail.com>,
-        "'Dave Chinner'" <david@fromorbit.com>,
-        "'Alexander Viro'" <viro@zeniv.linux.org.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [PATCH -mm v3 3/9] vmscan: per memory cgroup slab shrinkers
-Message-ID: <20150109085855.GC2110@esperanza>
-References: <063c01d02bd6$38c64ce0$aa52e6a0$@alibaba-inc.com>
+	Fri, 9 Jan 2015 04:02:55 -0500
+Message-ID: <54AF993A.7070707@atmel.com>
+Date: Fri, 9 Jan 2015 10:02:50 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <063c01d02bd6$38c64ce0$aa52e6a0$@alibaba-inc.com>
-X-Originating-IP: [81.5.99.36]
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <arm@kernel.org>
+CC: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Ludovic Desroches" <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL] at91: fixes for 3.19 #1 (bis)
+References: <1420456477-18204-1-git-send-email-nicolas.ferre@atmel.com> <20150108224150.GB13612@quad.lixom.net>
+In-Reply-To: <20150108224150.GB13612@quad.lixom.net>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 02:33:46PM +0800, Hillf Danton wrote:
-> > @@ -2318,16 +2357,22 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
-> > 
-> >  		memcg = mem_cgroup_iter(root, NULL, &reclaim);
-> >  		do {
-> > -			unsigned long lru_pages;
-> > +			unsigned long lru_pages, scanned;
-> >  			struct lruvec *lruvec;
-> >  			int swappiness;
-> > 
-> >  			lruvec = mem_cgroup_zone_lruvec(zone, memcg);
-> >  			swappiness = mem_cgroup_swappiness(memcg);
-> > +			scanned = sc->nr_scanned;
-> > 
-> >  			shrink_lruvec(lruvec, swappiness, sc, &lru_pages);
-> >  			zone_lru_pages += lru_pages;
-> > 
-> > +			if (memcg && is_classzone)
-> > +				shrink_slab(sc->gfp_mask, zone_to_nid(zone),
-> > +					    memcg, sc->nr_scanned - scanned,
-> > +					    lru_pages);
-> > +
-> Looks sc->nr_reclaimed has to be updated for "limit reclaim".
+Le 08/01/2015 23:41, Olof Johansson a écrit :
+> On Mon, Jan 05, 2015 at 12:14:37PM +0100, Nicolas Ferre wrote:
+>> Arnd, Olof, Kevin,
+>>
+>> This is the rebase of my previous pull-request on top of 3.19-rc1. As said at
+>> the time of my early messages, I was waiting for the arm-soc *and* pinctrl
+>> material to reach Linus T.'s tree before sending this pull-request. In fact
+>> this sequence was needed for the gpio header removal. The little patch about
+>> #include deletion just follows an earlier merge conflict in arm-soc tree: I was
+>> also waiting for this moment before sending the definitive fix, just to be
+>> sure.
+>>
+>> In comparison with the previous pull-request, I also added a tiny correction of
+>> the sama5d4.dtsi timer entry. All the rest is pretty straightforward.
+>>
+>> Thanks, best regards,
+>>
+>> The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
+>>
+>>   Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
+>>
+>> are available in the git repository at:
+>>
+>>   git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-fixes
+>>
+>> for you to fetch changes up to 0e049c66ebf56a415cadd6c593b7ee0a2cb9d19d:
+>>
+>>   ARM: at91/dt: sama5d4: fix the timer reg length (2015-01-05 11:07:14 +0100)
+>>
+>> ----------------------------------------------------------------
+>> First fixes batch for AT91 on 3.19 folowing The big cleanup:
+>> - removal of unused Kconfig RTC options
+>> - GPIO header file is now in same directory as the pinctrl driver
+>> - little fix on #includes
+>> - removal of DEBUG_LL from the sama5 common defconfig
+>> - little fix of reg size in sama5d4.dtsi
+>>
+>> ----------------------------------------------------------------
+>> Bo Shen (1):
+>>       ARM: at91/dt: sama5d4: fix the timer reg length
 > 
+> This is the only fix among these patches, isn't it? The others seem to
+> be code removals/cleanups better targeted for 3.20, as far as I can tell.
 
-That's true, thank you for catching this!
+Well, this is why I sent the first version of this pull-request very
+early in the process. I didn't have the possibility to re-send it
+earlier on top of -rc1 until this pull-request.
 
-I think we should move reclaim_state handling to shrink_slab(), as this
-incremental patch does:
+For me, the remaining of a dead Kconfig option, some issues with
+DEGUG_LL and to a lesser extend the remaining of dead code are worth
+cleaning now. I do have more cleanup patches to come in 3.20, but
+waiting more for this simple material to be included is IMHO not
+necessary...
 
----
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 16f3e45742d6..6961bf0a47af 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -347,6 +347,7 @@ static unsigned long do_shrink_slab(struct shrink_control *shrinkctl,
-  * @memcg: memory cgroup whose slab caches to target
-  * @nr_scanned: pressure numerator
-  * @nr_eligible: pressure denominator
-+ * @nr_reclaimed: number of reclaimed slab pages
-  *
-  * Call the shrink functions to age shrinkable caches.
-  *
-@@ -372,8 +373,10 @@ static unsigned long do_shrink_slab(struct shrink_control *shrinkctl,
- static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
- 				 struct mem_cgroup *memcg,
- 				 unsigned long nr_scanned,
--				 unsigned long nr_eligible)
-+				 unsigned long nr_eligible,
-+				 unsigned long *nr_reclaimed)
- {
-+	struct reclaim_state *reclaim_state = current->reclaim_state;
- 	struct shrinker *shrinker;
- 	unsigned long freed = 0;
- 
-@@ -394,6 +397,9 @@ static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
- 		goto out;
- 	}
- 
-+	if (reclaim_state)
-+		reclaim_state->reclaimed_slab = 0;
-+
- 	list_for_each_entry(shrinker, &shrinker_list, list) {
- 		struct shrink_control sc = {
- 			.gfp_mask = gfp_mask,
-@@ -410,6 +416,9 @@ static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
- 		freed += do_shrink_slab(&sc, shrinker, nr_scanned, nr_eligible);
- 	}
- 
-+	if (reclaim_state)
-+		*nr_reclaimed += reclaim_state->reclaimed_slab;
-+
- 	up_read(&shrinker_rwsem);
- out:
- 	cond_resched();
-@@ -419,6 +428,7 @@ out:
- void drop_slab_node(int nid)
- {
- 	unsigned long freed;
-+	unsigned long nr_reclaimed = 0;
- 
- 	do {
- 		struct mem_cgroup *memcg = NULL;
-@@ -426,7 +436,7 @@ void drop_slab_node(int nid)
- 		freed = 0;
- 		do {
- 			freed += shrink_slab(GFP_KERNEL, nid, memcg,
--					     1000, 1000);
-+					     1000, 1000, &nr_reclaimed);
- 		} while ((memcg = mem_cgroup_iter(NULL, memcg, NULL)) != NULL);
- 	} while (freed > 10);
- }
-@@ -2339,7 +2349,6 @@ static inline bool should_continue_reclaim(struct zone *zone,
- static bool shrink_zone(struct zone *zone, struct scan_control *sc,
- 			bool is_classzone)
- {
--	struct reclaim_state *reclaim_state = current->reclaim_state;
- 	unsigned long nr_reclaimed, nr_scanned;
- 	bool reclaimable = false;
- 
-@@ -2371,7 +2380,7 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
- 			if (memcg && is_classzone)
- 				shrink_slab(sc->gfp_mask, zone_to_nid(zone),
- 					    memcg, sc->nr_scanned - scanned,
--					    lru_pages);
-+					    lru_pages, &sc->nr_reclaimed);
- 
- 			/*
- 			 * Direct reclaim and kswapd have to scan all memory
-@@ -2398,12 +2407,7 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
- 		if (global_reclaim(sc) && is_classzone)
- 			shrink_slab(sc->gfp_mask, zone_to_nid(zone), NULL,
- 				    sc->nr_scanned - nr_scanned,
--				    zone_lru_pages);
--
--		if (reclaim_state) {
--			sc->nr_reclaimed += reclaim_state->reclaimed_slab;
--			reclaim_state->reclaimed_slab = 0;
--		}
-+				    zone_lru_pages, &sc->nr_reclaimed);
- 
- 		vmpressure(sc->gfp_mask, sc->target_mem_cgroup,
- 			   sc->nr_scanned - nr_scanned,
-@@ -3367,10 +3371,7 @@ static int kswapd(void *p)
- 	int balanced_classzone_idx;
- 	pg_data_t *pgdat = (pg_data_t*)p;
- 	struct task_struct *tsk = current;
--
--	struct reclaim_state reclaim_state = {
--		.reclaimed_slab = 0,
--	};
-+	struct reclaim_state reclaim_state;
- 	const struct cpumask *cpumask = cpumask_of_node(pgdat->node_id);
- 
- 	lockdep_set_current_reclaim_state(GFP_KERNEL);
-@@ -3508,7 +3509,6 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
- 
- 	p->flags |= PF_MEMALLOC;
- 	lockdep_set_current_reclaim_state(sc.gfp_mask);
--	reclaim_state.reclaimed_slab = 0;
- 	p->reclaim_state = &reclaim_state;
- 
- 	nr_reclaimed = do_try_to_free_pages(zonelist, &sc);
-@@ -3697,7 +3697,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 	 */
- 	p->flags |= PF_MEMALLOC | PF_SWAPWRITE;
- 	lockdep_set_current_reclaim_state(gfp_mask);
--	reclaim_state.reclaimed_slab = 0;
- 	p->reclaim_state = &reclaim_state;
- 
- 	if (zone_pagecache_reclaimable(zone) > zone->min_unmapped_pages) {
+I may have some more fixes remaining for 3.19 and will be cautious about
+their nature.
+
+
+Bye,
+-- 
+Nicolas Ferre
