@@ -1,68 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447AbbAIVzy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 16:55:54 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752542AbbAIVzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 16:55:52 -0500
-Message-ID: <54B04E65.60306@nod.at>
-Date: Fri, 09 Jan 2015 22:55:49 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>, dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: Fastmap update v2 (pile 1)
-References: <1416835236-25185-1-git-send-email-richard@nod.at> <54B04A50.8040307@vanguardiasur.com.ar>
-In-Reply-To: <54B04A50.8040307@vanguardiasur.com.ar>
-Content-Type: text/plain; charset=windows-1252
+	id S1752551AbbAIV64 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 16:58:56 -0500
+Received: from smtprelay0133.hostedemail.com ([216.40.44.133]:41419 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751760AbbAIV6z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 16:58:55 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:69:355:379:541:800:960:968:973:982:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2538:2559:2562:2828:3138:3139:3140:3141:3142:3352:3653:3865:3866:3867:3868:3871:3872:3874:4250:4321:4605:5007:6119:6261:10004:10400:10848:11026:11232:11473:11658:11914:12043:12050:12291:12517:12519:12555:12683:12698:12737:13095:13161:13229:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: pie94_6aa41051bff01
+X-Filterd-Recvd-Size: 3948
+Message-ID: <1420840730.32628.13.camel@perches.com>
+Subject: [PATCH] checkpatch: Update git commit message
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>, Prarit Bhargava <prarit@redhat.com>,
+        Daniel Baluta <daniel.baluta@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 09 Jan 2015 13:58:50 -0800
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 09.01.2015 um 22:38 schrieb Ezequiel Garcia:
-> Hi Richard,
-> 
-> On 11/24/2014 10:20 AM, Richard Weinberger wrote:
->> Artem,
->>
->> as requested I'm resending my fastmap work in smaller pieces.
->> This is pile 1 of 7.
->> Rebasing my patches to ubifs.git was a massive PITA because the
->> logging style changes touched a lot of code and almost every patch
->> failed to apply and needed inspection by hand.
->> The first patches are bug fixes, the latter introduce cleanups
->> and new features.
->> After all bugfixes are mainline I'll make sure that all needed
->> fixes go into -stable.
->>
-> 
-> Maybe it would be clearer if you could point out exactly which of these
-> are considered bugfixes.
+The git commit message can be confusing,
 
-All of Pile1, 2, 3 and 4. :-)
-One or tow patches are preparations for the real fix but obviously you'll need them
-too.
-The rest are enhancements and cleanups.
-As I wrote before I've structured the patch set in a way to make backporting easy.
+Try to clarify the message a bit to reduce
+the confusion when emitted.
 
-> For bugfixes, having a detailed explanation of the problem the commit is
-> meant to fix would be better as well.
+Show the correct form using
+	Please use git commit description style 'commit <12+ chars of sha1> ("<title line>")'
+and if the git commit sha1 is unique, show
+the right sha1 to use with the actual title
 
-Okay, I'll add the horror stories to these patches.
+Signed-off-by: Joe Perches <joe@perches.com>
+Original-patch-by: Prarit Bhargava <prarit@redhat.com>
+---
+ scripts/checkpatch.pl | 45 ++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 32 insertions(+), 13 deletions(-)
 
-> This patchset seems to have stalled, so perhaps having this information
-> would help Artem to pick the ones that you point as fixes, before we
-> miss another cycle.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 6afc24b..5d8c1f1 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -634,6 +634,8 @@ sub git_commit_info {
+ 	$output =~ s/^\s*//gm;
+ 	my @lines = split("\n", $output);
+ 
++	return ($id, $desc) if ($#lines < 0);
++
+ 	if ($lines[0] =~ /^error: short SHA1 $commit is ambiguous\./) {
+ # Maybe one day convert this block of bash into something that returns
+ # all matching commit ids, but it's very slow...
+@@ -2173,21 +2175,38 @@ sub process {
+ 			      "Remove Gerrit Change-Id's before submitting upstream.\n" . $herecurr);
+ 		}
+ 
+-# Check for improperly formed commit descriptions
+-		if ($in_commit_log &&
+-		    $line =~ /\bcommit\s+[0-9a-f]{5,}/i &&
+-		    !($line =~ /\b[Cc]ommit [0-9a-f]{12,40} \("/ ||
+-		      ($line =~ /\b[Cc]ommit [0-9a-f]{12,40}\s*$/ &&
+-		       defined $rawlines[$linenr] &&
+-		       $rawlines[$linenr] =~ /^\s*\("/))) {
+-			$line =~ /\b(c)ommit\s+([0-9a-f]{5,})/i;
++# Check for git id commit length and improperly formed commit descriptions
++		if ($in_commit_log && $line =~ /\b(c)ommit\s+([0-9a-f]{5,})/i) {
+ 			my $init_char = $1;
+ 			my $orig_commit = lc($2);
+-			my $id = '01234567890ab';
+-			my $desc = 'commit description';
+-		        ($id, $desc) = git_commit_info($orig_commit, $id, $desc);
+-			ERROR("GIT_COMMIT_ID",
+-			      "Please use 12 or more chars for the git commit ID like: '${init_char}ommit $id (\"$desc\")'\n" . $herecurr);
++			my $short = 1;
++			my $long = 0;
++			my $case = 1;
++			my $space = 1;
++			my $hasdesc = 0;
++			my $id = '0123456789ab';
++			my $orig_desc = "commit description";
++			my $description = "";
++
++			$short = 0 if ($line =~ /\bcommit\s+[0-9a-f]{12,40}/i);
++			$long = 1 if ($line =~ /\bcommit\s+[0-9a-f]{41,}/i);
++			$space = 0 if ($line =~ /\bcommit [0-9a-f]/i);
++			$case = 0 if ($line =~ /\b[Cc]ommit\s+[0-9a-f]{5,40}[^A-F]/);
++			if ($line =~ /\bcommit\s+[0-9a-f]{5,}\s+\("([^"]+)"\)/i) {
++				$orig_desc = $1;
++			} elsif ($line =~ /\bcommit\s+[0-9a-f]{5,}\s*$/i &&
++				 defined $rawlines[$linenr] &&
++				 $rawlines[$linenr] =~ /^\s*\("([^"]+)"\)/) {
++				$orig_desc = $1;
++			}
++
++			($id, $description) = git_commit_info($orig_commit,
++							      $id, $orig_desc);
++
++			if ($short || $long || $space || $case || ($orig_desc ne $description)) {
++				ERROR("GIT_COMMIT_ID",
++				      "Please use git commit description style 'commit <12+ chars of sha1> (\"<title line>\")' - ie: '${init_char}ommit $id (\"$description\")'\n" . $herecurr);
++			}
+ 		}
+ 
+ # Check for added, moved or deleted files
 
-The question is, shall I wait for Artem or resend again?
-Most patches are completely unseen.
 
-> Would it help if we test the whole series? (any specific test in mind?)
-
-Sure. All issues have been found while real world usage and excessive powercut tests.
-
-Thanks,
-//richard
