@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758075AbbAIP5h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:57:37 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:58928 "EHLO
+	id S1758094AbbAIP5j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:57:39 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:58933 "EHLO
 	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757709AbbAIP5g (ORCPT
+	with ESMTP id S1757711AbbAIP5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Jan 2015 10:57:36 -0500
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 0/5] arm64 compat syscall table clean-up
-Date: Fri,  9 Jan 2015 15:57:23 +0000
-Message-Id: <1420819048-3515-1-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH 1/5] compat: Declare compat_sys_sigpending and compat_sys_sigprocmask prototypes
+Date: Fri,  9 Jan 2015 15:57:24 +0000
+Message-Id: <1420819048-3515-2-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1420819048-3515-1-git-send-email-catalin.marinas@arm.com>
+References: <1420819048-3515-1-git-send-email-catalin.marinas@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series moves the arm64 compat_sys_call_table from .S to a .c file
-for consistency with the native syscalls and also for detecting when the
-real number of compat system calls and the __NR_compat_syscalls
-definition are out of sync.
+__ARCH_WANT_SYS_SIGPENDING or __ARCH_WANT_SYS_SIGPROGMASK may be defined
+for compat support but the corresponding prototypes are missing from
+linux/compat.h.
 
-The first two patches, however, touch some generic header file, hence
-Andrew and Arnd on cc.
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+---
+ include/linux/compat.h | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-Catalin Marinas (4):
-  compat: Declare compat_sys_sigpending and compat_sys_sigprocmask
-    prototypes
-  syscalls: Declare sys_*stat64 prototypes if
-    __ARCH_WANT_(COMPAT_)STAT64
-  arm64: Implement the compat_sys_call_table in C
-  arm64: Remove asm/syscalls.h
-
-Mark Rutland (1):
-  arm64: make sys_call_table const
-
- arch/arm64/include/asm/syscalls.h        | 30 -------------------
- arch/arm64/include/asm/unistd.h          |  3 ++
- arch/arm64/kernel/Makefile               |  2 +-
- arch/arm64/kernel/entry.S                |  2 +-
- arch/arm64/kernel/{sys32.S => entry32.S} | 34 ++++++++-------------
- arch/arm64/kernel/sys.c                  |  5 ++--
- arch/arm64/kernel/sys32.c                | 51 ++++++++++++++++++++++++++++++++
- include/linux/compat.h                   |  9 ++++++
- include/linux/syscalls.h                 |  8 +++--
- 9 files changed, 84 insertions(+), 60 deletions(-)
- delete mode 100644 arch/arm64/include/asm/syscalls.h
- rename arch/arm64/kernel/{sys32.S => entry32.S} (80%)
- create mode 100644 arch/arm64/kernel/sys32.c
-
+diff --git a/include/linux/compat.h b/include/linux/compat.h
+index 7450ca2ac1fc..ab25814690bc 100644
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -689,6 +689,15 @@ asmlinkage long compat_sys_sendfile64(int out_fd, int in_fd,
+ asmlinkage long compat_sys_sigaltstack(const compat_stack_t __user *uss_ptr,
+ 				       compat_stack_t __user *uoss_ptr);
+ 
++#ifdef __ARCH_WANT_SYS_SIGPENDING
++asmlinkage long compat_sys_sigpending(compat_old_sigset_t __user *set);
++#endif
++
++#ifdef __ARCH_WANT_SYS_SIGPROCMASK
++asmlinkage long compat_sys_sigprocmask(int how, compat_old_sigset_t __user *nset,
++				       compat_old_sigset_t __user *oset);
++#endif
++
+ int compat_restore_altstack(const compat_stack_t __user *uss);
+ int __compat_save_altstack(compat_stack_t __user *, unsigned long);
+ #define compat_save_altstack_ex(uss, sp) do { \
