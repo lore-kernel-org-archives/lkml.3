@@ -1,259 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932712AbbAILqM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 06:46:12 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:47667 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932380AbbAILqK (ORCPT
+	id S932793AbbAILrl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 06:47:41 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56041 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755346AbbAILrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 06:46:10 -0500
-Date: Fri, 9 Jan 2015 07:46:01 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH V2] (gpio-fan): Add thermal control hooks
-Message-ID: <20150109114559.GA9510@developer>
-References: <1420740303-12529-1-git-send-email-nm@ti.com>
+	Fri, 9 Jan 2015 06:47:39 -0500
+Date: Fri, 9 Jan 2015 11:46:24 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Baruch Siach <baruch@tkos.co.il>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 3/8] ARM: digicolor: add minimal device tree
+ description
+Message-ID: <20150109114624.GB12942@leverpostej>
+References: <cover.1420744368.git.baruch@tkos.co.il>
+ <9d8d7aed6220e9e92ab70217a65d3291924cfa71.1420744369.git.baruch@tkos.co.il>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="k1lZvvs/B4yU6o8G"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1420740303-12529-1-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <9d8d7aed6220e9e92ab70217a65d3291924cfa71.1420744369.git.baruch@tkos.co.il>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 08, 2015 at 07:39:59PM +0000, Baruch Siach wrote:
+> cx92755.dtsi describes CX92755 on chip peripherals. conexant_equinox.dts
+> describes the Equinox evaluation board for the CX92755 SoC.
 
---k1lZvvs/B4yU6o8G
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I didn't spot any cpu nodes below. While that might happen to work at
+the moment for UP, there really should be a node for the boot CPU.
 
-On Thu, Jan 08, 2015 at 12:05:03PM -0600, Nishanth Menon wrote:
-> Allow gpio-fan to be used as thermal cooling device for platforms that
-> use GPIO maps to control fans.
->=20
-> As part of this change, we make the shutdown and remove logic the same
-> as well.
->=20
-> Signed-off-by: Nishanth Menon <nm@ti.com>
+Thanks,
+Mark.
 
-For the thermal part:
-
-Acked-by: Eduardo Valentin <edubezval@gmail.com>
-
+> 
+> Signed-off-by: Baruch Siach <baruch@tkos.co.il>
 > ---
->=20
-> Changes since v1:
-> 	- review comments incorporated (hopefully correct)
-> 	- checkpatch verified
-> 	- retested :).
->=20
-> V1: https://patchwork.kernel.org/patch/5587061/
->=20
->  .../devicetree/bindings/gpio/gpio-fan.txt          |   13 +++
->  drivers/hwmon/gpio-fan.c                           |   83 ++++++++++++++=
-++++--
->  2 files changed, 89 insertions(+), 7 deletions(-)
->=20
-> diff --git a/Documentation/devicetree/bindings/gpio/gpio-fan.txt b/Docume=
-ntation/devicetree/bindings/gpio/gpio-fan.txt
-> index 2dd457a3469a..43ca2a45b862 100644
-> --- a/Documentation/devicetree/bindings/gpio/gpio-fan.txt
-> +++ b/Documentation/devicetree/bindings/gpio/gpio-fan.txt
-> @@ -11,6 +11,9 @@ Required properties:
->  Optional properties:
->  - alarm-gpios: This pin going active indicates something is wrong with
->    the fan, and a udev event will be fired.
-> +- cooling-cells: If used as a cooling device, must be <2>
-> +  Also see: Documentation/devicetree/bindings/thermal/thermal.txt
-> +  min and max states are derived from the speed-map of the fan.
-> =20
->  Examples:
-> =20
-> @@ -23,3 +26,13 @@ Examples:
->  				      6000 2>;
->  		alarm-gpios =3D <&gpio1 15 1>;
->  	};
-> +	gpio_fan_cool: gpio_fan {
-> +		compatible =3D "gpio-fan";
-> +		gpios =3D <&gpio2 14 1
-> +			 &gpio2 13 1>;
-> +		gpio-fan,speed-map =3D	<0    0>,
-> +					<3000 1>,
-> +					<6000 2>;
-> +		alarm-gpios =3D <&gpio2 15 1>;
-> +		#cooling-cells =3D <2>; /* min followed by max */
+>  arch/arm/boot/dts/Makefile             |   1 +
+>  arch/arm/boot/dts/conexant_equinox.dts |  67 +++++++++++++++++++++
+>  arch/arm/boot/dts/cx92755.dtsi         | 103 +++++++++++++++++++++++++++++++++
+>  3 files changed, 171 insertions(+)
+>  create mode 100644 arch/arm/boot/dts/conexant_equinox.dts
+>  create mode 100644 arch/arm/boot/dts/cx92755.dtsi
+> 
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index 91bd5bd62857..fbeb65eaddda 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -75,6 +75,7 @@ dtb-$(CONFIG_ARCH_BRCMSTB) += \
+>  	bcm7445-bcm97445svmb.dtb
+>  dtb-$(CONFIG_ARCH_DAVINCI) += da850-enbw-cmc.dtb \
+>  	da850-evm.dtb
+> +dtb-$(CONFIG_ARCH_DIGICOLOR) += conexant_equinox.dtb
+>  dtb-$(CONFIG_ARCH_EFM32) += efm32gg-dk3750.dtb
+>  dtb-$(CONFIG_ARCH_EXYNOS) += exynos3250-monk.dtb \
+>  	exynos3250-rinato.dtb \
+> diff --git a/arch/arm/boot/dts/conexant_equinox.dts b/arch/arm/boot/dts/conexant_equinox.dts
+> new file mode 100644
+> index 000000000000..b2917d914740
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/conexant_equinox.dts
+> @@ -0,0 +1,67 @@
+> +/*
+> + * Device Tree file for the Conexant Equinox CX92755 EVK
+> + *
+> + * Author: Baruch Siach <baruch@tkos.co.il>
+> + *
+> + *  Copyright (C) 2014 Paradox Innovation Ltd.
+> + *
+> + * This file is dual-licensed: you can use it either under the terms
+> + * of the GPL or the X11 license, at your option. Note that this dual
+> + * licensing only applies to this file, and not this project as a
+> + * whole.
+> + *
+> + *  a) This file is free software; you can redistribute it and/or
+> + *     modify it under the terms of the GNU General Public License as
+> + *     published by the Free Software Foundation; either version 2 of the
+> + *     License, or (at your option) any later version.
+> + *
+> + *     This file is distributed in the hope that it will be useful,
+> + *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + *     GNU General Public License for more details.
+> + *
+> + * Or, alternatively,
+> + *
+> + *  b) Permission is hereby granted, free of charge, to any person
+> + *     obtaining a copy of this software and associated documentation
+> + *     files (the "Software"), to deal in the Software without
+> + *     restriction, including without limitation the rights to use,
+> + *     copy, modify, merge, publish, distribute, sublicense, and/or
+> + *     sell copies of the Software, and to permit persons to whom the
+> + *     Software is furnished to do so, subject to the following
+> + *     conditions:
+> + *
+> + *     The above copyright notice and this permission notice shall be
+> + *     included in all copies or substantial portions of the Software.
+> + *
+> + *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+> + *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+> + *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+> + *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+> + *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+> + *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+> + *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+> + *     OTHER DEALINGS IN THE SOFTWARE.
+> + */
+> +
+> +/dts-v1/;
+> +
+> +#include "cx92755.dtsi"
+> +
+> +/ {
+> +	model = "Conexant Equinox CX92755 EVK";
+> +	compatible = "cnxt,equinox", "cnxt,cx92755";
+> +
+> +	memory@0 {
+> +		reg = <0 0x8000000>;
+> +		device_type = "memory";
 > +	};
-> diff --git a/drivers/hwmon/gpio-fan.c b/drivers/hwmon/gpio-fan.c
-> index 36abf814b8c7..20232c11b579 100644
-> --- a/drivers/hwmon/gpio-fan.c
-> +++ b/drivers/hwmon/gpio-fan.c
-> @@ -34,10 +34,13 @@
->  #include <linux/of.h>
->  #include <linux/of_platform.h>
->  #include <linux/of_gpio.h>
-> +#include <linux/thermal.h>
-> =20
->  struct gpio_fan_data {
->  	struct platform_device	*pdev;
->  	struct device		*hwmon_dev;
-> +	/* Cooling device if any */
-> +	struct thermal_cooling_device *cdev;
->  	struct mutex		lock; /* lock GPIOs operations. */
->  	int			num_ctrl;
->  	unsigned		*ctrl;
-> @@ -387,6 +390,53 @@ static int fan_ctrl_init(struct gpio_fan_data *fan_d=
-ata,
->  	return 0;
->  }
-> =20
-> +static int gpio_fan_get_max_state(struct thermal_cooling_device *cdev,
-> +				  unsigned long *state)
-> +{
-> +	struct gpio_fan_data *fan_data =3D cdev->devdata;
 > +
-> +	if (!fan_data)
-> +		return -EINVAL;
-> +
-> +	*state =3D fan_data->num_speed - 1;
-> +	return 0;
-> +}
-> +
-> +static int gpio_fan_get_cur_state(struct thermal_cooling_device *cdev,
-> +				  unsigned long *state)
-> +{
-> +	struct gpio_fan_data *fan_data =3D cdev->devdata;
-> +	int r;
-> +
-> +	if (!fan_data)
-> +		return -EINVAL;
-> +
-> +	r =3D get_fan_speed_index(fan_data);
-> +	if (r < 0)
-> +		return r;
-> +
-> +	*state =3D r;
-> +	return 0;
-> +}
-> +
-> +static int gpio_fan_set_cur_state(struct thermal_cooling_device *cdev,
-> +				  unsigned long state)
-> +{
-> +	struct gpio_fan_data *fan_data =3D cdev->devdata;
-> +
-> +	if (!fan_data)
-> +		return -EINVAL;
-> +
-> +	set_fan_speed(fan_data, state);
-> +	return 0;
-> +}
-> +
-> +static const struct thermal_cooling_device_ops gpio_fan_cool_ops =3D {
-> +	.get_max_state =3D gpio_fan_get_max_state,
-> +	.get_cur_state =3D gpio_fan_get_cur_state,
-> +	.set_cur_state =3D gpio_fan_set_cur_state,
+> +	chosen {
+> +		bootargs = "console=ttyS0,115200 earlyprintk";
+> +	};
 > +};
 > +
->  #ifdef CONFIG_OF_GPIO
->  /*
->   * Translate OpenFirmware node properties into platform_data
-> @@ -495,6 +545,11 @@ static int gpio_fan_probe(struct platform_device *pd=
-ev)
->  	struct gpio_fan_data *fan_data;
->  	struct gpio_fan_platform_data *pdata =3D dev_get_platdata(&pdev->dev);
-> =20
-> +	fan_data =3D devm_kzalloc(&pdev->dev, sizeof(struct gpio_fan_data),
-> +				GFP_KERNEL);
-> +	if (!fan_data)
-> +		return -ENOMEM;
+> +&uart0 {
+> +	status = "okay";
+> +};
+> diff --git a/arch/arm/boot/dts/cx92755.dtsi b/arch/arm/boot/dts/cx92755.dtsi
+> new file mode 100644
+> index 000000000000..4088e8974b4b
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/cx92755.dtsi
+> @@ -0,0 +1,103 @@
+> +/*
+> + * Device Tree Include file for the Conexant Digicolor CX92755 SoC
+> + *
+> + * Author: Baruch Siach <baruch@tkos.co.il>
+> + *
+> + *  Copyright (C) 2014 Paradox Innovation Ltd.
+> + *
+> + * This file is dual-licensed: you can use it either under the terms
+> + * of the GPL or the X11 license, at your option. Note that this dual
+> + * licensing only applies to this file, and not this project as a
+> + * whole.
+> + *
+> + *  a) This file is free software; you can redistribute it and/or
+> + *     modify it under the terms of the GNU General Public License as
+> + *     published by the Free Software Foundation; either version 2 of the
+> + *     License, or (at your option) any later version.
+> + *
+> + *     This file is distributed in the hope that it will be useful,
+> + *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + *     GNU General Public License for more details.
+> + *
+> + * Or, alternatively,
+> + *
+> + *  b) Permission is hereby granted, free of charge, to any person
+> + *     obtaining a copy of this software and associated documentation
+> + *     files (the "Software"), to deal in the Software without
+> + *     restriction, including without limitation the rights to use,
+> + *     copy, modify, merge, publish, distribute, sublicense, and/or
+> + *     sell copies of the Software, and to permit persons to whom the
+> + *     Software is furnished to do so, subject to the following
+> + *     conditions:
+> + *
+> + *     The above copyright notice and this permission notice shall be
+> + *     included in all copies or substantial portions of the Software.
+> + *
+> + *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+> + *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+> + *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+> + *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+> + *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+> + *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+> + *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+> + *     OTHER DEALINGS IN THE SOFTWARE.
+> + */
 > +
->  #ifdef CONFIG_OF_GPIO
->  	if (!pdata) {
->  		pdata =3D devm_kzalloc(&pdev->dev,
-> @@ -506,17 +561,20 @@ static int gpio_fan_probe(struct platform_device *p=
-dev)
->  		err =3D gpio_fan_get_of_pdata(&pdev->dev, pdata);
->  		if (err)
->  			return err;
-> +		/* Optional cooling device register for Device tree platforms */
-> +		fan_data->cdev =3D
-> +			thermal_of_cooling_device_register(pdev->dev.of_node,
-> +							   "gpio-fan", fan_data,
-> +							   &gpio_fan_cool_ops);
->  	}
->  #else /* CONFIG_OF_GPIO */
->  	if (!pdata)
->  		return -EINVAL;
-> +	/* Optional cooling device register for non Device tree platforms */
-> +	fan_data->cdev =3D thermal_cooling_device_register("gpio-fan", fan_data,
-> +							 &gpio_fan_cool_ops);
->  #endif /* CONFIG_OF_GPIO */
-> =20
-> -	fan_data =3D devm_kzalloc(&pdev->dev, sizeof(struct gpio_fan_data),
-> -				GFP_KERNEL);
-> -	if (!fan_data)
-> -		return -ENOMEM;
-> -
->  	fan_data->pdev =3D pdev;
->  	platform_set_drvdata(pdev, fan_data);
->  	mutex_init(&fan_data->lock);
-> @@ -550,12 +608,22 @@ static int gpio_fan_probe(struct platform_device *p=
-dev)
->  	return 0;
->  }
-> =20
-> -static void gpio_fan_shutdown(struct platform_device *pdev)
-> +static int gpio_fan_remove(struct platform_device *pdev)
->  {
-> -	struct gpio_fan_data *fan_data =3D dev_get_drvdata(&pdev->dev);
-> +	struct gpio_fan_data *fan_data =3D platform_get_drvdata(pdev);
+> +#include "skeleton.dtsi"
 > +
-> +	if (!IS_ERR(fan_data->cdev))
-> +		thermal_cooling_device_unregister(fan_data->cdev);
-> =20
->  	if (fan_data->ctrl)
->  		set_fan_speed(fan_data, 0);
+> +/ {
+> +	compatible = "cnxt,cx92755";
 > +
-> +	return 0;
-> +}
+> +	interrupt-parent = <&intc>;
 > +
-> +static void gpio_fan_shutdown(struct platform_device *pdev)
-> +{
-> +	gpio_fan_remove(pdev);
->  }
-> =20
->  #ifdef CONFIG_PM_SLEEP
-> @@ -589,6 +657,7 @@ static SIMPLE_DEV_PM_OPS(gpio_fan_pm, gpio_fan_suspen=
-d, gpio_fan_resume);
-> =20
->  static struct platform_driver gpio_fan_driver =3D {
->  	.probe		=3D gpio_fan_probe,
-> +	.remove		=3D gpio_fan_remove,
->  	.shutdown	=3D gpio_fan_shutdown,
->  	.driver	=3D {
->  		.name	=3D "gpio-fan",
-> --=20
-> 1.7.9.5
->=20
-
---k1lZvvs/B4yU6o8G
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUr79uAAoJEMLUO4d9pOJWoS8H/ifD0Ym3utI4XqEzYJuODYCd
-i3fo96W/+yMFR4HIWrnAXKHv6p9Z9IoaYsUCO+igOhqmQjzwRQ8xMpx0vMfbGNfy
-wRLZdUAh7z0nexVMVgFCHZUTjztjxTczZh3Prs4jSuwv+o91+a5g+f5+mS+arQ/o
-pF8jqnFNkuBgzTWjKYNcyYj+Mrys4jt9j1T8eMlbzeW1M4O7af1+uL7QmphTz2bK
-Fb5yXqwKLKcGT3bPQgU3pG9lYrNwVYXJRqm03kLkr1Mi0P0nO/OQhhaWQ5PL8WSi
-UH6fp4OQa3WknYnt8dJv72YVY/eNFqL/alNcNWWTequ4OzHNZuwakeWs1l1WzrU=
-=w3qV
------END PGP SIGNATURE-----
-
---k1lZvvs/B4yU6o8G--
+> +	aliases {
+> +		serial0 = &uart0;
+> +		serial1 = &uart1;
+> +		serial2 = &uart2;
+> +	};
+> +
+> +	main_clk: main_clk {
+> +		compatible = "fixed-clock";
+> +		#clock-cells = <0>;
+> +		clock-frequency  = <200000000>;
+> +	};
+> +
+> +	intc: intc@f0000000 {
+> +		compatible = "cnxt,cx92755-ic";
+> +		interrupt-controller;
+> +		#interrupt-cells = <1>;
+> +		reg = <0xf0000000 0x1000>;
+> +	};
+> +
+> +	timer@f0000fc0 {
+> +		compatible = "cnxt,cx92755-timer";
+> +		reg = <0xf0000fc0 0x40>;
+> +		interrupts = <19>, <31>, <34>, <35>, <52>, <53>, <54>, <55>;
+> +		clocks = <&main_clk>;
+> +	};
+> +
+> +	uart0: uart@f0000740 {
+> +		compatible = "cnxt,cx92755-usart";
+> +		reg = <0xf0000740 0x20>;
+> +		clocks = <&main_clk>;
+> +		interrupts = <44>;
+> +		status = "disabled";
+> +	};
+> +
+> +	uart1: uart@f0000760 {
+> +		compatible = "cnxt,cx92755-usart";
+> +		reg = <0xf0000760 0x20>;
+> +		clocks = <&main_clk>;
+> +		interrupts = <45>;
+> +		status = "disabled";
+> +	};
+> +
+> +	uart2: uart@f0000780 {
+> +		compatible = "cnxt,cx92755-usart";
+> +		reg = <0xf0000780 0x20>;
+> +		clocks = <&main_clk>;
+> +		interrupts = <46>;
+> +		status = "disabled";
+> +	};
+> +};
+> -- 
+> 2.1.4
+> 
+> 
