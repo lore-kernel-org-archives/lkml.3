@@ -1,49 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932641AbbAIMFO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 07:05:14 -0500
-Received: from nautica.notk.org ([91.121.71.147]:35213 "EHLO nautica.notk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932388AbbAIMFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 07:05:12 -0500
-X-Greylist: delayed 496 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Jan 2015 07:05:12 EST
-From: Dominique Martinet <dominique.martinet@cea.fr>
-To: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
-        Latchesar Ionkov <lucho@ionkov.net>
-Cc: v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Dominique Martinet <dominique.martinet@cea.fr>
-Subject: [PATCH] fs/9p: Initialize status in v9fs_file_do_lock.
-Date: Fri,  9 Jan 2015 12:56:07 +0100
-Message-Id: <1420804567-15371-1-git-send-email-dominique.martinet@cea.fr>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756533AbbAIL5M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 06:57:12 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:44248 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753943AbbAIL5K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 06:57:10 -0500
+Date: Fri, 9 Jan 2015 12:57:07 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Mark Zhang <markz@nvidia.com>
+Cc: gnurou@gmail.com, hdoyu@nvidia.com, joro@8bytes.org, swarren@wwwdotorg.org,
+        olof@lixom.net, iommu@lists.linux-foundation.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] memory: Add NVIDIA SMMU suspend/resume support
+Message-ID: <20150109115706.GH16465@ulmo>
+References: <1419383441-18242-1-git-send-email-markz@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FLPM4o+7JoHGki3m"
+Content-Disposition: inline
+In-Reply-To: <1419383441-18242-1-git-send-email-markz@nvidia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If p9_client_lock_dotl returns an error, status is possibly never filled
-but will be used in the following switch.
-Initializing it to P9_LOCK_ERROR makes sur we will return an error and
-cleanup (and not hit the default case).
 
-Signed-off-by: Dominique Martinet <dominique.martinet@cea.fr>
----
- fs/9p/vfs_file.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+--FLPM4o+7JoHGki3m
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/fs/9p/vfs_file.c b/fs/9p/vfs_file.c
-index 5594505..9b02849 100644
---- a/fs/9p/vfs_file.c
-+++ b/fs/9p/vfs_file.c
-@@ -149,7 +149,7 @@ static int v9fs_file_do_lock(struct file *filp, int cmd, struct file_lock *fl)
- {
- 	struct p9_flock flock;
- 	struct p9_fid *fid;
--	uint8_t status;
-+	uint8_t status = P9_LOCK_ERROR;
- 	int res = 0;
- 	unsigned char fl_type;
- 
--- 
-1.9.3
+On Wed, Dec 24, 2014 at 09:10:41AM +0800, Mark Zhang wrote:
+> This patch adds suspend/resume support for NVIDIA SMMU.
+>=20
+> Signed-off-by: Mark Zhang <markz@nvidia.com>
+> ---
+> Hi Alex/Olof/Thierry/Hiroshi,
+>=20
+> This patch is created on top of Thierry Reding's patch set:
+> "[PATCH v7 00/12] NVIDIA Tegra memory controller and IOMMU support"
+>=20
+> Changes since v1:
+> - Remove the list which saves "tegra_smmu_swgroup_asid" instances
+> - Save all ASID registers when suspend then restore them when resume
+>=20
+>  drivers/iommu/tegra-smmu.c | 71 ++++++++++++++++++++++++++++++++++++++++=
+++++++
+>  drivers/memory/tegra/mc.c  | 24 ++++++++++++++++
+>  drivers/memory/tegra/mc.h  |  8 ++++++
+>  3 files changed, 103 insertions(+)
 
+We only need this for LP0, right? As such I'm reluctant to apply this
+since we can't test it upstream.
+
+Thierry
+
+--FLPM4o+7JoHGki3m
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUr8ISAAoJEN0jrNd/PrOhUNkQALuuRoHzgAV8zFYpErc9hbzV
+7BmtHAZ3UAlhYJEPL/wp/XgbYiJorGuCJafnX38mepxayiC/U9/tAnAQ4rrVMUWW
+1PwSGA4PdO9cyUVQiGPJjxKkB+Fb+K9Da/azlF+jT9e4I9yBrOeNYuhUgHZgGdkJ
+2wmhMGm50YsEThqeX1519VCotWGjyw2BTkv3O/TT0Y6hWnGz+Nu/wrbyKvTH3ola
+GbrDunOIzlqpszfIas3bHSiuXiYDAJGjAUgFv9uR5ObQc4xJJv32xJ+9+II71pG+
+kmxpRmZfAnXfPlPjKMGfHBkhzPR1tjke0kDOz/lwQNtlKFxhUYaBdlBoSyUhIiDD
+NSmc76Agg2p4cgED3SWg0yGTUjZsGo/k6tUVyYYQU/wJur4sPr++LK4PKhvzeufC
+VSyNHdEPjmtTsLOZNZx59vla52zhmA+dR9IoAmzychdsRB3fknzEB3x9KUdqkDo2
+GpafEwtRzvM0eIckzORNqhkWAJENKSk1Ap39bcfhOn1WzvgsVhjpOxRoH2H2MgN7
+uiC8w+ziL/lEQeY5wdTsV6KRFX5JsJJMg+avpyWI09XdO17NJs3/iEHd+UV7pdli
+jNvmXRL6v+kwI5BHwOulj6qAYiStL0CT2eEPwW2NYBQ3XoZrHFqUrl/7lzNpAEUt
+9FBisJfO2PYYPJGXyvLX
+=4ze6
+-----END PGP SIGNATURE-----
+
+--FLPM4o+7JoHGki3m--
