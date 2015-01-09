@@ -1,102 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756116AbbAIIx4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 03:53:56 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.246]:56479 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754154AbbAIIxy (ORCPT
+	id S1756274AbbAII7L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 03:59:11 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:52690 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752296AbbAII7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 03:53:54 -0500
-From: Bo Shen <voice.shen@atmel.com>
-To: Mark Brown <broonie@kernel.org>
-CC: <alsa-devel@alsa-project.org>, <linux-sound@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Bo Shen <voice.shen@atmel.com>
-Subject: [PATCH] ASoC: wm8904: fix runtime warning
-Date: Fri, 9 Jan 2015 16:53:40 +0800
-Message-ID: <1420793620-2866-1-git-send-email-voice.shen@atmel.com>
-X-Mailer: git-send-email 2.1.0.24.g4109c28
+	Fri, 9 Jan 2015 03:59:09 -0500
+Date: Fri, 9 Jan 2015 11:58:55 +0300
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Hillf Danton <hillf.zj@alibaba-inc.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "'Johannes Weiner'" <hannes@cmpxchg.org>,
+        "'Michal Hocko'" <mhocko@suse.cz>,
+        "'Greg Thelen'" <gthelen@google.com>,
+        "'Glauber Costa'" <glommer@gmail.com>,
+        "'Dave Chinner'" <david@fromorbit.com>,
+        "'Alexander Viro'" <viro@zeniv.linux.org.uk>,
+        linux-kernel <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH -mm v3 3/9] vmscan: per memory cgroup slab shrinkers
+Message-ID: <20150109085855.GC2110@esperanza>
+References: <063c01d02bd6$38c64ce0$aa52e6a0$@alibaba-inc.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <063c01d02bd6$38c64ce0$aa52e6a0$@alibaba-inc.com>
+X-Originating-IP: [81.5.99.36]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the commit 5fe5b76 (ASoC: dapm: Do not pretend to support
-controls for non mixer/mux widgets) remove the fake control.
+On Fri, Jan 09, 2015 at 02:33:46PM +0800, Hillf Danton wrote:
+> > @@ -2318,16 +2357,22 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
+> > 
+> >  		memcg = mem_cgroup_iter(root, NULL, &reclaim);
+> >  		do {
+> > -			unsigned long lru_pages;
+> > +			unsigned long lru_pages, scanned;
+> >  			struct lruvec *lruvec;
+> >  			int swappiness;
+> > 
+> >  			lruvec = mem_cgroup_zone_lruvec(zone, memcg);
+> >  			swappiness = mem_cgroup_swappiness(memcg);
+> > +			scanned = sc->nr_scanned;
+> > 
+> >  			shrink_lruvec(lruvec, swappiness, sc, &lru_pages);
+> >  			zone_lru_pages += lru_pages;
+> > 
+> > +			if (memcg && is_classzone)
+> > +				shrink_slab(sc->gfp_mask, zone_to_nid(zone),
+> > +					    memcg, sc->nr_scanned - scanned,
+> > +					    lru_pages);
+> > +
+> Looks sc->nr_reclaimed has to be updated for "limit reclaim".
+> 
 
-Then, the wm8904 throw out the following warning at runtime.
---->8---
-wm8904 1-001a: Control not supported for path ADCL -> [Left] -> AIFOUTL
-wm8904 1-001a: ASoC: no dapm match for ADCL --> Left --> AIFOUTL
-wm8904 1-001a: ASoC: Failed to add route ADCL -> Left -> AIFOUTL
-wm8904 1-001a: Control not supported for path ADCR -> [Right] -> AIFOUTL
-wm8904 1-001a: ASoC: no dapm match for ADCR --> Right --> AIFOUTL
-wm8904 1-001a: ASoC: Failed to add route ADCR -> Right -> AIFOUTL
-wm8904 1-001a: Control not supported for path ADCL -> [Left] -> AIFOUTR
-wm8904 1-001a: ASoC: no dapm match for ADCL --> Left --> AIFOUTR
-wm8904 1-001a: ASoC: Failed to add route ADCL -> Left -> AIFOUTR
-wm8904 1-001a: Control not supported for path ADCR -> [Right] -> AIFOUTR
-wm8904 1-001a: ASoC: no dapm match for ADCR --> Right --> AIFOUTR
-wm8904 1-001a: ASoC: Failed to add route ADCR -> Right -> AIFOUTR
-wm8904 1-001a: Control not supported for path AIFINR -> [Right] -> DACL
-wm8904 1-001a: ASoC: no dapm match for AIFINR --> Right --> DACL
-wm8904 1-001a: ASoC: Failed to add route AIFINR -> Right -> DACL
-wm8904 1-001a: Control not supported for path AIFINL -> [Left] -> DACL
-wm8904 1-001a: ASoC: no dapm match for AIFINL --> Left --> DACL
-wm8904 1-001a: ASoC: Failed to add route AIFINL -> Left -> DACL
-wm8904 1-001a: Control not supported for path AIFINR -> [Right] -> DACR
-wm8904 1-001a: ASoC: no dapm match for AIFINR --> Right --> DACR
-wm8904 1-001a: ASoC: Failed to add route AIFINR -> Right -> DACR
-wm8904 1-001a: Control not supported for path AIFINL -> [Left] -> DACR
-wm8904 1-001a: ASoC: no dapm match for AIFINL --> Left --> DACR
-wm8904 1-001a: ASoC: Failed to add route AIFINL -> Left -> DACR
----8<---
+That's true, thank you for catching this!
 
-This patch is used to remove these warning.
+I think we should move reclaim_state handling to shrink_slab(), as this
+incremental patch does:
 
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
 ---
-
- sound/soc/codecs/wm8904.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/sound/soc/codecs/wm8904.c b/sound/soc/codecs/wm8904.c
-index 4d2d2b1..38582d7 100644
---- a/sound/soc/codecs/wm8904.c
-+++ b/sound/soc/codecs/wm8904.c
-@@ -1076,10 +1076,10 @@ static const struct snd_soc_dapm_route adc_intercon[] = {
- 	{ "Right Capture PGA", NULL, "Right Capture Mux" },
- 	{ "Right Capture PGA", NULL, "Right Capture Inverting Mux" },
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 16f3e45742d6..6961bf0a47af 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -347,6 +347,7 @@ static unsigned long do_shrink_slab(struct shrink_control *shrinkctl,
+  * @memcg: memory cgroup whose slab caches to target
+  * @nr_scanned: pressure numerator
+  * @nr_eligible: pressure denominator
++ * @nr_reclaimed: number of reclaimed slab pages
+  *
+  * Call the shrink functions to age shrinkable caches.
+  *
+@@ -372,8 +373,10 @@ static unsigned long do_shrink_slab(struct shrink_control *shrinkctl,
+ static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
+ 				 struct mem_cgroup *memcg,
+ 				 unsigned long nr_scanned,
+-				 unsigned long nr_eligible)
++				 unsigned long nr_eligible,
++				 unsigned long *nr_reclaimed)
+ {
++	struct reclaim_state *reclaim_state = current->reclaim_state;
+ 	struct shrinker *shrinker;
+ 	unsigned long freed = 0;
  
--	{ "AIFOUTL", "Left",  "ADCL" },
--	{ "AIFOUTL", "Right", "ADCR" },
--	{ "AIFOUTR", "Left",  "ADCL" },
--	{ "AIFOUTR", "Right", "ADCR" },
-+	{ "AIFOUTL", NULL, "ADCL" },
-+	{ "AIFOUTL", NULL, "ADCR" },
-+	{ "AIFOUTR", NULL, "ADCL" },
-+	{ "AIFOUTR", NULL, "ADCR" },
+@@ -394,6 +397,9 @@ static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
+ 		goto out;
+ 	}
  
- 	{ "ADCL", NULL, "CLK_DSP" },
- 	{ "ADCL", NULL, "Left Capture PGA" },
-@@ -1089,12 +1089,12 @@ static const struct snd_soc_dapm_route adc_intercon[] = {
- };
++	if (reclaim_state)
++		reclaim_state->reclaimed_slab = 0;
++
+ 	list_for_each_entry(shrinker, &shrinker_list, list) {
+ 		struct shrink_control sc = {
+ 			.gfp_mask = gfp_mask,
+@@ -410,6 +416,9 @@ static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
+ 		freed += do_shrink_slab(&sc, shrinker, nr_scanned, nr_eligible);
+ 	}
  
- static const struct snd_soc_dapm_route dac_intercon[] = {
--	{ "DACL", "Right", "AIFINR" },
--	{ "DACL", "Left",  "AIFINL" },
-+	{ "DACL", NULL, "AIFINR" },
-+	{ "DACL", NULL, "AIFINL" },
- 	{ "DACL", NULL, "CLK_DSP" },
++	if (reclaim_state)
++		*nr_reclaimed += reclaim_state->reclaimed_slab;
++
+ 	up_read(&shrinker_rwsem);
+ out:
+ 	cond_resched();
+@@ -419,6 +428,7 @@ out:
+ void drop_slab_node(int nid)
+ {
+ 	unsigned long freed;
++	unsigned long nr_reclaimed = 0;
  
--	{ "DACR", "Right", "AIFINR" },
--	{ "DACR", "Left",  "AIFINL" },
-+	{ "DACR", NULL, "AIFINR" },
-+	{ "DACR", NULL, "AIFINL" },
- 	{ "DACR", NULL, "CLK_DSP" },
+ 	do {
+ 		struct mem_cgroup *memcg = NULL;
+@@ -426,7 +436,7 @@ void drop_slab_node(int nid)
+ 		freed = 0;
+ 		do {
+ 			freed += shrink_slab(GFP_KERNEL, nid, memcg,
+-					     1000, 1000);
++					     1000, 1000, &nr_reclaimed);
+ 		} while ((memcg = mem_cgroup_iter(NULL, memcg, NULL)) != NULL);
+ 	} while (freed > 10);
+ }
+@@ -2339,7 +2349,6 @@ static inline bool should_continue_reclaim(struct zone *zone,
+ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
+ 			bool is_classzone)
+ {
+-	struct reclaim_state *reclaim_state = current->reclaim_state;
+ 	unsigned long nr_reclaimed, nr_scanned;
+ 	bool reclaimable = false;
  
- 	{ "Charge pump", NULL, "SYSCLK" },
--- 
-2.1.0.24.g4109c28
-
+@@ -2371,7 +2380,7 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
+ 			if (memcg && is_classzone)
+ 				shrink_slab(sc->gfp_mask, zone_to_nid(zone),
+ 					    memcg, sc->nr_scanned - scanned,
+-					    lru_pages);
++					    lru_pages, &sc->nr_reclaimed);
+ 
+ 			/*
+ 			 * Direct reclaim and kswapd have to scan all memory
+@@ -2398,12 +2407,7 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
+ 		if (global_reclaim(sc) && is_classzone)
+ 			shrink_slab(sc->gfp_mask, zone_to_nid(zone), NULL,
+ 				    sc->nr_scanned - nr_scanned,
+-				    zone_lru_pages);
+-
+-		if (reclaim_state) {
+-			sc->nr_reclaimed += reclaim_state->reclaimed_slab;
+-			reclaim_state->reclaimed_slab = 0;
+-		}
++				    zone_lru_pages, &sc->nr_reclaimed);
+ 
+ 		vmpressure(sc->gfp_mask, sc->target_mem_cgroup,
+ 			   sc->nr_scanned - nr_scanned,
+@@ -3367,10 +3371,7 @@ static int kswapd(void *p)
+ 	int balanced_classzone_idx;
+ 	pg_data_t *pgdat = (pg_data_t*)p;
+ 	struct task_struct *tsk = current;
+-
+-	struct reclaim_state reclaim_state = {
+-		.reclaimed_slab = 0,
+-	};
++	struct reclaim_state reclaim_state;
+ 	const struct cpumask *cpumask = cpumask_of_node(pgdat->node_id);
+ 
+ 	lockdep_set_current_reclaim_state(GFP_KERNEL);
+@@ -3508,7 +3509,6 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
+ 
+ 	p->flags |= PF_MEMALLOC;
+ 	lockdep_set_current_reclaim_state(sc.gfp_mask);
+-	reclaim_state.reclaimed_slab = 0;
+ 	p->reclaim_state = &reclaim_state;
+ 
+ 	nr_reclaimed = do_try_to_free_pages(zonelist, &sc);
+@@ -3697,7 +3697,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 	 */
+ 	p->flags |= PF_MEMALLOC | PF_SWAPWRITE;
+ 	lockdep_set_current_reclaim_state(gfp_mask);
+-	reclaim_state.reclaimed_slab = 0;
+ 	p->reclaim_state = &reclaim_state;
+ 
+ 	if (zone_pagecache_reclaimable(zone) > zone->min_unmapped_pages) {
