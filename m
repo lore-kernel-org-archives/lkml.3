@@ -1,88 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463AbbAINP1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 08:15:27 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:62518 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757160AbbAINP0 (ORCPT
+	id S1757004AbbAINU0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 08:20:26 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:3077 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785AbbAINUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 08:15:26 -0500
-Message-ID: <54AFD468.2020609@gmail.com>
-Date: Fri, 09 Jan 2015 14:15:20 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 9 Jan 2015 08:20:22 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <khilman@kernel.org>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Patrice Vilchez <patrice.vilchez@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Cyrille Pitchen <cyrille.pitchen@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        ARM Maintainers <arm@kernel.org>
+Subject: [PATCH] ARM: at91/Documentation: add a README for Atmel SoCs
+Date: Fri, 9 Jan 2015 14:20:31 +0100
+Message-ID: <1420809631-26923-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 2.1.3
 MIME-Version: 1.0
-To: Vince Weaver <vincent.weaver@maine.edu>
-CC: mtk.manpages@gmail.com, xmtk.manpages@gmail.com, linux-man@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-Subject: Re: [patch] perf_event_open.2 clarify the PERF_FLAG_FD_* flags
-References: <alpine.DEB.2.11.1501081201020.25399@vincent-weaver-1.umelst.maine.edu>
-In-Reply-To: <alpine.DEB.2.11.1501081201020.25399@vincent-weaver-1.umelst.maine.edu>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vince,
+Add a README file to describe Atmel SoCs (aka AT91) support in Mainline Linux:
+- SoC list + datasheet web links
+- Basic but useful information
+- Device Tree conventions and Work In Progress statement.
 
-On 01/08/2015 06:04 PM, Vince Weaver wrote:
-> 
-> This change clarifies the behavior of the PERF_FLAG_FD_OUTPUT and
-> PERF_FLAG_FD_NO_GROUP flags to perf_event_open(), and removes
-> the related FIXME comments.
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: ARM Maintainers <arm@kernel.org>
+---
+ Documentation/arm/Atmel/README | 120 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 120 insertions(+)
+ create mode 100644 Documentation/arm/Atmel/README
 
-Patch applied. Thank you!
-
-> While writing tests to validate the behavior of these flags I
-> discovered that PERF_FLAG_FD_OUTPUT has been broken since the
-> 2.6.35 kernel release.
-
-Sigh!
-
-Cheers,
-
-Michael
-
-
-> Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
-> 
-> diff --git a/man2/perf_event_open.2 b/man2/perf_event_open.2
-> index 8bde791..7181c29 100644
-> --- a/man2/perf_event_open.2
-> +++ b/man2/perf_event_open.2
-> @@ -149,14 +149,17 @@ then
->  .BR execve (2).
->  .TP
->  .BR PERF_FLAG_FD_NO_GROUP
-> -.\" FIXME . The following sentence is unclear
-> -This flag allows creating an event as part of an event group but
-> -having no group leader.
-> -It is unclear why this is useful.
-> -.\" FIXME . So, why is it useful?
-> -.TP
-> -.BR PERF_FLAG_FD_OUTPUT
-> -This flag reroutes the output from an event to the group leader.
-> +This flag tells the event to ignore the
-> +.IR group_fd
-> +parameter except for the purpose of setting up output redirection
-> +using the
-> +.B PERF_FLAG_FD_OUTPUT
-> +flag.
-> +.TP
-> +.BR PERF_FLAG_FD_OUTPUT " (broken since Linux 2.6.35)."
-> +This flag re-routes the event's sampled output to instead
-> +be included in the mmap buffer of the event specified by
-> +.IR group_fd .
->  .TP
->  .BR PERF_FLAG_PID_CGROUP " (since Linux 2.6.39)."
->  This flag activates per-container system-wide monitoring.
-> 
-
-
+diff --git a/Documentation/arm/Atmel/README b/Documentation/arm/Atmel/README
+new file mode 100644
+index 000000000000..538f8a556277
+--- /dev/null
++++ b/Documentation/arm/Atmel/README
+@@ -0,0 +1,120 @@
++ARM Atmel SoCs (aka AT91)
++=========================
++
++
++Introduction
++------------
++This document gives useful information about the ARM Atmel SoCs that are
++currently supported in Linux Mainline (you know, the one on kernel.org).
++
++It is important to note that the Atmel | SMART ARM-based MPU product line is
++historically named "AT91" or "at91" throughout the Linux kernel development
++process even if this product prefix has completely disappeared from the
++official Atmel product name. Anyway, files, directories, git trees,
++git branches/tags and email subject always contain this "at91" sub-string.
++
++
++AT91 SoCs
++---------
++Documentation and detailled datasheet for each product are available on
++the Atmel website: http://www.atmel.com.
++
++  Flavors:
++    * ARM 920 based SoC
++      - at91rm9200
++        + Datasheet
++          http://www.atmel.com/Images/doc1768.pdf
++
++    * ARM 926 based SoCs
++      - at91sam9260
++        + Datasheet
++          http://www.atmel.com/Images/doc6221.pdf
++
++      - at91sam9261
++        + Datasheet
++          http://www.atmel.com/Images/doc6062.pdf
++
++      - at91sam9263
++        + Datasheet
++          http://www.atmel.com/Images/Atmel_6249_32-bit-ARM926EJ-S-Microcontroller_SAM9263_Datasheet.pdf
++
++      - at91sam9rl
++        + Datasheet
++          http://www.atmel.com/Images/doc6289.pdf
++
++      - at91sam9g20
++        + Datasheet
++          http://www.atmel.com/Images/doc6384.pdf
++
++      - at91sam9g45 family
++        - at91sam9g45
++        - at91sam9g46
++        - at91sam9m10
++        - at91sam9m11 (device superset)
++        + Datasheet
++          http://www.atmel.com/Images/Atmel-6437-32-bit-ARM926-Embedded-Microprocessor-SAM9M11_Datasheet.pdf
++
++      - at91sam9x5 family (aka "The 5 series")
++        - at91sam9g15
++        - at91sam9g25
++        - at91sam9g35
++        - at91sam9x25
++        - at91sam9x35
++        + Datasheet (can be considered as covering the whole family)
++          http://www.atmel.com/Images/Atmel_11055_32-bit-ARM926EJ-S-Microcontroller_SAM9X35_Datasheet.pdf
++
++      - at91sam9n12
++        + Datasheet
++          http://www.atmel.com/Images/Atmel_11063_32-bit-ARM926EJ-S-Microcontroller_SAM9N12CN11CN12_Datasheet.pdf
++
++    * ARM Cortex-A5 based SoCs
++      - sama5d3 family
++        - sama5d31
++        - sama5d33
++        - sama5d34
++        - sama5d35
++        - sama5d36 (device superset)
++        + Datasheet
++          http://www.atmel.com/Images/Atmel-11121-32-bit-Cortex-A5-Microcontroller-SAMA5D3_Datasheet.pdf
++
++    * ARM Cortex-A5 + NEON based SoCs
++      - sama5d4 family
++        - sama5d41
++        - sama5d42
++        - sama5d43
++        - sama5d44 (device superset)
++        + Datasheet
++          http://www.atmel.com/Images/Atmel-11238-32-bit-Cortex-A5-Microcontroller-SAMA5D4_Datasheet.pdf
++
++
++Linux kernel information
++------------------------
++Linux kernel mach directory: arch/arm/mach-at91
++MAINTAINERS entry is: "ARM/ATMEL AT91RM9200 AND AT91SAM ARM ARCHITECTURES"
++
++
++Device Tree for AT91 SoCs and boards
++------------------------------------
++All AT91 SoCs are converted to Device Tree. Since Linux 3.19, these products
++must use this method to boot the Linux kernel.
++
++Work In Progress statement:
++Device Tree files and Device Tree bindings that apply to AT91 SoCs and boards are
++considered as "Unstable". To be completely clear, any at91 binding can change at
++any time. So, be sure to use a Device Tree Binary and a Kernel Image generated from
++the same source tree.
++Please refer to the Documentation/devicetree/bindings/ABI.txt file for a
++definition of a "Stable" binding/ABI.
++This statement will be removed by AT91 MAINTAINERS when appropriated.
++
++Naming conventions and best practice:
++- SoCs Device Tree Source Include files are named after the official name of
++  the product (at91sam9g20.dtsi or sama5d33.dtsi for instance).
++- Device Tree Source Include files (.dtsi) are used to collect common nodes that can be
++  shared across SoCs or boards (sama5d3.dtsi or at91sam9x5cm.dtsi for instance).
++  When collecting nodes for a particular peripheral or topic, the identifier have to
++  be placed at the end of the file name, separated with a "_" (at91sam9x5_can.dtsi
++  or sama5d3_gmac.dtsi for example).
++- board Device Tree Source files (.dts) are prefixed by the string "at91-" so
++  that they can be identified easily. Note that the sama5d3[13456]ek.dts files
++  are an historical exception to this rule.
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+2.1.3
+
