@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757960AbbAIPzG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 10:55:06 -0500
-Received: from smtp-out-098.synserver.de ([212.40.185.98]:1047 "EHLO
-	smtp-out-098.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757234AbbAIPzE (ORCPT
+	id S1758027AbbAIP4r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 10:56:47 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:53719 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752200AbbAIP4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:55:04 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 9680
-Message-ID: <54AFF9D3.7000007@metafoo.de>
-Date: Fri, 09 Jan 2015 16:54:59 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	Fri, 9 Jan 2015 10:56:46 -0500
+Date: Fri, 9 Jan 2015 16:56:43 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Mark Langsdorf <mlangsdo@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: Linux 3.19-rc3
+Message-ID: <20150109155643.GC7596@dhcp22.suse.cz>
+References: <CA+55aFwsxoyLb9OWMSCL3doe_cz_EQtKsEFCyPUYn_T87pbz0A@mail.gmail.com>
+ <54AE7D53.2020305@redhat.com>
+ <20150108150850.GD5658@dhcp22.suse.cz>
+ <54AEB25E.9050205@redhat.com>
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iio: Simplify IIO provider access locking mechanism
-References: <1420817893-5858-1-git-send-email-iivanov@mm-sol.com>	 <54AFF6C4.9020306@metafoo.de> <1420818639.28652.5.camel@mm-sol.com>
-In-Reply-To: <1420818639.28652.5.camel@mm-sol.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54AEB25E.9050205@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2015 04:50 PM, Ivan T. Ivanov wrote:
->
-> On Fri, 2015-01-09 at 16:41 +0100, Lars-Peter Clausen wrote:
->> On 01/09/2015 04:38 PM, Ivan T. Ivanov wrote:
->>> Instead of checking whether provider module is still
->>> loaded on every access to device just lock module to
->>> memory when client get reference to provider device.
->>>
->>
->> This has nothing to do with the module, it's about the device. In the Linux
->> device driver model as device can be unbound at any time and the IIO
->> framework needs to handle this.
->>
->
-> Hm. Probably i am missing something here, but is this
-> still true if we have reference to device structure?
+On Thu 08-01-15 10:37:50, Mark Langsdorf wrote:
+> On 01/08/2015 09:08 AM, Michal Hocko wrote:
+> >[CCing linux-mm and CMA people]
+> >[Full message here:
+> >http://article.gmane.org/gmane.linux.ports.arm.kernel/383669]
+> 
+> >>[ 1054.095277] DMA: 109*64kB (UR) 53*128kB (R) 8*256kB (R) 0*512kB 0*1024kB
+> >>0*2048kB 1*4096kB (R) 0*8192kB 0*16384kB 1*32768kB (R) 0*65536kB = 52672kB
+> >>[ 1054.108621] Normal: 191*64kB (MR) 0*128kB 0*256kB 0*512kB 0*1024kB
+> >>0*2048kB 0*4096kB 0*8192kB 0*16384kB 0*32768kB 0*65536kB = 12224kB
+> >[...]
+> >>[ 1054.142545] Free swap  = 6598400kB
+> >>[ 1054.145928] Total swap = 8388544kB
+> >>[ 1054.149317] 262112 pages RAM
+> >>[ 1054.152180] 0 pages HighMem/MovableOnly
+> >>[ 1054.155995] 18446744073709544361 pages reserved
+> >>[ 1054.160505] 8192 pages cma reserved
+> >
+> >Besides underflow in the reserved pages accounting mentioned in other
+> >email the free lists look strange as well. All free blocks with some memory
+> >are marked as reserved. I would suspect something CMA related.
+> 
+> I get the same failure with CMA turned off entirely. I assume that means
+> CMA is not the culprit.
 
-Yes, that only prevents the memory of device from being freed. But the 
-device can still be unbound from the driver.
+OK. Do you see all the free page blocks completely reserved without CMA
+as well?
 
-Think of e.g. a USB device that is pulled from the USB connector. Nothing 
-you can do in software about having the device disappear.
-
-- Lars
-
+-- 
+Michal Hocko
+SUSE Labs
