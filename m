@@ -1,75 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757026AbbAIIss (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 03:48:48 -0500
-Received: from dehamd003.servertools24.de ([31.47.254.18]:57633 "EHLO
-	dehamd003.servertools24.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756945AbbAIIsp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 03:48:45 -0500
-Message-ID: <54AF95EA.90505@ladisch.de>
-Date: Fri, 09 Jan 2015 09:48:42 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64;
-	rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1756270AbbAIIy4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 03:54:56 -0500
+Received: from mga11.intel.com ([192.55.52.93]:19442 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754154AbbAIIyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 03:54:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,729,1413270000"; 
+   d="scan'208";a="634776385"
+Message-ID: <54AF967B.3060503@intel.com>
+Date: Fri, 09 Jan 2015 16:51:07 +0800
+From: Jike Song <jike.song@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Paul Bonser <misterpib@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>
-CC: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH v2] ALSA: usb-audio: Add support for Akai
-	MPC Element USB MIDI controller
-References: <54AE16D8.6080302@gmail.com> <54AEFCFF.3060406@ladisch.de>
-	<54AF24D6.6010701@gmail.com>
-In-Reply-To: <54AF24D6.6010701@gmail.com>
-Content-Type: text/plain; charset=us-ascii
+To: xen-devel@lists.xen.org, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+CC: "White, Michael L" <michael.l.white@intel.com>,
+        "Dong, Eddie" <eddie.dong@intel.com>, "Li, Susie" <susie.li@intel.com>,
+        "Cowperthwaite, David J" <david.j.cowperthwaite@intel.com>,
+        "Haron, Sandra" <sandra.haron@intel.com>,
+        "Tian, Kevin" <kevin.tian@intel.com>, "Zhu, Libo" <libo.zhu@intel.com>,
+        "Zhou, Chao" <chao.zhou@intel.com>,
+        "Wang, Hongbo" <hongbo.wang@intel.com>
+Subject: Re: [Intel-gfx] [Announcement] 2015-Q1 release of XenGT - a Mediated
+ Graphics Passthrough Solution from Intel
+References: <53D215D3.50608@intel.com> <547FCAAD.2060406@intel.com>
+In-Reply-To: <547FCAAD.2060406@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-PPP-Message-ID: <20150109084408.137708.52109@dehamd003.servertools24.de>
-X-PPP-Vhost: ladisch.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Bonser wrote:
-> On 01/08/2015 03:56 PM, Clemens Ladisch wrote:
->> Paul Bonser wrote:
->>> The Akai MPC Element incorrectly reports its bInterfaceClass as 255, but
->>> otherwise implements the USB MIDI spec correctly.
->>>
->>> This adds a quirks-table.h entry which allows the device to be
->>> recognized as a standard USB MIDI device.
->>>
->>> +++ b/sound/usb/quirks-table.h
->>> +{
->>> +	/* Akai MPC Element */
->>> +	USB_DEVICE(0x09e8, 0x0021),
->>> +	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
->>> +		.ifnum = QUIRK_ANY_INTERFACE,
->>> +		.type = QUIRK_COMPOSITE,
->>> +		.data = & (const struct snd_usb_audio_quirk[]) {
->>> +			{
->>> +				.ifnum = 0,
->>> +				.type = QUIRK_IGNORE_INTERFACE
->>> +			},
->>> +			{
->>> +				.ifnum = 1,
->>> +				.type = QUIRK_MIDI_STANDARD_INTERFACE
->>> +			},
->>> +			{
->>> +				.ifnum = -1
->>> +			}
->>> +		}
->>> +	}
->>> +},
->>
->> Why a composite quirk?  Does a single quirk entry not work?
+Hi all,
+
+   We're pleased to announce a public update to Intel Graphics Virtualization Technology (Intel GVT-g, formerly known as XenGT). Intel GVT-g is a complete vGPU solution with mediated pass-through, supported today on 4th generation Intel Core(TM) processors with Intel Graphics processors. A virtual GPU instance is maintained for each VM, with part of performance critical resources directly assigned. The capability of running native graphics driver inside a VM, without hypervisor intervention in performance critical paths, achieves a good balance among performance, feature, and sharing capability. Though we only support Xen on Intel Processor Graphics so far, the core logic can be easily ported to other hypervisors.   The XenGT project should be considered a work in progress, As such it is not a complete product nor should it be considered one., Extra care should be taken when testing and configuring a system to use the XenGT project.
+
+The news of this update:
+
+	- kernel update from 3.14.1 to drm-intel 3.17.0.
+	- We plan to integrate Intel GVT-g as a feature in i915 driver. That effort is still under review, not included in this update yet.
+	- Next update will be around early Apr, 2015.
+
+This update consists of:
+
+	- Including some bug fixes and stability enhancement.
+	- Making XenGT device model to be aware of Broadwell. In this version BDW is not yet functioning.
+	- Available Fence registers number is changed to 32 from 16 to align with HSW hardware.
+	- New cascade interrupt framework for supporting interrupt virtualization on both Haswell and Broadwell.
+	- Add back the gem_vgtbuffer. The previous release did not build that module for 3.14 kernel. In this release, the module is back and rebased to 3.17.
+	- Enable the irq based context switch in vgt driver, which will help reduce the cpu utilization while doing context switch, it is enabled by default, and can be turn off by kernel flag irq_based_ctx_switch.
+
+
+Please refer to the new setup guide, which provides step-to-step details about building/configuring/running Intel GVT-g:
+
+	https://github.com/01org/XenGT-Preview-kernel/blob/master/XenGT_Setup_Guide.pdf
+
+The new source codes are available at the updated github repos:
+
+	Linux: https://github.com/01org/XenGT-Preview-kernel.git
+	Xen: https://github.com/01org/XenGT-Preview-xen.git
+	Qemu: https://github.com/01org/XenGT-Preview-qemu.git
+
+
+More information about Intel GVT-g background, architecture, etc can be found at:
+
+
+	https://www.usenix.org/conference/atc14/technical-sessions/presentation/tian
+	http://events.linuxfoundation.org/sites/events/files/slides/XenGT-Xen%20Summit-v7_0.pdf
+	https://01.org/xen/blogs/srclarkx/2013/graphics-virtualization-xengt
+
+
+
+The previous update can be found here:
+
+
+	http://lists.xen.org/archives/html/xen-devel/2014-12/msg00474.html
+
+
+
+Appreciate your comments!
+
+
+
+--
+Thanks,
+Jike
+
+
+On 12/04/2014 10:45 AM, Jike Song wrote:
+> Hi all,
 >
-> A single quirk entry results in an error message in dmesg:
-> "snd-usb-audio: probe of 3-2:1.0 failed with error -5"
-
-That message is normal for unhandled interfaces.
-
-Does it actually prevent the device from working?
-
-
-Regards,
-Clemens
+> We're pleased to announce a public release to Intel Graphics Virtualization Technology (Intel GVT-g, formerly known as XenGT). Intel GVT-g is a complete vGPU solution with mediated pass-through, supported today on 4th generation Intel Core(TM) processors with Intel Graphics processors. A virtual GPU instance is maintained for each VM, with part of performance critical resources directly assigned. The capability of running native graphics driver inside a VM, without hypervisor intervention in performance critical paths, achieves a good balance among performance, feature, and sharing capability. Though we only support Xen on Intel Processor Graphics so far, the core logic can be easily ported to other hypervisors.
+>
+>
+> The news of this update:
+>
+>
+> 	- kernel update from 3.11.6 to 3.14.1
+>
+> 	- We plan to integrate Intel GVT-g as a feature in i915 driver. That effort is still under review, not included in this update yet
+>
+> 	- Next update will be around early Jan, 2015
+>
+>
+> This update consists of:
+>
+> 	- Windows HVM support with driver version 15.33.3910
+>
+> 	- Stability fixes, e.g. stabilize GPU, the GPU hang occurrence rate becomes rare now
+>
+> 	- Hardware Media Acceleration for Decoding/Encoding/Transcoding, VC1, H264 etc. format supporting
+>
+> 	- Display enhancements, e.g. DP type is supported for virtual PORT
+>
+> 	- Display port capability virtualization: with this feature, dom0 manager could freely assign virtual DDI ports to VM, not necessary to check whether the corresponding physical DDI ports are available
+>
+>
+>
+> Please refer to the new setup guide, which provides step-to-step details about building/configuring/running Intel GVT-g:
+>
+>
+> 	https://github.com/01org/XenGT-Preview-kernel/blob/master/XenGT_Setup_Guide.pdf
+>
+>
+>
+> The new source codes are available at the updated github repos:
+>
+>
+> 	Linux: https://github.com/01org/XenGT-Preview-kernel.git
+>
+> 	Xen: https://github.com/01org/XenGT-Preview-xen.git
+>
+> 	Qemu: https://github.com/01org/XenGT-Preview-qemu.git
+>
+>
+> More information about Intel GVT-g background, architecture, etc can be found at:
+>
+>
+> 	https://www.usenix.org/conference/atc14/technical-sessions/presentation/tian
+>
+> 	http://events.linuxfoundation.org/sites/events/files/slides/XenGT-Xen%20Summit-v7_0.pdf
+>
+> 	https://01.org/xen/blogs/srclarkx/2013/graphics-virtualization-xengt
+>
+>
+> The previous update can be found here:
+>
+>
+> 	http://lists.xen.org/archives/html/xen-devel/2014-07/msg03248.html
+>
+>
+> Appreciate your comments!
+>
+>
+> --
+> Thanks,
+> Jike
+>
+> On 07/25/2014 04:31 PM, Jike Song wrote:
+>> Hi all,
+>>
+>> We're pleased to announce an update to Intel Graphics Virtualization Technology (Intel GVT-g, formerly known as XenGT). Intel GVT-g is a complete vGPU solution with mediated pass-through, supported today on 4th generation Intel Core(TM) processors with Intel Graphics processors. A virtual GPU instance is maintained for each VM, with part of performance critical resources directly assigned. The capability of running native graphics driver inside a VM, without hypervisor intervention in performance critical paths, achieves a good balance among performance, feature, and sharing capability. Though we only support Xen on Intel Processor Graphics so far, the core logic can be easily ported to other hypervisors.
+>>
+>> The news of this update:
+>>
+>> 	- Project code name is "XenGT", now official name is Intel Graphics Virtualization Technology (Intel GVT-g)
+>> 	- Currently Intel GVT-g supports Intel Processor Graphics built into 4th generation Intel Core processors - Haswell platform
+>> 	- Moving forward, XenGT will change to quarterly release cadence. Next update will be around early October, 2014.
+>>
+>> This update consists of:
+>>
+>> 	- Stability fixes, e.g. stable DP support
+>> 	- Display enhancements, e.g. virtual monitor support. Users can define a virtual monitor type with customized EDID for virtual machines, not necessarily the same as physical monitors.
+>> 	- Improved support for GPU recovery
+>> 	- Experimental Windows HVM support. To download the experimental version, see setup guide for details
+>> 	- Experimental Hardware Media Acceleration for decoding.
+>>
+>>
+>> Please refer to the new setup guide, which provides step-to-step details about building/configuring/running Intel GVT-g:
+>>
+>> 	https://github.com/01org/XenGT-Preview-kernel/blob/master/XenGT_Setup_Guide.pdf
+>>
+>>
+>> The new source codes are available at the updated github repos:
+>>
+>> 	Linux: https://github.com/01org/XenGT-Preview-kernel.git
+>> 	Xen: https://github.com/01org/XenGT-Preview-xen.git
+>> 	Qemu: https://github.com/01org/XenGT-Preview-qemu.git
+>>
+>>
+>> More information about Intel GVT-g background, architecture, etc can be found at:
+>>
+>> 	https://www.usenix.org/conference/atc14/technical-sessions/presentation/tian
+>> 	http://events.linuxfoundation.org/sites/events/files/slides/XenGT-Xen%20Summit-v7_0.pdf
+>> 	https://01.org/xen/blogs/srclarkx/2013/graphics-virtualization-xengt
+>>
+>> The previous update can be found here:
+>>
+>> 	http://lists.xen.org/archives/html/xen-devel/2014-02/msg01848.html
+>>
+>> Appreciate your comments!
+>>
+>>
+>>
+>>
+>> --
+>> Thanks,
+>> Jike
+>>
