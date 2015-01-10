@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758521AbbAJFld (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 00:41:33 -0500
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:32998 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062AbbAJFgn (ORCPT
+	id S1758456AbbAJFlB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 00:41:01 -0500
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:36198 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752302AbbAJFgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 00:36:43 -0500
+	Sat, 10 Jan 2015 00:36:45 -0500
 From: Chris Rorvick <chris@rorvick.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Chris Rorvick <chris@rorvick.com>,
@@ -21,9 +21,9 @@ Cc: Chris Rorvick <chris@rorvick.com>,
         Monam Agarwal <monamagarwal123@gmail.com>,
         Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
         Stefan Hajnoczi <stefanha@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 10/25] staging: line6: Rename capability macros
-Date: Fri,  9 Jan 2015 23:35:56 -0600
-Message-Id: <1420868171-2031-11-git-send-email-chris@rorvick.com>
+Subject: [PATCH 11/25] staging: line6: Use explicit indexes when defining properties
+Date: Fri,  9 Jan 2015 23:35:57 -0600
+Message-Id: <1420868171-2031-12-git-send-email-chris@rorvick.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1420868171-2031-1-git-send-email-chris@rorvick.com>
 References: <1420868171-2031-1-git-send-email-chris@rorvick.com>
@@ -31,137 +31,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Including "BIT" in the macro name is pointless.  Replace with "CAP" to
-provide some context for what its value represents.
+Specify the index of the properties entry explicitly to define this
+structure more robustly.  Also, drop the `L6PROP' macro in favor of
+initializing each member explicitly on its own line since horizontal
+space is limited and more attributes will be added later.
 
 Signed-off-by: Chris Rorvick <chris@rorvick.com>
 ---
- drivers/staging/line6/driver.c   |  8 ++++----
- drivers/staging/line6/midi.c     |  2 +-
- drivers/staging/line6/pcm.c      |  2 +-
- drivers/staging/line6/playback.c |  2 +-
- drivers/staging/line6/pod.c      |  2 +-
- drivers/staging/line6/usbdefs.h  | 12 ++++++------
- 6 files changed, 14 insertions(+), 14 deletions(-)
+ drivers/staging/line6/driver.c | 112 +++++++++++++++++++++++++++++++++--------
+ 1 file changed, 90 insertions(+), 22 deletions(-)
 
 diff --git a/drivers/staging/line6/driver.c b/drivers/staging/line6/driver.c
-index acde205..4ec87a3 100644
+index 4ec87a3..c988b78 100644
 --- a/drivers/staging/line6/driver.c
 +++ b/drivers/staging/line6/driver.c
-@@ -59,7 +59,7 @@ MODULE_DEVICE_TABLE(usb, line6_id_table);
+@@ -57,29 +57,97 @@ static const struct usb_device_id line6_id_table[] = {
  
- #define L6PROP(dev_id, dev_name, dev_cap)\
- 	{.id = dev_id,\
--	 .name = dev_name, .capabilities = LINE6_BIT_##dev_cap}
-+	 .name = dev_name, .capabilities = LINE6_CAP_##dev_cap}
+ MODULE_DEVICE_TABLE(usb, line6_id_table);
  
+-#define L6PROP(dev_id, dev_name, dev_cap)\
+-	{.id = dev_id,\
+-	 .name = dev_name, .capabilities = LINE6_CAP_##dev_cap}
+-
  static const struct line6_properties line6_properties_table[] = {
- 	L6PROP("BassPODxt",     "BassPODxt",        CTRL_PCM_HW),
-@@ -830,7 +830,7 @@ static int line6_probe(struct usb_interface *interface,
+-	L6PROP("BassPODxt",     "BassPODxt",        CTRL_PCM_HW),
+-	L6PROP("BassPODxtLive", "BassPODxt Live",   CTRL_PCM_HW),
+-	L6PROP("BassPODxtPro",  "BassPODxt Pro",    CTRL_PCM_HW),
+-	L6PROP("GuitarPort",    "GuitarPort",       PCM),
+-	L6PROP("PocketPOD",     "Pocket POD",       CONTROL),
+-	L6PROP("PODHD300",      "POD HD300",        CTRL_PCM_HW),
+-	L6PROP("PODHD400",      "POD HD400",        CTRL_PCM_HW),
+-	L6PROP("PODHD500",      "POD HD500",        CTRL_PCM_HW),
+-	L6PROP("PODStudioGX",   "POD Studio GX",    PCM),
+-	L6PROP("PODStudioUX1",  "POD Studio UX1",   PCM),
+-	L6PROP("PODStudioUX2",  "POD Studio UX2",   PCM),
+-	L6PROP("PODxt",         "PODxt",            CTRL_PCM_HW),
+-	L6PROP("PODxtLive",     "PODxt Live",       CTRL_PCM_HW),
+-	L6PROP("PODxtPro",      "PODxt Pro",        CTRL_PCM_HW),
+-	L6PROP("TonePortGX",    "TonePort GX",      PCM),
+-	L6PROP("TonePortUX1",   "TonePort UX1",     PCM),
+-	L6PROP("TonePortUX2",   "TonePort UX2",     PCM),
+-	L6PROP("Variax",        "Variax Workbench", CONTROL),
++	[LINE6_BASSPODXT] = {
++		.id = "BassPODxt",
++		.name = "BassPODxt",
++		.capabilities = LINE6_CAP_CTRL_PCM_HW,
++	},
++	[LINE6_BASSPODXTLIVE] = {
++		.id = "BassPODxtLive",
++		.name = "BassPODxt Live",
++		.capabilities = LINE6_CAP_CTRL_PCM_HW,
++	},
++	[LINE6_BASSPODXTPRO] = {
++		.id = "BassPODxtPro",
++		.name = "BassPODxt Pro",
++		.capabilities = LINE6_CAP_CTRL_PCM_HW,
++	},
++	[LINE6_GUITARPORT] = {
++		.id = "GuitarPort",
++		.name = "GuitarPort",
++		.capabilities = LINE6_CAP_PCM,
++	},
++	[LINE6_POCKETPOD] = {
++		.id = "PocketPOD",
++		.name = "Pocket POD",
++		.capabilities = LINE6_CAP_CONTROL,
++	},
++	[LINE6_PODHD300] = {
++		.id = "PODHD300",
++		.name = "POD HD300",
++		.capabilities = LINE6_CAP_CTRL_PCM_HW,
++	},
++	[LINE6_PODHD400] = {
++		.id = "PODHD400",
++		.name = "POD HD400",
++		.capabilities = LINE6_CAP_CTRL_PCM_HW,
++	},
++	[LINE6_PODHD500] = {
++		.id = "PODHD500",
++		.name = "POD HD500",
++		.capabilities = LINE6_CAP_CTRL_PCM_HW,
++	},
++	[LINE6_PODSTUDIO_GX] = {
++		.id = "PODStudioGX",
++		.name = "POD Studio GX",
++		.capabilities = LINE6_CAP_PCM,
++	},
++	[LINE6_PODSTUDIO_UX1] = {
++		.id = "PODStudioUX1",
++		.name = "POD Studio UX1",
++		.capabilities = LINE6_CAP_PCM,
++	},
++	[LINE6_PODSTUDIO_UX2] = {
++		.id = "PODStudioUX2",
++		.name = "POD Studio UX2",
++		.capabilities = LINE6_CAP_PCM,
++	},
++	[LINE6_PODXT] = {
++		.id = "PODxt",
++		.name = "PODxt",
++		.capabilities = LINE6_CAP_CTRL_PCM_HW,
++	},
++	[LINE6_PODXTLIVE] = {
++		.id = "PODxtLive",
++		.name = "PODxt Live",
++		.capabilities = LINE6_CAP_CTRL_PCM_HW,
++	},
++	[LINE6_PODXTPRO] = {
++		.id = "PODxtPro",
++		.name = "PODxt Pro",
++		.capabilities = LINE6_CAP_CTRL_PCM_HW,
++	},
++	[LINE6_TONEPORT_GX] = {
++		.id = "TonePortGX",
++		.name = "TonePort GX",
++		.capabilities = LINE6_CAP_PCM,
++	},
++	[LINE6_TONEPORT_UX1] = {
++		.id = "TonePortUX1",
++		.name = "TonePort UX1",
++		.capabilities = LINE6_CAP_PCM,
++	},
++	[LINE6_TONEPORT_UX2] = {
++		.id = "TonePortUX2",
++		.name = "TonePort UX2",
++		.capabilities = LINE6_CAP_PCM,
++	},
++	[LINE6_VARIAX] = {
++		.id = "Variax",
++		.name = "Variax Workbench",
++		.capabilities = LINE6_CAP_CONTROL,
++	}
+ };
  
- 	usb_set_intfdata(interface, line6);
- 
--	if (properties->capabilities & LINE6_BIT_CONTROL) {
-+	if (properties->capabilities & LINE6_CAP_CONTROL) {
- 		/* initialize USB buffers: */
- 		line6->buffer_listen =
- 		    kmalloc(LINE6_BUFSIZE_LISTEN, GFP_KERNEL);
-@@ -1052,7 +1052,7 @@ static int line6_suspend(struct usb_interface *interface, pm_message_t message)
- 
- 	snd_power_change_state(line6->card, SNDRV_CTL_POWER_D3hot);
- 
--	if (line6->properties->capabilities & LINE6_BIT_CONTROL)
-+	if (line6->properties->capabilities & LINE6_CAP_CONTROL)
- 		line6_stop_listen(line6);
- 
- 	if (line6pcm != NULL) {
-@@ -1071,7 +1071,7 @@ static int line6_resume(struct usb_interface *interface)
- {
- 	struct usb_line6 *line6 = usb_get_intfdata(interface);
- 
--	if (line6->properties->capabilities & LINE6_BIT_CONTROL)
-+	if (line6->properties->capabilities & LINE6_CAP_CONTROL)
- 		line6_start_listen(line6);
- 
- 	snd_power_change_state(line6->card, SNDRV_CTL_POWER_D0);
-diff --git a/drivers/staging/line6/midi.c b/drivers/staging/line6/midi.c
-index 1ac343b..c453485 100644
---- a/drivers/staging/line6/midi.c
-+++ b/drivers/staging/line6/midi.c
-@@ -279,7 +279,7 @@ int line6_init_midi(struct usb_line6 *line6)
- 	int err;
- 	struct snd_line6_midi *line6midi;
- 
--	if (!(line6->properties->capabilities & LINE6_BIT_CONTROL)) {
-+	if (!(line6->properties->capabilities & LINE6_CAP_CONTROL)) {
- 		/* skip MIDI initialization and report success */
- 		return 0;
- 	}
-diff --git a/drivers/staging/line6/pcm.c b/drivers/staging/line6/pcm.c
-index 86c7bcb..e09772f 100644
---- a/drivers/staging/line6/pcm.c
-+++ b/drivers/staging/line6/pcm.c
-@@ -424,7 +424,7 @@ int line6_init_pcm(struct usb_line6 *line6,
- 	int ep_read = 0, ep_write = 0;
- 	struct snd_line6_pcm *line6pcm;
- 
--	if (!(line6->properties->capabilities & LINE6_BIT_PCM))
-+	if (!(line6->properties->capabilities & LINE6_CAP_PCM))
- 		return 0;	/* skip PCM initialization and report success */
- 
- 	/* initialize PCM subsystem based on device: */
-diff --git a/drivers/staging/line6/playback.c b/drivers/staging/line6/playback.c
-index 2ca8900..54b7f60 100644
---- a/drivers/staging/line6/playback.c
-+++ b/drivers/staging/line6/playback.c
-@@ -261,7 +261,7 @@ static int submit_audio_out_urb(struct snd_line6_pcm *line6pcm)
- #endif
- 			if (!
- 			    (line6pcm->line6->
--			     properties->capabilities & LINE6_BIT_HWMON)
-+			     properties->capabilities & LINE6_CAP_HWMON)
- 			    && (line6pcm->flags & LINE6_BITS_PLAYBACK_STREAM)
- 			    && (line6pcm->flags & LINE6_BITS_CAPTURE_STREAM))
- 				add_monitor_signal(urb_out, line6pcm->prev_fbuf,
-diff --git a/drivers/staging/line6/pod.c b/drivers/staging/line6/pod.c
-index 7b4ec92f..0fb1788 100644
---- a/drivers/staging/line6/pod.c
-+++ b/drivers/staging/line6/pod.c
-@@ -396,7 +396,7 @@ static int pod_try_init(struct usb_interface *interface,
- 	   handler.
- 	 */
- 
--	if (pod->line6.properties->capabilities & LINE6_BIT_CONTROL) {
-+	if (pod->line6.properties->capabilities & LINE6_CAP_CONTROL) {
- 		pod->monitor_level = POD_SYSTEM_INVALID;
- 
- 		/* initiate startup procedure: */
-diff --git a/drivers/staging/line6/usbdefs.h b/drivers/staging/line6/usbdefs.h
-index c897dba..d6e46ee 100644
---- a/drivers/staging/line6/usbdefs.h
-+++ b/drivers/staging/line6/usbdefs.h
-@@ -15,15 +15,15 @@
- #define USB_INTERVALS_PER_SECOND 1000
- 
- /* device supports settings parameter via USB */
--#define LINE6_BIT_CONTROL (1 << 0)
-+#define LINE6_CAP_CONTROL (1 << 0)
- /* device supports PCM input/output via USB */
--#define LINE6_BIT_PCM (1 << 1)
-+#define LINE6_CAP_PCM (1 << 1)
- /* device support hardware monitoring */
--#define LINE6_BIT_HWMON (1 << 2)
-+#define LINE6_CAP_HWMON (1 << 2)
- 
--#define LINE6_BIT_CTRL_PCM_HW	(LINE6_BIT_CONTROL |	\
--					 LINE6_BIT_PCM |	\
--					 LINE6_BIT_HWMON)
-+#define LINE6_CAP_CTRL_PCM_HW	(LINE6_CAP_CONTROL |	\
-+					 LINE6_CAP_PCM |	\
-+					 LINE6_CAP_HWMON)
- 
- #define LINE6_FALLBACK_INTERVAL 10
- #define LINE6_FALLBACK_MAXPACKETSIZE 16
+ /*
 -- 
 2.1.0
 
