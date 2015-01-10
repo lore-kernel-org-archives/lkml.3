@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723AbbAJEPL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 23:15:11 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:34332 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745AbbAJEPI (ORCPT
+	id S1753772AbbAJEZC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 23:25:02 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:58717 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745AbbAJEZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 23:15:08 -0500
-Date: Sat, 10 Jan 2015 04:14:57 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Rich Felker <dalias@aerifal.cx>
-Cc: David Drysdale <drysdale@google.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, sparclinux@vger.kernel.org
-Subject: Re: [PATCHv10 man-pages 5/5] execveat.2: initial man page for
- execveat(2)
-Message-ID: <20150110041457.GV22149@ZenIV.linux.org.uk>
-References: <20150109212852.GU4574@brightrain.aerifal.cx>
- <20150109215042.GM22149@ZenIV.linux.org.uk>
- <20150109221728.GW4574@brightrain.aerifal.cx>
- <20150109223300.GO22149@ZenIV.linux.org.uk>
- <20150109224252.GY4574@brightrain.aerifal.cx>
- <20150109225743.GP22149@ZenIV.linux.org.uk>
- <20150109231248.GZ4574@brightrain.aerifal.cx>
- <20150109233644.GR22149@ZenIV.linux.org.uk>
- <20150110030300.GU22149@ZenIV.linux.org.uk>
- <20150110034144.GC4574@brightrain.aerifal.cx>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150110034144.GC4574@brightrain.aerifal.cx>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 9 Jan 2015 23:25:00 -0500
+From: jitendra kumar khasdev <jkhasdev@gmail.com>
+To: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        jitendra kumar khasdev <jkhasdev@gmail.com>
+Subject: [PATCH v6] Staging: comedi: patch to fix 80 characters line over warnings
+Date: Sat, 10 Jan 2015 09:54:39 +0530
+Message-Id: <1420863879-4066-1-git-send-email-jkhasdev@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 10:41:44PM -0500, Rich Felker wrote:
-> > _After_ the traversal it's too late to do this sort of thing - after all,
-> > how do you tell if your current position had been set by the traversal of
-> > your symlink or that of any normal /proc/self/fd/<n>?
-> 
-> Thanks for clarifying how this all works in the kernel. It makes it
-> easier to understand what the costs (especially complexity costs) of
-> different implementation options might be for the kernel.
-> 
-> > And doing that _during_ the traversal would really suck - stray ls -lR /proc
-> > could race with that open() done by script interpreter.
-> 
-> IMO this one issue is easily solvable by limiting the special action
-> to calls by the owning pid.
+This is the patch to pcl812.c that fix 80 character line over warnings.
+These warnings are identified by checkpatch.pl tool.
+For this patch I have did following changes,
+1. convert single line comment into multiline comment
+2. provide tab sapce for indentation purpose
+3. reduce extra space between ( = ) sign.
 
-Except that if your interpreter does stat(2) (or access(2), or getxattr(2),
-etc.) before bothering with open(2), you'll get screwed.  Moreover, if it
-does so only in case when you have something specific in environment,
-you'll have the devil of the time trying to figure out how to reproduce
-such a bug report...
+Signed-off-by: Jitendra kumar khasdev <jkhasdev@gmail.com>
+---
+ drivers/staging/comedi/drivers/pcl812.c | 20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/pcl812.c b/drivers/staging/comedi/drivers/pcl812.c
+index ac243ca..3eac017 100644
+--- a/drivers/staging/comedi/drivers/pcl812.c
++++ b/drivers/staging/comedi/drivers/pcl812.c
+@@ -507,20 +507,26 @@ static const struct pcl812_board boardtypes[] = {
+ };
+ 
+ struct pcl812_private {
+-	unsigned char dma;	/*  >0 use dma ( usedDMA channel) */
++	unsigned char dma;		/*  >0 use dma ( usedDMA channel) */
+ 	unsigned char range_correction;	/*  =1 we must add 1 to range number */
+ 	unsigned int last_ai_chanspec;
+-	unsigned char mode_reg_int;	/*  there is stored INT number for some card */
++	unsigned char mode_reg_int;	/*  there is stored INT number for
++					 *  some card
++					 */
+ 	unsigned int ai_poll_ptr;	/*  how many sampes transfer poll */
+ 	unsigned int dmapages;
+ 	unsigned int hwdmasize;
+ 	unsigned long dmabuf[2];	/*  PTR to DMA buf */
+ 	unsigned int hwdmaptr[2];	/*  HW PTR to DMA buf */
+ 	unsigned int dmabytestomove[2];	/*  how many bytes DMA transfer */
+-	int next_dma_buf;	/*  which buffer is next to use */
+-	unsigned int dma_runs_to_end;	/*  how many times we must switch DMA buffers */
+-	unsigned int last_dma_run;	/*  how many bytes to transfer on last DMA buffer */
+-	unsigned int max_812_ai_mode0_rangewait;	/*  setling time for gain */
++	int next_dma_buf;		/*  which buffer is next to use */
++	unsigned int dma_runs_to_end;	/*  how many times we must switch
++					 *  DMA buffers
++					 */
++	unsigned int last_dma_run;	/*  how many bytes to transfer on
++					 *  last DMA buffer
++					 */
++	unsigned int max_812_ai_mode0_rangewait;    /* setling time for gain */
+ 	unsigned int divisor1;
+ 	unsigned int divisor2;
+ 	unsigned int use_diff:1;
+@@ -1235,7 +1241,7 @@ static int pcl812_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		for (i = 0; i < 2; i++) {
+ 			unsigned long dmabuf;
+ 
+-			dmabuf =  __get_dma_pages(GFP_KERNEL, devpriv->dmapages);
++			dmabuf = __get_dma_pages(GFP_KERNEL, devpriv->dmapages);
+ 			if (!dmabuf)
+ 				return -ENOMEM;
+ 
+-- 
+1.9.1
+
