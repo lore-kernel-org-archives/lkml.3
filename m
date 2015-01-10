@@ -1,141 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916AbbAJLSO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 06:18:14 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:49032 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056AbbAJLSK (ORCPT
+	id S1752581AbbAJLY0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 06:24:26 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:40009 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223AbbAJLYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 06:18:10 -0500
-Date: Sat, 10 Jan 2015 11:17:48 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Chen-Yu Tsai <wens@csie.org>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Tawfik Bayouk <tawfik@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        devicetree <devicetree@vger.kernel.org>,
-        Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        Mark Rutland <mark.rutland@arm.com>, Nadav Haklai <nadavh@marvell.com>,
-        linux-ide@vger.kernel.org, Lior Amsalem <alior@marvell.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Tejun Heo <tj@kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Message-ID: <20150110111748.GB4160@sirena.org.uk>
-References: <1420799989-10645-1-git-send-email-gregory.clement@free-electrons.com>
- <1420799989-10645-3-git-send-email-gregory.clement@free-electrons.com>
- <54AFF7E3.4070506@redhat.com>
- <54AFFFDC.7020307@free-electrons.com>
- <CAGb2v674q4Cjp9qy9CbUXe2j5pT_ez98CKxXHC8u4Diap2TT1A@mail.gmail.com>
- <20150109171131.GH2634@sirena.org.uk>
- <54B0FCDD.7000300@redhat.com>
+	Sat, 10 Jan 2015 06:24:24 -0500
+Date: Sat, 10 Jan 2015 12:24:19 +0100
+From: Dongsu Park <dongsu.park@profitbricks.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kan Liang <kan.liang@intel.com>, Peter Zijlstra <peterz@infradead.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>,
+        Mark Davies <junk@eslaf.co.uk>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 3.12 11/78] perf/x86/intel: Protect LBR and extra_regs
+ against KVM lying
+Message-ID: <20150110112419.GA4000@posteo.de>
+References: <cover.1420799385.git.jslaby@suse.cz>
+ <304ed40ae03a8e72934efc935247780d1b0ada66.1420799385.git.jslaby@suse.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FsscpQKzF/jJk6ya"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <54B0FCDD.7000300@redhat.com>
-X-Cookie: Keep out of reach of children.
+In-Reply-To: <304ed40ae03a8e72934efc935247780d1b0ada66.1420799385.git.jslaby@suse.cz>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 2/4] Documentation: bindings: Add the regulator
- property to the sub-nodes AHCI bindings
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Jiry,
 
---FsscpQKzF/jJk6ya
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 09.01.2015 11:31, Jiri Slaby wrote:
+> From: Kan Liang <kan.liang@intel.com>
+> 
+> 3.12-stable review patch.  If anyone has any objections, please let me know.
 
-On Sat, Jan 10, 2015 at 11:20:13AM +0100, Hans de Goede wrote:
-> On 09-01-15 18:11, Mark Brown wrote:
+Thanks for taking this patch to 3.12-stable.
+I've just tested 3.12.36 from your stable-3.12-queue tree.
+Unfortunately, the kernel still crashes at intel_pmu_init().
 
-> >Or if the supply is for the device at the other end of the link (which
-> >is what it sounded like) then use that.  This just sounds like the same
-> >problem we have for all the enumerable buses in embedded systems where
-> >we need to be able to understand that the device exists prior to it
-> >being fully ready to appear in the system.  Having the link/slot be a
-> >device in Linux does indeed seem to be a common way people think about
-> >doing this, it sounds like for this one it might be the most direct.
+It turns out that this commit alone is not enough for fixing the bug.
+Actually you also need commit c9b08884c9c98929ec2d8abafd78e89062d01ee7
+("perf/x86: Correctly use FEATURE_PDCM").
+Can you please pick that commit too?
 
-> I think we should be careful to not think too much from an implementation
-> pov here, the purpose of the devicetree description is to describe the ha=
-rdware,
-> as is.
+Thanks,
+Dongsu
 
-I don't think anyone is talking about changing the DT here, only the way
-it's represented inside Linux.
+p.s. In contrast, that commit didn't have to be backported to kernel
+3.14.27, as it was already included in 3.14 tree. So situation was
+slightly different between 3.12 and 3.14. This also explains why I
+haven't been able to get it working in 3.10 so far.
+I'll send a separate mail to stable@.
 
->                 sata0: sata-port@0 {
->                         reg =3D <0>;
->                         phys =3D <&sata_phy 0>;
-> 			target-supply =3D <&reg_sata0>;
->                 };
->=20
->                 sata1: sata-port@1 {
->                         reg =3D <1>;
->                         phys =3D <&sata_phy 1>;
-> 			target-supply =3D <&reg_sata1>;
->                 };
->         };
-
-> Seems to match the hardware pretty exactly, and also matches how we've
-> been describing similar devices with only one sata port + power plug sofa=
-r,
-> so from a consistency pov it also is a good model.
-
-Right, I think that makes sense - it also looks to me like these things
-should be representable as devices within Linux.
-
-> So supporting this model requires having a regulator_get API which allows
-> specifying which of_node to get the regulator from, e.g. the proposed
-
-It requires nothing of the sort.
-
-> of_regulator_get function. I know you (Mark) do not like this, but all
-> other subsystems have an of_foo_get function taking an of_node as argumen=
-t,
-> I do not see how the regulator subsys is so special that it cannot have o=
-ne,
-> and also notice that this is only a kernel internal API which we can alwa=
-ys
-> change later.
-
-Two things there.  One is that mostly those APIs are legacy APIs from
-before we made DT a first class citizen and generally they shouldn't be
-used these days.  The other is that at least for regulators we have
-constant problems with people abusing the API in various ways, as a
-result the API has a goal of not helping undesirable usage patterns in
-order to help people spot problems.  Having an API which makes it easy
-create broken bindings means that it is much more likely that people
-will do just that.
-
---FsscpQKzF/jJk6ya
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUsQpbAAoJECTWi3JdVIfQxwYH/iEzJFcp4qFzIVt/Af9ri40/
-1g1Wjuujq3TMMYu/OcutyMvYEp8VBK8LOV0dYnQ6CJ08g+0+Tbg+RHzmOjtG3eeE
-XCGxoVOn6HwRLBledYyoAsFEzqdVaBGTYRUBGnU4Yhq6XGzQBrqigZyiSbWrR4nV
-oO0gj5We4WsB4Y0bCZhxJwG6nVIMoLdbDHjQCyGf2PdhhyW6CogHJ5fIWMG3HPKr
-i8h/RbK/qkaFmmGGtdZrkiVG03fH46YvcGmdvUswBoZISRRIrCH5C9m9OBF4NvI6
-dt48gKFuMQsflZ4/EoO+tPhu3dIE4rbz8EBVSaxHqNm3pYIaPuVv64qv4QwwbG4=
-=+bOd
------END PGP SIGNATURE-----
-
---FsscpQKzF/jJk6ya--
+> ===============
+> 
+> commit 338b522ca43cfd32d11a370f4203bcd089c6c877 upstream.
+> 
+> With -cpu host, KVM reports LBR and extra_regs support, if the host has
+> support.
+> 
+> When the guest perf driver tries to access LBR or extra_regs MSR,
+> it #GPs all MSR accesses,since KVM doesn't handle LBR and extra_regs support.
+> So check the related MSRs access right once at initialization time to avoid
+> the error access at runtime.
+> 
+> For reproducing the issue, please build the kernel with CONFIG_KVM_INTEL = y
+> (for host kernel).
+> And CONFIG_PARAVIRT = n and CONFIG_KVM_GUEST = n (for guest kernel).
+> Start the guest with -cpu host.
+> Run perf record with --branch-any or --branch-filter in guest to trigger LBR
+> Run perf stat offcore events (E.g. LLC-loads/LLC-load-misses ...) in guest to
+> trigger offcore_rsp #GP
+> 
+> Signed-off-by: Kan Liang <kan.liang@intel.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Cc: Andi Kleen <ak@linux.intel.com>
+> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+> Cc: Mark Davies <junk@eslaf.co.uk>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Stephane Eranian <eranian@google.com>
+> Cc: Yan, Zheng <zheng.z.yan@intel.com>
+> Link: http://lkml.kernel.org/r/1405365957-20202-1-git-send-email-kan.liang@intel.com
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> ---
+>  arch/x86/kernel/cpu/perf_event.c       |  3 ++
+>  arch/x86/kernel/cpu/perf_event.h       | 12 ++++---
+>  arch/x86/kernel/cpu/perf_event_intel.c | 66 +++++++++++++++++++++++++++++++++-
+>  3 files changed, 75 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index 5edd3c0b437a..c7106f116fb0 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -118,6 +118,9 @@ static int x86_pmu_extra_regs(u64 config, struct perf_event *event)
+>  			continue;
+>  		if (event->attr.config1 & ~er->valid_mask)
+>  			return -EINVAL;
+> +		/* Check if the extra msrs can be safely accessed*/
+> +		if (!er->extra_msr_access)
+> +			return -ENXIO;
+>  
+>  		reg->idx = er->idx;
+>  		reg->config = event->attr.config1;
+> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+> index cc16faae0538..53bd2726f4cd 100644
+> --- a/arch/x86/kernel/cpu/perf_event.h
+> +++ b/arch/x86/kernel/cpu/perf_event.h
+> @@ -279,14 +279,16 @@ struct extra_reg {
+>  	u64			config_mask;
+>  	u64			valid_mask;
+>  	int			idx;  /* per_xxx->regs[] reg index */
+> +	bool			extra_msr_access;
+>  };
+>  
+>  #define EVENT_EXTRA_REG(e, ms, m, vm, i) {	\
+> -	.event = (e),		\
+> -	.msr = (ms),		\
+> -	.config_mask = (m),	\
+> -	.valid_mask = (vm),	\
+> -	.idx = EXTRA_REG_##i,	\
+> +	.event = (e),			\
+> +	.msr = (ms),			\
+> +	.config_mask = (m),		\
+> +	.valid_mask = (vm),		\
+> +	.idx = EXTRA_REG_##i,		\
+> +	.extra_msr_access = true,	\
+>  	}
+>  
+>  #define INTEL_EVENT_EXTRA_REG(event, msr, vm, idx)	\
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index 959bbf204dae..02554ddf8481 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -2144,6 +2144,41 @@ static void intel_snb_check_microcode(void)
+>  	}
+>  }
+>  
+> +/*
+> + * Under certain circumstances, access certain MSR may cause #GP.
+> + * The function tests if the input MSR can be safely accessed.
+> + */
+> +static bool check_msr(unsigned long msr, u64 mask)
+> +{
+> +	u64 val_old, val_new, val_tmp;
+> +
+> +	/*
+> +	 * Read the current value, change it and read it back to see if it
+> +	 * matches, this is needed to detect certain hardware emulators
+> +	 * (qemu/kvm) that don't trap on the MSR access and always return 0s.
+> +	 */
+> +	if (rdmsrl_safe(msr, &val_old))
+> +		return false;
+> +
+> +	/*
+> +	 * Only change the bits which can be updated by wrmsrl.
+> +	 */
+> +	val_tmp = val_old ^ mask;
+> +	if (wrmsrl_safe(msr, val_tmp) ||
+> +	    rdmsrl_safe(msr, &val_new))
+> +		return false;
+> +
+> +	if (val_new != val_tmp)
+> +		return false;
+> +
+> +	/* Here it's sure that the MSR can be safely accessed.
+> +	 * Restore the old value and return.
+> +	 */
+> +	wrmsrl(msr, val_old);
+> +
+> +	return true;
+> +}
+> +
+>  static __init void intel_sandybridge_quirk(void)
+>  {
+>  	x86_pmu.check_microcode = intel_snb_check_microcode;
+> @@ -2207,7 +2242,8 @@ __init int intel_pmu_init(void)
+>  	union cpuid10_ebx ebx;
+>  	struct event_constraint *c;
+>  	unsigned int unused;
+> -	int version;
+> +	struct extra_reg *er;
+> +	int version, i;
+>  
+>  	if (!cpu_has(&boot_cpu_data, X86_FEATURE_ARCH_PERFMON)) {
+>  		switch (boot_cpu_data.x86) {
+> @@ -2515,6 +2551,34 @@ __init int intel_pmu_init(void)
+>  		}
+>  	}
+>  
+> +	/*
+> +	 * Access LBR MSR may cause #GP under certain circumstances.
+> +	 * E.g. KVM doesn't support LBR MSR
+> +	 * Check all LBT MSR here.
+> +	 * Disable LBR access if any LBR MSRs can not be accessed.
+> +	 */
+> +	if (x86_pmu.lbr_nr && !check_msr(x86_pmu.lbr_tos, 0x3UL))
+> +		x86_pmu.lbr_nr = 0;
+> +	for (i = 0; i < x86_pmu.lbr_nr; i++) {
+> +		if (!(check_msr(x86_pmu.lbr_from + i, 0xffffUL) &&
+> +		      check_msr(x86_pmu.lbr_to + i, 0xffffUL)))
+> +			x86_pmu.lbr_nr = 0;
+> +	}
+> +
+> +	/*
+> +	 * Access extra MSR may cause #GP under certain circumstances.
+> +	 * E.g. KVM doesn't support offcore event
+> +	 * Check all extra_regs here.
+> +	 */
+> +	if (x86_pmu.extra_regs) {
+> +		for (er = x86_pmu.extra_regs; er->msr; er++) {
+> +			er->extra_msr_access = check_msr(er->msr, 0x1ffUL);
+> +			/* Disable LBR select mapping */
+> +			if ((er->idx == EXTRA_REG_LBR) && !er->extra_msr_access)
+> +				x86_pmu.lbr_sel_map = NULL;
+> +		}
+> +	}
+> +
+>  	/* Support full width counters using alternative MSR range */
+>  	if (x86_pmu.intel_cap.full_width_write) {
+>  		x86_pmu.max_period = x86_pmu.cntval_mask;
+> -- 
+> 2.2.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
