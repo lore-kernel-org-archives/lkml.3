@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221AbbAJItB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 03:49:01 -0500
-Received: from mail-oi0-f41.google.com ([209.85.218.41]:33496 "EHLO
-	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306AbbAJItA (ORCPT
+	id S1754055AbbAJIv6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 03:51:58 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:37631 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306AbbAJIv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 03:49:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <1420868171-2031-1-git-send-email-chris@rorvick.com>
-References: <1420868171-2031-1-git-send-email-chris@rorvick.com>
-Date: Sat, 10 Jan 2015 08:48:59 +0000
-Message-ID: <CAJSP0QXx8PovhGT30A+S0hVDOX-Z4FODt2r7uXN0WyPU82C7YQ@mail.gmail.com>
-Subject: Re: [PATCH 00/25] line6usb cleanup
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: Chris Rorvick <chris@rorvick.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Davide Berardi <berardi.dav@gmail.com>, devel@driverdev.osuosl.org,
-        Fabian Mewes <architekt@coding4coffee.org>,
-        Gulsah Kose <gulsah.1004@gmail.com>,
-        Himangi Saraogi <himangi774@gmail.com>,
-        Jerry Snitselaar <dev@snitselaar.org>,
-        =?UTF-8?Q?L=2E_Alberto_Gim=C3=A9nez?= <agimenez@sysvalve.es>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mikhail Boiko <mm.boiko@yandex.ru>,
-        Monam Agarwal <monamagarwal123@gmail.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Takashi Iwai <tiwai@suse.de>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 10 Jan 2015 03:51:57 -0500
+From: Stefan Agner <stefan@agner.ch>
+To: arnd@arndb.de
+Cc: shawn.guo@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, stefan@agner.ch
+Subject: [PATCH RESEND] MAINTAINERS: add Freescale Vybrid SoC
+Date: Sat, 10 Jan 2015 09:51:49 +0100
+Message-Id: <1420879909-10970-1-git-send-email-stefan@agner.ch>
+X-Mailer: git-send-email 2.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 5:35 AM, Chris Rorvick <chris@rorvick.com> wrote:
-> The line6usb driver references the device's idProduct and, in some
-> cases, the interface number in a number of places to determine device-
-> specific configuration values and to call device-specific functionality.
-> Rework code to leverage the device table matching more effectively.
-> Consolidate configuration settings into the properties entries and use
-> function pointers setup at initialization to remove much of the
-> conditional logic.
->
-> I have a TonePort UX2 that I've used for testing, meaning that some of
-> this is really only compile-tested.
+Add Freescale Vybrid family as a own entry, along with an entry for
+the so far orphan Vybrid device tree files. Also add myself as
+a designated reviewer.
 
-I no longer own a Pod HD300 so I cannot test these patches.  The code
-looks fine.
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Stefan Agner <stefan@agner.ch>
+---
 
-Reviewed-by: Stefan Hajnoczi <stefanha@gmail.com>
+ MAINTAINERS | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index ddb9ac8..5f706ca 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1011,6 +1011,16 @@ F:	arch/arm/mach-mxs/
+ F:	arch/arm/boot/dts/imx*
+ F:	arch/arm/configs/imx*_defconfig
+ 
++ARM/FREESCALE VYBRID ARM ARCHITECTURE
++M:	Shawn Guo <shawn.guo@linaro.org>
++M:	Sascha Hauer <kernel@pengutronix.de>
++R:	Stefan Agner <stefan@agner.ch>
++L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
++S:	Maintained
++T:	git git://git.kernel.org/pub/scm/linux/kernel/git/shawnguo/linux.git
++F:	arch/arm/mach-imx/*vf610*
++F:	arch/arm/boot/dts/vf*
++
+ ARM/GLOMATION GESBC9312SX MACHINE SUPPORT
+ M:	Lennert Buytenhek <kernel@wantstofly.org>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+-- 
+2.2.1
+
