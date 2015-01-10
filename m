@@ -1,48 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529AbbAJTzd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 14:55:33 -0500
-Received: from mout.gmx.net ([212.227.17.20]:53521 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750844AbbAJTzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 14:55:32 -0500
-From: Sven Joachim <svenjoac@gmx.de>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Greg KH <greg@kroah.com>, pali.rohar@gmail.com, sre@debian.org,
-        sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        khilman@kernel.org, aaro.koskinen@iki.fi, ivo.g.dimitrov.75@gmail.com
-Subject: Re: Getting new udev to run with 2.6.28
-References: <20150110173920.GA31847@amd> <20150110180532.GA8566@kroah.com>
-	<20150110180942.GA10142@amd>
-Date: Sat, 10 Jan 2015 20:54:54 +0100
-In-Reply-To: <20150110180942.GA10142@amd> (Pavel Machek's message of "Sat, 10
-	Jan 2015 19:09:42 +0100")
-Message-ID: <87a91q2yy9.fsf@turtle.gmx.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.51 (gnu/linux)
+	id S1754910AbbAJT5P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 14:57:15 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:51766 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753814AbbAJT45 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jan 2015 14:56:57 -0500
+Date: Sat, 10 Jan 2015 11:56:48 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Omar Sandoval <osandov@osandov.com>
+Cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        David Sterba <dsterba@suse.cz>, Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH RESEND v8 0/3] Introduce RCU string API
+Message-ID: <20150110195647.GA8063@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <cover.1420834567.git.osandov@osandov.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Provags-ID: V03:K0:DRc9LEYUIovuws/bPHZ+7mZP69ZxE3HQarISLhzERK1PN9V/8eP
- zJoc9SZpCinGizKVXePK8lrOqgMEVNXzt6QxHO+c844fHLy97Jw71uo1Jvob1nnUBzxw3E/
- 95ncsjzPfFZfJbLpDRebCyevs7EQdOe4cd5TRGOKZGfoeY75qIKN/PWjSmQuUr5d2vATWUZ
- iKL36YdyQYEY7gt+Me0zg==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1420834567.git.osandov@osandov.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15011019-0009-0000-0000-000007DE8C4A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015-01-10 19:09 +0100, Pavel Machek wrote:
+On Fri, Jan 09, 2015 at 12:35:57PM -0800, Omar Sandoval wrote:
+> Hi, everyone,
+> 
+> Now that the merge window and the holidays are over, I've rebased this on
+> v3.19-rc3 for the next merge window.
 
-> I was hoping someone has devtmpfs patches I could just apply over
-> 2.6.28 and get a working system?
+Wasn't btrfs going to take this one?
 
-IIRC the udev version in Debian 7 does not require devtmpfs (that became
-mandatory only in udev 176), but kernel 2.6.32 or higher is required for
-other reasons.  See commit 67a77c8bf299f6264f001677becd056316ebce2f in
-udev[1].
+If I am supposed to take it, please split out the RCU infrastructure
+portion so that I can push it separately.
 
-Cheers,
-       Sven
+							Thanx, Paul
 
+> This patch series introduces the RCU string API and cleans up the wreckage of
+> sparse warnings which follow from it (shown here from when the patch was
+> briefly in the btrfs integration tree):
+> 
+> On Thu, Nov 27, 2014 at 06:45:20AM +0800, kbuild test robot wrote:
+> > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git integration
+> > head:   c7a37618b60026121255c69e042d74ae5631470c
+> > commit: 37aad79d90a0cbf82a5eda62dfe3af4241f5aca3 [38/39] Move BTRFS RCU string to common library
+> > reproduce:
+> >   # apt-get install sparse
+> >   git checkout 37aad79d90a0cbf82a5eda62dfe3af4241f5aca3
+> >   make ARCH=x86_64 allmodconfig
+> >   make C=1 CF=-D__CHECK_ENDIAN__
+> >
+> >
+> > sparse warnings: (new ones prefixed by >>)
+> >
+> > >> fs/btrfs/check-integrity.c:848:25: sparse: incorrect type in argument 1 (different address spaces)
+> >    fs/btrfs/check-integrity.c:848:25:    expected struct rcu_string [noderef] <asn:4>*rcu_str
+> >    fs/btrfs/check-integrity.c:848:25:    got struct rcu_string *name
+> [snip]
+> 
+> Version 8 combines the original patch with another patch series I posted to fix
+> these warnings, which fixes the botched __rcu annotations that caused some of
+> the warnings and refactors the existing uses of rcustring to get rid of the
+> rest. There's also a patch to fix an RCU misuse.
+> 
+> Thanks!
+> 
+> v8: Get the __rcu annotations right, clean up RCU string-related sparse noise
+> v7: Add arguments to kernel doc for printk wrappers, use ##__VA_ARGS
+> v6: Add header dependencies to rcustring.h
+> v5: Rebase against v3.18-rc3
+> v4: Don't return anything from the printk wrappers on the assumption that
+> printk will return void someday
+> v3: Add __rcu annotation to relevant functions, add Paul's ack and Josh's
+> review
+> 
+> Omar Sandoval (3):
+>   Move BTRFS RCU string to common library
+>   btrfs: refactor btrfs_device->name updates
+>   btrfs: fix suspicious RCU in BTRFS_IOC_DEV_INFO
+> 
+>  fs/btrfs/check-integrity.c |   6 +--
+>  fs/btrfs/dev-replace.c     |  19 ++++----
+>  fs/btrfs/disk-io.c         |   6 +--
+>  fs/btrfs/extent_io.c       |   4 +-
+>  fs/btrfs/ioctl.c           |  14 +++---
+>  fs/btrfs/raid56.c          |   2 +-
+>  fs/btrfs/rcu-string.h      |  56 ------------------------
+>  fs/btrfs/scrub.c           |  15 ++++---
+>  fs/btrfs/super.c           |   2 +-
+>  fs/btrfs/volumes.c         | 107 ++++++++++++++++++++++++++++++---------------
+>  fs/btrfs/volumes.h         |   2 +-
+>  include/linux/rcustring.h  |  97 ++++++++++++++++++++++++++++++++++++++++
+>  12 files changed, 204 insertions(+), 126 deletions(-)
+>  delete mode 100644 fs/btrfs/rcu-string.h
+>  create mode 100644 include/linux/rcustring.h
+> 
+> -- 
+> 2.2.1
+> 
 
-1. https://git.kernel.org/cgit/linux/hotplug/udev.git/commit/?id=67a77c8bf299f6264f001677becd056316ebce2f
