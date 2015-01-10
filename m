@@ -1,98 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997AbbAJBUc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 20:20:32 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:57555 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381AbbAJBU3 (ORCPT
+	id S1753516AbbAJBSm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 20:18:42 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:36652 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381AbbAJBSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 20:20:29 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Rich Felker <dalias@aerifal.cx>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, David Drysdale <drysdale@google.com>,
-        "Michael Kerrisk \(man-pages\)" <mtk.manpages@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, sparclinux@vger.kernel.org
-References: <1416830039-21952-6-git-send-email-drysdale@google.com>
-	<54AFF813.7050604@gmail.com>
-	<20150109161302.GQ4574@brightrain.aerifal.cx>
-	<CAHse=S88Jy5ZKM_VY5onfvxX7dTMngnxuHfuLeSuzvKvQNP19A@mail.gmail.com>
-	<20150109204815.GR4574@brightrain.aerifal.cx>
-	<20150109205626.GK22149@ZenIV.linux.org.uk>
-	<20150109205926.GT4574@brightrain.aerifal.cx>
-	<20150109210941.GL22149@ZenIV.linux.org.uk>
-	<20150109212852.GU4574@brightrain.aerifal.cx>
-	<87lhlbvbzs.fsf@x220.int.ebiederm.org>
-	<20150109223843.GX4574@brightrain.aerifal.cx>
-Date: Fri, 09 Jan 2015 19:17:41 -0600
-In-Reply-To: <20150109223843.GX4574@brightrain.aerifal.cx> (Rich Felker's
-	message of "Fri, 9 Jan 2015 17:38:43 -0500")
-Message-ID: <87mw5rtowa.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Fri, 9 Jan 2015 20:18:40 -0500
+From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+To: Andrew Duggan <aduggan@synaptics.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        benjamin.tissoires@redhat.com, jkosina@suse.cz
+Subject: Re: NULL pointer dereference in i2c-hid
+Date: Sat, 10 Jan 2015 02:18:36 +0100
+Message-ID: <2350742.rjWRas2JQA@xps13>
+In-Reply-To: <54B07250.5030803@synaptics.com>
+References: <31518562.V5Oyo0POsI@xps13> <1940829.tOcs3CnnyV@xps13> <54B07250.5030803@synaptics.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+l1Cf9wr/73QZD0AkohmWS43mllKsD56E=
-X-SA-Exim-Connect-IP: 97.121.85.189
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  3.0 XMDrug1234561 Drug references
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.0 TVD_RCVD_IP Message was received from an IP address
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.5000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_04 7+ unique symbols in subject
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *****;Rich Felker <dalias@aerifal.cx>
-X-Spam-Relay-Country: 
-X-Spam-Timing: total 360 ms - load_scoreonly_sql: 0.06 (0.0%),
-	signal_user_changed: 3.9 (1.1%), b_tie_ro: 2.7 (0.7%), parse: 1.00 (0.3%),
-	extract_message_metadata: 12 (3.3%), get_uri_detail_list: 1.05 (0.3%),
-	tests_pri_-1000: 6 (1.7%), tests_pri_-950: 1.32 (0.4%), tests_pri_-900: 1.14
-	(0.3%), tests_pri_-400: 23 (6.5%), check_bayes: 22 (6.2%), b_tokenize: 6
-	(1.8%), b_tok_get_all: 8 (2.1%), b_comp_prob: 1.83 (0.5%), b_tok_touch_all:
-	3.7 (1.0%), b_finish: 0.83 (0.2%), tests_pri_0: 182 (50.6%), tests_pri_500:
-	126 (34.9%), poll_dns_idle: 119 (33.1%), rewrite_mail: 0.00 (0.0%)
-Subject: Re: [PATCHv10 man-pages 5/5] execveat.2: initial man page for execveat(2)
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rich Felker <dalias@aerifal.cx> writes:
+On Friday 09 January 2015 16:29:04 Andrew Duggan wrote:
+> On 01/09/2015 12:04 AM, Gabriele Mazzotta wrote:
+> > On Thursday 08 January 2015 15:58:54 Andrew Duggan wrote:
+> >> On 12/24/2014 03:53 PM, Gabriele Mazzotta wrote:
+> >> [...snip...]
+> >>>>>> Also, if you can get the firmware id from your touchpad that would also
+> >>>>>> be useful.
+> >>>>>>
+> >>>>>> $ sudo ./rmihidtool -f /dev/hidraw0
+> >>>>> firmware id: 1522295
+> >>>> Thanks, I will see if I can get any additional information on this.
+> >>>>
+> >>>> Andrew
+> >>> Hi,
+> >>>
+> >>> I think I found the source of the problem.
+> >>>
+> >>> $ ./rmihidtool /dev/hidraw1 -r 0x50 1
+> >>> 0x01  #PalmDetect Interrupt Enable, right?
+> >> Yes, 0x50 does appear to be the address of the palm detect interrupt
+> >> enable register.
+> >>> $ ./rmihidtool /dev/hidraw1 -w 0x50 0  #Disable PalmDetect Interrupt
+> >>>
+> >>> It makes more sense now that widths greater than 12 trigger the bug.
+> >> That is weird behavior and I haven't seen anything like that before. I
+> >> will file a bug to see if firmware has any idea why this is happening.
+> > According to the RMI4 specification, gesture interrupts are cleared
+> > only once specific flag registers, F11_2D_Data8 and F11_2D_Data9, are
+> > read. So I tried to read those register and found that the following
+> > command stops the events:
+> 
+> It is unusual to see firmware gestures enabled for HID/I2C touchpads. In 
+> fact none of the touchpads I have have that functionality enabled, which 
+> is why I haven't been able to test. On HID touchpads there is a layer in 
+> the firmware which reads the RMI registers and packs them into the HID 
+> attention report. My guess is that the HID layer is not reading 
+> F11_2D_Data8 or 9 causing it to assert indefinitely. Since this isn't a 
+> common firmware configuration that is probably why this hasn't been 
+> observed before.
+> 
+> > $ rmihidtool /dev/hidraw1 -r 0x24 1  # I was looking for F11_2D_Data8
+> >
+> > I'm not sure I got the right address as reading any register close to
+> > 0x24 (such as 0x25, 0x26) has the same effect. I would have expected
+> > this to happen only reading one specific register.
+> 
+> With this firmware, F11_2D_Data8 should be at 0x3A. It's 2 bytes for 
+> finger state + 5 bytes per finger * 5 fingers for abs data  + 2 bytes 
+> per finger * 5 fingers for rel data. I'm not sure why reading 0x24 would 
+> stop the reports though.
 
-> I'm not proposing code because I'm a libc developer not a kernel
-> developer. I know what's needed for userspace to provide a conforming
-> fexecve to applications, not how to implement that on the kernel side,
-> although I'm trying to provide constructive ideas. The hostility is
-> really not necessary.
+Yes, this seems to be the right one, I can see the things I was
+expecting to see. That's why I kind of knew that 0x24 wasn't right,
+but I was surprised to see the problem disappear by reading that
+register, so I didn't bother do the math. Thanks for doing it for me.
 
-Conforming to what?
+Anyway, I can see PalmDetect set to 1 in register 0x3B and the
+interrupts stop as soon as I read it.
 
-The open group fexecve says nothing about requiring a file descriptor
-passed to fexecve to have O_CLOEXEC.
+> >
+> > I also honestly don't know why palms are detected when the width is at
+> > least 12, PalmDetectThreshold is 0 and so the palm detection should
+> > be inhibited.
+> >
+> 
+> This seems to be set in the firmware config. It looks like 
+> PalmDetectThreshold is only used when the reporting mode is 001. The 
+> default reporting mode looks like it is 000.
 
-Further looking at open group specification of exec it seems to indicate
-the preferred way to handle this is for the kernel to return O_NOEXEC
-and then libc gets to figure out how to run the shell script.  Is that
-the kind of ``conforming'' implementation you are looking for?
+For some reason, mode 001 is not working. I tried it time ago as an
+attempt to reduce the power consumption, but as soon as switched to it,
+the touchpad stopped working as intended. In that mode, nothing happens
+until I click and when I do that, I can see something going on while
+I move the finger. But this has nothing to do with the problem here
+discussed. The interesting thing is that whichever mode I set, as soon
+as the width of the finger reaches 12, everything starts working as
+if the reporting mode was 000. This means that as long as the palm
+detect interrupt is enabled, palms are detected regardless of the mode.
 
-Eric
+Gabriele
