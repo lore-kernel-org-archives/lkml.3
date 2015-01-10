@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286AbbAJBml (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 20:42:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39743 "EHLO
+	id S1753668AbbAJBtR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 20:49:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39781 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753354AbbAJBmk (ORCPT
+	with ESMTP id S1752713AbbAJBtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 20:42:40 -0500
-Date: Fri, 9 Jan 2015 17:42:39 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Olli Lehtinen <olli.lehtinen@iki.fi>
-Cc: jkc@redhat.com, sparmaintainer@unisys.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: unisys: Removed a prohibited space in a
- function parameter
-Message-ID: <20150110014239.GA31366@kroah.com>
-References: <d63fd4753ad47af98d2b26198dcf8db7@kapsi.fi>
+	Fri, 9 Jan 2015 20:49:16 -0500
+Date: Fri, 9 Jan 2015 17:49:15 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Simon Guo <wei.guo.simon@gmail.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.19.0-rc3 1/1] STAGING: Fix pcl818.c coding style issue
+Message-ID: <20150110014915.GA19362@kroah.com>
+References: <20150109042003.GA3970@thunderCat>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <d63fd4753ad47af98d2b26198dcf8db7@kapsi.fi>
+In-Reply-To: <20150109042003.GA3970@thunderCat>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 23, 2014 at 12:51:55PM +0200, Olli Lehtinen wrote:
-> Fixes the checkpatch.pl error:
-> ERROR: space prohibited before that ',' (ctx:WxW)" in virthba.c.
-> 
-> Signed-off-by: Olli Lehtinen <olli.lehtinen@iki.fi>
-> ---
->  drivers/staging/unisys/virthba/virthba.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/unisys/virthba/virthba.c
-> b/drivers/staging/unisys/virthba/virthba.c
-> index d7a629b..82fcb3b 100644
-> --- a/drivers/staging/unisys/virthba/virthba.c
-> +++ b/drivers/staging/unisys/virthba/virthba.c
-> @@ -1438,7 +1438,7 @@ static ssize_t enable_ints_write(struct file *file,
-> 		return -EFAULT;
-> 	}
-> 
-> -	i = kstrtoint(buf, 10 , &new_value);
-> +	i = kstrtoint(buf, 10, &new_value);
-> 
-> 	if (i != 0) {
-> 		LOGERR("Failed to scan value for enable_ints, buf<<%.*s>>",
-> -- 
-> 1.7.10.4
+On Fri, Jan 09, 2015 at 12:20:04PM +0800, Simon Guo wrote:
+> Correct coding style problem in pcl818.c. The coding style problems(29 
+> warnings detected by checkpatch.pl) includes:
+> - line over 80 characters
+> - There is space before tabs
+> The changed file has been verified with checkpatch.pl to be clean for 
+> warnings/errors.
 
-This patch fails to apply for some reason :(
+Those are different things, so there should be different patches, make
+this a series please.
 
-Please fix it up and resend.
+Also fix up your trailing whitespace in the changelog itself.
+
+thanks,
 
 greg k-h
