@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757283AbbAJFix (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 00:38:53 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:50094 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754870AbbAJFhA (ORCPT
+	id S1756922AbbAJFig (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 00:38:36 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:39007 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754811AbbAJFhC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 00:37:00 -0500
+	Sat, 10 Jan 2015 00:37:02 -0500
 From: Chris Rorvick <chris@rorvick.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Chris Rorvick <chris@rorvick.com>,
@@ -21,9 +21,9 @@ Cc: Chris Rorvick <chris@rorvick.com>,
         Monam Agarwal <monamagarwal123@gmail.com>,
         Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
         Stefan Hajnoczi <stefanha@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 20/25] staging: line6: Move audio endpoints to properties
-Date: Fri,  9 Jan 2015 23:36:06 -0600
-Message-Id: <1420868171-2031-21-git-send-email-chris@rorvick.com>
+Subject: [PATCH 21/25] staging: line6: Pass *_init() `usb_line6' pointers
+Date: Fri,  9 Jan 2015 23:36:07 -0600
+Message-Id: <1420868171-2031-22-git-send-email-chris@rorvick.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1420868171-2031-1-git-send-email-chris@rorvick.com>
 References: <1420868171-2031-1-git-send-email-chris@rorvick.com>
@@ -31,369 +31,230 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The device type can now be used to determine the addresses of the
-audio endpoints for the interface.  Drop the conditional logic and make
-these values properties.
+Casting the `struct usb_line6' pointer at the call point makes the code
+difficult to read.  This is substantially cleaned up by moving the cast
+into the callees.
 
 Signed-off-by: Chris Rorvick <chris@rorvick.com>
 ---
- drivers/staging/line6/capture.c  |  9 ++++----
- drivers/staging/line6/driver.c   | 38 +++++++++++++++++++++++++++++++
- drivers/staging/line6/driver.h   |  2 ++
- drivers/staging/line6/pcm.c      | 48 ++--------------------------------------
- drivers/staging/line6/pcm.h      | 10 ---------
- drivers/staging/line6/playback.c |  9 ++++----
- 6 files changed, 52 insertions(+), 64 deletions(-)
+ drivers/staging/line6/driver.c   | 21 ++++++---------------
+ drivers/staging/line6/pod.c      |  8 ++++----
+ drivers/staging/line6/pod.h      |  2 +-
+ drivers/staging/line6/podhd.c    |  4 ++--
+ drivers/staging/line6/podhd.h    |  2 +-
+ drivers/staging/line6/toneport.c |  8 ++++----
+ drivers/staging/line6/toneport.h |  2 +-
+ drivers/staging/line6/variax.c   |  8 ++++----
+ drivers/staging/line6/variax.h   |  2 +-
+ 9 files changed, 24 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/staging/line6/capture.c b/drivers/staging/line6/capture.c
-index e6ca631..f24c7c5 100644
---- a/drivers/staging/line6/capture.c
-+++ b/drivers/staging/line6/capture.c
-@@ -400,6 +400,7 @@ struct snd_pcm_ops snd_line6_capture_ops = {
- 
- int line6_create_audio_in_urbs(struct snd_line6_pcm *line6pcm)
- {
-+	struct usb_line6 *line6 = line6pcm->line6;
- 	int i;
- 
- 	/* create audio URBs and fill in constant values: */
-@@ -411,14 +412,14 @@ int line6_create_audio_in_urbs(struct snd_line6_pcm *line6pcm)
- 		    usb_alloc_urb(LINE6_ISO_PACKETS, GFP_KERNEL);
- 
- 		if (urb == NULL) {
--			dev_err(line6pcm->line6->ifcdev, "Out of memory\n");
-+			dev_err(line6->ifcdev, "Out of memory\n");
- 			return -ENOMEM;
- 		}
- 
--		urb->dev = line6pcm->line6->usbdev;
-+		urb->dev = line6->usbdev;
- 		urb->pipe =
--		    usb_rcvisocpipe(line6pcm->line6->usbdev,
--				    line6pcm->ep_audio_read &
-+		    usb_rcvisocpipe(line6->usbdev,
-+				    line6->properties->ep_audio_r &
- 				    USB_ENDPOINT_NUMBER_MASK);
- 		urb->transfer_flags = URB_ISO_ASAP;
- 		urb->start_frame = -1;
 diff --git a/drivers/staging/line6/driver.c b/drivers/staging/line6/driver.c
-index 40ec57c..4bfef21 100644
+index 4bfef21..08f8051 100644
 --- a/drivers/staging/line6/driver.c
 +++ b/drivers/staging/line6/driver.c
-@@ -70,6 +70,8 @@ static const struct line6_properties line6_properties_table[] = {
- 		.altsetting = 5,
- 		.ep_ctrl_r = 0x84,
- 		.ep_ctrl_w = 0x03,
-+		.ep_audio_r = 0x82,
-+		.ep_audio_w = 0x01,
- 	},
- 	[LINE6_BASSPODXTLIVE] = {
- 		.id = "BassPODxtLive",
-@@ -80,6 +82,8 @@ static const struct line6_properties line6_properties_table[] = {
- 		.altsetting = 1,
- 		.ep_ctrl_r = 0x84,
- 		.ep_ctrl_w = 0x03,
-+		.ep_audio_r = 0x82,
-+		.ep_audio_w = 0x01,
- 	},
- 	[LINE6_BASSPODXTPRO] = {
- 		.id = "BassPODxtPro",
-@@ -90,6 +94,8 @@ static const struct line6_properties line6_properties_table[] = {
- 		.altsetting = 5,
- 		.ep_ctrl_r = 0x84,
- 		.ep_ctrl_w = 0x03,
-+		.ep_audio_r = 0x82,
-+		.ep_audio_w = 0x01,
- 	},
- 	[LINE6_GUITARPORT] = {
- 		.id = "GuitarPort",
-@@ -97,6 +103,8 @@ static const struct line6_properties line6_properties_table[] = {
- 		.capabilities	= LINE6_CAP_PCM,
- 		.altsetting = 2,  /* 1..4 seem to be ok */
- 		/* no control channel */
-+		.ep_audio_r = 0x82,
-+		.ep_audio_w = 0x01,
- 	},
- 	[LINE6_POCKETPOD] = {
- 		.id = "PocketPOD",
-@@ -105,6 +113,7 @@ static const struct line6_properties line6_properties_table[] = {
- 		.altsetting = 0,
- 		.ep_ctrl_r = 0x82,
- 		.ep_ctrl_w = 0x02,
-+		/* no audio channel */
- 	},
- 	[LINE6_PODHD300] = {
- 		.id = "PODHD300",
-@@ -115,6 +124,8 @@ static const struct line6_properties line6_properties_table[] = {
- 		.altsetting = 5,
- 		.ep_ctrl_r = 0x84,
- 		.ep_ctrl_w = 0x03,
-+		.ep_audio_r = 0x82,
-+		.ep_audio_w = 0x01,
- 	},
- 	[LINE6_PODHD400] = {
- 		.id = "PODHD400",
-@@ -125,6 +136,8 @@ static const struct line6_properties line6_properties_table[] = {
- 		.altsetting = 5,
- 		.ep_ctrl_r = 0x84,
- 		.ep_ctrl_w = 0x03,
-+		.ep_audio_r = 0x82,
-+		.ep_audio_w = 0x01,
- 	},
- 	[LINE6_PODHD500_0] = {
- 		.id = "PODHD500",
-@@ -135,6 +148,8 @@ static const struct line6_properties line6_properties_table[] = {
- 		.altsetting = 1,
- 		.ep_ctrl_r = 0x81,
- 		.ep_ctrl_w = 0x01,
-+		.ep_audio_r = 0x86,
-+		.ep_audio_w = 0x02,
- 	},
- 	[LINE6_PODHD500_1] = {
- 		.id = "PODHD500",
-@@ -145,6 +160,8 @@ static const struct line6_properties line6_properties_table[] = {
- 		.altsetting = 1,
- 		.ep_ctrl_r = 0x81,
- 		.ep_ctrl_w = 0x01,
-+		.ep_audio_r = 0x86,
-+		.ep_audio_w = 0x02,
- 	},
- 	[LINE6_PODSTUDIO_GX] = {
- 		.id = "PODStudioGX",
-@@ -152,6 +169,8 @@ static const struct line6_properties line6_properties_table[] = {
- 		.capabilities	= LINE6_CAP_PCM,
- 		.altsetting = 2,  /* 1..4 seem to be ok */
- 		/* no control channel */
-+		.ep_audio_r = 0x82,
-+		.ep_audio_w = 0x01,
- 	},
- 	[LINE6_PODSTUDIO_UX1] = {
- 		.id = "PODStudioUX1",
-@@ -159,6 +178,8 @@ static const struct line6_properties line6_properties_table[] = {
- 		.capabilities	= LINE6_CAP_PCM,
- 		.altsetting = 2,  /* 1..4 seem to be ok */
- 		/* no control channel */
-+		.ep_audio_r = 0x82,
-+		.ep_audio_w = 0x01,
- 	},
- 	[LINE6_PODSTUDIO_UX2] = {
- 		.id = "PODStudioUX2",
-@@ -166,6 +187,8 @@ static const struct line6_properties line6_properties_table[] = {
- 		.capabilities	= LINE6_CAP_PCM,
- 		.altsetting = 2,  /* defaults to 44.1kHz, 16-bit */
- 		/* no control channel */
-+		.ep_audio_r = 0x82,
-+		.ep_audio_w = 0x01,
- 	},
- 	[LINE6_PODXT] = {
- 		.id = "PODxt",
-@@ -176,6 +199,8 @@ static const struct line6_properties line6_properties_table[] = {
- 		.altsetting = 5,
- 		.ep_ctrl_r = 0x84,
- 		.ep_ctrl_w = 0x03,
-+		.ep_audio_r = 0x82,
-+		.ep_audio_w = 0x01,
- 	},
- 	[LINE6_PODXTLIVE_POD] = {
- 		.id = "PODxtLive",
-@@ -186,6 +211,8 @@ static const struct line6_properties line6_properties_table[] = {
- 		.altsetting = 1,
- 		.ep_ctrl_r = 0x84,
- 		.ep_ctrl_w = 0x03,
-+		.ep_audio_r = 0x82,
-+		.ep_audio_w = 0x01,
- 	},
- 	[LINE6_PODXTLIVE_VARIAX] = {
- 		.id = "PODxtLive",
-@@ -196,6 +223,8 @@ static const struct line6_properties line6_properties_table[] = {
- 		.altsetting = 1,
- 		.ep_ctrl_r = 0x86,
- 		.ep_ctrl_w = 0x05,
-+		.ep_audio_r = 0x82,
-+		.ep_audio_w = 0x01,
- 	},
- 	[LINE6_PODXTPRO] = {
- 		.id = "PODxtPro",
-@@ -206,6 +235,8 @@ static const struct line6_properties line6_properties_table[] = {
- 		.altsetting = 5,
- 		.ep_ctrl_r = 0x84,
- 		.ep_ctrl_w = 0x03,
-+		.ep_audio_r = 0x82,
-+		.ep_audio_w = 0x01,
- 	},
- 	[LINE6_TONEPORT_GX] = {
- 		.id = "TonePortGX",
-@@ -213,6 +244,8 @@ static const struct line6_properties line6_properties_table[] = {
- 		.capabilities	= LINE6_CAP_PCM,
- 		.altsetting = 2,  /* 1..4 seem to be ok */
- 		/* no control channel */
-+		.ep_audio_r = 0x82,
-+		.ep_audio_w = 0x01,
- 	},
- 	[LINE6_TONEPORT_UX1] = {
- 		.id = "TonePortUX1",
-@@ -220,6 +253,8 @@ static const struct line6_properties line6_properties_table[] = {
- 		.capabilities	= LINE6_CAP_PCM,
- 		.altsetting = 2,  /* 1..4 seem to be ok */
- 		/* no control channel */
-+		.ep_audio_r = 0x82,
-+		.ep_audio_w = 0x01,
- 	},
- 	[LINE6_TONEPORT_UX2] = {
- 		.id = "TonePortUX2",
-@@ -227,6 +262,8 @@ static const struct line6_properties line6_properties_table[] = {
- 		.capabilities	= LINE6_CAP_PCM,
- 		.altsetting = 2,  /* defaults to 44.1kHz, 16-bit */
- 		/* no control channel */
-+		.ep_audio_r = 0x82,
-+		.ep_audio_w = 0x01,
- 	},
- 	[LINE6_VARIAX] = {
- 		.id = "Variax",
-@@ -235,6 +272,7 @@ static const struct line6_properties line6_properties_table[] = {
- 		.altsetting = 1,
- 		.ep_ctrl_r = 0x82,
- 		.ep_ctrl_w = 0x01,
-+		/* no audio channel */
- 	}
- };
+@@ -959,33 +959,26 @@ static int line6_probe(struct usb_interface *interface,
+ 	case LINE6_POCKETPOD:
+ 	case LINE6_PODXT:
+ 	case LINE6_PODXTPRO:
+-		ret = line6_pod_init(interface, (struct usb_line6_pod *)line6);
++		ret = line6_pod_init(interface, line6);
+ 		break;
  
-diff --git a/drivers/staging/line6/driver.h b/drivers/staging/line6/driver.h
-index a0555f4..a4bde71 100644
---- a/drivers/staging/line6/driver.h
-+++ b/drivers/staging/line6/driver.h
-@@ -120,6 +120,8 @@ struct line6_properties {
+ 	case LINE6_PODHD300:
+ 	case LINE6_PODHD400:
+ 	case LINE6_PODHD500_0:
+ 	case LINE6_PODHD500_1:
+-		ret = line6_podhd_init(interface,
+-				       (struct usb_line6_podhd *)line6);
++		ret = line6_podhd_init(interface, line6);
+ 		break;
  
- 	unsigned ep_ctrl_r;
- 	unsigned ep_ctrl_w;
-+	unsigned ep_audio_r;
-+	unsigned ep_audio_w;
- };
+ 	case LINE6_PODXTLIVE_POD:
+-		ret =
+-		    line6_pod_init(interface,
+-				   (struct usb_line6_pod *)line6);
++		ret = line6_pod_init(interface, line6);
+ 		break;
  
- /**
-diff --git a/drivers/staging/line6/pcm.c b/drivers/staging/line6/pcm.c
-index 19aa927..6d4e5cd 100644
---- a/drivers/staging/line6/pcm.c
-+++ b/drivers/staging/line6/pcm.c
-@@ -421,55 +421,13 @@ int line6_init_pcm(struct usb_line6 *line6,
- 	};
+ 	case LINE6_PODXTLIVE_VARIAX:
+-		ret =
+-		    line6_variax_init(interface,
+-				      (struct usb_line6_variax *)line6);
++		ret = line6_variax_init(interface, line6);
+ 		break;
  
- 	int err;
--	int ep_read = 0, ep_write = 0;
-+	unsigned ep_read = line6->properties->ep_audio_r;
-+	unsigned ep_write = line6->properties->ep_audio_w;
- 	struct snd_line6_pcm *line6pcm;
+ 	case LINE6_VARIAX:
+-		ret =
+-		    line6_variax_init(interface,
+-				      (struct usb_line6_variax *)line6);
++		ret = line6_variax_init(interface, line6);
+ 		break;
  
- 	if (!(line6->properties->capabilities & LINE6_CAP_PCM))
- 		return 0;	/* skip PCM initialization and report success */
+ 	case LINE6_PODSTUDIO_GX:
+@@ -995,9 +988,7 @@ static int line6_probe(struct usb_interface *interface,
+ 	case LINE6_TONEPORT_UX1:
+ 	case LINE6_TONEPORT_UX2:
+ 	case LINE6_GUITARPORT:
+-		ret =
+-		    line6_toneport_init(interface,
+-					(struct usb_line6_toneport *)line6);
++		ret = line6_toneport_init(interface, line6);
+ 		break;
  
--	/* initialize PCM subsystem based on device: */
--	switch (line6->type) {
--	case LINE6_BASSPODXT:
--	case LINE6_BASSPODXTLIVE:
--	case LINE6_BASSPODXTPRO:
--	case LINE6_PODXT:
--	case LINE6_PODXTLIVE_POD:
--	case LINE6_PODXTLIVE_VARIAX:
--	case LINE6_PODXTPRO:
--	case LINE6_PODHD300:
--	case LINE6_PODHD400:
--		ep_read = 0x82;
--		ep_write = 0x01;
--		break;
--
--	case LINE6_PODHD500_0:
--	case LINE6_PODHD500_1:
--		ep_read = 0x86;
--		ep_write = 0x02;
--		break;
--
--	case LINE6_GUITARPORT:
--	case LINE6_PODSTUDIO_GX:
--	case LINE6_PODSTUDIO_UX1:
--	case LINE6_PODSTUDIO_UX2:
--	case LINE6_TONEPORT_GX:
--	case LINE6_TONEPORT_UX1:
--	case LINE6_TONEPORT_UX2:
--		ep_read = 0x82;
--		ep_write = 0x01;
--		break;
--
--	/* this is for interface_number == 1:
--	case LINE6_DEVID_TONEPORT_UX2:
--	case LINE6_DEVID_PODSTUDIO_UX2:
--		ep_read  = 0x87;
--		ep_write = 0x00;
--		break; */
--
--	default:
--		MISSING_CASE;
--	}
--
- 	line6pcm = kzalloc(sizeof(*line6pcm), GFP_KERNEL);
- 
- 	if (line6pcm == NULL)
-@@ -478,8 +436,6 @@ int line6_init_pcm(struct usb_line6 *line6,
- 	line6pcm->volume_playback[0] = line6pcm->volume_playback[1] = 255;
- 	line6pcm->volume_monitor = 255;
- 	line6pcm->line6 = line6;
--	line6pcm->ep_audio_read = ep_read;
--	line6pcm->ep_audio_write = ep_write;
- 
- 	/* Read and write buffers are sized identically, so choose minimum */
- 	line6pcm->max_packet_size = min(
-diff --git a/drivers/staging/line6/pcm.h b/drivers/staging/line6/pcm.h
-index 5716f16..cddfd06 100644
---- a/drivers/staging/line6/pcm.h
-+++ b/drivers/staging/line6/pcm.h
-@@ -297,16 +297,6 @@ struct snd_line6_pcm {
- 	int max_packet_size;
- 
- 	/**
--		 USB endpoint for listening to audio data.
--	*/
--	int ep_audio_read;
--
--	/**
--		 USB endpoint for writing audio data.
--	*/
--	int ep_audio_write;
--
--	/**
- 		 Bit mask of active capture URBs.
- 	*/
- 	unsigned long active_urb_in;
-diff --git a/drivers/staging/line6/playback.c b/drivers/staging/line6/playback.c
-index 54b7f60..da2e3b8 100644
---- a/drivers/staging/line6/playback.c
-+++ b/drivers/staging/line6/playback.c
-@@ -560,6 +560,7 @@ struct snd_pcm_ops snd_line6_playback_ops = {
- 
- int line6_create_audio_out_urbs(struct snd_line6_pcm *line6pcm)
+ 	default:
+diff --git a/drivers/staging/line6/pod.c b/drivers/staging/line6/pod.c
+index 0fb1788..9292b72 100644
+--- a/drivers/staging/line6/pod.c
++++ b/drivers/staging/line6/pod.c
+@@ -353,10 +353,10 @@ static int pod_create_files2(struct device *dev)
+ 	 Try to init POD device.
+ */
+ static int pod_try_init(struct usb_interface *interface,
+-			struct usb_line6_pod *pod)
++			struct usb_line6 *line6)
  {
-+	struct usb_line6 *line6 = line6pcm->line6;
- 	int i;
+ 	int err;
+-	struct usb_line6 *line6 = &pod->line6;
++	struct usb_line6_pod *pod = (struct usb_line6_pod *) line6;
  
- 	/* create audio URBs and fill in constant values: */
-@@ -571,14 +572,14 @@ int line6_create_audio_out_urbs(struct snd_line6_pcm *line6pcm)
- 		    usb_alloc_urb(LINE6_ISO_PACKETS, GFP_KERNEL);
+ 	init_timer(&pod->startup_timer);
+ 	INIT_WORK(&pod->startup_work, pod_startup4);
+@@ -409,9 +409,9 @@ static int pod_try_init(struct usb_interface *interface,
+ /*
+ 	 Init POD device (and clean up in case of failure).
+ */
+-int line6_pod_init(struct usb_interface *interface, struct usb_line6_pod *pod)
++int line6_pod_init(struct usb_interface *interface, struct usb_line6 *line6)
+ {
+-	int err = pod_try_init(interface, pod);
++	int err = pod_try_init(interface, line6);
  
- 		if (urb == NULL) {
--			dev_err(line6pcm->line6->ifcdev, "Out of memory\n");
-+			dev_err(line6->ifcdev, "Out of memory\n");
- 			return -ENOMEM;
- 		}
+ 	if (err < 0)
+ 		pod_destruct(interface);
+diff --git a/drivers/staging/line6/pod.h b/drivers/staging/line6/pod.h
+index 91fd4c5..cf6c75cd 100644
+--- a/drivers/staging/line6/pod.h
++++ b/drivers/staging/line6/pod.h
+@@ -88,7 +88,7 @@ struct usb_line6_pod {
  
--		urb->dev = line6pcm->line6->usbdev;
-+		urb->dev = line6->usbdev;
- 		urb->pipe =
--		    usb_sndisocpipe(line6pcm->line6->usbdev,
--				    line6pcm->ep_audio_write &
-+		    usb_sndisocpipe(line6->usbdev,
-+				    line6->properties->ep_audio_w &
- 				    USB_ENDPOINT_NUMBER_MASK);
- 		urb->transfer_flags = URB_ISO_ASAP;
- 		urb->start_frame = -1;
+ extern void line6_pod_disconnect(struct usb_interface *interface);
+ extern int line6_pod_init(struct usb_interface *interface,
+-			  struct usb_line6_pod *pod);
++			  struct usb_line6 *line6);
+ extern void line6_pod_process_message(struct usb_line6_pod *pod);
+ 
+ #endif
+diff --git a/drivers/staging/line6/podhd.c b/drivers/staging/line6/podhd.c
+index 7ef4543..3bb942e 100644
+--- a/drivers/staging/line6/podhd.c
++++ b/drivers/staging/line6/podhd.c
+@@ -121,9 +121,9 @@ static int podhd_try_init(struct usb_interface *interface,
+ /*
+ 	Init POD HD device (and clean up in case of failure).
+ */
+-int line6_podhd_init(struct usb_interface *interface,
+-		     struct usb_line6_podhd *podhd)
++int line6_podhd_init(struct usb_interface *interface, struct usb_line6 *line6)
+ {
++	struct usb_line6_podhd *podhd = (struct usb_line6_podhd *) line6;
+ 	int err = podhd_try_init(interface, podhd);
+ 
+ 	if (err < 0)
+diff --git a/drivers/staging/line6/podhd.h b/drivers/staging/line6/podhd.h
+index 652f740..b7d9568 100644
+--- a/drivers/staging/line6/podhd.h
++++ b/drivers/staging/line6/podhd.h
+@@ -25,6 +25,6 @@ struct usb_line6_podhd {
+ 
+ extern void line6_podhd_disconnect(struct usb_interface *interface);
+ extern int line6_podhd_init(struct usb_interface *interface,
+-			    struct usb_line6_podhd *podhd);
++			    struct usb_line6 *line6);
+ 
+ #endif /* PODHD_H */
+diff --git a/drivers/staging/line6/toneport.c b/drivers/staging/line6/toneport.c
+index a2607e7..70fba02 100644
+--- a/drivers/staging/line6/toneport.c
++++ b/drivers/staging/line6/toneport.c
+@@ -339,10 +339,10 @@ static void toneport_setup(struct usb_line6_toneport *toneport)
+ 	 Try to init Toneport device.
+ */
+ static int toneport_try_init(struct usb_interface *interface,
+-			     struct usb_line6_toneport *toneport)
++			     struct usb_line6 *line6)
+ {
+ 	int err;
+-	struct usb_line6 *line6 = &toneport->line6;
++	struct usb_line6_toneport *toneport =  (struct usb_line6_toneport *) line6;
+ 
+ 	if ((interface == NULL) || (toneport == NULL))
+ 		return -ENODEV;
+@@ -411,9 +411,9 @@ static int toneport_try_init(struct usb_interface *interface,
+ 	 Init Toneport device (and clean up in case of failure).
+ */
+ int line6_toneport_init(struct usb_interface *interface,
+-			struct usb_line6_toneport *toneport)
++			struct usb_line6 *line6)
+ {
+-	int err = toneport_try_init(interface, toneport);
++	int err = toneport_try_init(interface, line6);
+ 
+ 	if (err < 0)
+ 		toneport_destruct(interface);
+diff --git a/drivers/staging/line6/toneport.h b/drivers/staging/line6/toneport.h
+index 8576b72..af2b4e0 100644
+--- a/drivers/staging/line6/toneport.h
++++ b/drivers/staging/line6/toneport.h
+@@ -46,7 +46,7 @@ struct usb_line6_toneport {
+ 
+ extern void line6_toneport_disconnect(struct usb_interface *interface);
+ extern int line6_toneport_init(struct usb_interface *interface,
+-			       struct usb_line6_toneport *toneport);
++			       struct usb_line6 *line6);
+ extern void line6_toneport_reset_resume(struct usb_line6_toneport *toneport);
+ 
+ #endif
+diff --git a/drivers/staging/line6/variax.c b/drivers/staging/line6/variax.c
+index ae2be99..f5b618b 100644
+--- a/drivers/staging/line6/variax.c
++++ b/drivers/staging/line6/variax.c
+@@ -174,8 +174,9 @@ static void variax_destruct(struct usb_interface *interface)
+ 	 Try to init workbench device.
+ */
+ static int variax_try_init(struct usb_interface *interface,
+-			   struct usb_line6_variax *variax)
++			   struct usb_line6 *line6)
+ {
++	struct usb_line6_variax *variax = (struct usb_line6_variax *) line6;
+ 	int err;
+ 
+ 	init_timer(&variax->startup_timer1);
+@@ -212,10 +213,9 @@ static int variax_try_init(struct usb_interface *interface,
+ /*
+ 	 Init workbench device (and clean up in case of failure).
+ */
+-int line6_variax_init(struct usb_interface *interface,
+-		      struct usb_line6_variax *variax)
++int line6_variax_init(struct usb_interface *interface, struct usb_line6 *line6)
+ {
+-	int err = variax_try_init(interface, variax);
++	int err = variax_try_init(interface, line6);
+ 
+ 	if (err < 0)
+ 		variax_destruct(interface);
+diff --git a/drivers/staging/line6/variax.h b/drivers/staging/line6/variax.h
+index 24de796..9bf1464 100644
+--- a/drivers/staging/line6/variax.h
++++ b/drivers/staging/line6/variax.h
+@@ -66,7 +66,7 @@ struct usb_line6_variax {
+ 
+ extern void line6_variax_disconnect(struct usb_interface *interface);
+ extern int line6_variax_init(struct usb_interface *interface,
+-			     struct usb_line6_variax *variax);
++			     struct usb_line6 *line6);
+ extern void line6_variax_process_message(struct usb_line6_variax *variax);
+ 
+ #endif
 -- 
 2.1.0
 
