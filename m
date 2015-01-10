@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754937AbbAJTu2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 14:50:28 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:53849 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685AbbAJTu0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 14:50:26 -0500
-From: Lorenzo Stoakes <lstoakes@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: anarey@gmail.com, mcgrof@do-not-panic.com, tapaswenipathak@gmail.com,
-        joe@perches.com, rmfrfs@gmail.com, yejiayily@gmail.com,
-        gdonald@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Lorenzo Stoakes <lstoakes@gmail.com>
-Subject: [PATCH RESEND 4/4] staging: rtl8192u: Refactor heavy nesting
-Date: Sat, 10 Jan 2015 14:19:14 +0000
-Message-Id: <1420899554-14120-4-git-send-email-lstoakes@gmail.com>
-X-Mailer: git-send-email 2.2.1
-In-Reply-To: <1420899554-14120-1-git-send-email-lstoakes@gmail.com>
-References: <1420899554-14120-1-git-send-email-lstoakes@gmail.com>
+	id S1753893AbbAJOXk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 09:23:40 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:56371 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753151AbbAJOXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jan 2015 09:23:39 -0500
+Date: Sat, 10 Jan 2015 15:23:36 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH 3/4] x86: open-code register save/restore in
+ trace_hardirqs thunks
+Message-ID: <20150110142336.GC12218@pd.tnic>
+References: <1420734315-30943-1-git-send-email-dvlasenk@redhat.com>
+ <1420734315-30943-4-git-send-email-dvlasenk@redhat.com>
+ <20150109121950.GD13637@pd.tnic>
+ <CAK1hOcMsGJ7geRAzfazPLZitcO0o9XYRPJDYa8sJHR4i6DPL-g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAK1hOcMsGJ7geRAzfazPLZitcO0o9XYRPJDYa8sJHR4i6DPL-g@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes warnings raised by checkpatch.pl relating to heavily indented
-lines in r8192U_dm.c by refactoring code to achieve the same outcome indented by
-one less tab.
+On Fri, Jan 09, 2015 at 07:54:08PM +0100, Denys Vlasenko wrote:
+> In order to narrow it down, can you, instead of my patch, try
+> just deleting this one line, and see whether breakage appears?
 
-Signed-off-by: Lorenzo Stoakes <lstoakes@gmail.com>
+Yep, this works:
+
 ---
- drivers/staging/rtl8192u/r8192U_dm.c | 27 ++++++++++++---------------
- 1 file changed, 12 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/staging/rtl8192u/r8192U_dm.c b/drivers/staging/rtl8192u/r8192U_dm.c
-index ed566bb..bae8511 100644
---- a/drivers/staging/rtl8192u/r8192U_dm.c
-+++ b/drivers/staging/rtl8192u/r8192U_dm.c
-@@ -2581,28 +2581,25 @@ static void dm_rxpath_sel_byrssi(struct net_device *dev)
- 						cck_rx_ver2_sec_index = cck_rx_ver2_max_index;
- 						tmp_cck_max_pwdb = cur_cck_pwdb;
- 						cck_rx_ver2_max_index = i;
--					} else if (cur_cck_pwdb == tmp_cck_max_pwdb) { /* let sec and min point to the different index */
-+					} else if (cur_cck_pwdb == tmp_cck_max_pwdb) {
-+						/* let sec and min point to the different index */
- 						tmp_cck_sec_pwdb = cur_cck_pwdb;
- 						cck_rx_ver2_sec_index = i;
- 					} else if ((cur_cck_pwdb < tmp_cck_max_pwdb) && (cur_cck_pwdb > tmp_cck_sec_pwdb)) {
- 						tmp_cck_sec_pwdb = cur_cck_pwdb;
- 						cck_rx_ver2_sec_index = i;
--					} else if (cur_cck_pwdb == tmp_cck_sec_pwdb) {
--						if (tmp_cck_sec_pwdb == tmp_cck_min_pwdb) { /* let sec and min point to the different index */
--							tmp_cck_sec_pwdb = cur_cck_pwdb;
--							cck_rx_ver2_sec_index = i;
--						} else {
--							/*  This case we don't need to set any index */
--						}
-+					} else if (cur_cck_pwdb == tmp_cck_sec_pwdb && tmp_cck_sec_pwdb == tmp_cck_min_pwdb) {
-+						/* let sec and min point to the different index */
-+						tmp_cck_sec_pwdb = cur_cck_pwdb;
-+						cck_rx_ver2_sec_index = i;
-+						/* otherwise we don't need to set any index */
- 					} else if ((cur_cck_pwdb < tmp_cck_sec_pwdb) && (cur_cck_pwdb > tmp_cck_min_pwdb)) {
- 						/*  This case we don't need to set any index */
--					} else if (cur_cck_pwdb == tmp_cck_min_pwdb) {
--						if (tmp_cck_sec_pwdb == tmp_cck_min_pwdb) { /*  let sec and min point to the different index */
--							tmp_cck_min_pwdb = cur_cck_pwdb;
--							cck_rx_ver2_min_index = i;
--						} else {
--							/*  This case we don't need to set any index */
--						}
-+					} else if (cur_cck_pwdb == tmp_cck_min_pwdb && tmp_cck_sec_pwdb == tmp_cck_min_pwdb) {
-+						/*  let sec and min point to the different index */
-+						tmp_cck_min_pwdb = cur_cck_pwdb;
-+						cck_rx_ver2_min_index = i;
-+						/* otherwise we don't need to set any index */
- 					} else if (cur_cck_pwdb < tmp_cck_min_pwdb) {
- 						tmp_cck_min_pwdb = cur_cck_pwdb;
- 						cck_rx_ver2_min_index = i;
+Index: b/arch/x86/lib/thunk_64.S
+===================================================================
+--- a/arch/x86/lib/thunk_64.S	2015-01-10 15:03:10.262716858 +0100
++++ b/arch/x86/lib/thunk_64.S	2015-01-10 15:12:53.502730396 +0100
+@@ -47,7 +47,6 @@
+ 
+ 	/* SAVE_ARGS below is used only for the .cfi directives it contains. */
+ 	CFI_STARTPROC
+-	SAVE_ARGS
+ restore:
+ 	RESTORE_ARGS
+ 	ret
 --
-2.2.1
+
+Bah, I see it. This nasty '$' gets forgotten a lot, maybe we should have
+a check for that in some scripts :-)
+
+Here's the fix:
+
+---
+Index: b/arch/x86/lib/thunk_64.S
+===================================================================
+--- a/arch/x86/lib/thunk_64.S	2015-01-10 15:18:04.418737613 +0100
++++ b/arch/x86/lib/thunk_64.S	2015-01-10 15:17:18.882736556 +0100
+@@ -67,7 +67,7 @@ restore:
+ 	movq_cfi_restore 6*8, rdx
+ 	movq_cfi_restore 7*8, rsi
+ 	movq_cfi_restore 8*8, rdi
+-	addq 9*8, %rsp
++	addq $9*8, %rsp
+ 	CFI_ADJUST_CFA_OFFSET -9*8
+ 	ret
+ 	CFI_ENDPROC
+---
+
+That boots!
+
+:-D
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
