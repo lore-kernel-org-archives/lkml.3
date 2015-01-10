@@ -1,142 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535AbbAJU6K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 15:58:10 -0500
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:51318 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335AbbAJU6I (ORCPT
+	id S1753218AbbAJVAa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 16:00:30 -0500
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:58223 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751633AbbAJVA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 15:58:08 -0500
-Message-ID: <1420923485.5947.85.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [BUG] 3.19-rc1 net: less interrupt masking in NAPI
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Oded Gabbay <oded.gabbay@amd.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Willem de Bruijn <willemb@google.com>,
-        "Bridgman, John" <John.Bridgman@amd.com>,
-        "Elifaz, Dana" <Dana.Elifaz@amd.com>
-Date: Sat, 10 Jan 2015 12:58:05 -0800
-In-Reply-To: <54B18DFF.80400@amd.com>
-References: <54B18DFF.80400@amd.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 10 Jan 2015 16:00:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <4665410.x9Uu42bKmJ@wuerfel>
+References: <CA+55aFwsxoyLb9OWMSCL3doe_cz_EQtKsEFCyPUYn_T87pbz0A@mail.gmail.com>
+	<20150110003540.GA32037@node.dhcp.inet.fi>
+	<CA+55aFz74hjhCcdz5J4r-xK4KW7oqNDA3i=jXHW0prGMMwgMvw@mail.gmail.com>
+	<4665410.x9Uu42bKmJ@wuerfel>
+Date: Sat, 10 Jan 2015 13:00:27 -0800
+X-Google-Sender-Auth: M530JVPRPSgG3Fkj-NXvUSTgLBI
+Message-ID: <CA+55aFxphoLdFkwkVFQ87Q8EbYNqFAE-n0yTvCSOJzSO2MtDgw@mail.gmail.com>
+Subject: Re: Linux 3.19-rc3
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Langsdorf <mlangsdo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2015-01-10 at 22:39 +0200, Oded Gabbay wrote:
-> Hi,
-> 
-> Commit d75b1ade567ffab085e8adbbdacf0092d10cd09c breaks my "Qualcomm Atheros
-> AR8161 Gigabit Ethernet (rev 10)" Ethernet controller, which is handled by
-> the alx network driver.
-> 
-> ogabbay@odedg-ubuntu:~$ lspci -s 01:00.0 -k
-> 01:00.0 Ethernet controller:
-> 	Qualcomm Atheros AR8161 Gigabit Ethernet (rev 10)
-> 	Subsystem: Qualcomm Atheros Device 1071
-> 	Kernel driver in use: alx
-> 
-> I have this controller on a mobile platform of AMD APU Kaveri, which I use
-> to test amdkfd, and from 3.19-rc1 the network stopped working when trying to
-> transfer files through scp or nfs.
-> 
-> I bisected the kernel (from 3.18.0 to 3.19-rc1) and reached this commit.
-> 
-> Here is the log of the bisect:
-> 
-> git bisect start
-> # bad: [97bf6af1f928216fd6c5a66e8a57bfa95a659672] Linux 3.19-rc1
-> git bisect bad 97bf6af1f928216fd6c5a66e8a57bfa95a659672
-> 
-> # good: [b2776bf7149bddd1f4161f14f79520f17fc1d71d] Linux 3.18
-> git bisect good b2776bf7149bddd1f4161f14f79520f17fc1d71d
-> 
-> # bad: [70e71ca0af244f48a5dcf56dc435243792e3a495] Merge
-> git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next
-> git bisect bad 70e71ca0af244f48a5dcf56dc435243792e3a495
-> 
-> # good: [e28870f9b3e92cd3570925089c6bb789c2603bc4] Merge tag
-> 'backlight-for-linus-3.19' of
-> git://git.kernel.org/pub/scm/linux/kernel/git/lee/backlight
-> git bisect good e28870f9b3e92cd3570925089c6bb789c2603bc4
-> 
-> # bad: [450fa21942fe2c37f0c9f52d1a33bbc081eee288] sh_eth: Remove redundant
-> alignment adjustment
-> git bisect bad 450fa21942fe2c37f0c9f52d1a33bbc081eee288
-> 
-> # bad: [5c8d19da950861d0482abc0ac3481acca34b008f] e100e: use
-> netdev_rss_key_fill() helper
-> git bisect bad 5c8d19da950861d0482abc0ac3481acca34b008f
-> 
-> # good: [bf515fb11ab539c76d04f0e3c5216ed41f41d81f] Merge tag
-> 'mac80211-next-for-john-2014-11-04' of
-> git://git.kernel.org/pub/scm/linux/kernel/git/jberg/mac80211-next
-> git bisect good bf515fb11ab539c76d04f0e3c5216ed41f41d81f
-> 
-> # bad: [2c99cd914d4fed9160d98849c9dd38034616768e] Merge branch 'amd-xgbe-next'
-> git bisect bad 2c99cd914d4fed9160d98849c9dd38034616768e
-> 
-> # good: [3d762a0f0ab9cb4a6b5993db3ce56c92f9f90ab2] net: dsa: Add support for
-> reading switch registers with ethtool
-> git bisect good 3d762a0f0ab9cb4a6b5993db3ce56c92f9f90ab2
-> 
-> # bad: [8ce0c8254f15229aa99fc6c04141f28c446e5f8c] Merge branch 'master' of
-> git://git.kernel.org/pub/scm/linux/kernel/git/jkirsher/net-next
-> git bisect bad 8ce0c8254f15229aa99fc6c04141f28c446e5f8c
-> 
-> # good: [f0c65567b3c1b23f79e8a49139580a3872a68d1f] Merge branch
-> 'sunvnet-multi-tx-queue'
-> git bisect good f0c65567b3c1b23f79e8a49139580a3872a68d1f
-> 
-> # bad: [547f2735c20023d7b50a791b1b17cacb652e9237] Merge branch 'mlx4-next'
-> git bisect bad 547f2735c20023d7b50a791b1b17cacb652e9237
-> 
-> # good: [4cdb1e2e3d3495423db558d3bb7ed11d66aabce7] net: shrink struct
-> softnet_data
-> git bisect good 4cdb1e2e3d3495423db558d3bb7ed11d66aabce7
-> 
-> # bad: [0a98455666ec87378148a1dde97f1ce5baf75a64] net/mlx4_core: Protect
-> port type setting by mutex
-> git bisect bad 0a98455666ec87378148a1dde97f1ce5baf75a64
-> 
-> # bad: [6e8066999800d90d52af5c84ac49ebf683d14cdc] net/mlx4_core: Prevent VF
-> from changing port configuration
-> git bisect bad 6e8066999800d90d52af5c84ac49ebf683d14cdc
-> 
-> # bad: [d75b1ade567ffab085e8adbbdacf0092d10cd09c] net: less interrupt
-> masking in NAPI
-> git bisect bad d75b1ade567ffab085e8adbbdacf0092d10cd09c
-> 
-> # first bad commit: [d75b1ade567ffab085e8adbbdacf0092d10cd09c]
-> net: less interrupt masking in NAPI
-> 
-> Could you please solve this issue as it renders my board quite useless.
-> 
+On Sat, Jan 10, 2015 at 12:16 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>
+> On a recent kernel, I get 628 MB for storing all files of the
+> kernel tree in 4KB pages, and 3141 MB for storing the same data
+> in 64KB pages, almost exactly factor 5, or 2.45 GiB wasted.
 
-Thanks for the report and bisection !
+Ok, so it's even worse than it used to be.  Partly because the tree
+has grown, partly because I did the math for 16kB and 64kB is just
+hugely worse.
 
-Could you try following fix ?
+I did the math back in the days when the PPC people were talking about
+16kB pages (iirc - it's been closer to a decade, so I might
+misremember the details).
 
-diff --git a/drivers/net/ethernet/atheros/alx/main.c b/drivers/net/ethernet/atheros/alx/main.c
-index e398eda07298..209c40765e0d 100644
---- a/drivers/net/ethernet/atheros/alx/main.c
-+++ b/drivers/net/ethernet/atheros/alx/main.c
-@@ -272,7 +272,7 @@ static int alx_poll(struct napi_struct *napi, int budget)
- 		   alx_clean_rx_irq(alx, budget);
- 
- 	if (!complete)
--		return 1;
-+		return budget;
- 
- 	napi_complete(&alx->napi);
- 
+And back then, with 4kB pages I could cache the kernel tree twice over
+in 1GB, and have enough left to run a graphical desktop. So enough
+memory to build a tree and also enough to have two kernel trees and do
+"diff -urN" between them.
 
+Of course, back then, 1-2GB was the usual desktop memory size, so the
+"I can do kernel development in 1GB without excessive IO" mattered to
+me in ways it wouldn't today.
 
+And it was before "git", so the whole "two kernel trees and do diffs
+between them" was a real concern.
 
+With 16kB pages, I think I had to have twice the memory for the same loads.
 
+> IIRC, AIX works great with 64k pages, but only because of two
+> reasons that don't apply on Linux:
+
+.. there's a few other ones:
+
+ (c) nobody really runs AIX on dekstops. It's very much a DB load
+environment, with historically some HPC.
+
+ (d) the powerpc TLB fill/buildup/teardown costs are horrible, so on
+AIX the cost of lots of small pages is much higher too.
+
+Now obviously, we *could* try to have a 64kB page size, and then do
+lots of tricks to actually allocate file caches in partial pages in
+order to avoid the internal fragmentation costs. HOWEVER:
+
+ - that obviously doesn't help with the page management overhead (in
+fact, it hurts). So it would be purely about trying to optimize for
+bad TLB's.
+
+ - that adds a *lot* of complexity to the VM. The coherency issues
+when you may need to move cached information between partial pages and
+full pages (required for mmap, but *most* files don't get mmap'ed)
+would actually be pretty horrible.
+
+ - all of this cost and complexity wouldn't help at all on x86, so it
+would be largely untested and almost inevitably broken crap.
+
+so I feel pretty confident in saying it won't happen. It's just too
+much of a bother, for little to no actual upside. It's likely a much
+better approach to try to instead use THP for anonymous mappings.
+
+                            Linus
