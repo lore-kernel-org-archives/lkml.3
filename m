@@ -1,88 +1,323 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466AbbAJVwK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 16:52:10 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754842AbbAJVwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 16:52:07 -0500
-Message-ID: <54B19F02.2070506@nod.at>
-Date: Sat, 10 Jan 2015 22:52:02 +0100
+	id S1755523AbbAJVwX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 16:52:23 -0500
+Received: from mail.sigma-star.at ([95.130.255.111]:14385 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754842AbbAJVwW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jan 2015 16:52:22 -0500
 From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: dedekind1@gmail.com, dwmw2@infradead.org, computersforpeace@gmail.com,
+To: dedekind1@gmail.com
+Cc: dwmw2@infradead.org, computersforpeace@gmail.com,
         linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        axboe@fb.com, tom.leiming@gmail.com
-Subject: Re: [PATCH 2/2] UBI: Block: Add blk-mq support
-References: <1420900188-15781-1-git-send-email-richard@nod.at> <1420900188-15781-2-git-send-email-richard@nod.at> <20150110185851.GA3945@infradead.org>
-In-Reply-To: <20150110185851.GA3945@infradead.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 1/2 v2] UBI: Add initial support for scatter gather
+Date: Sat, 10 Jan 2015 22:52:13 +0100
+Message-Id: <1420926734-16417-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 10.01.2015 um 19:58 schrieb Christoph Hellwig:
->> +struct ubiblock_pdu {
->> +	struct request *req;
-> 
-> No need to store the request, you can trivially get at it using
-> blk_mq_rq_from_pdu().
+Adds a new set of functions to deal with scatter gather.
+ubi_eba_read_leb_sg() will read from a LEB into a scatter gather list.
+The new data structure struct ubi_sgl will be used within UBI to
+hold the scatter gather list itself and metadata to have a cursor
+within the list.
 
-Very handy, I was not aware of blk_mq_rq_from_pdu().
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Tested-by: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
+---
+ drivers/mtd/ubi/eba.c   | 56 +++++++++++++++++++++++++++++
+ drivers/mtd/ubi/kapi.c  | 95 +++++++++++++++++++++++++++++++++++++++++--------
+ drivers/mtd/ubi/ubi.h   |  3 ++
+ include/linux/mtd/ubi.h | 46 ++++++++++++++++++++++++
+ 4 files changed, 185 insertions(+), 15 deletions(-)
 
->> +	struct ubiblock *dev;
-> 
-> Why do you need the dev pointer?  You can always trivially get
-> it using req->queuedata.
+diff --git a/drivers/mtd/ubi/eba.c b/drivers/mtd/ubi/eba.c
+index b698534..0aaf707 100644
+--- a/drivers/mtd/ubi/eba.c
++++ b/drivers/mtd/ubi/eba.c
+@@ -481,6 +481,62 @@ out_unlock:
+ }
+ 
+ /**
++ * ubi_eba_read_leb_sg - read data into a scatter gather list.
++ * @ubi: UBI device description object
++ * @vol: volume description object
++ * @lnum: logical eraseblock number
++ * @sgl: UBI scatter gather list to store the read data
++ * @offset: offset from where to read
++ * @len: how many bytes to read
++ * @check: data CRC check flag
++ *
++ * This function works exactly like ubi_eba_read_leb(). But instead of
++ * storing the read data into a buffer it writes to an UBI scatter gather
++ * list.
++ */
++int ubi_eba_read_leb_sg(struct ubi_device *ubi, struct ubi_volume *vol,
++			struct ubi_sgl *sgl, int lnum, int offset, int len,
++			int check)
++{
++	int to_read;
++	int ret;
++	struct scatterlist *sg;
++
++	for (;;) {
++		ubi_assert(sgl->list_pos < UBI_MAX_SG_COUNT);
++		sg = &sgl->sg[sgl->list_pos];
++		if (len < sg->length - sgl->page_pos)
++			to_read = len;
++		else
++			to_read = sg->length - sgl->page_pos;
++
++		ret = ubi_eba_read_leb(ubi, vol, lnum,
++				       sg_virt(sg) + sgl->page_pos, offset,
++				       to_read, check);
++		if (ret < 0)
++			goto out;
++
++		offset += to_read;
++		len -= to_read;
++		if (!len) {
++			sgl->page_pos += to_read;
++			if (sgl->page_pos == sg->length) {
++				sgl->list_pos++;
++				sgl->page_pos = 0;
++			}
++
++			break;
++		}
++
++		sgl->list_pos++;
++		sgl->page_pos = 0;
++	}
++
++out:
++	return ret;
++}
++
++/**
+  * recover_peb - recover from write failure.
+  * @ubi: UBI device description object
+  * @pnum: the physical eraseblock to recover
+diff --git a/drivers/mtd/ubi/kapi.c b/drivers/mtd/ubi/kapi.c
+index f3bab66..d0055a2 100644
+--- a/drivers/mtd/ubi/kapi.c
++++ b/drivers/mtd/ubi/kapi.c
+@@ -355,6 +355,43 @@ void ubi_close_volume(struct ubi_volume_desc *desc)
+ EXPORT_SYMBOL_GPL(ubi_close_volume);
+ 
+ /**
++ * leb_read_sanity_check - does sanity checks on read requests.
++ * @desc: volume descriptor
++ * @lnum: logical eraseblock number to read from
++ * @offset: offset within the logical eraseblock to read from
++ * @len: how many bytes to read
++ *
++ * This function is used by ubi_leb_read() and ubi_leb_read_sg()
++ * to perfrom sanity checks.
++ */
++static int leb_read_sanity_check(struct ubi_volume_desc *desc, int lnum,
++				 int offset, int len)
++{
++	struct ubi_volume *vol = desc->vol;
++	struct ubi_device *ubi = vol->ubi;
++	int vol_id = vol->vol_id;
++
++	if (vol_id < 0 || vol_id >= ubi->vtbl_slots || lnum < 0 ||
++	    lnum >= vol->used_ebs || offset < 0 || len < 0 ||
++	    offset + len > vol->usable_leb_size)
++		return -EINVAL;
++
++	if (vol->vol_type == UBI_STATIC_VOLUME) {
++		if (vol->used_ebs == 0)
++			/* Empty static UBI volume */
++			return 0;
++		if (lnum == vol->used_ebs - 1 &&
++		    offset + len > vol->last_eb_bytes)
++			return -EINVAL;
++	}
++
++	if (vol->upd_marker)
++		return -EBADF;
++
++	return 0;
++}
++
++/**
+  * ubi_leb_read - read data.
+  * @desc: volume descriptor
+  * @lnum: logical eraseblock number to read from
+@@ -390,22 +427,10 @@ int ubi_leb_read(struct ubi_volume_desc *desc, int lnum, char *buf, int offset,
+ 
+ 	dbg_gen("read %d bytes from LEB %d:%d:%d", len, vol_id, lnum, offset);
+ 
+-	if (vol_id < 0 || vol_id >= ubi->vtbl_slots || lnum < 0 ||
+-	    lnum >= vol->used_ebs || offset < 0 || len < 0 ||
+-	    offset + len > vol->usable_leb_size)
+-		return -EINVAL;
+-
+-	if (vol->vol_type == UBI_STATIC_VOLUME) {
+-		if (vol->used_ebs == 0)
+-			/* Empty static UBI volume */
+-			return 0;
+-		if (lnum == vol->used_ebs - 1 &&
+-		    offset + len > vol->last_eb_bytes)
+-			return -EINVAL;
+-	}
++	err = leb_read_sanity_check(desc, lnum, offset, len);
++	if (err < 0)
++		return err;
+ 
+-	if (vol->upd_marker)
+-		return -EBADF;
+ 	if (len == 0)
+ 		return 0;
+ 
+@@ -419,6 +444,46 @@ int ubi_leb_read(struct ubi_volume_desc *desc, int lnum, char *buf, int offset,
+ }
+ EXPORT_SYMBOL_GPL(ubi_leb_read);
+ 
++
++/**
++ * ubi_leb_read_sg - read data into a scatter gather list.
++ * @desc: volume descriptor
++ * @lnum: logical eraseblock number to read from
++ * @buf: buffer where to store the read data
++ * @offset: offset within the logical eraseblock to read from
++ * @len: how many bytes to read
++ * @check: whether UBI has to check the read data's CRC or not.
++ *
++ * This function works exactly like ubi_leb_read_sg(). But instead of
++ * storing the read data into a buffer it writes to an UBI scatter gather
++ * list.
++ */
++int ubi_leb_read_sg(struct ubi_volume_desc *desc, int lnum, struct ubi_sgl *sgl,
++		    int offset, int len, int check)
++{
++	struct ubi_volume *vol = desc->vol;
++	struct ubi_device *ubi = vol->ubi;
++	int err, vol_id = vol->vol_id;
++
++	dbg_gen("read %d bytes from LEB %d:%d:%d", len, vol_id, lnum, offset);
++
++	err = leb_read_sanity_check(desc, lnum, offset, len);
++	if (err < 0)
++		return err;
++
++	if (len == 0)
++		return 0;
++
++	err = ubi_eba_read_leb_sg(ubi, vol, sgl, lnum, offset, len, check);
++	if (err && mtd_is_eccerr(err) && vol->vol_type == UBI_STATIC_VOLUME) {
++		ubi_warn(ubi, "mark volume %d as corrupted", vol_id);
++		vol->corrupted = 1;
++	}
++
++	return err;
++}
++EXPORT_SYMBOL_GPL(ubi_leb_read_sg);
++
+ /**
+  * ubi_leb_write - write data.
+  * @desc: volume descriptor
+diff --git a/drivers/mtd/ubi/ubi.h b/drivers/mtd/ubi/ubi.h
+index ee7ac0b..a5283cf 100644
+--- a/drivers/mtd/ubi/ubi.h
++++ b/drivers/mtd/ubi/ubi.h
+@@ -791,6 +791,9 @@ int ubi_eba_unmap_leb(struct ubi_device *ubi, struct ubi_volume *vol,
+ 		      int lnum);
+ int ubi_eba_read_leb(struct ubi_device *ubi, struct ubi_volume *vol, int lnum,
+ 		     void *buf, int offset, int len, int check);
++int ubi_eba_read_leb_sg(struct ubi_device *ubi, struct ubi_volume *vol,
++			struct ubi_sgl *sgl, int lnum, int offset, int len,
++			int check);
+ int ubi_eba_write_leb(struct ubi_device *ubi, struct ubi_volume *vol, int lnum,
+ 		      const void *buf, int offset, int len);
+ int ubi_eba_write_leb_st(struct ubi_device *ubi, struct ubi_volume *vol,
+diff --git a/include/linux/mtd/ubi.h b/include/linux/mtd/ubi.h
+index c3918a0..3d5916d 100644
+--- a/include/linux/mtd/ubi.h
++++ b/include/linux/mtd/ubi.h
+@@ -23,11 +23,16 @@
+ 
+ #include <linux/ioctl.h>
+ #include <linux/types.h>
++#include <linux/scatterlist.h>
+ #include <mtd/ubi-user.h>
+ 
+ /* All voumes/LEBs */
+ #define UBI_ALL -1
+ 
++/* Maximum number of scatter gather list entries,
++ * we use only 64 to have a lower memory foot print. */
++#define UBI_MAX_SG_COUNT 64
++
+ /*
+  * enum ubi_open_mode - UBI volume open mode constants.
+  *
+@@ -116,6 +121,35 @@ struct ubi_volume_info {
+ };
+ 
+ /**
++ * struct ubi_sgl - UBI scatter gather list data structure.
++ * @list_pos: current position in @sg[]
++ * @page_pos: current position in @sg[@list_pos]
++ * @sg: the scatter gather list itself
++ *
++ * ubi_sgl is a wrapper around a scatter list which keeps track of the
++ * current position in the list and the current list item such that
++ * it can be used across multiple ubi_leb_read_sg() calls.
++ */
++struct ubi_sgl {
++	int list_pos;
++	int page_pos;
++	struct scatterlist sg[UBI_MAX_SG_COUNT];
++};
++
++/**
++ * ubi_sgl_init - initialize an UBI scatter gather list data structure.
++ * @usgl: the UBI scatter gather struct itself
++ *
++ * Please note that you still have to use sg_init_table() or any adequate
++ * function to initialize the unterlaying struct scatterlist.
++ */
++static inline void ubi_sgl_init(struct ubi_sgl *usgl)
++{
++	usgl->list_pos = 0;
++	usgl->page_pos = 0;
++}
++
++/**
+  * struct ubi_device_info - UBI device description data structure.
+  * @ubi_num: ubi device number
+  * @leb_size: logical eraseblock size on this UBI device
+@@ -210,6 +244,8 @@ int ubi_unregister_volume_notifier(struct notifier_block *nb);
+ void ubi_close_volume(struct ubi_volume_desc *desc);
+ int ubi_leb_read(struct ubi_volume_desc *desc, int lnum, char *buf, int offset,
+ 		 int len, int check);
++int ubi_leb_read_sg(struct ubi_volume_desc *desc, int lnum, struct ubi_sgl *sgl,
++		   int offset, int len, int check);
+ int ubi_leb_write(struct ubi_volume_desc *desc, int lnum, const void *buf,
+ 		  int offset, int len);
+ int ubi_leb_change(struct ubi_volume_desc *desc, int lnum, const void *buf,
+@@ -230,4 +266,14 @@ static inline int ubi_read(struct ubi_volume_desc *desc, int lnum, char *buf,
+ {
+ 	return ubi_leb_read(desc, lnum, buf, offset, len, 0);
+ }
++
++/*
++ * This function is the same as the 'ubi_leb_read_sg()' function, but it does
++ * not provide the checking capability.
++ */
++static inline int ubi_read_sg(struct ubi_volume_desc *desc, int lnum,
++			      struct ubi_sgl *sgl, int offset, int len)
++{
++	return ubi_leb_read_sg(desc, lnum, sgl, offset, len, 0);
++}
+ #endif /* !__LINUX_UBI_H__ */
+-- 
+1.8.4.5
 
-Same here.
-
->> +static void ubiblock_do_work(struct work_struct *work)
->> +{
->> +	int ret;
->> +	struct ubiblock_pdu *pdu = container_of(work, struct ubiblock_pdu, work);
->> +
->> +	ret = ubiblock_read(pdu);
->> +	blk_mq_end_request(pdu->req, ret ?: 0);
-> 
-> Why not just pass ret as-is?
-
-Obviously a brain fart. :-\
-
->> +	if (blk_rq_pos(req) + blk_rq_cur_sectors(req) >
->> +	    get_capacity(req->rq_disk))
->> +		return BLK_MQ_RQ_QUEUE_ERROR;
-> 
-> The upper layers take are of this check.
-
-Ok.
-
->> +	pdu->usgl.list_pos = 0;
->> +	pdu->usgl.page_pos = 0;
-> 
-> Having a helper to initialize a ubi_sgl would be nicer than having
-> to open code it ike here.
-
-Ok.
-
->> +
->> +	blk_mq_start_request(req);
->> +	ret = blk_rq_map_sg(hctx->queue, req, pdu->usgl.sg);
->> +
->> +	queue_work(dev->wq, &pdu->work);
-> 
-> Why don't you move these calls into the work queue as well?  The
-> queue_rq call would literally just become a queue_work call.
-
-I did not know that I'm allowed to get hctx->queue also via req->q.
-
-> And given that this is a fairly common patter this should allow
-> us to refactor / optimize this case a bit later on.
-
-Will send a v2 in a jiffy!
-
-Thanks,
-//richard
