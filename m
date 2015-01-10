@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145AbbAJWZv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 17:25:51 -0500
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:38218 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752762AbbAJWZu (ORCPT
+	id S1755216AbbAJW1J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 17:27:09 -0500
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:49985 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011AbbAJW1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 17:25:50 -0500
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Greg KH <greg@kroah.com>, Pavel Machek <pavel@ucw.cz>,
-        pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        khilman@kernel.org, aaro.koskinen@iki.fi, ivo.g.dimitrov.75@gmail.com
-Subject: Re: Getting new udev to run with 2.6.28
-Date: Sat, 10 Jan 2015 23:25:39 +0100
-Message-ID: <7348917.heGelKEtgq@merkaba>
-User-Agent: KMail/4.14.2 (Linux/3.19.0-rc3-tp520-trim-all-bgroups+; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <20150110211857.GA22149@ZenIV.linux.org.uk>
-References: <20150110173920.GA31847@amd> <20150110181710.GA8884@kroah.com> <20150110211857.GA22149@ZenIV.linux.org.uk>
+	Sat, 10 Jan 2015 17:27:08 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <CALCETrWsT75a1Mh61BCEO41CAEz1SWJTuVjkRP=60kr=21T3OQ@mail.gmail.com>
+References: <1420927210-19738-1-git-send-email-dvlasenk@redhat.com>
+	<1420927210-19738-3-git-send-email-dvlasenk@redhat.com>
+	<CALCETrWsT75a1Mh61BCEO41CAEz1SWJTuVjkRP=60kr=21T3OQ@mail.gmail.com>
+Date: Sat, 10 Jan 2015 14:27:06 -0800
+X-Google-Sender-Auth: 4h_-jwBdjRQ89_iJhV3m6Z8Bzbs
+Message-ID: <CA+55aFwTJHOtMh7CMctVojO+4iy-s1UsoLD6tVukeEhdAPM44A@mail.gmail.com>
+Subject: Re: [PATCH 2/4] x86: ia32entry.S: fix wrong symbolic constant usage: R11->ARGOFFSET
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Samstag, 10. Januar 2015, 21:18:58 schrieb Al Viro:
-> On Sat, Jan 10, 2015 at 10:17:10AM -0800, Greg KH wrote:
-> > > > Yes, 3.18, please use that instead.
-> > > 
-> > > Can't, sorry. My goal is to get 3.18/3.19 working, but I really need
-> > > working kernel to debug userland (and then use that userland to debug
-> > > kernel).> > 
-> > > > Seriously, lots of things have changed, if you want to run a "new"
-> > > > version of udev with an old kernel, try eudev, they have been
-> > > > attempting
-> > > > to keep "legacy" support around in it, don't know how well it has been
-> > > > working though, you really are on your own.
-> > > 
-> > > I was hoping someone has devtmpfs patches I could just apply over
-> > > 2.6.28 and get a working system?
-> > 
-> > If you want such a crazy thing, you have all of the source to do it
-> > yourself, good luck.
-> 
-> ... and this, boys and girls, is why quite a few of us have loathed udev
-> way before it got merged into even nastier shitpile.  Still do, for that
-> matter.
+On Sat, Jan 10, 2015 at 2:13 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>
+> I'll make the same change to my pending entry work, and hopefully we
+> can avoid conflicts.
 
-You mean systemd by that?
+That's not how conflicts work.
 
--- 
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+Either there is no overlap between the changes at all, in which case
+it doesn't matter if you then also have Denys' changes in your tree.
+
+Or you have other changes that change code around Denys' code, in
+which case you'll get conflicts whether you have Denys' changes or not
+(because two branches will be changing the same area differently, and
+so there's a conflict that needs to resolve which side was right).
+
+So the only way to avoid a conflict is to not touch the same code, or
+to touch it *exactly* the same way in all respects.
+
+Now, while the *conflict* is not something you can't avoid, some
+conflicts are easier to resolve than others, and from a conflict
+resolution standpoint it can make sense for your branch to include
+Denys' changes.
+
+Why? Because if whoever resolves the conflict sees that one branch is
+a proper superset of the other branch, than the resolution is a much
+more obvious "let's just take everything from one side" edit, rather
+than having to pick-and-choose.
+
+I I do actually agree with you taking the fixes (and maybe you should
+*entirely* take ownership of all the entry_64.S changes, so that there
+is no "other side" to conflict with at all!). I just wanted to point
+out the actual effects from a conflict standpoint.
+
+                          Linus
