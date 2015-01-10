@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762AbbAJXT0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 18:19:26 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:40725 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129AbbAJXTZ (ORCPT
+	id S1752674AbbAJX1s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 18:27:48 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:56958 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751050AbbAJX1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 18:19:25 -0500
-Date: Sat, 10 Jan 2015 23:25:18 +0000
-From: "Carlos R. Mafra" <crmafra@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Hauke Mehrtens <hauke@hauke-m.de>,
-        "John W. Linville" <linville@tuxdriver.com>, netdev@vger.kernel.org
-Subject: /proc/net/dev regression
-Message-ID: <20150110232518.GA3212@linux-g29b.site>
+	Sat, 10 Jan 2015 18:27:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFwTJHOtMh7CMctVojO+4iy-s1UsoLD6tVukeEhdAPM44A@mail.gmail.com>
+References: <1420927210-19738-1-git-send-email-dvlasenk@redhat.com>
+ <1420927210-19738-3-git-send-email-dvlasenk@redhat.com> <CALCETrWsT75a1Mh61BCEO41CAEz1SWJTuVjkRP=60kr=21T3OQ@mail.gmail.com>
+ <CA+55aFwTJHOtMh7CMctVojO+4iy-s1UsoLD6tVukeEhdAPM44A@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sat, 10 Jan 2015 15:27:24 -0800
+Message-ID: <CALCETrX80GF_01EW0azzerFq5gE-6PW6aXauCk3_LagwSy3PSA@mail.gmail.com>
+Subject: Re: [PATCH 2/4] x86: ia32entry.S: fix wrong symbolic constant usage: R11->ARGOFFSET
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I use a dockapp called 'wmnet' [1] to monitor the speed of
-my internet connection and after the kernel v3.18 it does no
-longer work properly (it still doesn't work in v3.19-rc3)
+On Sat, Jan 10, 2015 at 2:27 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Sat, Jan 10, 2015 at 2:13 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>
+>> I'll make the same change to my pending entry work, and hopefully we
+>> can avoid conflicts.
+>
+> That's not how conflicts work.
+>
+> Either there is no overlap between the changes at all, in which case
+> it doesn't matter if you then also have Denys' changes in your tree.
+>
+> Or you have other changes that change code around Denys' code, in
+> which case you'll get conflicts whether you have Denys' changes or not
+> (because two branches will be changing the same area differently, and
+> so there's a conflict that needs to resolve which side was right).
+>
+> So the only way to avoid a conflict is to not touch the same code, or
+> to touch it *exactly* the same way in all respects.
+>
+> Now, while the *conflict* is not something you can't avoid, some
+> conflicts are easier to resolve than others, and from a conflict
+> resolution standpoint it can make sense for your branch to include
+> Denys' changes.
 
-I bisected the problem and the culprit is this commit:
+Hmm.  What I meant here about avoiding conflicts was more like "with
+any luck, the timing will work out such that the code conflicts don't
+end up happening."
 
-commit 6e094bd805a9b6ad2f5421125db8f604a166616c
-Author: Rafał Miłecki <zajec5@gmail.com>
-Date:   Fri Sep 5 00:18:48 2014 +0200
+>
+> Why? Because if whoever resolves the conflict sees that one branch is
+> a proper superset of the other branch, than the resolution is a much
+> more obvious "let's just take everything from one side" edit, rather
+> than having to pick-and-choose.
+>
+> I I do actually agree with you taking the fixes (and maybe you should
+> *entirely* take ownership of all the entry_64.S changes, so that there
+> is no "other side" to conflict with at all!). I just wanted to point
+> out the actual effects from a conflict standpoint.
+>
 
-    bcma: move code for core registration into separate function
-    
-    This cleans code a bit and will us to register cores in other places as
-    well. The only difference with this patch is using "core_index" for
-    setting device name.
-    
-    
-The problem is caused by the different name that my wireless connection
-receives after this patch:
+Egads.  As if the vdso isn't bad enough.
 
-wlp3s0b1 (after the patch)
-wlp3s0   (before the patch)
+Mumble mumble maybe I'll agree to maintain this masterpiece of
+well-engineered asm.
 
-because it affects the display of information in the file /proc/net/dev.
+--Andy
 
-Before the patch the fields are all aligned:
+>                           Linus
 
-[mafra@linux-g29b:wmnet]$ cat net_dev_good.txt
-Inter-|   Receive                                                |  Transmit
- face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
-    lo:   35916     332    0    0    0     0          0         0    35916     332    0    0    0     0       0          0
-wlp3s0: 6406428    5794    0    0    0     0          0         0   426813    3778    0    0    0     0       0          0
 
-but after the patch the fields are misaligned:
 
-[mafra@linux-g29b:wmnet]$ cat net_dev_bad.txt
-Inter-|   Receive                                                |  Transmit
- face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
-    lo:     600       8    0    0    0     0          0         0      600       8    0    0    0     0       0          0
-wlp3s0b1: 9266848    7298    0    0    0     0          0         0   372229    4030    0    0    0     0       0          0
-
-And for some reason this change confuses 'wmnet'. Reading the source code
-of 'wmnet' I found that it reads the packets as follows,
-
-	totalpackets_in = strtoul(&buffer[15], NULL, 10);
-
-I am not sure if 'wmnet' could do this better (any suggestions?),
-but the fact is that it was working before and now it is not.
-
-Any help is greatly appreciated.
-
-[1] wmnet can be found in http://repo.or.cz/w/dockapps.git
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
