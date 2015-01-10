@@ -1,95 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351AbbAJC1k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 21:27:40 -0500
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:50053 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754022AbbAJC1j (ORCPT
+	id S1754087AbbAJCf3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 21:35:29 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:39341 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753315AbbAJCf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 21:27:39 -0500
+	Fri, 9 Jan 2015 21:35:27 -0500
+From: Rob Herring <robh@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-pci@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Howells <dhowells@redhat.com>, Greg Ungerer <gerg@uclinux.org>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Krzysztof Halasa <khalasa@piap.pl>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Paul Mackerras <paulus@samba.org>, Ralf Baechle <ralf@linux-mips.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Simon Horman <horms@verge.net.au>,
+        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Will Deacon <will.deacon@arm.com>, cbe-oss-dev@lists.ozlabs.org,
+        linux-am33-list@redhat.com, linux-arm-kernel@lists.infradead.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: [PATCH 00/16] PCI generic configuration space accessors
+Date: Fri,  9 Jan 2015 20:34:34 -0600
+Message-Id: <1420857290-8373-1-git-send-email-robh@kernel.org>
+X-Mailer: git-send-email 2.1.0
 MIME-Version: 1.0
-In-Reply-To: <20150110003540.GA32037@node.dhcp.inet.fi>
-References: <CA+55aFwsxoyLb9OWMSCL3doe_cz_EQtKsEFCyPUYn_T87pbz0A@mail.gmail.com>
-	<54AE7D53.2020305@redhat.com>
-	<20150108134520.GC14200@e104818-lin.cambridge.arm.com>
-	<54AEBE84.6090307@redhat.com>
-	<20150108173408.GF17290@e104818-lin.cambridge.arm.com>
-	<54AED10C.7090305@redhat.com>
-	<CA+55aFwpwkjRnTzBe2K0y+2DOH1F=5SpJkYe=P5z8ps5_1PQHQ@mail.gmail.com>
-	<20150109232707.GA6325@e104818-lin.cambridge.arm.com>
-	<20150110003540.GA32037@node.dhcp.inet.fi>
-Date: Fri, 9 Jan 2015 18:27:38 -0800
-X-Google-Sender-Auth: O5J4QOZj74IkJlh_pfacZBzy3RM
-Message-ID: <CA+55aFz74hjhCcdz5J4r-xK4KW7oqNDA3i=jXHW0prGMMwgMvw@mail.gmail.com>
-Subject: Re: Linux 3.19-rc3
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Mark Langsdorf <mlangsdo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 9, 2015 at 4:35 PM, Kirill A. Shutemov <kirill@shutemov.name> wrote:
->
-> With bigger page size there's also reduction in number of entities to
-> handle by kernel: less memory occupied by struct pages, fewer pages on
-> lru, etc.
+This series adds common accessor functions for PCI configuration space
+accesses. This supports most PCI hosts with memory mapped configuration
+space like ECAM or hosts with memory mapped address/data registers. ECAM
+is not generically supported by this series, but could be added on top
+of this. While some hosts have standard address decoding which could be 
+common as well, the various checks on bus numbers and device numbers are 
+quite varied. It is unclear how much of that is really necessary or 
+could be common. 
 
-Bah. Humbug. You've been listening to HW people too much, but they see
-the small details, not the big picture.
+The first 4 patches are preparatory cleanup. Patch 5 introduces the
+common accessors. The remaining patches convert several PCI host
+controllers. This is in no way a complete list of host controllers. The
+conversion of more hosts should be possible. The Designware controller
+in particular should be able to be converted, but its config space
+accessors are a mess of override-able functions that I've not gotten my
+head around.
 
-Page management was indeed a huge PITA for PAE. But that was because
-PAE is garbage.
+This series is available here [1].
 
-Really, do the math. 64kB pages waste so much memory due to internal
-fragmentation that any other memory use is completely immaterial.
+Rob
 
-Pretty much the only situation where 64kB pages are fine is when you
-have one single meaningful load running on your machine, and that one
-single load is likely a database.
+[1] git://git.kernel.org/pub/scm/linux/kernel/git/robh/linux.git pci-config-access
 
-Any other time, your filesystem caches will just suck.
+Rob Herring (16):
+  frv: add struct pci_ops member names to initialization
+  mips: add struct pci_ops member names to initialization
+  mn10300: add struct pci_ops member names to initialization
+  powerpc: add struct pci_ops member names to initialization
+  pci: introduce common pci config space accessors
+  ARM: cns3xxx: convert PCI to use generic config accesses
+  ARM: integrator: convert PCI to use generic config accesses
+  ARM: sa1100: convert PCI to use generic config accesses
+  ARM: ks8695: convert PCI to use generic config accesses
+  powerpc: fsl_pci: convert PCI to use generic config accesses
+  powerpc: powermac: convert PCI to use generic config accesses
+  pci/host: generic: convert to use generic config accesses
+  pci/host: rcar-gen2: convert to use generic config accesses
+  pci/host: tegra: convert to use generic config accesses
+  pci/host: xgene: convert to use generic config accesses
+  pci/host: xilinx: convert to use generic config accesses
 
-Just as an example, look at the kernel tree. Last I did the math
-(which is admittedly a long time ago), the median size (not average -
-median) of a file was pretty much 4kB.
+ arch/arm/mach-cns3xxx/pcie.c                   |  52 ++----
+ arch/arm/mach-integrator/pci_v3.c              |  61 +-------
+ arch/arm/mach-ks8695/pci.c                     |  77 +--------
+ arch/arm/mach-sa1100/pci-nanoengine.c          |  94 +----------
+ arch/frv/mb93090-mb00/pci-vdk.c                |   4 +-
+ arch/mips/pci/pci-bcm1480.c                    |   4 +-
+ arch/mips/pci/pci-octeon.c                     |   4 +-
+ arch/mips/pci/pcie-octeon.c                    |  12 +-
+ arch/mn10300/unit-asb2305/pci.c                |   4 +-
+ arch/powerpc/platforms/cell/celleb_scc_pciex.c |   4 +-
+ arch/powerpc/platforms/powermac/pci.c          | 209 +++++--------------------
+ arch/powerpc/sysdev/fsl_pci.c                  |  46 +-----
+ drivers/pci/access.c                           |  87 ++++++++++
+ drivers/pci/host/pci-host-generic.c            |  51 +-----
+ drivers/pci/host/pci-rcar-gen2.c               |  51 +-----
+ drivers/pci/host/pci-tegra.c                   |  55 +------
+ drivers/pci/host/pci-xgene.c                   | 150 ++----------------
+ drivers/pci/host/pcie-xilinx.c                 |  88 ++---------
+ include/linux/pci.h                            |  11 ++
+ 19 files changed, 212 insertions(+), 852 deletions(-)
 
-With a 64kB page, that means that for caching the kernel tree (what,
-closer to 50k files by now), you are basically wasting 60kB for most
-source files. Say, 60kB * 30k files, or 1.8GB.
+-- 
+2.1.0
 
-Read that again. 1.8 GIGABYTES. Wasted. Completely unused. Thrown
-away, with no upside. And that's just from the page cache for the
-kernel sources, which would be populated by a single "git grep".
-
-Maybe things have changed, and maybe I did my math wrong, and people
-can give a more exact number. But it's an example of why 64kB
-granularity is completely unacceptable in any kind of general-purpose
-load.
-
-Anybody who brings up TLB costs or costs of maintaining pages is just
-jying, or hasn't actually looked at the real issues. Anything you win
-in TLB you lose is *lots* and lots of extra IO, because you aren't
-using your memory efficiently for caching, and are basically easily
-throwing away half your RAM.
-
-Big pages are a bad bad bad idea. They work fine for databases, and
-that's pretty much just about it. I'm sure there are some other loads,
-but they are few and far between.
-
-4kB works well. 8kB is perfectly acceptable. 16kB is already wasting a
-lot of memory. 32kB and up is complete garbage for general-purpose
-computing.
-
-And no, source code isn't *that* special. There are lots of other
-cases where you have a multitude of small files. And small files are
-the things you want to cache - don't tell me about big video files etc
-that make a 64kB page size look small, because those files don't
-actually tend to be all that relevant for caching.
-
-                                   Linus
