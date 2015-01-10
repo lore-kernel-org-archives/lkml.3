@@ -1,86 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950AbbAJF6S (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 00:58:18 -0500
-Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:36426 "EHLO
-	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933AbbAJF6Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 00:58:16 -0500
-Date: Sat, 10 Jan 2015 00:57:13 -0500
-From: Rich Felker <dalias@aerifal.cx>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: David Drysdale <drysdale@google.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, sparclinux@vger.kernel.org
-Subject: Re: [PATCHv10 man-pages 5/5] execveat.2: initial man page for
- execveat(2)
-Message-ID: <20150110055713.GE4574@brightrain.aerifal.cx>
-References: <20150109215042.GM22149@ZenIV.linux.org.uk>
- <20150109221728.GW4574@brightrain.aerifal.cx>
- <20150109223300.GO22149@ZenIV.linux.org.uk>
- <20150109224252.GY4574@brightrain.aerifal.cx>
- <20150109225743.GP22149@ZenIV.linux.org.uk>
- <20150109231248.GZ4574@brightrain.aerifal.cx>
- <20150109233644.GR22149@ZenIV.linux.org.uk>
- <20150110030300.GU22149@ZenIV.linux.org.uk>
- <20150110034144.GC4574@brightrain.aerifal.cx>
- <20150110041457.GV22149@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150110041457.GV22149@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751361AbbAJFGH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 00:06:07 -0500
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:36545
+	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750724AbbAJFGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jan 2015 00:06:05 -0500
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        vkuznets@redhat.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH RESEND 0/5] Tools: hv: fix compiler warnings and do minor cleanup 
+Date: Fri,  9 Jan 2015 22:18:10 -0800
+Message-Id: <1420870690-2223-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 04:14:57AM +0000, Al Viro wrote:
-> On Fri, Jan 09, 2015 at 10:41:44PM -0500, Rich Felker wrote:
-> > > _After_ the traversal it's too late to do this sort of thing - after all,
-> > > how do you tell if your current position had been set by the traversal of
-> > > your symlink or that of any normal /proc/self/fd/<n>?
-> > 
-> > Thanks for clarifying how this all works in the kernel. It makes it
-> > easier to understand what the costs (especially complexity costs) of
-> > different implementation options might be for the kernel.
-> > 
-> > > And doing that _during_ the traversal would really suck - stray ls -lR /proc
-> > > could race with that open() done by script interpreter.
-> > 
-> > IMO this one issue is easily solvable by limiting the special action
-> > to calls by the owning pid.
-> 
-> Except that if your interpreter does stat(2) (or access(2), or getxattr(2),
-> etc.) before bothering with open(2), you'll get screwed.
+When someone does 'make' in tools/hv/ issues appear:
+- hv_fcopy_daemon is not being built;
+- lots of compiler warnings.
 
-Yes, but I think that would be very bad interpreter design.
-stat/getxattr/access/whatever followed by open is always a TOCTOU
-race. The correct sequence of actions is always open followed by
-fstat/fgetxattr/...
+This is just a cleanup. Compile-tested by myself on top of linux-next/master.
 
-> Moreover, if it
-> does so only in case when you have something specific in environment,
-> you'll have the devil of the time trying to figure out how to reproduce
-> such a bug report...
+Piggyback this series and send "[PATCH 5/5] Tools: hv: do not add redundant '/'
+in hv_start_fcopy()"
 
-Yes, this is a more serious concern. For example, if a shell processes
-$HISTFILE or something before opening the script. I'm starting to
-prefer the idea of just refusing to honor the close-on-exec flag for
-the fd passed to fexecve but preserving it, and letting the
-interpreter close the file itself if it wants to. This could be done
-with or without the new auxv entry stuff.
+Vitaly Kuznetsov (5):
+  Tools: hv: add mising fcopyd to the Makefile
+  Tools: hv: remove unused bytes_written from kvp_update_file()
+  Tools: hv: address compiler warnings for hv_kvp_daemon.c
+  Tools: hv: address compiler warnings for hv_fcopy_daemon.c
+  Tools: hv: do not add redundant '/' in hv_start_fcopy()
 
-Rich
+ tools/hv/Makefile          |    4 ++--
+ tools/hv/hv_fcopy_daemon.c |   10 ++--------
+ tools/hv/hv_kvp_daemon.c   |   29 +++++++++++++----------------
+ 3 files changed, 17 insertions(+), 26 deletions(-)
+
+-- 
+1.7.4.1
+
