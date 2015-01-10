@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753105AbbAJA1N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 19:27:13 -0500
-Received: from smtp2.provo.novell.com ([137.65.250.81]:33681 "EHLO
-	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381AbbAJA1L (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Fri, 9 Jan 2015 19:27:11 -0500
-Message-ID: <1420849621.2565.1.camel@stgolabs.net>
-Subject: Re: [PATCH tip/core/rcu 01/14] rcu: Protect rcu_boost() lockless
- accesses with ACCESS_ONCE()
-From: Davidlohr Bueso <dave@stgolabs.net>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, Pranith Kumar <bobby.prani@gmail.com>
-Date: Fri, 09 Jan 2015 16:27:01 -0800
-In-Reply-To: <54B04F1A.1060401@de.ibm.com>
-References: <20150107173215.GA897@linux.vnet.ibm.com>
-	 <1420651953-2651-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <20150108094102.GD29390@twins.programming.kicks-ass.net>
-	 <20150108152230.GL5280@linux.vnet.ibm.com>
-	 <1420785714.25454.1.camel@stgolabs.net>
-	 <20150109134954.GO5280@linux.vnet.ibm.com>
-	 <20150109135614.GI29390@twins.programming.kicks-ass.net>
-	 <54B04F1A.1060401@de.ibm.com>
+	id S1753629AbbAJA2f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 19:28:35 -0500
+Received: from mga14.intel.com ([192.55.52.115]:6096 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751108AbbAJA2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 19:28:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,734,1413270000"; 
+   d="scan'208";a="667427267"
+Subject: Re: [PATCH char-misc-next 02/13] misc: mic: SCIF ring buffer
+ infrastructure
+From: Sudeep Dutt <sudeep.dutt@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: sudeep.dutt@intel.com, Arnd Bergmann <arnd@arndb.de>,
+        Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>,
+        Nikhil Rao <nikhil.rao@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>
+In-Reply-To: <20150109230526.GB3614@kroah.com>
+References: <cover.1418237176.git.sudeep.dutt@intel.com>
+	 <6a99cdd6459ca70802f0000c1904bfdb8f45b73b.1418237176.git.sudeep.dutt@intel.com>
+	 <20150109230526.GB3614@kroah.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 
+Date: Fri, 09 Jan 2015 16:28:19 -0800
+Message-ID: <1420849699.6393.33.camel@rbtaylor-desk1.amr.corp.intel.com>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2015-01-09 at 22:58 +0100, Christian Borntraeger wrote:
-> When we talk about changing the parameters it might make sense to also think about some comments from George Spelvin and consider a rename to WRITE_ONCE or STORE_ONCE (READ_ONCE --> LOAD_ONCE). Unfortunately there doesnt seem to be a variant that is fool proof (in the sense of Rustys guideline that a good interface cannot be used wrong). So any proposal in that regard would be very welcome.
+On Fri, 2015-01-09 at 15:05 -0800, Greg Kroah-Hartman wrote:
+> On Wed, Dec 10, 2014 at 11:47:42AM -0800, Sudeep Dutt wrote:
+> > SCIF ring buffer is a single producer, single consumer byte stream ring
+> > buffer optimized for avoiding reads across the PCIe bus. The ring buffer is
+> > used to implement a receive queue for SCIF driver messaging between nodes and
+> > for byte stream messaging between SCIF endpoints. Each SCIF node has a
+> > receive queue for every other SCIF node, and each connected endpoint has a
+> > receive queue for messages from its peer. This pair of receive queues is
+> > referred to as a SCIF queue pair.
+> 
+> And the reason you aren't using the built-in kernel ring buffer code is
+> why?
+> 
 
-I think any of those two names are a lot better than what we have now.
-I'm a bit inclined towards LOAD/STORE though. That, and reordering the
-arguments for stores would make it pretty fool proof imo.
+This simple byte stream ring buffer is in our performance data path for
+small messages and is optimized to avoid reads across the PCIe bus while
+adding the required barriers and hardware workarounds for the MIC
+Coprocessor. I will add some more documentation here in the v2 which I
+will post early next week. 
+
+We did not find other ring buffers in the kernel which were tailored for
+our use case across PCIe. I am guessing (please correct me) that you are
+referring to the ring buffer in include/linux/ring_buffer.h. It does not
+seem to be designed for being used between two independent OS's across
+the PCIe bus. Please let me know your thoughts.
 
 Thanks,
-Davidlohr
+Sudeep Dutt
+
 
