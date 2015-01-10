@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126AbbAJIKk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 03:10:40 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:37532 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297AbbAJIKi (ORCPT
+	id S1754043AbbAJILD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 03:11:03 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:36707 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752319AbbAJIK7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 03:10:38 -0500
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-Date: Sat, 10 Jan 2015 09:09:59 +0100
-From: Stefan Agner <stefan@agner.ch>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: jslaby@suse.cz, jingchang.lu@freescale.com, shawn.guo@linaro.org,
-        linux-serial@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] serial: =?UTF-8?Q?fsl=5Flpuart=3A=20delete=20t?=
- =?UTF-8?Q?imer=20on=20shutdown?=
-In-Reply-To: <20150110004858.GB4171@kroah.com>
-References: <1420848539-4519-1-git-send-email-stefan@agner.ch>
- <1420848539-4519-2-git-send-email-stefan@agner.ch>
- <20150110004858.GB4171@kroah.com>
-Message-ID: <a65e439b2fb720d94ae2a7effea96eb0@agner.ch>
-User-Agent: Roundcube Webmail/1.0.3
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Sat Jan 10 09:09:04 2015
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 54b0de2012811643074491
+	Sat, 10 Jan 2015 03:10:59 -0500
+Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Content-Type: text/plain; charset=utf-8
+From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+In-Reply-To: <20150109205643.GA5761@amd>
+Date: Sat, 10 Jan 2015 10:10:51 +0200
+Cc: atull <atull@opensource.altera.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        jgunthorpe@obsidianresearch.com, hpa@zytor.com,
+        Michal Simek <monstr@monstr.eu>,
+        Michal Simek <michal.simek@xilinx.com>, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org, robh+dt@kernel.org,
+        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
+        linux-doc@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        philip@balister.org, rubini@gnudd.com,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>, jason@lakedaemon.net,
+        kyle.teske@ni.com, nico@linaro.org, Felipe Balbi <balbi@ti.com>,
+        m.chehab@samsung.com, davidb@codeaurora.org,
+        Rob Landley <rob@landley.net>, davem@davemloft.net, cesarb@cesarb.net,
+        sameo@linux.intel.com, akpm@linux-foundation.org,
+        Linus Walleij <linus.walleij@linaro.org>, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devel@driverdev.osuosl.org,
+        Alan Tull <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <4D4EA2D5-68DD-49F7-9E2D-3A0A8F6AF9CA@konsulko.com>
+References: <1420575219-27061-1-git-send-email-atull@opensource.altera.com> <1420575219-27061-3-git-send-email-atull@opensource.altera.com> <20150107084819.GA1887@amd> <alpine.DEB.2.02.1501091302370.30067@linuxheads99> <20150109205643.GA5761@amd>
+To: Pavel Machek <pavel@denx.de>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015-01-10 01:48, Greg KH wrote:
-> On Sat, Jan 10, 2015 at 01:08:58AM +0100, Stefan Agner wrote:
->> If the serial port gets closed while a RX transfer is in progress,
->> the timer might fire after the serial port shutdown finished. This
->> leads in a NULL pointer dereference:
->>
->> [    7.508324] Unable to handle kernel NULL pointer dereference at virtual address 00000000
->> [    7.516590] pgd = 86348000
->> [    7.519445] [00000000] *pgd=86179831, *pte=00000000, *ppte=00000000
->> [    7.526145] Internal error: Oops: 17 [#1] ARM
->> [    7.530611] Modules linked in:
->> [    7.533876] CPU: 0 PID: 123 Comm: systemd Not tainted 3.19.0-rc3-00004-g5b11ea7 #1778
->> [    7.541827] Hardware name: Freescale Vybrid VF610 (Device Tree)
->> [    7.547862] task: 861c3400 ti: 86ac8000 task.ti: 86ac8000
->> [    7.553392] PC is at lpuart_timer_func+0x24/0xf8
->> [    7.558127] LR is at lpuart_timer_func+0x20/0xf8
->> [    7.562857] pc : [<802df99c>]    lr : [<802df998>]    psr: 600b0113
->> [    7.562857] sp : 86ac9b90  ip : 86ac9b90  fp : 86ac9bbc
->> [    7.574467] r10: 80817180  r9 : 80817b98  r8 : 80817998
->> [    7.579803] r7 : 807acee0  r6 : 86989000  r5 : 00000100  r4 : 86997210
->> [    7.586444] r3 : 86ac8000  r2 : 86ac9bc0  r1 : 86997210  r0 : 00000000
->> [    7.593085] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
->> [    7.600341] Control: 10c5387d  Table: 86348059  DAC: 00000015
->> [    7.606203] Process systemd (pid: 123, stack limit = 0x86ac8230)
->>
->> Setup the timer on UART startup which allows to delete the timer
->> unconditionally on shutdown. This also saves the initialization
->> on each transfer.
->>
->> Signed-off-by: Stefan Agner <stefan@agner.ch>
->> ---
->>  drivers/tty/serial/fsl_lpuart.c | 7 ++++---
->>  1 file changed, 4 insertions(+), 3 deletions(-)
+Hi Pavel,
+
+> On Jan 9, 2015, at 22:56 , Pavel Machek <pavel@denx.de> wrote:
 > 
-> Do stable kernels care about this as well, or is this just a regression
-> from 3.18?
+> On Fri 2015-01-09 13:14:24, atull wrote:
+>> On Wed, 7 Jan 2015, Pavel Machek wrote:
+>> 
+>>> On Tue 2015-01-06 14:13:37, atull@opensource.altera.com wrote:
+>>>> +
+>>>> +What:		/sys/class/fpga_manager/<fpga>/firmware
+>>>> +Date:		October 2014
+>>>> +KernelVersion:	3.18
+>>>> +Contact:	Alan Tull <atull@opensource.altera.com>
+>>>> +Description:	Name of the FPGA image file to load using firmware
+>>>> class.
+>>> 
+>>> This one is ugly: it unneccessarily passes firmware name through the
+>>> kernel. Just make interface and code simpler by always passing
+>>> "socfpga-fpga-image" or something like that.
+>>> 
+>>> Thanks,
+>>> 									Pavel
+>> 
+>> Hi Pavel,
+>> 
+>> It might be ugly.  It's not unnecessary.  Some uses of FPGAs involve
+>> switching out the FPGA images dynamically under control of the userspace.
+> 
+> Then configure udev to load right firmware for you, or ln -s
+> image-i-want-now socfpga-fpga-image to select the one to read…?
+> 
 
-This is an issue since DMA support for lpuart was included in the
-kernel, which was in 3.14.
+Who said that udev is going to be available in the kind of system this is going to end in?
 
---
-Stefan
+Doing ln -s tricks to load a different image? Really?
+
+I say the interface is fine as it is.
+
+Regards
+
+— Pantelis
+
+> 
+> -- 
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
