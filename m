@@ -1,81 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758519AbbAJAiT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 19:38:19 -0500
-Received: from mta-out1.inet.fi ([62.71.2.195]:33480 "EHLO kirsi1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753536AbbAJAiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 19:38:18 -0500
-Date: Sat, 10 Jan 2015 02:35:40 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mark Langsdorf <mlangsdo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Linux 3.19-rc3
-Message-ID: <20150110003540.GA32037@node.dhcp.inet.fi>
-References: <CA+55aFwsxoyLb9OWMSCL3doe_cz_EQtKsEFCyPUYn_T87pbz0A@mail.gmail.com>
- <54AE7D53.2020305@redhat.com>
- <20150108134520.GC14200@e104818-lin.cambridge.arm.com>
- <54AEBE84.6090307@redhat.com>
- <20150108173408.GF17290@e104818-lin.cambridge.arm.com>
- <54AED10C.7090305@redhat.com>
- <CA+55aFwpwkjRnTzBe2K0y+2DOH1F=5SpJkYe=P5z8ps5_1PQHQ@mail.gmail.com>
- <20150109232707.GA6325@e104818-lin.cambridge.arm.com>
+	id S1758592AbbAJAi2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 19:38:28 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:8437 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758316AbbAJAiZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 19:38:25 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhULAIdzsFR5LLLkPGdsb2JhbABcgwaBKoI2g3mtDQIBAQaYKwQCAoEVRAEBAQEBBgEBAQE4O4QMAQEBAwEnExwjBQsIAw4KCQwZDwUlAwcaE4gkB8pMAQEIAiAYhW2JdAcKhB8Fl0KRdYQkKjGCQwEBAQ
+Date: Sat, 10 Jan 2015 11:38:19 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, jack@suse.cz,
+        hch@infradead.org, hannes@cmpxchg.org, linux-fsdevel@vger.kernel.org,
+        vgoyal@redhat.com, lizefan@huawei.com, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, mhocko@suse.cz, clm@fb.com, fengguang.wu@intel.com
+Subject: Re: [PATCHSET RFC block/for-next] writeback: cgroup writeback support
+Message-ID: <20150110003819.GP31508@dastard>
+References: <1420579582-8516-1-git-send-email-tj@kernel.org>
+ <20150106214426.GA24106@htj.dyndns.org>
+ <20150107234532.GD25000@dastard>
+ <20150109212336.GB2785@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150109232707.GA6325@e104818-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+In-Reply-To: <20150109212336.GB2785@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 11:27:07PM +0000, Catalin Marinas wrote:
-> On Thu, Jan 08, 2015 at 07:21:02PM +0000, Linus Torvalds wrote:
-> > The only excuse for 64kB pages is "my hardware TLB is complete crap,
-> > and I have very specialized server-only loads".
+On Fri, Jan 09, 2015 at 04:23:36PM -0500, Tejun Heo wrote:
+> Hello, Dave.
 > 
-> I would make a slight correction: s/and/or/.
+> On Thu, Jan 08, 2015 at 10:45:32AM +1100, Dave Chinner wrote:
+> > > Complications mostly arise from filesystems and inodes having to deal
+> > > with multiple split bdi's instead of one, but those are mostly
+> > > straight-forward 1:N mapping issues.  It does get tedious here and
+> > > there but doesn't complicate the overall picture.
+> > 
+> > Some filesystems don't track metadata-dirty inode state in the bdi
+> > lists, and instead track that in their own lists (usually deep
+> > inside the journalling subsystem). i.e. I_DIRTY_PAGES are the only
+> > dirty state that is tracked in the VFS. i.e. inode metadata
+> > writeback will still be considered global, but pages won't be. Hence
+> > you might get pages written back quickly, but the inodes are going
+> > to remain dirty and unreclaimable until the filesystem flushes some
+> > time in the future after the journal is committed and the inode
+> > written...
 > 
-> I agree that for a general purpose system (and even systems like web
-> hosting servers), 64KB is overkill; 16KB may be a better compromise.
-> 
-> There are however some specialised loads that benefit from this. The
-> main example here is virtualisation where if both guest and host use 4
-> levels of page tables each (that's what you may get with 4KB pages on
-> arm64), a full TLB miss in both stages of translation (the ARM
-> terminology for nested page tables) needs up to _24_ memory accesses
-> (though cached). Of course, once the TLB warms up, there will be much
-> less but for new mmaps you always get some misses.
-> 
-> With 64KB pages (in the host usually), you can reduce the page table
-> levels to three or two (the latter for 42-bit VA) or you could even
-> couple this with some insanely huge pages (512MB, the next up from 64KB)
-> to decrease the number of levels further.
-> 
-> I see three main advantages: the usual reduced TLB pressure (which
-> arguably can be solved with bigger TLBs), less TLB misses and, pretty
-> important with virtualisation, the cost of the TLB miss due to a reduced
-> number of levels. But that's for the user to balance the advantages and
-> disadvantages you already mentioned based on the planned workload (e.g.
-> host configured with 64KB pages while guests use 4KB).
-> 
-> Another aspect on ARM is the TLB flushing on (large) MP systems. With a
-> larger page size, we reduce the number of TLB operation (in-hardware)
-> broadcasting between CPUs (we could use non-broadcasting ops and IPIs,
-> not sure they are any faster though).
+> I'm not sure I'm following.  What writeback layer provides is cgroup
+> awareness when dealing with I_DIRTY_PAGES.  Metadata writebacks will
+> become automatically cgroup-aware to the extent they go through
+> regular page dirtying mechanism.
 
-With bigger page size there's also reduction in number of entities to
-handle by kernel: less memory occupied by struct pages, fewer pages on
-lru, etc.
+That's my point - inode metadata drtying/writeback don't go through
+the regular page dirtying mechanisms.
 
-Managing a lot of memory (TiB scale) with 4k chunks is just insane.
-We will need to find a way to cluster memory together to manage it
-reasonably. Whether it bigger base page size or some other mechanism.
-Maybe THP? ;)
+> What's implemented in this patchset is
+> propagation of memcg tags for pagecache pages.  If necessary, further
+> mechanisms can be added, but this should cover the basics.
 
+Sure, but I'm just pointing out that if you dirty a million inodes
+in a memcg (e.g. chown -R), memcg-based writeback will not cause
+them to be written...
+
+> > There has also been talk of allowing filesystems to directly track
+> > dirty page state as well - the discussion came out of the way tux3
+> > was tracking and committing delta changes to file data. Now that
+> > hasn't gone anywhere, but I'm wondering what impact this patch set
+> > would have on such proposals?
+> 
+> Would such a filesystem take over writeback mechanism too?
+
+That was the intent.
+> The
+> implemented mechanism is fairly modular and the counterparts in each
+> filesystem should be able to use them the same way the core writeback
+> code does.  I'm afraid I can't say much without knowing further
+> details.
+
+Ok,you haven't said "that's impossible", so that's good enough for
+now ;)
+
+> > Similarly, I'm concerned about additional overhead in the writeback
+> > path - we can easily drive the flusher thread to be CPU bound on IO
+> > subsystems that have decent bandwidth (low GB/s), so adding more
+> > overhead to every page we have to flush is going to reduce
+> > performance on these systems. Do you have any idea what impact
+> > just enabling the memcg/blkcg tracking has on writeback performance
+> > and CPU consumption?
+> 
+> I measured avg sys+user time of 50 iterations of
+> 
+>   fs_mark -d /mnt/tmp/ -s 104857600 -n 32
+> 
+> on an ext2 on a ramdisk, which should put the hot path part - page
+> faulting and inode dirtying - under spotlight.  cgroup writeback
+> enabled but not used case consumes around 1% more cpu time - AVG 6.616
+> STDEV 0.050 w/o this patchset, AVG 6.682 STDEV 0.046 with.  This is an
+> extreme case and while it isn't free the overhead is fairly low.
+
+What's the throughput for these numbers? CPU usage without any idea
+of the number of pages being scanned doesn't tell us a whole lot.
+
+> > A further complication for data writeback is that some filesystems
+> > do their own adjacent page write clustering own inside their own
+> > ->writepages/->writepage implementations. Both ext4 and XFS do this,
+> > and it makes no sense from a system and filesystem performance
+> > perspective to turn sequential ranges of dirty pages into much
+> > slower, semi-random IO just because the pages belong to different
+> > memcgs. It's not a good idea to compromise bulk writeback
+> > throughput under memory pressure just because a different memcgs
+> > write to the same files, so what is going to be the impact of
+> > filesystems ignoring memcg ownership during writeback clustering?
+> 
+> I don't think that's a good idea.  Implementing that isn't hard.
+> Range writeback can simply avoid skipping pages from different
+> cgroups; however, different cgroups can have vastly different
+> characteristics.  One may be configured to have a majority of the
+> available bandwidth while another has to scrap by with few hundreds of
+> k's per sec.  Initiating write out on pages which belong to the former
+> from the writeback of the latter may cause serious priority inversion
+> issues.
+
+I'd suggest that you should provide mechanisms at the block layer
+for accounting the pages in the bio to the memcg they belong to,
+not make a sweeping directive that filesystems can only write back
+pages from one memcg at a time.
+
+If you account for pages to their memcg and decide on bio priority
+at bio_add_page() time you would avoid the inversion and cross-cg
+accounting problems.  If you do this, the filesystem doesn't need to
+care at all what memcg pages belong to; they just do optimal IO to
+clean sequential dirty pages and it is accounted and throttled
+appropriately by the lower layers.
+
+> Maybe we can think of optimizations down the road but I'd strongly
+> prefer to stick to simple and clear divisions among cgroups.  Also, a
+> file highly interleaved by multiple cgroups isn't a particularly
+> likely use case.
+
+That's true, and that's a further reason why I think we should not
+be caring about this case in the filesystem writeback code at all.
+
+Cheers,
+
+Dave.
 -- 
- Kirill A. Shutemov
+Dave Chinner
+david@fromorbit.com
