@@ -1,216 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638AbbAJPox (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 10:44:53 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:3707 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751863AbbAJPov convert rfc822-to-8bit (ORCPT
+	id S1753973AbbAJP47 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 10:56:59 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:65051 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838AbbAJP45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 10:44:51 -0500
-Date: Sat, 10 Jan 2015 16:47:11 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mark Brown <broonie@kernel.org>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Andrew Jackson <Andrew.Jackson@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jyri Sarha <jsarha@ti.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Dave Airlie <airlied@gmail.com>
-Subject: Re: [alsa-devel] [PATCH v9 1/4] drm/i2c: tda998x: Add DT support
- for audio
-Message-ID: <20150110164711.637892fc@armhf>
-In-Reply-To: <20150109200127.GD12302@n2100.arm.linux.org.uk>
-References: <54AE99F5.1010404@ti.com>
- <20150108174257.557f7ea5@armhf>
- <54AFA9B0.6040405@ti.com>
- <20150109123036.4bc4bbf6@armhf>
- <20150109114529.GH12302@n2100.arm.linux.org.uk>
- <20150109135401.5b270d46@armhf>
- <20150109130725.GN12302@n2100.arm.linux.org.uk>
- <54AFDE8D.3000504@arm.com>
- <20150109145741.GP12302@n2100.arm.linux.org.uk>
- <20150109183857.53d701a4@armhf>
- <20150109200127.GD12302@n2100.arm.linux.org.uk>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; arm-unknown-linux-gnueabihf)
+	Sat, 10 Jan 2015 10:56:57 -0500
+Date: Sat, 10 Jan 2015 10:56:53 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, jack@suse.cz,
+        hch@infradead.org, hannes@cmpxchg.org, linux-fsdevel@vger.kernel.org,
+        vgoyal@redhat.com, lizefan@huawei.com, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, mhocko@suse.cz, clm@fb.com, fengguang.wu@intel.com
+Subject: Re: [PATCHSET RFC block/for-next] writeback: cgroup writeback support
+Message-ID: <20150110155653.GA25319@htj.dyndns.org>
+References: <1420579582-8516-1-git-send-email-tj@kernel.org>
+ <20150106214426.GA24106@htj.dyndns.org>
+ <20150107234532.GD25000@dastard>
+ <20150109212336.GB2785@htj.dyndns.org>
+ <20150110003819.GP31508@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150110003819.GP31508@dastard>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Jan 2015 20:01:27 +0000
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+Hey,
 
-> > I proposed:
+On Sat, Jan 10, 2015 at 11:38:19AM +1100, Dave Chinner wrote:
+> > What's implemented in this patchset is
+> > propagation of memcg tags for pagecache pages.  If necessary, further
+> > mechanisms can be added, but this should cover the basics.
+> 
+> Sure, but I'm just pointing out that if you dirty a million inodes
+> in a memcg (e.g. chown -R), memcg-based writeback will not cause
+> them to be written...
+
+Sure, in such cases, they'd need further wiring up if to be solved
+properly.  For some, we'd have to punt to the root cgroup and charge
+it as general system cost but this is no different from other
+controllers and at least some of such punting would be inherent in the
+nature of the involved activities.
+
+> > I measured avg sys+user time of 50 iterations of
 > > 
-> > 	audio-ports = <0x04>, <0x03>;
-> > 	audio-port-names = "spdif", "i2s";
+> >   fs_mark -d /mnt/tmp/ -s 104857600 -n 32
 > > 
-> > Do you better like:
-> > 
-> > 	audio-spdif-port = <0x04>;
-> > 	audio-i2s-port = <0x03>;  
+> > on an ext2 on a ramdisk, which should put the hot path part - page
+> > faulting and inode dirtying - under spotlight.  cgroup writeback
+> > enabled but not used case consumes around 1% more cpu time - AVG 6.616
+> > STDEV 0.050 w/o this patchset, AVG 6.682 STDEV 0.046 with.  This is an
+> > extreme case and while it isn't free the overhead is fairly low.
 > 
-> Neither; we know that there are TDA998x devices which allow SPDIF to be
-> input via two separate pins, but only one to be active at any one time.
-> Given that the hardware is flexible in that regard, a binding which
-> artificially restricts that flexibility would seem unwise.
+> What's the throughput for these numbers? CPU usage without any idea
+> of the number of pages being scanned doesn't tell us a whole lot.
+
+Ah, sorry about that.  Here's the output from one such fs_mark run.
+Being run on a ramdisk, it's CPU bound (1.9Ghz Opteron).
+
+$ fs_mark -d /mnt/tmp/ -s 104857600 -n 32 -v
+
+[opt ~]# fs_mark -d /mnt/tmp/ -s 104857600 -n 32 -v
+
+#  fs_mark  -d  /mnt/tmp/  -s  104857600  -n  32  -v
+#       Version 3.3, 1 thread(s) starting at Sat Jan 10 10:46:13 2015
+#       Sync method: INBAND FSYNC: fsync() per file in write loop.
+#       Directories:  no subdirectories used
+#       File names: 40 bytes long, (16 initial bytes of time stamp with 24 random bytes at end of name)
+#       Files info: size 104857600 bytes, written with an IO size of 16384 bytes per write
+#       App overhead is time in microseconds spent in the test not doing file writing related system calls.
+#       All system call times are reported in microseconds.
+
+FSUse%        Count         Size    Files/sec     App Overhead        CREAT (Min/Avg/Max)        WRITE (Min/Avg/Max)        FSYNC (Min/Avg/Max)         SYNC (Min/Avg/Max)        CLOSE (Min/Avg/Max)       UNLINK (Min/Avg/Max)
+     5           32    104857600          4.6            23204       28       45       54       14       21      364    65986    73892   112279        0        0        0       12       12       13     2647     5777    23842
+
+> I'd suggest that you should provide mechanisms at the block layer
+> for accounting the pages in the bio to the memcg they belong to,
+> not make a sweeping directive that filesystems can only write back
+> pages from one memcg at a time.
 > 
-> If we were to come across a setup which did route two SPDIF streams to
-> the TDA998x, and we had to make the decision at run time which to route
-> to the HDMI sink, we'd have to rework the binding, and we'd have to
-> support the new binding and the old binding in the driver.
+> If you account for pages to their memcg and decide on bio priority
+> at bio_add_page() time you would avoid the inversion and cross-cg
+> accounting problems.  If you do this, the filesystem doesn't need to
+> care at all what memcg pages belong to; they just do optimal IO to
+> clean sequential dirty pages and it is accounted and throttled
+> appropriately by the lower layers.
+
+That'd destroy the fundamental feedback mechanism propagating the
+pressure from the blkcg split block device up through the writeback
+eventually to the memcg.  This chain of backpressure is why this whole
+scheme works.  When a blkcg on a device gets congested, its request
+reserve becomes contended which in turn sets congestion state on the
+channel and blocks further bio submissions till requests are complete.
+This blocking of bio is the final and ultimate channel of the
+backpressure propagation.  If you start mixing pages from different
+cgroups in a single bio, the only options for handling it from the
+lower layer is either splitting it into two separate requests and
+finish the bio only on completion of both or choosing one victim
+cgroup, essentially arbitrarily, both of which can lead to gross
+priority inversion in many circumstances.
+
+> > Maybe we can think of optimizations down the road but I'd strongly
+> > prefer to stick to simple and clear divisions among cgroups.  Also, a
+> > file highly interleaved by multiple cgroups isn't a particularly
+> > likely use case.
 > 
-> Can you please look at Documentation/devicetree/bindings/graph.txt ?
-> 
-> I think we may be able to use something like this:
-> 
-> tda998x: hdmi-encoder {
-> 	compatible = "nxp,tda998x";
-> 	reg = <0x70>;
-> 	video-ports = <0x234501>;
-> 
-> 	port {
-> 		tda998x_video: endpoint {
-> 			remote-endpoint = <&lcd0_rgb>;
-> 		};
-> 	};
-> 
-> 	port {
-> 		#address-cells = <1>;
-> 		#size-cells = <0>;
-> 
-> 		tda998x_spdif0: endpoint@02 {
-> 			reg = <0x02>;
-> 			remote-endpoint = <&spdif0>;
-> 		};
-> 
-> 		tda998x_spdif1: endpoint@04 {
-> 			reg = <0x04>;
-> 			remote-endpoint = <&spdif0>;
-> 		};
-> 
-> 		tda998x_i2s: endpoint@03 {
-> 			reg = <0x03>;
-> 			remote-endpoint = <&i2s>;
-> 		};
-> 	};
-> };
-> 
-> I'm adding Philipp Zabel for comment.  The issue I see with this is that
-> we have two ports here which are not mutually exclusive, and it's not
-> obvious how they are dealt with.
+> That's true, and that's a further reason why I think we should not
+> be caring about this case in the filesystem writeback code at all.
 
-Very interesting idea!
-
-That's a detail, but I don't fully agree your endpoint description:
-
-- pin description
-	AP1 is the first S/PDIF input - ok
-	AP2 is the second S/PDIF input - ok
-	then, the I2S input may go only to AP3 or AP4.
-
-- source input nodes
-	You declare the same external S/PDIF source on AP1 and AP2.
-	I would have better seen a kirkwood-like audio device as one of
-	the S/PDIF input, say the second one.
-
-To complexify a bit, I also connect the spdif wire of the kirkwood-like
-device to a S/PDIF optical output ;)
-
-spdif_in -------------+
-                      v
-       + i2s -----> tda998x ---> HDMI
-audio1 |              ^
-       + spdif -------+--------> spdif_out
-
-
-Here are the modified ports of
-- the HDMI transmitter (I removed the #xxx_cells):
-
-	port@0 { // AP 1
-		tda998x_spdif0: endpoint@02 {
-			reg = <0x02>;
-			remote-endpoint = <&spdif_in_port>;
-		};
-	};
-	port@1 { //AP 2
-		tda998x_spdif1: endpoint@04 {
-			reg = <0x04>;
-			remote-endpoint = <&audio1_spdif0>;
-		};
-	};
-	port@2 { //AP 3
-		tda998x_i2s: endpoint@08 {
-			reg = <0x09>;
-			remote-endpoint = <&audio1_i2s>;
-		};
-	};
-
-- the (internal) audio device (audio1):
-
-	port@0 {
-		audio1_spdif0: endpoint@0 {
-			reg = 0;
-			remote-endpoint = <&tda998x_spdif1>;
-		};
-		audio1_spdif1: endpoint@1 {
-			reg = 0;
-			remote-endpoint = <&spdif_out_port>;
-		};
-	};
-	port@1 {
-		audio1_i2s: endpoint@1 {
-			reg = 1;
-			remote-endpoint = <&tda998x_i2s>;
-		};
-	};
-
-- and the S/PDIF external input (spdif_in):
-
-	port {
-		spdif_in_port: endpoint@0 {
-			reg = 0;
-			remote-endpoint = <&tda998x_spdif0>;
-		};
-	};
-
-- and the S/PDIF external output (spdif_out):
-
-	port {
-		spdif_out_port: endpoint@0 {
-			reg = 0;
-			remote-endpoint = <&audio1_spdif1>;
-		};
-	};
-
-All the hardware is described. There is nothing more to add in the DT.
-
-Especially, there is no 'simple-card' which is pure software and rather
-Linux specific.
-
-And, now, from this DT description, ASoC expects a sound card to be
-built.
-
-It seems that this creation should be done in the same way the video
-cards are built, i.e. from the source devices, i.e. the kirkwood-like
-device, and also from the spdif_in (which could be some other internal
-audio device outputting s/pdif instead of a simple S/PDIF input
-connector)! Is there one or two cards, and if 2 cards, how do they
-share the tda998x?
-
-Well, I will have a look at how to get audio out of my machine with
-these new DT definitions (hopefully, there is only one audio source!).
-
-Mark, you may forget about my other patch adding multi-codecs in the
-simple-card...
+I'm afraid I'm not following this logic.  Why would we do something
+which isn't straight forward and has a lot of corner cases for a
+prospect for optimizing a fringe case?  The only thing filesystem
+writeback logic has to do is skipping pages which belong to a
+different cgroup, just like it'd skip a page which is already under
+writeback.  There's nothing complicated about it.  Those pages simply
+aren't the target of that writeback instance.
 
 Thanks.
 
 -- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+tejun
