@@ -1,81 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116AbbAJVkZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 16:40:25 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:34679 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089AbbAJVkX (ORCPT
+	id S1754900AbbAJVnW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 16:43:22 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:43871 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335AbbAJVnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 16:40:23 -0500
+	Sat, 10 Jan 2015 16:43:20 -0500
+Date: Sat, 10 Jan 2015 16:43:16 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: "Suzuki K. Poulose" <Suzuki.Poulose@arm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: [PATCH cgroup/for-3.19-fixes] cgroup: implement
+ cgroup_subsys->unbind() callback
+Message-ID: <20150110214316.GF25319@htj.dyndns.org>
+References: <54B01335.4060901@arm.com>
+ <20150110085525.GD2110@esperanza>
 MIME-Version: 1.0
-In-Reply-To: <1420857290-8373-8-git-send-email-robh@kernel.org>
-References: <1420857290-8373-1-git-send-email-robh@kernel.org>
-	<1420857290-8373-8-git-send-email-robh@kernel.org>
-Date: Sat, 10 Jan 2015 22:40:22 +0100
-Message-ID: <CACRpkdbwKN9LenqrWeu4WykhdZOGAdxpC_BYr2cYpc2_cn5GfA@mail.gmail.com>
-Subject: Re: [PATCH 07/16] ARM: integrator: convert PCI to use generic config accesses
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Rob Herring <robh@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150110085525.GD2110@esperanza>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 3:34 AM, Rob Herring <robh@kernel.org> wrote:
+Currently, if a hierarchy doesn't have any live children when it's
+unmounted, the hierarchy starts dying by killing its refcnt.  The
+expectation is that even if there are lingering dead children which
+are lingering due to remaining references, they'll be put in a finite
+amount of time.  When the children are finally released, the hierarchy
+is destroyed and all controllers bound to it also are released.
 
-> Convert the integrator PCI driver to use the generic config access
-> functions.
->
-> This changes accesses from __raw_readX/__raw_writeX to readX/writeX
-> variants.
+However, for memcg, the premise that the lingering refs will be put in
+a finite amount time is not true.  In the absense of memory pressure,
+dead memcg's may hang around indefinitely pinned by its pages.  This
+unfortunately may lead to indefinite hang on the next mount attempt
+involving memcg as the mount logic waits for it to get released.
 
-Just as good.
+While we can change hierarchy destruction logic such that a hierarchy
+is only destroyed when it's not mounted anywhere and all its children,
+live or dead, are gone, this makes whether the hierarchy gets
+destroyed or not to be determined by factors opaque to userland.
+Userland may or may not get a new hierarchy on the next mount attempt.
+Worse, if it explicitly wants to create a new hierarchy with different
+options or controller compositions involving memcg, it will fail in an
+essentially arbitrary manner.
 
-> The spinlock is removed because it is unnecessary. The config
-> read and write functions are already protected with a spinlock and no
-> access can occur during the .pre_init function.
->
-> Signed-off-by: Rob Herring <robh@kernel.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: linux-arm-kernel@lists.infradead.org
+We want to guarantee that a hierarchy is destroyed once the
+conditions, unmounted and no visible children, are met.  To aid it,
+this patch introduces a new callback cgroup_subsys->unbind() which is
+invoked right before the hierarchy a subsystem is bound to starts
+dying.  memcg can implement this callback and initiate draining of
+remaining refs so that the hierarchy can eventually be released in a
+finite amount of time.
 
-I trust that you do the right thing I guess...
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Vladimir Davydov <vdavydov@parallels.com>
+---
+Hello,
 
->  static int v3_read_config(struct pci_bus *bus, unsigned int devfn, int where,
->                           int size, u32 *val)
->  {
-> -       addr = v3_open_config_window(bus, devfn, where);
-> +       int ret = pci_generic_config_read(bus, devfn, where, size, val);
->         v3_close_config_window();
-> +       return ret;
->  }
->
->  static int v3_write_config(struct pci_bus *bus, unsigned int devfn, int where,
->                            int size, u32 val)
->  {
-> +       int ret = pci_generic_config_write(bus, devfn, where, size, val);
->         v3_close_config_window();
-> -       raw_spin_unlock_irqrestore(&v3_lock, flags);
-> +       return ret;
->  }
->
->  static struct pci_ops pci_v3_ops = {
-> +       .map_bus = v3_open_config_window,
->         .read   = v3_read_config,
->         .write  = v3_write_config,
+> May be, we should kill the ref counter to the memory controller root in
+> cgroup_kill_sb only if there is no children at all, neither online nor
+> offline.
 
-So .map_bus is called before every .read/.write operation I take it.
+Ah, thanks for the analysis, but I really wanna avoid making hierarchy
+destruction conditions opaque to userland.  This is userland visible
+behavior.  It shouldn't be determined by kernel internals invisible
+outside.  This patch adds ss->unbind() which memcg can hook into to
+kick off draining of residual refs.  If this would work, I'll add this
+patch to cgroup/for-3.19-fixes, possibly with stable cc'd.
 
-Wouldn't it be proper to call the v3_close_config_window() from a
-matching .unmap_bus() callback for symmetry?
+Thanks.
 
-Yours,
-Linus Walleij
+ Documentation/cgroups/cgroups.txt |   12 +++++++++++-
+ include/linux/cgroup.h            |    1 +
+ kernel/cgroup.c                   |   14 ++++++++++++--
+ 3 files changed, 24 insertions(+), 3 deletions(-)
+
+--- a/Documentation/cgroups/cgroups.txt
++++ b/Documentation/cgroups/cgroups.txt
+@@ -637,7 +637,7 @@ void exit(struct task_struct *task)
+ 
+ Called during task exit.
+ 
+-void bind(struct cgroup *root)
++void bind(struct cgroup_subsys_state *root_css)
+ (cgroup_mutex held by caller)
+ 
+ Called when a cgroup subsystem is rebound to a different hierarchy
+@@ -645,6 +645,16 @@ and root cgroup. Currently this will onl
+ the default hierarchy (which never has sub-cgroups) and a hierarchy
+ that is being created/destroyed (and hence has no sub-cgroups).
+ 
++void unbind(struct cgroup_subsys_state *root_css)
++(cgroup_mutex held by caller)
++
++Called when a cgroup subsys is unbound from its current hierarchy. The
++subsystem must guarantee that all offline cgroups are going to be
++released in a finite amount of time after this function is called.
++Such draining can be asynchronous. The following binding of the
++subsystem to a hierarchy will be delayed till the draining is
++complete.
++
+ 4. Extended attribute usage
+ ===========================
+ 
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -654,6 +654,7 @@ struct cgroup_subsys {
+ 		     struct cgroup_subsys_state *old_css,
+ 		     struct task_struct *task);
+ 	void (*bind)(struct cgroup_subsys_state *root_css);
++	void (*unbind)(struct cgroup_subsys_state *root_css);
+ 
+ 	int disabled;
+ 	int early_init;
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1910,10 +1910,20 @@ static void cgroup_kill_sb(struct super_
+ 	 * And don't kill the default root.
+ 	 */
+ 	if (css_has_online_children(&root->cgrp.self) ||
+-	    root == &cgrp_dfl_root)
++	    root == &cgrp_dfl_root) {
+ 		cgroup_put(&root->cgrp);
+-	else
++	} else {
++		struct cgroup_subsys *ss;
++		int i;
++
++		mutex_lock(&cgroup_mutex);
++		for_each_subsys(ss, i)
++			if ((root->subsys_mask & (1UL << i)) && ss->unbind)
++				ss->unbind(cgroup_css(&root->cgrp, ss));
++		mutex_unlock(&cgroup_mutex);
++
+ 		percpu_ref_kill(&root->cgrp.self.refcnt);
++	}
+ 
+ 	kernfs_kill_sb(sb);
+ }
