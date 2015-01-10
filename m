@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755905AbbAJAen (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 19:34:43 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:46727 "EHLO
+	id S1758518AbbAJAg3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 19:36:29 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:56946 "EHLO
 	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755269AbbAJAel (ORCPT
+	with ESMTP id S1755532AbbAJAem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 19:34:41 -0500
+	Fri, 9 Jan 2015 19:34:42 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Dave Jones <davej@codemonkey.org.uk>,
@@ -16,9 +16,9 @@ Cc: John Stultz <john.stultz@linaro.org>, Dave Jones <davej@codemonkey.org.uk>,
         Prarit Bhargava <prarit@redhat.com>,
         Stephen Boyd <sboyd@codeaurora.org>, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 05/10] time: Add debugging checks to warn if we see delays
-Date: Fri,  9 Jan 2015 16:34:23 -0800
-Message-Id: <1420850068-27828-6-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 06/10] time: Cap clocksource reads to the clocksource max_cycles value
+Date: Fri,  9 Jan 2015 16:34:24 -0800
+Message-Id: <1420850068-27828-7-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1420850068-27828-1-git-send-email-john.stultz@linaro.org>
 References: <1420850068-27828-1-git-send-email-john.stultz@linaro.org>
@@ -26,20 +26,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recently there's been some request for better sanity
-checking in the time code, so that its more clear
-when something is going wrong since timekeeping issues
-could manifest in a large number of strange ways with
-various subsystems.
+When calculating the current delta since the last tick, we
+currently have no hard protections to prevent a multiplciation
+overflow from ocurring.
 
-Thus, this patch adds some extra infrastructure to
-add a check update_wall_time to print warnings if we
-see the call delayed beyond the max_cycles overflow
-point, or beyond the clocksource max_idle_ns value
-which is currently 50% of the overflow point.
+This patch introduces such a cap that limits the read delta
+value to the max_cycles value, which is where an overflow would
+occur.
 
-Tested this a bit by halting qemu for specified
-lengths of time to trigger the warnings.
+There was some concern that capping time like this could cause
+problems as we may stop expiring timers, which could go circular
+if the timer that triggers time accumulation were misscheduled
+too far in the future, which would cause time to stop.
+
+However, since the mult overflow would result in a smaller time
+value, we would effectively have the same problem there.
 
 Cc: Dave Jones <davej@codemonkey.org.uk>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
@@ -51,58 +52,43 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- kernel/time/jiffies.c     |  1 +
- kernel/time/timekeeping.c | 18 ++++++++++++++++++
- 2 files changed, 19 insertions(+)
+ kernel/time/timekeeping.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/kernel/time/jiffies.c b/kernel/time/jiffies.c
-index a6a5bf5..7e41390 100644
---- a/kernel/time/jiffies.c
-+++ b/kernel/time/jiffies.c
-@@ -71,6 +71,7 @@ static struct clocksource clocksource_jiffies = {
- 	.mask		= 0xffffffff, /*32bits*/
- 	.mult		= NSEC_PER_JIFFY << JIFFIES_SHIFT, /* details above */
- 	.shift		= JIFFIES_SHIFT,
-+	.max_cycles	= 10,
- };
- 
- __cacheline_aligned_in_smp DEFINE_SEQLOCK(jiffies_lock);
 diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 6a93185..0dcceba 100644
+index 0dcceba..9740fd8 100644
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -1319,6 +1319,22 @@ static int __init timekeeping_init_ops(void)
- }
- device_initcall(timekeeping_init_ops);
+@@ -202,6 +202,9 @@ static inline s64 timekeeping_get_ns(struct tk_read_base *tkr)
+ 	/* calculate the delta since the last update_wall_time: */
+ 	delta = clocksource_delta(cycle_now, tkr->cycle_last, tkr->mask);
  
-+static void timekeeping_check_offset(struct timekeeper *tk, cycle_t offset)
-+{
++	/* Cap delta value to the max_cycles values to avoid mult overflows */
++	delta = min(delta, tkr->clock->max_cycles);
 +
-+	cycle_t max_cycles = tk->tkr.clock->max_cycles;
-+	const char *name = tk->tkr.clock->name;
-+
-+	if (offset > max_cycles)
-+		printk("ERROR: cycle offset (%lld) is larger then"
-+			" allowed %s max_cycles (%lld)\n",
-+			offset, name, max_cycles);
-+	else if (offset > (max_cycles >> 1))
-+		printk("WARNING: cycle offset (%lld) is past"
-+			" the %s 50%% safety margin (%lld)\n",
-+			offset, name, max_cycles>>1);
-+}
-+
- /*
-  * Apply a multiplier adjustment to the timekeeper
-  */
-@@ -1602,6 +1618,8 @@ void update_wall_time(void)
- 	if (offset < real_tk->cycle_interval)
- 		goto out;
+ 	nsec = delta * tkr->mult + tkr->xtime_nsec;
+ 	nsec >>= tkr->shift;
  
-+	timekeeping_check_offset(real_tk, offset);
+@@ -221,6 +224,9 @@ static inline s64 timekeeping_get_ns_raw(struct timekeeper *tk)
+ 	/* calculate the delta since the last update_wall_time: */
+ 	delta = clocksource_delta(cycle_now, tk->tkr.cycle_last, tk->tkr.mask);
+ 
++	/* Cap delta value to the max_cycles values to avoid mult overflows */
++	delta = min(delta, tk->tkr.clock->max_cycles);
 +
- 	/*
- 	 * With NO_HZ we may have to accumulate many cycle_intervals
- 	 * (think "ticks") worth of time at once. To do this efficiently,
+ 	/* convert delta to nanoseconds. */
+ 	nsec = clocksource_cyc2ns(delta, clock->mult, clock->shift);
+ 
+@@ -482,6 +488,9 @@ static void timekeeping_forward_now(struct timekeeper *tk)
+ 	delta = clocksource_delta(cycle_now, tk->tkr.cycle_last, tk->tkr.mask);
+ 	tk->tkr.cycle_last = cycle_now;
+ 
++	/* Cap delta value to the max_cycles values to avoid mult overflows */
++	delta = min(delta, tk->tkr.clock->max_cycles);
++
+ 	tk->tkr.xtime_nsec += delta * tk->tkr.mult;
+ 
+ 	/* If arch requires, add in get_arch_timeoffset() */
 -- 
 1.9.1
 
