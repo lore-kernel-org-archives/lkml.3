@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758506AbbAJChB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 21:37:01 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:39129 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756318AbbAJCfw (ORCPT
+	id S1758448AbbAJCgm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 21:36:42 -0500
+Received: from mail-oi0-f46.google.com ([209.85.218.46]:58054 "EHLO
+	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756348AbbAJCfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 21:35:52 -0500
+	Fri, 9 Jan 2015 21:35:54 -0500
 From: Rob Herring <robh@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, linux-pci@vger.kernel.org,
         Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
-        Simon Horman <horms@verge.net.au>, linux-sh@vger.kernel.org
-Subject: [PATCH 13/16] pci/host: rcar-gen2: convert to use generic config accesses
-Date: Fri,  9 Jan 2015 20:34:47 -0600
-Message-Id: <1420857290-8373-14-git-send-email-robh@kernel.org>
+        Thierry Reding <thierry.reding@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org
+Subject: [PATCH 14/16] pci/host: tegra: convert to use generic config accesses
+Date: Fri,  9 Jan 2015 20:34:48 -0600
+Message-Id: <1420857290-8373-15-git-send-email-robh@kernel.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1420857290-8373-1-git-send-email-robh@kernel.org>
 References: <1420857290-8373-1-git-send-email-robh@kernel.org>
@@ -22,90 +24,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert the rcar-gen2 host PCI driver to use the generic config access
+Convert the tegra host PCI driver to use the generic config access
 functions.
 
-This changes the i/o accessors from io(read|write)X to readX/writeX
-variants which are equivalent on ARM.
-
 Signed-off-by: Rob Herring <robh@kernel.org>
-Cc: Simon Horman <horms@verge.net.au>
+Cc: Thierry Reding <thierry.reding@gmail.com>
 Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>
+Cc: linux-tegra@vger.kernel.org
 Cc: linux-pci@vger.kernel.org
-Cc: linux-sh@vger.kernel.org
 ---
- drivers/pci/host/pci-rcar-gen2.c | 51 +++-------------------------------------
- 1 file changed, 3 insertions(+), 48 deletions(-)
+ drivers/pci/host/pci-tegra.c | 55 +++-----------------------------------------
+ 1 file changed, 3 insertions(+), 52 deletions(-)
 
-diff --git a/drivers/pci/host/pci-rcar-gen2.c b/drivers/pci/host/pci-rcar-gen2.c
-index d9c042f..dd6b84e 100644
---- a/drivers/pci/host/pci-rcar-gen2.c
-+++ b/drivers/pci/host/pci-rcar-gen2.c
-@@ -131,52 +131,6 @@ static void __iomem *rcar_pci_cfg_base(struct pci_bus *bus, unsigned int devfn,
- 	return priv->reg + (slot >> 1) * 0x100 + where;
+diff --git a/drivers/pci/host/pci-tegra.c b/drivers/pci/host/pci-tegra.c
+index a800ae9..44fd31b 100644
+--- a/drivers/pci/host/pci-tegra.c
++++ b/drivers/pci/host/pci-tegra.c
+@@ -480,59 +480,10 @@ static void __iomem *tegra_pcie_conf_address(struct pci_bus *bus,
+ 	return addr;
  }
  
--static int rcar_pci_read_config(struct pci_bus *bus, unsigned int devfn,
--				int where, int size, u32 *val)
+-static int tegra_pcie_read_conf(struct pci_bus *bus, unsigned int devfn,
+-				int where, int size, u32 *value)
 -{
--	void __iomem *reg = rcar_pci_cfg_base(bus, devfn, where);
+-	void __iomem *addr;
 -
--	if (!reg)
+-	addr = tegra_pcie_conf_address(bus, devfn, where);
+-	if (!addr) {
+-		*value = 0xffffffff;
 -		return PCIBIOS_DEVICE_NOT_FOUND;
--
--	switch (size) {
--	case 1:
--		*val = ioread8(reg);
--		break;
--	case 2:
--		*val = ioread16(reg);
--		break;
--	default:
--		*val = ioread32(reg);
--		break;
 -	}
+-
+-	*value = readl(addr);
+-
+-	if (size == 1)
+-		*value = (*value >> (8 * (where & 3))) & 0xff;
+-	else if (size == 2)
+-		*value = (*value >> (8 * (where & 3))) & 0xffff;
 -
 -	return PCIBIOS_SUCCESSFUL;
 -}
 -
--static int rcar_pci_write_config(struct pci_bus *bus, unsigned int devfn,
--				 int where, int size, u32 val)
+-static int tegra_pcie_write_conf(struct pci_bus *bus, unsigned int devfn,
+-				 int where, int size, u32 value)
 -{
--	void __iomem *reg = rcar_pci_cfg_base(bus, devfn, where);
+-	void __iomem *addr;
+-	u32 mask, tmp;
 -
--	if (!reg)
+-	addr = tegra_pcie_conf_address(bus, devfn, where);
+-	if (!addr)
 -		return PCIBIOS_DEVICE_NOT_FOUND;
 -
--	switch (size) {
--	case 1:
--		iowrite8(val, reg);
--		break;
--	case 2:
--		iowrite16(val, reg);
--		break;
--	default:
--		iowrite32(val, reg);
--		break;
+-	if (size == 4) {
+-		writel(value, addr);
+-		return PCIBIOS_SUCCESSFUL;
 -	}
+-
+-	if (size == 2)
+-		mask = ~(0xffff << ((where & 0x3) * 8));
+-	else if (size == 1)
+-		mask = ~(0xff << ((where & 0x3) * 8));
+-	else
+-		return PCIBIOS_BAD_REGISTER_NUMBER;
+-
+-	tmp = readl(addr) & mask;
+-	tmp |= value << ((where & 0x3) * 8);
+-	writel(tmp, addr);
 -
 -	return PCIBIOS_SUCCESSFUL;
 -}
 -
- /* PCI interrupt mapping */
- static int rcar_pci_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
- {
-@@ -325,8 +279,9 @@ static int rcar_pci_setup(int nr, struct pci_sys_data *sys)
- }
- 
- static struct pci_ops rcar_pci_ops = {
--	.read	= rcar_pci_read_config,
--	.write	= rcar_pci_write_config,
-+	.map_bus = rcar_pci_cfg_base,
-+	.read	= pci_generic_config_read,
-+	.write	= pci_generic_config_write,
+ static struct pci_ops tegra_pcie_ops = {
+-	.read = tegra_pcie_read_conf,
+-	.write = tegra_pcie_write_conf,
++	.map_bus = tegra_pcie_conf_address,
++	.read = pci_generic_config_read32,
++	.write = pci_generic_config_write32,
  };
  
- static int rcar_pci_probe(struct platform_device *pdev)
+ static unsigned long tegra_pcie_port_get_pex_ctrl(struct tegra_pcie_port *port)
 -- 
 2.1.0
 
