@@ -1,117 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981AbbAJVF7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 16:05:59 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:57650 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016AbbAJVF5 (ORCPT
+	id S1755085AbbAJVIf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 16:08:35 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:41794 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751633AbbAJVIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 16:05:57 -0500
-Date: Sat, 10 Jan 2015 13:05:52 -0800
-From: Omar Sandoval <osandov@osandov.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        David Sterba <dsterba@suse.cz>, Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH RESEND v8 0/3] Introduce RCU string API
-Message-ID: <20150110210552.GA1544@mew>
-References: <cover.1420834567.git.osandov@osandov.com>
- <20150110195647.GA8063@linux.vnet.ibm.com>
+	Sat, 10 Jan 2015 16:08:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150110195647.GA8063@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CALCETrXS7BvtS3P3J8hnbt3GGvezx-935uxanSN_a=CU6s1d3g@mail.gmail.com>
+References: <1420734315-30943-1-git-send-email-dvlasenk@redhat.com>
+	<1420734315-30943-4-git-send-email-dvlasenk@redhat.com>
+	<20150109121950.GD13637@pd.tnic>
+	<CAK1hOcMsGJ7geRAzfazPLZitcO0o9XYRPJDYa8sJHR4i6DPL-g@mail.gmail.com>
+	<20150110142336.GC12218@pd.tnic>
+	<CAK1hOcO7K=4N8CF=LOPmosXRNnogaNi5vLDPMdb0XiKsL=JOfg@mail.gmail.com>
+	<CALCETrXS7BvtS3P3J8hnbt3GGvezx-935uxanSN_a=CU6s1d3g@mail.gmail.com>
+Date: Sat, 10 Jan 2015 13:08:33 -0800
+X-Google-Sender-Auth: wAV9IcXd42lak_RAzjlT_xSmRA0
+Message-ID: <CA+55aFzhgnHipD_mAA6qp9bum2b_j_7_3uWN4MHtwh6y20krcg@mail.gmail.com>
+Subject: Re: [PATCH 3/4] x86: open-code register save/restore in
+ trace_hardirqs thunks
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, Borislav Petkov <bp@alien8.de>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 11:56:48AM -0800, Paul E. McKenney wrote:
-> On Fri, Jan 09, 2015 at 12:35:57PM -0800, Omar Sandoval wrote:
-> > Hi, everyone,
-> > 
-> > Now that the merge window and the holidays are over, I've rebased this on
-> > v3.19-rc3 for the next merge window.
-> 
-> Wasn't btrfs going to take this one?
-> 
-> If I am supposed to take it, please split out the RCU infrastructure
-> portion so that I can push it separately.
-> 
-> 							Thanx, Paul
-> 
-> > This patch series introduces the RCU string API and cleans up the wreckage of
-> > sparse warnings which follow from it (shown here from when the patch was
-> > briefly in the btrfs integration tree):
-> > 
-> > On Thu, Nov 27, 2014 at 06:45:20AM +0800, kbuild test robot wrote:
-> > > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git integration
-> > > head:   c7a37618b60026121255c69e042d74ae5631470c
-> > > commit: 37aad79d90a0cbf82a5eda62dfe3af4241f5aca3 [38/39] Move BTRFS RCU string to common library
-> > > reproduce:
-> > >   # apt-get install sparse
-> > >   git checkout 37aad79d90a0cbf82a5eda62dfe3af4241f5aca3
-> > >   make ARCH=x86_64 allmodconfig
-> > >   make C=1 CF=-D__CHECK_ENDIAN__
-> > >
-> > >
-> > > sparse warnings: (new ones prefixed by >>)
-> > >
-> > > >> fs/btrfs/check-integrity.c:848:25: sparse: incorrect type in argument 1 (different address spaces)
-> > >    fs/btrfs/check-integrity.c:848:25:    expected struct rcu_string [noderef] <asn:4>*rcu_str
-> > >    fs/btrfs/check-integrity.c:848:25:    got struct rcu_string *name
-> > [snip]
-> > 
-> > Version 8 combines the original patch with another patch series I posted to fix
-> > these warnings, which fixes the botched __rcu annotations that caused some of
-> > the warnings and refactors the existing uses of rcustring to get rid of the
-> > rest. There's also a patch to fix an RCU misuse.
-> > 
-> > Thanks!
-> > 
-> > v8: Get the __rcu annotations right, clean up RCU string-related sparse noise
-> > v7: Add arguments to kernel doc for printk wrappers, use ##__VA_ARGS
-> > v6: Add header dependencies to rcustring.h
-> > v5: Rebase against v3.18-rc3
-> > v4: Don't return anything from the printk wrappers on the assumption that
-> > printk will return void someday
-> > v3: Add __rcu annotation to relevant functions, add Paul's ack and Josh's
-> > review
-> > 
-> > Omar Sandoval (3):
-> >   Move BTRFS RCU string to common library
-> >   btrfs: refactor btrfs_device->name updates
-> >   btrfs: fix suspicious RCU in BTRFS_IOC_DEV_INFO
-> > 
-> >  fs/btrfs/check-integrity.c |   6 +--
-> >  fs/btrfs/dev-replace.c     |  19 ++++----
-> >  fs/btrfs/disk-io.c         |   6 +--
-> >  fs/btrfs/extent_io.c       |   4 +-
-> >  fs/btrfs/ioctl.c           |  14 +++---
-> >  fs/btrfs/raid56.c          |   2 +-
-> >  fs/btrfs/rcu-string.h      |  56 ------------------------
-> >  fs/btrfs/scrub.c           |  15 ++++---
-> >  fs/btrfs/super.c           |   2 +-
-> >  fs/btrfs/volumes.c         | 107 ++++++++++++++++++++++++++++++---------------
-> >  fs/btrfs/volumes.h         |   2 +-
-> >  include/linux/rcustring.h  |  97 ++++++++++++++++++++++++++++++++++++++++
-> >  12 files changed, 204 insertions(+), 126 deletions(-)
-> >  delete mode 100644 fs/btrfs/rcu-string.h
-> >  create mode 100644 include/linux/rcustring.h
-> > 
-> > -- 
-> > 2.2.1
-> > 
-> 
+On Sat, Jan 10, 2015 at 12:17 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>
+> I asked this once, and someone told me that push/pop has lower
+> throughput.  I find this surprising.
 
-Hi, Paul,
+It was true for some AMD CPU's in particular. One insn/cycle vs two.
 
-I believe Chris is still going to take this one, just wanted to keep you
-and the RCU reviewers in the loop.
+I personally would be very happy to go back to push/pop sequences.
+Even without a fancy stack engine like Intel has done for a while,
+even *simple* cores can generally pair pushes and pops. I think the
+original Pentium already had a special magic pairing logic to pair
+pushes and pops despite both instructions using %esp. It's a common
+and fairly trivial special case, and the fact that a few AMD
+microarchitectures didn't do it is likely not really a good reason to
+avoid repeated push/pop instructions.
 
-Thanks!
--- 
-Omar
+                   Linus
