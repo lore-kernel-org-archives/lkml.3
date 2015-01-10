@@ -1,69 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755132AbbAJV1Z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 16:27:25 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:50625 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751920AbbAJV1V (ORCPT
+	id S1755240AbbAJV3f (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 16:29:35 -0500
+Received: from fortimail.online.lv ([81.198.164.220]:44863 "EHLO
+	fortimail.online.lv" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752403AbbAJV3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 16:27:21 -0500
+	Sat, 10 Jan 2015 16:29:34 -0500
+Message-ID: <54B199B6.3030103@apollo.lv>
+Date: Sat, 10 Jan 2015 23:29:26 +0200
+From: Raimonds Cicans <ray@apollo.lv>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0)
+ Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <CAK1hOcPAxvuPRB-+z2kob2=sF1C+aftH4M9JL2MaA5VcQDzuNA@mail.gmail.com>
-References: <1420734315-30943-1-git-send-email-dvlasenk@redhat.com>
-	<1420734315-30943-4-git-send-email-dvlasenk@redhat.com>
-	<20150109121950.GD13637@pd.tnic>
-	<CAK1hOcMsGJ7geRAzfazPLZitcO0o9XYRPJDYa8sJHR4i6DPL-g@mail.gmail.com>
-	<20150110142336.GC12218@pd.tnic>
-	<CAK1hOcO7K=4N8CF=LOPmosXRNnogaNi5vLDPMdb0XiKsL=JOfg@mail.gmail.com>
-	<CALCETrXS7BvtS3P3J8hnbt3GGvezx-935uxanSN_a=CU6s1d3g@mail.gmail.com>
-	<20150110204231.GD12218@pd.tnic>
-	<CALCETrWwnfU9roXp_0Z_hHo-c2LMcc3_KRKJgx_=p2U-+i5PrA@mail.gmail.com>
-	<CAK1hOcPAxvuPRB-+z2kob2=sF1C+aftH4M9JL2MaA5VcQDzuNA@mail.gmail.com>
-Date: Sat, 10 Jan 2015 13:27:20 -0800
-X-Google-Sender-Auth: dqsBELBJIzlgjmh90Xfqw8JZwqg
-Message-ID: <CA+55aFy-uSod4dndhjZ2VKgLkG42hajk7HLJwuNdv_eHfTW-=Q@mail.gmail.com>
-Subject: Re: [PATCH 3/4] x86: open-code register save/restore in
- trace_hardirqs thunks
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Borislav Petkov <bp@alien8.de>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+To: linux-kernel@vger.kernel.org
+Subject: [REGRESSION] media: cx23885 broken by commit
+ 453afdd9ce33293f640e84dc17e5f366701516e8  (was: Help needed: complex case
+ bisection (TBS6981))
+References: <54AF9297.1070603@apollo.lv>
+In-Reply-To: <54AF9297.1070603@apollo.lv>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+DomainKey-Status: no signature
+DKIM-Status: no signature
+X-AXIGEN-DK-Result: No records
+X-AXIGEN-DKIM-Result: No records
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 1:09 PM, Denys Vlasenko
-<vda.linux@googlemail.com> wrote:
+TL;DR:
+media: cx23885 broken by commit 453afdd9ce33293f640e84dc17e5f366701516e8
+"[media] cx23885: convert to vb2"
+Broken mean: until this commit driver was rock solid, after I started to 
+receive
+IOMMU related warnings and sometimes card stopped working
+
+
+Full report:
+
+On 09.01.2015 10:34, Raimonds Cicans wrote:
+> History of problem:
+> 1) I own computer based on AMD Athlon(tm) II X2 240e Processor on Asus 
+> M5A97 LE R2.0 motherboard
+> 2) I own TBS6981 card (Dual DVB-S/S2 PCIe receiver, in kernel driver)
+> 3) I used kernel 3.13.something
+> 4) everything was fine
+> 5) time to time I tried to upgrade to newer kernels
+>     but I got AMD IOMMU driver regression
+>     (AMD-Vi: Completion-Wait loop timed out)
+> 6) I tried to disable IOMMU, but this lead to problems with NIC and 
+> USB controller
+> 7) I was forced to upgrade to newer kernel (I needed all new fixes for 
+> BTRFS file system)
+> 8) I bought TBS6285 (Quad DVB-T/T2 PCIe receiver)
+> 9) I upgraded to kernel 3.17.7
+>     AMD IOMMU driver regression disappeared
+>     but appeared two IOMMU related problems with TBS6981:
 >
-> I think using push/pop is okay. In the very hottest code paths
-> you may want to prefer mov's.
+> WARNING: CPU: 0 PID: 13204 at drivers/iommu/amd_iommu.c:2625 
+> dma_ops_domain_unmap.part.9+0x4d/0x56()
+>
+> and
+>
+> AMD-Vi: Event logged [IO_PAGE_FAULT device=08:00.0 domain=0x001c 
+> address=0x0000000001355000 flags=0x0000]
+>
+> As I understand first message mean "we tried to unmap same dma region 
+> twice"
+> and second mean "we tried to dma to/from region that do not exist"
+>
+> IMHO this mean that cause for those messages can be single commit
+>
+I was naive... In reality it is not so simply.
 
-For kernel entrypoints in particular, the code sequence is quite
-possibly constrained by the decoder and instruction fetch rather than
-the execution engine. Even if the entrypoint were to be in the L1 I$
-(which is not generally the case except in microbenchmarks), I am
-pretty sure that even Intel doesn't actually speculatively decode
-across system call boundaries, so unlike normal nice code, you don't
-have the front end running ahead of the execution engine.
+> Hypotheses:
+> 1) Bug(s) in motherboard's hardware/BIOS (why it worked before?)
+Disproved: card work rock solid with plain 3.13.10 kernel
 
-Looking at the system call hotpath, for example, it looks like we
-save/restore 8 registers. So 16 instructions or about 80 bytes of
-code. I could easily imagine us avoiding one cacheline access by using
-shorter 1- and 2-byte push/pop instructions (depending a bit on how
-the cacheline alignment works out, of course).
+> 2) TBS6981 conflicts with TBS6285
+Disproved: card have same problems on new drivers,
+                   without TBS6285 in computer
 
-Depending on how well it prefetches from L2 and/or exact decoder
-details, that kind of issue *can* overshadow the actual execution
-costs. Of course, on microbenchmarks (eg some system call benchmark
-that does "getppid()" in a loop), even the kernel side stays in the
-L1, so those might show possible execution issues more. And
-macrobenchmarks probably won't show a cycle or two in the system call
-or fault path anyway.
+> 3) Bug(s) in TBS6981 driver
+Very likely: problems started from commit 
+453afdd9ce33293f640e84dc17e5f366701516e8
+                  which changed cx23885 driver
 
-                    Linus
+> 4) Bug(s) in media subsystem (video buffer dma part)
+Unlikely: only if cx23885 driver uses this part in specific way
+
+> 5) Bug(s) in AMD IOMMU driver
+Very unlikely: this would cause problems with other systems and drivers
+
+> Bisection plan:
+> 0. take out from computer all unnecessary hardware (including TBS6285)
+> 1. install latest known good kernel (3.13.something)
+>     I will use this kernel because I want to rule out AMD IOMMU 
+> regression
+> 2. cold reboot and test everything is working
+Every thing was working... almost: card lost one receiver
+I take card from second PCIe slot and put in third:
+first receiver appeared but card lost second receiver.
+I put card in fourth slot and both receivers reappeared.
+(I need to investigate this deeper)
+
+> 3. take linux-media tree and compile drivers from HEAD
+It took several hours to make linux-media build system to work
+
+> 4. cold reboot and test
+>     if everything is working, then
+>                     a) problem is fixed in HEAD
+>                         or
+>                     b) compatibility problem with TBS6285
+>                         or
+>                     c) problem is related to AMD IOMMU driver 
+> regression in
+>                         newer kernels
+>                     to distinguish between this cases I should build
+>                     newest kernel with HEAD media drivers
+>                     if everything is working then case a) or b)
+>                             and I must put TBS6285 back and test again
+>                     else this is case c) and I should bisect 
+> linux-kernel tree for this problem
+>                             (git bisect start; git bisect bad v3.14; 
+> git bisect good v3.13)
+>
+>                     end of testing
+>
+>     if TBS6981 driver misbehaves, then I should git bisect linux-media 
+> tree
+Driver misbehaved
+
+> 5. bisect linux-media tree
+>     (git bisect start -- drivers/media; git bisect bad v3.17; git 
+> bisect good v3.13)
+>
+>     if I find single commit that is cause for both messages then stop
+>
+>     if at some commit only one message appear, then I should write down
+>     good/bad region and continue with first message and then do
+>     new bisection for other message but on reduced region
+Soon appeared new bug:
+kernel BUG at mm/slub.c:1394!
+
+Main problem was that this bug appeared much faster than first two bugs
+and often caused computer lock up.
+I decided to treat this error same way as previous two:  git bisect bad
+
+When I tested affecting commit I received  two errors: second & third
+
+
+
+What now?
+
+I see two ways:
+
+1) investigate problem deeper and solve bug in current driver
+     it is perfect solution, but IMHO it is far beyond of my abilities.
+
+2) Just revert affecting commit(s)
+     BTW can somebody show how to create new branch and revert
+     some commit with all depending commits
+
+
+
+Raimonds Cicans
