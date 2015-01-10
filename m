@@ -1,64 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545AbbAJI6D (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 03:58:03 -0500
-Received: from mail-we0-f176.google.com ([74.125.82.176]:35050 "EHLO
+	id S1752328AbbAJJLf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 04:11:35 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:38444 "EHLO
 	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202AbbAJI6A (ORCPT
+	with ESMTP id S1751044AbbAJJL3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 03:58:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdY-pW98cymyAKpV4s8x00e-7MPksMX1_0Tj+1QT3WskMw@mail.gmail.com>
-References: <1418302951-9309-1-git-send-email-octavian.purdila@intel.com>
-	<1418302951-9309-3-git-send-email-octavian.purdila@intel.com>
-	<CACRpkdZq4r+3yLvumxM-+f-VyMCb-ZF8xE7_kOx7uAoxrPzpTw@mail.gmail.com>
-	<CAE1zotKu0f+169_WO3O=+Q1hpU_r-x60FLpJRWyd-na7B9T_VA@mail.gmail.com>
-	<CACRpkdY-pW98cymyAKpV4s8x00e-7MPksMX1_0Tj+1QT3WskMw@mail.gmail.com>
-Date: Sat, 10 Jan 2015 21:57:59 +1300
-Message-ID: <CAE1zot+FF-6TVJKaqmQ0Shouhtvo0eWytxGJG1VgqWFAen5JZg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] gpio: dln2: use bus_sync_unlock instead of scheduling work
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Johan Hovold <johan@kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 10 Jan 2015 04:11:29 -0500
+Message-ID: <1420881085.24061.13.camel@gmail.com>
+Subject: Re: noisy selinux messages on tmpfs mount.
+From: Dominick Grift <dac.override@gmail.com>
+To: Paul Moore <paul@paul-moore.com>
+Cc: Paul Moore <pmoore@redhat.com>, Dave Jones <davej@codemonkey.org.uk>,
+        Stephen Smalley <sds@epoch.ncsc.mil>,
+        James Morris <james.l.morris@oracle.com>,
+        selinux <selinux@tycho.nsa.gov>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Sat, 10 Jan 2015 10:11:25 +0100
+In-Reply-To: <14ad1d43100.2806.85c95baa4474aabc7814e68940a78392@paul-moore.com>
+References: <20150108190822.GB4365@codemonkey.org.uk>
+	 <CAB9W1A2nTN2DJ699BXL_r_aXCk-O9-KrTLSi731isQWpPUmkwg@mail.gmail.com>
+	 <20150109191329.GA19400@codemonkey.org.uk> <6645675.NppomaThWx@sifl>
+	 <1420837263.31986.0.camel@gmail.com>
+	 <14ad1d43100.2806.85c95baa4474aabc7814e68940a78392@paul-moore.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.9 (3.12.9-1.fc21) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 9, 2015 at 7:58 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Fri, Jan 9, 2015 at 12:40 AM, Octavian Purdila
-> <octavian.purdila@intel.com> wrote:
->> On Thu, Jan 1, 2015 at 9:56 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
->>> On Thu, Dec 11, 2014 at 2:02 PM, Octavian Purdila
->>> <octavian.purdila@intel.com> wrote:
->>>
->>>> Use the irq_chip bus_sync_unlock method to update hardware registers
->>>> instead of scheduling work from the mask/unmask methods. This simplifies
->>>> a bit the driver and make it more uniform with the other GPIO IRQ
->>>> drivers.
->>>>
->>>> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
->>>
->>> Patch applied for fixes.
->>>
->>
->> Hi Linus,
->>
->> I don't see the patch applied, could you please consider it for the
->> -for-next branch?
->
-> Ah sorry I thought only the first patch was a critical fix.
-> Applied this to fixes too now. Working on queueing the
-> GPIO fixes.
+On Fri, 2015-01-09 at 22:12 -0500, Paul Moore wrote:
+> systemd has taken over cron too?  I suppose that is a logical extension, 
+> but still...
 
-Hi Linus,
+That is were i think davej is wrong. Here is what i think is the
+scenario with cron.
 
-Its not a critical fix, its just a clean-up. I thought it would go in
-the the for-next branch (for 3.20) and since I did not see it there I
-thought it got lost.
+Cron runs jobs on behalf root. Root is generally not logged in all the
+time. So every time cron performs a job on behalf of root (hourly etc),
+systemd logind creates /run/user/0 and mounts tmpfs on it, when the job
+is done, tmpfs is unmounted and /run/user/= removed.
 
-Sorry for any confusion I may have caused, I am not familiar with the
-GPIO branch work-flow.
+In that sense cron acts as kind of a login program.
+
+Where i think davej might be wrong is that this would also happen with
+systemd's replacement for cron: timers.
+
+I suspect that systemd logind does not create 0 user runtime directory
+everytime a timer is triggered, as opposed to cron.
+
+with regard to normal user timers.Those really only work if you enable
+lingering on the systemd --user daemon with logind. This means that in
+practice the user is always logged in from a systemd logind user runtime
+directory point of view (e.g. /run/user/$UID is always there for a user
+that has a lingering systemd session daemon instance)
+
+In practice , i suspect that this means that, although now with cron
+were seeing logind mount tmpfs whenever some job of behalf of root is
+run if root is not physically loged in (which is often), that this would
+not be the case if we got rid of cron and if it would be replaced by
+systemd timers
+
+One might ask the question: why does logind create a root user runtime
+directory every time cron runs a job on behalf of root. Is that really
+required?
+
+> 
+> --
+> paul moore
+> www.paul-moore.com
+> 
+> 
+> 
+> On January 9, 2015 4:01:29 PM Dominick Grift <dac.override@gmail.com> wrote:
+> 
+> > On Fri, 2015-01-09 at 15:55 -0500, Paul Moore wrote:
+> > > On Friday, January 09, 2015 02:13:29 PM Dave Jones wrote:
+> > > > On Fri, Jan 09, 2015 at 08:06:49AM -0500, Stephen Smalley wrote:
+> > > >  > We already reduced that message to KERN_DEBUG.  Is that not sufficient?
+> > > >
+> > > > That doesn't really help with the flooding of dmesg, so no.
+> > > > I should also note that it's not just logging in that creates a new
+> > > > session, it also seems to be getting triggered by cron jobs, or
+> > > > whatever the systemd replacement is.
+> > >
+> > > I wonder if this is cron/systemd/whatever creating a new namespace and
+> > > mounting a new tmpfs in the namespace?  If yes, I wonder if we could 
+> > limit the
+> > > messages to the initial namespace ... ?
+> > >
+> >
+> > It is systemd logind creating sessions (e.g. creating /run/user/$UID and
+> > mounting a tmpfs on it)
+> >
+> >
+> >
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+
+
