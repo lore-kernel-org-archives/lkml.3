@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534AbbAJWqB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 17:46:01 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:41925 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750876AbbAJWqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 17:46:00 -0500
-Date: Sat, 10 Jan 2015 23:45:56 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH 2/4] x86: ia32entry.S: fix wrong symbolic constant usage:
- R11->ARGOFFSET
-Message-ID: <20150110224556.GK12218@pd.tnic>
-References: <1420927210-19738-1-git-send-email-dvlasenk@redhat.com>
- <1420927210-19738-3-git-send-email-dvlasenk@redhat.com>
- <CALCETrWsT75a1Mh61BCEO41CAEz1SWJTuVjkRP=60kr=21T3OQ@mail.gmail.com>
- <CA+55aFwTJHOtMh7CMctVojO+4iy-s1UsoLD6tVukeEhdAPM44A@mail.gmail.com>
- <20150110223519.GI12218@pd.tnic>
- <CA+55aFy37dKJ_g_kDsQrkRxLFePw2tT3+tuXawp8MJOgETC+UQ@mail.gmail.com>
+	id S1753299AbbAJWtH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 17:49:07 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47886 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855AbbAJWtF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jan 2015 17:49:05 -0500
+Date: Sat, 10 Jan 2015 23:49:02 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, pali.rohar@gmail.com, sre@debian.org,
+        sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        khilman@kernel.org, ivo.g.dimitrov.75@gmail.com,
+        Greg KH <greg@kroah.com>
+Subject: Re: Getting new udev to run with 2.6.28
+Message-ID: <20150110224902.GA25534@amd>
+References: <20150110173920.GA31847@amd>
+ <20150110191335.GA5125@fuloong-minipc.musicnaut.iki.fi>
+ <20150110211805.GZ22149@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFy37dKJ_g_kDsQrkRxLFePw2tT3+tuXawp8MJOgETC+UQ@mail.gmail.com>
+In-Reply-To: <20150110211805.GZ22149@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 02:41:07PM -0800, Linus Torvalds wrote:
-> On Sat, Jan 10, 2015 at 2:35 PM, Borislav Petkov <bp@alien8.de> wrote:
-> >
-> > Haha, Linus just made you maintainer of entry_64.S :-)
+On Sat 2015-01-10 21:18:05, Al Viro wrote:
+> On Sat, Jan 10, 2015 at 09:13:35PM +0200, Aaro Koskinen wrote:
+> > Hi,
+> > 
+> > On Sat, Jan 10, 2015 at 06:39:20PM +0100, Pavel Machek wrote:
+> > > N900 has real problems on 3.19, and 2.6.28 should be very well
+> > > debugged version. Getting it to compile on recent distribution was
+> > > fun, but I succeeded. Unfortunately, Debian 7's udev does not work
+> > > with 2.6.28...
+> > 
+> > I guess you will have many other issues too if you want to run
+> > such combination (legacy kernel + modern userspace). E.g. current glibc
+> > requires >= 2.6.32.
 > 
-> Just going by
-> 
->     git shortlog --no-merges --since=6.months arch/x86/kernel/entry_64.S
-> 
-> and looking at the kind of changes are going on, I really think a
-> "tag, you're it" to Andy is a reasonable thing to do.
-> 
-> I just hope he's stupid^Wambitious enough to fall for it.
+> How current is current and just what does it require in 2.6.32?
 
-I'm sure he will, he's doing nuts stuff anyway to that file but it seems
-to work so far :-)
+Debian 7 seems to contain
 
-You should take a look at this other thing too, using SYSRET to return
-from exceptions:
+root@n900:~# ls /lib/arm-linux-gnueabi/libc
+libc-2.13.so
 
-https://lkml.kernel.org/r/49394403b8b12486a6b9c9c70b72bd9f5dce7364.1415403984.git.luto@amacapital.net
+. And that one seems to be happy with 2.6.28. Its just udev that is
+the problem.
 
+									Pavel
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
