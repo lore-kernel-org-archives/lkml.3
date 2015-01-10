@@ -1,133 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184AbbAJDa5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 22:30:57 -0500
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:47781 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519AbbAJDaz (ORCPT
+	id S1753899AbbAJDmi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 22:42:38 -0500
+Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:36407 "EHLO
+	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752081AbbAJDmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 22:30:55 -0500
-MIME-Version: 1.0
-In-Reply-To: <1418266726-12004-1-git-send-email-a.kesavan@samsung.com>
-References: <1418266726-12004-1-git-send-email-a.kesavan@samsung.com>
-Date: Sat, 10 Jan 2015 09:00:54 +0530
-Message-ID: <CAM4voan_gA=X9nAe4quPWRx5m+uTsK1diBZKBsL36aPYG-q69A@mail.gmail.com>
-Subject: Re: [PATCH 1/2] lib: devres: add a helper function for ioremap_wc
-From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>,
-        Alexander Shiyan <shc_work@mail.ru>,
-        "p.zabel@pengutronix.de" <p.zabel@pengutronix.de>,
-        Nicolin Chen <nicoleotsuka@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "robh+dt" <robh+dt@kernel.org>, Grant Likely <grant.likely@linaro.org>,
+	Fri, 9 Jan 2015 22:42:35 -0500
+Date: Fri, 9 Jan 2015 22:41:44 -0500
+From: Rich Felker <dalias@aerifal.cx>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: David Drysdale <drysdale@google.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Meredydd Luff <meredydd@senatehouse.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jonathan Corbet <corbet@lwn.net>
-Cc: "padma.v@samsung.com" <padma.v@samsung.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        Kukjin Kim <kgene@kernel.org>, Me2 <kesavan.abhilash@gmail.com>,
-        Pawel Moll <pawel.moll@arm.com>
-Content-Type: text/plain; charset=UTF-8
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, sparclinux@vger.kernel.org
+Subject: Re: [PATCHv10 man-pages 5/5] execveat.2: initial man page for
+ execveat(2)
+Message-ID: <20150110034144.GC4574@brightrain.aerifal.cx>
+References: <20150109210941.GL22149@ZenIV.linux.org.uk>
+ <20150109212852.GU4574@brightrain.aerifal.cx>
+ <20150109215042.GM22149@ZenIV.linux.org.uk>
+ <20150109221728.GW4574@brightrain.aerifal.cx>
+ <20150109223300.GO22149@ZenIV.linux.org.uk>
+ <20150109224252.GY4574@brightrain.aerifal.cx>
+ <20150109225743.GP22149@ZenIV.linux.org.uk>
+ <20150109231248.GZ4574@brightrain.aerifal.cx>
+ <20150109233644.GR22149@ZenIV.linux.org.uk>
+ <20150110030300.GU22149@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150110030300.GU22149@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Sat, Jan 10, 2015 at 03:03:00AM +0000, Al Viro wrote:
+> On Fri, Jan 09, 2015 at 11:36:44PM +0000, Al Viro wrote:
+> > On Fri, Jan 09, 2015 at 06:12:48PM -0500, Rich Felker wrote:
+> > 
+> > > I'm not sure where you're disagreeing with me. open of procfs symlinks
+> > > does not resolve the symlink and open the resulting pathname. They are
+> > > "magic symlinks" which are bound to the inode of the open file. I
+> > > don't see why this action, which is already special for magic
+> > > symlinks, can't check a flag on the magic symlink and possibly close
+> > > the corresponding file descriptor as part of its action.
+> > 
+> > _What_ action?  ->follow_link()?  As in "the same thing that e.g.
+> > stat(2) would trigger"?
+> 
+> To elaborate a bit: the fundamental method for symlink traversal is
+> ->follow_link().  It gets dentry of the object itself + opaque context.
+> Usually it just obtains some string (== symlink contents) and calls
+> nd_set_link(context, string).  In that case the string will be interpreted
+> by its callers in usual way.  Another possibility is to call
+> nd_jump_link(context, location), which will reset the current position
+> (directory in which the symlink has been found and relative to which it
+> would be interpreted) to given location in tree.  It might actually do
+> both - then the string will be interpreted relative to the new location.
+> Once the pathname resolution is done with the string stored by nd_set_link(),
+> it calls another method - ->put_link().  That one releases the object
+> that contains this string; it gets an opaque pointer returned by
+> ->follow_link().  Returning ERR_PTR(-Esomething) indicates an error, so does
+> nd_set_link(context, ERR_PTR(-Esomething)).
+> 
+> readlink(2) is using a different method (->readlink()) and any object whose
+> ->follow_link() only uses nd_set_link() can use generic_readlink as its
+> ->readlink instance - that will call ->follow_link(), copy the string
+> stored by nd_set_link() to userland buffer and use ->put_link() to release
+> whatever needs to be released.  Most of the symlinks are doing just that.
+> 
+> procfs "magical" symlinks have ->follow_link() that uses nd_jump_link();
+> they obviously can't use generic_readlink() (there is no string left
+> by ->follow_link() for caller to traverse), so they have non-standard
+> ->readlink() instances - ones that use d_path() to generate a plausible
+> pathname of the would-be destination of their ->follow_link().  Or something
+> like pipe:[696969], etc.
+> 
+> Note, however, that ->readlink() is used only by readlink(2) syscall; as far
+> as pathname resolution is concerned it is completely irrelevant.  What matters
+> is ->follow_link().
+> 
+> Now, the callers do not know (and do not care) what a particular symlink _is_.
+> A symlink is just a dentry with inode that has non-NULL ->follow_link()
+> method.  That's it.  Moreover, _any_ pathname resolution is using the
+> same method for symlink traversal, be it open(2), stat(2), whatever.  If
+> a symlink is to be traversed, that's it - the only choice VFS has is whether
+> to traverse it at all or not (think of stat(2) vs lstat(2) difference, or
+> O_NOFOLLOW, etc.)
+> 
+> _After_ the traversal it's too late to do this sort of thing - after all,
+> how do you tell if your current position had been set by the traversal of
+> your symlink or that of any normal /proc/self/fd/<n>?
 
-On Thu, Dec 11, 2014 at 8:28 AM, Abhilash Kesavan <a.kesavan@samsung.com> wrote:
-> Implement a resource managed writecombine ioremap function.
->
-> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-> ---
->  Documentation/driver-model/devres.txt |    1 +
->  include/linux/io.h                    |    2 ++
->  lib/devres.c                          |   28 ++++++++++++++++++++++++++++
->  3 files changed, 31 insertions(+)
->
-> diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
-> index b5ab416..0f80cee 100644
-> --- a/Documentation/driver-model/devres.txt
-> +++ b/Documentation/driver-model/devres.txt
-> @@ -274,6 +274,7 @@ IOMAP
->    devm_ioport_unmap()
->    devm_ioremap()
->    devm_ioremap_nocache()
-> +  devm_ioremap_wc()
->    devm_ioremap_resource() : checks resource, requests memory region, ioremaps
->    devm_iounmap()
->    pcim_iomap()
-> diff --git a/include/linux/io.h b/include/linux/io.h
-> index fa02e55..42b33f0 100644
-> --- a/include/linux/io.h
-> +++ b/include/linux/io.h
-> @@ -64,6 +64,8 @@ void __iomem *devm_ioremap(struct device *dev, resource_size_t offset,
->                            resource_size_t size);
->  void __iomem *devm_ioremap_nocache(struct device *dev, resource_size_t offset,
->                                    resource_size_t size);
-> +void __iomem *devm_ioremap_wc(struct device *dev, resource_size_t offset,
-> +                                  resource_size_t size);
->  void devm_iounmap(struct device *dev, void __iomem *addr);
->  int check_signature(const volatile void __iomem *io_addr,
->                         const unsigned char *signature, int length);
-> diff --git a/lib/devres.c b/lib/devres.c
-> index 0f1dd2e..e8e1738 100644
-> --- a/lib/devres.c
-> +++ b/lib/devres.c
-> @@ -72,6 +72,34 @@ void __iomem *devm_ioremap_nocache(struct device *dev, resource_size_t offset,
->  EXPORT_SYMBOL(devm_ioremap_nocache);
->
->  /**
-> + * devm_ioremap_wc - Managed ioremap_wc()
-> + * @dev: Generic device to remap IO address for
-> + * @offset: BUS offset to map
-> + * @size: Size of map
-> + *
-> + * Managed ioremap_wc().  Map is automatically unmapped on driver detach.
-> + */
-> +void __iomem *devm_ioremap_wc(struct device *dev, resource_size_t offset,
-> +                          resource_size_t size)
-> +{
-> +       void __iomem **ptr, *addr;
-> +
-> +       ptr = devres_alloc(devm_ioremap_release, sizeof(*ptr), GFP_KERNEL);
-> +       if (!ptr)
-> +               return NULL;
-> +
-> +       addr = ioremap_wc(offset, size);
+Thanks for clarifying how this all works in the kernel. It makes it
+easier to understand what the costs (especially complexity costs) of
+different implementation options might be for the kernel.
 
-These two patches were applied yesterday to the char-misc tree, but
-have broken build on m32r and maybe other platforms too which do not
-have ioremap_wc defined. Unfortunately I missed catching this as I
-built the patches only for arm64 and arm32, sorry for the trouble.
-There was a patch posted a while back which added ioremap_wc for m32r
-(https://lkml.org/lkml/2013/6/26/795). I would have to do something
-similar for all the other archs which do not have it or is there some
-other solution ?
+> And doing that _during_ the traversal would really suck - stray ls -lR /proc
+> could race with that open() done by script interpreter.
 
-Please drop these patches in the interim so that the build is fixed.
+IMO this one issue is easily solvable by limiting the special action
+to calls by the owning pid.
 
-Regards,
-Abhilash
-> +       if (addr) {
-> +               *ptr = addr;
-> +               devres_add(dev, ptr);
-> +       } else
-> +               devres_free(ptr);
-> +
-> +       return addr;
-> +}
-> +EXPORT_SYMBOL(devm_ioremap_wc);
-> +
-> +/**
->   * devm_iounmap - Managed iounmap()
->   * @dev: Generic device to unmap for
->   * @addr: Address to unmap
-> --
-> 1.7.9.5
->
+Rich
