@@ -1,92 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218AbbAJVAa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 16:00:30 -0500
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:58223 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751633AbbAJVA2 (ORCPT
+	id S1754695AbbAJVCl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 16:02:41 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:42379 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753992AbbAJVCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 16:00:28 -0500
+	Sat, 10 Jan 2015 16:02:40 -0500
 MIME-Version: 1.0
-In-Reply-To: <4665410.x9Uu42bKmJ@wuerfel>
-References: <CA+55aFwsxoyLb9OWMSCL3doe_cz_EQtKsEFCyPUYn_T87pbz0A@mail.gmail.com>
-	<20150110003540.GA32037@node.dhcp.inet.fi>
-	<CA+55aFz74hjhCcdz5J4r-xK4KW7oqNDA3i=jXHW0prGMMwgMvw@mail.gmail.com>
-	<4665410.x9Uu42bKmJ@wuerfel>
-Date: Sat, 10 Jan 2015 13:00:27 -0800
-X-Google-Sender-Auth: M530JVPRPSgG3Fkj-NXvUSTgLBI
-Message-ID: <CA+55aFxphoLdFkwkVFQ87Q8EbYNqFAE-n0yTvCSOJzSO2MtDgw@mail.gmail.com>
-Subject: Re: Linux 3.19-rc3
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Mark Langsdorf <mlangsdo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <20150110204231.GD12218@pd.tnic>
+References: <1420734315-30943-1-git-send-email-dvlasenk@redhat.com>
+ <1420734315-30943-4-git-send-email-dvlasenk@redhat.com> <20150109121950.GD13637@pd.tnic>
+ <CAK1hOcMsGJ7geRAzfazPLZitcO0o9XYRPJDYa8sJHR4i6DPL-g@mail.gmail.com>
+ <20150110142336.GC12218@pd.tnic> <CAK1hOcO7K=4N8CF=LOPmosXRNnogaNi5vLDPMdb0XiKsL=JOfg@mail.gmail.com>
+ <CALCETrXS7BvtS3P3J8hnbt3GGvezx-935uxanSN_a=CU6s1d3g@mail.gmail.com> <20150110204231.GD12218@pd.tnic>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sat, 10 Jan 2015 13:02:18 -0800
+Message-ID: <CALCETrWwnfU9roXp_0Z_hHo-c2LMcc3_KRKJgx_=p2U-+i5PrA@mail.gmail.com>
+Subject: Re: [PATCH 3/4] x86: open-code register save/restore in
+ trace_hardirqs thunks
+To: Borislav Petkov <bp@alien8.de>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 12:16 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+On Sat, Jan 10, 2015 at 12:42 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Sat, Jan 10, 2015 at 12:17:13PM -0800, Andy Lutomirski wrote:
+>> I asked this once, and someone told me that push/pop has lower
+>> throughput.  I find this surprising.
 >
-> On a recent kernel, I get 628 MB for storing all files of the
-> kernel tree in 4KB pages, and 3141 MB for storing the same data
-> in 64KB pages, almost exactly factor 5, or 2.45 GiB wasted.
+> Implicit dependency on %rsp probably. The MOVs allow you to start more
+> stuff out-of-order I'd guess...
 
-Ok, so it's even worse than it used to be.  Partly because the tree
-has grown, partly because I did the math for 16kB and 64kB is just
-hugely worse.
+AIUI modern CPUs have fancy stack engines that match call/ret pairs,
+and presumably they can speculate rsp values across multiple pushes
+and pops very quickly.
 
-I did the math back in the days when the PPC people were talking about
-16kB pages (iirc - it's been closer to a decade, so I might
-misremember the details).
+Also, don't compilers generally use push and pop to save and restore
+callee-saved registers?  I think that function calls are common enough
+that the CPU vendors would have made these sequences fast.
 
-And back then, with 4kB pages I could cache the kernel tree twice over
-in 1GB, and have enough left to run a graphical desktop. So enough
-memory to build a tree and also enough to have two kernel trees and do
-"diff -urN" between them.
+--Andy
 
-Of course, back then, 1-2GB was the usual desktop memory size, so the
-"I can do kernel development in 1GB without excessive IO" mattered to
-me in ways it wouldn't today.
+>
+>> Tt could be worth adding a macro along the lines of pushq_cfi_save
+>> that does the pushq_cfi and the CFI_REL_OFFSET.
+>
+> Yep, for balance.
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
 
-And it was before "git", so the whole "two kernel trees and do diffs
-between them" was a real concern.
 
-With 16kB pages, I think I had to have twice the memory for the same loads.
 
-> IIRC, AIX works great with 64k pages, but only because of two
-> reasons that don't apply on Linux:
-
-.. there's a few other ones:
-
- (c) nobody really runs AIX on dekstops. It's very much a DB load
-environment, with historically some HPC.
-
- (d) the powerpc TLB fill/buildup/teardown costs are horrible, so on
-AIX the cost of lots of small pages is much higher too.
-
-Now obviously, we *could* try to have a 64kB page size, and then do
-lots of tricks to actually allocate file caches in partial pages in
-order to avoid the internal fragmentation costs. HOWEVER:
-
- - that obviously doesn't help with the page management overhead (in
-fact, it hurts). So it would be purely about trying to optimize for
-bad TLB's.
-
- - that adds a *lot* of complexity to the VM. The coherency issues
-when you may need to move cached information between partial pages and
-full pages (required for mmap, but *most* files don't get mmap'ed)
-would actually be pretty horrible.
-
- - all of this cost and complexity wouldn't help at all on x86, so it
-would be largely untested and almost inevitably broken crap.
-
-so I feel pretty confident in saying it won't happen. It's just too
-much of a bother, for little to no actual upside. It's likely a much
-better approach to try to instead use THP for anonymous mappings.
-
-                            Linus
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
