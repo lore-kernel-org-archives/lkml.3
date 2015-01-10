@@ -1,155 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755746AbbAJWBV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 17:01:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53483 "EHLO mx1.redhat.com"
+	id S1755302AbbAJWAw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 17:00:52 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:52331 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755615AbbAJWBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 17:01:12 -0500
-From: Denys Vlasenko <dvlasenk@redhat.com>
-To: linux-kernel@vger.kernel.org
+	id S1752198AbbAJWAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jan 2015 17:00:51 -0500
+Date: Sat, 10 Jan 2015 23:00:42 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Denys Vlasenko <vda.linux@googlemail.com>
 Cc: Denys Vlasenko <dvlasenk@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Andy Lutomirski <luto@amacapital.net>,
+        Andy Lutomirski <luto@amacapital.net>,
         Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
         Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
         Kees Cook <keescook@chromium.org>
-Subject: [PATCH 4/4] x86: entry_64.S: fold SAVE_ARGS_IRQ macro into its sole user
-Date: Sat, 10 Jan 2015 23:00:10 +0100
-Message-Id: <1420927210-19738-5-git-send-email-dvlasenk@redhat.com>
-In-Reply-To: <1420927210-19738-1-git-send-email-dvlasenk@redhat.com>
-References: <1420927210-19738-1-git-send-email-dvlasenk@redhat.com>
+Subject: Re: [PATCH 3/4] x86: open-code register save/restore in
+ trace_hardirqs thunks
+Message-ID: <20150110220042.GG12218@pd.tnic>
+References: <1420734315-30943-1-git-send-email-dvlasenk@redhat.com>
+ <1420734315-30943-4-git-send-email-dvlasenk@redhat.com>
+ <20150109121950.GD13637@pd.tnic>
+ <CAK1hOcMsGJ7geRAzfazPLZitcO0o9XYRPJDYa8sJHR4i6DPL-g@mail.gmail.com>
+ <20150110142336.GC12218@pd.tnic>
+ <CAK1hOcO7K=4N8CF=LOPmosXRNnogaNi5vLDPMdb0XiKsL=JOfg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAK1hOcO7K=4N8CF=LOPmosXRNnogaNi5vLDPMdb0XiKsL=JOfg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No code changes.
+On Sat, Jan 10, 2015 at 09:14:03PM +0100, Denys Vlasenko wrote:
+> From 2f636e0a92db898f2bdb592027aa302fcb32a326 Mon Sep 17 00:00:00 2001
+> From: Denys Vlasenko <dvlasenk@redhat.com>
+> To: linux-kernel@vger.kernel.org
+> Subject: [PATCH 3/4] x86: open-code register save/restore in trace_hardirqs thunks
+> 
+> This is a preparatory patch for change in "struct pt_regs"
+> handling in entry_64.S.
+> 
+> trace_hardirqs thunks were (ab)using a part of pt_regs
+> handling code, namely SAVE_ARGS/RESTORE_ARGS macros,
+> to save/restore registers across C function calls.
+> 
+> Since SAVE_ARGS is going to be changed, open-code
+> register saving/restoring here. Take a page from thunk_32.S
+> and use push/pop insns instead of movq, they are far shorter:
+> 1 or 2 bytes versus 5, and no need for insns to adjust %rsp:
+> 
+>    text	   data	    bss	    dec	    hex	filename
+>     333	     40	      0	    373	    175	thunk_64_movq.o
+>     104	     40	      0	    144	     90	thunk_64_push_pop.o
+> 
+> Incidentally, this removes a bit of dead code:
+> one SAVE_ARGS was used just to emit a CFI annotation,
+> but it also generated unreachable assembly insns.
+> 
+> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+> CC: Linus Torvalds <torvalds@linux-foundation.org>
+> CC: Oleg Nesterov <oleg@redhat.com>
+> CC: "H. Peter Anvin" <hpa@zytor.com>
+> CC: Borislav Petkov <bp@alien8.de>
+> CC: Andy Lutomirski <luto@amacapital.net>
+> CC: Frederic Weisbecker <fweisbec@gmail.com>
+> CC: X86 ML <x86@kernel.org>
+> CC: Alexei Starovoitov <ast@plumgrid.com>
+> CC: Will Drewry <wad@chromium.org>
+> CC: Kees Cook <keescook@chromium.org>
+> CC: linux-kernel@vger.kernel.org
+> ---
+>  arch/x86/lib/thunk_64.S | 46 ++++++++++++++++++++++++++++++++++++++++++----
+>  1 file changed, 42 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/lib/thunk_64.S b/arch/x86/lib/thunk_64.S
+> index b30b5eb..8ec443a 100644
+> --- a/arch/x86/lib/thunk_64.S
+> +++ b/arch/x86/lib/thunk_64.S
+> @@ -17,9 +17,27 @@
+>  	CFI_STARTPROC
+>  
+>  	/* this one pushes 9 elems, the next one would be %rIP */
+> -	SAVE_ARGS
+> +	pushq_cfi %rdi
+> +	CFI_REL_OFFSET rdi, 0
 
-This is a preparatory patch for change in "struct pt_regs" handling.
+Btw, why the second CFI annotation?
 
-Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Oleg Nesterov <oleg@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: Borislav Petkov <bp@alien8.de>
-CC: Andy Lutomirski <luto@amacapital.net>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: X86 ML <x86@kernel.org>
-CC: Alexei Starovoitov <ast@plumgrid.com>
-CC: Will Drewry <wad@chromium.org>
-CC: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org
----
- arch/x86/kernel/entry_64.S | 88 ++++++++++++++++++++++------------------------
- 1 file changed, 42 insertions(+), 46 deletions(-)
+pushq_cfi does already CFI_ADJUST_CFA_OFFSET 8. Can't we use one and
+hide it in the macro?
 
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 5ed4773..7d59df2 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -217,51 +217,6 @@ ENDPROC(native_usergs_sysret64)
- 	CFI_REL_OFFSET r15, R15+\offset
- 	.endm
- 
--/* save partial stack frame */
--	.macro SAVE_ARGS_IRQ
--	cld
--	/* start from rbp in pt_regs and jump over */
--	movq_cfi rdi, (RDI-RBP)
--	movq_cfi rsi, (RSI-RBP)
--	movq_cfi rdx, (RDX-RBP)
--	movq_cfi rcx, (RCX-RBP)
--	movq_cfi rax, (RAX-RBP)
--	movq_cfi  r8,  (R8-RBP)
--	movq_cfi  r9,  (R9-RBP)
--	movq_cfi r10, (R10-RBP)
--	movq_cfi r11, (R11-RBP)
--
--	/* Save rbp so that we can unwind from get_irq_regs() */
--	movq_cfi rbp, 0
--
--	/* Save previous stack value */
--	movq %rsp, %rsi
--
--	leaq -RBP(%rsp),%rdi	/* arg1 for handler */
--	testl $3, CS-RBP(%rsi)
--	je 1f
--	SWAPGS
--	/*
--	 * irq_count is used to check if a CPU is already on an interrupt stack
--	 * or not. While this is essentially redundant with preempt_count it is
--	 * a little cheaper to use a separate counter in the PDA (short of
--	 * moving irq_enter into assembly, which would be too much work)
--	 */
--1:	incl PER_CPU_VAR(irq_count)
--	cmovzq PER_CPU_VAR(irq_stack_ptr),%rsp
--	CFI_DEF_CFA_REGISTER	rsi
--
--	/* Store previous stack value */
--	pushq %rsi
--	CFI_ESCAPE	0x0f /* DW_CFA_def_cfa_expression */, 6, \
--			0x77 /* DW_OP_breg7 */, 0, \
--			0x06 /* DW_OP_deref */, \
--			0x08 /* DW_OP_const1u */, SS+8-RBP, \
--			0x22 /* DW_OP_plus */
--	/* We entered an interrupt context - irqs are off: */
--	TRACE_IRQS_OFF
--	.endm
--
- ENTRY(save_paranoid)
- 	XCPT_FRAME 1 RDI+8
- 	cld
-@@ -745,7 +700,48 @@ END(interrupt)
- 	/* reserve pt_regs for scratch regs and rbp */
- 	subq $ORIG_RAX-RBP, %rsp
- 	CFI_ADJUST_CFA_OFFSET ORIG_RAX-RBP
--	SAVE_ARGS_IRQ
-+	cld
-+	/* start from rbp in pt_regs and jump over */
-+	movq_cfi rdi, (RDI-RBP)
-+	movq_cfi rsi, (RSI-RBP)
-+	movq_cfi rdx, (RDX-RBP)
-+	movq_cfi rcx, (RCX-RBP)
-+	movq_cfi rax, (RAX-RBP)
-+	movq_cfi  r8,  (R8-RBP)
-+	movq_cfi  r9,  (R9-RBP)
-+	movq_cfi r10, (R10-RBP)
-+	movq_cfi r11, (R11-RBP)
-+
-+	/* Save rbp so that we can unwind from get_irq_regs() */
-+	movq_cfi rbp, 0
-+
-+	/* Save previous stack value */
-+	movq %rsp, %rsi
-+
-+	leaq -RBP(%rsp),%rdi	/* arg1 for handler */
-+	testl $3, CS-RBP(%rsi)
-+	je 1f
-+	SWAPGS
-+	/*
-+	 * irq_count is used to check if a CPU is already on an interrupt stack
-+	 * or not. While this is essentially redundant with preempt_count it is
-+	 * a little cheaper to use a separate counter in the PDA (short of
-+	 * moving irq_enter into assembly, which would be too much work)
-+	 */
-+1:	incl PER_CPU_VAR(irq_count)
-+	cmovzq PER_CPU_VAR(irq_stack_ptr),%rsp
-+	CFI_DEF_CFA_REGISTER	rsi
-+
-+	/* Store previous stack value */
-+	pushq %rsi
-+	CFI_ESCAPE	0x0f /* DW_CFA_def_cfa_expression */, 6, \
-+			0x77 /* DW_OP_breg7 */, 0, \
-+			0x06 /* DW_OP_deref */, \
-+			0x08 /* DW_OP_const1u */, SS+8-RBP, \
-+			0x22 /* DW_OP_plus */
-+	/* We entered an interrupt context - irqs are off: */
-+	TRACE_IRQS_OFF
-+
- 	call \func
- 	.endm
- 
+Btw, patch boots fine in the guest.
+
 -- 
-1.8.1.4
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
