@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408AbbAJFhM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 00:37:12 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:61312 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755036AbbAJFhE (ORCPT
+	id S1755248AbbAJFhI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 00:37:08 -0500
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:38296 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754540AbbAJFhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 00:37:04 -0500
+	Sat, 10 Jan 2015 00:37:05 -0500
 From: Chris Rorvick <chris@rorvick.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Chris Rorvick <chris@rorvick.com>,
@@ -21,9 +21,9 @@ Cc: Chris Rorvick <chris@rorvick.com>,
         Monam Agarwal <monamagarwal123@gmail.com>,
         Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
         Stefan Hajnoczi <stefanha@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 22/25] staging: line6: Pass *_process_message() `usb_line6' pointers
-Date: Fri,  9 Jan 2015 23:36:08 -0600
-Message-Id: <1420868171-2031-23-git-send-email-chris@rorvick.com>
+Subject: [PATCH 23/25] staging: line6: Call *_process_message() via pointer
+Date: Fri,  9 Jan 2015 23:36:09 -0600
+Message-Id: <1420868171-2031-24-git-send-email-chris@rorvick.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1420868171-2031-1-git-send-email-chris@rorvick.com>
 References: <1420868171-2031-1-git-send-email-chris@rorvick.com>
@@ -31,108 +31,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Casting the `struct usb_line6' pointer at the call point makes the code
-difficult to read.  This is substantially cleaned up by moving the cast
-into the callees.
+Which *_process_message() function (if any) to call when data is
+received is known at initialization.  Add a function pointer to the
+`usb_line6' struct and use to call into the appropriate logic instead
+of evaluating the conditional logic for each message.
 
 Signed-off-by: Chris Rorvick <chris@rorvick.com>
 ---
- drivers/staging/line6/driver.c | 13 ++++---------
- drivers/staging/line6/pod.c    |  3 ++-
- drivers/staging/line6/pod.h    |  2 +-
- drivers/staging/line6/variax.c |  3 ++-
- drivers/staging/line6/variax.h |  2 +-
- 5 files changed, 10 insertions(+), 13 deletions(-)
+ drivers/staging/line6/driver.c | 33 ++-------------------------------
+ drivers/staging/line6/driver.h |  2 ++
+ drivers/staging/line6/pod.c    |  4 +++-
+ drivers/staging/line6/pod.h    |  1 -
+ drivers/staging/line6/variax.c |  4 +++-
+ drivers/staging/line6/variax.h |  1 -
+ 6 files changed, 10 insertions(+), 35 deletions(-)
 
 diff --git a/drivers/staging/line6/driver.c b/drivers/staging/line6/driver.c
-index 08f8051..369e60e 100644
+index 369e60e..f7629cb 100644
 --- a/drivers/staging/line6/driver.c
 +++ b/drivers/staging/line6/driver.c
-@@ -544,8 +544,7 @@ static void line6_data_received(struct urb *urb)
- 		case LINE6_PODXT:
- 		case LINE6_PODXTPRO:
- 		case LINE6_POCKETPOD:
--			line6_pod_process_message((struct usb_line6_pod *)
--						  line6);
-+			line6_pod_process_message(line6);
- 			break;
+@@ -537,37 +537,8 @@ static void line6_data_received(struct urb *urb)
+ 		line6->message_length = done;
+ 		line6_midi_receive(line6, line6->buffer_message, done);
  
- 		case LINE6_PODHD300:
-@@ -555,19 +554,15 @@ static void line6_data_received(struct urb *urb)
- 			break; /* let userspace handle MIDI */
+-		switch (line6->type) {
+-		case LINE6_BASSPODXT:
+-		case LINE6_BASSPODXTLIVE:
+-		case LINE6_BASSPODXTPRO:
+-		case LINE6_PODXT:
+-		case LINE6_PODXTPRO:
+-		case LINE6_POCKETPOD:
+-			line6_pod_process_message(line6);
+-			break;
+-
+-		case LINE6_PODHD300:
+-		case LINE6_PODHD400:
+-		case LINE6_PODHD500_0:
+-		case LINE6_PODHD500_1:
+-			break; /* let userspace handle MIDI */
+-
+-		case LINE6_PODXTLIVE_POD:
+-			line6_pod_process_message(line6);
+-			break;
+-
+-		case LINE6_PODXTLIVE_VARIAX:
+-			line6_variax_process_message(line6);
+-			break;
+-
+-		case LINE6_VARIAX:
+-			line6_variax_process_message(line6);
+-			break;
+-
+-		default:
+-			MISSING_CASE;
+-		}
++		if (line6->process_message)
++			line6->process_message(line6);
+ 	}
  
- 		case LINE6_PODXTLIVE_POD:
--			line6_pod_process_message((struct usb_line6_pod
--							   *)line6);
-+			line6_pod_process_message(line6);
- 			break;
+ 	line6_start_listen(line6);
+diff --git a/drivers/staging/line6/driver.h b/drivers/staging/line6/driver.h
+index a4bde71..220813f 100644
+--- a/drivers/staging/line6/driver.h
++++ b/drivers/staging/line6/driver.h
+@@ -194,6 +194,8 @@ struct usb_line6 {
+ 		 Length of message to be processed.
+ 	*/
+ 	int message_length;
++
++	void (*process_message)(struct usb_line6 *);
+ };
  
- 		case LINE6_PODXTLIVE_VARIAX:
--			line6_variax_process_message((struct
--						      usb_line6_variax
--						      *)line6);
-+			line6_variax_process_message(line6);
- 			break;
- 
- 		case LINE6_VARIAX:
--			line6_variax_process_message((struct usb_line6_variax *)
--						     line6);
-+			line6_variax_process_message(line6);
- 			break;
- 
- 		default:
+ extern char *line6_alloc_sysex_buffer(struct usb_line6 *line6, int code1,
 diff --git a/drivers/staging/line6/pod.c b/drivers/staging/line6/pod.c
-index 9292b72..aa8977d 100644
+index aa8977d..79dcff4 100644
 --- a/drivers/staging/line6/pod.c
 +++ b/drivers/staging/line6/pod.c
-@@ -131,8 +131,9 @@ static char *pod_alloc_sysex_buffer(struct usb_line6_pod *pod, int code,
+@@ -131,7 +131,7 @@ static char *pod_alloc_sysex_buffer(struct usb_line6_pod *pod, int code,
  /*
  	Process a completely received message.
  */
--void line6_pod_process_message(struct usb_line6_pod *pod)
-+void line6_pod_process_message(struct usb_line6 *line6)
+-void line6_pod_process_message(struct usb_line6 *line6)
++static void line6_pod_process_message(struct usb_line6 *line6)
  {
-+	struct usb_line6_pod *pod = (struct usb_line6_pod *) line6;
+ 	struct usb_line6_pod *pod = (struct usb_line6_pod *) line6;
  	const unsigned char *buf = pod->line6.buffer_message;
+@@ -359,6 +359,8 @@ static int pod_try_init(struct usb_interface *interface,
+ 	int err;
+ 	struct usb_line6_pod *pod = (struct usb_line6_pod *) line6;
  
- 	if (memcmp(buf, pod_version_header, sizeof(pod_version_header)) == 0) {
++	line6->process_message = line6_pod_process_message;
++
+ 	init_timer(&pod->startup_timer);
+ 	INIT_WORK(&pod->startup_work, pod_startup4);
+ 
 diff --git a/drivers/staging/line6/pod.h b/drivers/staging/line6/pod.h
-index cf6c75cd..984a00b 100644
+index 984a00b..0d78ca7 100644
 --- a/drivers/staging/line6/pod.h
 +++ b/drivers/staging/line6/pod.h
-@@ -89,6 +89,6 @@ struct usb_line6_pod {
+@@ -89,6 +89,5 @@ struct usb_line6_pod {
  extern void line6_pod_disconnect(struct usb_interface *interface);
  extern int line6_pod_init(struct usb_interface *interface,
  			  struct usb_line6 *line6);
--extern void line6_pod_process_message(struct usb_line6_pod *pod);
-+extern void line6_pod_process_message(struct usb_line6 *line6);
+-extern void line6_pod_process_message(struct usb_line6 *line6);
  
  #endif
 diff --git a/drivers/staging/line6/variax.c b/drivers/staging/line6/variax.c
-index f5b618b..4d41994 100644
+index 4d41994..ccb1f68 100644
 --- a/drivers/staging/line6/variax.c
 +++ b/drivers/staging/line6/variax.c
-@@ -130,8 +130,9 @@ static void variax_startup6(struct work_struct *work)
+@@ -130,7 +130,7 @@ static void variax_startup6(struct work_struct *work)
  /*
  	Process a completely received message.
  */
--void line6_variax_process_message(struct usb_line6_variax *variax)
-+void line6_variax_process_message(struct usb_line6 *line6)
+-void line6_variax_process_message(struct usb_line6 *line6)
++static void line6_variax_process_message(struct usb_line6 *line6)
  {
-+	struct usb_line6_variax *variax = (struct usb_line6_variax *) line6;
+ 	struct usb_line6_variax *variax = (struct usb_line6_variax *) line6;
  	const unsigned char *buf = variax->line6.buffer_message;
+@@ -180,6 +180,8 @@ static int variax_try_init(struct usb_interface *interface,
+ 	struct usb_line6_variax *variax = (struct usb_line6_variax *) line6;
+ 	int err;
  
- 	switch (buf[0]) {
++	line6->process_message = line6_variax_process_message;
++
+ 	init_timer(&variax->startup_timer1);
+ 	init_timer(&variax->startup_timer2);
+ 	INIT_WORK(&variax->startup_work, variax_startup6);
 diff --git a/drivers/staging/line6/variax.h b/drivers/staging/line6/variax.h
-index 9bf1464..7d445ff 100644
+index 7d445ff..f21ff20 100644
 --- a/drivers/staging/line6/variax.h
 +++ b/drivers/staging/line6/variax.h
-@@ -67,6 +67,6 @@ struct usb_line6_variax {
+@@ -67,6 +67,5 @@ struct usb_line6_variax {
  extern void line6_variax_disconnect(struct usb_interface *interface);
  extern int line6_variax_init(struct usb_interface *interface,
  			     struct usb_line6 *line6);
--extern void line6_variax_process_message(struct usb_line6_variax *variax);
-+extern void line6_variax_process_message(struct usb_line6 *line6);
+-extern void line6_variax_process_message(struct usb_line6 *line6);
  
  #endif
 -- 
