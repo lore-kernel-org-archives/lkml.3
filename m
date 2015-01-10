@@ -1,86 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348AbbAJKeg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 05:34:36 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:48971 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752482AbbAJKed (ORCPT
+	id S1753128AbbAJKbE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 05:31:04 -0500
+Received: from smtprelay.synopsys.com ([198.182.47.9]:59962 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655AbbAJKbA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 05:34:33 -0500
+	Sat, 10 Jan 2015 05:31:00 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Namhyung Kim <namhyung@kernel.org>
+CC: "acme@redhat.com" <acme@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "jolsa@kernel.org" <jolsa@kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-perf-users@vger.kernel.org" <linux-perf-users@vger.kernel.org>,
+        "bp@suse.de" <bp@suse.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "Alexey.Brodkin@synopsys.com" <Alexey.Brodkin@synopsys.com>
+Subject: Re: [PATCH 5/5] perf tools: [uclibc] provide stub for
+ pthread_attr_setaffinity_np
+Thread-Topic: [PATCH 5/5] perf tools: [uclibc] provide stub for
+ pthread_attr_setaffinity_np
+Thread-Index: AQHQKbge3TD7NQC2/UWZaYAt8kGmRw==
+Date: Sat, 10 Jan 2015 10:30:54 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA2307565BCA76A@IN01WEMBXA.internal.synopsys.com>
+References: <1420552335-26886-1-git-send-email-vgupta@synopsys.com>
+ <1420552335-26886-6-git-send-email-vgupta@synopsys.com>
+ <20150108075653.GG7268@sejong>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.196.223]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <2258.1420801223@warthog.procyon.org.uk>
-References: <1417824042-539-1-git-send-email-linux@rasmusvillemoes.dk>
-	<1417824042-539-2-git-send-email-linux@rasmusvillemoes.dk>
-	<2258.1420801223@warthog.procyon.org.uk>
-Date: Sat, 10 Jan 2015 12:29:21 +0200
-Message-ID: <CACE9dm8N31zAdxC5J0N=dCAqRMA25k8cnTK25NqvaE=tOAWs0A@mail.gmail.com>
-Subject: Re: [Keyrings] [PATCH 2/2] MPILIB: Deobfuscate mpi_cmp
-From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        keyrings <keyrings@linux-nfs.org>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Namhyung,
 
-Thank you. Indeed '-cmp' is much more clear.
 
-Ack.
 
-- Dmitry
+On Thursday 08 January 2015 01:28 PM, Namhyung Kim wrote:
+> On Tue, Jan 06, 2015 at 07:22:15PM +0530, Vineet Gupta wrote:
+>> > uClibc Linuxthreads.old doesnt support pthread_attr_setaffinity_np()
+>> > call
+>> > 
+>> > ----------------->8-----------------------
+>> >   CC       bench/futex-hash.o
+>> >   CC       bench/futex-wake.o
+>> > bench/futex-hash.c: In function 'bench_futex_hash':
+>> > bench/futex-hash.c:161:3: error: implicit declaration of function
+>> > 'pthread_attr_setaffinity_np' [-Werror=implicit-function-declaration]
+>> >    ret = pthread_attr_setaffinity_np(&thread_attr, sizeof(cpu_set_t),
+>> > &cpu);
+>> >    ^
+>> > bench/futex-hash.c:161:3: error: nested extern declaration of
+>> > 'pthread_attr_setaffinity_np' [-Werror=nested-externs]
+>> > ----------------->8-----------------------
+>> > 
+>> > Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+>> > ---
+>> >  tools/perf/bench/futex.h                    | 13 +++++++++++++
+>> >  tools/perf/config/Makefile                  |  6 ++++++
+>> >  tools/perf/config/feature-checks/Makefile   |  4 ++++
+>> >  tools/perf/config/feature-checks/test-all.c |  5 +++++
+>> >  4 files changed, 28 insertions(+)
+> It seems that you fotgot to add the real test file
+> (test-pthread_attr_setaffinity_np.c?) here..
 
-On 9 January 2015 at 13:00, David Howells <dhowells@redhat.com> wrote:
-> This looks very reasonable.  cc'ing Dmitry for his check.
+Indeed, apologies for the snafu. I'll include it in v2 for the series.
+Any thoughts on rest of patches for the series.
+Thanks for the careful review so far.
+
+-Vineet
+
 >
-> David
-> ---
-> Rasmus Villemoes <linux@rasmusvillemoes.dk> wrote:
+> Thanks,
+> Namhyung
 >
->> The condition preceding 'return 1;' makes my head hurt. At this point,
->> we know that u and v have the same sign; if they are negative, they
->> compare opposite to how their absolute values compare (which
->> mpihelp_cmp found for us), otherwise cmp itself is the
->> answer. Negating cmp is ok since mpihelp_cmp returns {-1,0,1};
->> -INT_MIN==INT_MIN won't bite us.
->>
->> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
->> ---
->>  lib/mpi/mpi-cmp.c | 8 +++-----
->>  1 file changed, 3 insertions(+), 5 deletions(-)
->>
->> diff --git a/lib/mpi/mpi-cmp.c b/lib/mpi/mpi-cmp.c
->> index 3801694240d8..d25e9e96c310 100644
->> --- a/lib/mpi/mpi-cmp.c
->> +++ b/lib/mpi/mpi-cmp.c
->> @@ -61,10 +61,8 @@ int mpi_cmp(MPI u, MPI v)
->>       if (!usize)
->>               return 0;
->>       cmp = mpihelp_cmp(u->d, v->d, usize);
->> -     if (!cmp)
->> -             return 0;
->> -     if ((cmp < 0 ? 1 : 0) == (u->sign ? 1 : 0))
->> -             return 1;
->> -     return -1;
->> +     if (u->sign)
->> +             return -cmp;
->> +     return cmp;
->>  }
->>  EXPORT_SYMBOL_GPL(mpi_cmp);
->> --
->> 2.1.3
-> _______________________________________________
-> Keyrings mailing list
-> Keyrings@linux-nfs.org
-> To change your subscription to this list, please see http://linux-nfs.org/cgi-bin/mailman/listinfo/keyrings
+>
 
-
-
--- 
-Thanks,
-Dmitry
