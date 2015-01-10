@@ -1,71 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376AbbAJNtO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 08:49:14 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:54250 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752400AbbAJNtN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 08:49:13 -0500
-Message-ID: <54B12DD3.5020605@gmail.com>
-Date: Sat, 10 Jan 2015 14:49:07 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753594AbbAJNwI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 08:52:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41557 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752227AbbAJNwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jan 2015 08:52:05 -0500
+Message-ID: <54B12E54.7000704@redhat.com>
+Date: Sat, 10 Jan 2015 14:51:16 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>
-CC: mtk.manpages@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Qiaowei Ren <qiaowei.ren@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, mpx: Ensure unused arguments of prctl() MPX requests
- are 0
-References: <54AE5BE8.1050701@gmail.com> <87r3v350io.fsf@tassilo.jf.intel.com> <CAKgNAki3Fh8N=jyPHxxFpicjyJ=0kA75SJ65QjYzPmWnvy4nsw@mail.gmail.com> <54B01F41.10001@intel.com>
-In-Reply-To: <54B01F41.10001@intel.com>
-Content-Type: text/plain; charset=utf-8
+To: Mark Brown <broonie@kernel.org>
+CC: Chen-Yu Tsai <wens@csie.org>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Tawfik Bayouk <tawfik@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        devicetree <devicetree@vger.kernel.org>,
+        =?windows-1252?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        Mark Rutland <mark.rutland@arm.com>, Nadav Haklai <nadavh@marvell.com>,
+        linux-ide@vger.kernel.org, Lior Amsalem <alior@marvell.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Tejun Heo <tj@kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH v2 2/4] Documentation: bindings: Add the regulator property
+ to the sub-nodes AHCI bindings
+References: <1420799989-10645-1-git-send-email-gregory.clement@free-electrons.com> <1420799989-10645-3-git-send-email-gregory.clement@free-electrons.com> <54AFF7E3.4070506@redhat.com> <54AFFFDC.7020307@free-electrons.com> <CAGb2v674q4Cjp9qy9CbUXe2j5pT_ez98CKxXHC8u4Diap2TT1A@mail.gmail.com> <20150109171131.GH2634@sirena.org.uk> <54B0FCDD.7000300@redhat.com> <20150110111748.GB4160@sirena.org.uk>
+In-Reply-To: <20150110111748.GB4160@sirena.org.uk>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2015 07:34 PM, Dave Hansen wrote:
-> On 01/09/2015 10:25 AM, Michael Kerrisk (man-pages) wrote:
->> On 9 January 2015 at 18:25, Andi Kleen <andi@firstfloor.org> wrote:
->>> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
->>>> From: Michael Kerrisk <mtk.manpages@gmail.com>
->>>>
->>>> commit fe8c7f5cbf91124987106faa3bdf0c8b955c4cf7 added two new prctl()
->>>> operations, PR_MPX_ENABLE_MANAGEMENT and PR_MPX_DISABLE_MANAGEMENT.
->>>> However, no checks were included to ensure that unused arguments
->>>> are zero, as is done in many existing prctl()s and as should be
->>>> done for all new prctl()s. This patch adds the required checks.
->>>
->>> This will break the existing gcc run time, which doesn't zero these
->>> arguments.
+Hi,
+
+On 10-01-15 12:17, Mark Brown wrote:
+> On Sat, Jan 10, 2015 at 11:20:13AM +0100, Hans de Goede wrote:
+>> On 09-01-15 18:11, Mark Brown wrote:
+>
+>>> Or if the supply is for the device at the other end of the link (which
+>>> is what it sounded like) then use that.  This just sounds like the same
+>>> problem we have for all the enumerable buses in embedded systems where
+>>> we need to be able to understand that the device exists prior to it
+>>> being fully ready to appear in the system.  Having the link/slot be a
+>>> device in Linux does indeed seem to be a common way people think about
+>>> doing this, it sounds like for this one it might be the most direct.
+>
+>> I think we should be careful to not think too much from an implementation
+>> pov here, the purpose of the devicetree description is to describe the hardware,
+>> as is.
+>
+> I don't think anyone is talking about changing the DT here, only the way
+> it's represented inside Linux.
+>
+>>                  sata0: sata-port@0 {
+>>                          reg = <0>;
+>>                          phys = <&sata_phy 0>;
+>> 			target-supply = <&reg_sata0>;
+>>                  };
 >>
->> I'm a little lost here. Weren't these flags new in the
->> as-yet-unreleased 3.19? How does gcc run-time depends on them already?
-> 
-> These prctl()s have been around in some form or another for a few months
-> since the patches had not yet been merged in to the kernel.  There is
-> support for them in a set of (yet unmerged) gcc patches, as well as some
-> tests which are only internal to Intel.
-> 
-> This change will, indeed, break those internal tests as well as the gcc
-> patches.  As far as I know, the code is not in production anywhere and
-> can be changed.  The prctl() numbers have changed while the patches were
-> out of tree and it's a somewhat painful process each time it changes.
-> It's not impossible, just painful.
+>>                  sata1: sata-port@1 {
+>>                          reg = <1>;
+>>                          phys = <&sata_phy 1>;
+>> 			target-supply = <&reg_sata1>;
+>>                  };
+>>          };
+>
+>> Seems to match the hardware pretty exactly, and also matches how we've
+>> been describing similar devices with only one sata port + power plug sofar,
+>> so from a consistency pov it also is a good model.
+>
+> Right, I think that makes sense
 
-So, sounds like thinks can be fixed (with mild inconvenience), and they
-should be fixed before 3.19 is actually released.
+Good, as said I think getting the dt bit rights is the most important
+thing here. So if we agree that the above dt example looks sane, lets see
+how we can best implement that.
 
-Cheers,
+ > it also looks to me like these things
+> should be representable as devices within Linux.
 
-Michael
+I guess we could manually instantiate platform devices for each of the
+subnodes which represent an sata port here, yes that should not be
+hard to do, it feels like a bit overkill though.
 
+So for our this should likely look something like this:
 
+         if (IS_ENABLED(CONFIG_OF_ADDRESS) && dev->of_node) {
+                 for_each_child_of_node(dev->of_node, np) {
+                         pdev[i++] = of_platform_device_create(np, NULL, NULL);
+                 }
+         }
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+and then loop over the pdev[] array and get the regulator, and phy for each.
+
+I wonder if of_platform_device_create can deal with nodes with
+#size-cells = <0>; is 0 though, if it cannot maybe we need to teach it.
+
+>> So supporting this model requires having a regulator_get API which allows
+>> specifying which of_node to get the regulator from, e.g. the proposed
+>
+> It requires nothing of the sort.
+
+You're proposed solution of instantiating devices does more or less exactly
+what I say is required, it is a way to pass an of_node into regulator_get,
+but you're hiding the node inside dev->of_node. I can see the appeal in
+that.
+
+>> of_regulator_get function. I know you (Mark) do not like this, but all
+>> other subsystems have an of_foo_get function taking an of_node as argument,
+>> I do not see how the regulator subsys is so special that it cannot have one,
+>> and also notice that this is only a kernel internal API which we can always
+>> change later.
+>
+> Two things there.  One is that mostly those APIs are legacy APIs from
+> before we made DT a first class citizen and generally they shouldn't be
+> used these days.  The other is that at least for regulators we have
+> constant problems with people abusing the API in various ways, as a
+> result the API has a goal of not helping undesirable usage patterns in
+> order to help people spot problems.  Having an API which makes it easy
+> create broken bindings means that it is much more likely that people
+> will do just that.
+
+Hmm I can see where you're coming from, and your proposed solution may
+also be useful for when we get similar boards requiring explicit regulator
+handling with the sata ports described in ACPI tables.
+
+Gregory, can you give the setup using per sata port devices a try, and
+see how that works out code wise ?
+
+Regards,
+
+Hans
