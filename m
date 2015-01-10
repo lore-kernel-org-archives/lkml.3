@@ -1,84 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249AbbAJSjP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 13:39:15 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:37657 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbbAJSjO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 13:39:14 -0500
-Date: Sat, 10 Jan 2015 19:39:11 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Qiaowei Ren <qiaowei.ren@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, mpx: Ensure unused arguments of prctl() MPX
- requests are 0
-Message-ID: <20150110183911.GB2915@two.firstfloor.org>
-References: <54AE5BE8.1050701@gmail.com>
- <87r3v350io.fsf@tassilo.jf.intel.com>
- <CAKgNAki3Fh8N=jyPHxxFpicjyJ=0kA75SJ65QjYzPmWnvy4nsw@mail.gmail.com>
- <54B01F41.10001@intel.com>
- <54B12DD3.5020605@gmail.com>
+	id S1754506AbbAJSj0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 13:39:26 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754315AbbAJSjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jan 2015 13:39:24 -0500
+Message-ID: <54B171D8.6020301@nod.at>
+Date: Sat, 10 Jan 2015 19:39:20 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54B12DD3.5020605@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jonathan Cameron <jic23@kernel.org>, Harald Geyer <harald@ccbib.org>
+CC: knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
+        sanjeev_sharma@mentor.com, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 1/3,RESEND] iio: dht11: Fix out-of-bounds read
+References: <1417563176-31972-1-git-send-email-richard@nod.at> <54A53FBF.5000003@kernel.org> <7e4f6a70e48afe96457ebbcf07572224@imap.cosmopool.net> <54A680F8.30209@nod.at> <54A91DA1.6080107@kernel.org> <E1Y881p-0001Fp-NX@stardust.g4.wien.funkfeuer.at> <54AA97B9.7040703@nod.at> <E1Y8pWE-00012g-Ec@stardust.g4.wien.funkfeuer.at> <54B10997.6090708@kernel.org>
+In-Reply-To: <54B10997.6090708@kernel.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 02:49:07PM +0100, Michael Kerrisk (man-pages) wrote:
-> On 01/09/2015 07:34 PM, Dave Hansen wrote:
-> > On 01/09/2015 10:25 AM, Michael Kerrisk (man-pages) wrote:
-> >> On 9 January 2015 at 18:25, Andi Kleen <andi@firstfloor.org> wrote:
-> >>> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
-> >>>> From: Michael Kerrisk <mtk.manpages@gmail.com>
-> >>>>
-> >>>> commit fe8c7f5cbf91124987106faa3bdf0c8b955c4cf7 added two new prctl()
-> >>>> operations, PR_MPX_ENABLE_MANAGEMENT and PR_MPX_DISABLE_MANAGEMENT.
-> >>>> However, no checks were included to ensure that unused arguments
-> >>>> are zero, as is done in many existing prctl()s and as should be
-> >>>> done for all new prctl()s. This patch adds the required checks.
-> >>>
-> >>> This will break the existing gcc run time, which doesn't zero these
-> >>> arguments.
-> >>
-> >> I'm a little lost here. Weren't these flags new in the
-> >> as-yet-unreleased 3.19? How does gcc run-time depends on them already?
-> > 
-> > These prctl()s have been around in some form or another for a few months
-> > since the patches had not yet been merged in to the kernel.  There is
-> > support for them in a set of (yet unmerged) gcc patches, as well as some
-> > tests which are only internal to Intel.
-> > 
-> > This change will, indeed, break those internal tests as well as the gcc
-> > patches.  As far as I know, the code is not in production anywhere and
-> > can be changed.  The prctl() numbers have changed while the patches were
-> > out of tree and it's a somewhat painful process each time it changes.
-> > It's not impossible, just painful.
-> 
-> So, sounds like thinks can be fixed (with mild inconvenience), and they
-> should be fixed before 3.19 is actually released.
+Am 10.01.2015 um 12:14 schrieb Jonathan Cameron:
+> On 07/01/15 12:15, Harald Geyer wrote:
+>> As we access i-1 we must not start with i=0.
+>>
+>> From: Richard Weinberger <richard@nod.at>
+>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>> Acked-by: Hartmut Knaack <knaack.h@gmx.de>
+>> Acked-by: Harald Geyer <harald@ccbib.org>
+>> Reviewed-by: Sanjeev Sharma <sanjeev_sharma@mentor.com>
+>> ---
+>> Resending again to get the metadata right.
+> Putting a From: in doesn't work, you need to use git commit --amend --author to
+> fix it up.
 
-FWIW I added these checks to prctl first, but in hindsight it was a
-mistake.
+Or just use "git am" to apply a patch to a tree and keep the original author.
+If you use "git format-patch" later it will produce the correct "From:".
 
-The glibc prctl() function is stdarg. Often you only have a single
-extra argument, so you need to add 4 zeroes. There is no compile
-time checking. It is very easy to get wrong and miscount the zeroes, 
-happened several times.  The failure may be hard to catch, because
-it only happens at runtime.
 
-Also the extra zeroes look ugly in the source.
-
-And it doesn't really buy you anything because it's very cheap
-to add new prctl numbers if you want to extend something.
-
-So I would advise against it.
-
--Andi
+Thanks,
+//richard
