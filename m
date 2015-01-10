@@ -1,103 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942AbbAJPLX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 10:11:23 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49386 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255AbbAJPLV (ORCPT
+	id S1753945AbbAJPOi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 10:14:38 -0500
+Received: from mail-lb0-f195.google.com ([209.85.217.195]:43797 "EHLO
+	mail-lb0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753657AbbAJPOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 10:11:21 -0500
-Date: Sat, 10 Jan 2015 16:11:18 +0100
-From: Pavel Machek <pavel@denx.de>
-To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: atull <atull@opensource.altera.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        jgunthorpe@obsidianresearch.com, hpa@zytor.com,
-        Michal Simek <monstr@monstr.eu>,
-        Michal Simek <michal.simek@xilinx.com>, rdunlap@infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, robh+dt@kernel.org,
-        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        philip@balister.org, rubini@gnudd.com,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>, jason@lakedaemon.net,
-        kyle.teske@ni.com, nico@linaro.org, Felipe Balbi <balbi@ti.com>,
-        m.chehab@samsung.com, davidb@codeaurora.org,
-        Rob Landley <rob@landley.net>, davem@davemloft.net, cesarb@cesarb.net,
-        sameo@linux.intel.com, akpm@linux-foundation.org,
-        Linus Walleij <linus.walleij@linaro.org>, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, devel@driverdev.osuosl.org,
-        Alan Tull <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com,
-        yvanderv@opensource.altera.com
-Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
-Message-ID: <20150110151118.GA16036@amd>
-References: <1420575219-27061-1-git-send-email-atull@opensource.altera.com>
- <1420575219-27061-3-git-send-email-atull@opensource.altera.com>
- <20150107084819.GA1887@amd>
- <alpine.DEB.2.02.1501091302370.30067@linuxheads99>
- <20150109205643.GA5761@amd>
- <4D4EA2D5-68DD-49F7-9E2D-3A0A8F6AF9CA@konsulko.com>
+	Sat, 10 Jan 2015 10:14:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4D4EA2D5-68DD-49F7-9E2D-3A0A8F6AF9CA@konsulko.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Date: Sat, 10 Jan 2015 23:14:33 +0800
+Message-ID: <CADcZZT+nQ_0LfurU+z5wLC_OxNhEs6n0kCoLSkfoFCDqyOu04g@mail.gmail.com>
+Subject: ARM64: hibernation: How to use hibernation/suspend-to-disk on ARMv8?
+From: George Bush <georgebush815@gmail.com>
+To: sebastian.capella@linaro.org, Russ.Dill@ti.com, rjw@rjwysocki.net,
+        linux@arm.linux.org.uk, len.brown@intel.com, nico@linaro.org,
+        santosh.shilimkar@ti.com, will.deacon@arm.com, jonathan.austin@arm.com,
+        catalin.marinas@arm.com, u.kleine-koenig@pengutronix.de,
+        sboyd@codeaurora.org, victor.kamensky@linaro.org, r.sricharan@ti.com,
+        liuj97@gmail.com, lauraa@codeaurora.org, zhou0283@gmail.com
+Cc: linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 2015-01-10 10:10:51, Pantelis Antoniou wrote:
-> Hi Pavel,
-> 
-> > On Jan 9, 2015, at 22:56 , Pavel Machek <pavel@denx.de> wrote:
-> > 
-> > On Fri 2015-01-09 13:14:24, atull wrote:
-> >> On Wed, 7 Jan 2015, Pavel Machek wrote:
-> >> 
-> >>> On Tue 2015-01-06 14:13:37, atull@opensource.altera.com wrote:
-> >>>> +
-> >>>> +What:		/sys/class/fpga_manager/<fpga>/firmware
-> >>>> +Date:		October 2014
-> >>>> +KernelVersion:	3.18
-> >>>> +Contact:	Alan Tull <atull@opensource.altera.com>
-> >>>> +Description:	Name of the FPGA image file to load using firmware
-> >>>> class.
-> >>> 
-> >>> This one is ugly: it unneccessarily passes firmware name through the
-> >>> kernel. Just make interface and code simpler by always passing
-> >>> "socfpga-fpga-image" or something like that.
-> >>> 
-> >>> Thanks,
-> >>> 									Pavel
-> >> 
-> >> Hi Pavel,
-> >> 
-> >> It might be ugly.  It's not unnecessary.  Some uses of FPGAs involve
-> >> switching out the FPGA images dynamically under control of the userspace.
-> > 
-> > Then configure udev to load right firmware for you, or ln -s
-> > image-i-want-now socfpga-fpga-image to select the one to read…?
-> > 
-> 
-> Who said that udev is going to be available in the kind of system this is going to end in?
+Hi all
 
-Noone.
+I notice we have hibernation.c in arm/kernel, however, I don't find it in arm64.
+Does it mean arm64 do not support hibernation/suspend-to-disk function?
 
-> Doing ln -s tricks to load a different image? Really?
+I tried some path to search the reason, but found nothing, they all say arm64
+has the backward compatibility. So I send this email to the community and
+hope to get the reason.
+Thanks!
 
-But if you don't have udev, you can do ln -s. It is better than
-open-coding symlink functionality into
-/sys/class/fpga_manager/<fpga>/firmware ... cause that's what this is.
+I ported the arm hibernation.c to arm64/kernel(with LP64), but failed in a
+strange way. When I do resume, the arch_restore_image() get a page_fault
+when it calls the copy_page(), like:
+"Unable to handle kernel paging request at virtual address 0xffffffbc055c3fa8"
+I'm sure the copy_page()'s parameters is in the memory area, why and how
+I get the strange address 0xffffffbc055c3fa8?
 
-Actually, clean implementation of "firmware" would be symlink in
-sysfs; but I'd say that would be overdoing it.
+vmalloc:         0xffffff8000000000 - 0xffffffbb00000000
+vmemmap:     0xffffffbc01400000 - 0xffffffbc04f88000
+modules:       0xffffffbffc000000   -  0xffffffc000000000
+memory:        0xffffffc000000000 - 0xffffffc0be800000
 
-> I say the interface is fine as it is.
 
-I say it is not.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Look forward to your reply, thanks!
