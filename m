@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113AbbAJV07 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 16:26:59 -0500
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:61142 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609AbbAJV06 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 16:26:58 -0500
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Jani Nikula <jani.nikula@linux.intel.com>
-Cc: Daniel Vetter <daniel.vetter@intel.com>, David Airlie <airlied@linux.ie>,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Jeremiah Mahler <jmmahler@gmail.com>
-Subject: [PATCH] drm/i915: fix inconsistent brightness after resume
-Date: Sat, 10 Jan 2015 13:25:35 -0800
-Message-Id: <1420925135-1589-1-git-send-email-jmmahler@gmail.com>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <87fvbkz7nd.fsf@intel.com>
-References: <87fvbkz7nd.fsf@intel.com>
+	id S1754945AbbAJV1R (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 16:27:17 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:53095 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751609AbbAJV1A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jan 2015 16:27:00 -0500
+Date: Sat, 10 Jan 2015 22:26:57 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH 3/4] x86: open-code register save/restore in
+ trace_hardirqs thunks
+Message-ID: <20150110212657.GE12218@pd.tnic>
+References: <1420734315-30943-1-git-send-email-dvlasenk@redhat.com>
+ <1420734315-30943-4-git-send-email-dvlasenk@redhat.com>
+ <20150109121950.GD13637@pd.tnic>
+ <CAK1hOcMsGJ7geRAzfazPLZitcO0o9XYRPJDYa8sJHR4i6DPL-g@mail.gmail.com>
+ <20150110142336.GC12218@pd.tnic>
+ <CAK1hOcO7K=4N8CF=LOPmosXRNnogaNi5vLDPMdb0XiKsL=JOfg@mail.gmail.com>
+ <CALCETrXS7BvtS3P3J8hnbt3GGvezx-935uxanSN_a=CU6s1d3g@mail.gmail.com>
+ <CA+55aFzhgnHipD_mAA6qp9bum2b_j_7_3uWN4MHtwh6y20krcg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzhgnHipD_mAA6qp9bum2b_j_7_3uWN4MHtwh6y20krcg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 6dda730e55f4 introduced a bug which resulted in inconsistent
-brightness levels on different machines. If a suspended was entered
-with the screen off some machines would resume with the screen
-at minimum brightness and others at maximum brightness.
+On Sat, Jan 10, 2015 at 01:08:33PM -0800, Linus Torvalds wrote:
+> It was true for some AMD CPU's in particular. One insn/cycle vs two.
 
-The following commands can be used to produce this behavior.
+Probably on K8: Agner Fog's insn tables show reciprocal throughput of
+1/2 for MOV r64/m64 vs 1 for PUSH/POP.
 
-  xset dpms force off
-  sleep 1
-  sudo systemctl suspend
-  (resume ...)
+> I personally would be very happy to go back to push/pop sequences.
+> Even without a fancy stack engine like Intel has done for a while,
+> even *simple* cores can generally pair pushes and pops. I think the
 
-The root cause of this problem is a comparison which checks to see if
-the backlight level is zero when the panel is enabled.  If it is zero,
-it is set to the maximum level.  Unfortunately, not all machines have a
-minimum level of zero. On those machines the level is left at the
-minimum instead of begin set to the maximum.
+I think all the modern x86 machines have stack engines now :-)
 
-Fix the bug by updating the comparison to check for the minimum
-backlight level instead of zero.
+> original Pentium already had a special magic pairing logic to pair
+> pushes and pops despite both instructions using %esp. It's a common
+> and fairly trivial special case, and the fact that a few AMD
+> microarchitectures didn't do it is likely not really a good reason to
+> avoid repeated push/pop instructions.
 
-Fixes: 6dda730e55f4 ("respect the VBT minimum backlight brightness")
-Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
----
- drivers/gpu/drm/i915/intel_panel.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Well, according to the optimization manual, on F15h (Bulldozer and
+later) PUSH/POP are faster than MOVs and on F16h (Jaguar and later) both
+MOV and PUSH/POP have latency of 1, with MOV having a 1/2 throughput vs
+PUSH/POP throughput of 1. So theoretically we can do 2 MOVs per cycle
+there vs 1 PUSH/POP.
 
-diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-index 4d63839..4ef4d66 100644
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -962,7 +962,7 @@ void intel_panel_enable_backlight(struct intel_connector *connector)
- 
- 	WARN_ON(panel->backlight.max == 0);
- 
--	if (panel->backlight.level == 0) {
-+	if (panel->backlight.level == panel->backlight.min) {
- 		panel->backlight.level = panel->backlight.max;
- 		if (panel->backlight.device)
- 			panel->backlight.device->props.brightness =
 -- 
-2.1.4
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
