@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266AbbAJLCq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 06:02:46 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:47653 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752144AbbAJLCo (ORCPT
+	id S1753121AbbAJLKh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 06:10:37 -0500
+Received: from smtp-out-105.synserver.de ([212.40.185.105]:1063 "EHLO
+	smtp-out-105.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655AbbAJLKf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 06:02:44 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>, Nick Kossifidis <mickflemm@gmail.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        linux-wireless@vger.kernel.org,
-        "Michael Renzmann" <mrenzmann@madwifi-project.org>
-Subject: [PATCH 1/1] MAINTAINERS: remove ath5k mailing list
-Date: Sat, 10 Jan 2015 12:02:40 +0100
-Message-Id: <1420887760-9979-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 2.2.1
+	Sat, 10 Jan 2015 06:10:35 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 5741
+Message-ID: <54B108A9.7080307@metafoo.de>
+Date: Sat, 10 Jan 2015 12:10:33 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+MIME-Version: 1.0
+To: Karol Wrona <k.wrona@samsung.com>, Jonathan Cameron <jic23@kernel.org>,
+        linux-iio@vger.kernel.org, Hartmut Knaack <knaack.h@gmx.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>, linux-kernel@vger.kernel.org
+CC: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Karol Wrona <wrona.vy@gmail.com>
+Subject: Re: [PATCH 1/2] iio: Add no-triggered buffer helper functions
+References: <1420735227-21091-1-git-send-email-k.wrona@samsung.com> <1420735227-21091-2-git-send-email-k.wrona@samsung.com>
+In-Reply-To: <1420735227-21091-2-git-send-email-k.wrona@samsung.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The list is in the process of closing.
+On 01/08/2015 05:40 PM, Karol Wrona wrote:
+> These ones helps to create and manage iio_kfifo buffer when
+> no-triggered buffer is used.
+[...]
+> +int iio_notriggered_buffer_setup(struct iio_dev *indio_dev,
+> +				 const struct iio_buffer_setup_ops *setup_ops)
+> +
+> +{
+> +	int ret;
+> +	struct iio_buffer *buffer;
+> +
+> +	buffer = iio_kfifo_allocate();
+> +	if (!buffer)
+> +		return -ENOMEM;
+> +
+> +	iio_device_attach_buffer(indio_dev, buffer);
+> +
+> +	indio_dev->setup_ops = setup_ops;
+> +
+> +	ret = iio_buffer_register(indio_dev, indio_dev->channels,
+> +				  indio_dev->num_channels);
+> +	if (ret)
+> +		iio_kfifo_free(buffer);
+> +
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Nick Kossifidis <mickflemm@gmail.com>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: linux-wireless@vger.kernel.org
-Cc: "Michael Renzmann" <mrenzmann@madwifi-project.org>
----
- MAINTAINERS | 1 -
- 1 file changed, 1 deletion(-)
+We recently got rid of having to manually call iio_buffer_register() and 
+iio_buffer_unregister(). This is now done by the IIO core. See 
+http://git.kernel.org/cgit/linux/kernel/git/jic23/iio.git/commit/?h=togreg&id=3e1b6c95b990c93f4aa3b17e9f66221e2fa44bee
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 0519e79197ad..5ce30f9810b1 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1596,7 +1596,6 @@ M:	Jiri Slaby <jirislaby@gmail.com>
- M:	Nick Kossifidis <mickflemm@gmail.com>
- M:	"Luis R. Rodriguez" <mcgrof@do-not-panic.com>
- L:	linux-wireless@vger.kernel.org
--L:	ath5k-devel@lists.ath5k.org
- W:	http://wireless.kernel.org/en/users/Drivers/ath5k
- S:	Maintained
- F:	drivers/net/wireless/ath/ath5k/
--- 
-2.2.1
+I don't think we actually need these non-triggered helper functions anymore. 
+It basically just boils down to iio_kfifo_allocate() and 
+iio_device_attach_buffer().
 
+- Lars
