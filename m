@@ -1,129 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268AbbAJUO0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 15:14:26 -0500
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:41268 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753AbbAJUOY (ORCPT
+	id S1754761AbbAJUQM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 15:16:12 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:51230 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751856AbbAJUQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 15:14:24 -0500
+	Sat, 10 Jan 2015 15:16:11 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Langsdorf <mlangsdo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.19-rc3
+Date: Sat, 10 Jan 2015 21:16:02 +0100
+Message-ID: <4665410.x9Uu42bKmJ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CA+55aFz74hjhCcdz5J4r-xK4KW7oqNDA3i=jXHW0prGMMwgMvw@mail.gmail.com>
+References: <CA+55aFwsxoyLb9OWMSCL3doe_cz_EQtKsEFCyPUYn_T87pbz0A@mail.gmail.com> <20150110003540.GA32037@node.dhcp.inet.fi> <CA+55aFz74hjhCcdz5J4r-xK4KW7oqNDA3i=jXHW0prGMMwgMvw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20150110142336.GC12218@pd.tnic>
-References: <1420734315-30943-1-git-send-email-dvlasenk@redhat.com>
- <1420734315-30943-4-git-send-email-dvlasenk@redhat.com> <20150109121950.GD13637@pd.tnic>
- <CAK1hOcMsGJ7geRAzfazPLZitcO0o9XYRPJDYa8sJHR4i6DPL-g@mail.gmail.com> <20150110142336.GC12218@pd.tnic>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Sat, 10 Jan 2015 21:14:03 +0100
-Message-ID: <CAK1hOcO7K=4N8CF=LOPmosXRNnogaNi5vLDPMdb0XiKsL=JOfg@mail.gmail.com>
-Subject: Re: [PATCH 3/4] x86: open-code register save/restore in
- trace_hardirqs thunks
-To: Borislav Petkov <bp@alien8.de>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: multipart/mixed; boundary=047d7bdc81cc5a481a050c51ebb2
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:KYYvNpa2QvY1UFzTIOpjsAdd8k9wMTtLQiEN2RMIwQC095Q0Bop
+ 9x5Aywzg4ffDQ55a9jkDVH+DHNj7nJYlOx3QD1nL0zUup5hIRrVIbFIeHos7F3xjyfKvjSH
+ y+ia06ARn+yWvSo5foj1pIR1L2SxeK3DIWZ5xeU6HRkLGv8oMMwNOPPkCkIqmAnNFbN4shn
+ HiIZbJ8IAYe6r2N8Iqesg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7bdc81cc5a481a050c51ebb2
-Content-Type: text/plain; charset=UTF-8
-
-On Sat, Jan 10, 2015 at 3:23 PM, Borislav Petkov <bp@alien8.de> wrote:
-> Bah, I see it. This nasty '$' gets forgotten a lot, maybe we should have
-> a check for that in some scripts :-)
+On Friday 09 January 2015 18:27:38 Linus Torvalds wrote:
+> On Fri, Jan 9, 2015 at 4:35 PM, Kirill A. Shutemov <kirill@shutemov.name> wrote:
+> >
+> > With bigger page size there's also reduction in number of entities to
+> > handle by kernel: less memory occupied by struct pages, fewer pages on
+> > lru, etc.
+> 
+> Really, do the math. [...]
 >
-> Here's the fix:
->
-> ---
-> Index: b/arch/x86/lib/thunk_64.S
-> ===================================================================
-> --- a/arch/x86/lib/thunk_64.S   2015-01-10 15:18:04.418737613 +0100
-> +++ b/arch/x86/lib/thunk_64.S   2015-01-10 15:17:18.882736556 +0100
-> @@ -67,7 +67,7 @@ restore:
->         movq_cfi_restore 6*8, rdx
->         movq_cfi_restore 7*8, rsi
->         movq_cfi_restore 8*8, rdi
-> -       addq 9*8, %rsp
-> +       addq $9*8, %rsp
->         CFI_ADJUST_CFA_OFFSET -9*8
->         ret
+> With a 64kB page, that means that for caching the kernel tree (what,
+> closer to 50k files by now), you are basically wasting 60kB for most
+> source files. Say, 60kB * 30k files, or 1.8GB.
 
-Thanks!
+On a recent kernel, I get 628 MB for storing all files of the
+kernel tree in 4KB pages, and 3141 MB for storing the same data
+in 64KB pages, almost exactly factor 5, or 2.45 GiB wasted.
 
-After I've seen the disassembly I myself posted, I can't help but wonder
-why we use 5-byte instructions to store and load regs on stack when
-pushes and pops are 1 or 2-byte long.
+> Maybe things have changed, and maybe I did my math wrong, and people
+> can give a more exact number. But it's an example of why 64kB
+> granularity is completely unacceptable in any kind of general-purpose
+> load.
 
-Especially that 32-bit code *does* use push/pops.
+I'd say it's unacceptable for any file backed mappings in general, but
+usually an improvement for anonymous maps, for the same reasons that
+transparent huge pages are great. IIRC, AIX works great with 64k
+pages, but only because of two reasons that don't apply on Linux:
 
-Can you test the attached patch with your kvm guest testcase?
+a) The PowerPC MMU can mix 4KB and 64KB pages in a single process.
+   Linux doesn't use this feature except for very special cases,
+   although it could be done on PowerPC but not most other architectures.
 
---047d7bdc81cc5a481a050c51ebb2
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0003-x86-open-code-register-save-restore-in-trace_hardirq.patch"
-Content-Disposition: attachment; 
-	filename="0003-x86-open-code-register-save-restore-in-trace_hardirq.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_i4rfgnv80
+b) Linux has a unified page cache page size that is used for both
+   anonymous and file backed mappings. It's a great feature of the
+   Linux MM code (it avoids having two copies of each mapped file
+   in memory), but other OSs can just use 4KB blocks in the file
+   system cache independent of the page size.
 
-RnJvbSAyZjYzNmUwYTkyZGI4OThmMmJkYjU5MjAyN2FhMzAyZmNiMzJhMzI2IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBEZW55cyBWbGFzZW5rbyA8ZHZsYXNlbmtAcmVkaGF0LmNvbT4K
-VG86IGxpbnV4LWtlcm5lbEB2Z2VyLmtlcm5lbC5vcmcKU3ViamVjdDogW1BBVENIIDMvNF0geDg2
-OiBvcGVuLWNvZGUgcmVnaXN0ZXIgc2F2ZS9yZXN0b3JlIGluIHRyYWNlX2hhcmRpcnFzIHRodW5r
-cwoKVGhpcyBpcyBhIHByZXBhcmF0b3J5IHBhdGNoIGZvciBjaGFuZ2UgaW4gInN0cnVjdCBwdF9y
-ZWdzIgpoYW5kbGluZyBpbiBlbnRyeV82NC5TLgoKdHJhY2VfaGFyZGlycXMgdGh1bmtzIHdlcmUg
-KGFiKXVzaW5nIGEgcGFydCBvZiBwdF9yZWdzCmhhbmRsaW5nIGNvZGUsIG5hbWVseSBTQVZFX0FS
-R1MvUkVTVE9SRV9BUkdTIG1hY3JvcywKdG8gc2F2ZS9yZXN0b3JlIHJlZ2lzdGVycyBhY3Jvc3Mg
-QyBmdW5jdGlvbiBjYWxscy4KClNpbmNlIFNBVkVfQVJHUyBpcyBnb2luZyB0byBiZSBjaGFuZ2Vk
-LCBvcGVuLWNvZGUKcmVnaXN0ZXIgc2F2aW5nL3Jlc3RvcmluZyBoZXJlLiBUYWtlIGEgcGFnZSBm
-cm9tIHRodW5rXzMyLlMKYW5kIHVzZSBwdXNoL3BvcCBpbnNucyBpbnN0ZWFkIG9mIG1vdnEsIHRo
-ZXkgYXJlIGZhciBzaG9ydGVyOgoxIG9yIDIgYnl0ZXMgdmVyc3VzIDUsIGFuZCBubyBuZWVkIGZv
-ciBpbnNucyB0byBhZGp1c3QgJXJzcDoKCiAgIHRleHQJICAgZGF0YQkgICAgYnNzCSAgICBkZWMJ
-ICAgIGhleAlmaWxlbmFtZQogICAgMzMzCSAgICAgNDAJICAgICAgMAkgICAgMzczCSAgICAxNzUJ
-dGh1bmtfNjRfbW92cS5vCiAgICAxMDQJICAgICA0MAkgICAgICAwCSAgICAxNDQJICAgICA5MAl0
-aHVua182NF9wdXNoX3BvcC5vCgpJbmNpZGVudGFsbHksIHRoaXMgcmVtb3ZlcyBhIGJpdCBvZiBk
-ZWFkIGNvZGU6Cm9uZSBTQVZFX0FSR1Mgd2FzIHVzZWQganVzdCB0byBlbWl0IGEgQ0ZJIGFubm90
-YXRpb24sCmJ1dCBpdCBhbHNvIGdlbmVyYXRlZCB1bnJlYWNoYWJsZSBhc3NlbWJseSBpbnNucy4K
-ClNpZ25lZC1vZmYtYnk6IERlbnlzIFZsYXNlbmtvIDxkdmxhc2Vua0ByZWRoYXQuY29tPgpDQzog
-TGludXMgVG9ydmFsZHMgPHRvcnZhbGRzQGxpbnV4LWZvdW5kYXRpb24ub3JnPgpDQzogT2xlZyBO
-ZXN0ZXJvdiA8b2xlZ0ByZWRoYXQuY29tPgpDQzogIkguIFBldGVyIEFudmluIiA8aHBhQHp5dG9y
-LmNvbT4KQ0M6IEJvcmlzbGF2IFBldGtvdiA8YnBAYWxpZW44LmRlPgpDQzogQW5keSBMdXRvbWly
-c2tpIDxsdXRvQGFtYWNhcGl0YWwubmV0PgpDQzogRnJlZGVyaWMgV2Vpc2JlY2tlciA8ZndlaXNi
-ZWNAZ21haWwuY29tPgpDQzogWDg2IE1MIDx4ODZAa2VybmVsLm9yZz4KQ0M6IEFsZXhlaSBTdGFy
-b3ZvaXRvdiA8YXN0QHBsdW1ncmlkLmNvbT4KQ0M6IFdpbGwgRHJld3J5IDx3YWRAY2hyb21pdW0u
-b3JnPgpDQzogS2VlcyBDb29rIDxrZWVzY29va0BjaHJvbWl1bS5vcmc+CkNDOiBsaW51eC1rZXJu
-ZWxAdmdlci5rZXJuZWwub3JnCi0tLQogYXJjaC94ODYvbGliL3RodW5rXzY0LlMgfCA0NiArKysr
-KysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKystLS0tCiAxIGZpbGUgY2hhbmdl
-ZCwgNDIgaW5zZXJ0aW9ucygrKSwgNCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9hcmNoL3g4
-Ni9saWIvdGh1bmtfNjQuUyBiL2FyY2gveDg2L2xpYi90aHVua182NC5TCmluZGV4IGIzMGI1ZWIu
-LjhlYzQ0M2EgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L2xpYi90aHVua182NC5TCisrKyBiL2FyY2gv
-eDg2L2xpYi90aHVua182NC5TCkBAIC0xNyw5ICsxNywyNyBAQAogCUNGSV9TVEFSVFBST0MKIAog
-CS8qIHRoaXMgb25lIHB1c2hlcyA5IGVsZW1zLCB0aGUgbmV4dCBvbmUgd291bGQgYmUgJXJJUCAq
-LwotCVNBVkVfQVJHUworCXB1c2hxX2NmaSAlcmRpCisJQ0ZJX1JFTF9PRkZTRVQgcmRpLCAwCisJ
-cHVzaHFfY2ZpICVyc2kKKwlDRklfUkVMX09GRlNFVCByc2ksIDAKKwlwdXNocV9jZmkgJXJkeAor
-CUNGSV9SRUxfT0ZGU0VUIHJkeCwgMAorCXB1c2hxX2NmaSAlcmN4CisJQ0ZJX1JFTF9PRkZTRVQg
-cmN4LCAwCisJcHVzaHFfY2ZpICVyYXgKKwlDRklfUkVMX09GRlNFVCByYXgsIDAKKwlwdXNocV9j
-ZmkgJXI4CisJQ0ZJX1JFTF9PRkZTRVQgcjgsIDAKKwlwdXNocV9jZmkgJXI5CisJQ0ZJX1JFTF9P
-RkZTRVQgcjksIDAKKwlwdXNocV9jZmkgJXIxMAorCUNGSV9SRUxfT0ZGU0VUIHIxMCwgMAorCXB1
-c2hxX2NmaSAlcjExCisJQ0ZJX1JFTF9PRkZTRVQgcjExLCAwCiAKIAkuaWYgXHB1dF9yZXRfYWRk
-cl9pbl9yZGkKKwkvKiA5KjgoJXJzcCkgaXMgcmV0dXJuIGFkZHIgb24gc3RhY2sgKi8KIAltb3Zx
-X2NmaV9yZXN0b3JlIDkqOCwgcmRpCiAJLmVuZGlmCiAKQEAgLTQ1LDExICs2MywzMSBAQAogI2Vu
-ZGlmCiAjZW5kaWYKIAotCS8qIFNBVkVfQVJHUyBiZWxvdyBpcyB1c2VkIG9ubHkgZm9yIHRoZSAu
-Y2ZpIGRpcmVjdGl2ZXMgaXQgY29udGFpbnMuICovCisjaWYgZGVmaW5lZChDT05GSUdfVFJBQ0Vf
-SVJRRkxBR1MpIFwKKyB8fCBkZWZpbmVkKENPTkZJR19ERUJVR19MT0NLX0FMTE9DKSBcCisgfHwg
-ZGVmaW5lZChDT05GSUdfUFJFRU1QVCkKIAlDRklfU1RBUlRQUk9DCi0JU0FWRV9BUkdTCisJQ0ZJ
-X0FESlVTVF9DRkFfT0ZGU0VUIDkqOAogcmVzdG9yZToKLQlSRVNUT1JFX0FSR1MKKwlwb3BxX2Nm
-aSAlcjExCisJQ0ZJX1JFU1RPUkUgcjExCisJcG9wcV9jZmkgJXIxMAorCUNGSV9SRVNUT1JFIHIx
-MAorCXBvcHFfY2ZpICVyOQorCUNGSV9SRVNUT1JFIHI5CisJcG9wcV9jZmkgJXI4CisJQ0ZJX1JF
-U1RPUkUgcjgKKwlwb3BxX2NmaSAlcmF4CisJQ0ZJX1JFU1RPUkUgcmF4CisJcG9wcV9jZmkgJXJj
-eAorCUNGSV9SRVNUT1JFIHJjeAorCXBvcHFfY2ZpICVyZHgKKwlDRklfUkVTVE9SRSByZHgKKwlw
-b3BxX2NmaSAlcnNpCisJQ0ZJX1JFU1RPUkUgcnNpCisJcG9wcV9jZmkgJXJkaQorCUNGSV9SRVNU
-T1JFIHJkaQogCXJldAogCUNGSV9FTkRQUk9DCiAJX0FTTV9OT0tQUk9CRShyZXN0b3JlKQorI2Vu
-ZGlmCi0tIAoxLjguMS40Cgo=
---047d7bdc81cc5a481a050c51ebb2--
+> 4kB works well. 8kB is perfectly acceptable. 16kB is already wasting a
+> lot of memory. 32kB and up is complete garbage for general-purpose
+> computing.
+
+I was expecting 16KB pages to work better, but you are right:
+
+arnd:~/linux$ for i in 1 2 4 8 16 32 64 128 256 ; do echo -n "$i KiB pages: " ; total=0 ; git ls-files | xargs ls -ld | while read a b c d e f ; do echo $[((e + $i*1024 - 1) / (1024 * $i))  ]  ; done | sort -n | uniq -c | while read num size ; do total=$[$total + ($num * $size) * $i] ; echo $[total / 1024] MiB ; done  | tail -n 1 ; done
+1 KiB pages: 544 MiB
+2 KiB pages: 571 MiB
+4 KiB pages: 628 MiB
+8 KiB pages: 759 MiB
+16 KiB pages: 1055 MiB
+32 KiB pages: 1717 MiB
+64 KiB pages: 3141 MiB
+128 KiB pages: 6103 MiB
+256 KiB pages: 12125 MiB
+
+Regarding ARM64 in particular, I think it would be nice to investigate
+how to extend the THP code to cover 64KB TLBs when running with the 4KB
+page size. There is a hint bit in the page table to tell the CPU that
+a set of 16 aligned pages can share one TLB, and it would be nice to
+use that bit in Linux, and to make this case more common for anonymous
+mappings, and possible large file based mappings.
+
+	Arnd
