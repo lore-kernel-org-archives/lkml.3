@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074AbbAJSRN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 13:17:13 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37939 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750825AbbAJSRM (ORCPT
+	id S1754547AbbAJSTU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 13:19:20 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:58766 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753012AbbAJSTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 13:17:12 -0500
-X-Sasl-enc: O1znvBzPEYCCvlYcmObOj8WgkJExxuH9cDkt3rSEmTGT 1420913831
-Date: Sat, 10 Jan 2015 10:17:10 -0800
-From: Greg KH <greg@kroah.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        khilman@kernel.org, aaro.koskinen@iki.fi, ivo.g.dimitrov.75@gmail.com
-Subject: Re: Getting new udev to run with 2.6.28
-Message-ID: <20150110181710.GA8884@kroah.com>
-References: <20150110173920.GA31847@amd>
- <20150110180532.GA8566@kroah.com>
- <20150110180942.GA10142@amd>
+	Sat, 10 Jan 2015 13:19:18 -0500
+Message-ID: <54B16D24.8090704@kernel.org>
+Date: Sat, 10 Jan 2015 18:19:16 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150110180942.GA10142@amd>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Lars-Peter Clausen <lars@metafoo.de>, Karol Wrona <k.wrona@samsung.com>,
+        linux-iio@vger.kernel.org, Hartmut Knaack <knaack.h@gmx.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>, linux-kernel@vger.kernel.org
+CC: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Karol Wrona <wrona.vy@gmail.com>
+Subject: Re: [PATCH 2/2] iio: Deselect IIO_TRIGGER for IIO_KFIFO_BUF
+References: <1420735227-21091-1-git-send-email-k.wrona@samsung.com> <1420735227-21091-3-git-send-email-k.wrona@samsung.com> <54B108FA.6010704@metafoo.de>
+In-Reply-To: <54B108FA.6010704@metafoo.de>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 07:09:42PM +0100, Pavel Machek wrote:
-> On Sat 2015-01-10 10:05:32, Greg KH wrote:
-> > On Sat, Jan 10, 2015 at 06:39:20PM +0100, Pavel Machek wrote:
-> > > Hi!
-> > > 
-> > > N900 has real problems on 3.19, and 2.6.28 should be very well
-> > > debugged version. Getting it to compile on recent distribution was
-> > > fun, but I succeeded. Unfortunately, Debian 7's udev does not work
-> > > with 2.6.28...
-> > > 
-> > > Does anyone have kernel patches to enable modern udev?
-> > 
-> > Yes, 3.18, please use that instead.
+On 10/01/15 11:11, Lars-Peter Clausen wrote:
+> On 01/08/2015 05:40 PM, Karol Wrona wrote:
+>> iio kfifo can be used without trigger support so there is no need to build it.
+>>
+>> Signed-off-by: Karol Wrona <k.wrona@samsung.com>
 > 
-> Can't, sorry. My goal is to get 3.18/3.19 working, but I really need
-> working kernel to debug userland (and then use that userland to debug kernel).
+> Looks good, not sure why this was ever selected it in the first place.
 > 
-> > Seriously, lots of things have changed, if you want to run a "new"
-> > version of udev with an old kernel, try eudev, they have been attempting
-> > to keep "legacy" support around in it, don't know how well it has been
-> > working though, you really are on your own.
-> 
-> I was hoping someone has devtmpfs patches I could just apply over
-> 2.6.28 and get a working system?
+> Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
+Applied to the togreg branch of iio.git initially pushed out as testing.
+That's certainly been there a while. I got bored looking for the source
+when we hit the move out of staging :)
 
-If you want such a crazy thing, you have all of the source to do it
-yourself, good luck.
+oops for a long time ago - though prior to there being any examples
+where a kfifo didn't meant there was a trigger as well.
+
+J
+> 
+>> ---
+>>   drivers/iio/Kconfig |    1 -
+>>   1 file changed, 1 deletion(-)
+>>
+>> diff --git a/drivers/iio/Kconfig b/drivers/iio/Kconfig
+>> index 50f6599..dfda2c3 100644
+>> --- a/drivers/iio/Kconfig
+>> +++ b/drivers/iio/Kconfig
+>> @@ -27,7 +27,6 @@ boolean "IIO callback buffer used for push in-kernel interfaces"
+>>         usage.  That is, those where the data is pushed to the consumer.
+>>
+>>   config IIO_KFIFO_BUF
+>> -    select IIO_TRIGGER
+>>       tristate "Industrial I/O buffering based on kfifo"
+>>       help
+>>         A simple fifo based on kfifo.  Note that this currently provides
+>>
+> 
+
