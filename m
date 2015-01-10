@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215AbbAJAtA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 19:49:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39048 "EHLO
+	id S1755644AbbAJAtO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 19:49:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39052 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753577AbbAJAs7 (ORCPT
+	with ESMTP id S1753321AbbAJAtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 19:48:59 -0500
-Date: Fri, 9 Jan 2015 16:48:58 -0800
+	Fri, 9 Jan 2015 19:49:11 -0500
+Date: Fri, 9 Jan 2015 16:49:10 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Stefan Agner <stefan@agner.ch>
 Cc: jslaby@suse.cz, jingchang.lu@freescale.com, shawn.guo@linaro.org,
         linux-serial@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] serial: fsl_lpuart: delete timer on shutdown
-Message-ID: <20150110004858.GB4171@kroah.com>
+Subject: Re: [PATCH v2 2/2] serial: fsl_lpuart: avoid new transfer while DMA
+ is running
+Message-ID: <20150110004910.GC4171@kroah.com>
 References: <1420848539-4519-1-git-send-email-stefan@agner.ch>
- <1420848539-4519-2-git-send-email-stefan@agner.ch>
+ <1420848539-4519-3-git-send-email-stefan@agner.ch>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1420848539-4519-2-git-send-email-stefan@agner.ch>
+In-Reply-To: <1420848539-4519-3-git-send-email-stefan@agner.ch>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 01:08:58AM +0100, Stefan Agner wrote:
-> If the serial port gets closed while a RX transfer is in progress,
-> the timer might fire after the serial port shutdown finished. This
-> leads in a NULL pointer dereference:
+On Sat, Jan 10, 2015 at 01:08:59AM +0100, Stefan Agner wrote:
+> When the UART is in DMA receive mode (RDMAS set) and one character
+> just arrived while another interrupt is handled (e.g. TX), the RDRF
+> (receiver data register full flag) is set due to the water level of
+> 1. But since the DMA will take care of this character, there is no
+> need to handle it by calling lpuart_prepare_rx. Handling it leads to
+> adding the RX timeout timer twice:
 > 
-> [    7.508324] Unable to handle kernel NULL pointer dereference at virtual address 00000000
-> [    7.516590] pgd = 86348000
-> [    7.519445] [00000000] *pgd=86179831, *pte=00000000, *ppte=00000000
-> [    7.526145] Internal error: Oops: 17 [#1] ARM
-> [    7.530611] Modules linked in:
-> [    7.533876] CPU: 0 PID: 123 Comm: systemd Not tainted 3.19.0-rc3-00004-g5b11ea7 #1778
-> [    7.541827] Hardware name: Freescale Vybrid VF610 (Device Tree)
-> [    7.547862] task: 861c3400 ti: 86ac8000 task.ti: 86ac8000
-> [    7.553392] PC is at lpuart_timer_func+0x24/0xf8
-> [    7.558127] LR is at lpuart_timer_func+0x20/0xf8
-> [    7.562857] pc : [<802df99c>]    lr : [<802df998>]    psr: 600b0113
-> [    7.562857] sp : 86ac9b90  ip : 86ac9b90  fp : 86ac9bbc
-> [    7.574467] r10: 80817180  r9 : 80817b98  r8 : 80817998
-> [    7.579803] r7 : 807acee0  r6 : 86989000  r5 : 00000100  r4 : 86997210
-> [    7.586444] r3 : 86ac8000  r2 : 86ac9bc0  r1 : 86997210  r0 : 00000000
-> [    7.593085] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-> [    7.600341] Control: 10c5387d  Table: 86348059  DAC: 00000015
-> [    7.606203] Process systemd (pid: 123, stack limit = 0x86ac8230)
+> [   74.336698] Kernel BUG at 80053070 [verbose debug info unavailable]
+> [   74.342999] Internal error: Oops - BUG: 0 [#1] ARM0:00.00 khungtaskd
+> [   74.347817] Modules linked in:    0 S  0.0  0.0   0:00.00 writeback
+> [   74.350926] CPU: 0 PID: 0 Comm: swapper Not tainted 3.19.0-rc3-00001-g39d78e2 #1788
+> [   74.358617] Hardware name: Freescale Vybrid VF610 (Device Tree)t
+> [   74.364563] task: 807a7678 ti: 8079c000 task.ti: 8079c000 kblockd
+> [   74.370002] PC is at add_timer+0x24/0x28.0  0.0   0:00.09 kworker/u2:1
+> [   74.373960] LR is at lpuart_int+0x15c/0x3d8
+> [   74.378171] pc : [<80053070>]    lr : [<802e0d88>]    psr: a0010193
+> [   74.378171] sp : 8079de10  ip : 8079de20  fp : 8079de1c
+> [   74.389694] r10: 807d44c0  r9 : 8688c300  r8 : 00000013
+> [   74.394943] r7 : 20010193  r6 : 00000000  r5 : 000000a0  r4 : 86997210
+> [   74.401498] r3 : ffffa7da  r2 : 80817868  r1 : 86997210  r0 : 86997344
+> [   74.408052] Flags: NzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+> [   74.415489] Control: 10c5387d  Table: 8611c059  DAC: 00000015
+> [   74.421265] Process swapper (pid: 0, stack limit = 0x8079c230)
+> ...
 > 
-> Setup the timer on UART startup which allows to delete the timer
-> unconditionally on shutdown. This also saves the initialization
-> on each transfer.
+> Solve this by only execute the receiver path (lpuart_prepare_rx) if
+> the DMA receive mode (RDMAS) is not set. Also, make sure the flag is
+> cleared on initialization, in case it has been left set.
+> 
+> This can be best reproduced using UART as a serial console, then
+> running top while dd'ing data into the terminal.
 > 
 > Signed-off-by: Stefan Agner <stefan@agner.ch>
 > ---
->  drivers/tty/serial/fsl_lpuart.c | 7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
+>  drivers/tty/serial/fsl_lpuart.c | 9 +++++----
+>  1 file changed, 5 insertions(+), 4 deletions(-)
 
-Do stable kernels care about this as well, or is this just a regression
-from 3.18?
+Same stable question as before.
 
-thanks,
-
-greg k-h
