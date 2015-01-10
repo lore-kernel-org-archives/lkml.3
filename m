@@ -1,101 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427AbbAJWLg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 17:11:36 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:59940 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752636AbbAJWLf (ORCPT
+	id S1755494AbbAJWNP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 17:13:15 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:55803 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754597AbbAJWNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 17:11:35 -0500
-Message-ID: <54B1A394.2090704@kernel.org>
-Date: Sat, 10 Jan 2015 22:11:32 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Sat, 10 Jan 2015 17:13:14 -0500
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>, Karol Wrona <k.wrona@samsung.com>,
-        linux-iio@vger.kernel.org, Hartmut Knaack <knaack.h@gmx.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>, linux-kernel@vger.kernel.org
-CC: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Karol Wrona <wrona.vy@gmail.com>
-Subject: Re: [RFC PATCH] iio: Add new operating mode for non triggered sw
- buffers
-References: <1420655771-22465-1-git-send-email-k.wrona@samsung.com> <54AE6024.8050303@metafoo.de>
-In-Reply-To: <54AE6024.8050303@metafoo.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1420927210-19738-2-git-send-email-dvlasenk@redhat.com>
+References: <1420927210-19738-1-git-send-email-dvlasenk@redhat.com> <1420927210-19738-2-git-send-email-dvlasenk@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sat, 10 Jan 2015 14:12:51 -0800
+Message-ID: <CALCETrXNYe5+NGm0qPrGw+9A3DGZ0D08mbtbt5ObKCdpu7_Dcw@mail.gmail.com>
+Subject: Re: [PATCH 1/4] x86: entry_64.S: delete unused code
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/15 10:47, Lars-Peter Clausen wrote:
-> On 01/07/2015 07:36 PM, Karol Wrona wrote:
->> There was a need for non triggered software buffer type.  It can be used when
->> triggered model does not fit and INDIO_BUFFER_HARDWARE causes confusion because
->> the data stream can be obtained not directly form hardware backend.
->>
->> Suggested-by: Jonathan Cameron <jic23@kernel.org>
->> Signed-off-by: Karol Wrona <k.wrona@samsung.com>
-> 
-> Looks good, thanks.
-> 
-> Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
-> 
-Thanks for doing this.
+On Sat, Jan 10, 2015 at 2:00 PM, Denys Vlasenko <dvlasenk@redhat.com> wrote:
+> A define, two macros and an unreferenced bit of assembly are gone.
 
-Applied to the togreg branch of iio.git - initially pushed out
-as testing.
 
-Jonathan
->> ---
->>   drivers/iio/industrialio-buffer.c |    2 ++
->>   include/linux/iio/iio.h           |    6 ++++--
->>   2 files changed, 6 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/iio/industrialio-buffer.c b/drivers/iio/industrialio-buffer.c
->> index f971f79..15e6de3 100644
->> --- a/drivers/iio/industrialio-buffer.c
->> +++ b/drivers/iio/industrialio-buffer.c
->> @@ -680,6 +680,8 @@ static int __iio_update_buffers(struct iio_dev *indio_dev,
->>           indio_dev->currentmode = INDIO_BUFFER_TRIGGERED;
->>       } else if (indio_dev->modes & INDIO_BUFFER_HARDWARE) {
->>           indio_dev->currentmode = INDIO_BUFFER_HARDWARE;
->> +    } else if (indio_dev->modes & INDIO_BUFFER_SOFTWARE) {
->> +        indio_dev->currentmode = INDIO_BUFFER_SOFTWARE;
->>       } else { /* Should never be reached */
->>           ret = -EINVAL;
->>           goto error_run_postdisable;
->> diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
->> index 3642ce7..55e63fd 100644
->> --- a/include/linux/iio/iio.h
->> +++ b/include/linux/iio/iio.h
->> @@ -284,10 +284,11 @@ static inline s64 iio_get_time_ns(void)
->>   /* Device operating modes */
->>   #define INDIO_DIRECT_MODE        0x01
->>   #define INDIO_BUFFER_TRIGGERED        0x02
->> +#define INDIO_BUFFER_SOFTWARE        0x04
->>   #define INDIO_BUFFER_HARDWARE        0x08
->>
->>   #define INDIO_ALL_BUFFER_MODES                    \
->> -    (INDIO_BUFFER_TRIGGERED | INDIO_BUFFER_HARDWARE)
->> +    (INDIO_BUFFER_TRIGGERED | INDIO_BUFFER_HARDWARE | INDIO_BUFFER_SOFTWARE)
->>
->>   #define INDIO_MAX_RAW_ELEMENTS        4
->>
->> @@ -591,7 +592,8 @@ void devm_iio_trigger_free(struct device *dev, struct iio_trigger *iio_trig);
->>   static inline bool iio_buffer_enabled(struct iio_dev *indio_dev)
->>   {
->>       return indio_dev->currentmode
->> -        & (INDIO_BUFFER_TRIGGERED | INDIO_BUFFER_HARDWARE);
->> +        & (INDIO_BUFFER_TRIGGERED | INDIO_BUFFER_HARDWARE |
->> +           INDIO_BUFFER_SOFTWARE);
->>   }
->>
->>   /**
->>
-> 
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Acked-by: Andy Lutomirski <luto@amacapital.net>
 
+>
+> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+> Acked-by: Borislav Petkov <bp@suse.de>
+> CC: Linus Torvalds <torvalds@linux-foundation.org>
+> CC: Oleg Nesterov <oleg@redhat.com>
+> CC: "H. Peter Anvin" <hpa@zytor.com>
+> CC: Borislav Petkov <bp@alien8.de>
+> CC: Andy Lutomirski <luto@amacapital.net>
+> CC: Frederic Weisbecker <fweisbec@gmail.com>
+> CC: X86 ML <x86@kernel.org>
+> CC: Alexei Starovoitov <ast@plumgrid.com>
+> CC: Will Drewry <wad@chromium.org>
+> CC: Kees Cook <keescook@chromium.org>
+> CC: linux-kernel@vger.kernel.org
+> ---
+>  arch/x86/include/asm/calling.h |  1 -
+>  arch/x86/kernel/entry_64.S     | 34 ----------------------------------
+>  2 files changed, 35 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/calling.h b/arch/x86/include/asm/calling.h
+> index 76659b6..1f1297b 100644
+> --- a/arch/x86/include/asm/calling.h
+> +++ b/arch/x86/include/asm/calling.h
+> @@ -83,7 +83,6 @@ For 32-bit we have the following conventions - kernel is built with
+>  #define SS             160
+>
+>  #define ARGOFFSET      R11
+> -#define SWFRAME                ORIG_RAX
+>
+>         .macro SAVE_ARGS addskip=0, save_rcx=1, save_r891011=1, rax_enosys=0
+>         subq  $9*8+\addskip, %rsp
+> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+> index 931f32f..5ed4773 100644
+> --- a/arch/x86/kernel/entry_64.S
+> +++ b/arch/x86/kernel/entry_64.S
+> @@ -155,27 +155,6 @@ ENDPROC(native_usergs_sysret64)
+>         movq \tmp,R11+\offset(%rsp)
+>         .endm
+>
+> -       .macro FAKE_STACK_FRAME child_rip
+> -       /* push in order ss, rsp, eflags, cs, rip */
+> -       xorl %eax, %eax
+> -       pushq_cfi $__KERNEL_DS /* ss */
+> -       /*CFI_REL_OFFSET        ss,0*/
+> -       pushq_cfi %rax /* rsp */
+> -       CFI_REL_OFFSET  rsp,0
+> -       pushq_cfi $(X86_EFLAGS_IF|X86_EFLAGS_FIXED) /* eflags - interrupts on */
+> -       /*CFI_REL_OFFSET        rflags,0*/
+> -       pushq_cfi $__KERNEL_CS /* cs */
+> -       /*CFI_REL_OFFSET        cs,0*/
+> -       pushq_cfi \child_rip /* rip */
+> -       CFI_REL_OFFSET  rip,0
+> -       pushq_cfi %rax /* orig rax */
+> -       .endm
+> -
+> -       .macro UNFAKE_STACK_FRAME
+> -       addq $8*6, %rsp
+> -       CFI_ADJUST_CFA_OFFSET   -(6*8)
+> -       .endm
+> -
+>  /*
+>   * initial frame state for interrupts (and exceptions without error code)
+>   */
+> @@ -626,19 +605,6 @@ END(\label)
+>         FORK_LIKE  vfork
+>         FIXED_FRAME stub_iopl, sys_iopl
+>
+> -ENTRY(ptregscall_common)
+> -       DEFAULT_FRAME 1 8       /* offset 8: return address */
+> -       RESTORE_TOP_OF_STACK %r11, 8
+> -       movq_cfi_restore R15+8, r15
+> -       movq_cfi_restore R14+8, r14
+> -       movq_cfi_restore R13+8, r13
+> -       movq_cfi_restore R12+8, r12
+> -       movq_cfi_restore RBP+8, rbp
+> -       movq_cfi_restore RBX+8, rbx
+> -       ret $REST_SKIP          /* pop extended registers */
+> -       CFI_ENDPROC
+> -END(ptregscall_common)
+> -
+>  ENTRY(stub_execve)
+>         CFI_STARTPROC
+>         addq $8, %rsp
+> --
+> 1.8.1.4
+>
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
