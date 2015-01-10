@@ -1,110 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754910AbbAJT5P (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 14:57:15 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:51766 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753814AbbAJT45 (ORCPT
+	id S1754743AbbAJT46 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 14:56:58 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:34608 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753370AbbAJT45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 10 Jan 2015 14:56:57 -0500
-Date: Sat, 10 Jan 2015 11:56:48 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Omar Sandoval <osandov@osandov.com>
-Cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        David Sterba <dsterba@suse.cz>, Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH RESEND v8 0/3] Introduce RCU string API
-Message-ID: <20150110195647.GA8063@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <cover.1420834567.git.osandov@osandov.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1420834567.git.osandov@osandov.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15011019-0009-0000-0000-000007DE8C4A
+In-Reply-To: <54B181B7.5080503@redhat.com>
+References: <CA+55aFwsxoyLb9OWMSCL3doe_cz_EQtKsEFCyPUYn_T87pbz0A@mail.gmail.com>
+	<54AE7D53.2020305@redhat.com>
+	<20150109121348.GD12942@leverpostej>
+	<CAPvkgC23LHhs7Tw4rdAPFooimonji8R7kEAbWYRKPJwouwUzBA@mail.gmail.com>
+	<54AFE53A.4020004@redhat.com>
+	<20150109175702.GA27787@leverpostej>
+	<54B01FF0.3020900@arm.com>
+	<20150109194333.GA23028@arm.com>
+	<54B09CA3.1060501@redhat.com>
+	<CA+55aFw3aGeiWOiKxQaC23VVX_Q9B0cDeZc37vVfK+SJVjGwFw@mail.gmail.com>
+	<20150110133742.GA6999@arm.com>
+	<54B181B7.5080503@redhat.com>
+Date: Sat, 10 Jan 2015 11:56:55 -0800
+X-Google-Sender-Auth: FrLti7uGOAnoyxmhxKSFs9_urlM
+Message-ID: <CA+55aFzXYhyBW_pF___69o98uq7nnH60wvnTr37RYmrjQgsdQA@mail.gmail.com>
+Subject: Re: Linux 3.19-rc3
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Laszlo Ersek <lersek@redhat.com>
+Cc: Will Deacon <will.deacon@arm.com>, Mark Langsdorf <mlangsdo@redhat.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Steve Capper <steve.capper@linaro.org>,
+        "vishnu.ps@samsung.com" <vishnu.ps@samsung.com>,
+        main kernel list <linux-kernel@vger.kernel.org>,
+        arm kernel list <linux-arm-kernel@lists.infradead.org>,
+        Kyle McMartin <kmcmarti@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 12:35:57PM -0800, Omar Sandoval wrote:
-> Hi, everyone,
-> 
-> Now that the merge window and the holidays are over, I've rebased this on
-> v3.19-rc3 for the next merge window.
+On Sat, Jan 10, 2015 at 11:47 AM, Laszlo Ersek <lersek@redhat.com> wrote:
+>
+> I grepped the tree for "fullmm", and only tlb_gather_mmu() seems to set
+> it. There are several instances of that function, but each sets fullmm to:
+>
+>         /* Is it from 0 to ~0? */
+>         tlb->fullmm     = !(start | (end+1));
+>
+> So, a nonzero fullmm seems to imply (end == ~0UL).
 
-Wasn't btrfs going to take this one?
+Yes. But note how it imples "end == ~0ul", but it does *not* imply
+"tlb->end" having that value.
 
-If I am supposed to take it, please split out the RCU infrastructure
-portion so that I can push it separately.
+tlb->end is initialized to zero (not obvious, but it's what the call
+to __tlb_reset_range() does). It's then updated by
+__tlb_adjust_range() as we actually flush individual pages.
 
-							Thanx, Paul
-
-> This patch series introduces the RCU string API and cleans up the wreckage of
-> sparse warnings which follow from it (shown here from when the patch was
-> briefly in the btrfs integration tree):
-> 
-> On Thu, Nov 27, 2014 at 06:45:20AM +0800, kbuild test robot wrote:
-> > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git integration
-> > head:   c7a37618b60026121255c69e042d74ae5631470c
-> > commit: 37aad79d90a0cbf82a5eda62dfe3af4241f5aca3 [38/39] Move BTRFS RCU string to common library
-> > reproduce:
-> >   # apt-get install sparse
-> >   git checkout 37aad79d90a0cbf82a5eda62dfe3af4241f5aca3
-> >   make ARCH=x86_64 allmodconfig
-> >   make C=1 CF=-D__CHECK_ENDIAN__
-> >
-> >
-> > sparse warnings: (new ones prefixed by >>)
-> >
-> > >> fs/btrfs/check-integrity.c:848:25: sparse: incorrect type in argument 1 (different address spaces)
-> >    fs/btrfs/check-integrity.c:848:25:    expected struct rcu_string [noderef] <asn:4>*rcu_str
-> >    fs/btrfs/check-integrity.c:848:25:    got struct rcu_string *name
-> [snip]
-> 
-> Version 8 combines the original patch with another patch series I posted to fix
-> these warnings, which fixes the botched __rcu annotations that caused some of
-> the warnings and refactors the existing uses of rcustring to get rid of the
-> rest. There's also a patch to fix an RCU misuse.
-> 
-> Thanks!
-> 
-> v8: Get the __rcu annotations right, clean up RCU string-related sparse noise
-> v7: Add arguments to kernel doc for printk wrappers, use ##__VA_ARGS
-> v6: Add header dependencies to rcustring.h
-> v5: Rebase against v3.18-rc3
-> v4: Don't return anything from the printk wrappers on the assumption that
-> printk will return void someday
-> v3: Add __rcu annotation to relevant functions, add Paul's ack and Josh's
-> review
-> 
-> Omar Sandoval (3):
->   Move BTRFS RCU string to common library
->   btrfs: refactor btrfs_device->name updates
->   btrfs: fix suspicious RCU in BTRFS_IOC_DEV_INFO
-> 
->  fs/btrfs/check-integrity.c |   6 +--
->  fs/btrfs/dev-replace.c     |  19 ++++----
->  fs/btrfs/disk-io.c         |   6 +--
->  fs/btrfs/extent_io.c       |   4 +-
->  fs/btrfs/ioctl.c           |  14 +++---
->  fs/btrfs/raid56.c          |   2 +-
->  fs/btrfs/rcu-string.h      |  56 ------------------------
->  fs/btrfs/scrub.c           |  15 ++++---
->  fs/btrfs/super.c           |   2 +-
->  fs/btrfs/volumes.c         | 107 ++++++++++++++++++++++++++++++---------------
->  fs/btrfs/volumes.h         |   2 +-
->  include/linux/rcustring.h  |  97 ++++++++++++++++++++++++++++++++++++++++
->  12 files changed, 204 insertions(+), 126 deletions(-)
->  delete mode 100644 fs/btrfs/rcu-string.h
->  create mode 100644 include/linux/rcustring.h
-> 
-> -- 
-> 2.2.1
-> 
-
+                           Linus
