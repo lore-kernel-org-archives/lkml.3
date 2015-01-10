@@ -1,79 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834AbbAJURg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 15:17:36 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:60831 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751856AbbAJURf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 15:17:35 -0500
+	id S1753418AbbAJUji (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 15:39:38 -0500
+Received: from mail-by2on0144.outbound.protection.outlook.com ([207.46.100.144]:31969
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750753AbbAJUjg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jan 2015 15:39:36 -0500
+X-WSS-ID: 0NHZAPV-08-736-02
+X-M-MSG: 
+Message-ID: <54B18DFF.80400@amd.com>
+Date: Sat, 10 Jan 2015 22:39:27 +0200
+From: Oded Gabbay <oded.gabbay@amd.com>
+Organization: AMD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <CAK1hOcO7K=4N8CF=LOPmosXRNnogaNi5vLDPMdb0XiKsL=JOfg@mail.gmail.com>
-References: <1420734315-30943-1-git-send-email-dvlasenk@redhat.com>
- <1420734315-30943-4-git-send-email-dvlasenk@redhat.com> <20150109121950.GD13637@pd.tnic>
- <CAK1hOcMsGJ7geRAzfazPLZitcO0o9XYRPJDYa8sJHR4i6DPL-g@mail.gmail.com>
- <20150110142336.GC12218@pd.tnic> <CAK1hOcO7K=4N8CF=LOPmosXRNnogaNi5vLDPMdb0XiKsL=JOfg@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sat, 10 Jan 2015 12:17:13 -0800
-Message-ID: <CALCETrXS7BvtS3P3J8hnbt3GGvezx-935uxanSN_a=CU6s1d3g@mail.gmail.com>
-Subject: Re: [PATCH 3/4] x86: open-code register save/restore in
- trace_hardirqs thunks
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Borislav Petkov <bp@alien8.de>, Denys Vlasenko <dvlasenk@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+To: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Willem de Bruijn <willemb@google.com>,
+        "Bridgman, John" <John.Bridgman@amd.com>,
+        "Elifaz, Dana" <Dana.Elifaz@amd.com>
+Subject: [BUG] 3.19-rc1 net: less interrupt masking in NAPI
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.224.10.145]
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(164054003)(189002)(199003)(64126003)(68736005)(50466002)(19580405001)(19580395003)(36756003)(65816999)(54356999)(50986999)(77096005)(575784001)(86362001)(92566002)(87936001)(97736003)(33656002)(46102003)(105586002)(62966003)(77156002)(106466001)(101416001)(83506001)(65806001)(23676002)(65956001)(229853001)(64706001)(47776003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY1PR0201MB1077;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BY1PR0201MB1077;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY1PR0201MB1077;
+X-Forefront-PRVS: 0452022BE1
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0201MB1077;
+X-OriginatorOrg: amd4.onmicrosoft.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 10 Jan 2015 20:39:33.5073
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.222]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY1PR0201MB1077
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 12:14 PM, Denys Vlasenko
-<vda.linux@googlemail.com> wrote:
-> On Sat, Jan 10, 2015 at 3:23 PM, Borislav Petkov <bp@alien8.de> wrote:
->> Bah, I see it. This nasty '$' gets forgotten a lot, maybe we should have
->> a check for that in some scripts :-)
->>
->> Here's the fix:
->>
->> ---
->> Index: b/arch/x86/lib/thunk_64.S
->> ===================================================================
->> --- a/arch/x86/lib/thunk_64.S   2015-01-10 15:18:04.418737613 +0100
->> +++ b/arch/x86/lib/thunk_64.S   2015-01-10 15:17:18.882736556 +0100
->> @@ -67,7 +67,7 @@ restore:
->>         movq_cfi_restore 6*8, rdx
->>         movq_cfi_restore 7*8, rsi
->>         movq_cfi_restore 8*8, rdi
->> -       addq 9*8, %rsp
->> +       addq $9*8, %rsp
->>         CFI_ADJUST_CFA_OFFSET -9*8
->>         ret
->
-> Thanks!
->
-> After I've seen the disassembly I myself posted, I can't help but wonder
-> why we use 5-byte instructions to store and load regs on stack when
-> pushes and pops are 1 or 2-byte long.
->
+Hi,
 
-I asked this once, and someone told me that push/pop has lower
-throughput.  I find this surprising.
+Commit d75b1ade567ffab085e8adbbdacf0092d10cd09c breaks my "Qualcomm Atheros
+AR8161 Gigabit Ethernet (rev 10)" Ethernet controller, which is handled by
+the alx network driver.
 
---Andy
+ogabbay@odedg-ubuntu:~$ lspci -s 01:00.0 -k
+01:00.0 Ethernet controller:
+	Qualcomm Atheros AR8161 Gigabit Ethernet (rev 10)
+	Subsystem: Qualcomm Atheros Device 1071
+	Kernel driver in use: alx
 
-> Especially that 32-bit code *does* use push/pops.
->
-> Can you test the attached patch with your kvm guest testcase?
+I have this controller on a mobile platform of AMD APU Kaveri, which I use
+to test amdkfd, and from 3.19-rc1 the network stopped working when trying to
+transfer files through scp or nfs.
 
-Tt could be worth adding a macro along the lines of pushq_cfi_save
-that does the pushq_cfi and the CFI_REL_OFFSET.
+I bisected the kernel (from 3.18.0 to 3.19-rc1) and reached this commit.
 
---Andy
+Here is the log of the bisect:
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+git bisect start
+# bad: [97bf6af1f928216fd6c5a66e8a57bfa95a659672] Linux 3.19-rc1
+git bisect bad 97bf6af1f928216fd6c5a66e8a57bfa95a659672
+
+# good: [b2776bf7149bddd1f4161f14f79520f17fc1d71d] Linux 3.18
+git bisect good b2776bf7149bddd1f4161f14f79520f17fc1d71d
+
+# bad: [70e71ca0af244f48a5dcf56dc435243792e3a495] Merge
+git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next
+git bisect bad 70e71ca0af244f48a5dcf56dc435243792e3a495
+
+# good: [e28870f9b3e92cd3570925089c6bb789c2603bc4] Merge tag
+'backlight-for-linus-3.19' of
+git://git.kernel.org/pub/scm/linux/kernel/git/lee/backlight
+git bisect good e28870f9b3e92cd3570925089c6bb789c2603bc4
+
+# bad: [450fa21942fe2c37f0c9f52d1a33bbc081eee288] sh_eth: Remove redundant
+alignment adjustment
+git bisect bad 450fa21942fe2c37f0c9f52d1a33bbc081eee288
+
+# bad: [5c8d19da950861d0482abc0ac3481acca34b008f] e100e: use
+netdev_rss_key_fill() helper
+git bisect bad 5c8d19da950861d0482abc0ac3481acca34b008f
+
+# good: [bf515fb11ab539c76d04f0e3c5216ed41f41d81f] Merge tag
+'mac80211-next-for-john-2014-11-04' of
+git://git.kernel.org/pub/scm/linux/kernel/git/jberg/mac80211-next
+git bisect good bf515fb11ab539c76d04f0e3c5216ed41f41d81f
+
+# bad: [2c99cd914d4fed9160d98849c9dd38034616768e] Merge branch 'amd-xgbe-next'
+git bisect bad 2c99cd914d4fed9160d98849c9dd38034616768e
+
+# good: [3d762a0f0ab9cb4a6b5993db3ce56c92f9f90ab2] net: dsa: Add support for
+reading switch registers with ethtool
+git bisect good 3d762a0f0ab9cb4a6b5993db3ce56c92f9f90ab2
+
+# bad: [8ce0c8254f15229aa99fc6c04141f28c446e5f8c] Merge branch 'master' of
+git://git.kernel.org/pub/scm/linux/kernel/git/jkirsher/net-next
+git bisect bad 8ce0c8254f15229aa99fc6c04141f28c446e5f8c
+
+# good: [f0c65567b3c1b23f79e8a49139580a3872a68d1f] Merge branch
+'sunvnet-multi-tx-queue'
+git bisect good f0c65567b3c1b23f79e8a49139580a3872a68d1f
+
+# bad: [547f2735c20023d7b50a791b1b17cacb652e9237] Merge branch 'mlx4-next'
+git bisect bad 547f2735c20023d7b50a791b1b17cacb652e9237
+
+# good: [4cdb1e2e3d3495423db558d3bb7ed11d66aabce7] net: shrink struct
+softnet_data
+git bisect good 4cdb1e2e3d3495423db558d3bb7ed11d66aabce7
+
+# bad: [0a98455666ec87378148a1dde97f1ce5baf75a64] net/mlx4_core: Protect
+port type setting by mutex
+git bisect bad 0a98455666ec87378148a1dde97f1ce5baf75a64
+
+# bad: [6e8066999800d90d52af5c84ac49ebf683d14cdc] net/mlx4_core: Prevent VF
+from changing port configuration
+git bisect bad 6e8066999800d90d52af5c84ac49ebf683d14cdc
+
+# bad: [d75b1ade567ffab085e8adbbdacf0092d10cd09c] net: less interrupt
+masking in NAPI
+git bisect bad d75b1ade567ffab085e8adbbdacf0092d10cd09c
+
+# first bad commit: [d75b1ade567ffab085e8adbbdacf0092d10cd09c]
+net: less interrupt masking in NAPI
+
+Could you please solve this issue as it renders my board quite useless.
+
+If you need more info, please ask.
+
+Thanks,
+	Oded
