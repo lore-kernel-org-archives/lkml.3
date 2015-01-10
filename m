@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755381AbbAJWAx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 17:00:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43664 "EHLO mx1.redhat.com"
+	id S1755928AbbAJWCJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 17:02:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53451 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752760AbbAJWAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 17:00:51 -0500
+	id S1755034AbbAJWBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jan 2015 17:01:01 -0500
 From: Denys Vlasenko <dvlasenk@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Denys Vlasenko <dvlasenk@redhat.com>,
@@ -15,29 +15,19 @@ Cc: Denys Vlasenko <dvlasenk@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
         Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
         Kees Cook <keescook@chromium.org>
-Subject: [PATCH 0/4 v2] x86: entry.S cleanup
-Date: Sat, 10 Jan 2015 23:00:06 +0100
-Message-Id: <1420927210-19738-1-git-send-email-dvlasenk@redhat.com>
+Subject: [PATCH 1/4] x86: entry_64.S: delete unused code
+Date: Sat, 10 Jan 2015 23:00:07 +0100
+Message-Id: <1420927210-19738-2-git-send-email-dvlasenk@redhat.com>
+In-Reply-To: <1420927210-19738-1-git-send-email-dvlasenk@redhat.com>
+References: <1420927210-19738-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the first part of a bigger patch set I posted last August,
-then under title of "x86: entry.S optimizations".
+A define, two macros and an unreferenced bit of assembly are gone.
 
-I fully rebased that patch set to Linus tree, but currently
-Linus and -next are diverging a bit in arch/x86/kernel/entry_64.S
-
-To make it easier for mainteiners, I'm splitting the old patch set
-into more digestible parts.
-
-This is the first set. These four patches apply both to Linus and -next.
-They do not contain any substantial code changes.
-Patches 2 and 4 don't result in any actual code changes.
-
-Changes since v1:
-Patch #3 had a bug.
-
+Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+Acked-by: Borislav Petkov <bp@suse.de>
 CC: Linus Torvalds <torvalds@linux-foundation.org>
 CC: Oleg Nesterov <oleg@redhat.com>
 CC: "H. Peter Anvin" <hpa@zytor.com>
@@ -49,19 +39,75 @@ CC: Alexei Starovoitov <ast@plumgrid.com>
 CC: Will Drewry <wad@chromium.org>
 CC: Kees Cook <keescook@chromium.org>
 CC: linux-kernel@vger.kernel.org
+---
+ arch/x86/include/asm/calling.h |  1 -
+ arch/x86/kernel/entry_64.S     | 34 ----------------------------------
+ 2 files changed, 35 deletions(-)
 
-Denys Vlasenko (4):
-  x86: entry_64.S: delete unused code
-  x86: ia32entry.S: fix wrong symbolic constant usage: R11->ARGOFFSET
-  x86: open-code register save/restore in trace_hardirqs thunks
-  x86: entry_64.S: fold SAVE_ARGS_IRQ macro into its sole user
-
- arch/x86/ia32/ia32entry.S      |   4 +-
- arch/x86/include/asm/calling.h |   1 -
- arch/x86/kernel/entry_64.S     | 122 ++++++++++++++---------------------------
- arch/x86/lib/thunk_64.S        |  29 ++++++++--
- 4 files changed, 68 insertions(+), 88 deletions(-)
-
+diff --git a/arch/x86/include/asm/calling.h b/arch/x86/include/asm/calling.h
+index 76659b6..1f1297b 100644
+--- a/arch/x86/include/asm/calling.h
++++ b/arch/x86/include/asm/calling.h
+@@ -83,7 +83,6 @@ For 32-bit we have the following conventions - kernel is built with
+ #define SS		160
+ 
+ #define ARGOFFSET	R11
+-#define SWFRAME		ORIG_RAX
+ 
+ 	.macro SAVE_ARGS addskip=0, save_rcx=1, save_r891011=1, rax_enosys=0
+ 	subq  $9*8+\addskip, %rsp
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 931f32f..5ed4773 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -155,27 +155,6 @@ ENDPROC(native_usergs_sysret64)
+ 	movq \tmp,R11+\offset(%rsp)
+ 	.endm
+ 
+-	.macro FAKE_STACK_FRAME child_rip
+-	/* push in order ss, rsp, eflags, cs, rip */
+-	xorl %eax, %eax
+-	pushq_cfi $__KERNEL_DS /* ss */
+-	/*CFI_REL_OFFSET	ss,0*/
+-	pushq_cfi %rax /* rsp */
+-	CFI_REL_OFFSET	rsp,0
+-	pushq_cfi $(X86_EFLAGS_IF|X86_EFLAGS_FIXED) /* eflags - interrupts on */
+-	/*CFI_REL_OFFSET	rflags,0*/
+-	pushq_cfi $__KERNEL_CS /* cs */
+-	/*CFI_REL_OFFSET	cs,0*/
+-	pushq_cfi \child_rip /* rip */
+-	CFI_REL_OFFSET	rip,0
+-	pushq_cfi %rax /* orig rax */
+-	.endm
+-
+-	.macro UNFAKE_STACK_FRAME
+-	addq $8*6, %rsp
+-	CFI_ADJUST_CFA_OFFSET	-(6*8)
+-	.endm
+-
+ /*
+  * initial frame state for interrupts (and exceptions without error code)
+  */
+@@ -626,19 +605,6 @@ END(\label)
+ 	FORK_LIKE  vfork
+ 	FIXED_FRAME stub_iopl, sys_iopl
+ 
+-ENTRY(ptregscall_common)
+-	DEFAULT_FRAME 1 8	/* offset 8: return address */
+-	RESTORE_TOP_OF_STACK %r11, 8
+-	movq_cfi_restore R15+8, r15
+-	movq_cfi_restore R14+8, r14
+-	movq_cfi_restore R13+8, r13
+-	movq_cfi_restore R12+8, r12
+-	movq_cfi_restore RBP+8, rbp
+-	movq_cfi_restore RBX+8, rbx
+-	ret $REST_SKIP		/* pop extended registers */
+-	CFI_ENDPROC
+-END(ptregscall_common)
+-
+ ENTRY(stub_execve)
+ 	CFI_STARTPROC
+ 	addq $8, %rsp
 -- 
 1.8.1.4
 
