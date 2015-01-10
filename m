@@ -1,56 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055AbbAJIv6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 03:51:58 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:37631 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306AbbAJIv5 (ORCPT
+	id S1754396AbbAJIxJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 03:53:09 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:54387 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752328AbbAJIxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 03:51:57 -0500
-From: Stefan Agner <stefan@agner.ch>
-To: arnd@arndb.de
-Cc: shawn.guo@linaro.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, stefan@agner.ch
-Subject: [PATCH RESEND] MAINTAINERS: add Freescale Vybrid SoC
-Date: Sat, 10 Jan 2015 09:51:49 +0100
-Message-Id: <1420879909-10970-1-git-send-email-stefan@agner.ch>
-X-Mailer: git-send-email 2.2.1
+	Sat, 10 Jan 2015 03:53:07 -0500
+Date: Sat, 10 Jan 2015 14:22:59 +0530
+From: Vaishali Thakkar <vthakkar1994@gmail.com>
+To: matthew.r.wilcox@intel.com
+Cc: linux-kernel@vger.kernel.org, linux-nvme@lists.infradead.org, axboe@fb.com
+Subject: [PATCH v2] NVMe: Use put_unaligned_be64
+Message-ID: <20150110085259.GA3120@vaishali-Ideapad-Z570>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Freescale Vybrid family as a own entry, along with an entry for
-the so far orphan Vybrid device tree files. Also add myself as
-a designated reviewer.
+This patch introduces the use of function put_unaligned_be64.
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Stefan Agner <stefan@agner.ch>
----
+This is done using Coccinelle and semantic patch used is as follows:
 
- MAINTAINERS | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+@a@
+typedef u64, __be64, uint64_t;
+{u64,__be64,uint64_t} e64;
+identifier tmp;
+expression ptr;
+expression y,e;
+type T;
+@@
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index ddb9ac8..5f706ca 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1011,6 +1011,16 @@ F:	arch/arm/mach-mxs/
- F:	arch/arm/boot/dts/imx*
- F:	arch/arm/configs/imx*_defconfig
+- tmp = cpu_to_be64(y);
+
+<+... when != tmp
+(
+- memcpy(ptr, (T)&tmp, \(8\|sizeof(u64)\|sizeof(__be64)\|sizeof(uint64_t)\|sizeof(e64)\));
++ put_unaligned_be64(y,ptr);
+|
+- memcpy(ptr, (T)&tmp, ...);
++ put_unaligned_be64(y,ptr);
+)
+...+>
+? tmp = e
+
+@@ type T; identifier a.tmp; @@
+
+- T tmp;
+...when != tmp
+
+Signed-off-by: Vaishali Thakkar <vthakkar1994@gmail.com>
+--
+Changes in v2:
+   -Shorten commit message and change subject line
+   -<asm/unaligned.h>  has arch-specific knowlege of which of
+    the implementations needs to be used. So, include it instaed
+    of <linux/unaligned/access_ok.h>.
+
+ drivers/block/nvme-scsi.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/block/nvme-scsi.c b/drivers/block/nvme-scsi.c
+index 5e78568..12893ef 100644
+--- a/drivers/block/nvme-scsi.c
++++ b/drivers/block/nvme-scsi.c
+@@ -43,6 +43,7 @@
+ #include <linux/types.h>
+ #include <scsi/sg.h>
+ #include <scsi/scsi.h>
++#include <asm/unaligned.h>
  
-+ARM/FREESCALE VYBRID ARM ARCHITECTURE
-+M:	Shawn Guo <shawn.guo@linaro.org>
-+M:	Sascha Hauer <kernel@pengutronix.de>
-+R:	Stefan Agner <stefan@agner.ch>
-+L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-+S:	Maintained
-+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/shawnguo/linux.git
-+F:	arch/arm/mach-imx/*vf610*
-+F:	arch/arm/boot/dts/vf*
-+
- ARM/GLOMATION GESBC9312SX MACHINE SUPPORT
- M:	Lennert Buytenhek <kernel@wantstofly.org>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ 
+ static int sg_version_num = 30534;	/* 2 digits for each component */
+@@ -1417,7 +1418,6 @@ static void nvme_trans_fill_read_cap(u8 *response, struct nvme_id_ns *id_ns,
+ 	u64 rlba;
+ 	u8 prot_en;
+ 	u8 p_type_lut[4] = {0, 0, 1, 2};
+-	__be64 tmp_rlba;
+ 	__be32 tmp_rlba_32;
+ 	__be32 tmp_len;
+ 
+@@ -1434,9 +1434,8 @@ static void nvme_trans_fill_read_cap(u8 *response, struct nvme_id_ns *id_ns,
+ 		memcpy(response, &tmp_rlba_32, sizeof(u32));
+ 		memcpy(&response[4], &tmp_len, sizeof(u32));
+ 	} else {
+-		tmp_rlba = cpu_to_be64(rlba);
+ 		tmp_len = cpu_to_be32(lba_length);
+-		memcpy(response, &tmp_rlba, sizeof(u64));
++		put_unaligned_be64(rlba, response);
+ 		memcpy(&response[8], &tmp_len, sizeof(u32));
+ 		response[12] = (p_type_lut[id_ns->dps & 0x3] << 1) | prot_en;
+ 		/* P_I_Exponent = 0x0 | LBPPBE = 0x0 */
 -- 
-2.2.1
+1.9.1
 
