@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758596AbbAJCic (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 21:38:32 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:52545 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754418AbbAJCfl (ORCPT
+	id S1755972AbbAJCfr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 21:35:47 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:59555 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753475AbbAJCfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 21:35:41 -0500
+	Fri, 9 Jan 2015 21:35:43 -0500
 From: Rob Herring <robh@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, linux-pci@vger.kernel.org,
         Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
         Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 07/16] ARM: integrator: convert PCI to use generic config accesses
-Date: Fri,  9 Jan 2015 20:34:41 -0600
-Message-Id: <1420857290-8373-8-git-send-email-robh@kernel.org>
+Subject: [PATCH 08/16] ARM: sa1100: convert PCI to use generic config accesses
+Date: Fri,  9 Jan 2015 20:34:42 -0600
+Message-Id: <1420857290-8373-9-git-send-email-robh@kernel.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1420857290-8373-1-git-send-email-robh@kernel.org>
 References: <1420857290-8373-1-git-send-email-robh@kernel.org>
@@ -24,125 +23,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert the integrator PCI driver to use the generic config access
+Convert the sa1100 nanoengine PCI driver to use the generic config access
 functions.
 
 This changes accesses from __raw_readX/__raw_writeX to readX/writeX
 variants. The spinlock is removed because it is unnecessary. The config
-read and write functions are already protected with a spinlock and no
-access can occur during the .pre_init function.
+read and write functions are already protected with a spinlock.
 
 Signed-off-by: Rob Herring <robh@kernel.org>
 Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org
 ---
- arch/arm/mach-integrator/pci_v3.c | 61 ++++-----------------------------------
- 1 file changed, 5 insertions(+), 56 deletions(-)
+ arch/arm/mach-sa1100/pci-nanoengine.c | 94 +++--------------------------------
+ 1 file changed, 8 insertions(+), 86 deletions(-)
 
-diff --git a/arch/arm/mach-integrator/pci_v3.c b/arch/arm/mach-integrator/pci_v3.c
-index c186a17..dc7782f 100644
---- a/arch/arm/mach-integrator/pci_v3.c
-+++ b/arch/arm/mach-integrator/pci_v3.c
-@@ -356,7 +356,6 @@ static u64 pre_mem_pci_sz;
-  *	 7:2	register number
-  *
-  */
--static DEFINE_RAW_SPINLOCK(v3_lock);
+diff --git a/arch/arm/mach-sa1100/pci-nanoengine.c b/arch/arm/mach-sa1100/pci-nanoengine.c
+index b704433..d7ae8d5 100644
+--- a/arch/arm/mach-sa1100/pci-nanoengine.c
++++ b/arch/arm/mach-sa1100/pci-nanoengine.c
+@@ -22,7 +22,6 @@
+ #include <linux/kernel.h>
+ #include <linux/irq.h>
+ #include <linux/pci.h>
+-#include <linux/spinlock.h>
  
- #undef V3_LB_BASE_PREFETCH
- #define V3_LB_BASE_PREFETCH 0
-@@ -457,67 +456,21 @@ static void v3_close_config_window(void)
- static int v3_read_config(struct pci_bus *bus, unsigned int devfn, int where,
- 			  int size, u32 *val)
+ #include <asm/mach/pci.h>
+ #include <asm/mach-types.h>
+@@ -30,97 +29,20 @@
+ #include <mach/nanoengine.h>
+ #include <mach/hardware.h>
+ 
+-static DEFINE_SPINLOCK(nano_lock);
+-
+-static int nanoengine_get_pci_address(struct pci_bus *bus,
+-	unsigned int devfn, int where, void __iomem **address)
++static void __iomem *nanoengine_pci_map_bus(struct pci_bus *bus,
++					    unsigned int devfn, int where)
  {
--	void __iomem *addr;
+-	int ret = PCIBIOS_DEVICE_NOT_FOUND;
+-	unsigned int busnr = bus->number;
++	if (bus->number != 0 || (devfn >> 3) != 0)
++		return NULL;
+ 
+-	*address = (void __iomem *)NANO_PCI_CONFIG_SPACE_VIRT +
++	return (void __iomem *)NANO_PCI_CONFIG_SPACE_VIRT +
+ 		((bus->number << 16) | (devfn << 8) | (where & ~3));
+-
+-	ret = (busnr > 255 || devfn > 255 || where > 255) ?
+-		PCIBIOS_DEVICE_NOT_FOUND : PCIBIOS_SUCCESSFUL;
+-
+-	return ret;
+-}
+-
+-static int nanoengine_read_config(struct pci_bus *bus, unsigned int devfn, int where,
+-	int size, u32 *val)
+-{
+-	int ret;
+-	void __iomem *address;
 -	unsigned long flags;
 -	u32 v;
 -
--	raw_spin_lock_irqsave(&v3_lock, flags);
--	addr = v3_open_config_window(bus, devfn, where);
--
--	switch (size) {
--	case 1:
--		v = __raw_readb(addr);
--		break;
--
--	case 2:
--		v = __raw_readw(addr);
--		break;
--
--	default:
--		v = __raw_readl(addr);
--		break;
+-	/* nanoEngine PCI bridge does not return -1 for a non-existing
+-	 * device. We must fake the answer. We know that the only valid
+-	 * device is device zero at bus 0, which is the network chip. */
+-	if (bus->number != 0 || (devfn >> 3) != 0) {
+-		v = -1;
+-		nanoengine_get_pci_address(bus, devfn, where, &address);
+-		goto exit_function;
 -	}
 -
-+	int ret = pci_generic_config_read(bus, devfn, where, size, val);
- 	v3_close_config_window();
--	raw_spin_unlock_irqrestore(&v3_lock, flags);
+-	spin_lock_irqsave(&nano_lock, flags);
 -
+-	ret = nanoengine_get_pci_address(bus, devfn, where, &address);
+-	if (ret != PCIBIOS_SUCCESSFUL)
+-		return ret;
+-	v = __raw_readl(address);
+-
+-	spin_unlock_irqrestore(&nano_lock, flags);
+-
+-	v >>= ((where & 3) * 8);
+-	v &= (unsigned long)(-1) >> ((4 - size) * 8);
+-
+-exit_function:
 -	*val = v;
 -	return PCIBIOS_SUCCESSFUL;
-+	return ret;
- }
- 
- static int v3_write_config(struct pci_bus *bus, unsigned int devfn, int where,
- 			   int size, u32 val)
- {
--	void __iomem *addr;
+-}
+-
+-static int nanoengine_write_config(struct pci_bus *bus, unsigned int devfn, int where,
+-	int size, u32 val)
+-{
+-	int ret;
+-	void __iomem *address;
 -	unsigned long flags;
+-	unsigned shift;
+-	u32 v;
 -
--	raw_spin_lock_irqsave(&v3_lock, flags);
--	addr = v3_open_config_window(bus, devfn, where);
+-	shift = (where & 3) * 8;
 -
+-	spin_lock_irqsave(&nano_lock, flags);
+-
+-	ret = nanoengine_get_pci_address(bus, devfn, where, &address);
+-	if (ret != PCIBIOS_SUCCESSFUL)
+-		return ret;
+-	v = __raw_readl(address);
 -	switch (size) {
 -	case 1:
--		__raw_writeb((u8)val, addr);
--		__raw_readb(addr);
+-		v &= ~(0xFF << shift);
+-		v |= val << shift;
 -		break;
--
 -	case 2:
--		__raw_writew((u16)val, addr);
--		__raw_readw(addr);
+-		v &= ~(0xFFFF << shift);
+-		v |= val << shift;
 -		break;
--
 -	case 4:
--		__raw_writel(val, addr);
--		__raw_readl(addr);
+-		v = val;
 -		break;
 -	}
+-	__raw_writel(v, address);
 -
-+	int ret = pci_generic_config_write(bus, devfn, where, size, val);
- 	v3_close_config_window();
--	raw_spin_unlock_irqrestore(&v3_lock, flags);
+-	spin_unlock_irqrestore(&nano_lock, flags);
 -
 -	return PCIBIOS_SUCCESSFUL;
-+	return ret;
  }
  
- static struct pci_ops pci_v3_ops = {
-+	.map_bus = v3_open_config_window,
- 	.read	= v3_read_config,
- 	.write	= v3_write_config,
+ static struct pci_ops pci_nano_ops = {
+-	.read	= nanoengine_read_config,
+-	.write	= nanoengine_write_config,
++	.map_bus = nanoengine_pci_map_bus,
++	.read	= pci_generic_config_read32,
++	.write	= pci_generic_config_write32,
  };
-@@ -672,8 +625,6 @@ static void __init pci_v3_preinit(void)
- 	hook_fault_code(8, v3_pci_fault, SIGBUS, 0, "external abort on non-linefetch");
- 	hook_fault_code(10, v3_pci_fault, SIGBUS, 0, "external abort on non-linefetch");
  
--	raw_spin_lock_irqsave(&v3_lock, flags);
--
- 	/*
- 	 * Unlock V3 registers, but only if they were previously locked.
- 	 */
-@@ -736,8 +687,6 @@ static void __init pci_v3_preinit(void)
- 	v3_writew(V3_LB_CFG, v3_readw(V3_LB_CFG) | (1 << 10));
- 	v3_writeb(V3_LB_IMASK, 0x28);
- 	__raw_writel(3, ap_syscon_base + INTEGRATOR_SC_PCIENABLE_OFFSET);
--
--	raw_spin_unlock_irqrestore(&v3_lock, flags);
- }
- 
- static void __init pci_v3_postinit(void)
+ static int __init pci_nanoengine_map_irq(const struct pci_dev *dev, u8 slot,
 -- 
 2.1.0
 
