@@ -1,163 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758382AbbAJCgV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 21:36:21 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:45264 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756754AbbAJCf6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 21:35:58 -0500
-From: Rob Herring <robh@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-pci@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 16/16] pci/host: xilinx: convert to use generic config accesses
-Date: Fri,  9 Jan 2015 20:34:50 -0600
-Message-Id: <1420857290-8373-17-git-send-email-robh@kernel.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1420857290-8373-1-git-send-email-robh@kernel.org>
-References: <1420857290-8373-1-git-send-email-robh@kernel.org>
+	id S1753695AbbAJCvv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 21:51:51 -0500
+Received: from mail.lang.hm ([64.81.33.126]:46513 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751267AbbAJCvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 21:51:51 -0500
+Date: Fri, 9 Jan 2015 18:51:04 -0800 (PST)
+From: David Lang <david@lang.hm>
+X-X-Sender: dlang@asgard.lang.hm
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Langsdorf <mlangsdo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Linux 3.19-rc3
+In-Reply-To: <CA+55aFz74hjhCcdz5J4r-xK4KW7oqNDA3i=jXHW0prGMMwgMvw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1501091849250.3078@nftneq.ynat.uz>
+References: <CA+55aFwsxoyLb9OWMSCL3doe_cz_EQtKsEFCyPUYn_T87pbz0A@mail.gmail.com> <54AE7D53.2020305@redhat.com> <20150108134520.GC14200@e104818-lin.cambridge.arm.com> <54AEBE84.6090307@redhat.com> <20150108173408.GF17290@e104818-lin.cambridge.arm.com>
+ <54AED10C.7090305@redhat.com> <CA+55aFwpwkjRnTzBe2K0y+2DOH1F=5SpJkYe=P5z8ps5_1PQHQ@mail.gmail.com> <20150109232707.GA6325@e104818-lin.cambridge.arm.com> <20150110003540.GA32037@node.dhcp.inet.fi>
+ <CA+55aFz74hjhCcdz5J4r-xK4KW7oqNDA3i=jXHW0prGMMwgMvw@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert the Xilinx host PCI driver to use the generic config access
-functions.
+On Fri, 9 Jan 2015, Linus Torvalds wrote:
 
-Signed-off-by: Rob Herring <robh@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Michal Simek <michal.simek@xilinx.com>
-Cc: "Sören Brinkmann" <soren.brinkmann@xilinx.com>
-Cc: linux-pci@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
----
- drivers/pci/host/pcie-xilinx.c | 88 +++++-------------------------------------
- 1 file changed, 9 insertions(+), 79 deletions(-)
+> Big pages are a bad bad bad idea. They work fine for databases, and
+> that's pretty much just about it. I'm sure there are some other loads,
+> but they are few and far between.
 
-diff --git a/drivers/pci/host/pcie-xilinx.c b/drivers/pci/host/pcie-xilinx.c
-index ef3ebaf..f67d036 100644
---- a/drivers/pci/host/pcie-xilinx.c
-+++ b/drivers/pci/host/pcie-xilinx.c
-@@ -189,7 +189,7 @@ static bool xilinx_pcie_valid_device(struct pci_bus *bus, unsigned int devfn)
- }
- 
- /**
-- * xilinx_pcie_config_base - Get configuration base
-+ * xilinx_pcie_map_bus - Get configuration base
-  * @bus: PCI Bus structure
-  * @devfn: Device/function
-  * @where: Offset from base
-@@ -197,96 +197,26 @@ static bool xilinx_pcie_valid_device(struct pci_bus *bus, unsigned int devfn)
-  * Return: Base address of the configuration space needed to be
-  *	   accessed.
-  */
--static void __iomem *xilinx_pcie_config_base(struct pci_bus *bus,
--					     unsigned int devfn, int where)
-+static void __iomem *xilinx_pcie_map_bus(struct pci_bus *bus,
-+					 unsigned int devfn, int where)
- {
- 	struct xilinx_pcie_port *port = sys_to_pcie(bus->sysdata);
- 	int relbus;
- 
-+	if (!xilinx_pcie_valid_device(bus, devfn))
-+		return NULL;
-+
- 	relbus = (bus->number << ECAM_BUS_NUM_SHIFT) |
- 		 (devfn << ECAM_DEV_NUM_SHIFT);
- 
- 	return port->reg_base + relbus + where;
- }
- 
--/**
-- * xilinx_pcie_read_config - Read configuration space
-- * @bus: PCI Bus structure
-- * @devfn: Device/function
-- * @where: Offset from base
-- * @size: Byte/word/dword
-- * @val: Value to be read
-- *
-- * Return: PCIBIOS_SUCCESSFUL on success
-- *	   PCIBIOS_DEVICE_NOT_FOUND on failure
-- */
--static int xilinx_pcie_read_config(struct pci_bus *bus, unsigned int devfn,
--				   int where, int size, u32 *val)
--{
--	void __iomem *addr;
--
--	if (!xilinx_pcie_valid_device(bus, devfn)) {
--		*val = 0xFFFFFFFF;
--		return PCIBIOS_DEVICE_NOT_FOUND;
--	}
--
--	addr = xilinx_pcie_config_base(bus, devfn, where);
--
--	switch (size) {
--	case 1:
--		*val = readb(addr);
--		break;
--	case 2:
--		*val = readw(addr);
--		break;
--	default:
--		*val = readl(addr);
--		break;
--	}
--
--	return PCIBIOS_SUCCESSFUL;
--}
--
--/**
-- * xilinx_pcie_write_config - Write configuration space
-- * @bus: PCI Bus structure
-- * @devfn: Device/function
-- * @where: Offset from base
-- * @size: Byte/word/dword
-- * @val: Value to be written to device
-- *
-- * Return: PCIBIOS_SUCCESSFUL on success
-- *	   PCIBIOS_DEVICE_NOT_FOUND on failure
-- */
--static int xilinx_pcie_write_config(struct pci_bus *bus, unsigned int devfn,
--				    int where, int size, u32 val)
--{
--	void __iomem *addr;
--
--	if (!xilinx_pcie_valid_device(bus, devfn))
--		return PCIBIOS_DEVICE_NOT_FOUND;
--
--	addr = xilinx_pcie_config_base(bus, devfn, where);
--
--	switch (size) {
--	case 1:
--		writeb(val, addr);
--		break;
--	case 2:
--		writew(val, addr);
--		break;
--	default:
--		writel(val, addr);
--		break;
--	}
--
--	return PCIBIOS_SUCCESSFUL;
--}
--
- /* PCIe operations */
- static struct pci_ops xilinx_pcie_ops = {
--	.read  = xilinx_pcie_read_config,
--	.write = xilinx_pcie_write_config,
-+	.map_bus = xilinx_pcie_map_bus,
-+	.read	= pci_generic_config_read,
-+	.write	= pci_generic_config_write,
- };
- 
- /* MSI functions */
--- 
-2.1.0
+what about a dedicated virtualization host (where your workload is a handful of 
+virtual machines), would the file cache issue still be overwelming, even though 
+it's the virtual machines accessing things?
 
+David Lang
