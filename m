@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565AbbAJKpL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 05:45:11 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:49081 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750962AbbAJKpI (ORCPT
+	id S1753015AbbAJKqa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 05:46:30 -0500
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:49096 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751156AbbAJKq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 05:45:08 -0500
-Date: Sat, 10 Jan 2015 19:44:58 +0900
-From: Namhyung Kim <namhyung@kernel.org>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: "acme@redhat.com" <acme@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "jolsa@kernel.org" <jolsa@kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-perf-users@vger.kernel.org" <linux-perf-users@vger.kernel.org>,
-        "bp@suse.de" <bp@suse.de>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "Alexey.Brodkin@synopsys.com" <Alexey.Brodkin@synopsys.com>
-Subject: Re: [PATCH 4/5] perf tools: [uclibc] don't rely on glibc malloc
- working for sz 0
-Message-ID: <20150110104458.GC29697@danjae>
-References: <1420552335-26886-1-git-send-email-vgupta@synopsys.com>
- <1420552335-26886-5-git-send-email-vgupta@synopsys.com>
- <20150108075125.GF7268@sejong>
- <C2D7FE5348E1B147BCA15975FBA2307565BCA731@IN01WEMBXA.internal.synopsys.com>
+	Sat, 10 Jan 2015 05:46:29 -0500
+Date: Sat, 10 Jan 2015 11:46:27 +0100
+From: Andreas Mohr <andi@lisas.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Lang <david@lang.hm>, "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Langsdorf <mlangsdo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Linux 3.19-rc3
+Message-ID: <20150110104627.GA8281@rhlx01.hs-esslingen.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <C2D7FE5348E1B147BCA15975FBA2307565BCA731@IN01WEMBXA.internal.synopsys.com>
+In-Reply-To: <CA+55aFy+7+-8CHpmOjRXh1txpABRK3PC+7yZ+fESVAmveOWDyw@mail.gmail.com>
+X-Priority: none
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 10:16:06AM +0000, Vineet Gupta wrote:
-> On Thursday 08 January 2015 01:23 PM, Namhyung Kim wrote:
-> > Hmm.. okay.  I think we don't need to allocate the id arrays when size
-> > is 0.  So perf_event__process_attr() will have the same problem IMHO.
-> > How about this?
-> >
-> >
-> > diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-> > index 1e90c8557ede..1d826d63bc20 100644
-> > --- a/tools/perf/util/evsel.c
-> > +++ b/tools/perf/util/evsel.c
-> > @@ -797,6 +797,9 @@ int perf_evsel__enable(struct perf_evsel *evsel, int ncpus, int nthreads)
-> >  
-> >  int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads)
-> >  {
-> > +	if (ncpus == 0 || nthreads == 0)
-> > +		return 0;
-> > +
-> >  	if (evsel->system_wide)
-> >  		nthreads = 1;
-> 
-> Fine by me as I'm not too familiar with perf tools internals.
-> So I need to spin a v2 for this or would you rather create a patch with me as
-> Reported-by:
+Linus Torvalds wrote:
+> I dunno. I do know that you definitely don't want to haev a
+> desktop/workstation with 64kB pages.
 
-Please include this in your v2 and adds me as Suggested-by:
+Yet that is what any VirtualAlloc() call on Windows does
+(well, not exactly *page* granularity but *allocation* granularity there).
+Prime example: do a naively specific/custom VirtualAlloc() request
+for a simple string Hello World\0 allocation (11+1 bytes),
+get one page (4kB, "Private Data") plus "overhead" (60kB, "Unusable").
+--> allocation efficiency: 0.01831%(!).
+And that does hurt plenty IME, especially on a 32bit address space's
+very limited 2GB/3GB total per Win32 process.
 
-Thanks,
-Namhyung
+http://blogs.microsoft.co.il/sasha/2014/07/22/tracking-unusable-virtual-memory-vmmap/
+"Why is address space allocation granularity 64K?"
+  http://blogs.msdn.com/b/oldnewthing/archive/2003/10/08/55239.aspx
+
+One thing less left to wonder why 'doze is such a performance pig...
+
+Andreas Mohr
