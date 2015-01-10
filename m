@@ -1,69 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644AbbAJAtO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 19:49:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39052 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753321AbbAJAtL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 19:49:11 -0500
-Date: Fri, 9 Jan 2015 16:49:10 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Stefan Agner <stefan@agner.ch>
-Cc: jslaby@suse.cz, jingchang.lu@freescale.com, shawn.guo@linaro.org,
-        linux-serial@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] serial: fsl_lpuart: avoid new transfer while DMA
- is running
-Message-ID: <20150110004910.GC4171@kroah.com>
-References: <1420848539-4519-1-git-send-email-stefan@agner.ch>
- <1420848539-4519-3-git-send-email-stefan@agner.ch>
+	id S1755919AbbAJAun (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 19:50:43 -0500
+Received: from nupi.pair.com ([209.68.5.149]:65189 "EHLO nupi.pair.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753288AbbAJAum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jan 2015 19:50:42 -0500
+Message-ID: <54B0775C.1080705@flaterco.com>
+Date: Fri, 09 Jan 2015 19:50:36 -0500
+From: David Flater <vger@flaterco.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420848539-4519-3-git-send-email-stefan@agner.ch>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Takashi Iwai <tiwai@suse.de>
+CC: Jaroslav Kysela <perex@perex.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Alsa Devel <alsa-devel@alsa-project.org>
+Subject: [PATCHv2 1/2] ALSA: fix emu8000 DRAM sizing for AWE64 Value
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 01:08:59AM +0100, Stefan Agner wrote:
-> When the UART is in DMA receive mode (RDMAS set) and one character
-> just arrived while another interrupt is handled (e.g. TX), the RDRF
-> (receiver data register full flag) is set due to the water level of
-> 1. But since the DMA will take care of this character, there is no
-> need to handle it by calling lpuart_prepare_rx. Handling it leads to
-> adding the RX timeout timer twice:
-> 
-> [   74.336698] Kernel BUG at 80053070 [verbose debug info unavailable]
-> [   74.342999] Internal error: Oops - BUG: 0 [#1] ARM0:00.00 khungtaskd
-> [   74.347817] Modules linked in:    0 S  0.0  0.0   0:00.00 writeback
-> [   74.350926] CPU: 0 PID: 0 Comm: swapper Not tainted 3.19.0-rc3-00001-g39d78e2 #1788
-> [   74.358617] Hardware name: Freescale Vybrid VF610 (Device Tree)t
-> [   74.364563] task: 807a7678 ti: 8079c000 task.ti: 8079c000 kblockd
-> [   74.370002] PC is at add_timer+0x24/0x28.0  0.0   0:00.09 kworker/u2:1
-> [   74.373960] LR is at lpuart_int+0x15c/0x3d8
-> [   74.378171] pc : [<80053070>]    lr : [<802e0d88>]    psr: a0010193
-> [   74.378171] sp : 8079de10  ip : 8079de20  fp : 8079de1c
-> [   74.389694] r10: 807d44c0  r9 : 8688c300  r8 : 00000013
-> [   74.394943] r7 : 20010193  r6 : 00000000  r5 : 000000a0  r4 : 86997210
-> [   74.401498] r3 : ffffa7da  r2 : 80817868  r1 : 86997210  r0 : 86997344
-> [   74.408052] Flags: NzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-> [   74.415489] Control: 10c5387d  Table: 8611c059  DAC: 00000015
-> [   74.421265] Process swapper (pid: 0, stack limit = 0x8079c230)
-> ...
-> 
-> Solve this by only execute the receiver path (lpuart_prepare_rx) if
-> the DMA receive mode (RDMAS) is not set. Also, make sure the flag is
-> cleared on initialization, in case it has been left set.
-> 
-> This can be best reproduced using UART as a serial console, then
-> running top while dd'ing data into the terminal.
-> 
-> Signed-off-by: Stefan Agner <stefan@agner.ch>
-> ---
->  drivers/tty/serial/fsl_lpuart.c | 9 +++++----
->  1 file changed, 5 insertions(+), 4 deletions(-)
+Applicable to any kernel since 2013:
 
-Same stable question as before.
+The special case added in commit 1338fc97d07a did not handle the possibility
+that the address space on an AWE64 Value would wrap around at 512 KiB.  That
+is what it does, so the memory is still not detected on those cards.
 
+Fix that with a logic clean-up that eliminates the need for a special case.
+
+Signed-off-by: David Flater <dave@flaterco.com>
+---
+History:
+2015-01-09  v2: In response to feedback from Takashi Iwai,
+               1. Optimize for diff size.
+                 1a. Use goto to avoid indenting and repeating code.
+                 1b. Jettison new debugging printouts.
+               2. Split printk into second patch.
+            Retested on CT4390 (4 MiB) and CT4380 (512 KiB).
+2015-01-08  v1 patch sent to LKML, Alsa Devel and maintainers.  Tested on
+            unexpanded CT4390 (4 MiB), CT4520 (512 KiB), and CT4380 (512
+            KiB).
+
+CT4380 is commonly said to come with 1 MiB of DRAM, but Creative's AWE
+Control app agreed that mine has only 512 KiB.  It has the same memory chip
+as the CT4520.
+
+The affected function first appeared in alsa-driver-0.3.0 and was merged in
+linux-2.5.5.  Its somewhat different ancestor was in sound/oss/awe_wave.c.
+
+ sound/isa/sb/emu8000.c | 33 +++++++++++++++------------------
+ 1 file changed, 15 insertions(+), 18 deletions(-)
+
+diff --git a/sound/isa/sb/emu8000.c b/sound/isa/sb/emu8000.c
+index 45fcdff..3dcf80e 100644
+--- a/sound/isa/sb/emu8000.c
++++ b/sound/isa/sb/emu8000.c
+@@ -378,13 +378,12 @@ init_arrays(struct snd_emu8000 *emu)
+ static void
+ size_dram(struct snd_emu8000 *emu)
+ {
+-	int i, size, detected_size;
++	int i, size;
+ 
+ 	if (emu->dram_checked)
+ 		return;
+ 
+ 	size = 0;
+-	detected_size = 0;
+ 
+ 	/* write out a magic number */
+ 	snd_emu8000_dma_chan(emu, 0, EMU8000_RAM_WRITE);
+@@ -392,11 +391,12 @@ size_dram(struct snd_emu8000 *emu)
+ 	EMU8000_SMALW_WRITE(emu, EMU8000_DRAM_OFFSET);
+ 	EMU8000_SMLD_WRITE(emu, UNIQUE_ID1);
+ 	snd_emu8000_init_fm(emu); /* This must really be here and not 2 lines back even */
++	snd_emu8000_write_wait(emu);
++
++	goto size_dram_ID1_check; /* If that fails, we have no RAM. */
+ 
+ 	while (size < EMU8000_MAX_DRAM) {
+ 
+-		size += 512 * 1024;  /* increment 512kbytes */
+-
+ 		/* Write a unique data on the test address.
+ 		 * if the address is out of range, the data is written on
+ 		 * 0x200000(=EMU8000_DRAM_OFFSET).  Then the id word is
+@@ -424,23 +424,20 @@ size_dram(struct snd_emu8000 *emu)
+ 		 * wraps back to the beginning; so check to see if the
+ 		 * initial value has been overwritten.
+ 		 */
++
++	size_dram_ID1_check:
+ 		EMU8000_SMALR_WRITE(emu, EMU8000_DRAM_OFFSET);
+ 		EMU8000_SMLD_READ(emu); /* discard stale data  */
+ 		if (EMU8000_SMLD_READ(emu) != UNIQUE_ID1)
+-			break; /* we must have wrapped around */
++			break;
+ 		snd_emu8000_read_wait(emu);
+ 
+-		/* Otherwise, it's valid memory. */
+-		detected_size = size + 512 * 1024;
+-	}
+-
+-	/* Distinguish 512 KiB from 0. */
+-	if (detected_size == 0) {
+-		snd_emu8000_read_wait(emu);
+-		EMU8000_SMALR_WRITE(emu, EMU8000_DRAM_OFFSET);
+-		EMU8000_SMLD_READ(emu); /* discard stale data  */
+-		if (EMU8000_SMLD_READ(emu) == UNIQUE_ID1)
+-			detected_size = 512 * 1024;
++		/*
++		 * Otherwise, it's valid memory.  If a write succeeds at
++		 * the beginning of a 512 KiB page we assume that the whole
++		 * page is there.
++		 */
++		size += 512 * 1024;  /* increment 512 KiB */
+ 	}
+ 
+ 	/* wait until FULL bit in SMAxW register is false */
+@@ -455,9 +452,9 @@ size_dram(struct snd_emu8000 *emu)
+ 	snd_emu8000_dma_chan(emu, 1, EMU8000_RAM_CLOSE);
+ 
+ 	snd_printdd("EMU8000 [0x%lx]: %d Kb on-board memory detected\n",
+-		    emu->port1, detected_size/1024);
++		    emu->port1, size/1024);
+ 
+-	emu->mem_size = detected_size;
++	emu->mem_size = size;
+ 	emu->dram_checked = 1;
+ }
+ 
+-- 
+1.8.4
