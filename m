@@ -1,96 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605AbbAJLQE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 06:16:04 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:56274 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085AbbAJLQB (ORCPT
+	id S1753916AbbAJLSO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 06:18:14 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:49032 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056AbbAJLSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 06:16:01 -0500
-Message-ID: <54B109F0.5060101@kernel.org>
-Date: Sat, 10 Jan 2015 11:16:00 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Sat, 10 Jan 2015 06:18:10 -0500
+Date: Sat, 10 Jan 2015 11:17:48 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Chen-Yu Tsai <wens@csie.org>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Tawfik Bayouk <tawfik@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        devicetree <devicetree@vger.kernel.org>,
+        Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        Mark Rutland <mark.rutland@arm.com>, Nadav Haklai <nadavh@marvell.com>,
+        linux-ide@vger.kernel.org, Lior Amsalem <alior@marvell.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Tejun Heo <tj@kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Message-ID: <20150110111748.GB4160@sirena.org.uk>
+References: <1420799989-10645-1-git-send-email-gregory.clement@free-electrons.com>
+ <1420799989-10645-3-git-send-email-gregory.clement@free-electrons.com>
+ <54AFF7E3.4070506@redhat.com>
+ <54AFFFDC.7020307@free-electrons.com>
+ <CAGb2v674q4Cjp9qy9CbUXe2j5pT_ez98CKxXHC8u4Diap2TT1A@mail.gmail.com>
+ <20150109171131.GH2634@sirena.org.uk>
+ <54B0FCDD.7000300@redhat.com>
 MIME-Version: 1.0
-To: Harald Geyer <harald@ccbib.org>
-CC: Richard Weinberger <richard@nod.at>, knaack.h@gmx.de, lars@metafoo.de,
-        pmeerw@pmeerw.net, sanjeev_sharma@mentor.com,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 2/3,RESEND] iio: dht11: Add locking
-References: <1417563176-31972-1-git-send-email-richard@nod.at> <54A53FBF.5000003@kernel.org> <7e4f6a70e48afe96457ebbcf07572224@imap.cosmopool.net> <54A680F8.30209@nod.at> <54A91DA1.6080107@kernel.org> <E1Y881p-0001Fp-NX@stardust.g4.wien.funkfeuer.at> <54AA97B9.7040703@nod.at> <E1Y8pZ9-000133-AF@stardust.g4.wien.funkfeuer.at>
-In-Reply-To: <E1Y8pZ9-000133-AF@stardust.g4.wien.funkfeuer.at>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FsscpQKzF/jJk6ya"
+Content-Disposition: inline
+In-Reply-To: <54B0FCDD.7000300@redhat.com>
+X-Cookie: Keep out of reach of children.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 2/4] Documentation: bindings: Add the regulator
+ property to the sub-nodes AHCI bindings
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/15 12:18, Harald Geyer wrote:
-> Make sure that the read function is not interrupted...
-> 
-> From: Richard Weinberger <richard@nod.at>
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> Acked-by: Harald Geyer <harald@ccbib.org>
-> Reviewed-by: Sanjeev Sharma <sanjeev_sharma@mentor.com>
-> ---
-> Resending again to get the metadata right.
-> No Signed-off-by from me, because I didn't contribute anything.
-Technically you 'handled' the patch which is all that actually
-matters for a sign-off.  Anyhow I don't really care either way ;)
 
-Applied to the fixes-togreg branch of iio.git
+--FsscpQKzF/jJk6ya
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
+On Sat, Jan 10, 2015 at 11:20:13AM +0100, Hans de Goede wrote:
+> On 09-01-15 18:11, Mark Brown wrote:
 
-Jonathan
-> No changes since v1 except reordering.
-> 
->  drivers/iio/humidity/dht11.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/iio/humidity/dht11.c b/drivers/iio/humidity/dht11.c
-> index f546eca..7717f5c 100644
-> --- a/drivers/iio/humidity/dht11.c
-> +++ b/drivers/iio/humidity/dht11.c
-> @@ -29,6 +29,7 @@
->  #include <linux/wait.h>
->  #include <linux/bitops.h>
->  #include <linux/completion.h>
-> +#include <linux/mutex.h>
->  #include <linux/delay.h>
->  #include <linux/gpio.h>
->  #include <linux/of_gpio.h>
-> @@ -57,6 +58,7 @@ struct dht11 {
->  	int				irq;
->  
->  	struct completion		completion;
-> +	struct mutex			lock;
->  
->  	s64				timestamp;
->  	int				temperature;
-> @@ -145,6 +147,7 @@ static int dht11_read_raw(struct iio_dev *iio_dev,
->  	struct dht11 *dht11 = iio_priv(iio_dev);
->  	int ret;
->  
-> +	mutex_lock(&dht11->lock);
->  	if (dht11->timestamp + DHT11_DATA_VALID_TIME < iio_get_time_ns()) {
->  		reinit_completion(&dht11->completion);
->  
-> @@ -185,6 +188,7 @@ static int dht11_read_raw(struct iio_dev *iio_dev,
->  		ret = -EINVAL;
->  err:
->  	dht11->num_edges = -1;
-> +	mutex_unlock(&dht11->lock);
->  	return ret;
->  }
->  
-> @@ -268,6 +272,7 @@ static int dht11_probe(struct platform_device *pdev)
->  	platform_set_drvdata(pdev, iio);
->  
->  	init_completion(&dht11->completion);
-> +	mutex_init(&dht11->lock);
->  	iio->name = pdev->name;
->  	iio->dev.parent = &pdev->dev;
->  	iio->info = &dht11_iio_info;
-> 
+> >Or if the supply is for the device at the other end of the link (which
+> >is what it sounded like) then use that.  This just sounds like the same
+> >problem we have for all the enumerable buses in embedded systems where
+> >we need to be able to understand that the device exists prior to it
+> >being fully ready to appear in the system.  Having the link/slot be a
+> >device in Linux does indeed seem to be a common way people think about
+> >doing this, it sounds like for this one it might be the most direct.
 
+> I think we should be careful to not think too much from an implementation
+> pov here, the purpose of the devicetree description is to describe the ha=
+rdware,
+> as is.
+
+I don't think anyone is talking about changing the DT here, only the way
+it's represented inside Linux.
+
+>                 sata0: sata-port@0 {
+>                         reg =3D <0>;
+>                         phys =3D <&sata_phy 0>;
+> 			target-supply =3D <&reg_sata0>;
+>                 };
+>=20
+>                 sata1: sata-port@1 {
+>                         reg =3D <1>;
+>                         phys =3D <&sata_phy 1>;
+> 			target-supply =3D <&reg_sata1>;
+>                 };
+>         };
+
+> Seems to match the hardware pretty exactly, and also matches how we've
+> been describing similar devices with only one sata port + power plug sofa=
+r,
+> so from a consistency pov it also is a good model.
+
+Right, I think that makes sense - it also looks to me like these things
+should be representable as devices within Linux.
+
+> So supporting this model requires having a regulator_get API which allows
+> specifying which of_node to get the regulator from, e.g. the proposed
+
+It requires nothing of the sort.
+
+> of_regulator_get function. I know you (Mark) do not like this, but all
+> other subsystems have an of_foo_get function taking an of_node as argumen=
+t,
+> I do not see how the regulator subsys is so special that it cannot have o=
+ne,
+> and also notice that this is only a kernel internal API which we can alwa=
+ys
+> change later.
+
+Two things there.  One is that mostly those APIs are legacy APIs from
+before we made DT a first class citizen and generally they shouldn't be
+used these days.  The other is that at least for regulators we have
+constant problems with people abusing the API in various ways, as a
+result the API has a goal of not helping undesirable usage patterns in
+order to help people spot problems.  Having an API which makes it easy
+create broken bindings means that it is much more likely that people
+will do just that.
+
+--FsscpQKzF/jJk6ya
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUsQpbAAoJECTWi3JdVIfQxwYH/iEzJFcp4qFzIVt/Af9ri40/
+1g1Wjuujq3TMMYu/OcutyMvYEp8VBK8LOV0dYnQ6CJ08g+0+Tbg+RHzmOjtG3eeE
+XCGxoVOn6HwRLBledYyoAsFEzqdVaBGTYRUBGnU4Yhq6XGzQBrqigZyiSbWrR4nV
+oO0gj5We4WsB4Y0bCZhxJwG6nVIMoLdbDHjQCyGf2PdhhyW6CogHJ5fIWMG3HPKr
+i8h/RbK/qkaFmmGGtdZrkiVG03fH46YvcGmdvUswBoZISRRIrCH5C9m9OBF4NvI6
+dt48gKFuMQsflZ4/EoO+tPhu3dIE4rbz8EBVSaxHqNm3pYIaPuVv64qv4QwwbG4=
+=+bOd
+-----END PGP SIGNATURE-----
+
+--FsscpQKzF/jJk6ya--
