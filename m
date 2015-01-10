@@ -1,95 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043AbbAJILD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 03:11:03 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:36707 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752319AbbAJIK7 convert rfc822-to-8bit (ORCPT
+	id S1754235AbbAJINY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 03:13:24 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:37548 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075AbbAJINX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 03:10:59 -0500
-Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Content-Type: text/plain; charset=utf-8
-From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-In-Reply-To: <20150109205643.GA5761@amd>
-Date: Sat, 10 Jan 2015 10:10:51 +0200
-Cc: atull <atull@opensource.altera.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        jgunthorpe@obsidianresearch.com, hpa@zytor.com,
-        Michal Simek <monstr@monstr.eu>,
-        Michal Simek <michal.simek@xilinx.com>, rdunlap@infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, robh+dt@kernel.org,
-        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        philip@balister.org, rubini@gnudd.com,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>, jason@lakedaemon.net,
-        kyle.teske@ni.com, nico@linaro.org, Felipe Balbi <balbi@ti.com>,
-        m.chehab@samsung.com, davidb@codeaurora.org,
-        Rob Landley <rob@landley.net>, davem@davemloft.net, cesarb@cesarb.net,
-        sameo@linux.intel.com, akpm@linux-foundation.org,
-        Linus Walleij <linus.walleij@linaro.org>, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, devel@driverdev.osuosl.org,
-        Alan Tull <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com,
-        yvanderv@opensource.altera.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <4D4EA2D5-68DD-49F7-9E2D-3A0A8F6AF9CA@konsulko.com>
-References: <1420575219-27061-1-git-send-email-atull@opensource.altera.com> <1420575219-27061-3-git-send-email-atull@opensource.altera.com> <20150107084819.GA1887@amd> <alpine.DEB.2.02.1501091302370.30067@linuxheads99> <20150109205643.GA5761@amd>
-To: Pavel Machek <pavel@denx.de>
-X-Mailer: Apple Mail (2.1993)
+	Sat, 10 Jan 2015 03:13:23 -0500
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Date: Sat, 10 Jan 2015 09:12:44 +0100
+From: Stefan Agner <stefan@agner.ch>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: jslaby@suse.cz, jingchang.lu@freescale.com, shawn.guo@linaro.org,
+        linux-serial@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] serial: =?UTF-8?Q?fsl=5Flpuart=3A=20avoid=20ne?=
+ =?UTF-8?Q?w=20transfer=20while=20DMA=20is=20running?=
+In-Reply-To: <20150110004910.GC4171@kroah.com>
+References: <1420848539-4519-1-git-send-email-stefan@agner.ch>
+ <1420848539-4519-3-git-send-email-stefan@agner.ch>
+ <20150110004910.GC4171@kroah.com>
+Message-ID: <a9bb59ff73dc15b1134df7072409a272@agner.ch>
+User-Agent: Roundcube Webmail/1.0.3
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Sat Jan 10 09:11:49 2015
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 54b0dec512811134045633
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
-
-> On Jan 9, 2015, at 22:56 , Pavel Machek <pavel@denx.de> wrote:
+On 2015-01-10 01:49, Greg KH wrote:
+> On Sat, Jan 10, 2015 at 01:08:59AM +0100, Stefan Agner wrote:
+>> When the UART is in DMA receive mode (RDMAS set) and one character
+>> just arrived while another interrupt is handled (e.g. TX), the RDRF
+>> (receiver data register full flag) is set due to the water level of
+>> 1. But since the DMA will take care of this character, there is no
+>> need to handle it by calling lpuart_prepare_rx. Handling it leads to
+>> adding the RX timeout timer twice:
+>>
+>> [   74.336698] Kernel BUG at 80053070 [verbose debug info unavailable]
+>> [   74.342999] Internal error: Oops - BUG: 0 [#1] ARM0:00.00 khungtaskd
+>> [   74.347817] Modules linked in:    0 S  0.0  0.0   0:00.00 writeback
+>> [   74.350926] CPU: 0 PID: 0 Comm: swapper Not tainted 3.19.0-rc3-00001-g39d78e2 #1788
+>> [   74.358617] Hardware name: Freescale Vybrid VF610 (Device Tree)t
+>> [   74.364563] task: 807a7678 ti: 8079c000 task.ti: 8079c000 kblockd
+>> [   74.370002] PC is at add_timer+0x24/0x28.0  0.0   0:00.09 kworker/u2:1
+>> [   74.373960] LR is at lpuart_int+0x15c/0x3d8
+>> [   74.378171] pc : [<80053070>]    lr : [<802e0d88>]    psr: a0010193
+>> [   74.378171] sp : 8079de10  ip : 8079de20  fp : 8079de1c
+>> [   74.389694] r10: 807d44c0  r9 : 8688c300  r8 : 00000013
+>> [   74.394943] r7 : 20010193  r6 : 00000000  r5 : 000000a0  r4 : 86997210
+>> [   74.401498] r3 : ffffa7da  r2 : 80817868  r1 : 86997210  r0 : 86997344
+>> [   74.408052] Flags: NzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+>> [   74.415489] Control: 10c5387d  Table: 8611c059  DAC: 00000015
+>> [   74.421265] Process swapper (pid: 0, stack limit = 0x8079c230)
+>> ...
+>>
+>> Solve this by only execute the receiver path (lpuart_prepare_rx) if
+>> the DMA receive mode (RDMAS) is not set. Also, make sure the flag is
+>> cleared on initialization, in case it has been left set.
+>>
+>> This can be best reproduced using UART as a serial console, then
+>> running top while dd'ing data into the terminal.
+>>
+>> Signed-off-by: Stefan Agner <stefan@agner.ch>
+>> ---
+>>  drivers/tty/serial/fsl_lpuart.c | 9 +++++----
+>>  1 file changed, 5 insertions(+), 4 deletions(-)
 > 
-> On Fri 2015-01-09 13:14:24, atull wrote:
->> On Wed, 7 Jan 2015, Pavel Machek wrote:
->> 
->>> On Tue 2015-01-06 14:13:37, atull@opensource.altera.com wrote:
->>>> +
->>>> +What:		/sys/class/fpga_manager/<fpga>/firmware
->>>> +Date:		October 2014
->>>> +KernelVersion:	3.18
->>>> +Contact:	Alan Tull <atull@opensource.altera.com>
->>>> +Description:	Name of the FPGA image file to load using firmware
->>>> class.
->>> 
->>> This one is ugly: it unneccessarily passes firmware name through the
->>> kernel. Just make interface and code simpler by always passing
->>> "socfpga-fpga-image" or something like that.
->>> 
->>> Thanks,
->>> 									Pavel
->> 
->> Hi Pavel,
->> 
->> It might be ugly.  It's not unnecessary.  Some uses of FPGAs involve
->> switching out the FPGA images dynamically under control of the userspace.
-> 
-> Then configure udev to load right firmware for you, or ln -s
-> image-i-want-now socfpga-fpga-image to select the one to read…?
-> 
+> Same stable question as before.
 
-Who said that udev is going to be available in the kind of system this is going to end in?
+The same here, an issue since 3.14....
 
-Doing ln -s tricks to load a different image? Really?
+--
+Stefan
 
-I say the interface is fine as it is.
-
-Regards
-
-— Pantelis
-
-> 
-> -- 
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
