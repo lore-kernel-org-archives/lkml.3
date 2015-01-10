@@ -1,60 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876AbbAJUn7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 15:43:59 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:65453 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531AbbAJUn6 (ORCPT
+	id S1752535AbbAJU6K (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 15:58:10 -0500
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:51318 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335AbbAJU6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 15:43:58 -0500
-MIME-Version: 1.0
-In-Reply-To: <CALCETrXS7BvtS3P3J8hnbt3GGvezx-935uxanSN_a=CU6s1d3g@mail.gmail.com>
-References: <1420734315-30943-1-git-send-email-dvlasenk@redhat.com>
- <1420734315-30943-4-git-send-email-dvlasenk@redhat.com> <20150109121950.GD13637@pd.tnic>
- <CAK1hOcMsGJ7geRAzfazPLZitcO0o9XYRPJDYa8sJHR4i6DPL-g@mail.gmail.com>
- <20150110142336.GC12218@pd.tnic> <CAK1hOcO7K=4N8CF=LOPmosXRNnogaNi5vLDPMdb0XiKsL=JOfg@mail.gmail.com>
- <CALCETrXS7BvtS3P3J8hnbt3GGvezx-935uxanSN_a=CU6s1d3g@mail.gmail.com>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Sat, 10 Jan 2015 21:43:37 +0100
-Message-ID: <CAK1hOcNeAytfd=tMSeCXV+FDnf16qb6wfO5=n94z3jnEFk=JKQ@mail.gmail.com>
-Subject: Re: [PATCH 3/4] x86: open-code register save/restore in
- trace_hardirqs thunks
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Borislav Petkov <bp@alien8.de>, Denys Vlasenko <dvlasenk@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 10 Jan 2015 15:58:08 -0500
+Message-ID: <1420923485.5947.85.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [BUG] 3.19-rc1 net: less interrupt masking in NAPI
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Oded Gabbay <oded.gabbay@amd.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Willem de Bruijn <willemb@google.com>,
+        "Bridgman, John" <John.Bridgman@amd.com>,
+        "Elifaz, Dana" <Dana.Elifaz@amd.com>
+Date: Sat, 10 Jan 2015 12:58:05 -0800
+In-Reply-To: <54B18DFF.80400@amd.com>
+References: <54B18DFF.80400@amd.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 9:17 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> After I've seen the disassembly I myself posted, I can't help but wonder
->> why we use 5-byte instructions to store and load regs on stack when
->> pushes and pops are 1 or 2-byte long.
->
-> I asked this once, and someone told me that push/pop has lower
-> throughput.  I find this surprising.
+On Sat, 2015-01-10 at 22:39 +0200, Oded Gabbay wrote:
+> Hi,
+> 
+> Commit d75b1ade567ffab085e8adbbdacf0092d10cd09c breaks my "Qualcomm Atheros
+> AR8161 Gigabit Ethernet (rev 10)" Ethernet controller, which is handled by
+> the alx network driver.
+> 
+> ogabbay@odedg-ubuntu:~$ lspci -s 01:00.0 -k
+> 01:00.0 Ethernet controller:
+> 	Qualcomm Atheros AR8161 Gigabit Ethernet (rev 10)
+> 	Subsystem: Qualcomm Atheros Device 1071
+> 	Kernel driver in use: alx
+> 
+> I have this controller on a mobile platform of AMD APU Kaveri, which I use
+> to test amdkfd, and from 3.19-rc1 the network stopped working when trying to
+> transfer files through scp or nfs.
+> 
+> I bisected the kernel (from 3.18.0 to 3.19-rc1) and reached this commit.
+> 
+> Here is the log of the bisect:
+> 
+> git bisect start
+> # bad: [97bf6af1f928216fd6c5a66e8a57bfa95a659672] Linux 3.19-rc1
+> git bisect bad 97bf6af1f928216fd6c5a66e8a57bfa95a659672
+> 
+> # good: [b2776bf7149bddd1f4161f14f79520f17fc1d71d] Linux 3.18
+> git bisect good b2776bf7149bddd1f4161f14f79520f17fc1d71d
+> 
+> # bad: [70e71ca0af244f48a5dcf56dc435243792e3a495] Merge
+> git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next
+> git bisect bad 70e71ca0af244f48a5dcf56dc435243792e3a495
+> 
+> # good: [e28870f9b3e92cd3570925089c6bb789c2603bc4] Merge tag
+> 'backlight-for-linus-3.19' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/lee/backlight
+> git bisect good e28870f9b3e92cd3570925089c6bb789c2603bc4
+> 
+> # bad: [450fa21942fe2c37f0c9f52d1a33bbc081eee288] sh_eth: Remove redundant
+> alignment adjustment
+> git bisect bad 450fa21942fe2c37f0c9f52d1a33bbc081eee288
+> 
+> # bad: [5c8d19da950861d0482abc0ac3481acca34b008f] e100e: use
+> netdev_rss_key_fill() helper
+> git bisect bad 5c8d19da950861d0482abc0ac3481acca34b008f
+> 
+> # good: [bf515fb11ab539c76d04f0e3c5216ed41f41d81f] Merge tag
+> 'mac80211-next-for-john-2014-11-04' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/jberg/mac80211-next
+> git bisect good bf515fb11ab539c76d04f0e3c5216ed41f41d81f
+> 
+> # bad: [2c99cd914d4fed9160d98849c9dd38034616768e] Merge branch 'amd-xgbe-next'
+> git bisect bad 2c99cd914d4fed9160d98849c9dd38034616768e
+> 
+> # good: [3d762a0f0ab9cb4a6b5993db3ce56c92f9f90ab2] net: dsa: Add support for
+> reading switch registers with ethtool
+> git bisect good 3d762a0f0ab9cb4a6b5993db3ce56c92f9f90ab2
+> 
+> # bad: [8ce0c8254f15229aa99fc6c04141f28c446e5f8c] Merge branch 'master' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/jkirsher/net-next
+> git bisect bad 8ce0c8254f15229aa99fc6c04141f28c446e5f8c
+> 
+> # good: [f0c65567b3c1b23f79e8a49139580a3872a68d1f] Merge branch
+> 'sunvnet-multi-tx-queue'
+> git bisect good f0c65567b3c1b23f79e8a49139580a3872a68d1f
+> 
+> # bad: [547f2735c20023d7b50a791b1b17cacb652e9237] Merge branch 'mlx4-next'
+> git bisect bad 547f2735c20023d7b50a791b1b17cacb652e9237
+> 
+> # good: [4cdb1e2e3d3495423db558d3bb7ed11d66aabce7] net: shrink struct
+> softnet_data
+> git bisect good 4cdb1e2e3d3495423db558d3bb7ed11d66aabce7
+> 
+> # bad: [0a98455666ec87378148a1dde97f1ce5baf75a64] net/mlx4_core: Protect
+> port type setting by mutex
+> git bisect bad 0a98455666ec87378148a1dde97f1ce5baf75a64
+> 
+> # bad: [6e8066999800d90d52af5c84ac49ebf683d14cdc] net/mlx4_core: Prevent VF
+> from changing port configuration
+> git bisect bad 6e8066999800d90d52af5c84ac49ebf683d14cdc
+> 
+> # bad: [d75b1ade567ffab085e8adbbdacf0092d10cd09c] net: less interrupt
+> masking in NAPI
+> git bisect bad d75b1ade567ffab085e8adbbdacf0092d10cd09c
+> 
+> # first bad commit: [d75b1ade567ffab085e8adbbdacf0092d10cd09c]
+> net: less interrupt masking in NAPI
+> 
+> Could you please solve this issue as it renders my board quite useless.
+> 
 
-Theoretically yes.
-In practice, AMD K7 and K8 seem to be able to execute two movq's
-in one cycle, but only one push.
+Thanks for the report and bisection !
 
-For all other processors I looked at, they have the same throughput:
-K10 can do two movq's in one cycle, but also two push'es.
-Bulldozer...Steamroller: can do one insn per cycle.
-Bobcat..Jaguar: can do one insn per cycle.
-Core 2: can do one insn per cycle.
-Nehalem: can do one insn per cycle.
+Could you try following fix ?
 
-The above was microbenchmarked with long sequences
-of similar instructions, in which case store unit gets saturated
-and becomes a bottleneck.
+diff --git a/drivers/net/ethernet/atheros/alx/main.c b/drivers/net/ethernet/atheros/alx/main.c
+index e398eda07298..209c40765e0d 100644
+--- a/drivers/net/ethernet/atheros/alx/main.c
++++ b/drivers/net/ethernet/atheros/alx/main.c
+@@ -272,7 +272,7 @@ static int alx_poll(struct napi_struct *napi, int budget)
+ 		   alx_clean_rx_irq(alx, budget);
+ 
+ 	if (!complete)
+-		return 1;
++		return budget;
+ 
+ 	napi_complete(&alx->napi);
+ 
 
-Here's the document.
 
-http://www.agner.org/optimize/instruction_tables.pdf
+
+
