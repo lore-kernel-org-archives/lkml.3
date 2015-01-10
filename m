@@ -1,172 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287AbbAJVaf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 16:30:35 -0500
-Received: from mail-bn1bon0140.outbound.protection.outlook.com ([157.56.111.140]:42336
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753124AbbAJVad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 16:30:33 -0500
-X-WSS-ID: 0NHZD2P-07-KQJ-02
-X-M-MSG: 
-Message-ID: <54B199EB.1080004@amd.com>
-Date: Sat, 10 Jan 2015 23:30:19 +0200
-From: Oded Gabbay <oded.gabbay@amd.com>
-Organization: AMD
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1754102AbbAJVdw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 16:33:52 -0500
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:56181 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751920AbbAJVdu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jan 2015 16:33:50 -0500
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
+In-Reply-To: <20141202135527.GM30369@pengutronix.de>
+References: <1415709535-31515-1-git-send-email-hongzhou.yang@mediatek.com>
+	<1415709535-31515-3-git-send-email-hongzhou.yang@mediatek.com>
+	<CACRpkdYSe_BH_qiHma2BA+c2otEi3wd0TBXy83t8vwrNL+3U2g@mail.gmail.com>
+	<20141127101830.GP30369@pengutronix.de>
+	<CACRpkdbMdJT6y-NL36RgQe0-CAFAVGqKiwY9+yFcwA7JDLmA+Q@mail.gmail.com>
+	<20141202135527.GM30369@pengutronix.de>
+Date: Sat, 10 Jan 2015 22:33:46 +0100
+Message-ID: <CACRpkdZeRd+j7d_iRphruHRg8p3XjqWK8_HQzLH2PTZ_pqOrYA@mail.gmail.com>
+Subject: Re: [PATCH v3 2/3] dt-bindings: Add pinctrl bindings for mt65xx/mt81xx.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Rob Herring <robh+dt@kernel.org>,
+        Hongzhou Yang <hongzhou.yang@mediatek.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Willem de Bruijn <willemb@google.com>,
-        "Bridgman, John" <John.Bridgman@amd.com>,
-        "Elifaz, Dana" <Dana.Elifaz@amd.com>
-Subject: Re: [BUG] 3.19-rc1 net: less interrupt masking in NAPI
-References: <54B18DFF.80400@amd.com>
- <1420923485.5947.85.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1420923485.5947.85.camel@edumazet-glaptop2.roam.corp.google.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.224.10.145]
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Oded.Gabbay@amd.com; 
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(24454002)(51914003)(377454003)(377424004)(479174004)(189002)(199003)(51704005)(47776003)(87936001)(97736003)(110136001)(77096005)(19580395003)(59896002)(105586002)(19580405001)(80316001)(62966003)(77156002)(46102003)(92566002)(65956001)(64706001)(68736005)(64126003)(65806001)(575784001)(86362001)(23676002)(2950100001)(106466001)(101416001)(36756003)(54356999)(83506001)(50986999)(87266999)(50466002)(76176999)(65816999)(33656002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY1PR0201MB1079;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-DmarcAction-Test: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BY1PR0201MB1079;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY1PR0201MB1079;
-X-Forefront-PRVS: 0452022BE1
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0201MB1079;
-X-OriginatorOrg: amd4.onmicrosoft.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 10 Jan 2015 21:30:28.2455
- (UTC)
-X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.221]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY1PR0201MB1079
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        huang eddie <eddie.huang@mediatek.com>, dandan.he@mediatek.com,
+        alan.cheng@mediatek.com, toby.liu@mediatek.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 2, 2014 at 2:55 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
 
+Sorry for taking eternities to get back on this, I ran into a merge window
+and some christmas. I do hope we can resolve this in the current
+development cycle so we can get this support in.
 
-On 01/10/2015 10:58 PM, Eric Dumazet wrote:
-> On Sat, 2015-01-10 at 22:39 +0200, Oded Gabbay wrote:
->> Hi,
->>
->> Commit d75b1ade567ffab085e8adbbdacf0092d10cd09c breaks my "Qualcomm Atheros
->> AR8161 Gigabit Ethernet (rev 10)" Ethernet controller, which is handled by
->> the alx network driver.
->>
->> ogabbay@odedg-ubuntu:~$ lspci -s 01:00.0 -k
->> 01:00.0 Ethernet controller:
->> 	Qualcomm Atheros AR8161 Gigabit Ethernet (rev 10)
->> 	Subsystem: Qualcomm Atheros Device 1071
->> 	Kernel driver in use: alx
->>
->> I have this controller on a mobile platform of AMD APU Kaveri, which I use
->> to test amdkfd, and from 3.19-rc1 the network stopped working when trying to
->> transfer files through scp or nfs.
->>
->> I bisected the kernel (from 3.18.0 to 3.19-rc1) and reached this commit.
->>
->> Here is the log of the bisect:
->>
->> git bisect start
->> # bad: [97bf6af1f928216fd6c5a66e8a57bfa95a659672] Linux 3.19-rc1
->> git bisect bad 97bf6af1f928216fd6c5a66e8a57bfa95a659672
->>
->> # good: [b2776bf7149bddd1f4161f14f79520f17fc1d71d] Linux 3.18
->> git bisect good b2776bf7149bddd1f4161f14f79520f17fc1d71d
->>
->> # bad: [70e71ca0af244f48a5dcf56dc435243792e3a495] Merge
->> git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next
->> git bisect bad 70e71ca0af244f48a5dcf56dc435243792e3a495
->>
->> # good: [e28870f9b3e92cd3570925089c6bb789c2603bc4] Merge tag
->> 'backlight-for-linus-3.19' of
->> git://git.kernel.org/pub/scm/linux/kernel/git/lee/backlight
->> git bisect good e28870f9b3e92cd3570925089c6bb789c2603bc4
->>
->> # bad: [450fa21942fe2c37f0c9f52d1a33bbc081eee288] sh_eth: Remove redundant
->> alignment adjustment
->> git bisect bad 450fa21942fe2c37f0c9f52d1a33bbc081eee288
->>
->> # bad: [5c8d19da950861d0482abc0ac3481acca34b008f] e100e: use
->> netdev_rss_key_fill() helper
->> git bisect bad 5c8d19da950861d0482abc0ac3481acca34b008f
->>
->> # good: [bf515fb11ab539c76d04f0e3c5216ed41f41d81f] Merge tag
->> 'mac80211-next-for-john-2014-11-04' of
->> git://git.kernel.org/pub/scm/linux/kernel/git/jberg/mac80211-next
->> git bisect good bf515fb11ab539c76d04f0e3c5216ed41f41d81f
->>
->> # bad: [2c99cd914d4fed9160d98849c9dd38034616768e] Merge branch 'amd-xgbe-next'
->> git bisect bad 2c99cd914d4fed9160d98849c9dd38034616768e
->>
->> # good: [3d762a0f0ab9cb4a6b5993db3ce56c92f9f90ab2] net: dsa: Add support for
->> reading switch registers with ethtool
->> git bisect good 3d762a0f0ab9cb4a6b5993db3ce56c92f9f90ab2
->>
->> # bad: [8ce0c8254f15229aa99fc6c04141f28c446e5f8c] Merge branch 'master' of
->> git://git.kernel.org/pub/scm/linux/kernel/git/jkirsher/net-next
->> git bisect bad 8ce0c8254f15229aa99fc6c04141f28c446e5f8c
->>
->> # good: [f0c65567b3c1b23f79e8a49139580a3872a68d1f] Merge branch
->> 'sunvnet-multi-tx-queue'
->> git bisect good f0c65567b3c1b23f79e8a49139580a3872a68d1f
->>
->> # bad: [547f2735c20023d7b50a791b1b17cacb652e9237] Merge branch 'mlx4-next'
->> git bisect bad 547f2735c20023d7b50a791b1b17cacb652e9237
->>
->> # good: [4cdb1e2e3d3495423db558d3bb7ed11d66aabce7] net: shrink struct
->> softnet_data
->> git bisect good 4cdb1e2e3d3495423db558d3bb7ed11d66aabce7
->>
->> # bad: [0a98455666ec87378148a1dde97f1ce5baf75a64] net/mlx4_core: Protect
->> port type setting by mutex
->> git bisect bad 0a98455666ec87378148a1dde97f1ce5baf75a64
->>
->> # bad: [6e8066999800d90d52af5c84ac49ebf683d14cdc] net/mlx4_core: Prevent VF
->> from changing port configuration
->> git bisect bad 6e8066999800d90d52af5c84ac49ebf683d14cdc
->>
->> # bad: [d75b1ade567ffab085e8adbbdacf0092d10cd09c] net: less interrupt
->> masking in NAPI
->> git bisect bad d75b1ade567ffab085e8adbbdacf0092d10cd09c
->>
->> # first bad commit: [d75b1ade567ffab085e8adbbdacf0092d10cd09c]
->> net: less interrupt masking in NAPI
->>
->> Could you please solve this issue as it renders my board quite useless.
->>
-> 
-> Thanks for the report and bisection !
-> 
-> Could you try following fix ?
-> 
-> diff --git a/drivers/net/ethernet/atheros/alx/main.c b/drivers/net/ethernet/atheros/alx/main.c
-> index e398eda07298..209c40765e0d 100644
-> --- a/drivers/net/ethernet/atheros/alx/main.c
-> +++ b/drivers/net/ethernet/atheros/alx/main.c
-> @@ -272,7 +272,7 @@ static int alx_poll(struct napi_struct *napi, int budget)
->  		   alx_clean_rx_irq(alx, budget);
->  
->  	if (!complete)
-> -		return 1;
-> +		return budget;
->  
->  	napi_complete(&alx->napi);
->  
-> 
-> 
-> 
-> 
-Yes, no problem.
-I will update on the result.
+> On Fri, Nov 28, 2014 at 05:12:44PM +0100, Linus Walleij wrote:
+>> On Thu, Nov 27, 2014 at 11:18 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+>> > On Thu, Nov 27, 2014 at 09:44:42AM +0100, Linus Walleij wrote:
+>> >> On Tue, Nov 11, 2014 at 1:38 PM, Hongzhou Yang
+>> >> <hongzhou.yang@mediatek.com> wrote:
 
-	Oded
+>> >> > +    node {
+>> >> > +     mediatek,pins = <PIN_NUMBER_PINMUX>;
+>> >> > +                     GENERIC_PINCONFIG;
+>> >> > +    };
+>> >>
+>> >> As suggested by Sacha, use just "pins" and define the binding as a patch
+>> >> to Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+>> >> that is generic for multiplexing, so we get some order here.
+>> >>
+>> >> I want you however to put pin multiplexing and pin configuration into
+>> >> different nodes if possible. I don't like combines muxing and config
+>> >> nodes. If necessary tag the node with something.
+>> >
+>> > Why? I think the properties can live happily together, even when the
+>> > parsing functions go to the pinctrl core.
+>>
+>> I'm worried about the semantic ambiguity between the pins = <...>;
+>> property on different pin controllers, whether they are based on
+>> function+group or per-pin. It's not even up to me to decide,
+>> this is for the DT binding people.
+>>
+>> In this case:
+>>
+>> pins = <MT8135_PIN_100_SDA0__FUNC_SDA0>,
+>>           <MT8135_PIN_101_SCL0__FUNC_SCL0>;
+>>
+>> Each element is a 32bit unsigned where the lower and higher
+>> 16 bits have different meanings.
+>>
+>> In some other pin controller (using generic bindings and
+>> already merged! arch/arm/boot/dts/ste-href-ab8500.dtsi):
+>>
+>> gpio39 {
+>>       gpio39_default_mode: gpio39_default {
+>>              default_mux {
+>>                       function = "gpio";
+>>                       groups = "gpio39_a_1";
+>>              };
+>>              default_cfg {
+>>                       pins = "GPIO39_E16";
+>>                       input-enable;
+>>                       bias-pull-down;
+>>              };
+>>      };
+>> };
+>>
+>> Can we get away with using the same core parser with this
+>> as well, here the nodes are split and using strings to identify
+>> pins, not 32bit numbers.
+>>
+>> I am worried about semantic coexistance...
+>
+> We could rename the property from 'pins' to 'pinmux' for this variant of
+> the binding. Then a parser would know that this property is about pins
+> and muxing.
+
+OK sounds like a viable compromise.
+
+I am mostly worried that none of the fine device tree people say
+anything about this stuff we're discussing here, maybe absolutely
+nobody else understands...
+
+>> >> i2c0_pins_a: i2c0@0 {
+>> >>         pins1 {
+>> >>                 pins = <MT8135_PIN_100_SDA0>;
+>> >>                 function = <MT8135_PIN_100_FUNC_SDA0>;
+>> >>         };
+>> >
+>> > The reason to put this in a single define was to make writing the device
+>> > trees less error prone. When you have two arrays you must correlate the
+>> > entries.
+>>
+>> I see the upside. I'm just worried about ambiguity when comparing
+>> different device trees to each other, because they should be about
+>> readability and understanding, not confusing...
+>
+> Sorry, given the currently existing devicetrees I don't buy that
+> readability argument. Let's look into the snowball example, here ssp0:
+>
+>         ssp0_snowball_mode: ssp0_snowball_default {
+>                 snowball_mux {
+>                         ste,function = "ssp0";
+>                         ste,pins = "ssp0_a_1";
+>                 };
+>                 snowball_cfg1 {
+>                         ste,pins = "GPIO144_B13"; /* FRM */
+>                         ste,config = <&gpio_out_hi>;
+>                 };
+>                 snowball_cfg2 {
+>                         ste,pins = "GPIO145_C13"; /* RXD */
+>                         ste,config = <&in_pd>;
+>                 };
+>                 snowball_cfg3 {
+>                         ste,pins =
+>                         "GPIO146_D13", /* TXD */
+>                         "GPIO143_D12"; /* CLK */
+>                         ste,config = <&out_lo>;
+>                 };
+>         };
+
+I agree the ste,pins is not a good example, it is insane to have
+something group and pins mixed, and that is why
+I migrated it in the last merge window, notably the pin multiplex thing
+so it now looks like this:
+
+                        ssp0 {
+                                ssp0_snowball_mode: ssp0_snowball_default {
+                                        snowball_mux {
+                                                function = "ssp0";
+                                                groups = "ssp0_a_1";
+                                        };
+                                        snowball_cfg1 {
+                                                pins = "GPIO144_B13"; /* FRM */
+                                                ste,config = <&gpio_out_hi>;
+                                        };
+(...)
+
+I'm sorry about not migrating the ste,config part to
+generic bindings yet :( that is next.
+
+> For the SSP0 it needs the string "ssp0_a_1" which is documented exactly
+> nowhere.
+
+Is this a bug report about the documentation? I don't see how
+that is relevant to the overall design.
+
+> Only the sourcecode shows that this (totally made up) string
+> means that the pins DB8500_PIN_D12, DB8500_PIN_B13, DB8500_PIN_C13 and
+> DB8500_PIN_D13 shall be muxed.
+
+So this pins and pins ambiguity (which has nothing to do with the
+generic bindings BTW) is now fixed up somewhat. The first thing is
+a group, the pins are pin names.
+
+> The corresponding ste,function property
+> has the value "ssp0" which again is not documented. The following config
+> nodes reference the same pins under a different name: "GPIO144_B13",
+> "GPIO145_C13", "GPIO146_D13" and "GPIO143_D12".
+
+Yes, because it references individual pins, not groups. Config
+is per-pin, multiplexing is per-group in the Nomadik case.
+(Some hardware and drivers are different.)
+
+> Again, these strings are
+> completely undocumented and only the sourcecode shows which strings can
+> be used for the ste,pins property. Not only that no documentation shows
+> which strings are allowed, there's also no documentation which describes
+> which combination of strings for the different properties make sense.
+
+OK again a documentation bug report I guess, if you want to I can
+add this to the documentation (there are indeed some pin control
+drivers that list these groups and functions). This documentation was
+not written by me, but I can sure fix it up if that makes you happier.
+
+> The use of ## for concatenating defines in the driver makes the whole
+> stuff even harder to understand. It even took me quite a while to
+> realize that the binding requires me to configure the muxes in groups,
+> but the config as individual pins.
+
+The hardware is such that muxes are in groups and pin config per-pin.
+We cannot augment reality, just describe it in an as structured way
+as possible.
+
+To add to the complexity, some pin controllers mux things in groups,
+some per-pin (like freescale I think?) some controllers even do config
+of things like pull-up across groups of pins rather than individually.
+
+> So no, the current devicetrees are
+> not about readability.
+
+Is this an argument that goes away if I fix the documentation?
+
+> #define GPIO143_D12_SSP0_CLK    PINMUX_PIN(143, 1)
+> #define GPIO144_B13_SSP0_FRM    PINMUX_PIN(144, 1)
+> #define GPIO145_C13_SSP0_RXD    PINMUX_PIN(145, 1)
+> #define GPIO146_D13_SSP0_TXD    PINMUX_PIN(146, 1)
+>
+> and we get:
+>
+>         ssp0_snowball_mode: ssp0_snowball_default {
+>                 snowball_cfg1 {
+>                         pinmux = <GPIO144_B13_SSP0_FRM>;
+>                         ste,config = <&gpio_out_hi>;
+>                 };
+>                 snowball_cfg2 {
+>                         pinmux = <GPIO145_C13_SSP0_RXD>;
+>                         ste,config = <&in_pd>;
+>                 };
+>                 snowball_cfg3 {
+>                         pinmux = <GPIO143_D12_SSP0_CLK GPIO146_D13_SSP0_TXD>;
+>                         ste,config = <&out_lo>;
+>                 };
+>         };
+
+But this gives the false impression that pins can be muxed
+individually, and it makes it possible to write device trees that
+attempt to do so, while in practice it will not perform on the
+hardware.
+
+>> >> One node for the multiplexing, one node for the config. This is the
+>> >> pattern used by most drivers, so I want to have this structure.
+>> >>
+>> >> It is also easy to tell one node from the other: if it contains "function"
+>> >> we know it's a multiplexing node, if it doesn't, it's a config node.
+>> >
+>> > So when merging these together a node is always multiplexing and
+>> > configuration. But do we really win anything if both are separated? When
+>> > both are separated you still need an array of pins in the nodes to
+>> > tell which pins this node is for. If this array also contains the
+>> > mux information then this won't hurt. You can still ignore it.
+>>
+>> Well we definately have to support the case with split config and
+>> muxing nodes at least. I am very worried that we would get into
+>> ambguities where that is not possible.
+>
+> Sure we have as we cannot change existing bindings,
+
+For Nomadik I did, because there are no deployed systems suffering
+from it. I just had to use some board I had to make some kind of
+example. I would encourage any other system not deployed in the
+masses with flashed-in device trees to do the same as this is
+still somewhat in a flux.
+
+I am worried that there is something in your reasoning that sort of
+assumes all pin controllers mux pins one-by-one and not in groups.
+How do we make it impossible to write a device tree that also
+make hardware that do groupwise config viable without ambiguities?
+
+Yours,
+Linus Walleij
