@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755571AbbAJVx2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 16:53:28 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:65407 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753124AbbAJVx1 (ORCPT
+	id S1755030AbbAJV5m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 16:57:42 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:38966 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752114AbbAJV5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 16:53:27 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Rob Herring <robh@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 07/16] ARM: integrator: convert PCI to use generic config accesses
-Date: Sat, 10 Jan 2015 22:53:06 +0100
-Message-ID: <4938579.0KIk3QtTCP@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CACRpkdbwKN9LenqrWeu4WykhdZOGAdxpC_BYr2cYpc2_cn5GfA@mail.gmail.com>
-References: <1420857290-8373-1-git-send-email-robh@kernel.org> <1420857290-8373-8-git-send-email-robh@kernel.org> <CACRpkdbwKN9LenqrWeu4WykhdZOGAdxpC_BYr2cYpc2_cn5GfA@mail.gmail.com>
+	Sat, 10 Jan 2015 16:57:41 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:umOs98ugBoNC35Rp7umzJvLeFzVH2nOJmINuGOQPHgM+fkc9yk2
- m1KDE44Zi0IhdP0lO2UnNeQBKK548c30aMDHw4DYijxfs5oY1QMHKmrZeSe73VtDo4HkCNp
- wQZ43du8prq0UL/ujz73mzxIeo5pm02Ps1SkLg9HcDmMfBRXxl1JWaQtBTsuUjBHgW/2xfG
- xIRvmh/iMNvY8BGoVL0HA==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <CA+55aFy-uSod4dndhjZ2VKgLkG42hajk7HLJwuNdv_eHfTW-=Q@mail.gmail.com>
+References: <1420734315-30943-1-git-send-email-dvlasenk@redhat.com>
+ <1420734315-30943-4-git-send-email-dvlasenk@redhat.com> <20150109121950.GD13637@pd.tnic>
+ <CAK1hOcMsGJ7geRAzfazPLZitcO0o9XYRPJDYa8sJHR4i6DPL-g@mail.gmail.com>
+ <20150110142336.GC12218@pd.tnic> <CAK1hOcO7K=4N8CF=LOPmosXRNnogaNi5vLDPMdb0XiKsL=JOfg@mail.gmail.com>
+ <CALCETrXS7BvtS3P3J8hnbt3GGvezx-935uxanSN_a=CU6s1d3g@mail.gmail.com>
+ <20150110204231.GD12218@pd.tnic> <CALCETrWwnfU9roXp_0Z_hHo-c2LMcc3_KRKJgx_=p2U-+i5PrA@mail.gmail.com>
+ <CAK1hOcPAxvuPRB-+z2kob2=sF1C+aftH4M9JL2MaA5VcQDzuNA@mail.gmail.com> <CA+55aFy-uSod4dndhjZ2VKgLkG42hajk7HLJwuNdv_eHfTW-=Q@mail.gmail.com>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Sat, 10 Jan 2015 22:57:20 +0100
+Message-ID: <CAK1hOcPRvFZs4WS=Wek8tvk_mn8+NPv=9OJV9j0q8jkHVFHiow@mail.gmail.com>
+Subject: Re: [PATCH 3/4] x86: open-code register save/restore in
+ trace_hardirqs thunks
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andy Lutomirski <luto@amacapital.net>, Borislav Petkov <bp@alien8.de>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 10 January 2015 22:40:22 Linus Walleij wrote:
-> >  static int v3_read_config(struct pci_bus *bus, unsigned int devfn, int where,
-> >                           int size, u32 *val)
-> >  {
-> > -       addr = v3_open_config_window(bus, devfn, where);
-> > +       int ret = pci_generic_config_read(bus, devfn, where, size, val);
-> >         v3_close_config_window();
-> > +       return ret;
-> >  }
-> >
-> >  static int v3_write_config(struct pci_bus *bus, unsigned int devfn, int where,
-> >                            int size, u32 val)
-> >  {
-> > +       int ret = pci_generic_config_write(bus, devfn, where, size, val);
-> >         v3_close_config_window();
-> > -       raw_spin_unlock_irqrestore(&v3_lock, flags);
-> > +       return ret;
-> >  }
-> >
-> >  static struct pci_ops pci_v3_ops = {
-> > +       .map_bus = v3_open_config_window,
-> >         .read   = v3_read_config,
-> >         .write  = v3_write_config,
-> 
-> So .map_bus is called before every .read/.write operation I take it.
-> 
-> Wouldn't it be proper to call the v3_close_config_window() from a
-> matching .unmap_bus() callback for symmetry?
+On Sat, Jan 10, 2015 at 10:27 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Sat, Jan 10, 2015 at 1:09 PM, Denys Vlasenko
+> <vda.linux@googlemail.com> wrote:
+>>
+>> I think using push/pop is okay. In the very hottest code paths
+>> you may want to prefer mov's.
+>
+> For kernel entrypoints in particular, the code sequence is quite
+> possibly constrained by the decoder and instruction fetch rather than
+> the execution engine. Even if the entrypoint were to be in the L1 I$
+> (which is not generally the case except in microbenchmarks), I am
+> pretty sure that even Intel doesn't actually speculatively decode
+> across system call boundaries, so unlike normal nice code, you don't
+> have the front end running ahead of the execution engine.
+>
+> Looking at the system call hotpath, for example, it looks like we
+> save/restore 8 registers. So 16 instructions or about 80 bytes of
+> code. I could easily imagine us avoiding one cacheline access by using
+> shorter 1- and 2-byte push/pop instructions (depending a bit on how
+> the cacheline alignment works out, of course).
+>
+> Depending on how well it prefetches from L2 and/or exact decoder
+> details, that kind of issue *can* overshadow the actual execution
+> costs. Of course, on microbenchmarks (eg some system call benchmark
+> that does "getppid()" in a loop), even the kernel side stays in the
+> L1, so those might show possible execution issues more. And
+> macrobenchmarks probably won't show a cycle or two in the system call
+> or fault path anyway.
+>
+>                     Linus
 
-It would be nicer for integrator but useless for anything else, so
-I'd vote for leaving it the way Rob posted.
-
-	Arnd
+Looks like consensus to me. I'm resending patches with patch #3 reworked.
