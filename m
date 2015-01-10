@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753106AbbAJWWc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 17:22:32 -0500
-Received: from mx1.scotdoyle.com ([23.226.141.211]:57616 "EHLO
-	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882AbbAJWWb (ORCPT
+	id S1754145AbbAJWZv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 17:25:51 -0500
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:38218 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752762AbbAJWZu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 17:22:31 -0500
-Date: Sat, 10 Jan 2015 22:21:02 +0000 (UTC)
-From: Scot Doyle <lkml14@scotdoyle.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] arch/x86/kernel/cpu/common.c: split log entry into logical
- components
-Message-ID: <alpine.DEB.2.11.1501102203380.2303@localhost.localdomain>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Sat, 10 Jan 2015 17:25:50 -0500
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Greg KH <greg@kroah.com>, Pavel Machek <pavel@ucw.cz>,
+        pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        khilman@kernel.org, aaro.koskinen@iki.fi, ivo.g.dimitrov.75@gmail.com
+Subject: Re: Getting new udev to run with 2.6.28
+Date: Sat, 10 Jan 2015 23:25:39 +0100
+Message-ID: <7348917.heGelKEtgq@merkaba>
+User-Agent: KMail/4.14.2 (Linux/3.19.0-rc3-tp520-trim-all-bgroups+; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <20150110211857.GA22149@ZenIV.linux.org.uk>
+References: <20150110173920.GA31847@amd> <20150110181710.GA8884@kroah.com> <20150110211857.GA22149@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Call printk twice since this log entry has two lines and headings.
+Am Samstag, 10. Januar 2015, 21:18:58 schrieb Al Viro:
+> On Sat, Jan 10, 2015 at 10:17:10AM -0800, Greg KH wrote:
+> > > > Yes, 3.18, please use that instead.
+> > > 
+> > > Can't, sorry. My goal is to get 3.18/3.19 working, but I really need
+> > > working kernel to debug userland (and then use that userland to debug
+> > > kernel).> > 
+> > > > Seriously, lots of things have changed, if you want to run a "new"
+> > > > version of udev with an old kernel, try eudev, they have been
+> > > > attempting
+> > > > to keep "legacy" support around in it, don't know how well it has been
+> > > > working though, you really are on your own.
+> > > 
+> > > I was hoping someone has devtmpfs patches I could just apply over
+> > > 2.6.28 and get a working system?
+> > 
+> > If you want such a crazy thing, you have all of the source to do it
+> > yourself, good luck.
+> 
+> ... and this, boys and girls, is why quite a few of us have loathed udev
+> way before it got merged into even nastier shitpile.  Still do, for that
+> matter.
 
-[    0.009285] Last level iTLB entries: 4KB 1024, 2MB 1024, 4MB 1024
-Last level dTLB entries: 4KB 1024, 2MB 1024, 4MB 1024, 1GB 4
+You mean systemd by that?
 
-Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
----
- arch/x86/kernel/cpu/common.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index c604965..76f253f 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -496,12 +496,12 @@ void cpu_detect_tlb(struct cpuinfo_x86 *c)
- 	if (this_cpu->c_detect_tlb)
- 		this_cpu->c_detect_tlb(c);
- 
--	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n"
--		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d, 1GB %d\n",
-+	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n",
- 		tlb_lli_4k[ENTRIES], tlb_lli_2m[ENTRIES],
--		tlb_lli_4m[ENTRIES], tlb_lld_4k[ENTRIES],
--		tlb_lld_2m[ENTRIES], tlb_lld_4m[ENTRIES],
--		tlb_lld_1g[ENTRIES]);
-+		tlb_lli_4m[ENTRIES]);
-+	printk(KERN_INFO "Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d, 1GB %d\n",
-+		tlb_lld_4k[ENTRIES], tlb_lld_2m[ENTRIES],
-+		tlb_lld_4m[ENTRIES], tlb_lld_1g[ENTRIES]);
- }
- 
- void detect_ht(struct cpuinfo_x86 *c)
 -- 
-2.1.3
-
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
