@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757606AbbAJFja (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 00:39:30 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:64989 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754670AbbAJFgx (ORCPT
+	id S1754813AbbAJFg5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 00:36:57 -0500
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:35616 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754540AbbAJFgz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 00:36:53 -0500
+	Sat, 10 Jan 2015 00:36:55 -0500
 From: Chris Rorvick <chris@rorvick.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Chris Rorvick <chris@rorvick.com>,
@@ -21,9 +21,9 @@ Cc: Chris Rorvick <chris@rorvick.com>,
         Monam Agarwal <monamagarwal123@gmail.com>,
         Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
         Stefan Hajnoczi <stefanha@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 16/25] staging: line6: Filter on UX2 interfaces
-Date: Fri,  9 Jan 2015 23:36:02 -0600
-Message-Id: <1420868171-2031-17-git-send-email-chris@rorvick.com>
+Subject: [PATCH 17/25] staging: line6: Move altsetting to properties
+Date: Fri,  9 Jan 2015 23:36:03 -0600
+Message-Id: <1420868171-2031-18-git-send-email-chris@rorvick.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1420868171-2031-1-git-send-email-chris@rorvick.com>
 References: <1420868171-2031-1-git-send-email-chris@rorvick.com>
@@ -31,58 +31,242 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver only supports interface 0 of the TonePort UX2 and POD Studio
-UX2 devices.  Use the device table to filter on this.
+The device type can now be used to determine the altsetting for the
+interface.  Drop the conditional logic and make this value a property.
 
 Signed-off-by: Chris Rorvick <chris@rorvick.com>
 ---
- drivers/staging/line6/driver.c | 20 ++++----------------
- 1 file changed, 4 insertions(+), 16 deletions(-)
+ drivers/staging/line6/driver.c | 74 +++++++++++++-----------------------------
+ drivers/staging/line6/driver.h |  2 ++
+ 2 files changed, 25 insertions(+), 51 deletions(-)
 
 diff --git a/drivers/staging/line6/driver.c b/drivers/staging/line6/driver.c
-index 8b03bc0..f04ff80 100644
+index f04ff80..0150470 100644
 --- a/drivers/staging/line6/driver.c
 +++ b/drivers/staging/line6/driver.c
-@@ -46,14 +46,14 @@ static const struct usb_device_id line6_id_table[] = {
- 	{ LINE6_IF_NUM(0x414D, 1), .driver_info = LINE6_PODHD500_1 },
- 	{ LINE6_DEVICE(0x4153),    .driver_info = LINE6_PODSTUDIO_GX },
- 	{ LINE6_DEVICE(0x4150),    .driver_info = LINE6_PODSTUDIO_UX1 },
--	{ LINE6_DEVICE(0x4151),    .driver_info = LINE6_PODSTUDIO_UX2 },
-+	{ LINE6_IF_NUM(0x4151, 0), .driver_info = LINE6_PODSTUDIO_UX2 },
- 	{ LINE6_DEVICE(0x5044),    .driver_info = LINE6_PODXT },
- 	{ LINE6_IF_NUM(0x4650, 0), .driver_info = LINE6_PODXTLIVE_POD },
- 	{ LINE6_IF_NUM(0x4650, 1), .driver_info = LINE6_PODXTLIVE_VARIAX },
- 	{ LINE6_DEVICE(0x5050),    .driver_info = LINE6_PODXTPRO },
- 	{ LINE6_DEVICE(0x4147),    .driver_info = LINE6_TONEPORT_GX },
- 	{ LINE6_DEVICE(0x4141),    .driver_info = LINE6_TONEPORT_UX1 },
--	{ LINE6_DEVICE(0x4142),    .driver_info = LINE6_TONEPORT_UX2 },
-+	{ LINE6_IF_NUM(0x4142, 0), .driver_info = LINE6_TONEPORT_UX2 },
- 	{ LINE6_DEVICE(0x534d),    .driver_info = LINE6_VARIAX },
- 	{}
+@@ -67,6 +67,7 @@ static const struct line6_properties line6_properties_table[] = {
+ 		.capabilities	= LINE6_CAP_CONTROL
+ 				| LINE6_CAP_PCM
+ 				| LINE6_CAP_HWMON,
++		.altsetting = 5,
+ 	},
+ 	[LINE6_BASSPODXTLIVE] = {
+ 		.id = "BassPODxtLive",
+@@ -74,6 +75,7 @@ static const struct line6_properties line6_properties_table[] = {
+ 		.capabilities	= LINE6_CAP_CONTROL
+ 				| LINE6_CAP_PCM
+ 				| LINE6_CAP_HWMON,
++		.altsetting = 1,
+ 	},
+ 	[LINE6_BASSPODXTPRO] = {
+ 		.id = "BassPODxtPro",
+@@ -81,16 +83,19 @@ static const struct line6_properties line6_properties_table[] = {
+ 		.capabilities	= LINE6_CAP_CONTROL
+ 				| LINE6_CAP_PCM
+ 				| LINE6_CAP_HWMON,
++		.altsetting = 5,
+ 	},
+ 	[LINE6_GUITARPORT] = {
+ 		.id = "GuitarPort",
+ 		.name = "GuitarPort",
+ 		.capabilities	= LINE6_CAP_PCM,
++		.altsetting = 2,  /* 1..4 seem to be ok */
+ 	},
+ 	[LINE6_POCKETPOD] = {
+ 		.id = "PocketPOD",
+ 		.name = "Pocket POD",
+ 		.capabilities	= LINE6_CAP_CONTROL,
++		.altsetting = 0,
+ 	},
+ 	[LINE6_PODHD300] = {
+ 		.id = "PODHD300",
+@@ -98,6 +103,7 @@ static const struct line6_properties line6_properties_table[] = {
+ 		.capabilities	= LINE6_CAP_CONTROL
+ 				| LINE6_CAP_PCM
+ 				| LINE6_CAP_HWMON,
++		.altsetting = 5,
+ 	},
+ 	[LINE6_PODHD400] = {
+ 		.id = "PODHD400",
+@@ -105,6 +111,7 @@ static const struct line6_properties line6_properties_table[] = {
+ 		.capabilities	= LINE6_CAP_CONTROL
+ 				| LINE6_CAP_PCM
+ 				| LINE6_CAP_HWMON,
++		.altsetting = 5,
+ 	},
+ 	[LINE6_PODHD500_0] = {
+ 		.id = "PODHD500",
+@@ -112,6 +119,7 @@ static const struct line6_properties line6_properties_table[] = {
+ 		.capabilities	= LINE6_CAP_CONTROL
+ 				| LINE6_CAP_PCM
+ 				| LINE6_CAP_HWMON,
++		.altsetting = 1,
+ 	},
+ 	[LINE6_PODHD500_1] = {
+ 		.id = "PODHD500",
+@@ -119,21 +127,25 @@ static const struct line6_properties line6_properties_table[] = {
+ 		.capabilities	= LINE6_CAP_CONTROL
+ 				| LINE6_CAP_PCM
+ 				| LINE6_CAP_HWMON,
++		.altsetting = 1,
+ 	},
+ 	[LINE6_PODSTUDIO_GX] = {
+ 		.id = "PODStudioGX",
+ 		.name = "POD Studio GX",
+ 		.capabilities	= LINE6_CAP_PCM,
++		.altsetting = 2,  /* 1..4 seem to be ok */
+ 	},
+ 	[LINE6_PODSTUDIO_UX1] = {
+ 		.id = "PODStudioUX1",
+ 		.name = "POD Studio UX1",
+ 		.capabilities	= LINE6_CAP_PCM,
++		.altsetting = 2,  /* 1..4 seem to be ok */
+ 	},
+ 	[LINE6_PODSTUDIO_UX2] = {
+ 		.id = "PODStudioUX2",
+ 		.name = "POD Studio UX2",
+ 		.capabilities	= LINE6_CAP_PCM,
++		.altsetting = 2,  /* defaults to 44.1kHz, 16-bit */
+ 	},
+ 	[LINE6_PODXT] = {
+ 		.id = "PODxt",
+@@ -141,6 +153,7 @@ static const struct line6_properties line6_properties_table[] = {
+ 		.capabilities	= LINE6_CAP_CONTROL
+ 				| LINE6_CAP_PCM
+ 				| LINE6_CAP_HWMON,
++		.altsetting = 5,
+ 	},
+ 	[LINE6_PODXTLIVE_POD] = {
+ 		.id = "PODxtLive",
+@@ -148,6 +161,7 @@ static const struct line6_properties line6_properties_table[] = {
+ 		.capabilities	= LINE6_CAP_CONTROL
+ 				| LINE6_CAP_PCM
+ 				| LINE6_CAP_HWMON,
++		.altsetting = 1,
+ 	},
+ 	[LINE6_PODXTLIVE_VARIAX] = {
+ 		.id = "PODxtLive",
+@@ -155,6 +169,7 @@ static const struct line6_properties line6_properties_table[] = {
+ 		.capabilities	= LINE6_CAP_CONTROL
+ 				| LINE6_CAP_PCM
+ 				| LINE6_CAP_HWMON,
++		.altsetting = 1,
+ 	},
+ 	[LINE6_PODXTPRO] = {
+ 		.id = "PODxtPro",
+@@ -162,26 +177,31 @@ static const struct line6_properties line6_properties_table[] = {
+ 		.capabilities	= LINE6_CAP_CONTROL
+ 				| LINE6_CAP_PCM
+ 				| LINE6_CAP_HWMON,
++		.altsetting = 5,
+ 	},
+ 	[LINE6_TONEPORT_GX] = {
+ 		.id = "TonePortGX",
+ 		.name = "TonePort GX",
+ 		.capabilities	= LINE6_CAP_PCM,
++		.altsetting = 2,  /* 1..4 seem to be ok */
+ 	},
+ 	[LINE6_TONEPORT_UX1] = {
+ 		.id = "TonePortUX1",
+ 		.name = "TonePort UX1",
+ 		.capabilities	= LINE6_CAP_PCM,
++		.altsetting = 2,  /* 1..4 seem to be ok */
+ 	},
+ 	[LINE6_TONEPORT_UX2] = {
+ 		.id = "TonePortUX2",
+ 		.name = "TonePort UX2",
+ 		.capabilities	= LINE6_CAP_PCM,
++		.altsetting = 2,  /* defaults to 44.1kHz, 16-bit */
+ 	},
+ 	[LINE6_VARIAX] = {
+ 		.id = "Variax",
+ 		.name = "Variax Workbench",
+ 		.capabilities	= LINE6_CAP_CONTROL,
++		.altsetting = 1,
+ 	}
  };
-@@ -768,20 +768,8 @@ static int line6_probe(struct usb_interface *interface,
  
- 	case LINE6_TONEPORT_UX2:
- 	case LINE6_PODSTUDIO_UX2:
--		switch (interface_number) {
--		case 0:
--			/* defaults to 44.1kHz, 16-bit */
--			alternate = 2;
--			break;
--		case 1:
--			/* don't know yet what this is ...
--			   alternate = 1;
--			   break;
--			 */
--			return -ENODEV;
--		default:
--			MISSING_CASE;
--		}
-+		/* defaults to 44.1kHz, 16-bit */
-+		alternate = 2;
- 		break;
+@@ -703,7 +723,7 @@ static int line6_probe(struct usb_interface *interface,
+ 	struct usb_device *usbdev;
+ 	struct usb_line6 *line6;
+ 	const struct line6_properties *properties;
+-	int interface_number, alternate = 0;
++	int interface_number;
+ 	int size = 0;
+ 	int ep_read = 0, ep_write = 0;
+ 	int ret;
+@@ -729,56 +749,8 @@ static int line6_probe(struct usb_interface *interface,
+ 	/* query interface number */
+ 	interface_number = interface->cur_altsetting->desc.bInterfaceNumber;
  
- 	default:
+-	switch (devtype) {
+-	case LINE6_BASSPODXTLIVE:
+-	case LINE6_PODXTLIVE_POD:
+-	case LINE6_PODXTLIVE_VARIAX:
+-	case LINE6_VARIAX:
+-		alternate = 1;
+-		break;
+-
+-	case LINE6_POCKETPOD:
+-		alternate = 0;
+-		break;
+-
+-	case LINE6_PODHD500_0:
+-		alternate = 1;
+-		break;
+-
+-	case LINE6_PODHD500_1:
+-		alternate = 0;
+-		break;
+-
+-	case LINE6_BASSPODXT:
+-	case LINE6_BASSPODXTPRO:
+-	case LINE6_PODXT:
+-	case LINE6_PODXTPRO:
+-	case LINE6_PODHD300:
+-	case LINE6_PODHD400:
+-		alternate = 5;
+-		break;
+-
+-	case LINE6_GUITARPORT:
+-	case LINE6_PODSTUDIO_GX:
+-	case LINE6_PODSTUDIO_UX1:
+-	case LINE6_TONEPORT_GX:
+-	case LINE6_TONEPORT_UX1:
+-		alternate = 2;	/* 1..4 seem to be ok */
+-		break;
+-
+-	case LINE6_TONEPORT_UX2:
+-	case LINE6_PODSTUDIO_UX2:
+-		/* defaults to 44.1kHz, 16-bit */
+-		alternate = 2;
+-		break;
+-
+-	default:
+-		MISSING_CASE;
+-		ret = -ENODEV;
+-		goto err_put;
+-	}
+-
+-	ret = usb_set_interface(usbdev, interface_number, alternate);
++	ret = usb_set_interface(usbdev, interface_number,
++			properties->altsetting);
+ 	if (ret < 0) {
+ 		dev_err(&interface->dev, "set_interface failed\n");
+ 		goto err_put;
+diff --git a/drivers/staging/line6/driver.h b/drivers/staging/line6/driver.h
+index 9d6b351..97d6be1 100644
+--- a/drivers/staging/line6/driver.h
++++ b/drivers/staging/line6/driver.h
+@@ -115,6 +115,8 @@ struct line6_properties {
+ 		 line6usb driver.
+ 	*/
+ 	int capabilities;
++
++	int altsetting;
+ };
+ 
+ /**
 -- 
 2.1.0
 
