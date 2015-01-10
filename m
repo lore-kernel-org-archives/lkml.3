@@ -1,153 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758592AbbAJAi2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jan 2015 19:38:28 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:8437 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758316AbbAJAiZ (ORCPT
+	id S1758602AbbAJAjw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jan 2015 19:39:52 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:53856 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752611AbbAJAjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jan 2015 19:38:25 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhULAIdzsFR5LLLkPGdsb2JhbABcgwaBKoI2g3mtDQIBAQaYKwQCAoEVRAEBAQEBBgEBAQE4O4QMAQEBAwEnExwjBQsIAw4KCQwZDwUlAwcaE4gkB8pMAQEIAiAYhW2JdAcKhB8Fl0KRdYQkKjGCQwEBAQ
-Date: Sat, 10 Jan 2015 11:38:19 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, jack@suse.cz,
-        hch@infradead.org, hannes@cmpxchg.org, linux-fsdevel@vger.kernel.org,
-        vgoyal@redhat.com, lizefan@huawei.com, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, mhocko@suse.cz, clm@fb.com, fengguang.wu@intel.com
-Subject: Re: [PATCHSET RFC block/for-next] writeback: cgroup writeback support
-Message-ID: <20150110003819.GP31508@dastard>
-References: <1420579582-8516-1-git-send-email-tj@kernel.org>
- <20150106214426.GA24106@htj.dyndns.org>
- <20150107234532.GD25000@dastard>
- <20150109212336.GB2785@htj.dyndns.org>
+	Fri, 9 Jan 2015 19:39:51 -0500
+Message-ID: <54B074B9.2090704@roeck-us.net>
+Date: Fri, 09 Jan 2015 16:39:21 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150109212336.GB2785@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH v2 3/8] watchdog: at91rm9200: use the regmap from mfd
+References: <1420797094-9444-1-git-send-email-alexandre.belloni@free-electrons.com> <1420797094-9444-4-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1420797094-9444-4-git-send-email-alexandre.belloni@free-electrons.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020205.54B074D7.00B0,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 4
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 04:23:36PM -0500, Tejun Heo wrote:
-> Hello, Dave.
-> 
-> On Thu, Jan 08, 2015 at 10:45:32AM +1100, Dave Chinner wrote:
-> > > Complications mostly arise from filesystems and inodes having to deal
-> > > with multiple split bdi's instead of one, but those are mostly
-> > > straight-forward 1:N mapping issues.  It does get tedious here and
-> > > there but doesn't complicate the overall picture.
-> > 
-> > Some filesystems don't track metadata-dirty inode state in the bdi
-> > lists, and instead track that in their own lists (usually deep
-> > inside the journalling subsystem). i.e. I_DIRTY_PAGES are the only
-> > dirty state that is tracked in the VFS. i.e. inode metadata
-> > writeback will still be considered global, but pages won't be. Hence
-> > you might get pages written back quickly, but the inodes are going
-> > to remain dirty and unreclaimable until the filesystem flushes some
-> > time in the future after the journal is committed and the inode
-> > written...
-> 
-> I'm not sure I'm following.  What writeback layer provides is cgroup
-> awareness when dealing with I_DIRTY_PAGES.  Metadata writebacks will
-> become automatically cgroup-aware to the extent they go through
-> regular page dirtying mechanism.
+On 01/09/2015 01:51 AM, Alexandre Belloni wrote:
+> The system timer MFD driver is providing a regmap. Use it to access the
+> registers.
+>
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+>   drivers/watchdog/Kconfig          |  2 +-
+>   drivers/watchdog/at91rm9200_wdt.c | 27 +++++++++------------------
+>   2 files changed, 10 insertions(+), 19 deletions(-)
+>
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index 08f41add1461..18c73bc159fc 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -154,7 +154,7 @@ config ARM_SP805_WATCHDOG
+>
+>   config AT91RM9200_WATCHDOG
+>   	tristate "AT91RM9200 watchdog"
+> -	depends on SOC_AT91RM9200
+> +	depends on SOC_AT91RM9200 && MFD_ATMEL_ST
+>   	help
+>   	  Watchdog timer embedded into AT91RM9200 chips. This will reboot your
+>   	  system when the timeout is reached.
+> diff --git a/drivers/watchdog/at91rm9200_wdt.c b/drivers/watchdog/at91rm9200_wdt.c
+> index d244112d5b6f..a493fe4b0dfc 100644
+> --- a/drivers/watchdog/at91rm9200_wdt.c
+> +++ b/drivers/watchdog/at91rm9200_wdt.c
+> @@ -14,25 +14,22 @@
+>   #include <linux/bitops.h>
+>   #include <linux/errno.h>
+>   #include <linux/fs.h>
+> -#include <linux/init.h>
+> -#include <linux/io.h>
+>   #include <linux/kernel.h>
+> +#include <linux/mfd/atmel-st.h>
+>   #include <linux/miscdevice.h>
+>   #include <linux/module.h>
+>   #include <linux/moduleparam.h>
+>   #include <linux/platform_device.h>
+> -#include <linux/types.h>
+> +#include <linux/regmap.h>
+>   #include <linux/watchdog.h>
+>   #include <linux/uaccess.h>
+> -#include <linux/of.h>
+> -#include <linux/of_device.h>
+> -#include <mach/at91_st.h>
+>
+>   #define WDT_DEFAULT_TIME	5	/* seconds */
+>   #define WDT_MAX_TIME		256	/* seconds */
+>
+>   static int wdt_time = WDT_DEFAULT_TIME;
+>   static bool nowayout = WATCHDOG_NOWAYOUT;
+> +static struct regmap *regmap_st;
+>
+>   module_param(wdt_time, int, 0);
+>   MODULE_PARM_DESC(wdt_time, "Watchdog time in seconds. (default="
+> @@ -55,7 +52,7 @@ static unsigned long at91wdt_busy;
+>    */
+>   static inline void at91_wdt_stop(void)
+>   {
+> -	at91_st_write(AT91_ST_WDMR, AT91_ST_EXTEN);
+> +	regmap_write(regmap_st, AT91_ST_WDMR, AT91_ST_EXTEN);
+>   }
+>
+>   /*
+> @@ -63,9 +60,9 @@ static inline void at91_wdt_stop(void)
+>    */
+>   static inline void at91_wdt_start(void)
+>   {
+> -	at91_st_write(AT91_ST_WDMR, AT91_ST_EXTEN | AT91_ST_RSTEN |
+> +	regmap_write(regmap_st, AT91_ST_WDMR, AT91_ST_EXTEN | AT91_ST_RSTEN |
+>   				(((65536 * wdt_time) >> 8) & AT91_ST_WDV));
+> -	at91_st_write(AT91_ST_CR, AT91_ST_WDRST);
+> +	regmap_write(regmap_st, AT91_ST_CR, AT91_ST_WDRST);
+>   }
+>
+>   /*
+> @@ -73,7 +70,7 @@ static inline void at91_wdt_start(void)
+>    */
+>   static inline void at91_wdt_reload(void)
+>   {
+> -	at91_st_write(AT91_ST_CR, AT91_ST_WDRST);
+> +	regmap_write(regmap_st, AT91_ST_CR, AT91_ST_WDRST);
+>   }
+>
+>   /* ......................................................................... */
+> @@ -204,6 +201,7 @@ static struct miscdevice at91wdt_miscdev = {
+>   static int at91wdt_probe(struct platform_device *pdev)
+>   {
+>   	int res;
+> +	regmap_st = dev_get_drvdata(pdev->dev.parent);
+>
 
-That's my point - inode metadata drtying/writeback don't go through
-the regular page dirtying mechanisms.
+Is it guaranteed that parent is never NULL, and that the parent's
+drvdata is always set ?
 
-> What's implemented in this patchset is
-> propagation of memcg tags for pagecache pages.  If necessary, further
-> mechanisms can be added, but this should cover the basics.
+Also, it seems that regmap_st will be overwritten if the device
+is already open (see code below). That may not be a good idea.
 
-Sure, but I'm just pointing out that if you dirty a million inodes
-in a memcg (e.g. chown -R), memcg-based writeback will not cause
-them to be written...
+Guenter
 
-> > There has also been talk of allowing filesystems to directly track
-> > dirty page state as well - the discussion came out of the way tux3
-> > was tracking and committing delta changes to file data. Now that
-> > hasn't gone anywhere, but I'm wondering what impact this patch set
-> > would have on such proposals?
-> 
-> Would such a filesystem take over writeback mechanism too?
+>   	if (at91wdt_miscdev.parent)
+>   		return -EBUSY;
+> @@ -254,12 +252,6 @@ static int at91wdt_resume(struct platform_device *pdev)
+>   #define at91wdt_resume	NULL
+>   #endif
+>
+> -static const struct of_device_id at91_wdt_dt_ids[] = {
+> -	{ .compatible = "atmel,at91rm9200-wdt" },
+> -	{ /* sentinel */ }
+> -};
+> -MODULE_DEVICE_TABLE(of, at91_wdt_dt_ids);
+> -
+>   static struct platform_driver at91wdt_driver = {
+>   	.probe		= at91wdt_probe,
+>   	.remove		= at91wdt_remove,
+> @@ -267,8 +259,7 @@ static struct platform_driver at91wdt_driver = {
+>   	.suspend	= at91wdt_suspend,
+>   	.resume		= at91wdt_resume,
+>   	.driver		= {
+> -		.name	= "at91_wdt",
+> -		.of_match_table = at91_wdt_dt_ids,
+> +		.name	= "atmel_st_watchdog",
+>   	},
+>   };
+>
+>
 
-That was the intent.
-> The
-> implemented mechanism is fairly modular and the counterparts in each
-> filesystem should be able to use them the same way the core writeback
-> code does.  I'm afraid I can't say much without knowing further
-> details.
-
-Ok,you haven't said "that's impossible", so that's good enough for
-now ;)
-
-> > Similarly, I'm concerned about additional overhead in the writeback
-> > path - we can easily drive the flusher thread to be CPU bound on IO
-> > subsystems that have decent bandwidth (low GB/s), so adding more
-> > overhead to every page we have to flush is going to reduce
-> > performance on these systems. Do you have any idea what impact
-> > just enabling the memcg/blkcg tracking has on writeback performance
-> > and CPU consumption?
-> 
-> I measured avg sys+user time of 50 iterations of
-> 
->   fs_mark -d /mnt/tmp/ -s 104857600 -n 32
-> 
-> on an ext2 on a ramdisk, which should put the hot path part - page
-> faulting and inode dirtying - under spotlight.  cgroup writeback
-> enabled but not used case consumes around 1% more cpu time - AVG 6.616
-> STDEV 0.050 w/o this patchset, AVG 6.682 STDEV 0.046 with.  This is an
-> extreme case and while it isn't free the overhead is fairly low.
-
-What's the throughput for these numbers? CPU usage without any idea
-of the number of pages being scanned doesn't tell us a whole lot.
-
-> > A further complication for data writeback is that some filesystems
-> > do their own adjacent page write clustering own inside their own
-> > ->writepages/->writepage implementations. Both ext4 and XFS do this,
-> > and it makes no sense from a system and filesystem performance
-> > perspective to turn sequential ranges of dirty pages into much
-> > slower, semi-random IO just because the pages belong to different
-> > memcgs. It's not a good idea to compromise bulk writeback
-> > throughput under memory pressure just because a different memcgs
-> > write to the same files, so what is going to be the impact of
-> > filesystems ignoring memcg ownership during writeback clustering?
-> 
-> I don't think that's a good idea.  Implementing that isn't hard.
-> Range writeback can simply avoid skipping pages from different
-> cgroups; however, different cgroups can have vastly different
-> characteristics.  One may be configured to have a majority of the
-> available bandwidth while another has to scrap by with few hundreds of
-> k's per sec.  Initiating write out on pages which belong to the former
-> from the writeback of the latter may cause serious priority inversion
-> issues.
-
-I'd suggest that you should provide mechanisms at the block layer
-for accounting the pages in the bio to the memcg they belong to,
-not make a sweeping directive that filesystems can only write back
-pages from one memcg at a time.
-
-If you account for pages to their memcg and decide on bio priority
-at bio_add_page() time you would avoid the inversion and cross-cg
-accounting problems.  If you do this, the filesystem doesn't need to
-care at all what memcg pages belong to; they just do optimal IO to
-clean sequential dirty pages and it is accounted and throttled
-appropriately by the lower layers.
-
-> Maybe we can think of optimizations down the road but I'd strongly
-> prefer to stick to simple and clear divisions among cgroups.  Also, a
-> file highly interleaved by multiple cgroups isn't a particularly
-> likely use case.
-
-That's true, and that's a further reason why I think we should not
-be caring about this case in the filesystem writeback code at all.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
