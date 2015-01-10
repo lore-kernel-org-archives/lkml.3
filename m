@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753029AbbAJXyu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 18:54:50 -0500
-Received: from plane.gmane.org ([80.91.229.3]:52013 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752782AbbAJXyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 18:54:49 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-Mail-Followup-To: linux-kernel@vger.kernel.org
-To: linux-kernel@vger.kernel.org
-From: rh_ <richard_hubbe11@lavabit.com>
-Subject: Re: man-pages-3.77 is released
-Date: Sat, 10 Jan 2015 15:52:24 -0800
-Organization: L2N
-Message-ID: <20150110155224.08c9a2c9@127>
-References: <54B150D4.6060405@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: ip68-6-109-86.sb.sd.cox.net
-User-Agent: dsodnetnin
-X-Gmane-NNTP-Posting-Host: EZnn0.37p
-Original-Received: from slem by 1.1 with local
-X-No-Archive: yes
-Archive: no
-X-Archive: encrypt
-X-Operating-System: Barebones_6.1
-X-Gmane-NNTP-Posting-Host: 192.168.1.1
-X-NNTP-Posting-Host: 192.168.1.1
-Mail-Copies-To: never
-X-Archive: expiry=79
-X-Mailer: EZnn0.37u
-X-Newsreader: EZnn0.37u
+	id S1753262AbbAJX6k (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 18:58:40 -0500
+Received: from mx1.scotdoyle.com ([23.226.141.211]:58503 "EHLO
+	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222AbbAJX6j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jan 2015 18:58:39 -0500
+Date: Sat, 10 Jan 2015 23:57:04 +0000 (UTC)
+From: Scot Doyle <lkml14@scotdoyle.com>
+To: Joe Perches <joe@perches.com>, Steven Honeyman <stevenhoneyman@gmail.com>
+cc: Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arch/x86/kernel/cpu/common.c: split log entry into
+ logical components
+In-Reply-To: <1420929338.16787.6.camel@perches.com>
+Message-ID: <alpine.DEB.2.11.1501102345590.26282@localhost.localdomain>
+References: <alpine.DEB.2.11.1501102203380.2303@localhost.localdomain> <1420929338.16787.6.camel@perches.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 10 Jan 2015 17:18:28 +0100
-"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> wrote:
+On Sat, 10 Jan 2015, Joe Perches wrote:
 
--snip 8< snip-
+> On Sat, 2015-01-10 at 22:21 +0000, Scot Doyle wrote:
+> > Call printk twice since this log entry has two lines and headings.
+> > 
+> > [    0.009285] Last level iTLB entries: 4KB 1024, 2MB 1024, 4MB 1024
+> > Last level dTLB entries: 4KB 1024, 2MB 1024, 4MB 1024, 1GB 4
+> > 
+> > Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
+> > ---
+> >  arch/x86/kernel/cpu/common.c | 10 +++++-----
+> >  1 file changed, 5 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+> > index c604965..76f253f 100644
+> > --- a/arch/x86/kernel/cpu/common.c
+> > +++ b/arch/x86/kernel/cpu/common.c
+> > @@ -496,12 +496,12 @@ void cpu_detect_tlb(struct cpuinfo_x86 *c)
+> >  	if (this_cpu->c_detect_tlb)
+> >  		this_cpu->c_detect_tlb(c);
+> >  
+> > -	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n"
+> > -		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d, 1GB %d\n",
+> > +	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n",
+> >  		tlb_lli_4k[ENTRIES], tlb_lli_2m[ENTRIES],
+> > -		tlb_lli_4m[ENTRIES], tlb_lld_4k[ENTRIES],
+> > -		tlb_lld_2m[ENTRIES], tlb_lld_4m[ENTRIES],
+> > -		tlb_lld_1g[ENTRIES]);
+> > +		tlb_lli_4m[ENTRIES]);
+> > +	printk(KERN_INFO "Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d, 1GB %d\n",
+> > +		tlb_lld_4k[ENTRIES], tlb_lld_2m[ENTRIES],
+> > +		tlb_lld_4m[ENTRIES], tlb_lld_1g[ENTRIES]);
+> >  }
+> 
+> Check your dmesg version
+> 
+> https://lkml.org/lkml/2014/11/1/67
+> https://lkml.org/lkml/2014/11/2/1
+> 
 
-I did:
+Thanks Joe.
 
-git clone git://git.kernel.org/pub/scm/docs/man-pages/man-pages.git
-cd man-pages
-make install prefix=/ssd42/man
-
-The man pages do install but I get one error:
-
-mktemp: cannot create temp file /tmp/manpages-checksXXXX: Invalid argument
-for i in man?; do \
-	install -d -m 755 /ssd42/man-pages/share/man/"$i" || exit $?; \
-	install -m 644 "$i"/* /ssd42/man-pages/share/man/"$i" || exit $?; \
-done; \
-
-
---- Makefile	2015-01-10 15:48:44.000000000 -0800
-+++ Makefile.new	2015-01-10 15:48:35.000000000 -0800
-@@ -57,7 +57,7 @@ install:
- 
- # Check if groff reports warnings (may be words of sentances not displayed)
- # from http://lintian.debian.org/tags/manpage-has-errors-from-man.html 
--GROFF_LOG := $(shell mktemp /tmp/manpages-checksXXXX)
-+GROFF_LOG := $(shell mktemp /tmp/manpages-checks.XXXXXX)
- check-groff-warnings:
- 	for i in man?/*.[1-9]; \
- 	do \
-
-
-
+Steven, are you planning to resubmit the patch as suggested by Borislav?
