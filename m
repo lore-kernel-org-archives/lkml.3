@@ -1,59 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146AbbAJVJq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 16:09:46 -0500
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:45522 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609AbbAJVJp (ORCPT
+	id S1755224AbbAJVK3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 16:10:29 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:54592 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754776AbbAJVK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 16:09:45 -0500
-MIME-Version: 1.0
-In-Reply-To: <CALCETrWwnfU9roXp_0Z_hHo-c2LMcc3_KRKJgx_=p2U-+i5PrA@mail.gmail.com>
-References: <1420734315-30943-1-git-send-email-dvlasenk@redhat.com>
- <1420734315-30943-4-git-send-email-dvlasenk@redhat.com> <20150109121950.GD13637@pd.tnic>
- <CAK1hOcMsGJ7geRAzfazPLZitcO0o9XYRPJDYa8sJHR4i6DPL-g@mail.gmail.com>
- <20150110142336.GC12218@pd.tnic> <CAK1hOcO7K=4N8CF=LOPmosXRNnogaNi5vLDPMdb0XiKsL=JOfg@mail.gmail.com>
- <CALCETrXS7BvtS3P3J8hnbt3GGvezx-935uxanSN_a=CU6s1d3g@mail.gmail.com>
- <20150110204231.GD12218@pd.tnic> <CALCETrWwnfU9roXp_0Z_hHo-c2LMcc3_KRKJgx_=p2U-+i5PrA@mail.gmail.com>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Sat, 10 Jan 2015 22:09:24 +0100
-Message-ID: <CAK1hOcPAxvuPRB-+z2kob2=sF1C+aftH4M9JL2MaA5VcQDzuNA@mail.gmail.com>
-Subject: Re: [PATCH 3/4] x86: open-code register save/restore in
- trace_hardirqs thunks
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Borislav Petkov <bp@alien8.de>, Denys Vlasenko <dvlasenk@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 10 Jan 2015 16:10:28 -0500
+Message-ID: <1420924225.5947.87.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [BUG] 3.19-rc1 net: less interrupt masking in NAPI
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Oded Gabbay <oded.gabbay@amd.com>, Johannes Berg <johannes.berg@intel.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Willem de Bruijn <willemb@google.com>,
+        "Bridgman, John" <John.Bridgman@amd.com>,
+        "Elifaz, Dana" <Dana.Elifaz@amd.com>
+Date: Sat, 10 Jan 2015 13:10:25 -0800
+In-Reply-To: <1420923485.5947.85.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <54B18DFF.80400@amd.com>
+	 <1420923485.5947.85.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 10:02 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Sat, Jan 10, 2015 at 12:42 PM, Borislav Petkov <bp@alien8.de> wrote:
->> On Sat, Jan 10, 2015 at 12:17:13PM -0800, Andy Lutomirski wrote:
->>> I asked this once, and someone told me that push/pop has lower
->>> throughput.  I find this surprising.
->>
->> Implicit dependency on %rsp probably. The MOVs allow you to start more
->> stuff out-of-order I'd guess...
->
-> AIUI modern CPUs have fancy stack engines that match call/ret pairs,
-> and presumably they can speculate rsp values across multiple pushes
-> and pops very quickly.
+On Sat, 2015-01-10 at 12:58 -0800, Eric Dumazet wrote:
+> On Sat, 2015-01-10 at 22:39 +0200, Oded Gabbay wrote:
+> > Hi,
+> > 
+> > Commit d75b1ade567ffab085e8adbbdacf0092d10cd09c breaks my "Qualcomm Atheros
+> > AR8161 Gigabit Ethernet (rev 10)" Ethernet controller, which is handled by
+> > the alx network driver.
+> > 
+> > ogabbay@odedg-ubuntu:~$ lspci -s 01:00.0 -k
+> > 01:00.0 Ethernet controller:
+> > 	Qualcomm Atheros AR8161 Gigabit Ethernet (rev 10)
+> > 	Subsystem: Qualcomm Atheros Device 1071
+> > 	Kernel driver in use: alx
+> > 
+> > I have this controller on a mobile platform of AMD APU Kaveri, which I use
+> > to test amdkfd, and from 3.19-rc1 the network stopped working when trying to
+> > transfer files through scp or nfs.
+> > 
+> > I bisected the kernel (from 3.18.0 to 3.19-rc1) and reached this commit.
+> > 
+> > Here is the log of the bisect:
+> > 
+> > git bisect start
+> > # bad: [97bf6af1f928216fd6c5a66e8a57bfa95a659672] Linux 3.19-rc1
+> > git bisect bad 97bf6af1f928216fd6c5a66e8a57bfa95a659672
+> > 
+> > # good: [b2776bf7149bddd1f4161f14f79520f17fc1d71d] Linux 3.18
+> > git bisect good b2776bf7149bddd1f4161f14f79520f17fc1d71d
+> > 
+> > # bad: [70e71ca0af244f48a5dcf56dc435243792e3a495] Merge
+> > git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next
+> > git bisect bad 70e71ca0af244f48a5dcf56dc435243792e3a495
+> > 
+> > # good: [e28870f9b3e92cd3570925089c6bb789c2603bc4] Merge tag
+> > 'backlight-for-linus-3.19' of
+> > git://git.kernel.org/pub/scm/linux/kernel/git/lee/backlight
+> > git bisect good e28870f9b3e92cd3570925089c6bb789c2603bc4
+> > 
+> > # bad: [450fa21942fe2c37f0c9f52d1a33bbc081eee288] sh_eth: Remove redundant
+> > alignment adjustment
+> > git bisect bad 450fa21942fe2c37f0c9f52d1a33bbc081eee288
+> > 
+> > # bad: [5c8d19da950861d0482abc0ac3481acca34b008f] e100e: use
+> > netdev_rss_key_fill() helper
+> > git bisect bad 5c8d19da950861d0482abc0ac3481acca34b008f
+> > 
+> > # good: [bf515fb11ab539c76d04f0e3c5216ed41f41d81f] Merge tag
+> > 'mac80211-next-for-john-2014-11-04' of
+> > git://git.kernel.org/pub/scm/linux/kernel/git/jberg/mac80211-next
+> > git bisect good bf515fb11ab539c76d04f0e3c5216ed41f41d81f
+> > 
+> > # bad: [2c99cd914d4fed9160d98849c9dd38034616768e] Merge branch 'amd-xgbe-next'
+> > git bisect bad 2c99cd914d4fed9160d98849c9dd38034616768e
+> > 
+> > # good: [3d762a0f0ab9cb4a6b5993db3ce56c92f9f90ab2] net: dsa: Add support for
+> > reading switch registers with ethtool
+> > git bisect good 3d762a0f0ab9cb4a6b5993db3ce56c92f9f90ab2
+> > 
+> > # bad: [8ce0c8254f15229aa99fc6c04141f28c446e5f8c] Merge branch 'master' of
+> > git://git.kernel.org/pub/scm/linux/kernel/git/jkirsher/net-next
+> > git bisect bad 8ce0c8254f15229aa99fc6c04141f28c446e5f8c
+> > 
+> > # good: [f0c65567b3c1b23f79e8a49139580a3872a68d1f] Merge branch
+> > 'sunvnet-multi-tx-queue'
+> > git bisect good f0c65567b3c1b23f79e8a49139580a3872a68d1f
+> > 
+> > # bad: [547f2735c20023d7b50a791b1b17cacb652e9237] Merge branch 'mlx4-next'
+> > git bisect bad 547f2735c20023d7b50a791b1b17cacb652e9237
+> > 
+> > # good: [4cdb1e2e3d3495423db558d3bb7ed11d66aabce7] net: shrink struct
+> > softnet_data
+> > git bisect good 4cdb1e2e3d3495423db558d3bb7ed11d66aabce7
+> > 
+> > # bad: [0a98455666ec87378148a1dde97f1ce5baf75a64] net/mlx4_core: Protect
+> > port type setting by mutex
+> > git bisect bad 0a98455666ec87378148a1dde97f1ce5baf75a64
+> > 
+> > # bad: [6e8066999800d90d52af5c84ac49ebf683d14cdc] net/mlx4_core: Prevent VF
+> > from changing port configuration
+> > git bisect bad 6e8066999800d90d52af5c84ac49ebf683d14cdc
+> > 
+> > # bad: [d75b1ade567ffab085e8adbbdacf0092d10cd09c] net: less interrupt
+> > masking in NAPI
+> > git bisect bad d75b1ade567ffab085e8adbbdacf0092d10cd09c
+> > 
+> > # first bad commit: [d75b1ade567ffab085e8adbbdacf0092d10cd09c]
+> > net: less interrupt masking in NAPI
+> > 
+> > Could you please solve this issue as it renders my board quite useless.
+> > 
+> 
+> Thanks for the report and bisection !
+> 
+> Could you try following fix ?
+> 
+> diff --git a/drivers/net/ethernet/atheros/alx/main.c b/drivers/net/ethernet/atheros/alx/main.c
+> index e398eda07298..209c40765e0d 100644
+> --- a/drivers/net/ethernet/atheros/alx/main.c
+> +++ b/drivers/net/ethernet/atheros/alx/main.c
+> @@ -272,7 +272,7 @@ static int alx_poll(struct napi_struct *napi, int budget)
+>  		   alx_clean_rx_irq(alx, budget);
+>  
+>  	if (!complete)
+> -		return 1;
+> +		return budget;
+>  
+>  	napi_complete(&alx->napi);
+>  
+> 
+> 
+> 
 
-Yes, stack engine hangs off the pipeline right after decode stage.
+BTW this driver has other issues :
 
-> Also, don't compilers generally use push and pop to save and restore
-> callee-saved registers?  I think that function calls are common enough
-> that the CPU vendors would have made these sequences fast.
+complete = alx_clean_tx_irq(alx) &&
+            alx_clean_rx_irq(alx, budget);
 
-Compilers can't predict which functions are hottest.
-Using mov's would bloat prologues by about factor of 5.
+Means that under TX completion pressure (alx_clean_tx_irq(alx) return
+false), we never dequeue packets from RX rings.
 
-I think using push/pop is okay. In the very hottest code paths
-you may want to prefer mov's.
+
+
