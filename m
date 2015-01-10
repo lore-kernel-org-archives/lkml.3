@@ -1,149 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900AbbAJVnW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 16:43:22 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:43871 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335AbbAJVnU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 16:43:20 -0500
-Date: Sat, 10 Jan 2015 16:43:16 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: "Suzuki K. Poulose" <Suzuki.Poulose@arm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: [PATCH cgroup/for-3.19-fixes] cgroup: implement
- cgroup_subsys->unbind() callback
-Message-ID: <20150110214316.GF25319@htj.dyndns.org>
-References: <54B01335.4060901@arm.com>
- <20150110085525.GD2110@esperanza>
+	id S1755251AbbAJVn5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 16:43:57 -0500
+Received: from mail-bn1bn0103.outbound.protection.outlook.com ([157.56.110.103]:64384
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752690AbbAJVnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jan 2015 16:43:55 -0500
+X-WSS-ID: 0NHZDP1-07-KXI-02
+X-M-MSG: 
+Message-ID: <54B19D10.5020408@amd.com>
+Date: Sat, 10 Jan 2015 23:43:44 +0200
+From: Oded Gabbay <oded.gabbay@amd.com>
+Organization: AMD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150110085525.GD2110@esperanza>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Willem de Bruijn <willemb@google.com>,
+        "Bridgman, John" <John.Bridgman@amd.com>,
+        "Elifaz, Dana" <Dana.Elifaz@amd.com>
+Subject: Re: [BUG] 3.19-rc1 net: less interrupt masking in NAPI
+References: <54B18DFF.80400@amd.com>
+ <1420923485.5947.85.camel@edumazet-glaptop2.roam.corp.google.com>
+ <54B199EB.1080004@amd.com>
+In-Reply-To: <54B199EB.1080004@amd.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.224.10.145]
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(24454002)(199003)(189002)(479174004)(51704005)(377424004)(377454003)(51914003)(106466001)(68736005)(33656002)(105586002)(101416001)(87936001)(36756003)(110136001)(2950100001)(47776003)(15975445007)(77096005)(54356999)(76176999)(87266999)(50986999)(50466002)(64706001)(23676002)(65956001)(83506001)(59896002)(65806001)(65816999)(86362001)(64126003)(46102003)(19580395003)(80316001)(575784001)(19580405001)(77156002)(62966003)(97736003)(92566002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB201;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BY2PR02MB201;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR02MB201;
+X-Forefront-PRVS: 0452022BE1
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB201;
+X-OriginatorOrg: amd4.onmicrosoft.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 10 Jan 2015 21:43:50.6848
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.221]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR02MB201
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, if a hierarchy doesn't have any live children when it's
-unmounted, the hierarchy starts dying by killing its refcnt.  The
-expectation is that even if there are lingering dead children which
-are lingering due to remaining references, they'll be put in a finite
-amount of time.  When the children are finally released, the hierarchy
-is destroyed and all controllers bound to it also are released.
 
-However, for memcg, the premise that the lingering refs will be put in
-a finite amount time is not true.  In the absense of memory pressure,
-dead memcg's may hang around indefinitely pinned by its pages.  This
-unfortunately may lead to indefinite hang on the next mount attempt
-involving memcg as the mount logic waits for it to get released.
 
-While we can change hierarchy destruction logic such that a hierarchy
-is only destroyed when it's not mounted anywhere and all its children,
-live or dead, are gone, this makes whether the hierarchy gets
-destroyed or not to be determined by factors opaque to userland.
-Userland may or may not get a new hierarchy on the next mount attempt.
-Worse, if it explicitly wants to create a new hierarchy with different
-options or controller compositions involving memcg, it will fail in an
-essentially arbitrary manner.
+On 01/10/2015 11:30 PM, Oded Gabbay wrote:
+> 
+> 
+> On 01/10/2015 10:58 PM, Eric Dumazet wrote:
+>> On Sat, 2015-01-10 at 22:39 +0200, Oded Gabbay wrote:
+>>> Hi,
+>>>
+>>> Commit d75b1ade567ffab085e8adbbdacf0092d10cd09c breaks my "Qualcomm Atheros
+>>> AR8161 Gigabit Ethernet (rev 10)" Ethernet controller, which is handled by
+>>> the alx network driver.
+>>>
+>>> ogabbay@odedg-ubuntu:~$ lspci -s 01:00.0 -k
+>>> 01:00.0 Ethernet controller:
+>>> 	Qualcomm Atheros AR8161 Gigabit Ethernet (rev 10)
+>>> 	Subsystem: Qualcomm Atheros Device 1071
+>>> 	Kernel driver in use: alx
+>>>
+>>> I have this controller on a mobile platform of AMD APU Kaveri, which I use
+>>> to test amdkfd, and from 3.19-rc1 the network stopped working when trying to
+>>> transfer files through scp or nfs.
+>>>
+>>> I bisected the kernel (from 3.18.0 to 3.19-rc1) and reached this commit.
+>>>
+>>> Here is the log of the bisect:
+>>>
+>>> git bisect start
+>>> # bad: [97bf6af1f928216fd6c5a66e8a57bfa95a659672] Linux 3.19-rc1
+>>> git bisect bad 97bf6af1f928216fd6c5a66e8a57bfa95a659672
+>>>
+>>> # good: [b2776bf7149bddd1f4161f14f79520f17fc1d71d] Linux 3.18
+>>> git bisect good b2776bf7149bddd1f4161f14f79520f17fc1d71d
+>>>
+>>> # bad: [70e71ca0af244f48a5dcf56dc435243792e3a495] Merge
+>>> git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next
+>>> git bisect bad 70e71ca0af244f48a5dcf56dc435243792e3a495
+>>>
+>>> # good: [e28870f9b3e92cd3570925089c6bb789c2603bc4] Merge tag
+>>> 'backlight-for-linus-3.19' of
+>>> git://git.kernel.org/pub/scm/linux/kernel/git/lee/backlight
+>>> git bisect good e28870f9b3e92cd3570925089c6bb789c2603bc4
+>>>
+>>> # bad: [450fa21942fe2c37f0c9f52d1a33bbc081eee288] sh_eth: Remove redundant
+>>> alignment adjustment
+>>> git bisect bad 450fa21942fe2c37f0c9f52d1a33bbc081eee288
+>>>
+>>> # bad: [5c8d19da950861d0482abc0ac3481acca34b008f] e100e: use
+>>> netdev_rss_key_fill() helper
+>>> git bisect bad 5c8d19da950861d0482abc0ac3481acca34b008f
+>>>
+>>> # good: [bf515fb11ab539c76d04f0e3c5216ed41f41d81f] Merge tag
+>>> 'mac80211-next-for-john-2014-11-04' of
+>>> git://git.kernel.org/pub/scm/linux/kernel/git/jberg/mac80211-next
+>>> git bisect good bf515fb11ab539c76d04f0e3c5216ed41f41d81f
+>>>
+>>> # bad: [2c99cd914d4fed9160d98849c9dd38034616768e] Merge branch 'amd-xgbe-next'
+>>> git bisect bad 2c99cd914d4fed9160d98849c9dd38034616768e
+>>>
+>>> # good: [3d762a0f0ab9cb4a6b5993db3ce56c92f9f90ab2] net: dsa: Add support for
+>>> reading switch registers with ethtool
+>>> git bisect good 3d762a0f0ab9cb4a6b5993db3ce56c92f9f90ab2
+>>>
+>>> # bad: [8ce0c8254f15229aa99fc6c04141f28c446e5f8c] Merge branch 'master' of
+>>> git://git.kernel.org/pub/scm/linux/kernel/git/jkirsher/net-next
+>>> git bisect bad 8ce0c8254f15229aa99fc6c04141f28c446e5f8c
+>>>
+>>> # good: [f0c65567b3c1b23f79e8a49139580a3872a68d1f] Merge branch
+>>> 'sunvnet-multi-tx-queue'
+>>> git bisect good f0c65567b3c1b23f79e8a49139580a3872a68d1f
+>>>
+>>> # bad: [547f2735c20023d7b50a791b1b17cacb652e9237] Merge branch 'mlx4-next'
+>>> git bisect bad 547f2735c20023d7b50a791b1b17cacb652e9237
+>>>
+>>> # good: [4cdb1e2e3d3495423db558d3bb7ed11d66aabce7] net: shrink struct
+>>> softnet_data
+>>> git bisect good 4cdb1e2e3d3495423db558d3bb7ed11d66aabce7
+>>>
+>>> # bad: [0a98455666ec87378148a1dde97f1ce5baf75a64] net/mlx4_core: Protect
+>>> port type setting by mutex
+>>> git bisect bad 0a98455666ec87378148a1dde97f1ce5baf75a64
+>>>
+>>> # bad: [6e8066999800d90d52af5c84ac49ebf683d14cdc] net/mlx4_core: Prevent VF
+>>> from changing port configuration
+>>> git bisect bad 6e8066999800d90d52af5c84ac49ebf683d14cdc
+>>>
+>>> # bad: [d75b1ade567ffab085e8adbbdacf0092d10cd09c] net: less interrupt
+>>> masking in NAPI
+>>> git bisect bad d75b1ade567ffab085e8adbbdacf0092d10cd09c
+>>>
+>>> # first bad commit: [d75b1ade567ffab085e8adbbdacf0092d10cd09c]
+>>> net: less interrupt masking in NAPI
+>>>
+>>> Could you please solve this issue as it renders my board quite useless.
+>>>
+>>
+>> Thanks for the report and bisection !
+>>
+>> Could you try following fix ?
+>>
+>> diff --git a/drivers/net/ethernet/atheros/alx/main.c b/drivers/net/ethernet/atheros/alx/main.c
+>> index e398eda07298..209c40765e0d 100644
+>> --- a/drivers/net/ethernet/atheros/alx/main.c
+>> +++ b/drivers/net/ethernet/atheros/alx/main.c
+>> @@ -272,7 +272,7 @@ static int alx_poll(struct napi_struct *napi, int budget)
+>>  		   alx_clean_rx_irq(alx, budget);
+>>  
+>>  	if (!complete)
+>> -		return 1;
+>> +		return budget;
+>>  
+>>  	napi_complete(&alx->napi);
+>>  
+>>
+>>
+>>
+>>
+> Yes, no problem.
+> I will update on the result.
+> 
+> 	Oded
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-We want to guarantee that a hierarchy is destroyed once the
-conditions, unmounted and no visible children, are met.  To aid it,
-this patch introduces a new callback cgroup_subsys->unbind() which is
-invoked right before the hierarchy a subsystem is bound to starts
-dying.  memcg can implement this callback and initiate draining of
-remaining refs so that the hierarchy can eventually be released in a
-finite amount of time.
+Hi Eric,
+Your patch fixed the problem.
+Thanks for the quick help!
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Vladimir Davydov <vdavydov@parallels.com>
----
-Hello,
-
-> May be, we should kill the ref counter to the memory controller root in
-> cgroup_kill_sb only if there is no children at all, neither online nor
-> offline.
-
-Ah, thanks for the analysis, but I really wanna avoid making hierarchy
-destruction conditions opaque to userland.  This is userland visible
-behavior.  It shouldn't be determined by kernel internals invisible
-outside.  This patch adds ss->unbind() which memcg can hook into to
-kick off draining of residual refs.  If this would work, I'll add this
-patch to cgroup/for-3.19-fixes, possibly with stable cc'd.
-
-Thanks.
-
- Documentation/cgroups/cgroups.txt |   12 +++++++++++-
- include/linux/cgroup.h            |    1 +
- kernel/cgroup.c                   |   14 ++++++++++++--
- 3 files changed, 24 insertions(+), 3 deletions(-)
-
---- a/Documentation/cgroups/cgroups.txt
-+++ b/Documentation/cgroups/cgroups.txt
-@@ -637,7 +637,7 @@ void exit(struct task_struct *task)
- 
- Called during task exit.
- 
--void bind(struct cgroup *root)
-+void bind(struct cgroup_subsys_state *root_css)
- (cgroup_mutex held by caller)
- 
- Called when a cgroup subsystem is rebound to a different hierarchy
-@@ -645,6 +645,16 @@ and root cgroup. Currently this will onl
- the default hierarchy (which never has sub-cgroups) and a hierarchy
- that is being created/destroyed (and hence has no sub-cgroups).
- 
-+void unbind(struct cgroup_subsys_state *root_css)
-+(cgroup_mutex held by caller)
-+
-+Called when a cgroup subsys is unbound from its current hierarchy. The
-+subsystem must guarantee that all offline cgroups are going to be
-+released in a finite amount of time after this function is called.
-+Such draining can be asynchronous. The following binding of the
-+subsystem to a hierarchy will be delayed till the draining is
-+complete.
-+
- 4. Extended attribute usage
- ===========================
- 
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -654,6 +654,7 @@ struct cgroup_subsys {
- 		     struct cgroup_subsys_state *old_css,
- 		     struct task_struct *task);
- 	void (*bind)(struct cgroup_subsys_state *root_css);
-+	void (*unbind)(struct cgroup_subsys_state *root_css);
- 
- 	int disabled;
- 	int early_init;
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1910,10 +1910,20 @@ static void cgroup_kill_sb(struct super_
- 	 * And don't kill the default root.
- 	 */
- 	if (css_has_online_children(&root->cgrp.self) ||
--	    root == &cgrp_dfl_root)
-+	    root == &cgrp_dfl_root) {
- 		cgroup_put(&root->cgrp);
--	else
-+	} else {
-+		struct cgroup_subsys *ss;
-+		int i;
-+
-+		mutex_lock(&cgroup_mutex);
-+		for_each_subsys(ss, i)
-+			if ((root->subsys_mask & (1UL << i)) && ss->unbind)
-+				ss->unbind(cgroup_css(&root->cgrp, ss));
-+		mutex_unlock(&cgroup_mutex);
-+
- 		percpu_ref_kill(&root->cgrp.self.refcnt);
-+	}
- 
- 	kernfs_kill_sb(sb);
- }
+	Oded
