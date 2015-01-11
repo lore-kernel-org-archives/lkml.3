@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660AbbAKWoY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 17:44:24 -0500
-Received: from mail-we0-f178.google.com ([74.125.82.178]:45895 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752406AbbAKWoU (ORCPT
+	id S1752638AbbAKWp4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 17:45:56 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:61768 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbbAKWpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 17:44:20 -0500
+	Sun, 11 Jan 2015 17:45:54 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+To: Anton Altaparmakov <anton@tuxera.com>,
+        linux-ntfs-dev@lists.sourceforge.net
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Cliff Wickman <cpw@sgi.com>,
-        Daniel Walter <dwalter@google.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: platform: uv: tlb_uv: Remove unused function
-Date: Sun, 11 Jan 2015 23:47:25 +0100
-Message-Id: <1421016445-25738-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ntfs: attrib: Remove unused function
+Date: Sun, 11 Jan 2015 23:48:59 +0100
+Message-Id: <1421016539-25918-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function normal_busy() that is not used anywhere.
+Remove the function ntfs_attr_can_be_resident() that is not used anywhere.
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- arch/x86/platform/uv/tlb_uv.c |   20 --------------------
- 1 file changed, 20 deletions(-)
+ fs/ntfs/attrib.c |   25 -------------------------
+ fs/ntfs/attrib.h |    2 --
+ 2 files changed, 27 deletions(-)
 
-diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
-index 3968d67..3ac7569 100644
---- a/arch/x86/platform/uv/tlb_uv.c
-+++ b/arch/x86/platform/uv/tlb_uv.c
-@@ -573,26 +573,6 @@ static unsigned long uv2_3_read_status(unsigned long offset, int rshft, int desc
+diff --git a/fs/ntfs/attrib.c b/fs/ntfs/attrib.c
+index 250ed5b..2c83e66 100644
+--- a/fs/ntfs/attrib.c
++++ b/fs/ntfs/attrib.c
+@@ -1390,31 +1390,6 @@ int ntfs_attr_can_be_non_resident(const ntfs_volume *vol, const ATTR_TYPE type)
  }
  
- /*
-- * Return whether the status of the descriptor that is normally used for this
-- * cpu (the one indexed by its hub-relative cpu number) is busy.
-- * The status of the original 32 descriptors is always reflected in the 64
-- * bits of UVH_LB_BAU_SB_ACTIVATION_STATUS_0.
-- * The bit provided by the activation_status_2 register is irrelevant to
-- * the status if it is only being tested for busy or not busy.
+ /**
+- * ntfs_attr_can_be_resident - check if an attribute can be resident
+- * @vol:	ntfs volume to which the attribute belongs
+- * @type:	attribute type which to check
+- *
+- * Check whether the attribute of @type on the ntfs volume @vol is allowed to
+- * be resident.  This information is derived from our ntfs knowledge and may
+- * not be completely accurate, especially when user defined attributes are
+- * present.  Basically we allow everything to be resident except for index
+- * allocation and $EA attributes.
+- *
+- * Return 0 if the attribute is allowed to be non-resident and -EPERM if not.
+- *
+- * Warning: In the system file $MFT the attribute $Bitmap must be non-resident
+- *	    otherwise windows will not boot (blue screen of death)!  We cannot
+- *	    check for this here as we do not know which inode's $Bitmap is
+- *	    being asked about so the caller needs to special case this.
 - */
--int normal_busy(struct bau_control *bcp)
+-int ntfs_attr_can_be_resident(const ntfs_volume *vol, const ATTR_TYPE type)
 -{
--	int cpu = bcp->uvhub_cpu;
--	int mmr_offset;
--	int right_shift;
--
--	mmr_offset = UVH_LB_BAU_SB_ACTIVATION_STATUS_0;
--	right_shift = cpu * UV_ACT_STATUS_SIZE;
--	return (((((read_lmmr(mmr_offset) >> right_shift) &
--				UV_ACT_STATUS_MASK)) << 1) == UV2H_DESC_BUSY);
+-	if (type == AT_INDEX_ALLOCATION)
+-		return -EPERM;
+-	return 0;
 -}
 -
--/*
-  * Entered when a bau descriptor has gone into a permanent busy wait because
-  * of a hardware bug.
-  * Workaround the bug.
+-/**
+  * ntfs_attr_record_resize - resize an attribute record
+  * @m:		mft record containing attribute record
+  * @a:		attribute record to resize
+diff --git a/fs/ntfs/attrib.h b/fs/ntfs/attrib.h
+index 3c8b74c..bfc1829 100644
+--- a/fs/ntfs/attrib.h
++++ b/fs/ntfs/attrib.h
+@@ -96,8 +96,6 @@ extern int ntfs_attr_size_bounds_check(const ntfs_volume *vol,
+ 		const ATTR_TYPE type, const s64 size);
+ extern int ntfs_attr_can_be_non_resident(const ntfs_volume *vol,
+ 		const ATTR_TYPE type);
+-extern int ntfs_attr_can_be_resident(const ntfs_volume *vol,
+-		const ATTR_TYPE type);
+ 
+ extern int ntfs_attr_record_resize(MFT_RECORD *m, ATTR_RECORD *a, u32 new_size);
+ extern int ntfs_resident_attr_value_resize(MFT_RECORD *m, ATTR_RECORD *a,
 -- 
 1.7.10.4
 
