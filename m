@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751774AbbAKQES (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 11:04:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35286 "EHLO mx2.suse.de"
+	id S1752052AbbAKQFU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 11:05:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35298 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751063AbbAKQER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 11:04:17 -0500
-Date: Sun, 11 Jan 2015 17:04:15 +0100
-Message-ID: <s5hmw5p2tj4.wl-tiwai@suse.de>
+	id S1751426AbbAKQFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jan 2015 11:05:19 -0500
+Date: Sun, 11 Jan 2015 17:05:16 +0100
+Message-ID: <s5hlhl92thf.wl-tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ALSA: ice1712: wm8766: Remove some unused functions
-In-Reply-To: <1420990300-19672-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1420990300-19672-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Cc: Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Sakamoto <o-takashi@sakamocchi.jp>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sound: firewire: fireworks: fireworks_command: Remove unused function
+In-Reply-To: <1420908780-31468-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1420908780-31468-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.4
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,66 +25,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Sun, 11 Jan 2015 16:31:40 +0100,
+At Sat, 10 Jan 2015 17:53:00 +0100,
 Rickard Strandqvist wrote:
 > 
-> Removes some functions that are not used anywhere:
-> snd_wm8766_set_power() snd_wm8766_set_master_mode()
+> Remove the function snd_efw_command_set_resp_addr() that is not used anywhere.
 > 
 > This was partially found by using a static code analysis program called cppcheck.
 > 
 > Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 
-Applied, thanks.
+I leave the decision to Sakamoto-san and Clemens.  Let me know if this
+should be applied or not.
 
+
+thanks,
 
 Takashi
 
 > ---
->  sound/pci/ice1712/wm8766.c |   16 ----------------
->  sound/pci/ice1712/wm8766.h |    2 --
->  2 files changed, 18 deletions(-)
+>  sound/firewire/fireworks/fireworks.h         |    2 --
+>  sound/firewire/fireworks/fireworks_command.c |   21 ---------------------
+>  2 files changed, 23 deletions(-)
 > 
-> diff --git a/sound/pci/ice1712/wm8766.c b/sound/pci/ice1712/wm8766.c
-> index 21b373b..f7ac8d5 100644
-> --- a/sound/pci/ice1712/wm8766.c
-> +++ b/sound/pci/ice1712/wm8766.c
-> @@ -183,22 +183,6 @@ void snd_wm8766_set_if(struct snd_wm8766 *wm, u16 dac)
->  	snd_wm8766_write(wm, WM8766_REG_IFCTRL, val | dac);
+> diff --git a/sound/firewire/fireworks/fireworks.h b/sound/firewire/fireworks/fireworks.h
+> index 4f0201a..693b76b 100644
+> --- a/sound/firewire/fireworks/fireworks.h
+> +++ b/sound/firewire/fireworks/fireworks.h
+> @@ -189,8 +189,6 @@ enum snd_efw_transport_mode {
+>  	SND_EFW_TRANSPORT_MODE_WINDOWS	= 0,
+>  	SND_EFW_TRANSPORT_MODE_IEC61883	= 1,
+>  };
+> -int snd_efw_command_set_resp_addr(struct snd_efw *efw,
+> -				  u16 addr_high, u32 addr_low);
+>  int snd_efw_command_set_tx_mode(struct snd_efw *efw,
+>  				enum snd_efw_transport_mode mode);
+>  int snd_efw_command_get_hwinfo(struct snd_efw *efw,
+> diff --git a/sound/firewire/fireworks/fireworks_command.c b/sound/firewire/fireworks/fireworks_command.c
+> index 166f805..e0cc467 100644
+> --- a/sound/firewire/fireworks/fireworks_command.c
+> +++ b/sound/firewire/fireworks/fireworks_command.c
+> @@ -175,27 +175,6 @@ end:
 >  }
 >  
-> -void snd_wm8766_set_master_mode(struct snd_wm8766 *wm, u16 mode)
+>  /*
+> - * The address in host system for transaction response is changable when the
+> - * device supports. struct hwinfo.flags includes its flag. The default is
+> - * MEMORY_SPACE_EFW_RESPONSE.
+> - */
+> -int snd_efw_command_set_resp_addr(struct snd_efw *efw,
+> -				  u16 addr_high, u32 addr_low)
 > -{
-> -	u16 val = wm->regs[WM8766_REG_DACCTRL3] & ~WM8766_DAC3_MSTR_MASK;
+> -	__be32 addr[2];
 > -
-> -	mode &= WM8766_DAC3_MSTR_MASK;
-> -	snd_wm8766_write(wm, WM8766_REG_DACCTRL3, val | mode);
+> -	addr[0] = cpu_to_be32(addr_high);
+> -	addr[1] = cpu_to_be32(addr_low);
+> -
+> -	if (!efw->resp_addr_changable)
+> -		return -ENOSYS;
+> -
+> -	return efw_transaction(efw, EFC_CAT_HWCTL,
+> -			       EFC_CMD_HWINFO_SET_RESP_ADDR,
+> -			       addr, sizeof(addr), NULL, 0);
 > -}
 > -
-> -void snd_wm8766_set_power(struct snd_wm8766 *wm, u16 power)
-> -{
-> -	u16 val = wm->regs[WM8766_REG_DACCTRL3] & ~WM8766_DAC3_POWER_MASK;
-> -
-> -	power &= WM8766_DAC3_POWER_MASK;
-> -	snd_wm8766_write(wm, WM8766_REG_DACCTRL3, val | power);
-> -}
-> -
->  void snd_wm8766_volume_restore(struct snd_wm8766 *wm)
->  {
->  	u16 val = wm->regs[WM8766_REG_DACR1];
-> diff --git a/sound/pci/ice1712/wm8766.h b/sound/pci/ice1712/wm8766.h
-> index c119f84..18c8d9d 100644
-> --- a/sound/pci/ice1712/wm8766.h
-> +++ b/sound/pci/ice1712/wm8766.h
-> @@ -155,8 +155,6 @@ struct snd_wm8766 {
->  void snd_wm8766_init(struct snd_wm8766 *wm);
->  void snd_wm8766_resume(struct snd_wm8766 *wm);
->  void snd_wm8766_set_if(struct snd_wm8766 *wm, u16 dac);
-> -void snd_wm8766_set_master_mode(struct snd_wm8766 *wm, u16 mode);
-> -void snd_wm8766_set_power(struct snd_wm8766 *wm, u16 power);
->  void snd_wm8766_volume_restore(struct snd_wm8766 *wm);
->  int snd_wm8766_build_controls(struct snd_wm8766 *wm);
->  
+> -/*
+>   * This is for timestamp processing. In Windows mode, all 32bit fields of second
+>   * CIP header in AMDTP transmit packet is used for 'presentation timestamp'. In
+>   * 'no data' packet the value of this field is 0x90ffffff.
 > -- 
 > 1.7.10.4
 > 
