@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110AbbAKBxi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 20:53:38 -0500
-Received: from outbound-smtp05.blacknight.com ([81.17.249.38]:57674 "EHLO
-	outbound-smtp05.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751123AbbAKBxh (ORCPT
+	id S1752994AbbAKCAf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 21:00:35 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:47636 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751726AbbAKCAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 20:53:37 -0500
-Message-ID: <54B1D79E.3070602@nexus-software.ie>
-Date: Sun, 11 Jan 2015 01:53:34 +0000
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Darren Hart <dvhart@infradead.org>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Boon Leong Ong <boon.leong.ong@intel.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH 2/2] platform/x86: Add Intel Galileo platform specific
- setup
-References: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie> <1419873783-5161-3-git-send-email-pure.logic@nexus-software.ie> <20150109044613.GB9311@vmdeb7> <54AFB8D7.6020306@nexus-software.ie> <20150110065409.GA104814@vmdeb7>
-In-Reply-To: <20150110065409.GA104814@vmdeb7>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 10 Jan 2015 21:00:34 -0500
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH] avr32: remove fake at91 cpu identification
+Date: Sun, 11 Jan 2015 03:00:16 +0100
+Message-Id: <1420941616-2777-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+cpu_is_at91* are not used in any driver outside mach-at91. Remove those useless
+definitions.
 
-> I'm wondering if there is a need for this to be a platform driver at
-> all. Could we, instead, tear down any unlocked IMRs at boot as part of the IMR
-> driver itself, as well as lock the kernel .text. Firmware has the option of
-> making an IMR mandatory by locking it. If it isn't locked, what use is it to the
-> OS without a lot more context? Any sort of policy enforced with IMRs is a
-> user-space decision, so clearing out the unlocked ones and then handing off to
-> user-space seems like a sane default mode to me.
->
-> I discussed this with Boon Leong this afternoon and we couldn't come up with a
-> justification for a platform-specific driver to do what this does.
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
 
-I think there's no technical reason impeding what you've just suggested 
-in the IMR init and I'm happy to move the code in there since basically 
-any platform with IMR registers could justifiably
+Hans-Christian,
 
-a) Tear down everything that's unlocked
-b) Place a default IMR around the .text section
+If you want, I guess that one could go through the at91 tree. Unless you have
+more material and you want to do a pull request for 3.20.
 
-No reason it the world that that policy needs to be Galileo specific - 
-and it's a valid argument to say - this behaviour can simply be an IMR 
-policy in the kernel and less code for the same functionality, that adds 
-consistency across x86 is a good thing.
+Regards,
 
-I'll zap the Galileo platform code entirely for V2 unless there's a 
-counter-argument from someone.
+ arch/avr32/mach-at32ap/include/mach/cpu.h | 26 +-------------------------
+ 1 file changed, 1 insertion(+), 25 deletions(-)
 
---
-BOD
+diff --git a/arch/avr32/mach-at32ap/include/mach/cpu.h b/arch/avr32/mach-at32ap/include/mach/cpu.h
+index 16a24b14146c..4181086f4ddc 100644
+--- a/arch/avr32/mach-at32ap/include/mach/cpu.h
++++ b/arch/avr32/mach-at32ap/include/mach/cpu.h
+@@ -1,5 +1,5 @@
+ /*
+- * AVR32 and (fake) AT91 CPU identification
++ * AVR32 CPU identification
+  *
+  * Copyright (C) 2007 Atmel Corporation
+  *
+@@ -20,28 +20,4 @@
+ # define cpu_is_at32ap7000()	(0)
+ #endif
+ 
+-/*
+- * Since this is AVR32, we will never run on any AT91 CPU. But these
+- * definitions may reduce clutter in common drivers.
+- */
+-#define cpu_is_at91rm9200()	(0)
+-#define cpu_is_at91sam9xe()	(0)
+-#define cpu_is_at91sam9260()	(0)
+-#define cpu_is_at91sam9261()	(0)
+-#define cpu_is_at91sam9263()	(0)
+-#define cpu_is_at91sam9rl()	(0)
+-#define cpu_is_at91sam9g10()	(0)
+-#define cpu_is_at91sam9g20()	(0)
+-#define cpu_is_at91sam9g45()	(0)
+-#define cpu_is_at91sam9g45es()	(0)
+-#define cpu_is_at91sam9m10()	(0)
+-#define cpu_is_at91sam9g46()	(0)
+-#define cpu_is_at91sam9m11()	(0)
+-#define cpu_is_at91sam9x5()	(0)
+-#define cpu_is_at91sam9g15()	(0)
+-#define cpu_is_at91sam9g35()	(0)
+-#define cpu_is_at91sam9x35()	(0)
+-#define cpu_is_at91sam9g25()	(0)
+-#define cpu_is_at91sam9x25()	(0)
+-
+ #endif /* __ASM_ARCH_CPU_H */
+-- 
+2.1.0
 
