@@ -1,98 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751602AbbAKKe1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 05:34:27 -0500
-Received: from mx02.posteo.de ([89.146.194.165]:41853 "EHLO mx02.posteo.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751239AbbAKKeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 05:34:24 -0500
-Message-ID: <54B251A7.3000403@posteo.de>
-Date: Sun, 11 Jan 2015 11:34:15 +0100
-From: Martin Kepplinger <martink@posteo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	id S1751618AbbAKKmE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 05:42:04 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:63164 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751267AbbAKKmC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jan 2015 05:42:02 -0500
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: peterz@infradead.org, mingo@kernel.org, tytso@mit.edu,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] hwmon: jc42: use bitops' sign_extend16
-References: <1418660317-21750-1-git-send-email-martink@posteo.de> <1418660317-21750-4-git-send-email-martink@posteo.de> <20141215212948.GA23765@roeck-us.net> <548FDC85.3060400@posteo.de>
-In-Reply-To: <548FDC85.3060400@posteo.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1389910514-3802-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1389910514-3802-1-git-send-email-paul.gortmaker@windriver.com>
+Date: Sun, 11 Jan 2015 11:42:00 +0100
+X-Google-Sender-Auth: vQ7AKyFCw4dJJ2t1cKfcU_e2Pd4
+Message-ID: <CAMuHMdWxEiBNas2S18fu9H8BK5aEdEmgazT0dpj1N0TFeDHiAg@mail.gmail.com>
+Subject: Re: [PATCH] m68k: don't use module_init in non-modular mvme16x/rtc.c code
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-12-16 um 08:17 schrieb Martin Kepplinger:
-> Am 2014-12-15 um 22:29 schrieb Guenter Roeck:
->> On Mon, Dec 15, 2014 at 05:18:34PM +0100, Martin Kepplinger wrote:
->>> ---
->>
->> Some description would be nice. Also, please consider adding
->> relevant subsystem mailing lists and maintainers to your patches.
->>
-> 
-> I shouldn't have added the Signed-off-by line to some of them. Sorry.
-> 
-> The driver-patches are meant to be examples of what can be changed if
-> the sign_extend functions are added. I don't know if they are taken and
-> planned to post the driver patches (probably more) thereafter, and of
-> course to the relevant people.
+On Thu, Jan 16, 2014 at 11:15 PM, Paul Gortmaker
+<paul.gortmaker@windriver.com> wrote:
+> The rtc.o is built for obj-y, i.e. always built in.  It will
+> never be modular, so using module_init as an alias for __initcall
+> can be somewhat misleading.
+>
+> Fix this up now, so that we can relocate module_init from
+> init.h into module.h in the future.  If we don't do this, we'd
+> have to add module.h to obviously non-modular code, and that
+> would be a worse thing.
+>
+> Note that direct use of __initcall is discouraged, vs. one
+> of the priority categorized subgroups.  As __initcall gets
+> mapped onto device_initcall, our use of device_initcall
+> directly in this change means that the runtime impact is
+> zero -- it will remain at level 6 in initcall ordering.
+>
+> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: linux-m68k@lists.linux-m68k.org
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-Is this sign_extendXX() set of functions considered to be added to
-bitops.h ?
+Thanks, applied and queued for 3.20.
 
-Just checking if I can prepare some driver-patches (the ones I posted
-are just examples, meant to be re-sent to relevant maintainers when it's
-time), or not.
+Gr{oetje,eeting}s,
 
-thanks
+                        Geert
 
-> 
->>>  drivers/hwmon/jc42.c | 5 ++---
->>>  1 file changed, 2 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/drivers/hwmon/jc42.c b/drivers/hwmon/jc42.c
->>> index 388f8bc..335a2de 100644
->>> --- a/drivers/hwmon/jc42.c
->>> +++ b/drivers/hwmon/jc42.c
->>> @@ -31,6 +31,7 @@
->>>  #include <linux/hwmon-sysfs.h>
->>>  #include <linux/err.h>
->>>  #include <linux/mutex.h>
->>> +#include <linux/bitops.h>
->>>  
->>>  /* Addresses to scan */
->>>  static const unsigned short normal_i2c[] = {
->>> @@ -215,9 +216,7 @@ static int jc42_temp_from_reg(s16 reg)
->>>  {
->>>  	reg &= 0x1fff;
->>>  
->> If I understand the code in sign_extend16 correctly, the above mask
->> should no longer be necessary.
-> 
-> exactly. The mask would then be shifting. Thanks!
-> 
->>
->> Thanks,
->> Guenter
->>
->>> -	/* sign extend register */
->>> -	if (reg & 0x1000)
->>> -		reg |= 0xf000;
->>> +	reg = sign_extend16(reg, 12);
->>>  
->>>  	/* convert from 0.0625 to 0.001 resolution */
->>>  	return reg * 125 / 2;
->>> -- 
->>> 2.1.3
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>>
-> 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
