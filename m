@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135AbbAKUP1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 15:15:27 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:47264 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844AbbAKUPY (ORCPT
+	id S1751934AbbAKUSQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 15:18:16 -0500
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:53878 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753AbbAKUSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 15:15:24 -0500
-Date: Sun, 11 Jan 2015 15:15:19 -0500
-From: "Ahmed S. Darwish" <darwish.07@gmail.com>
-To: Olivier Sobrie <olivier@sobrie.be>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v4 2/4] can: kvaser_usb: Update error counters before exiting
- on OOM
-Message-ID: <20150111201519.GC8855@linux>
-References: <20141223154654.GB6460@vivalin-002>
- <20150111200544.GA8855@linux>
- <20150111201116.GB8855@linux>
+	Sun, 11 Jan 2015 15:18:15 -0500
+X-Originating-IP: 50.43.58.154
+Date: Sun, 11 Jan 2015 12:18:06 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Jaroslav Kysela <perex@perex.cz>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rashika Kheria <rashika.kheria@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ALSA: lx6464es: lx_core: Remove some unused functions
+Message-ID: <20150111201806.GA1074@thin>
+References: <1420990982-20187-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <s5htwzx2txw.wl-tiwai@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150111201116.GB8855@linux>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <s5htwzx2txw.wl-tiwai@suse.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+On Sun, Jan 11, 2015 at 04:55:23PM +0100, Takashi Iwai wrote:
+> At Sun, 11 Jan 2015 16:43:02 +0100,
+> Rickard Strandqvist wrote:
+> > 
+> > Removes some functions that are not used anywhere:
+> > lx_buffer_cancel() lx_buffer_free() lx_stream_sample_position()
+> > lx_stream_state() lx_pipe_sample_count()
+> 
+> We really shouldn't delete the code but keep somehow disabled for such
+> a driver that has no hardware spec documents available.  Since the
+> source code is the only reference, the implemented code is the only
+> information if we need to change / fix anything.
 
-Let the error counters be more accurate in case of Out of
-Memory conditions.
+Easy enough to get it back out of version control if so.
 
-Suggested-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
----
- drivers/net/can/usb/kvaser_usb.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/net/can/usb/kvaser_usb.c b/drivers/net/can/usb/kvaser_usb.c
-index c32cd61..0eb870b 100644
---- a/drivers/net/can/usb/kvaser_usb.c
-+++ b/drivers/net/can/usb/kvaser_usb.c
-@@ -792,6 +792,9 @@ static void kvaser_usb_rx_can_err(const struct kvaser_usb_net_priv *priv,
- 	}
- 
- 	if (msg->u.rx_can.flag & MSG_FLAG_OVERRUN) {
-+		stats->rx_over_errors++;
-+		stats->rx_errors++;
-+
- 		skb = alloc_can_err_skb(priv->netdev, &cf);
- 		if (!skb) {
- 			stats->rx_dropped++;
-@@ -801,9 +804,6 @@ static void kvaser_usb_rx_can_err(const struct kvaser_usb_net_priv *priv,
- 		cf->can_id |= CAN_ERR_CRTL;
- 		cf->data[1] = CAN_ERR_CRTL_RX_OVERFLOW;
- 
--		stats->rx_over_errors++;
--		stats->rx_errors++;
--
- 		stats->rx_packets++;
- 		stats->rx_bytes += cf->can_dlc;
- 		netif_rx(skb);
--- 
-1.9.1
-
+- Josh Triplett
