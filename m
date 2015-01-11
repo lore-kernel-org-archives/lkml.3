@@ -1,52 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233AbbAKOFn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 09:05:43 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:47217 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865AbbAKOFl (ORCPT
+	id S1752107AbbAKOU7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 09:20:59 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:57639 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630AbbAKOU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 09:05:41 -0500
+	Sun, 11 Jan 2015 09:20:57 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Jamal Hadi Salim <jhs@mojatatu.com>,
-        "David S. Miller" <davem@davemloft.net>
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] net: sched: sch_teql: Remove unused function
-Date: Sun, 11 Jan 2015 15:08:46 +0100
-Message-Id: <1420985326-18201-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ALSA: lola: lola_mixer: Remove some unused functions
+Date: Sun, 11 Jan 2015 15:24:02 +0100
+Message-Id: <1420986242-18502-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function teql_neigh_release() that is not used anywhere.
+Removes some functions that are not used anywhere:
+lola_restore_mixer() lola_save_mixer()
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- net/sched/sch_teql.c |    7 -------
- 1 file changed, 7 deletions(-)
+ sound/pci/lola/lola.h       |    2 --
+ sound/pci/lola/lola_mixer.c |   43 -------------------------------------------
+ 2 files changed, 45 deletions(-)
 
-diff --git a/net/sched/sch_teql.c b/net/sched/sch_teql.c
-index 6ada423..4899d4a 100644
---- a/net/sched/sch_teql.c
-+++ b/net/sched/sch_teql.c
-@@ -122,13 +122,6 @@ teql_peek(struct Qdisc *sch)
- 	return NULL;
+diff --git a/sound/pci/lola/lola.h b/sound/pci/lola/lola.h
+index f0b1000..9125916 100644
+--- a/sound/pci/lola/lola.h
++++ b/sound/pci/lola/lola.h
+@@ -513,8 +513,6 @@ int lola_init_mixer_widget(struct lola *chip, int nid);
+ void lola_free_mixer(struct lola *chip);
+ int lola_create_mixer(struct lola *chip);
+ int lola_setup_all_analog_gains(struct lola *chip, int dir, bool mute);
+-void lola_save_mixer(struct lola *chip);
+-void lola_restore_mixer(struct lola *chip);
+ int lola_set_src_config(struct lola *chip, unsigned int src_mask, bool update);
+ 
+ /* proc */
+diff --git a/sound/pci/lola/lola_mixer.c b/sound/pci/lola/lola_mixer.c
+index 782f4d8..47ac93a 100644
+--- a/sound/pci/lola/lola_mixer.c
++++ b/sound/pci/lola/lola_mixer.c
+@@ -348,49 +348,6 @@ int lola_setup_all_analog_gains(struct lola *chip, int dir, bool mute)
+ 	return lola_codec_flush(chip);
  }
  
--static inline void
--teql_neigh_release(struct neighbour *n)
+-void lola_save_mixer(struct lola *chip)
 -{
--	if (n)
--		neigh_release(n);
+-	/* mute analog output */
+-	if (chip->mixer.array_saved) {
+-		/* store contents of mixer array */
+-		memcpy_fromio(chip->mixer.array_saved, chip->mixer.array,
+-			      sizeof(*chip->mixer.array));
+-	}
+-	lola_setup_all_analog_gains(chip, PLAY, true); /* output mute */
 -}
 -
- static void
- teql_reset(struct Qdisc *sch)
- {
+-void lola_restore_mixer(struct lola *chip)
+-{
+-	int i;
+-
+-	/*lola_reset_setups(chip);*/
+-	if (chip->mixer.array_saved) {
+-		/* restore contents of mixer array */
+-		memcpy_toio(chip->mixer.array, chip->mixer.array_saved,
+-			    sizeof(*chip->mixer.array));
+-		/* inform micro-controller about all restored values
+-		 * and ignore return values
+-		 */
+-		for (i = 0; i < chip->mixer.src_phys_ins; i++)
+-			lola_codec_write(chip, chip->mixer.nid,
+-					 LOLA_VERB_SET_SOURCE_GAIN,
+-					 i, 0);
+-		for (i = 0; i < chip->mixer.src_stream_outs; i++)
+-			lola_codec_write(chip, chip->mixer.nid,
+-					 LOLA_VERB_SET_SOURCE_GAIN,
+-					 chip->mixer.src_stream_out_ofs + i, 0);
+-		for (i = 0; i < chip->mixer.dest_stream_ins; i++)
+-			lola_codec_write(chip, chip->mixer.nid,
+-					 LOLA_VERB_SET_DESTINATION_GAIN,
+-					 i, 0);
+-		for (i = 0; i < chip->mixer.dest_phys_outs; i++)
+-			lola_codec_write(chip, chip->mixer.nid,
+-					 LOLA_VERB_SET_DESTINATION_GAIN,
+-					 chip->mixer.dest_phys_out_ofs + i, 0);
+-		lola_codec_flush(chip);
+-	}
+-}
+-
+ /*
+  */
+ 
 -- 
 1.7.10.4
 
