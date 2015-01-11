@@ -1,60 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752025AbbAKQbM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 11:31:12 -0500
-Received: from smtp-out14.tpgi.com.au ([220.244.226.124]:40032 "EHLO
-	mail14.tpgi.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751230AbbAKQbI (ORCPT
+	id S1751728AbbAKQYi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 11:24:38 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:34249 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214AbbAKQYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 11:31:08 -0500
-X-TPG-Antivirus: Passed
-X-TPG-Abuse: host=14-201-201-57.static.tpgi.com.au; ip=14.201.201.57; date=Mon, 12 Jan 2015 03:21:09 +1100; auth=qn3nQWOo9XiOgLX3+3LzYIb4Pj8GBfUecjOflfKdwAc=
-From: Emrys Bayliss <emrys@paradise.net.nz>
-To: forest@alittletooquiet.net, gregkh@linuxfoundation.org, tvboxspy@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Emrys Bayliss <emrys@paradise.net.nz>
-Subject: [PATCH] Staging: vt6656: Checkpatch fix: else after break or return
-Date: Mon, 12 Jan 2015 03:19:34 +1100
-Message-Id: <1420993174-24908-1-git-send-email-emrys@paradise.net.nz>
-X-Mailer: git-send-email 2.2.1
+	Sun, 11 Jan 2015 11:24:36 -0500
+Date: Sun, 11 Jan 2015 17:24:26 +0100
+From: Konrad Zapalowicz <bergo.torino@gmail.com>
+To: atull <atull@opensource.altera.com>
+Cc: gregkh@linuxfoundation.org, jgunthorpe@obsidianresearch.com, hpa@zytor.com,
+        monstr@monstr.eu, michal.simek@xilinx.com, rdunlap@infradead.org,
+        mark.rutland@arm.com, linux-doc@vger.kernel.org, rubini@gnudd.com,
+        pantelis.antoniou@konsulko.com, s.trumtrar@pengutronix.de,
+        devel@driverdev.osuosl.org, sameo@linux.intel.com, nico@linaro.org,
+        ijc+devicetree@hellion.org.uk, kyle.teske@ni.com,
+        grant.likely@linaro.org, davidb@codeaurora.org,
+        linus.walleij@linaro.org, cesarb@cesarb.net,
+        devicetree@vger.kernel.org, jason@lakedaemon.net, pawel.moll@arm.com,
+        iws@ovro.caltech.edu, broonie@kernel.org, philip@balister.org,
+        dinguyen@opensource.altera.com, pavel@denx.de,
+        yvanderv@opensource.altera.com, linux-kernel@vger.kernel.org,
+        balbi@ti.com, delicious.quinoa@gmail.com, robh+dt@kernel.org,
+        rob@landley.net, galak@codeaurora.org, akpm@linux-foundation.org,
+        davem@davemloft.net, m.chehab@samsung.com
+Subject: Re: [PATCH v8 0/4] FPGA Manager Framework
+Message-ID: <20150111162426.GC26067@t400>
+References: <1420575219-27061-1-git-send-email-atull@opensource.altera.com>
+ <20150110181120.GA26067@t400>
+ <alpine.DEB.2.10.1501111004580.2556@shineypoop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1501111004580.2556@shineypoop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following checkpatch.pl error:
-rxtx.c:588: WARNING: else is not generally useful after a break or return
+On 01/11, atull wrote:
+> On Sat, 10 Jan 2015, Konrad Zapalowicz wrote:
+> 
+> > On 01/06, atull@opensource.altera.com wrote:
+> > > From: Alan Tull <atull@opensource.altera.com>
+> > 
+> > Alan, there is something wrong with your email client configuration
+> > and you need to fix.
+> > 
+> > thanks,
+> > konrad
+> 
+> Hi Konrad,
+> 
+> Can you be more specific?  What problem are you seeing?  Is it a problem 
+> with the original patch  post or when I reply?  When I a post, I'm using
+> 'git send-email' with sendmail and when I am replying, I am using alpine.
 
-Signed-off-by: Emrys Bayliss <emrys@paradise.net.nz>
----
- drivers/staging/vt6656/rxtx.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+I think that because you email client configuration sets the 'From'
+header to "atull@..." and at the same time you sign-off messages with
+"Alan Tull atull@..." the "From" is added at the beginning of the
+message to indicate the original author.
 
-diff --git a/drivers/staging/vt6656/rxtx.c b/drivers/staging/vt6656/rxtx.c
-index ea5140a..cc34704 100644
---- a/drivers/staging/vt6656/rxtx.c
-+++ b/drivers/staging/vt6656/rxtx.c
-@@ -553,8 +553,6 @@ static u16 vnt_fill_cts_head(struct vnt_usb_send_context *tx_context,
- 			cpu_to_le16(IEEE80211_FTYPE_CTL | IEEE80211_STYPE_CTS);
- 
- 		memcpy(buf->data.ra, priv->current_net_addr, ETH_ALEN);
--
--		return vnt_rxtx_datahead_g_fb(tx_context, &buf->data_head);
- 	} else {
- 		struct vnt_cts *buf = &head->cts_g;
- 		/* Get SignalField,ServiceField,Length */
-@@ -571,11 +569,9 @@ static u16 vnt_fill_cts_head(struct vnt_usb_send_context *tx_context,
- 			cpu_to_le16(IEEE80211_FTYPE_CTL | IEEE80211_STYPE_CTS);
- 
- 		memcpy(buf->data.ra, priv->current_net_addr, ETH_ALEN);
--
--		return vnt_rxtx_datahead_g(tx_context, &buf->data_head);
- 	}
- 
--	return 0;
-+	return vnt_rxtx_datahead_g_fb(tx_context, &buf->data_head);
- }
- 
- static u16 vnt_rxtx_rts(struct vnt_usb_send_context *tx_context,
--- 
-2.2.1
+This should be fixed as the "from" is not welcomed in the body of the
+commit message.
 
+hope this helps,
+konrad
+ 
+> Alan
+> 
+> >  
+> > > v8 changes the compatible string for SOCFPGA FPGA managers
+> > > to be more chip specific.
+> > > 
+> > > "altr,fpga-mgr" becomes "altr,socfpga-fpga-mgr"
+> > > 
+> > > Thanks,
+> > > Alan
+> > > 
+> > > Alan Tull (4):
+> > >   doc: add bindings document for altera fpga manager
+> > >   fpga manager: add sysfs interface document
+> > >   staging: fpga manager: framework core
+> > >   staging: fpga manager: add driver for socfpga fpga manager
+> > > 
+> > >  drivers/staging/Kconfig                            |    2 +
+> > >  drivers/staging/Makefile                           |    1 +
+> > >  .../Documentation/ABI/sysfs-class-fpga-manager     |   38 ++
+> > >  .../bindings/altera-socfpga-fpga-mgr.txt           |   17 +
+> > >  drivers/staging/fpga/Kconfig                       |   29 +
+> > >  drivers/staging/fpga/Makefile                      |    9 +
+> > >  drivers/staging/fpga/fpga-mgr.c                    |  551 ++++++++++++++++
+> > >  drivers/staging/fpga/socfpga.c                     |  694 ++++++++++++++++++++
+> > >  include/linux/fpga/fpga-mgr.h                      |  124 ++++
+> > >  9 files changed, 1465 insertions(+)
+> > >  create mode 100644 drivers/staging/fpga/Documentation/ABI/sysfs-class-fpga-manager
+> > >  create mode 100644 drivers/staging/fpga/Documentation/bindings/altera-socfpga-fpga-mgr.txt
+> > >  create mode 100644 drivers/staging/fpga/Kconfig
+> > >  create mode 100644 drivers/staging/fpga/Makefile
+> > >  create mode 100644 drivers/staging/fpga/fpga-mgr.c
+> > >  create mode 100644 drivers/staging/fpga/socfpga.c
+> > >  create mode 100644 include/linux/fpga/fpga-mgr.h
+> > > 
+> > > -- 
+> > > 1.7.9.5
+> > > 
+> > > _______________________________________________
+> > > devel mailing list
+> > > devel@linuxdriverproject.org
+> > > http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
+> > 
