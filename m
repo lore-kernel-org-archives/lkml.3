@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751509AbbAKSfg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 13:35:36 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:34763 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbbAKSfd (ORCPT
+	id S1751412AbbAKSoK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 13:44:10 -0500
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:35605 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744AbbAKSoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 13:35:33 -0500
-Message-ID: <1421001331.5947.101.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH net] packet: bail out of packet_snd() if L2 header
- creation fails
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christoph Jaeger <cj@linux.com>
-Cc: davem@davemloft.net, willemb@google.com, edumazet@google.com,
-        dborkman@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 11 Jan 2015 10:35:31 -0800
-In-Reply-To: <1420999276-28225-1-git-send-email-cj@linux.com>
-References: <1420999276-28225-1-git-send-email-cj@linux.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 11 Jan 2015 13:44:06 -0500
+Date: Sun, 11 Jan 2015 13:44:03 -0500
+From: Nickolaus Woodruff <nickolauswoodruff@gmail.com>
+To: andreas.dilger@intel.com, oleg.drokin@intel.com
+Cc: HPDD-discuss@ml01.01.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org
+Subject: [PATCH] staging: lustre: Fix spacing error in libcfs_string.c
+Message-ID: <20150111184403.GA17805@Caladan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2015-01-11 at 13:01 -0500, Christoph Jaeger wrote:
-> Due to a misplaced parenthesis, the expression
-> 
->   (unlikely(offset) < 0),
-> 
-> which expands to
-> 
->   (__builtin_expect(!!(offset), 0) < 0),
-> 
-> never evaluates to true. Therefore, when sending packets with
-> PF_PACKET/SOCK_DGRAM, packet_snd() does not abort as intended
-> if the creation of the layer 2 header fails.
-> 
-> Spotted by Coverity - CID 1259975 ("Operands don't affect result").
-> 
-> Fixes: 9c7077622dd9 ("packet: make packet_snd fail on len smaller than l2 header")
-> Signed-off-by: Christoph Jaeger <cj@linux.com>
-> ---
+This patch fixes the following checkpatch.pl error in libcfs_string.c:
 
-Nice catch !
+ERROR: spaces required around that '='
 
-Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Nickolaus Woodruff <nickolauswoodruff@gmail.com>
+---
+ drivers/staging/lustre/lustre/libcfs/libcfs_string.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/staging/lustre/lustre/libcfs/libcfs_string.c b/drivers/staging/lustre/lustre/libcfs/libcfs_string.c
+index fb88733..e67a18d 100644
+--- a/drivers/staging/lustre/lustre/libcfs/libcfs_string.c
++++ b/drivers/staging/lustre/lustre/libcfs/libcfs_string.c
+@@ -132,7 +132,7 @@ char *cfs_firststr(char *str, size_t size)
+ 		++end;
+ 	}
+ 
+-	*end= '\0';
++	*end = '\0';
+ out:
+ 	return str;
+ }
+-- 
+1.9.1
 
