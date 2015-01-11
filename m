@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752483AbbAKNzB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 08:55:01 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:51681 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400AbbAKNzA (ORCPT
+	id S1752131AbbAKOBi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 09:01:38 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:62926 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233AbbAKOBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 08:55:00 -0500
+	Sun, 11 Jan 2015 09:01:37 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>
+To: Mike Marciniszyn <infinipath@intel.com>, Roland Dreier <roland@kernel.org>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Thierry Reding <treding@nvidia.com>, dri-devel@lists.freedesktop.org,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] drm: nouveau: nouveau_gem: Remove unused function
-Date: Sun, 11 Jan 2015 14:58:05 +0100
-Message-Id: <1420984685-17724-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: [PATCH] IB: qib: qib_iba7322: Remove unused function
+Date: Sun, 11 Jan 2015 15:04:42 +0100
+Message-Id: <1420985082-17977-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function domain_to_ttm() that is not used anywhere.
+Remove the function qib_read_ureg() that is not used anywhere.
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/gpu/drm/nouveau/nouveau_gem.c |   13 -------------
- 1 file changed, 13 deletions(-)
+ drivers/infiniband/hw/qib/qib_iba7322.c |   22 ----------------------
+ 1 file changed, 22 deletions(-)
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_gem.c b/drivers/gpu/drm/nouveau/nouveau_gem.c
-index 36951ee..f208d3a 100644
---- a/drivers/gpu/drm/nouveau/nouveau_gem.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_gem.c
-@@ -825,19 +825,6 @@ out_next:
- 	return nouveau_abi16_put(abi16, ret);
+diff --git a/drivers/infiniband/hw/qib/qib_iba7322.c b/drivers/infiniband/hw/qib/qib_iba7322.c
+index a7eb325..a57b1a2 100644
+--- a/drivers/infiniband/hw/qib/qib_iba7322.c
++++ b/drivers/infiniband/hw/qib/qib_iba7322.c
+@@ -783,28 +783,6 @@ static inline u32 qib_read_ureg32(const struct qib_devdata *dd,
  }
  
--static inline uint32_t
--domain_to_ttm(struct nouveau_bo *nvbo, uint32_t domain)
+ /**
+- * qib_read_ureg - read virtualized per-context register
+- * @dd: device
+- * @regno: register number
+- * @ctxt: context number
+- *
+- * Return the contents of a register that is virtualized to be per context.
+- * Returns -1 on errors (not distinguishable from valid contents at
+- * runtime; we may add a separate error variable at some point).
+- */
+-static inline u64 qib_read_ureg(const struct qib_devdata *dd,
+-				enum qib_ureg regno, int ctxt)
 -{
--	uint32_t flags = 0;
 -
--	if (domain & NOUVEAU_GEM_DOMAIN_VRAM)
--		flags |= TTM_PL_FLAG_VRAM;
--	if (domain & NOUVEAU_GEM_DOMAIN_GART)
--		flags |= TTM_PL_FLAG_TT;
--
--	return flags;
+-	if (!dd->kregbase || !(dd->flags & QIB_PRESENT))
+-		return 0;
+-	return readq(regno + (u64 __iomem *)(
+-		(dd->ureg_align * ctxt) + (dd->userbase ?
+-		 (char __iomem *)dd->userbase :
+-		 (char __iomem *)dd->kregbase + dd->uregbase)));
 -}
 -
- int
- nouveau_gem_ioctl_cpu_prep(struct drm_device *dev, void *data,
- 			   struct drm_file *file_priv)
+-/**
+  * qib_write_ureg - write virtualized per-context register
+  * @dd: device
+  * @regno: register number
 -- 
 1.7.10.4
 
