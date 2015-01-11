@@ -1,58 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752432AbbAKU7j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 15:59:39 -0500
-Received: from smtprelay0022.hostedemail.com ([216.40.44.22]:50515 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751573AbbAKU7g (ORCPT
+	id S1751958AbbAKVWl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 16:22:41 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:55468 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755AbbAKVWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 15:59:36 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3867:3868:3871:3872:4321:5007:6261:6742:6743:10004:10400:10848:11026:11658:11914:12043:12296:12438:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: drop64_8d72c52b8b005
-X-Filterd-Recvd-Size: 2039
-Message-ID: <1421009969.9233.5.camel@perches.com>
-Subject: Re: [PATCH 3/3] x_tables: Factor out 16bit aligment ifname_compare()
-From: Joe Perches <joe@perches.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: davem@davemloft.net, coreteam@netfilter.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, bhutchings@solarflare.com,
-        john.fastabend@gmail.com, herbert@gondor.apana.org.au,
-        vyasevic@redhat.com, jiri@resnulli.us, vfalico@gmail.com,
-        therbert@google.com, edumazet@google.com, yoshfuji@linux-ipv6.org,
-        jmorris@namei.org, kuznet@ms2.inr.ac.ru, kadlec@blackhole.kfki.hu,
-        kaber@trash.net, pablo@netfilter.org, kay@vrfy.org,
-        stephen@networkplumber.org
-Date: Sun, 11 Jan 2015 12:59:29 -0800
-In-Reply-To: <1421009571-5279-4-git-send-email-richard@nod.at>
-References: <1421009571-5279-1-git-send-email-richard@nod.at>
-	 <1421009571-5279-4-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
+	Sun, 11 Jan 2015 16:22:40 -0500
+Message-ID: <54B2E455.7050707@gmail.com>
+Date: Sun, 11 Jan 2015 22:00:05 +0100
+From: Samuel Pitoiset <samuel.pitoiset@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>
+CC: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm: nouveau: core: engine: perfmon: base: Remove unused
+ function
+References: <1420999965-22216-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1420999965-22216-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2015-01-11 at 21:52 +0100, Richard Weinberger wrote:
-> arp_tables.c has a 16bit aligment ifname_compare(), factor
-> it out to use it for all tables.
-[]
-> diff --git a/include/linux/netfilter/x_tables.h b/include/linux/netfilter/x_tables.h
-[]
-> @@ -331,14 +331,15 @@ static inline void xt_write_recseq_end(unsigned int addend)
->  /*
->   * This helper is performance critical and must be inlined
->   */
-> -static inline unsigned long ifname_compare_aligned(const char *_a,
-> -						   const char *_b,
-> -						   const char *_mask)
-> +static inline unsigned long ifname_compare(const char *_a,
-> +					   const char *_b,
-> +					   const char *_mask)
+Hi Rickard,
 
-Perhaps this would be better as bool ifname_compare
+Thanks for submitting this patch, but I already submitted the same a few 
+weeks ago. :-)
 
+This function will be removed when I will submit my work on this area.
+
+Greetings,
+Samuel Pitoiset.
+
+On 01/11/2015 07:12 PM, Rickard Strandqvist wrote:
+> Remove the function nouveau_perfsig_wrap() that is not used anywhere.
+>
+> This was partially found by using a static code analysis program called cppcheck.
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>   drivers/gpu/drm/nouveau/core/engine/perfmon/base.c |   20 --------------------
+>   drivers/gpu/drm/nouveau/core/engine/perfmon/priv.h |    5 -----
+>   2 files changed, 25 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/nouveau/core/engine/perfmon/base.c b/drivers/gpu/drm/nouveau/core/engine/perfmon/base.c
+> index 6301381..d0c5255 100644
+> --- a/drivers/gpu/drm/nouveau/core/engine/perfmon/base.c
+> +++ b/drivers/gpu/drm/nouveau/core/engine/perfmon/base.c
+> @@ -80,26 +80,6 @@ nouveau_perfsig_find(struct nouveau_perfmon *ppm, const char *name, u32 size,
+>   	return nouveau_perfsig_find_(dom, name, size);
+>   }
+>   
+> -struct nouveau_perfctr *
+> -nouveau_perfsig_wrap(struct nouveau_perfmon *ppm, const char *name,
+> -		     struct nouveau_perfdom **pdom)
+> -{
+> -	struct nouveau_perfsig *sig;
+> -	struct nouveau_perfctr *ctr;
+> -
+> -	sig = nouveau_perfsig_find(ppm, name, strlen(name), pdom);
+> -	if (!sig)
+> -		return NULL;
+> -
+> -	ctr = kzalloc(sizeof(*ctr), GFP_KERNEL);
+> -	if (ctr) {
+> -		ctr->signal[0] = sig;
+> -		ctr->logic_op = 0xaaaa;
+> -	}
+> -
+> -	return ctr;
+> -}
+> -
+>   /*******************************************************************************
+>    * Perfmon object classes
+>    ******************************************************************************/
+> diff --git a/drivers/gpu/drm/nouveau/core/engine/perfmon/priv.h b/drivers/gpu/drm/nouveau/core/engine/perfmon/priv.h
+> index 0ac8714..1a0989e 100644
+> --- a/drivers/gpu/drm/nouveau/core/engine/perfmon/priv.h
+> +++ b/drivers/gpu/drm/nouveau/core/engine/perfmon/priv.h
+> @@ -30,11 +30,6 @@ struct nouveau_perfsig {
+>   	const char *name;
+>   };
+>   
+> -struct nouveau_perfdom;
+> -struct nouveau_perfctr *
+> -nouveau_perfsig_wrap(struct nouveau_perfmon *, const char *,
+> -		     struct nouveau_perfdom **);
+> -
+>   struct nouveau_specdom {
+>   	u16 signal_nr;
+>   	const struct nouveau_specsig *signal;
 
