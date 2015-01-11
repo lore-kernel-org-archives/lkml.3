@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546AbbAKWcj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 17:32:39 -0500
-Received: from mail-we0-f178.google.com ([74.125.82.178]:33599 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997AbbAKWcg (ORCPT
+	id S1752463AbbAKWgH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 17:36:07 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:41560 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891AbbAKWgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 17:32:36 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: xen: mmu: Remove unused function
-Date: Sun, 11 Jan 2015 23:35:41 +0100
-Message-Id: <1421015741-25110-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 11 Jan 2015 17:36:03 -0500
+From: "Gustavo A. R. Silva" <silvagustavosilva@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        "Gustavo A. R. Silva" <silvagustavosilva@gmail.com>,
+        "Gustavo A. R. Silva" <garsilva@embeddedor.com>
+Subject: [PATCH] Staging: vt6656: Fixed typo in a macro name
+Date: Sun, 11 Jan 2015 16:35:54 -0600
+Message-Id: <1421015754-4242-1-git-send-email-silvagustavosilva@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function set_pte_mfn() that is not used anywhere.
+Fixed typo in a macro name in card.c and device.h files.
 
-This was partially found by using a static code analysis program called cppcheck.
-
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Signed-off-by: Gustavo A. R. Silva <garsilva@embeddedor.com>
 ---
- arch/x86/xen/mmu.c |    9 ---------
- arch/x86/xen/mmu.h |    2 --
- 2 files changed, 11 deletions(-)
+ drivers/staging/vt6656/card.c   | 2 +-
+ drivers/staging/vt6656/device.h | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index a8a1a3d..6959550 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -281,15 +281,6 @@ static void xen_set_pmd(pmd_t *ptr, pmd_t val)
- 	xen_set_pmd_hyper(ptr, val);
- }
+diff --git a/drivers/staging/vt6656/card.c b/drivers/staging/vt6656/card.c
+index 9340f15..67ff13f 100644
+--- a/drivers/staging/vt6656/card.c
++++ b/drivers/staging/vt6656/card.c
+@@ -78,7 +78,7 @@ void vnt_set_channel(struct vnt_private *priv, u32 connection_channel)
+ 	/* Set Channel[7] = 0 to tell H/W channel is changing now. */
+ 	vnt_mac_reg_bits_off(priv, MAC_REG_CHANNEL, 0xb0);
  
--/*
-- * Associate a virtual page frame with a given physical page frame
-- * and protection flags for that frame.
-- */
--void set_pte_mfn(unsigned long vaddr, unsigned long mfn, pgprot_t flags)
--{
--	set_pte_vaddr(vaddr, mfn_pte(mfn, flags));
--}
--
- static bool xen_batched_set_pte(pte_t *ptep, pte_t pteval)
- {
- 	struct mmu_update u;
-diff --git a/arch/x86/xen/mmu.h b/arch/x86/xen/mmu.h
-index 73809bb..f2dcf79 100644
---- a/arch/x86/xen/mmu.h
-+++ b/arch/x86/xen/mmu.h
-@@ -13,8 +13,6 @@ enum pt_level {
+-	vnt_control_out(priv, MESSAGE_TYPE_SELECT_CHANNLE,
++	vnt_control_out(priv, MESSAGE_TYPE_SELECT_CHANNEL,
+ 					connection_channel, 0, 0, NULL);
  
- bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn);
- 
--void set_pte_mfn(unsigned long vaddr, unsigned long pfn, pgprot_t flags);
--
- pte_t xen_ptep_modify_prot_start(struct mm_struct *mm, unsigned long addr, pte_t *ptep);
- void  xen_ptep_modify_prot_commit(struct mm_struct *mm, unsigned long addr,
- 				  pte_t *ptep, pte_t pte);
+ 	vnt_control_out_u8(priv, MESSAGE_REQUEST_MACREG, MAC_REG_CHANNEL,
+diff --git a/drivers/staging/vt6656/device.h b/drivers/staging/vt6656/device.h
+index 5a7ca52..c051320 100644
+--- a/drivers/staging/vt6656/device.h
++++ b/drivers/staging/vt6656/device.h
+@@ -160,7 +160,7 @@
+ #define MESSAGE_TYPE_CLRKEYENTRY	0x9
+ #define MESSAGE_TYPE_WRITE_MISCFF	0xa
+ #define MESSAGE_TYPE_SET_ANTMD		0xb
+-#define MESSAGE_TYPE_SELECT_CHANNLE	0xc
++#define MESSAGE_TYPE_SELECT_CHANNEL	0xc
+ #define MESSAGE_TYPE_SET_TSFTBTT	0xd
+ #define MESSAGE_TYPE_SET_SSTIFS		0xe
+ #define MESSAGE_TYPE_CHANGE_BBTYPE	0xf
 -- 
-1.7.10.4
+1.9.1
 
