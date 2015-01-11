@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751415AbbAKTuH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 14:50:07 -0500
-Received: from smtprelay0180.hostedemail.com ([216.40.44.180]:43507 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750767AbbAKTuF (ORCPT
+	id S1751866AbbAKTw0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 14:52:26 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:51497 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751539AbbAKTwX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 14:50:05 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3653:3865:3866:3867:3870:3871:3872:4321:4605:5007:6261:8957:10004:10400:10848:11232:11658:11914:12043:12296:12517:12519:12555:12740:13069:13161:13229:13311:13357:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: rain69_7478c5a4de419
-X-Filterd-Recvd-Size: 2532
-Message-ID: <1421005797.9233.3.camel@perches.com>
-Subject: [PATCH] checkpatch: Add likely/unlikely comparison misuse test
-From: Joe Perches <joe@perches.com>
-To: Christoph Jaeger <cj@linux.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Julia Lawall <julia.lawall@lip6.fr>
-Cc: Alan <alan@linux.intel.com>, davem@davemloft.net, willemb@google.com,
-        edumazet@google.com, dborkman@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 11 Jan 2015 11:49:57 -0800
-In-Reply-To: <20150111193404.GN1513@betelgeuse.hsd1.ma.comcast.net>
-References: <1420999276-28225-1-git-send-email-cj@linux.com>
-	 <1421002345.9233.1.camel@perches.com>
-	 <20150111193404.GN1513@betelgeuse.hsd1.ma.comcast.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 11 Jan 2015 14:52:23 -0500
+Date: Sun, 11 Jan 2015 20:52:19 +0100
+From: Pavel Machek <pavel@denx.de>
+To: Konrad Zapalowicz <bergo.torino@gmail.com>
+Cc: atull <atull@opensource.altera.com>, gregkh@linuxfoundation.org,
+        jgunthorpe@obsidianresearch.com, hpa@zytor.com, monstr@monstr.eu,
+        michal.simek@xilinx.com, rdunlap@infradead.org, mark.rutland@arm.com,
+        linux-doc@vger.kernel.org, rubini@gnudd.com,
+        pantelis.antoniou@konsulko.com, s.trumtrar@pengutronix.de,
+        devel@driverdev.osuosl.org, sameo@linux.intel.com, nico@linaro.org,
+        ijc+devicetree@hellion.org.uk, kyle.teske@ni.com,
+        grant.likely@linaro.org, davidb@codeaurora.org,
+        linus.walleij@linaro.org, cesarb@cesarb.net,
+        devicetree@vger.kernel.org, jason@lakedaemon.net, pawel.moll@arm.com,
+        iws@ovro.caltech.edu, broonie@kernel.org, philip@balister.org,
+        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com,
+        linux-kernel@vger.kernel.org, balbi@ti.com, delicious.quinoa@gmail.com,
+        robh+dt@kernel.org, rob@landley.net, galak@codeaurora.org,
+        akpm@linux-foundation.org, davem@davemloft.net, m.chehab@samsung.com
+Subject: Re: [PATCH v8 0/4] FPGA Manager Framework
+Message-ID: <20150111195219.GA25760@amd>
+References: <1420575219-27061-1-git-send-email-atull@opensource.altera.com>
+ <20150110181120.GA26067@t400>
+ <alpine.DEB.2.10.1501111004580.2556@shineypoop>
+ <20150111162426.GC26067@t400>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150111162426.GC26067@t400>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a test for probably likely/unlikely misuses where
-the comparison is likely misplaced
-
-	if (likely(foo) > 0)
-vs
-	if (likely(foo > 0))
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
-On Sun, 2015-01-11 at 14:34 -0500, Christoph Jaeger wrote:
-> > drivers/platform/goldfish/goldfish_pipe.c:285:	if (unlikely(bufflen) == 0)
+On Sun 2015-01-11 17:24:26, Konrad Zapalowicz wrote:
+> On 01/11, atull wrote:
+> > On Sat, 10 Jan 2015, Konrad Zapalowicz wrote:
+> > 
+> > > On 01/06, atull@opensource.altera.com wrote:
+> > > > From: Alan Tull <atull@opensource.altera.com>
+> > > 
+> > > Alan, there is something wrong with your email client configuration
+> > > and you need to fix.
+> > > 
+> > > thanks,
+> > > konrad
+> > 
+> > Hi Konrad,
+> > 
+> > Can you be more specific?  What problem are you seeing?  Is it a problem 
+> > with the original patch  post or when I reply?  When I a post, I'm using
+> > 'git send-email' with sendmail and when I am replying, I am using alpine.
 > 
-> Well, the conditional statement works as intended. Of course, the branch
-> prediction doesn't.
+> I think that because you email client configuration sets the 'From'
+> header to "atull@..." and at the same time you sign-off messages with
+> "Alan Tull atull@..." the "From" is added at the beginning of the
+> message to indicate the original author.
 > 
-> Coccinelle should be able to check for this kind of likely()/unlikely() usage,
-> shouldn't it?
+> This should be fixed as the "from" is not welcomed in the body of the
+> commit message.
 
-Most likely,  checkpatch could too, but not as well.
-This misuse isn't very common. (2 in current source?)
-
- scripts/checkpatch.pl | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 6afc24b..b8d47dc 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -5219,6 +5219,13 @@ sub process {
- 			      "#define of '$1' is wrong - use Kconfig variables or standard guards instead\n" . $herecurr);
- 		}
- 
-+# likely/unlikely comparisons similar to "(likely(foo) > 0)"
-+		if ($^V && $^V ge 5.10.0 &&
-+		    $line =~ /\b((?:un)?likely)\s*\(\s*$FuncArg\s*\)\s*$Compare/) {
-+			WARN("LIKELY_MISUSE",
-+			     "Using $1 should generally have parentheses around the comparison\n" . $herecurr);
-+		}
-+
- # whine mightly about in_atomic
- 		if ($line =~ /\bin_atomic\s*\(/) {
- 			if ($realfile =~ m@^drivers/@) {
-
-
+Actually, why not? Tools should know to look at From: in the
+commit. AFAICT, Alan has it set up correctly.
+								Pavel
+								
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
