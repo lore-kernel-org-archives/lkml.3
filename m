@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736AbbAKREK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 12:04:10 -0500
-Received: from smtprelay0221.hostedemail.com ([216.40.44.221]:60602 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751077AbbAKREG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 12:04:06 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1561:1593:1594:1711:1714:1730:1747:1777:1792:2198:2199:2393:2559:2562:2693:2731:2828:3138:3139:3140:3141:3142:3622:3865:3866:3867:3870:3872:3873:4043:4321:5007:6261:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13215:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: uncle90_7acad55f22726
-X-Filterd-Recvd-Size: 1343
-Message-ID: <1420995841.3690.4.camel@perches.com>
-Subject: Re: [PATCH] staging: unisys: Convert direct LOGERR uses to pr_err
-From: Joe Perches <joe@perches.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, Benjamin Romer <benjamin.romer@unisys.com>,
-        David Kershner <david.kershner@unisys.com>,
-        LKML <linux-kernel@vger.kernel.org>, sparmaintainer@unisys.com
-Date: Sun, 11 Jan 2015 09:04:01 -0800
-In-Reply-To: <20150111165708.GA27161@kroah.com>
-References: <1420945742.16787.12.camel@perches.com>
-	 <20150111041319.GB22334@kroah.com> <1420952121.32288.1.camel@perches.com>
-	 <20150111052428.GC24038@kroah.com> <1420954353.32288.3.camel@perches.com>
-	 <20150111165708.GA27161@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
+	id S1751723AbbAKRKP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 12:10:15 -0500
+Received: from nupi.pair.com ([209.68.5.149]:19970 "EHLO nupi.pair.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750860AbbAKRKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jan 2015 12:10:12 -0500
+Message-ID: <54B2AE6E.3080909@flaterco.com>
+Date: Sun, 11 Jan 2015 12:10:06 -0500
+From: David Flater <vger@flaterco.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Takashi Iwai <tiwai@suse.de>
+CC: Jaroslav Kysela <perex@perex.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Alsa Devel <alsa-devel@alsa-project.org>
+Subject: Re: [PATCHv2 1/2] ALSA: fix emu8000 DRAM sizing for AWE64 Value
+References: <54B0775C.1080705@flaterco.com> <s5h7fwt4mji.wl-tiwai@suse.de>
+In-Reply-To: <s5h7fwt4mji.wl-tiwai@suse.de>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2015-01-11 at 08:57 -0800, Greg Kroah-Hartman wrote:
-> It will need to be done to get the code merged out of staging, so it
-> better happen...
+On 01/11/2015 05:52 AM, Takashi Iwai wrote:
+> At Fri, 09 Jan 2015 19:50:36 -0500,
+> David Flater wrote:
+>> CT4380 is commonly said to come with 1 MiB of DRAM, but Creative's AWE
+>> Control app agreed that mine has only 512 KiB.  It has the same memory chip
+>> as the CT4520.
+> 
+> And you couldn't actually use the 1MB, right?
 
-Maybe the unisys folk will do something in the
-order you want.  Good luck.
+Confirmed with indirect evidence.  Since the address space wraps around, the mode of failure (assuming that the load isn't blocked by checking against a correctly detected size) is silent corruption of the loaded sound font.
 
+Testing with a random sound font larger than 512 KiB but smaller than 1 MiB:
+Fender2.sf2, 545994 B
+
+On CT4390, the following test gives me a credible guitar in the left channel (and nothing else):
+asfxload -i -M Fender2.sf2
+DRAM memory left = 3565 kB
+aplaymidi -p 17:0 E1M1.mid
+
+On CT4380 with DRAM size hard-coded to 1 MiB, asfxload catches no failure but aplaymidi produces a glitchy mixture of guitar and morse code beeping:
+asfxload -i -M Fender2.sf2
+DRAM memory left = 493 kB
+aplaymidi -p 17:0 E1M1.mid
+
+DWF
 
