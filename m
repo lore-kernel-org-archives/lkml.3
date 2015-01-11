@@ -1,69 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239AbbAKVFC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 16:05:02 -0500
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:62754 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299AbbAKVE4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 16:04:56 -0500
+	id S1752001AbbAKVJH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 16:09:07 -0500
+Received: from nupi.pair.com ([209.68.5.149]:63032 "EHLO nupi.pair.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750782AbbAKVJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jan 2015 16:09:04 -0500
+Message-ID: <54B2E66A.7060907@flaterco.com>
+Date: Sun, 11 Jan 2015 16:08:58 -0500
+From: David Flater <vger@flaterco.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <s5h8uh94nce.wl-tiwai@suse.de>
-References: <1420868171-2031-1-git-send-email-chris@rorvick.com>
-	<s5h8uh94nce.wl-tiwai@suse.de>
-Date: Sun, 11 Jan 2015 15:04:55 -0600
-X-Google-Sender-Auth: u5LXe-oqRWFa4ZLynSuQfGkgFx4
-Message-ID: <CAEUsAPaDdXO_0z0sWp_M_sYV69N44+Ea7eqm1VvPA2mONUerag@mail.gmail.com>
-Subject: Re: [PATCH 00/25] line6usb cleanup
-From: Chris Rorvick <chris@rorvick.com>
 To: Takashi Iwai <tiwai@suse.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Davide Berardi <berardi.dav@gmail.com>, devel@driverdev.osuosl.org,
-        Fabian Mewes <architekt@coding4coffee.org>,
-        Gulsah Kose <gulsah.1004@gmail.com>,
-        Himangi Saraogi <himangi774@gmail.com>,
-        Jerry Snitselaar <dev@snitselaar.org>,
-        =?UTF-8?Q?L=2E_Alberto_Gim=C3=A9nez?= <agimenez@sysvalve.es>,
-        linux-kernel@vger.kernel.org, Mikhail Boiko <mm.boiko@yandex.ru>,
-        Monam Agarwal <monamagarwal123@gmail.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Stefan Hajnoczi <stefanha@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+CC: Jaroslav Kysela <perex@perex.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Alsa Devel <alsa-devel@alsa-project.org>
+Subject: [PATCHv3 1/2] ALSA: fix emu8000 DRAM sizing for AWE64 Value
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> At Fri,  9 Jan 2015 23:35:46 -0600,
-> Chris Rorvick wrote:
->>
->> I have a TonePort UX2 that I've used for testing, meaning that some of
->> this is really only compile-tested.
->
-> If anyone is responsible for testing with real hardware, I'll happily
-> review.
+Applicable to any kernel since 2013:
 
-To be clear, the TonePort UX2 is real hardware.  But this driver
-basically supports four classes of Line 6 devices and I'm only covering
-one of them.
+The special case added in commit 1338fc97d07a did not handle the possibility
+that the address space on an AWE64 Value would wrap around at 512 KiB.  That
+is what it does, so the memory is still not detected on those cards.
 
-So this series is a first step in trying to address this.  Having this
-as a single driver probably made sense when it was a separate project,
-but now that it is in-tree it seems like the POD, PODHD, TonePort, and
-Variax pieces should each be separate drivers that each depend on a core
-Line 6 driver.  I think the cleanup in this series will make that
-easier.  None of this is my area of expertise, though, so advice and
-feedback is very welcome.
+Fix that with a logic clean-up that eliminates the need for a special case.
 
-> are there any active developers for this driver?
+Signed-off-by: David Flater <dave@flaterco.com>
+---
+History:
+2015-01-11  v3: In response to feedback from Takashi Iwai,
+              Patch 1: Repeat code to avoid goto middle of loop.
+              Patch 2: Use pr_info not printk.
+            Retested on CT4390 (4 MiB) and CT4380 (512 KiB).
+2015-01-09  v2: In response to feedback from Takashi Iwai,
+               1. Optimize for diff size.
+                 1a. Use goto to avoid indenting and repeating code.
+                 1b. Jettison new debugging printouts.
+               2. Split printk into second patch.
+            Retested on CT4390 (4 MiB) and CT4380 (512 KiB).
+2015-01-08  v1 patch sent to LKML, Alsa Devel and maintainers.  Tested on
+            unexpanded CT4390 (4 MiB), CT4520 (512 KiB), and CT4380 (512
+            KiB).
 
-I intended to do further work.  I know there is quite a bit of mundane
-checkpatch cleanup that would need to get done before this could get
-promoted, and I believe I read that it's using sysfs for stuff that
-would normally be done via an ALSA interface, and the sysfs interface
-has not been documented nor has it been justified.  All stuff I thought
-I might look into.
+ sound/isa/sb/emu8000.c | 31 +++++++++++++++----------------
+ 1 file changed, 15 insertions(+), 16 deletions(-)
 
-But I'm just doing this for fun so I can't promise anything.  :-)
-
-Chris
+diff --git a/sound/isa/sb/emu8000.c b/sound/isa/sb/emu8000.c
+index 45fcdff..d25e384 100644
+--- a/sound/isa/sb/emu8000.c
++++ b/sound/isa/sb/emu8000.c
+@@ -378,13 +378,12 @@ init_arrays(struct snd_emu8000 *emu)
+ static void
+ size_dram(struct snd_emu8000 *emu)
+ {
+-	int i, size, detected_size;
++	int i, size;
+ 
+ 	if (emu->dram_checked)
+ 		return;
+ 
+ 	size = 0;
+-	detected_size = 0;
+ 
+ 	/* write out a magic number */
+ 	snd_emu8000_dma_chan(emu, 0, EMU8000_RAM_WRITE);
+@@ -392,10 +391,19 @@ size_dram(struct snd_emu8000 *emu)
+ 	EMU8000_SMALW_WRITE(emu, EMU8000_DRAM_OFFSET);
+ 	EMU8000_SMLD_WRITE(emu, UNIQUE_ID1);
+ 	snd_emu8000_init_fm(emu); /* This must really be here and not 2 lines back even */
++	snd_emu8000_write_wait(emu);
+ 
+-	while (size < EMU8000_MAX_DRAM) {
++	/*
++	 * Detect first 512 KiB.  If a write succeeds at the beginning of a
++	 * 512 KiB page we assume that the whole page is there.
++	 */
++	EMU8000_SMALR_WRITE(emu, EMU8000_DRAM_OFFSET);
++	EMU8000_SMLD_READ(emu); /* discard stale data  */
++	if (EMU8000_SMLD_READ(emu) != UNIQUE_ID1)
++		goto skip_detect;   /* No RAM */
++	snd_emu8000_read_wait(emu);
+ 
+-		size += 512 * 1024;  /* increment 512kbytes */
++	for (size = 512 * 1024; size < EMU8000_MAX_DRAM; size += 512 * 1024) {
+ 
+ 		/* Write a unique data on the test address.
+ 		 * if the address is out of range, the data is written on
+@@ -431,18 +439,9 @@ size_dram(struct snd_emu8000 *emu)
+ 		snd_emu8000_read_wait(emu);
+ 
+ 		/* Otherwise, it's valid memory. */
+-		detected_size = size + 512 * 1024;
+-	}
+-
+-	/* Distinguish 512 KiB from 0. */
+-	if (detected_size == 0) {
+-		snd_emu8000_read_wait(emu);
+-		EMU8000_SMALR_WRITE(emu, EMU8000_DRAM_OFFSET);
+-		EMU8000_SMLD_READ(emu); /* discard stale data  */
+-		if (EMU8000_SMLD_READ(emu) == UNIQUE_ID1)
+-			detected_size = 512 * 1024;
+ 	}
+ 
++skip_detect:
+ 	/* wait until FULL bit in SMAxW register is false */
+ 	for (i = 0; i < 10000; i++) {
+ 		if ((EMU8000_SMALW_READ(emu) & 0x80000000) == 0)
+@@ -455,9 +454,9 @@ size_dram(struct snd_emu8000 *emu)
+ 	snd_emu8000_dma_chan(emu, 1, EMU8000_RAM_CLOSE);
+ 
+ 	snd_printdd("EMU8000 [0x%lx]: %d Kb on-board memory detected\n",
+-		    emu->port1, detected_size/1024);
++		    emu->port1, size/1024);
+ 
+-	emu->mem_size = detected_size;
++	emu->mem_size = size;
+ 	emu->dram_checked = 1;
+ }
+ 
+-- 
+1.8.4
