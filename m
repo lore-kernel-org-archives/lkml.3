@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463AbbAKWgH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 17:36:07 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:41560 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891AbbAKWgD (ORCPT
+	id S1752572AbbAKWdo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 17:33:44 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:39939 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891AbbAKWdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 17:36:03 -0500
-From: "Gustavo A. R. Silva" <silvagustavosilva@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        "Gustavo A. R. Silva" <silvagustavosilva@gmail.com>,
-        "Gustavo A. R. Silva" <garsilva@embeddedor.com>
-Subject: [PATCH] Staging: vt6656: Fixed typo in a macro name
-Date: Sun, 11 Jan 2015 16:35:54 -0600
-Message-Id: <1421015754-4242-1-git-send-email-silvagustavosilva@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sun, 11 Jan 2015 17:33:43 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Jani Nikula <jani.nikula@intel.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Dave Airlie <airlied@redhat.com>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drm/nouveau/dispnv04/disp: Remove some unused functions
+Date: Sun, 11 Jan 2015 23:36:47 +0100
+Message-Id: <1421015807-25273-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed typo in a macro name in card.c and device.h files.
+Removes some functions that are not used anywhere:
+nv04_display_late_takedown() nv04_display_early_init()
 
-Signed-off-by: Gustavo A. R. Silva <garsilva@embeddedor.com>
+This was partially found by using a static code analysis program called cppcheck.
+
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/staging/vt6656/card.c   | 2 +-
- drivers/staging/vt6656/device.h | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/nouveau/dispnv04/disp.c |   18 ------------------
+ drivers/gpu/drm/nouveau/dispnv04/disp.h |    2 --
+ 2 files changed, 20 deletions(-)
 
-diff --git a/drivers/staging/vt6656/card.c b/drivers/staging/vt6656/card.c
-index 9340f15..67ff13f 100644
---- a/drivers/staging/vt6656/card.c
-+++ b/drivers/staging/vt6656/card.c
-@@ -78,7 +78,7 @@ void vnt_set_channel(struct vnt_private *priv, u32 connection_channel)
- 	/* Set Channel[7] = 0 to tell H/W channel is changing now. */
- 	vnt_mac_reg_bits_off(priv, MAC_REG_CHANNEL, 0xb0);
+diff --git a/drivers/gpu/drm/nouveau/dispnv04/disp.c b/drivers/gpu/drm/nouveau/dispnv04/disp.c
+index 3d0afa1..bdf7cf4 100644
+--- a/drivers/gpu/drm/nouveau/dispnv04/disp.c
++++ b/drivers/gpu/drm/nouveau/dispnv04/disp.c
+@@ -32,24 +32,6 @@
+ #include "nouveau_connector.h"
  
--	vnt_control_out(priv, MESSAGE_TYPE_SELECT_CHANNLE,
-+	vnt_control_out(priv, MESSAGE_TYPE_SELECT_CHANNEL,
- 					connection_channel, 0, 0, NULL);
+ int
+-nv04_display_early_init(struct drm_device *dev)
+-{
+-	/* ensure vblank interrupts are off, they can't be enabled until
+-	 * drm_vblank has been initialised
+-	 */
+-	NVWriteCRTC(dev, 0, NV_PCRTC_INTR_EN_0, 0);
+-	if (nv_two_heads(dev))
+-		NVWriteCRTC(dev, 1, NV_PCRTC_INTR_EN_0, 0);
+-
+-	return 0;
+-}
+-
+-void
+-nv04_display_late_takedown(struct drm_device *dev)
+-{
+-}
+-
+-int
+ nv04_display_create(struct drm_device *dev)
+ {
+ 	struct nouveau_drm *drm = nouveau_drm(dev);
+diff --git a/drivers/gpu/drm/nouveau/dispnv04/disp.h b/drivers/gpu/drm/nouveau/dispnv04/disp.h
+index 17b899d..3ad3ee8 100644
+--- a/drivers/gpu/drm/nouveau/dispnv04/disp.h
++++ b/drivers/gpu/drm/nouveau/dispnv04/disp.h
+@@ -90,8 +90,6 @@ nv04_display(struct drm_device *dev)
+ }
  
- 	vnt_control_out_u8(priv, MESSAGE_REQUEST_MACREG, MAC_REG_CHANNEL,
-diff --git a/drivers/staging/vt6656/device.h b/drivers/staging/vt6656/device.h
-index 5a7ca52..c051320 100644
---- a/drivers/staging/vt6656/device.h
-+++ b/drivers/staging/vt6656/device.h
-@@ -160,7 +160,7 @@
- #define MESSAGE_TYPE_CLRKEYENTRY	0x9
- #define MESSAGE_TYPE_WRITE_MISCFF	0xa
- #define MESSAGE_TYPE_SET_ANTMD		0xb
--#define MESSAGE_TYPE_SELECT_CHANNLE	0xc
-+#define MESSAGE_TYPE_SELECT_CHANNEL	0xc
- #define MESSAGE_TYPE_SET_TSFTBTT	0xd
- #define MESSAGE_TYPE_SET_SSTIFS		0xe
- #define MESSAGE_TYPE_CHANGE_BBTYPE	0xf
+ /* nv04_display.c */
+-int nv04_display_early_init(struct drm_device *);
+-void nv04_display_late_takedown(struct drm_device *);
+ int nv04_display_create(struct drm_device *);
+ void nv04_display_destroy(struct drm_device *);
+ int nv04_display_init(struct drm_device *);
 -- 
-1.9.1
+1.7.10.4
 
