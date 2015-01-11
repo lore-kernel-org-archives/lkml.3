@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516AbbAKBjR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jan 2015 20:39:17 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38247 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123AbbAKBjP (ORCPT
+	id S1752110AbbAKBxi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jan 2015 20:53:38 -0500
+Received: from outbound-smtp05.blacknight.com ([81.17.249.38]:57674 "EHLO
+	outbound-smtp05.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751123AbbAKBxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jan 2015 20:39:15 -0500
-Date: Sun, 11 Jan 2015 01:39:13 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Carlos R. Mafra" <crmafra@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Hauke Mehrtens <hauke@hauke-m.de>,
-        "John W. Linville" <linville@tuxdriver.com>, netdev@vger.kernel.org
-Subject: Re: /proc/net/dev regression
-Message-ID: <20150111013913.GE22149@ZenIV.linux.org.uk>
-References: <20150110232518.GA3212@linux-g29b.site>
- <20150111002706.GC22149@ZenIV.linux.org.uk>
- <20150111010036.GD22149@ZenIV.linux.org.uk>
- <20150111013335.GA5753@linux-g29b.site>
+	Sat, 10 Jan 2015 20:53:37 -0500
+Message-ID: <54B1D79E.3070602@nexus-software.ie>
+Date: Sun, 11 Jan 2015 01:53:34 +0000
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150111013335.GA5753@linux-g29b.site>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Darren Hart <dvhart@infradead.org>
+CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Boon Leong Ong <boon.leong.ong@intel.com>,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH 2/2] platform/x86: Add Intel Galileo platform specific
+ setup
+References: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie> <1419873783-5161-3-git-send-email-pure.logic@nexus-software.ie> <20150109044613.GB9311@vmdeb7> <54AFB8D7.6020306@nexus-software.ie> <20150110065409.GA104814@vmdeb7>
+In-Reply-To: <20150110065409.GA104814@vmdeb7>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 11, 2015 at 01:33:35AM +0000, Carlos R. Mafra wrote:
 
-> I think the problem with wmnet is not that it was expecting the fields
-> to be aligned because it never had problems before (when definitely more
-> than 10 megabytes were received, wmnet is crappy but not _that_ crappy).
-> 
-> I think the problem really was here,
-> 
-> 	totalbytes_in = strtoul(&buffer[7], NULL, 10);
-> 
-> After the patch the device name is 8 characters long and &buffer[7]
-> overlaps with the name instead of reading the bytes. Before the
-> patch is was fine because the call to strtoul() seems correct in the
-> sense that it would read everything until the NULL. So more than 10
-> megabytes was still ok.
-> 
-> So I guess I was wrong when suggesting that the problem was the
-> alignment.
+> I'm wondering if there is a need for this to be a platform driver at
+> all. Could we, instead, tear down any unlocked IMRs at boot as part of the IMR
+> driver itself, as well as lock the kernel .text. Firmware has the option of
+> making an IMR mandatory by locking it. If it isn't locked, what use is it to the
+> OS without a lot more context? Any sort of policy enforced with IMRs is a
+> user-space decision, so clearing out the unlocked ones and then handing off to
+> user-space seems like a sane default mode to me.
+>
+> I discussed this with Boon Leong this afternoon and we couldn't come up with a
+> justification for a platform-specific driver to do what this does.
 
-Several lines below there's this:
-                        totalpackets_out = strtoul(&buffer[74], NULL, 10);
-                        if (totalpackets_out != lastpackets_out) {
-                                totalbytes_out = strtoul(&buffer[66], NULL, 10);
-                                diffpackets_out += totalpackets_out - lastpackets_out;
-                                diffbytes_out += totalbytes_out - lastbytes_out;
-                                lastpackets_out = totalpackets_out;
-                                lastbytes_out = totalbytes_out;
-                                tx = True;
-                        }
+I think there's no technical reason impeding what you've just suggested 
+in the IMR init and I'm happy to move the code in there since basically 
+any platform with IMR registers could justifiably
 
-So I'm afraid it *is* that crappy.  This function really should use scanf();
-note that updateStats_ipchains() in the same file does just that (well,
-fgets()+sscanf() for fsck knows what reason).  And I'd be careful with all
-those %d, actually - it's not _that_ hard to get more than 4Gb sent.
-scanf formats really ought to match the kernel-side (seq_)printf one...
+a) Tear down everything that's unlocked
+b) Place a default IMR around the .text section
+
+No reason it the world that that policy needs to be Galileo specific - 
+and it's a valid argument to say - this behaviour can simply be an IMR 
+policy in the kernel and less code for the same functionality, that adds 
+consistency across x86 is a good thing.
+
+I'll zap the Galileo platform code entirely for V2 unless there's a 
+counter-argument from someone.
+
+--
+BOD
+
