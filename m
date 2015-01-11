@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480AbbAKNyO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 08:54:14 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:58507 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752340AbbAKNyL (ORCPT
+	id S1752364AbbAKNxY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 08:53:24 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:52997 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752244AbbAKNxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 08:54:11 -0500
-Subject: [PATCH] mm: fix corner case in anon_vma endless growing prevention
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	Sun, 11 Jan 2015 08:53:21 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Alex Deucher <alexander.deucher@amd.com>,
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org
-Cc: Rik van Riel <riel@redhat.com>, "Elifaz, Dana" <Dana.Elifaz@amd.com>,
-        "Bridgman, John" <John.Bridgman@amd.com>,
-        Daniel Forrest <dan.forrest@ssec.wisc.edu>,
-        Chris Clayton <chris2553@googlemail.com>,
-        Oded Gabbay <oded.gabbay@amd.com>, Michal Hocko <mhocko@suse.cz>
-Date: Sun, 11 Jan 2015 16:54:06 +0300
-Message-ID: <20150111135406.13266.42007.stgit@zurg>
-User-Agent: StGit/0.17.1-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH] drm: radeon: btc_dpm: Remove unused function
+Date: Sun, 11 Jan 2015 14:56:26 +0100
+Message-Id: <1420984586-17554-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix for BUG_ON(anon_vma->degree) splashes in unlink_anon_vmas()
-("kernel BUG at mm/rmap.c:399!").
+Remove the function btc_dpm_reset_asic() that is not used anywhere.
 
-Anon_vma_clone() is usually called for a copy of source vma in destination
-argument. If source vma has anon_vma it should be already in dst->anon_vma.
-NULL in dst->anon_vma is used as a sign that it's called from anon_vma_fork().
-In this case anon_vma_clone() finds anon_vma for reusing.
+This was partially found by using a static code analysis program called cppcheck.
 
-Vma_adjust() calls it differently and this breaks anon_vma reusing logic:
-anon_vma_clone() links vma to old anon_vma and updates degree counters but
-vma_adjust() overrides vma->anon_vma right after that. As a result final
-unlink_anon_vmas() decrements degree for wrong anon_vma.
-
-This patch assigns ->anon_vma before calling anon_vma_clone().
-
-Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
-Fixes: 7a3ef208e662 ("mm: prevent endless growth of anon_vma hierarchy")
-Tested-by: Chris Clayton <chris2553@googlemail.com>
-Tested-by: Oded Gabbay <oded.gabbay@amd.com>
-Cc: Daniel Forrest <dan.forrest@ssec.wisc.edu>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Rik van Riel <riel@redhat.com>
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- mm/mmap.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/btc_dpm.c |    8 --------
+ 1 file changed, 8 deletions(-)
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 7b36aa7..12616c5 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -778,10 +778,12 @@ again:			remove_next = 1 + (end > next->vm_end);
- 		if (exporter && exporter->anon_vma && !importer->anon_vma) {
- 			int error;
+diff --git a/drivers/gpu/drm/radeon/btc_dpm.c b/drivers/gpu/drm/radeon/btc_dpm.c
+index 0b2929d..fea7130 100644
+--- a/drivers/gpu/drm/radeon/btc_dpm.c
++++ b/drivers/gpu/drm/radeon/btc_dpm.c
+@@ -2277,14 +2277,6 @@ static void btc_update_requested_ps(struct radeon_device *rdev,
+ 	eg_pi->requested_rps.ps_priv = &eg_pi->requested_ps;
+ }
  
-+			importer->anon_vma = exporter->anon_vma;
- 			error = anon_vma_clone(importer, exporter);
--			if (error)
-+			if (error) {
-+				importer->anon_vma = NULL;
- 				return error;
--			importer->anon_vma = exporter->anon_vma;
-+			}
- 		}
- 	}
- 
+-void btc_dpm_reset_asic(struct radeon_device *rdev)
+-{
+-	rv770_restrict_performance_levels_before_switch(rdev);
+-	btc_disable_ulv(rdev);
+-	btc_set_boot_state_timing(rdev);
+-	rv770_set_boot_state(rdev);
+-}
+-
+ int btc_dpm_pre_set_power_state(struct radeon_device *rdev)
+ {
+ 	struct evergreen_power_info *eg_pi = evergreen_get_pi(rdev);
+-- 
+1.7.10.4
 
