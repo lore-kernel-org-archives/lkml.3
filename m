@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993AbbAKNbP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 08:31:15 -0500
-Received: from mail-yk0-f172.google.com ([209.85.160.172]:53172 "EHLO
-	mail-yk0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863AbbAKNbN (ORCPT
+	id S1752123AbbAKNeU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 08:34:20 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:36144 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863AbbAKNeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 08:31:13 -0500
-Date: Sun, 11 Jan 2015 05:31:08 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [RESEND PATCH v2 1/2] usb: serial: handle -EPROTO quietly in
- generic_read_bulk
-Message-ID: <20150111133108.GA4497@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Johan Hovold <johan@kernel.org>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-References: <1419066698-2684-1-git-send-email-jmmahler@gmail.com>
- <1420937073-20835-2-git-send-email-jmmahler@gmail.com>
- <20150111113618.GA23221@localhost>
+	Sun, 11 Jan 2015 08:34:17 -0500
+Date: Sun, 11 Jan 2015 13:40:12 +0000
+From: "Carlos R. Mafra" <crmafra@gmail.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, Hauke Mehrtens <hauke@hauke-m.de>,
+        "John W. Linville" <linville@tuxdriver.com>, netdev@vger.kernel.org
+Subject: Re: /proc/net/dev regression
+Message-ID: <20150111134012.GA2079@linux-g29b.site>
+References: <20150110232518.GA3212@linux-g29b.site>
+ <20150111002706.GC22149@ZenIV.linux.org.uk>
+ <20150111010036.GD22149@ZenIV.linux.org.uk>
+ <20150111013335.GA5753@linux-g29b.site>
+ <20150111013913.GE22149@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150111113618.GA23221@localhost>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20150111013913.GE22149@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Johan,
-
-On Sun, Jan 11, 2015 at 12:36:18PM +0100, Johan Hovold wrote:
-> On Sat, Jan 10, 2015 at 04:44:32PM -0800, Jeremiah Mahler wrote:
-> > If a USB serial device is unplugged while there is an active program
-> > using the device it will spam the logs with -EPROTO (71) messages as it
-> > attempts to retry.
+On Sun, 11 Jan 2015 at  1:39:13 +0000, Al Viro wrote:
+> On Sun, Jan 11, 2015 at 01:33:35AM +0000, Carlos R. Mafra wrote:
 > 
-> Can you change this to "might spam", as which error message, and if it is
-> at all printed, depends on host controller and what (hub) devices are
-> used.
-> 
-Ah, yes, good point.
-
-> > Most serial usb drivers (metro-usb, pl2303, mos7840, ...) only output
-> > these messages for debugging.  The generic driver treats these as
-> > errors.
+> > I think the problem with wmnet is not that it was expecting the fields
+> > to be aligned because it never had problems before (when definitely more
+> > than 10 megabytes were received, wmnet is crappy but not _that_ crappy).
 > > 
-> > Change the default output for the generic serial driver from error to
-> > debug.
+> > I think the problem really was here,
+> > 
+> > 	totalbytes_in = strtoul(&buffer[7], NULL, 10);
+> > 
+> > After the patch the device name is 8 characters long and &buffer[7]
+> > overlaps with the name instead of reading the bytes. Before the
+> > patch is was fine because the call to strtoul() seems correct in the
+> > sense that it would read everything until the NULL. So more than 10
+> > megabytes was still ok.
+> > 
+> > So I guess I was wrong when suggesting that the problem was the
+> > alignment.
 > 
-> Please also correct the commit summary (Subject) so that it matches what
-> this revised patch now does (you silence all non-critical error
-> messages).
+> Several lines below there's this:
+>                         totalpackets_out = strtoul(&buffer[74], NULL, 10);
+>                         if (totalpackets_out != lastpackets_out) {
+>                                 totalbytes_out = strtoul(&buffer[66], NULL, 10);
+>                                 diffpackets_out += totalpackets_out - lastpackets_out;
+>                                 diffbytes_out += totalbytes_out - lastbytes_out;
+>                                 lastpackets_out = totalpackets_out;
+>                                 lastbytes_out = totalbytes_out;
+>                                 tx = True;
+>                         }
 > 
-True, it is more than just -EPROTO now.
+> So I'm afraid it *is* that crappy.  This function really should use scanf();
+> note that updateStats_ipchains() in the same file does just that (well,
+> fgets()+sscanf() for fsck knows what reason).  And I'd be careful with all
+> those %d, actually - it's not _that_ hard to get more than 4Gb sent.
+> scanf formats really ought to match the kernel-side (seq_)printf one...
 
-> Fix this up and I'll take both patches.
-> 
-> Thanks,
-> Johan
+Ok, I fixed wmnet using Al's suggestion.
 
-Thanks for the suggestions.
+As far as I'm concerned, my regression complaint can be dismissed. It's
+all working fine again.
 
-v3 coming up.
-
--- 
-- Jeremiah Mahler
+Thanks!
