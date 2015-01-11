@@ -1,206 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751638AbbAKPj6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 10:39:58 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:58746 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028AbbAKPj5 (ORCPT
+	id S1751955AbbAKPpD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 10:45:03 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:59181 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048AbbAKPpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 10:39:57 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Rashika Kheria <rashika.kheria@gmail.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ALSA: lx6464es: lx_core: Remove some unused functions
-Date: Sun, 11 Jan 2015 16:43:02 +0100
-Message-Id: <1420990982-20187-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 11 Jan 2015 10:45:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <20150109230254.GA3528@kroah.com>
+References: <20141204232951.GA13690@kroah.com> <1417754274-29769-1-git-send-email-tomvanbraeckel@gmail.com>
+ <20150109230254.GA3528@kroah.com>
+From: Tom Van Braeckel <tomvanbraeckel@gmail.com>
+Date: Sun, 11 Jan 2015 16:44:19 +0100
+Message-ID: <CAJ7vePD63YK3vfF40efV7CxKKJiRaeCY5tD4UsEOgn8MJY9ONw@mail.gmail.com>
+Subject: Re: [PATCH] misc: pass miscdevice through file's private_data
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        samu.p.onkalo@nokia.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere:
-lx_buffer_cancel() lx_buffer_free() lx_stream_sample_position()
-lx_stream_state() lx_pipe_sample_count()
+> Wait, didn't this break FUSE?  Or was that some other variant of this
+> patch?
 
-This was partially found by using a static code analysis program called cppcheck.
+You're right. How come I missed this?
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- sound/pci/lx6464es/lx_core.c |  107 ------------------------------------------
- sound/pci/lx6464es/lx_core.h |   10 ----
- 2 files changed, 117 deletions(-)
+I traced back my steps and as stated, I had reviewed all relevant code in the
+"drivers" folder. And therein lies the problem: I didn't think of reviewing the
+code in the "fs" folder, hence I missed fuse. I also went over the history of
+misc.c, but I used the default "git log", which pruned the reverted commits,
+while I should have used git log --full-history.
 
-diff --git a/sound/pci/lx6464es/lx_core.c b/sound/pci/lx6464es/lx_core.c
-index f3d6202..5621cd7 100644
---- a/sound/pci/lx6464es/lx_core.c
-+++ b/sound/pci/lx6464es/lx_core.c
-@@ -582,33 +582,6 @@ int lx_pipe_pause(struct lx6464es *chip, u32 pipe, int is_capture)
- }
- 
- 
--int lx_pipe_sample_count(struct lx6464es *chip, u32 pipe, int is_capture,
--			 u64 *rsample_count)
--{
--	int err;
--	u32 pipe_cmd = PIPE_INFO_TO_CMD(is_capture, pipe);
--
--	mutex_lock(&chip->msg_lock);
--	lx_message_init(&chip->rmh, CMD_0A_GET_PIPE_SPL_COUNT);
--
--	chip->rmh.cmd[0] |= pipe_cmd;
--	chip->rmh.stat_len = 2;	/* need all words here! */
--
--	err = lx_message_send_atomic(chip, &chip->rmh); /* don't sleep! */
--
--	if (err != 0)
--		dev_err(chip->card->dev,
--			"could not query pipe's sample count\n");
--	else {
--		*rsample_count = ((u64)(chip->rmh.stat[0] & MASK_SPL_COUNT_HI)
--				  << 24)     /* hi part */
--			+ chip->rmh.stat[1]; /* lo part */
--	}
--
--	mutex_unlock(&chip->msg_lock);
--	return err;
--}
--
- int lx_pipe_state(struct lx6464es *chip, u32 pipe, int is_capture, u16 *rstate)
- {
- 	int err;
-@@ -714,46 +687,6 @@ int lx_stream_set_format(struct lx6464es *chip, struct snd_pcm_runtime *runtime,
- 	return err;
- }
- 
--int lx_stream_state(struct lx6464es *chip, u32 pipe, int is_capture,
--		    int *rstate)
--{
--	int err;
--	u32 pipe_cmd = PIPE_INFO_TO_CMD(is_capture, pipe);
--
--	mutex_lock(&chip->msg_lock);
--	lx_message_init(&chip->rmh, CMD_0E_GET_STREAM_SPL_COUNT);
--
--	chip->rmh.cmd[0] |= pipe_cmd;
--
--	err = lx_message_send_atomic(chip, &chip->rmh);
--
--	*rstate = (chip->rmh.stat[0] & SF_START) ? START_STATE : PAUSE_STATE;
--
--	mutex_unlock(&chip->msg_lock);
--	return err;
--}
--
--int lx_stream_sample_position(struct lx6464es *chip, u32 pipe, int is_capture,
--			      u64 *r_bytepos)
--{
--	int err;
--	u32 pipe_cmd = PIPE_INFO_TO_CMD(is_capture, pipe);
--
--	mutex_lock(&chip->msg_lock);
--	lx_message_init(&chip->rmh, CMD_0E_GET_STREAM_SPL_COUNT);
--
--	chip->rmh.cmd[0] |= pipe_cmd;
--
--	err = lx_message_send_atomic(chip, &chip->rmh);
--
--	*r_bytepos = ((u64) (chip->rmh.stat[0] & MASK_SPL_COUNT_HI)
--		      << 32)	     /* hi part */
--		+ chip->rmh.stat[1]; /* lo part */
--
--	mutex_unlock(&chip->msg_lock);
--	return err;
--}
--
- /* low-level buffer handling */
- int lx_buffer_give(struct lx6464es *chip, u32 pipe, int is_capture,
- 		   u32 buffer_size, u32 buf_address_lo, u32 buf_address_hi,
-@@ -803,46 +736,6 @@ int lx_buffer_give(struct lx6464es *chip, u32 pipe, int is_capture,
- 	return err;
- }
- 
--int lx_buffer_free(struct lx6464es *chip, u32 pipe, int is_capture,
--		   u32 *r_buffer_size)
--{
--	int err;
--	u32 pipe_cmd = PIPE_INFO_TO_CMD(is_capture, pipe);
--
--	mutex_lock(&chip->msg_lock);
--	lx_message_init(&chip->rmh, CMD_11_CANCEL_BUFFER);
--
--	chip->rmh.cmd[0] |= pipe_cmd;
--	chip->rmh.cmd[0] |= MASK_BUFFER_ID; /* ask for the current buffer: the
--					     * microblaze will seek for it */
--
--	err = lx_message_send_atomic(chip, &chip->rmh);
--
--	if (err == 0)
--		*r_buffer_size = chip->rmh.stat[0]  & MASK_DATA_SIZE;
--
--	mutex_unlock(&chip->msg_lock);
--	return err;
--}
--
--int lx_buffer_cancel(struct lx6464es *chip, u32 pipe, int is_capture,
--		     u32 buffer_index)
--{
--	int err;
--	u32 pipe_cmd = PIPE_INFO_TO_CMD(is_capture, pipe);
--
--	mutex_lock(&chip->msg_lock);
--	lx_message_init(&chip->rmh, CMD_11_CANCEL_BUFFER);
--
--	chip->rmh.cmd[0] |= pipe_cmd;
--	chip->rmh.cmd[0] |= buffer_index;
--
--	err = lx_message_send_atomic(chip, &chip->rmh);
--
--	mutex_unlock(&chip->msg_lock);
--	return err;
--}
--
- 
- /* low-level gain/peak handling
-  *
-diff --git a/sound/pci/lx6464es/lx_core.h b/sound/pci/lx6464es/lx_core.h
-index 0cc140c..f95ed1b 100644
---- a/sound/pci/lx6464es/lx_core.h
-+++ b/sound/pci/lx6464es/lx_core.h
-@@ -120,8 +120,6 @@ int lx_dsp_get_mac(struct lx6464es *chip);
- int lx_pipe_allocate(struct lx6464es *chip, u32 pipe, int is_capture,
- 		     int channels);
- int lx_pipe_release(struct lx6464es *chip, u32 pipe, int is_capture);
--int lx_pipe_sample_count(struct lx6464es *chip, u32 pipe, int is_capture,
--			 u64 *rsample_count);
- int lx_pipe_state(struct lx6464es *chip, u32 pipe, int is_capture, u16 *rstate);
- int lx_pipe_stop(struct lx6464es *chip, u32 pipe, int is_capture);
- int lx_pipe_start(struct lx6464es *chip, u32 pipe, int is_capture);
-@@ -133,10 +131,6 @@ int lx_pipe_wait_for_idle(struct lx6464es *chip, u32 pipe, int is_capture);
- /* low-level stream handling */
- int lx_stream_set_format(struct lx6464es *chip, struct snd_pcm_runtime *runtime,
- 			 u32 pipe, int is_capture);
--int lx_stream_state(struct lx6464es *chip, u32 pipe, int is_capture,
--		    int *rstate);
--int lx_stream_sample_position(struct lx6464es *chip, u32 pipe, int is_capture,
--			      u64 *r_bytepos);
- 
- int lx_stream_set_state(struct lx6464es *chip, u32 pipe,
- 			int is_capture, enum stream_state_t state);
-@@ -168,10 +162,6 @@ int lx_buffer_ask(struct lx6464es *chip, u32 pipe, int is_capture,
- int lx_buffer_give(struct lx6464es *chip, u32 pipe, int is_capture,
- 		   u32 buffer_size, u32 buf_address_lo, u32 buf_address_hi,
- 		   u32 *r_buffer_index);
--int lx_buffer_free(struct lx6464es *chip, u32 pipe, int is_capture,
--		   u32 *r_buffer_size);
--int lx_buffer_cancel(struct lx6464es *chip, u32 pipe, int is_capture,
--		     u32 buffer_index);
- 
- /* low-level gain/peak handling */
- int lx_level_unmute(struct lx6464es *chip, int is_capture, int unmute);
--- 
-1.7.10.4
+I'm sorry I missed this... and I'm not giving up :-)
 
+I spent the whole day re-doing the investigation, checking *all* relevant code
+this time. The code in arch, fs, lib, net and virt uses misc_register, but most
+code is safe because it either registers a custom open() file operation or it
+doesn't rely on private_data being initialized to NULL when it didn't.
+
+And yes, I did find *one* additional case that is affected; btrfs' transaction
+starting and stopping ioctl code in fs/btrfs/super.c uses private_data to store
+the transaction, and relies on the fact that it is NULL initially. This only
+works because btrfs doesn't register a custom open() file operation for this
+device file.
+
+I'm currently testing out patches to make fuse and btrfs independent of this
+subtle behavior of the misc subsystem. I'll send my patches to the fuse and
+btrfs maintainers first and when they get accepted, I'll re-send this patch to
+misc.
+
+Kind regards and thanks for the feedback,
+
+Tom Van Braeckel.
