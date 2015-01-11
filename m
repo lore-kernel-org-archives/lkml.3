@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525AbbAKWXH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 17:23:07 -0500
-Received: from ares60.inai.de ([5.9.23.85]:47460 "EHLO ares60.inai.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751186AbbAKWXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 17:23:05 -0500
-Date: Sun, 11 Jan 2015 23:23:01 +0100 (CET)
-From: Jan Engelhardt <jengelh@inai.de>
-To: Richard Weinberger <richard@nod.at>
-cc: Joe Perches <joe@perches.com>,
-        Netfilter Developer Mailing List 
-	<netfilter-devel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Networking Developer Mailing List 
-	<netdev@vger.kernel.org>
-Subject: Re: [PATCH 3/3] x_tables: Factor out 16bit aligment
- ifname_compare()
-In-Reply-To: <54B2EB81.5050604@nod.at>
-Message-ID: <alpine.LSU.2.11.1501112257580.10101@nerf60.vanv.qr>
-References: <1421009571-5279-1-git-send-email-richard@nod.at>  <1421009571-5279-4-git-send-email-richard@nod.at>  <1421009969.9233.5.camel@perches.com> <54B2E4DD.90200@nod.at> <1421010853.9233.7.camel@perches.com> <54B2EB81.5050604@nod.at>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752521AbbAKWUY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 17:20:24 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:61136 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323AbbAKWUV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jan 2015 17:20:21 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Thomas Pugliese <thomas.pugliese@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] uwb: lc-dev: Remove unused function
+Date: Sun, 11 Jan 2015 23:23:25 +0100
+Message-Id: <1421015005-24286-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Remove the function uwb_dev_addr_bcast() that is not used anywhere.
 
-On Sunday 2015-01-11 22:30, Richard Weinberger wrote:
->>>> Perhaps this would be better as bool ifname_compare
->
->Anyway, I agree with Linus wrt. bool.
->https://lkml.org/lkml/2013/8/31/138
+This was partially found by using a static code analysis program called cppcheck.
 
-Had the function return "bool", it would have been obvious enough
-what to do with its return type. A return type of "int" might have
-hinted towards negative-is-error (in general) or strcmpish values
-(functions doing string compare work).
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/uwb/lc-dev.c |    7 -------
+ 1 file changed, 7 deletions(-)
 
-Now that it returns "unsigned long", one is pressed to look at the 
-function body (not bad per se, but it is a hump) for the return 
-value's semantics.
+diff --git a/drivers/uwb/lc-dev.c b/drivers/uwb/lc-dev.c
+index 8c7cfab..7203358 100644
+--- a/drivers/uwb/lc-dev.c
++++ b/drivers/uwb/lc-dev.c
+@@ -43,13 +43,6 @@ static inline void uwb_mac_addr_init(struct uwb_mac_addr *addr)
+ 	memset(&addr->data, 0xff, sizeof(addr->data));
+ }
+ 
+-/* @returns !0 if a device @addr is a broadcast address */
+-static inline int uwb_dev_addr_bcast(const struct uwb_dev_addr *addr)
+-{
+-	static const struct uwb_dev_addr bcast = { .data = { 0xff, 0xff } };
+-	return !uwb_dev_addr_cmp(addr, &bcast);
+-}
+-
+ /*
+  * Add callback @new to be called when an event occurs in @rc.
+  */
+-- 
+1.7.10.4
 
-Linus says bool is dangerous to the unsuspecting user — but so is
-"volatile", microwave ovens, etc. If the kernel really cared for
-entry-level coders, it would be written in something like MISRA C.
