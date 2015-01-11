@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261AbbAKUxG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 15:53:06 -0500
-Received: from mail.sigma-star.at ([95.130.255.111]:14385 "EHLO
+	id S1752494AbbAKUyF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 15:54:05 -0500
+Received: from mail.sigma-star.at ([95.130.255.111]:14386 "EHLO
 	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711AbbAKUxB (ORCPT
+	with ESMTP id S1751712AbbAKUxC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 15:53:01 -0500
+	Sun, 11 Jan 2015 15:53:02 -0500
 From: Richard Weinberger <richard@nod.at>
 To: davem@davemloft.net
 Cc: coreteam@netfilter.org, netfilter-devel@vger.kernel.org,
@@ -16,66 +16,178 @@ Cc: coreteam@netfilter.org, netfilter-devel@vger.kernel.org,
         vfalico@gmail.com, therbert@google.com, edumazet@google.com,
         yoshfuji@linux-ipv6.org, jmorris@namei.org, kuznet@ms2.inr.ac.ru,
         kadlec@blackhole.kfki.hu, kaber@trash.net, pablo@netfilter.org,
-        kay@vrfy.org, stephen@networkplumber.org
-Subject: [RFC] Make predictable/persistent network interface names more handy
-Date: Sun, 11 Jan 2015 21:52:48 +0100
-Message-Id: <1421009571-5279-1-git-send-email-richard@nod.at>
+        kay@vrfy.org, stephen@networkplumber.org,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 1/3] net: Make interface aliases available for general usage
+Date: Sun, 11 Jan 2015 21:52:49 +0100
+Message-Id: <1421009571-5279-2-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1421009571-5279-1-git-send-email-richard@nod.at>
+References: <1421009571-5279-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the Linux distribution of my choice makes use of
-predictable network interface names[0] my USB gadgets
-are no longer usb0 but enp0s29u1u2. Same for all other network devices.
-While I can fully understand that this new naming scheme makes sense
-for a lot of people and makes their work easier it does not really work for me.
-My brain is not able to remember that my Beaglebone's USB-Ethernet
-is now enp0s29u1u2. Even after looking at the output of ifconfig
-I have to copy&paste the interface name.
-Instead of just disabling the feature I thought about
-a generic solution which satisfies both needs.
+Allow interface aliases to be used as regular interfaces.
+Such that a command sequence like this one works:
+$ ip l set eth0 alias internet
+$ ip a s internet
+$ tcpdump -n -i internet
 
-For block devices we also have predictable device names,
-udev creates a symlink to the kernel device.
-This works very good and reliable.
-My idea is to use the network device alias as symlink.
-Such that we can have both the easy to use kernel name and
-the predictable/persistent name from udev.
-systemd/udev could store the original kernel interface name
-as alias after renaming the interface.
-Existing users would not notice but one can still use the kernel name.
-So I can use tcpdump -i usb0 _and_ tcpdump -i enp0s29u1u2.
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ include/linux/netdevice.h   |  1 +
+ include/net/net_namespace.h |  1 +
+ net/core/dev.c              | 52 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 54 insertions(+)
 
-This patch series implements my idea.
-I'd love to get some feedback!
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 679e6e9..e00b4e2 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1493,6 +1493,7 @@ struct net_device {
+ 	char			name[IFNAMSIZ];
+ 	struct hlist_node	name_hlist;
+ 	char 			*ifalias;
++	struct hlist_node	ifalias_hlist;
+ 	/*
+ 	 *	I/O specific fields
+ 	 *	FIXME: Merge these and struct ifmap into one
+diff --git a/include/net/net_namespace.h b/include/net/net_namespace.h
+index 2e8756b8..9fa0939 100644
+--- a/include/net/net_namespace.h
++++ b/include/net/net_namespace.h
+@@ -76,6 +76,7 @@ struct net {
+ 	struct list_head 	dev_base_head;
+ 	struct hlist_head 	*dev_name_head;
+ 	struct hlist_head	*dev_index_head;
++	struct hlist_head	*dev_ifalias_head;
+ 	unsigned int		dev_base_seq;	/* protected by rtnl_mutex */
+ 	int			ifindex;
+ 	unsigned int		dev_unreg_count;
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 683d493..2551b03 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -202,6 +202,14 @@ static inline struct hlist_head *dev_index_hash(struct net *net, int ifindex)
+ 	return &net->dev_index_head[ifindex & (NETDEV_HASHENTRIES - 1)];
+ }
+ 
++static inline struct hlist_head *dev_ifalias_hash(struct net *net,
++						  const char *ifalias)
++{
++	unsigned int hash = full_name_hash(ifalias, strnlen(ifalias, IFALIASZ));
++
++	return &net->dev_ifalias_head[hash_32(hash, NETDEV_HASHBITS)];
++}
++
+ static inline void rps_lock(struct softnet_data *sd)
+ {
+ #ifdef CONFIG_RPS
+@@ -228,6 +236,9 @@ static void list_netdevice(struct net_device *dev)
+ 	hlist_add_head_rcu(&dev->name_hlist, dev_name_hash(net, dev->name));
+ 	hlist_add_head_rcu(&dev->index_hlist,
+ 			   dev_index_hash(net, dev->ifindex));
++	if (dev->ifalias)
++		hlist_add_head_rcu(&dev->ifalias_hlist,
++			   dev_ifalias_hash(net, dev->ifalias));
+ 	write_unlock_bh(&dev_base_lock);
+ 
+ 	dev_base_seq_inc(net);
+@@ -245,6 +256,8 @@ static void unlist_netdevice(struct net_device *dev)
+ 	list_del_rcu(&dev->dev_list);
+ 	hlist_del_rcu(&dev->name_hlist);
+ 	hlist_del_rcu(&dev->index_hlist);
++	if (dev->ifalias)
++		hlist_del_rcu(&dev->ifalias_hlist);
+ 	write_unlock_bh(&dev_base_lock);
+ 
+ 	dev_base_seq_inc(dev_net(dev));
+@@ -679,6 +692,11 @@ struct net_device *__dev_get_by_name(struct net *net, const char *name)
+ 		if (!strncmp(dev->name, name, IFNAMSIZ))
+ 			return dev;
+ 
++	head = dev_ifalias_hash(net, name);
++	hlist_for_each_entry(dev, head, ifalias_hlist)
++		if (dev->ifalias && !strncmp(dev->ifalias, name, IFALIASZ))
++			return dev;
++
+ 	return NULL;
+ }
+ EXPORT_SYMBOL(__dev_get_by_name);
+@@ -704,6 +722,11 @@ struct net_device *dev_get_by_name_rcu(struct net *net, const char *name)
+ 		if (!strncmp(dev->name, name, IFNAMSIZ))
+ 			return dev;
+ 
++	head = dev_ifalias_hash(net, name);
++	hlist_for_each_entry_rcu(dev, head, ifalias_hlist)
++		if (dev->ifalias && !strncmp(dev->ifalias, name, IFALIASZ))
++			return dev;
++
+ 	return NULL;
+ }
+ EXPORT_SYMBOL(dev_get_by_name_rcu);
+@@ -1169,6 +1192,20 @@ rollback:
+ 	return err;
+ }
+ 
++static void __hlist_del_alias(struct net_device *dev)
++{
++	write_lock_bh(&dev_base_lock);
++	hlist_del_rcu(&dev->ifalias_hlist);
++	write_unlock_bh(&dev_base_lock);
++}
++
++static void __hlist_add_alias(struct net_device *dev)
++{
++	write_lock_bh(&dev_base_lock);
++	hlist_add_head_rcu(&dev->ifalias_hlist, dev_ifalias_hash(dev_net(dev), dev->ifalias));
++	write_unlock_bh(&dev_base_lock);
++}
++
+ /**
+  *	dev_set_alias - change ifalias of a device
+  *	@dev: device
+@@ -1189,15 +1226,24 @@ int dev_set_alias(struct net_device *dev, const char *alias, size_t len)
+ 	if (!len) {
+ 		kfree(dev->ifalias);
+ 		dev->ifalias = NULL;
++		__hlist_del_alias(dev);
+ 		return 0;
+ 	}
+ 
+ 	new_ifalias = krealloc(dev->ifalias, len + 1, GFP_KERNEL);
+ 	if (!new_ifalias)
+ 		return -ENOMEM;
++
++	if (dev->ifalias) {
++		__hlist_del_alias(dev);
++		synchronize_rcu();
++	}
++
+ 	dev->ifalias = new_ifalias;
+ 
+ 	strlcpy(dev->ifalias, alias, len+1);
++	__hlist_add_alias(dev);
++
+ 	return len;
+ }
+ 
+@@ -7150,8 +7196,14 @@ static int __net_init netdev_init(struct net *net)
+ 	if (net->dev_index_head == NULL)
+ 		goto err_idx;
+ 
++	net->dev_ifalias_head = netdev_create_hash();
++	if (net->dev_ifalias_head == NULL)
++		goto err_alias;
++
+ 	return 0;
+ 
++err_alias:
++	kfree(net->dev_index_head);
+ err_idx:
+ 	kfree(net->dev_name_head);
+ err_name:
+-- 
+1.8.4.5
 
-Patch 1/3 exposes the interfaces alias for general userspace usage, i.e. that ifconfig <alias> works.
-Of course you can only use the first 15 chars of an alias.
-
-In-kernel users of interface names need also an update, patch 2/3 updates x_tables.
-I'm sure there is more todo, i.e. nftables.
-We could also define that netfilter will never use the alias but this needs documented cleary.
-
-Patch 3/3 is a cleanup in continuation of 2/3.
-
-[0] http://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/
-
-Thanks,
-//richard
-
-git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git netalias
-
-[PATCH 1/3] net: Make interface aliases available for general usage
-[PATCH 2/3] x_tables: Use also dev->ifalias for interface matching
-[PATCH 3/3] x_tables: Factor out 16bit aligment ifname_compare()
-
- include/linux/netdevice.h          |  1 +
- include/linux/netfilter/x_tables.h | 41 +++++++++++++++++++++++++++---
- include/net/net_namespace.h        |  1 +
- net/core/dev.c                     | 52 ++++++++++++++++++++++++++++++++++++++
- net/ipv4/netfilter/arp_tables.c    | 37 ++++-----------------------
- net/ipv4/netfilter/ip_tables.c     | 15 ++++-------
- net/ipv6/netfilter/ip6_tables.c    | 18 +++++--------
- net/netfilter/xt_physdev.c         |  9 ++-----
- 8 files changed, 110 insertions(+), 64 deletions(-)
