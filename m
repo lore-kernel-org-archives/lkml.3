@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736AbbAKWI2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 17:08:28 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:51352 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299AbbAKWIY (ORCPT
+	id S1752332AbbAKWSM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 17:18:12 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:42663 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194AbbAKWSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 17:08:24 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Joern Engel <joern@logfs.org>, Prasad Joshi <prasadjoshi.linux@gmail.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        logfs@logfs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] logfs: readwrite: Remove unused function
-Date: Sun, 11 Jan 2015 23:11:28 +0100
-Message-Id: <1421014288-23746-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 11 Jan 2015 17:18:10 -0500
+From: "Gustavo A. R. Silva" <silvagustavosilva@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        "Gustavo A. R. Silva" <silvagustavosilva@gmail.com>,
+        "Gustavo A. R. Silva" <garsilva@embeddedor.com>
+Subject: [PATCH] Staging: vt6655: Fixed a typo
+Date: Sun, 11 Jan 2015 16:18:00 -0600
+Message-Id: <1421014680-1415-1-git-send-email-silvagustavosilva@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function init_shadow_tree() that is not used anywhere.
+Fixed a typo in mac.c file.
 
-This was partially found by using a static code analysis program called cppcheck.
-
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Signed-off-by: Gustavo A. R. Silva <garsilva@embeddedor.com>
 ---
- fs/logfs/readwrite.c |    9 ---------
- 1 file changed, 9 deletions(-)
+ drivers/staging/vt6655/mac.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/logfs/readwrite.c b/fs/logfs/readwrite.c
-index 380d86e..eafaa29 100644
---- a/fs/logfs/readwrite.c
-+++ b/fs/logfs/readwrite.c
-@@ -377,15 +377,6 @@ static unsigned long get_bits(u64 val, level_t skip)
- 	return __get_bits(val, (__force int)skip, LOGFS_BLOCK_BITS);
- }
+diff --git a/drivers/staging/vt6655/mac.c b/drivers/staging/vt6655/mac.c
+index 8f0d652..1975c91 100644
+--- a/drivers/staging/vt6655/mac.c
++++ b/drivers/staging/vt6655/mac.c
+@@ -356,7 +356,7 @@ bool MACbSafeSoftwareReset(void __iomem *dwIoBase)
  
--static inline void init_shadow_tree(struct super_block *sb,
--		struct shadow_tree *tree)
--{
--	struct logfs_super *super = logfs_super(sb);
--
--	btree_init_mempool64(&tree->new, super->s_btree_pool);
--	btree_init_mempool64(&tree->old, super->s_btree_pool);
--}
--
- static void indirect_write_block(struct logfs_block *block)
- {
- 	struct page *page;
+ /*
+  * Description:
+- *      Trun Off MAC Rx
++ *      Turn Off MAC Rx
+  *
+  * Parameters:
+  *  In:
+@@ -417,7 +417,7 @@ bool MACbSafeRxOff(void __iomem *dwIoBase)
+ 
+ /*
+  * Description:
+- *      Trun Off MAC Tx
++ *      Turn Off MAC Tx
+  *
+  * Parameters:
+  *  In:
 -- 
-1.7.10.4
+1.9.1
 
