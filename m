@@ -1,57 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975AbbAKQub (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 11:50:31 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:60696 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077AbbAKQua (ORCPT
+	id S1752117AbbAKQzH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 11:55:07 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:57093 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406AbbAKQzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 11:50:30 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: David Airlie <airlied@linux.ie>,
-        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] drm: gma500: psb_irq: Remove unused function
-Date: Sun, 11 Jan 2015 17:53:35 +0100
-Message-Id: <1420995215-21383-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 11 Jan 2015 11:55:05 -0500
+Date: Sun, 11 Jan 2015 11:55:01 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ata: libata-core: Remove unused function
+Message-ID: <20150111165501.GG25319@htj.dyndns.org>
+References: <1420986421-18686-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420986421-18686-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function mid_pipe_vsync() that is not used anywhere.
+On Sun, Jan 11, 2015 at 03:27:01PM +0100, Rickard Strandqvist wrote:
+> Remove the function ata_do_simple_cmd() that is not used anywhere.
+> 
+> This was partially found by using a static code analysis program called cppcheck.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 
-This was partially found by using a static code analysis program called cppcheck.
+Applied to libata/for-3.20.  Thanks.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/gpu/drm/gma500/psb_irq.c |   12 ------------
- 1 file changed, 12 deletions(-)
-
-diff --git a/drivers/gpu/drm/gma500/psb_irq.c b/drivers/gpu/drm/gma500/psb_irq.c
-index 624eb36..dcfd0a7 100644
---- a/drivers/gpu/drm/gma500/psb_irq.c
-+++ b/drivers/gpu/drm/gma500/psb_irq.c
-@@ -59,18 +59,6 @@ mid_pipe_event(int pipe)
- }
- 
- static inline u32
--mid_pipe_vsync(int pipe)
--{
--	if (pipe == 0)
--		return _PSB_VSYNC_PIPEA_FLAG;
--	if (pipe == 1)
--		return _PSB_VSYNC_PIPEB_FLAG;
--	if (pipe == 2)
--		return _MDFLD_PIPEC_VBLANK_FLAG;
--	BUG();
--}
--
--static inline u32
- mid_pipeconf(int pipe)
- {
- 	if (pipe == 0)
 -- 
-1.7.10.4
-
+tejun
