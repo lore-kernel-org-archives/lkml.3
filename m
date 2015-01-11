@@ -1,279 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751452AbbAKIwJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 03:52:09 -0500
-Received: from mail-we0-f170.google.com ([74.125.82.170]:55215 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887AbbAKIwE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 03:52:04 -0500
-Date: Sun, 11 Jan 2015 09:51:57 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86 fixes
-Message-ID: <20150111085157.GA2277@gmail.com>
+	id S1751175AbbAKI6v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 03:58:51 -0500
+Received: from mail-bn1bon0144.outbound.protection.outlook.com ([157.56.111.144]:18414
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750856AbbAKI6t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jan 2015 03:58:49 -0500
+X-WSS-ID: 0NI08XT-08-J93-02
+X-M-MSG: 
+Message-ID: <54B23B37.5080306@amd.com>
+Date: Sun, 11 Jan 2015 10:58:31 +0200
+From: Oded Gabbay <oded.gabbay@amd.com>
+Organization: AMD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: <koct9i@gmail.com>, <mhocko@suse.cz>, <riel@redhat.com>,
+        <akpm@linux-foundation.org>, <torvalds@linux-foundation.org>
+CC: <dan.forrest@ssec.wisc.edu>, <mhocko@suse.cz>, <jmarchan@redhat.com>,
+        "Bridgman, John" <John.Bridgman@amd.com>,
+        "Elifaz, Dana" <Dana.Elifaz@amd.com>, Dave Airlie <airlied@gmail.com>,
+        "Deucher, Alexander" <Alexander.Deucher@amd.com>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: [BUG] 3.19-rc3+ - mm: prevent endless growth of anon_vma hierarchy
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.224.11.83]
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(979002)(6009001)(428002)(164054003)(199003)(189002)(479174004)(33656002)(106466001)(2201001)(36756003)(229853001)(101416001)(87936001)(92566002)(47776003)(77096005)(68736005)(54356999)(87266999)(50986999)(50466002)(64706001)(23676002)(65956001)(83506001)(59896002)(65806001)(65816999)(77156002)(19580395003)(86362001)(19580405001)(105586002)(575784001)(80316001)(46102003)(64126003)(97736003)(62966003)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0201MB1003;H:atltwp02.amd.com;FPR:;SPF:None;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:CY1PR0201MB1003;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CY1PR0201MB1003;
+X-Forefront-PRVS: 045315E1EE
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0201MB1003;
+X-OriginatorOrg: amd4.onmicrosoft.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 11 Jan 2015 08:58:44.7858
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.222]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: CY1PR0201MB1003
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Hello,
 
-Please pull the latest x86-urgent-for-linus git tree from:
+Today I took latest branch from Linus repo to check for amdkfd regressions
+due to my fixes pulled for 3.19-rc4, and I got a kernel bug (see below dmesg
+output).
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+I did a bisect and the first bad commit is:
 
-   # HEAD: 2aba73a6146bb85d4a42386ca41dec0f4aa4b3ad Merge tag 'pr-20141223-x86-vdso' of git://git.kernel.org/pub/scm/linux/kernel/git/luto/linux into x86/urgent
+7a3ef208e662f4b63d43a23f61a64a129c525bbc is the first bad commit
+commit 7a3ef208e662f4b63d43a23f61a64a129c525bbc
+Author: Konstantin Khlebnikov <koct9i@gmail.com>
+Date:   Thu Jan 8 14:32:15 2015 -0800
 
-Misc fixes: two vdso fixes, two kbuild fixes and a boot failure 
-fix with certain odd memory mappings.
+    mm: prevent endless growth of anon_vma hierarchy
 
- Thanks,
+The bug is before the pull of latest amdkfd fixes, so it is not related to
+my pull request. From the bisect log (end of email), you can see 3.19-rc3 is
+fine.
 
-	Ingo
+The problem occurred while running java over HSA. The Kernel is 64-bit and
+userspace processes are 64-bit as well. CPU is AMD Kaveri (A10-7850).
+OpenCL/OpenMP over HSA run without problems.
 
------------------->
-Andy Lutomirski (2):
-      x86_64, vdso: Fix the vdso address randomization algorithm
-      x86, vdso: Use asm volatile in __getcpu
+dmesg output:
 
-Bjørn Mork (1):
-      x86/build: Clean auto-generated processor feature files
+[  266.491864] ------------[ cut here ]------------
+[  266.491904] kernel BUG at mm/rmap.c:399!
+[  266.491934] invalid opcode: 0000 [#1] SMP
+[  266.491962] Modules linked in: amdkfd amd_iommu_v2 radeon cfbfillrect
+cfbimgblt cfbcopyarea drm_kms_helper ttm fuse
+[  266.492043] CPU: 3 PID: 5155 Comm: java Not tainted 3.19.0-rc3-kfd+ #24
+[  266.492087] Hardware name: AMD BALLINA/Ballina, BIOS
+WBL3B20N_Weekly_13_11_2 11/20/2013
+[  266.492141] task: ffff8800a3b3c840 ti: ffff8800916f8000 task.ti:
+ffff8800916f8000
+[  266.492191] RIP: 0010:[<ffffffff81126630>]  [<ffffffff81126630>]
+unlink_anon_vmas+0x102/0x159
+[  266.492249] RSP: 0018:ffff8800916fbb68  EFLAGS: 00010286
+[  266.492285] RAX: ffff88008f6b3ba0 RBX: ffff88008f6b3b90 RCX: ffff8800a3b3cf30
+[  266.492331] RDX: ffff8800914b3c98 RSI: 0000000000000001 RDI: ffff8800914b3c98
+[  266.492376] RBP: ffff8800916fbba8 R08: 0000000000000002 R09: 0000000000000000
+[  266.492421] R10: 0000000000000008 R11: 0000000000000001 R12: ffff88008f686068
+[  266.492465] R13: ffff8800914b3c98 R14: ffff88008f6b3b90 R15: ffff88008f686000
+[  266.492513] FS:  00007fb8966f6700(0000) GS:ffff88011ed80000(0000)
+knlGS:0000000000000000
+[  266.492566] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  266.492601] CR2: 00007f50fa190770 CR3: 0000000001b31000 CR4: 00000000000407e0
+[  266.492652] Stack:
+[  266.492665]  0000000000000000 ffff88008f686078 ffff8800916fbba8
+ffff88008f686000
+[  266.492714]  ffff8800916fbc08 0000000000000000 0000000000000000
+ffff88008f686000
+[  266.492764]  ffff8800916fbbf8 ffffffff8111ba5d 00007fb885918000
+ffff88008edf3000
+[  266.492815] Call Trace:
+[  266.492834]  [<ffffffff8111ba5d>] free_pgtables+0x8e/0xcc
+[  266.492873]  [<ffffffff8112253e>] exit_mmap+0x84/0x116
+[  266.492907]  [<ffffffff8103f789>] mmput+0x52/0xe9
+[  266.492940]  [<ffffffff81043918>] do_exit+0x3cd/0x9c9
+[  266.492975]  [<ffffffff8170c1ec>] ? _raw_spin_unlock_irq+0x2d/0x32
+[  266.493016]  [<ffffffff81044d7f>] do_group_exit+0x4c/0xc9
+[  266.493051]  [<ffffffff8104eb87>] get_signal+0x58f/0x5bc
+[  266.493090]  [<ffffffff810022c4>] do_signal+0x28/0x5b1
+[  266.493123]  [<ffffffff8170ca0c>] ? sysret_signal+0x5/0x43
+[  266.493162]  [<ffffffff81002882>] do_notify_resume+0x35/0x68
+[  266.493200]  [<ffffffff8170cc7f>] int_signal+0x12/0x17
+[  266.493235] Code: e8 03 b7 f4 ff 49 8b 47 78 4c 8b 20 48 8d 58 f0 49 83
+ec 10 48 8d 43 10 48 39 45 c8 74 55 48 8b 7b 08 83 bf 8c 00 00 00 00 74 02
+<0f> 0b e8 a4 fd ff ff 48 8b 43 18 48 8b 53 10 48 89 df 48 89 42
+[  266.493404] RIP  [<ffffffff81126630>] unlink_anon_vmas+0x102/0x159
+[  266.493447]  RSP <ffff8800916fbb68>
+[  266.508877] ---[ end trace 02d28fe9b3de2e1a ]---
+[  266.508880] Fixing recursive fault but reboot is needed!
 
-Jan Beulich (1):
-      x86: Fix step size adjustment during initial memory mapping
 
-Sylvain BERTRAND (1):
-      x86: Fix mkcapflags.sh bash-ism
+git bisect log:
 
+git bisect start
+# bad: [a4ad89a46882b91b7df9cfb83dd21c06b8065c30] fix to qcom eth ctrl
+git bisect bad a4ad89a46882b91b7df9cfb83dd21c06b8065c30
+# good: [b1940cd21c0f4abdce101253e860feff547291b0] Linux 3.19-rc3
+git bisect good b1940cd21c0f4abdce101253e860feff547291b0
+# bad: [03c751a5e10caafbb6d1afcaf1ea67f2153c3193] Merge branch 'for-linus'
+of git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs
+git bisect bad 03c751a5e10caafbb6d1afcaf1ea67f2153c3193
+# bad: [53dc20b9a3d928b0744dad5aee65b610de1cc85d] ocfs2: fix the wrong
+directory passed to ocfs2_lookup_ino_from_name() when link file
+git bisect bad 53dc20b9a3d928b0744dad5aee65b610de1cc85d
+# good: [e8829f007e982a9a8fb4023109233d5f344d4657] batman-adv: fix counter
+for multicast supporting nodes
+git bisect good e8829f007e982a9a8fb4023109233d5f344d4657
+# good: [2abad79afa700e837cb4feed170141292e0720c0] qla3xxx: don't allow
+never end busy loop
+git bisect good 2abad79afa700e837cb4feed170141292e0720c0
+# good: [0adc1803880db728fa7f8cbad5b214ab657e5e0d] Merge tag 'for-linus-3'
+of git://git.code.sf.net/p/openipmi/linux-ipmi
+git bisect good 0adc1803880db728fa7f8cbad5b214ab657e5e0d
+# good: [3245d6acab981a2388ffb877c7ecc97e763c59d4] exit: fix race between
+wait_consider_task() and wait_task_zombie()
+git bisect good 3245d6acab981a2388ffb877c7ecc97e763c59d4
+# bad: [2d6d7f98284648c5ed113fe22a132148950b140f] mm: protect
+set_page_dirty() from ongoing truncation
+git bisect bad 2d6d7f98284648c5ed113fe22a132148950b140f
+# bad: [7a3ef208e662f4b63d43a23f61a64a129c525bbc] mm: prevent endless growth
+of anon_vma hierarchy
+git bisect bad 7a3ef208e662f4b63d43a23f61a64a129c525bbc
+# first bad commit: [7a3ef208e662f4b63d43a23f61a64a129c525bbc] mm: prevent
+endless growth of anon_vma hierarchy
 
- arch/x86/boot/Makefile            |  1 +
- arch/x86/include/asm/vgtod.h      |  6 ++++--
- arch/x86/kernel/cpu/Makefile      |  1 +
- arch/x86/kernel/cpu/mkcapflags.sh |  2 +-
- arch/x86/mm/init.c                | 37 +++++++++++++++-----------------
- arch/x86/vdso/vma.c               | 45 +++++++++++++++++++++++++--------------
- 6 files changed, 53 insertions(+), 39 deletions(-)
+I saw this commit is marked stable, so this is quite problematic as it could
+break userspace HSA apps out there (although amdkfd will only be present
+from 3.19).
 
-diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
-index 5b016e2498f3..3db07f30636f 100644
---- a/arch/x86/boot/Makefile
-+++ b/arch/x86/boot/Makefile
-@@ -51,6 +51,7 @@ targets += cpustr.h
- $(obj)/cpustr.h: $(obj)/mkcpustr FORCE
- 	$(call if_changed,cpustr)
- endif
-+clean-files += cpustr.h
- 
- # ---------------------------------------------------------------------------
- 
-diff --git a/arch/x86/include/asm/vgtod.h b/arch/x86/include/asm/vgtod.h
-index e7e9682a33e9..f556c4843aa1 100644
---- a/arch/x86/include/asm/vgtod.h
-+++ b/arch/x86/include/asm/vgtod.h
-@@ -80,9 +80,11 @@ static inline unsigned int __getcpu(void)
- 
- 	/*
- 	 * Load per CPU data from GDT.  LSL is faster than RDTSCP and
--	 * works on all CPUs.
-+	 * works on all CPUs.  This is volatile so that it orders
-+	 * correctly wrt barrier() and to keep gcc from cleverly
-+	 * hoisting it out of the calling function.
- 	 */
--	asm("lsl %1,%0" : "=r" (p) : "r" (__PER_CPU_SEG));
-+	asm volatile ("lsl %1,%0" : "=r" (p) : "r" (__PER_CPU_SEG));
- 
- 	return p;
- }
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index e27b49d7c922..80091ae54c2b 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -66,3 +66,4 @@ targets += capflags.c
- $(obj)/capflags.c: $(cpufeature) $(src)/mkcapflags.sh FORCE
- 	$(call if_changed,mkcapflags)
- endif
-+clean-files += capflags.c
-diff --git a/arch/x86/kernel/cpu/mkcapflags.sh b/arch/x86/kernel/cpu/mkcapflags.sh
-index e2b22df964cd..36d99a337b49 100644
---- a/arch/x86/kernel/cpu/mkcapflags.sh
-+++ b/arch/x86/kernel/cpu/mkcapflags.sh
-@@ -28,7 +28,7 @@ function dump_array()
- 		# If the /* comment */ starts with a quote string, grab that.
- 		VALUE="$(echo "$i" | sed -n 's@.*/\* *\("[^"]*"\).*\*/@\1@p')"
- 		[ -z "$VALUE" ] && VALUE="\"$NAME\""
--		[ "$VALUE" == '""' ] && continue
-+		[ "$VALUE" = '""' ] && continue
- 
- 		# Name is uppercase, VALUE is all lowercase
- 		VALUE="$(echo "$VALUE" | tr A-Z a-z)"
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index a97ee0801475..08a7d313538a 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -438,20 +438,20 @@ static unsigned long __init init_range_memory_mapping(
- static unsigned long __init get_new_step_size(unsigned long step_size)
- {
- 	/*
--	 * Explain why we shift by 5 and why we don't have to worry about
--	 * 'step_size << 5' overflowing:
--	 *
--	 * initial mapped size is PMD_SIZE (2M).
-+	 * Initial mapped size is PMD_SIZE (2M).
- 	 * We can not set step_size to be PUD_SIZE (1G) yet.
- 	 * In worse case, when we cross the 1G boundary, and
- 	 * PG_LEVEL_2M is not set, we will need 1+1+512 pages (2M + 8k)
--	 * to map 1G range with PTE. Use 5 as shift for now.
-+	 * to map 1G range with PTE. Hence we use one less than the
-+	 * difference of page table level shifts.
- 	 *
--	 * Don't need to worry about overflow, on 32bit, when step_size
--	 * is 0, round_down() returns 0 for start, and that turns it
--	 * into 0x100000000ULL.
-+	 * Don't need to worry about overflow in the top-down case, on 32bit,
-+	 * when step_size is 0, round_down() returns 0 for start, and that
-+	 * turns it into 0x100000000ULL.
-+	 * In the bottom-up case, round_up(x, 0) returns 0 though too, which
-+	 * needs to be taken into consideration by the code below.
- 	 */
--	return step_size << 5;
-+	return step_size << (PMD_SHIFT - PAGE_SHIFT - 1);
- }
- 
- /**
-@@ -471,7 +471,6 @@ static void __init memory_map_top_down(unsigned long map_start,
- 	unsigned long step_size;
- 	unsigned long addr;
- 	unsigned long mapped_ram_size = 0;
--	unsigned long new_mapped_ram_size;
- 
- 	/* xen has big range in reserved near end of ram, skip it at first.*/
- 	addr = memblock_find_in_range(map_start, map_end, PMD_SIZE, PMD_SIZE);
-@@ -496,14 +495,12 @@ static void __init memory_map_top_down(unsigned long map_start,
- 				start = map_start;
- 		} else
- 			start = map_start;
--		new_mapped_ram_size = init_range_memory_mapping(start,
-+		mapped_ram_size += init_range_memory_mapping(start,
- 							last_start);
- 		last_start = start;
- 		min_pfn_mapped = last_start >> PAGE_SHIFT;
--		/* only increase step_size after big range get mapped */
--		if (new_mapped_ram_size > mapped_ram_size)
-+		if (mapped_ram_size >= step_size)
- 			step_size = get_new_step_size(step_size);
--		mapped_ram_size += new_mapped_ram_size;
- 	}
- 
- 	if (real_end < map_end)
-@@ -524,7 +521,7 @@ static void __init memory_map_top_down(unsigned long map_start,
- static void __init memory_map_bottom_up(unsigned long map_start,
- 					unsigned long map_end)
- {
--	unsigned long next, new_mapped_ram_size, start;
-+	unsigned long next, start;
- 	unsigned long mapped_ram_size = 0;
- 	/* step_size need to be small so pgt_buf from BRK could cover it */
- 	unsigned long step_size = PMD_SIZE;
-@@ -539,19 +536,19 @@ static void __init memory_map_bottom_up(unsigned long map_start,
- 	 * for page table.
- 	 */
- 	while (start < map_end) {
--		if (map_end - start > step_size) {
-+		if (step_size && map_end - start > step_size) {
- 			next = round_up(start + 1, step_size);
- 			if (next > map_end)
- 				next = map_end;
--		} else
-+		} else {
- 			next = map_end;
-+		}
- 
--		new_mapped_ram_size = init_range_memory_mapping(start, next);
-+		mapped_ram_size += init_range_memory_mapping(start, next);
- 		start = next;
- 
--		if (new_mapped_ram_size > mapped_ram_size)
-+		if (mapped_ram_size >= step_size)
- 			step_size = get_new_step_size(step_size);
--		mapped_ram_size += new_mapped_ram_size;
- 	}
- }
- 
-diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index 009495b9ab4b..1c9f750c3859 100644
---- a/arch/x86/vdso/vma.c
-+++ b/arch/x86/vdso/vma.c
-@@ -41,12 +41,17 @@ void __init init_vdso_image(const struct vdso_image *image)
- 
- struct linux_binprm;
- 
--/* Put the vdso above the (randomized) stack with another randomized offset.
--   This way there is no hole in the middle of address space.
--   To save memory make sure it is still in the same PTE as the stack top.
--   This doesn't give that many random bits.
--
--   Only used for the 64-bit and x32 vdsos. */
-+/*
-+ * Put the vdso above the (randomized) stack with another randomized
-+ * offset.  This way there is no hole in the middle of address space.
-+ * To save memory make sure it is still in the same PTE as the stack
-+ * top.  This doesn't give that many random bits.
-+ *
-+ * Note that this algorithm is imperfect: the distribution of the vdso
-+ * start address within a PMD is biased toward the end.
-+ *
-+ * Only used for the 64-bit and x32 vdsos.
-+ */
- static unsigned long vdso_addr(unsigned long start, unsigned len)
- {
- #ifdef CONFIG_X86_32
-@@ -54,22 +59,30 @@ static unsigned long vdso_addr(unsigned long start, unsigned len)
- #else
- 	unsigned long addr, end;
- 	unsigned offset;
--	end = (start + PMD_SIZE - 1) & PMD_MASK;
-+
-+	/*
-+	 * Round up the start address.  It can start out unaligned as a result
-+	 * of stack start randomization.
-+	 */
-+	start = PAGE_ALIGN(start);
-+
-+	/* Round the lowest possible end address up to a PMD boundary. */
-+	end = (start + len + PMD_SIZE - 1) & PMD_MASK;
- 	if (end >= TASK_SIZE_MAX)
- 		end = TASK_SIZE_MAX;
- 	end -= len;
--	/* This loses some more bits than a modulo, but is cheaper */
--	offset = get_random_int() & (PTRS_PER_PTE - 1);
--	addr = start + (offset << PAGE_SHIFT);
--	if (addr >= end)
--		addr = end;
-+
-+	if (end > start) {
-+		offset = get_random_int() % (((end - start) >> PAGE_SHIFT) + 1);
-+		addr = start + (offset << PAGE_SHIFT);
-+	} else {
-+		addr = start;
-+	}
- 
- 	/*
--	 * page-align it here so that get_unmapped_area doesn't
--	 * align it wrongfully again to the next page. addr can come in 4K
--	 * unaligned here as a result of stack start randomization.
-+	 * Forcibly align the final address in case we have a hardware
-+	 * issue that requires alignment for performance reasons.
- 	 */
--	addr = PAGE_ALIGN(addr);
- 	addr = align_vdso_addr(addr);
- 
- 	return addr;
+Could you please take a look and help solve this issue ?
+
+Thanks,
+
+	Oded
