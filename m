@@ -1,156 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919AbbAKK4R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 05:56:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60723 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751280AbbAKK4P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 05:56:15 -0500
-Message-ID: <54B256CC.6080804@suse.cz>
-Date: Sun, 11 Jan 2015 11:56:12 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751935AbbAKK5o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 05:57:44 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:48073 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751488AbbAKK5n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jan 2015 05:57:43 -0500
+Message-ID: <54B25720.2000806@googlemail.com>
+Date: Sun, 11 Jan 2015 10:57:36 +0000
+From: Chris Clayton <chris2553@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.1
 MIME-Version: 1.0
-To: Krzysztof Kolasa <kkolasa@winsoft.pl>, linux-mm@kvack.org
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: probably commit b3d574ae ( Linus github 10-01-2015) causes oops
- after run Android SDK Manager from Eclipse
-References: <54B117C9.5080805@winsoft.pl>
-In-Reply-To: <54B117C9.5080805@winsoft.pl>
-Content-Type: text/plain; charset=iso-8859-2
+To: Konstantin Khlebnikov <koct9i@gmail.com>,
+        Oded Gabbay <oded.gabbay@amd.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Forrest <dan.forrest@ssec.wisc.edu>,
+        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Elifaz, Dana" <Dana.Elifaz@amd.com>,
+        "Bridgman, John" <John.Bridgman@amd.com>
+Subject: Re: BUG in 3.19.0-rc3+
+References: <54B188BF.3020304@googlemail.com>	<54B2316F.9040608@googlemail.com>	<CALYGNiO5zyGHWh0MxjLTYy8-JHrei7Cqoi1QrDwgo8_Xhb8Vxg@mail.gmail.com>	<54B247D0.2090600@amd.com> <CALYGNiOpw75TJhXX5czdkEsver0HVf+oGX3d8qVKNPRNLygUpQ@mail.gmail.com>
+In-Reply-To: <CALYGNiOpw75TJhXX5czdkEsver0HVf+oGX3d8qVKNPRNLygUpQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Re: subject
+Thanks Konstantin.
 
-why do you think it was this commit? bisection? The commit you point to is
-"Merge branch 'akpm' (patches from Andrew)"
-It's possible that bisection pointed you to this, instead of the proper commit
-though. Luckily, there are only 12 of them and ...
+[snip]
 
-On 01/10/2015 01:15 PM, Krzysztof Kolasa wrote:
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.320920] ------------[ cut 
-> here ]------------
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.320927] Kernel BUG at 
-> ffffffff81187f1f [verbose debug info unavailable]
-
-Could you enable CONFIG_DEBUG_BUGVERBOSE please? This should make the stacktrace
-readable.
-
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.320929] invalid opcode: 0000 
-> [#3] SMP
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.320932] Modules linked in: 
-> dm_crypt(E) pci_stub(E) vboxpci(OE) vboxnetadp(OE) vboxnetflt(OE) 
-> vboxdrv(OE) c
-> use(E) arc4(E) md4(E) bnep(E) rfcomm(E) bluetooth(E) nls_utf8(E) cifs(E) 
-> fscache(E) binfmt_misc(E) fglrx(OE) uvcvideo(E) videobuf2_vmalloc(E) 
-> x86_pkg_
-> temp_thermal(E) videobuf2_memops(E) videobuf2_core(E) hp_wmi(E) 
-> v4l2_common(E) wl(POE) kvm_intel(E) sparse_keymap(E) videodev(E) kvm(E) 
-> ghash_clmulni_
-> intel(E) aesni_intel(E) aes_x86_64(E) lrw(E) gf128mul(E) 
-> snd_hda_codec_idt(E) snd_hda_codec_hdmi(E) snd_hda_codec_generic(E) 
-> glue_helper(E) ablk_helpe
-> r(E) snd_hda_intel(E) cryptd(E) snd_hda_controller(E) snd_hda_codec(E) 
-> snd_hwdep(E) snd_pcm(E) snd_seq_midi(E) snd_seq_midi_event(E) 
-> microcode(E) snd_
-> rawmidi(E) snd_seq(E) snd_seq_device(E) snd_timer(E) snd(E) cfg80211(E) 
-> soundcore(E) joydev(E) lpc_ich(E) hp_accel(E) wmi(E) serio_raw(E) 
-> tpm_infineon
-> (E) lis3lv02d(E) amd_iommu_v2(E) input_polldev(E) video(E) tpm_tis(E) 
-> mac_hid(E) parport_pc(E) ppdev(E) coretemp(E) lp(E) parport(E) 
-> hid_generic(E) us
-> bhid(E) hid(E) mmc_block(E) psmouse(E) firewire_ohci(E) ahci(E) 
-> libahci(E) sdhci_pci(E) e1000e(E) firewire_core(E) sdhci(E) crc_itu_t(E) 
-> ptp(E) pps_co
-> re(E)
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.320979] CPU: 1 PID: 6871 
-> Comm: Sweeper thread Tainted: P      D    OE 3.19.0-rc3-winsoft-x64+ #10
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.320981] Hardware name: 
-> Hewlett-Packard HP ProBook 6560b/1619, BIOS 68SCE Ver. F.50 08/04/2014
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.320983] task: 
-> ffff88005d95b1c0 ti: ffff88018ee18000 task.ti: ffff88018ee18000
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.320985] RIP: 
-> 0010:[<ffffffff81187f1f>]  [<ffffffff81187f1f>] unlink_anon_vmas+0x1af/0x200
-
-Nevertheless, here we see unlink_anon_vmas, which would strongly point to
-7a3ef208e662f4b63d ("mm: prevent endless growth of anon_vma hierarchy")
-and we also have another report for that.
-
-Still your stracktrace could be useful to help determining the cause, if you
-enabled the verbose debugging.
-
-Thanks.
-
-
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.320993] RSP: 
-> 0018:ffff88018ee1bba8  EFLAGS: 00010286
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.320994] RAX: 
-> ffff880182a47c50 RBX: ffff880182a47c40 RCX: ffff8801b9e1d638
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.320996] RDX: 
-> 00000000ffffffff RSI: ffff8801abb60630 RDI: ffff8801abb605f0
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.320998] RBP: 
-> ffff88018ee1bbe8 R08: 00000000f70a2000 R09: 0000000000000000
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321000] R10: 
-> ffff880182a47c60 R11: ffffea00060a91c0 R12: ffff8801b9e1d628
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321001] R13: 
-> ffff8801b9e1d638 R14: ffff8801abb605f0 R15: ffff8801abb605f0
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321003] FS: 
-> 0000000000000000(0000) GS:ffff88023f440000(0000) knlGS:0000000000000000
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321005] CS:  0010 DS: 002b 
-> ES: 002b CR0: 0000000080050033
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321007] CR2: 
-> 00000000f653e70c CR3: 0000000001c12000 CR4: 00000000000407e0
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321008] Stack:
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321010] ffff8801b9e1d5c0 
-> ffff8801abb605f0 ffff88018ee1bbe8 ffff88006a1d70b8
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321013] 00000000a3255000 
-> 0000000000000000 ffff88018ee1bc58 ffff8801b9e1d5c0
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321016] ffff88018ee1bc38 
-> ffffffff81179b58 ffff88018ee1bc38 0000000000000000
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321019] Call Trace:
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321025] [<ffffffff81179b58>] 
-> free_pgtables+0xa8/0x120
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321029] [<ffffffff81183e5f>] 
-> exit_mmap+0xdf/0x170
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321033] [<ffffffff81055984>] 
-> mmput+0x64/0x130
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321036] [<ffffffff8105ab2f>] 
-> do_exit+0x26f/0xb10
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321039] [<ffffffff8105b45f>] 
-> do_group_exit+0x3f/0xa0
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321044] [<ffffffff81066d48>] 
-> get_signal+0x1d8/0x5f0
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321047] [<ffffffff81002e10>] 
-> do_signal+0x20/0x120
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321052] [<ffffffff810d0d01>] 
-> ? compat_SyS_futex+0x71/0x140
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321055] [<ffffffff81002f80>] 
-> do_notify_resume+0x70/0xa0
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321059] [<ffffffff8171ebc7>] 
-> int_signal+0x12/0x17
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321061] Code: 44 24 10 48 8d 
-> 50 f0 49 8d 44 24 10 49 39 c5 75 9b 48 83 c4 18 5b 41 5c 41 5d 41 5e 41 
-> 5f 5d
->   c3 0f 1f 40 00 e8 c3 fa ff ff eb 99 <0f> 0b 80 3d ea 8e b6 00 00 74 16 
-> 49 8d 7e 08 48 89 55 c8 e8 09
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321088] RIP 
-> [<ffffffff81187f1f>] unlink_anon_vmas+0x1af/0x200
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321091]  RSP <ffff88018ee1bba8>
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321094] ---[ end trace 
-> 1c9e464233c6be56 ]---
-> Jan 10 12:33:57 krzysiek-hp1 kernel: [ 3872.321096] Fixing recursive 
-> fault but reboot is needed!
+>>>
+>>> Looks like degree (%edx) is 1 on anon-vma desruction.
+>>> Probably I've overlooked some weird conrner case in vma splitting/merging.
+>>>
+>>> Could you try this patch. It disables vma merging end eliminates half
+>>> of complicated paths.
+>>> As I see merging is optional, everything should work fine without it.
+>>>
+>>> --- a/mm/mmap.c
+>>> +++ b/mm/mmap.c
+>>> @@ -1048,7 +1048,7 @@ struct vm_area_struct *vma_merge(struct mm_struct *mm,
+>>>          * We later require that vma->vm_flags == vm_flags,
+>>>          * so this tests vma->vm_flags & VM_SPECIAL, too.
+>>>          */
+>>> -       if (vm_flags & VM_SPECIAL)
+>>> +       if (1)
+>>>                 return NULL;
+>>>
+>>>         if (prev)
+>>>
+>>>
+>>>
+>>>
+>>> Code from your oops.
+>>>
+>>> Code: 00 ad de 48 89 43 18 e8 c5 f9 00 00 48 8b 45 10 48 8d 55 10 48
+>>> 83 e8 10 49 39 d6 74 54 48 8b 7d 08 48 89 eb 8b 57 34 85 d2 74 9e <0f>
+>>> 0b 0f 1f 40 00 e8 6b fc ff ff eb 9a 66 0f 1f 84 00 00 00 00
+>>> All code
+>>> ========
+>>>    0: 00 ad de 48 89 43     add    %ch,0x438948de(%rbp)
+>>>    6: 18 e8                 sbb    %ch,%al
+>>>    8: c5 f9 00             (bad)
+>>>    b: 00 48 8b             add    %cl,-0x75(%rax)
+>>>    e: 45 10 48 8d           adc    %r9b,-0x73(%r8)
+>>>   12: 55                   push   %rbp
+>>>   13: 10 48 83             adc    %cl,-0x7d(%rax)
+>>>   16: e8 10 49 39 d6       callq  0xffffffffd639492b
+>>>   1b: 74 54                 je     0x71
+>>>   1d: 48 8b 7d 08           mov    0x8(%rbp),%rdi
+>>>   21: 48 89 eb             mov    %rbp,%rbx
+>>>   24: 8b 57 34             mov    0x34(%rdi),%edx
+>>>   27: 85 d2                 test   %edx,%edx
+>>>   29: 74 9e                 je     0xffffffffffffffc9
+>>>   2b:* 0f 0b                 ud2     <-- trapping instruction
+>>>   2d: 0f 1f 40 00           nopl   0x0(%rax)
+>>>   31: e8 6b fc ff ff       callq  0xfffffffffffffca1
+>>>   36: eb 9a                 jmp    0xffffffffffffffd2
+>>>   38: 66                   data16
+>>>   39: 0f                   .byte 0xf
+>>>   3a: 1f                   (bad)
+>>>   3b: 84 00                 test   %al,(%rax)
+>>>   3d: 00 00                 add    %al,(%rax)
+>>> ...
+>>>
+>>> Code starting with the faulting instruction
+>>> ===========================================
+>>>    0: 0f 0b                 ud2
+>>>    2: 0f 1f 40 00           nopl   0x0(%rax)
+>>>    6: e8 6b fc ff ff       callq  0xfffffffffffffc76
+>>>    b: eb 9a                 jmp    0xffffffffffffffa7
+>>>    d: 66                   data16
+>>>    e: 0f                   .byte 0xf
+>>>    f: 1f                   (bad)
+>>>   10: 84 00                 test   %al,(%rax)
+>>>   12: 00 00                 add    %al,(%rax)
+>>>
+>>>
+>>> +Added Oded Gabbay <oded.gabbay@amd.com> into cc, he's reported this
+>>> problem too.
+>>>
+>> Thanks for the fast reply.
+>>
+>> I applied the patch and tested it. I wasn't able to reproduce *my* problem,
+>> so you are definitely in the right direction :)
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> Ok. I've found something. Try patch from attachment.
 > 
 
+Your patch has fixed the BUG for me. Thank you.
+
+Tested-by: Chris Clayton <chris2553@googlemail.com>
+
+>>
+>>         Oded
+>>
+>>>>
+>>>> In case it helps, I've attached the xz-compressed related config file.
+>>>>
+>>>> Chris
+>>>>
+>>>>>
+>>>>> I've attached the full kernel log file for that boot.
+>>>>>
+>>>>> Chris
+>>>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
