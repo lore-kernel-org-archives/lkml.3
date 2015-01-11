@@ -1,102 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107AbbAKOU7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 09:20:59 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:57639 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751630AbbAKOU5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 09:20:57 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ALSA: lola: lola_mixer: Remove some unused functions
-Date: Sun, 11 Jan 2015 15:24:02 +0100
-Message-Id: <1420986242-18502-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752258AbbAKOZd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 09:25:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47870 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751541AbbAKOZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jan 2015 09:25:32 -0500
+Message-ID: <54B287BE.3010107@redhat.com>
+Date: Sun, 11 Jan 2015 09:25:02 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Konstantin Khlebnikov <koct9i@gmail.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+CC: "Elifaz, Dana" <Dana.Elifaz@amd.com>,
+        "Bridgman, John" <John.Bridgman@amd.com>,
+        Daniel Forrest <dan.forrest@ssec.wisc.edu>,
+        Chris Clayton <chris2553@googlemail.com>,
+        Oded Gabbay <oded.gabbay@amd.com>, Michal Hocko <mhocko@suse.cz>
+Subject: Re: [PATCH] mm: fix corner case in anon_vma endless growing prevention
+References: <20150111135406.13266.42007.stgit@zurg>
+In-Reply-To: <20150111135406.13266.42007.stgit@zurg>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere:
-lola_restore_mixer() lola_save_mixer()
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-This was partially found by using a static code analysis program called cppcheck.
+On 01/11/2015 08:54 AM, Konstantin Khlebnikov wrote:
+> Fix for BUG_ON(anon_vma->degree) splashes in unlink_anon_vmas() 
+> ("kernel BUG at mm/rmap.c:399!").
+> 
+> Anon_vma_clone() is usually called for a copy of source vma in
+> destination argument. If source vma has anon_vma it should be
+> already in dst->anon_vma. NULL in dst->anon_vma is used as a sign
+> that it's called from anon_vma_fork(). In this case
+> anon_vma_clone() finds anon_vma for reusing.
+> 
+> Vma_adjust() calls it differently and this breaks anon_vma reusing
+> logic: anon_vma_clone() links vma to old anon_vma and updates
+> degree counters but vma_adjust() overrides vma->anon_vma right
+> after that. As a result final unlink_anon_vmas() decrements degree
+> for wrong anon_vma.
+> 
+> This patch assigns ->anon_vma before calling anon_vma_clone().
+> 
+> Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com> Fixes:
+> 7a3ef208e662 ("mm: prevent endless growth of anon_vma hierarchy") 
+> Tested-by: Chris Clayton <chris2553@googlemail.com> Tested-by: Oded
+> Gabbay <oded.gabbay@amd.com> Cc: Daniel Forrest
+> <dan.forrest@ssec.wisc.edu> Cc: Michal Hocko <mhocko@suse.cz> Cc:
+> Rik van Riel <riel@redhat.com>
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- sound/pci/lola/lola.h       |    2 --
- sound/pci/lola/lola_mixer.c |   43 -------------------------------------------
- 2 files changed, 45 deletions(-)
+Acked-by: Rik van Riel <riel@redhat.com>
 
-diff --git a/sound/pci/lola/lola.h b/sound/pci/lola/lola.h
-index f0b1000..9125916 100644
---- a/sound/pci/lola/lola.h
-+++ b/sound/pci/lola/lola.h
-@@ -513,8 +513,6 @@ int lola_init_mixer_widget(struct lola *chip, int nid);
- void lola_free_mixer(struct lola *chip);
- int lola_create_mixer(struct lola *chip);
- int lola_setup_all_analog_gains(struct lola *chip, int dir, bool mute);
--void lola_save_mixer(struct lola *chip);
--void lola_restore_mixer(struct lola *chip);
- int lola_set_src_config(struct lola *chip, unsigned int src_mask, bool update);
- 
- /* proc */
-diff --git a/sound/pci/lola/lola_mixer.c b/sound/pci/lola/lola_mixer.c
-index 782f4d8..47ac93a 100644
---- a/sound/pci/lola/lola_mixer.c
-+++ b/sound/pci/lola/lola_mixer.c
-@@ -348,49 +348,6 @@ int lola_setup_all_analog_gains(struct lola *chip, int dir, bool mute)
- 	return lola_codec_flush(chip);
- }
- 
--void lola_save_mixer(struct lola *chip)
--{
--	/* mute analog output */
--	if (chip->mixer.array_saved) {
--		/* store contents of mixer array */
--		memcpy_fromio(chip->mixer.array_saved, chip->mixer.array,
--			      sizeof(*chip->mixer.array));
--	}
--	lola_setup_all_analog_gains(chip, PLAY, true); /* output mute */
--}
--
--void lola_restore_mixer(struct lola *chip)
--{
--	int i;
--
--	/*lola_reset_setups(chip);*/
--	if (chip->mixer.array_saved) {
--		/* restore contents of mixer array */
--		memcpy_toio(chip->mixer.array, chip->mixer.array_saved,
--			    sizeof(*chip->mixer.array));
--		/* inform micro-controller about all restored values
--		 * and ignore return values
--		 */
--		for (i = 0; i < chip->mixer.src_phys_ins; i++)
--			lola_codec_write(chip, chip->mixer.nid,
--					 LOLA_VERB_SET_SOURCE_GAIN,
--					 i, 0);
--		for (i = 0; i < chip->mixer.src_stream_outs; i++)
--			lola_codec_write(chip, chip->mixer.nid,
--					 LOLA_VERB_SET_SOURCE_GAIN,
--					 chip->mixer.src_stream_out_ofs + i, 0);
--		for (i = 0; i < chip->mixer.dest_stream_ins; i++)
--			lola_codec_write(chip, chip->mixer.nid,
--					 LOLA_VERB_SET_DESTINATION_GAIN,
--					 i, 0);
--		for (i = 0; i < chip->mixer.dest_phys_outs; i++)
--			lola_codec_write(chip, chip->mixer.nid,
--					 LOLA_VERB_SET_DESTINATION_GAIN,
--					 chip->mixer.dest_phys_out_ofs + i, 0);
--		lola_codec_flush(chip);
--	}
--}
--
- /*
-  */
- 
--- 
-1.7.10.4
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQEcBAEBAgAGBQJUsoe+AAoJEM553pKExN6D4x0H/RpBJella2+JhOBPyCBtLY7Z
+9w8n14TlqEq7cK/WRmjhYZfVMNGIG3MDe+nAH0hTF0teh/MvJuAkraYnPxtIZYqX
+R7IpNOUS3HJBLqsRjNdVNsoMnWOGBC6j/RV70pLj1VklZnq/VDsUPybm0XWk1oh6
+nC1QhdLfcnuaFS4M1lzsSyURwQYxi+2vv/kFdtYscArTYmjI7I4gCP3fD7lQKCwK
+za0z/oZb5Z5cOHXyQfe/HUROCCNUZUQfcX1XvW+TWvuwcatOvKeVCmJAy5/aPkfH
+THtwAP6EyZpu5XwsYXCNfbyalqYpH5lKxd5C+vG86YKEYZyeqRLKLeYAVY3yTho=
+=v95A
+-----END PGP SIGNATURE-----
