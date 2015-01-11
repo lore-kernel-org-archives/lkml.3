@@ -1,349 +1,1327 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584AbbAKVnt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 16:43:49 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:37729 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011AbbAKVnp (ORCPT
+	id S1752542AbbAKVoo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 16:44:44 -0500
+Received: from smtp-2.concepts.nl ([213.197.30.125]:46426 "EHLO
+	smtp-2.concepts.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751120AbbAKVon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 16:43:45 -0500
-Date: Sun, 11 Jan 2015 22:43:40 +0100
-From: Christoffer Dall <christoffer.dall@linaro.org>
-To: Eric Auger <eric.auger@linaro.org>
-Cc: eric.auger@st.com, marc.zyngier@arm.com,
-        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        kvm@vger.kernel.org, alex.williamson@redhat.com, agraf@suse.de,
-        joel.schopp@amd.com, gleb@kernel.org, pbonzini@redhat.com,
-        borntraeger@de.ibm.com, cornelia.huck@de.ibm.com,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        a.motakis@virtualopensystems.com
-Subject: Re: [PATCH v5 5/5] KVM: arm/arm64: add irqfd support
-Message-ID: <20150111214340.GG3868@cbox>
-References: <1417622832-5460-1-git-send-email-eric.auger@linaro.org>
- <1417622832-5460-6-git-send-email-eric.auger@linaro.org>
+	Sun, 11 Jan 2015 16:44:43 -0500
+Message-ID: <54B2EEC5.7050805@xmsnet.nl>
+Date: Sun, 11 Jan 2015 22:44:37 +0100
+From: Hans de Bruin <jmdebruin@xmsnet.nl>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.8.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417622832-5460-6-git-send-email-eric.auger@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Takashi Iwai <tiwai@suse.de>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Henningsson <david.henningsson@canonical.com>
+Subject: Re: 3.19-rc1 regression bisected No sound on Dell Latitude d430
+References: <54B26ACE.90406@xmsnet.nl> <s5hy4p92ue0.wl-tiwai@suse.de>
+In-Reply-To: <s5hy4p92ue0.wl-tiwai@suse.de>
+Content-Type: multipart/mixed;
+ boundary="------------060202030607030805060701"
+X-Concepts-MailScanner-Information: Please contact abuse@concepts.nl for more information
+X-Concepts-MailScanner-ID: 1YAQJJ-0006dT-Iw
+X-Concepts-MailScanner: Found to be clean
+X-Concepts-MailScanner-SpamCheck: 
+X-Concepts-MailScanner-From: jmdebruin@xmsnet.nl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 05:07:12PM +0100, Eric Auger wrote:
-> This patch enables irqfd on arm/arm64.
-> 
-> Both irqfd and resamplefd are supported. Injection is implemented
-> in vgic.c without routing.
-> 
-> This patch enables CONFIG_HAVE_KVM_EVENTFD and CONFIG_HAVE_KVM_IRQFD.
-> 
-> KVM_CAP_IRQFD is now advertised. KVM_CAP_IRQFD_RESAMPLE capability
-> automatically is advertised as soon as CONFIG_HAVE_KVM_IRQFD is set.
-> 
-> Irqfd injection is restricted to SPI. The rationale behind not
-> supporting PPI irqfd injection is that any device using a PPI would
-> be a private-to-the-CPU device (timer for instance), so its state
-> would have to be context-switched along with the VCPU and would
-> require in-kernel wiring anyhow. It is not a relevant use case for
-> irqfds.
-> 
-> Signed-off-by: Eric Auger <eric.auger@linaro.org>
-> 
-> ---
-> 
-> v4 -> v5:
-> - squash [PATCH v4 3/3] KVM: arm64: add irqfd support into this patch
-> - some rewording in Documentation/virtual/kvm/api.txt and in vgic
->   vgic_process_maintenance unlock comment.
-> - move explanation of why not supporting PPI into commit message
-> - in case of injection before gic readiness, -ENODEV is returned. It is
->   up to the user space to avoid this situation.
-> 
-> v3 -> v4:
-> - reword commit message
-> - explain why we unlock the distributor before calling kvm_notify_acked_irq
-> - rename is_assigned_irq into has_notifier
-> - change EOI and injection kvm_debug format string
-> - remove error local variable in kvm_set_irq
-> - Move HAVE_KVM_IRQCHIP unset in a separate patch
-> - handle case were the irqfd injection is attempted before the vgic is ready.
->   in such a case the notifier, if any, is called immediatly
-> - use nr_irqs to test spi is within correct range
-> 
-> v2 -> v3:
-> - removal of irq.h from eventfd.c put in a separate patch to increase
->   visibility
-> - properly expose KVM_CAP_IRQFD capability in arm.c
-> - remove CONFIG_HAVE_KVM_IRQCHIP meaningfull only if irq_comm.c is used
-> 
-> v1 -> v2:
-> - rebase on 3.17rc1
-> - move of the dist unlock in process_maintenance
-> - remove of dist lock in __kvm_vgic_sync_hwstate
-> - rewording of the commit message (add resamplefd reference)
-> - remove irq.h
-> ---
->  Documentation/virtual/kvm/api.txt |  6 +++-
->  arch/arm/include/uapi/asm/kvm.h   |  3 ++
->  arch/arm/kvm/Kconfig              |  2 ++
->  arch/arm/kvm/Makefile             |  2 +-
->  arch/arm/kvm/arm.c                |  3 ++
->  arch/arm64/include/uapi/asm/kvm.h |  3 ++
->  arch/arm64/kvm/Kconfig            |  2 ++
->  arch/arm64/kvm/Makefile           |  2 +-
->  virt/kvm/arm/vgic.c               | 63 ++++++++++++++++++++++++++++++++++++---
->  9 files changed, 79 insertions(+), 7 deletions(-)
-> 
-> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> index 7610eaa..8993556 100644
-> --- a/Documentation/virtual/kvm/api.txt
-> +++ b/Documentation/virtual/kvm/api.txt
-> @@ -2206,7 +2206,7 @@ into the hash PTE second double word).
->  4.75 KVM_IRQFD
->  
->  Capability: KVM_CAP_IRQFD
-> -Architectures: x86 s390
-> +Architectures: x86 s390 arm arm64
->  Type: vm ioctl
->  Parameters: struct kvm_irqfd (in)
->  Returns: 0 on success, -1 on error
-> @@ -2232,6 +2232,10 @@ Note that closing the resamplefd is not sufficient to disable the
->  irqfd.  The KVM_IRQFD_FLAG_RESAMPLE is only necessary on assignment
->  and need not be specified with KVM_IRQFD_FLAG_DEASSIGN.
->  
-> +On ARM/ARM64, the gsi field in the kvm_irqfd struct specifies the Shared
-> +Peripheral Interrupt (SPI) index, such that the GIC interrupt ID is
-> +given by gsi + 32.
-> +
->  4.76 KVM_PPC_ALLOCATE_HTAB
->  
->  Capability: KVM_CAP_PPC_ALLOC_HTAB
-> diff --git a/arch/arm/include/uapi/asm/kvm.h b/arch/arm/include/uapi/asm/kvm.h
-> index 09ee408..77547bb 100644
-> --- a/arch/arm/include/uapi/asm/kvm.h
-> +++ b/arch/arm/include/uapi/asm/kvm.h
-> @@ -196,6 +196,9 @@ struct kvm_arch_memory_slot {
->  /* Highest supported SPI, from VGIC_NR_IRQS */
->  #define KVM_ARM_IRQ_GIC_MAX		127
->  
-> +/* One single KVM irqchip, ie. the VGIC */
-> +#define KVM_NR_IRQCHIPS          1
-> +
->  /* PSCI interface */
->  #define KVM_PSCI_FN_BASE		0x95c1ba5e
->  #define KVM_PSCI_FN(n)			(KVM_PSCI_FN_BASE + (n))
-> diff --git a/arch/arm/kvm/Kconfig b/arch/arm/kvm/Kconfig
-> index 9f581b1..e519a40 100644
-> --- a/arch/arm/kvm/Kconfig
-> +++ b/arch/arm/kvm/Kconfig
-> @@ -24,6 +24,7 @@ config KVM
->  	select KVM_MMIO
->  	select KVM_ARM_HOST
->  	depends on ARM_VIRT_EXT && ARM_LPAE
-> +	select HAVE_KVM_EVENTFD
->  	---help---
->  	  Support hosting virtualized guest machines. You will also
->  	  need to select one or more of the processor modules below.
-> @@ -55,6 +56,7 @@ config KVM_ARM_MAX_VCPUS
->  config KVM_ARM_VGIC
->  	bool "KVM support for Virtual GIC"
->  	depends on KVM_ARM_HOST && OF
-> +	select HAVE_KVM_IRQFD
->  	default y
->  	---help---
->  	  Adds support for a hardware assisted, in-kernel GIC emulation.
-> diff --git a/arch/arm/kvm/Makefile b/arch/arm/kvm/Makefile
-> index f7057ed..859db09 100644
-> --- a/arch/arm/kvm/Makefile
-> +++ b/arch/arm/kvm/Makefile
-> @@ -15,7 +15,7 @@ AFLAGS_init.o := -Wa,-march=armv7-a$(plus_virt)
->  AFLAGS_interrupts.o := -Wa,-march=armv7-a$(plus_virt)
->  
->  KVM := ../../../virt/kvm
-> -kvm-arm-y = $(KVM)/kvm_main.o $(KVM)/coalesced_mmio.o
-> +kvm-arm-y = $(KVM)/kvm_main.o $(KVM)/coalesced_mmio.o $(KVM)/eventfd.o
->  
->  obj-y += kvm-arm.o init.o interrupts.o
->  obj-y += arm.o handle_exit.o guest.o mmu.o emulate.o reset.o
-> diff --git a/arch/arm/kvm/arm.c b/arch/arm/kvm/arm.c
-> index 5309e4b..45681b4 100644
-> --- a/arch/arm/kvm/arm.c
-> +++ b/arch/arm/kvm/arm.c
-> @@ -172,6 +172,9 @@ int kvm_vm_ioctl_check_extension(struct kvm *kvm, long ext)
->  	case KVM_CAP_IRQCHIP:
->  		r = vgic_present;
->  		break;
-> +#ifdef CONFIG_HAVE_KVM_IRQFD
-> +	case KVM_CAP_IRQFD:
+This is a multi-part message in MIME format.
+--------------060202030607030805060701
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-shouldn't this also depend on vgic_present?
+On 01/11/2015 04:45 PM, Takashi Iwai wrote:
+> At Sun, 11 Jan 2015 13:21:34 +0100,
+> Hans de Bruin wrote:
+>>
+>> This commit:
+>>
+>> commit 3abb4f4d0e7aaad0d12004b5057f4486a688752b
+>> Author: David Henningsson <david.henningsson@canonical.com>
+>> Date:   Thu Oct 16 15:33:46 2014 +0200
+>>
+>>       ALSA: hda - Use "Line Out" name instead of "PCM" when there are
+>> other outputs
+>>
+>>       In case there are speakers or headphones as well, anything that only
+>>       covers the line out should not be labelled "PCM". Let's name it
+>>       "Line Out" instead for clarity.
+>>
+>>       Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+>>       Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>>
+>> breaks the sound on my dell laptop.
+>
+> What sound?  From the speaker, the headphone or the dock output?
 
-> +#endif
->  	case KVM_CAP_DEVICE_CTRL:
->  	case KVM_CAP_USER_MEMORY:
->  	case KVM_CAP_SYNC_MMU:
-> diff --git a/arch/arm64/include/uapi/asm/kvm.h b/arch/arm64/include/uapi/asm/kvm.h
-> index 8e38878..1ed4417 100644
-> --- a/arch/arm64/include/uapi/asm/kvm.h
-> +++ b/arch/arm64/include/uapi/asm/kvm.h
-> @@ -182,6 +182,9 @@ struct kvm_arch_memory_slot {
->  /* Highest supported SPI, from VGIC_NR_IRQS */
->  #define KVM_ARM_IRQ_GIC_MAX		127
->  
-> +/* One single KVM irqchip, ie. the VGIC */
-> +#define KVM_NR_IRQCHIPS          1
-> +
->  /* PSCI interface */
->  #define KVM_PSCI_FN_BASE		0x95c1ba5e
->  #define KVM_PSCI_FN(n)			(KVM_PSCI_FN_BASE + (n))
-> diff --git a/arch/arm64/kvm/Kconfig b/arch/arm64/kvm/Kconfig
-> index 279e1a0..09c25c2 100644
-> --- a/arch/arm64/kvm/Kconfig
-> +++ b/arch/arm64/kvm/Kconfig
-> @@ -26,6 +26,7 @@ config KVM
->  	select KVM_ARM_HOST
->  	select KVM_ARM_VGIC
->  	select KVM_ARM_TIMER
-> +	select HAVE_KVM_EVENTFD
->  	---help---
->  	  Support hosting virtualized guest machines.
->  
-> @@ -50,6 +51,7 @@ config KVM_ARM_MAX_VCPUS
->  config KVM_ARM_VGIC
->  	bool
->  	depends on KVM_ARM_HOST && OF
-> +	select HAVE_KVM_IRQFD
->  	---help---
->  	  Adds support for a hardware assisted, in-kernel GIC emulation.
->  
-> diff --git a/arch/arm64/kvm/Makefile b/arch/arm64/kvm/Makefile
-> index 32a0961..2e6b827 100644
-> --- a/arch/arm64/kvm/Makefile
-> +++ b/arch/arm64/kvm/Makefile
-> @@ -11,7 +11,7 @@ ARM=../../../arch/arm/kvm
->  
->  obj-$(CONFIG_KVM_ARM_HOST) += kvm.o
->  
-> -kvm-$(CONFIG_KVM_ARM_HOST) += $(KVM)/kvm_main.o $(KVM)/coalesced_mmio.o
-> +kvm-$(CONFIG_KVM_ARM_HOST) += $(KVM)/kvm_main.o $(KVM)/coalesced_mmio.o $(KVM)/eventfd.o
->  kvm-$(CONFIG_KVM_ARM_HOST) += $(ARM)/arm.o $(ARM)/mmu.o $(ARM)/mmio.o
->  kvm-$(CONFIG_KVM_ARM_HOST) += $(ARM)/psci.o $(ARM)/perf.o
->  
-> diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
-> index 3aaca49..6ab232a 100644
-> --- a/virt/kvm/arm/vgic.c
-> +++ b/virt/kvm/arm/vgic.c
-> @@ -1446,7 +1446,10 @@ epilog:
->  static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
->  {
->  	u32 status = vgic_get_interrupt_status(vcpu);
-> +	struct vgic_dist *dist = &vcpu->kvm->arch.vgic;
->  	bool level_pending = false;
-> +	struct kvm *kvm = vcpu->kvm;
-> +	bool has_notifier;
->  
->  	kvm_debug("STATUS = %08x\n", status);
->  
-> @@ -1463,6 +1466,7 @@ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
->  			struct vgic_lr vlr = vgic_get_lr(vcpu, lr);
->  			WARN_ON(vgic_irq_is_edge(vcpu, vlr.irq));
->  
-> +			spin_lock(&dist->lock);
->  			vgic_irq_clear_queued(vcpu, vlr.irq);
->  			WARN_ON(vlr.state & LR_STATE_MASK);
->  			vlr.state = 0;
-> @@ -1481,6 +1485,24 @@ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
->  			 */
->  			vgic_dist_irq_clear_soft_pend(vcpu, vlr.irq);
->  
-> +			/*
-> +			 * kvm_notify_acked_irq calls kvm_set_irq()
-> +			 * to reset the IRQ level. Need to release the
-> +			 * lock for kvm_set_irq to grab it.
-> +			 */
-> +			spin_unlock(&dist->lock);
-> +
-> +			has_notifier = kvm_irq_has_notifier(kvm, 0,
-> +						vlr.irq - VGIC_NR_PRIVATE_IRQS);
-> +
-> +			if (has_notifier) {
-> +				kvm_debug("Guest EOIed vIRQ %d on CPU %d\n",
-> +					  vlr.irq, vcpu->vcpu_id);
-> +				kvm_notify_acked_irq(kvm, 0,
-> +						vlr.irq - VGIC_NR_PRIVATE_IRQS);
-> +			}
-> +			spin_lock(&dist->lock);
-> +
->  			/* Any additional pending interrupt? */
->  			if (vgic_dist_irq_get_level(vcpu, vlr.irq)) {
->  				vgic_cpu_irq_set(vcpu, vlr.irq);
-> @@ -1490,6 +1512,8 @@ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
->  				vgic_cpu_irq_clear(vcpu, vlr.irq);
->  			}
->  
-> +			spin_unlock(&dist->lock);
-> +
->  			/*
->  			 * Despite being EOIed, the LR may not have
->  			 * been marked as empty.
-> @@ -1554,14 +1578,10 @@ void kvm_vgic_flush_hwstate(struct kvm_vcpu *vcpu)
->  
->  void kvm_vgic_sync_hwstate(struct kvm_vcpu *vcpu)
->  {
-> -	struct vgic_dist *dist = &vcpu->kvm->arch.vgic;
-> -
->  	if (!irqchip_in_kernel(vcpu->kvm))
->  		return;
->  
-> -	spin_lock(&dist->lock);
->  	__kvm_vgic_sync_hwstate(vcpu);
-> -	spin_unlock(&dist->lock);
->  }
->  
->  int kvm_vgic_vcpu_pending_irq(struct kvm_vcpu *vcpu)
-> @@ -2477,3 +2497,38 @@ out_free_irq:
->  	free_percpu_irq(vgic->maint_irq, kvm_get_running_vcpus());
->  	return ret;
->  }
-> +
-> +int kvm_irq_map_gsi(struct kvm *kvm,
-> +		    struct kvm_kernel_irq_routing_entry *entries,
-> +		    int gsi)
-> +{
-> +	return gsi;
-> +}
-> +
-> +int kvm_irq_map_chip_pin(struct kvm *kvm, unsigned irqchip, unsigned pin)
-> +{
-> +	return pin;
-> +}
-> +
-> +int kvm_set_irq(struct kvm *kvm, int irq_source_id,
-> +		u32 irq, int level, bool line_status)
-> +{
-> +	unsigned int spi = irq + VGIC_NR_PRIVATE_IRQS;
-> +
-> +	kvm_debug("irqfd sets vIRQ %d to %d\n", irq, level);
-> +
-> +	if (likely(vgic_initialized(kvm))) {
-> +		if (spi > kvm->arch.vgic.nr_irqs)
-> +			return -EINVAL;
-> +		return kvm_vgic_inject_irq(kvm, 0, spi, level);
-> +	} else
-> +		return -ENODEV;
-> +}
-> +
-> +/* MSI not implemented yet */
-> +int kvm_set_msi(struct kvm_kernel_irq_routing_entry *e,
-> +		struct kvm *kvm, int irq_source_id,
-> +		int level, bool line_status)
-> +{
-> +	return 0;
-> +}
-> -- 
-> 1.9.1
-> 
-besides the nit:
+The speaker. I have not checked the other exits
 
-Reviewed-by: Christoffer Dall <christoffer.dall@linaro.org>
+> Are you using PulseAudio?
+
+No
+
+> What if you adjust/unmute the volume
+> (likely "Line Out") manually?
+
+running 3.18 alsamixer show these options:
+
+Master
+PCM
+Mic Boost
+Auto Mute mode
+
+PCM affects the volume of the speaker.
+
+running 3.19-rc1 alsamixer show these options:
+
+Master
+PCM
+Line Out
+Mic Boost
+Auto Mute mode
+
+Line out now controls the vole of the speaker (this 'new' channel had 
+volume 0 so did not hear anything). Changing PCM has no effect.
+
+> In anyway, please give alsa-info.sh output.  Run it with --no-upload
+> option and attach the output.
+
+I have attached both the 3.18.0 and a 3.19-rc1 ouputs
+
+
+-- 
+Hans
+
+--------------060202030607030805060701
+Content-Type: text/plain; charset=ISO-8859-1;
+ name="alsa-info-3.18.0"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="alsa-info-3.18.0"
+
+upload=true&script=true&cardinfo=
+!!################################
+!!ALSA Information Script v 0.4.64
+!!################################
+
+!!Script ran on: Sun Jan 11 18:06:43 UTC 2015
+
+
+!!Linux Distribution
+!!------------------
+
+NAME=Slackware ID=slackware PRETTY_NAME="Slackware 14.1" CPE_NAME="cpe:/o:slackware:slackware_linux:14.1" HOME_URL="http://slackware.com/" SUPPORT_URL="http://www.linuxquestions.org/questions/slackware-14/" BUG_REPORT_URL="http://www.linuxquestions.org/questions/slackware-14/" Slackware 14.1
+
+
+!!DMI Information
+!!---------------
+
+Manufacturer:      Dell Inc.
+Product Name:      Latitude D430                   
+Product Version:   
+Firmware Version:  A02
+
+
+!!Kernel Information
+!!------------------
+
+Kernel release:    3.18.0
+Operating System:  GNU/Linux
+Architecture:      i686
+Processor:         Intel(R) Core(TM) Solo CPU     U1400  @ 1.20GHz
+SMP Enabled:       No
+
+
+!!ALSA Version
+!!------------
+
+Driver version:     k3.18.0
+Library version:    1.0.27.2
+Utilities version:  1.0.27.1
+
+
+!!Loaded ALSA modules
+!!-------------------
+
+
+
+!!Sound Servers on this system
+!!----------------------------
+
+ESound Daemon:
+      Installed - Yes (/usr/bin/esd)
+      Running - No
+
+
+!!Soundcards recognised by ALSA
+!!-----------------------------
+
+ 0 [Intel          ]: HDA-Intel - HDA Intel
+                      HDA Intel at 0xefebc000 irq 21
+
+
+!!PCI Soundcards installed in the system
+!!--------------------------------------
+
+00:1b.0 Audio device: Intel Corporation NM10/ICH7 Family High Definition Audio Controller (rev 01)
+
+
+!!Advanced information - PCI Vendor/Device/Subsystem ID's
+!!-------------------------------------------------------
+
+00:1b.0 0403: 8086:27d8 (rev 01)
+	Subsystem: 1028:0201
+
+
+!!Loaded sound module options
+!!---------------------------
+
+
+!!HDA-Intel Codec information
+!!---------------------------
+--startcollapse--
+
+Codec: SigmaTel STAC9200
+Address: 0
+AFG Function Id: 0x1 (unsol 1)
+Vendor Id: 0x83847690
+Subsystem Id: 0x10280201
+Revision Id: 0x102201
+No Modem Function Group found
+Default PCM:
+    rates [0x7e0]: 44100 48000 88200 96000 176400 192000
+    bits [0xe]: 16 20 24
+    formats [0x1]: PCM
+Default Amp-In caps: N/A
+Default Amp-Out caps: ofs=0x1f, nsteps=0x1f, stepsize=0x05, mute=1
+State of AFG node 0x01:
+  Power states:  D0 D1 D2 D3
+  Power: setting=D0, actual=D0
+GPIO: io=4, o=0, i=0, unsolicited=1, wake=1
+  IO[0]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
+  IO[1]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
+  IO[2]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
+  IO[3]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
+Node 0x02 [Audio Output] wcaps 0xd0401: Stereo
+  Device: name="STAC9200 Analog", type="Audio", device=0
+  Converter: stream=5, channel=0
+  Power states: 
+  Power: setting=D0, actual=D0
+  Delay: 13 samples
+Node 0x03 [Audio Input] wcaps 0x1d0541: Stereo
+  Device: name="STAC9200 Analog", type="Audio", device=0
+  Converter: stream=1, channel=0
+  SDI-Select: 0
+  Power states: 
+  Power: setting=D0, actual=D0
+  Delay: 13 samples
+  Connection: 1
+     0x0a
+  Processing caps: benign=0, ncoeff=0
+Node 0x04 [Audio Input] wcaps 0x140311: Stereo Digital
+  Converter: stream=0, channel=0
+  SDI-Select: 0
+  Digital:
+  Digital category: 0x0
+  IEC Coding Type: 0x0
+  PCM:
+    rates [0x160]: 44100 48000 96000
+    bits [0xe]: 16 20 24
+    formats [0x5]: PCM AC3
+  Delay: 4 samples
+  Connection: 1
+     0x08
+Node 0x05 [Audio Output] wcaps 0x40211: Stereo Digital
+  Converter: stream=0, channel=0
+  Digital:
+  Digital category: 0x0
+  IEC Coding Type: 0x0
+  PCM:
+    rates [0x1e0]: 44100 48000 88200 96000
+    bits [0xe]: 16 20 24
+    formats [0x5]: PCM AC3
+  Delay: 4 samples
+Node 0x06 [Vendor Defined Widget] wcaps 0xf30201: Stereo Digital
+  Delay: 3 samples
+Node 0x07 [Audio Selector] wcaps 0x300901: Stereo R/L
+  Connection: 3
+     0x02* 0x08 0x0a
+Node 0x08 [Pin Complex] wcaps 0x430681: Stereo Digital
+  Pincap 0x00010024: IN EAPD Detect
+  EAPD 0x2: EAPD
+  Pin Default 0x40f000f0: [N/A] Other at Ext N/A
+    Conn = Unknown, Color = Unknown
+    DefAssociation = 0xf, Sequence = 0x0
+  Pin-ctls: 0x00:
+  Unsolicited: tag=00, enabled=0
+  Power states: 
+  Power: setting=D0, actual=D0
+  Delay: 3 samples
+Node 0x09 [Pin Complex] wcaps 0x400301: Stereo Digital
+  Pincap 0x00000010: OUT
+  Pin Default 0x40f000f1: [N/A] Other at Ext N/A
+    Conn = Unknown, Color = Unknown
+    DefAssociation = 0xf, Sequence = 0x1
+  Pin-ctls: 0x00:
+  Connection: 2
+     0x05* 0x0a
+Node 0x0a [Audio Selector] wcaps 0x30090d: Stereo Amp-Out R/L
+  Control: name="Capture Volume", index=0, device=0
+    ControlAmp: chs=3, dir=Out, idx=0, ofs=0
+  Control: name="Capture Switch", index=0, device=0
+    ControlAmp: chs=3, dir=Out, idx=0, ofs=0
+  Amp-Out caps: ofs=0x00, nsteps=0x0f, stepsize=0x05, mute=1
+  Amp-Out vals:  [0x80 0x80]
+  Connection: 1
+     0x0c
+Node 0x0b [Audio Selector] wcaps 0x300105: Stereo Amp-Out
+  Control: name="PCM Playback Volume", index=0, device=0
+    ControlAmp: chs=3, dir=Out, idx=0, ofs=0
+  Control: name="PCM Playback Switch", index=0, device=0
+    ControlAmp: chs=3, dir=Out, idx=0, ofs=0
+  Amp-Out caps: N/A
+  Amp-Out vals:  [0x1f 0x1f]
+  Connection: 1
+     0x07
+Node 0x0c [Audio Selector] wcaps 0x30010d: Stereo Amp-Out
+  Control: name="Mic Boost Volume", index=0, device=0
+    ControlAmp: chs=3, dir=Out, idx=0, ofs=0
+  Amp-Out caps: ofs=0x00, nsteps=0x04, stepsize=0x27, mute=0
+  Amp-Out vals:  [0x00 0x00]
+  Connection: 5
+     0x10 0x0f* 0x0e 0x0d 0x12
+Node 0x0d [Pin Complex] wcaps 0x400181: Stereo
+  Control: name="Headphone Jack", index=0, device=0
+  Pincap 0x0000003f: IN OUT HP Detect Trigger ImpSense
+  Pin Default 0x0321101f: [Jack] HP Out at Ext Left
+    Conn = 1/8, Color = Black
+    DefAssociation = 0x1, Sequence = 0xf
+  Pin-ctls: 0xc0: OUT HP
+  Unsolicited: tag=01, enabled=1
+  Connection: 1
+     0x0b
+Node 0x0e [Pin Complex] wcaps 0x400181: Stereo
+  Control: name="Speaker Phantom Jack", index=0, device=0
+  Pincap 0x0000003f: IN OUT HP Detect Trigger ImpSense
+  Pin Default 0x90170110: [Fixed] Speaker at Int N/A
+    Conn = Analog, Color = Unknown
+    DefAssociation = 0x1, Sequence = 0x0
+    Misc = NO_PRESENCE
+  Pin-ctls: 0x40: OUT
+  Unsolicited: tag=00, enabled=0
+  Connection: 1
+     0x0b
+Node 0x0f [Pin Complex] wcaps 0x400181: Stereo
+  Control: name="Mic Phantom Jack", index=0, device=0
+  Pincap 0x00000037: IN OUT Detect Trigger ImpSense
+  Pin Default 0x90a70120: [Fixed] Mic at Int N/A
+    Conn = Analog, Color = Unknown
+    DefAssociation = 0x2, Sequence = 0x0
+    Misc = NO_PRESENCE
+  Pin-ctls: 0x20: IN
+  Unsolicited: tag=00, enabled=0
+  Connection: 1
+     0x0b
+Node 0x10 [Pin Complex] wcaps 0x400181: Stereo
+  Control: name="Line Jack", index=0, device=0
+  Pincap 0x00001737: IN OUT Detect Trigger ImpSense
+    Vref caps: HIZ 50 GRD 80
+  Pin Default 0x0381102e: [Jack] Line In at Ext Left
+    Conn = 1/8, Color = Black
+    DefAssociation = 0x2, Sequence = 0xe
+  Pin-ctls: 0x20: IN VREF_HIZ
+  Unsolicited: tag=03, enabled=1
+  Connection: 1
+     0x0b
+Node 0x11 [Pin Complex] wcaps 0x400104: Mono Amp-Out
+  Amp-Out caps: N/A
+  Amp-Out vals:  [0x9f]
+  Pincap 0x00000010: OUT
+  Pin Default 0x40f000f2: [N/A] Other at Ext N/A
+    Conn = Unknown, Color = Unknown
+    DefAssociation = 0xf, Sequence = 0x2
+  Pin-ctls: 0x00:
+  Connection: 1
+     0x13
+Node 0x12 [Pin Complex] wcaps 0x400001: Stereo
+  Pincap 0x00000020: IN
+  Pin Default 0x40f000f3: [N/A] Other at Ext N/A
+    Conn = Unknown, Color = Unknown
+    DefAssociation = 0xf, Sequence = 0x3
+  Pin-ctls: 0x20: IN
+Node 0x13 [Audio Mixer] wcaps 0x200100: Mono
+  Connection: 1
+     0x07
+Node 0x14 [Beep Generator Widget] wcaps 0x70000c: Mono Amp-Out
+  Amp-Out caps: ofs=0x03, nsteps=0x03, stepsize=0x17, mute=1
+  Amp-Out vals:  [0x83]
+Codec: Conexant ID 2c06
+Address: 1
+MFG Function Id: 0x2 (unsol 1)
+Vendor Id: 0x14f12c06
+Subsystem Id: 0x14f1000f
+Revision Id: 0x100000
+Modem Function Group: 0x2
+--endcollapse--
+
+
+!!ALSA Device nodes
+!!-----------------
+
+crw-rw---- 1 root audio 116,  2 Jan 11 18:58 /dev/snd/controlC0
+crw-rw---- 1 root audio 116,  4 Jan 11 18:59 /dev/snd/pcmC0D0c
+crw-rw---- 1 root audio 116,  3 Jan 11 18:59 /dev/snd/pcmC0D0p
+crw-rw---- 1 root audio 116,  1 Jan 11 18:58 /dev/snd/seq
+crw-rw---- 1 root audio 116, 33 Jan 11 18:58 /dev/snd/timer
+
+/dev/snd/by-path:
+total 0
+drwxr-xr-x 2 root root  60 Jan 11  2015 .
+drwxr-xr-x 3 root root 160 Jan 11  2015 ..
+lrwxrwxrwx 1 root root  12 Jan 11 18:58 pci-0000:00:1b.0 -> ../controlC0
+
+
+!!Aplay/Arecord output
+!!--------------------
+
+APLAY
+
+**** List of PLAYBACK Hardware Devices ****
+card 0: Intel [HDA Intel], device 0: STAC9200 Analog [STAC9200 Analog]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+
+ARECORD
+
+**** List of CAPTURE Hardware Devices ****
+card 0: Intel [HDA Intel], device 0: STAC9200 Analog [STAC9200 Analog]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+
+!!Amixer output
+!!-------------
+
+!!-------Mixer controls for card 0 [Intel]
+
+Card hw:0 'Intel'/'HDA Intel at 0xefebc000 irq 21'
+  Mixer name	: 'SigmaTel STAC9200'
+  Components	: 'HDA:83847690,10280201,00102201 HDA:14f12c06,14f1000f,00100000'
+  Controls      : 16
+  Simple ctrls  : 8
+Simple mixer control 'Master',0
+  Capabilities: pvolume pvolume-joined pswitch pswitch-joined
+  Playback channels: Mono
+  Limits: Playback 0 - 31
+  Mono: Playback 31 [100%] [0.00dB] [on]
+Simple mixer control 'PCM',0
+  Capabilities: pvolume pswitch
+  Playback channels: Front Left - Front Right
+  Limits: Playback 0 - 31
+  Mono:
+  Front Left: Playback 31 [100%] [0.00dB] [on]
+  Front Right: Playback 31 [100%] [0.00dB] [on]
+Simple mixer control 'Line',0
+  Capabilities: cswitch cswitch-joined cswitch-exclusive
+  Capture exclusive group: 0
+  Capture channels: Mono
+  Mono: Capture [off]
+Simple mixer control 'Mic',0
+  Capabilities: cswitch cswitch-joined cswitch-exclusive
+  Capture exclusive group: 0
+  Capture channels: Mono
+  Mono: Capture [on]
+Simple mixer control 'Mic Boost',0
+  Capabilities: volume
+  Playback channels: Front Left - Front Right
+  Capture channels: Front Left - Front Right
+  Limits: 0 - 4
+  Front Left: 0 [0%] [0.00dB]
+  Front Right: 0 [0%] [0.00dB]
+Simple mixer control 'Capture',0
+  Capabilities: cvolume cswitch
+  Capture channels: Front Left - Front Right
+  Limits: Capture 0 - 15
+  Front Left: Capture 0 [0%] [0.00dB] [off]
+  Front Right: Capture 0 [0%] [0.00dB] [off]
+Simple mixer control 'Auto-Mute Mode',0
+  Capabilities: enum
+  Items: 'Disabled' 'Enabled'
+  Item0: 'Enabled'
+Simple mixer control 'Digital',0
+  Capabilities: cvolume
+  Capture channels: Front Left - Front Right
+  Limits: Capture 0 - 120
+  Front Left: Capture 60 [50%] [0.00dB]
+  Front Right: Capture 60 [50%] [0.00dB]
+
+
+!!Alsactl output
+!!--------------
+
+--startcollapse--
+state.Intel {
+	control.1 {
+		iface MIXER
+		name 'PCM Playback Volume'
+		value.0 31
+		value.1 31
+		comment {
+			access 'read write'
+			type INTEGER
+			count 2
+			range '0 - 31'
+			dbmin -9999999
+			dbmax 0
+			dbvalue.0 0
+			dbvalue.1 0
+		}
+	}
+	control.2 {
+		iface MIXER
+		name 'PCM Playback Switch'
+		value.0 true
+		value.1 true
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.3 {
+		iface MIXER
+		name 'Auto-Mute Mode'
+		value Enabled
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Disabled
+			item.1 Enabled
+		}
+	}
+	control.4 {
+		iface MIXER
+		name 'Capture Source'
+		value Mic
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Mic
+			item.1 Line
+		}
+	}
+	control.5 {
+		iface MIXER
+		name 'Capture Volume'
+		value.0 0
+		value.1 0
+		comment {
+			access 'read write'
+			type INTEGER
+			count 2
+			range '0 - 15'
+			dbmin 0
+			dbmax 2250
+			dbvalue.0 0
+			dbvalue.1 0
+		}
+	}
+	control.6 {
+		iface MIXER
+		name 'Capture Switch'
+		value.0 false
+		value.1 false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.7 {
+		iface MIXER
+		name 'Mic Boost Volume'
+		value.0 0
+		value.1 0
+		comment {
+			access 'read write'
+			type INTEGER
+			count 2
+			range '0 - 4'
+			dbmin 0
+			dbmax 4000
+			dbvalue.0 0
+			dbvalue.1 0
+		}
+	}
+	control.8 {
+		iface MIXER
+		name 'Master Playback Volume'
+		value 31
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '0 - 31'
+			dbmin -9999999
+			dbmax 0
+			dbvalue.0 0
+		}
+	}
+	control.9 {
+		iface MIXER
+		name 'Master Playback Switch'
+		value true
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.10 {
+		iface CARD
+		name 'Mic Phantom Jack'
+		value true
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.11 {
+		iface CARD
+		name 'Line Jack'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.12 {
+		iface CARD
+		name 'Headphone Jack'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.13 {
+		iface CARD
+		name 'Speaker Phantom Jack'
+		value true
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.14 {
+		iface PCM
+		name 'Playback Channel Map'
+		value.0 0
+		value.1 0
+		comment {
+			access read
+			type INTEGER
+			count 2
+			range '0 - 36'
+		}
+	}
+	control.15 {
+		iface PCM
+		name 'Capture Channel Map'
+		value.0 0
+		value.1 0
+		comment {
+			access read
+			type INTEGER
+			count 2
+			range '0 - 36'
+		}
+	}
+	control.16 {
+		iface MIXER
+		name 'Digital Capture Volume'
+		value.0 60
+		value.1 60
+		comment {
+			access 'read write user'
+			type INTEGER
+			count 2
+			range '0 - 120'
+			tlv '0000000100000008fffff44800000032'
+			dbmin -3000
+			dbmax 3000
+			dbvalue.0 0
+			dbvalue.1 0
+		}
+	}
+}
+--endcollapse--
+
+
+!!All Loaded Modules
+!!------------------
+
+Module
+
+
+!!ALSA/HDA dmesg
+!!--------------
+
+[    0.665397] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+[    0.669457] sound hdaudioC0D0: autoconfig: line_outs=1 (0xe/0x0/0x0/0x0/0x0) type:speaker
+[    0.669475] sound hdaudioC0D0:    speaker_outs=0 (0x0/0x0/0x0/0x0/0x0)
+[    0.669488] sound hdaudioC0D0:    hp_outs=1 (0xd/0x0/0x0/0x0/0x0)
+[    0.669499] sound hdaudioC0D0:    mono: mono_out=0x0
+[    0.669509] sound hdaudioC0D0:    inputs:
+[    0.669518] sound hdaudioC0D0:      Mic=0xf
+[    0.669528] sound hdaudioC0D0:      Line=0x10
+[    0.670518] sound hdaudioC0D1: autoconfig: line_outs=0 (0x0/0x0/0x0/0x0/0x0) type:line
+[    0.670534] sound hdaudioC0D1:    speaker_outs=0 (0x0/0x0/0x0/0x0/0x0)
+[    0.670547] sound hdaudioC0D1:    hp_outs=0 (0x0/0x0/0x0/0x0/0x0)
+[    0.670558] sound hdaudioC0D1:    mono: mono_out=0x0
+[    0.670568] sound hdaudioC0D1:    inputs:
+[    0.720614] ata1.00: ATA-6: TOSHIBA MK4009GAL, BS111G, max UDMA/100
+--
+[    4.479045]      nameserver0=10.10.0.1
+[    4.486690] ALSA device list:
+[    4.490484]   #0: HDA Intel at 0xefebc000 irq 21
+[    4.506025] VFS: Mounted root (nfs filesystem) readonly on device 0:13.
+
+
+
+--------------060202030607030805060701
+Content-Type: text/plain; charset=ISO-8859-1;
+ name="alsa-info-3.19-rc1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="alsa-info-3.19-rc1"
+
+upload=true&script=true&cardinfo=
+!!################################
+!!ALSA Information Script v 0.4.64
+!!################################
+
+!!Script ran on: Sun Jan 11 19:19:07 UTC 2015
+
+
+!!Linux Distribution
+!!------------------
+
+NAME=Slackware ID=slackware PRETTY_NAME="Slackware 14.1" CPE_NAME="cpe:/o:slackware:slackware_linux:14.1" HOME_URL="http://slackware.com/" SUPPORT_URL="http://www.linuxquestions.org/questions/slackware-14/" BUG_REPORT_URL="http://www.linuxquestions.org/questions/slackware-14/" Slackware 14.1
+
+
+!!DMI Information
+!!---------------
+
+Manufacturer:      Dell Inc.
+Product Name:      Latitude D430                   
+Product Version:   
+Firmware Version:  A02
+
+
+!!Kernel Information
+!!------------------
+
+Kernel release:    3.19.0-rc1bisect
+Operating System:  GNU/Linux
+Architecture:      i686
+Processor:         Intel(R) Core(TM) Solo CPU     U1400  @ 1.20GHz
+SMP Enabled:       No
+
+
+!!ALSA Version
+!!------------
+
+Driver version:     k3.19.0-rc1bisect
+Library version:    1.0.27.2
+Utilities version:  1.0.27.1
+
+
+!!Loaded ALSA modules
+!!-------------------
+
+
+
+!!Sound Servers on this system
+!!----------------------------
+
+ESound Daemon:
+      Installed - Yes (/usr/bin/esd)
+      Running - No
+
+
+!!Soundcards recognised by ALSA
+!!-----------------------------
+
+ 0 [Intel          ]: HDA-Intel - HDA Intel
+                      HDA Intel at 0xefebc000 irq 21
+
+
+!!PCI Soundcards installed in the system
+!!--------------------------------------
+
+00:1b.0 Audio device: Intel Corporation NM10/ICH7 Family High Definition Audio Controller (rev 01)
+
+
+!!Advanced information - PCI Vendor/Device/Subsystem ID's
+!!-------------------------------------------------------
+
+00:1b.0 0403: 8086:27d8 (rev 01)
+	Subsystem: 1028:0201
+
+
+!!Loaded sound module options
+!!---------------------------
+
+
+!!HDA-Intel Codec information
+!!---------------------------
+--startcollapse--
+
+Codec: SigmaTel STAC9200
+Address: 0
+AFG Function Id: 0x1 (unsol 1)
+Vendor Id: 0x83847690
+Subsystem Id: 0x10280201
+Revision Id: 0x102201
+No Modem Function Group found
+Default PCM:
+    rates [0x7e0]: 44100 48000 88200 96000 176400 192000
+    bits [0xe]: 16 20 24
+    formats [0x1]: PCM
+Default Amp-In caps: N/A
+Default Amp-Out caps: ofs=0x1f, nsteps=0x1f, stepsize=0x05, mute=1
+State of AFG node 0x01:
+  Power states:  D0 D1 D2 D3
+  Power: setting=D0, actual=D0
+GPIO: io=4, o=0, i=0, unsolicited=1, wake=1
+  IO[0]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
+  IO[1]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
+  IO[2]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
+  IO[3]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
+Node 0x02 [Audio Output] wcaps 0xd0401: Stereo
+  Device: name="STAC9200 Analog", type="Audio", device=0
+  Converter: stream=5, channel=0
+  Power states: 
+  Power: setting=D0, actual=D0
+  Delay: 13 samples
+Node 0x03 [Audio Input] wcaps 0x1d0541: Stereo
+  Device: name="STAC9200 Analog", type="Audio", device=0
+  Converter: stream=1, channel=0
+  SDI-Select: 0
+  Power states: 
+  Power: setting=D0, actual=D0
+  Delay: 13 samples
+  Connection: 1
+     0x0a
+  Processing caps: benign=0, ncoeff=0
+Node 0x04 [Audio Input] wcaps 0x140311: Stereo Digital
+  Converter: stream=0, channel=0
+  SDI-Select: 0
+  Digital:
+  Digital category: 0x0
+  IEC Coding Type: 0x0
+  PCM:
+    rates [0x160]: 44100 48000 96000
+    bits [0xe]: 16 20 24
+    formats [0x5]: PCM AC3
+  Delay: 4 samples
+  Connection: 1
+     0x08
+Node 0x05 [Audio Output] wcaps 0x40211: Stereo Digital
+  Converter: stream=0, channel=0
+  Digital:
+  Digital category: 0x0
+  IEC Coding Type: 0x0
+  PCM:
+    rates [0x1e0]: 44100 48000 88200 96000
+    bits [0xe]: 16 20 24
+    formats [0x5]: PCM AC3
+  Delay: 4 samples
+Node 0x06 [Vendor Defined Widget] wcaps 0xf30201: Stereo Digital
+  Delay: 3 samples
+Node 0x07 [Audio Selector] wcaps 0x300901: Stereo R/L
+  Connection: 3
+     0x02* 0x08 0x0a
+Node 0x08 [Pin Complex] wcaps 0x430681: Stereo Digital
+  Pincap 0x00010024: IN EAPD Detect
+  EAPD 0x2: EAPD
+  Pin Default 0x40f000f0: [N/A] Other at Ext N/A
+    Conn = Unknown, Color = Unknown
+    DefAssociation = 0xf, Sequence = 0x0
+  Pin-ctls: 0x00:
+  Unsolicited: tag=00, enabled=0
+  Power states: 
+  Power: setting=D0, actual=D0
+  Delay: 3 samples
+Node 0x09 [Pin Complex] wcaps 0x400301: Stereo Digital
+  Pincap 0x00000010: OUT
+  Pin Default 0x40f000f1: [N/A] Other at Ext N/A
+    Conn = Unknown, Color = Unknown
+    DefAssociation = 0xf, Sequence = 0x1
+  Pin-ctls: 0x00:
+  Connection: 2
+     0x05* 0x0a
+Node 0x0a [Audio Selector] wcaps 0x30090d: Stereo Amp-Out R/L
+  Control: name="Capture Volume", index=0, device=0
+    ControlAmp: chs=3, dir=Out, idx=0, ofs=0
+  Control: name="Capture Switch", index=0, device=0
+    ControlAmp: chs=3, dir=Out, idx=0, ofs=0
+  Amp-Out caps: ofs=0x00, nsteps=0x0f, stepsize=0x05, mute=1
+  Amp-Out vals:  [0x80 0x80]
+  Connection: 1
+     0x0c
+Node 0x0b [Audio Selector] wcaps 0x300105: Stereo Amp-Out
+  Control: name="Line Out Playback Volume", index=0, device=0
+    ControlAmp: chs=3, dir=Out, idx=0, ofs=0
+  Control: name="Line Out Playback Switch", index=0, device=0
+    ControlAmp: chs=3, dir=Out, idx=0, ofs=0
+  Amp-Out caps: N/A
+  Amp-Out vals:  [0x00 0x00]
+  Connection: 1
+     0x07
+Node 0x0c [Audio Selector] wcaps 0x30010d: Stereo Amp-Out
+  Control: name="Mic Boost Volume", index=0, device=0
+    ControlAmp: chs=3, dir=Out, idx=0, ofs=0
+  Amp-Out caps: ofs=0x00, nsteps=0x04, stepsize=0x27, mute=0
+  Amp-Out vals:  [0x00 0x00]
+  Connection: 5
+     0x10 0x0f* 0x0e 0x0d 0x12
+Node 0x0d [Pin Complex] wcaps 0x400181: Stereo
+  Control: name="Headphone Jack", index=0, device=0
+  Pincap 0x0000003f: IN OUT HP Detect Trigger ImpSense
+  Pin Default 0x0321101f: [Jack] HP Out at Ext Left
+    Conn = 1/8, Color = Black
+    DefAssociation = 0x1, Sequence = 0xf
+  Pin-ctls: 0xc0: OUT HP
+  Unsolicited: tag=01, enabled=1
+  Connection: 1
+     0x0b
+Node 0x0e [Pin Complex] wcaps 0x400181: Stereo
+  Control: name="Speaker Phantom Jack", index=0, device=0
+  Pincap 0x0000003f: IN OUT HP Detect Trigger ImpSense
+  Pin Default 0x90170110: [Fixed] Speaker at Int N/A
+    Conn = Analog, Color = Unknown
+    DefAssociation = 0x1, Sequence = 0x0
+    Misc = NO_PRESENCE
+  Pin-ctls: 0x40: OUT
+  Unsolicited: tag=00, enabled=0
+  Connection: 1
+     0x0b
+Node 0x0f [Pin Complex] wcaps 0x400181: Stereo
+  Control: name="Mic Phantom Jack", index=0, device=0
+  Pincap 0x00000037: IN OUT Detect Trigger ImpSense
+  Pin Default 0x90a70120: [Fixed] Mic at Int N/A
+    Conn = Analog, Color = Unknown
+    DefAssociation = 0x2, Sequence = 0x0
+    Misc = NO_PRESENCE
+  Pin-ctls: 0x20: IN
+  Unsolicited: tag=00, enabled=0
+  Connection: 1
+     0x0b
+Node 0x10 [Pin Complex] wcaps 0x400181: Stereo
+  Control: name="Line Jack", index=0, device=0
+  Pincap 0x00001737: IN OUT Detect Trigger ImpSense
+    Vref caps: HIZ 50 GRD 80
+  Pin Default 0x0381102e: [Jack] Line In at Ext Left
+    Conn = 1/8, Color = Black
+    DefAssociation = 0x2, Sequence = 0xe
+  Pin-ctls: 0x20: IN VREF_HIZ
+  Unsolicited: tag=03, enabled=1
+  Connection: 1
+     0x0b
+Node 0x11 [Pin Complex] wcaps 0x400104: Mono Amp-Out
+  Amp-Out caps: N/A
+  Amp-Out vals:  [0x9f]
+  Pincap 0x00000010: OUT
+  Pin Default 0x40f000f2: [N/A] Other at Ext N/A
+    Conn = Unknown, Color = Unknown
+    DefAssociation = 0xf, Sequence = 0x2
+  Pin-ctls: 0x00:
+  Connection: 1
+     0x13
+Node 0x12 [Pin Complex] wcaps 0x400001: Stereo
+  Pincap 0x00000020: IN
+  Pin Default 0x40f000f3: [N/A] Other at Ext N/A
+    Conn = Unknown, Color = Unknown
+    DefAssociation = 0xf, Sequence = 0x3
+  Pin-ctls: 0x20: IN
+Node 0x13 [Audio Mixer] wcaps 0x200100: Mono
+  Connection: 1
+     0x07
+Node 0x14 [Beep Generator Widget] wcaps 0x70000c: Mono Amp-Out
+  Amp-Out caps: ofs=0x03, nsteps=0x03, stepsize=0x17, mute=1
+  Amp-Out vals:  [0x83]
+Codec: Conexant ID 2c06
+Address: 1
+MFG Function Id: 0x2 (unsol 1)
+Vendor Id: 0x14f12c06
+Subsystem Id: 0x14f1000f
+Revision Id: 0x100000
+Modem Function Group: 0x2
+--endcollapse--
+
+
+!!ALSA Device nodes
+!!-----------------
+
+crw-rw---- 1 root audio 116,  2 Jan 11 20:16 /dev/snd/controlC0
+crw-rw---- 1 root audio 116,  4 Jan 11 20:17 /dev/snd/pcmC0D0c
+crw-rw---- 1 root audio 116,  3 Jan 11 20:17 /dev/snd/pcmC0D0p
+crw-rw---- 1 root audio 116,  1 Jan 11 20:16 /dev/snd/seq
+crw-rw---- 1 root audio 116, 33 Jan 11 20:16 /dev/snd/timer
+
+/dev/snd/by-path:
+total 0
+drwxr-xr-x 2 root root  60 Jan 11  2015 .
+drwxr-xr-x 3 root root 160 Jan 11  2015 ..
+lrwxrwxrwx 1 root root  12 Jan 11 20:16 pci-0000:00:1b.0 -> ../controlC0
+
+
+!!Aplay/Arecord output
+!!--------------------
+
+APLAY
+
+**** List of PLAYBACK Hardware Devices ****
+card 0: Intel [HDA Intel], device 0: STAC9200 Analog [STAC9200 Analog]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+
+ARECORD
+
+**** List of CAPTURE Hardware Devices ****
+card 0: Intel [HDA Intel], device 0: STAC9200 Analog [STAC9200 Analog]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+
+!!Amixer output
+!!-------------
+
+!!-------Mixer controls for card 0 [Intel]
+
+Card hw:0 'Intel'/'HDA Intel at 0xefebc000 irq 21'
+  Mixer name	: 'SigmaTel STAC9200'
+  Components	: 'HDA:83847690,10280201,00102201 HDA:14f12c06,14f1000f,00100000'
+  Controls      : 17
+  Simple ctrls  : 9
+Simple mixer control 'Master',0
+  Capabilities: pvolume pvolume-joined pswitch pswitch-joined
+  Playback channels: Mono
+  Limits: Playback 0 - 31
+  Mono: Playback 31 [100%] [0.00dB] [on]
+Simple mixer control 'PCM',0
+  Capabilities: pvolume
+  Playback channels: Front Left - Front Right
+  Limits: Playback 0 - 255
+  Mono:
+  Front Left: Playback 255 [100%] [0.00dB]
+  Front Right: Playback 255 [100%] [0.00dB]
+Simple mixer control 'Line',0
+  Capabilities: cswitch cswitch-joined cswitch-exclusive
+  Capture exclusive group: 0
+  Capture channels: Mono
+  Mono: Capture [off]
+Simple mixer control 'Line Out',0
+  Capabilities: pvolume pswitch
+  Playback channels: Front Left - Front Right
+  Limits: Playback 0 - 31
+  Mono:
+  Front Left: Playback 0 [0%] [-99999.99dB] [on]
+  Front Right: Playback 0 [0%] [-99999.99dB] [on]
+Simple mixer control 'Mic',0
+  Capabilities: cswitch cswitch-joined cswitch-exclusive
+  Capture exclusive group: 0
+  Capture channels: Mono
+  Mono: Capture [on]
+Simple mixer control 'Mic Boost',0
+  Capabilities: volume
+  Playback channels: Front Left - Front Right
+  Capture channels: Front Left - Front Right
+  Limits: 0 - 4
+  Front Left: 0 [0%] [0.00dB]
+  Front Right: 0 [0%] [0.00dB]
+Simple mixer control 'Capture',0
+  Capabilities: cvolume cswitch
+  Capture channels: Front Left - Front Right
+  Limits: Capture 0 - 15
+  Front Left: Capture 0 [0%] [0.00dB] [off]
+  Front Right: Capture 0 [0%] [0.00dB] [off]
+Simple mixer control 'Auto-Mute Mode',0
+  Capabilities: enum
+  Items: 'Disabled' 'Enabled'
+  Item0: 'Enabled'
+Simple mixer control 'Digital',0
+  Capabilities: cvolume
+  Capture channels: Front Left - Front Right
+  Limits: Capture 0 - 120
+  Front Left: Capture 60 [50%] [0.00dB]
+  Front Right: Capture 60 [50%] [0.00dB]
+
+
+!!Alsactl output
+!!--------------
+
+--startcollapse--
+state.Intel {
+	control.1 {
+		iface MIXER
+		name 'Line Out Playback Volume'
+		value.0 0
+		value.1 0
+		comment {
+			access 'read write'
+			type INTEGER
+			count 2
+			range '0 - 31'
+			dbmin -9999999
+			dbmax 0
+			dbvalue.0 -9999999
+			dbvalue.1 -9999999
+		}
+	}
+	control.2 {
+		iface MIXER
+		name 'Line Out Playback Switch'
+		value.0 true
+		value.1 true
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.3 {
+		iface MIXER
+		name 'Auto-Mute Mode'
+		value Enabled
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Disabled
+			item.1 Enabled
+		}
+	}
+	control.4 {
+		iface MIXER
+		name 'Capture Source'
+		value Mic
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Mic
+			item.1 Line
+		}
+	}
+	control.5 {
+		iface MIXER
+		name 'Capture Volume'
+		value.0 0
+		value.1 0
+		comment {
+			access 'read write'
+			type INTEGER
+			count 2
+			range '0 - 15'
+			dbmin 0
+			dbmax 2250
+			dbvalue.0 0
+			dbvalue.1 0
+		}
+	}
+	control.6 {
+		iface MIXER
+		name 'Capture Switch'
+		value.0 false
+		value.1 false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.7 {
+		iface MIXER
+		name 'Mic Boost Volume'
+		value.0 0
+		value.1 0
+		comment {
+			access 'read write'
+			type INTEGER
+			count 2
+			range '0 - 4'
+			dbmin 0
+			dbmax 4000
+			dbvalue.0 0
+			dbvalue.1 0
+		}
+	}
+	control.8 {
+		iface MIXER
+		name 'Master Playback Volume'
+		value 31
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '0 - 31'
+			dbmin -9999999
+			dbmax 0
+			dbvalue.0 0
+		}
+	}
+	control.9 {
+		iface MIXER
+		name 'Master Playback Switch'
+		value true
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.10 {
+		iface CARD
+		name 'Mic Phantom Jack'
+		value true
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.11 {
+		iface CARD
+		name 'Line Jack'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.12 {
+		iface CARD
+		name 'Headphone Jack'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.13 {
+		iface CARD
+		name 'Speaker Phantom Jack'
+		value true
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.14 {
+		iface PCM
+		name 'Playback Channel Map'
+		value.0 0
+		value.1 0
+		comment {
+			access read
+			type INTEGER
+			count 2
+			range '0 - 36'
+		}
+	}
+	control.15 {
+		iface PCM
+		name 'Capture Channel Map'
+		value.0 0
+		value.1 0
+		comment {
+			access read
+			type INTEGER
+			count 2
+			range '0 - 36'
+		}
+	}
+	control.16 {
+		iface MIXER
+		name 'PCM Playback Volume'
+		value.0 255
+		value.1 255
+		comment {
+			access 'read write user'
+			type INTEGER
+			count 2
+			range '0 - 255'
+			tlv '0000000100000008ffffec1400000014'
+			dbmin -5100
+			dbmax 0
+			dbvalue.0 0
+			dbvalue.1 0
+		}
+	}
+	control.17 {
+		iface MIXER
+		name 'Digital Capture Volume'
+		value.0 60
+		value.1 60
+		comment {
+			access 'read write user'
+			type INTEGER
+			count 2
+			range '0 - 120'
+			tlv '0000000100000008fffff44800000032'
+			dbmin -3000
+			dbmax 3000
+			dbvalue.0 0
+			dbvalue.1 0
+		}
+	}
+}
+--endcollapse--
+
+
+!!All Loaded Modules
+!!------------------
+
+Module
+
+
+!!ALSA/HDA dmesg
+!!--------------
+
+[    0.688331] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+[    0.692454] sound hdaudioC0D0: autoconfig: line_outs=1 (0xe/0x0/0x0/0x0/0x0) type:speaker
+[    0.692472] sound hdaudioC0D0:    speaker_outs=0 (0x0/0x0/0x0/0x0/0x0)
+[    0.692485] sound hdaudioC0D0:    hp_outs=1 (0xd/0x0/0x0/0x0/0x0)
+[    0.692496] sound hdaudioC0D0:    mono: mono_out=0x0
+[    0.692506] sound hdaudioC0D0:    inputs:
+[    0.692516] sound hdaudioC0D0:      Mic=0xf
+[    0.692526] sound hdaudioC0D0:      Line=0x10
+[    0.693524] sound hdaudioC0D1: autoconfig: line_outs=0 (0x0/0x0/0x0/0x0/0x0) type:line
+[    0.693541] sound hdaudioC0D1:    speaker_outs=0 (0x0/0x0/0x0/0x0/0x0)
+[    0.693553] sound hdaudioC0D1:    hp_outs=0 (0x0/0x0/0x0/0x0/0x0)
+[    0.693565] sound hdaudioC0D1:    mono: mono_out=0x0
+[    0.693575] sound hdaudioC0D1:    inputs:
+[    0.740585] ata1.00: ATA-6: TOSHIBA MK4009GAL, BS111G, max UDMA/100
+--
+[    4.552659]      nameserver0=10.10.0.1
+[    4.561045] ALSA device list:
+[    4.565218]   #0: HDA Intel at 0xefebc000 irq 21
+[    4.924196] VFS: Mounted root (nfs filesystem) readonly on device 0:14.
+
+
+
+--------------060202030607030805060701--
