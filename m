@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346AbbAKLrb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 06:47:31 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:58949 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859AbbAKLra (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 06:47:30 -0500
-Date: Sun, 11 Jan 2015 12:47:25 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@codemonkey.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 03/10] clocksource: Remove clocksource_max_deferment()
-Message-ID: <20150111114724.GE4467@localhost.localdomain>
-References: <1420850068-27828-1-git-send-email-john.stultz@linaro.org>
- <1420850068-27828-4-git-send-email-john.stultz@linaro.org>
+	id S1751645AbbAKLzP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 06:55:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59965 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750807AbbAKLzM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jan 2015 06:55:12 -0500
+Date: Sun, 11 Jan 2015 13:55:04 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [PATCH v2 00/40] uaccess: fix sparse warning on get/put_user for
+ bitwise types
+Message-ID: <20150111115504.GA13570@redhat.com>
+References: <1420558883-10131-1-git-send-email-mst@redhat.com>
+ <4461163.Sc5FsMDTBa@wuerfel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1420850068-27828-4-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4461163.Sc5FsMDTBa@wuerfel>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 06, 2015 at 08:08:57PM +0100, Arnd Bergmann wrote:
+> On Tuesday 06 January 2015 17:43:28 Michael S. Tsirkin wrote:
+> > 
+> > I tested this on x86 only. Since it's just adding __force, should be
+> > trivially safe everywhere?
+> > 
+> > 
+> > Arnd, did you merge v1 already? If yes, can you please replace with
+> > this version?
+> > 
+> 
+> I haven't merged it yet. I see that more Acks and some comments are
+> coming in. Once those are done, could you send a pull request? It
+> might be useful to have a branch that can be shared with architecture
+> trees if necessary to avoid merge conflicts.
+> 
+> 	Arnd
 
-This series added:
+OK, I got a bunch of acks, mostly it seems to have calmed down.
+Heiko Carstens (s390 maintainer) says he won't apply whitespace changes:
+http://mid.gmane.org/20150107083339.GB4365@osiris
+so I dropped s390 patches.
 
-+	/* Return 50% of the actual maximum, so we can detect bad values */
-+	max_nsecs >>= 1;
+The rest is tagged:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git tags/uaccess_for_upstream
+and pushed out to linux-next.
 
-and then...
+I'll give it a couple of days there, then send a pull request - Arnd, you
+meant I should send it to you, right?
 
-On Fri, Jan 09, 2015 at 04:34:21PM -0800, John Stultz wrote:
-> @@ -760,7 +746,8 @@ void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
->  		cs->maxadj = clocksource_max_adjustment(cs);
->  	}
->  
-> -	cs->max_idle_ns = clocksource_max_deferment(cs);
-> +	cs->max_idle_ns = clocks_calc_max_nsecs(cs->mult, cs->shift,
-> +						 cs->maxadj, cs->mask);
->  }
->  EXPORT_SYMBOL_GPL(__clocksource_updatefreq_scale);
->  
-> @@ -807,7 +794,8 @@ int clocksource_register(struct clocksource *cs)
->  		cs->name);
->  
->  	/* calculate max idle time permitted for this clocksource */
-> -	cs->max_idle_ns = clocksource_max_deferment(cs);
-> +	cs->max_idle_ns = clocks_calc_max_nsecs(cs->mult, cs->shift,
-> +						 cs->maxadj, cs->mask);
-
-... the whole world's maximum idle time is artificially reduced by
-half in order to catch some rare HW bug?  Not a very green solution.
-
-Thanks,
-Richard
+-- 
+MST
