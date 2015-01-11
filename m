@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960AbbAKPxY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 10:53:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35186 "EHLO mx2.suse.de"
+	id S1751978AbbAKPz0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 10:55:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35206 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751267AbbAKPxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 10:53:21 -0500
-Date: Sun, 11 Jan 2015 16:53:20 +0100
-Message-ID: <s5hvbkd2u1b.wl-tiwai@suse.de>
+	id S1751048AbbAKPzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jan 2015 10:55:25 -0500
+Date: Sun, 11 Jan 2015 16:55:23 +0100
+Message-ID: <s5htwzx2txw.wl-tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+Cc: Jaroslav Kysela <perex@perex.cz>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Rashika Kheria <rashika.kheria@gmail.com>, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ALSA: lola: lola_mixer: Remove some unused functions
-In-Reply-To: <1420986242-18502-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1420986242-18502-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: Re: [PATCH] ALSA: lx6464es: lx_core: Remove some unused functions
+In-Reply-To: <1420990982-20187-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1420990982-20187-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.4
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,15 +27,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Sun, 11 Jan 2015 15:24:02 +0100,
+At Sun, 11 Jan 2015 16:43:02 +0100,
 Rickard Strandqvist wrote:
 > 
 > Removes some functions that are not used anywhere:
-> lola_restore_mixer() lola_save_mixer()
+> lx_buffer_cancel() lx_buffer_free() lx_stream_sample_position()
+> lx_stream_state() lx_pipe_sample_count()
 
-These are needed (yet-to-be-implemented) suspend/resume for this
-driver.
+We really shouldn't delete the code but keep somehow disabled for such
+a driver that has no hardware spec documents available.  Since the
+source code is the only reference, the implemented code is the only
+information if we need to change / fix anything.
 
+
+thanks,
 
 Takashi
 
@@ -41,77 +49,177 @@ Takashi
 > 
 > Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 > ---
->  sound/pci/lola/lola.h       |    2 --
->  sound/pci/lola/lola_mixer.c |   43 -------------------------------------------
->  2 files changed, 45 deletions(-)
+>  sound/pci/lx6464es/lx_core.c |  107 ------------------------------------------
+>  sound/pci/lx6464es/lx_core.h |   10 ----
+>  2 files changed, 117 deletions(-)
 > 
-> diff --git a/sound/pci/lola/lola.h b/sound/pci/lola/lola.h
-> index f0b1000..9125916 100644
-> --- a/sound/pci/lola/lola.h
-> +++ b/sound/pci/lola/lola.h
-> @@ -513,8 +513,6 @@ int lola_init_mixer_widget(struct lola *chip, int nid);
->  void lola_free_mixer(struct lola *chip);
->  int lola_create_mixer(struct lola *chip);
->  int lola_setup_all_analog_gains(struct lola *chip, int dir, bool mute);
-> -void lola_save_mixer(struct lola *chip);
-> -void lola_restore_mixer(struct lola *chip);
->  int lola_set_src_config(struct lola *chip, unsigned int src_mask, bool update);
->  
->  /* proc */
-> diff --git a/sound/pci/lola/lola_mixer.c b/sound/pci/lola/lola_mixer.c
-> index 782f4d8..47ac93a 100644
-> --- a/sound/pci/lola/lola_mixer.c
-> +++ b/sound/pci/lola/lola_mixer.c
-> @@ -348,49 +348,6 @@ int lola_setup_all_analog_gains(struct lola *chip, int dir, bool mute)
->  	return lola_codec_flush(chip);
+> diff --git a/sound/pci/lx6464es/lx_core.c b/sound/pci/lx6464es/lx_core.c
+> index f3d6202..5621cd7 100644
+> --- a/sound/pci/lx6464es/lx_core.c
+> +++ b/sound/pci/lx6464es/lx_core.c
+> @@ -582,33 +582,6 @@ int lx_pipe_pause(struct lx6464es *chip, u32 pipe, int is_capture)
 >  }
 >  
-> -void lola_save_mixer(struct lola *chip)
-> -{
-> -	/* mute analog output */
-> -	if (chip->mixer.array_saved) {
-> -		/* store contents of mixer array */
-> -		memcpy_fromio(chip->mixer.array_saved, chip->mixer.array,
-> -			      sizeof(*chip->mixer.array));
-> -	}
-> -	lola_setup_all_analog_gains(chip, PLAY, true); /* output mute */
-> -}
-> -
-> -void lola_restore_mixer(struct lola *chip)
-> -{
-> -	int i;
-> -
-> -	/*lola_reset_setups(chip);*/
-> -	if (chip->mixer.array_saved) {
-> -		/* restore contents of mixer array */
-> -		memcpy_toio(chip->mixer.array, chip->mixer.array_saved,
-> -			    sizeof(*chip->mixer.array));
-> -		/* inform micro-controller about all restored values
-> -		 * and ignore return values
-> -		 */
-> -		for (i = 0; i < chip->mixer.src_phys_ins; i++)
-> -			lola_codec_write(chip, chip->mixer.nid,
-> -					 LOLA_VERB_SET_SOURCE_GAIN,
-> -					 i, 0);
-> -		for (i = 0; i < chip->mixer.src_stream_outs; i++)
-> -			lola_codec_write(chip, chip->mixer.nid,
-> -					 LOLA_VERB_SET_SOURCE_GAIN,
-> -					 chip->mixer.src_stream_out_ofs + i, 0);
-> -		for (i = 0; i < chip->mixer.dest_stream_ins; i++)
-> -			lola_codec_write(chip, chip->mixer.nid,
-> -					 LOLA_VERB_SET_DESTINATION_GAIN,
-> -					 i, 0);
-> -		for (i = 0; i < chip->mixer.dest_phys_outs; i++)
-> -			lola_codec_write(chip, chip->mixer.nid,
-> -					 LOLA_VERB_SET_DESTINATION_GAIN,
-> -					 chip->mixer.dest_phys_out_ofs + i, 0);
-> -		lola_codec_flush(chip);
-> -	}
-> -}
-> -
->  /*
->   */
 >  
+> -int lx_pipe_sample_count(struct lx6464es *chip, u32 pipe, int is_capture,
+> -			 u64 *rsample_count)
+> -{
+> -	int err;
+> -	u32 pipe_cmd = PIPE_INFO_TO_CMD(is_capture, pipe);
+> -
+> -	mutex_lock(&chip->msg_lock);
+> -	lx_message_init(&chip->rmh, CMD_0A_GET_PIPE_SPL_COUNT);
+> -
+> -	chip->rmh.cmd[0] |= pipe_cmd;
+> -	chip->rmh.stat_len = 2;	/* need all words here! */
+> -
+> -	err = lx_message_send_atomic(chip, &chip->rmh); /* don't sleep! */
+> -
+> -	if (err != 0)
+> -		dev_err(chip->card->dev,
+> -			"could not query pipe's sample count\n");
+> -	else {
+> -		*rsample_count = ((u64)(chip->rmh.stat[0] & MASK_SPL_COUNT_HI)
+> -				  << 24)     /* hi part */
+> -			+ chip->rmh.stat[1]; /* lo part */
+> -	}
+> -
+> -	mutex_unlock(&chip->msg_lock);
+> -	return err;
+> -}
+> -
+>  int lx_pipe_state(struct lx6464es *chip, u32 pipe, int is_capture, u16 *rstate)
+>  {
+>  	int err;
+> @@ -714,46 +687,6 @@ int lx_stream_set_format(struct lx6464es *chip, struct snd_pcm_runtime *runtime,
+>  	return err;
+>  }
+>  
+> -int lx_stream_state(struct lx6464es *chip, u32 pipe, int is_capture,
+> -		    int *rstate)
+> -{
+> -	int err;
+> -	u32 pipe_cmd = PIPE_INFO_TO_CMD(is_capture, pipe);
+> -
+> -	mutex_lock(&chip->msg_lock);
+> -	lx_message_init(&chip->rmh, CMD_0E_GET_STREAM_SPL_COUNT);
+> -
+> -	chip->rmh.cmd[0] |= pipe_cmd;
+> -
+> -	err = lx_message_send_atomic(chip, &chip->rmh);
+> -
+> -	*rstate = (chip->rmh.stat[0] & SF_START) ? START_STATE : PAUSE_STATE;
+> -
+> -	mutex_unlock(&chip->msg_lock);
+> -	return err;
+> -}
+> -
+> -int lx_stream_sample_position(struct lx6464es *chip, u32 pipe, int is_capture,
+> -			      u64 *r_bytepos)
+> -{
+> -	int err;
+> -	u32 pipe_cmd = PIPE_INFO_TO_CMD(is_capture, pipe);
+> -
+> -	mutex_lock(&chip->msg_lock);
+> -	lx_message_init(&chip->rmh, CMD_0E_GET_STREAM_SPL_COUNT);
+> -
+> -	chip->rmh.cmd[0] |= pipe_cmd;
+> -
+> -	err = lx_message_send_atomic(chip, &chip->rmh);
+> -
+> -	*r_bytepos = ((u64) (chip->rmh.stat[0] & MASK_SPL_COUNT_HI)
+> -		      << 32)	     /* hi part */
+> -		+ chip->rmh.stat[1]; /* lo part */
+> -
+> -	mutex_unlock(&chip->msg_lock);
+> -	return err;
+> -}
+> -
+>  /* low-level buffer handling */
+>  int lx_buffer_give(struct lx6464es *chip, u32 pipe, int is_capture,
+>  		   u32 buffer_size, u32 buf_address_lo, u32 buf_address_hi,
+> @@ -803,46 +736,6 @@ int lx_buffer_give(struct lx6464es *chip, u32 pipe, int is_capture,
+>  	return err;
+>  }
+>  
+> -int lx_buffer_free(struct lx6464es *chip, u32 pipe, int is_capture,
+> -		   u32 *r_buffer_size)
+> -{
+> -	int err;
+> -	u32 pipe_cmd = PIPE_INFO_TO_CMD(is_capture, pipe);
+> -
+> -	mutex_lock(&chip->msg_lock);
+> -	lx_message_init(&chip->rmh, CMD_11_CANCEL_BUFFER);
+> -
+> -	chip->rmh.cmd[0] |= pipe_cmd;
+> -	chip->rmh.cmd[0] |= MASK_BUFFER_ID; /* ask for the current buffer: the
+> -					     * microblaze will seek for it */
+> -
+> -	err = lx_message_send_atomic(chip, &chip->rmh);
+> -
+> -	if (err == 0)
+> -		*r_buffer_size = chip->rmh.stat[0]  & MASK_DATA_SIZE;
+> -
+> -	mutex_unlock(&chip->msg_lock);
+> -	return err;
+> -}
+> -
+> -int lx_buffer_cancel(struct lx6464es *chip, u32 pipe, int is_capture,
+> -		     u32 buffer_index)
+> -{
+> -	int err;
+> -	u32 pipe_cmd = PIPE_INFO_TO_CMD(is_capture, pipe);
+> -
+> -	mutex_lock(&chip->msg_lock);
+> -	lx_message_init(&chip->rmh, CMD_11_CANCEL_BUFFER);
+> -
+> -	chip->rmh.cmd[0] |= pipe_cmd;
+> -	chip->rmh.cmd[0] |= buffer_index;
+> -
+> -	err = lx_message_send_atomic(chip, &chip->rmh);
+> -
+> -	mutex_unlock(&chip->msg_lock);
+> -	return err;
+> -}
+> -
+>  
+>  /* low-level gain/peak handling
+>   *
+> diff --git a/sound/pci/lx6464es/lx_core.h b/sound/pci/lx6464es/lx_core.h
+> index 0cc140c..f95ed1b 100644
+> --- a/sound/pci/lx6464es/lx_core.h
+> +++ b/sound/pci/lx6464es/lx_core.h
+> @@ -120,8 +120,6 @@ int lx_dsp_get_mac(struct lx6464es *chip);
+>  int lx_pipe_allocate(struct lx6464es *chip, u32 pipe, int is_capture,
+>  		     int channels);
+>  int lx_pipe_release(struct lx6464es *chip, u32 pipe, int is_capture);
+> -int lx_pipe_sample_count(struct lx6464es *chip, u32 pipe, int is_capture,
+> -			 u64 *rsample_count);
+>  int lx_pipe_state(struct lx6464es *chip, u32 pipe, int is_capture, u16 *rstate);
+>  int lx_pipe_stop(struct lx6464es *chip, u32 pipe, int is_capture);
+>  int lx_pipe_start(struct lx6464es *chip, u32 pipe, int is_capture);
+> @@ -133,10 +131,6 @@ int lx_pipe_wait_for_idle(struct lx6464es *chip, u32 pipe, int is_capture);
+>  /* low-level stream handling */
+>  int lx_stream_set_format(struct lx6464es *chip, struct snd_pcm_runtime *runtime,
+>  			 u32 pipe, int is_capture);
+> -int lx_stream_state(struct lx6464es *chip, u32 pipe, int is_capture,
+> -		    int *rstate);
+> -int lx_stream_sample_position(struct lx6464es *chip, u32 pipe, int is_capture,
+> -			      u64 *r_bytepos);
+>  
+>  int lx_stream_set_state(struct lx6464es *chip, u32 pipe,
+>  			int is_capture, enum stream_state_t state);
+> @@ -168,10 +162,6 @@ int lx_buffer_ask(struct lx6464es *chip, u32 pipe, int is_capture,
+>  int lx_buffer_give(struct lx6464es *chip, u32 pipe, int is_capture,
+>  		   u32 buffer_size, u32 buf_address_lo, u32 buf_address_hi,
+>  		   u32 *r_buffer_index);
+> -int lx_buffer_free(struct lx6464es *chip, u32 pipe, int is_capture,
+> -		   u32 *r_buffer_size);
+> -int lx_buffer_cancel(struct lx6464es *chip, u32 pipe, int is_capture,
+> -		     u32 buffer_index);
+>  
+>  /* low-level gain/peak handling */
+>  int lx_level_unmute(struct lx6464es *chip, int is_capture, int unmute);
 > -- 
 > 1.7.10.4
 > 
