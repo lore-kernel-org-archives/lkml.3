@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598AbbAKRyH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 12:54:07 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:47742 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952AbbAKRyF (ORCPT
+	id S1751406AbbAKSFB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 13:05:01 -0500
+Received: from smtprelay02.ispgateway.de ([80.67.31.36]:45540 "EHLO
+	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbbAKSE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 12:54:05 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Doug Thompson <dougthompson@xmission.com>, Borislav Petkov <bp@alien8.de>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] edac: i5100_edac: Remove unused function
-Date: Sun, 11 Jan 2015 18:57:10 +0100
-Message-Id: <1420999030-21770-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 11 Jan 2015 13:04:59 -0500
+From: Christoph Jaeger <cj@linux.com>
+To: davem@davemloft.net
+Cc: willemb@google.com, edumazet@google.com, dborkman@redhat.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Jaeger <cj@linux.com>
+Subject: [PATCH net] packet: bail out of packet_snd() if L2 header creation fails
+Date: Sun, 11 Jan 2015 13:01:16 -0500
+Message-Id: <1420999276-28225-1-git-send-email-cj@linux.com>
+X-Mailer: git-send-email 2.1.0
+X-Df-Sender: MTg4NDM4Mw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function i5100_recmema_dm_buf_id() that is not used anywhere.
+Due to a misplaced parenthesis, the expression
 
-This was partially found by using a static code analysis program called cppcheck.
+  (unlikely(offset) < 0),
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+which expands to
+
+  (__builtin_expect(!!(offset), 0) < 0),
+
+never evaluates to true. Therefore, when sending packets with
+PF_PACKET/SOCK_DGRAM, packet_snd() does not abort as intended
+if the creation of the layer 2 header fails.
+
+Spotted by Coverity - CID 1259975 ("Operands don't affect result").
+
+Fixes: 9c7077622dd9 ("packet: make packet_snd fail on len smaller than l2 header")
+Signed-off-by: Christoph Jaeger <cj@linux.com>
 ---
- drivers/edac/i5100_edac.c |    5 -----
- 1 file changed, 5 deletions(-)
+ net/packet/af_packet.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/edac/i5100_edac.c b/drivers/edac/i5100_edac.c
-index 6247d18..e9f8a39 100644
---- a/drivers/edac/i5100_edac.c
-+++ b/drivers/edac/i5100_edac.c
-@@ -279,11 +279,6 @@ static inline u32 i5100_recmema_rank(u32 a)
- 	return i5100_nrecmema_rank(a);
- }
- 
--static inline u32 i5100_recmema_dm_buf_id(u32 a)
--{
--	return i5100_nrecmema_dm_buf_id(a);
--}
--
- static inline u32 i5100_recmemb_cas(u32 a)
- {
- 	return i5100_nrecmemb_cas(a);
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index 6880f34..9cfe2e1 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -2517,7 +2517,7 @@ static int packet_snd(struct socket *sock, struct msghdr *msg, size_t len)
+ 	err = -EINVAL;
+ 	if (sock->type == SOCK_DGRAM) {
+ 		offset = dev_hard_header(skb, dev, ntohs(proto), addr, NULL, len);
+-		if (unlikely(offset) < 0)
++		if (unlikely(offset < 0))
+ 			goto out_free;
+ 	} else {
+ 		if (ll_header_truncated(dev, len))
 -- 
-1.7.10.4
+2.1.0
 
