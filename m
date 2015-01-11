@@ -1,233 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738AbbAKPld (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 10:41:33 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60042 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751358AbbAKPlc (ORCPT
+	id S1751638AbbAKPj6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 10:39:58 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:58746 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028AbbAKPj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 10:41:32 -0500
-Message-ID: <54B299A0.1000504@pengutronix.de>
-Date: Sun, 11 Jan 2015 16:41:20 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
-CC: "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Soren Brinkmann <sorenb@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "wg@grandegger.com" <wg@grandegger.com>
-Subject: Re: [PATCH v4] can: Convert to runtime_pm
-References: <58f37b6fd9104ce185c413c473fe047b@BY2FFO11FD050.protection.gbl> <54AD267C.4060004@pengutronix.de> <12e7202e137e4d5680185748ebf0cf2d@BY2FFO11FD060.protection.gbl>
-In-Reply-To: <12e7202e137e4d5680185748ebf0cf2d@BY2FFO11FD060.protection.gbl>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="IIgnhFqQxjSk2sG6boEQrHjQIJpBHqmER"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Sun, 11 Jan 2015 10:39:57 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Rashika Kheria <rashika.kheria@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ALSA: lx6464es: lx_core: Remove some unused functions
+Date: Sun, 11 Jan 2015 16:43:02 +0100
+Message-Id: <1420990982-20187-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---IIgnhFqQxjSk2sG6boEQrHjQIJpBHqmER
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Removes some functions that are not used anywhere:
+lx_buffer_cancel() lx_buffer_free() lx_stream_sample_position()
+lx_stream_state() lx_pipe_sample_count()
 
-On 01/11/2015 06:34 AM, Appana Durga Kedareswara Rao wrote:
-[...]
->>>             return ret;
->>>     }
->>>
->>>     priv->write_reg(priv, XCAN_MSR_OFFSET, 0);
->>>     priv->write_reg(priv, XCAN_SRR_OFFSET, XCAN_SRR_CEN_MASK);
->>>
->>>     if (netif_running(ndev)) {
->>>             priv->can.state =3D CAN_STATE_ERROR_ACTIVE;
->>
->> What happens if the device was not in ACTIVE state prior to the
->> runtime_suspend?
->>
->=20
-> I am not sure about the state of CAN at this point of time.
-> I just followed what other drivers are following for run time  suspend =
-:).
+This was partially found by using a static code analysis program called cppcheck.
 
-Please check the state of the hardware if you go with bus off into
-suspend and then resume.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ sound/pci/lx6464es/lx_core.c |  107 ------------------------------------------
+ sound/pci/lx6464es/lx_core.h |   10 ----
+ 2 files changed, 117 deletions(-)
 
->>>             netif_device_attach(ndev);
->>>             netif_start_queue(ndev);
->>>     }
->>>
->>>     return 0;
->>> }
->>
->>
->>>
->>> @@ -1020,9 +1035,9 @@ static int __maybe_unused xcan_resume(struct
->>> device *dev)
->>>
->>>     priv->write_reg(priv, XCAN_MSR_OFFSET, 0);
->>>     priv->write_reg(priv, XCAN_SRR_OFFSET, XCAN_SRR_CEN_MASK);
->>> -   priv->can.state =3D CAN_STATE_ERROR_ACTIVE;
->>>
->>>     if (netif_running(ndev)) {
->>> +           priv->can.state =3D CAN_STATE_ERROR_ACTIVE;
->>>             netif_device_attach(ndev);
->>>             netif_start_queue(ndev);
->>>     }
->>> @@ -1030,7 +1045,10 @@ static int __maybe_unused xcan_resume(struct
->> device *dev)
->>>     return 0;
->>>  }
->>>
->>> -static SIMPLE_DEV_PM_OPS(xcan_dev_pm_ops, xcan_suspend,
->> xcan_resume);
->>> +static const struct dev_pm_ops xcan_dev_pm_ops =3D {
->>> +   SET_SYSTEM_SLEEP_PM_OPS(xcan_suspend, xcan_resume)
->>> +   SET_PM_RUNTIME_PM_OPS(xcan_runtime_suspend,
->> xcan_runtime_resume,
->>> +NULL) };
->>>
->>>  /**
->>>   * xcan_probe - Platform registration call @@ -1071,7 +1089,7 @@
->>> static int xcan_probe(struct platform_device *pdev)
->>>             return -ENOMEM;
->>>
->>>     priv =3D netdev_priv(ndev);
->>> -   priv->dev =3D ndev;
->>> +   priv->dev =3D &pdev->dev;
->>>     priv->can.bittiming_const =3D &xcan_bittiming_const;
->>>     priv->can.do_set_mode =3D xcan_do_set_mode;
->>>     priv->can.do_get_berr_counter =3D xcan_get_berr_counter; @@ -
->> 1137,15
->>> +1155,22 @@ static int xcan_probe(struct platform_device *pdev)
->>>
->>>     netif_napi_add(ndev, &priv->napi, xcan_rx_poll, rx_max);
->>>
->>> +   pm_runtime_set_active(&pdev->dev);
->>> +   pm_runtime_irq_safe(&pdev->dev);
->>> +   pm_runtime_enable(&pdev->dev);
->>> +   pm_runtime_get_sync(&pdev->dev);
->> Check error values?
->=20
-> Ok
->>> +
->>>     ret =3D register_candev(ndev);
->>>     if (ret) {
->>>             dev_err(&pdev->dev, "fail to register failed (err=3D%d)\n=
-",
->> ret);
->>> +           pm_runtime_put(priv->dev);
->>
->> Please move the pm_runtime_put into the common error exit path.
->>
->=20
-> Ok
->=20
->>>             goto err_unprepare_disable_busclk;
->>>     }
->>>
->>>     devm_can_led_init(ndev);
->>> -   clk_disable_unprepare(priv->bus_clk);
->>> -   clk_disable_unprepare(priv->can_clk);
->>> +
->>> +   pm_runtime_put(&pdev->dev);
->>> +
->>>     netdev_dbg(ndev, "reg_base=3D0x%p irq=3D%d clock=3D%d, tx fifo
->> depth:%d\n",
->>>                     priv->reg_base, ndev->irq, priv->can.clock.freq,
->>>                     priv->tx_max);
->>>
->>
->> I think you have to convert the _remove() function, too. Have a look a=
-t the
->> gpio-zynq.c driver:
->>
->>> static int zynq_gpio_remove(struct platform_device *pdev) {
->>>     struct zynq_gpio *gpio =3D platform_get_drvdata(pdev);
->>>
->>>     pm_runtime_get_sync(&pdev->dev);
->>
->> However I don't understand why the get_sync() is here. Maybe S=C3=B6re=
-n can
->> help?
->=20
-> I converted the remove function to use the run-time PM and .
-> Below is the remove code snippet.
->=20
->        ret =3D pm_runtime_get_sync(&pdev->dev);
->         if (ret < 0) {
->                 netdev_err(ndev, "%s: pm_runtime_get failed(%d)\n",
->                                 __func__, ret);
->                 return ret;
->         }
->=20
->         if (set_reset_mode(ndev) < 0)
->                 netdev_err(ndev, "mode resetting failed!\n");
->=20
->         unregister_candev(ndev);
->         netif_napi_del(&priv->napi);
->         free_candev(ndev);
+diff --git a/sound/pci/lx6464es/lx_core.c b/sound/pci/lx6464es/lx_core.c
+index f3d6202..5621cd7 100644
+--- a/sound/pci/lx6464es/lx_core.c
++++ b/sound/pci/lx6464es/lx_core.c
+@@ -582,33 +582,6 @@ int lx_pipe_pause(struct lx6464es *chip, u32 pipe, int is_capture)
+ }
+ 
+ 
+-int lx_pipe_sample_count(struct lx6464es *chip, u32 pipe, int is_capture,
+-			 u64 *rsample_count)
+-{
+-	int err;
+-	u32 pipe_cmd = PIPE_INFO_TO_CMD(is_capture, pipe);
+-
+-	mutex_lock(&chip->msg_lock);
+-	lx_message_init(&chip->rmh, CMD_0A_GET_PIPE_SPL_COUNT);
+-
+-	chip->rmh.cmd[0] |= pipe_cmd;
+-	chip->rmh.stat_len = 2;	/* need all words here! */
+-
+-	err = lx_message_send_atomic(chip, &chip->rmh); /* don't sleep! */
+-
+-	if (err != 0)
+-		dev_err(chip->card->dev,
+-			"could not query pipe's sample count\n");
+-	else {
+-		*rsample_count = ((u64)(chip->rmh.stat[0] & MASK_SPL_COUNT_HI)
+-				  << 24)     /* hi part */
+-			+ chip->rmh.stat[1]; /* lo part */
+-	}
+-
+-	mutex_unlock(&chip->msg_lock);
+-	return err;
+-}
+-
+ int lx_pipe_state(struct lx6464es *chip, u32 pipe, int is_capture, u16 *rstate)
+ {
+ 	int err;
+@@ -714,46 +687,6 @@ int lx_stream_set_format(struct lx6464es *chip, struct snd_pcm_runtime *runtime,
+ 	return err;
+ }
+ 
+-int lx_stream_state(struct lx6464es *chip, u32 pipe, int is_capture,
+-		    int *rstate)
+-{
+-	int err;
+-	u32 pipe_cmd = PIPE_INFO_TO_CMD(is_capture, pipe);
+-
+-	mutex_lock(&chip->msg_lock);
+-	lx_message_init(&chip->rmh, CMD_0E_GET_STREAM_SPL_COUNT);
+-
+-	chip->rmh.cmd[0] |= pipe_cmd;
+-
+-	err = lx_message_send_atomic(chip, &chip->rmh);
+-
+-	*rstate = (chip->rmh.stat[0] & SF_START) ? START_STATE : PAUSE_STATE;
+-
+-	mutex_unlock(&chip->msg_lock);
+-	return err;
+-}
+-
+-int lx_stream_sample_position(struct lx6464es *chip, u32 pipe, int is_capture,
+-			      u64 *r_bytepos)
+-{
+-	int err;
+-	u32 pipe_cmd = PIPE_INFO_TO_CMD(is_capture, pipe);
+-
+-	mutex_lock(&chip->msg_lock);
+-	lx_message_init(&chip->rmh, CMD_0E_GET_STREAM_SPL_COUNT);
+-
+-	chip->rmh.cmd[0] |= pipe_cmd;
+-
+-	err = lx_message_send_atomic(chip, &chip->rmh);
+-
+-	*r_bytepos = ((u64) (chip->rmh.stat[0] & MASK_SPL_COUNT_HI)
+-		      << 32)	     /* hi part */
+-		+ chip->rmh.stat[1]; /* lo part */
+-
+-	mutex_unlock(&chip->msg_lock);
+-	return err;
+-}
+-
+ /* low-level buffer handling */
+ int lx_buffer_give(struct lx6464es *chip, u32 pipe, int is_capture,
+ 		   u32 buffer_size, u32 buf_address_lo, u32 buf_address_hi,
+@@ -803,46 +736,6 @@ int lx_buffer_give(struct lx6464es *chip, u32 pipe, int is_capture,
+ 	return err;
+ }
+ 
+-int lx_buffer_free(struct lx6464es *chip, u32 pipe, int is_capture,
+-		   u32 *r_buffer_size)
+-{
+-	int err;
+-	u32 pipe_cmd = PIPE_INFO_TO_CMD(is_capture, pipe);
+-
+-	mutex_lock(&chip->msg_lock);
+-	lx_message_init(&chip->rmh, CMD_11_CANCEL_BUFFER);
+-
+-	chip->rmh.cmd[0] |= pipe_cmd;
+-	chip->rmh.cmd[0] |= MASK_BUFFER_ID; /* ask for the current buffer: the
+-					     * microblaze will seek for it */
+-
+-	err = lx_message_send_atomic(chip, &chip->rmh);
+-
+-	if (err == 0)
+-		*r_buffer_size = chip->rmh.stat[0]  & MASK_DATA_SIZE;
+-
+-	mutex_unlock(&chip->msg_lock);
+-	return err;
+-}
+-
+-int lx_buffer_cancel(struct lx6464es *chip, u32 pipe, int is_capture,
+-		     u32 buffer_index)
+-{
+-	int err;
+-	u32 pipe_cmd = PIPE_INFO_TO_CMD(is_capture, pipe);
+-
+-	mutex_lock(&chip->msg_lock);
+-	lx_message_init(&chip->rmh, CMD_11_CANCEL_BUFFER);
+-
+-	chip->rmh.cmd[0] |= pipe_cmd;
+-	chip->rmh.cmd[0] |= buffer_index;
+-
+-	err = lx_message_send_atomic(chip, &chip->rmh);
+-
+-	mutex_unlock(&chip->msg_lock);
+-	return err;
+-}
+-
+ 
+ /* low-level gain/peak handling
+  *
+diff --git a/sound/pci/lx6464es/lx_core.h b/sound/pci/lx6464es/lx_core.h
+index 0cc140c..f95ed1b 100644
+--- a/sound/pci/lx6464es/lx_core.h
++++ b/sound/pci/lx6464es/lx_core.h
+@@ -120,8 +120,6 @@ int lx_dsp_get_mac(struct lx6464es *chip);
+ int lx_pipe_allocate(struct lx6464es *chip, u32 pipe, int is_capture,
+ 		     int channels);
+ int lx_pipe_release(struct lx6464es *chip, u32 pipe, int is_capture);
+-int lx_pipe_sample_count(struct lx6464es *chip, u32 pipe, int is_capture,
+-			 u64 *rsample_count);
+ int lx_pipe_state(struct lx6464es *chip, u32 pipe, int is_capture, u16 *rstate);
+ int lx_pipe_stop(struct lx6464es *chip, u32 pipe, int is_capture);
+ int lx_pipe_start(struct lx6464es *chip, u32 pipe, int is_capture);
+@@ -133,10 +131,6 @@ int lx_pipe_wait_for_idle(struct lx6464es *chip, u32 pipe, int is_capture);
+ /* low-level stream handling */
+ int lx_stream_set_format(struct lx6464es *chip, struct snd_pcm_runtime *runtime,
+ 			 u32 pipe, int is_capture);
+-int lx_stream_state(struct lx6464es *chip, u32 pipe, int is_capture,
+-		    int *rstate);
+-int lx_stream_sample_position(struct lx6464es *chip, u32 pipe, int is_capture,
+-			      u64 *r_bytepos);
+ 
+ int lx_stream_set_state(struct lx6464es *chip, u32 pipe,
+ 			int is_capture, enum stream_state_t state);
+@@ -168,10 +162,6 @@ int lx_buffer_ask(struct lx6464es *chip, u32 pipe, int is_capture,
+ int lx_buffer_give(struct lx6464es *chip, u32 pipe, int is_capture,
+ 		   u32 buffer_size, u32 buf_address_lo, u32 buf_address_hi,
+ 		   u32 *r_buffer_index);
+-int lx_buffer_free(struct lx6464es *chip, u32 pipe, int is_capture,
+-		   u32 *r_buffer_size);
+-int lx_buffer_cancel(struct lx6464es *chip, u32 pipe, int is_capture,
+-		     u32 buffer_index);
+ 
+ /* low-level gain/peak handling */
+ int lx_level_unmute(struct lx6464es *chip, int is_capture, int unmute);
+-- 
+1.7.10.4
 
->         pm_runtime_disable(&pdev->dev);
-
-Can this make a call to xcan_runtime_*()? I'm asking since the ndev has
-been unregistered and already free()ed. Better move this directly after
-the set_reset_mode(). This way you are symmetric to the probe() function.=
-
-
-> Observed the below things in the /sys/kernel/debug/clk/clk_summary.
->=20
->                                 Modprobe        ifconfig up    ifconfig=
- down   rmmod  Modprobe  ifconfig up   ifconfig down  rmmod  Modprobe  if=
-config up   ifconfig down  rmmod
-> Clk_prepare count:                1             1               1      =
-         1       2       2               2               2       3       =
-3               3               3
-> Clk_enable count:                 0             1               0      =
-         1       2       2               2               2       3       =
-3               3               3
-
-As the numbers are increasing you have a clk_prepare_enable() leak. Your
-remove() function is missing the clk_disable_unprepare() for the can and
-bus clock (as you have clk_prepare_enable in probe()).
-
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---IIgnhFqQxjSk2sG6boEQrHjQIJpBHqmER
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUspmgAAoJECte4hHFiupU3BkP/RNZ+lH57aMC6Wr7E6sA1TNL
-emLxcSUvJPfSKSWO0Nd2XTehPd+BlV27+96ioyh5glJUV9GYNEF0iYn7G8Uf4owh
-FsE7wmCmn3QNvETMzt680k3g104kvYR9MAjwogJuo4hgmLrlTGijmDXP7i/yed6x
-VWH4lQuQbPMqGmQLL8hWchgpdjzjFdTg8Y3M6b0cmE1PUI2Z0H5h2B6O/4fYsWJv
-SIU23IwYGbwQCcwK6I8i9w7JfFFDg3q63/wRfbufF1xoRNJA9iAQFO6qIS4BTQlG
-FgDV8/3+EHBChwnB+G3796xMNCd7PY2YPZqJCfdEng1RNffNIjlwJfL1o9O6zWA4
-5ZzMF7HJQHHbuc7ZPvLpTelEnM3+eLnt66Wj0zqdt6h0x2RTChzdJVoKZ/sBYYYI
-4fDuQJSmYFzvvDTRWa5PQuRSDJ3jGdboeTH5TgpUJqM3BkXAhKoLn+yynnlNuFmk
-KUpJ303P0O3PGXi7tuNbQadh0eiXbvb57WDpQaqdzY6Li1Y666PyBzBVFSLJ1htV
-xlLDo5rSJ6kxOB60pQnPJv47EMLLAzca5dCg/DbyNSlXERji583UIJuqoZwplEEE
-OK6+kl2+H6EDK6JPf89Zs2CkRUgivPr7jYIIvIIpeZ52EH/YW2EXxnxxj7eIOdXc
-bOedRWD47c+BtVwmF4kW
-=lzog
------END PGP SIGNATURE-----
-
---IIgnhFqQxjSk2sG6boEQrHjQIJpBHqmER--
