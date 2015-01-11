@@ -1,84 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638AbbAKWp4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 17:45:56 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:61768 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852AbbAKWpy (ORCPT
+	id S1752574AbbAKWuP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 17:50:15 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:64982 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752003AbbAKWuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 17:45:54 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Anton Altaparmakov <anton@tuxera.com>,
-        linux-ntfs-dev@lists.sourceforge.net
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ntfs: attrib: Remove unused function
-Date: Sun, 11 Jan 2015 23:48:59 +0100
-Message-Id: <1421016539-25918-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 11 Jan 2015 17:50:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <54AE4282.20009@mellanox.com>
+References: <1420512850-24699-1-git-send-email-ddecotig@gmail.com>
+ <54ABE991.3040107@mellanox.com> <CAG88wWYPDpwkWkL+Pj2VKrX5WVp=at8v0=gcFAVAA8nntv+-nw@mail.gmail.com>
+ <54AE4282.20009@mellanox.com>
+From: David Decotigny <ddecotig@gmail.com>
+Date: Sun, 11 Jan 2015 14:49:45 -0800
+X-Google-Sender-Auth: yNrrN4y5yJ_vk9KrA5TLpzfmJb0
+Message-ID: <CAG88wWYryVb1-fQM5vmqY+-dQ3FhBpbCUrqobzH1A7gTfqW4Bg@mail.gmail.com>
+Subject: Re: [PATCH net-next v2 0/8] net: extend ethtool link mode bitmaps to
+ 48 bits
+To: Amir Vadai <amirv@mellanox.com>
+Cc: Florian Fainelli <f.fainelli@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        Saeed Mahameed <saeedm@mellanox.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jason Wang <jasowang@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Al Viro <viro@zeniv.linux.org.uk>, Ben Hutchings <ben@decadent.org.uk>,
+        Masatake YAMATO <yamato@redhat.com>, Xi Wang <xii@google.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, Flavio Leitner <fbl@redhat.com>,
+        Tom Gundersen <teg@jklm.no>, Jiri Pirko <jiri@resnulli.us>,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Venkata Duvvuru <VenkatKumar.Duvvuru@emulex.com>,
+        Govindarajulu Varadarajan <_govind@gmx.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function ntfs_attr_can_be_resident() that is not used anywhere.
+Thanks for the input. Please ignore this patch series: I'm preparing a
+new version: new commands, bitmap-based that should allow us to live
+happily ever after, should take your feedback into account. Will send
+an RFC patch series in the next hours/days.
 
-This was partially found by using a static code analysis program called cppcheck.
-
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- fs/ntfs/attrib.c |   25 -------------------------
- fs/ntfs/attrib.h |    2 --
- 2 files changed, 27 deletions(-)
-
-diff --git a/fs/ntfs/attrib.c b/fs/ntfs/attrib.c
-index 250ed5b..2c83e66 100644
---- a/fs/ntfs/attrib.c
-+++ b/fs/ntfs/attrib.c
-@@ -1390,31 +1390,6 @@ int ntfs_attr_can_be_non_resident(const ntfs_volume *vol, const ATTR_TYPE type)
- }
- 
- /**
-- * ntfs_attr_can_be_resident - check if an attribute can be resident
-- * @vol:	ntfs volume to which the attribute belongs
-- * @type:	attribute type which to check
-- *
-- * Check whether the attribute of @type on the ntfs volume @vol is allowed to
-- * be resident.  This information is derived from our ntfs knowledge and may
-- * not be completely accurate, especially when user defined attributes are
-- * present.  Basically we allow everything to be resident except for index
-- * allocation and $EA attributes.
-- *
-- * Return 0 if the attribute is allowed to be non-resident and -EPERM if not.
-- *
-- * Warning: In the system file $MFT the attribute $Bitmap must be non-resident
-- *	    otherwise windows will not boot (blue screen of death)!  We cannot
-- *	    check for this here as we do not know which inode's $Bitmap is
-- *	    being asked about so the caller needs to special case this.
-- */
--int ntfs_attr_can_be_resident(const ntfs_volume *vol, const ATTR_TYPE type)
--{
--	if (type == AT_INDEX_ALLOCATION)
--		return -EPERM;
--	return 0;
--}
--
--/**
-  * ntfs_attr_record_resize - resize an attribute record
-  * @m:		mft record containing attribute record
-  * @a:		attribute record to resize
-diff --git a/fs/ntfs/attrib.h b/fs/ntfs/attrib.h
-index 3c8b74c..bfc1829 100644
---- a/fs/ntfs/attrib.h
-+++ b/fs/ntfs/attrib.h
-@@ -96,8 +96,6 @@ extern int ntfs_attr_size_bounds_check(const ntfs_volume *vol,
- 		const ATTR_TYPE type, const s64 size);
- extern int ntfs_attr_can_be_non_resident(const ntfs_volume *vol,
- 		const ATTR_TYPE type);
--extern int ntfs_attr_can_be_resident(const ntfs_volume *vol,
--		const ATTR_TYPE type);
- 
- extern int ntfs_attr_record_resize(MFT_RECORD *m, ATTR_RECORD *a, u32 new_size);
- extern int ntfs_resident_attr_value_resize(MFT_RECORD *m, ATTR_RECORD *a,
--- 
-1.7.10.4
-
+On Thu, Jan 8, 2015 at 12:40 AM, Amir Vadai <amirv@mellanox.com> wrote:
+> On 1/6/2015 7:36 PM, David Decotigny wrote:
+>> Interesting. It seems that the band-aid I was proposing is already
+>> obsolete. We could still use the remaining reserved 16 bits to encode
+>> 5 more bits per mask (that is: 53 bits / mask total). But if I
+>> understand you, it would allow us to survive only a few months longer,
+>> as opposed to a few weeks.
+>>
+>> One short-term alternative solution I can imagine is the following:
+>> /* For example bitmap-based for variable length: */
+>> struct ethtool_link_mode {
+>>   __u32 cmd;
+>>   __u8 autoneg :1;
+>>   __u8 duplex :2;
+>>  __u16 supported_nbits;
+>>   __u16 advertising_nbits;
+>>   __u16 lp_advertising_nbits;
+>>   __u32 reserved[4];
+>>   __u8 masks[0];
+>> };
+>> /* Or simpler, statically limited to 64b / mask, but easier to migrate
+>> to for driver authors: */
+> I think the first options is better. A driver will have to do changes in
+> order to support >32 link modes, so better change it once now, without
+> having to change it again for >64 link modes.
+>
+>> struct ethtool_link_mode {
+>>   __u32 cmd;
+>>   __u8 autoneg :1;
+>>   __u8 duplex :2;
+>>    __u64 supported;
+>>   __u64 advertising;
+>>   __u64 lp_advertising;
+>>   __u32 reserved[4];
+>> };
+>> #define ETHTOOL_GLINK_MODE 0x0000004a
+>> #define ETHTOOL_SLINK_MODE 0x0000004b
+>> struct ethtool_ops {
+>> ...
+>>    int (*get_link_mode)(struct net_device *, struct ethtool_link_mode *);
+>>    int (*set_link_mode)(struct net_device *, struct ethtool_link_mode *);
+>> };
+>>
+>> The same thing required for EEE.
+> Yeh :(
+>
+>>
+>> I am not sure about moving the autoneg and duplex fields into the new
+>> struct. Especially the "duplex" field.
+> I think so too. ethtool user space will call ETHTOOL_[GS]SET and after
+> that ETHTOOL_[GS]LINK_MODE (if supported). No need to get the
+> duplex/autoneg fields again.
+>
+>>
+>> Then the idea would be to update the ethtool user-space tool to try
+>> get/set_link mode when reporting/changing the autoneg/advertising
+>> settings.
+>>
+>> Both will require significant effort from the driver authors.
+>> Especially if the variable-length bitmap approach is preferred:
+>>  - most drivers currently use simple bitwise arithmetic in their code,
+>> and that goes far beyond get/set_settings, it is sometimes part of the
+>> core driver logic. They will have to migrate to the bitmap API if they
+>> want to use the larger bitmaps (note: no change needed if they are
+>> happy with <= 32b / mask)
+> As I said above, it will save as doing this work again in the future,
+> and more problematic, save another version to backport in the future. In
+> addition, not all drivers will have to do it, only if >32 link speeds is
+> needed - this work will be required.
+>
+>>  - we would have to progressively deprecate the use of #define
+>> ADVERTISED_1000baseT_Full in favor of an enum of the bit indices.
+> Maybe we could use some macro juggling to define the legacy macro's
+> using enum for the first 32 bits, and fail the compilation if used on
+>>32. For example, calling this:
+> DEFINE_LINK_MODE(ADVERTISED_1000baseT_Full, 5)
+>
+> Will add the following:
+> ADVERTISED_1000baseT_Full_SHIFT = 5
+> ADVERTISED_1000baseT_Full = (1<<5)
+>
+> DEFINE_LINK_MODE(ADVERTISED_100000baseKR5_Full, 50) will add:
+> ADVERTISED_100000baseKR5_Full_SHIFT = 50
+> ADVERTISED_100000baseKR5_Full = #error new link speeds must be defined
+> using [gs]et_link_speed
+>
+> This will break compilation if ADVERTISED_100000baseKR5_Full is used in
+> [gs]et_settings (I know the '#error' will not print something very
+> pretty - I used it only to explain what I meant)
+>
+>>
+>> Any feedback welcome. In the meantime, I am going to propose a v3 of
+>> current option with 53 bits / mask. I can also propose a prototype of
+>> the scheme described above, please let me know.
+> I think that it is better to do it once, and skip the 53 bits / mask
+> version.
+> I'll be happy to assist.
+>
+> Amir
