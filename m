@@ -1,39 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617AbbAKWvf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 17:51:35 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65277 "EHLO radon.swed.at"
+	id S1752169AbbAKXAq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 18:00:46 -0500
+Received: from mta-out1.inet.fi ([62.71.2.227]:42267 "EHLO kirsi1.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751132AbbAKWvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 17:51:31 -0500
-Message-ID: <54B2FE70.4090707@nod.at>
-Date: Sun, 11 Jan 2015 23:51:28 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1750852AbbAKXAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jan 2015 18:00:45 -0500
+Date: Mon, 12 Jan 2015 00:58:02 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Darren Hart <dvhart@infradead.org>, Andy Lutomirski <luto@mit.edu>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] platform-drivers-x86 for 3.19
+Message-ID: <20150111225802.GA12944@node.dhcp.inet.fi>
+References: <20141218175126.GA78864@vmdeb7>
 MIME-Version: 1.0
-To: Stephen Hemminger <stephen@networkplumber.org>
-CC: davem@davemloft.net, coreteam@netfilter.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, bhutchings@solarflare.com,
-        john.fastabend@gmail.com, herbert@gondor.apana.org.au,
-        vyasevic@redhat.com, jiri@resnulli.us, vfalico@gmail.com,
-        therbert@google.com, edumazet@google.com, yoshfuji@linux-ipv6.org,
-        jmorris@namei.org, kuznet@ms2.inr.ac.ru, kadlec@blackhole.kfki.hu,
-        kaber@trash.net, pablo@netfilter.org, kay@vrfy.org
-Subject: Re: [RFC] Make predictable/persistent network interface names more
- handy
-References: <1421009571-5279-1-git-send-email-richard@nod.at> <20150111144236.1b693c93@urahara>
-In-Reply-To: <20150111144236.1b693c93@urahara>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141218175126.GA78864@vmdeb7>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 11.01.2015 um 23:42 schrieb Stephen Hemminger:
-> P.s:  ifconfig is deprecated.
+On Thu, Dec 18, 2014 at 09:51:27AM -0800, Darren Hart wrote:
+> thinkpad-acpi using software mute simplifies the driver and the user experience
+> significantly.
 
-ifconfig was just an example. It will work if iproute2 too.
+Except when it doesn't.
 
-Thanks,
-//richard
+I'm probably in minority, but I don't use fancy userspace to mess with my
+mixer and the mute button worked just fine for me before the change.
+Wasted half an hour to find out what happened is not a pure win from user
+experience point of view.
+
+Is it really necessary to have software_mute_requested == true by default?
+Can fancy userspace ask for desired behaviour instead and change kernel to
+not send hotkeys change notification until software_mute is enabled?
+
+-- 
+ Kirill A. Shutemov
