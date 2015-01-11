@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997AbbAKUvR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 15:51:17 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:51178 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282AbbAKUvP (ORCPT
+	id S1752261AbbAKUxG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 15:53:06 -0500
+Received: from mail.sigma-star.at ([95.130.255.111]:14385 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711AbbAKUxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 15:51:15 -0500
-Message-ID: <54B2E240.8030701@linaro.org>
-Date: Sun, 11 Jan 2015 21:51:12 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Barry Song <baohua@kernel.org>
-CC: Thierry Reding <thierry.reding@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
-Subject: Re: [PATCH] clocksource: sirf: Remove unused variable
-References: <1418659160-2115-1-git-send-email-thierry.reding@gmail.com> <548F09B6.6010202@linaro.org> <CAGsJ_4zQqwNdu3z1hzuLd4gvxY8iA+9HfdoTE8_U2tDmRUBNYQ@mail.gmail.com>
-In-Reply-To: <CAGsJ_4zQqwNdu3z1hzuLd4gvxY8iA+9HfdoTE8_U2tDmRUBNYQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Sun, 11 Jan 2015 15:53:01 -0500
+From: Richard Weinberger <richard@nod.at>
+To: davem@davemloft.net
+Cc: coreteam@netfilter.org, netfilter-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        bhutchings@solarflare.com, john.fastabend@gmail.com,
+        herbert@gondor.apana.org.au, vyasevic@redhat.com, jiri@resnulli.us,
+        vfalico@gmail.com, therbert@google.com, edumazet@google.com,
+        yoshfuji@linux-ipv6.org, jmorris@namei.org, kuznet@ms2.inr.ac.ru,
+        kadlec@blackhole.kfki.hu, kaber@trash.net, pablo@netfilter.org,
+        kay@vrfy.org, stephen@networkplumber.org
+Subject: [RFC] Make predictable/persistent network interface names more handy
+Date: Sun, 11 Jan 2015 21:52:48 +0100
+Message-Id: <1421009571-5279-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2015 04:58 PM, Barry Song wrote:
-> 2014-12-16 0:17 GMT+08:00 Daniel Lezcano <daniel.lezcano@linaro.org>:
->> On 12/15/2014 04:59 PM, Thierry Reding wrote:
->>>
->>> From: Thierry Reding <treding@nvidia.com>
->>>
->>> Commit ef89af1f4380 ("clocksource: sirf: Remove hard-coded clock rate")
->>> removes all uses of the timer_div variable. Since the variable is no
->>> longer used it should be removed.
->>>
->>> Signed-off-by: Thierry Reding <treding@nvidia.com>
->>> ---
->>
->>
->> Applied to my tree. Thanks!
->
-> Daniel,
->
-> i didn't find this commit in any tree in kernel.org. am i missing something?
+Since the Linux distribution of my choice makes use of
+predictable network interface names[0] my USB gadgets
+are no longer usb0 but enp0s29u1u2. Same for all other network devices.
+While I can fully understand that this new naming scheme makes sense
+for a lot of people and makes their work easier it does not really work for me.
+My brain is not able to remember that my Beaglebone's USB-Ethernet
+is now enp0s29u1u2. Even after looking at the output of ifconfig
+I have to copy&paste the interface name.
+Instead of just disabling the feature I thought about
+a generic solution which satisfies both needs.
 
-Nope, I did probably something wrong.
+For block devices we also have predictable device names,
+udev creates a symlink to the kernel device.
+This works very good and reliable.
+My idea is to use the network device alias as symlink.
+Such that we can have both the easy to use kernel name and
+the predictable/persistent name from udev.
+systemd/udev could store the original kernel interface name
+as alias after renaming the interface.
+Existing users would not notice but one can still use the kernel name.
+So I can use tcpdump -i usb0 _and_ tcpdump -i enp0s29u1u2.
 
-> so i manually rebased "clocksource: marco: rename marco to atlas7"
-> against this commit.
->
-> can you help to apply the attached patch to your tree? i guess pulling
-> by arm-soc will cause conflicts.
+This patch series implements my idea.
+I'd love to get some feedback!
 
-Ok, done. Both patches are in my tree [1].
+Patch 1/3 exposes the interfaces alias for general userspace usage, i.e. that ifconfig <alias> works.
+Of course you can only use the first 15 chars of an alias.
 
-Thanks
-   -- Daniel
+In-kernel users of interface names need also an update, patch 2/3 updates x_tables.
+I'm sure there is more todo, i.e. nftables.
+We could also define that netfilter will never use the alias but this needs documented cleary.
 
-[1] 
-https://git.linaro.org/people/daniel.lezcano/linux.git/shortlog/refs/heads/clockevents/3.20
+Patch 3/3 is a cleanup in continuation of 2/3.
 
+[0] http://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+Thanks,
+//richard
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git netalias
 
+[PATCH 1/3] net: Make interface aliases available for general usage
+[PATCH 2/3] x_tables: Use also dev->ifalias for interface matching
+[PATCH 3/3] x_tables: Factor out 16bit aligment ifname_compare()
+
+ include/linux/netdevice.h          |  1 +
+ include/linux/netfilter/x_tables.h | 41 +++++++++++++++++++++++++++---
+ include/net/net_namespace.h        |  1 +
+ net/core/dev.c                     | 52 ++++++++++++++++++++++++++++++++++++++
+ net/ipv4/netfilter/arp_tables.c    | 37 ++++-----------------------
+ net/ipv4/netfilter/ip_tables.c     | 15 ++++-------
+ net/ipv6/netfilter/ip6_tables.c    | 18 +++++--------
+ net/netfilter/xt_physdev.c         |  9 ++-----
+ 8 files changed, 110 insertions(+), 64 deletions(-)
