@@ -1,140 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751212AbbAKIYA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 03:24:00 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:56753 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931AbbAKIX6 (ORCPT
+	id S1751055AbbAKIj3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 03:39:29 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:39765 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856AbbAKIj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 03:23:58 -0500
+	Sun, 11 Jan 2015 03:39:27 -0500
+Date: Sun, 11 Jan 2015 09:39:22 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] locking fixes
+Message-ID: <20150111083921.GA1493@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.11.1501061747540.2041@eggly.anvils>
-References: <35FD53F367049845BC99AC72306C23D103E688B313EE@CNBJMBX05.corpusers.net>
-	<CALYGNiOuBKz8shHSrFCp0BT5AV6XkNOCHj+LJedQQ-2YdZtM7w@mail.gmail.com>
-	<35FD53F367049845BC99AC72306C23D103E688B313F2@CNBJMBX05.corpusers.net>
-	<20141205143134.37139da2208c654a0d3cd942@linux-foundation.org>
-	<35FD53F367049845BC99AC72306C23D103E688B313F4@CNBJMBX05.corpusers.net>
-	<20141208114601.GA28846@node.dhcp.inet.fi>
-	<35FD53F367049845BC99AC72306C23D103E688B313FB@CNBJMBX05.corpusers.net>
-	<CALYGNiMEytHuND37f+hNdMKqCPzN0k_uha6CaeL_fyzrj-obNQ@mail.gmail.com>
-	<35FD53F367049845BC99AC72306C23D103E688B31408@CNBJMBX05.corpusers.net>
-	<35FD53F367049845BC99AC72306C23D103EDAF89E14C@CNBJMBX05.corpusers.net>
-	<35FD53F367049845BC99AC72306C23D103EDAF89E160@CNBJMBX05.corpusers.net>
-	<20150106164340.55e83f742d6f57c19e6500ff@linux-foundation.org>
-	<alpine.LSU.2.11.1501061654340.1497@eggly.anvils>
-	<20150106172518.8f84bffdfa0d35336b233d07@linux-foundation.org>
-	<alpine.LSU.2.11.1501061747540.2041@eggly.anvils>
-Date: Sun, 11 Jan 2015 12:23:56 +0400
-Message-ID: <CALYGNiM11DRqJ5OT+27Db3O_0w7v7iMHquRH+V-gi=rjYy4hKA@mail.gmail.com>
-Subject: Re: [RFC] mm:change meminfo cached calculation
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
-        "minchan@kernel.org" <minchan@kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "n-horiguchi@ah.jp.nec.com" <n-horiguchi@ah.jp.nec.com>,
-        "pintu.k@samsung.com" <pintu.k@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 7, 2015 at 5:03 AM, Hugh Dickins <hughd@google.com> wrote:
-> On Tue, 6 Jan 2015, Andrew Morton wrote:
->> On Tue, 6 Jan 2015 17:04:33 -0800 (PST) Hugh Dickins <hughd@google.com> wrote:
->> > On Tue, 6 Jan 2015, Andrew Morton wrote:
->> > > On Fri, 26 Dec 2014 19:56:49 +0800 "Wang, Yalin" <Yalin.Wang@sonymobile.com> wrote:
->> > >
->> > > > This patch subtract sharedram from cached,
->> > > > sharedram can only be swap into swap partitions,
->> > > > they should be treated as swap pages, not as cached pages.
->> > > >
->> > > > ...
->> > > >
->> > > > --- a/fs/proc/meminfo.c
->> > > > +++ b/fs/proc/meminfo.c
->> > > > @@ -45,7 +45,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
->> > > >         committed = percpu_counter_read_positive(&vm_committed_as);
->> > > >
->> > > >         cached = global_page_state(NR_FILE_PAGES) -
->> > > > -                       total_swapcache_pages() - i.bufferram;
->> > > > +                       total_swapcache_pages() - i.bufferram - i.sharedram;
->> > > >         if (cached < 0)
->> > > >                 cached = 0;
->> > >
->> > > Documentation/filesystems/proc.txt says
->> > >
->> > > :      Cached: in-memory cache for files read from the disk (the
->> > > :              pagecache).  Doesn't include SwapCached
->> > >
->> > > So yes, I guess it should not include shmem.
->> > >
->> > > And why not do this as well?
->> > >
->> > >
->> > > --- a/Documentation/filesystems/proc.txt~mm-change-meminfo-cached-calculation-fix
->> > > +++ a/Documentation/filesystems/proc.txt
->> > > @@ -811,7 +811,7 @@ MemAvailable: An estimate of how much me
->> > >       Buffers: Relatively temporary storage for raw disk blocks
->> > >                shouldn't get tremendously large (20MB or so)
->> > >        Cached: in-memory cache for files read from the disk (the
->> > > -              pagecache).  Doesn't include SwapCached
->> > > +              pagecache).  Doesn't include SwapCached or Shmem.
->> > >    SwapCached: Memory that once was swapped out, is swapped back in but
->> > >                still also is in the swapfile (if memory is needed it
->> > >                doesn't need to be swapped out AGAIN because it is already
->> >
->> > Whoa.  Changes of this kind would have made good sense about 14 years ago.
->> > And there's plenty more which would benefit from having anon/shmem/file
->> > properly distinguished.  But how can we make such a change now,
->> > breaking everything that has made its own sense of these counts?
->>
->> That's what I was wondering, but I was having some trouble picking a
->> situation where it mattered much.
->
-> If it doesn't matter, then we don't need to change it.
->
->> What's the problematic scenario
->> here?  Userspace that is taking Cached, saying "that was silly" and
->> subtracting Shmem from it by hand?
->
-> Someone a long time ago saw "that was silly", worked out it was because
-> of Shmem, adjusted their scripts or whatever accordingly, and has run
-> happily ever since.
+Linus,
 
-Totally agree. I know some of these guys.
-But that's here not for so long time, 'Shmem' has appeared only in 2.6.32.
+Please pull the latest locking-urgent-for-linus git tree from:
 
->
->>
->> I suppose that as nobody knows we should err on the side of caution and
->> leave this alone.  But the situation is pretty sad - it would be nice
->> to make the code agree with the documentation at least.
->
-> By all means fix the documentation.  And work on a /proc/meminfo.2015
-> which has sensibly differentiated counts (and probably omits that
-> wonderful Linux 2.2-compatible "Buffers").
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git locking-urgent-for-linus
 
-'Buffers' is actually very useful. Ext4 keeps almost all metadata in
-bdev page-cache.
+   # HEAD: 8e654dd68f95ac5f990ed21b2b31967dacbe563f Merge branch 'core/urgent' into locking/urgent, to collect all pending locking fixes
 
-Meminfo has a bigger and much more confusing problem: there is no subset of
-fields which sums to all ram. Some paged allocations are showed nowhere.
+A liblockdep fix and a mutex_unlock() mutex-debugging fix.
 
-Probably it would be good to show that 'Untracked' memory as well,
-calculated as:
-Total - Free - Cached - Buffers - Slab - PageTables - KernelStack - AnonPages.
-(fix me if I'm wrong =)
+ Thanks,
 
->
-> But there's more to do than I can think of.  Cc'ing Jerome who has a
-> particular interest in this (no, I haven't forgotten his patches,
-> but nor have I had a moment to reconsider them).
->
-> Hugh
+	Ingo
+
+------------------>
+Chris Wilson (1):
+      mutex: Always clear owner field upon mutex_unlock()
+
+Kirill Smelkov (1):
+      tools/liblockdep: Fix debug_check thinko in mutex destroy
+
+
+ kernel/locking/mutex-debug.c | 2 +-
+ tools/lib/lockdep/preload.c  | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/locking/mutex-debug.c b/kernel/locking/mutex-debug.c
+index 5cf6731b98e9..3ef3736002d8 100644
+--- a/kernel/locking/mutex-debug.c
++++ b/kernel/locking/mutex-debug.c
+@@ -80,13 +80,13 @@ void debug_mutex_unlock(struct mutex *lock)
+ 			DEBUG_LOCKS_WARN_ON(lock->owner != current);
+ 
+ 		DEBUG_LOCKS_WARN_ON(!lock->wait_list.prev && !lock->wait_list.next);
+-		mutex_clear_owner(lock);
+ 	}
+ 
+ 	/*
+ 	 * __mutex_slowpath_needs_to_unlock() is explicitly 0 for debug
+ 	 * mutexes so that we can do it here after we've verified state.
+ 	 */
++	mutex_clear_owner(lock);
+ 	atomic_set(&lock->count, 1);
+ }
+ 
+diff --git a/tools/lib/lockdep/preload.c b/tools/lib/lockdep/preload.c
+index 6f803609e498..0b0112c80f22 100644
+--- a/tools/lib/lockdep/preload.c
++++ b/tools/lib/lockdep/preload.c
+@@ -317,7 +317,7 @@ int pthread_mutex_destroy(pthread_mutex_t *mutex)
+ 	 *
+ 	 * TODO: Hook into free() and add that check there as well.
+ 	 */
+-	debug_check_no_locks_freed(mutex, mutex + sizeof(*mutex));
++	debug_check_no_locks_freed(mutex, sizeof(*mutex));
+ 	__del_lock(__get_lock(mutex));
+ 	return ll_pthread_mutex_destroy(mutex);
+ }
+@@ -341,7 +341,7 @@ int pthread_rwlock_destroy(pthread_rwlock_t *rwlock)
+ {
+ 	try_init_preload();
+ 
+-	debug_check_no_locks_freed(rwlock, rwlock + sizeof(*rwlock));
++	debug_check_no_locks_freed(rwlock, sizeof(*rwlock));
+ 	__del_lock(__get_lock(rwlock));
+ 	return ll_pthread_rwlock_destroy(rwlock);
+ }
