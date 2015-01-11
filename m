@@ -1,79 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbbAKU1Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 15:27:16 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:38510 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282AbbAKU1N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 15:27:13 -0500
-Message-ID: <1421008017.13233.8.camel@haakon3.risingtidesystems.com>
-Subject: [GIT PULL] target fixes for v3.19-rc4
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Sun, 11 Jan 2015 12:26:57 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752118AbbAKUlZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 15:41:25 -0500
+Received: from [31.3.103.55] ([31.3.103.55]:55478 "EHLO pegasus.mortis.eu"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750753AbbAKUlU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jan 2015 15:41:20 -0500
+X-Greylist: delayed 553 seconds by postgrey-1.27 at vger.kernel.org; Sun, 11 Jan 2015 15:41:19 EST
+Date: Sun, 11 Jan 2015 21:32:01 +0100
+From: Giel van Schijndel <me@mortis.eu>
+To: Eliad Peller <eliad@wizery.com>
+Cc: Kalle Valo <kvalo@codeaurora.org>, LKML <linux-kernel@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Arik Nemtsov <arik@wizery.com>,
+        "open list:TI WILINK WIRELES..." <linux-wireless@vger.kernel.org>,
+        "open list:NETWORKING DRIVERS" <netdev@vger.kernel.org>
+Subject: Re: [PATCH RESEND 2/2] wlcore: align member-assigns in a
+ structure-copy block
+Message-ID: <20150111203201.GG7918@salidar.dom.custoft.eu>
+References: <1420394427-19509-1-git-send-email-me@mortis.eu>
+ <1420659525-22975-1-git-send-email-me@mortis.eu>
+ <1420659525-22975-2-git-send-email-me@mortis.eu>
+ <87vbkfga32.fsf@kamboji.qca.qualcomm.com>
+ <CAB3XZEcm4+=dYC-8_m_7YRdET_wPkWUYHcDuy9mCKdxkCFEnQA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3xoW37o/FfUZJwQG"
+Content-Disposition: inline
+In-Reply-To: <CAB3XZEcm4+=dYC-8_m_7YRdET_wPkWUYHcDuy9mCKdxkCFEnQA@mail.gmail.com>
+OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Here are the target pending fixes for v3.19-rc4.  Please go ahead and
-pull from:
+--3xoW37o/FfUZJwQG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git master
+On Sun, Jan 11, 2015 at 12:22:49 +0200, Eliad Peller wrote:
+> On Fri, Jan 9, 2015 at 7:03 PM, Kalle Valo <kvalo@codeaurora.org> wrote:
+>> Giel van Schijndel <me@mortis.eu> writes:
+>>> This highlights the differences (e.g. the bug fixed in the previous
+>>> commit).
+>>>
+>>> Signed-off-by: Giel van Schijndel <me@mortis.eu>
+>>> ---
+>>>  drivers/net/wireless/ti/wlcore/acx.c | 22 +++++++++++-----------
+>>>  1 file changed, 11 insertions(+), 11 deletions(-)
+>>>
+>>> diff --git a/drivers/net/wireless/ti/wlcore/acx.c b/drivers/net/wireles=
+s/ti/wlcore/acx.c
+>>> index f28fa3b..93a2fa8 100644
+>>> --- a/drivers/net/wireless/ti/wlcore/acx.c
+>>> +++ b/drivers/net/wireless/ti/wlcore/acx.c
+>>> @@ -1715,17 +1715,17 @@ int wl12xx_acx_config_hangover(struct wl1271 *w=
+l)
+>>>               goto out;
+>>>       }
+>>>
+>>> -     acx->recover_time =3D cpu_to_le32(conf->recover_time);
+>>> -     acx->hangover_period =3D conf->hangover_period;
+>>> -     acx->dynamic_mode =3D conf->dynamic_mode;
+>>> -     acx->early_termination_mode =3D conf->early_termination_mode;
+>>> -     acx->max_period =3D conf->max_period;
+>>> -     acx->min_period =3D conf->min_period;
+>>> -     acx->increase_delta =3D conf->increase_delta;
+>>> -     acx->decrease_delta =3D conf->decrease_delta;
+>>> -     acx->quiet_time =3D conf->quiet_time;
+>>> -     acx->increase_time =3D conf->increase_time;
+>>> -     acx->window_size =3D conf->window_size;
+>>> +     acx->recover_time               =3D cpu_to_le32(conf->recover_tim=
+e);
+>>> +     acx->hangover_period            =3D conf->hangover_period;
+>>> +     acx->dynamic_mode               =3D conf->dynamic_mode;
+>>> +     acx->early_termination_mode     =3D conf->early_termination_mode;
+>>> +     acx->max_period                 =3D conf->max_period;
+>>> +     acx->min_period                 =3D conf->min_period;
+>>> +     acx->increase_delta             =3D conf->increase_delta;
+>>> +     acx->decrease_delta             =3D conf->decrease_delta;
+>>> +     acx->quiet_time                 =3D conf->quiet_time;
+>>> +     acx->increase_time              =3D conf->increase_time;
+>>> +     acx->window_size                =3D conf->window_size;
+>>
+>> I would like to get an ACK from one of the wlcore developers if I should
+>> apply this (or not).
+>>
+> I don't have a strong opinion here.
+> However, it looks pretty much redundant to take a random blob (which
+> was just fixed by a correct patch) and re-indent it.
+> The rest of the file doesn't follow this style, so i don't see a good
+> reason to apply it here.
+>=20
+> I agree such indentation have some benefit, but it won't help with the
+> more common use case (of copy-paste error) of copying the wrong field
+> (i.e. D->a =3D S->b instead of D->a =3D S->a).
+> For these cases the macros suggested by Arend and Johannes will do the
+> trick. However i usually dislike such macros, as they tend to break
+> some IDE features (e.g. auto completion).
+> Maybe we can come up with some nice spatch to catch these cases.
 
-Mostly minor fixes this time, including:
+What I dislike about those macros is just that they're not as familiar
+to any C programmer as the assignment operator, so they make the code
+less readable (even if just a little bit).
 
-  - Add missing virtio-scsi -> TCM attribute conversion in vhost-scsi.
-  - Fix persistent reservations write exclusive handling to allow
-    readers for all registered I_T nexuses.
-  - Drop arbitrary maximum I/O size limit in order to process I/Os
-    larger than 4 MB, required for initiators that don't honor block
-    limits EVPD.
-  - Drop the now left-over fabric_max_sectors attribute.
+As for the IDE thing: I try not to use them, but have been told (by
+colleagues) that Eclipse is reasonably smart about macros in C. I use
+VIM with the clang_complete plugin and that does do proper completion
+with expressions containing macros, but not inside macros based on what
+the macro expansion would be, like the one above.
 
-Thank you,
+That's why I believe this kind of alignment is at least *an* improvement
+even if it doesn't solve all possible problems.
 
---nab
+--=20
+Met vriendelijke groet,
+With kind regards,
+Giel van Schijndel
+--
+"Question: what do you call your programming methodology?
+ Answer: Faith based development. You code and then pray that it works."
+  -- John Spelner
 
-Andy Grover (1):
-  iscsi-target: Fix typos in enum cmd_flags_table
+--3xoW37o/FfUZJwQG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Lee Duncan (1):
-  target: Allow Write Exclusive non-reservation holders to READ
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Nicholas Bellinger (4):
-  vhost-scsi: Add missing virtio-scsi -> TCM attribute conversion
-  Documentation/target: Update fabric_ops to latest code
-  target: Drop arbitrary maximum I/O size limit
-  target: Drop left-over fabric_max_sectors attribute
+iEYEARECAAYFAlSy3b8ACgkQZBYm/87l50LZ0ACeL4zkWdTsuJW99qgDOqA7qWZI
+WPoAn1XzcExsiqdIkz+EufXyOeQdeZ13
+=sz4K
+-----END PGP SIGNATURE-----
 
-Sagi Grimberg (1):
-  MAINTAINERS: Add entry for iSER target driver
-
- Documentation/target/tcm_mod_builder.py       | 49 ++++++------------------
- MAINTAINERS                                   |  9 +++++
- drivers/target/iscsi/iscsi_target.c           | 12 +++---
- drivers/target/iscsi/iscsi_target_core.h      |  4 +-
- drivers/target/target_core_device.c           | 54 ++-------------------------
- drivers/target/target_core_file.c             | 12 +++++-
- drivers/target/target_core_iblock.c           |  3 +-
- drivers/target/target_core_pr.c               | 12 ++++++
- drivers/target/target_core_rd.c               |  1 -
- drivers/target/target_core_sbc.c              | 15 --------
- drivers/target/target_core_spc.c              |  5 +--
- drivers/target/target_core_user.c             |  1 -
- drivers/vhost/scsi.c                          | 24 ++++++++++--
- include/target/target_core_backend.h          |  1 -
- include/target/target_core_backend_configfs.h |  2 -
- include/target/target_core_base.h             |  3 --
- 16 files changed, 78 insertions(+), 129 deletions(-)
-
+--3xoW37o/FfUZJwQG--
