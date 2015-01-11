@@ -1,118 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966AbbAKXlM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 18:41:12 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:43658 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709AbbAKXlJ (ORCPT
+	id S1751992AbbAKXmx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 18:42:53 -0500
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:59171 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807AbbAKXmv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 18:41:09 -0500
-Date: Sun, 11 Jan 2015 15:41:05 -0800
-From: Shirish Gajera <gajerashirish@gmail.com>
-To: gregkh@linuxfoundation.org, eric.rost@mybabylon.net, jason@lakedaemon.net,
-        jake@lwn.net, antonysaraev@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] staging: skein: Remove all do{} while (0) loop from
- single statement.
-Message-ID: <20150111234105.GA2744@shirish-ThinkPad-Edge-E430>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 11 Jan 2015 18:42:51 -0500
+From: Chris Rorvick <chris@rorvick.com>
+To: Oleg Drokin <oleg.drokin@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Chris Rorvick <chris@rorvick.com>,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Julia Lawall <Julia.Lawall@lip6.fr>, Greg Donald <gdonald@gmail.com>,
+        "John L. Hammond" <john.hammond@intel.com>,
+        Andriy Skulysh <Andriy_Skulysh@xyratex.com>,
+        Fabian Frederick <fabf@skynet.be>, James Simmons <uja.ornl@gmail.com>,
+        HPDD-discuss@ml01.01.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4 0/2] lprocfs_write_frac_u64_helper cleanup
+Date: Sun, 11 Jan 2015 17:42:27 -0600
+Message-Id: <1421019749-25110-1-git-send-email-chris@rorvick.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the checkpatch.pl warning:
+Removed "drivers" from the subject.  I saw examples of this in the
+commit log but have since realized this is not preferred.
 
-WARNING: Single statement macros should not use a do {} while (0) loop
+v3:
 
-I remove do while from the single statement macro.
+Added Andreas as reviewer (thanks!)
 
-Signed-off-by: Shirish Gajera <gajerashirish@gmail.com>
----
- drivers/staging/skein/skein_block.c | 31 +++++++++----------------------
- 1 file changed, 9 insertions(+), 22 deletions(-)
+v2:
 
-diff --git a/drivers/staging/skein/skein_block.c b/drivers/staging/skein/skein_block.c
-index 66261ab..f89b410 100644
---- a/drivers/staging/skein/skein_block.c
-+++ b/drivers/staging/skein/skein_block.c
-@@ -67,10 +67,8 @@ do {                                         \
- } while (0)
- 
- #if SKEIN_UNROLL_256 == 0
--#define R256(p0, p1, p2, p3, ROT, r_num) /* fully unrolled */ \
--do {                                                          \
--	ROUND256(p0, p1, p2, p3, ROT, r_num);                 \
--} while (0)
-+#define R256(p0, p1, p2, p3, ROT, r_num)	\
-+	ROUND256(p0, p1, p2, p3, ROT, r_num)
- 
- #define I256(R)                                                           \
- do {                                                                      \
-@@ -82,10 +80,7 @@ do {                                                                      \
- } while (0)
- #else
- /* looping version */
--#define R256(p0, p1, p2, p3, ROT, r_num) \
--do { \
--	ROUND256(p0, p1, p2, p3, ROT, r_num); \
--} while (0)
-+#define R256(p0, p1, p2, p3, ROT, r_num) ROUND256(p0, p1, p2, p3, ROT, r_num)
- 
- #define I256(R) \
- do { \
-@@ -154,10 +149,8 @@ do {                                                         \
- } while (0)
- 
- #if SKEIN_UNROLL_512 == 0
--#define R512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num) /* unrolled */ \
--do {                                                                    \
--	ROUND512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num);           \
--} while (0)
-+#define R512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num)	\
-+	ROUND512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num)
- 
- #define I512(R)                                                           \
- do {                                                                      \
-@@ -173,10 +166,8 @@ do {                                                                      \
- } while (0)
- 
- #else /* looping version */
--#define R512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num)                 \
--do {                                                                     \
--	ROUND512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num);            \
--} while (0)
-+#define R512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num)		\
-+	ROUND512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num)
- 
- #define I512(R)                                                           \
- do {                                                                      \
-@@ -263,10 +254,8 @@ do {                                                                          \
- #if SKEIN_UNROLL_1024 == 0
- #define R1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, pF, \
- 	      ROT, rn)                                                        \
--do {                                                                          \
- 	ROUND1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, \
--		  pF, ROT, rn);                                               \
--} while (0)
-+		  pF, ROT, rn)
- 
- #define I1024(R)                                                          \
- do {                                                                      \
-@@ -291,10 +280,8 @@ do {                                                                      \
- #else /* looping version */
- #define R1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, pF, \
- 	      ROT, rn)                                                        \
--do {                                                                          \
- 	ROUND1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, \
--		  pF, ROT, rn);                                               \
--} while (0)
-+		  pF, ROT, rn)
- 
- #define I1024(R)                                                           \
- do {                                                                       \
+Added a second patch to address Dan Carpenter's concern with the
+complexity of passing the sign through `mult'.  Compile tested only.
+
+Chris Rorvick (2):
+  staging: lustre: Use mult if units not specified
+  staging: lustre: Track sign separately
+
+ drivers/staging/lustre/lustre/obdclass/lprocfs_status.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
 -- 
-1.9.1
+2.1.0
 
