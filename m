@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439AbbAKVaM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 16:30:12 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:51915 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782AbbAKVaK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 16:30:10 -0500
-Message-ID: <54B2EB5C.50508@gmail.com>
-Date: Sun, 11 Jan 2015 21:30:04 +0000
-From: Malcolm Priestley <tvboxspy@gmail.com>
+	id S1752484AbbAKVat (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 16:30:49 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65277 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752453AbbAKVaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jan 2015 16:30:46 -0500
+Message-ID: <54B2EB81.5050604@nod.at>
+Date: Sun, 11 Jan 2015 22:30:41 +0100
+From: Richard Weinberger <richard@nod.at>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, Emrys Bayliss <emrys@paradise.net.nz>
-CC: forest@alittletooquiet.net, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: vt6656: Checkpatch fix: else after break or
- return
-References: <1420993174-24908-1-git-send-email-emrys@paradise.net.nz> <1420994540.3690.2.camel@perches.com>
-In-Reply-To: <1420994540.3690.2.camel@perches.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Joe Perches <joe@perches.com>
+CC: davem@davemloft.net, coreteam@netfilter.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, bhutchings@solarflare.com,
+        john.fastabend@gmail.com, herbert@gondor.apana.org.au,
+        vyasevic@redhat.com, jiri@resnulli.us, vfalico@gmail.com,
+        therbert@google.com, edumazet@google.com, yoshfuji@linux-ipv6.org,
+        jmorris@namei.org, kuznet@ms2.inr.ac.ru, kadlec@blackhole.kfki.hu,
+        kaber@trash.net, pablo@netfilter.org, kay@vrfy.org,
+        stephen@networkplumber.org
+Subject: Re: [PATCH 3/3] x_tables: Factor out 16bit aligment ifname_compare()
+References: <1421009571-5279-1-git-send-email-richard@nod.at>	 <1421009571-5279-4-git-send-email-richard@nod.at>	 <1421009969.9233.5.camel@perches.com> <54B2E4DD.90200@nod.at> <1421010853.9233.7.camel@perches.com>
+In-Reply-To: <1421010853.9233.7.camel@perches.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am 11.01.2015 um 22:14 schrieb Joe Perches:
+> On Sun, 2015-01-11 at 22:02 +0100, Richard Weinberger wrote:
+>> Am 11.01.2015 um 21:59 schrieb Joe Perches:
+>>> On Sun, 2015-01-11 at 21:52 +0100, Richard Weinberger wrote:
+>>>> arp_tables.c has a 16bit aligment ifname_compare(), factor
+>>>> it out to use it for all tables.
+> []
+>>> Perhaps this would be better as bool ifname_compare
+>> Let's discuss the whole concept first
+> 
+> The concept seems obvious enough
 
+Anyway, I agree with Linus wrt. bool.
+https://lkml.org/lkml/2013/8/31/138
 
-On 11/01/15 16:42, Joe Perches wrote:
-> On Mon, 2015-01-12 at 03:19 +1100, Emrys Bayliss wrote:
->> This patch fixes the following checkpatch.pl error:
->> rxtx.c:588: WARNING: else is not generally useful after a break or return
->>
->> Signed-off-by: Emrys Bayliss <emrys@paradise.net.nz>
->> ---
->>   drivers/staging/vt6656/rxtx.c | 6 +-----
->>   1 file changed, 1 insertion(+), 5 deletions(-)
->>
->> diff --git a/drivers/staging/vt6656/rxtx.c b/drivers/staging/vt6656/rxtx.c
->> index ea5140a..cc34704 100644
->> --- a/drivers/staging/vt6656/rxtx.c
->> +++ b/drivers/staging/vt6656/rxtx.c
->> @@ -553,8 +553,6 @@ static u16 vnt_fill_cts_head(struct vnt_usb_send_context *tx_context,
->>   			cpu_to_le16(IEEE80211_FTYPE_CTL | IEEE80211_STYPE_CTS);
->>
->>   		memcpy(buf->data.ra, priv->current_net_addr, ETH_ALEN);
->> -
->> -		return vnt_rxtx_datahead_g_fb(tx_context, &buf->data_head);
->>   	} else {
->>   		struct vnt_cts *buf = &head->cts_g;
->>   		/* Get SignalField,ServiceField,Length */
->> @@ -571,11 +569,9 @@ static u16 vnt_fill_cts_head(struct vnt_usb_send_context *tx_context,
->>   			cpu_to_le16(IEEE80211_FTYPE_CTL | IEEE80211_STYPE_CTS);
->>
->>   		memcpy(buf->data.ra, priv->current_net_addr, ETH_ALEN);
->> -
->> -		return vnt_rxtx_datahead_g(tx_context, &buf->data_head);
->>   	}
->>
->> -	return 0;
->> +	return vnt_rxtx_datahead_g_fb(tx_context, &buf->data_head);
->>   }
->>
->>   static u16 vnt_rxtx_rts(struct vnt_usb_send_context *tx_context,
->
-> This is not the same code.
-> Does this even compile?
->
-> For the second block, you've changed
-> return <foo>_g(...) to <foo>_g_fb(...).
->
-Yes, this is wrong and will cause CTS to fail.
-
+Thanks,
+//richard
