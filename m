@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947AbbAKR7Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 12:59:24 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:48083 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075AbbAKR7V (ORCPT
+	id S1751571AbbAKSJp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 13:09:45 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:39270 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbbAKSJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 12:59:21 -0500
+	Sun, 11 Jan 2015 13:09:41 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>
+To: David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: kvm: vmx: Remove some unused functions
-Date: Sun, 11 Jan 2015 19:02:26 +0100
-Message-Id: <1420999346-21962-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        Samuel Pitoiset <samuel.pitoiset@gmail.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drm: nouveau: core: engine: perfmon: base: Remove unused function
+Date: Sun, 11 Jan 2015 19:12:45 +0100
+Message-Id: <1420999965-22216-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere:
-cpu_has_vmx_eptp_writeback() cpu_has_vmx_eptp_uncacheable()
+Remove the function nouveau_perfsig_wrap() that is not used anywhere.
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- arch/x86/kvm/vmx.c |   10 ----------
- 1 file changed, 10 deletions(-)
+ drivers/gpu/drm/nouveau/core/engine/perfmon/base.c |   20 --------------------
+ drivers/gpu/drm/nouveau/core/engine/perfmon/priv.h |    5 -----
+ 2 files changed, 25 deletions(-)
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 3e556c6..e273f15 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -951,16 +951,6 @@ static inline bool cpu_has_vmx_ept_execute_only(void)
- 	return vmx_capability.ept & VMX_EPT_EXECUTE_ONLY_BIT;
+diff --git a/drivers/gpu/drm/nouveau/core/engine/perfmon/base.c b/drivers/gpu/drm/nouveau/core/engine/perfmon/base.c
+index 6301381..d0c5255 100644
+--- a/drivers/gpu/drm/nouveau/core/engine/perfmon/base.c
++++ b/drivers/gpu/drm/nouveau/core/engine/perfmon/base.c
+@@ -80,26 +80,6 @@ nouveau_perfsig_find(struct nouveau_perfmon *ppm, const char *name, u32 size,
+ 	return nouveau_perfsig_find_(dom, name, size);
  }
  
--static inline bool cpu_has_vmx_eptp_uncacheable(void)
+-struct nouveau_perfctr *
+-nouveau_perfsig_wrap(struct nouveau_perfmon *ppm, const char *name,
+-		     struct nouveau_perfdom **pdom)
 -{
--	return vmx_capability.ept & VMX_EPTP_UC_BIT;
+-	struct nouveau_perfsig *sig;
+-	struct nouveau_perfctr *ctr;
+-
+-	sig = nouveau_perfsig_find(ppm, name, strlen(name), pdom);
+-	if (!sig)
+-		return NULL;
+-
+-	ctr = kzalloc(sizeof(*ctr), GFP_KERNEL);
+-	if (ctr) {
+-		ctr->signal[0] = sig;
+-		ctr->logic_op = 0xaaaa;
+-	}
+-
+-	return ctr;
 -}
 -
--static inline bool cpu_has_vmx_eptp_writeback(void)
--{
--	return vmx_capability.ept & VMX_EPTP_WB_BIT;
--}
+ /*******************************************************************************
+  * Perfmon object classes
+  ******************************************************************************/
+diff --git a/drivers/gpu/drm/nouveau/core/engine/perfmon/priv.h b/drivers/gpu/drm/nouveau/core/engine/perfmon/priv.h
+index 0ac8714..1a0989e 100644
+--- a/drivers/gpu/drm/nouveau/core/engine/perfmon/priv.h
++++ b/drivers/gpu/drm/nouveau/core/engine/perfmon/priv.h
+@@ -30,11 +30,6 @@ struct nouveau_perfsig {
+ 	const char *name;
+ };
+ 
+-struct nouveau_perfdom;
+-struct nouveau_perfctr *
+-nouveau_perfsig_wrap(struct nouveau_perfmon *, const char *,
+-		     struct nouveau_perfdom **);
 -
- static inline bool cpu_has_vmx_ept_2m_page(void)
- {
- 	return vmx_capability.ept & VMX_EPT_2MB_PAGE_BIT;
+ struct nouveau_specdom {
+ 	u16 signal_nr;
+ 	const struct nouveau_specsig *signal;
 -- 
 1.7.10.4
 
