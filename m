@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657AbbAKWHA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 17:07:00 -0500
-Received: from shelob.surriel.com ([74.92.59.67]:38185 "EHLO
-	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448AbbAKWF0 (ORCPT
+	id S1752540AbbAKVqg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 16:46:36 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:54052 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323AbbAKVqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 17:05:26 -0500
-From: riel@redhat.com
-To: linux-kernel@vger.kernel.org
-Cc: mingo@redhat.com, hpa@zytor.com, matt.fleming@intel.com, bp@suse.de,
-        oleg@redhat.com, pbonzini@redhat.com, tglx@linutronix.de,
-        luto@amacapital.net
-Subject: [RFC PATCH 03/11] x86,fpu: move __thread_fpu_begin to when the task has the fpu
-Date: Sun, 11 Jan 2015 16:46:25 -0500
-Message-Id: <1421012793-30106-4-git-send-email-riel@redhat.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1421012793-30106-1-git-send-email-riel@redhat.com>
-References: <1421012793-30106-1-git-send-email-riel@redhat.com>
+	Sun, 11 Jan 2015 16:46:35 -0500
+From: "Gustavo A. R. Silva" <silvagustavosilva@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        "Gustavo A. R. Silva" <silvagustavosilva@gmail.com>,
+        "Gustavo A. R. Silva" <garsilva@embeddedor.com>
+Subject: [PATCH] Staging: comedi: kcomedilib: Fixed a typo
+Date: Sun, 11 Jan 2015 15:46:26 -0600
+Message-Id: <1421012786-32194-1-git-send-email-silvagustavosilva@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+Fixed a typo in kcomedilib_main.c file.
 
-Move the call to __thread_fpu_begin, which in turn calls
-__thread_set_has_fpu, to a spot where the task actually has
-the FPU.
-
-This is in preparation for the next patch.
-
-This changeset introduces an extraneous clts() call when
-switching from one FPU-using task to another FPU-using
-task in non-eager FPU switching mode. The next patch gets
-rid of that.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Gustavo A. R. Silva <garsilva@embeddedor.com>
 ---
- arch/x86/include/asm/fpu-internal.h | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/staging/comedi/kcomedilib/kcomedilib_main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
-index 5f8f971..27556f4 100644
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -420,7 +420,6 @@ static inline void switch_fpu_prepare(struct task_struct *old, struct task_struc
- 		if (preload) {
- 			new->thread.fpu_counter++;
- 			set_thread_flag(TIF_LOAD_FPU);
--			__thread_set_has_fpu(new);
- 			prefetch(new->thread.fpu.state);
- 		} else if (!use_eager_fpu())
- 			stts();
-@@ -436,7 +435,6 @@ static inline void switch_fpu_prepare(struct task_struct *old, struct task_struc
- 				prefetch(new->thread.fpu.state);
- 				set_thread_flag(TIF_LOAD_FPU);
- 			}
--			__thread_fpu_begin(new);
- 		}
- 		/* else: CR0.TS is still set from a previous FPU switch */
- 	}
-@@ -451,6 +449,7 @@ static inline void switch_fpu_prepare(struct task_struct *old, struct task_struc
- static inline void switch_fpu_finish(struct task_struct *new)
- {
- 	if (test_and_clear_thread_flag(TIF_LOAD_FPU)) {
-+		__thread_fpu_begin(new);
- 		if (unlikely(restore_fpu_checking(new)))
- 			drop_init_fpu(new);
+diff --git a/drivers/staging/comedi/kcomedilib/kcomedilib_main.c b/drivers/staging/comedi/kcomedilib/kcomedilib_main.c
+index 8777f95..973f544 100644
+--- a/drivers/staging/comedi/kcomedilib/kcomedilib_main.c
++++ b/drivers/staging/comedi/kcomedilib/kcomedilib_main.c
+@@ -95,7 +95,7 @@ static int comedi_do_insn(struct comedi_device *dev,
+ 
+ 	if (s->type == COMEDI_SUBD_UNUSED) {
+ 		dev_err(dev->class_dev,
+-			"%d not useable subdevice\n", insn->subdev);
++			"%d not usable subdevice\n", insn->subdev);
+ 		ret = -EIO;
+ 		goto error;
  	}
 -- 
-1.9.3
+1.9.1
 
