@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753027AbbALQoN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 11:44:13 -0500
-Received: from mail.kernel.org ([198.145.29.136]:35783 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752577AbbALQoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 11:44:11 -0500
-Date: Mon, 12 Jan 2015 13:44:06 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, Kan Liang <kan.liang@intel.com>,
-        Jiri Olsa <jolsa@kernel.org>
-Subject: Re: [PATCH 5/7] perf tools: Pass struct perf_hpp_fmt to its callbacks
-Message-ID: <20150112164406.GC29743@kernel.org>
-References: <1420677949-6719-1-git-send-email-namhyung@kernel.org>
- <1420677949-6719-6-git-send-email-namhyung@kernel.org>
- <20150112162140.GK12406@kernel.org>
- <20150112162736.GL12406@kernel.org>
- <20150112164050.GB18267@krava.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20150112164050.GB18267@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753225AbbALQqQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 11:46:16 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:41649 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753143AbbALQqM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 11:46:12 -0500
+Message-ID: <1421081168.4099.10.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH 2/3] x_tables: Use also dev->ifalias for interface
+ matching
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jan Engelhardt <jengelh@inai.de>
+Cc: Richard Weinberger <richard@nod.at>, davem@davemloft.net,
+        coreteam@netfilter.org, netfilter-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        bhutchings@solarflare.com, john.fastabend@gmail.com,
+        herbert@gondor.apana.org.au, vyasevic@redhat.com, jiri@resnulli.us,
+        vfalico@gmail.com, therbert@google.com, edumazet@google.com,
+        yoshfuji@linux-ipv6.org, jmorris@namei.org, kuznet@ms2.inr.ac.ru,
+        kadlec@blackhole.kfki.hu, kaber@trash.net, pablo@netfilter.org,
+        kay@vrfy.org, stephen@networkplumber.org
+Date: Mon, 12 Jan 2015 08:46:08 -0800
+In-Reply-To: <alpine.LSU.2.11.1501121731510.25482@nerf60.vanv.qr>
+References: <1421009571-5279-1-git-send-email-richard@nod.at>
+	 <1421009571-5279-3-git-send-email-richard@nod.at>
+	 <1421078666.4099.6.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <alpine.LSU.2.11.1501121731510.25482@nerf60.vanv.qr>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jan 12, 2015 at 05:40:50PM +0100, Jiri Olsa escreveu:
-> On Mon, Jan 12, 2015 at 01:27:36PM -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Mon, Jan 12, 2015 at 01:21:40PM -0300, Arnaldo Carvalho de Melo escreveu:
-> > > Em Thu, Jan 08, 2015 at 09:45:46AM +0900, Namhyung Kim escreveu:
-> > > > Currently ->cmp, ->collapse and ->sort callbacks doesn't pass
-> > > > corresponding fmt.  But it'll be needed by upcoming changes in
-> > > > perf diff command.
-> > > > 
-> > > > Suggested-by: Jiri Olsa <jolsa@kernel.org>
-> > > 
-> > > 
-> > >   CC       /tmp/build/perf/builtin-evlist.o
-> > > builtin-diff.c: In function ‘data__hpp_register’:
-> > > builtin-diff.c:1036:11: error: assignment from incompatible pointer type [-Werror]
-> > >   fmt->cmp    = hist_entry__cmp_nop;
-> > >            ^
-> > > builtin-diff.c:1037:16: error: assignment from incompatible pointer type [-Werror]
-> > >   fmt->collapse = hist_entry__cmp_nop;
-> > >                 ^
-> > > builtin-diff.c:1043:13: error: assignment from incompatible pointer type [-Werror]
-> > >    fmt->sort  = hist_entry__cmp_baseline;
-> > >              ^
-> > > builtin-diff.c:1047:13: error: assignment from incompatible pointer type [-Werror]
-> > >    fmt->sort  = hist_entry__cmp_delta;
-> > >              ^
-> > > builtin-diff.c:1051:13: error: assignment from incompatible pointer type [-Werror]
-> > >    fmt->sort  = hist_entry__cmp_ratio;
-> > >              ^
-> > > builtin-diff.c:1055:13: error: assignment from incompatible pointer type [-Werror]
-> > >    fmt->sort  = hist_entry__cmp_wdiff;
-> > >              ^
-> > > builtin-diff.c:1058:13: error: assignment from incompatible pointer type [-Werror]
-> > >    fmt->sort  = hist_entry__cmp_nop;
-> > >              ^
-> > > cc1: all warnings being treated as errors
-> > >   LINK     plugin_kvm.so
-> > > make[1]: *** [/tmp/build/perf/builtin-diff.o] Error 1
-> > > make[1]: *** Waiting for unfinished jobs....
-> > >   LINK     plugin_mac80211.so
-> > 
-> > Am I missing something? Lemme continue trying applying the rest of the
-> > kit...
+On Mon, 2015-01-12 at 17:32 +0100, Jan Engelhardt wrote:
+> On Monday 2015-01-12 17:04, Eric Dumazet wrote:
+> >
+> >iptables should have used ifindex [for interface matching],
+> >it[']s sad we allowed the substring match in first place.
 > 
-> hum,
-> looks like those (= hist_entry__cmp_delta,.. functions) are fixed (=added fmt param)
-> later in patch 6/7 of this series.. which is wrong, should be updated in this patch,
-> as you did below
+> How would you solve interface name wildcards with ifindices?
+> (They come in handy if you have something like lots of tun+/veth+
+> interfaces from openvpn/lxc.)
 
-I have it all fixed up and pushed to my perf/core branch, thanks for
-checking!
 
-- Arnaldo
+This is what I said : "it[']s sad we allowed the substring match in
+first place."
+
+This obviously referred to wildcards, in the in/out interface match for
+every _single_ rule, consuming 64 bytes of memory per rule and per cpu !
+Which is absolutely crazy in term of memory usage.
+
+Matching tun+ or whatever could easily be done by a match (-m ...),
+because you can factorize this quite easily (called once for a group of
+rules)
+
+
+
