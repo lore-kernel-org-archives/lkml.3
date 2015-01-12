@@ -1,266 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250AbbALNZv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 08:25:51 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58847 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559AbbALNZt (ORCPT
+	id S1752981AbbALN1h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 08:27:37 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36077 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751175AbbALN1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 08:25:49 -0500
-Message-ID: <54B3CB51.3060207@pengutronix.de>
-Date: Mon, 12 Jan 2015 14:25:37 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Mon, 12 Jan 2015 08:27:35 -0500
+Date: Mon, 12 Jan 2015 14:27:26 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
+        s.nawrocki@samsung.com, Hans Verkuil <hans.verkuil@cisco.com>
+Subject: Re: [PATCH/RFC v10 15/19] media: Add registration helpers for V4L2
+ flash sub-devices
+Message-ID: <20150112132726.GB15838@amd>
+References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
+ <1420816989-1808-16-git-send-email-j.anaszewski@samsung.com>
+ <20150109205432.GP18076@amd>
+ <54B397F2.6060205@samsung.com>
 MIME-Version: 1.0
-To: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
-CC: "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Soren Brinkmann <sorenb@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "wg@grandegger.com" <wg@grandegger.com>,
-        Michal Simek <michals@xilinx.com>
-Subject: Re: [PATCH v4] can: Convert to runtime_pm
-References: <58f37b6fd9104ce185c413c473fe047b@BY2FFO11FD050.protection.gbl> <54AD267C.4060004@pengutronix.de> <12e7202e137e4d5680185748ebf0cf2d@BY2FFO11FD060.protection.gbl> <54B299A0.1000504@pengutronix.de> <bb20847c9546459592241f801be2b536@BY2FFO11FD027.protection.gbl>
-In-Reply-To: <bb20847c9546459592241f801be2b536@BY2FFO11FD027.protection.gbl>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="FC6fjPPgDMvOWsaH2lNiGPIqjbBAq9iEk"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54B397F2.6060205@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---FC6fjPPgDMvOWsaH2lNiGPIqjbBAq9iEk
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi!
 
-On 01/12/2015 07:59 AM, Appana Durga Kedareswara Rao wrote:
-> Hi Marc,
->=20
->> -----Original Message-----
->> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
->> Sent: Sunday, January 11, 2015 9:11 PM
->> To: Appana Durga Kedareswara Rao
->> Cc: linux-can@vger.kernel.org; netdev@vger.kernel.org; linux-
->> kernel@vger.kernel.org; Soren Brinkmann; grant.likely@linaro.org;
->> wg@grandegger.com
->> Subject: Re: [PATCH v4] can: Convert to runtime_pm
->>
->> On 01/11/2015 06:34 AM, Appana Durga Kedareswara Rao wrote:
->> [...]
->>>>>             return ret;
->>>>>     }
->>>>>
->>>>>     priv->write_reg(priv, XCAN_MSR_OFFSET, 0);
->>>>>     priv->write_reg(priv, XCAN_SRR_OFFSET, XCAN_SRR_CEN_MASK);
->>>>>
->>>>>     if (netif_running(ndev)) {
->>>>>             priv->can.state =3D CAN_STATE_ERROR_ACTIVE;
->>>>
->>>> What happens if the device was not in ACTIVE state prior to the
->>>> runtime_suspend?
->>>>
->>>
->>> I am not sure about the state of CAN at this point of time.
->>> I just followed what other drivers are following for run time  suspen=
-d :).
->>
->> Please check the state of the hardware if you go with bus off into sus=
-pend
->> and then resume.
->>
->=20
->         if (netif_running(ndev)) {
->                         if (isr & XCAN_IXR_BSOFF_MASK) {
->                                 priv->can.state =3D CAN_STATE_BUS_OFF;
->                            priv->write_reg(priv, XCAN_SRR_OFFSET,
->                                         XCAN_SRR_RESET_MASK);
->                 } else if ((status & XCAN_SR_ESTAT_MASK) =3D=3D
->                                         XCAN_SR_ESTAT_MASK) {
->                         priv->can.state =3D CAN_STATE_ERROR_PASSIVE;
->                 } else if (status & XCAN_SR_ERRWRN_MASK) {
->                         priv->can.state =3D CAN_STATE_ERROR_WARNING;
->                 } else {
->                         priv->can.state =3D CAN_STATE_ERROR_ACTIVE;
->                 }
->         }
->=20
-> Is the above code snippet ok for you?
+> >>+	 * the state of V4L2_CID_FLASH_INDICATOR_INTENSITY control only.
+> >>+	 * Therefore it must be possible to set it to 0 level which in
+> >>+	 * the LED subsystem reflects LED_OFF state.
+> >>+	 */
+> >>+	if (cdata_id != INDICATOR_INTENSITY)
+> >>+		++__intensity;
+> >
+> >And normally we'd do i++ instead of ++i, and avoid __ for local
+> >variables...?
+> 
+> Pre-incrementation operator is favourable over the post-incrementation
+> one if we don't want to have an access to the value of a variable before
+> incrementation, which is the case here.
 
-Yes, but what's the state of the hardware when it wakes up again?
+That may be some old C++ convention, but I'm pretty sure gcc does not
+care.
 
->=20
->>>>>             netif_device_attach(ndev);
->>>>>             netif_start_queue(ndev);
->>>>>     }
->>>>>
->>>>>     return 0;
->>>>> }
->>>>
->>>>
->>>>>
->>>>> @@ -1020,9 +1035,9 @@ static int __maybe_unused xcan_resume(struct
->>>>> device *dev)
->>>>>
->>>>>     priv->write_reg(priv, XCAN_MSR_OFFSET, 0);
->>>>>     priv->write_reg(priv, XCAN_SRR_OFFSET, XCAN_SRR_CEN_MASK);
->>>>> -   priv->can.state =3D CAN_STATE_ERROR_ACTIVE;
->>>>>
->>>>>     if (netif_running(ndev)) {
->>>>> +           priv->can.state =3D CAN_STATE_ERROR_ACTIVE;
->>>>>             netif_device_attach(ndev);
->>>>>             netif_start_queue(ndev);
->>>>>     }
->>>>> @@ -1030,7 +1045,10 @@ static int __maybe_unused
->> xcan_resume(struct
->>>> device *dev)
->>>>>     return 0;
->>>>>  }
->>>>>
->>>>> -static SIMPLE_DEV_PM_OPS(xcan_dev_pm_ops, xcan_suspend,
->>>> xcan_resume);
->>>>> +static const struct dev_pm_ops xcan_dev_pm_ops =3D {
->>>>> +   SET_SYSTEM_SLEEP_PM_OPS(xcan_suspend, xcan_resume)
->>>>> +   SET_PM_RUNTIME_PM_OPS(xcan_runtime_suspend,
->>>> xcan_runtime_resume,
->>>>> +NULL) };
->>>>>
->>>>>  /**
->>>>>   * xcan_probe - Platform registration call @@ -1071,7 +1089,7 @@
->>>>> static int xcan_probe(struct platform_device *pdev)
->>>>>             return -ENOMEM;
->>>>>
->>>>>     priv =3D netdev_priv(ndev);
->>>>> -   priv->dev =3D ndev;
->>>>> +   priv->dev =3D &pdev->dev;
->>>>>     priv->can.bittiming_const =3D &xcan_bittiming_const;
->>>>>     priv->can.do_set_mode =3D xcan_do_set_mode;
->>>>>     priv->can.do_get_berr_counter =3D xcan_get_berr_counter; @@ -
->>>> 1137,15
->>>>> +1155,22 @@ static int xcan_probe(struct platform_device *pdev)
->>>>>
->>>>>     netif_napi_add(ndev, &priv->napi, xcan_rx_poll, rx_max);
->>>>>
->>>>> +   pm_runtime_set_active(&pdev->dev);
->>>>> +   pm_runtime_irq_safe(&pdev->dev);
->>>>> +   pm_runtime_enable(&pdev->dev);
->>>>> +   pm_runtime_get_sync(&pdev->dev);
->>>> Check error values?
->>>
->>> Ok
->>>>> +
->>>>>     ret =3D register_candev(ndev);
->>>>>     if (ret) {
->>>>>             dev_err(&pdev->dev, "fail to register failed
->>>>> (err=3D%d)\n",
->>>> ret);
->>>>> +           pm_runtime_put(priv->dev);
->>>>
->>>> Please move the pm_runtime_put into the common error exit path.
->>>>
->>>
->>> Ok
->>>
->>>>>             goto err_unprepare_disable_busclk;
->>>>>     }
->>>>>
->>>>>     devm_can_led_init(ndev);
->>>>> -   clk_disable_unprepare(priv->bus_clk);
->>>>> -   clk_disable_unprepare(priv->can_clk);
->>>>> +
->>>>> +   pm_runtime_put(&pdev->dev);
->>>>> +
->>>>>     netdev_dbg(ndev, "reg_base=3D0x%p irq=3D%d clock=3D%d, tx fifo
->>>> depth:%d\n",
->>>>>                     priv->reg_base, ndev->irq, priv->can.clock.freq=
-,
->>>>>                     priv->tx_max);
->>>>>
->>>>
->>>> I think you have to convert the _remove() function, too. Have a look=
+> Maybe gcc detects the cases when the value of a variable is not assigned
+> and doesn't copy it before incrementing, however I haven't found any
+> reference. I see that often in the for loops the i++ version
+> is used, but I am not sure if this is done because developers are
+> aware that gcc will optimize it anyway or it is just an omission.
 
->>>> at the gpio-zynq.c driver:
->>>>
->>>>> static int zynq_gpio_remove(struct platform_device *pdev) {
->>>>>     struct zynq_gpio *gpio =3D platform_get_drvdata(pdev);
->>>>>
->>>>>     pm_runtime_get_sync(&pdev->dev);
->>>>
->>>> However I don't understand why the get_sync() is here. Maybe S=C3=B6=
-ren
->>>> can help?
->>>
->>> I converted the remove function to use the run-time PM and .
->>> Below is the remove code snippet.
->>>
->>>        ret =3D pm_runtime_get_sync(&pdev->dev);
->>>         if (ret < 0) {
->>>                 netdev_err(ndev, "%s: pm_runtime_get failed(%d)\n",
->>>                                 __func__, ret);
->>>                 return ret;
->>>         }
->>>
->>>         if (set_reset_mode(ndev) < 0)
->>>                 netdev_err(ndev, "mode resetting failed!\n");
->>>
->>>         unregister_candev(ndev);
->>>         netif_napi_del(&priv->napi);
->>>         free_candev(ndev);
->>
->>>         pm_runtime_disable(&pdev->dev);
->>
->> Can this make a call to xcan_runtime_*()? I'm asking since the ndev ha=
-s
->> been unregistered and already free()ed. Better move this directly afte=
-r the
->> set_reset_mode(). This way you are symmetric to the probe() function.
->=20
-> If I move the  pm_runtime_disable after the set_reset_mode
-> I am getting the below error.
-> ERROR:
-> xilinx_can e0008000.can can0 (unregistering): xcan_get_berr_counter: pm=
-_runtime_get fail
->=20
-> If I move the pm_runtime_disable after unregister_candev everything is =
-working fine.
+The code is equivalent, and normally the n++ version is used. gcc will
+get it right.
 
-Fine - but who calls xcan_get_berr_counter here? Can you add a
-dump_stack() here?
+> >>+struct v4l2_flash_ctrl_config {
+> >>+	struct v4l2_ctrl_config intensity;
+> >>+	struct v4l2_ctrl_config flash_intensity;
+> >>+	struct v4l2_ctrl_config flash_timeout;
+> >>+	u32 flash_faults;
+> >>+	bool has_external_strobe:1;
+> >>+	bool indicator_led:1;
+> >>+};
+> >
+> >I don't think you are supposed to do boolean bit arrays.
+> 
+> These bit fields allow to reduce memory usage. If they were not bit
+> fields, the address of the next variable would be aligned to the
+> multiply of the CPU word size.
+> Please look e.g. at struct dev_pm_info in the file include/linux/pm.h.
+> It also contains boolean bit fields.
 
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+Looks like you are right. I guess I confused bool foo:1 with int
+foo:1.
 
+Thanks,
+									Pavel
 
---FC6fjPPgDMvOWsaH2lNiGPIqjbBAq9iEk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUs8tUAAoJECte4hHFiupUCzYP/AstDCsT2tAj1id4EHRFEgj9
-ZBrJGBEVeRPkxI2iIe18OhKpaE+KCiT5jMyEqIA3+CWtAZ2YUOdEe2g8fYnEwGso
-L8NbLbIy511ZdGavTguA3e/NZG+KsgpAfE/d0tVs93uCLAlLVUxoPPGmxtw3/UlB
-bgcY9lbTpdVScQpRG8pI46Cwg7NLr8EObLiRK3gYxsedTSQSBzXDNh6RGcbpgJ96
-NF2NeC250vGnoWJoxYZXYwLaTOL2ywRP4a7FlbVRF3ObeudWuqSp3qkri+18ST3V
-zUN+MehUIZ+yb/j9SMryQmJ/4/9kL74zLqqOCiSTRp+M/+JjeYbCVeIqZUYu2uNt
-DdT5NJmq3n10omTm98uf9yGvZ/DLDv5oZqhSn/kC6PmVeq/zwKIaCPk6U/TgQVq0
-hwQsVbALekv4eOFkIkT3YK+7XCMRvjSaMzc2czLh9x59MUmeqHQuTqIS+Opewilo
-nW6uXvsdfvDaRwKI+PviYtxzprZKcbdx4y1FF3QwepTGlQiQM0/d7UQEnne4Cizh
-v/dycjKU7tyhjtPrHwqfevz1E+pNjzSPtWJn2Mgxep1uXsj/bGGnr5NjT9BcPwxa
-prE4M7jpJB9Z5f/LKaFXa0g15ZTIUCvqERXEdYmIIMW0UVzGllkRmzSvrQl6fZYd
-fkE4DYFfIYjfnUkonxi9
-=Ejns
------END PGP SIGNATURE-----
-
---FC6fjPPgDMvOWsaH2lNiGPIqjbBAq9iEk--
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
