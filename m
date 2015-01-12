@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751637AbbALFF2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 00:05:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40252 "EHLO mx2.suse.de"
+	id S1751008AbbALFP5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 00:15:57 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40291 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751033AbbALFFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 00:05:17 -0500
+	id S1750787AbbALFP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 00:15:56 -0500
 From: Juergen Gross <jgross@suse.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        konrad.wilk@oracle.com, david.vrabel@citrix.com,
-        boris.ostrovsky@oracle.com, jbeulich@suse.com
+To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, akataria@vmware.com,
+        jongman.heo@samsung.com
 Cc: Juergen Gross <jgross@suse.com>
-Subject: [Patch V2 4/4] xen: check for zero sized area when invalidating memory
-Date: Mon, 12 Jan 2015 06:05:10 +0100
-Message-Id: <1421039110-11207-5-git-send-email-jgross@suse.com>
+Subject: [Patch RESEND] x86: don't rely on VMWare emulating PAT MSR correctly
+Date: Mon, 12 Jan 2015 06:15:45 +0100
+Message-Id: <1421039745-14335-1-git-send-email-jgross@suse.com>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1421039110-11207-1-git-send-email-jgross@suse.com>
-References: <1421039110-11207-1-git-send-email-jgross@suse.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the introduction of the linear mapped p2m list setting memory
-areas to "invalid" had to be delayed. When doing the invalidation
-make sure no zero sized areas are processed.
+VMWare seems not to emulate the PAT MSR correctly: reaeding
+MSR_IA32_CR_PAT returns 0 even after writing another value to it.
 
-Signed-off-by: Juegren Gross <jgross@suse.com>
+Detect this bug and don't use the read value if it is 0.
+
+Commit bd809af16e3ab1f8d55b3e2928c47c67e2a865d2 ("x86: Enable PAT to
+use cache mode translation tables") triggers this VMWare bug when the
+kernel is booted as a VMWare guest.
+
+Reported-by: Jongman Heo <jongman.heo@samsung.com>
+Signed-off-by: Juergen Gross <jgross@suse.com>
+Tested-by: Jongman Heo <jongman.heo@samsung.com>
+Acked-by: Alok N Kataria <akataria@vmware.com>
 ---
- arch/x86/xen/setup.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/mm/pat.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 410210f..865e56c 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -160,6 +160,8 @@ void __init xen_inv_extra_mem(void)
- 	int i;
+diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+index edf299c..7ac6869 100644
+--- a/arch/x86/mm/pat.c
++++ b/arch/x86/mm/pat.c
+@@ -234,8 +234,13 @@ void pat_init(void)
+ 	      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, UC);
  
- 	for (i = 0; i < XEN_EXTRA_MEM_MAX_REGIONS; i++) {
-+		if (!xen_extra_mem[i].size)
-+			continue;
- 		pfn_s = PFN_DOWN(xen_extra_mem[i].start);
- 		pfn_e = PFN_UP(xen_extra_mem[i].start + xen_extra_mem[i].size);
- 		for (pfn = pfn_s; pfn < pfn_e; pfn++)
+ 	/* Boot CPU check */
+-	if (!boot_pat_state)
++	if (!boot_pat_state) {
+ 		rdmsrl(MSR_IA32_CR_PAT, boot_pat_state);
++		if (!boot_pat_state) {
++			pat_disable("PAT read returns always zero, disabled.");
++			return;
++		}
++	}
+ 
+ 	wrmsrl(MSR_IA32_CR_PAT, pat);
+ 
 -- 
 2.1.2
 
