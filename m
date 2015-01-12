@@ -1,107 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017AbbALLg1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 06:36:27 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:8940 "EHLO SMTP02.CITRIX.COM"
+	id S1752090AbbALLh6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 06:37:58 -0500
+Received: from mta-out1.inet.fi ([62.71.2.203]:37565 "EHLO jenni2.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750921AbbALLg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 06:36:26 -0500
-X-IronPort-AV: E=Sophos;i="5.07,743,1413244800"; 
-   d="scan'208";a="215411051"
-Message-ID: <54B3B1B7.40700@citrix.com>
-Date: Mon, 12 Jan 2015 12:36:23 +0100
-From: =?windows-1252?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1750971AbbALLh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 06:37:57 -0500
+Date: Mon, 12 Jan 2015 13:37:22 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Langsdorf <mlangsdo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.19-rc3
+Message-ID: <20150112113722.GC16935@node.dhcp.inet.fi>
+References: <CA+55aFwsxoyLb9OWMSCL3doe_cz_EQtKsEFCyPUYn_T87pbz0A@mail.gmail.com>
+ <4665410.x9Uu42bKmJ@wuerfel>
+ <CA+55aFxphoLdFkwkVFQ87Q8EbYNqFAE-n0yTvCSOJzSO2MtDgw@mail.gmail.com>
+ <10028397.kdbz8TfPck@wuerfel>
 MIME-Version: 1.0
-To: Bob Liu <bob.liu@oracle.com>
-CC: <xen-devel@lists.xen.org>, <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, <david.vrabel@citrix.com>,
-        <junxiao.bi@oracle.com>
-Subject: Re: [PATCH] xen/blkfront: restart request queue when there is enough
- persistent_gnts_c
-References: <1420550343-14013-1-git-send-email-bob.liu@oracle.com> <54AFF909.3090909@citrix.com> <54B37336.40109@oracle.com>
-In-Reply-To: <54B37336.40109@oracle.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <10028397.kdbz8TfPck@wuerfel>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-El 12/01/15 a les 8.09, Bob Liu ha escrit:
+On Sat, Jan 10, 2015 at 10:36:13PM +0100, Arnd Bergmann wrote:
+> On Saturday 10 January 2015 13:00:27 Linus Torvalds wrote:
+> > so I feel pretty confident in saying it won't happen. It's just too
+> > much of a bother, for little to no actual upside. It's likely a much
+> > better approach to try to instead use THP for anonymous mappings.
 > 
-> On 01/09/2015 11:51 PM, Roger Pau Monné wrote:
->> El 06/01/15 a les 14.19, Bob Liu ha escrit:
->>> When there is no enough free grants, gnttab_alloc_grant_references()
->>> will fail and block request queue will stop.
->>> If the system is always lack of grants, blkif_restart_queue_callback() can't be
->>> scheduled and block request queue can't be restart(block I/O hang).
->>>
->>> But when there are former requests complete, some grants may free to
->>> persistent_gnts_c, we can give the request queue another chance to restart and
->>> avoid block hang.
->>>
->>> Reported-by: Junxiao Bi <junxiao.bi@oracle.com>
->>> Signed-off-by: Bob Liu <bob.liu@oracle.com>
->>> ---
->>>  drivers/block/xen-blkfront.c |   11 +++++++++++
->>>  1 file changed, 11 insertions(+)
->>>
->>> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
->>> index 2236c6f..dd30f99 100644
->>> --- a/drivers/block/xen-blkfront.c
->>> +++ b/drivers/block/xen-blkfront.c
->>> @@ -1125,6 +1125,17 @@ static void blkif_completion(struct blk_shadow *s, struct blkfront_info *info,
->>>  			}
->>>  		}
->>>  	}
->>> +
->>> +	/*
->>> +	 * Request queue would be stopped if failed to alloc enough grants and
->>> +	 * won't be restarted until gnttab_free_count >= info->callback->count.
->>> +	 *
->>> +	 * But there is another case, once we have enough persistent grants we
->>> +	 * can try to restart the request queue instead of continue to wait for
->>> +	 * 'gnttab_free_count'.
->>> +	 */
->>> +	if (info->persistent_gnts_c >= info->callback.count)
->>> +		schedule_work(&info->work);
->>
->> I guess I'm missing something here, but blkif_completion is called by
->> blkif_interrupt, which in turn calls kick_pending_request_queues when
->> finished, which IMHO should be enough to restart the processing of requests.
->>
-> 
-> You are right, sorry for the mistake.
-> 
-> The problem we met was a xenblock I/O hang.
-> Dumped data showed at that time info->persistent_gnt_c = 8, max_gref = 8
-> but block request queue was still stopped.
-> It's very hard to reproduce this issue, we only see it once.
-> 
-> I think there might be a race condition:
-> 
-> request A                          request B:
-> 
->                                    info->persistent_gnts_c < max_grefs
->                                    and fail to alloc enough grants
-> 
-> 
-> ^^^^
-> interrupt happen, blkif_complte():
-> info->persistent_gnts_c++
-> kick_pending_request_queues()
-> 
->                                     stop block request queue
->                                     added to callback list
-> 
-> If the system don't have enough grants(but have enough persistent_gnts),
-> request queue would still hang.
+> arm64 already supports 2MB transparent hugepages. I guess it
+> wouldn't be too hard to change it so that an existing hugepage
+> on an anonymous mapping that gets split up into 4KB pages gets
+> split along 64KB boundaries with the contiguous mapping bit set.
 
-Not sure how can this happen, blkif_queue_request explicitly checks that
-persistent_gnts_c < max_grefs before adding the callback and stopping
-the request queue, so in your case the queue should not be blocked. Can
-you dump the state of info->connected?
+What you are talking about is in fact multi-level transparent huge page
+support: you need to couple 4k pages into 64k to avoid breaking them apart
+by compactation or migration or whatever.
 
-Roger.
+That definetely would not make THP code simplier.
 
+> Having full support for multiple hugepage sizes (64KB, 2MB and 32MB
+> in case of ARM64 with 4KB PAGE_SIZE) would be even better and
+> probably negate any benefits of 64KB PAGE_SIZE, but requires more
+> changes to common mm code.
+> 
+> 	Arnd
+
+-- 
+ Kirill A. Shutemov
