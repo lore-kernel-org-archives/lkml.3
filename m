@@ -1,83 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862AbbALPyg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 10:54:36 -0500
-Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:56927 "EHLO
-	emvm-gh1-uea08.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650AbbALPyf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 10:54:35 -0500
-X-TM-IMSS-Message-ID: <08e5c7620000ad3c@nsa.gov>
-Message-ID: <54B3EDF4.2000801@tycho.nsa.gov>
-Date: Mon, 12 Jan 2015 10:53:24 -0500
-From: Stephen Smalley <sds@tycho.nsa.gov>
-Organization: National Security Agency
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751570AbbALPx5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 10:53:57 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50655 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750921AbbALPxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 10:53:55 -0500
+Message-ID: <54B3EE11.3040303@suse.cz>
+Date: Mon, 12 Jan 2015 16:53:53 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: "Christopher J. PeBenito" <cpebenito@tresys.com>,
-        Dave Jones <davej@codemonkey.org.uk>,
-        Stephen Smalley <stephen.smalley@gmail.com>,
-        Paul Moore <pmoore@redhat.com>, selinux <selinux@tycho.nsa.gov>,
-        James Morris <james.l.morris@oracle.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: noisy selinux messages on tmpfs mount.
-References: <20150108190822.GB4365@codemonkey.org.uk> <3227891.DhTeT4XeAv@sifl> <2354586.80TRdrKbtf@sifl> <CAB9W1A2nTN2DJ699BXL_r_aXCk-O9-KrTLSi731isQWpPUmkwg@mail.gmail.com> <20150109191329.GA19400@codemonkey.org.uk> <54B03E45.8000106@tycho.nsa.gov> <54B3DF65.809@tresys.com>
-In-Reply-To: <54B3DF65.809@tresys.com>
-Content-Type: text/plain; charset=windows-1252
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/5] mm/compaction: more trace to understand when/why
+ compaction start/finish
+References: <1421050875-26332-1-git-send-email-iamjoonsoo.kim@lge.com> <1421050875-26332-4-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <1421050875-26332-4-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: text/plain; charset=iso-8859-2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2015 09:51 AM, Christopher J. PeBenito wrote:
-> On 1/9/2015 3:47 PM, Stephen Smalley wrote:
->> On 01/09/2015 02:13 PM, Dave Jones wrote:
->>> On Fri, Jan 09, 2015 at 08:06:49AM -0500, Stephen Smalley wrote:
->>>  
->>>  > On Thu, Jan 8, 2015 at 2:39 PM, Paul Moore <pmoore@redhat.com> wrote:
->>>  > > On Thursday, January 08, 2015 02:34:57 PM Paul Moore wrote:
->>>  > >> On Thursday, January 08, 2015 02:08:22 PM Dave Jones wrote:
->>>  > >> > systemd has started mounting a tmpfs in /run/user/<uid> every time a
->>>  > >> > session begins.  So after ssh'ing into a box a number of times, dmesg
->>>  > >> > looks like this..
->>>  > >> >
->>>  > >> > [...] SELinux: initialized (dev tmpfs, type tmpfs), uses transition SIDs
->>>  > >> > [...] SELinux: initialized (dev tmpfs, type tmpfs), uses transition SIDs
->>>  > >>
->>>  > >> {snip}
->>>  > >>
->>>  > >> > What's a good solution to stopping this spew ? printk_once doesn't seem
->>>  > >> > like a good fit, in case someone is doing different labelling behaviours
->>>  > >> > between mounts.
->>>  > >> >
->>>  > >> > Could we only print it if the mount is being done with non-default
->>>  > >> > behaviour perhaps?
->>>  > >>
->>>  > >> I'm very curious to hear Stephen's opinion on the issue, but I wonder how
->>>  > >> much this would honestly impact us if we removed this message in the case
->>>  > >> where we mount the filesystem with a known labeling behavior.
->>>  >
->>>  > We already reduced that message to KERN_DEBUG.  Is that not sufficient?
->>>
->>> That doesn't really help with the flooding of dmesg, so no.
->>> I should also note that it's not just logging in that creates a new
->>> session, it also seems to be getting triggered by cron jobs, or
->>> whatever the systemd replacement is.
->>
->> Fair enough.  I think we can likely get rid of it then.
+On 01/12/2015 09:21 AM, Joonsoo Kim wrote:
+> It is not well analyzed that when/why compaction start/finish or not. With
+> these new tracepoints, we can know much more about start/finish reason of
+> compaction. I can find following bug with these tracepoint.
 > 
-> Are you saying completely get rid of the message in all cases?  If so,
-> how is a user supposed to debug situations where they mount a filesystem
-> and labeling doesn't work (i.e. no security label support or policy
-> hasn't been updated for that fs)?  Is there going to be another place to
-> look see what the labeling behavior is for all mounted filesystems?
+> http://www.spinics.net/lists/linux-mm/msg81582.html
+> 
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> ---
+>  include/linux/compaction.h        |    3 ++
+>  include/trace/events/compaction.h |   94 +++++++++++++++++++++++++++++++++++++
+>  mm/compaction.c                   |   41 ++++++++++++++--
+>  3 files changed, 134 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+> index a9547b6..d82181a 100644
+> --- a/include/linux/compaction.h
+> +++ b/include/linux/compaction.h
+> @@ -12,6 +12,9 @@
+>  #define COMPACT_PARTIAL		3
+>  /* The full zone was compacted */
+>  #define COMPACT_COMPLETE	4
+> +/* For more detailed tracepoint output */
+> +#define COMPACT_NO_SUITABLE_PAGE	5
+> +#define COMPACT_NOT_SUITABLE_ZONE	6
+>  /* When adding new state, please change compaction_status_string, too */
+>  
+>  /* Used to signal whether compaction detected need_sched() or lock contention */
+> diff --git a/include/trace/events/compaction.h b/include/trace/events/compaction.h
+> index 139020b..839dd4f 100644
+> --- a/include/trace/events/compaction.h
+> +++ b/include/trace/events/compaction.h
+> @@ -164,6 +164,100 @@ TRACE_EVENT(mm_compaction_end,
+>  		compaction_status_string[__entry->status])
+>  );
+>  
+> +TRACE_EVENT(mm_compaction_try_to_compact_pages,
+> +
+> +	TP_PROTO(
+> +		int order,
+> +		gfp_t gfp_mask,
+> +		enum migrate_mode mode,
+> +		int alloc_flags,
+> +		int classzone_idx),
 
-In most cases, they can extract the information directly from the policy
-via seinfo or their favorite policy tool.  For mountpoint labeling, the
-printk in question only tells them that mountpoint labeling was used,
-not the specific option and value, so reading /proc/self/mounts is more
-informative.  /proc/self/mounts will also tell them whether the
-filesystem "supports" labeling via the seclabel option.  So I don't
-believe it offers us any information that isn't available elsewhere.
+I wonder if alloc_flags and classzone_idx is particularly useful. It affects the
+watermark checks, but those are a bit of blackbox anyway.
 
+> +	TP_ARGS(order, gfp_mask, mode, alloc_flags, classzone_idx),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(int, order)
+> +		__field(gfp_t, gfp_mask)
+> +		__field(enum migrate_mode, mode)
+> +		__field(int, alloc_flags)
+> +		__field(int, classzone_idx)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->order = order;
+> +		__entry->gfp_mask = gfp_mask;
+> +		__entry->mode = mode;
+> +		__entry->alloc_flags = alloc_flags;
+> +		__entry->classzone_idx = classzone_idx;
+> +	),
+> +
+> +	TP_printk("order=%d gfp_mask=0x%x mode=%d alloc_flags=0x%x classzone_idx=%d",
+> +		__entry->order,
+> +		__entry->gfp_mask,
+> +		(int)__entry->mode,
+> +		__entry->alloc_flags,
+> +		__entry->classzone_idx)
+> +);
+> +
+> +DECLARE_EVENT_CLASS(mm_compaction_suitable_template,
+> +
+> +	TP_PROTO(struct zone *zone,
+> +		int order,
+> +		int alloc_flags,
+> +		int classzone_idx,
+> +		int ret),
+> +
+> +	TP_ARGS(zone, order, alloc_flags, classzone_idx, ret),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(int, nid)
+> +		__field(char *, name)
+> +		__field(int, order)
+> +		__field(int, alloc_flags)
+> +		__field(int, classzone_idx)
+> +		__field(int, ret)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->nid = zone_to_nid(zone);
+> +		__entry->name = (char *)zone->name;
+> +		__entry->order = order;
+> +		__entry->alloc_flags = alloc_flags;
+> +		__entry->classzone_idx = classzone_idx;
+> +		__entry->ret = ret;
+> +	),
+> +
+> +	TP_printk("node=%d zone=%-8s order=%d alloc_flags=0x%x classzone_idx=%d ret=%s",
+> +		__entry->nid,
+> +		__entry->name,
+> +		__entry->order,
+> +		__entry->alloc_flags,
+> +		__entry->classzone_idx,
+> +		compaction_status_string[__entry->ret])
+> +);
+> +
+> +DEFINE_EVENT(mm_compaction_suitable_template, mm_compaction_finished,
+> +
+> +	TP_PROTO(struct zone *zone,
+> +		int order,
+> +		int alloc_flags,
+> +		int classzone_idx,
+> +		int ret),
+> +
+> +	TP_ARGS(zone, order, alloc_flags, classzone_idx, ret)
+> +);
+> +
+> +DEFINE_EVENT(mm_compaction_suitable_template, mm_compaction_suitable,
+> +
+> +	TP_PROTO(struct zone *zone,
+> +		int order,
+> +		int alloc_flags,
+> +		int classzone_idx,
+> +		int ret),
+> +
+> +	TP_ARGS(zone, order, alloc_flags, classzone_idx, ret)
+> +);
+> +
+>  #endif /* _TRACE_COMPACTION_H */
+>  
+>  /* This part must be outside protection */
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index be28469..7500f01 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -25,6 +25,8 @@ char *compaction_status_string[] = {
+>  	"continue",
+>  	"partial",
+>  	"complete",
+> +	"no_suitable_page",
+> +	"not_suitable_zone",
+>  };
+>  
+>  static inline void count_compact_event(enum vm_event_item item)
+> @@ -1048,7 +1050,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+>  	return cc->nr_migratepages ? ISOLATE_SUCCESS : ISOLATE_NONE;
+>  }
+>  
+> -static int compact_finished(struct zone *zone, struct compact_control *cc,
+> +static int __compact_finished(struct zone *zone, struct compact_control *cc,
+>  			    const int migratetype)
+>  {
+>  	unsigned int order;
+> @@ -1103,7 +1105,21 @@ static int compact_finished(struct zone *zone, struct compact_control *cc,
+>  			return COMPACT_PARTIAL;
+>  	}
+>  
+> -	return COMPACT_CONTINUE;
+> +	return COMPACT_NO_SUITABLE_PAGE;
+> +}
+> +
+> +static int compact_finished(struct zone *zone, struct compact_control *cc,
+> +			    const int migratetype)
+> +{
+> +	int ret;
+> +
+> +	ret = __compact_finished(zone, cc, migratetype);
+> +	trace_mm_compaction_finished(zone, cc->order, cc->alloc_flags,
+> +						cc->classzone_idx, ret);
+> +	if (ret == COMPACT_NO_SUITABLE_PAGE)
+> +		ret = COMPACT_CONTINUE;
+> +
+> +	return ret;
+>  }
+>  
+>  /*
+> @@ -1113,7 +1129,7 @@ static int compact_finished(struct zone *zone, struct compact_control *cc,
+>   *   COMPACT_PARTIAL  - If the allocation would succeed without compaction
+>   *   COMPACT_CONTINUE - If compaction should run now
+>   */
+> -unsigned long compaction_suitable(struct zone *zone, int order,
+> +static unsigned long __compaction_suitable(struct zone *zone, int order,
+>  					int alloc_flags, int classzone_idx)
+>  {
+>  	int fragindex;
+> @@ -1157,11 +1173,25 @@ unsigned long compaction_suitable(struct zone *zone, int order,
+>  	 */
+>  	fragindex = fragmentation_index(zone, order);
+>  	if (fragindex >= 0 && fragindex <= sysctl_extfrag_threshold)
+> -		return COMPACT_SKIPPED;
+> +		return COMPACT_NOT_SUITABLE_ZONE;
+>  
+>  	return COMPACT_CONTINUE;
+>  }
+>  
+> +unsigned long compaction_suitable(struct zone *zone, int order,
+> +					int alloc_flags, int classzone_idx)
+> +{
+> +	unsigned long ret;
+> +
+> +	ret = __compaction_suitable(zone, order, alloc_flags, classzone_idx);
+> +	trace_mm_compaction_suitable(zone, order, alloc_flags,
+> +						classzone_idx, ret);
+> +	if (ret == COMPACT_NOT_SUITABLE_ZONE)
+> +		ret = COMPACT_SKIPPED;
+> +
+> +	return ret;
+> +}
+> +
+>  static int compact_zone(struct zone *zone, struct compact_control *cc)
+>  {
+>  	int ret;
+> @@ -1377,6 +1407,9 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>  	if (!order || !may_enter_fs || !may_perform_io)
+>  		return COMPACT_SKIPPED;
+>  
+> +	trace_mm_compaction_try_to_compact_pages(order, gfp_mask, mode,
+> +					alloc_flags, classzone_idx);
+> +
+>  	/* Compact each zone in the list */
+>  	for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
+>  								nodemask) {
+> 
 
