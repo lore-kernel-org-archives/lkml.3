@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626AbbALTEo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 14:04:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57994 "EHLO
+	id S1754947AbbALS34 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:29:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58007 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754911AbbALS3u (ORCPT
+	with ESMTP id S1754913AbbALS3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:29:50 -0500
+	Mon, 12 Jan 2015 13:29:51 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nadav Amit <namit@cs.technion.ac.il>, Paolo Bonzini <pbonzini@redhat.com>,
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Jani Nikula <jani.nikula@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 123/216] KVM: x86: em_ret_far overrides cpl
-Date: Mon, 12 Jan 2015 18:28:21 +0000
-Message-Id: <1421087394-2712-11-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 124/216] drm/i915: save/restore GMBUS freq across suspend/resume on gen4
+Date: Mon, 12 Jan 2015 18:28:22 +0000
+Message-Id: <1421087394-2712-12-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,34 +31,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nadav Amit <nadav.amit@gmail.com>
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-commit ab646f54f4fd1a8b9671b8707f0739fdd28ce2b1 upstream.
+commit 9f49c37635d5c2a801f7670d5fbf0b25ec461f2c upstream.
 
-commit d50eaa18039b ("KVM: x86: Perform limit checks when assigning EIP")
-mistakenly used zero as cpl on em_ret_far. Use the actual one.
+Should probably just init this in the GMbus code all the time, based on
+the cdclk and HPLL like we do on newer platforms.  Ville has code for
+that in a rework branch, but until then we can fix this bug fairly
+easily.
 
-Fixes: d50eaa18039b8b848c2285478d0775335ad5e930
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76301
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Tested-by: Nikolay <mar.kolya@gmail.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kvm/emulate.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_drv.h     | 1 +
+ drivers/gpu/drm/i915/i915_reg.h     | 1 +
+ drivers/gpu/drm/i915/i915_suspend.c | 8 ++++++++
+ 3 files changed, 10 insertions(+)
 
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 27362eceec9c..bf9e8fdc2425 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -2088,7 +2088,7 @@ static int em_ret_far(struct x86_emulate_ctxt *ctxt)
- 	/* Outer-privilege level return is not implemented */
- 	if (ctxt->mode >= X86EMUL_MODE_PROT16 && (cs & 3) > cpl)
- 		return X86EMUL_UNHANDLEABLE;
--	rc = __load_segment_descriptor(ctxt, (u16)cs, VCPU_SREG_CS, 0, false,
-+	rc = __load_segment_descriptor(ctxt, (u16)cs, VCPU_SREG_CS, cpl, false,
- 				       &new_desc);
- 	if (rc != X86EMUL_CONTINUE)
- 		return rc;
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index 374f964323ad..bc47ba421fc8 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -817,6 +817,7 @@ struct i915_suspend_saved_registers {
+ 	u32 savePIPEB_LINK_N1;
+ 	u32 saveMCHBAR_RENDER_STANDBY;
+ 	u32 savePCH_PORT_HOTPLUG;
++	u16 saveGCDGMBUS;
+ };
+ 
+ struct vlv_s0ix_state {
+diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+index a5bab61bfc00..6b9626567cfa 100644
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -74,6 +74,7 @@
+ #define   I915_GC_RENDER_CLOCK_166_MHZ	(0 << 0)
+ #define   I915_GC_RENDER_CLOCK_200_MHZ	(1 << 0)
+ #define   I915_GC_RENDER_CLOCK_333_MHZ	(4 << 0)
++#define GCDGMBUS 0xcc
+ #define PCI_LBPC 0xf4 /* legacy/combination backlight modes, also called LBB */
+ 
+ 
+diff --git a/drivers/gpu/drm/i915/i915_suspend.c b/drivers/gpu/drm/i915/i915_suspend.c
+index 043123c77a1f..e22b0e825de2 100644
+--- a/drivers/gpu/drm/i915/i915_suspend.c
++++ b/drivers/gpu/drm/i915/i915_suspend.c
+@@ -328,6 +328,10 @@ int i915_save_state(struct drm_device *dev)
+ 		}
+ 	}
+ 
++	if (IS_GEN4(dev))
++		pci_read_config_word(dev->pdev, GCDGMBUS,
++				     &dev_priv->regfile.saveGCDGMBUS);
++
+ 	/* Cache mode state */
+ 	if (INTEL_INFO(dev)->gen < 7)
+ 		dev_priv->regfile.saveCACHE_MODE_0 = I915_READ(CACHE_MODE_0);
+@@ -356,6 +360,10 @@ int i915_restore_state(struct drm_device *dev)
+ 	mutex_lock(&dev->struct_mutex);
+ 
+ 	i915_gem_restore_fences(dev);
++
++	if (IS_GEN4(dev))
++		pci_write_config_word(dev->pdev, GCDGMBUS,
++				      dev_priv->regfile.saveGCDGMBUS);
+ 	i915_restore_display(dev);
+ 
+ 	if (!drm_core_check_feature(dev, DRIVER_MODESET)) {
 -- 
 2.1.4
 
