@@ -1,81 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771AbbALLIj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 06:08:39 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:53239 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752587AbbALLIg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 06:08:36 -0500
-Message-ID: <54B3AB32.3040308@atmel.com>
-Date: Mon, 12 Jan 2015 12:08:34 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752755AbbALLJi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 06:09:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49443 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752217AbbALLJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 06:09:36 -0500
+Date: Mon, 12 Jan 2015 12:09:07 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: acme@redhat.com, namhyung@kernel.org, peterz@infradead.org,
+        jolsa@kernel.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        linux-perf-users@vger.kernel.org, linux-arch@vger.kernel.org,
+        Alexey.Brodkin@synopsys.com
+Subject: Re: [PATCH v2 3/5] perf tools: [uclibc] Avoid build splat for
+ syscall numbers
+Message-ID: <20150112110907.GD26229@krava.redhat.com>
+References: <1420888254-17504-1-git-send-email-vgupta@synopsys.com>
+ <1420888254-17504-4-git-send-email-vgupta@synopsys.com>
 MIME-Version: 1.0
-To: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        "Alexandre Belloni" <alexandre.belloni@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Laight <David.Laight@ACULAB.COM>
-Subject: Re: [PATCH v3 0/5] usb: atmel_usba_udc: Rework errata handling
-References: <1421060278-27329-1-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1421060278-27329-1-git-send-email-boris.brezillon@free-electrons.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420888254-17504-4-git-send-email-vgupta@synopsys.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 12/01/2015 11:57, Boris Brezillon a écrit :
-> Hello,
+On Sat, Jan 10, 2015 at 04:40:52PM +0530, Vineet Gupta wrote:
+> This is due to duplicated unistd inclusion (via uClibc headers + kernel headers)
+> Also seen on ARM uClibc based tools
 > 
-> Here is a set of patches porting existing at91sam9rl erratum handling to
-> DT and adding new code to handle at91sam9g45/9x5 erratum.
-> It also adds several compatible strings to differentiate those errata.
+> ------- ARC build ---------->8-------------
 > 
-> These patches should be backported to 3.17 and 3.18 stable releases but
-> they do not apply cleanly on those stable branches.
-> I'll send a backport of this series once it is merged in mainline.
+>   CC       util/evlist.o
+> In file included from
+> ~/arc/k.org/arch/arc/include/uapi/asm/unistd.h:25:0,
+>                  from util/../perf-sys.h:10,
+>                  from util/../perf.h:15,
+>                  from util/event.h:7,
+>                  from util/event.c:3:
+> ~/arc/k.org/include/uapi/asm-generic/unistd.h:906:0:
+> warning: "__NR_fcntl64" redefined [enabled by default]
+>  #define __NR_fcntl64 __NR3264_fcntl
+>  ^
+> In file included from
+> ~/arc/gnu/INSTALL_1412-arc-2014.12-rc1/arc-snps-linux-uclibc/sysroot/usr/include/sys/syscall.h:24:0,
+>                  from util/../perf-sys.h:6,
+> ----------------->8-------------------
 > 
-> Regards,
+> ------- ARM build ---------->8-------------
 > 
-> Boris
-> 
-> Changes since v2:
-> - remove UTF8 character in commit message of patch 2
-> 
-> Changes since v1:
-> - cache INT_ENB value to speedup INT_ENB read operations
+>   CC FPIC  plugin_scsi.o
+> In file included from util/../perf-sys.h:9:0,
+>                  from util/../perf.h:15,
+>                  from util/cache.h:7,
+>                  from perf.c:12:
+> ~/arc/k.org/arch/arm/include/uapi/asm/unistd.h:28:0:
+> warning: "__NR_restart_syscall" redefined [enabled by default]
+> In file included from
+> ~/buildroot/host/usr/arm-buildroot-linux-uclibcgnueabi/sysroot/usr/include/sys/syscall.h:25:0,
+>                  from util/../perf-sys.h:6,
+>                  from util/../perf.h:15,
+>                  from util/cache.h:7,
+>                  from perf.c:12:
+> ~/buildroot/host/usr/arm-buildroot-linux-uclibcgnueabi/sysroot/usr/include/bits/sysnum.h:17:0:
+> note: this is the location of the previous definition
+> ----------------->8-------------------
 
-To the whole series:
+Could you please point out what's the right logic for including those headers?
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+I've always thought that just adding:
 
-Thanks.
+  #include <linux/unistd.h>
 
-> Boris Brezillon (5):
->   usb: atmel_usba_udc: Rework at91sam9rl errata handling
->   usb: atmel_usba_udc: Add at91sam9g45 and at91sam9x5 errata handling
->   ARM: at91/dt: update udc compatible strings
->   usb: atmel_usba_udc: Mask status with enabled irqs
->   usb: gadget: atmel_usba: Cache INT_ENB register value
-> 
->  .../devicetree/bindings/usb/atmel-usb.txt          |   5 +-
->  arch/arm/boot/dts/at91sam9g45.dtsi                 |   2 +-
->  arch/arm/boot/dts/at91sam9x5.dtsi                  |   2 +-
->  arch/arm/boot/dts/sama5d3.dtsi                     |   2 +-
->  arch/arm/boot/dts/sama5d4.dtsi                     |   2 +-
->  drivers/usb/gadget/udc/atmel_usba_udc.c            | 146 +++++++++++++--------
->  drivers/usb/gadget/udc/atmel_usba_udc.h            |   9 ++
->  7 files changed, 111 insertions(+), 57 deletions(-)
-> 
+should be safe no matter what.. feels like bug in one of those
+header files? (uClibc headers & kernel headers)
 
-
--- 
-Nicolas Ferre
+thanks for info,
+jirka
