@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718AbbALNUv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 08:20:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54585 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751132AbbALNUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 08:20:50 -0500
-Message-ID: <54B3CA2A.2030004@redhat.com>
-Date: Mon, 12 Jan 2015 08:20:42 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
+	id S1753097AbbALNWI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 08:22:08 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:59403 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916AbbALNWF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 08:22:05 -0500
+Message-ID: <54B3CA49.7010302@atmel.com>
+Date: Mon, 12 Jan 2015 14:21:13 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@canonical.com>,
-        Daniel Baluta <daniel.baluta@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] checkpatch: Update git commit message
-References: <1420840730.32628.13.camel@perches.com>
-In-Reply-To: <1420840730.32628.13.camel@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Bo Shen <voice.shen@atmel.com>, Mark Brown <broonie@kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] ARM: at91: sama5d3: dt: correct the sound route
+References: <1420795096-8944-1-git-send-email-voice.shen@atmel.com>
+In-Reply-To: <1420795096-8944-1-git-send-email-voice.shen@atmel.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le 09/01/2015 10:18, Bo Shen a écrit :
+> The MICBIAS is a supply, should route to MIC while not IN1L.
+> 
+> Signed-off-by: Bo Shen <voice.shen@atmel.com>
+
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+I stack it up in at91-3.19-fixes.
+
+Thanks. Bye.
 
 
-On 01/09/2015 04:58 PM, Joe Perches wrote:
-> The git commit message can be confusing,
-> 
-> Try to clarify the message a bit to reduce
-> the confusion when emitted.
-> 
-> Show the correct form using
-> 	Please use git commit description style 'commit <12+ chars of sha1> ("<title line>")'
-> and if the git commit sha1 is unique, show
-> the right sha1 to use with the actual title
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> Original-patch-by: Prarit Bhargava <prarit@redhat.com>
 > ---
+> 
+>  arch/arm/boot/dts/sama5d3xmb.dtsi | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/boot/dts/sama5d3xmb.dtsi b/arch/arm/boot/dts/sama5d3xmb.dtsi
+> index 0399be6..83d0598 100644
+> --- a/arch/arm/boot/dts/sama5d3xmb.dtsi
+> +++ b/arch/arm/boot/dts/sama5d3xmb.dtsi
+> @@ -176,7 +176,7 @@
+>  			"Headphone Jack", "HPOUTR",
+>  			"IN2L", "Line In Jack",
+>  			"IN2R", "Line In Jack",
+> -			"MICBIAS", "IN1L",
+> +			"Mic", "MICBIAS",
+>  			"IN1L", "Mic";
+>  
+>  		atmel,ssc-controller = <&ssc0>;
+> 
 
-Acked-by: Prarit Bhargava <prarit@redhat.com>
 
-P.
+-- 
+Nicolas Ferre
