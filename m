@@ -1,103 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879AbbALKj4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 05:39:56 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:57822 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752217AbbALKjy (ORCPT
+	id S1753037AbbALKka (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 05:40:30 -0500
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:50605 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752785AbbALKk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 05:39:54 -0500
-X-AuditID: cbfee690-f79ab6d0000046f7-2d-54b3a478ef24
-Message-id: <54B3A477.8080705@samsung.com>
-Date: Mon, 12 Jan 2015 19:39:51 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Kukjin Kim <kgene@kernel.org>
-Cc: ben-linux@fluff.org, kyungmin.park@samsung.com, inki.dae@samsung.com,
-        k.kozlowski@samsung.com, b.zolnierkie@samsung.com,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RESEND PATCH] ARM: EXYNOS: Add exynos3250 suspend-to-ram support
-References: <1420681838-4292-1-git-send-email-cw00.choi@samsung.com>
- <54B38989.4030700@kernel.org> <54B38B24.20804@samsung.com>
- <54B393B9.6060806@kernel.org>
-In-reply-to: <54B393B9.6060806@kernel.org>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNIsWRmVeSWpSXmKPExsWyRsSkULdiyeYQgz8LuSw2zljPajFp3QEm
-	i0n3J7BYvH5haNH/+DWzxdmmN+wWmx5fY7W4vGsOm8WM8/uYHDg9/q56weyxaVUnm8fmJfUe
-	fVtWMXp83iQXwBrFZZOSmpNZllqkb5fAldG+/wxrwVOuiidN85kbGD9wdDFyckgImEisf36A
-	DcIWk7hwbz2QzcUhJLCUUeLd/l2MMEWfLoHYIInpjBIHtq9mAUkICbxmlOg6zwNi8wpoSUx/
-	eQiom4ODRUBVYtJlSZAwG1B4/4sbYAtEBcIkVk6/wgJRLijxY/I9FpByEQFFic0LFEDGMwu8
-	YJR4/uYcM0iNsICfxMNrD5gh9i5klNj1sJEJJMEJNHTekV9gg5gFdCT2t05jg7DlJTaveQvW
-	ICFwi13i8dNHYA0sAgIS3yYfAtsmISArsekAM8RjkhIHV9xgmcAoNgvJTbOQjJ2FZOwCRuZV
-	jKKpBckFxUnpRSZ6xYm5xaV56XrJ+bmbGIFxePrfswk7GO8dsD7EKMDBqMTDayG1OUSINbGs
-	uDL3EKMp0BUTmaVEk/OB0Z5XEm9obGZkYWpiamxkbmmmJM77WupnsJBAemJJanZqakFqUXxR
-	aU5q8SFGJg5OqQbGtSeFFOcsfSufE295r734gXTFo3LPHXKBL5Lesj35PF/xhMD5y8tbV4qo
-	bVok8Xz5AhEOV1GjW21BtbJBjzTmG15Uq9Uv2/Zp9QKuy4sKQ8Pz+x+9+VTabvMztfTQlr8N
-	9is+e756Fm/69M2TD5w3u5Km1tZp3ZoY+cNZKsvpBPevdScNi6yllViKMxINtZiLihMBBRc7
-	Tr4CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsVy+t9jQd2KJZtDDM4/ZbLYOGM9q8WkdQeY
-	LCbdn8Bi8fqFoUX/49fMFmeb3rBbbHp8jdXi8q45bBYzzu9jcuD0+LvqBbPHplWdbB6bl9R7
-	9G1ZxejxeZNcAGtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2S
-	i0+ArltmDtA9SgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaM9v1nWAue
-	clU8aZrP3MD4gaOLkZNDQsBE4tOlXYwQtpjEhXvr2boYuTiEBKYzShzYvpoFJCEk8JpRous8
-	D4jNK6AlMf3lIaAiDg4WAVWJSZclQcJsQOH9L26wgdiiAmESK6dfYYEoF5T4MfkeC0i5iICi
-	xOYFCiDjmQVeMEo8f3OOGaRGWMBP4uG1B8wQexcySux62MgEkuAEGjrvyC+wQcwCOhL7W6ex
-	QdjyEpvXvGWewCgwC8mOWUjKZiEpW8DIvIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOMqf
-	Se9gXNVgcYhRgINRiYfXQmpziBBrYllxZe4hRgkOZiURXtcyoBBvSmJlVWpRfnxRaU5q8SFG
-	U2AITGSWEk3OByagvJJ4Q2MTMyNLI3NDCyNjcyVxXiX7thAhgfTEktTs1NSC1CKYPiYOTqkG
-	Rq5AjoV7PP2Y7aafvaG0VTE4/dSJ2BLTCY7yhm6i/o8Vf2y2WCjB8d9G8vr1iNgl0u6smyNz
-	w/e93rv19s3JviYrfU89n8at9S722fbCXepxcyV5GwL2XJzrLMjte/3iTr9+g71bnLfH8uTY
-	7V0nLjPzc1vmnO8bWWOLxX8KeHzJtIi6OzfUTYmlOCPRUIu5qDgRAC61TpAIAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 12 Jan 2015 05:40:28 -0500
+Message-ID: <1421059225.22660.33.camel@x220>
+Subject: Re: [PATCH v2 0/3] power: rt5033: Add Richtek RT533 drivers
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Beomho Seo <beomho.seo@samsung.com>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, sre@kernel.org, lee.jone@linaro.org,
+        broonie@kernel.org, dbaryshkov@gmail.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        cw00.choi@samsung.com, inki.dae@samsung.com, sw0312.kim@samsung.com
+Date: Mon, 12 Jan 2015 11:40:25 +0100
+In-Reply-To: <1420793114-20586-1-git-send-email-beomho.seo@samsung.com>
+References: <1420793114-20586-1-git-send-email-beomho.seo@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Jan 2015 10:40:26.0386 (UTC) FILETIME=[2D2DEF20:01D02E54]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Kukjin,
+Beomho,
 
-On 01/12/2015 06:28 PM, Kukjin Kim wrote:
-> On 01/12/15 17:51, Chanwoo Choi wrote:
->> Dear Kukjin,
->>
->> On 01/12/2015 05:44 PM, Kukjin Kim wrote:
->>> On 01/08/15 10:50, Chanwoo Choi wrote:
->>>> This patch adds the support for suspend-to-ram feature of Exynos3250 SoC.
->>>> Exynos3250 don't contain the L2 cache.
->>>>
->>>> Cc: Kukjin Kim <kgene@kernel.org>
->>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->>>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->>>> ---
->>>> Depend on:
->>>> - v3.19-rc3
->>>>
->>> Chanwoo,
->>>
->>> Can you please let me know why this is depending on v3.19-rc3?
->>> If I apply this on top of my tree not including some stuff between
->>> v3.19-rc1 and v3.19-rc3, is there a problem?
->>
->> No problem.
->> I'm sorry. It is my mistake about using meaning of dependency.
->> This patch can be applied on v3.19-rc1. I just tested it on v3.19-rc3.
->>
-> OK, applied.
+On Fri, 2015-01-09 at 17:45 +0900, Beomho Seo wrote:
+> This patchset adds driver for Richtek rt5033 chip The chip contains
+> switching charge mode Li-Ion/Li-Polymer battery charger, fuelgauge.
+> Additionally, This includes document for device tree of RT5033 device.
+> 
+> RT5033 core driver is applied by Lee Jones.
+> RT5033 regulator driver have been merged by Mark Brown. commit is below,
+> 
+> commit b1917578fd5d8efa67afa05a0d6d7e323f2802da
+> 
+> Changes in v2:
+> - Revise binding documentation..
+>  
+> Beomho Seo (3):
+>   power: rt5033_battery: Add RT5033 Fuel gauge device driver
+>   power: rt5033_charger: Add RT5033 charger device driver
+>   Documentation: Add documentation for rt5033 multifunction device
+> 
+>  Documentation/devicetree/bindings/mfd/rt5033.txt   |  101 ++++
+>  .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+>  drivers/power/Kconfig                              |   16 +
+>  drivers/power/Makefile                             |    2 +
+>  drivers/power/rt5033_battery.c                     |  177 +++++++
+>  drivers/power/rt5033_charger.c                     |  485 ++++++++++++++++++++
+>  6 files changed, 782 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/rt5033.txt
+>  create mode 100644 drivers/power/rt5033_battery.c
+>  create mode 100644 drivers/power/rt5033_charger.c
 
-Thanks for your apply.
+This series adds two drivers that depend on MFD_RT5033. But there's
+currently no Kconfig symbol MFD_RT5033.
 
-I check this patch on your git repository on following:
-https://git.kernel.org/cgit/linux/kernel/git/kgene/linux-samsung.git/commit/?h=v3.20-next/update-samsung&id=e2fb3668567d0b70563cca0d1e350afd5053e4a3
+The regulator driver mentioned above is another driver that depends on
+MFD_RT5033. It was included first in next-20141117. It is also included
+in mainline since v3.19-rc1. That regulator driver has never been
+buildable, even if one bypasses its dependency on MFD_RT5033. That is
+because it includes two headers that are not yet part of the tree
+(linux/mfd/rt5033.h and linux/mfd/rt5033-private.h).
 
-Although this patch contains a little decription of patch,
-applied patch don't include any description of patch.
+When is the Kconfig symbol MFD_RT5033 expected to be included in the
+tree?
 
-If you possible, please add the description of patch.
 
-Best Regards,
-Chanwoo Choi
+Paul Bolle
+
