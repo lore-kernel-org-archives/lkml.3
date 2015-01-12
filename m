@@ -1,157 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453AbbALXZH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 18:25:07 -0500
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:63884 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388AbbALXZE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 18:25:04 -0500
-From: Jeff Layton <jeff.layton@primarydata.com>
-X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
-Date: Mon, 12 Jan 2015 18:25:00 -0500
-To: NeilBrown <neilb@suse.de>
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
-        "L. A. Walsh" <suse@tlinx.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH v2 05/17] locks: generic_delete_lease doesn't need a
- file_lock at all
-Message-ID: <20150112182500.33bebf6c@tlielax.poochiereds.net>
-In-Reply-To: <20150113120343.02e0b977@notabene.brown>
-References: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
-	<1409834323-7171-6-git-send-email-jlayton@primarydata.com>
-	<20150113120343.02e0b977@notabene.brown>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
+	id S1751639AbbALXgI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 18:36:08 -0500
+Received: from er-systems.de ([46.4.18.139]:39080 "EHLO er-systems.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751043AbbALXgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 18:36:07 -0500
+Date: Tue, 13 Jan 2015 00:35:58 +0100 (CET)
+From: Thomas Voegtle <tv@lio96.de>
+X-X-Sender: thomas@er-systems.de
+To: Luis Henriques <luis.henriques@canonical.com>
+cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Subject: Re: [3.16.y-ckt stable] Linux 3.16.7-ckt4 stable review
+In-Reply-To: <20150112215941.GJ2455@charon>
+Message-ID: <alpine.LSU.2.11.1501130035110.20153@er-systems.de>
+References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com> <alpine.LSU.2.11.1501122121450.16281@er-systems.de> <20150112215941.GJ2455@charon>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/PpsVTiTFfQrFLRtFuF7iLsB"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=US-ASCII; format=flowed
+X-Virus-Checker-Version: clamassassin 1.2.4 with clamdscan / ClamAV 0.98.5/19912/Mon Jan 12 12:55:27 2015 signatures 55.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/PpsVTiTFfQrFLRtFuF7iLsB
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, 12 Jan 2015, Luis Henriques wrote:
 
-On Tue, 13 Jan 2015 12:03:43 +1300
-NeilBrown <neilb@suse.de> wrote:
+> On Mon, Jan 12, 2015 at 09:30:45PM +0100, Thomas Voegtle wrote:
+>> On Mon, 12 Jan 2015, Luis Henriques wrote:
+>>
+>>> This is the start of the review cycle for the Linux 3.16.7-ckt4 stable kernel.
+>>>
+>>> This version contains 216 new patches, summarized below.  The new patches are
+>>> posted as replies to this message and also available in this git branch:
+>>>
+>>> http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=linux-3.16.y-review;a=shortlog
+>>>
+>>> git://kernel.ubuntu.com/ubuntu/linux.git  linux-3.16.y-review
+>>>
+>>> The review period for version 3.16.7-ckt4 will be open for the next three days.
+>>> To report a problem, please reply to the relevant follow-up patch message.
+>>>
+>>> For more information about the Linux 3.16.y-ckt extended stable kernel version,
+>>> see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable .
+>>
+>>
+>> Something is wrong with drm/i915 (I guess). I had a terrible memleak on Xorg
+>> when using mplayer using more and more RAM, and then the system is swapping
+>> itself to death.
+>>
+>> I'm using a openSUSE 13.1 (x86_64) on a Baytrail J1900 (this is Intel HD
+>> Gen7).
+>>
+>>
+>
+> Thank you for reporting, Thomas.  Can you please confirm that this is
+> actually a regression in 3.16.7-ckt4 (i.e., that you can't reproduce
+> it in 3.16.7-ckt3)?  If so, is it possible to bisecting it?
 
-> On Thu,  4 Sep 2014 08:38:31 -0400 Jeff Layton <jlayton@primarydata.com>
-> wrote:
->=20
-> > Ensure that it's OK to pass in a NULL file_lock double pointer on
-> > a F_UNLCK request and convert the vfs_setlease F_UNLCK callers to
-> > do just that.
-> >=20
-> > Finally, turn the BUG_ON in generic_setlease into a WARN_ON_ONCE
-> > with an error return. That's a problem we can handle without
-> > crashing the box if it occurs.
-> >=20
-> > Signed-off-by: Jeff Layton <jlayton@primarydata.com>
-> > Reviewed-by: Christoph Hellwig <hch@lst.de>
-> > ---
-> >  fs/locks.c                      | 34 ++++++++++++++--------------------
-> >  fs/nfsd/nfs4state.c             |  2 +-
-> >  include/trace/events/filelock.h | 14 +++++++-------
-> >  3 files changed, 22 insertions(+), 28 deletions(-)
-> >=20
-> > diff --git a/fs/locks.c b/fs/locks.c
-> > index 4031324e6cca..1289b74fffbf 100644
-> > --- a/fs/locks.c
-> > +++ b/fs/locks.c
-> > @@ -1637,22 +1637,23 @@ out:
-> >  	return error;
-> >  }
-> > =20
-> > -static int generic_delete_lease(struct file *filp, struct file_lock **=
-flp)
-> > +static int generic_delete_lease(struct file *filp)
-> >  {
-> > +	int error =3D -EAGAIN;
-> >  	struct file_lock *fl, **before;
-> >  	struct dentry *dentry =3D filp->f_path.dentry;
-> >  	struct inode *inode =3D dentry->d_inode;
-> > =20
-> > -	trace_generic_delete_lease(inode, *flp);
-> > -
-> >  	for (before =3D &inode->i_flock;
-> >  			((fl =3D *before) !=3D NULL) && IS_LEASE(fl);
-> >  			before =3D &fl->fl_next) {
-> > -		if (fl->fl_file !=3D filp)
-> > -			continue;
-> > -		return (*flp)->fl_lmops->lm_change(before, F_UNLCK);
-> > +		if (fl->fl_file =3D=3D filp)
-> > +			break;
-> >  	}
-> > -	return -EAGAIN;
-> > +	trace_generic_delete_lease(inode, fl);
-> > +	if (fl)
-> > +		error =3D fl->fl_lmops->lm_change(before, F_UNLCK);
-> > +	return error;
-> >  }
->=20
-> Hi Jeff,
->  I have a report of a crash in 3.18 because fl->fl_lmops is NULL in the a=
-bove.
->    https://bugzilla.suse.com/show_bug.cgi?id=3D912569
->=20
-> I assume this happens because a file_lock is found which is not IS_LEASE.
-> When that happens, the loop will abort, but fl will not be NULL.
-> As non-LEASE locks have  a NULL fl_lmops, we crash.
->=20
-> I would be inclined to put the code back the way it was, and just move the
-> trace_generic_delete_lease call.
->=20
-> Alternately we could make it
->=20
->   if (fl && IS_LEASE(fl))
->           error =3D fl->fl_lmops-> .....
->=20
-> What do you think?
->=20
-> NeilBrown
 
-Doh! Well spotted...
+3.16.7-ckt3 was fine for me.
 
-Either fix sounds fine as long as we don't make generic_delete_lease
-require a "flp" arg again. IOW, if you do make the code work similarly
-to how it did before, then we should do:
+I tried to revert the drm/i915 patches in the review branch, and I got 
+lucky with (only) reverting cb58c663d940a "drm/i915: Disallow pin ioctl 
+completely for kms drivers".
 
-    return fl->fl_lmops->lm_change(before, F_UNLCK);
+No clue, why reverting these few lines helps, but then I have no memleak.
 
-...rather than trying to use the ops from a completely different struct
-file_lock argument that's passed in.
 
-FWIW, I have an overhaul of the locking code that is queued for v3.20
-that will also fix this (as we'll be moving all of the different locks
-to separate lists), but we'll obviously need to queue up a patch for
-stable for this in the interim.
+      Thomas
 
-Thanks!
---=20
-Jeff Layton <jlayton@primarydata.com>
-
---Sig_/PpsVTiTFfQrFLRtFuF7iLsB
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUtFfMAAoJEAAOaEEZVoIV3IMP/0nPOPK81BMtXbbUjVhJq33a
-13Mea3fJlsSk/v0om9zuoQ87HrmKKm6q0eGNDC3kfiDsq98Y2Uu3ZCUb+7kKcaQM
-lXRfWjp9YyRyy4bOx+6/Tm7GvxXQI32gVo9Sxb8j1tIyMPYFtRqg3v7/a3LQLSUy
-rs7AZtWbpEx7PpCa9K0eRfTc/w/LiTSUP+K+hj3k3UA+u6XwWUo720t54Ijt0bfF
-XsjEg+O2iayBamS7j4QK60khl7B+SF389ymAug1OstCnCUj89OK+LAkZ1DhzveKd
-zzRjfclPQjJuwXm1ftiDQ5JoNSnTi6kHOYuHSxO3s4sKGdy6qFblyyQX0YHvbNpg
-5xEHqHE55YddreDhsEZR2F0FLYzAK6HjMwMnxJzdTaAPNBA+vO0fp9jc/U+Va8mU
-vqinxtidUPtCVXSPJSEcJC2w7wWcH2Wcd1h3osiCNVRuJKg9RfYdQTI+MqEYgHyC
-ZtTT1tMKX77atZhiN8zNK26BbKg1Z82B+Z8gEbsdFdKg2NXraA8M6lmqed8fE2Eu
-mPs4fb57CQXnmntDPmIIJ/xp1X9kanBjpTa5mFST8fe5Xpw27WOWx+LvigDdnM7p
-qtZ06B8Nx5e/SSVq9go/kaBxx85utp4emPPtc9k2vvwFvS85JXYm1GTM8Bi7LgqC
-n+7aYfwkCdR7G5ZRw+QW
-=7ceP
------END PGP SIGNATURE-----
-
---Sig_/PpsVTiTFfQrFLRtFuF7iLsB--
