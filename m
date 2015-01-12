@@ -1,122 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066AbbALHQc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 02:16:32 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:32111 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760AbbALHQb (ORCPT
+	id S1751947AbbALHQA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 02:16:00 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:15531 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751865AbbALHP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 02:16:31 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-89-54b374cd1049
-From: Chao Yu <chao2.yu@samsung.com>
-To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [f2fs-dev][RFC PATCH 07/10] f2fs: add a mount option for rb-tree
- extent cache
-Date: Mon, 12 Jan 2015 15:15:45 +0800
-Message-id: <000b01d02e37$b08b42e0$11a1c8a0$@samsung.com>
+	Mon, 12 Jan 2015 02:15:57 -0500
+X-AuditID: cbfee68d-f79296d000004278-cb-54b374ab6682
+Date: Mon, 12 Jan 2015 07:15:55 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCHv7 02/10] devfreq: event: Add the list of supported
+ devfreq-event type
+To: =?utf-8?Q?=EC=B5=9C=EC=B0=AC=EC=9A=B0?= <cw00.choi@samsung.com>,
+        "kgene@kernel.org" <kgene@kernel.org>
+Cc: =?utf-8?Q?=EB=B0=95=EA=B2=BD=EB=AF=BC?= <kyungmin.park@samsung.com>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        ABHILASH KESAVAN <a.kesavan@samsung.com>,
+        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        =?utf-8?Q?=EB=8C=80=EC=9D=B8=EA=B8=B0?= <inki.dae@samsung.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
+Reply-to: myungjoo.ham@samsung.com
 MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AdAuG8CjitxjIcJuQByXOsUEf0ADkw==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jQd1zJZtDDHa/YbS4tq+RyeLJ+lnM
-	FpcWuVtc3jWHzYHFY9OqTjaP3Qs+M3n0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxvWb71gK
-	rotX/OudytrAeFSoi5GTQ0LARGLD7+esELaYxIV769m6GLk4hASmM0o8XnCVBcL5wSgx4fkv
-	sCo2ARWJ5R3/mUBsEQEviUn7T7CA2MwCHhKNHd/BaoQFIiQWPusEi7MIqEo8OzEBzOYVsJT4
-	O+MoI4QtKPFj8j2oXi2J9TuPM0HY8hKb17xlhrhIQWLH2deMELv0JPZvWsYOUSMusfHILZYJ
-	jAKzkIyahWTULCSjZiFpWcDIsopRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOKifSe1gXNlg
-	cYhRgINRiYfXQmpziBBrYllxZe4hRgkOZiUR3jBroBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXFe
-	Jfu2ECGB9MSS1OzU1ILUIpgsEwenVAOjoMdNsSl37309bVhxl5H9xLuu3d8fuaWp/GRMlnjw
-	fObPiZHPap/eiWZxuKr174Tw4f7aZM6JVyxOPSvsdy4Un5q8xVfrSffdJX/W/jF9qxX9dB7j
-	tWKeVgmGYxIVN+Ysv6HvceAi/9LIx9vc64/lzTOREfvAF+fF99/wppjWnsiPO4TWZS3jUWIp
-	zkg01GIuKk4EADLOxk1mAgAA
+X-MTR: 20150112070622786@myungjoo.ham
+Msgkey: 20150112070622786@myungjoo.ham
+X-EPLocale: ko_KR.utf-8
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-MLAttribute: 
+X-RootMTR: 20150112070622786@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+X-ConfirmMail: N,general
+Content-type: text/plain; charset=utf-8
+MIME-version: 1.0
+Message-id: <768125446.886831421046952335.JavaMail.weblogic@epmlwas09a>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCIsWRmVeSWpSXmKPExsWyRsSkWHd1yeYQg9ML1Swu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGhddHGAv2KVbcunWIsYHxjEIXIyeHkIC6xKIlJ9lAbAkBE4kd
+	h7awQthiEhfurQeKcwHVLGWUOHllHhNM0ZSGWawQiTmMEtsmHgPrYBFQlVi6eAt7FyMHB5uA
+	nsTMz8kgYWGBSIlJnYvZQWwRgTyJK3dnMIL0Mgv0sEl0XP3ODHGFksSafa9YQGxeAUGJkzOf
+	sEAsU5X49O0YO0RcTeLkjAlQl4pLXJh7iR3C5pWY0f4Uql5OYtrXNcwQtrTE+VkbGGG+Wfz9
+	MVScX+LY7R1QzwhITD1zEKpGS2La9flQc/gk1ix8ywJTv+vUcmaYXfe3zIXqlZDY2vIE7Hdm
+	AUWJKd0PwX5nFtCUWL9LH90rvALuElN+bQcHqITAVA6J450zWCcwKs1CUjcLyahZCKOQlSxg
+	ZFnFKJpakFxQnJReZKhXnJhbXJqXrpecn7uJEZgYTv971ruD8fYB60OMAhyMSjy8FlKbQ4RY
+	E8uKK3MPMZoCY2kis5Rocj4w/eSVxBsamxlZmJqYGhuZW5opifMqSv0MFhJITyxJzU5NLUgt
+	ii8qzUktPsTIxMEp1cA4K0/ipNqiyEkFao+s7+Wzc0xWNyiJqep9OXXnpdMasjrlET0y++yL
+	P86a+NzU5NdsnhlrnokbLj2tmxTwPm7dPv3KDanG32e5d+1wEd4ZG2/RzH904bMd0rm2m65W
+	HIw4Eb3w/VFtX8/tvzeX7C+fpr5yr8zO3VUShf77mFd4yLIsDDglv+2XEktxRqKhFnNRcSIA
+	zXPBpwcDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKKsWRmVeSWpSXmKPExsVy+t/tXt3VJZtDDK68kbO4vGsOmwOjx+dN
+	cgGMUWk2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBD
+	lRTKEnNKgUIBicXFSvp2NkX5pSWpChn5xSW2StGG5kZ6RgZ6pkZ6hsaxVoYGBkamQDUJaRkX
+	Xh9hLNinWHHr1iHGBsYzCl2MnBxCAuoSi5acZAOxJQRMJKY0zGKFsMUkLtxbDxTnAqqZwyix
+	beIxsASLgKrE0sVb2LsYOTjYBPQkZn5OBgkLC0RKTOpczA5iiwjkSVy5O4MRpJdZoIdNouPq
+	d2aIZUoSa/a9YgGxeQUEJU7OfMICsUxV4tO3Y+wQcTWJkzMmQB0kLnFh7iV2CJtXYkb7U6h6
+	OYlpX9cwQ9jSEudnbWCEOXrx98dQcX6JY7d3MEHYAhJTzxyEqtGSmHZ9PtQcPok1C9+ywNTv
+	OrWcGWbX/S1zoXolJLa2PAH7nVlAUWJK90Ow35kFNCXW79JH9wqvgLvElF/b2SYwys5CkpqF
+	pHsWQjeykgWMLKsYRVMLkguKk9IrjPSKE3OLS/PS9ZLzczcxgpPQs0U7GP+dtz7EKMDBqMTD
+	ayG1OUSINbGsuDL3EKMEB7OSCG+YNVCINyWxsiq1KD++qDQntfgQoykwziYyS4km5wMTZF5J
+	vKGxsYmZiamliYWBqbmSOO//c7khQgLpiSWp2ampBalFMH1MHJxSDYx7hM5wL1G4xGQQYFmW
+	tbC6Xk50+bS+640yL4/NWZ5/V35jH2tORKLRzgUP0gOZuTkC9Ob+S4r2UG7Itts237Xg2dyS
+	F1u+65hqfDoye0/hn84vHysXqEicOS72/7eBZPtq7VKRo95/zU823/9T9/NLrdGLOSsTJrJv
+	nnzpJ/OGTbOzpDdLb+RXYinOSDTUYi4qTgQAfycDflgDAAA=
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0C7G5mp016312
 
-This patch adds a mount option 'extent_cache' in f2fs.
+>   
+>  This patch adds the list of supported devfreq-event type as following.
+> Each devfreq-event device driver would support the various devfreq-event type
+> for devfreq governor at the same time.
+> - DEVFREQ_EVENT_TYPE_RAW_DATA
+> - DEVFREQ_EVENT_TYPE_UTILIZATION
+> - DEVFREQ_EVENT_TYPE_BANDWIDTH
+> - DEVFREQ_EVENT_TYPE_LATENCY
 
-It is try to use a rb-tree based extent cache to cache more mapping information
-with less memory if this option is set, otherwise we will use the original one
-extent info cache.
+Did you try to say:
 
-Suggested-by: Changman Lee <cm224.lee@samsung.com>
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- Documentation/filesystems/f2fs.txt | 4 ++++
- fs/f2fs/f2fs.h                     | 1 +
- fs/f2fs/super.c                    | 7 +++++++
- 3 files changed, 12 insertions(+)
+A devfreq-event device may support multiple devfreq-event types
+simultaneously.
 
-diff --git a/Documentation/filesystems/f2fs.txt b/Documentation/filesystems/f2fs.txt
-index e0950c4..87ae1a2 100644
---- a/Documentation/filesystems/f2fs.txt
-+++ b/Documentation/filesystems/f2fs.txt
-@@ -138,6 +138,10 @@ nobarrier              This option can be used if underlying storage guarantees
- fastboot               This option is used when a system wants to reduce mount
-                        time as much as possible, even though normal performance
- 		       can be sacrificed.
-+extent_cache           Enable an extent cache based on rb-tree, it can cache
-+                       as many as extent which map between contiguous logical
-+                       address and physical address per inode, resulting in
-+                       increasing the cache hit ratio.
- 
- ================================================================================
- DEBUGFS ENTRIES
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 6decfd2..d065ff1 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -50,6 +50,7 @@
- #define F2FS_MOUNT_FLUSH_MERGE		0x00000400
- #define F2FS_MOUNT_NOBARRIER		0x00000800
- #define F2FS_MOUNT_FASTBOOT		0x00001000
-+#define F2FS_MOUNT_EXTENT_CACHE		0x00002000
- 
- #define clear_opt(sbi, option)	(sbi->mount_opt.opt &= ~F2FS_MOUNT_##option)
- #define set_opt(sbi, option)	(sbi->mount_opt.opt |= F2FS_MOUNT_##option)
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index 8b8de7f..5041e719 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -56,6 +56,7 @@ enum {
- 	Opt_flush_merge,
- 	Opt_nobarrier,
- 	Opt_fastboot,
-+	Opt_extent_cache,
- 	Opt_err,
- };
- 
-@@ -76,6 +77,7 @@ static match_table_t f2fs_tokens = {
- 	{Opt_flush_merge, "flush_merge"},
- 	{Opt_nobarrier, "nobarrier"},
- 	{Opt_fastboot, "fastboot"},
-+	{Opt_extent_cache, "extent_cache"},
- 	{Opt_err, NULL},
- };
- 
-@@ -357,6 +359,9 @@ static int parse_options(struct super_block *sb, char *options)
- 		case Opt_fastboot:
- 			set_opt(sbi, FASTBOOT);
- 			break;
-+		case Opt_extent_cache:
-+			set_opt(sbi, EXTENT_CACHE);
-+			break;
- 		default:
- 			f2fs_msg(sb, KERN_ERR,
- 				"Unrecognized mount option \"%s\" or missing value",
-@@ -583,6 +588,8 @@ static int f2fs_show_options(struct seq_file *seq, struct dentry *root)
- 		seq_puts(seq, ",nobarrier");
- 	if (test_opt(sbi, FASTBOOT))
- 		seq_puts(seq, ",fastboot");
-+	if (test_opt(sbi, EXTENT_CACHE))
-+		seq_puts(seq, ",extent_cache");
- 	seq_printf(seq, ",active_logs=%u", sbi->active_logs);
- 
- 	return 0;
--- 
-2.2.1
+If so, your switch expressions are going to screw up.
 
 
+> 
+> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> ---
+>  drivers/devfreq/devfreq-event.c | 58 ++++++++++++++++++++++++++++++++++++-----
+>  include/linux/devfreq-event.h   | 25 +++++++++++++++---
+>  2 files changed, 73 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/devfreq/devfreq-event.c b/drivers/devfreq/devfreq-event.c
+> index 81448ba..64c1764 100644
+> --- a/drivers/devfreq/devfreq-event.c
+> +++ b/drivers/devfreq/devfreq-event.c
+>  
+[]
+> -	mutex_lock(&edev->lock);
+> -	ret = edev->desc->ops->get_event(edev, edata);
+> -	mutex_unlock(&edev->lock);
+> +	switch (type) {
+
+Bitwise value with switch? (what if type = RAW_DATA | BANDWIDTH, meaning
+this is raw data of the bandwitdh.)
+
+> +	case DEVFREQ_EVENT_TYPE_RAW_DATA:
+> +	case DEVFREQ_EVENT_TYPE_BANDWIDTH:
+> +	case DEVFREQ_EVENT_TYPE_LATENCY:
+> +		if ((edata->event > EVENT_TYPE_RAW_DATA_MAX) ||
+> +			(edata->total_event > EVENT_TYPE_RAW_DATA_MAX)) {
+
+Is it possible for unsigned long edata->event/total_event to be
+  > EVENT_TYPE_RAW_DATA_MAX = ULONG_MAX?
+
+What was your intention?
+
+If you were trying to detect overflow, you need to rethink about it.
+If not, (overflow is harmless or not going to happen) you don't need to
+check it.
+
+
+> +			edata->event = edata->total_event = 0;
+> +			ret = -EINVAL;
+> +		}
+> +		break;
+> +	case DEVFREQ_EVENT_TYPE_UTILIZATION:
+> +		edata->total_event = EVENT_TYPE_UTILIZATION_MAX;
+>  
+> -	if ((edata->total_event <= 0)
+> -		|| (edata->event > edata->total_event)) {
+> +		if (edata->event > EVENT_TYPE_UTILIZATION_MAX) {
+> +			edata->event = edata->total_event = 0;
+> +			ret = -EINVAL;
+> +		}
+> +		break;
+> +	default:
+>  		edata->event = edata->total_event = 0;
+>  		ret = -EINVAL;
+> +		break;
+>  	}
+>  
+> +	mutex_unlock(&edev->lock);
+> +
+>  	return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(devfreq_event_get_event);
+> diff --git a/include/linux/devfreq-event.h b/include/linux/devfreq-event.h
+> index b7363f5..13a5703 100644
+> --- a/include/linux/devfreq-event.h
+> +++ b/include/linux/devfreq-event.h
+> @@ -36,6 +36,14 @@ struct devfreq_event_dev {
+>  	const struct devfreq_event_desc *desc;
+>  };
+>  
+> +/* The supported type by devfreq-event device */
+> +enum devfreq_event_type {
+> +	DEVFREQ_EVENT_TYPE_RAW_DATA	= BIT(0),
+> +	DEVFREQ_EVENT_TYPE_UTILIZATION	= BIT(1),
+> +	DEVFREQ_EVENT_TYPE_BANDWIDTH	= BIT(2),
+> +	DEVFREQ_EVENT_TYPE_LATENCY	= BIT(3),
+> +};
+> +
+
+(Being curious) Is it possible to have multiple types
+simultaneously?
+
+
+[]
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
