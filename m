@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823AbbALTNd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 14:13:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57401 "EHLO
+	id S1756777AbbALTMY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 14:12:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57406 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752948AbbALSFj (ORCPT
+	with ESMTP id S1753038AbbALSFl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:05:39 -0500
+	Mon, 12 Jan 2015 13:05:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Philipp Reisner <philipp.reisner@linbit.com>,
-        Lars Ellenberg <lars.ellenberg@linbit.com>, Jens Axboe <axboe@fb.com>,
+Cc: Myron Stowe <myron.stowe@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 025/216] drbd: merge_bvec_fn: properly remap bvm->bi_bdev
-Date: Mon, 12 Jan 2015 18:02:22 +0000
-Message-Id: <1421085933-32536-26-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 026/216] PCI: Restore detection of read-only BARs
+Date: Mon, 12 Jan 2015 18:02:23 +0000
+Message-Id: <1421085933-32536-27-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -28,33 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars Ellenberg <lars.ellenberg@linbit.com>
+From: Myron Stowe <myron.stowe@redhat.com>
 
-commit 3b9d35d744bb5139f9fed57f38c019bb8c7d351c upstream.
+commit 36e8164882ca6d3c41cb91e6f09a3ed236841f80 upstream.
 
-This was not noticed for many years. Affects operation if
-md raid is used a backing device for DRBD.
+Commit 6ac665c63dca ("PCI: rewrite PCI BAR reading code") masked off
+low-order bits from 'l', but not from 'sz'.  Both are passed to pci_size(),
+which compares 'base == maxbase' to check for read-only BARs.  The masking
+of 'l' means that comparison will never be 'true', so the check for
+read-only BARs no longer works.
 
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Resolve this by also masking off the low-order bits of 'sz' before passing
+it into pci_size() as 'maxbase'.  With this change, pci_size() will once
+again catch the problems that have been encountered to date:
+
+  - AGP aperture BAR of AMD-7xx host bridges: if the AGP window is
+    disabled, this BAR is read-only and read as 0x00000008 [1]
+
+  - BARs 0-4 of ALi IDE controllers can be non-zero and read-only [1]
+
+  - Intel Sandy Bridge - Thermal Management Controller [8086:0103];
+    BAR 0 returning 0xfed98004 [2]
+
+  - Intel Xeon E5 v3/Core i7 Power Control Unit [8086:2fc0];
+    Bar 0 returning 0x00001a [3]
+
+Link: [1] https://git.kernel.org/cgit/linux/kernel/git/tglx/history.git/commit/drivers/pci/probe.c?id=1307ef6621991f1c4bc3cec1b5a4ebd6fd3d66b9 ("PCI: probing read-only BARs" (pre-git))
+Link: [2] https://bugzilla.kernel.org/show_bug.cgi?id=43331
+Link: [3] https://bugzilla.kernel.org/show_bug.cgi?id=85991
+Reported-by: William Unruh <unruh@physics.ubc.ca>
+Reported-by: Martin Lucina <martin@lucina.net>
+Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+CC: Matthew Wilcox <willy@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/block/drbd/drbd_req.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/pci/probe.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
-index 09803d0d5207..eeba503ee7bb 100644
---- a/drivers/block/drbd/drbd_req.c
-+++ b/drivers/block/drbd/drbd_req.c
-@@ -1343,6 +1343,7 @@ int drbd_merge_bvec(struct request_queue *q, struct bvec_merge_data *bvm, struct
- 		struct request_queue * const b =
- 			device->ldev->backing_bdev->bd_disk->queue;
- 		if (b->merge_bvec_fn) {
-+			bvm->bi_bdev = device->ldev->backing_bdev;
- 			backing_limit = b->merge_bvec_fn(b, bvm, bvec);
- 			limit = min(limit, backing_limit);
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 9cce960029aa..f096079d1fa3 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -215,14 +215,17 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
+ 		res->flags |= IORESOURCE_SIZEALIGN;
+ 		if (res->flags & IORESOURCE_IO) {
+ 			l &= PCI_BASE_ADDRESS_IO_MASK;
++			sz &= PCI_BASE_ADDRESS_IO_MASK;
+ 			mask = PCI_BASE_ADDRESS_IO_MASK & (u32) IO_SPACE_LIMIT;
+ 		} else {
+ 			l &= PCI_BASE_ADDRESS_MEM_MASK;
++			sz &= PCI_BASE_ADDRESS_MEM_MASK;
+ 			mask = (u32)PCI_BASE_ADDRESS_MEM_MASK;
  		}
+ 	} else {
+ 		res->flags |= (l & IORESOURCE_ROM_ENABLE);
+ 		l &= PCI_ROM_ADDRESS_MASK;
++		sz &= PCI_ROM_ADDRESS_MASK;
+ 		mask = (u32)PCI_ROM_ADDRESS_MASK;
+ 	}
+ 
 -- 
 2.1.4
 
