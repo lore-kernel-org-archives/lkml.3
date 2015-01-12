@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166AbbALXPA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 18:15:00 -0500
-Received: from us01smtprelay-2.synopsys.com ([198.182.47.9]:57538 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752978AbbALXO5 convert rfc822-to-8bit (ORCPT
+	id S1753829AbbALXSg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 18:18:36 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:57645 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751964AbbALXSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 18:14:57 -0500
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "balbi@ti.com" <balbi@ti.com>, John Youn <John.Youn@synopsys.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "r.baldyga@samsung.com" <r.baldyga@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
-        "Mian Yousaf Kaukab" <yousaf.kaukab@intel.com>,
-        Yunzhi Li <lyz@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
-        Nick Hudson <skrll@netbsd.org>
-Subject: New maintainer for dwc2
-Thread-Topic: New maintainer for dwc2
-Thread-Index: AdAuvY537K3q4zEZTxGErlRM6KDSNw==
-Date: Mon, 12 Jan 2015 23:14:54 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E030484506EFD@US01WEMBX2.internal.synopsys.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.13.184.19]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 12 Jan 2015 18:18:34 -0500
 MIME-Version: 1.0
+In-Reply-To: <54B45514.3070603@linux.intel.com>
+References: <cover.1421103159.git.luto@amacapital.net> <602a94627fedaab4e339088d633b72174caf14c9.1421103159.git.luto@amacapital.net>
+ <54B45514.3070603@linux.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 12 Jan 2015 15:18:12 -0800
+Message-ID: <CALCETrX-BkHkAUpSLkdue7hEve544fBtjmD1F2hffW6XO=T7WQ@mail.gmail.com>
+Subject: Re: [PATCH 3.19 v2 1/3] x86: Fix off-by-one in the instruction
+ decoder length checks
+To: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On Mon, Jan 12, 2015 at 3:13 PM, Dave Hansen
+<dave.hansen@linux.intel.com> wrote:
+> On 01/12/2015 03:04 PM, Andy Lutomirski wrote:
+>> diff --git a/arch/x86/lib/insn.c b/arch/x86/lib/insn.c
+>> index 2480978b31cc..1313ae6b478b 100644
+>> --- a/arch/x86/lib/insn.c
+>> +++ b/arch/x86/lib/insn.c
+>> @@ -28,7 +28,7 @@
+>>
+>>  /* Verify next sizeof(t) bytes can be on the same instruction */
+>>  #define validate_next(t, insn, n)    \
+>> -     ((insn)->next_byte + sizeof(t) + n < (insn)->end_kaddr)
+>> +     ((insn)->next_byte + sizeof(t) + n <= (insn)->end_kaddr)
+>>
+>>  #define __get_next(t, insn)  \
+>>       ({ t r = *(t*)insn->next_byte; insn->next_byte += sizeof(t); r; })
+>
+> This issue should already be handled by this patch:
+>
+> http://git.kernel.org/tip/0f363b250b15af0f218bb2876d101fe5cd413f8b
 
-I will be leaving Synopsys on Friday, Jan 16th, so the dwc2 driver
-will need a new maintainer.
+I wasn't paying much attention to the world for the last couple weeks,
+and I didn't notice that it was already fixed.
 
-I am recommending John Youn <johnyoun@synopsys.com> as the new
-maintainer.
+Ingo, etc: I won't send a v3 just to drop this patch from the series.
 
-On the plus side, John has quite a bit of experience with the dwc2
-controller, and has previous experience submitting kernel patches (for
-the xhci and dwc3 drivers). And being a Synopsys employee, he will have
-access to internal resources for support.
-
-On the minus side, John has not worked directly with the in-kernel dwc2
-driver until very recently, and has not done maintainer work before.
-
-If no one has any objections, I will submit a patch to MAINTAINERS in a
-couple of days making John the new dwc2 maintainer.
+--Andy
 
 -- 
-Paul
-
+Andy Lutomirski
+AMA Capital Management, LLC
