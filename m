@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675AbbALSXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:23:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57573 "EHLO
+	id S1753622AbbALSGP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:06:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57586 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753394AbbALSGJ (ORCPT
+	with ESMTP id S1753493AbbALSGM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:06:09 -0500
+	Mon, 12 Jan 2015 13:06:12 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+Cc: "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 061/216] dm cache: dirty flag was mistakenly being cleared when promoting via overwrite
-Date: Mon, 12 Jan 2015 18:02:58 +0000
-Message-Id: <1421085933-32536-62-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 062/216] dm bufio: fix memleak when using a dm_buffer's inline bio
+Date: Mon, 12 Jan 2015 18:02:59 +0000
+Message-Id: <1421085933-32536-63-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -27,44 +29,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
 
-commit 1e32134a5a404e80bfb47fad8a94e9bbfcbdacc5 upstream.
+commit 445559cdcb98a141f5de415b94fd6eaccab87e6d upstream.
 
-If the incoming bio is a WRITE and completely covers a block then we
-don't bother to do any copying for a promotion operation.  Once this is
-done the cache block and origin block will be different, so we need to
-set it to 'dirty'.
+When dm-bufio sets out to use the bio built into a struct dm_buffer to
+issue an IO, it needs to call bio_reset after it's done with the bio
+so that we can free things attached to the bio such as the integrity
+payload.  Therefore, inject our own endio callback to take care of
+the bio_reset after calling submit_io's end_io callback.
 
-Signed-off-by: Joe Thornber <ejt@redhat.com>
+Test case:
+1. modprobe scsi_debug delay=0 dif=1 dix=199 ato=1 dev_size_mb=300
+2. Set up a dm-bufio client, e.g. dm-verity, on the scsi_debug device
+3. Repeatedly read metadata and watch kmalloc-192 leak!
+
+Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/dm-cache-target.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/md/dm-bufio.c | 20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
-index e5bb12810ccc..e5308b8b4043 100644
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -929,10 +929,14 @@ static void migration_success_post_commit(struct dm_cache_migration *mg)
- 		}
+diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
+index fb5654da25a1..4d1edcf552bb 100644
+--- a/drivers/md/dm-bufio.c
++++ b/drivers/md/dm-bufio.c
+@@ -532,6 +532,19 @@ static void use_dmio(struct dm_buffer *b, int rw, sector_t block,
+ 		end_io(&b->bio, r);
+ }
  
- 	} else {
--		clear_dirty(cache, mg->new_oblock, mg->cblock);
--		if (mg->requeue_holder)
-+		if (mg->requeue_holder) {
-+			clear_dirty(cache, mg->new_oblock, mg->cblock);
- 			cell_defer(cache, mg->new_ocell, true);
--		else {
-+		} else {
-+			/*
-+			 * The block was promoted via an overwrite, so it's dirty.
-+			 */
-+			set_dirty(cache, mg->new_oblock, mg->cblock);
- 			bio_endio(mg->new_ocell->holder, 0);
- 			cell_defer(cache, mg->new_ocell, false);
- 		}
++static void inline_endio(struct bio *bio, int error)
++{
++	bio_end_io_t *end_fn = bio->bi_private;
++
++	/*
++	 * Reset the bio to free any attached resources
++	 * (e.g. bio integrity profiles).
++	 */
++	bio_reset(bio);
++
++	end_fn(bio, error);
++}
++
+ static void use_inline_bio(struct dm_buffer *b, int rw, sector_t block,
+ 			   bio_end_io_t *end_io)
+ {
+@@ -543,7 +556,12 @@ static void use_inline_bio(struct dm_buffer *b, int rw, sector_t block,
+ 	b->bio.bi_max_vecs = DM_BUFIO_INLINE_VECS;
+ 	b->bio.bi_iter.bi_sector = block << b->c->sectors_per_block_bits;
+ 	b->bio.bi_bdev = b->c->bdev;
+-	b->bio.bi_end_io = end_io;
++	b->bio.bi_end_io = inline_endio;
++	/*
++	 * Use of .bi_private isn't a problem here because
++	 * the dm_buffer's inline bio is local to bufio.
++	 */
++	b->bio.bi_private = end_io;
+ 
+ 	/*
+ 	 * We assume that if len >= PAGE_SIZE ptr is page-aligned.
 -- 
 2.1.4
 
