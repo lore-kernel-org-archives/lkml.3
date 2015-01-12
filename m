@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860AbbALS3b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:29:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57487 "EHLO
+	id S1754826AbbALS1d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:27:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57516 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632AbbALSFz (ORCPT
+	with ESMTP id S1753405AbbALSF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:05:55 -0500
+	Mon, 12 Jan 2015 13:05:59 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
+Cc: Sumit Saxena <sumit.saxena@avagotech.com>,
+        Kashyap Desai <kashyap.desai@avagotech.com>,
+        Christoph Hellwig <hch@lst.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 044/216] ARM: mvebu: disable I/O coherency on non-SMP situations on Armada 370/375/38x/XP
-Date: Mon, 12 Jan 2015 18:02:41 +0000
-Message-Id: <1421085933-32536-45-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 045/216] megaraid_sas: corrected return of wait_event from abort frame path
+Date: Mon, 12 Jan 2015 18:02:42 +0000
+Message-Id: <1421085933-32536-46-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -28,117 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: "Sumit.Saxena@avagotech.com" <Sumit.Saxena@avagotech.com>
 
-commit e55355453600a33bb5ca4f71f2d7214875f3b061 upstream.
+commit 170c238701ec38b1829321b17c70671c101bac55 upstream.
 
-Enabling the hardware I/O coherency on Armada 370, Armada 375, Armada
-38x and Armada XP requires a certain number of conditions:
+Corrected wait_event() call which was waiting for wrong completion
+status (0xFF).
 
- - On Armada 370, the cache policy must be set to write-allocate.
-
- - On Armada 375, 38x and XP, the cache policy must be set to
-   write-allocate, the pages must be mapped with the shareable
-   attribute, and the SMP bit must be set
-
-Currently, on Armada XP, when CONFIG_SMP is enabled, those conditions
-are met. However, when Armada XP is used in a !CONFIG_SMP kernel, none
-of these conditions are met. With Armada 370, the situation is worse:
-since the processor is single core, regardless of whether CONFIG_SMP
-or !CONFIG_SMP is used, the cache policy will be set to write-back by
-the kernel and not write-allocate.
-
-Since solving this problem turns out to be quite complicated, and we
-don't want to let users with a mainline kernel known to have
-infrequent but existing data corruptions, this commit proposes to
-simply disable hardware I/O coherency in situations where it is known
-not to work.
-
-And basically, the is_smp() function of the kernel tells us whether it
-is OK to enable hardware I/O coherency or not, so this commit slightly
-refactors the coherency_type() function to return
-COHERENCY_FABRIC_TYPE_NONE when is_smp() is false, or the appropriate
-type of the coherency fabric in the other case.
-
-Thanks to this, the I/O coherency fabric will no longer be used at all
-in !CONFIG_SMP configurations. It will continue to be used in
-CONFIG_SMP configurations on Armada XP, Armada 375 and Armada 38x
-(which are multiple cores processors), but will no longer be used on
-Armada 370 (which is a single core processor).
-
-In the process, it simplifies the implementation of the
-coherency_type() function, and adds a missing call to of_node_put().
-
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Fixes: e60304f8cb7bb545e79fe62d9b9762460c254ec2 ("arm: mvebu: Add hardware I/O Coherency support")
-Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Link: https://lkml.kernel.org/r/1415871540-20302-3-git-send-email-thomas.petazzoni@free-electrons.com
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Sumit Saxena <sumit.saxena@avagotech.com>
+Signed-off-by: Kashyap Desai <kashyap.desai@avagotech.com>
+Reviewed-by: Tomas Henzl <thenzl@redhat.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/mach-mvebu/coherency.c | 44 ++++++++++++++++++++++++++++-------------
- 1 file changed, 30 insertions(+), 14 deletions(-)
+ drivers/scsi/megaraid/megaraid_sas_base.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-mvebu/coherency.c b/arch/arm/mach-mvebu/coherency.c
-index 044b51185fcc..c31f4c00b1fc 100644
---- a/arch/arm/mach-mvebu/coherency.c
-+++ b/arch/arm/mach-mvebu/coherency.c
-@@ -361,25 +361,41 @@ static int coherency_type(void)
- {
- 	struct device_node *np;
- 	const struct of_device_id *match;
-+	int type;
+diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
+index 112799b131a9..8677fa0deb2d 100644
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -980,7 +980,7 @@ megasas_issue_blocked_abort_cmd(struct megasas_instance *instance,
+ 		cpu_to_le32(upper_32_bits(cmd_to_abort->frame_phys_addr));
  
--	np = of_find_matching_node_and_match(NULL, of_coherency_table, &match);
--	if (np) {
--		int type = (int) match->data;
-+	/*
-+	 * The coherency fabric is needed:
-+	 * - For coherency between processors on Armada XP, so only
-+	 *   when SMP is enabled.
-+	 * - For coherency between the processor and I/O devices, but
-+	 *   this coherency requires many pre-requisites (write
-+	 *   allocate cache policy, shareable pages, SMP bit set) that
-+	 *   are only meant in SMP situations.
-+	 *
-+	 * Note that this means that on Armada 370, there is currently
-+	 * no way to use hardware I/O coherency, because even when
-+	 * CONFIG_SMP is enabled, is_smp() returns false due to the
-+	 * Armada 370 being a single-core processor. To lift this
-+	 * limitation, we would have to find a way to make the cache
-+	 * policy set to write-allocate (on all Armada SoCs), and to
-+	 * set the shareable attribute in page tables (on all Armada
-+	 * SoCs except the Armada 370). Unfortunately, such decisions
-+	 * are taken very early in the kernel boot process, at a point
-+	 * where we don't know yet on which SoC we are running.
+ 	cmd->sync_cmd = 1;
+-	cmd->cmd_status = 0xFF;
++	cmd->cmd_status = ENODATA;
  
--		/* Armada 370/XP coherency works in both UP and SMP */
--		if (type == COHERENCY_FABRIC_TYPE_ARMADA_370_XP)
--			return type;
-+	 */
-+	if (!is_smp())
-+		return COHERENCY_FABRIC_TYPE_NONE;
+ 	instance->instancet->issue_dcmd(instance, cmd);
  
--		/* Armada 375 coherency works only on SMP */
--		else if (type == COHERENCY_FABRIC_TYPE_ARMADA_375 && is_smp())
--			return type;
-+	np = of_find_matching_node_and_match(NULL, of_coherency_table, &match);
-+	if (!np)
-+		return COHERENCY_FABRIC_TYPE_NONE;
- 
--		/* Armada 380 coherency works only on SMP */
--		else if (type == COHERENCY_FABRIC_TYPE_ARMADA_380 && is_smp())
--			return type;
--	}
-+	type = (int) match->data;
-+
-+	of_node_put(np);
- 
--	return COHERENCY_FABRIC_TYPE_NONE;
-+	return type;
- }
- 
- int coherency_available(void)
 -- 
 2.1.4
 
