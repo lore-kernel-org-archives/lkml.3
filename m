@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859AbbALKOQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 05:14:16 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:62682 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752108AbbALKOM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 05:14:12 -0500
-Date: Mon, 12 Jan 2015 05:14:07 -0500
-From: "Ahmed S. Darwish" <darwish.07@gmail.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: Olivier Sobrie <olivier@sobrie.be>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux-USB <linux-usb@vger.kernel.org>,
-        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 4/4] can: kvaser_usb: Retry first bulk transfer on
- -ETIMEDOUT
-Message-ID: <20150112101407.GA9213@linux>
-References: <20141223154654.GB6460@vivalin-002>
- <20150111200544.GA8855@linux>
- <20150111201116.GB8855@linux>
- <20150111201519.GC8855@linux>
- <20150111203612.GA8999@linux>
- <20150111204508.GB8999@linux>
- <54B2E23E.1090108@pengutronix.de>
+	id S1752906AbbALKOn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 05:14:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44332 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752549AbbALKOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 05:14:42 -0500
+Date: Mon, 12 Jan 2015 11:14:37 +0100
+From: Jan Kara <jack@suse.cz>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/1 linux-next] fs/affs/file.c: fix direct IO writes
+ beyond EOF
+Message-ID: <20150112101437.GD4468@quack.suse.cz>
+References: <1420838383-6638-1-git-send-email-fabf@skynet.be>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54B2E23E.1090108@pengutronix.de>
+In-Reply-To: <1420838383-6638-1-git-send-email-fabf@skynet.be>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 11, 2015 at 09:51:10PM +0100, Marc Kleine-Budde wrote:
-> On 01/11/2015 09:45 PM, Ahmed S. Darwish wrote:
-> > From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
-> > 
-> > (This is a draft patch, I'm not sure if this fixes the USB
-> > bug or only its psymptom. Feedback from the linux-usb folks
-> > is really appreciated.)
-> > 
-> > When plugging the Kvaser USB/CAN dongle the first time, everything
-> > works as expected and all of the transfers from and to the USB
-> > device succeeds.
-> > 
-> > Meanwhile, after unplugging the device and plugging it again, the
-> > first bulk transfer _always_ returns an -ETIMEDOUT. The following
-> > behaviour was observied:
-> > 
-> > - Setting higher timeout values for the first bulk transfer never
-> >   solved the issue.
-> > 
-> > - Unloading, then loading, our kvaser_usb module in question
-> >   __always__ solved the issue.
-> > 
-> > - Checking first bulk transfer status, and retry the transfer
-> >   again in case of an -ETIMEDOUT also __always__ solved the issue.
-> >   This is what the patch below does.
-> > 
-> > - In the testing done so far, this issue appears only on laptops
-> >   but never on PCs (possibly power related?)
-> > 
-> > Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+On Fri 09-01-15 22:19:43, Fabian Frederick wrote:
+> Use the same fallback to normal IO in case of write
+> operations beyond EOF as fat direct IO. This patch fixes
 > 
-> Does this patch apply apply between 3 and 4? If not, please re-arrange
-> the series. As this is a bug fix, patches 1, 2 and 4 will go via
-> net/master, 3 will go via net-next/master.
+> fsx file -d -Z -r 4096 -w 4096
 > 
+> Report:
+> 129(129 mod 256): TRUNCATE DOWN from 0x3ff01 to 0xb3f6
+> 130(130 mod 256): WRITE    0x22000 thru 0x2dfff (0xc000 bytes) HOLE
+> 
+> Thanks to Jan for helping me on this problem.
+> 
+> Cc: Jan Kara <jack@suse.cz>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+  Yes, this looks fine to me. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-Since no one complained earlier, I guess this issue only affects
-USBCAN devices. That's why I've based it above patch #3: adding
-USBCAN hardware support.
+								Honza
 
-Nonetheless, it won't do any harm for the current Leaf-only
-driver. So _if_ this is the correct fix, I will update the commit
-log, refactor the check into a 'do { } while()' loop, and then
-base it above the Leaf-only net/master fixes on patch #1, and #2.
-
-Any feedback on the USB side of things?
-
-Thanks,
-Darwish
+> ---
+> Ideal solution suggested by Jan Kara would be to use cont_write_begin but
+>  affs direct_IO shouldn't be used a lot anyway...
+> 
+>  fs/affs/file.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/fs/affs/file.c b/fs/affs/file.c
+> index 7e83ba2..d2468bf 100644
+> --- a/fs/affs/file.c
+> +++ b/fs/affs/file.c
+> @@ -398,6 +398,13 @@ affs_direct_IO(int rw, struct kiocb *iocb, struct iov_iter *iter,
+>  	size_t count = iov_iter_count(iter);
+>  	ssize_t ret;
+>  
+> +	if (rw == WRITE) {
+> +		loff_t size = offset + count;
+> +
+> +		if (AFFS_I(inode)->mmu_private < size)
+> +			return 0;
+> +	}
+> +
+>  	ret = blockdev_direct_IO(rw, iocb, inode, iter, offset, affs_get_block);
+>  	if (ret < 0 && (rw & WRITE))
+>  		affs_write_failed(mapping, offset + count);
+> -- 
+> 2.1.0
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
