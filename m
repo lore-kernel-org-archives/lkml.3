@@ -1,104 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781AbbALPik (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 10:38:40 -0500
-Received: from lb3-smtp-cloud6.xs4all.net ([194.109.24.31]:57702 "EHLO
-	lb3-smtp-cloud6.xs4all.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751699AbbALPij (ORCPT
+	id S1752971AbbALPkL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 10:40:11 -0500
+Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:59484 "EHLO
+	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752899AbbALPkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 10:38:39 -0500
-Message-ID: <54B3EA71.9020005@xs4all.nl>
-Date: Mon, 12 Jan 2015 16:38:25 +0100
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	Mon, 12 Jan 2015 10:40:06 -0500
+Date: Mon, 12 Jan 2015 10:39:50 -0500
+From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+To: Quentin Lambert <lambert.quentin@gmail.com>
+Cc: linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] moving from pci to dma
+Message-ID: <20150112103950.0631916b@thirdoffive.cmf.nrl.navy.mil>
+In-Reply-To: <54B3E91E.9060100@gmail.com>
+References: <20150112100239.GA9009@sloth>
+	<20150112102700.2aa3b17e@thirdoffive.cmf.nrl.navy.mil>
+	<54B3E91E.9060100@gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-To: Philipp Zabel <p.zabel@pengutronix.de>
-CC: Kamil Debski <k.debski@samsung.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?B?RnLDqWTDqXJpYyBTdXJlYXU=?= <frederic.sureau@vodalys.com>,
-        Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>,
-        Nicolas Dufresne <nicolas.dufresne@collabora.com>
-Subject: Re: [RFC PATCH] [media] coda: Use S_PARM to set nominal framerate
- for h.264 encoder
-References: <1419264000-11761-1-git-send-email-p.zabel@pengutronix.de>	 <54B3E24B.5030403@xs4all.nl> <1421076959.3081.63.camel@pengutronix.de>
-In-Reply-To: <1421076959.3081.63.camel@pengutronix.de>
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-NRLCMF-Spam-Score: () hits=0
+X-NRLCMF-Virus-Scanned: No virus found
+X-NRLCMF-Languages: en
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2015 04:35 PM, Philipp Zabel wrote:
-> Hi Hans,
-> 
-> thank you for the comments!
-> 
-> Am Montag, den 12.01.2015, 16:03 +0100 schrieb Hans Verkuil:
->> On 12/22/2014 05:00 PM, Philipp Zabel wrote:
->>> The encoder needs to know the nominal framerate for the constant bitrate
->>> control mechanism to work. Currently the only way to set the framerate is
->>> by using VIDIOC_S_PARM on the output queue.
->>>
->>> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
->>> ---
->>>  drivers/media/platform/coda/coda-common.c | 29 +++++++++++++++++++++++++++++
->>>  1 file changed, 29 insertions(+)
->>>
->>> diff --git a/drivers/media/platform/coda/coda-common.c b/drivers/media/platform/coda/coda-common.c
->>> index 39330a7..63eb510 100644
->>> --- a/drivers/media/platform/coda/coda-common.c
->>> +++ b/drivers/media/platform/coda/coda-common.c
->>> @@ -803,6 +803,32 @@ static int coda_decoder_cmd(struct file *file, void *fh,
->>>  	return 0;
->>>  }
->>>  
->>> +static int coda_g_parm(struct file *file, void *fh, struct v4l2_streamparm *a)
->>> +{
->>> +	struct coda_ctx *ctx = fh_to_ctx(fh);
->>> +
->>
->> If a->type != V4L2_BUF_TYPE_VIDEO_OUTPUT, then return -EINVAL.
-> 
-> If the decoder can retrieve the framerate from the stream, wouldn't it
-> make sense to allow G_PARM for a->type == V4L2_BUF_TYPE_VIDEO_CAPTURE ?
-
-Certainly. But that wasn't in the patch :-)
-
-Regards,
-
-	Hans
+On Mon, 12 Jan 2015 16:32:46 +0100
+Quentin Lambert <lambert.quentin@gmail.com> wrote:
 
 > 
->>  Ditto for s_parm.
+> On 12/01/2015 16:27, chas williams - CONTRACTOR wrote:
+> > There doesn't seem to be a patch for review?
+> >
+> I made a mistake and forgot to number the mails. I did send them though.
+> Would you like me to send them again, with the proper subject format?
 > 
-> Will do.
 > 
->>> +	a->parm.output.timeperframe.denominator = 1;
->>> +	a->parm.output.timeperframe.numerator = ctx->params.framerate;
->>> +
->>> +	return 0;
->>> +}
->>> +
->>> +static int coda_s_parm(struct file *file, void *fh, struct v4l2_streamparm *a)
->>> +{
->>> +	struct coda_ctx *ctx = fh_to_ctx(fh);
->>> +
->>> +	if (a->type == V4L2_BUF_TYPE_VIDEO_OUTPUT &&
->>> +	    a->parm.output.timeperframe.numerator != 0) {
->>> +		ctx->params.framerate = a->parm.output.timeperframe.denominator
->>> +				      / a->parm.output.timeperframe.numerator;
->>
->> Hmm, what happens if the denominator is 1 and the numerator is 2?
->> You probably want to clamp ctx->params.framerate to the range of allowed framerates.
->> And at least ensure a framerate > 0.
->>
->> Also check with v4l2_compliance! You'd have caught at least the missing a->type check.
-> 
-> Oh dear, I need to improve my v4l-utils update habits. I'll fix this
-> patch and resend it.
-> 
-> regards
-> Philipp
+> Quentin Lambert
 > 
 
+That would be nice.  Thanks!
