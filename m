@@ -1,69 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543AbbALRZm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 12:25:42 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:60220 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782AbbALRZl (ORCPT
+	id S1752414AbbALRZr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 12:25:47 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:55873 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630AbbALRZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 12:25:41 -0500
-Date: Mon, 12 Jan 2015 17:25:34 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Mark Salter <msalter@redhat.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Subject: Re: [PATCH] arm64: allow late use of early_ioremap
-Message-ID: <20150112172534.GJ13360@arm.com>
-References: <1421081711-1128-1-git-send-email-msalter@redhat.com>
+	Mon, 12 Jan 2015 12:25:44 -0500
+Date: Mon, 12 Jan 2015 09:25:37 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jim Davis <jim.epost@gmail.com>
+Cc: linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, jdelvare@suse.de,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, lm-sensors@lm-sensors.org,
+        devicetree <devicetree@vger.kernel.org>, Nishanth Menon <nm@ti.com>,
+        Eduardo Valentin <edubezval@gmail.com>
+Subject: Re: randconfig build error with next-20150112, in
+ drivers/hwmon/gpio-fan.c
+Message-ID: <20150112172537.GA19868@roeck-us.net>
+References: <CA+r1Zhh4EXQ_0pYZfL4jB=F8unP7+jzp7LVL2RRL+urU3srj3A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421081711-1128-1-git-send-email-msalter@redhat.com>
+In-Reply-To: <CA+r1Zhh4EXQ_0pYZfL4jB=F8unP7+jzp7LVL2RRL+urU3srj3A@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020201.54B40397.031E,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 3
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 04:55:11PM +0000, Mark Salter wrote:
-> Commit 0e63ea48b4d8 (arm64/efi: add missing call to early_ioremap_reset())
-> added a missing call to early_ioremap_reset(). This triggers a BUG if code
-> tries using early_ioremap() after the early_ioremap_reset(). This is a
-> problem for some ACPI code which needs short-lived temporary mappings
-> after paging_init() but before mm_init(). This patch adds definitions for
-> the __late_set_fixmap() and __late_clear_fixmap() which avoids the BUG
-> by allowing later use of early_ioremap().
+On Mon, Jan 12, 2015 at 09:53:05AM -0700, Jim Davis wrote:
+> Building with the attached random configuration file,
 > 
-> Signed-off-by: Mark Salter <msalter@redhat.com>
-> CC: Leif Lindholm <leif.lindholm@linaro.org>
-> CC: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-> ---
->  arch/arm64/include/asm/fixmap.h | 3 +++
->  1 file changed, 3 insertions(+)
+> drivers/built-in.o: In function `gpio_fan_remove':
+> gpio-fan.c:(.text+0x6efea): undefined reference to
+> `thermal_cooling_device_unregister'
+> drivers/built-in.o: In function `gpio_fan_probe':
+> gpio-fan.c:(.text+0x6f376): undefined reference to
+> `thermal_cooling_device_register'
+> make: *** [vmlinux] Error 1
 
-Given that we don't support ACPI on arm64 in mainline, I assume this can
-wait until at least 3.20?
+Hi Jim,
 
-Will
+thanks for the note.
 
-> diff --git a/arch/arm64/include/asm/fixmap.h b/arch/arm64/include/asm/fixmap.h
-> index 9ef6eca..e629c70 100644
-> --- a/arch/arm64/include/asm/fixmap.h
-> +++ b/arch/arm64/include/asm/fixmap.h
-> @@ -61,6 +61,9 @@ void __init early_fixmap_init(void);
->  
->  #define __early_set_fixmap __set_fixmap
->  
-> +#define __late_set_fixmap __set_fixmap
-> +#define __late_clear_fixmap(idx) __set_fixmap((idx), 0, FIXMAP_PAGE_CLEAR)
-> +
->  extern void __set_fixmap(enum fixed_addresses idx, phys_addr_t phys, pgprot_t prot);
->  
->  #include <asm-generic/fixmap.h>
-> -- 
-> 1.8.3.1
-> 
-> 
+Hmm .. turns out those functions don't define dummies if CONFIG_THERMAL
+is not configured. How annoying.
+
+Nishant, please fix your gpio-fan patch. I am going to drop it for now.
+Please keep in mind that there is a secondary dependency: The thermal
+code can be built as module. In that case, the gpio-fan driver must
+either also be built as module, or its thermal registration must be
+disabled.
+
+Guenter
