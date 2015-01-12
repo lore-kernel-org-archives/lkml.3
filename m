@@ -1,62 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081AbbALRl5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 12:41:57 -0500
-Received: from mga02.intel.com ([134.134.136.20]:62049 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751929AbbALRlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 12:41:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,745,1413270000"; 
-   d="scan'208";a="668556208"
-From: kan.liang@intel.com
-To: a.p.zijlstra@chello.nl
-Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com,
-        Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V2 1/1] perf, x86: bug fix for cycles:p and cycles:pp on SLM
-Date: Mon, 12 Jan 2015 17:42:21 +0000
-Message-Id: <1421084541-31639-1-git-send-email-kan.liang@intel.com>
-X-Mailer: git-send-email 1.7.11.7
+	id S1752227AbbALRnZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 12:43:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57120 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782AbbALRnX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 12:43:23 -0500
+Date: Mon, 12 Jan 2015 17:43:34 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Ben Hutchings <ben@decadent.org.uk>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, kernel-team@lists.ubuntu.com,
+        "Nikula, Jani" <jani.nikula@linux.intel.com>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Subject: Re: [PATCH 3.16.y-ckt 030/168] drm/i915: Handle failure to kick out
+ a conflicting fb driver
+Message-ID: <20150112174334.GI2455@charon>
+References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
+ <1418653622-21105-31-git-send-email-luis.henriques@canonical.com>
+ <1421012945.19708.27.camel@decadent.org.uk>
+ <CAKMK7uFDS339qaqaNeRJ-L+XXKBaS8CgDY1CzEB7ugDmOto+Dw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAKMK7uFDS339qaqaNeRJ-L+XXKBaS8CgDY1CzEB7ugDmOto+Dw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kan Liang <kan.liang@intel.com>
+On Mon, Jan 12, 2015 at 06:20:22PM +0100, Daniel Vetter wrote:
+> On Sun, Jan 11, 2015 at 10:49 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
+> > On Mon, 2014-12-15 at 14:24 +0000, Luis Henriques wrote:
+> >> 3.16.7-ckt3 -stable review patch.  If anyone has any objections, please let me know.
+> >>
+> >> ------------------
+> >>
+> >> From: Chris Wilson <chris@chris-wilson.co.uk>
+> >>
+> >> commit f96de58fc7e7d3d717c7c63975c3b896c906b5e3 upstream.
+> >>
+> >> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+> >> Reviewed-by: Jani Nikula <jani.nikula@intel.com>
+> >> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> >> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+> >
+> > Should this also be applied to any older stable branches?
+> >
+> > i915_kick_out_firmware_fb() was introduced in 3.6 and it has always been
+> > possible for the alloc_apertures() call to fail.
+> >
+> > remove_conflicting_framebuffers() has returned an error code since 3.14
+> > (but could silently fail before then!) so this should be applicable to
+> > the 3.14 stable branch too.
+> 
+> tbh I don't know why this patch ended up in a stable kernel, at least
+> I didn't find anything where we (drm/i915 maintainers) marked it as
+> such. And there's no bugzilla references added either. Imo the patch
+> doesn't qualify for stable (it's not a real-world bug afaik).
 
-cycles:p and cycles:pp do not work on SLM since
-86a04461a99f ("perf/x86: Revamp PEBS event selection")
+You're right, this patch was not tagged for stable.
 
-UOPS_RETIRED.ALL is not a PEBS capable event, so it should not be used
-to count cycle number.
-Actually SLM call intel_pebs_aliases_core2 which uses INST_RETIRED.ANY_P
-counts the number of cycles. It's a PEBS capable event. But inv and
-cmask must be set to count cycles.
-Considering SLM allows all events as PEBS with no flags, here only
-INST_RETIRED.ANY_P, inv=1, cmask=16 need to specially handled.
+While applying 0485c9dc24ec ("drm/i915: Kick fbdev before vgacon") to
+the 3.16 kernel, I found that cherry-picking f96de58fc7e7 would make
+it apply cleanly and it didn't shock me to have it in a stable kernel.
+That's why I applied it for release 3.16.7-ckt3.  I guess I should
+have added a note in the commit text justifying its presence.
 
-Signed-off-by: Kan Liang <kan.liang@intel.com>
----
-Changes since V1
- - Only handle INST_RETIRED.ANY_P, inv=1, cmask=16
+Cheers,
+--
+Luís
 
- arch/x86/kernel/cpu/perf_event_intel_ds.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 3c895d4..0739833 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -568,8 +568,8 @@ struct event_constraint intel_atom_pebs_event_constraints[] = {
- };
- 
- struct event_constraint intel_slm_pebs_event_constraints[] = {
--	/* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
--	INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
-+	/* INST_RETIRED.ANY_P, inv=1, cmask=16 (cycles:p). */
-+	INTEL_FLAGS_EVENT_CONSTRAINT(0x108000c0, 0x1),
- 	/* Allow all events as PEBS with no flags */
- 	INTEL_ALL_EVENT_CONSTRAINT(0, 0x1),
- 	EVENT_CONSTRAINT_END
--- 
-1.7.11.7
-
+> -Daniel
+> 
+> >
+> > Ben.
+> >
+> >> ---
+> >>  drivers/gpu/drm/i915/i915_dma.c | 18 +++++++++++++-----
+> >>  1 file changed, 13 insertions(+), 5 deletions(-)
+> >>
+> >> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+> >> index d44344140627..0663fb4fa606 100644
+> >> --- a/drivers/gpu/drm/i915/i915_dma.c
+> >> +++ b/drivers/gpu/drm/i915/i915_dma.c
+> >> @@ -1425,15 +1425,16 @@ void i915_master_destroy(struct drm_device *dev, struct drm_master *master)
+> >>  }
+> >>
+> >>  #if IS_ENABLED(CONFIG_FB)
+> >> -static void i915_kick_out_firmware_fb(struct drm_i915_private *dev_priv)
+> >> +static int i915_kick_out_firmware_fb(struct drm_i915_private *dev_priv)
+> >>  {
+> >>       struct apertures_struct *ap;
+> >>       struct pci_dev *pdev = dev_priv->dev->pdev;
+> >>       bool primary;
+> >> +     int ret;
+> >>
+> >>       ap = alloc_apertures(1);
+> >>       if (!ap)
+> >> -             return;
+> >> +             return -ENOMEM;
+> >>
+> >>       ap->ranges[0].base = dev_priv->gtt.mappable_base;
+> >>       ap->ranges[0].size = dev_priv->gtt.mappable_end;
+> >> @@ -1441,13 +1442,16 @@ static void i915_kick_out_firmware_fb(struct drm_i915_private *dev_priv)
+> >>       primary =
+> >>               pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW;
+> >>
+> >> -     remove_conflicting_framebuffers(ap, "inteldrmfb", primary);
+> >> +     ret = remove_conflicting_framebuffers(ap, "inteldrmfb", primary);
+> >>
+> >>       kfree(ap);
+> >> +
+> >> +     return ret;
+> >>  }
+> >>  #else
+> >> -static void i915_kick_out_firmware_fb(struct drm_i915_private *dev_priv)
+> >> +static int i915_kick_out_firmware_fb(struct drm_i915_private *dev_priv)
+> >>  {
+> >> +     return 0;
+> >>  }
+> >>  #endif
+> >>
+> >> @@ -1664,7 +1668,11 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
+> >>                       goto out_gtt;
+> >>               }
+> >>
+> >> -             i915_kick_out_firmware_fb(dev_priv);
+> >> +             ret = i915_kick_out_firmware_fb(dev_priv);
+> >> +             if (ret) {
+> >> +                     DRM_ERROR("failed to remove conflicting framebuffer drivers\n");
+> >> +                     goto out_gtt;
+> >> +             }
+> >>       }
+> >>
+> >>       pci_set_master(dev->pdev);
+> >
+> > --
+> > Ben Hutchings
+> > One of the nice things about standards is that there are so many of them.
+> 
+> 
+> 
+> -- 
+> Daniel Vetter
+> Software Engineer, Intel Corporation
+> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
