@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286AbbALOI2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 09:08:28 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:40968 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212AbbALOI0 (ORCPT
+	id S1753254AbbALOG6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 09:06:58 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:36057 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329AbbALOG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 09:08:26 -0500
-Date: Mon, 12 Jan 2015 17:06:43 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Pavel Machek <pavel@denx.de>
-Cc: Konrad Zapalowicz <bergo.torino@gmail.com>, mark.rutland@arm.com,
-        linux-doc@vger.kernel.org, rubini@gnudd.com,
-        pantelis.antoniou@konsulko.com, hpa@zytor.com,
-        s.trumtrar@pengutronix.de, devel@driverdev.osuosl.org,
-        sameo@linux.intel.com, nico@linaro.org, iws@ovro.caltech.edu,
-        michal.simek@xilinx.com, kyle.teske@ni.com,
-        jgunthorpe@obsidianresearch.com, grant.likely@linaro.org,
-        davidb@codeaurora.org, linus.walleij@linaro.org, cesarb@cesarb.net,
-        devicetree@vger.kernel.org, jason@lakedaemon.net, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, atull <atull@opensource.altera.com>,
-        broonie@kernel.org, philip@balister.org, akpm@linux-foundation.org,
-        monstr@monstr.eu, gregkh@linuxfoundation.org,
-        yvanderv@opensource.altera.com, linux-kernel@vger.kernel.org,
-        balbi@ti.com, davem@davemloft.net, robh+dt@kernel.org, rob@landley.net,
-        galak@codeaurora.org, dinguyen@opensource.altera.com,
-        delicious.quinoa@gmail.com, m.chehab@samsung.com
-Subject: Re: [PATCH v8 0/4] FPGA Manager Framework
-Message-ID: <20150112140642.GD7568@mwanda>
-References: <1420575219-27061-1-git-send-email-atull@opensource.altera.com>
- <20150110181120.GA26067@t400>
- <alpine.DEB.2.10.1501111004580.2556@shineypoop>
- <20150111162426.GC26067@t400>
- <20150111195219.GA25760@amd>
+	Mon, 12 Jan 2015 09:06:56 -0500
+Message-ID: <54B3D4FC.1090806@cogentembedded.com>
+Date: Mon, 12 Jan 2015 17:06:52 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150111195219.GA25760@amd>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>, brudley@broadcom.com,
+        "arend@broadcom.com >> Arend van Spriel" <arend@broadcom.com>,
+        Franky Lin <frankyl@broadcom.com>, meuleman@broadcom.com,
+        kvalo@codeaurora.org, linville@tuxdriver.com, pieterpg@broadcom.com,
+        hdegoede@redhat.com, wens@csie.org, linux-wireless@vger.kernel.org,
+        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
+References: <54B36C88.3030609@linux.intel.com>
+In-Reply-To: <54B36C88.3030609@linux.intel.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 11, 2015 at 08:52:19PM +0100, Pavel Machek wrote:
-> 
-> Actually, why not? Tools should know to look at From: in the
-> commit. AFAICT, Alan has it set up correctly.
-> 								Pavel
+Hello.
 
-Normally, the Extra From header should only be used if the patches were
-sent on behalf of someone else.  It's just a bit of a pain to verify
-that the Extra From matches the email headers.
+On 1/12/2015 9:41 AM, Fu, Zhonghui wrote:
 
-Also sometimes people can't get their corporate email configured
-properly for patches and so they use gmail but specify an Extra From so
-their employer gets credit...  That's ok.
+>  From 8685c3c2746b4275fc808d9db23c364b2f54b52a Mon Sep 17 00:00:00 2001
+> From: Zhonghui Fu <zhonghui.fu@linux.intel.com>
+> Date: Mon, 12 Jan 2015 14:25:46 +0800
+> Subject: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
 
-The patches apply fine so it's not a "redo the patch" type thing, it's
-just a "In the long term, please, fix your email From header so the
-Extra From isn't needed."
+    The lines above are not needed.
 
-regards,
-dan carpenter
+> WiFi chip has 2 SDIO functions, and PM core will trigger
+> twice suspend/resume operations for one WiFi chip to do
+> the same things. This patch avoid this case.
+
+> Acked-by: Arend van Spriel<arend@broadcom.com>
+> Acked-by: Sergei Shtylyov<sergei.shtylyov@cogentembedded.com>
+> Signed-off-by: Zhonghui Fu <zhonghui.fu@linux.intel.com>
+> ---
+>   drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c |   21 +++++++++++++++++----
+>   1 files changed, 17 insertions(+), 4 deletions(-)
+
+> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
+> index 9880dae..8f71485 100644
+> --- a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
+> +++ b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
+> @@ -1070,7 +1070,7 @@ static int brcmf_ops_sdio_probe(struct sdio_func *func,
+>   	 */
+>   	if ((sdio_get_host_pm_caps(sdiodev->func[1]) & MMC_PM_KEEP_POWER) &&
+>   	    ((sdio_get_host_pm_caps(sdiodev->func[1]) & MMC_PM_WAKE_SDIO_IRQ) ||
+> -	     (sdiodev->pdata && sdiodev->pdata->oob_irq_supported)))
+> +	     (sdiodev->pdata->oob_irq_supported)))
+
+    Inner parens not needed on this line.
+
+[...]
+
+WBR, Sergei
 
