@@ -1,37 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991AbbALUjI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 15:39:08 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:53577 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319AbbALUjF (ORCPT
+	id S1754076AbbALUqB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 15:46:01 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:45089 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752279AbbALUp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 15:39:05 -0500
-Date: Mon, 12 Jan 2015 15:39:01 -0500 (EST)
-Message-Id: <20150112.153901.1394819040600142883.davem@davemloft.net>
-To: ani@arista.com
-Cc: corbet@lwn.net, edumazet@google.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, P@draigbrady.com, netdev@vger.kernel.org,
-        fruggeri@arista.com
-Subject: Re: [PATCH 1/1] update ip-sysctl.txt documentation (v2)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1420674356-32210-1-git-send-email-ani@arista.com>
-References: <1420674356-32210-1-git-send-email-ani@arista.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 12 Jan 2015 12:39:04 -0800 (PST)
+	Mon, 12 Jan 2015 15:45:59 -0500
+Date: Mon, 12 Jan 2015 21:45:53 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@codemonkey.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [PATCH 00/10][RFC] Increased clocksource validation and cleanups
+Message-ID: <20150112204553.GD4233@localhost.localdomain>
+References: <1420850068-27828-1-git-send-email-john.stultz@linaro.org>
+ <20150111114124.GD4467@localhost.localdomain>
+ <CALAqxLW7xymopptsq5zWMyY_P25WmNvKne4u_LH-kZKK25N5fQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALAqxLW7xymopptsq5zWMyY_P25WmNvKne4u_LH-kZKK25N5fQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ani Sinha <ani@arista.com>
-Date: Wed,  7 Jan 2015 15:45:56 -0800
+On Mon, Jan 12, 2015 at 10:22:11AM -0800, John Stultz wrote:
+> Yea, I've not looked at the actual performance impact yet, but things
+> like the read-time capping (which is in the hot path) could be put
+> under a debug config. Thanks for the suggestion!
 
-> Update documentation to reflect the fact that
-> /proc/sys/net/ipv4/route/max_size is no longer used for ipv4.
-> 
-> Signed-off-by: Ani Sinha <ani@arista.com>
+Having a broken clock is like having a broken memory card.  Both will
+make your system behave very strangely.  Once you start having really
+strange issues, you run a dedicated memory test.  That is why I would
+expect to have clock validation as compile time option.
 
-Applied, thank you.
+Thanks,
+Richard
