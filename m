@@ -1,89 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932384AbbALT0O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 14:26:14 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:57280 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757122AbbALT0H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 14:26:07 -0500
-Date: Mon, 12 Jan 2015 20:26:03 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+	id S1754684AbbALTdT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 14:33:19 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:60381 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753463AbbALTdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 14:33:15 -0500
+Date: Mon, 12 Jan 2015 13:31:26 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+CC: <balbi@ti.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] AT91 cleanup for 3.20 #1
-Message-ID: <20150112202603.6a7b691d@bbrezillon>
-In-Reply-To: <1421088136-10172-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1421088136-10172-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        David Laight <David.Laight@ACULAB.COM>
+Subject: Re: [PATCH v3 3/5] ARM: at91/dt: update udc compatible strings
+Message-ID: <20150112193126.GC2858@saruman>
+Reply-To: <balbi@ti.com>
+References: <1421060278-27329-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1421060278-27329-4-git-send-email-boris.brezillon@free-electrons.com>
+ <20150112182349.GJ6525@saruman>
+ <20150112201816.6e57fe74@bbrezillon>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="s9fJI615cBHmzTOP"
+Content-Disposition: inline
+In-Reply-To: <20150112201816.6e57fe74@bbrezillon>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
+--s9fJI615cBHmzTOP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, 12 Jan 2015 19:42:09 +0100
-Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
+On Mon, Jan 12, 2015 at 08:18:16PM +0100, Boris Brezillon wrote:
+> Hi Felipe,
+>=20
+> On Mon, 12 Jan 2015 12:23:49 -0600
+> Felipe Balbi <balbi@ti.com> wrote:
+>=20
+> > On Mon, Jan 12, 2015 at 11:57:56AM +0100, Boris Brezillon wrote:
+> > > at91sam9g45, at91sam9x5 and sama5 SoCs should not use
+> > > "atmel,at91sam9rl-udc" for their USB device compatible property since
+> > > this compatible is attached to a specific hardware bug fix.
+> > >=20
+> > > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> > > Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> >=20
+> > WARNING: DT compatible string "atmel,at91sam9g45-udc" appears un-docume=
+nted -- check ./Documentation/devicetree/bindings/
+> > #177: FILE: drivers/usb/gadget/udc/atmel_usba_udc.c:1827:
+> > +       { .compatible =3D "atmel,at91sam9g45-udc" },
+> >=20
+> > WARNING: DT compatible string "atmel,sama5d3-udc" appears un-documented=
+ -- check ./Documentation/devicetree/bindings/
+> > #178: FILE: drivers/usb/gadget/udc/atmel_usba_udc.c:1828:
+> > +       { .compatible =3D "atmel,sama5d3-udc" },
+> >=20
+> > please fix and resend. Also, when resending, could you add Nicolas'
+> > Acked-by since he's already given it ?
+>=20
+> Actually these compatible strings are documented in the first patch
+> (where they were introduced), but I'll send a v4 with Nicolas' ack.
 
-> Hi,
-> 
-> This patch set cleans a lot of remaining header, config options and functions
-> that are not used anymore since the switch to DT only.
-> 
-> Patch 5 is moving mach/debug-macro.S to include/debug/at91.S to prepare the
-> upcoming switch to multiplatform.
-> 
+heh, checkpatch stupidity :-) My bad.
 
-Thanks for those cleanup changes.
+--=20
+balbi
 
-To the whole series:
+--s9fJI615cBHmzTOP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-> 
-> Alexandre Belloni (7):
->   ARM: at91: remove unused mach/memory.h
->   ARM: at91: remove useless config MACH_AT91RM9200_DT
->   ARM: at91: remove useless config MACH_AT91SAM9_DT
->   ARM: at91: remove useless at91_sysirq_mask_rtx
->   ARM: at91: move debug-macro.S into the common space
->   ARM: at91: remove useless at91rm9200_dt_initialize()
->   ARM: at91: remove useless at91rm9200_set_type()
-> 
->  MAINTAINERS                                        |  1 +
->  arch/arm/Kconfig.debug                             |  9 ++-
->  .../mach/debug-macro.S => include/debug/at91.S}    | 19 +++---
->  arch/arm/mach-at91/Kconfig                         |  8 ---
->  arch/arm/mach-at91/Makefile                        |  6 +-
->  arch/arm/mach-at91/at91sam9260.c                   |  2 -
->  arch/arm/mach-at91/at91sam9261.c                   |  2 -
->  arch/arm/mach-at91/at91sam9263.c                   |  3 -
->  arch/arm/mach-at91/at91sam9g45.c                   |  3 -
->  arch/arm/mach-at91/at91sam9n12.c                   |  6 --
->  arch/arm/mach-at91/at91sam9rl.c                    |  3 -
->  arch/arm/mach-at91/at91sam9x5.c                    | 10 ---
->  arch/arm/mach-at91/board-dt-rm9200.c               |  2 +-
->  arch/arm/mach-at91/generic.h                       |  6 --
->  arch/arm/mach-at91/include/mach/at91_rtt.h         | 35 ----------
->  arch/arm/mach-at91/include/mach/memory.h           | 26 --------
->  arch/arm/mach-at91/sama5d3.c                       |  6 --
->  arch/arm/mach-at91/setup.c                         | 18 ------
->  arch/arm/mach-at91/sysirq_mask.c                   | 75 ----------------------
->  19 files changed, 23 insertions(+), 217 deletions(-)
->  rename arch/arm/{mach-at91/include/mach/debug-macro.S => include/debug/at91.S} (68%)
->  delete mode 100644 arch/arm/mach-at91/include/mach/at91_rtt.h
->  delete mode 100644 arch/arm/mach-at91/include/mach/memory.h
->  delete mode 100644 arch/arm/mach-at91/sysirq_mask.c
-> 
+iQIcBAEBAgAGBQJUtCEOAAoJEIaOsuA1yqREYJgP/jw3tJvofFrxtQdj6udzChik
+n2Nw2d2qHhmJzEaRTz8KUGD4OBdQtMJcrGI01FLUZltwBTOxN2VYf99F4Zz8KxQg
+hVYOMT0oymawNEN9LjRk0xJBpdfPyuDcgDIWCUkpn7jbY01dpPGPCnGmgM7UKHqO
+FY9BY288gJcTA9aGUz0FPcGnUarbP+mziYt4jjwJqcQ8Vx8nGslN6V0RlFg6slkE
+hT0IvF7TpL1OvJaDZxTlKkgM1bMkkUdmuktldQhZ4T7pYJFw20cNr7ftf3kUU+Qj
+up0nVdSRM5K6iCtjlqH71ey9eABMi9BBT36l6f3gG1PL0IShGmFQX8YZoemX2/sC
+XGzAG2N9uBvQB0Z4KvmyGVsCZ6XIVmgR99AVlUN4VrOSoVNcLS5H4GZfNDGJX2ED
+BAsfUhxN+dNpSuNRNGyHfB9sbsVRRLRbhsExbkzZWy474KtimnbsM947gdeOfzdb
+SMooNZnMmnVuKgVSxv15vlKB5iaISmhly8mETPZK8QtnpirJRYJF1DdD2J3ZJ/m1
+nxdefa/vpHXNWrM1eg1LTnE/NSfrQ+JJdGKx0N/k51cKtiEDF6gi4BdAeORkrmjl
+Zi9l4MUXl+fsKmJsoQvn/46aRyD7Km2RDRhJp7WUYVY+UV5S+CkhXcwIThowgnxH
+U8EKsRVkd8IrmJGRjF6A
+=bKXD
+-----END PGP SIGNATURE-----
 
-
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+--s9fJI615cBHmzTOP--
