@@ -1,130 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751280AbbALGnp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 01:43:45 -0500
-Received: from mga01.intel.com ([192.55.52.88]:61029 "EHLO mga01.intel.com"
+	id S1751129AbbALGqZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 01:46:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55737 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750753AbbALGnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 01:43:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,742,1413270000"; 
-   d="scan'208";a="668278105"
-Message-ID: <54B36D1A.40608@linux.intel.com>
-Date: Mon, 12 Jan 2015 14:43:38 +0800
-From: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1750968AbbALGqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 01:46:24 -0500
+Message-ID: <54B36D8E.4030001@redhat.com>
+Date: Mon, 12 Jan 2015 12:15:34 +0530
+From: Pratyush Anand <panand@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Arend van Spriel <arend@broadcom.com>
-CC: brudley@broadcom.com, Franky Lin <frankyl@broadcom.com>,
-        meuleman@broadcom.com, kvalo@codeaurora.org, linville@tuxdriver.com,
-        pieterpg@broadcom.com, hdegoede@redhat.com, wens@csie.org,
-        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
-References: <54A3B1B4.7090705@linux.intel.com> <54A3C837.6040400@broadcom.com> <54A9F82D.9030003@linux.intel.com> <54AA6BEB.9060207@broadcom.com>
-In-Reply-To: <54AA6BEB.9060207@broadcom.com>
-Content-Type: text/plain; charset=utf-8
+To: Oleg Nesterov <oleg@redhat.com>
+CC: tixy@linaro.org, linux@arm.linux.org.uk, ananth@in.ibm.com,
+        sandeepa.prabhu@linaro.org, catalin.marinas@arm.com,
+        will.deacon@arm.com, linux-kernel@vger.kernel.org,
+        anil.s.keshavamurthy@intel.com, masami.hiramatsu.pt@hitachi.com,
+        wcohen@redhat.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 8/8] ARM64: Add uprobe support
+References: <cover.1420038188.git.panand@redhat.com> <0694af6935f9c6873ef8d25ad51630a40a74a116.1420038188.git.panand@redhat.com> <20150109175936.GB13161@redhat.com> <54B355FA.60702@redhat.com>
+In-Reply-To: <54B355FA.60702@redhat.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Oleg,
 
-I sent a new version of this patch in another mail.
+How can I generate a scenario to test:
 
+a) arch_uprobe_xol_was_trapped
+b) arch_uprobe_abort_xol
 
-Thanks,
-Zhonghui
+~Pratyush
 
-
-On 2015/1/5 18:48, Arend van Spriel wrote:
-> On 01/05/15 03:34, Fu, Zhonghui wrote:
->> Hi Arend,
->>
->> Where to find your patch for this?
+On Monday 12 January 2015 10:34 AM, Pratyush Anand wrote:
 >
-> Well, we did not submit it. Hence my "Acked-by:" to your patch below.
 >
-> Regards,
-> Arend
->
->>
->> Thanks,
->> Zhonghui
->>
->> On 2014/12/31 17:56, Arend van Spriel wrote:
->>> On 12/31/14 09:20, Fu, Zhonghui wrote:
->>>>    From e34419970a07bfcd365f9c66bdfa552188a0cd26 Mon Sep 17 00:00:00 2001
->>>> From: Zhonghui Fu<zhonghui.fu@linux.intel.com>
->>>> Date: Mon, 29 Dec 2014 21:25:31 +0800
->>>> Subject: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
->>>>
->>>> WiFi chip has 2 SDIO functions, and PM core will trigger
->>>> twice suspend/resume operations for one WiFi chip to do
->>>> the same things. This patch avoid this case.
+> On Friday 09 January 2015 11:29 PM, Oleg Nesterov wrote:
+>> On 12/31, Pratyush Anand wrote:
 >>>
->>> We have a patch queued up for this as well, but this one looks good enough although I personally prefer container_of() instead of dev_to_sdio_func().
->>>
->>> Acked-by: Arend van Spriel<arend@broadcom.com>
->>>> Signed-off-by: Zhonghui Fu<zhonghui.fu@linux.intel.com>
->>>> ---
->>>>    drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c |   19 +++++++++++++++++--
->>>>    1 files changed, 17 insertions(+), 2 deletions(-)
->>>>
->>>> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
->>>> index 3c06e93..eee7818 100644
->>>> --- a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
->>>> +++ b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
->>>> @@ -1139,11 +1139,18 @@ void brcmf_sdio_wowl_config(struct device *dev, bool enabled)
->>>>    static int brcmf_ops_sdio_suspend(struct device *dev)
->>>>    {
->>>>        struct brcmf_bus *bus_if = dev_get_drvdata(dev);
->>>> -    struct brcmf_sdio_dev *sdiodev = bus_if->bus_priv.sdio;
->>>> +    struct brcmf_sdio_dev *sdiodev;
->>>>        mmc_pm_flag_t sdio_flags;
->>>> +    struct sdio_func *func = dev_to_sdio_func(dev);
->>>>
->>>>        brcmf_dbg(SDIO, "Enter\n");
->>>>
->>>> +    if (func->num == 2) {
->>>> +        return 0;
->>>> +    }
->>>> +
->>>> +    sdiodev = bus_if->bus_priv.sdio;
->>>> +
->>>>        atomic_set(&sdiodev->suspend, true);
->>>>
->>>>        if (sdiodev->wowl_enabled) {
->>>> @@ -1164,9 +1171,17 @@ static int brcmf_ops_sdio_suspend(struct device *dev)
->>>>    static int brcmf_ops_sdio_resume(struct device *dev)
->>>>    {
->>>>        struct brcmf_bus *bus_if = dev_get_drvdata(dev);
->>>> -    struct brcmf_sdio_dev *sdiodev = bus_if->bus_priv.sdio;
->>>> +    struct brcmf_sdio_dev *sdiodev;
->>>> +    struct sdio_func *func = dev_to_sdio_func(dev);
->>>>
->>>>        brcmf_dbg(SDIO, "Enter\n");
->>>> +
->>>> +    if (func->num == 2) {
->>>> +        return 0;
->>>> +    }
->>>> +
->>>> +    sdiodev = bus_if->bus_priv.sdio;
->>>> +
->>>>        if (sdiodev->pdata->oob_irq_supported)
->>>>            disable_irq_wake(sdiodev->pdata->oob_irq_nr);
->>>>        brcmf_sdio_wd_timer(sdiodev->bus, BRCMF_WD_POLL_MS);
->>>> -- 1.7.1
->>>>
->>>
->>> -- 
->>> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> +int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct
+>>> mm_struct *mm,
+>>> +        unsigned long addr)
+>>> +{
+>>> +    probe_opcode_t insn;
+>>> +
+>>> +    insn = *(probe_opcode_t *)(&auprobe->insn[0]);
+>>> +
+>>> +    switch (arm_probe_decode_insn(insn, &auprobe->ainsn)) {
+>>> +    case INSN_REJECTED:
+>>> +        return -EINVAL;
+>>> +
+>>> +    case INSN_GOOD_NO_SLOT:
+>>> +        auprobe->simulate = true;
+>>> +        if (auprobe->ainsn.prepare)
+>>> +            auprobe->ainsn.prepare(insn, &auprobe->ainsn);
+>>> +        break;
+>>> +
+>>> +    case INSN_GOOD:
+>>> +    default:
+>>> +        break;
+>>> +    }
+>>> +
+>>> +    return 0;
+>>> +}
 >>
+>> forgot to mention... shouldn't it also check IS_ALIGNED(addr,
+>> AARCH64_INSN_SIZE) ?
+>>
+>> I do not know if unaligned insn address is valid on arm64 or not, but
+>> please
 >
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+> AARCH64 instructions are always of fixed lenght ie 4 bytes. I do not see
+> possibility of addr being unaligned. Please let me know, if I am missing
+> something.
+>
+>> note that at least it should not cross the page boundary, set_swbp()
+>> needs to
+>> write AARCH64_INSN_SIZE == UPROBE_SWBP_INSN bytes and it assumes that
+>> this
+>> should fit the single page.
+>
+> So, again I do not see the possibility of crossing of page boundary for
+> any instruction address.
+>
+> ~Pratyush
