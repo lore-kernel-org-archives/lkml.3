@@ -1,46 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbbALPmW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 10:42:22 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:62566 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751372AbbALPmV (ORCPT
+	id S1752362AbbALPn4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 10:43:56 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:60115 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955AbbALPny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 10:42:21 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Mark Langsdorf <mlangsdo@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.19-rc3
-Date: Mon, 12 Jan 2015 16:42:14 +0100
-Message-ID: <3791313.iJ2hL8LhRB@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20150112142332.GC19807@e104818-lin.cambridge.arm.com>
-References: <CA+55aFwsxoyLb9OWMSCL3doe_cz_EQtKsEFCyPUYn_T87pbz0A@mail.gmail.com> <23318125.rGnCbWvYBR@wuerfel> <20150112142332.GC19807@e104818-lin.cambridge.arm.com>
+	Mon, 12 Jan 2015 10:43:54 -0500
+Date: Mon, 12 Jan 2015 15:43:47 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH RESEND] PM / sleep: Fix racing timers
+Message-ID: <20150112154347.GA23297@red-moon>
+References: <1411405623-7869-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1025ebd0a9984037bf15adf3ae4889d9@BN1BFFO11FD013.protection.gbl>
+ <99d5bcca1d6541a49ff8a9f41f9b18af@BL2FFO11FD039.protection.gbl>
+ <12360948.gSvRbI0dui@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:JjkA86GgrgWjBDILAwNOxwArKRrRwn8U56O1bzpRKRhCmuZlnrm
- Kh1a1HZ3y/2aR5tZ70eJfhwfHcB6AUjAZy+IjBAupvakcHCtbZ4FAGT8nntfEBeo/kobQjF
- Xc4siQlPfE41eGoIU5tZsAepLuITFboVwmYIkEW5AqZ8NGOtGd/5r237FxMj2jk/OL3vOOd
- sdkhkKaB5AaoqwJml+nwA==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <12360948.gSvRbI0dui@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 12 January 2015 14:23:32 Catalin Marinas wrote:
+Hi Rafael, Soren,
+
+On Sun, Jan 11, 2015 at 11:20:36PM +0000, Rafael J. Wysocki wrote:
+> On Friday, January 09, 2015 01:50:59 PM Sören Brinkmann wrote:
+> > On Sat, 2014-11-08 at 03:56PM -0800, Sören Brinkmann wrote:
+> > > Hi Rafael,
+> > > 
+> > > On Thu, 2014-11-06 at 01:33AM +0100, Rafael J. Wysocki wrote:
+> > > > On Thursday, October 02, 2014 09:01:15 AM Sören Brinkmann wrote:
+> > > > > Hi Rafael,
+> > > > 
+> > > > Hi,
+> > > > 
+> > > > Sorry for the huge delay.
+> > > > 
+> > > > > On Tue, 2014-09-23 at 01:01AM +0200, Rafael J. Wysocki wrote:
+> > > > > > On Monday, September 22, 2014 10:07:03 AM Soren Brinkmann wrote:
+> > > > > > > On platforms that do not power off during suspend, successfully entering
+> > > > > > > suspend races with timers.
+> > > > > > > 
+> > > > > > > The race happening in a couple of location is:
+> > > > > > > 
+> > > > > > >   1. disable IRQs   		(e.g. arch_suspend_disable_irqs())
+> > > > > > >      ...
+> > > > > > >   2. syscore_suspend()
+> > > > > > >       -> timekeeping_suspend()
+> > > > > > >        -> clockevents_notify(SUSPEND)
+> > > > > > >         -> tick_suspend()   	(timers are turned off here)
+> > > > > > >      ...
+> > > > > > >   3. wfi            		(wait for wake-IRQ here)
+> > > > > > > 
+> > > > > > > Between steps 1 and 2 the timers can still generate interrupts that are
+> > > > > > > not handled and stay pending until step 3. That pending IRQ causes an
+> > > > > > > immediate - spurious - wake.
+> > > > > > > 
+> > > > > > > The solution is to move the clockevents suspend/resume notification
+> > > > > > > out of the syscore_suspend step and explictly call them at the appropriate
+> > > > > > > time in the suspend/hibernation paths. I.e. timers are suspend _before_
+> > > > > > > IRQs get disabled. And accordingly in the resume path.
+> > > > > > > 
+> > > > > > > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> > > > > > > ---
+> > > > > > > Hi,
+> > > > > > > 
+> > > > > > > there was not a lot of discussion on the last submission. Just one comment from
+> > > > > > > Rafael (https://lkml.org/lkml/2014/8/26/780), which - as I outlined in my
+> > > > > > > response, does not apply, IMHO, since the platform does not re-enable
+> > > > > > > interrupts.
+> > > > > > 
+> > > > > > Well, you just don't agree with it.
+> > > > > > 
+> > > > > > The problem with your approach is that timer interrupts aren't actually as
+> > > > > > special as you think and any other IRQF_NO_SUSPEND interrupts would have caused
+> > > > > > similar issues to appear under specific conditions.
+> > > > > > 
+> > > > > > The solution I would suggest and that actually covers all IRQF_NO_SUSPEND
+> > > > > > interrupts would be to use a wait_event() loop like the one in freeze_enter()
+> > > > > > (on top of the current linux-next or the pm-genirq branch of linux-pm.git),
+> > > > > > but wait for pm_abort_suspend to become true, to implement system suspend.
+> > > > > 
+> > > > > sorry, it took me a while since I needed to get some dependencies ported
+> > > > > to the pm-genirq base. Once I had that, it reproduced my original issue.
+> > > > > So far so good. I then looked into finding a solution following your
+> > > > > guidance. I'm not sure I really found what you had in mind, but below is
+> > > > > what I came up with, which seems to do it.
+> > > > > Please let me know how far off I am.
+> > > > > 
+> > > > > 	Thanks,
+> > > > > 	Sören
+> > > > > 
+> > > > > -------8<------------------8<----------------8<----------------8<---------------
+> > > > > diff --git a/drivers/base/power/wakeup.c b/drivers/base/power/wakeup.c
+> > > > > index c2744b30d5d9..a4f9914571f1 100644
+> > > > > --- a/drivers/base/power/wakeup.c
+> > > > > +++ b/drivers/base/power/wakeup.c
+> > > > > @@ -25,7 +25,7 @@
+> > > > >  bool events_check_enabled __read_mostly;
+> > > > >  
+> > > > >  /* If set and the system is suspending, terminate the suspend. */
+> > > > > -static bool pm_abort_suspend __read_mostly;
+> > > > > +bool pm_abort_suspend __read_mostly;
+> > > > >  
+> > > > >  /*
+> > > > >   * Combined counters of registered wakeup events and wakeup events in progress.
+> > > > > diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+> > > > > index 6dadb25cb0d8..e6a6de8f76d0 100644
+> > > > > --- a/kernel/power/suspend.c
+> > > > > +++ b/kernel/power/suspend.c
+> > > > > @@ -33,6 +33,7 @@
+> > > > >  
+> > > > >  static const char *pm_labels[] = { "mem", "standby", "freeze", };
+> > > > >  const char *pm_states[PM_SUSPEND_MAX];
+> > > > > +extern bool pm_abort_suspend;
+> > > > >  
+> > > > >  static const struct platform_suspend_ops *suspend_ops;
+> > > > >  static const struct platform_freeze_ops *freeze_ops;
+> > > > > @@ -294,25 +295,27 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
+> > > > >  	if (error || suspend_test(TEST_CPUS))
+> > > > >  		goto Enable_cpus;
+> > > > >  
+> > > > > -	arch_suspend_disable_irqs();
+> > > > > -	BUG_ON(!irqs_disabled());
+> > > > > -
+> > > > > -	error = syscore_suspend();
+> > > > > -	if (!error) {
+> > > > > -		*wakeup = pm_wakeup_pending();
+> > > > > -		if (!(suspend_test(TEST_CORE) || *wakeup)) {
+> > > > > -			trace_suspend_resume(TPS("machine_suspend"),
+> > > > > -				state, true);
+> > > > > -			error = suspend_ops->enter(state);
+> > > > > -			trace_suspend_resume(TPS("machine_suspend"),
+> > > > > -				state, false);
+> > > > > -			events_check_enabled = false;
+> > > > > +	while (!pm_abort_suspend) {
+> > > > 
+> > > > That won't work in general, because pm_abort_suspend may not be set on some
+> > > > platforms on wakeup.  It is only set if a wakeup interrupt triggers which
+> > > > may not be the case on ACPI systems if the BIOS has woken up the system.
+> > > > 
+> > > > But that could be addressed by making those platforms simply set pm_wakeup_pending
+> > > > in their BIOS exit path.
+> > > > 
+> > > > > +		arch_suspend_disable_irqs();
+> > > > > +		BUG_ON(!irqs_disabled());
+> > > > > +
+> > > > > +		error = syscore_suspend();
+> > > > 
+> > > > Also it shouldn't be necessary to do syscore_suspend()/syscore_resume() in
+> > > > every iteration of the loop.
+> > > > 
+> > > > > +		if (!error) {
+> > > > > +			*wakeup = pm_wakeup_pending();
+> > > > 
+> > > > Plus pm_wakeup_pending() returns true if pm_abort_suspend is set
+> > > > 
+> > > > > +			if (!(suspend_test(TEST_CORE) || *wakeup)) {
+> > > > > +				trace_suspend_resume(TPS("machine_suspend"),
+> > > > > +					state, true);
+> > > > 
+> > > > Did you try to add the loop here instead of above?  Like:
+> > > > 
+> > > > 			for (;;) {
+> > > > 				*wakeup = pm_wakeup_pending();
+> > > > 				if (*wakeup)
+> > > > 					break;
+> > > 
+> > > I think, that doesn't work. I chose the start/end points of the loop
+> > > to include the IRQ enable/disable calls. AFAICT, pm_abort_suspend is
+> > > set in an ISR. Without enabling interrupts the abort condition of
+> > > this loop never becomes true.
+> > 
+> > Any further ideas how to resolve this?
 > 
-> So, I guess it's run-time cost of the LRU algorithm, especially under
-> memory pressure. Harder to benchmark though (we'll see when we get
-> hardware, though probably not very soon).
+> Sorry about the delay, lost track of this.
+> 
+> You're right, the IRQ disabling/enabling needs to happen in the loop.
+> 
+> So the direction of the patch looks OK, but it needs to ensure that pm_wakeup_pending
+> is set properly by all platforms.  Also it should be sufficient to check
+> pm_wakeup_pending() to detect wakeup.
+> 
+> Have you tested the patch? 
 
-One thing you could try is to add an access fault handler that gathers
-statistics about number of calls (you could trivially get this by
-using gcov) and time spent in the handler for a workload that causes
-memory pressure.
+Before considering this patch a solution, can I ask you to rewind
+the discussion a bit since I have a question.
 
-	Arnd
+I thought that "suspending" the tick through syscore meant shutting down
+the respective clock_event_device, and that's how it is implemented in the
+kernel.
+
+Now, do we expect a shutdown clock_event_device to still signal pending
+IRQs ? I do not think that should be the case, at least that's not what
+happens for eg arm arch timers - ie disabling them implicitly gates
+the signal connected to the IRQ line.
+
+So the question is more related to the zynq platform and how their clock
+event device (which is ?) is shutdown, and what's the correct behaviour we
+are expecting.
+
+FWIW, the problem here is not related to the simple wfi state on zynq,
+even some other ARM platforms with power management capabilities would wake
+up from the state entered by executing wfi (ie possibly through reset) if
+there is a pending timer IRQ, the question is more "should the IRQ be
+allowed to be there" instead IMHO.
+
+I still think that Stephen's query related to what timer is causing
+the wake-up is worth investigating.
+
+Thanks,
+Lorenzo
