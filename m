@@ -1,101 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbbALHJn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 02:09:43 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:38004 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995AbbALHJh (ORCPT
+	id S1752102AbbALHJx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 02:09:53 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:52955 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995AbbALHJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 02:09:37 -0500
-Message-ID: <54B3727A.108@oracle.com>
-Date: Mon, 12 Jan 2015 15:06:34 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: =?windows-1252?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
-CC: xen-devel@lists.xen.org, konrad.wilk@oracle.com,
-        linux-kernel@vger.kernel.org, david.vrabel@citrix.com,
-        junxiao.bi@oracle.com
-Subject: Re: [PATCH] xen/blkfront: restart request queue when there is enough
- persistent_gnts_c
-References: <1420550343-14013-1-git-send-email-bob.liu@oracle.com> <54AFF909.3090909@citrix.com>
-In-Reply-To: <54AFF909.3090909@citrix.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Mon, 12 Jan 2015 02:09:49 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-e6-54b373316ed2
+From: Chao Yu <chao2.yu@samsung.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [f2fs-dev][RFC PATCH 01/10] f2fs: move ext_lock out of struct
+ extent_info
+Date: Mon, 12 Jan 2015 15:08:52 +0800
+Message-id: <000501d02e36$ba5070d0$2ef15270$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AdAsyMV+xHlNIFGVS6eLYLtHgdXsxA==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jAV3D4s0hBtObhCyu7Wtksniyfhaz
+	xaVF7haXd81hc2Dx2LSqk81j94LPTB59W1YxenzeJBfAEsVlk5Kak1mWWqRvl8CVcf5NJ2vB
+	GpWKhbemMjUwtsl1MXJySAiYSFzrXs8OYYtJXLi3nq2LkYtDSGARo8TOmQdZQBJCAj8YJV5N
+	NwCx2QRUJJZ3/GcCsUUEvCQm7T8BVsMs4CHR2PGdFcQWFgiR+Lx1CthQFgFVic07n4LFeQUs
+	JX6/usAGYQtK/Jh8D6pXS2L9zuNMELa8xOY1b5khDlKQ2HH2NSPELj2JZe272SFqxCU2HrnF
+	MoFRYBaSUbOQjJqFZNQsJC0LGFlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgSH9DPpHYyr
+	GiwOMQpwMCrx8FpIbQ4RYk0sK67MPcQowcGsJMIbZg0U4k1JrKxKLcqPLyrNSS0+xCjNwaIk
+	zqtk3xYiJJCeWJKanZpakFoEk2Xi4JRqYOQs/Jmgu646SI/jchxf7LKvjgoNCS78Py39nwl5
+	6h799jwnNlae0/C2oJP6xWlbH7g9b1dbrvbJ9U5++O/tt1fws296ESTx/P9Ps5tMG2OVbykL
+	rNjgefmV7yzvW8v95q0tknG93pIat+Xy5J8+Af1N7qE+t27yJf1S3N5VUxGy5soq18UnPyqx
+	FGckGmoxFxUnAgCt/TiBZQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Move ext_lock out of struct extent_info, then in the following patches we can
+use variables with struct extent_info type as a parameter to pass pure data.
 
-On 01/09/2015 11:51 PM, Roger Pau Monné wrote:
-> El 06/01/15 a les 14.19, Bob Liu ha escrit:
->> When there is no enough free grants, gnttab_alloc_grant_references()
->> will fail and block request queue will stop.
->> If the system is always lack of grants, blkif_restart_queue_callback() can't be
->> scheduled and block request queue can't be restart(block I/O hang).
->>
->> But when there are former requests complete, some grants may free to
->> persistent_gnts_c, we can give the request queue another chance to restart and
->> avoid block hang.
->>
->> Reported-by: Junxiao Bi <junxiao.bi@oracle.com>
->> Signed-off-by: Bob Liu <bob.liu@oracle.com>
->> ---
->>  drivers/block/xen-blkfront.c |   11 +++++++++++
->>  1 file changed, 11 insertions(+)
->>
->> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
->> index 2236c6f..dd30f99 100644
->> --- a/drivers/block/xen-blkfront.c
->> +++ b/drivers/block/xen-blkfront.c
->> @@ -1125,6 +1125,17 @@ static void blkif_completion(struct blk_shadow *s, struct blkfront_info *info,
->>  			}
->>  		}
->>  	}
->> +
->> +	/*
->> +	 * Request queue would be stopped if failed to alloc enough grants and
->> +	 * won't be restarted until gnttab_free_count >= info->callback->count.
->> +	 *
->> +	 * But there is another case, once we have enough persistent grants we
->> +	 * can try to restart the request queue instead of continue to wait for
->> +	 * 'gnttab_free_count'.
->> +	 */
->> +	if (info->persistent_gnts_c >= info->callback.count)
->> +		schedule_work(&info->work);
-> 
-> I guess I'm missing something here, but blkif_completion is called by
-> blkif_interrupt, which in turn calls kick_pending_request_queues when
-> finished, which IMHO should be enough to restart the processing of requests.
-> 
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/data.c  | 12 ++++++------
+ fs/f2fs/f2fs.h  |  6 +-----
+ fs/f2fs/inode.c |  7 +++++++
+ fs/f2fs/super.c |  2 +-
+ 4 files changed, 15 insertions(+), 12 deletions(-)
 
-You are right, sorry for the mistake.
-
-The problem we met was a xenblock I/O hang.
-Dumped data showed at that time info->persistent_gnt_c = 8, max_gref = 8
-but block request queue was still stopped.
-It's very hard to reproduce this issue, we only see it once.
-
-I think there might be a race condition:
-
-request A                          request B:
-
-                                   info->persistent_gnts_c < max_grefs
-                                   and fail to alloc enough grants
-
-
-^^^^
-interrupt happen, blkif_complte():
-info->persistent_gnts_c++
-kick_pending_request_queues()
-
-                                    stop block request queue
-                                    added to callback()
-
-If the system don't have enough grants(but have enough persistent_gnts),
-request queue would still hang.
-
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index a7b905c..fece5cc 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -258,9 +258,9 @@ static int check_extent_cache(struct inode *inode, pgoff_t pgofs,
+ 	if (is_inode_flag_set(fi, FI_NO_EXTENT))
+ 		return 0;
+ 
+-	read_lock(&fi->ext.ext_lock);
++	read_lock(&fi->ext_lock);
+ 	if (fi->ext.len == 0) {
+-		read_unlock(&fi->ext.ext_lock);
++		read_unlock(&fi->ext_lock);
+ 		return 0;
+ 	}
+ 
+@@ -284,10 +284,10 @@ static int check_extent_cache(struct inode *inode, pgoff_t pgofs,
+ 			bh_result->b_size = UINT_MAX;
+ 
+ 		stat_inc_read_hit(inode->i_sb);
+-		read_unlock(&fi->ext.ext_lock);
++		read_unlock(&fi->ext_lock);
+ 		return 1;
+ 	}
+-	read_unlock(&fi->ext.ext_lock);
++	read_unlock(&fi->ext_lock);
+ 	return 0;
+ }
+ 
+@@ -309,7 +309,7 @@ void update_extent_cache(struct dnode_of_data *dn)
+ 	fofs = start_bidx_of_node(ofs_of_node(dn->node_page), fi) +
+ 							dn->ofs_in_node;
+ 
+-	write_lock(&fi->ext.ext_lock);
++	write_lock(&fi->ext_lock);
+ 
+ 	start_fofs = fi->ext.fofs;
+ 	end_fofs = fi->ext.fofs + fi->ext.len - 1;
+@@ -366,7 +366,7 @@ void update_extent_cache(struct dnode_of_data *dn)
+ 		need_update = true;
+ 	}
+ end_update:
+-	write_unlock(&fi->ext.ext_lock);
++	write_unlock(&fi->ext_lock);
+ 	if (need_update)
+ 		sync_inode_page(dn);
+ 	return;
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index 209532c..beacda0 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -271,7 +271,6 @@ enum {
+ #define F2FS_MIN_EXTENT_LEN	16	/* minimum extent length */
+ 
+ struct extent_info {
+-	rwlock_t ext_lock;	/* rwlock for consistency */
+ 	unsigned int fofs;	/* start offset in a file */
+ 	u32 blk_addr;		/* start block address of the extent */
+ 	unsigned int len;	/* length of the extent */
+@@ -303,6 +302,7 @@ struct f2fs_inode_info {
+ 	nid_t i_xattr_nid;		/* node id that contains xattrs */
+ 	unsigned long long xattr_ver;	/* cp version of xattr modification */
+ 	struct extent_info ext;		/* in-memory extent cache entry */
++	rwlock_t ext_lock;		/* rwlock for single extent cache */
+ 	struct inode_entry *dirty_dir;	/* the pointer of dirty dir */
+ 
+ 	struct radix_tree_root inmem_root;	/* radix tree for inmem pages */
+@@ -313,21 +313,17 @@ struct f2fs_inode_info {
+ static inline void get_extent_info(struct extent_info *ext,
+ 					struct f2fs_extent i_ext)
+ {
+-	write_lock(&ext->ext_lock);
+ 	ext->fofs = le32_to_cpu(i_ext.fofs);
+ 	ext->blk_addr = le32_to_cpu(i_ext.blk_addr);
+ 	ext->len = le32_to_cpu(i_ext.len);
+-	write_unlock(&ext->ext_lock);
+ }
+ 
+ static inline void set_raw_extent(struct extent_info *ext,
+ 					struct f2fs_extent *i_ext)
+ {
+-	read_lock(&ext->ext_lock);
+ 	i_ext->fofs = cpu_to_le32(ext->fofs);
+ 	i_ext->blk_addr = cpu_to_le32(ext->blk_addr);
+ 	i_ext->len = cpu_to_le32(ext->len);
+-	read_unlock(&ext->ext_lock);
+ }
+ 
+ struct f2fs_nm_info {
+diff --git a/fs/f2fs/inode.c b/fs/f2fs/inode.c
+index 2d002e3..28dd26a 100644
+--- a/fs/f2fs/inode.c
++++ b/fs/f2fs/inode.c
+@@ -130,7 +130,10 @@ static int do_read_inode(struct inode *inode)
+ 	fi->i_pino = le32_to_cpu(ri->i_pino);
+ 	fi->i_dir_level = ri->i_dir_level;
+ 
++	write_lock(&fi->ext_lock);
+ 	get_extent_info(&fi->ext, ri->i_ext);
++	write_unlock(&fi->ext_lock);
++
+ 	get_inline_info(fi, ri);
+ 
+ 	/* check data exist */
+@@ -220,7 +223,11 @@ void update_inode(struct inode *inode, struct page *node_page)
+ 	ri->i_links = cpu_to_le32(inode->i_nlink);
+ 	ri->i_size = cpu_to_le64(i_size_read(inode));
+ 	ri->i_blocks = cpu_to_le64(inode->i_blocks);
++
++	read_lock(&F2FS_I(inode)->ext_lock);
+ 	set_raw_extent(&F2FS_I(inode)->ext, &ri->i_ext);
++	read_unlock(&F2FS_I(inode)->ext_lock);
++
+ 	set_raw_inline(F2FS_I(inode), ri);
+ 
+ 	ri->i_atime = cpu_to_le64(inode->i_atime.tv_sec);
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index 0e97974..8b8de7f 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -382,7 +382,7 @@ static struct inode *f2fs_alloc_inode(struct super_block *sb)
+ 	atomic_set(&fi->dirty_pages, 0);
+ 	fi->i_current_depth = 1;
+ 	fi->i_advise = 0;
+-	rwlock_init(&fi->ext.ext_lock);
++	rwlock_init(&fi->ext_lock);
+ 	init_rwsem(&fi->i_sem);
+ 	INIT_RADIX_TREE(&fi->inmem_root, GFP_NOFS);
+ 	INIT_LIST_HEAD(&fi->inmem_pages);
 -- 
-Regards,
--Bob
+2.2.1
+
+
