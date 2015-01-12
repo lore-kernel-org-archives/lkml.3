@@ -1,241 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbbALXJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 18:09:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36116 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753070AbbALXJx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 18:09:53 -0500
-Date: Mon, 12 Jan 2015 15:09:52 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, willy@linux.intel.com
-Subject: Re: [PATCH v12 08/20] dax,ext2: Replace the XIP page fault handler
- with the DAX page fault handler
-Message-Id: <20150112150952.b44ee750a6292284e7a909ff@linux-foundation.org>
-In-Reply-To: <1414185652-28663-9-git-send-email-matthew.r.wilcox@intel.com>
-References: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
-	<1414185652-28663-9-git-send-email-matthew.r.wilcox@intel.com>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753845AbbALXK4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 18:10:56 -0500
+Received: from mga09.intel.com ([134.134.136.24]:6926 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753633AbbALXKl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 18:10:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="511204066"
+From: Sudeep Dutt <sudeep.dutt@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Jonathan Corbet <corbet@lwn.net>,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Dave Jiang <dave.jiang@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Sudeep Dutt <sudeep.dutt@intel.com>
+Subject: [PATCH char-misc-next v2 00/13] misc: mic: SCIF driver
+Date: Mon, 12 Jan 2015 15:09:54 -0800
+Message-Id: <cover.1421097390.git.sudeep.dutt@intel.com>
+X-Mailer: git-send-email 1.8.2.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Oct 2014 17:20:40 -0400 Matthew Wilcox <matthew.r.wilcox@intel.com> wrote:
+ChangeLog:
+=========
+v1 => v2:
+a) Use kernel-doc formatting for SCIF header file documentation, enhance
+   SCIF ring buffer documentation and formatting cleanup in patch 4 as
+   per feedback from Greg Kroah-Hartman
+b) SCIF bug fixes and cleanups since initial post
 
-> Instead of calling aops->get_xip_mem from the fault handler, the
-> filesystem passes a get_block_t that is used to find the appropriate
-> blocks.
-> 
-> ...
->
-> +static int copy_user_bh(struct page *to, struct buffer_head *bh,
-> +			unsigned blkbits, unsigned long vaddr)
-> +{
-> +	void *vfrom, *vto;
-> +	if (dax_get_addr(bh, &vfrom, blkbits) < 0)
-> +		return -EIO;
-> +	vto = kmap_atomic(to);
-> +	copy_user_page(vto, vfrom, vaddr, to);
-> +	kunmap_atomic(vto);
+v1: Initial post @ https://lkml.org/lkml/2014/12/10/546
 
-Again, please check the cache-flush aspects.  copy_user_page() appears
-to be reponsible for handling coherency issues on the destination
-vaddr, but what about *vto?
+Description:
+============
 
-> +	return 0;
-> +}
-> +
-> +static int dax_insert_mapping(struct inode *inode, struct buffer_head *bh,
-> +			struct vm_area_struct *vma, struct vm_fault *vmf)
-> +{
-> +	struct address_space *mapping = inode->i_mapping;
-> +	sector_t sector = bh->b_blocknr << (inode->i_blkbits - 9);
-> +	unsigned long vaddr = (unsigned long)vmf->virtual_address;
-> +	void *addr;
-> +	unsigned long pfn;
-> +	pgoff_t size;
-> +	int error;
-> +
-> +	mutex_lock(&mapping->i_mmap_mutex);
-> +
-> +	/*
-> +	 * Check truncate didn't happen while we were allocating a block.
-> +	 * If it did, this block may or may not be still allocated to the
-> +	 * file.  We can't tell the filesystem to free it because we can't
-> +	 * take i_mutex here.
+The Symmetric Communication Interface (SCIF (pronounced as skiff)) is a low
+level communications API across PCIe currently implemented for MIC. Currently
+SCIF provides inter-node communication within a single host platform, where a
+node is a MIC Coprocessor or Xeon based host. SCIF abstracts the details of
+communicating over the PCIe bus while providing an API that is symmetric
+across all the nodes in the PCIe network. An important design objective for SCIF
+is to deliver the maximum possible performance given the communication
+abilities of the hardware. SCIF has been used to implement an offload compiler
+runtime and OFED support for MPI implementations for MIC coprocessors.
 
-(what's preventing us from taking i_mutex?)
+==== SCIF API Components ====
+The SCIF API has the following parts:
+1. Connection establishment using a client server model
+2. Byte stream messaging intended for short messages
+3. Node enumeration to determine online nodes
+4. Poll semantics for detection of incoming connections and messages
+5. Memory registration to pin down pages
+6. Remote memory mapping for low latency CPU accesses via mmap
+7. Remote DMA (RDMA) for high bandwidth DMA transfers
+8. Fence APIs for RDMA synchronization
 
->  	   In the worst case, the file still has blocks
-> +	 * allocated past the end of the file.
-> +	 */
-> +	size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
-> +	if (unlikely(vmf->pgoff >= size)) {
-> +		error = -EIO;
-> +		goto out;
-> +	}
+SCIF exposes the notion of a connection which can be used by peer processes on
+nodes in a SCIF PCIe "network" to share memory "windows" and to communicate. A
+process in a SCIF node initiates a SCIF connection to a peer process on a
+different node via a SCIF "endpoint". SCIF endpoints support messaging APIs
+which are similar to connection oriented socket APIs. Connected SCIF endpoints
+can also register local memory which is followed by data transfer using either
+DMA, CPU copies or remote memory mapping via mmap. SCIF supports both user and
+kernel mode clients which are functionally equivalent.
 
-How does this play with holepunching?  Checking i_size won't work there?
+==== SCIF Performance for MIC ====
+DMA bandwidth comparison between the TCP (over ethernet over PCIe) stack versus
+SCIF shows the performance advantages of SCIF for HPC applications and runtimes.
 
-> +	error = bdev_direct_access(bh->b_bdev, sector, &addr, &pfn, bh->b_size);
-> +	if (error < 0)
-> +		goto out;
-> +	if (error < PAGE_SIZE) {
-> +		error = -EIO;
-> +		goto out;
+             Comparison of TCP and SCIF based BW
 
-hm, what's going on here.  It's known that bh->b_size >= PAGE_SIZE?  I
-don't recall seeing anything which explained that to me.  Help.
+  Throughput (GB/sec)
+    8 +                                             PCIe Bandwidth ******
+      +                                                        TCP ######
+    7 +    **************************************             SCIF %%%%%%
+      |                       %%%%%%%%%%%%%%%%%%%
+    6 +                   %%%%
+      |                 %%
+      |               %%%
+    5 +              %%
+      |            %%
+    4 +           %%
+      |          %%
+    3 +         %%
+      |        %
+    2 +      %%
+      |     %%
+      |    %
+    1 +
+      +    ######################################
+    0 +++---+++--+--+-+--+--+-++-+--+-++-+--+-++-+-
+      1       10     100      1000   10000   100000
+                   Transfer Size (KBytes)
 
-> +	}
-> +
-> +	if (buffer_unwritten(bh) || buffer_new(bh))
-> +		clear_page(addr);
-> +
-> +	error = vm_insert_mixed(vma, vaddr, pfn);
-> +
-> + out:
-> +	mutex_unlock(&mapping->i_mmap_mutex);
-> +
-> +	if (bh->b_end_io)
-> +		bh->b_end_io(bh, 1);
-> +
-> +	return error;
-> +}
-> +
-> +static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
-> +			get_block_t get_block)
-> +{
-> +	struct file *file = vma->vm_file;
-> +	struct address_space *mapping = file->f_mapping;
-> +	struct inode *inode = mapping->host;
-> +	struct page *page;
-> +	struct buffer_head bh;
-> +	unsigned long vaddr = (unsigned long)vmf->virtual_address;
-> +	unsigned blkbits = inode->i_blkbits;
-> +	sector_t block;
-> +	pgoff_t size;
-> +	int error;
-> +	int major = 0;
-> +
-> +	size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
-> +	if (vmf->pgoff >= size)
-> +		return VM_FAULT_SIGBUS;
-> +
-> +	memset(&bh, 0, sizeof(bh));
-> +	block = (sector_t)vmf->pgoff << (PAGE_SHIFT - blkbits);
-> +	bh.b_size = PAGE_SIZE;
+SCIF allows memory sharing via mmap(..) between processes on different PCIe
+nodes and thus provides bare-metal PCIe latency. The round trip SCIF mmap
+latency from the host to an x100 MIC for an 8 byte message is 0.44 usecs.
 
-ah, there.
+For more information on SCIF please refer to the Linux Con 2013 slides titled
+"Intel® MIC x100 Coprocessor Driver - on the Frontiers of Linux & HPC" at
+http://events.linuxfoundation.org/sites/events/files/slides/LinuxConMicDriver.pdf
+The talk can also be viewed at https://www.youtube.com/watch?v=dylbmmQs4W0
 
-PAGE_SIZE varies a lot between architectures.  What are the
-implications of this>?
+This initial patch series introduces the SCIF API and implements the SCIF
+connection, messaging and node enumeration APIs. SCIF poll, mmap, RDMA and
+fence APIs will be submitted in a future patch series once the initial base
+patches are accepted upstream.
 
-> + repeat:
-> +	page = find_get_page(mapping, vmf->pgoff);
-> +	if (page) {
-> +		if (!lock_page_or_retry(page, vma->vm_mm, vmf->flags)) {
-> +			page_cache_release(page);
-> +			return VM_FAULT_RETRY;
-> +		}
-> +		if (unlikely(page->mapping != mapping)) {
-> +			unlock_page(page);
-> +			page_cache_release(page);
-> +			goto repeat;
-> +		}
-> +		size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
-> +		if (unlikely(vmf->pgoff >= size)) {
-> +			error = -EIO;
+This patch series is divided into 13 patches as follows:
+1) SCIF header file documenting the API along with the IOCTL interface
 
-What happened when this happens?
+2) SCIF ring buffer is a single producer, single consumer byte stream ring
+   buffer optimized for avoiding reads across the PCIe bus. The ring buffer is
+   used to implement a receive queue for SCIF driver messaging between nodes and
+   for byte stream messaging between SCIF endpoints. Each SCIF node has a
+   receive queue for every other SCIF node, and each connected endpoint has a
+   receive queue for messages from its peer. This pair of receive queues is
+   referred to as a SCIF queue pair.
 
-> +			goto unlock_page;
-> +		}
-> +	}
-> +
-> +	error = get_block(inode, block, &bh, 0);
-> +	if (!error && (bh.b_size < PAGE_SIZE))
-> +		error = -EIO;
+3) SCIF hardware bus which abstracts the low level hardware details so that the
+   same SCIF driver can work without any changes on the host or the card as long
+   as the hardware bus operations are implemented.
 
-How could this happen?
+4) SCIF peer bus is used to register and unregister SCIF peer devices internally
+   by the SCIF driver to signify the addition and removal of peer nodes
+   respectively from the SCIF network. This simplifies remote node handling
+   within SCIF and will also be used to support device probe/remove for SCIF
+   client drivers (e.g. netdev over SCIF)
 
-> +	if (error)
-> +		goto unlock_page;
-> +
-> +	if (!buffer_mapped(&bh) && !buffer_unwritten(&bh) && !vmf->cow_page) {
-> +		if (vmf->flags & FAULT_FLAG_WRITE) {
-> +			error = get_block(inode, block, &bh, 1);
-> +			count_vm_event(PGMAJFAULT);
-> +			mem_cgroup_count_vm_event(vma->vm_mm, PGMAJFAULT);
-> +			major = VM_FAULT_MAJOR;
-> +			if (!error && (bh.b_size < PAGE_SIZE))
-> +				error = -EIO;
-> +			if (error)
-> +				goto unlock_page;
-> +		} else {
-> +			return dax_load_hole(mapping, page, vmf);
-> +		}
-> +	}
-> +
-> +	if (vmf->cow_page) {
-> +		struct page *new_page = vmf->cow_page;
-> +		if (buffer_written(&bh))
-> +			error = copy_user_bh(new_page, &bh, blkbits, vaddr);
-> +		else
-> +			clear_user_highpage(new_page, vaddr);
-> +		if (error)
-> +			goto unlock_page;
-> +		vmf->page = page;
-> +		if (!page) {
-> +			mutex_lock(&mapping->i_mmap_mutex);
-> +			/* Check we didn't race with truncate */
-> +			size = (i_size_read(inode) + PAGE_SIZE - 1) >>
-> +								PAGE_SHIFT;
-> +			if (vmf->pgoff >= size) {
-> +				mutex_unlock(&mapping->i_mmap_mutex);
-> +				error = -EIO;
-> +				goto out;
-> +			}
-> +		}
-> +		return VM_FAULT_LOCKED;
-> +	}
-> +
-> +	/* Check we didn't race with a read fault installing a new page */
-> +	if (!page && major)
-> +		page = find_lock_page(mapping, vmf->pgoff);
-> +
-> +	if (page) {
-> +		unmap_mapping_range(mapping, vmf->pgoff << PAGE_SHIFT,
-> +							PAGE_CACHE_SIZE, 0);
-> +		delete_from_page_cache(page);
-> +		unlock_page(page);
-> +		page_cache_release(page);
-> +	}
-> +
-> +	error = dax_insert_mapping(inode, &bh, vma, vmf);
-> +
-> + out:
-> +	if (error == -ENOMEM)
-> +		return VM_FAULT_OOM | major;
-> +	/* -EBUSY is fine, somebody else faulted on the same PTE */
-> +	if ((error < 0) && (error != -EBUSY))
-> +		return VM_FAULT_SIGBUS | major;
-> +	return VM_FAULT_NOPAGE | major;
-> +
-> + unlock_page:
-> +	if (page) {
-> +		unlock_page(page);
-> +		page_cache_release(page);
-> +	}
-> +	goto out;
-> +}
-> 
-> ...
->
+5) Common MIC header file changes to enable SCIF
+
+6) SCIF module initialization, DMA/remote memory mapping APIs and debugfs hooks.
+
+7) SCIF node queue pair setup sets up the kernel mode private node
+   queue pairs between all the nodes to enable internal control
+   message communication.
+
+8) SCIF character device file operations and kernel APIs for opening and
+   closing a user and kernel mode SCIF endpoint. This patch also enables
+   binding to a SCIF port and listening for incoming SCIF connections.
+
+9) SCIF connection APIs which establish a SCIF connection between
+   a pair of user or kernel mode endpoints.
+
+10) SCIF messaging APIs which allow sending messages between the SCIF endpoints
+    via a byte stream based ring buffer which has been optimized to avoid reads
+    across PCIe. The node enumeration API enables a user to query for the number
+    of online nodes.
+
+11) MIC host driver specific changes to enable SCIF
+
+12) MIC card driver specific changes to enable SCIF
+
+13) Add support for loading/unloading SCIF driver
+
+Nikhil Rao (1):
+  misc: mic: SCIF connections APIs i.e. accept and connect
+
+Sudeep Dutt (12):
+  misc: mic: SCIF header file and IOCTL interface
+  misc: mic: SCIF ring buffer infrastructure
+  misc: mic: SCIF Hardware Bus
+  misc: mic: SCIF Peer Bus
+  misc: mic: Common MIC header file changes in preparation for SCIF
+  misc: mic: SCIF module initialization
+  misc: mic: SCIF node queue pair setup management
+  misc: mic: SCIF open close bind and listen APIs
+  misc: mic: SCIF messaging and node enumeration APIs
+  misc: mic: MIC host driver specific changes to enable SCIF
+  misc: mic: MIC card driver specific changes to enable SCIF
+  misc: mic: add support for loading/unloading SCIF driver
+
+ Documentation/mic/mic_overview.txt    |   28 +-
+ Documentation/mic/scif_overview.txt   |   62 ++
+ drivers/misc/mic/Kconfig              |   40 +-
+ drivers/misc/mic/Makefile             |    3 +-
+ drivers/misc/mic/bus/Makefile         |    1 +
+ drivers/misc/mic/scif/Makefile        |   15 +
+ include/uapi/linux/Kbuild             |    1 +
+ drivers/misc/mic/bus/scif_bus.h       |  129 ++++
+ drivers/misc/mic/card/mic_device.h    |   11 +-
+ drivers/misc/mic/card/mic_x100.h      |    1 +
+ drivers/misc/mic/common/mic_dev.h     |    3 +
+ drivers/misc/mic/host/mic_device.h    |   11 +-
+ drivers/misc/mic/host/mic_intr.h      |    3 +-
+ drivers/misc/mic/host/mic_smpt.h      |    1 +
+ drivers/misc/mic/scif/scif_epd.h      |  160 ++++
+ drivers/misc/mic/scif/scif_main.h     |  252 +++++++
+ drivers/misc/mic/scif/scif_map.h      |  113 +++
+ drivers/misc/mic/scif/scif_nodeqp.h   |  182 +++++
+ drivers/misc/mic/scif/scif_peer_bus.h |   65 ++
+ drivers/misc/mic/scif/scif_rb.h       |  100 +++
+ include/linux/scif.h                  | 1125 ++++++++++++++++++++++++++++
+ include/uapi/linux/mic_common.h       |   12 +
+ include/uapi/linux/scif_ioctl.h       |  213 ++++++
+ drivers/misc/mic/bus/scif_bus.c       |  210 ++++++
+ drivers/misc/mic/card/mic_device.c    |  132 +++-
+ drivers/misc/mic/card/mic_x100.c      |   61 +-
+ drivers/misc/mic/host/mic_boot.c      |  264 ++++++-
+ drivers/misc/mic/host/mic_debugfs.c   |   13 +
+ drivers/misc/mic/host/mic_main.c      |    6 +
+ drivers/misc/mic/host/mic_smpt.c      |    7 +-
+ drivers/misc/mic/host/mic_virtio.c    |    6 +-
+ drivers/misc/mic/host/mic_x100.c      |    3 +-
+ drivers/misc/mic/scif/scif_api.c      | 1271 ++++++++++++++++++++++++++++++++
+ drivers/misc/mic/scif/scif_debugfs.c  |   85 +++
+ drivers/misc/mic/scif/scif_epd.c      |  353 +++++++++
+ drivers/misc/mic/scif/scif_fd.c       |  303 ++++++++
+ drivers/misc/mic/scif/scif_main.c     |  391 ++++++++++
+ drivers/misc/mic/scif/scif_nm.c       |  237 ++++++
+ drivers/misc/mic/scif/scif_nodeqp.c   | 1307 +++++++++++++++++++++++++++++++++
+ drivers/misc/mic/scif/scif_peer_bus.c |  124 ++++
+ drivers/misc/mic/scif/scif_ports.c    |  124 ++++
+ drivers/misc/mic/scif/scif_rb.c       |  248 +++++++
+ Documentation/mic/mpssd/mpss          |   24 +-
+ 43 files changed, 7644 insertions(+), 56 deletions(-)
+ create mode 100644 Documentation/mic/scif_overview.txt
+ create mode 100644 drivers/misc/mic/scif/Makefile
+ create mode 100644 drivers/misc/mic/bus/scif_bus.h
+ create mode 100644 drivers/misc/mic/scif/scif_epd.h
+ create mode 100644 drivers/misc/mic/scif/scif_main.h
+ create mode 100644 drivers/misc/mic/scif/scif_map.h
+ create mode 100644 drivers/misc/mic/scif/scif_nodeqp.h
+ create mode 100644 drivers/misc/mic/scif/scif_peer_bus.h
+ create mode 100644 drivers/misc/mic/scif/scif_rb.h
+ create mode 100644 include/linux/scif.h
+ create mode 100644 include/uapi/linux/scif_ioctl.h
+ create mode 100644 drivers/misc/mic/bus/scif_bus.c
+ create mode 100644 drivers/misc/mic/scif/scif_api.c
+ create mode 100644 drivers/misc/mic/scif/scif_debugfs.c
+ create mode 100644 drivers/misc/mic/scif/scif_epd.c
+ create mode 100644 drivers/misc/mic/scif/scif_fd.c
+ create mode 100644 drivers/misc/mic/scif/scif_main.c
+ create mode 100644 drivers/misc/mic/scif/scif_nm.c
+ create mode 100644 drivers/misc/mic/scif/scif_nodeqp.c
+ create mode 100644 drivers/misc/mic/scif/scif_peer_bus.c
+ create mode 100644 drivers/misc/mic/scif/scif_ports.c
+ create mode 100644 drivers/misc/mic/scif/scif_rb.c
+
+-- 
+1.8.2.1
 
