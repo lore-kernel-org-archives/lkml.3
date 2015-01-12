@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236AbbALS5n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:57:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58116 "EHLO
+	id S1755072AbbALSaS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:30:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58094 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754999AbbALSaI (ORCPT
+	with ESMTP id S1754020AbbALSaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:30:08 -0500
+	Mon, 12 Jan 2015 13:30:04 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "security@kernel.org" <security@kernel.org>, Willy Tarreau <w@1wt.eu>,
-        Ingo Molnar <mingo@kernel.org>,
+Cc: Vineet Gupta <vgupta@synopsys.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 140/216] x86/tls: Disallow unusual TLS segments
-Date: Mon, 12 Jan 2015 18:28:38 +0000
-Message-Id: <1421087394-2712-28-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 141/216] ARC: [nsimosci] move peripherals to match model to FPGA
+Date: Mon, 12 Jan 2015 18:28:39 +0000
+Message-Id: <1421087394-2712-29-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -31,69 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Vineet Gupta <vgupta@synopsys.com>
 
-commit 0e58af4e1d2166e9e33375a0f121e4867010d4f8 upstream.
+commit e8ef060b37c2d3cc5fd0c0edbe4e42ec1cb9768b upstream.
 
-Users have no business installing custom code segments into the
-GDT, and segments that are not present but are otherwise valid
-are a historical source of interesting attacks.
+This allows the sdplite/Zebu images to run on OSCI simulation platform
 
-For completeness, block attempts to set the L bit.  (Prior to
-this patch, the L bit would have been silently dropped.)
-
-This is an ABI break.  I've checked glibc, musl, and Wine, and
-none of them look like they'll have any trouble.
-
-Note to stable maintainers: this is a hardening patch that fixes
-no known bugs.  Given the possibility of ABI issues, this
-probably shouldn't be backported quickly.
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Acked-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: security@kernel.org <security@kernel.org>
-Cc: Willy Tarreau <w@1wt.eu>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/tls.c | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ arch/arc/boot/dts/nsimosci.dts | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/kernel/tls.c b/arch/x86/kernel/tls.c
-index e7650bd71109..3e551eee87b9 100644
---- a/arch/x86/kernel/tls.c
-+++ b/arch/x86/kernel/tls.c
-@@ -39,6 +39,28 @@ static bool tls_desc_okay(const struct user_desc *info)
- 	if (!info->seg_32bit)
- 		return false;
+diff --git a/arch/arc/boot/dts/nsimosci.dts b/arch/arc/boot/dts/nsimosci.dts
+index 398064cef746..4c169d825415 100644
+--- a/arch/arc/boot/dts/nsimosci.dts
++++ b/arch/arc/boot/dts/nsimosci.dts
+@@ -20,7 +20,7 @@
+ 		/* this is for console on PGU */
+ 		/* bootargs = "console=tty0 consoleblank=0"; */
+ 		/* this is for console on serial */
+-		bootargs = "earlycon=uart8250,mmio32,0xc0000000,115200n8 console=tty0 console=ttyS0,115200n8 consoleblank=0 debug";
++		bootargs = "earlycon=uart8250,mmio32,0xf0000000,115200n8 console=tty0 console=ttyS0,115200n8 consoleblank=0 debug";
+ 	};
  
-+	/* Only allow data segments in the TLS array. */
-+	if (info->contents > 1)
-+		return false;
-+
-+	/*
-+	 * Non-present segments with DPL 3 present an interesting attack
-+	 * surface.  The kernel should handle such segments correctly,
-+	 * but TLS is very difficult to protect in a sandbox, so prevent
-+	 * such segments from being created.
-+	 *
-+	 * If userspace needs to remove a TLS entry, it can still delete
-+	 * it outright.
-+	 */
-+	if (info->seg_not_present)
-+		return false;
-+
-+#ifdef CONFIG_X86_64
-+	/* The L bit makes no sense for data. */
-+	if (info->lm)
-+		return false;
-+#endif
-+
- 	return true;
- }
+ 	aliases {
+@@ -46,9 +46,9 @@
+ 			#interrupt-cells = <1>;
+ 		};
  
+-		uart0: serial@c0000000 {
++		uart0: serial@f0000000 {
+ 			compatible = "ns8250";
+-			reg = <0xc0000000 0x2000>;
++			reg = <0xf0000000 0x2000>;
+ 			interrupts = <11>;
+ 			clock-frequency = <3686400>;
+ 			baud = <115200>;
+@@ -57,21 +57,21 @@
+ 			no-loopback-test = <1>;
+ 		};
+ 
+-		pgu0: pgu@c9000000 {
++		pgu0: pgu@f9000000 {
+ 			compatible = "snps,arcpgufb";
+-			reg = <0xc9000000 0x400>;
++			reg = <0xf9000000 0x400>;
+ 		};
+ 
+-		ps2: ps2@c9001000 {
++		ps2: ps2@f9001000 {
+ 			compatible = "snps,arc_ps2";
+-			reg = <0xc9000400 0x14>;
++			reg = <0xf9000400 0x14>;
+ 			interrupts = <13>;
+ 			interrupt-names = "arc_ps2_irq";
+ 		};
+ 
+-		eth0: ethernet@c0003000 {
++		eth0: ethernet@f0003000 {
+ 			compatible = "snps,oscilan";
+-			reg = <0xc0003000 0x44>;
++			reg = <0xf0003000 0x44>;
+ 			interrupts = <7>, <8>;
+ 			interrupt-names = "rx", "tx";
+ 		};
 -- 
 2.1.4
 
