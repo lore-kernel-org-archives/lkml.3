@@ -1,57 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751754AbbALWMV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 17:12:21 -0500
-Received: from mail-yk0-f169.google.com ([209.85.160.169]:53324 "EHLO
-	mail-yk0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000AbbALWMT (ORCPT
+	id S1752174AbbALWMs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 17:12:48 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:49269 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751474AbbALWMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 17:12:19 -0500
-Date: Mon, 12 Jan 2015 14:12:30 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Wenyou Yang <wenyou.yang@atmel.com>,
-        Alexander Stein <alexanders83@web.de>, Bo Shen <voice.shen@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [GIT PULL] at91: fixes for 3.19 #1 (ter)
-Message-ID: <20150112221230.GD22090@quad.lixom.net>
-References: <1421076472-10589-1-git-send-email-nicolas.ferre@atmel.com>
+	Mon, 12 Jan 2015 17:12:46 -0500
+Date: Mon, 12 Jan 2015 14:12:32 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Davidlohr Bueso <dave@stgolabs.net>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com,
+        Pranith Kumar <bobby.prani@gmail.com>
+Subject: Re: [PATCH tip/core/rcu 01/14] rcu: Protect rcu_boost() lockless
+ accesses with ACCESS_ONCE()
+Message-ID: <20150112221232.GG9719@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20150107173215.GA897@linux.vnet.ibm.com>
+ <1420651953-2651-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20150108094102.GD29390@twins.programming.kicks-ass.net>
+ <20150108152230.GL5280@linux.vnet.ibm.com>
+ <1420785714.25454.1.camel@stgolabs.net>
+ <20150109134954.GO5280@linux.vnet.ibm.com>
+ <20150109135614.GI29390@twins.programming.kicks-ass.net>
+ <54B04F1A.1060401@de.ibm.com>
+ <20150112085957.GA25256@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421076472-10589-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <20150112085957.GA25256@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15011222-0009-0000-0000-000007EC9E99
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 04:27:52PM +0100, Nicolas Ferre wrote:
-> Arnd, Olof, Kevin,
+On Mon, Jan 12, 2015 at 09:59:57AM +0100, Peter Zijlstra wrote:
+> On Fri, Jan 09, 2015 at 10:58:50PM +0100, Christian Borntraeger wrote:
+> > Am 09.01.2015 um 14:56 schrieb Peter Zijlstra:
+> > > On Fri, Jan 09, 2015 at 05:49:54AM -0800, Paul E. McKenney wrote:
+> > >>> That reminds me, I think the new conversion for stores will most likely
+> > >>> introduce silly arg bugs:
+> > >>>
+> > >>> -       ACCESS_ONCE(a) = b;
+> > >>> +       ASSIGN_ONCE(b, a);
+> > >>
+> > >> I was planning to do mine by hand for this sort of reason.
+> > >>
+> > >> Or are you thinking of something more subtle than the case where
+> > >> "b" is an unparenthesized comma-separated expression?
+> > > 
+> > > I think he's revering to the wrong way around-ness of the thing.
+> > > 
+> > > Its a bit of a mixed bag on assignments, but for instance
+> > > rcu_assign_pointer() takes them the right way around, as does
+> > > atomic_set().
+> > > 
+> > > So yes, I think the ASSIGN_ONCE() thing got the arguments the wrong way
+> > > around.
+> > > 
+> > > We could maybe still change it, before its in too long ?
+> > 
+> > Linus initial proposal was inspired by put_user model which is (val,
+> > ptr) and I took that. 
 > 
-> Here is the fixes pull-request for 3.19 that supersedes the ones already sent.
-> It collects all the fixes that I have currently for this kernel revision.
+> Yeah, like I said, its a bit of a mixed bag. We've got plenty examples
+> of the wrong way around.
 > 
-> Thanks, best regards,
+> > As my focus was on avoiding the volatile bug,
+> > all my current conversions are READ_ONCE as no potential ASSIGN_ONCE
+> > user was done on a non-scalar type, so I have no first hand
+> > experience. 
 > 
-> The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
-> 
->   Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-fixes
-> 
-> for you to fetch changes up to b8659752c37ec157ee254cff443b1c9d523aea22:
-> 
->   ARM: at91: board-dt-sama5: add phy_fixup to override NAND_Tree (2015-01-12 15:50:23 +0100)
+> So the implication there is that we'd preserve ACCESS_ONCE() for use on
+> scalar types. I don't think we should do that, I think we should just
+> en-mass convert to {READ,WRITE}/{LOAD,STORE}_ONCE() and kill off
+> ACCESS_ONCE().
 
-Thanks Nicolas, now merged!
+Yep.  For one thing, the proposed replacements work much better with
+C11 than does ACCESS_ONCE().
 
+> > I am fine with changing that, though, both ways have pros
+> > and cons. Last time I checked in Linus tree there was no ASSIGN_ONCE
+> > user.
+> 
+> Right, so Davidlohr just introduced a few in my tree :-), which is how I
+> came to know we even had this stuff..
+> 
+> > When we talk about changing the parameters it might make sense to also
+> > think about some comments from George Spelvin and consider a rename to
+> > WRITE_ONCE or STORE_ONCE (READ_ONCE --> LOAD_ONCE). 
+> 
+> I'd be OK with that.
+> 
+> > Unfortunately
+> > there doesnt seem to be a variant that is fool proof (in the sense of
+> > Rustys guideline that a good interface cannot be used wrong). So any
+> > proposal in that regard would be very welcome.
+> 
+> If you want fool proof, I think we should discard C ;-) Then again, I've
+> yet to see a programming language that would not let a human make a
+> proper idiot out of himself.
 
--Olof
+Limit NR_CPUS to zero!  It is the only way!!!
+
+						Thanx, Paul
+
