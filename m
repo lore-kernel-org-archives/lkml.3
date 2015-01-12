@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517AbbALVn4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 16:43:56 -0500
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:44436 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752398AbbALVny (ORCPT
+	id S1752306AbbALVnq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 16:43:46 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:44125 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453AbbALVnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 16:43:54 -0500
+	Mon, 12 Jan 2015 16:43:43 -0500
 MIME-Version: 1.0
-In-Reply-To: <20150112163902.GE5834@ti.com>
-References: <1419019671-25377-1-git-send-email-bparrot@ti.com>
- <1419019671-25377-3-git-send-email-bparrot@ti.com> <CACRpkdb7Wq7-rBypqPkefejY5Qfq_KKx91H+DxKWv-TM2y04bg@mail.gmail.com>
- <20150112163902.GE5834@ti.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 13 Jan 2015 06:43:33 +0900
-Message-ID: <CAAVeFuLF7EVR-Xta=eNegmGWX9AFu9xmyhXisGCTwc1ds3t1cA@mail.gmail.com>
-Subject: Re: [Patch v5 2/2] gpio: Document GPIO hogging mechanism
-To: Benoit Parrot <bparrot@ti.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Jiri Prchal <jiri.prchal@aksignal.cz>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
+X-Originating-IP: [130.216.30.134]
+In-Reply-To: <20150112174334.GI2455@charon>
+References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
+	<1418653622-21105-31-git-send-email-luis.henriques@canonical.com>
+	<1421012945.19708.27.camel@decadent.org.uk>
+	<CAKMK7uFDS339qaqaNeRJ-L+XXKBaS8CgDY1CzEB7ugDmOto+Dw@mail.gmail.com>
+	<20150112174334.GI2455@charon>
+Date: Mon, 12 Jan 2015 22:43:42 +0100
+Message-ID: <CAKMK7uGXq2JBJqTPAmFfs7ZG1SLUs4KT4SC9+mrbWSb6RFcXjA@mail.gmail.com>
+Subject: Re: [PATCH 3.16.y-ckt 030/168] drm/i915: Handle failure to kick out a
+ conflicting fb driver
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Luis Henriques <luis.henriques@canonical.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, kernel-team@lists.ubuntu.com,
+        "Nikula, Jani" <jani.nikula@linux.intel.com>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 1:39 AM, Benoit Parrot <bparrot@ti.com> wrote:
-> Linus Walleij <linus.walleij@linaro.org> wrote on Mon [2015-Jan-12 11:20:14 +0100]:
->> On Fri, Dec 19, 2014 at 9:07 PM, Benoit Parrot <bparrot@ti.com> wrote:
->>
->> > Add GPIO hogging documentation to gpio.txt
+On Mon, Jan 12, 2015 at 6:43 PM, Luis Henriques
+<luis.henriques@canonical.com> wrote:
+> On Mon, Jan 12, 2015 at 06:20:22PM +0100, Daniel Vetter wrote:
+>> On Sun, Jan 11, 2015 at 10:49 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
+>> > On Mon, 2014-12-15 at 14:24 +0000, Luis Henriques wrote:
+>> >> 3.16.7-ckt3 -stable review patch.  If anyone has any objections, please let me know.
+>> >>
+>> >> ------------------
+>> >>
+>> >> From: Chris Wilson <chris@chris-wilson.co.uk>
+>> >>
+>> >> commit f96de58fc7e7d3d717c7c63975c3b896c906b5e3 upstream.
+>> >>
+>> >> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+>> >> Reviewed-by: Jani Nikula <jani.nikula@intel.com>
+>> >> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+>> >> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 >> >
->> > Signed-off-by: Benoit Parrot <bparrot@ti.com>
->> > Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
+>> > Should this also be applied to any older stable branches?
+>> >
+>> > i915_kick_out_firmware_fb() was introduced in 3.6 and it has always been
+>> > possible for the alloc_apertures() call to fail.
+>> >
+>> > remove_conflicting_framebuffers() has returned an error code since 3.14
+>> > (but could silently fail before then!) so this should be applicable to
+>> > the 3.14 stable branch too.
 >>
->> This is starting to look good ...
->>
->> > +               line_b {
->> > +                       gpio-hog;
->> > +                       gpios = <6 0>;
->> > +                       state = "output-low";
->>
->> I don't like the state string.
->>
->> Instead have boolean properties for all states.
->>
->> line_b {
->>     gpio-hog;
->>     gpios = <6 0>;
->>     output-low;
->>     line-name = "foo-bar-gpio";
->> }
->>
->> Then use of_property_read_bool() in the code to check which
->> state is to be selected intially. You can check that no mutually
->> exclusive state are selected, I don't like that an arbitrary string
->> select the state like that, if we do it that way an enumerator would
->> be better, I prefer bools.
+>> tbh I don't know why this patch ended up in a stable kernel, at least
+>> I didn't find anything where we (drm/i915 maintainers) marked it as
+>> such. And there's no bugzilla references added either. Imo the patch
+>> doesn't qualify for stable (it's not a real-world bug afaik).
 >
-> I am sorry but that is how it was originally in the first patch.
-> Alexandre's review comment suggested this method in [1] and [2] (below).
+> You're right, this patch was not tagged for stable.
 >
-> Alexandre, any comments?
->
-> [1] http://marc.info/?l=linux-gpio&m=141456662426151&w=2
->
-> [2] http://marc.info/?l=linux-gpio&m=141715982424744&w=2
+> While applying 0485c9dc24ec ("drm/i915: Kick fbdev before vgacon") to
+> the 3.16 kernel, I found that cherry-picking f96de58fc7e7 would make
+> it apply cleanly and it didn't shock me to have it in a stable kernel.
+> That's why I applied it for release 3.16.7-ckt3.  I guess I should
+> have added a note in the commit text justifying its presence.
 
-When Linus and I are in conflict, follow Linus. Arnd's suggestion of
-having enums defined in (IIUC) include/dt-bindings/gpio and using them
-sounds good to me too and might make everyone happy (no possibility of
-conflicting definitions + no strings). Linus, could you comment on it?
+Ah makes sense. Usually we try to tag cc: stable patches with their
+depencies (and I looked for that but didn't find anything). As a rule
+I only scan stable patches from Greg's kernels since there's way too
+much going on (and this time around too much vacation and conferences
+on top).
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
