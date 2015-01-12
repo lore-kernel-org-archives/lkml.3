@@ -1,122 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752045AbbALHJg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 02:09:36 -0500
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:39677 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995AbbALHJb (ORCPT
+	id S1752070AbbALHJn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 02:09:43 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:38004 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995AbbALHJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 02:09:31 -0500
-From: "Li, Zhen-Hua" <zhen-hual@hp.com>
-To: <dwmw2@infradead.org>, <indou.takao@jp.fujitsu.com>, <bhe@redhat.com>,
-        <joro@8bytes.org>, <vgoyal@redhat.com>, <dyoung@redhat.com>
-Cc: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <kexec@lists.infradead.org>,
-        <alex.williamson@redhat.com>, <ddutile@redhat.com>,
-        <ishii.hironobu@jp.fujitsu.com>, <bhelgaas@google.com>,
-        <doug.hatch@hp.com>, <jerry.hoemann@hp.com>, <tom.vaden@hp.com>,
-        <li.zhang6@hp.com>, <lisa.mitchell@hp.com>,
-        <billsumnerlinux@gmail.com>, <zhen-hual@hp.com>, <rwright@hp.com>
-Subject: [PATCH v8 10/10] iommu/vt-d: Use old irte in kdump kernel
-Date: Mon, 12 Jan 2015 15:06:28 +0800
-Message-Id: <1421046388-27925-11-git-send-email-zhen-hual@hp.com>
-X-Mailer: git-send-email 2.0.0-rc0
-In-Reply-To: <1421046388-27925-1-git-send-email-zhen-hual@hp.com>
-References: <1421046388-27925-1-git-send-email-zhen-hual@hp.com>
+	Mon, 12 Jan 2015 02:09:37 -0500
+Message-ID: <54B3727A.108@oracle.com>
+Date: Mon, 12 Jan 2015 15:06:34 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: =?windows-1252?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+CC: xen-devel@lists.xen.org, konrad.wilk@oracle.com,
+        linux-kernel@vger.kernel.org, david.vrabel@citrix.com,
+        junxiao.bi@oracle.com
+Subject: Re: [PATCH] xen/blkfront: restart request queue when there is enough
+ persistent_gnts_c
+References: <1420550343-14013-1-git-send-email-bob.liu@oracle.com> <54AFF909.3090909@citrix.com>
+In-Reply-To: <54AFF909.3090909@citrix.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the intr-remapping fault.
 
-[1.594890] dmar: DRHD: handling fault status reg 2
-[1.594894] dmar: INTR-REMAP: Request device [[41:00.0] fault index 4d
-[1.594894] INTR-REMAP:[fault reason 34] Present field in the IRTE entry
-is clear
+On 01/09/2015 11:51 PM, Roger Pau Monné wrote:
+> El 06/01/15 a les 14.19, Bob Liu ha escrit:
+>> When there is no enough free grants, gnttab_alloc_grant_references()
+>> will fail and block request queue will stop.
+>> If the system is always lack of grants, blkif_restart_queue_callback() can't be
+>> scheduled and block request queue can't be restart(block I/O hang).
+>>
+>> But when there are former requests complete, some grants may free to
+>> persistent_gnts_c, we can give the request queue another chance to restart and
+>> avoid block hang.
+>>
+>> Reported-by: Junxiao Bi <junxiao.bi@oracle.com>
+>> Signed-off-by: Bob Liu <bob.liu@oracle.com>
+>> ---
+>>  drivers/block/xen-blkfront.c |   11 +++++++++++
+>>  1 file changed, 11 insertions(+)
+>>
+>> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+>> index 2236c6f..dd30f99 100644
+>> --- a/drivers/block/xen-blkfront.c
+>> +++ b/drivers/block/xen-blkfront.c
+>> @@ -1125,6 +1125,17 @@ static void blkif_completion(struct blk_shadow *s, struct blkfront_info *info,
+>>  			}
+>>  		}
+>>  	}
+>> +
+>> +	/*
+>> +	 * Request queue would be stopped if failed to alloc enough grants and
+>> +	 * won't be restarted until gnttab_free_count >= info->callback->count.
+>> +	 *
+>> +	 * But there is another case, once we have enough persistent grants we
+>> +	 * can try to restart the request queue instead of continue to wait for
+>> +	 * 'gnttab_free_count'.
+>> +	 */
+>> +	if (info->persistent_gnts_c >= info->callback.count)
+>> +		schedule_work(&info->work);
+> 
+> I guess I'm missing something here, but blkif_completion is called by
+> blkif_interrupt, which in turn calls kick_pending_request_queues when
+> finished, which IMHO should be enough to restart the processing of requests.
+> 
 
-Use old irte in kdump kernel, do not disable and re-enable interrupt
-remapping.
+You are right, sorry for the mistake.
 
-Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
----
- drivers/iommu/intel_irq_remapping.c | 42 ++++++++++++++++++++++++++++++++-----
- 1 file changed, 37 insertions(+), 5 deletions(-)
+The problem we met was a xenblock I/O hang.
+Dumped data showed at that time info->persistent_gnt_c = 8, max_gref = 8
+but block request queue was still stopped.
+It's very hard to reproduce this issue, we only see it once.
 
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index d37fd62..58356cb 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -198,6 +198,11 @@ static int modify_irte(int irq, struct irte *irte_modified)
- 
- 	set_64bit(&irte->low, irte_modified->low);
- 	set_64bit(&irte->high, irte_modified->high);
-+
-+#ifdef CONFIG_CRASH_DUMP
-+	if (is_kdump_kernel())
-+		__iommu_update_old_irte(iommu, index);
-+#endif
- 	__iommu_flush_cache(iommu, irte, sizeof(*irte));
- 
- 	rc = qi_flush_iec(iommu, index, 0);
-@@ -259,6 +264,11 @@ static int clear_entries(struct irq_2_iommu *irq_iommu)
- 	bitmap_release_region(iommu->ir_table->bitmap, index,
- 			      irq_iommu->irte_mask);
- 
-+#ifdef CONFIG_CRASH_DUMP
-+	if (is_kdump_kernel())
-+		__iommu_update_old_irte(iommu, -1);
-+#endif
-+
- 	return qi_flush_iec(iommu, index, irq_iommu->irte_mask);
- }
- 
-@@ -640,11 +650,20 @@ static int __init intel_enable_irq_remapping(void)
- 		 */
- 		dmar_fault(-1, iommu);
- 
--		/*
--		 * Disable intr remapping and queued invalidation, if already
--		 * enabled prior to OS handover.
--		 */
--		iommu_disable_irq_remapping(iommu);
-+#ifdef CONFIG_CRASH_DUMP
-+		if (is_kdump_kernel()) {
-+			/* Do notdisable irq and then re-enable again. */
-+		} else {
-+#endif
-+			/*
-+			 * Disable intr remapping and queued invalidation,
-+			 * if already enabled prior to OS handover.
-+			 */
-+			iommu_disable_irq_remapping(iommu);
-+
-+#ifdef CONFIG_CRASH_DUMP
-+		}
-+#endif
- 
- 		dmar_disable_qi(iommu);
- 	}
-@@ -687,7 +706,20 @@ static int __init intel_enable_irq_remapping(void)
- 		if (intel_setup_irq_remapping(iommu))
- 			goto error;
- 
-+#ifdef CONFIG_CRASH_DUMP
-+	if (is_kdump_kernel()) {
-+		unsigned long long q;
-+
-+		q = dmar_readq(iommu->reg + DMAR_IRTA_REG);
-+		iommu->ir_table->base_old_phys = q & VTD_PAGE_MASK;
-+		iommu->ir_table->base_old_virt = ioremap_cache(
-+				iommu->ir_table->base_old_phys,
-+				INTR_REMAP_TABLE_ENTRIES*sizeof(struct irte));
-+		__iommu_load_old_irte(iommu);
-+	} else
-+#endif
- 		iommu_set_irq_remapping(iommu, eim);
-+
- 		setup = 1;
- 	}
- 
+I think there might be a race condition:
+
+request A                          request B:
+
+                                   info->persistent_gnts_c < max_grefs
+                                   and fail to alloc enough grants
+
+
+^^^^
+interrupt happen, blkif_complte():
+info->persistent_gnts_c++
+kick_pending_request_queues()
+
+                                    stop block request queue
+                                    added to callback()
+
+If the system don't have enough grants(but have enough persistent_gnts),
+request queue would still hang.
+
 -- 
-2.0.0-rc0
-
+Regards,
+-Bob
