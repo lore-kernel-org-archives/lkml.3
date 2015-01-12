@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564AbbALSGH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:06:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57536 "EHLO
+	id S1753527AbbALSGF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:06:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57540 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753394AbbALSGC (ORCPT
+	with ESMTP id S1753492AbbALSGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:06:02 -0500
+	Mon, 12 Jan 2015 13:06:03 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>,
-        Antonio Borneo <borneo.antonio@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>,
+Cc: Tony Lindgren <tony@atomide.com>, Lee Jones <lee.jones@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 052/216] HID: i2c-hid: fix race condition reading reports
-Date: Mon, 12 Jan 2015 18:02:49 +0000
-Message-Id: <1421085933-32536-53-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 053/216] mfd: twl4030-power: Fix regression with missing compatible flag
+Date: Mon, 12 Jan 2015 18:02:50 +0000
+Message-Id: <1421085933-32536-54-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -29,91 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
+From: Tony Lindgren <tony@atomide.com>
 
-commit 6296f4a8eb86f9abcc370fb7a1a116b8441c17fd upstream.
+commit 1b9b46d05f887aec418b3a5f4f55abf79316fcda upstream.
 
-Current driver uses a common buffer for reading reports either
-synchronously in i2c_hid_get_raw_report() and asynchronously in
-the interrupt handler.
-There is race condition if an interrupt arrives immediately after
-the report is received in i2c_hid_get_raw_report(); the common
-buffer is modified by the interrupt handler with the new report
-and then i2c_hid_get_raw_report() proceed using wrong data.
+Commit e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset
+configuration") accidentally removed the compatible flag for
+"ti,twl4030-power" that should be there as documented in the
+binding.
 
-Fix it by using a separate buffers for synchronous reports.
+If "ti,twl4030-power" only the poweroff configuration is done
+by the driver.
 
-Signed-off-by: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
-[Antonio Borneo: cleanup, rebase to v3.17, submit mainline]
-Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Fixes: e7cd1d1eb16f ("mfd: twl4030-power: Add generic reset configuration")
+Reported-by: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/i2c-hid/i2c-hid.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/mfd/twl4030-power.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-index 21aafc8f48c8..523ebb74097d 100644
---- a/drivers/hid/i2c-hid/i2c-hid.c
-+++ b/drivers/hid/i2c-hid/i2c-hid.c
-@@ -137,6 +137,7 @@ struct i2c_hid {
- 						   * descriptor. */
- 	unsigned int		bufsize;	/* i2c buffer size */
- 	char			*inbuf;		/* Input buffer */
-+	char			*rawbuf;	/* Raw Input buffer */
- 	char			*cmdbuf;	/* Command buffer */
- 	char			*argsbuf;	/* Command arguments buffer */
+diff --git a/drivers/mfd/twl4030-power.c b/drivers/mfd/twl4030-power.c
+index 542f1a8247f5..33a35fbd48c9 100644
+--- a/drivers/mfd/twl4030-power.c
++++ b/drivers/mfd/twl4030-power.c
+@@ -828,6 +828,9 @@ static struct twl4030_power_data osc_off_idle = {
  
-@@ -504,9 +505,11 @@ static void i2c_hid_find_max_report(struct hid_device *hid, unsigned int type,
- static void i2c_hid_free_buffers(struct i2c_hid *ihid)
- {
- 	kfree(ihid->inbuf);
-+	kfree(ihid->rawbuf);
- 	kfree(ihid->argsbuf);
- 	kfree(ihid->cmdbuf);
- 	ihid->inbuf = NULL;
-+	ihid->rawbuf = NULL;
- 	ihid->cmdbuf = NULL;
- 	ihid->argsbuf = NULL;
- 	ihid->bufsize = 0;
-@@ -522,10 +525,11 @@ static int i2c_hid_alloc_buffers(struct i2c_hid *ihid, size_t report_size)
- 		       report_size; /* report */
- 
- 	ihid->inbuf = kzalloc(report_size, GFP_KERNEL);
-+	ihid->rawbuf = kzalloc(report_size, GFP_KERNEL);
- 	ihid->argsbuf = kzalloc(args_len, GFP_KERNEL);
- 	ihid->cmdbuf = kzalloc(sizeof(union command) + args_len, GFP_KERNEL);
- 
--	if (!ihid->inbuf || !ihid->argsbuf || !ihid->cmdbuf) {
-+	if (!ihid->inbuf || !ihid->rawbuf || !ihid->argsbuf || !ihid->cmdbuf) {
- 		i2c_hid_free_buffers(ihid);
- 		return -ENOMEM;
- 	}
-@@ -552,12 +556,12 @@ static int i2c_hid_get_raw_report(struct hid_device *hid,
- 
- 	ret = i2c_hid_get_report(client,
- 			report_type == HID_FEATURE_REPORT ? 0x03 : 0x01,
--			report_number, ihid->inbuf, ask_count);
-+			report_number, ihid->rawbuf, ask_count);
- 
- 	if (ret < 0)
- 		return ret;
- 
--	ret_count = ihid->inbuf[0] | (ihid->inbuf[1] << 8);
-+	ret_count = ihid->rawbuf[0] | (ihid->rawbuf[1] << 8);
- 
- 	if (ret_count <= 2)
- 		return 0;
-@@ -566,7 +570,7 @@ static int i2c_hid_get_raw_report(struct hid_device *hid,
- 
- 	/* The query buffer contains the size, dropping it in the reply */
- 	count = min(count, ret_count - 2);
--	memcpy(buf, ihid->inbuf + 2, count);
-+	memcpy(buf, ihid->rawbuf + 2, count);
- 
- 	return count;
- }
+ static struct of_device_id twl4030_power_of_match[] = {
+ 	{
++		.compatible = "ti,twl4030-power",
++	},
++	{
+ 		.compatible = "ti,twl4030-power-reset",
+ 		.data = &omap3_reset,
+ 	},
 -- 
 2.1.4
 
