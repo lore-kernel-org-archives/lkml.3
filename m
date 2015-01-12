@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751612AbbALISo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 03:18:44 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65276 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751281AbbALISm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 03:18:42 -0500
-Message-ID: <54B3834D.6090602@nod.at>
-Date: Mon, 12 Jan 2015 09:18:21 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751788AbbALIUg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 03:20:36 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:52973 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751286AbbALIUf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 03:20:35 -0500
+X-Original-SENDERIP: 10.177.222.153
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Mon, 12 Jan 2015 17:20:57 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Vlastimil Babka <vbabka@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] mm/compaction: enhance trace output to know more
+ about compaction internals
+Message-ID: <20150112082057.GA26078@js1304-P5Q-DELUXE>
+References: <1417593127-6819-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <54ABA563.1040103@suse.cz>
+ <20150108081835.GC25453@js1304-P5Q-DELUXE>
+ <54AE43E3.60209@suse.cz>
+ <20150109105710.GN2395@suse.de>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: joe@perches.com, coreteam@netfilter.org, netfilter-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        bhutchings@solarflare.com, john.fastabend@gmail.com,
-        herbert@gondor.apana.org.au, vyasevic@redhat.com, jiri@resnulli.us,
-        vfalico@gmail.com, therbert@google.com, edumazet@google.com,
-        yoshfuji@linux-ipv6.org, jmorris@namei.org, kuznet@ms2.inr.ac.ru,
-        kadlec@blackhole.kfki.hu, kaber@trash.net, pablo@netfilter.org,
-        kay@vrfy.org, stephen@networkplumber.org
-Subject: Re: [PATCH 3/3] x_tables: Factor out 16bit aligment ifname_compare()
-References: <54B2EB81.5050604@nod.at>	<1421012376.9233.9.camel@perches.com>	<54B2EE4D.2080802@nod.at> <20150111.215050.458358747958425038.davem@davemloft.net>
-In-Reply-To: <20150111.215050.458358747958425038.davem@davemloft.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150109105710.GN2395@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 12.01.2015 um 03:50 schrieb David Miller:
-> From: Richard Weinberger <richard@nod.at>
-> Date: Sun, 11 Jan 2015 22:42:37 +0100
+On Fri, Jan 09, 2015 at 10:57:10AM +0000, Mel Gorman wrote:
+> On Thu, Jan 08, 2015 at 09:46:27AM +0100, Vlastimil Babka wrote:
+> > On 01/08/2015 09:18 AM, Joonsoo Kim wrote:
+> > > On Tue, Jan 06, 2015 at 10:05:39AM +0100, Vlastimil Babka wrote:
+> > >> On 12/03/2014 08:52 AM, Joonsoo Kim wrote:
+> > >> > It'd be useful to know where the both scanner is start. And, it also be
+> > >> > useful to know current range where compaction work. It will help to find
+> > >> > odd behaviour or problem on compaction.
+> > >> 
+> > >> Overall it looks good, just two questions:
+> > >> 1) Why change the pfn output to hexadecimal with different printf layout and
+> > >> change the variable names and? Is it that better to warrant people having to
+> > >> potentially modify their scripts parsing the old output?
+> > > 
+> > > Deciaml output has really bad readability since we manage all pages by order
+> > > of 2 which is well represented by hexadecimal. With hex output, we can
+> > > easily notice whether we move out from one pageblock to another one.
+> > 
+> > OK. I don't have any strong objection, maybe Mel should comment on this as the
+> > author of most of the tracepoints? But if it happens, I think converting the old
+> > tracepoints to new hexadecimal format should be a separate patch from adding the
+> > new ones.
+> > 
 > 
->> Joe, I really don't care. This is the least significant
->> patch of the series.
->> I'll no longer waste my time with that.
-> 
-> If you're not willing to fix stylistic issues now, then nobody should
-> bother wasting their time on the high level issues of your patch.
-> 
-> Just fix these things now rather than being difficult, this is a part
-> of patch review that everyone has to do, not just you.
+> To date, I'm not aware of any user-space programs that heavily depend on
+> the formatting. The scripts I am aware of are ad-hoc and easily modified
+> to adapt to format changes. LTT-NG is the only tool that might be
+> depending on trace point formats but I severely doubt it's interested in
+> this particular tracepoint.
 
-I apologize, it was not my intention to be difficult.
-Please note that the stylistic issue is not a warning produced
-by checkpatch.pl. If you and netfilter folks now prefer bool
-for such string compare functions I'll happily address this in
-v2 of my series.
+Okay. Thanks for confirmation!
 
-Thanks,
-//richard
+Thanks.
