@@ -1,386 +1,398 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220AbbAMMLo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 07:11:44 -0500
-Received: from 60-248-182-7.HINET-IP.hinet.net ([60.248.182.7]:55662 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751060AbbAMMLl (ORCPT
+	id S1751064AbbALE1M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 23:27:12 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:44148 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887AbbALE1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 07:11:41 -0500
-X-Greylist: delayed 360 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Jan 2015 07:11:40 EST
-X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0DC5arN032079, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next] r8152: replace tasklet with NAPI
-Date: Mon, 12 Jan 2015 12:06:23 +0800
-Message-ID: <1394712342-15778-117-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
+	Sun, 11 Jan 2015 23:27:07 -0500
+Message-ID: <54B34D01.8090600@linaro.org>
+Date: Mon, 12 Jan 2015 12:26:41 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.41]
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+CC: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh@kernel.org>, Robert Richter <rric@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
+        Timur Tabi <timur@codeaurora.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: Re: [PATCH v6 08/17] ARM64 / ACPI: Parse FADT table to get PSCI flags
+ for PSCI init
+References: <1420368918-5086-1-git-send-email-hanjun.guo@linaro.org> <1420368918-5086-9-git-send-email-hanjun.guo@linaro.org> <20150109190400.GD13478@red-moon>
+In-Reply-To: <20150109190400.GD13478@red-moon>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace tasklet with NAPI.
+On 2015年01月10日 03:04, Lorenzo Pieralisi wrote:
+> On Sun, Jan 04, 2015 at 10:55:09AM +0000, Hanjun Guo wrote:
+>> There are two flags: PSCI_COMPLIANT and PSCI_USE_HVC. When set,
+>> the former signals to the OS that the firmware is PSCI compliant.
+>> The latter selects the appropriate conduit for PSCI calls by
+>> toggling between Hypervisor Calls (HVC) and Secure Monitor Calls
+>> (SMC).
+>>
+>> FADT table contains such information, parse FADT to get the flags
+>> for PSCI init. Since ACPI 5.1 doesn't support self defined PSCI
+>> function IDs, which means that only PSCI 0.2+ is supported in ACPI.
+>>
+>> At the same time, only ACPI 5.1 or higher verison supports PSCI,
+>> and FADT Major.Minor version was introduced in ACPI 5.1, so we
+>> will check the version and only parse FADT table with version >= 5.1.
+>>
+>> If firmware provides ACPI tables with ACPI version less than 5.1,
+>> OS will be messed up with those information and have no way to init
+>> smp and GIC, so disable ACPI if we get an FADT table with version
+>> less that 5.1.
+>
+> I am a bit confused by this log. I understand the problem is that,
+> for versions predating 5.1, PSCI information is missing. So, I would
+> say:
+>
+> "OS will not be able to boot properly owing to missing PSCI bindings
+> data in the ACPI tables".
+>
+> Is that the message you want to get across ?
 
-Add rx_queue to queue the remaining rx packets if the number of the
-rx packets is more than the request from poll().
+Not exactly. PSCI is part of the updates for ACPI 5.1, and more updates
+are for GIC (MADT table), without those updates in GIC (MADT table), we
+can not get the MPIDR for SMP init, and can not get the right GICC
+base_address for GICv2 init too (GICC base_address was there in ACPI 5.0
+, but the offset to the start of the structure was changed in ACPI 5.1)
+so if we use the ACPI 5.1 OS code to parse ACPI 5.0 firmware table, it
+will messed up teh OS boot, not only because of PSCI.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 120 ++++++++++++++++++++++++++++++++++--------------
- 1 file changed, 85 insertions(+), 35 deletions(-)
+Should I update the Change log here?
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index b23426e..50387fe 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -27,7 +27,7 @@
- #include <linux/usb/cdc.h>
- 
- /* Version Information */
--#define DRIVER_VERSION "v1.07.0 (2014/10/09)"
-+#define DRIVER_VERSION "v1.08.0 (2015/01/13)"
- #define DRIVER_AUTHOR "Realtek linux nic maintainers <nic_swsd@realtek.com>"
- #define DRIVER_DESC "Realtek RTL8152/RTL8153 Based USB Ethernet Adapters"
- #define MODULENAME "r8152"
-@@ -448,6 +448,7 @@ enum rtl_register_content {
- #define RTL8152_RMS		(VLAN_ETH_FRAME_LEN + VLAN_HLEN)
- #define RTL8153_RMS		RTL8153_MAX_PACKET
- #define RTL8152_TX_TIMEOUT	(5 * HZ)
-+#define RTL8152_NAPI_WEIGHT	64
- 
- /* rtl8152 flags */
- enum rtl8152_flags {
-@@ -457,7 +458,7 @@ enum rtl8152_flags {
- 	RTL8152_LINK_CHG,
- 	SELECTIVE_SUSPEND,
- 	PHY_RESET,
--	SCHEDULE_TASKLET,
-+	SCHEDULE_NAPI,
- };
- 
- /* Define these values to match your device */
-@@ -549,14 +550,14 @@ struct tx_agg {
- struct r8152 {
- 	unsigned long flags;
- 	struct usb_device *udev;
--	struct tasklet_struct tl;
-+	struct napi_struct napi;
- 	struct usb_interface *intf;
- 	struct net_device *netdev;
- 	struct urb *intr_urb;
- 	struct tx_agg tx_info[RTL8152_MAX_TX];
- 	struct rx_agg rx_info[RTL8152_MAX_RX];
- 	struct list_head rx_done, tx_free;
--	struct sk_buff_head tx_queue;
-+	struct sk_buff_head tx_queue, rx_queue;
- 	spinlock_t rx_lock, tx_lock;
- 	struct delayed_work schedule;
- 	struct mii_if_info mii;
-@@ -1062,7 +1063,7 @@ static void read_bulk_callback(struct urb *urb)
- 		spin_lock(&tp->rx_lock);
- 		list_add_tail(&agg->list, &tp->rx_done);
- 		spin_unlock(&tp->rx_lock);
--		tasklet_schedule(&tp->tl);
-+		napi_schedule(&tp->napi);
- 		return;
- 	case -ESHUTDOWN:
- 		set_bit(RTL8152_UNPLUG, &tp->flags);
-@@ -1126,7 +1127,7 @@ static void write_bulk_callback(struct urb *urb)
- 		return;
- 
- 	if (!skb_queue_empty(&tp->tx_queue))
--		tasklet_schedule(&tp->tl);
-+		napi_schedule(&tp->napi);
- }
- 
- static void intr_callback(struct urb *urb)
-@@ -1245,6 +1246,7 @@ static int alloc_all_mem(struct r8152 *tp)
- 	spin_lock_init(&tp->tx_lock);
- 	INIT_LIST_HEAD(&tp->tx_free);
- 	skb_queue_head_init(&tp->tx_queue);
-+	skb_queue_head_init(&tp->rx_queue);
- 
- 	for (i = 0; i < RTL8152_MAX_RX; i++) {
- 		buf = kmalloc_node(agg_buf_sz, GFP_KERNEL, node);
-@@ -1649,13 +1651,32 @@ return_result:
- 	return checksum;
- }
- 
--static void rx_bottom(struct r8152 *tp)
-+static int rx_bottom(struct r8152 *tp, int budget)
- {
- 	unsigned long flags;
- 	struct list_head *cursor, *next, rx_queue;
-+	int work_done = 0;
-+
-+	if (!skb_queue_empty(&tp->rx_queue)) {
-+		while (work_done < budget) {
-+			struct sk_buff *skb = __skb_dequeue(&tp->rx_queue);
-+			struct net_device *netdev = tp->netdev;
-+			struct net_device_stats *stats = &netdev->stats;
-+			unsigned int pkt_len;
-+
-+			if (!skb)
-+				break;
-+
-+			pkt_len = skb->len;
-+			napi_gro_receive(&tp->napi, skb);
-+			work_done++;
-+			stats->rx_packets++;
-+			stats->rx_bytes += pkt_len;
-+		}
-+	}
- 
- 	if (list_empty(&tp->rx_done))
--		return;
-+		goto out1;
- 
- 	INIT_LIST_HEAD(&rx_queue);
- 	spin_lock_irqsave(&tp->rx_lock, flags);
-@@ -1708,9 +1729,14 @@ static void rx_bottom(struct r8152 *tp)
- 			skb_put(skb, pkt_len);
- 			skb->protocol = eth_type_trans(skb, netdev);
- 			rtl_rx_vlan_tag(rx_desc, skb);
--			netif_receive_skb(skb);
--			stats->rx_packets++;
--			stats->rx_bytes += pkt_len;
-+			if (work_done < budget) {
-+				napi_gro_receive(&tp->napi, skb);
-+				work_done++;
-+				stats->rx_packets++;
-+				stats->rx_bytes += pkt_len;
-+			} else {
-+				__skb_queue_tail(&tp->rx_queue, skb);
-+			}
- 
- find_next_rx:
- 			rx_data = rx_agg_align(rx_data + pkt_len + CRC_SIZE);
-@@ -1722,6 +1748,9 @@ find_next_rx:
- submit:
- 		r8152_submit_rx(tp, agg, GFP_ATOMIC);
- 	}
-+
-+out1:
-+	return work_done;
- }
- 
- static void tx_bottom(struct r8152 *tp)
-@@ -1761,12 +1790,8 @@ static void tx_bottom(struct r8152 *tp)
- 	} while (res == 0);
- }
- 
--static void bottom_half(unsigned long data)
-+static void bottom_half(struct r8152 *tp)
- {
--	struct r8152 *tp;
--
--	tp = (struct r8152 *)data;
--
- 	if (test_bit(RTL8152_UNPLUG, &tp->flags))
- 		return;
- 
-@@ -1778,12 +1803,28 @@ static void bottom_half(unsigned long data)
- 	if (!netif_carrier_ok(tp->netdev))
- 		return;
- 
--	clear_bit(SCHEDULE_TASKLET, &tp->flags);
-+	clear_bit(SCHEDULE_NAPI, &tp->flags);
- 
--	rx_bottom(tp);
- 	tx_bottom(tp);
- }
- 
-+static int r8152_poll(struct napi_struct *napi, int budget)
-+{
-+	struct r8152 *tp = container_of(napi, struct r8152, napi);
-+	int work_done;
-+
-+	work_done = rx_bottom(tp, budget);
-+	bottom_half(tp);
-+
-+	if (work_done < budget) {
-+		napi_complete(napi);
-+		if (!list_empty(&tp->rx_done))
-+			napi_schedule(napi);
-+	}
-+
-+	return work_done;
-+}
-+
- static
- int r8152_submit_rx(struct r8152 *tp, struct rx_agg *agg, gfp_t mem_flags)
- {
-@@ -1810,7 +1851,11 @@ int r8152_submit_rx(struct r8152 *tp, struct rx_agg *agg, gfp_t mem_flags)
- 		spin_lock_irqsave(&tp->rx_lock, flags);
- 		list_add_tail(&agg->list, &tp->rx_done);
- 		spin_unlock_irqrestore(&tp->rx_lock, flags);
--		tasklet_schedule(&tp->tl);
-+
-+		netif_err(tp, rx_err, tp->netdev,
-+			  "Couldn't submit rx[%p], ret = %d\n", agg, ret);
-+
-+		napi_schedule(&tp->napi);
- 	}
- 
- 	return ret;
-@@ -1929,11 +1974,11 @@ static netdev_tx_t rtl8152_start_xmit(struct sk_buff *skb,
- 
- 	if (!list_empty(&tp->tx_free)) {
- 		if (test_bit(SELECTIVE_SUSPEND, &tp->flags)) {
--			set_bit(SCHEDULE_TASKLET, &tp->flags);
-+			set_bit(SCHEDULE_NAPI, &tp->flags);
- 			schedule_delayed_work(&tp->schedule, 0);
- 		} else {
- 			usb_mark_last_busy(tp->udev);
--			tasklet_schedule(&tp->tl);
-+			napi_schedule(&tp->napi);
- 		}
- 	} else if (skb_queue_len(&tp->tx_queue) > tp->tx_qlen) {
- 		netif_stop_queue(netdev);
-@@ -2012,6 +2057,7 @@ static int rtl_start_rx(struct r8152 *tp)
- {
- 	int i, ret = 0;
- 
-+	napi_disable(&tp->napi);
- 	INIT_LIST_HEAD(&tp->rx_done);
- 	for (i = 0; i < RTL8152_MAX_RX; i++) {
- 		INIT_LIST_HEAD(&tp->rx_info[i].list);
-@@ -2019,6 +2065,7 @@ static int rtl_start_rx(struct r8152 *tp)
- 		if (ret)
- 			break;
- 	}
-+	napi_enable(&tp->napi);
- 
- 	if (ret && ++i < RTL8152_MAX_RX) {
- 		struct list_head rx_queue;
-@@ -2049,6 +2096,9 @@ static int rtl_stop_rx(struct r8152 *tp)
- 	for (i = 0; i < RTL8152_MAX_RX; i++)
- 		usb_kill_urb(tp->rx_info[i].urb);
- 
-+	while (!skb_queue_empty(&tp->rx_queue))
-+		dev_kfree_skb(__skb_dequeue(&tp->rx_queue));
-+
- 	return 0;
- }
- 
-@@ -2884,9 +2934,9 @@ static void set_carrier(struct r8152 *tp)
- 	} else {
- 		if (tp->speed & LINK_STATUS) {
- 			netif_carrier_off(netdev);
--			tasklet_disable(&tp->tl);
-+			napi_disable(&tp->napi);
- 			tp->rtl_ops.disable(tp);
--			tasklet_enable(&tp->tl);
-+			napi_enable(&tp->napi);
- 		}
- 	}
- 	tp->speed = speed;
-@@ -2919,10 +2969,11 @@ static void rtl_work_func_t(struct work_struct *work)
- 	if (test_bit(RTL8152_SET_RX_MODE, &tp->flags))
- 		_rtl8152_set_rx_mode(tp->netdev);
- 
--	if (test_bit(SCHEDULE_TASKLET, &tp->flags) &&
-+	/* don't schedule napi before linking */
-+	if (test_bit(SCHEDULE_NAPI, &tp->flags) &&
- 	    (tp->speed & LINK_STATUS)) {
--		clear_bit(SCHEDULE_TASKLET, &tp->flags);
--		tasklet_schedule(&tp->tl);
-+		clear_bit(SCHEDULE_NAPI, &tp->flags);
-+		napi_schedule(&tp->napi);
- 	}
- 
- 	if (test_bit(PHY_RESET, &tp->flags))
-@@ -2983,7 +3034,7 @@ static int rtl8152_open(struct net_device *netdev)
- 			   res);
- 		free_all_mem(tp);
- 	} else {
--		tasklet_enable(&tp->tl);
-+		napi_enable(&tp->napi);
- 	}
- 
- 	mutex_unlock(&tp->control);
-@@ -2999,7 +3050,7 @@ static int rtl8152_close(struct net_device *netdev)
- 	struct r8152 *tp = netdev_priv(netdev);
- 	int res = 0;
- 
--	tasklet_disable(&tp->tl);
-+	napi_disable(&tp->napi);
- 	clear_bit(WORK_ENABLE, &tp->flags);
- 	usb_kill_urb(tp->intr_urb);
- 	cancel_delayed_work_sync(&tp->schedule);
-@@ -3008,6 +3059,7 @@ static int rtl8152_close(struct net_device *netdev)
- 	res = usb_autopm_get_interface(tp->intf);
- 	if (res < 0) {
- 		rtl_drop_queued_tx(tp);
-+		rtl_stop_rx(tp);
- 	} else {
- 		mutex_lock(&tp->control);
- 
-@@ -3263,7 +3315,7 @@ static int rtl8152_suspend(struct usb_interface *intf, pm_message_t message)
- 	if (netif_running(netdev) && test_bit(WORK_ENABLE, &tp->flags)) {
- 		clear_bit(WORK_ENABLE, &tp->flags);
- 		usb_kill_urb(tp->intr_urb);
--		tasklet_disable(&tp->tl);
-+		napi_disable(&tp->napi);
- 		if (test_bit(SELECTIVE_SUSPEND, &tp->flags)) {
- 			rtl_stop_rx(tp);
- 			rtl_runtime_suspend_enable(tp, true);
-@@ -3271,7 +3323,7 @@ static int rtl8152_suspend(struct usb_interface *intf, pm_message_t message)
- 			cancel_delayed_work_sync(&tp->schedule);
- 			tp->rtl_ops.down(tp);
- 		}
--		tasklet_enable(&tp->tl);
-+		napi_enable(&tp->napi);
- 	}
- out1:
- 	mutex_unlock(&tp->control);
-@@ -3855,7 +3907,6 @@ static int rtl8152_probe(struct usb_interface *intf,
- 	if (ret)
- 		goto out;
- 
--	tasklet_init(&tp->tl, bottom_half, (unsigned long)tp);
- 	mutex_init(&tp->control);
- 	INIT_DELAYED_WORK(&tp->schedule, rtl_work_func_t);
- 
-@@ -3891,6 +3942,7 @@ static int rtl8152_probe(struct usb_interface *intf,
- 	set_ethernet_addr(tp);
- 
- 	usb_set_intfdata(intf, tp);
-+	netif_napi_add(netdev, &tp->napi, r8152_poll, RTL8152_NAPI_WEIGHT);
- 
- 	ret = register_netdev(netdev);
- 	if (ret != 0) {
-@@ -3904,15 +3956,13 @@ static int rtl8152_probe(struct usb_interface *intf,
- 	else
- 		device_set_wakeup_enable(&udev->dev, false);
- 
--	tasklet_disable(&tp->tl);
--
- 	netif_info(tp, probe, netdev, "%s\n", DRIVER_VERSION);
- 
- 	return 0;
- 
- out1:
-+	netif_napi_del(&tp->napi);
- 	usb_set_intfdata(intf, NULL);
--	tasklet_kill(&tp->tl);
- out:
- 	free_netdev(netdev);
- 	return ret;
-@@ -3929,7 +3979,7 @@ static void rtl8152_disconnect(struct usb_interface *intf)
- 		if (udev->state == USB_STATE_NOTATTACHED)
- 			set_bit(RTL8152_UNPLUG, &tp->flags);
- 
--		tasklet_kill(&tp->tl);
-+		netif_napi_del(&tp->napi);
- 		unregister_netdev(tp->netdev);
- 		tp->rtl_ops.unload(tp);
- 		free_netdev(tp->netdev);
--- 
-2.1.0
+>
+>> Tested-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+>> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+>> ---
+>>   arch/arm64/include/asm/acpi.h | 14 ++++++++
+>>   arch/arm64/include/asm/psci.h |  3 +-
+>>   arch/arm64/kernel/acpi.c      | 31 ++++++++++++++++-
+>>   arch/arm64/kernel/psci.c      | 78 ++++++++++++++++++++++++++++++-------------
+>>   arch/arm64/kernel/setup.c     |  8 +++--
+>>   5 files changed, 105 insertions(+), 29 deletions(-)
+>>
+>> diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
+>> index 496c33b..221ff15 100644
+>> --- a/arch/arm64/include/asm/acpi.h
+>> +++ b/arch/arm64/include/asm/acpi.h
+>> @@ -19,6 +19,18 @@ extern int acpi_disabled;
+>>   extern int acpi_noirq;
+>>   extern int acpi_pci_disabled;
+>>
+>> +/* 1 to indicate PSCI 0.2+ is implemented */
+>> +static inline bool acpi_psci_present(void)
+>> +{
+>> +	return acpi_gbl_FADT.arm_boot_flags & ACPI_FADT_PSCI_COMPLIANT;
+>> +}
+>> +
+>> +/* 1 to indicate HVC must be used instead of SMC as the PSCI conduit */
+>> +static inline bool acpi_psci_use_hvc(void)
+>> +{
+>> +	return acpi_gbl_FADT.arm_boot_flags & ACPI_FADT_PSCI_USE_HVC;
+>> +}
+>> +
+>>   static inline void disable_acpi(void)
+>>   {
+>>   	acpi_disabled = 1;
+>> @@ -49,6 +61,8 @@ static inline void arch_fix_phys_package_id(int num, u32 slot) { }
+>>
+>>   #else
+>>   static inline void disable_acpi(void) { }
+>> +static inline bool acpi_psci_present(void) { return false; }
+>> +static inline bool acpi_psci_use_hvc(void) { return false; }
+>>   #endif /* CONFIG_ACPI */
+>>
+>>   #endif /*_ASM_ACPI_H*/
+>> diff --git a/arch/arm64/include/asm/psci.h b/arch/arm64/include/asm/psci.h
+>> index e5312ea..2454bc5 100644
+>> --- a/arch/arm64/include/asm/psci.h
+>> +++ b/arch/arm64/include/asm/psci.h
+>> @@ -14,6 +14,7 @@
+>>   #ifndef __ASM_PSCI_H
+>>   #define __ASM_PSCI_H
+>>
+>> -int psci_init(void);
+>> +int psci_dt_init(void);
+>> +int psci_acpi_init(void);
+>
+> Is not there a better way to avoid this function dt/acpi duplication ?
+>
+>>
+>>   #endif /* __ASM_PSCI_H */
+>> diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
+>> index 39a1655..e713236 100644
+>> --- a/arch/arm64/kernel/acpi.c
+>> +++ b/arch/arm64/kernel/acpi.c
+>> @@ -13,6 +13,8 @@
+>>    *  published by the Free Software Foundation.
+>>    */
+>>
+>> +#define pr_fmt(fmt) "ACPI: " fmt
+>> +
+>>   #include <linux/init.h>
+>>   #include <linux/acpi.h>
+>>   #include <linux/cpumask.h>
+>> @@ -49,10 +51,32 @@ void __init __acpi_unmap_table(char *map, unsigned long size)
+>>   	early_memunmap(map, size);
+>>   }
+>>
+>> +static int __init acpi_parse_fadt(struct acpi_table_header *table)
+>> +{
+>> +	struct acpi_table_fadt *fadt = (struct acpi_table_fadt *)table;
+>> +
+>> +	/*
+>> +	 * Revision in table header is the FADT Major revision,
+>> +	 * and there is a minor revision of FADT which was introduced
+>> +	 * by ACPI 5.1, we only deal with ACPI 5.1 or newer revision
+>> +	 * to get arm boot flags, or we will disable ACPI.
+>> +	 */
+>> +	if (table->revision > 5 ||
+>> +	    (table->revision == 5 && fadt->minor_revision >= 1))
+>> +		return 0;
+>> +
+>> +	pr_warn("Unsupported FADT revision %d.%d, should be 5.1+, will disable ACPI\n",
+>> +		table->revision, fadt->minor_revision);
+>> +	disable_acpi();
+>
+> I would rename this function, function is checking the FADT
+> revision, make that clear. I think that disable_acpi() should be
+> called on function return, if it fails.
+>
+> To make the "acpi disabling" clearer, why not call this function in
+>
+> psci_acpi_init()
+>
+> something like:
+>
+> int __init psci_acpi_init(void)
+> {
+>
+> 	if (acpi_table_parse(ACPI_SIG_FADT, acpi_parse_fadt)) {
+> 		pr_err("Can't find FADT or error happened during parsing FADT\n");
+> 		disable_acpi();
+> 	}
+> 	...
+> }
+>
+> After all you disable ACPI because you can't retrieve PSCI information,
+> am I right ?
 
+I think we need to consider two scenes:
+
+  - ACPI version less than 5.1, it definitely needs to disable ACPI
+    because of OS doesn't support that and we don't need to do it;
+
+  - if ACPI version is 5.1 or later, and PSCI flags are missing in
+    FADT table, I think we still can boot the OS with single core (
+    if Parking Protocol is still missing) and print some warning message
+    instead (you can refer to patch 10/17). just disable ACPI may lead
+    to boot failure.
+
+Does it make sense?
+
+>
+>> +
+>> +	return -EINVAL;
+>> +}
+>> +
+>>   /*
+>>    * acpi_boot_table_init() called from setup_arch(), always.
+>>    *	1. find RSDP and get its address, and then find XSDT
+>>    *	2. extract all tables and checksums them all
+>> + *	3. check ACPI FADT revisoin
+>
+> s/revisoin/revision
+
+Good catch, will update it.
+
+>
+>>    *
+>>    * We can parse ACPI boot-time tables such as MADT after
+>>    * this function is called.
+>> @@ -64,8 +88,13 @@ void __init acpi_boot_table_init(void)
+>>   		return;
+>>
+>>   	/* Initialize the ACPI boot-time table parser. */
+>> -	if (acpi_table_init())
+>> +	if (acpi_table_init()) {
+>>   		disable_acpi();
+>> +		return;
+>> +	}
+>> +
+>> +	if (acpi_table_parse(ACPI_SIG_FADT, acpi_parse_fadt))
+>> +		pr_err("Can't find FADT or error happened during parsing FADT\n");
+>
+> As I said above this is a bit sneaky. It is not clear you are disabling
+> ACPI when the acpi_table_parse() call fails. Is it not better to move
+> the revision check in the PSCI ACPI init call ?
+
+please refer to the comments above.
+
+>
+>>   }
+>>
+>>   static int __init parse_acpi(char *arg)
+>> diff --git a/arch/arm64/kernel/psci.c b/arch/arm64/kernel/psci.c
+>> index f1dbca7..dbb3945 100644
+>> --- a/arch/arm64/kernel/psci.c
+>> +++ b/arch/arm64/kernel/psci.c
+>> @@ -15,6 +15,7 @@
+>>
+>>   #define pr_fmt(fmt) "psci: " fmt
+>>
+>> +#include <linux/acpi.h>
+>>   #include <linux/init.h>
+>>   #include <linux/of.h>
+>>   #include <linux/smp.h>
+>> @@ -24,6 +25,7 @@
+>>   #include <linux/slab.h>
+>>   #include <uapi/linux/psci.h>
+>>
+>> +#include <asm/acpi.h>
+>>   #include <asm/compiler.h>
+>>   #include <asm/cpu_ops.h>
+>>   #include <asm/errno.h>
+>> @@ -304,6 +306,33 @@ static void psci_sys_poweroff(void)
+>>   	invoke_psci_fn(PSCI_0_2_FN_SYSTEM_OFF, 0, 0, 0);
+>>   }
+>>
+>> +static void psci_0_2_set_functions(void)
+>
+> __init ?
+
+Yes, it only called by __init function, can be defined as
+__init too.
+
+>
+>> +{
+>> +	pr_info("Using standard PSCI v0.2 function IDs\n");
+>> +	psci_function_id[PSCI_FN_CPU_SUSPEND] = PSCI_0_2_FN64_CPU_SUSPEND;
+>> +	psci_ops.cpu_suspend = psci_cpu_suspend;
+>> +
+>> +	psci_function_id[PSCI_FN_CPU_OFF] = PSCI_0_2_FN_CPU_OFF;
+>> +	psci_ops.cpu_off = psci_cpu_off;
+>> +
+>> +	psci_function_id[PSCI_FN_CPU_ON] = PSCI_0_2_FN64_CPU_ON;
+>> +	psci_ops.cpu_on = psci_cpu_on;
+>> +
+>> +	psci_function_id[PSCI_FN_MIGRATE] = PSCI_0_2_FN64_MIGRATE;
+>> +	psci_ops.migrate = psci_migrate;
+>> +
+>> +	psci_function_id[PSCI_FN_AFFINITY_INFO] = PSCI_0_2_FN64_AFFINITY_INFO;
+>> +	psci_ops.affinity_info = psci_affinity_info;
+>> +
+>> +	psci_function_id[PSCI_FN_MIGRATE_INFO_TYPE] =
+>> +		PSCI_0_2_FN_MIGRATE_INFO_TYPE;
+>> +	psci_ops.migrate_info_type = psci_migrate_info_type;
+>> +
+>> +	arm_pm_restart = psci_sys_reset;
+>> +
+>> +	pm_power_off = psci_sys_poweroff;
+>> +}
+>> +
+>>   /*
+>>    * PSCI Function IDs for v0.2+ are well defined so use
+>>    * standard values.
+>> @@ -337,29 +366,7 @@ static int __init psci_0_2_init(struct device_node *np)
+>>   		}
+>>   	}
+>>
+>> -	pr_info("Using standard PSCI v0.2 function IDs\n");
+>> -	psci_function_id[PSCI_FN_CPU_SUSPEND] = PSCI_0_2_FN64_CPU_SUSPEND;
+>> -	psci_ops.cpu_suspend = psci_cpu_suspend;
+>> -
+>> -	psci_function_id[PSCI_FN_CPU_OFF] = PSCI_0_2_FN_CPU_OFF;
+>> -	psci_ops.cpu_off = psci_cpu_off;
+>> -
+>> -	psci_function_id[PSCI_FN_CPU_ON] = PSCI_0_2_FN64_CPU_ON;
+>> -	psci_ops.cpu_on = psci_cpu_on;
+>> -
+>> -	psci_function_id[PSCI_FN_MIGRATE] = PSCI_0_2_FN64_MIGRATE;
+>> -	psci_ops.migrate = psci_migrate;
+>> -
+>> -	psci_function_id[PSCI_FN_AFFINITY_INFO] = PSCI_0_2_FN64_AFFINITY_INFO;
+>> -	psci_ops.affinity_info = psci_affinity_info;
+>> -
+>> -	psci_function_id[PSCI_FN_MIGRATE_INFO_TYPE] =
+>> -		PSCI_0_2_FN_MIGRATE_INFO_TYPE;
+>> -	psci_ops.migrate_info_type = psci_migrate_info_type;
+>> -
+>> -	arm_pm_restart = psci_sys_reset;
+>> -
+>> -	pm_power_off = psci_sys_poweroff;
+>> +	psci_0_2_set_functions();
+>>
+>>   out_put_node:
+>>   	of_node_put(np);
+>> @@ -412,7 +419,7 @@ static const struct of_device_id psci_of_match[] __initconst = {
+>>   	{},
+>>   };
+>>
+>> -int __init psci_init(void)
+>> +int __init psci_dt_init(void)
+>>   {
+>>   	struct device_node *np;
+>>   	const struct of_device_id *matched_np;
+>> @@ -427,6 +434,29 @@ int __init psci_init(void)
+>>   	return init_fn(np);
+>>   }
+>>
+>> +/*
+>> + * We use PSCI 0.2+ when ACPI is deployed on ARM64 and it's
+>> + * explicitly clarified in SBBR
+>> + */
+>> +int __init psci_acpi_init(void)
+>> +{
+>> +	if (!acpi_psci_present()) {
+>> +		pr_info("is not implemented in ACPI.\n");
+>> +		return -EOPNOTSUPP;
+>> +	}
+>> +
+>> +	pr_info("probing for conduit method from ACPI.\n");
+>> +
+>> +	if (acpi_psci_use_hvc())
+>> +		invoke_psci_fn = __invoke_psci_fn_hvc;
+>> +	else
+>> +		invoke_psci_fn = __invoke_psci_fn_smc;
+>> +
+>> +	psci_0_2_set_functions();
+>> +
+>> +	return 0;
+>
+> As I asked above, is not there a better way to have a common init
+> function and factor out the acpi/dt paths in it instead of adding
+> multiple calls in setup_arch() ?
+
+We tried, but it introduced more complexity, so Catalin suggested
+that adding multiple calls in setup_arch (which the way he preferred).
+
+Thanks
+Hanjun
