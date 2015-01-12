@@ -1,153 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751325AbbALC0c (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 21:26:32 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:29772 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755AbbALC0b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 21:26:31 -0500
-From: Wang Nan <wangnan0@huawei.com>
-To: <jolsa@redhat.com>, <namhyung@kernel.org>
-CC: <mingo@redhat.com>, <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>,
-        <acme@kernel.org>
-Subject: [PATCH] perf: fix building error in x86_64 when dwarf unwind is on.
-Date: Mon, 12 Jan 2015 10:20:55 +0800
-Message-ID: <1421029255-23039-1-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <20150109144332.GB14750@krava.brq.redhat.com>
-References: <20150109144332.GB14750@krava.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+	id S1751357AbbALCdO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 21:33:14 -0500
+Received: from mga11.intel.com ([192.55.52.93]:19826 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751159AbbALCdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jan 2015 21:33:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="439292785"
+Message-ID: <1421029988.6201.150.camel@intel.com>
+Subject: [LKP] [drm/radeon] 38c2adfb00d: Fixed kernel panic
+From: Huang Ying <ying.huang@intel.com>
+To: Oded Gabbay <oded.gabbay@amd.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, LKP ML <lkp@01.org>
+Date: Mon, 12 Jan 2015 10:33:08 +0800
+Content-Type: multipart/mixed; boundary="=-m4tEZ8t+bQSE4z+J/Ahz"
+X-Mailer: Evolution 3.12.9-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
 
-When build with 'make ARCH=x86' and dwarf unwind is on, there is a
-compiling error:
+--=-m4tEZ8t+bQSE4z+J/Ahz
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-   CC       /home/wn/perf/arch/x86/util/unwind-libdw.o
-   CC       /home/wn/perf/arch/x86/tests/regs_load.o
- arch/x86/tests/regs_load.S: Assembler messages:
- arch/x86/tests/regs_load.S:65: Error: operand type mismatch for `push'
- arch/x86/tests/regs_load.S:72: Error: operand type mismatch for `pop'
- make[1]: *** [/home/wn/perf/arch/x86/tests/regs_load.o] Error 1
- make[1]: INTERNAL: Exiting with 25 jobserver tokens available; should be 24!
- make: *** [all] Error 2
- ...
+FYI, we noticed the below changes on
 
-Which is caused by incorrectly undefine macro HAVE_ARCH_X86_64_SUPPORT.
-'config/Makefile.arch' tests __x86_64__ only when 'ARCH=x86_64'.
-However, when building x86_64 kernel, ARCH=x86 is valid and commonly
-used. Building systems, such as yocto, uses x86_64 compiler with
-'ARCH=x86' to build x86_64 perf, which causes mismatching.
+commit 38c2adfb00db045a876dd667040abc01b788ad61 ("drm/radeon: Init amdkfd only if it was compiled")
 
-As __LP64__ is defined for x86_64 as well, we can consolidate the
-__x86_64__ check to the __LP64__ check and get rid of the IS_X86_64
-IMHO.
+The original kernel panic caused by radeon init is fixed!  Thanks!
 
-(This patch is made by Namhyung Kim when replying my v1 patch:
+testbox/testcase/testparams: vm-vp-quantal-i386/boot/1
 
-https://lkml.org/lkml/2015/1/7/17
+68d0cb49f8db5ddc  38c2adfb00db045a876dd66704  
+----------------  --------------------------  
+       fail:runs  %reproduction    fail:runs
+           |             |             |    
+           :10         100%          10:10    kmsg.dummy-irq:no_IRQ_given.Use_irq=N
+           :10         100%          10:10    kmsg.mk712:device_not_present
+           :10         100%          10:10    kmsg.wistron_btns:System_unknown
+           :10         100%          10:10    kmsg.ideapad_slidebar:DMI_does_not_match
+           :10         100%          10:10    kmsg.i2c-parport-light:adapter_type_unspecified
+           :10         100%          10:10    kmsg.i2c_i2c-#:detect_fail:address_match
+           :10         100%          10:10    kmsg.pc87360:PC8736x_not_detected,module_not_inserted
+           :10         100%          10:10    kmsg.sch56xx_common:Unsupported_device_id
+           :10         100%          10:10    kmsg.acquirewdt:I/O_address#already_in_use
+           :10         100%          10:10    kmsg.wafer5823wdt:I/O_address#already_in_use
+           :10         100%          10:10    kmsg.i6300esb:cannot_register_miscdev_on_minor=#(err=-#)
+           :10         100%          10:10    kmsg.pc87413_wdt:cannot_register_miscdev_on_minor=#(err=-#)
+           :10         100%          10:10    kmsg.sbc60xxwdt:I/O_address#already_in_use
+           :10         100%          10:10    kmsg.sbc8360:failed_to_register_misc_device
+           :10         100%          10:10    kmsg.sbc7240_wdt:I/O_address#already_in_use
+           :10         100%          10:10    kmsg.cpu5wdt:misc_register_failed
+           :10         100%          10:10    kmsg.w83877f_wdt:I/O_address#already_in_use
+           :10         100%          10:10    kmsg.sbc_epx_c3:cannot_register_miscdev_on_minor=#(err=-#)
+           :10         100%          10:10    kmsg.Driver'mmcblk'needs_updating-please_use_bus_type_methods
+           :10         100%          10:10    kmsg.vme_user:No_cards,skipping_registration
+           :10         100%          10:10    kmsg.dell_wmi:No_known_WMI_GUID_found
+           :10         100%          10:10    kmsg.dell_wmi_aio:No_known_WMI_GUID_found
+           :10         100%          10:10    kmsg.acer_wmi:No_or_unsupported_WMI_interface,unable_to_load
+           :10         100%          10:10    kmsg.acerhdf:error_getting_hardware_information
+           :10         100%          10:10    kmsg.alienware_wmi:alienware-wmi:No_known_WMI_GUID_found
+           :10         100%          10:10    kmsg.fmc_fake-design-for-testing-f001:Driver_has_no_ID:matches_all
+           :10         100%          10:10    kmsg.fmc_write_eeprom_fake-design-for-testing-f001:fmc_write_eeprom:no_busid_passed,refusing_all_cards
+           :10         100%          10:10    kmsg.intel_rapl:no_valid_rapl_domains_found_in_package
+         10:10        -100%            :10    kmsg.BUG:unable_to_handle_kernel
+         10:10        -100%            :10    kmsg.Oops
+         10:10        -100%            :10    kmsg.Kernel_panic-not_syncing:Fatal_exception
+         10:10        -100%            :10    kmsg.Kernel_Offset:#from#(relocation_range:#-#)
+         10:10        -100%            :10    dmesg.BUG:unable_to_handle_kernel
+         10:10        -100%            :10    dmesg.Oops
+         10:10        -100%            :10    dmesg.Kernel_panic-not_syncing:Fatal_exception
 
-I modified the code to remove dependency on RAW_ARCH:
+testbox/testcase/testparams: vm-kbuild-yocto-i386/boot/1
 
-https://lkml.org/lkml/2015/1/7/865
+68d0cb49f8db5ddc  38c2adfb00db045a876dd66704  
+----------------  --------------------------  
+           :10         100%          10:10    kmsg.dummy-irq:no_IRQ_given.Use_irq=N
+           :10         100%          10:10    kmsg.dummy-irq:no_IRQ_given.Use_irq=N
+           :10         100%          10:10    kmsg.wistron_btns:System_unknown
+           :10         100%          10:10    kmsg.i2c-parport-light:adapter_type_unspecified
+           :10         100%          10:10    kmsg.i2c-parport-light:adapter_type_unspecified
+           :10         100%          10:10    kmsg.pc87360:PC8736x_not_detected,module_not_inserted
+           :10         100%          10:10    kmsg.sch56xx_common:Unsupported_device_id
+           :10         100%          10:10    kmsg.i6300esb:cannot_register_miscdev_on_minor=#(err=-#)
+           :10         100%          10:10    kmsg.pc87413_wdt:cannot_register_miscdev_on_minor=#(err=-#)
+           :10         100%          10:10    kmsg.sbc60xxwdt:I/O_address#already_in_use
+           :10         100%          10:10    kmsg.sbc8360:failed_to_register_misc_device
+           :10         100%          10:10    kmsg.sbc7240_wdt:I/O_address#already_in_use
+           :10         100%          10:10    kmsg.cpu5wdt:misc_register_failed
+           :10         100%          10:10    kmsg.w83877f_wdt:I/O_address#already_in_use
+           :10         100%          10:10    kmsg.sbc_epx_c3:cannot_register_miscdev_on_minor=#(err=-#)
+           :10         100%          10:10    kmsg.dell_wmi:No_known_WMI_GUID_found
+           :10         100%          10:10    kmsg.dell_wmi_aio:No_known_WMI_GUID_found
+           :10         100%          10:10    kmsg.acer_wmi:No_or_unsupported_WMI_interface,unable_to_load
+           :10         100%          10:10    kmsg.acerhdf:error_getting_hardware_information
+           :10         100%          10:10    kmsg.alienware_wmi:alienware-wmi:No_known_WMI_GUID_found
+           :10         100%          10:10    kmsg.alienware_wmi:alienware-wmi:No_known_WMI_GUID_found
+           :10         100%          10:10    kmsg.fmc_fake-design-for-testing-f001:Driver_has_no_ID:matches_all
+           :10         100%          10:10    kmsg.fmc_fake-design-for-testing-f001:Driver_has_no_ID:matches_all
+           :10         100%          10:10    kmsg.fmc_write_eeprom_fake-design-for-testing-f001:fmc_write_eeprom:no_busid_passed,refusing_all_cards
+           :10         100%          10:10    kmsg.fmc_write_eeprom_fake-design-for-testing-f001:fmc_write_eeprom:no_busid_passed,refusing_all_cards
+         10:10        -100%            :10    kmsg.BUG:unable_to_handle_kernel
+         10:10        -100%            :10    kmsg.BUG:unable_to_handle_kernel
+         10:10        -100%            :10    kmsg.Oops
+         10:10        -100%            :10    kmsg.Oops
+         10:10        -100%            :10    kmsg.Kernel_panic-not_syncing:Fatal_exception
+         10:10        -100%            :10    kmsg.Kernel_panic-not_syncing:Fatal_exception
+         10:10        -100%            :10    kmsg.Kernel_Offset:#from#(relocation_range:#-#)
+         10:10        -100%            :10    kmsg.Kernel_Offset:#from#(relocation_range:#-#)
+         10:10        -100%            :10    dmesg.BUG:unable_to_handle_kernel
+         10:10        -100%            :10    dmesg.BUG:unable_to_handle_kernel
+         10:10        -100%            :10    dmesg.Oops
+         10:10        -100%            :10    dmesg.Oops
+         10:10        -100%            :10    dmesg.Kernel_panic-not_syncing:Fatal_exception
+         10:10        -100%            :10    dmesg.Kernel_panic-not_syncing:Fatal_exception
+           :10         100%          10:10    kmsg.drm/i810_does_not_support_SMP
+           :10         100%          10:10    kmsg.nandsim]warning:read_byte:unexpected_data_output_cycle,state_is_STATE_READY_return
+           :10         100%          10:10    kmsg.nandsim]warning:read_byte:unexpected_data_output_cycle,state_is_STATE_READY_return
+           :10         100%          10:10    kmsg.ks0108:ERROR:parport_didn't_register_new_device
+           :10         100%          10:10    kmsg.cfag12864b:ERROR:ks0108_is_not_initialized
+           :10         100%          10:10    kmsg.cfag12864bfb:ERROR:cfag12864b_is_not_initialized
+           :10         100%          10:10    kmsg.pps_parport:couldn't_register_with_parport0
+           :10         100%          10:10    kmsg.applesmc:supported_laptop_not_found
+           :10         100%          10:10    kmsg.applesmc:driver_init_failed(ret=-#)
+           :10         100%          10:10    kmsg.vmap_allocation_for_size#failed:use_vmalloc=<size>to_increase_size
+           :10         100%          10:10    kmsg.null):enodev_DEV_ADDR=#xFF
+           :10         100%          10:10    kmsg.toshiba_acpi:Unable_to_create_proc_dir_toshiba
+           :10         100%          10:10    kmsg.mce:Unable_to_init_device/dev/mcelog(rc:-#)
+           :10         100%          10:10    kmsg.mce:Unable_to_init_device/dev/mcelog(rc:-#)
+           :10         100%          10:10    kmsg.Starting_Bootlog_daemon:bootlogd:cannot_allocate_pseudo_tty:No_such_file_or_directory
+           :10         100%          10:10    kmsg.no_ifx_modem_active
+           :10          10%           1:10    kmsg.APIC_calibration_not_consistent_with_PM-Timer:#ms_instead_of#ms
+           :10         100%          10:10    kmsg.Failed_to_add_WC_MTRR_for[#-#];performance_may_suffer
+           :10         100%          10:10    kmsg.mtdoops:mtd_device(mtddev=name/number)must_be_supplied
+           :10         100%          10:10    kmsg.Warning!fusbh200_hcd_should_always_be_loaded_before_uhci_hcd_and_ohci_hcd,not_after
+           :10         100%          10:10    kmsg.rtc(null):invalid_alarm_value
+           :10         100%          10:10    kmsg.intel_powerclamp:Intel_powerclamp_does_not_run_on_family#model
+           :10         100%          10:10    kmsg.geodewdt:No_timers_were_available
+           :10         100%          10:10    kmsg.sc1200wdt:io_parameter_must_be_specified
+           :10         100%          10:10    kmsg.acerhdf:unknown(unsupported)BIOS_version_Bochs/Bochs/Bochs,please_report,aborting
+           :10         100%          10:10    kmsg.msi_wmi:This_machine_doesn't_have_neither_MSI-hotkeys_nor_backlight_through_WMI
+           :10         100%          10:10    kmsg.ALSA:seq_oss:can't_register_device_seq
+           :10         100%          10:10    kmsg.rcu-torture:Free-Block_Circulation
 
-Namhyung Kim didn't provide his SOB in his original email. I add
-mine only for my modification.)
+vm-vp-quantal-i386: qemu-system-i386 -enable-kvm -cpu Haswell,+smep,+smap
+Memory: 360M
 
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
----
- tools/perf/Makefile.perf        |  4 +++-
- tools/perf/config/Makefile      |  2 +-
- tools/perf/config/Makefile.arch | 26 +++++++++++++-------------
- 3 files changed, 17 insertions(+), 15 deletions(-)
+vm-kbuild-yocto-i386: qemu-system-i386 -enable-kvm
+Memory: 320M
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 67a03a82..1f71a32 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -462,10 +462,12 @@ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
- # Benchmark modules
- BUILTIN_OBJS += $(OUTPUT)bench/sched-messaging.o
- BUILTIN_OBJS += $(OUTPUT)bench/sched-pipe.o
--ifeq ($(RAW_ARCH),x86_64)
-+ifeq ($(ARCH), x86)
-+ifeq ($(IS_64_BIT), 1)
- BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy-x86-64-asm.o
- BUILTIN_OBJS += $(OUTPUT)bench/mem-memset-x86-64-asm.o
- endif
-+endif
- BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy.o
- BUILTIN_OBJS += $(OUTPUT)bench/futex-hash.o
- BUILTIN_OBJS += $(OUTPUT)bench/futex-wake.o
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 5d4b039..648e31f 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -20,7 +20,7 @@ NO_PERF_REGS := 1
- 
- # Additional ARCH settings for x86
- ifeq ($(ARCH),x86)
--  ifeq (${IS_X86_64}, 1)
-+  ifeq (${IS_64_BIT}, 1)
-     CFLAGS += -DHAVE_ARCH_X86_64_SUPPORT
-     ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
-     LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
-diff --git a/tools/perf/config/Makefile.arch b/tools/perf/config/Makefile.arch
-index 851cd01..ff95a68 100644
---- a/tools/perf/config/Makefile.arch
-+++ b/tools/perf/config/Makefile.arch
-@@ -1,7 +1,7 @@
- 
- uname_M := $(shell uname -m 2>/dev/null || echo not)
- 
--ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
-+RAW_ARCH := $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
-                                   -e s/arm.*/arm/ -e s/sa110/arm/ \
-                                   -e s/s390x/s390/ -e s/parisc64/parisc/ \
-                                   -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
-@@ -9,23 +9,23 @@ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
-                                   -e s/tile.*/tile/ )
- 
- # Additional ARCH settings for x86
--ifeq ($(ARCH),i386)
--  override ARCH := x86
-+ifeq ($(RAW_ARCH),i386)
-+  ARCH ?= x86
- endif
- 
--ifeq ($(ARCH),x86_64)
--  override ARCH := x86
--  IS_X86_64 := 0
--  ifeq (, $(findstring m32,$(CFLAGS)))
--    IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
--    RAW_ARCH := x86_64
-+ifeq ($(RAW_ARCH),x86_64)
-+  ARCH ?= x86
-+
-+  ifneq (, $(findstring m32,$(CFLAGS)))
-+    RAW_ARCH := x86_32
-   endif
- endif
- 
--ifeq (${IS_X86_64}, 1)
-+ARCH ?= $(RAW_ARCH)
-+
-+LP64 := $(shell echo __LP64__ | ${CC} ${CFLAGS} -E -x c - | tail -n 1)
-+ifeq ($(LP64), 1)
-   IS_64_BIT := 1
--else ifeq ($(ARCH),x86)
--  IS_64_BIT := 0
- else
--  IS_64_BIT := $(shell echo __LP64__ | ${CC} ${CFLAGS} -E -x c - | tail -n 1)
-+  IS_64_BIT := 0
- endif
--- 
-1.8.4
+
+Disclaimer:
+Results have been estimated based on internal Intel analysis and are provided
+for informational purposes only. Any difference in system hardware or software
+design or configuration may affect actual performance.
+
+
+Thanks,
+Huang, Ying
+
+
+--=-m4tEZ8t+bQSE4z+J/Ahz
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+_______________________________________________
+LKP mailing list
+LKP@linux.intel.com
+=0D
+--=-m4tEZ8t+bQSE4z+J/Ahz--
 
