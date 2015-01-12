@@ -1,81 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023AbbALSHV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:07:21 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:50724 "EHLO quartz.orcorp.ca"
+	id S1754005AbbALSHL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:07:11 -0500
+Received: from mga09.intel.com ([134.134.136.24]:64478 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751325AbbALSHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:07:16 -0500
-Date: Mon, 12 Jan 2015 11:06:08 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: atull <atull@opensource.altera.com>
-Cc: Pavel Machek <pavel@denx.de>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, hpa@zytor.com,
-        Michal Simek <monstr@monstr.eu>,
-        Michal Simek <michal.simek@xilinx.com>, rdunlap@infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, robh+dt@kernel.org,
-        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        philip@balister.org, rubini@gnudd.com,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>, jason@lakedaemon.net,
-        kyle.teske@ni.com, nico@linaro.org, Felipe Balbi <balbi@ti.com>,
-        m.chehab@samsung.com, davidb@codeaurora.org,
-        Rob Landley <rob@landley.net>, davem@davemloft.net, cesarb@cesarb.net,
-        sameo@linux.intel.com, akpm@linux-foundation.org,
-        Linus Walleij <linus.walleij@linaro.org>, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, devel@driverdev.osuosl.org,
-        Alan Tull <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com,
-        yvanderv@opensource.altera.com
-Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
-Message-ID: <20150112180608.GA11295@obsidianresearch.com>
-References: <1420575219-27061-1-git-send-email-atull@opensource.altera.com>
- <1420575219-27061-3-git-send-email-atull@opensource.altera.com>
- <20150107084819.GA1887@amd>
- <alpine.DEB.2.02.1501091302370.30067@linuxheads99>
- <20150109205643.GA5761@amd>
- <4D4EA2D5-68DD-49F7-9E2D-3A0A8F6AF9CA@konsulko.com>
- <20150110151118.GA16036@amd>
- <alpine.DEB.2.10.1501111009180.2556@shineypoop>
+	id S1753991AbbALSHF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 13:07:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,745,1413270000"; 
+   d="scan'208";a="660612266"
+From: "Liang, Kan" <kan.liang@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+CC: "jolsa@redhat.com" <jolsa@redhat.com>,
+        "namhyung@kernel.org" <namhyung@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: RE: [PATCH V6 1/1] perf tool: perf diff support for different
+ binaries
+Thread-Topic: [PATCH V6 1/1] perf tool: perf diff support for different
+ binaries
+Thread-Index: AQHQKcCYJ7KOEpNzNUyoh7SK6Z35IZyyvomAgAn9D5A=
+Date: Mon, 12 Jan 2015 18:06:53 +0000
+Message-ID: <37D7C6CF3E00A74B8858931C1DB2F07701694FB9@SHSMSX103.ccr.corp.intel.com>
+References: <1417534758-26416-1-git-send-email-kan.liang@intel.com>
+ <20150106145356.GA10675@kernel.org> <20150106161607.GA15396@kernel.org>
+In-Reply-To: <20150106161607.GA15396@kernel.org>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1501111009180.2556@shineypoop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.183
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 11, 2015 at 10:29:00AM -0600, atull wrote:
-> the FPGA image.  If someone wants there to be only one FPGA image on
-> the FGPA forever, they will probably not be using this framework; their
-> FPGA will probably be loaded before Linux boots up.
+> Em Tue, Jan 06, 2015 at 11:53:56AM -0300, Arnaldo Carvalho de Melo
+> escreveu:
+> > Em Tue, Dec 02, 2014 at 10:39:18AM -0500, kan.liang@intel.com escreveu:
+> > > Currently, the perf diff only works with same binaries. That's
+> > > because it compares the symbol start address. It doesn't work if the
+> > > perf.data comes from different binaries. This patch matches the
+> function names.
+> 
+> > Sorry Kan, I saw these patches, its just that it the above statement
+> > looked completely strange to me, i.e. of course it should look at the
+> > dso name, then at the symbol name, comparing via addresses makes no
+> > sense to me, so I kept leaving this patch to look after processing
+> > other patches and doing other things, then the year end holidays, etc.
+> 
+> > So now I'm looking at old code, from 2009:
+> 
+> >   commit 604c5c92972dcb4b98be34775452d09a5d4ec248
+> >   Author: Arnaldo Carvalho de Melo <acme@redhat.com>
+> >   Date:   Wed Dec 16 14:09:53 2009 -0200
+> 
+> >     perf diff: Change the default sort order to "dso,symbol"
+> 
+> <SNIP>
+> 
+> > Now I'm trying to figure out _when_ this got broken, what was the
+> > reasoning for that code to have changed in a way that made it not match
+> by dso_name, symbol_name.
+> 
+> <SNIP>
+> 
+> > > New perf diff result.
+> > > [lk@localhost perf_diff]$ perf diff example_v1.data example_v2.data
+> > >                      [kernel.vmlinux]  [k] __perf_event_task_sched_out
+> > >      0.00%           [kernel.vmlinux]  [k] apic_timer_interrupt
+> > >                      [kernel.vmlinux]  [k] idle_cpu
+> > >                      [kernel.vmlinux]  [k] intel_pstate_timer_func
+> > >                      [kernel.vmlinux]  [k] native_read_msr_safe
+> > >      0.00%           [kernel.vmlinux]  [k] native_read_tsc
+> > >      0.00%           [kernel.vmlinux]  [k] native_write_msr_safe
+> > >                      [kernel.vmlinux]  [k] ntp_tick_length
+> > >      0.00%           [kernel.vmlinux]  [k] rb_erase
+> > >      0.00%           [kernel.vmlinux]  [k] tick_sched_timer
+> > >      0.00%           [kernel.vmlinux]  [k] unmap_single_vma
+> > >      0.00%           [kernel.vmlinux]  [k] update_wall_time
+> > >      0.00%           example           [.] f1
+> > >     46.24%   -0.08%  example           [.] f2
+> > >     53.71%   +0.11%  example           [.] f3
+> > >      0.02%           example           [.] main
+> 
+> So, with:
+> 
+> [root@ssdandy l]# perf --version
+> perf version 3.1.rc9.37.g3f2728.dirty
+> 
+> commit 3f2728bdb6a4cad0d18b09d03e2008121c902751
+> Author: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Date:   Wed Oct 5 16:10:06 2011 -0300
+> 
+>     perf report: Add option to show total period
+> 
+> I get:
+> 
+> [root@ssdandy l]# gcc example_v1.c -o example [root@ssdandy l]# perf
+> record -F 10000 ./example [ perf record: Woken up 7 times to write data ]
+> [ perf record: Captured and wrote 1.739 MB perf.data (~75981 samples) ]
+> [root@ssdandy l]# gcc example_v2.c -o example [root@ssdandy l]# perf
+> record -F 10000 ./example [ perf record: Woken up 7 times to write data ]
+> [ perf record: Captured and wrote 1.733 MB perf.data (~75735 samples) ]
+> [root@ssdandy l]# perf diff
+> # Baseline  Delta          Shared Object                       Symbol
+> # ........ ..........  .................  ...........................
+> #
+>      0.00%    +53.60%  example            [.] f3
+>     54.23%     -8.02%  example            [.] f2
+>      0.02%             [kernel.kallsyms]  [k] native_read_msr_safe
+>      0.04%     -0.01%  [kernel.kallsyms]  [k] native_write_msr_safe
+>      0.01%             [kernel.kallsyms]  [k] thermal_interrupt
+>      0.01%             [kernel.kallsyms]  [k] apic_timer_interrupt
+>      0.00%             [kernel.kallsyms]  [k] update_wall_time
+>      0.00%             example            [.] main
+>      0.00%             example            [.] f1
+>      0.00%             [kernel.kallsyms]  [k] notifier_call_chain
+>      0.00%             [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
+>      0.01%             [kernel.kallsyms]  [k] _raw_spin_lock
+>      0.00%             [kernel.kallsyms]  [k] native_read_tsc
+>      0.00%             [kernel.kallsyms]  [k] task_tick_fair
+>      0.00%             [kernel.kallsyms]  [k] account_user_time
+>      0.00%             [kernel.kallsyms]  [k] unmap_page_range
+>      0.00%             [kernel.kallsyms]  [k] kfree
+>      0.00%             [kernel.kallsyms]  [k] sidtab_context_to_sid
+>      0.00%             ld-2.17.so         [.] _dl_relocate_object
+>      0.00%             [kernel.kallsyms]  [k] update_cfs_rq_blocked_load
+>      0.00%             [kernel.kallsyms]  [k] perf_event_task_tick
+>      0.00%             [kernel.kallsyms]  [k] rcu_irq_enter
+>      0.00%             [kernel.kallsyms]  [k] run_timer_softirq
+>      0.00%             [kernel.kallsyms]  [k] task_cputime
+>      0.00%             [kernel.kallsyms]  [k] exit_idle
+>      0.00%             [kernel.kallsyms]  [k] __update_cpu_load
+>      0.00%             [kernel.kallsyms]  [k] _raw_spin_unlock_irqrestore
+>      0.00%             [kernel.kallsyms]  [k] account_process_tick
+>      0.00%             [kernel.kallsyms]  [k] raise_softirq
+>      0.00%             [kernel.kallsyms]  [k] update_process_times
+>      0.01%             [kernel.kallsyms]  [k] native_sched_clock
+>      0.00%             [kernel.kallsyms]  [k] therm_throt_process
+>      0.00%             [kernel.kallsyms]  [k] intel_thermal_interrupt
+>      0.01%             [kernel.kallsyms]  [k] update_vsyscall
+>      0.00%             [kernel.kallsyms]  [k] jiffies_to_timeval
+>      0.00%             [kernel.kallsyms]  [k] intel_pstate_timer_func
+>      0.00%             [kernel.kallsyms]  [k] x86_pmu_disable
+>      0.00%             [kernel.kallsyms]  [k] __do_softirq
+>      0.00%             [kernel.kallsyms]  [k] hrtimer_interrupt
+>      0.00%             [kernel.kallsyms]  [k] tick_sched_do_timer
+>      0.00%             [kernel.kallsyms]  [k] do_softirq
+>      0.00%             [kernel.kallsyms]  [k] sidtab_search_core
+>      0.00%             [kernel.kallsyms]  [k] selinux_inode_permission
+>      0.00%             [kernel.kallsyms]  [k] kmem_cache_alloc
+>      0.00%             [kernel.kallsyms]  [k] finish_wait
+> [root@ssdandy l]#
+> 
+> After this there were the changes to allow using the hists browser to be
+> used with 'top' and 'diff' was left broken for a while, I'll see if I can continue
+> bisecting this after lunch.
+> 
 
-Nonsense, loading the FPGA through Linux is much better, it avoids
-having to deal with this complexity in the boot loader and means that
-Linux can be used to locate the huge image in some kind of sensible
-filesystem, log failures, do any FPGA startup sequence/etc.
+Hi Arnaldo,
 
-With hotplug and DT I find this this works very well. The FPGA devices
-simply are not registered with the kernel until userspace gives the OK
-(in future a DT overload can handle this)
+I'm not quite what should I modified for this patch.
 
-If you keep with the notion that the DT overload specifies the
-matching FPGA firmware then it makes alot more sense to me to use DT
-overlays as the API to change the file name - not sysfs.
+I think it may be broken after the commit as below (not test)
+9c443dfdd31e ("perf diff: Fix support for all --sort combinations").
 
-To reload a FPGA, unload the DT overlay (this would have to disconnect
-all the drivers), de-program the FPGA, the load a new DT overlay,
-which reprograms and re-binds the new drivers. All those steps have to
-be done anyhow, you can't just swap the HW while drivers are attached.
+Should I change the patch description to bug fix, remove the examples,
+ and remove the changes in Documentation?
 
-.. and if there are no drivers then Alan is right, this is the wrong
-interface for the 'FPGA as a user space co-processor' model.
+It's only one-line change, so I will keep the code part.
 
-I would also re-iterate my earlier comments: requiring the whole FPGA
-image to be held in ram makes this useless for any of my applications.
+What do you think?
 
-Jason
+Thanks,
+Kan
+
+
