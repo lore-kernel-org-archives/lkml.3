@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736AbbALSFc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:05:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57284 "EHLO
+	id S1757045AbbALTT0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 14:19:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57298 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027AbbALSFV (ORCPT
+	with ESMTP id S1752419AbbALSFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:05:21 -0500
+	Mon, 12 Jan 2015 13:05:23 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
+Cc: Mark Fasheh <mfasheh@suse.de>, Chris Mason <clm@fb.com>,
+        "Sebastiaan L. Zoutendijk" <baszoutendijk@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 005/216] s390/3215: fix tty output containing tabs
-Date: Mon, 12 Jan 2015 18:02:02 +0000
-Message-Id: <1421085933-32536-6-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 006/216] btrfs: don't go readonly on existing qgroup items
+Date: Mon, 12 Jan 2015 18:02:03 +0000
+Message-Id: <1421085933-32536-7-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -28,72 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Mark Fasheh <mfasheh@suse.de>
 
-commit e512d56c799517f33b301d81e9a5e0ebf30c2d1e upstream.
+commit 0b4699dcb65c2cff793210b07f40b98c2d423a43 upstream.
 
-git commit 37f81fa1f63ad38e16125526bb2769ae0ea8d332
-"n_tty: do O_ONLCR translation as a single write"
-surfaced a bug in the 3215 device driver. In combination this
-broke tab expansion for tty ouput.
+btrfs_drop_snapshot() leaves subvolume qgroup items on disk after
+completion. This can cause problems with snapshot creation. If a new
+snapshot tries to claim the deleted subvolumes id, btrfs will get -EEXIST
+from add_qgroup_item() and go read-only. The following commands will
+reproduce this problem (assume btrfs is on /dev/sda and is mounted at
+/btrfs)
 
-The cause is an asymmetry in the behaviour of tty3215_ops->write
-vs tty3215_ops->put_char. The put_char function scans for '\t'
-but the write function does not.
+mkfs.btrfs -f /dev/sda
+mount -t btrfs /dev/sda /btrfs/
+btrfs quota enable /btrfs/
+btrfs su sna /btrfs/ /btrfs/snap
+btrfs su de /btrfs/snap
+sleep 45
+umount /btrfs/
+mount -t btrfs /dev/sda /btrfs/
 
-As the driver has logic for the '\t' expansion remove XTABS
-from c_oflag of the initial termios as well.
+We can fix this by catching -EEXIST in add_qgroup_item() and
+initializing the existing items. We have the problem of orphaned
+relation items being on disk from an old snapshot but that is outside
+the scope of this patch.
 
-Reported-by: Stephen Powell <zlinuxman@wowway.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Mark Fasheh <mfasheh@suse.de>
+Signed-off-by: Chris Mason <clm@fb.com>
+Cc: Sebastiaan L. Zoutendijk <baszoutendijk@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/s390/char/con3215.c | 20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+ fs/btrfs/qgroup.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/s390/char/con3215.c b/drivers/s390/char/con3215.c
-index a6d47e5eee9e..c43aca69fb30 100644
---- a/drivers/s390/char/con3215.c
-+++ b/drivers/s390/char/con3215.c
-@@ -1035,12 +1035,26 @@ static int tty3215_write(struct tty_struct * tty,
- 			 const unsigned char *buf, int count)
- {
- 	struct raw3215_info *raw;
-+	int i, written;
+diff --git a/fs/btrfs/qgroup.c b/fs/btrfs/qgroup.c
+index 3eec914710b2..0e32f21e0868 100644
+--- a/fs/btrfs/qgroup.c
++++ b/fs/btrfs/qgroup.c
+@@ -551,9 +551,15 @@ static int add_qgroup_item(struct btrfs_trans_handle *trans,
+ 	key.type = BTRFS_QGROUP_INFO_KEY;
+ 	key.offset = qgroupid;
  
- 	if (!tty)
- 		return 0;
- 	raw = (struct raw3215_info *) tty->driver_data;
--	raw3215_write(raw, buf, count);
--	return count;
-+	written = count;
-+	while (count > 0) {
-+		for (i = 0; i < count; i++)
-+			if (buf[i] == '\t' || buf[i] == '\n')
-+				break;
-+		raw3215_write(raw, buf, i);
-+		count -= i;
-+		buf += i;
-+		if (count > 0) {
-+			raw3215_putchar(raw, *buf);
-+			count--;
-+			buf++;
-+		}
-+	}
-+	return written;
- }
++	/*
++	 * Avoid a transaction abort by catching -EEXIST here. In that
++	 * case, we proceed by re-initializing the existing structure
++	 * on disk.
++	 */
++
+ 	ret = btrfs_insert_empty_item(trans, quota_root, path, &key,
+ 				      sizeof(*qgroup_info));
+-	if (ret)
++	if (ret && ret != -EEXIST)
+ 		goto out;
  
- /*
-@@ -1188,7 +1202,7 @@ static int __init tty3215_init(void)
- 	driver->subtype = SYSTEM_TYPE_TTY;
- 	driver->init_termios = tty_std_termios;
- 	driver->init_termios.c_iflag = IGNBRK | IGNPAR;
--	driver->init_termios.c_oflag = ONLCR | XTABS;
-+	driver->init_termios.c_oflag = ONLCR;
- 	driver->init_termios.c_lflag = ISIG;
- 	driver->flags = TTY_DRIVER_REAL_RAW;
- 	tty_set_operations(driver, &tty3215_ops);
+ 	leaf = path->nodes[0];
+@@ -572,7 +578,7 @@ static int add_qgroup_item(struct btrfs_trans_handle *trans,
+ 	key.type = BTRFS_QGROUP_LIMIT_KEY;
+ 	ret = btrfs_insert_empty_item(trans, quota_root, path, &key,
+ 				      sizeof(*qgroup_limit));
+-	if (ret)
++	if (ret && ret != -EEXIST)
+ 		goto out;
+ 
+ 	leaf = path->nodes[0];
 -- 
 2.1.4
 
