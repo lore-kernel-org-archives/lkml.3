@@ -1,136 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016AbbALRU0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 12:20:26 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:38807 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649AbbALRUX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 12:20:23 -0500
-MIME-Version: 1.0
-X-Originating-IP: [130.216.30.134]
-In-Reply-To: <1421012945.19708.27.camel@decadent.org.uk>
-References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
-	<1418653622-21105-31-git-send-email-luis.henriques@canonical.com>
-	<1421012945.19708.27.camel@decadent.org.uk>
-Date: Mon, 12 Jan 2015 18:20:22 +0100
-Message-ID: <CAKMK7uFDS339qaqaNeRJ-L+XXKBaS8CgDY1CzEB7ugDmOto+Dw@mail.gmail.com>
-Subject: Re: [PATCH 3.16.y-ckt 030/168] drm/i915: Handle failure to kick out a
- conflicting fb driver
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Luis Henriques <luis.henriques@canonical.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
+	id S1752087AbbALRWA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 12:22:00 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50725 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751649AbbALRV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 12:21:57 -0500
+Date: Mon, 12 Jan 2015 11:20:32 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Sneeker Yeh <sneeker.yeh@gmail.com>
+CC: Felipe Balbi <balbi@ti.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, kernel-team@lists.ubuntu.com,
-        "Nikula, Jani" <jani.nikula@linux.intel.com>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Paul Bolle <pebolle@tiscali.nl>, Hans de Goede <hdegoede@redhat.com>,
+        Thomas Pugliese <thomas.pugliese@gmail.com>,
+        David Mosberger <davidm@egauge.net>,
+        Peter Griffin <peter.griffin@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        Andy Green <andy.green@linaro.org>,
+        Jassi Brar <jaswinder.singh@linaro.org>,
+        Sneeker Yeh <Sneeker.Yeh@tw.fujitsu.com>
+Subject: Re: [PATCH 3/3] usb: dwc3: add a quirk for device disconnection
+ issue in Synopsis dwc3 core
+Message-ID: <20150112172032.GD6525@saruman>
+Reply-To: <balbi@ti.com>
+References: <1418695828-605-1-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
+ <1418695828-605-4-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
+ <20141222153730.GA12815@saruman>
+ <CAJ1gpc3jVpz=5ME4+wCJDW5NKihvB4xYzwi0co=UuPtG9Ubmjg@mail.gmail.com>
+ <CAJ1gpc3-Wjtm54WOhO6RXjZft9BMngzyYC0-S-XnTacV-qKgMg@mail.gmail.com>
+ <20141229160641.GD29379@saruman>
+ <CAJ1gpc0Uu4vS2iA_o_W5NaE_QBWDYFZJio7yKvhpaR5f=qWcGA@mail.gmail.com>
+ <20150105170921.GH19336@saruman>
+ <CAJ1gpc3RZnqizhiasrwS8uy1H_wQAi_T0mPcS8LAK4FhmBRJ6A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3Gf/FFewwPeBMqCJ"
+Content-Disposition: inline
+In-Reply-To: <CAJ1gpc3RZnqizhiasrwS8uy1H_wQAi_T0mPcS8LAK4FhmBRJ6A@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 11, 2015 at 10:49 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
-> On Mon, 2014-12-15 at 14:24 +0000, Luis Henriques wrote:
->> 3.16.7-ckt3 -stable review patch.  If anyone has any objections, please let me know.
->>
->> ------------------
->>
->> From: Chris Wilson <chris@chris-wilson.co.uk>
->>
->> commit f96de58fc7e7d3d717c7c63975c3b896c906b5e3 upstream.
->>
->> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
->> Reviewed-by: Jani Nikula <jani.nikula@intel.com>
->> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
->> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
->
-> Should this also be applied to any older stable branches?
->
-> i915_kick_out_firmware_fb() was introduced in 3.6 and it has always been
-> possible for the alloc_apertures() call to fail.
->
-> remove_conflicting_framebuffers() has returned an error code since 3.14
-> (but could silently fail before then!) so this should be applicable to
-> the 3.14 stable branch too.
+--3Gf/FFewwPeBMqCJ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-tbh I don't know why this patch ended up in a stable kernel, at least
-I didn't find anything where we (drm/i915 maintainers) marked it as
-such. And there's no bugzilla references added either. Imo the patch
-doesn't qualify for stable (it's not a real-world bug afaik).
--Daniel
+Hi,
 
->
-> Ben.
->
->> ---
->>  drivers/gpu/drm/i915/i915_dma.c | 18 +++++++++++++-----
->>  1 file changed, 13 insertions(+), 5 deletions(-)
->>
->> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
->> index d44344140627..0663fb4fa606 100644
->> --- a/drivers/gpu/drm/i915/i915_dma.c
->> +++ b/drivers/gpu/drm/i915/i915_dma.c
->> @@ -1425,15 +1425,16 @@ void i915_master_destroy(struct drm_device *dev, struct drm_master *master)
->>  }
->>
->>  #if IS_ENABLED(CONFIG_FB)
->> -static void i915_kick_out_firmware_fb(struct drm_i915_private *dev_priv)
->> +static int i915_kick_out_firmware_fb(struct drm_i915_private *dev_priv)
->>  {
->>       struct apertures_struct *ap;
->>       struct pci_dev *pdev = dev_priv->dev->pdev;
->>       bool primary;
->> +     int ret;
->>
->>       ap = alloc_apertures(1);
->>       if (!ap)
->> -             return;
->> +             return -ENOMEM;
->>
->>       ap->ranges[0].base = dev_priv->gtt.mappable_base;
->>       ap->ranges[0].size = dev_priv->gtt.mappable_end;
->> @@ -1441,13 +1442,16 @@ static void i915_kick_out_firmware_fb(struct drm_i915_private *dev_priv)
->>       primary =
->>               pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW;
->>
->> -     remove_conflicting_framebuffers(ap, "inteldrmfb", primary);
->> +     ret = remove_conflicting_framebuffers(ap, "inteldrmfb", primary);
->>
->>       kfree(ap);
->> +
->> +     return ret;
->>  }
->>  #else
->> -static void i915_kick_out_firmware_fb(struct drm_i915_private *dev_priv)
->> +static int i915_kick_out_firmware_fb(struct drm_i915_private *dev_priv)
->>  {
->> +     return 0;
->>  }
->>  #endif
->>
->> @@ -1664,7 +1668,11 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
->>                       goto out_gtt;
->>               }
->>
->> -             i915_kick_out_firmware_fb(dev_priv);
->> +             ret = i915_kick_out_firmware_fb(dev_priv);
->> +             if (ret) {
->> +                     DRM_ERROR("failed to remove conflicting framebuffer drivers\n");
->> +                     goto out_gtt;
->> +             }
->>       }
->>
->>       pci_set_master(dev->pdev);
->
-> --
-> Ben Hutchings
-> One of the nice things about standards is that there are so many of them.
+On Sun, Jan 11, 2015 at 11:19:55PM +0800, Sneeker Yeh wrote:
+> > > > enable the quirk only for you. Isn't there a better way of enabling=
+ the
+> > > > quirk based off of revision detection couple with a look on GHWPARA=
+MS*
+> > > > registers ?
+> > > >
+> > > > What's tricking me is this claim that only config-free PHYs would be
+> > > > affected, why ?
+> > > >
+> > >
+> > > i'm still struggling now to try to get more information about this.
+> > > some security policy inside Fujitsu make me unable to access full
+> > > information of this errata today.
+> > >
+> > > Someday after i get enough information,
+> > > i shall take your suggestion here that seems better to incur quirk
+> > > dynamically via GHWPARAMS,
+> > > and then send it here again.
+> >
+> > ok, hopefully you'll find a way ;-)
+> >
+> > I got some update information here finally~
+> in case i express unclearly i also put a pdf:
+> https://drive.google.com/file/d/0B18MmcvvKjNNbDF6eEdHSzZCazA/view
+>=20
+> This issue is defined by a two-way race at disconnect, between
+> 1) class driver interrupt endpoint resheduling attempts if the ISR gave an
+> ep error event due to device detach (it would try 3 times)
+> 2) Disconnect interrupt on PORTSC_CSC, which is cleared by hub thread
+> asynchronously
+> 3) The hardware IP was configured in silicon with
+>        - DWC_USB3_SUSPEND_ON_DISCONNECT_EN=3D1 (this is an IP configurati=
+on
 
+yeah, aparently this is another configuration which is not exposed on
+HWPARAMS registers. Paul, can you confirm for us ? I couldn't find it on
+Databook on any of the HWPARAMS registers.
 
+> port whose state cannot be checked from software)
+>        - Synopsys IP version is < 3.00a
 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+heh, so pretty much everybody :-)
+
+>        The IP will auto-suspend itself on device detach with some
+> phy-specific interval after CSC is cleared by 2)
+>=20
+> If 2) and 3) complete before 1), the interrupts it expects will not be
+> generated by the autosuspended IP, leading to a deadlock. Even later
+> disconnection procedure would detect that corresponding urb is still
+> in-progress and issue a ep stop command, auto-suspended IP still won't
+> respond to that command.
+>=20
+> this defect would result in this when device detached:
+> -------------------
+> [   99.603544] usb 4-1: USB disconnect, device number 2
+> [  104.615254] xhci-hcd xhci-hcd.0.auto: xHCI host not responding to stop
+> endpoint command.
+> [  104.623362] xhci-hcd xhci-hcd.0.auto: Assuming host is dying, halting
+> host.
+> [  104.653261] xhci-hcd xhci-hcd.0.auto: Host not halted after 16000
+> microseconds.
+> [  104.660584] xhci-hcd xhci-hcd.0.auto: Non-responsive xHCI host is not
+> halting.
+> [  104.667817] xhci-hcd xhci-hcd.0.auto: Completing active URBs anyway.
+> [  104.674198] xhci-hcd xhci-hcd.0.auto: HC died; cleaning up
+> --------------------
+> As a result, when device detached, we desired to postpone "PORTCSC clear"
+> behind "disable slot". it's found that all executed ep command related to
+> disconnetion, are executed before "disable slot".
+
+Now this is all great information and they should all be part of your
+commit log and probably a big comment should be added to code as well.
+
+Thanks for going after all these details, now let's figure out a way to
+pass dwc3 revision to xhci, or maybe we pass just a flag for the quirk,
+something like:
+
+	if (dwc->revision < 3.00a && dwc->has_suspend_on_disconnect)
+		xhci_pdata.delay_portcsc_clear =3D true;
+
+or something similar to that.
+
+cheers
+
+--=20
+balbi
+
+--3Gf/FFewwPeBMqCJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUtAJgAAoJEIaOsuA1yqREGw8P/jpIGLNqcZXQ98zMo0UbgeYx
+5Qsk4DCs3DzruXojtOo09RY9uGmFQybUyarlc9jEmuiBm/IZVLYKDGMggGb9qUY9
+o9o+T9G7oMCFN7IisMrFuc6KNQJARkXfKBjuHZOzRiEdaZE73ie7D6yUJa15ggzR
+h2Pnei2Dzmcu6rNCWjrZhLt05W/GAGUpFQX9DgW59DKU7GR+2YUviSlvNXyUy2wL
+WiFDhHRV25aGIFY9rH4sKTDvSRDJgqWV/gZLMwU0lZmCMfpgJA5hFECr5m0TWrbe
+SIgPE1nb8KIsbWM5qboFQg9Iue3OziuXsgTtoYg6SJd5WRw+EYl7LI/ayxJErTqJ
+GaamsnM+SG3QDlM1lS9+WsqP46unsFoXwu5lTFhkmjg9SwYMt57xX2Bm4VaKs0v0
+2ln/fxWjpFTpgQzeqWTejbnlQGqnQ/9PWxW4Eyd0REjIo1QrTeH+57O0PgvDx+X/
+K8hQMuZfL+LZPfcCOOy/ijHM0WUaWlAxS47J+QMWgvGr5TIX6ubLC4K4c/eAOD2w
+0jZntuhDY/k6C8MutWcSMSq9iqt4sCTCdCM3ts718EUMwk5eTsz4hrINL0dUR47l
+MZOHO/+ii4U1U9unVhLio1voSnail6VnkCrOGR3SZpRK2ClBHDupvJfdhs2gs5yg
+ND71GCunNsNVzmQWhQvu
+=HyRL
+-----END PGP SIGNATURE-----
+
+--3Gf/FFewwPeBMqCJ--
