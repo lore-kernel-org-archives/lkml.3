@@ -1,134 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503AbbALO6d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 09:58:33 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:41155 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752533AbbALO5r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 09:57:47 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@redhat.com,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [RFC 4/4] locking/spinlock: additional lock information when dumping locks
-Date: Mon, 12 Jan 2015 09:57:11 -0500
-Message-Id: <1421074631-18831-4-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1421074631-18831-1-git-send-email-sasha.levin@oracle.com>
-References: <1421074631-18831-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S1753253AbbALPB2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 10:01:28 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:64914 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751281AbbALPB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 10:01:26 -0500
+X-IronPort-AV: E=Sophos;i="5.07,744,1413244800"; 
+   d="scan'208";a="214783085"
+Message-ID: <54B3E1AC.6080902@citrix.com>
+Date: Mon, 12 Jan 2015 15:01:00 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+MIME-Version: 1.0
+To: Jiang Liu <jiang.liu@linux.intel.com>,
+        Sander Eikelenboom <linux@eikelenboom.it>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "Grant Likely" <grant.likely@linaro.org>,
+        Yinghai Lu <yinghai@kernel.org>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH v2] [Bugfix] x86/apic: Fix xen IRQ allocation
+ failure caused by commit b81975eade8c
+References: <1767175032.20150110201202@eikelenboom.it> <1421069966-19729-1-git-send-email-jiang.liu@linux.intel.com>
+In-Reply-To: <1421069966-19729-1-git-send-email-jiang.liu@linux.intel.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Show the owner cpu and task of the lock when dumping held locks in the system.
+On 12/01/15 13:39, Jiang Liu wrote:
+> Commit b81975eade8c ("x86, irq: Clean up irqdomain transition code")
+> breaks xen IRQ allocation because xen_smp_prepare_cpus() doesn't invoke
+> setup_IO_APIC(), so no irqdomains created for IOAPICs and
+> mp_map_pin_to_irq() fails at the very beginning.
+> 
+> Enhance xen_smp_prepare_cpus() to call setup_IO_APIC() to initialize
+> irqdomain for IOAPICs.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- include/linux/lockdep.h         |    2 +-
- include/linux/spinlock.h        |    4 ++++
- include/linux/spinlock_types.h  |    2 +-
- kernel/locking/lockdep.c        |    5 +++++
- kernel/locking/spinlock_debug.c |   17 ++++++++++++++++-
- 5 files changed, 27 insertions(+), 3 deletions(-)
+Having Xen call setup_IO_APIC() to initialize the irq domains then having to
+add special cases to it is just wrong.
 
-diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
-index 4527f99..01e0b14 100644
---- a/include/linux/lockdep.h
-+++ b/include/linux/lockdep.h
-@@ -143,7 +143,7 @@ struct lock_class_stats lock_stats(struct lock_class *class);
- void clear_lock_stats(struct lock_class *class);
- #endif
+The bits of init deferred by mp_register_apic() are also deferred to
+two different places which looks odd.
+
+What about something like the following (untested) patch?
+
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 3f5f604..e180680 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -253,8 +253,10 @@ int __init arch_early_ioapic_init(void)
+ 	if (!nr_legacy_irqs())
+ 		io_apic_irqs = ~0UL;
  
--enum LOCK_TYPE { LOCKTYPE_NONE, LOCKTYPE_MUTEX, LOCKTYPE_RWSEM, };
-+enum LOCK_TYPE { LOCKTYPE_NONE, LOCKTYPE_MUTEX, LOCKTYPE_RWSEM, LOCKTYPE_SPINLOCK, };
+-	for_each_ioapic(i)
++	for_each_ioapic(i) {
++		BUG_ON(mp_irqdomain_create(ioapic));
+ 		alloc_ioapic_saved_registers(i);
++	}
  
- /*
-  * Map the lock object (the lock instance) to the lock-class object.
-diff --git a/include/linux/spinlock.h b/include/linux/spinlock.h
-index 3e18379..963f7626 100644
---- a/include/linux/spinlock.h
-+++ b/include/linux/spinlock.h
-@@ -409,6 +409,10 @@ static inline int spin_can_lock(spinlock_t *lock)
+ 	/*
+ 	 * For legacy IRQ's, start with assigning irq0 to irq15 to
+@@ -2379,8 +2381,6 @@ void __init setup_IO_APIC(void)
+ 	io_apic_irqs = nr_legacy_irqs() ? ~PIC_IRQS : ~0UL;
  
- #define assert_spin_locked(lock)	assert_raw_spin_locked(&(lock)->rlock)
+ 	apic_printk(APIC_VERBOSE, "ENABLING IO-APIC IRQs\n");
+-	for_each_ioapic(ioapic)
+-		BUG_ON(mp_irqdomain_create(ioapic));
  
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+extern void spinlock_print_debug(const spinlock_t *lock);
-+#endif
-+
- /*
-  * Pull the atomic_t declaration:
-  * (asm-mips/atomic.h needs above definitions)
-diff --git a/include/linux/spinlock_types.h b/include/linux/spinlock_types.h
-index 73548eb..efbe667 100644
---- a/include/linux/spinlock_types.h
-+++ b/include/linux/spinlock_types.h
-@@ -36,7 +36,7 @@ typedef struct raw_spinlock {
- #define SPINLOCK_OWNER_INIT	((void *)-1L)
- 
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
--# define SPIN_DEP_MAP_INIT(lockname)	.dep_map = { .name = #lockname }
-+# define SPIN_DEP_MAP_INIT(lockname)	.dep_map = { .name = #lockname, .type = LOCKTYPE_SPINLOCK }
- #else
- # define SPIN_DEP_MAP_INIT(lockname)
- #endif
-diff --git a/kernel/locking/lockdep.c b/kernel/locking/lockdep.c
-index e75f83b..b3d4151 100644
---- a/kernel/locking/lockdep.c
-+++ b/kernel/locking/lockdep.c
-@@ -512,6 +512,7 @@ static void get_lock_info(enum LOCK_TYPE t, struct lockdep_map *map)
- {
- 	struct mutex *mtx;
- 	struct rw_semaphore *rw;
-+	spinlock_t *spin;
- 
- 	switch (t) {
- 	case LOCKTYPE_NONE: break;
-@@ -523,6 +524,10 @@ static void get_lock_info(enum LOCK_TYPE t, struct lockdep_map *map)
- 		rw = container_of(map, struct rw_semaphore, dep_map);
- 		rwsem_print_debug(rw);
- 		break;
-+	case LOCKTYPE_SPINLOCK:
-+		spin = container_of(map, struct spinlock, dep_map);
-+		spinlock_print_debug(spin);
-+		break;
- 	}
- }
- 
-diff --git a/kernel/locking/spinlock_debug.c b/kernel/locking/spinlock_debug.c
-index 0374a59..52798c0 100644
---- a/kernel/locking/spinlock_debug.c
-+++ b/kernel/locking/spinlock_debug.c
-@@ -21,7 +21,7 @@ void __raw_spin_lock_init(raw_spinlock_t *lock, const char *name,
- 	 * Make sure we are not reinitializing a held lock:
+ 	/*
+          * Set up IO-APIC IRQ routing.
+@@ -2929,7 +2929,8 @@ int mp_register_ioapic(int id, u32 address, u32 gsi_base,
+ 	/*
+ 	 * If mp_register_ioapic() is called during early boot stage when
+ 	 * walking ACPI/SFI/DT tables, it's too early to create irqdomain,
+-	 * we are still using bootmem allocator. So delay it to setup_IO_APIC().
++	 * we are still using bootmem allocator. So delay it to
++	 * arch_early_ioapic_init().
  	 */
- 	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
--	lockdep_init_map(&lock->dep_map, name, key, 0);
-+	lockdep_init_map_type(&lock->dep_map, name, key, 0, LOCKTYPE_SPINLOCK);
- #endif
- 	lock->raw_lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
- 	lock->magic = SPINLOCK_MAGIC;
-@@ -300,3 +300,18 @@ void do_raw_write_unlock(rwlock_t *lock)
- 	debug_write_unlock(lock);
- 	arch_write_unlock(&lock->raw_lock);
- }
-+
-+void spinlock_print_debug(const spinlock_t *lock)
-+{
-+	const char *owner_comm = NULL;
-+	const struct task_struct *owner;
-+	unsigned int cpu = lock->rlock.owner_cpu;
-+
-+	owner = lock->rlock.owner;
-+
-+	if (owner && owner != SPINLOCK_OWNER_INIT)
-+		owner_comm = owner->comm;
-+
-+	printk("Spinlock: owner cpu: %u owner: %s\n", cpu, owner_comm);
-+}
-+EXPORT_SYMBOL_GPL(spinlock_print_debug);
--- 
-1.7.10.4
+ 	if (hotplug) {
+ 		if (mp_irqdomain_create(idx)) {
 
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -2369,6 +2381,15 @@ static void ioapic_destroy_irqdomain(int idx)
+>  	ioapics[idx].pin_info = NULL;
+>  }
+>  
+> +static void setup_IO_APIC_IDs(void)
+> +{
+> +	if (xen_domain())
+> +		return;
+
+This would have to xen_pv_domain().
+
+David
