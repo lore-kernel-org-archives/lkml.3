@@ -1,67 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960AbbALKU7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 05:20:59 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:57251 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752422AbbALKU6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 05:20:58 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, <linux-mm@kvack.org>,
-        <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm] fs: shrinker: always scan at least one object of each type
-Date: Mon, 12 Jan 2015 13:20:46 +0300
-Message-ID: <1421058046-2434-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752834AbbALKXJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 05:23:09 -0500
+Received: from mga09.intel.com ([134.134.136.24]:30960 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752108AbbALKXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 05:23:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="439406049"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v1] fs/proc/array.c: convert to use string_escape_str()
+Date: Mon, 12 Jan 2015 12:23:04 +0200
+Message-Id: <1421058184-26936-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In super_cache_scan() we divide the number of objects of particular type
-by the total number of objects in order to distribute pressure among
-different types of fs objects (inodes, dentries, fs-private objects).
-As a result, in some corner cases we can get nr_to_scan=0 even if there
-are some objects to reclaim, e.g. dentries=1, inodes=1, fs_objects=1,
-nr_to_scan=1/3=0.
+Instead of custom approach let's use string_escape_str() to escape a given
+string (task_name in this case).
 
-This is unacceptable for per memcg kmem accounting, because this means
-that some objects may never get reclaimed after memcg death, preventing
-it from being freed.
-
-This patch therefore assures that super_cache_scan() will scan at least
-one object of each type if any.
-
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
- fs/super.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/proc/array.c | 34 +++++++---------------------------
+ 1 file changed, 7 insertions(+), 27 deletions(-)
 
-diff --git a/fs/super.c b/fs/super.c
-index 482b4071f4de..63136156867e 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -92,13 +92,13 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
- 	 * prune the dcache first as the icache is pinned by it, then
- 	 * prune the icache, followed by the filesystem specific caches
- 	 */
--	sc->nr_to_scan = dentries;
-+	sc->nr_to_scan = dentries + 1;
- 	freed = prune_dcache_sb(sb, sc);
--	sc->nr_to_scan = inodes;
-+	sc->nr_to_scan = inodes + 1;
- 	freed += prune_icache_sb(sb, sc);
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index bd117d0..a3ccf4c 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -81,6 +81,7 @@
+ #include <linux/pid_namespace.h>
+ #include <linux/ptrace.h>
+ #include <linux/tracehook.h>
++#include <linux/string_helpers.h>
+ #include <linux/user_namespace.h>
  
- 	if (fs_objects) {
--		sc->nr_to_scan = fs_objects;
-+		sc->nr_to_scan = fs_objects + 1;
- 		freed += sb->s_op->free_cached_objects(sb, sc);
- 	}
+ #include <asm/pgtable.h>
+@@ -89,39 +90,18 @@
  
+ static inline void task_name(struct seq_file *m, struct task_struct *p)
+ {
+-	int i;
+-	char *buf, *end;
+-	char *name;
++	char *buf;
+ 	char tcomm[sizeof(p->comm)];
+ 
+ 	get_task_comm(tcomm, p);
+ 
+ 	seq_puts(m, "Name:\t");
+-	end = m->buf + m->size;
+ 	buf = m->buf + m->count;
+-	name = tcomm;
+-	i = sizeof(tcomm);
+-	while (i && (buf < end)) {
+-		unsigned char c = *name;
+-		name++;
+-		i--;
+-		*buf = c;
+-		if (!c)
+-			break;
+-		if (c == '\\') {
+-			buf++;
+-			if (buf < end)
+-				*buf++ = c;
+-			continue;
+-		}
+-		if (c == '\n') {
+-			*buf++ = '\\';
+-			if (buf < end)
+-				*buf++ = 'n';
+-			continue;
+-		}
+-		buf++;
+-	}
++
++	/* Ignore error for now */
++	string_escape_str(tcomm, &buf, m->size - m->count,
++			  ESCAPE_SPACE | ESCAPE_SPECIAL, "\n\\");
++
+ 	m->count = buf - m->buf;
+ 	seq_putc(m, '\n');
+ }
 -- 
-1.7.10.4
+2.1.4
 
