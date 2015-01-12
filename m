@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977AbbALSry (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:47:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58280 "EHLO
+	id S1756010AbbALSuA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:50:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58217 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755155AbbALSac (ORCPT
+	with ESMTP id S1754055AbbALSaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:30:32 -0500
+	Mon, 12 Jan 2015 13:30:24 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Vince Weaver <vince@deater.net>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, Ingo Molnar <mingo@kernel.org>,
+Cc: Imre Deak <imre.deak@intel.com>, Jani Nikula <jani.nikula@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 163/216] perf: Fix events installation during moving group
-Date: Mon, 12 Jan 2015 18:29:01 +0000
-Message-Id: <1421087394-2712-51-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 164/216] drm/i915: vlv: fix IRQ masking when uninstalling interrupts
+Date: Mon, 12 Jan 2015 18:29:02 +0000
+Message-Id: <1421087394-2712-52-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,78 +30,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@kernel.org>
+From: Imre Deak <imre.deak@intel.com>
 
-commit 9fc81d87420d0d3fd62d5e5529972c0ad9eab9cc upstream.
+commit c352d1ba1e1e2c8a96af660944a58e86b12ac4af upstream.
 
-We allow PMU driver to change the cpu on which the event
-should be installed to. This happened in patch:
+irq_mask should include all IRQ bits that we want to mask, but atm we
+set it incorrectly to the inverse of this. If the mask is used
+subsequently to enable/disable some IRQ bits, we may unintentionally
+unmask unrelated IRQs. I can't see any way that this can lead to a real
+problem in the current -nightly code, since the first place the mask
+will be used next (after a suspend/resume cycle) is in
+valleyview_irq_postinstall(), but the mask is reset there to its proper
+value.
 
-  e2d37cd213dc ("perf: Allow the PMU driver to choose the CPU on which to install events")
+This causes a problem in the upstream kernel though, where - due to another
+issue - the mask is used in the above way to disable only the display IRQs.
+This other issue is fixed by:
 
-This patch also forces all the group members to follow
-the currently opened events cpu if the group happened
-to be moved.
+commit 950eabaf5a87257040e0c207be09487954113f54
+Author: Imre Deak <imre.deak@intel.com>
+Date:   Mon Sep 8 15:21:09 2014 +0300
 
-This and the change of event->cpu in perf_install_in_context()
-function introduced in:
+    drm/i915: vlv: fix display IRQ enable/disable
 
-  0cda4c023132 ("perf: Introduce perf_pmu_migrate_context()")
+Interestingly, even with the above two bugs, we shouldn't in theory have
+any real problems (arguably a famous last sentence:). That's because
+even if we unmask something unintentionally via the VLV_IMR/VLV_IER
+register the master IRQ masking bit in VLV_MASTER_IER is still set and
+should prevent all i915 interrupts. According to my testing on an ASUS
+T100 with DSI output this isn't the case at least with the
+MIPIA_INTERRUPT. Leaving this one unmasked in IMR/IER, while having
+VLV_MASTER_IER set to 0 may lead to a lockup during system suspend as
+shown in the bugzilla ticket below. This fix should get rid of the
+problem reported there in upstream and older kernels.
 
-forces group members to change their event->cpu,
-if the currently-opened-event's PMU changed the cpu
-and there is a group move.
-
-Above behaviour causes problem for breakpoint events,
-which uses event->cpu to touch cpu specific data for
-breakpoints accounting. By changing event->cpu, some
-breakpoints slots were wrongly accounted for given
-cpu.
-
-Vinces's perf fuzzer hit this issue and caused following
-WARN on my setup:
-
-   WARNING: CPU: 0 PID: 20214 at arch/x86/kernel/hw_breakpoint.c:119 arch_install_hw_breakpoint+0x142/0x150()
-   Can't find any breakpoint slot
-   [...]
-
-This patch changes the group moving code to keep the event's
-original cpu.
-
-Reported-by: Vince Weaver <vince@deater.net>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Vince Weaver <vince@deater.net>
-Cc: Yan, Zheng <zheng.z.yan@intel.com>
-Link: http://lkml.kernel.org/r/1418243031-20367-3-git-send-email-jolsa@kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=85920
+Signed-off-by: Imre Deak <imre.deak@intel.com>
+Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+[ luis: backported to 3.16: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/events/core.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_irq.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 6bc75223aaa7..cfaeffaefc75 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7329,11 +7329,11 @@ SYSCALL_DEFINE5(perf_event_open,
+diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
+index c05c84f3f091..b54f8563ebbb 100644
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -3591,7 +3591,7 @@ static void valleyview_irq_uninstall(struct drm_device *dev)
+ 		valleyview_display_irqs_uninstall(dev_priv);
+ 	spin_unlock_irqrestore(&dev_priv->irq_lock, irqflags);
  
- 	if (move_group) {
- 		synchronize_rcu();
--		perf_install_in_context(ctx, group_leader, event->cpu);
-+		perf_install_in_context(ctx, group_leader, group_leader->cpu);
- 		get_ctx(ctx);
- 		list_for_each_entry(sibling, &group_leader->sibling_list,
- 				    group_entry) {
--			perf_install_in_context(ctx, sibling, event->cpu);
-+			perf_install_in_context(ctx, sibling, sibling->cpu);
- 			get_ctx(ctx);
- 		}
- 	}
+-	dev_priv->irq_mask = 0;
++	dev_priv->irq_mask = ~0;
+ 
+ 	I915_WRITE(VLV_IIR, 0xffffffff);
+ 	I915_WRITE(VLV_IMR, 0xffffffff);
 -- 
 2.1.4
 
