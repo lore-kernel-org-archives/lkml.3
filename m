@@ -1,101 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131AbbALHKE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 02:10:04 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:38097 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995AbbALHKA (ORCPT
+	id S1752142AbbALHKt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 02:10:49 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:14257 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995AbbALHKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 02:10:00 -0500
-Message-ID: <54B37336.40109@oracle.com>
-Date: Mon, 12 Jan 2015 15:09:42 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: =?windows-1252?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
-CC: xen-devel@lists.xen.org, konrad.wilk@oracle.com,
-        linux-kernel@vger.kernel.org, david.vrabel@citrix.com,
-        junxiao.bi@oracle.com
-Subject: Re: [PATCH] xen/blkfront: restart request queue when there is enough
- persistent_gnts_c
-References: <1420550343-14013-1-git-send-email-bob.liu@oracle.com> <54AFF909.3090909@citrix.com>
-In-Reply-To: <54AFF909.3090909@citrix.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Mon, 12 Jan 2015 02:10:46 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-bf-54b373740a6f
+From: Chao Yu <chao2.yu@samsung.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [f2fs-dev][RFC PATCH 02/10] f2fs: simplfy a field name in struct
+ f2fs_extent,extent_info
+Date: Mon, 12 Jan 2015 15:10:01 +0800
+Message-id: <000601d02e36$e2a8f660$a7fae320$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AdAuD7JvK5l6AHY2Sx+/Gu0VUYjQTg==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jQd2S4s0hBv+XGFhc29fIZPFk/Sxm
+	i0uL3C0u75rD5sDisWlVJ5vH7gWfmTz6tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoEr4+vGo8wF
+	H2QqHjZ8YGlg/CzWxcjJISFgIjHhQD87hC0mceHeerYuRi4OIYHpjBIzri5khnB+MEp823SN
+	FaSKTUBFYnnHfyYQW0TAS2LS/hMsIDazgIdEY8d3sBphgWSJZw0ngJo5OFgEVCWmfNQACfMK
+	WErc2PSdGcIWlPgx+R5Uq5bE+p3HmSBseYnNa94yQxykILHj7GtGiFV6El/OXGaDqBGX2Hjk
+	FssERoFZSEbNQjJqFpJRs5C0LGBkWcUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHNLPpHcw
+	rmqwOMQowMGoxMNrIbU5RIg1say4MvcQowQHs5IIb5g1UIg3JbGyKrUoP76oNCe1+BCjNAeL
+	kjivkn1biJBAemJJanZqakFqEUyWiYNTqoFxs9blps74FyIPVxs7pN7Y0rrr0O/zmf8L5H19
+	/10uOrooa803DpXrhoUaz948/JovevDxMj3tth4r0b+ucy+7/IndJaeimWSzIaNv6js95Sen
+	vyfFLM2WMnhlMyU1mtEmiFNqt+gURbdZ3NqxgkaC7wz9OTt+MW65LPvk3GSZ6ZO7tZdMiC9V
+	YinOSDTUYi4qTgQAE7SCtmUCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Rename a filed name from 'blk_addr' to 'blk' in struct {f2fs_extent,extent_info}
+as annotation of this field descripts its meaning well to us.
+By this way, we can avoid long statement in code of following patches.
 
-On 01/09/2015 11:51 PM, Roger Pau Monné wrote:
-> El 06/01/15 a les 14.19, Bob Liu ha escrit:
->> When there is no enough free grants, gnttab_alloc_grant_references()
->> will fail and block request queue will stop.
->> If the system is always lack of grants, blkif_restart_queue_callback() can't be
->> scheduled and block request queue can't be restart(block I/O hang).
->>
->> But when there are former requests complete, some grants may free to
->> persistent_gnts_c, we can give the request queue another chance to restart and
->> avoid block hang.
->>
->> Reported-by: Junxiao Bi <junxiao.bi@oracle.com>
->> Signed-off-by: Bob Liu <bob.liu@oracle.com>
->> ---
->>  drivers/block/xen-blkfront.c |   11 +++++++++++
->>  1 file changed, 11 insertions(+)
->>
->> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
->> index 2236c6f..dd30f99 100644
->> --- a/drivers/block/xen-blkfront.c
->> +++ b/drivers/block/xen-blkfront.c
->> @@ -1125,6 +1125,17 @@ static void blkif_completion(struct blk_shadow *s, struct blkfront_info *info,
->>  			}
->>  		}
->>  	}
->> +
->> +	/*
->> +	 * Request queue would be stopped if failed to alloc enough grants and
->> +	 * won't be restarted until gnttab_free_count >= info->callback->count.
->> +	 *
->> +	 * But there is another case, once we have enough persistent grants we
->> +	 * can try to restart the request queue instead of continue to wait for
->> +	 * 'gnttab_free_count'.
->> +	 */
->> +	if (info->persistent_gnts_c >= info->callback.count)
->> +		schedule_work(&info->work);
-> 
-> I guess I'm missing something here, but blkif_completion is called by
-> blkif_interrupt, which in turn calls kick_pending_request_queues when
-> finished, which IMHO should be enough to restart the processing of requests.
-> 
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/data.c          | 13 ++++++-------
+ fs/f2fs/f2fs.h          |  6 +++---
+ include/linux/f2fs_fs.h |  2 +-
+ 3 files changed, 10 insertions(+), 11 deletions(-)
 
-You are right, sorry for the mistake.
-
-The problem we met was a xenblock I/O hang.
-Dumped data showed at that time info->persistent_gnt_c = 8, max_gref = 8
-but block request queue was still stopped.
-It's very hard to reproduce this issue, we only see it once.
-
-I think there might be a race condition:
-
-request A                          request B:
-
-                                   info->persistent_gnts_c < max_grefs
-                                   and fail to alloc enough grants
-
-
-^^^^
-interrupt happen, blkif_complte():
-info->persistent_gnts_c++
-kick_pending_request_queues()
-
-                                    stop block request queue
-                                    added to callback list
-
-If the system don't have enough grants(but have enough persistent_gnts),
-request queue would still hang.
-
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index fece5cc..935a23b 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -268,7 +268,7 @@ static int check_extent_cache(struct inode *inode, pgoff_t pgofs,
+ 
+ 	start_fofs = fi->ext.fofs;
+ 	end_fofs = fi->ext.fofs + fi->ext.len - 1;
+-	start_blkaddr = fi->ext.blk_addr;
++	start_blkaddr = fi->ext.blk;
+ 
+ 	if (pgofs >= start_fofs && pgofs <= end_fofs) {
+ 		unsigned int blkbits = inode->i_sb->s_blocksize_bits;
+@@ -313,8 +313,8 @@ void update_extent_cache(struct dnode_of_data *dn)
+ 
+ 	start_fofs = fi->ext.fofs;
+ 	end_fofs = fi->ext.fofs + fi->ext.len - 1;
+-	start_blkaddr = fi->ext.blk_addr;
+-	end_blkaddr = fi->ext.blk_addr + fi->ext.len - 1;
++	start_blkaddr = fi->ext.blk;
++	end_blkaddr = fi->ext.blk + fi->ext.len - 1;
+ 
+ 	/* Drop and initialize the matched extent */
+ 	if (fi->ext.len == 1 && fofs == start_fofs)
+@@ -324,7 +324,7 @@ void update_extent_cache(struct dnode_of_data *dn)
+ 	if (fi->ext.len == 0) {
+ 		if (dn->data_blkaddr != NULL_ADDR) {
+ 			fi->ext.fofs = fofs;
+-			fi->ext.blk_addr = dn->data_blkaddr;
++			fi->ext.blk = dn->data_blkaddr;
+ 			fi->ext.len = 1;
+ 		}
+ 		goto end_update;
+@@ -333,7 +333,7 @@ void update_extent_cache(struct dnode_of_data *dn)
+ 	/* Front merge */
+ 	if (fofs == start_fofs - 1 && dn->data_blkaddr == start_blkaddr - 1) {
+ 		fi->ext.fofs--;
+-		fi->ext.blk_addr--;
++		fi->ext.blk--;
+ 		fi->ext.len++;
+ 		goto end_update;
+ 	}
+@@ -351,8 +351,7 @@ void update_extent_cache(struct dnode_of_data *dn)
+ 			fi->ext.len = fofs - start_fofs;
+ 		} else {
+ 			fi->ext.fofs = fofs + 1;
+-			fi->ext.blk_addr = start_blkaddr +
+-					fofs - start_fofs + 1;
++			fi->ext.blk = start_blkaddr + fofs - start_fofs + 1;
+ 			fi->ext.len -= fofs - start_fofs + 1;
+ 		}
+ 	} else {
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index beacda0..a74ad85 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -272,7 +272,7 @@ enum {
+ 
+ struct extent_info {
+ 	unsigned int fofs;	/* start offset in a file */
+-	u32 blk_addr;		/* start block address of the extent */
++	u32 blk;		/* start block address of the extent */
+ 	unsigned int len;	/* length of the extent */
+ };
+ 
+@@ -314,7 +314,7 @@ static inline void get_extent_info(struct extent_info *ext,
+ 					struct f2fs_extent i_ext)
+ {
+ 	ext->fofs = le32_to_cpu(i_ext.fofs);
+-	ext->blk_addr = le32_to_cpu(i_ext.blk_addr);
++	ext->blk = le32_to_cpu(i_ext.blk);
+ 	ext->len = le32_to_cpu(i_ext.len);
+ }
+ 
+@@ -322,7 +322,7 @@ static inline void set_raw_extent(struct extent_info *ext,
+ 					struct f2fs_extent *i_ext)
+ {
+ 	i_ext->fofs = cpu_to_le32(ext->fofs);
+-	i_ext->blk_addr = cpu_to_le32(ext->blk_addr);
++	i_ext->blk = cpu_to_le32(ext->blk);
+ 	i_ext->len = cpu_to_le32(ext->len);
+ }
+ 
+diff --git a/include/linux/f2fs_fs.h b/include/linux/f2fs_fs.h
+index e993b0b..295acfa 100644
+--- a/include/linux/f2fs_fs.h
++++ b/include/linux/f2fs_fs.h
+@@ -148,7 +148,7 @@ struct f2fs_orphan_block {
+  */
+ struct f2fs_extent {
+ 	__le32 fofs;		/* start file offset of the extent */
+-	__le32 blk_addr;	/* start block address of the extent */
++	__le32 blk;		/* start block address of the extent */
+ 	__le32 len;		/* lengh of the extent */
+ } __packed;
+ 
 -- 
-Regards,
--Bob
+2.2.1
+
+
