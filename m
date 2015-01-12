@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084AbbALSKX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:10:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57793 "EHLO
+	id S1753943AbbALSGy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:06:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57800 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753884AbbALSGs (ORCPT
+	with ESMTP id S1753895AbbALSGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:06:48 -0500
+	Mon, 12 Jan 2015 13:06:49 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Benjamin Coddington <bcodding@redhat.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 106/216] nfsd4: fix xdr4 count of server in fs_location4
-Date: Mon, 12 Jan 2015 18:03:43 +0000
-Message-Id: <1421085933-32536-107-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 107/216] userns: Don't allow setgroups until a gid mapping has been setablished
+Date: Mon, 12 Jan 2015 18:03:44 +0000
+Message-Id: <1421085933-32536-108-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -28,35 +27,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Coddington <bcodding@redhat.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit bf7491f1be5e125eece2ec67e0f79d513caa6c7e upstream.
+commit 273d2c67c3e179adb1e74f403d1e9a06e3f841b5 upstream.
 
-Fix a bug where nfsd4_encode_components_esc() incorrectly calculates the
-length of server array in fs_location4--note that it is a count of the
-number of array elements, not a length in bytes.
+setgroups is unique in not needing a valid mapping before it can be called,
+in the case of setgroups(0, NULL) which drops all supplemental groups.
 
-Signed-off-by: Benjamin Coddington <bcodding@redhat.com>
-Fixes: 082d4bd72a45 (nfsd4: "backfill" using write_bytes_to_xdr_buf)
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+The design of the user namespace assumes that CAP_SETGID can not actually
+be used until a gid mapping is established.  Therefore add a helper function
+to see if the user namespace gid mapping has been established and call
+that function in the setgroups permission check.
+
+This is part of the fix for CVE-2014-8989, being able to drop groups
+without privilege using user namespaces.
+
+Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfsd/nfs4xdr.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/user_namespace.h |  5 +++++
+ kernel/groups.c                |  4 +++-
+ kernel/user_namespace.c        | 14 ++++++++++++++
+ 3 files changed, 22 insertions(+), 1 deletion(-)
 
-diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-index 69f15dc9e16b..dda2e4d91a25 100644
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -1782,7 +1782,7 @@ static __be32 nfsd4_encode_components_esc(struct xdr_stream *xdr, char sep,
+diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+index 4836ba3c1cd8..dd4f91b99b04 100644
+--- a/include/linux/user_namespace.h
++++ b/include/linux/user_namespace.h
+@@ -63,6 +63,7 @@ extern struct seq_operations proc_projid_seq_operations;
+ extern ssize_t proc_uid_map_write(struct file *, const char __user *, size_t, loff_t *);
+ extern ssize_t proc_gid_map_write(struct file *, const char __user *, size_t, loff_t *);
+ extern ssize_t proc_projid_map_write(struct file *, const char __user *, size_t, loff_t *);
++extern bool userns_may_setgroups(const struct user_namespace *ns);
+ #else
  
- 		str = end;
- 	}
--	pathlen = htonl(xdr->buf->len - pathlen_offset);
-+	pathlen = htonl(count);
- 	write_bytes_to_xdr_buf(xdr->buf, pathlen_offset, &pathlen, 4);
- 	return 0;
+ static inline struct user_namespace *get_user_ns(struct user_namespace *ns)
+@@ -87,6 +88,10 @@ static inline void put_user_ns(struct user_namespace *ns)
+ {
  }
+ 
++static inline bool userns_may_setgroups(const struct user_namespace *ns)
++{
++	return true;
++}
+ #endif
+ 
+ #endif /* _LINUX_USER_H */
+diff --git a/kernel/groups.c b/kernel/groups.c
+index 02d8a251c476..664411f171b5 100644
+--- a/kernel/groups.c
++++ b/kernel/groups.c
+@@ -6,6 +6,7 @@
+ #include <linux/slab.h>
+ #include <linux/security.h>
+ #include <linux/syscalls.h>
++#include <linux/user_namespace.h>
+ #include <asm/uaccess.h>
+ 
+ /* init to 2 - one for init_task, one to ensure it is never freed */
+@@ -217,7 +218,8 @@ bool may_setgroups(void)
+ {
+ 	struct user_namespace *user_ns = current_user_ns();
+ 
+-	return ns_capable(user_ns, CAP_SETGID);
++	return ns_capable(user_ns, CAP_SETGID) &&
++		userns_may_setgroups(user_ns);
+ }
+ 
+ /*
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index 5afe24b03a9c..397d7b1e5f40 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -843,6 +843,20 @@ static bool new_idmap_permitted(const struct file *file,
+ 	return false;
+ }
+ 
++bool userns_may_setgroups(const struct user_namespace *ns)
++{
++	bool allowed;
++
++	mutex_lock(&id_map_mutex);
++	/* It is not safe to use setgroups until a gid mapping in
++	 * the user namespace has been established.
++	 */
++	allowed = ns->gid_map.nr_extents != 0;
++	mutex_unlock(&id_map_mutex);
++
++	return allowed;
++}
++
+ static void *userns_get(struct task_struct *task)
+ {
+ 	struct user_namespace *user_ns;
 -- 
 2.1.4
 
