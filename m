@@ -1,88 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093AbbALIXn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 03:23:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41680 "EHLO mx2.suse.de"
+	id S1752096AbbALIZW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 03:25:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35930 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751607AbbALIXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 03:23:41 -0500
-Message-ID: <54B3848A.7040002@suse.com>
-Date: Mon, 12 Jan 2015 09:23:38 +0100
-From: =?windows-1252?Q?J=FCrgen_Gro=DF?= <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1750964AbbALIZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 03:25:18 -0500
+Date: Mon, 12 Jan 2015 16:24:00 +0800
+From: Fam Zheng <famz@redhat.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Andy Lutomirski <luto@amacapital.net>, Miklos Szeredi <mszeredi@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Juri Lelli <juri.lelli@gmail.com>, Zach Brown <zab@zabbo.net>,
+        David Drysdale <drysdale@google.com>,
+        Kees Cook <keescook@chromium.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Dario Faggioli <raistlin@linux.it>, "Theodore Ts'o" <tytso@mit.edu>,
+        Peter Zijlstra <peterz@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Fabian Frederick <fabf@skynet.be>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Subject: Re: [PATCH 0/3] epoll: Add epoll_pwait1 syscall
+Message-ID: <20150112082400.GA21123@fam-t430.nay.redhat.com>
+References: <1420705550-24245-1-git-send-email-famz@redhat.com>
+ <1420708372.18399.15.camel@suse.cz>
+ <CALCETrVyPij1Zxwmw7p06UrZjoyYDXqEjmxyQ-KJ8Y7dx7mL3g@mail.gmail.com>
+ <20150109011608.GA2924@fam-t430.nay.redhat.com>
+ <CALCETrWHGwPw2cH3RruaCFKj2ND8PdEbdWjTi4OJ8m2eF9fpLw@mail.gmail.com>
+ <20150109015248.GA5034@fam-t430.nay.redhat.com>
+ <CALCETrU+MKWCh1FBqvuf3MGo3dTcmdktcM4aVZZGGUAmDNoWtg@mail.gmail.com>
+ <20150109044908.GA10966@fam-t430.nay.redhat.com>
+ <20150109052129.GA6831@thin>
 MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, David Vrabel <david.vrabel@citrix.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, xen-devel@lists.xenproject.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Xen-devel] [PATCH] x86: xen: mmu: Remove unused function
-References: <1421015741-25110-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1421015741-25110-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150109052129.GA6831@thin>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2015 11:35 PM, Rickard Strandqvist wrote:
-> Remove the function set_pte_mfn() that is not used anywhere.
->
-> This was partially found by using a static code analysis program called cppcheck.
+On Thu, 01/08 21:21, Josh Triplett wrote:
+> On Fri, Jan 09, 2015 at 12:49:08PM +0800, Fam Zheng wrote:
+> > On Thu, 01/08 18:24, Andy Lutomirski wrote:
+> > > On Thu, Jan 8, 2015 at 5:52 PM, Fam Zheng <famz@redhat.com> wrote:
+> > > > On Thu, 01/08 17:28, Andy Lutomirski wrote:
+> > > >> On Thu, Jan 8, 2015 at 5:25 PM, Fam Zheng <famz@redhat.com> wrote:
+> > > >> > On Thu, 01/08 09:57, Andy Lutomirski wrote:
+> > > >> >> I'd like to see a more ambitious change, since the timer isn't the
+> > > >> >> only problem like this.  Specifically, I'd like a syscall that does a
+> > > >> >> list of epoll-related things and then waits.  The list of things could
+> > > >> >> include, at least:
+> > > >> >>
+> > > >> >>  - EPOLL_CTL_MOD actions: level-triggered epoll users are likely to
+> > > >> >> want to turn on and off their requests for events on a somewhat
+> > > >> >> regular basis.
+> > > >> >
+> > > >> > This sounds good to me.
+> > > >> >
+> > > >> >>
+> > > >> >>  - timerfd_settime actions: this allows a single syscall to wait and
+> > > >> >> adjust *both* monotonic and real-time wakeups.
+> > > >> >
+> > > >> > I'm not sure, doesn't this break orthogonality between epoll and timerfd?
+> > > >>
+> > > >> Yes.  It's not very elegant, and more elegant ideas are welcome.
+> > > >
+> > > > What is the purpose of embedding timerfd operation here? Modifying timerfd
+> > > > for each poll doesn't sound a common pattern to me.
+> > > 
+> > > Setting a timeout is definitely a common pattern, hence this thread.
+> > > But the current timeout interface sucks, and people should really use
+> > > absolute time.  (My epoll software uses absolute time.)  But then
+> > > users need to decide whether to have their timeout based on the
+> > > monotonic clock or the realtime clock (or something else entirely).
+> > > Some bigger programs may want both -- they may have internal events
+> > > queued for certain times and for certain timeouts, and those should
+> > > use realtime and monotonic respectively.  Heck, users may also want
+> > > separate slack values on those.
+> > > 
+> > > Timerfd is the only thing we have right now that is anywhere near
+> > > flexible enough.  Obviously if epoll became fancy enough, then we
+> > > could do away with the timerfd entirely here.
+> > > 
+> > > >
+> > > >>
+> > > >> >
+> > > >> >>
+> > > >> >> Would this make sense?  It could look like:
+> > > >> >>
+> > > >> >> int epoll_mod_and_pwait(int epfd,
+> > > >> >>   struct epoll_event *events, int maxevents,
+> > > >> >>   struct epoll_command *commands, int ncommands,
+> > > >> >>   const sigset_t *sigmask);
+> > > >> >
+> > > >> > What about flags?
+> > > >> >
+> > > >>
+> > > >> No room.  Maybe it should just be a struct for everything instead of
+> > > >> separate args.
+> > > >
+> > > > Also no room for timeout. A single struct sounds the only way to go.
+> > > 
+> > > That's what timerfd is for.  I think it would be a bit weird to
+> > > support "timeout" and detailed timerfd control.
+> > 
+> > I see what you mean. Thanks.
+> > 
+> > I still don't like hooking timerfd in the interface. Besides the unclean
+> > interface, it also feels cubersome and overkill to let users setup and add a
+> > dedicated timerfd to implement timeout.
+> > 
+> > How about this:
+> > 
+> > int epoll_mod_wait(int epfd, struct epoll_mod_wait_data *data);
+> > 
+> > struct epoll_mod_wait_data {
+> > 	struct epoll_event *events;
+> > 	int maxevents;
+> > 	struct epoll_mod_cmd {
+> > 		int op,
+> > 		int fd;
+> > 		void *data;
+> > 	} *cmds;
+> > 	int ncmds;
+> > 	int flags;
+> > 	sigset_t *sigmask;
+> > };
+> > 
+> > Commands ops are:
+> > 
+> > 	EPOLL_CTL_ADD
+> > 		@fd is the fd to modify; @data is epoll_event.
+> > 	EPOLL_CTL_MOD
+> > 		@fd is the fd to modify; @data is epoll_event.
+> > 	EPOLL_CTL_DEL
+> > 		@fd is the fd to modify; @data is epoll_event.
+> > 
+> > 	EPOLL_CTL_SET_TIMEOUT
+> > 		@fd is ignored, @data is timespec.
+> > 		Clock type and relative/absolute are selected by flags as below.
+> > 
+> > Flags are given to override timeout defaults:
+> > 	EPOLL_FL_MONOTONIC_CLOCK
+> > 		If set, don't use realtime clock, use monotonic clock.
+> > 	EPOLL_FL_ABSOLUTE_TIMEOUT
+> > 		If set, don't use relative timeout, use absolute timeout.
+> 
+> I'd suggest using an "int clockid" field instead, like timerfd_settime;
+> even if it only accepts CLOCK_REALTIME and CLOCK_MONOTONIC, if it needs
+> extending in the future, it'd be painful to have to remap new CLOCK_*
+> constants into the EPOLL_FL_* namespace.  (I do think dropping timeouts
+> in favor of timerfds makes things more nicely orthogonal, but epoll_wait
+> already has a timeout parameter, so *shrug*.)
+> 
+> Also, I think that structure has too many levels of indirection; it'd
+> produce many unnecessary cache misses; considering you're trying to
+> eliminate the overhead of one or two extra syscalls, you don't want to
+> introduce a pile of unnecessary cache misses in the processes.  I'd
+> suggest inlining cmds as an array at the end of the structure, and
+> turning "void *data" into an inline epoll_event.  (Or, you could use
+> "events" as an in/out parameter.)
+> 
+> You could drop EPOLL_CTL_SET_TIMEOUT, and just include a clockid and
+> timespec directly in the top-level structure.
+> 
+> And I'd suggest either making flags a top-level parameter or putting it
+> at the start of the structure, to make future extension easier.
 
-Sorry, you seem not to have checked the newest kernel.
+Makes sense to me, thanks.
 
-Used by:
+Also the number of cmds are undecided until we do a copy_from_user for the
+header fields before another one for specified number of cmds. So I think it's
+better to move ncmds and cmds to top level parameter.
 
-xen_do_set_identity_and_remap_chunk()
-xen_remap_memory()
+Fam
 
-So: Nak.
-
-
-Juergen
-
->
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->   arch/x86/xen/mmu.c |    9 ---------
->   arch/x86/xen/mmu.h |    2 --
->   2 files changed, 11 deletions(-)
->
-> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> index a8a1a3d..6959550 100644
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -281,15 +281,6 @@ static void xen_set_pmd(pmd_t *ptr, pmd_t val)
->   	xen_set_pmd_hyper(ptr, val);
->   }
->
-> -/*
-> - * Associate a virtual page frame with a given physical page frame
-> - * and protection flags for that frame.
-> - */
-> -void set_pte_mfn(unsigned long vaddr, unsigned long mfn, pgprot_t flags)
-> -{
-> -	set_pte_vaddr(vaddr, mfn_pte(mfn, flags));
-> -}
-> -
->   static bool xen_batched_set_pte(pte_t *ptep, pte_t pteval)
->   {
->   	struct mmu_update u;
-> diff --git a/arch/x86/xen/mmu.h b/arch/x86/xen/mmu.h
-> index 73809bb..f2dcf79 100644
-> --- a/arch/x86/xen/mmu.h
-> +++ b/arch/x86/xen/mmu.h
-> @@ -13,8 +13,6 @@ enum pt_level {
->
->   bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn);
->
-> -void set_pte_mfn(unsigned long vaddr, unsigned long pfn, pgprot_t flags);
-> -
->   pte_t xen_ptep_modify_prot_start(struct mm_struct *mm, unsigned long addr, pte_t *ptep);
->   void  xen_ptep_modify_prot_commit(struct mm_struct *mm, unsigned long addr,
->   				  pte_t *ptep, pte_t pte);
->
-
+> 
+> </bikeshed>
+> 
+> - Josh Triplett
