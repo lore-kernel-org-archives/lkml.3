@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387AbbALQT2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 11:19:28 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:57595 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481AbbALQT1 (ORCPT
+	id S1752729AbbALQUo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 11:20:44 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:62472 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751754AbbALQUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 11:19:27 -0500
-From: Chintan Pandya <cpandya@codeaurora.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        David Rientjes <rientjes@google.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, linux-mm@kvack.org,
-        Chintan Pandya <cpandya@codeaurora.org>
-Subject: [PATCH] lowmemorykiller: Avoid excessive/redundant calling of LMK
-Date: Mon, 12 Jan 2015 21:49:14 +0530
-Message-Id: <1421079554-30899-1-git-send-email-cpandya@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Mon, 12 Jan 2015 11:20:42 -0500
+Message-ID: <54B3F44F.2010408@googlemail.com>
+Date: Mon, 12 Jan 2015 17:20:31 +0100
+From: Tobias Powalowski <tobias.powalowski@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: Possible bug in initramfs RAM handling
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="FMv4ib6CcMJ982lBfb7qJLcpb464N6w6W"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The global shrinker will invoke lowmem_shrink in a loop.
-The loop will be run (total_scan_pages/batch_size) times.
-The default batch_size will be 128 which will make
-shrinker invoking 100s of times. LMK does meaningful
-work only during first 2-3 times and then rest of the
-invocations are just CPU cycle waste. Fix that by returning
-to the shrinker with SHRINK_STOP when LMK doesn't find any
-more work to do. The deciding factor here is, no process
-found in the selected LMK bucket or memory conditions are
-sane.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--FMv4ib6CcMJ982lBfb7qJLcpb464N6w6W
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Chintan Pandya <cpandya@codeaurora.org>
----
- drivers/staging/android/lowmemorykiller.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+Hi,
+I have a weird bug here with initramfs,
+I have big initramfs files around 150MB zipped, 400MB extracted.
+I suppose the needed RAM to boot this setup should be around:
+150MB zipped initramfs+ 400MB extracted initramfs + 5MB kernel image.
+Our distro kernel has tmpfs support, booting this setup without kernel
+parameter needs around 1000MB RAM to boot.
+Using rootfstype=3Dramfs makes it work with around 600MB RAM.
 
-diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
-index b545d3d..5bf483f 100644
---- a/drivers/staging/android/lowmemorykiller.c
-+++ b/drivers/staging/android/lowmemorykiller.c
-@@ -110,7 +110,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
- 	if (min_score_adj == OOM_SCORE_ADJ_MAX + 1) {
- 		lowmem_print(5, "lowmem_scan %lu, %x, return 0\n",
- 			     sc->nr_to_scan, sc->gfp_mask);
--		return 0;
-+		return SHRINK_STOP;
- 	}
- 
- 	selected_oom_score_adj = min_score_adj;
-@@ -163,6 +163,9 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
- 		set_tsk_thread_flag(selected, TIF_MEMDIE);
- 		send_sig(SIGKILL, selected, 0);
- 		rem += selected_tasksize;
-+	} else {
-+		rcu_read_unlock();
-+		return SHRINK_STOP;
- 	}
- 
- 	lowmem_print(4, "lowmem_scan %lu, %x, return %lu\n",
--- 
-Chintan Pandya
+Is this a bug in kernel code?
+Shouldn't both types not use the same amount of RAM?
+I used kernel 3.18.2 at the moment but issue is reproducable with 3.15 to=
+o.
 
-QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
-member of the Code Aurora Forum, hosted by The Linux Foundation
+Thanks for your help.
+greetings
+tpowa
 
+--=20
+Tobias Powalowski
+Archlinux Developer & Package Maintainer (tpowa)
+http://www.archlinux.org
+tpowa@archlinux.org
+
+
+
+
+
+--FMv4ib6CcMJ982lBfb7qJLcpb464N6w6W
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBCAAGBQJUs/RPAAoJEHcd9mJ+32gfJioH/jENrPantGq1XV5kB/R2qZyy
+vkUHF7tSqFa7B4MaU7//CCWZ3Da/Gl8/DJ10Ea/w0eIN8/AJ4X/WcjwDRwJUG0cD
+QGAvBgJCIUTgK9VvGxJYxzsItn+IqBV1fs2wEk6I7w05FB2FpdBFT75udOMO+TVo
+3zJXPBec5Dxz2klnNKV2Sf1o8zuTTA5MSSAN8gTxgHwoJQyvWEzyJLufSLZKAL7S
+uOOSaJzt2CzqzrLz57WQySas+m5thpKbYemIiLNIEFMXdAwxF1Z7bFps7i/Puq87
+9d7XtHUZ1aJQxz9NcORsTmknsELdO4JvNlD0VmZefI0w3ZtXQUFdc2EMrwAjaxo=
+=67zZ
+-----END PGP SIGNATURE-----
+
+--FMv4ib6CcMJ982lBfb7qJLcpb464N6w6W--
