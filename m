@@ -1,147 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751893AbbALILj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 03:11:39 -0500
-Received: from mout.web.de ([212.227.15.3]:57089 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751745AbbALILf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 03:11:35 -0500
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="pgp-sha256"; boundary="===============8900957341149917359=="
+	id S1751974AbbALILq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 03:11:46 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:54571 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751770AbbALILl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 03:11:41 -0500
+Message-ID: <54B381A9.8080608@gmail.com>
+Date: Mon, 12 Jan 2015 09:11:21 +0100
+From: Imre Palik <imrep.amz@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Disposition: inline
-To: wei_wang@realsil.com.cn, phihag@phihag.de, ben@decadent.org.uk
-References: <20140810225012.3425.19201.reportbug@t4.home.phihag.de>
- <1407715088.3017.73.camel@deadeye.wl.decadent.org.uk>
- <53E81801.8000907@phihag.de>
- <B801BD58FDB66349A47F17A55A52796045FF6429@rsex2.realsil.com.cn>
- <20150111000919.4607.25466@hoothoot>
-In-reply-to: <20150111000919.4607.25466@hoothoot>
-Cc: 757733@bugs.debian.org, linux-kernel@vger.kernel.org
-From: Johannes Schauer <j.schauer@email.de>
-Message-ID: <20150112081117.3781.89247@hoothoot>
-User-Agent: alot/0.3.6
-Subject: Re: Bug#757733: RTS2557 SD card reader does not work
-Date: Mon, 12 Jan 2015 09:11:17 +0100
-X-Provags-ID: V03:K0:UFVKktYmnLusq7vlp+GL23N40uLxBpYOKo6CSBh8zFUOhEH1ziT
- 9zNz9/LYoQrjiRs1pk3+RkTDWGcwdTkWV9InzHmXsBJ8Md9wESV8rbG2ytX8UmFbaLd+i1q
- RRVuSp8x2aWqjqPCFpfd2OtunRi+wTcQrd86rQGRbuWhYur/kxeIA57LMvBYutI2KPr56I1
- QIDZzEe3rgtb1jexsfVRA==
-X-UI-Out-Filterresults: notjunk:1;
+To: Paul Moore <paul@paul-moore.com>
+CC: linux-audit@redhat.com, Eric Paris <eparis@redhat.com>,
+        linux-kernel@vger.kernel.org, "Palik, Imre" <imrep@amazon.de>,
+        Matt Wilson <msw@amazon.com>
+Subject: Re: [PATCH RFC] audit: move the tree pruning to a dedicated thread
+References: <1420555880-4328-1-git-send-email-imrep.amz@gmail.com> <12579290.YG49FVpphz@sifl>
+In-Reply-To: <12579290.YG49FVpphz@sifl>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---===============8900957341149917359==
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: quoted-printable
+On 01/08/15 22:53, Paul Moore wrote:
+> On Tuesday, January 06, 2015 03:51:20 PM Imre Palik wrote:
+>> From: "Palik, Imre" <imrep@amazon.de>
+>>
+>> When file auditing is enabled, during a low memory situation, a memory
+>> allocation with __GFP_FS can lead to pruning the inode cache.  Which can,
+>> in turn lead to audit_tree_freeing_mark() being called.  This can call
+>> audit_schedule_prune(), that tries to fork a pruning thread, and
+>> waits until the thread is created.  But forking needs memory, and the
+>> memory allocations there are done with __GFP_FS.
+>>
+>> So we are waiting merrily for some __GFP_FS memory allocations to complete,
+>> while holding some filesystem locks.  This can take a while ...
+>>
+>> This patch creates a single thread for pruning the tree from
+>> audit_add_tree_rule(), and thus avoids the deadlock that the on-demand
+>> thread creation can cause.
+>>
+>> Reported-by: Matt Wilson <msw@amazon.com>
+>> Cc: Matt Wilson <msw@amazon.com>
+>> Signed-off-by: Imre Palik <imrep@amazon.de>
+> 
+> Thanks for sticking with this and posting a revised patch, my comments are 
+> inline with the patch below ... also as a FYI, when sending a revised patch it 
+> is often helpful to put a revision indicator in the subject line, as an 
+> example:
+> 
+>   "[RFC PATCH v2] audit: make audit less awful"
+> 
+> It's not strictly necessary, but it makes my life just a little bit easier.
 
-Hi,
+Sorry for that.  I realised that I botched the subject immediately after
+sending the mail :-(
 
-On Sun, 11 Jan 2015 01:09:19 +0100 Johannes Schauer <j.schauer@email.de> wr=
-ote:
-> Weirdly, my SD card reader used to work (but presented the SD card as
-> /dev/mmcblk0pX). I do not know why it stopped working though as I didn't =
-reboot
-> my laptop for several months. Running an older kernel version (3.14 for
-> example) does not fix the problem. Maybe it is related to other parts of =
-my
-> (Debian testing) OS. I'll see if I can find a Debian unstable snapshot th=
-at
-> restores the behaviour I observed last year and try to bisect to find the
-> source of the regression.
+> 
+>> diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
+>> index 0caf1f8..0ada577 100644
+>> --- a/kernel/audit_tree.c
+>> +++ b/kernel/audit_tree.c
+> 
+> ...
+> 
+>> +static int launch_prune_thread(void)
+>> +{
+>> +	prune_thread = kthread_create(prune_tree_thread, NULL,
+>> +				"audit_prune_tree");
+>> +	if (IS_ERR(prune_thread)) {
+>> +		audit_panic("cannot start thread audit_prune_tree");
+> 
+> I'm not certain audit_panic() is warranted here, pr_err() might be a better 
+> choice.  What is the harm if the thread doesn't start and we return an error 
+> code?
 
-I spent the past two days trying to reproduce the problem and I'm unable to=
- get
-reliable results. Let me explain what I did.
+I thought disabling the bigger part of the file auditing would warrant a bigger
+bang than pr_err().  If you think, it is an overkill, then I can change it.
 
- - December 20 I took a snapshot of my system (but without rebooting) at th=
-is
-   time my T440s SD card reader worked fine and showed up as /dev/mmcblk0*
- - January 10 (three weeks later) I did a big `apt-get upgrade/dist-upgrade=
-` to
-   update all the packages to their Jessie or Sid versions, respectively and
-   rebooted. The card reader didn't show up anymore. Nothing on dmesg when I
-   inserted my sdcard which would before show me the new registered partiti=
-ons
- - I put a Debian Sid debootstrap from January 1 2014 on a USB stick and bo=
-oted
-   that. Same thing, no SD card.
- - I put a Debian Sid debootstrap from January 1 2013 on a USB stick and bo=
-oted
-   that. Same thing, no SD card.
- - In the hopes that at least the snapshot from December 20 would work and
-   somehow allow me to find out which package upgrade broke my system, I put
-   this back on my harddisk and booted it. The SD card reader worked and was
-   available as /dev/mmcblk0*
- - I upgraded step by step important packages like linux-image-amd64,
-   initramfs, udev, while rebooting after every step. The system kept worki=
-ng.
- - I added /usr /bin /sbin /var /etc /boot and /lib to a git on my / so tha=
-t I
-   would always be able to quickly roll back everything and did `apt-get
-   upgrade/dist-upgrade` for the rest of my system and rebooted. Everything
-   kept working
- - So at this point I executed the same upgrade path which before made a sy=
-stem
-   that was working not working but in this case the SD card reader kept
-   working. I had no explanation as I didn't do anything different.
- - I put the prior non-working snapshot of my system from January 10 back w=
-hich
-   had all the upgrades already done. And surprise: this time it worked! The
-   exact same hard disk image which before leads to my MMC card reader not
-   showing up worked fine this time.
- - I installed Debian Jessie (with the daily installer from [1]) on a USB s=
-tick
-   and booted that. My card reader keeps working
- - I put put a Debian Sid debootstrap from January 1 2014 on a USB stick and
-   booted that (this wasn't working before, see above). This time it worked=
- and
-   I was able to mount my SD card.
+But see my comment below in audit_schedule_prune()
 
-What do you make from this?
+>> +		prune_thread = NULL;
+>> +		return -ENOSYS;
+> 
+> Out of curiosity, why ENOSYS?
 
-Apparently there are situations where, with the exact same root file system=
- (My
-January 20 full snapshot and the January 1 2014 Debian Sid debootstrap) it =
-at
-some point did not work but then worked again.
+I thought it is a bit less confusing than ESRCH.
 
-How can this happen?
+>> +	} else {
+>> +		wake_up_process(prune_thread);
+>> +		return 0;
+>> +	}
+>> +}
+> 
+> See my comments below in audit_schedule_prune().
+> 
+>>  /* called with audit_filter_mutex */
+>>  int audit_add_tree_rule(struct audit_krule *rule)
+>>  {
+>> @@ -663,6 +713,12 @@ int audit_add_tree_rule(struct audit_krule *rule)
+>>  	/* do not set rule->tree yet */
+>>  	mutex_unlock(&audit_filter_mutex);
+>>
+>> +	if (unlikely(!prune_thread)) {
+>> +		err = launch_prune_thread();
+>> +		if (err)
+>> +			goto Err;
+>> +	}
+>> +
+> 
+> Why not put this at the top of audit_add_tree_rule()?
 
-What else can I try?
+I would like to do this without holding audit_filter_mutex.
 
-Right now everything works and I'm not able to make it not-working again.
-Thoughts?
+if (!prune_thread) then the file auditing is disabled, so it probably won't
+hurt moving this to the beginning of the function, but I feel better when it
+is done here.
 
-cheers, josch
+>>  	err = kern_path(tree->pathname, 0, &path);
+>>  	if (err)
+>>  		goto Err;
+>> @@ -713,6 +769,9 @@ int audit_tag_tree(char *old, char *new)
+>>  	struct vfsmount *tagged;
+>>  	int err;
+>>
+>> +	if (!prune_thread)
+>> +		return -ENOSYS;
+> 
+> Help me out - why?
+> 
+>>  	err = kern_path(new, 0, &path2);
+>>  	if (err)
+>>  		return err;
+>> @@ -800,36 +859,11 @@ int audit_tag_tree(char *old, char *new)
+>>  	return failed;
+>>  }
+>>
+>> -/*
+>> - * That gets run when evict_chunk() ends up needing to kill audit_tree.
+>> - * Runs from a separate thread.
+>> - */
+>> -static int prune_tree_thread(void *unused)
+>> -{
+>> -	mutex_lock(&audit_cmd_mutex);
+>> -	mutex_lock(&audit_filter_mutex);
+>> -
+>> -	while (!list_empty(&prune_list)) {
+>> -		struct audit_tree *victim;
+>> -
+>> -		victim = list_entry(prune_list.next, struct audit_tree, list);
+>> -		list_del_init(&victim->list);
+>> -
+>> -		mutex_unlock(&audit_filter_mutex);
+>> -
+>> -		prune_one(victim);
+>> -
+>> -		mutex_lock(&audit_filter_mutex);
+>> -	}
+>> -
+>> -	mutex_unlock(&audit_filter_mutex);
+>> -	mutex_unlock(&audit_cmd_mutex);
+>> -	return 0;
+>> -}
+>>
+>>  static void audit_schedule_prune(void)
+>>  {
+>> -	kthread_run(prune_tree_thread, NULL, "audit_prune_tree");
+>> +	BUG_ON(!prune_thread);
+>> +	wake_up_process(prune_thread);
+>>  }
+> 
+> First, I probably wasn't clear last time so I'll be more clear now: no 
+> BUG_ON() here, handle the error.
 
-[1] http://cdimage.debian.org/cdimage/daily-builds/daily/arch-latest/amd64/=
-iso-cd/debian-testing-amd64-netinst.iso
+As far as I see, I disabled all the codepaths that can reach this point with
+!prune_thread.  So I thought leaving the BUG_ON() here doesn't really matter.
 
---===============8900957341149917359==
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Content-Description: signature
-Content-Type: application/pgp-signature; name="signature.asc"; charset="us-ascii"
+> Second, and closely related to the last sentence, perhaps the right approach 
+> is to merge the launch_prune_thread() code with audit_schedule_prune() such 
+> that we only have one function which starts the thread if it isn't present, 
+> and wakes it up if it is, something like the following:
+> 
+> 	static int audit_schedule_prune(void)
+> 	{
+> 		if (!prune_thread) {
+> 			prune_thread = kthread_create(...);
+> 			if (IS_ERR(prune_thread)) {
+> 				pr_err("cannot start thread audit_prune_tree");
+> 				prune_thread = NULL;
+> 				return -ENOSYS;
+> 			}
+> 		}
+> 
+> 		wake_up_process(prune_thread);
+> 		return 0;
+> 	}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+if we do the thread creation in audit_schedule_prune, we won't necessarily
+need the dedicated thread.  This would be the alternative approach I mentioned
+in the comment part of my original mail.  Sorry if I was not clear enough.
 
-iQIcBAABCAAGBQJUs4GlAAoJEPLLpcePvYPh1hcP/0Ba9nO9jDwgDm6xincrTajM
-FYHF3sQKmIz3DibbMvoBQA3YePHy0PhZgbNUroNMI7OPefe7vQipvcFtFCYxXfsG
-+bvLQ+FW4saHk0+1mHw27ozx211jXWW/g1xPejsaVBdlunCIM8bclCjUcJ0tXiPZ
-Xd1ECbm8S32uPAhxd+SpWuLq/+EM/oy3x20fiOPW8QJ4Ik6Tt/T+vqY1ZMnmDlU9
-VkjpXYZbIUCc26L923o69cDofIRdUUwbZU/OedR1uBD/N6RZe9LcV625pfuPPQB6
-t5pdbIR00EwhF14G+JyIcXIpe2qCRneGLztN4jw8Y+nBxM1jltpzVF4qb3pLfXur
-isrbCOYQ6JAcO/t735WF0aZaRzcsXaEiFnu/Tb92iZ6Y46o2fO3UvfLBQ7QGPTAr
-vfT6vBmCapdccpqA/N7ueTs50UbrM/exX/id8kmo9mU1liVoI64AdArnH16iU5zw
-Sn4QlwpIbDeBjV8oh9w05P/r9VjYmuH70eecjBGtAVhuND/dJBW/W34O16XvT+Li
-d/n+zwfuLjHPq2bBHtAuNkUMI/B3wCrjNgM86KGB2FSfb2JcpvhWxM62AJ0MkmMQ
-vzeTI60gV/ui/1pg9u/AZvhanttyI1G98cXBjbupb+n7U9nt0dHpIgDqmjdU1fTZ
-jp4QdMpTisSBSKntrlqp
-=gs15
------END PGP SIGNATURE-----
+Basically I see the following approaches:
 
---===============8900957341149917359==--
+1) dedicated thread created on syscall entry, with disabling file auditing as
+   long as the thread cannot be created.
+
+2) on-demand thread-creation/destruction with some serialisation to ensure
+   that we won't create too many threads.
+
+3) dedicated thread created on syscall entry, with fallback to thread creation
+   at cleanup time, if original thread creation fails.
+
+Am I right that you would like to see the third one?
+
+> 
+>>  /*
+>> @@ -896,9 +930,10 @@ static void evict_chunk(struct audit_chunk *chunk)
+>>  	for (n = 0; n < chunk->count; n++)
+>>  		list_del_init(&chunk->owners[n].list);
+>>  	spin_unlock(&hash_lock);
+>> +	mutex_unlock(&audit_filter_mutex);
+>>  	if (need_prune)
+>>  		audit_schedule_prune();
+>> -	mutex_unlock(&audit_filter_mutex);
+>> +
+>>  }
+> 
+> Remove that trailing empty vertical whitespace please.  If you aren't using it 
+> already, you should look into scripts/checkpatch.pl to sanity check your 
+> patches before sending.
+
+Could you point me to that whitespace?  I cannot see it in the patch, and
+scripts/checkpatch.pl was not complaining either.
+
+It might be my mail setup, but without knowing what is amiss, I cannot troubleshoot
+it.
+
+> 
+
