@@ -1,90 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753049AbbALOvt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 09:51:49 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:57646 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964AbbALOvs (ORCPT
+	id S1753340AbbALOw3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 09:52:29 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:20998 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753234AbbALOw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 09:51:48 -0500
-Message-ID: <54B3DF81.1010503@roeck-us.net>
-Date: Mon, 12 Jan 2015 06:51:45 -0800
-From: Guenter Roeck <linux@roeck-us.net>
+	Mon, 12 Jan 2015 09:52:28 -0500
+Message-ID: <54B3DFAA.9020804@atmel.com>
+Date: Mon, 12 Jan 2015 15:52:26 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: =?windows-1252?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Steven Honeyman <stevenhoneyman@gmail.com>,
-        Jean Delvare <jdelvare@suse.de>,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
-        Jochen Eisinger <jochen@penguin-breeder.org>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/9] i8k: Autodetect fan RPM multiplier
-References: <1421069525-12875-1-git-send-email-pali.rohar@gmail.com> <1421069525-12875-8-git-send-email-pali.rohar@gmail.com> <54B3D7F3.9020504@roeck-us.net> <20150112143741.GA25806@kroah.com>
-In-Reply-To: <20150112143741.GA25806@kroah.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Wenyou Yang <wenyou.yang@atmel.com>
+CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: at91: board-dt-sama5: add phy_fixup to override
+ NAND_Tree which improperly strapp-in during the reset period.
+References: <1418283069-5648-1-git-send-email-wenyou.yang@atmel.com>
+In-Reply-To: <1418283069-5648-1-git-send-email-wenyou.yang@atmel.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 8bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020201.54B3DF83.02E6,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 10
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2015 06:37 AM, Greg Kroah-Hartman wrote:
-> On Mon, Jan 12, 2015 at 06:19:31AM -0800, Guenter Roeck wrote:
->> On 01/12/2015 05:32 AM, Pali Rohár wrote:
->>> This patch adds new function i8k_get_fan_nominal_speed() for doing SMM call
->>> which will return nominal fan RPM for specified fan speed. It returns nominal
->>> RPM value at which fan operate when speed (0, 1, 2, 3) is set. It looks like
->>> RPM value is not accurate, but still provides very useful information.
->>>
->>> New function i8k_get_fan_nominal_speed() is used for determinate if fan
->>> multiplier is 1 or 30. If function for maximal fan value success and returned
->>> RPM value too high (above 30000) then fan multiplier is set to 1. Otherwise
->>> multiplier is not changed and default value 30 is used.
->>>
->>> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
->>> Tested-by: Pali Rohár <pali.rohar@gmail.com>
->>> Tested-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
->>
->> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
->>
->> Greg,
->>
->> with this the entire series is ready to go.
->
-> What about patch 9?  It doesn't have your ack.
->
+Le 11/12/2014 08:31, Wenyou Yang a écrit :
+> Appearance: On some SAMA5D4EK boards, after power up, the Eth1 doesn't work.
+> 
+> Reason: The PIOE2 pin is connected to the NAND_Tree# of KSZ8081,
+> But it outputs LOW during the reset period, which cause the NAND_Tree# enabled.
+> 
+> Add phy_fixup() to disable NAND_Tree by overriding the Operation
+> Mode Strap Override register(i.e. Register 16h) to clear the NAND_Tree bit.
+> 
+> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 
-I thought I sent a Reviewed-by: for patch 9 prior to sending this mail.
-Must be getting old. I just re-sent it.
+Stacked on top of at91-3.19-fixes.
 
-Guenter
+Bye,
 
+
+> ---
+>  arch/arm/mach-at91/board-dt-sama5.c |   18 ++++++++++++++++++
+>  1 file changed, 18 insertions(+)
+> 
+> diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
+> index 8fb9ef5..97f7367 100644
+> --- a/arch/arm/mach-at91/board-dt-sama5.c
+> +++ b/arch/arm/mach-at91/board-dt-sama5.c
+> @@ -17,6 +17,7 @@
+>  #include <linux/of_platform.h>
+>  #include <linux/phy.h>
+>  #include <linux/clk-provider.h>
+> +#include <linux/phy.h>
+>  
+>  #include <asm/setup.h>
+>  #include <asm/irq.h>
+> @@ -26,8 +27,25 @@
+>  
+>  #include "generic.h"
+>  
+> +static int ksz8081_phy_fixup(struct phy_device *phy)
+> +{
+> +	int value;
+> +
+> +	value = phy_read(phy, 0x16);
+> +	value &= ~0x20;
+> +	phy_write(phy, 0x16, value);
+> +
+> +	return 0;
+> +}
+> +
+>  static void __init sama5_dt_device_init(void)
+>  {
+> +	if (of_machine_is_compatible("atmel,sama5d4ek") &&
+> +	   IS_ENABLED(CONFIG_PHYLIB)) {
+> +		phy_register_fixup_for_id("fc028000.etherne:00",
+> +						ksz8081_phy_fixup);
+> +	}
+> +
+>  	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+>  }
+>  
+> 
+
+
+-- 
+Nicolas Ferre
