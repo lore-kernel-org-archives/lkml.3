@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161AbbALSzN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:55:13 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58149 "EHLO
+	id S1756119AbbALSxS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:53:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58160 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755034AbbALSaN (ORCPT
+	with ESMTP id S1755044AbbALSaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:30:13 -0500
+	Mon, 12 Jan 2015 13:30:14 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Peter Guo <peter.guo@bayhubtech.com>, Ulf Hansson <ulf.hansson@linaro.org>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Mike Snitzer <snitzer@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 150/216] mmc: sdhci-pci-o2micro: Fix Dell E5440 issue
-Date: Mon, 12 Jan 2015 18:28:48 +0000
-Message-Id: <1421087394-2712-38-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 151/216] dm space map metadata: fix sm_bootstrap_get_nr_blocks()
+Date: Mon, 12 Jan 2015 18:28:49 +0000
+Message-Id: <1421087394-2712-39-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -27,33 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Guo <peter.guo@bayhubtech.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 6380ea099cdd46d7377b6fbec0291cf2aa387bad upstream.
+commit c1c6156fe4d4577444b769d7edd5dd503e57bbc9 upstream.
 
-Fix Dell E5440 when reboot Linux, can't find o2micro sd host chip issue.
+This function isn't right and it causes a static checker warning:
 
-Fixes: 01acf6917aed (mmc: sdhci-pci: add support of O2Micro/BayHubTech SD hosts)
-Signed-off-by: Peter Guo <peter.guo@bayhubtech.com>
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+	drivers/md/dm-thin.c:3016 maybe_resize_data_dev()
+	error: potentially using uninitialized 'sb_data_size'.
+
+It should set "*count" and return zero on success the same as the
+sm_metadata_get_nr_blocks() function does earlier.
+
+Fixes: 3241b1d3e0aa ('dm: add persistent data library')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mmc/host/sdhci-pci-o2micro.c | 2 --
- 1 file changed, 2 deletions(-)
+ drivers/md/persistent-data/dm-space-map-metadata.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mmc/host/sdhci-pci-o2micro.c b/drivers/mmc/host/sdhci-pci-o2micro.c
-index 5670e381b0cf..e2ec108dba0e 100644
---- a/drivers/mmc/host/sdhci-pci-o2micro.c
-+++ b/drivers/mmc/host/sdhci-pci-o2micro.c
-@@ -127,8 +127,6 @@ void sdhci_pci_o2_fujin2_pci_init(struct sdhci_pci_chip *chip)
- 		return;
- 	scratch_32 &= ~((1 << 21) | (1 << 30));
+diff --git a/drivers/md/persistent-data/dm-space-map-metadata.c b/drivers/md/persistent-data/dm-space-map-metadata.c
+index 786b689bdfc7..f4e22bcc7fb8 100644
+--- a/drivers/md/persistent-data/dm-space-map-metadata.c
++++ b/drivers/md/persistent-data/dm-space-map-metadata.c
+@@ -564,7 +564,9 @@ static int sm_bootstrap_get_nr_blocks(struct dm_space_map *sm, dm_block_t *count
+ {
+ 	struct sm_metadata *smm = container_of(sm, struct sm_metadata, sm);
  
--	/* Set RTD3 function disabled */
--	scratch_32 |= ((1 << 29) | (1 << 28));
- 	pci_write_config_dword(chip->pdev, O2_SD_FUNC_REG3, scratch_32);
+-	return smm->ll.nr_blocks;
++	*count = smm->ll.nr_blocks;
++
++	return 0;
+ }
  
- 	/* Set L1 Entrance Timer */
+ static int sm_bootstrap_get_nr_free(struct dm_space_map *sm, dm_block_t *count)
 -- 
 2.1.4
 
