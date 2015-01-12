@@ -1,95 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753119AbbALQKR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 11:10:17 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:40319 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753053AbbALQKP (ORCPT
+	id S1753188AbbALQKd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 11:10:33 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:54126 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752089AbbALQK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 11:10:15 -0500
-Date: Mon, 12 Jan 2015 17:10:11 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "\\\"Rafael J. Wysocki\\\"" <rjw@rjwysocki.net>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Oleg Nesterov <oleg@redhat.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH -v3 5/5] oom, PM: make OOM detection in the freezer path
- raceless
-Message-ID: <20150112161011.GE4877@dhcp22.suse.cz>
-References: <1420801555-22659-1-git-send-email-mhocko@suse.cz>
- <1420801555-22659-6-git-send-email-mhocko@suse.cz>
- <20150110194322.GE25319@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150110194322.GE25319@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 12 Jan 2015 11:10:28 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-f1-54b3f1f26d58
+Message-id: <54B3F1EF.4060506@samsung.com>
+Date: Mon, 12 Jan 2015 17:10:23 +0100
+From: Jacek Anaszewski <j.anaszewski@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-leds@vger.kernel.org,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Pavel Machek <pavel@ucw.cz>, Bryan Wu <cooloney@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>, sakari.ailus@iki.fi,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH/RFC v10 03/19] DT: leds: Add led-sources property
+References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
+ <1420816989-1808-4-git-send-email-j.anaszewski@samsung.com>
+ <CAL_JsqJKEp6TWaRhJimg3AWBh+MCCr2Bk9+1o7orLLdp5E+n-g@mail.gmail.com>
+ <54B38682.5080605@samsung.com>
+ <CAL_Jsq+UaA41DvawdOMmOib=Fi0hC-nBdKV-+P4DFo+MoOy-bQ@mail.gmail.com>
+In-reply-to: <CAL_Jsq+UaA41DvawdOMmOib=Fi0hC-nBdKV-+P4DFo+MoOy-bQ@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupikeLIzCtJLcpLzFFi42I5/e/4Nd1PHzeHGByeKmyxccZ6VoujOycy
+	Wcw/co7Vov/NQlaLc69WMlqcbXrDbnF51xw2i61v1jFa9GzYymqx9PpFJou7p46yWUyYvpbF
+	onXvEXaL79++sVns3vWU1eLwm3ZWizP7V7I5CHqsmbeG0eNyXy+Tx85Zd9k9Vi7/wuZx+OtC
+	Fo9NqzrZPPbM/8Hq0bdlFaPHitXf2T0+b5IL4IrisklJzcksSy3St0vgyvj2/w5TwXKZit/7
+	3jI1MB4U62Lk5JAQMJG4dHElM4QtJnHh3nq2LkYuDiGBpYwSr241skM4Hxkl9u//CJTh4OAV
+	0JJ4t4sJpIFFQFVi0t71YM1sAoYSP1+8BouLCkRI/Dm9jxXE5hUQlPgx+R4LiC0ioC7xbflx
+	sAXMAktZJc6/nsEOkhAWcJWY3b6YGWLZFiaJe4ePM4IkOAWCJbpW/gMrYhYwk3jUso4ZwpaX
+	2LzmLfMERoFZSJbMQlI2C0nZAkbmVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxgh8fd1B+PS
+	Y1aHGAU4GJV4eC2lNocIsSaWFVfmHmKU4GBWEuF1LQMK8aYkVlalFuXHF5XmpBYfYmTi4JRq
+	YHSRaf1Zzvzebe5dK7MMvYPRNiIOZ6LiNR48aOI8Inl7o8YC3pyKCzPezCw6xfS8Z4e20KTt
+	hVceG8meYkw1+vTAaN6RPptIDdMNtjo7/h3aMO1Z9P13Kw598REuKHyS96pP+VqtpdTjz+2N
+	BQZHH660OTnx+pLDihwLEkP652X+EF7sUnWCV02JpTgj0VCLuag4EQAuqxNGnQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 10-01-15 14:43:22, Tejun Heo wrote:
-> On Fri, Jan 09, 2015 at 12:05:55PM +0100, Michal Hocko wrote:
-> ...
-> > @@ -142,7 +118,6 @@ static bool check_frozen_processes(void)
-> >  int freeze_processes(void)
-> >  {
-> >  	int error;
-> > -	int oom_kills_saved;
-> >  
-> >  	error = __usermodehelper_disable(UMH_FREEZING);
-> >  	if (error)
-> > @@ -157,29 +132,22 @@ int freeze_processes(void)
-> >  	pm_wakeup_clear();
-> >  	pr_info("Freezing user space processes ... ");
-> >  	pm_freezing = true;
-> > -	oom_kills_saved = oom_kills_count();
-> >  	error = try_to_freeze_tasks(true);
-> >  	if (!error) {
-> >  		__usermodehelper_set_disable_depth(UMH_DISABLED);
-> > -		oom_killer_disable();
-> > -
-> > -		/*
-> > -		 * There might have been an OOM kill while we were
-> > -		 * freezing tasks and the killed task might be still
-> > -		 * on the way out so we have to double check for race.
-> > -		 */
-> > -		if (oom_kills_count() != oom_kills_saved &&
-> > -		    !check_frozen_processes()) {
-> > -			__usermodehelper_set_disable_depth(UMH_ENABLED);
-> > -			pr_cont("OOM in progress.");
-> > -			error = -EBUSY;
-> > -		} else {
-> > -			pr_cont("done.");
-> > -		}
-> > +		pr_cont("done.");
-> >  	}
-> >  	pr_cont("\n");
-> >  	BUG_ON(in_atomic());
-> >  
-> > +	/*
-> > +	 * Now that the whole userspace is frozen we need to disbale
-> > +	 * the OOM killer to disallow any further interference with
-> > +	 * killable tasks.
-> > +	 */
-> > +	if (!error && !oom_killer_disable())
-> 
-> So, previously, oom killer was disabled at the top of
-> freeze_kernel_threads(), right?  I think that was the better spot to
-> do that.  We don't want to disable oom killer before the system is
-> just about to enter total quiescence which is freeze_kernel_threads().
-> We want to delay this as long as possible.  Let's please disable oom
-> killing in at the top of freeze_kernel_threads() and re-enable at the
-> bottom of thaw_kernel_threads().
+On 01/12/2015 02:52 PM, Rob Herring wrote:
+> On Mon, Jan 12, 2015 at 2:32 AM, Jacek Anaszewski
+> <j.anaszewski@samsung.com> wrote:
+>> On 01/09/2015 07:33 PM, Rob Herring wrote:
+>>>
+>>> On Fri, Jan 9, 2015 at 9:22 AM, Jacek Anaszewski
+>>> <j.anaszewski@samsung.com> wrote:
+>>>>
+>>>> Add a property for defining the device outputs the LED
+>>>> represented by the DT child node is connected to.
+>>>>
+>>>> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+>>>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>>> Cc: Bryan Wu <cooloney@gmail.com>
+>>>> Cc: Richard Purdie <rpurdie@rpsys.net>
+>>>> Cc: Rob Herring <robh+dt@kernel.org>
+>>>> Cc: Pawel Moll <pawel.moll@arm.com>
+>>>> Cc: Mark Rutland <mark.rutland@arm.com>
+>>>> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+>>>> Cc: Kumar Gala <galak@codeaurora.org>
+>>>> ---
+>>>>    Documentation/devicetree/bindings/leds/common.txt |    5 +++++
+>>>>    1 file changed, 5 insertions(+)
+>>>>
+>>>> diff --git a/Documentation/devicetree/bindings/leds/common.txt
+>>>> b/Documentation/devicetree/bindings/leds/common.txt
+>>>> index a2c3f7a..29295bf 100644
+>>>> --- a/Documentation/devicetree/bindings/leds/common.txt
+>>>> +++ b/Documentation/devicetree/bindings/leds/common.txt
+>>>> @@ -1,6 +1,10 @@
+>>>>    Common leds properties.
+>>>>
+>>>>    Optional properties for child nodes:
+>>>> +- led-sources : Array of bits signifying the LED current regulator
+>>>> outputs the
+>>>> +               LED represented by the child node is connected to (1 -
+>>>> the LED
+>>>> +               is connected to the output, 0 - the LED isn't connected
+>>>> to the
+>>>> +               output).
+>>>
+>>>
+>>> Sorry, I just don't understand this.
+>>
+>>
+>> In some Flash LED devices one LED can be connected to one or more
+>> electric current outputs, which allows for multiplying the maximum
+>> current allowed for the LED. Each sub-LED is represented by a child
+>> node in the DT binding of the Flash LED device and it needs to declare
+>> which outputs it is connected to. In the example below the led-sources
+>> property is a two element array, which means that the flash LED device
+>> has two current outputs, and the bits signify if the LED is connected
+>> to the output.
+>
+> Sounds like a regulator for which we already have bindings for and we
+> have a driver for regulator based LEDs (but no binding for it).
 
-Yes I had it this way but it didn't work out because thaw_kernel_threads
-is not called on the resume because it is only used as a fail
-path when kernel threads freezing fails. I would rather keep the
-enabling/disabling points as we had them. This is less risky IMHO.
+Do you think of drivers/leds/leds-regulator.c driver? This driver just
+allows for registering an arbitrary regulator device as a LED subsystem
+device.
+
+There are however devices that don't fall into this category, i.e. they
+have many outputs, that can be connected to a single LED or to many LEDs
+and the driver has to know what is the actual arrangement.
+
+> Please use the regulator binding.
+
+>> Do your doubts stem from the ambiguity of the word "current" or the
+>> form of the description itself is unclear? Probably there should be
+>> explicit explanation added that the size of the array depends on the
+>> number of current outputs of the flash LED device.
+>
+> The size of the array and meaning of array indexes was not clear.
+
+What about this:
+
+led-sources : Array of connection states between all LED current
+	      sources exposed by the device and this LED (1 - this LED
+	      is connected to the current output with index N, 0 -
+	      this LED isn't connected to the current output with
+	      index N); the mapping of N-th element of the array to the
+	      physical device output should be defined in the LED
+	      driver binding.
 
 -- 
-Michal Hocko
-SUSE Labs
+Best Regards,
+Jacek Anaszewski
