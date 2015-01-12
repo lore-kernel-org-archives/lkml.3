@@ -1,95 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751812AbbALHSn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 02:18:43 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:32553 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087AbbALHSl (ORCPT
+	id S1751920AbbALHTk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 02:19:40 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:16294 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212AbbALHTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 02:18:41 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-cb-54b375505477
+	Mon, 12 Jan 2015 02:19:39 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-a7-54b3758990a8
 From: Chao Yu <chao2.yu@samsung.com>
 To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
 Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [f2fs-dev][RFC PATCH 09/10] f2fs: show extent tree,node stat info in
- debugfs
-Date: Mon, 12 Jan 2015 15:17:56 +0800
-Message-id: <000d01d02e37$fe5310c0$faf93240$@samsung.com>
+Subject: [f2fs-dev][RFC PATCH 10/10] f2fs: add trace for rb-tree extent cache
+ ops
+Date: Mon, 12 Jan 2015 15:18:54 +0800
+Message-id: <000e01d02e38$2067bc60$61373520$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: AdAuBrTeB3SkMuq5TqygfuRx6GmceA==
+Thread-index: AdAuBsZ9gYtr+k3oQIyYhiC2wa8J8g==
 Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrALMWRmVeSWpSXmKPExsVy+t9jQd2A0s0hBs9OyVlc29fIZPFk/Sxm
-	i0uL3C0u75rD5sDisWlVJ5vH7gWfmTz6tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoEro2/2RPaC
-	q4IV++d8YmlgvM7XxcjJISFgIvH3xmtmCFtM4sK99WwgtpDAdEaJndcquhi5gOwfjBKzb85g
-	BUmwCahILO/4zwRiiwh4SUzaf4IFxGYW8JBo7PgOViMsEC7x4cEHRhCbRUBVYtWZa+wgNq+A
-	pcTiLbeZIWxBiR+T70H1akms33mcCcKWl9i85i3UQQoSO86+BprDDrRLT+K0LUSFuMTGI7dY
-	JjAKzEIyaBaSQbOQDJqFpGUBI8sqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjOBwfia9g3FV
-	g8UhRgEORiUeXgupzSFCrIllxZW5hxglOJiVRHjDrIFCvCmJlVWpRfnxRaU5qcWHGKU5WJTE
-	eZXs20KEBNITS1KzU1MLUotgskwcnFINjBqSYU+dJCcsrF+5eHJ5esCi+y0zLsdlRPR0NfVZ
-	5n+5lLOh8MnRzMmG21NYC6aY/7Y1fRU+3Te9PBfo5B3yAuvkGeyedU3cadvSIfp+y38tPh7v
-	Lys678ZMtuffZsDGdUn5ocebL2fFZHIf/mBQOF4XofHLXvlAK6948e/w1P8vbe7c6WBVYinO
-	SDTUYi4qTgQAkAtdCmMCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsVy+t9jAd3O0s0hBuvuqFlc29fIZPFk/Sxm
+	i0uL3C0u75rD5sDisWlVJ5vH7gWfmTz6tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoEro+NTN0tB
+	p2ZFc+d11gbGG4pdjBwcEgImEl0HS7oYOYFMMYkL99azdTFycQgJLGKUuNr0GMr5wSix7MJL
+	dpAqNgEVieUd/5lAbBEBL4lJ+0+wgNjMAh4SjR3fWUFsYYFgiZ7771hBFrAIqEpMXmoFEuYV
+	sJR4cPgEG4QtKPFj8j2oVi2J9TuPM0HY8hKb17xlhjhIQWLH2deMEKv0JK4tXwdVIy6x8cgt
+	lgmMArOQjJqFZNQsJKNmIWlZwMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4oJ9J7WBc
+	2WBxiFGAg1GJh9dCanOIEGtiWXFl7iFGCQ5mJRHeMGugEG9KYmVValF+fFFpTmrxIUZpDhYl
+	cV4l+7YQIYH0xJLU7NTUgtQimCwTB6dUA2N7ZL147ru955snOJStDVzZdJbt8lHecA/xD3mR
+	BrNiTb51WyVOvnJj/dot/RbOnvddEwy98viPHS0pPfvim7erqIn+xb5y9mrZIyyrDK5qvp0R
+	PWHyadXm7vMpMw9eZJ2qUcNU7ck+kUH07Zu6cv5UlQ0dm4K//cxUtPrvvPLODtm0PYtCxZRY
+	ijMSDbWYi4oTAS8SPhZkAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add and show stat info of total memory footprint for extent tree,node
-in debugfs.
+This patch adds trace for lookup/update/shrink/destroy ops in rb-tree extent cache.
 
 Signed-off-by: Chao Yu <chao2.yu@samsung.com>
 ---
- fs/f2fs/debug.c | 7 +++++++
- fs/f2fs/f2fs.h  | 2 +-
- 2 files changed, 8 insertions(+), 1 deletion(-)
+ fs/f2fs/data.c              |   9 +++
+ include/trace/events/f2fs.h | 134 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 143 insertions(+)
 
-diff --git a/fs/f2fs/debug.c b/fs/f2fs/debug.c
-index 1f0fb58..0fdfffe 100644
---- a/fs/f2fs/debug.c
-+++ b/fs/f2fs/debug.c
-@@ -35,6 +35,8 @@ static void update_general_status(struct f2fs_sb_info *sbi)
- 	/* validation check of the segment numbers */
- 	si->hit_ext = sbi->read_hit_ext;
- 	si->total_ext = sbi->total_hit_ext;
-+	si->ext_tree = sbi->total_ext_tree;
-+	si->ext_node = atomic_read(&sbi->total_ext_node);
- 	si->ndirty_node = get_pages(sbi, F2FS_DIRTY_NODES);
- 	si->ndirty_dent = get_pages(sbi, F2FS_DIRTY_DENTS);
- 	si->ndirty_dirs = sbi->n_dirty_dirs;
-@@ -177,6 +179,9 @@ get_cache:
- 	si->cache_mem += sbi->n_dirty_dirs * sizeof(struct inode_entry);
- 	for (i = 0; i <= UPDATE_INO; i++)
- 		si->cache_mem += sbi->im[i].ino_num * sizeof(struct ino_entry);
-+	si->cache_mem += sbi->total_ext_tree * sizeof(struct extent_tree);
-+	si->cache_mem += atomic_read(&sbi->total_ext_node) *
-+						sizeof(struct extent_node);
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index ed7b9c5..d636475 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -572,6 +572,8 @@ static bool f2fs_lookup_extent_tree(struct inode *inode, pgoff_t pgofs,
+ 	if (is_inode_flag_set(F2FS_I(inode), FI_NO_EXTENT))
+ 		return false;
+ 
++	trace_f2fs_lookup_extent_tree_start(inode, pgofs);
++
+ 	down_read(&sbi->extent_tree_lock);
+ 	et = radix_tree_lookup(&sbi->extent_tree_root, inode->i_ino);
+ 	if (!et) {
+@@ -594,6 +596,8 @@ static bool f2fs_lookup_extent_tree(struct inode *inode, pgoff_t pgofs,
+ 	stat_inc_total_hit(sbi->sb);
+ 	read_unlock(&et->lock);
+ 
++	trace_f2fs_lookup_extent_tree_end(inode, pgofs, en);
++
+ 	atomic_dec(&et->refcount);
+ 	return en ? true : false;
+ }
+@@ -613,6 +617,8 @@ static void f2fs_update_extent_tree(struct inode *inode, pgoff_t fofs,
+ 	if (is_inode_flag_set(F2FS_I(inode), FI_NO_EXTENT))
+ 		return;
+ 
++	trace_f2fs_update_extent_tree(inode, fofs, blkaddr);
++
+ retry:
+ 	down_write(&sbi->extent_tree_lock);
+ 	et = radix_tree_lookup(&sbi->extent_tree_root, ino);
+@@ -763,6 +769,8 @@ void f2fs_shrink_extent_tree(struct f2fs_sb_info *sbi, int nr_shrink)
+ 		}
+ 	}
+ 	up_write(&sbi->extent_tree_lock);
++
++	trace_f2fs_shrink_extent_tree(sbi, node_cnt, tree_cnt);
  }
  
- static int stat_show(struct seq_file *s, void *v)
-@@ -253,6 +258,8 @@ static int stat_show(struct seq_file *s, void *v)
- 		seq_printf(s, "  - node blocks : %d\n", si->node_blks);
- 		seq_printf(s, "\nExtent Hit Ratio: %d / %d\n",
- 			   si->hit_ext, si->total_ext);
-+		seq_printf(s, "\nExtent Tree Count: %d\n", si->ext_tree);
-+		seq_printf(s, "\nExtent Node Count: %d\n", si->ext_node);
- 		seq_puts(s, "\nBalancing F2FS Async:\n");
- 		seq_printf(s, "  - inmem: %4d\n",
- 			   si->inmem_pages);
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 811fd90..c5138fc 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -1540,7 +1540,7 @@ struct f2fs_stat_info {
- 	struct f2fs_sb_info *sbi;
- 	int all_area_segs, sit_area_segs, nat_area_segs, ssa_area_segs;
- 	int main_area_segs, main_area_sections, main_area_zones;
--	int hit_ext, total_ext;
-+	int hit_ext, total_ext, ext_tree, ext_node;
- 	int ndirty_node, ndirty_dent, ndirty_dirs, ndirty_meta;
- 	int nats, dirty_nats, sits, dirty_sits, fnids;
- 	int total_count, utilization;
+ void f2fs_destroy_extent_tree(struct inode *inode)
+@@ -803,6 +811,7 @@ void f2fs_destroy_extent_tree(struct inode *inode)
+ 	sbi->total_ext_tree--;
+ 	up_write(&sbi->extent_tree_lock);
+ out:
++	trace_f2fs_destroy_extent_tree(inode, node_cnt);
+ 	return;
+ }
+ 
+diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
+index 13992f3..8f53fda 100644
+--- a/include/trace/events/f2fs.h
++++ b/include/trace/events/f2fs.h
+@@ -1009,6 +1009,140 @@ TRACE_EVENT(f2fs_issue_flush,
+ 		__entry->nobarrier ? "skip (nobarrier)" : "issue",
+ 		__entry->flush_merge ? " with flush_merge" : "")
+ );
++
++TRACE_EVENT(f2fs_lookup_extent_tree_start,
++
++	TP_PROTO(struct inode *inode, unsigned int pgofs),
++
++	TP_ARGS(inode, pgofs),
++
++	TP_STRUCT__entry(
++		__field(dev_t,	dev)
++		__field(ino_t,	ino)
++		__field(unsigned int, pgofs)
++	),
++
++	TP_fast_assign(
++		__entry->dev = inode->i_sb->s_dev;
++		__entry->ino = inode->i_ino;
++		__entry->pgofs = pgofs;
++	),
++
++	TP_printk("dev = (%d,%d), ino = %lu, pgofs = %u",
++		show_dev_ino(__entry),
++		__entry->pgofs)
++);
++
++TRACE_EVENT_CONDITION(f2fs_lookup_extent_tree_end,
++
++	TP_PROTO(struct inode *inode, unsigned int pgofs,
++						struct extent_node *en),
++
++	TP_ARGS(inode, pgofs, en),
++
++	TP_CONDITION(en),
++
++	TP_STRUCT__entry(
++		__field(dev_t,	dev)
++		__field(ino_t,	ino)
++		__field(unsigned int, pgofs)
++		__field(unsigned int, fofs)
++		__field(u32, blk)
++		__field(unsigned int, len)
++	),
++
++	TP_fast_assign(
++		__entry->dev = inode->i_sb->s_dev;
++		__entry->ino = inode->i_ino;
++		__entry->pgofs = pgofs;
++		__entry->fofs = en->ei.fofs;
++		__entry->blk = en->ei.blk;
++		__entry->len = en->ei.len;
++	),
++
++	TP_printk("dev = (%d,%d), ino = %lu, pgofs = %u, "
++		"ext_info(fofs: %u, blk: %u, len: %u)",
++		show_dev_ino(__entry),
++		__entry->pgofs,
++		__entry->fofs,
++		__entry->blk,
++		__entry->len)
++);
++
++TRACE_EVENT(f2fs_update_extent_tree,
++
++	TP_PROTO(struct inode *inode, unsigned int pgofs, block_t blkaddr),
++
++	TP_ARGS(inode, pgofs, blkaddr),
++
++	TP_STRUCT__entry(
++		__field(dev_t,	dev)
++		__field(ino_t,	ino)
++		__field(unsigned int, pgofs)
++		__field(u32, blk)
++	),
++
++	TP_fast_assign(
++		__entry->dev = inode->i_sb->s_dev;
++		__entry->ino = inode->i_ino;
++		__entry->pgofs = pgofs;
++		__entry->blk = blkaddr;
++	),
++
++	TP_printk("dev = (%d,%d), ino = %lu, pgofs = %u, blkaddr = %u",
++		show_dev_ino(__entry),
++		__entry->pgofs,
++		__entry->blk)
++);
++
++TRACE_EVENT(f2fs_shrink_extent_tree,
++
++	TP_PROTO(struct f2fs_sb_info *sbi, unsigned int node_cnt,
++						unsigned int tree_cnt),
++
++	TP_ARGS(sbi, node_cnt, tree_cnt),
++
++	TP_STRUCT__entry(
++		__field(dev_t,	dev)
++		__field(unsigned int, node_cnt)
++		__field(unsigned int, tree_cnt)
++	),
++
++	TP_fast_assign(
++		__entry->dev = sbi->sb->s_dev;
++		__entry->node_cnt = node_cnt;
++		__entry->tree_cnt = tree_cnt;
++	),
++
++	TP_printk("dev = (%d,%d), shrunk: node_cnt = %u, tree_cnt = %u",
++		show_dev(__entry),
++		__entry->node_cnt,
++		__entry->tree_cnt)
++);
++
++TRACE_EVENT(f2fs_destroy_extent_tree,
++
++	TP_PROTO(struct inode *inode, unsigned int node_cnt),
++
++	TP_ARGS(inode, node_cnt),
++
++	TP_STRUCT__entry(
++		__field(dev_t,	dev)
++		__field(ino_t,	ino)
++		__field(unsigned int, node_cnt)
++	),
++
++	TP_fast_assign(
++		__entry->dev = inode->i_sb->s_dev;
++		__entry->ino = inode->i_ino;
++		__entry->node_cnt = node_cnt;
++	),
++
++	TP_printk("dev = (%d,%d), ino = %lu, destroyed: node_cnt = %u",
++		show_dev_ino(__entry),
++		__entry->node_cnt)
++);
++
+ #endif /* _TRACE_F2FS_H */
+ 
+  /* This part must be outside protection */
 -- 
 2.2.1
 
