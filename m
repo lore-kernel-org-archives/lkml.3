@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846AbbALJ0g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 04:26:36 -0500
+	id S1752745AbbALJXv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 04:23:51 -0500
 Received: from mailout2.w1.samsung.com ([210.118.77.12]:32012 "EHLO
 	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677AbbALJXY (ORCPT
+	with ESMTP id S1752704AbbALJX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 04:23:24 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-46-54b3928a66b3
+	Mon, 12 Jan 2015 04:23:28 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-49-54b3928b7975
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
         Jaehoon Chung <jh80.chung@samsung.com>, devicetree@vger.kernel.org,
@@ -18,54 +18,47 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [RFC 2/3] ARM: dts: Specify MSHC realistic clocks and use frequency
- scaling
-Date: Mon, 12 Jan 2015 10:23:04 +0100
-Message-id: <1421054585-9032-3-git-send-email-k.kozlowski@samsung.com>
+Subject: [RFC 3/3] ARM: dts: Use frequency scaling for MSHC
+Date: Mon, 12 Jan 2015 10:23:05 +0100
+Message-id: <1421054585-9032-4-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1421054585-9032-1-git-send-email-k.kozlowski@samsung.com>
 References: <1421054585-9032-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBLMWRmVeSWpSXmKPExsVy+t/xy7pdkzaHGBzcbmmxccZ6VosJl7cz
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOLMWRmVeSWpSXmKPExsVy+t/xy7rdkzaHGPx9Km+xccZ6VosJl7cz
 	Wsw/co7V4savNlaL1y8MLfofv2a2ONv0ht1i0+NrrBaXd81hszjyv5/RYsb5fUwWa4/cZbc4
-	vjbcgddj06pONo871/aweWxeUu9x49VCJo++LasYPT5vkgtgi+KySUnNySxLLdK3S+DKuH5r
-	PVvBd/aKR2s+sjYwXmDrYuTkkBAwkVj34SwLhC0mceHeeqA4F4eQwFJGiZZTW1ggnD4miZPf
-	ZzGBVLEJGEtsXr4ErEpEYAuTxKo1a1lBHGaBo4wSN2bdBasSFgiTOH7qDdhcFgFVieb+JnYQ
-	m1fATeLdvbXMEPvkJE4em8wKYnMKuEscnPgDzBYCqrm6q5NpAiPvAkaGVYyiqaXJBcVJ6bmG
-	esWJucWleel6yfm5mxghofllB+PiY1aHGAU4GJV4eCfIbA4RYk0sK67MPcQowcGsJMLrWgYU
-	4k1JrKxKLcqPLyrNSS0+xMjEwSnVwJgq/oLntI6wecKPgru+L7Y6yc43OXEh97DslZdGe60L
-	NyvICYv1MOQIO/BydN9orfq2P75SrTu6qaF/zZQzVq5C745nvNDf/u/Kqa0nD3zX402VFXTY
-	dM5xYpnp1PvCU95lKV2fkjZ3RVXHGc5NnG5RZWfuspRuyU6Jstkr3fe4sdrrgLCDmxJLcUai
-	oRZzUXEiAG05LlQrAgAA
+	vjbcgddj06pONo871/aweWxeUu9x49VCJo++LasYPT5vkgtgi+KySUnNySxLLdK3S+DKeNfk
+	WbCYrWLO/63MDYxrWbsYOTkkBEwk/izZBGWLSVy4t56ti5GLQ0hgKaPErlUbWSGcPiaJpd8u
+	sYBUsQkYS2xevgSsSkRgC5PEqjVrwaqYBY4yStyYdZcJpEpYwFpid+cpRhCbRUBVYuv8A8wg
+	Nq+Am8TkyTuZIPbJSZw8NhlsN6eAu8TBiT/AbCGgmqu7OpkmMPIuYGRYxSiaWppcUJyUnmuo
+	V5yYW1yal66XnJ+7iRESmF92MC4+ZnWIUYCDUYmHd4LM5hAh1sSy4srcQ4wSHMxKIryuZUAh
+	3pTEyqrUovz4otKc1OJDjEwcnFINjBterpV5IimWxSVxjv3wNQVFawW+QvG15b/NWvP0hIOW
+	tNydfWPbk2qegxvKDZNfT11s3RbzPDkyr9lx8uH0rkNu67/ev29a8anPUyp/3tfti0UbEkpq
+	E+LZbk7YP2kDX9m9i//tLq2KSJtUtmH1/3+6s9dJ9N0rtT/O99xyCvdp6c+R109cl1ViKc5I
+	NNRiLipOBAD+qv7UKgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lower the dw_mmc host clock from 400 MHz to 100 MHz because there are a
-lot of MMC errors above 100 MHz.
-
-Enable frequency scaling to reduce energy consumption. In idle this
-reduced energy consumption by 2.6% (from 119.5 mA to 116.4 mA).
+Enable frequency scaling on MSHC to reduce energy consumption. In idle
+this reduced energy consumption by 1.0% (from 27.16 mA to 26.89 mA).
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- arch/arm/boot/dts/exynos4412-trats2.dts | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/arm/boot/dts/exynos3250-rinato.dts | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/boot/dts/exynos4412-trats2.dts b/arch/arm/boot/dts/exynos4412-trats2.dts
-index 29231b452643..21f1236ae979 100644
---- a/arch/arm/boot/dts/exynos4412-trats2.dts
-+++ b/arch/arm/boot/dts/exynos4412-trats2.dts
-@@ -558,7 +558,9 @@
- 		non-removable;
- 		card-detect-delay = <200>;
- 		vmmc-supply = <&vemmc_reg>;
--		clock-frequency = <400000000>;
-+		clock-frequency = <100000000>;
-+		clock-freq-min-max = <400000 100000000>;
-+		frequency-scaling;
- 		samsung,dw-mshc-ciu-div = <0>;
- 		samsung,dw-mshc-sdr-timing = <2 3>;
- 		samsung,dw-mshc-ddr-timing = <1 2>;
+diff --git a/arch/arm/boot/dts/exynos3250-rinato.dts b/arch/arm/boot/dts/exynos3250-rinato.dts
+index e53f62f216ba..aad09109fdbc 100644
+--- a/arch/arm/boot/dts/exynos3250-rinato.dts
++++ b/arch/arm/boot/dts/exynos3250-rinato.dts
+@@ -493,6 +493,7 @@
+ 	vmmc-supply = <&ldo12_reg>;
+ 	clock-frequency = <100000000>;
+ 	clock-freq-min-max = <400000 100000000>;
++	frequency-scaling;
+ 	samsung,dw-mshc-ciu-div = <1>;
+ 	samsung,dw-mshc-sdr-timing = <0 1>;
+ 	samsung,dw-mshc-ddr-timing = <1 2>;
 -- 
 1.9.1
 
