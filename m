@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932340AbbALTYU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 14:24:20 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:46054 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754614AbbALTYR (ORCPT
+	id S1754554AbbALTY3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 14:24:29 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:48055 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932342AbbALTY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 14:24:17 -0500
+	Mon, 12 Jan 2015 14:24:26 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, David Howells <dhowells@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH 04/10] PCI, frv: clip firmware assigned resource under parent bridge's
-Date: Mon, 12 Jan 2015 11:23:14 -0800
-Message-Id: <1421090600-9750-5-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-ia64@vger.kernel.org
+Subject: [PATCH 05/10] PCI, ia64: clip firmware assigned resource under parent bridge's
+Date: Mon, 12 Jan 2015 11:23:15 -0800
+Message-Id: <1421090600-9750-6-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1421090600-9750-1-git-send-email-yinghai@kernel.org>
 References: <1421090600-9750-1-git-send-email-yinghai@kernel.org>
@@ -32,69 +34,118 @@ Link: https://bugzilla.kernel.org/show_bug.cgi?id=85491
 Reported-by: Marek Kordik <kordikmarek@gmail.com>
 Fixes: 5b28541552ef ("PCI: Restrict 64-bit prefetchable bridge windows to 64-bit resources")
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: linux-ia64@vger.kernel.org
 ---
- arch/frv/mb93090-mb00/pci-frv.c | 33 ++++++++++++++++++++++++++++-----
- 1 file changed, 28 insertions(+), 5 deletions(-)
+ arch/ia64/pci/pci.c | 71 +++++++++++++++++++++++++++++++++--------------------
+ 1 file changed, 44 insertions(+), 27 deletions(-)
 
-diff --git a/arch/frv/mb93090-mb00/pci-frv.c b/arch/frv/mb93090-mb00/pci-frv.c
-index 67b1d16..f4e36f6 100644
---- a/arch/frv/mb93090-mb00/pci-frv.c
-+++ b/arch/frv/mb93090-mb00/pci-frv.c
-@@ -90,12 +90,26 @@ static void __init pcibios_allocate_bus_resources(struct list_head *bus_list)
- 	for (ln=bus_list->next; ln != bus_list; ln=ln->next) {
- 		bus = list_entry(ln, struct pci_bus, node);
- 		if ((dev = bus->self)) {
-+			bool changed = false;
+diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
+index 291a582..a3f9e27 100644
+--- a/arch/ia64/pci/pci.c
++++ b/arch/ia64/pci/pci.c
+@@ -487,45 +487,57 @@ int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge)
+ 	return 0;
+ }
+ 
+-static int is_valid_resource(struct pci_dev *dev, int idx)
++void pcibios_fixup_device_resources(struct pci_dev *dev)
+ {
+-	unsigned int i, type_mask = IORESOURCE_IO | IORESOURCE_MEM;
+-	struct resource *devr = &dev->resource[idx], *busr;
++	int idx;
+ 
+ 	if (!dev->bus)
+-		return 0;
++		return;
+ 
+-	pci_bus_for_each_resource(dev->bus, busr, i) {
+-		if (!busr || ((busr->flags ^ devr->flags) & type_mask))
++	for (idx = 0; idx < PCI_BRIDGE_RESOURCES; idx++) {
++		struct resource *r = &dev->resource[idx];
 +
- 			for (idx = PCI_BRIDGE_RESOURCES; idx < PCI_NUM_RESOURCES; idx++) {
- 				r = &dev->resource[idx];
- 				if (!r->start)
- 					continue;
--				pci_claim_resource(dev, idx);
++		if (!r->flags || r->parent || !r->start)
+ 			continue;
+-		if ((devr->start) && (devr->start >= busr->start) &&
+-				(devr->end <= busr->end))
+-			return 1;
 +
-+				if (pci_claim_resource(dev, idx) >= 0)
-+					continue;
++		if (pci_claim_resource(dev, idx) >= 0)
++			continue;
 +
-+				/* try again after clip for pci bridge*/
-+				if ((dev->class >> 8) == PCI_CLASS_BRIDGE_PCI &&
-+				    pci_bus_clip_resource(dev, r)) {
-+					changed = true;
-+					pci_claim_resource(dev, idx);
-+				}
- 			}
-+
-+			if (changed)
-+				pci_setup_bridge(bus);
- 		}
- 		pcibios_allocate_bus_resources(&bus->children);
++		/* try again with clip */
++		if (pci_bus_clip_resource(dev, r)) {
++			pci_update_resource(dev, idx);
++			pci_claim_resource(dev, idx);
++		}
  	}
-@@ -123,11 +137,20 @@ static void __init pcibios_allocate_resources(int pass)
- 			if (pass == disabled) {
- 				DBG("PCI: Resource %08lx-%08lx (f=%lx, d=%d, p=%d)\n",
- 				    r->start, r->end, r->flags, disabled, pass);
--				if (pci_claim_resource(dev, idx) < 0) {
--					/* We'll assign a new address later */
--					r->end -= r->start;
--					r->start = 0;
+-	return 0;
+ }
++EXPORT_SYMBOL_GPL(pcibios_fixup_device_resources);
+ 
+-static void pcibios_fixup_resources(struct pci_dev *dev, int start, int limit)
++static bool pcibios_fixup_bridge_resources(struct pci_dev *dev)
+ {
+-	int i;
++	int idx;
++	bool changed = false;
 +
-+				if (pci_claim_resource(dev, idx) >= 0)
-+					continue;
++	if (!dev->bus)
++		return changed;
 +
-+				/* try again with clip */
-+				if (pci_bus_clip_resource(dev, r)) {
-+					pci_update_resource(dev, idx);
-+					if (pci_claim_resource(dev, idx) >= 0)
-+						continue;
- 				}
++	for (idx = PCI_BRIDGE_RESOURCES; idx < PCI_NUM_RESOURCES; idx++) {
++		struct resource *r = &dev->resource[idx];
+ 
+-	for (i = start; i < limit; i++) {
+-		if (!dev->resource[i].flags)
++		if (!r->flags || r->parent || !r->start)
+ 			continue;
+-		if ((is_valid_resource(dev, i)))
+-			pci_claim_resource(dev, i);
+-	}
+-}
+ 
+-void pcibios_fixup_device_resources(struct pci_dev *dev)
+-{
+-	pcibios_fixup_resources(dev, 0, PCI_BRIDGE_RESOURCES);
+-}
+-EXPORT_SYMBOL_GPL(pcibios_fixup_device_resources);
++		if (pci_claim_resource(dev, idx) >= 0)
++			continue;
+ 
+-static void pcibios_fixup_bridge_resources(struct pci_dev *dev)
+-{
+-	pcibios_fixup_resources(dev, PCI_BRIDGE_RESOURCES, PCI_NUM_RESOURCES);
++		/* try again after clip for pci bridge*/
++		if ((dev->class >> 8) == PCI_CLASS_BRIDGE_PCI &&
++		    pci_bus_clip_resource(dev, r)) {
++			changed = true;
++			pci_claim_resource(dev, idx);
++		}
++	}
 +
-+				/* We'll assign a new address later */
-+				r->end -= r->start;
-+				r->start = 0;
- 			}
- 		}
- 		if (!pass) {
++	return changed;
+ }
+ 
+ /*
+@@ -536,9 +548,14 @@ void pcibios_fixup_bus(struct pci_bus *b)
+ 	struct pci_dev *dev;
+ 
+ 	if (b->self) {
++		bool changed;
++
+ 		pci_read_bridge_bases(b);
+-		pcibios_fixup_bridge_resources(b->self);
++		changed = pcibios_fixup_bridge_resources(b->self);
++		if (changed)
++			pci_setup_bridge(b);
+ 	}
++
+ 	list_for_each_entry(dev, &b->devices, bus_list)
+ 		pcibios_fixup_device_resources(dev);
+ 	platform_pci_fixup_bus(b);
 -- 
 1.8.4.5
 
