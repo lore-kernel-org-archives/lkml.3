@@ -1,89 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752980AbbALMgp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 07:36:45 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:48347 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188AbbALMgl (ORCPT
+	id S1752444AbbALMuF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 07:50:05 -0500
+Received: from smtp-out003.kontent.com ([81.88.40.217]:47663 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083AbbALMuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 07:36:41 -0500
-Date: Mon, 12 Jan 2015 07:36:36 -0500
-From: "Ahmed S. Darwish" <darwish.07@gmail.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: Olivier Sobrie <olivier@sobrie.be>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 3/4] can: kvaser_usb: Add support for the Usbcan-II
- family
-Message-ID: <20150112123636.GE9213@linux>
-References: <20141223154654.GB6460@vivalin-002>
- <20150111200544.GA8855@linux>
- <20150111201116.GB8855@linux>
- <20150111201519.GC8855@linux>
- <20150111203612.GA8999@linux>
- <54B3B37C.7090002@pengutronix.de>
- <20150112120741.GC9213@linux>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150112120741.GC9213@linux>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 12 Jan 2015 07:50:03 -0500
+X-Greylist: delayed 762 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Jan 2015 07:50:02 EST
+Message-ID: <1421066230.12454.24.camel@linux-0dmf.site>
+Subject: Re: [PATCH] usb/kaweth: use GFP_ATOMIC under spin_lock in
+ usb_start_wait_urb()
+From: Oliver Neukum <oliver@neukum.org>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Date: Mon, 12 Jan 2015 13:37:10 +0100
+In-Reply-To: <1420845382-25815-1-git-send-email-khoroshilov@ispras.ru>
+References: <1420845382-25815-1-git-send-email-khoroshilov@ispras.ru>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 07:07:41AM -0500, Ahmed S. Darwish wrote:
-> Hi Marc,
+On Sat, 2015-01-10 at 02:16 +0300, Alexey Khoroshilov wrote:
+> Commit e4c7f259c5be ("USB: kaweth.c: use GFP_ATOMIC under spin_lock")
+> makes sure that kaweth_internal_control_msg() allocates memory with
+> GFP_ATOMIC,
+> but kaweth_internal_control_msg() also calls usb_start_wait_urb()
+> that still allocates memory with GFP_NOIO.
 > 
-> On Mon, Jan 12, 2015 at 12:43:56PM +0100, Marc Kleine-Budde wrote:
-> > On 01/11/2015 09:36 PM, Ahmed S. Darwish wrote:
-> > > +
-> > > +	switch (dev->family) {
-> > > +	case KVASER_LEAF:
-> > > +		rx_msg = msg->u.leaf.rx_can.msg;
-> > > +		break;
-> > > +	case KVASER_USBCAN:
-> > > +		rx_msg = msg->u.usbcan.rx_can.msg;
-> > > +		break;
-> > > +	default:
-> > > +		dev_err(dev->udev->dev.parent,
-> > > +			"Invalid device family (%d)\n", dev->family);
-> > >  		return;
-> > 
-> > should not happen.
-> > 
+> The patch fixes usb_start_wait_urb() as well.
 > 
-> Yes, but otherwise I get GCC warnings of 'rx_msg' possibly
-> being unused. I can add __maybe_unused to rx_msg of course,
-> but such annotation may hide possible errors in the future.
+> Found by Linux Driver Verification project (linuxtesting.org).
 > 
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-Ah, what I meant is using uninitialized_var() to suppress the
-GCC warning. But, really, using that macro has a bad history
-of hiding errors in the future.
+Acked-by: Oliver Neukum <oliver@neukum.org>
 
-Kindly check http://lwn.net/Articles/529954/ for context.
-
-Another solution might be initializing rx_msg to NULL.
-
-> > > +	switch (dev->family) {
-> > > +	case KVASER_LEAF:
-> > > +		msg_tx_can_flags = &msg->u.tx_can.leaf.flags;
-> > > +		break;
-> > > +	case KVASER_USBCAN:
-> > > +		msg_tx_can_flags = &msg->u.tx_can.usbcan.flags;
-> > > +		break;
-> > > +	default:
-> > > +		dev_err(dev->udev->dev.parent,
-> > > +			"Invalid device family (%d)\n", dev->family);
-> > > +		goto releasebuf;
-> > should not happen, please remove
-> 
-> Like the 'rx_msg' case above.
-> 
-> Thanks,
-> Darwish
