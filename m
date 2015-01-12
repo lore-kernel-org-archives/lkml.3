@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150AbbALSso (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:48:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58272 "EHLO
+	id S1755974AbbALSrz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:47:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58279 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755137AbbALSab (ORCPT
+	with ESMTP id S1755150AbbALSac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:30:31 -0500
+	Mon, 12 Jan 2015 13:30:32 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Sagi Grimberg <sagig@mellanox.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 171/216] iser-target: Allocate PI contexts dynamically
-Date: Mon, 12 Jan 2015 18:29:09 +0000
-Message-Id: <1421087394-2712-59-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 172/216] iser-target: Fix NULL dereference in SW mode DIF
+Date: Mon, 12 Jan 2015 18:29:10 +0000
+Message-Id: <1421087394-2712-60-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -30,464 +30,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sagi Grimberg <sagig@mellanox.com>
 
-commit 570db170f37715b7df23c95868169f3d9affa48c upstream.
+commit 302cc7c3ca14d21ccdffdebdb61c4fe028f2d5ad upstream.
 
-This patch converts to allocate PI contexts dynamically in order
-avoid a potentially bogus np->tpg_np and associated NULL pointer
-dereference in isert_connect_request() during iser-target endpoint
-shutdown with multiple network portals.
+Fallback to software mode DIF if HCA does not support
+PI (without crashing obviously). It is still possible to
+run with backend protection and an unprotected frontend,
+so looking at the command prot_op is not enough. Check
+device PI capability on a per-IO basis (isert_prot_cmd
+inline static) to determine if we need to handle protection
+information.
 
-Also, there is really no need to allocate these at connection
-establishment since it is not guaranteed that all the IOs on
-that connection will be to a PI formatted device.
+Trace:
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
+IP: [<ffffffffa037f8b1>] isert_reg_sig_mr+0x351/0x3b0 [ib_isert]
+Call Trace:
+ [<ffffffff812b003a>] ? swiotlb_map_sg_attrs+0x7a/0x130
+ [<ffffffffa038184d>] isert_reg_rdma+0x2fd/0x370 [ib_isert]
+ [<ffffffff8108f2ec>] ? idle_balance+0x6c/0x2c0
+ [<ffffffffa0382b68>] isert_put_datain+0x68/0x210 [ib_isert]
+ [<ffffffffa02acf5b>] lio_queue_data_in+0x2b/0x30 [iscsi_target_mod]
+ [<ffffffffa02306eb>] target_complete_ok_work+0x21b/0x310 [target_core_mod]
+ [<ffffffff8106ece2>] process_one_work+0x182/0x3b0
+ [<ffffffff8106fda0>] worker_thread+0x120/0x3c0
+ [<ffffffff8106fc80>] ? maybe_create_worker+0x190/0x190
+ [<ffffffff8107594e>] kthread+0xce/0xf0
+ [<ffffffff81075880>] ? kthread_freezable_should_stop+0x70/0x70
+ [<ffffffff8159a22c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff81075880>] ? kthread_freezable_should_stop+0x70/0x70
 
-We can do it in a lazy fashion so the initial burst will have a
-transient slow down, but very fast all IOs will allocate a PI
-context.
-
-Squashed:
-
-iser-target: Centralize PI context handling code
-
+Reported-by: Slava Shwartsman <valyushash@gmail.com>
 Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/ulp/isert/ib_isert.c | 267 ++++++++++++++++++--------------
- drivers/infiniband/ulp/isert/ib_isert.h |   7 +
- 2 files changed, 158 insertions(+), 116 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c | 19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index 8244ff44010c..703c957683b1 100644
+index 703c957683b1..8a25ebee717a 100644
 --- a/drivers/infiniband/ulp/isert/ib_isert.c
 +++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -96,8 +96,7 @@ isert_query_device(struct ib_device *ib_dev, struct ib_device_attr *devattr)
- }
+@@ -61,6 +61,14 @@ static int
+ isert_rdma_accept(struct isert_conn *isert_conn);
+ struct rdma_cm_id *isert_setup_id(struct isert_np *isert_np);
  
- static int
--isert_conn_setup_qp(struct isert_conn *isert_conn, struct rdma_cm_id *cma_id,
--		    u8 protection)
-+isert_conn_setup_qp(struct isert_conn *isert_conn, struct rdma_cm_id *cma_id)
- {
- 	struct isert_device *device = isert_conn->conn_device;
- 	struct ib_qp_init_attr attr;
-@@ -132,7 +131,7 @@ isert_conn_setup_qp(struct isert_conn *isert_conn, struct rdma_cm_id *cma_id,
- 	attr.cap.max_recv_sge = 1;
- 	attr.sq_sig_type = IB_SIGNAL_REQ_WR;
- 	attr.qp_type = IB_QPT_RC;
--	if (protection)
-+	if (device->pi_capable)
- 		attr.create_flags |= IB_QP_CREATE_SIGNATURE_EN;
- 
- 	pr_debug("isert_conn_setup_qp cma_id->device: %p\n",
-@@ -442,8 +441,68 @@ isert_conn_free_fastreg_pool(struct isert_conn *isert_conn)
- }
- 
- static int
-+isert_create_pi_ctx(struct fast_reg_descriptor *desc,
-+		    struct ib_device *device,
-+		    struct ib_pd *pd)
++static inline bool
++isert_prot_cmd(struct isert_conn *conn, struct se_cmd *cmd)
 +{
-+	struct ib_mr_init_attr mr_init_attr;
-+	struct pi_context *pi_ctx;
-+	int ret;
-+
-+	pi_ctx = kzalloc(sizeof(*desc->pi_ctx), GFP_KERNEL);
-+	if (!pi_ctx) {
-+		pr_err("Failed to allocate pi context\n");
-+		return -ENOMEM;
-+	}
-+
-+	pi_ctx->prot_frpl = ib_alloc_fast_reg_page_list(device,
-+					    ISCSI_ISER_SG_TABLESIZE);
-+	if (IS_ERR(pi_ctx->prot_frpl)) {
-+		pr_err("Failed to allocate prot frpl err=%ld\n",
-+			  PTR_ERR(pi_ctx->prot_frpl));
-+		ret = PTR_ERR(pi_ctx->prot_frpl);
-+		goto err_pi_ctx;
-+	}
-+
-+	pi_ctx->prot_mr = ib_alloc_fast_reg_mr(pd, ISCSI_ISER_SG_TABLESIZE);
-+	if (IS_ERR(pi_ctx->prot_mr)) {
-+		pr_err("Failed to allocate prot frmr err=%ld\n",
-+			  PTR_ERR(pi_ctx->prot_mr));
-+		ret = PTR_ERR(pi_ctx->prot_mr);
-+		goto err_prot_frpl;
-+	}
-+	desc->ind |= ISERT_PROT_KEY_VALID;
-+
-+	memset(&mr_init_attr, 0, sizeof(mr_init_attr));
-+	mr_init_attr.max_reg_descriptors = 2;
-+	mr_init_attr.flags |= IB_MR_SIGNATURE_EN;
-+	pi_ctx->sig_mr = ib_create_mr(pd, &mr_init_attr);
-+	if (IS_ERR(pi_ctx->sig_mr)) {
-+		pr_err("Failed to allocate signature enabled mr err=%ld\n",
-+			  PTR_ERR(pi_ctx->sig_mr));
-+		ret = PTR_ERR(pi_ctx->sig_mr);
-+		goto err_prot_mr;
-+	}
-+
-+	desc->pi_ctx = pi_ctx;
-+	desc->ind |= ISERT_SIG_KEY_VALID;
-+	desc->ind &= ~ISERT_PROTECTED;
-+
-+	return 0;
-+
-+err_prot_mr:
-+	ib_dereg_mr(desc->pi_ctx->prot_mr);
-+err_prot_frpl:
-+	ib_free_fast_reg_page_list(desc->pi_ctx->prot_frpl);
-+err_pi_ctx:
-+	kfree(desc->pi_ctx);
-+
-+	return ret;
++	return (conn->conn_device->pi_capable &&
++		cmd->prot_op != TARGET_PROT_NORMAL);
 +}
 +
-+static int
- isert_create_fr_desc(struct ib_device *ib_device, struct ib_pd *pd,
--		     struct fast_reg_descriptor *fr_desc, u8 protection)
-+		     struct fast_reg_descriptor *fr_desc)
- {
- 	int ret;
- 
-@@ -462,62 +521,12 @@ isert_create_fr_desc(struct ib_device *ib_device, struct ib_pd *pd,
- 		ret = PTR_ERR(fr_desc->data_mr);
- 		goto err_data_frpl;
- 	}
--	pr_debug("Create fr_desc %p page_list %p\n",
--		 fr_desc, fr_desc->data_frpl->page_list);
- 	fr_desc->ind |= ISERT_DATA_KEY_VALID;
- 
--	if (protection) {
--		struct ib_mr_init_attr mr_init_attr = {0};
--		struct pi_context *pi_ctx;
--
--		fr_desc->pi_ctx = kzalloc(sizeof(*fr_desc->pi_ctx), GFP_KERNEL);
--		if (!fr_desc->pi_ctx) {
--			pr_err("Failed to allocate pi context\n");
--			ret = -ENOMEM;
--			goto err_data_mr;
--		}
--		pi_ctx = fr_desc->pi_ctx;
--
--		pi_ctx->prot_frpl = ib_alloc_fast_reg_page_list(ib_device,
--						    ISCSI_ISER_SG_TABLESIZE);
--		if (IS_ERR(pi_ctx->prot_frpl)) {
--			pr_err("Failed to allocate prot frpl err=%ld\n",
--			       PTR_ERR(pi_ctx->prot_frpl));
--			ret = PTR_ERR(pi_ctx->prot_frpl);
--			goto err_pi_ctx;
--		}
--
--		pi_ctx->prot_mr = ib_alloc_fast_reg_mr(pd, ISCSI_ISER_SG_TABLESIZE);
--		if (IS_ERR(pi_ctx->prot_mr)) {
--			pr_err("Failed to allocate prot frmr err=%ld\n",
--			       PTR_ERR(pi_ctx->prot_mr));
--			ret = PTR_ERR(pi_ctx->prot_mr);
--			goto err_prot_frpl;
--		}
--		fr_desc->ind |= ISERT_PROT_KEY_VALID;
--
--		mr_init_attr.max_reg_descriptors = 2;
--		mr_init_attr.flags |= IB_MR_SIGNATURE_EN;
--		pi_ctx->sig_mr = ib_create_mr(pd, &mr_init_attr);
--		if (IS_ERR(pi_ctx->sig_mr)) {
--			pr_err("Failed to allocate signature enabled mr err=%ld\n",
--			       PTR_ERR(pi_ctx->sig_mr));
--			ret = PTR_ERR(pi_ctx->sig_mr);
--			goto err_prot_mr;
--		}
--		fr_desc->ind |= ISERT_SIG_KEY_VALID;
--	}
--	fr_desc->ind &= ~ISERT_PROTECTED;
-+	pr_debug("Created fr_desc %p\n", fr_desc);
- 
- 	return 0;
--err_prot_mr:
--	ib_dereg_mr(fr_desc->pi_ctx->prot_mr);
--err_prot_frpl:
--	ib_free_fast_reg_page_list(fr_desc->pi_ctx->prot_frpl);
--err_pi_ctx:
--	kfree(fr_desc->pi_ctx);
--err_data_mr:
--	ib_dereg_mr(fr_desc->data_mr);
 +
- err_data_frpl:
- 	ib_free_fast_reg_page_list(fr_desc->data_frpl);
- 
-@@ -525,7 +534,7 @@ err_data_frpl:
- }
- 
- static int
--isert_conn_create_fastreg_pool(struct isert_conn *isert_conn, u8 pi_support)
-+isert_conn_create_fastreg_pool(struct isert_conn *isert_conn)
+ static void
+ isert_qp_event_callback(struct ib_event *e, void *context)
  {
- 	struct fast_reg_descriptor *fr_desc;
- 	struct isert_device *device = isert_conn->conn_device;
-@@ -549,8 +558,7 @@ isert_conn_create_fastreg_pool(struct isert_conn *isert_conn, u8 pi_support)
- 		}
- 
- 		ret = isert_create_fr_desc(device->ib_device,
--					   isert_conn->conn_pd, fr_desc,
--					   pi_support);
-+					   isert_conn->conn_pd, fr_desc);
- 		if (ret) {
- 			pr_err("Failed to create fastreg descriptor err=%d\n",
- 			       ret);
-@@ -581,7 +589,6 @@ isert_connect_request(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
- 	struct isert_device *device;
- 	struct ib_device *ib_dev = cma_id->device;
- 	int ret = 0;
--	u8 pi_support;
- 
- 	spin_lock_bh(&np->np_thread_lock);
- 	if (!np->enabled) {
-@@ -679,15 +686,7 @@ isert_connect_request(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
- 		goto out_mr;
- 	}
- 
--	pi_support = np->tpg_np->tpg->tpg_attrib.t10_pi;
--	if (pi_support && !device->pi_capable) {
--		pr_err("Protection information requested but not supported, "
--		       "rejecting connect request\n");
--		ret = rdma_reject(cma_id, NULL, 0);
--		goto out_mr;
--	}
--
--	ret = isert_conn_setup_qp(isert_conn, cma_id, pi_support);
-+	ret = isert_conn_setup_qp(isert_conn, cma_id);
+@@ -2930,8 +2938,7 @@ isert_reg_rdma(struct iscsi_conn *conn, struct iscsi_cmd *cmd,
  	if (ret)
- 		goto out_conn_dev;
+ 		return ret;
  
-@@ -1149,11 +1148,7 @@ isert_put_login_tx(struct iscsi_conn *conn, struct iscsi_login *login,
- 		if (login->login_complete) {
- 			if (!conn->sess->sess_ops->SessionType &&
- 			    isert_conn->conn_device->use_fastreg) {
--				/* Normal Session and fastreg is used */
--				u8 pi_support = login->np->tpg_np->tpg->tpg_attrib.t10_pi;
--
--				ret = isert_conn_create_fastreg_pool(isert_conn,
--								     pi_support);
-+				ret = isert_conn_create_fastreg_pool(isert_conn);
- 				if (ret) {
- 					pr_err("Conn: %p failed to create"
- 					       " fastreg pool\n", isert_conn);
-@@ -2782,10 +2777,10 @@ isert_set_prot_checks(u8 prot_checks)
- }
- 
- static int
--isert_reg_sig_mr(struct isert_conn *isert_conn, struct se_cmd *se_cmd,
--		 struct fast_reg_descriptor *fr_desc,
--		 struct ib_sge *data_sge, struct ib_sge *prot_sge,
--		 struct ib_sge *sig_sge)
-+isert_reg_sig_mr(struct isert_conn *isert_conn,
-+		 struct se_cmd *se_cmd,
-+		 struct isert_rdma_wr *rdma_wr,
-+		 struct fast_reg_descriptor *fr_desc)
- {
- 	struct ib_send_wr sig_wr, inv_wr;
- 	struct ib_send_wr *bad_wr, *wr = NULL;
-@@ -2815,13 +2810,13 @@ isert_reg_sig_mr(struct isert_conn *isert_conn, struct se_cmd *se_cmd,
- 	memset(&sig_wr, 0, sizeof(sig_wr));
- 	sig_wr.opcode = IB_WR_REG_SIG_MR;
- 	sig_wr.wr_id = ISER_FASTREG_LI_WRID;
--	sig_wr.sg_list = data_sge;
-+	sig_wr.sg_list = &rdma_wr->ib_sg[DATA];
- 	sig_wr.num_sge = 1;
- 	sig_wr.wr.sig_handover.access_flags = IB_ACCESS_LOCAL_WRITE;
- 	sig_wr.wr.sig_handover.sig_attrs = &sig_attrs;
- 	sig_wr.wr.sig_handover.sig_mr = pi_ctx->sig_mr;
- 	if (se_cmd->t_prot_sg)
--		sig_wr.wr.sig_handover.prot = prot_sge;
-+		sig_wr.wr.sig_handover.prot = &rdma_wr->ib_sg[PROT];
- 
- 	if (!wr)
- 		wr = &sig_wr;
-@@ -2835,34 +2830,93 @@ isert_reg_sig_mr(struct isert_conn *isert_conn, struct se_cmd *se_cmd,
- 	}
- 	fr_desc->ind &= ~ISERT_SIG_KEY_VALID;
- 
--	sig_sge->lkey = pi_ctx->sig_mr->lkey;
--	sig_sge->addr = 0;
--	sig_sge->length = se_cmd->data_length;
-+	rdma_wr->ib_sg[SIG].lkey = pi_ctx->sig_mr->lkey;
-+	rdma_wr->ib_sg[SIG].addr = 0;
-+	rdma_wr->ib_sg[SIG].length = se_cmd->data_length;
- 	if (se_cmd->prot_op != TARGET_PROT_DIN_STRIP &&
- 	    se_cmd->prot_op != TARGET_PROT_DOUT_INSERT)
- 		/*
- 		 * We have protection guards on the wire
- 		 * so we need to set a larget transfer
- 		 */
--		sig_sge->length += se_cmd->prot_length;
-+		rdma_wr->ib_sg[SIG].length += se_cmd->prot_length;
- 
- 	pr_debug("sig_sge: addr: 0x%llx  length: %u lkey: %x\n",
--		 sig_sge->addr, sig_sge->length,
--		 sig_sge->lkey);
-+		  rdma_wr->ib_sg[SIG].addr, rdma_wr->ib_sg[SIG].length,
-+		  rdma_wr->ib_sg[SIG].lkey);
- err:
- 	return ret;
- }
- 
- static int
-+isert_handle_prot_cmd(struct isert_conn *isert_conn,
-+		      struct isert_cmd *isert_cmd,
-+		      struct isert_rdma_wr *wr)
-+{
-+	struct isert_device *device = isert_conn->conn_device;
-+	struct se_cmd *se_cmd = &isert_cmd->iscsi_cmd->se_cmd;
-+	int ret;
-+
-+	if (!wr->fr_desc->pi_ctx) {
-+		ret = isert_create_pi_ctx(wr->fr_desc,
-+					  device->ib_device,
-+					  isert_conn->conn_pd);
-+		if (ret) {
-+			pr_err("conn %p failed to allocate pi_ctx\n",
-+				  isert_conn);
-+			return ret;
-+		}
-+	}
-+
-+	if (se_cmd->t_prot_sg) {
-+		ret = isert_map_data_buf(isert_conn, isert_cmd,
-+					 se_cmd->t_prot_sg,
-+					 se_cmd->t_prot_nents,
-+					 se_cmd->prot_length,
-+					 0, wr->iser_ib_op, &wr->prot);
-+		if (ret) {
-+			pr_err("conn %p failed to map protection buffer\n",
-+				  isert_conn);
-+			return ret;
-+		}
-+
-+		memset(&wr->ib_sg[PROT], 0, sizeof(wr->ib_sg[PROT]));
-+		ret = isert_fast_reg_mr(isert_conn, wr->fr_desc, &wr->prot,
-+					ISERT_PROT_KEY_VALID, &wr->ib_sg[PROT]);
-+		if (ret) {
-+			pr_err("conn %p failed to fast reg mr\n",
-+				  isert_conn);
-+			goto unmap_prot_cmd;
-+		}
-+	}
-+
-+	ret = isert_reg_sig_mr(isert_conn, se_cmd, wr, wr->fr_desc);
-+	if (ret) {
-+		pr_err("conn %p failed to fast reg mr\n",
-+			  isert_conn);
-+		goto unmap_prot_cmd;
-+	}
-+	wr->fr_desc->ind |= ISERT_PROTECTED;
-+
-+	return 0;
-+
-+unmap_prot_cmd:
-+	if (se_cmd->t_prot_sg)
-+		isert_unmap_data_buf(isert_conn, &wr->prot);
-+
-+	return ret;
-+}
-+
-+static int
- isert_reg_rdma(struct iscsi_conn *conn, struct iscsi_cmd *cmd,
- 	       struct isert_rdma_wr *wr)
- {
- 	struct se_cmd *se_cmd = &cmd->se_cmd;
- 	struct isert_cmd *isert_cmd = iscsit_priv_cmd(cmd);
- 	struct isert_conn *isert_conn = conn->context;
--	struct ib_sge data_sge;
--	struct ib_send_wr *send_wr;
- 	struct fast_reg_descriptor *fr_desc = NULL;
-+	struct ib_send_wr *send_wr;
-+	struct ib_sge *ib_sg;
- 	u32 offset;
- 	int ret = 0;
- 	unsigned long flags;
-@@ -2887,38 +2941,21 @@ isert_reg_rdma(struct iscsi_conn *conn, struct iscsi_cmd *cmd,
- 	}
- 
- 	ret = isert_fast_reg_mr(isert_conn, fr_desc, &wr->data,
--				ISERT_DATA_KEY_VALID, &data_sge);
-+				ISERT_DATA_KEY_VALID, &wr->ib_sg[DATA]);
+-	if (wr->data.dma_nents != 1 ||
+-	    se_cmd->prot_op != TARGET_PROT_NORMAL) {
++	if (wr->data.dma_nents != 1 || isert_prot_cmd(isert_conn, se_cmd)) {
+ 		spin_lock_irqsave(&isert_conn->conn_lock, flags);
+ 		fr_desc = list_first_entry(&isert_conn->conn_fr_pool,
+ 					   struct fast_reg_descriptor, list);
+@@ -2945,7 +2952,7 @@ isert_reg_rdma(struct iscsi_conn *conn, struct iscsi_cmd *cmd,
  	if (ret)
  		goto unmap_cmd;
  
- 	if (se_cmd->prot_op != TARGET_PROT_NORMAL) {
--		struct ib_sge prot_sge, sig_sge;
--
--		if (se_cmd->t_prot_sg) {
--			ret = isert_map_data_buf(isert_conn, isert_cmd,
--						 se_cmd->t_prot_sg,
--						 se_cmd->t_prot_nents,
--						 se_cmd->prot_length,
--						 0, wr->iser_ib_op, &wr->prot);
--			if (ret)
--				goto unmap_cmd;
--
--			ret = isert_fast_reg_mr(isert_conn, fr_desc, &wr->prot,
--						ISERT_PROT_KEY_VALID, &prot_sge);
--			if (ret)
--				goto unmap_prot_cmd;
--		}
--
--		ret = isert_reg_sig_mr(isert_conn, se_cmd, fr_desc,
--				       &data_sge, &prot_sge, &sig_sge);
-+		ret = isert_handle_prot_cmd(isert_conn, isert_cmd, wr);
+-	if (se_cmd->prot_op != TARGET_PROT_NORMAL) {
++	if (isert_prot_cmd(isert_conn, se_cmd)) {
+ 		ret = isert_handle_prot_cmd(isert_conn, isert_cmd, wr);
  		if (ret)
--			goto unmap_prot_cmd;
-+			goto unmap_cmd;
- 
--		fr_desc->ind |= ISERT_PROTECTED;
--		memcpy(&wr->s_ib_sge, &sig_sge, sizeof(sig_sge));
--	} else
--		memcpy(&wr->s_ib_sge, &data_sge, sizeof(data_sge));
-+		ib_sg = &wr->ib_sg[SIG];
-+	} else {
-+		ib_sg = &wr->ib_sg[DATA];
-+	}
- 
-+	memcpy(&wr->s_ib_sge, ib_sg, sizeof(*ib_sg));
- 	wr->ib_sge = &wr->s_ib_sge;
- 	wr->send_wr_num = 1;
- 	memset(&wr->s_send_wr, 0, sizeof(*send_wr));
-@@ -2943,9 +2980,7 @@ isert_reg_rdma(struct iscsi_conn *conn, struct iscsi_cmd *cmd,
+ 			goto unmap_cmd;
+@@ -2970,7 +2977,7 @@ isert_reg_rdma(struct iscsi_conn *conn, struct iscsi_cmd *cmd,
+ 		send_wr->opcode = IB_WR_RDMA_WRITE;
+ 		send_wr->wr.rdma.remote_addr = isert_cmd->read_va;
+ 		send_wr->wr.rdma.rkey = isert_cmd->read_stag;
+-		send_wr->send_flags = se_cmd->prot_op == TARGET_PROT_NORMAL ?
++		send_wr->send_flags = !isert_prot_cmd(isert_conn, se_cmd) ?
+ 				      0 : IB_SEND_SIGNALED;
+ 	} else {
+ 		send_wr->opcode = IB_WR_RDMA_READ;
+@@ -3012,7 +3019,7 @@ isert_put_datain(struct iscsi_conn *conn, struct iscsi_cmd *cmd)
+ 		return rc;
  	}
  
- 	return 0;
--unmap_prot_cmd:
--	if (se_cmd->t_prot_sg)
--		isert_unmap_data_buf(isert_conn, &wr->prot);
-+
- unmap_cmd:
- 	if (fr_desc) {
- 		spin_lock_irqsave(&isert_conn->conn_lock, flags);
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.h b/drivers/infiniband/ulp/isert/ib_isert.h
-index 9372d4d4d14a..2e7868c5ad14 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.h
-+++ b/drivers/infiniband/ulp/isert/ib_isert.h
-@@ -82,6 +82,12 @@ struct isert_data_buf {
- 	enum dma_data_direction dma_dir;
- };
+-	if (se_cmd->prot_op == TARGET_PROT_NORMAL) {
++	if (!isert_prot_cmd(isert_conn, se_cmd)) {
+ 		/*
+ 		 * Build isert_conn->tx_desc for iSCSI response PDU and attach
+ 		 */
+@@ -3035,7 +3042,7 @@ isert_put_datain(struct iscsi_conn *conn, struct iscsi_cmd *cmd)
+ 		atomic_sub(wr->send_wr_num, &isert_conn->post_send_buf_count);
+ 	}
  
-+enum {
-+	DATA = 0,
-+	PROT = 1,
-+	SIG = 2,
-+};
-+
- struct isert_rdma_wr {
- 	struct list_head	wr_list;
- 	struct isert_cmd	*isert_cmd;
-@@ -91,6 +97,7 @@ struct isert_rdma_wr {
- 	int			send_wr_num;
- 	struct ib_send_wr	*send_wr;
- 	struct ib_send_wr	s_send_wr;
-+	struct ib_sge		ib_sg[3];
- 	struct isert_data_buf	data;
- 	struct isert_data_buf	prot;
- 	struct fast_reg_descriptor *fr_desc;
+-	if (se_cmd->prot_op == TARGET_PROT_NORMAL)
++	if (!isert_prot_cmd(isert_conn, se_cmd))
+ 		pr_debug("Cmd: %p posted RDMA_WRITE + Response for iSER Data "
+ 			 "READ\n", isert_cmd);
+ 	else
 -- 
 2.1.4
 
