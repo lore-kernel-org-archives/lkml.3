@@ -1,91 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753125AbbALLsf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 06:48:35 -0500
-Received: from mx-relay13.cloudservice.ag ([81.20.94.219]:44273 "EHLO
-	mx-relay13.cloudservice.ag" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752098AbbALLsc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 06:48:32 -0500
-From: "Stoidner, Christoph" <c.stoidner@arvero.de>
-To: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: AW: Question concerning RCU
-Thread-Topic: Question concerning RCU
-Thread-Index: AQHQKdgN5pYhqCTrrEydsWtlbI+1KpyzbZSAgAdiVA6AAIVJAIAA8bH3
-Date: Mon, 12 Jan 2015 11:48:28 +0000
-Message-ID: <249b36ec1afa43a699b281a4192c6afd@EX132MBOX1A.de2.local>
-References: <94921a144a97457385ae95b838c3c6fa@EX132MBOX1A.de2.local>
- <20150106194317.GG5280@linux.vnet.ibm.com>
- <81b94fc89c774b71a967fc93823e9c63@EX132MBOX1A.de2.local>,<20150111202604.GC8063@linux.vnet.ibm.com>
-In-Reply-To: <20150111202604.GC8063@linux.vnet.ibm.com>
-Accept-Language: de-DE, en-US
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [217.91.168.120]
-x-exclaimer-md-config: 2329e0da-e5c9-454a-b62b-9269baa51382
-x-hoag-tnef: done
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-cloud-security-sender: c.stoidner@oujhf.hostedoffice.ag
-X-cloud-security-recipient: linux-kernel@vger.kernel.org
-X-cloud-security-Virusscan: CLEAN
-X-cloud-security-disclaimer: This E-Mail was scanned by E-Mailservice on mx-gate13 with 957482118001
-X-cloud-security-connect: fw1.hostedoffice.ag[81.20.90.82], TLS=, IP=81.20.90.82
-X-cloud-security: scantime:.1103
+	id S1752240AbbALLuk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 06:50:40 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:35284 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750848AbbALLuj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 06:50:39 -0500
+From: Dongsu Park <dongsu.park@profitbricks.com>
+To: linux-kernel@vger.kernel.org
+Cc: Christoph Hellwig <hch@infradead.org>, Kent Overstreet <kmo@daterainc.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        Dongsu Park <dongsu.park@profitbricks.com>
+Subject: [RFC PATCH v2 0/9] simplify block layer based on immutable biovecs
+Date: Mon, 12 Jan 2015 12:49:39 +0100
+Message-Id: <cover.1421052745.git.dongsu.park@profitbricks.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+This is the second attempt of simplifying block layer based on immutable
+biovecs. Immutable biovecs, implemented by Kent Overstreet, have been
+available in mainline since v3.14. Its original goal was actually making
+generic_make_request() accept arbitrarily sized bios, and pushing the
+splitting down to the drivers or wherever it's required. See also
+discussions in the past, [1] [2] [3] [4].
+  
+This will bring not only performance improvements, but also a great amount
+of reduction in code complexity all over the block layer. Performance gain
+is possible due to the fact that bio_add_page() does not have to check
+unnecesary conditions such as queue limits or if biovecs are mergeable.
+Those will be delegated to the driver level. Kent already said that he
+actually benchmarked the impact of this with fio on a micron p320h, which
+showed definitely a positive impact.
+  
+Moreover, this patchset also allows a lot of code to be deleted, mainly
+because of removal of merge_bvec_fn() callbacks. We have been aware that
+it has been always a delicate issue for stacking block drivers (e.g. md
+and bcache) to handle merging bio consistently. This simplication will
+help every individual block driver avoid having such an issue.
+  
+- Patch 01/09 allows generic_make_request handle arbitrarily sized bios,
+  by making make_request functions call blk_queue_split().
+- Patch 02/09 simplifies __bio_add_page() to avoid calling ->merge_bvec_fn().
+- Patch 03/09 allows queue_bounce to handle bios with > BIO_MAX_PAGES
+- Patch 04/09 gets rid of workarounds in bcache.
+- Patch 05/09 removes unnecessary biovec merging parts in btrfs
+- Patch 06/09 removes unnecessary biovec merging parts in MD-RAID5.
+- Patch 07/09 removes ->merge_bvec_fn() completely, which affects a lot of
+  block drivers, such as Ceph RBD, DRBD, device mapper, MD, etc.
+- Patch 08/09 makes filesystems use helper bio_add_page().
+- Patch 09/09 updates document about biovecs.
 
-> You got stack traces with the stall warnings, correct?  If so, please look
-> at them and at Documentation/RCU/stallwarn.txt and see if the kernel is
-> looping somewhere inappropriate.
+Patches are against 3.19-rc4. These are also available in my git repo at:
 
-Yes and no. I have a stack trace, but it is not generated by a stall warning. More
-precise: I can never see any stall warning. The reason is that the system freezes 
-when it is about to output such a warning. Instead the stack trace is generated 
-by gdb and JTAG hardware debugging, when freezing has occurred.
+  https://github.com/dongsupark/linux.git block-generic-req
 
-So I am not sure if there is really a CPU-stall condition or it is just a misrepresented
-stall detection. However, outputting a stall warning leads to system freeze. The 
-warning is never seen.
+It's recommended to apply this patchset on top of its preparation patchset
+i.e. "preparation for block layer simplification". [5]
+This patchset is in turn also a prerequisite of other consecutive patchsets,
+e.g. multipage biovecs, rewriting plugging, or rewriting direct-IO, which
+is yet to-be-done. This patchset should not bring any regression to
+end-users. I already tested it with xfstests multiple times. On the other
+hand, the multipage biovecs part is currently in heavy development, with
+help of Kent and Ming Lin. Those experimental patches are also available
+on other branches on my git tree. Once they are done, I'm also going to
+post them to get reviews.
 
-> I am not familiar with the low-level ARM kernel code, but the stack below
-> leads me to suspect that your kernel is interrupting itself to death or
-> is improperly handling interrupts.
+Comments are welcome.
+Dongsu
 
-The stack trace must be read from bottom to top. The repetitive occurrence of
-"__irq_svc () at arch/arm/kernel/entry-armv.S:202" on bottom of stack trace is 
-caused by the stack frame of the interrupt context. This is completely legal and 
-also the case in normal situations. Instead the problem is on the top of the stack 
-trace, in function rcu_print_task_stall(). The loop rcutree_plugin.h in line 528 
-never ends:
+Changes in v2:
+- split up preparation patches into a separate series
+- remove a patch "block: simplify issueing discard, write_same, zeroout",
+  as suggested by Christoph Hellwig.
+- move a patch "btrfs: make use of immutable biovecs" to the upcoming series.
+- minor change in ps3vram suggested by Geoff Levand
+- make bio_add_page() warn once on a cloned bio.
+- add more comments and commit messages to patch 02 "block: simplify
+  bio_add_page()"
 
-static int rcu_print_task_stall(struct rcu_node *rnp)
-{
-	...
-	...
+[1] https://lkml.org/lkml/2014/11/23/263
+[2] https://lkml.org/lkml/2013/11/25/732
+[3] https://lkml.org/lkml/2014/2/26/618
+[4] https://lkml.org/lkml/2014/12/22/128
+[5] https://lkml.org/lkml/2015/1/12/255
 
-	list_for_each_entry_continue(t, &rnp->blkd_tasks, rcu_node_entry) {
-		printk(KERN_CONT " P%d", t->pid);
-		ndetected++;
-	}
+Dongsu Park (1):
+  Documentation: update notes in biovecs about arbitrarily sized bios
 
-	...    
-	...
-}        
+Kent Overstreet (8):
+  block: make generic_make_request handle arbitrarily sized bios
+  block: simplify bio_add_page()
+  block: allow __blk_queue_bounce() to handle bios larger than
+    BIO_MAX_PAGES
+  bcache: clean up hacks around bio_split_pool
+  btrfs: remove bio splitting and merge_bvec_fn() calls
+  md/raid5: get rid of bio_fits_rdev()
+  block: kill merge_bvec_fn() completely
+  fs: use helper bio_add_page() instead of open coding on bi_io_vec
 
-That means list_for_each_entry_continue () never ends since rcu_node_entry.next 
-seems to point to it-self but not to rnp->blkd_tasks. I have no idea how this can
-happen.
+ Documentation/block/biovecs.txt             |  10 +-
+ block/bio.c                                 | 135 +++++++++++----------------
+ block/blk-core.c                            |  19 ++--
+ block/blk-merge.c                           | 140 ++++++++++++++++++++++++++--
+ block/blk-mq.c                              |   2 +
+ block/blk-settings.c                        |  22 -----
+ block/bounce.c                              |  60 ++++++++++--
+ drivers/block/drbd/drbd_int.h               |   1 -
+ drivers/block/drbd/drbd_main.c              |   1 -
+ drivers/block/drbd/drbd_req.c               |  37 +-------
+ drivers/block/pktcdvd.c                     |  27 +-----
+ drivers/block/ps3vram.c                     |   2 +
+ drivers/block/rbd.c                         |  47 ----------
+ drivers/block/rsxx/dev.c                    |   2 +
+ drivers/block/umem.c                        |   2 +
+ drivers/block/zram/zram_drv.c               |   2 +
+ drivers/md/bcache/bcache.h                  |  18 ----
+ drivers/md/bcache/io.c                      | 100 +-------------------
+ drivers/md/bcache/journal.c                 |   4 +-
+ drivers/md/bcache/request.c                 |  16 ++--
+ drivers/md/bcache/super.c                   |  32 +------
+ drivers/md/bcache/util.h                    |   5 +-
+ drivers/md/bcache/writeback.c               |   4 +-
+ drivers/md/dm-cache-target.c                |  21 -----
+ drivers/md/dm-crypt.c                       |  16 ----
+ drivers/md/dm-era-target.c                  |  15 ---
+ drivers/md/dm-flakey.c                      |  16 ----
+ drivers/md/dm-linear.c                      |  16 ----
+ drivers/md/dm-snap.c                        |  15 ---
+ drivers/md/dm-stripe.c                      |  21 -----
+ drivers/md/dm-table.c                       |   8 --
+ drivers/md/dm-thin.c                        |  31 ------
+ drivers/md/dm-verity.c                      |  16 ----
+ drivers/md/dm.c                             | 122 +-----------------------
+ drivers/md/dm.h                             |   2 -
+ drivers/md/linear.c                         |  46 ---------
+ drivers/md/md.c                             |   4 +-
+ drivers/md/md.h                             |   8 --
+ drivers/md/multipath.c                      |  21 -----
+ drivers/md/raid0.c                          |  57 -----------
+ drivers/md/raid0.h                          |   2 -
+ drivers/md/raid1.c                          |  59 +-----------
+ drivers/md/raid10.c                         | 122 +-----------------------
+ drivers/md/raid5.c                          |  51 +---------
+ drivers/s390/block/dcssblk.c                |   2 +
+ drivers/s390/block/xpram.c                  |   2 +
+ drivers/staging/lustre/lustre/llite/lloop.c |   2 +
+ fs/btrfs/volumes.c                          |  73 ---------------
+ fs/buffer.c                                 |   7 +-
+ fs/jfs/jfs_logmgr.c                         |  14 +--
+ include/linux/blkdev.h                      |  13 +--
+ include/linux/device-mapper.h               |   4 -
+ mm/page_io.c                                |   8 +-
+ 53 files changed, 318 insertions(+), 1164 deletions(-)
 
-One more thing: Just for testing I have now enabled CONFIG_TINY_PREEMPT_RCU. 
-Until now the problem has not occurred anymore. Do you have any idea what makes
-the differences here?
+-- 
+2.1.0
 
-Thanks and regards,
-Christoph
