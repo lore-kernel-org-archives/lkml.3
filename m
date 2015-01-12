@@ -1,125 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157AbbALUVH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 15:21:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33257 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750973AbbALUVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 15:21:05 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: axboe@kernel.dk, linux-kernel@vger.kernel.org
-Subject: [patch] cfq-iosched: fix incorrect filing of rt async cfqq
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 12 Jan 2015 15:21:01 -0500
-Message-ID: <x494mrvu4wi.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754273AbbALUVk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 15:21:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34288 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753198AbbALUVj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 15:21:39 -0500
+Date: Mon, 12 Jan 2015 12:21:38 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        "Elifaz, Dana" <Dana.Elifaz@amd.com>,
+        "Bridgman, John" <John.Bridgman@amd.com>,
+        Daniel Forrest <dan.forrest@ssec.wisc.edu>,
+        Chris Clayton <chris2553@googlemail.com>,
+        Oded Gabbay <oded.gabbay@amd.com>, Michal Hocko <mhocko@suse.cz>,
+        Greg KH <gregkh@suse.de>
+Subject: Re: [PATCH] mm: fix corner case in anon_vma endless growing
+ prevention
+Message-Id: <20150112122138.f173c6279af0b49565e956d3@linux-foundation.org>
+In-Reply-To: <20150111135406.13266.42007.stgit@zurg>
+References: <20150111135406.13266.42007.stgit@zurg>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, 11 Jan 2015 16:54:06 +0300 Konstantin Khlebnikov <koct9i@gmail.com> wrote:
 
-If you can manage to submit an async write as the first async I/O from
-the context of a process with realtime scheduling priority, then a
-cfq_queue is allocated, but filed into the wrong async_cfqq bucket.  It
-ends up in the best effort array, but actually has realtime I/O
-scheduling priority set in cfqq->ioprio.
+> Fix for BUG_ON(anon_vma->degree) splashes in unlink_anon_vmas()
+> ("kernel BUG at mm/rmap.c:399!").
+> 
+> Anon_vma_clone() is usually called for a copy of source vma in destination
+> argument. If source vma has anon_vma it should be already in dst->anon_vma.
+> NULL in dst->anon_vma is used as a sign that it's called from anon_vma_fork().
+> In this case anon_vma_clone() finds anon_vma for reusing.
+> 
+> Vma_adjust() calls it differently and this breaks anon_vma reusing logic:
+> anon_vma_clone() links vma to old anon_vma and updates degree counters but
+> vma_adjust() overrides vma->anon_vma right after that. As a result final
+> unlink_anon_vmas() decrements degree for wrong anon_vma.
+> 
+> This patch assigns ->anon_vma before calling anon_vma_clone().
+> 
+> Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+> Fixes: 7a3ef208e662 ("mm: prevent endless growth of anon_vma hierarchy")
 
-The reason is that cfq_get_queue assumes the default scheduling class and
-priority when there is no information present (i.e. when the async cfqq
-is created):
+I've asked Greg not to take 7a3ef208e662 into -stable because of this
+problem.  So if you still think we should fix this in -stable, could
+you please prepare an updated patch and send it to Greg?
 
-static struct cfq_queue *
-cfq_get_queue(struct cfq_data *cfqd, bool is_sync, struct cfq_io_cq *cic,
-	      struct bio *bio, gfp_t gfp_mask)
-{
-	const int ioprio_class = IOPRIO_PRIO_CLASS(cic->ioprio);
-	const int ioprio = IOPRIO_PRIO_DATA(cic->ioprio);
-
-cic->ioprio starts out as 0, which is "invalid".  So, class of 0
-(IOPRIO_CLASS_NONE) is passed to cfq_async_queue_prio like so:
-
-		async_cfqq = cfq_async_queue_prio(cfqd, ioprio_class, ioprio);
-
-static struct cfq_queue **
-cfq_async_queue_prio(struct cfq_data *cfqd, int ioprio_class, int ioprio)
-{
-        switch (ioprio_class) {
-        case IOPRIO_CLASS_RT:
-                return &cfqd->async_cfqq[0][ioprio];
-        case IOPRIO_CLASS_NONE:
-                ioprio = IOPRIO_NORM;
-                /* fall through */
-        case IOPRIO_CLASS_BE:
-                return &cfqd->async_cfqq[1][ioprio];
-        case IOPRIO_CLASS_IDLE:
-                return &cfqd->async_idle_cfqq;
-        default:
-                BUG();
-        }
-}
-
-Here, instead of returning a class mapped from the process' scheduling
-priority, we get back the bucket associated with IOPRIO_CLASS_BE.
-
-Now, there is no queue allocated there yet, so we create it:
-
-		cfqq = cfq_find_alloc_queue(cfqd, is_sync, cic, bio, gfp_mask);
-
-That function ends up doing this:
-
-			cfq_init_cfqq(cfqd, cfqq, current->pid, is_sync);
-			cfq_init_prio_data(cfqq, cic);
-
-cfq_init_cfqq marks the priority as having changed.  Then, cfq_init_prio
-data does this:
-
-	ioprio_class = IOPRIO_PRIO_CLASS(cic->ioprio);
-	switch (ioprio_class) {
-	default:
-		printk(KERN_ERR "cfq: bad prio %x\n", ioprio_class);
-	case IOPRIO_CLASS_NONE:
-		/*
-		 * no prio set, inherit CPU scheduling settings
-		 */
-		cfqq->ioprio = task_nice_ioprio(tsk);
-		cfqq->ioprio_class = task_nice_ioclass(tsk);
-		break;
-
-So we basically have two code paths that treat IOPRIO_CLASS_NONE
-differently, which results in an RT async cfqq filed into a best effort
-bucket.
-
-Attached is a patch which fixes the problem.  I'm not sure how to make
-it cleaner.  Suggestions would be welcome.
-
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 6f2751d..b9abdca 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -3656,12 +3656,17 @@ static struct cfq_queue *
- cfq_get_queue(struct cfq_data *cfqd, bool is_sync, struct cfq_io_cq *cic,
- 	      struct bio *bio, gfp_t gfp_mask)
- {
--	const int ioprio_class = IOPRIO_PRIO_CLASS(cic->ioprio);
--	const int ioprio = IOPRIO_PRIO_DATA(cic->ioprio);
-+	int ioprio_class = IOPRIO_PRIO_CLASS(cic->ioprio);
-+	int ioprio = IOPRIO_PRIO_DATA(cic->ioprio);
- 	struct cfq_queue **async_cfqq = NULL;
- 	struct cfq_queue *cfqq = NULL;
- 
- 	if (!is_sync) {
-+		if (!ioprio_valid(cic->ioprio)) {
-+			struct task_struct *tsk = current;
-+			ioprio = task_nice_ioprio(tsk);
-+			ioprio_class = task_nice_ioclass(tsk);
-+		}
- 		async_cfqq = cfq_async_queue_prio(cfqd, ioprio_class, ioprio);
- 		cfqq = *async_cfqq;
- 	}
+> Tested-by: Chris Clayton <chris2553@googlemail.com>
+> Tested-by: Oded Gabbay <oded.gabbay@amd.com>
+> Cc: Daniel Forrest <dan.forrest@ssec.wisc.edu>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Rik van Riel <riel@redhat.com>
