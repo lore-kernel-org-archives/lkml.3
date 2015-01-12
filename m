@@ -1,88 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741AbbALSZE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:25:04 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53288 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753857AbbALSZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:25:01 -0500
-Date: Mon, 12 Jan 2015 12:23:49 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-CC: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Laight <David.Laight@ACULAB.COM>
-Subject: Re: [PATCH v3 3/5] ARM: at91/dt: update udc compatible strings
-Message-ID: <20150112182349.GJ6525@saruman>
-Reply-To: <balbi@ti.com>
-References: <1421060278-27329-1-git-send-email-boris.brezillon@free-electrons.com>
- <1421060278-27329-4-git-send-email-boris.brezillon@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="x+WOirvrtTKur1pg"
-Content-Disposition: inline
-In-Reply-To: <1421060278-27329-4-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754891AbbALS3n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:29:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57925 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632AbbALS3j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 13:29:39 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Andy Lutomirski <luto@amacapital.net>, Paolo Bonzini <pbonzini@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 113/216] x86, kvm: Clear paravirt_enabled on KVM guests for espfix32's benefit
+Date: Mon, 12 Jan 2015 18:28:11 +0000
+Message-Id: <1421087394-2712-1-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.4
+In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
+References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---x+WOirvrtTKur1pg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+3.16.7-ckt4 -stable review patch.  If anyone has any objections, please let me know.
 
-On Mon, Jan 12, 2015 at 11:57:56AM +0100, Boris Brezillon wrote:
-> at91sam9g45, at91sam9x5 and sama5 SoCs should not use
-> "atmel,at91sam9rl-udc" for their USB device compatible property since
-> this compatible is attached to a specific hardware bug fix.
->=20
-> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+------------------
 
-WARNING: DT compatible string "atmel,at91sam9g45-udc" appears un-documented=
- -- check ./Documentation/devicetree/bindings/
-#177: FILE: drivers/usb/gadget/udc/atmel_usba_udc.c:1827:
-+       { .compatible =3D "atmel,at91sam9g45-udc" },
+From: Andy Lutomirski <luto@amacapital.net>
 
-WARNING: DT compatible string "atmel,sama5d3-udc" appears un-documented -- =
-check ./Documentation/devicetree/bindings/
-#178: FILE: drivers/usb/gadget/udc/atmel_usba_udc.c:1828:
-+       { .compatible =3D "atmel,sama5d3-udc" },
+commit 29fa6825463c97e5157284db80107d1bfac5d77b upstream.
 
-please fix and resend. Also, when resending, could you add Nicolas'
-Acked-by since he's already given it ?
+paravirt_enabled has the following effects:
 
-Thanks
+ - Disables the F00F bug workaround warning.  There is no F00F bug
+   workaround any more because Linux's standard IDT handling already
+   works around the F00F bug, but the warning still exists.  This
+   is only cosmetic, and, in any event, there is no such thing as
+   KVM on a CPU with the F00F bug.
 
---=20
-balbi
+ - Disables 32-bit APM BIOS detection.  On a KVM paravirt system,
+   there should be no APM BIOS anyway.
 
---x+WOirvrtTKur1pg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ - Disables tboot.  I think that the tboot code should check the
+   CPUID hypervisor bit directly if it matters.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+ - paravirt_enabled disables espfix32.  espfix32 should *not* be
+   disabled under KVM paravirt.
 
-iQIcBAEBAgAGBQJUtBE1AAoJEIaOsuA1yqREOX0QAKG+AYCe5awpIENaJpAN6X+9
-F39MMjXn8AL47M4F9IH4v3ZjVcBoJnOM/gAFaz10YsSWGMogYPikHJY237ddkR2N
-Ziuov6LPlZxHqboObEAWZqg9+ItZmP1UlSaiz9tGrpwREYZrI2o5bS766Q3MWHC1
-IT4euxHwH9lYGO1VZAowCOoby82UmgAxqub1+RqALS5TdnrvBjOVugifCkvavGuw
-1HShbuZ8Y1SbIq4cHq/u5TDHRoFVzc8nzcZCM4q3xlml3/jLsbKoKbUvWbqTLdYl
-LmbMq2ru6rScxF/6UDI5YBJP5koEf/Rhce1pwNt4tIzRRwNJ3NeuC6xpPJcK9cei
-I1G6e7XzI4KbuT8xrBsSn2Umt+D9YYRGDrx/15wNuPRab32qVCgQFvWrxnYqpHj3
-6wNYd3UyZaQBJocwpkVh8sEmRr725D3k9FG1caplVaYXVXMx0ttgtxss2ro8Rc3R
-SF6L9i+HLYoE31Q0ziEEX88MAz+4diEzqQOSQP8pToLH0+xNgYIWSAmNbr036vzm
-/w42LALWlT8kv2t7rHPtYsfpgXPxh+QULxaMcf+xQIQbo0rFuYI79HKwUOkGPr9k
-vWEjJJzmnUmpxaojQyHyHICsXLZRiupMmnwVHoujLialP16fnHcZLHc25J5jR3qB
-8QasthDnKrmb6nRPDmhs
-=sdiU
------END PGP SIGNATURE-----
+The last point is the purpose of this patch.  It fixes a leak of the
+high 16 bits of the kernel stack address on 32-bit KVM paravirt
+guests.  Fixes CVE-2014-8134.
 
---x+WOirvrtTKur1pg--
+Suggested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/x86/kernel/kvm.c      | 9 ++++++++-
+ arch/x86/kernel/kvmclock.c | 1 -
+ 2 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index 3dd8e2c4d74a..07de51f66deb 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -282,7 +282,14 @@ NOKPROBE_SYMBOL(do_async_page_fault);
+ static void __init paravirt_ops_setup(void)
+ {
+ 	pv_info.name = "KVM";
+-	pv_info.paravirt_enabled = 1;
++
++	/*
++	 * KVM isn't paravirt in the sense of paravirt_enabled.  A KVM
++	 * guest kernel works like a bare metal kernel with additional
++	 * features, and paravirt_enabled is about features that are
++	 * missing.
++	 */
++	pv_info.paravirt_enabled = 0;
+ 
+ 	if (kvm_para_has_feature(KVM_FEATURE_NOP_IO_DELAY))
+ 		pv_cpu_ops.io_delay = kvm_io_delay;
+diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
+index d9156ceecdff..a2de9bc7ac0b 100644
+--- a/arch/x86/kernel/kvmclock.c
++++ b/arch/x86/kernel/kvmclock.c
+@@ -263,7 +263,6 @@ void __init kvmclock_init(void)
+ #endif
+ 	kvm_get_preset_lpj();
+ 	clocksource_register_hz(&kvm_clock, NSEC_PER_SEC);
+-	pv_info.paravirt_enabled = 1;
+ 	pv_info.name = "KVM";
+ 
+ 	if (kvm_para_has_feature(KVM_FEATURE_CLOCKSOURCE_STABLE_BIT))
+-- 
+2.1.4
+
