@@ -1,43 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148AbbALVnT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 16:43:19 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:54302 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995AbbALVnR (ORCPT
+	id S1752517AbbALVn4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 16:43:56 -0500
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:44436 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752398AbbALVny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 16:43:17 -0500
-Date: Mon, 12 Jan 2015 16:43:15 -0500 (EST)
-Message-Id: <20150112.164315.1318481358364498844.davem@davemloft.net>
-To: khoroshilov@ispras.ru
-Cc: linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: Re: [PATCH] usb/kaweth: use GFP_ATOMIC under spin_lock in
- usb_start_wait_urb()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1420845382-25815-1-git-send-email-khoroshilov@ispras.ru>
-References: <1420845382-25815-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 12 Jan 2015 13:43:17 -0800 (PST)
+	Mon, 12 Jan 2015 16:43:54 -0500
+MIME-Version: 1.0
+In-Reply-To: <20150112163902.GE5834@ti.com>
+References: <1419019671-25377-1-git-send-email-bparrot@ti.com>
+ <1419019671-25377-3-git-send-email-bparrot@ti.com> <CACRpkdb7Wq7-rBypqPkefejY5Qfq_KKx91H+DxKWv-TM2y04bg@mail.gmail.com>
+ <20150112163902.GE5834@ti.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 13 Jan 2015 06:43:33 +0900
+Message-ID: <CAAVeFuLF7EVR-Xta=eNegmGWX9AFu9xmyhXisGCTwc1ds3t1cA@mail.gmail.com>
+Subject: Re: [Patch v5 2/2] gpio: Document GPIO hogging mechanism
+To: Benoit Parrot <bparrot@ti.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Jiri Prchal <jiri.prchal@aksignal.cz>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Date: Sat, 10 Jan 2015 02:16:22 +0300
+On Tue, Jan 13, 2015 at 1:39 AM, Benoit Parrot <bparrot@ti.com> wrote:
+> Linus Walleij <linus.walleij@linaro.org> wrote on Mon [2015-Jan-12 11:20:14 +0100]:
+>> On Fri, Dec 19, 2014 at 9:07 PM, Benoit Parrot <bparrot@ti.com> wrote:
+>>
+>> > Add GPIO hogging documentation to gpio.txt
+>> >
+>> > Signed-off-by: Benoit Parrot <bparrot@ti.com>
+>> > Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
+>>
+>> This is starting to look good ...
+>>
+>> > +               line_b {
+>> > +                       gpio-hog;
+>> > +                       gpios = <6 0>;
+>> > +                       state = "output-low";
+>>
+>> I don't like the state string.
+>>
+>> Instead have boolean properties for all states.
+>>
+>> line_b {
+>>     gpio-hog;
+>>     gpios = <6 0>;
+>>     output-low;
+>>     line-name = "foo-bar-gpio";
+>> }
+>>
+>> Then use of_property_read_bool() in the code to check which
+>> state is to be selected intially. You can check that no mutually
+>> exclusive state are selected, I don't like that an arbitrary string
+>> select the state like that, if we do it that way an enumerator would
+>> be better, I prefer bools.
+>
+> I am sorry but that is how it was originally in the first patch.
+> Alexandre's review comment suggested this method in [1] and [2] (below).
+>
+> Alexandre, any comments?
+>
+> [1] http://marc.info/?l=linux-gpio&m=141456662426151&w=2
+>
+> [2] http://marc.info/?l=linux-gpio&m=141715982424744&w=2
 
-> Commit e4c7f259c5be ("USB: kaweth.c: use GFP_ATOMIC under spin_lock")
-> makes sure that kaweth_internal_control_msg() allocates memory with GFP_ATOMIC,
-> but kaweth_internal_control_msg() also calls usb_start_wait_urb()
-> that still allocates memory with GFP_NOIO.
-> 
-> The patch fixes usb_start_wait_urb() as well.
-> 
-> Found by Linux Driver Verification project (linuxtesting.org).
-> 
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-
-Applied, thanks.
+When Linus and I are in conflict, follow Linus. Arnd's suggestion of
+having enums defined in (IIUC) include/dt-bindings/gpio and using them
+sounds good to me too and might make everyone happy (no possibility of
+conflicting definitions + no strings). Linus, could you comment on it?
