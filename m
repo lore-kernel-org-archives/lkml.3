@@ -1,149 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892AbbALTZB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 14:25:01 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:60682 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755838AbbALTY6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 14:24:58 -0500
-Date: Mon, 12 Jan 2015 19:24:51 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Laszlo Ersek <lersek@redhat.com>, Mark Langsdorf <mlangsdo@redhat.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Steve Capper <steve.capper@linaro.org>,
-        "vishnu.ps@samsung.com" <vishnu.ps@samsung.com>,
-        main kernel list <linux-kernel@vger.kernel.org>,
-        arm kernel list <linux-arm-kernel@lists.infradead.org>,
-        Kyle McMartin <kmcmarti@redhat.com>, Dave Hansen <dave@sr71.net>
-Subject: Re: Linux 3.19-rc3
-Message-ID: <20150112192451.GQ13360@arm.com>
-References: <20150109175702.GA27787@leverpostej>
- <54B01FF0.3020900@arm.com>
- <20150109194333.GA23028@arm.com>
- <54B09CA3.1060501@redhat.com>
- <CA+55aFw3aGeiWOiKxQaC23VVX_Q9B0cDeZc37vVfK+SJVjGwFw@mail.gmail.com>
- <20150110133742.GA6999@arm.com>
- <CA+55aFxBA6F4Kr89iZwPPeBnkiRO4GnrbUSd0CqVG-LD6ZQyiw@mail.gmail.com>
- <20150112124256.GB13360@arm.com>
- <CA+55aFxD63S0PE4zBnEw2jn3pPSALO0BdxY7tP++8wKVdRKJ5g@mail.gmail.com>
- <CA+55aFw=urngjyQvuOWHP1BBe-tNKy0E4DC0c5PwP+XuvpSmEg@mail.gmail.com>
+	id S1757137AbbALT0M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 14:26:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59354 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755536AbbALT0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 14:26:09 -0500
+Message-ID: <54B41FB1.2010406@redhat.com>
+Date: Mon, 12 Jan 2015 14:25:37 -0500
+From: William Cohen <wcohen@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFw=urngjyQvuOWHP1BBe-tNKy0E4DC0c5PwP+XuvpSmEg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Will Deacon <will.deacon@arm.com>, Pratyush Anand <panand@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Steve Capper <steve.capper@linaro.org>,
+        David Long <dave.long@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: Query: ARM64: Behavior of el1_dbg exception while executing el0_dbg
+References: <54AE830E.1090000@redhat.com> <20150108162312.GO11583@arm.com> <54AEBE45.9080203@redhat.com> <20150109154635.GG11258@arm.com> <54B00C39.1070809@redhat.com> <20150112173005.GK13360@arm.com>
+In-Reply-To: <20150112173005.GK13360@arm.com>
+Content-Type: multipart/mixed;
+ boundary="------------010308000109090802000905"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 07:07:12PM +0000, Linus Torvalds wrote:
-> On Tue, Jan 13, 2015 at 8:06 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > So I'm ok with it, as long as we don't have a performance regression.
-> >
-> > Your "don't bother freeing when the batch is empty" should hopefully
-> > be fine. Dave, does that work for your case?
+This is a multi-part message in MIME format.
+--------------010308000109090802000905
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+
+On 01/12/2015 12:30 PM, Will Deacon wrote:
+> On Fri, Jan 09, 2015 at 05:13:29PM +0000, Pratyush Anand wrote:
+>>
+>>
+>> On Friday 09 January 2015 09:16 PM, Will Deacon wrote:
+>>> On Thu, Jan 08, 2015 at 05:28:37PM +0000, Pratyush Anand wrote:
+>>>> On Thursday 08 January 2015 09:53 PM, Will Deacon wrote:
+>>>>> On Thu, Jan 08, 2015 at 01:15:58PM +0000, Pratyush Anand wrote:
+>>>>>> I am trying to test following scenario, which seems valid to me. But I
+>>>>>> am very new to ARM64 as well as to debugging tools, so seeking expert's
+>>>>>> comment here.
+>>>>>>
+>>>>>> -- I have inserted a kprobe to the function uprobe_breakpoint_handler
+>>>>>> which is called from elo_dbg
+>>>>>> (el0_dbg->do_debug_exception->brk_handler->call_break_hook->uprobe_breakpoint_handler)
+>>>>>>
+>>>>>> -- kprobe is enabled.
+>>>>>>
+>>>>>> -- an uprobe is inserted into a test application and enabled.
+>>>>>>
+>>>>>> So, when uprobe is enabled and test code execution reaches to probe
+>>>>>> instruction, it executes uprobe breakpoint instruction and el0_dbg
+>>>>>> exception is raised.
+>>>>>>
+>>>>>> When control reaches to start of uprobe_breakpoint_handler and it
+>>>>>> executes first instruction (which has been replaced with a kprobe
+>>>>>> breakpoint instruction), el1_dbg exception is raised.
+>>>>>
+>>>>> Hmm, debug exceptions should be masked at this point so I don't see why
+>>>>> you're taking the second debug exception.
+>>>>>
+>>>>
+>>>> So, you mean to say that when an exception which has been taken from
+>>>> lower exception level (EL0) is being executed, then we keep masked also
+>>>> the exception from current exception level (EL1)...
+>>>
+>>> Yeah, if you look at entry.S then you'll see that neither el0_dbg or el1_dbg
+>>> re-enable debug exceptions (masked automatically by the CPU after taking the
+>>> exception) until *after* the handling has completed. This is to prevent
+>>> recursive debug exceptions, which I don't see how we can reasonable handle.
+>>
+>> May be I am missing something, but my observation on silicon is 
+>> different. Please have a look at git log of HEAD of following branch, 
+>> which says that el1_dbg exception has been raised while el0_dbg was 
+>> executing. Do not know what I am missing..
+>>
+>> https://github.com/pratyushanand/linux/tree/ml_arm64_uprobe_devel_debug_kprobe_insertion_at_uprobe_breakpoint_handler
 > 
-> Oh, and Dave just replied that it's ok. So should I just take it
-> directly, or expect it through the arm64 tree? Either works for me.
+> That page just says "Failed to load latest commit information." for me.
 
-Although I do have a couple of arm64 fixes on the radar, it'd be quicke
-if you just take the patch. I added a commit log/SoB below.
+I got that message too, but I was able to see the history and the information in the first entry of:
 
-Cheers,
+https://github.com/pratyushanand/linux/commits/ml_arm64_uprobe_devel_debug_kprobe_insertion_at_uprobe_breakpoint_handler
 
-Will
+> 
+> Regardless, I think you need to debug further and found out if PSTATE.D is
+> getting cleared and, if so, who is responsible for that. Somebody could be
+> enabling IRQs, for example, which will then unmask debug exceptions in
+> el1_irq.
+> 
+> Will
+> 
 
---->8
+If the problem is due to the irq being enabled and then an irq handler re-enabling the flag, it would be possible to use a systemtap script to monitor the irq_handler_entry and irq_handler_exit tracepoints to see if PSTATE.D is gettting cleared.  Maybe something like the attached script. This script isn't using the kprobe support, so should avoid the problematic interactions between kprobes and uprobes.
 
->From bcf792ffc9ce29415261d2055954b883c5bec978 Mon Sep 17 00:00:00 2001
-From: Will Deacon <will.deacon@arm.com>
-Date: Mon, 12 Jan 2015 19:10:55 +0000
-Subject: [PATCH] mm: mmu_gather: use tlb->end != 0 only for TLB invalidation
+-Will Cohen
 
-When batching up address ranges for TLB invalidation, we check tlb->end
-!= 0 to indicate that some pages have actually been unmapped.
+--------------010308000109090802000905
+Content-Type: text/plain; charset=UTF-8;
+ name="irq_pstated.stp"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="irq_pstated.stp"
 
-As of commit f045bbb9fa1b ("mmu_gather: fix over-eager
-tlb_flush_mmu_free() calling"), we use the same check for freeing these
-pages in order to avoid a performance regression where we call
-free_pages_and_swap_cache even when no pages are actually queued up.
+global pstated
 
-Unfortunately, the range could have been reset (tlb->end = 0) by
-tlb_end_vma, which has been shown to cause memory leaks on arm64.
-Furthermore, investigation into these leaks revealed that the fullmm
-case on task exit no longer invalidates the TLB, by virtue of tlb->end
- == 0 (in 3.18, need_flush would have been set).
+function masked_dflag:long(f) { return ((f & 1 << 9) != 0) }
 
-This patch resolves the problem by reverting f045bbb9fa1b, using
-tlb->local.nr as the predicate for page freeing in tlb_flush_mmu_free
-and ensuring that tlb->end is initialised to a non-zero value in the
-fullmm case.
+probe irq_handler.entry {
+  // Record if pstate.d is masked
+  pstated[cpu(), irq] = masked_dflag(flags)
+}
 
-Tested-by: Mark Langsdorf <mlangsdo@redhat.com>
-Tested-by: Dave Hansen <dave@sr71.net>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
----
- include/asm-generic/tlb.h | 8 ++++++--
- mm/memory.c               | 8 ++++----
- 2 files changed, 10 insertions(+), 6 deletions(-)
-
-diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
-index 08848050922e..db284bff29dc 100644
---- a/include/asm-generic/tlb.h
-+++ b/include/asm-generic/tlb.h
-@@ -136,8 +136,12 @@ static inline void __tlb_adjust_range(struct mmu_gather *tlb,
- 
- static inline void __tlb_reset_range(struct mmu_gather *tlb)
- {
--	tlb->start = TASK_SIZE;
--	tlb->end = 0;
-+	if (tlb->fullmm) {
-+		tlb->start = tlb->end = ~0;
-+	} else {
-+		tlb->start = TASK_SIZE;
-+		tlb->end = 0;
-+	}
- }
- 
- /*
-diff --git a/mm/memory.c b/mm/memory.c
-index c6565f00fb38..54f3a9b00956 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -235,6 +235,9 @@ void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned long
- 
- static void tlb_flush_mmu_tlbonly(struct mmu_gather *tlb)
- {
-+	if (!tlb->end)
-+		return;
-+
- 	tlb_flush(tlb);
- 	mmu_notifier_invalidate_range(tlb->mm, tlb->start, tlb->end);
- #ifdef CONFIG_HAVE_RCU_TABLE_FREE
-@@ -247,7 +250,7 @@ static void tlb_flush_mmu_free(struct mmu_gather *tlb)
- {
- 	struct mmu_gather_batch *batch;
- 
--	for (batch = &tlb->local; batch; batch = batch->next) {
-+	for (batch = &tlb->local; batch && batch->nr; batch = batch->next) {
- 		free_pages_and_swap_cache(batch->pages, batch->nr);
- 		batch->nr = 0;
- 	}
-@@ -256,9 +259,6 @@ static void tlb_flush_mmu_free(struct mmu_gather *tlb)
- 
- void tlb_flush_mmu(struct mmu_gather *tlb)
- {
--	if (!tlb->end)
--		return;
--
- 	tlb_flush_mmu_tlbonly(tlb);
- 	tlb_flush_mmu_free(tlb);
- }
--- 
-2.1.4
-
+probe irq_handler.exit {
+  if ((!masked_dflag(flags)) && pstated[cpu(), irq]) {
+    printf("d flag unmasked in irq %d(%s)\n", irq, kernel_string(dev_name));
+  }
+  delete pstated[cpu(), irq]
+}
+--------------010308000109090802000905--
