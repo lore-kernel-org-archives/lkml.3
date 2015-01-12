@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765AbbALSyx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:54:53 -0500
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:42249 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752095AbbALSyv (ORCPT
+	id S1756179AbbALSzp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:55:45 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:59763 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754790AbbALSzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:54:51 -0500
+	Mon, 12 Jan 2015 13:55:42 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rameshwar Sahu <rsahu@apm.com>
+Cc: vinod.koul@intel.com, dan.j.williams@intel.com, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, ddutile@redhat.com,
+        jcm@redhat.com, patches@apm.com, Loc Ho <lho@apm.com>
+Subject: Re: [PATCH v2 1/3] dmaengine: Add support for APM X-Gene SoC DMA engine driver
+Date: Mon, 12 Jan 2015 19:55:02 +0100
+Message-ID: <1701652.4qUlzcU1j2@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAFd313xp5rZZZSSKk-DDTC4ccY9ZucGgmWrc9oG-TiK2FMBS1g@mail.gmail.com>
+References: <1420628981-22774-1-git-send-email-rsahu@apm.com> <1420628981-22774-2-git-send-email-rsahu@apm.com> <CAFd313xp5rZZZSSKk-DDTC4ccY9ZucGgmWrc9oG-TiK2FMBS1g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20150111124146.GA15387@localhost.localdomain>
-References: <1420850068-27828-1-git-send-email-john.stultz@linaro.org>
-	<1420850068-27828-7-git-send-email-john.stultz@linaro.org>
-	<20150111124146.GA15387@localhost.localdomain>
-Date: Mon, 12 Jan 2015 10:54:50 -0800
-Message-ID: <CALAqxLX2Th7-kEM1vQBJn5hnPTJ5ujg-Zx-aa-oOhP5cb=hXLQ@mail.gmail.com>
-Subject: Re: [PATCH 06/10] time: Cap clocksource reads to the clocksource
- max_cycles value
-From: John Stultz <john.stultz@linaro.org>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@codemonkey.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:tCmhKtmbN7R8JaSzOA7dg3rQjkfA91Jn6+tCtxHXNP6f8cNXcoN
+ KMBZbGJmqEBH/VOv2gXVTtzV9pipRfVsiD8pP2rxhbhKOVWNqGN8lok0TbHMrMRMs7vWeEr
+ 3W/TVdQFLV1GMceEc1IoyEvPyXXWWuB764Hh5lWk2aLAc+fpu1lGX5drG+HQ3cF/DhJ6IWK
+ 4mmCJeefeKUlYc/VUVTpQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 11, 2015 at 4:41 AM, Richard Cochran
-<richardcochran@gmail.com> wrote:
-> On Fri, Jan 09, 2015 at 04:34:24PM -0800, John Stultz wrote:
->> When calculating the current delta since the last tick, we
->> currently have no hard protections to prevent a multiplciation
->> overflow from ocurring.
->
-> This is just papering over the problem. The "hard protection" should
-> be having a tick scheduled before the range of the clock source is
-> exhausted.
+On Monday 12 January 2015 14:40:09 Rameshwar Sahu wrote:
+> > +
+> > +       dma_set_mask_and_coherent(&pdev->dev,
+> > +                                 (sizeof(dma_addr_t) == sizeof(u64)) ?
+> > +                                 DMA_BIT_MASK(64) : DMA_BIT_MASK(32));
+> > +
+> 
 
-So I disagree this is papering over the problem.
+I commented on this on v1 already: always set the device specific mask here,
+it's independent of the CPU architecture, but do check the return value.
 
-You say the tick should be scheduled before the clocksource wraps -
-but we have logic to do that.
+Also add the correct dma-ranges property in the parent, or else this will
+fail in the future once we add proper checks to dma_set_mask.
 
-However there are many ways that can still go wrong.  Virtualization
-can delay interrupts for long periods of time, the timer/irq code
-isn't the simplest and there can be bugs, or timer hardware itself can
-have issues. The difficulty is that when something has gone wrong, the
-only thing we have to measure the problem may become corrupted.  And
-worse, once the timekeeping code is having problems,  that can result
-in bugs that manifest in all sorts of strange ways that are very
-difficult to debug (you can't trust your log timestamps, etc).
-
-So I think having some extra measures of protection is useful here.
-
-I'll admit that its always difficult to manage, since we have to layer
-our checks, we have circular dependencies (timer code needs
-timekeeping to be correct, timekeeping code needs timer code to be
-correct), and hardware problems are rampant - so we get trouble like
-the clocksource watchdog which uses more trustworthy clocksources to
-watch less trustworthy ones, but then hardware starts adding bugs to
-the trustworthy ones which cause false positives, etc.   And these
-checks make the code add complexity to the code that we'd be happier
-without, but we can't throw out supporting the majority of hardware
-that have some quirk and imperfection, so I'm not sure what the
-alternative should be.
-
-thanks
--john
+	Arnd
