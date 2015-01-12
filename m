@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754308AbbALUtm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 15:49:42 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:53943 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641AbbALUtl (ORCPT
+	id S1754081AbbALUwE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 15:52:04 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:34580 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132AbbALUwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 15:49:41 -0500
-Date: Mon, 12 Jan 2015 21:49:36 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@codemonkey.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 06/10] time: Cap clocksource reads to the clocksource
- max_cycles value
-Message-ID: <20150112204936.GE4233@localhost.localdomain>
-References: <1420850068-27828-1-git-send-email-john.stultz@linaro.org>
- <1420850068-27828-7-git-send-email-john.stultz@linaro.org>
- <20150111124146.GA15387@localhost.localdomain>
- <CALAqxLX2Th7-kEM1vQBJn5hnPTJ5ujg-Zx-aa-oOhP5cb=hXLQ@mail.gmail.com>
- <20150112203006.GB4233@localhost.localdomain>
+	Mon, 12 Jan 2015 15:52:01 -0500
+From: Paul Moore <paul@paul-moore.com>
+To: Steve Grubb <sgrubb@redhat.com>, linux-audit@redhat.com,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>, rgb@redhat.com
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] TaskTracker : Simplified thread information tracker.
+Date: Mon, 12 Jan 2015 15:51:58 -0500
+Message-ID: <2562166.o5FKhBijgA@sifl>
+User-Agent: KMail/4.14.3 (Linux/3.16.7-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <14076510.2zuEr3QEsx@x2>
+References: <20141007213054.GJ26201@madcap2.tricolour.ca> <201501121513.GAD65121.OOJQVSFFLOFMHt@I-love.SAKURA.ne.jp> <14076510.2zuEr3QEsx@x2>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150112203006.GB4233@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 09:30:07PM +0100, Richard Cochran wrote:
-> On Mon, Jan 12, 2015 at 10:54:50AM -0800, John Stultz wrote:
-> > You say the tick should be scheduled before the clocksource wraps -
-> > but we have logic to do that.
+On Monday, January 12, 2015 10:14:34 AM Steve Grubb wrote:
+> On Monday, January 12, 2015 03:13:12 PM Tetsuo Handa wrote:
+> > This record contains multiple user-influenced comm names. If I use
+> > audit_log_untrustedstring(), I would need to split this record into
+> > multiple records like history[0]='...' history[1]='...' history[2]='...'
+> > in order to avoid matching delimiters (i.e. ';', '=' and '>') used in
+> > this record.
 > 
-> Well that is a shame.
+> That sounds like a good change to me. Audit records are always name=value
+> with a space between fields. We need this to always stay like this because
+> the tooling expects that format. There is nowhere in the audit logs we use
+> =>.
 
-Arg, I mean, not a shame that we have logic for that, but rather that
-the logic is not reliable enough!
+As a FYI, I'm putting a hold on any new audit messages for the time being so 
+we can evaluate the current kernel audit API to determine the possibility of 
+transitioning to a less ugly API.  I'll leave the door open for messages 
+needed to fix bugs, but that's it.  If we do end up providing a new API and 
+record format, I want to limit the number of message types in the existing 
+API.
 
-Sorry
-Richard
+My apologies, but this is long overdue and the longer we wait the more 
+difficult it will become.
 
+-- 
+paul moore
+www.paul-moore.com
 
