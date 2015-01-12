@@ -1,69 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204AbbALN7H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 08:59:07 -0500
-Received: from lb3-smtp-cloud2.xs4all.net ([194.109.24.29]:36705 "EHLO
-	lb3-smtp-cloud2.xs4all.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750921AbbALN7E (ORCPT
+	id S1753256AbbALOAP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 09:00:15 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52940 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752506AbbALOAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 08:59:04 -0500
-Message-ID: <54B3D319.2090506@xs4all.nl>
-Date: Mon, 12 Jan 2015 14:58:49 +0100
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
-MIME-Version: 1.0
-To: Shuah Khan <shuahkh@osg.samsung.com>, m.chehab@samsung.com,
-        hans.verkuil@cisco.com, dheitmueller@kernellabs.com,
-        prabhakar.csengg@gmail.com, sakari.ailus@linux.intel.com,
-        laurent.pinchart@ideasonboard.com, ttmesterr@gmail.com
-CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] media: au0828 change to not zero out fmt.pix.priv
-References: <cover.1418918401.git.shuahkh@osg.samsung.com> <54b748fa5cb6883d6ce348c38328161409c1f1be.1418918402.git.shuahkh@osg.samsung.com>
-In-Reply-To: <54b748fa5cb6883d6ce348c38328161409c1f1be.1418918402.git.shuahkh@osg.samsung.com>
-Content-Type: text/plain; charset=windows-1252
+	Mon, 12 Jan 2015 09:00:14 -0500
+Message-ID: <1421071197.3081.44.camel@pengutronix.de>
+Subject: Re: [PATCH v9 1/4] drm/i2c: tda998x: Add DT support for audio
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Jean-Francois Moine <moinejf@free.fr>,
+        Andrew Jackson <Andrew.Jackson@arm.com>, Jyri Sarha <jsarha@ti.com>,
+        Mark Brown <broonie@kernel.org>, Dave Airlie <airlied@gmail.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 12 Jan 2015 14:59:57 +0100
+In-Reply-To: <20150112122527.GF12302@n2100.arm.linux.org.uk>
+References: <54AFA9B0.6040405@ti.com> <20150109123036.4bc4bbf6@armhf>
+	 <20150109114529.GH12302@n2100.arm.linux.org.uk>
+	 <20150109135401.5b270d46@armhf>
+	 <20150109130725.GN12302@n2100.arm.linux.org.uk> <54AFDE8D.3000504@arm.com>
+	 <20150109145741.GP12302@n2100.arm.linux.org.uk>
+	 <20150109183857.53d701a4@armhf>
+	 <20150109200127.GD12302@n2100.arm.linux.org.uk>
+	 <1421054728.3081.28.camel@pengutronix.de>
+	 <20150112122527.GF12302@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.9-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My first code review of the new year, so let's start with a simple one to avoid
-taxing my brain cells (that are still in vacation mode) too much...
-
-On 12/18/2014 05:20 PM, Shuah Khan wrote:
-> There is no need to zero out fmt.pix.priv in vidioc_g_fmt_vid_cap()
-> vidioc_try_fmt_vid_cap(), and vidioc_s_fmt_vid_cap(). Remove it.
+Am Montag, den 12.01.2015, 12:25 +0000 schrieb Russell King - ARM Linux:
+> On Mon, Jan 12, 2015 at 10:25:28AM +0100, Philipp Zabel wrote:
+> > Jean-Francois' reply already reflects this, but the 'port' nodes should
+> > correspond to physical ports of the device if possible. If you can
+> > configure the device to have dedicated input pins for I2S, SPDIF0, and
+> > SPDIF1 at the same time, they should appear in the device tree as
+> > separate ports:
+> > 
+> > tda998x: hdmi-encoder {
+> > 	port@0 { /* pixel data according to video-ports */
+> > 		reg = <0x00>;
+> > 	};
+> > 	port@1 { /* AP1: SPDIF0 */
+> > 		reg = <0x01>;
+> > 	};
+> > 	port@2 { /* AP2: SPDIF1 */
+> > 		reg = <0x02>;
+> > 	};
+> > 	port@3 { /* AP3: I2S */
+> > 		reg = <0x03>;
+> > 	};
+> > };
+> > 
+> > The tda998x binding would define how the ports are numbered, some
+> > correspondence to the AP pin numbers would be good.
 > 
-> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
+> It's not quite that simple, because the SPDIF AP pins are multiplexed
+> with the I2S pins - and there is variation between chip models and
+> packages.
+>
+> So, it's probably best if port@0 is the video port, and then port@1..n
+> can describe the audio inputs, including a property which specifies
+> whether they are I2S or SPDIF, and the value to be programmed into
+> the AP enable register (which is a bit field of the AP pins which
+> should be unmasked.)  I guess we can re-use the reg= property for that
+> value, since video will always be zero.
 
-Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+Note that of_graph_parse_endpoint interprets the port node's reg
+property as port id. And the unit address part of the node name should
+match the first address in the reg property.
 
-Happy New Year!
-
-	Hans
-
-> ---
->  drivers/media/usb/au0828/au0828-video.c | 2 --
->  1 file changed, 2 deletions(-)
-> 
-> diff --git a/drivers/media/usb/au0828/au0828-video.c b/drivers/media/usb/au0828/au0828-video.c
-> index 3011ca8..ef49b2e 100644
-> --- a/drivers/media/usb/au0828/au0828-video.c
-> +++ b/drivers/media/usb/au0828/au0828-video.c
-> @@ -1104,7 +1104,6 @@ static int au0828_set_format(struct au0828_dev *dev, unsigned int cmd,
->  	format->fmt.pix.sizeimage = width * height * 2;
->  	format->fmt.pix.colorspace = V4L2_COLORSPACE_SMPTE170M;
->  	format->fmt.pix.field = V4L2_FIELD_INTERLACED;
-> -	format->fmt.pix.priv = 0;
->  
->  	if (cmd == VIDIOC_TRY_FMT)
->  		return 0;
-> @@ -1189,7 +1188,6 @@ static int vidioc_g_fmt_vid_cap(struct file *file, void *priv,
->  	f->fmt.pix.sizeimage = dev->frame_size;
->  	f->fmt.pix.colorspace = V4L2_COLORSPACE_SMPTE170M; /* NTSC/PAL */
->  	f->fmt.pix.field = V4L2_FIELD_INTERLACED;
-> -	f->fmt.pix.priv = 0;
->  	return 0;
->  }
->  
-> 
+regards
+Philipp
 
