@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753094AbbALJb7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 04:31:59 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:58572 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752698AbbALJb5 (ORCPT
+	id S1753120AbbALJcJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 04:32:09 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:44007 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753101AbbALJcG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 04:31:57 -0500
+	Mon, 12 Jan 2015 04:32:06 -0500
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdYq_tyamCzM575D8vdMg_rvDy93fSm+7Oss3tQzFu+TTA@mail.gmail.com>
+In-Reply-To: <CACRpkdYr6OZUjQ8JLzpktQK1xg1Un_SKtU+xr=gFzpSo+A2C-g@mail.gmail.com>
 References: <1418831474-24428-1-git-send-email-ricardo.ribalda@gmail.com>
- <1418831474-24428-7-git-send-email-ricardo.ribalda@gmail.com> <CACRpkdYq_tyamCzM575D8vdMg_rvDy93fSm+7Oss3tQzFu+TTA@mail.gmail.com>
+ <1418831474-24428-4-git-send-email-ricardo.ribalda@gmail.com> <CACRpkdYr6OZUjQ8JLzpktQK1xg1Un_SKtU+xr=gFzpSo+A2C-g@mail.gmail.com>
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Mon, 12 Jan 2015 10:31:35 +0100
-Message-ID: <CAPybu_1n0mGjm+Si_e4soVcQgGbP=fPFXDU71f3bvABDLraNVQ@mail.gmail.com>
-Subject: Re: [PATCH v5 6/7] gpio/gpiolib-of: Create of_mm_gpiochip_remove
+Date: Mon, 12 Jan 2015 10:31:44 +0100
+Message-ID: <CAPybu_2X17ymd2NK7AHgJ5eaTjbpTQS_8mp8a6ijYsdS+qoQ+Q@mail.gmail.com>
+Subject: Re: [PATCH v5 3/7] gpio/xilinx: Add support for X86 Arch
 To: Linus Walleij <linus.walleij@linaro.org>
 Cc: Alexandre Courbot <gnurou@gmail.com>,
         Michal Simek <michal.simek@xilinx.com>,
         =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
         "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Darren Hart <dvhart@linux.intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,48 +31,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hello
 
-I think that only gpio-mpc5200.c would benefit from the new API, I can
-send a patchset to support removal and use the new API if you want.
-
-Thanks!
-
-On Mon, Jan 12, 2015 at 10:30 AM, Linus Walleij
+On Mon, Jan 12, 2015 at 10:24 AM, Linus Walleij
 <linus.walleij@linaro.org> wrote:
 > On Wed, Dec 17, 2014 at 4:51 PM, Ricardo Ribalda Delgado
 > <ricardo.ribalda@gmail.com> wrote:
 >
->> Create counterpart of of_mm_gpiochip_add(). This way the modules that
->> can be removable do not duplicate the cleanup code.
+>> Core can be accessed via PCIe on X86 platform.
+>> This patch also allows the driver to be used as module.
 >>
->> Suggested-by: Alexandre Courbot <gnurou@gmail.com>
+>> Acked-by: Michal Simek <michal.simek@xilinx.com>
 >> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 >
-> Patch applied.
+> PCIe on x86, using device tree? The ACPI people are just gonna love this.
+
 >
-> Hm.
+> Patch applied, anyway. DT on x86 is not unheard of.
 >
-> $ git grep of_mm_gpiochip_add
-> arch/powerpc/sysdev/cpm1.c:     return of_mm_gpiochip_add(np, mm_gc);
-> arch/powerpc/sysdev/cpm1.c:     return of_mm_gpiochip_add(np, mm_gc);
-> arch/powerpc/sysdev/cpm_common.c:       return of_mm_gpiochip_add(np, mm_gc);
-> arch/powerpc/sysdev/ppc4xx_gpio.c:              ret =
-> of_mm_gpiochip_add(np, mm_gc);
-> arch/powerpc/sysdev/qe_lib/gpio.c:              ret =
-> of_mm_gpiochip_add(np, mm_gc);
-> arch/powerpc/sysdev/simple_gpio.c:      ret = of_mm_gpiochip_add(np, mm_gc);
-> drivers/gpio/gpio-ge.c: return of_mm_gpiochip_add(pdev->dev.of_node, mmchip);
-> drivers/gpio/gpio-mm-lantiq.c:  ret =
-> of_mm_gpiochip_add(pdev->dev.of_node, &chip->mmchip);
-> drivers/gpio/gpio-mpc5200.c:    ret =
-> of_mm_gpiochip_add(ofdev->dev.of_node, &chip->mmchip);
-> drivers/gpio/gpio-mpc5200.c:    ret =
-> of_mm_gpiochip_add(ofdev->dev.of_node, &chip->mmchip);
-> drivers/gpio/gpio-mpc8xxx.c:    ret = of_mm_gpiochip_add(np, mm_gc);
-> drivers/gpio/gpio-xilinx.c:     status = of_mm_gpiochip_add(np, &chip->mmchip);
-> drivers/gpio/gpio-zevio.c:      status =
-> of_mm_gpiochip_add(pdev->dev.of_node, &(controller->chip));
+>>  config GPIO_XILINX
+>> -       bool "Xilinx GPIO support"
+>> -       depends on PPC_OF || MICROBLAZE || ARCH_ZYNQ
+>> +       tristate "Xilinx GPIO support"
+>> +       depends on OF_GPIO && (PPC_OF || MICROBLAZE || ARCH_ZYNQ || ARCH_X86)
 >
-> Should these all be patched to use this, or reviewed for applicability?
+> Maybe you want to add COMPILE_TEST too?
+
+Up to you
+
 >
 > Yours,
 > Linus Walleij
