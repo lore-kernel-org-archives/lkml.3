@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751547AbbALVSK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 16:18:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55711 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751107AbbALVSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 16:18:09 -0500
-Date: Mon, 12 Jan 2015 22:18:02 +0100
-From: Borislav Petkov <bp@suse.de>
-To: riel@redhat.com
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        matt.fleming@intel.com, oleg@redhat.com, pbonzini@redhat.com,
-        tglx@linutronix.de, luto@amacapital.net
-Subject: Re: [RFC PATCH 01/11] x86,fpu: document the data structures a little
-Message-ID: <20150112211802.GE5016@pd.tnic>
-References: <1421012793-30106-1-git-send-email-riel@redhat.com>
- <1421012793-30106-2-git-send-email-riel@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1421012793-30106-2-git-send-email-riel@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751436AbbALVYF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 16:24:05 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:58002 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750774AbbALVYD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 16:24:03 -0500
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH 0/6] AT91 cleanup for 3.20 #2
+Date: Mon, 12 Jan 2015 22:23:39 +0100
+Message-Id: <1421097825-396-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 11, 2015 at 04:46:23PM -0500, riel@redhat.com wrote:
-> From: Rik van Riel <riel@redhat.com>
-> 
-> Add some documentation to data structures used for FPU context
-> switching.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> ---
->  arch/x86/include/asm/processor.h | 9 +++++++--
->  arch/x86/kernel/cpu/common.c     | 1 +
->  2 files changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-> index a092a0c..17bd8a0 100644
-> --- a/arch/x86/include/asm/processor.h
-> +++ b/arch/x86/include/asm/processor.h
-> @@ -400,6 +400,11 @@ struct xsave_struct {
->  	/* new processor state extensions will go here */
->  } __attribute__ ((packed, aligned (64)));
->  
-> +/*
-> + * The FPU state used depends on the capabilities of the hardware; the
-> + * registers used for vector instructions on newer hardware are included
-> + * in the FPU state.
-> + */
->  union thread_xstate {
->  	struct i387_fsave_struct	fsave;
->  	struct i387_fxsave_struct	fxsave;
-> @@ -408,8 +413,8 @@ union thread_xstate {
->  };
->  
->  struct fpu {
-> -	unsigned int last_cpu;
-> -	unsigned int has_fpu;
-> +	unsigned int last_cpu;		/* FPU state last loaded on this CPU */
+This patch sets is based on AT91 cleanup for 3.20 #1
+and depends on AT91 DT for 3.20 #1 because it uses the added SRAM nodes.
 
-Isn't that the last CPU which had the FPU?
+The first two patches rework the pm code to get rid of cpu_is_xxx (they will be
+dropped soon) and use the SRAM from the genpool instead of relying on the remap
+done by at91_init_sram.
 
-> +	unsigned int has_fpu;		/* FPU state in current use on CPU */
+Then the following patches get rid of at91_init_sram, taking .map_io for almost
+all SoCs but the sama5d4 (more cleanups coming soon for that part).
 
-I understand ->has_fpu as this thread has the FPU. See comment over
-user_has_fpu().
+The final patch moves at91rm9200_idle to clk/at91/pmc.c and allows to almost
+empty arch/arm/mach-at91/at91rm9200.c (It is actually empty once "Atmel System
+Timer cleanups" is applied).
+
+Alexandre Belloni (6):
+  ARM: at91: pm: rework cpu detection
+  ARM: at91: pm: use the mmio-sram pool to access SRAM
+  ARM: at91: remove useless map_io
+  ARM: at91: sama5d4: remove useless call to at91_init_sram
+  ARM: at91: remove unused at91_init_sram
+  ARM: at91: move at91rm9200_idle() to clk/at91/pmc.c
+
+ arch/arm/mach-at91/Kconfig       |   1 +
+ arch/arm/mach-at91/at91rm9200.c  |  15 ------
+ arch/arm/mach-at91/at91sam9260.c |  27 -----------
+ arch/arm/mach-at91/at91sam9261.c |   9 ----
+ arch/arm/mach-at91/at91sam9263.c |   7 ---
+ arch/arm/mach-at91/at91sam9g45.c |   7 ---
+ arch/arm/mach-at91/at91sam9n12.c |   6 ---
+ arch/arm/mach-at91/at91sam9rl.c  |  18 -------
+ arch/arm/mach-at91/at91sam9x5.c  |   6 ---
+ arch/arm/mach-at91/generic.h     |   3 +-
+ arch/arm/mach-at91/pm.c          | 100 ++++++++++++++++++++++++++++++---------
+ arch/arm/mach-at91/sama5d3.c     |   6 ---
+ arch/arm/mach-at91/sama5d4.c     |   1 -
+ arch/arm/mach-at91/setup.c       |  20 --------
+ drivers/clk/at91/pmc.c           |   9 ++++
+ 15 files changed, 89 insertions(+), 146 deletions(-)
 
 -- 
-Regards/Gruss,
-    Boris.
+2.1.0
 
-Sent from a fat crate under my desk. Formatting is fine.
---
