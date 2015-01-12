@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883AbbALXET (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 18:04:19 -0500
-Received: from mail-yk0-f169.google.com ([209.85.160.169]:59759 "EHLO
-	mail-yk0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752169AbbALXER (ORCPT
+	id S1752961AbbALXEW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 18:04:22 -0500
+Received: from mail-yh0-f41.google.com ([209.85.213.41]:48508 "EHLO
+	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752861AbbALXEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 18:04:17 -0500
+	Mon, 12 Jan 2015 18:04:20 -0500
 From: Andy Lutomirski <luto@amacapital.net>
 To: x86@kernel.org, linux-kernel@vger.kernel.org,
         Dave Hansen <dave.hansen@linux.intel.com>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 3.19 v2 0/3] x86, mpx: Instruction decoder fixes and hardening
-Date: Mon, 12 Jan 2015 15:04:08 -0800
-Message-Id: <cover.1421103159.git.luto@amacapital.net>
+Subject: [PATCH 3.19 v2 1/3] x86: Fix off-by-one in the instruction decoder length checks
+Date: Mon, 12 Jan 2015 15:04:09 -0800
+Message-Id: <602a94627fedaab4e339088d633b72174caf14c9.1421103159.git.luto@amacapital.net>
 X-Mailer: git-send-email 2.1.0
+In-Reply-To: <cover.1421103159.git.luto@amacapital.net>
+References: <cover.1421103159.git.luto@amacapital.net>
+In-Reply-To: <cover.1421103159.git.luto@amacapital.net>
+References: <cover.1421103159.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all-
+If next_byte + sizeof(t) == end_kaddr, then we are trying to read
+exactly to the end; this should be allowed.
 
-Sorry, this is later than I had hoped to send this.  This series has
-three minor fixes for mpx and the instruction decoder.
+Fixes: 6ba48ff46f76 x86: Remove arbitrary instruction size limit in instruction decoder
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ arch/x86/lib/insn.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Changes from v1:
- - Dropped the TIF_IA32 change -- let's defer that until at least 3.20.
- - Fixed the MPX decode short-circuit.  v1 was buggy.
- - Patch 3 is new.  It fixes a minor regression from the MPX work.
-
-Andy Lutomirski (3):
-  x86: Fix off-by-one in the instruction decoder length checks
-  x86, mpx: Short-circuit the instruction decoder for unexpected opcodes
-  x86: Enforce MAX_INSN_SIZE in the instruction decoder
-
- arch/x86/lib/insn.c |  9 ++++++++-
- arch/x86/mm/mpx.c   | 25 ++++++++++++++++---------
- 2 files changed, 24 insertions(+), 10 deletions(-)
-
+diff --git a/arch/x86/lib/insn.c b/arch/x86/lib/insn.c
+index 2480978b31cc..1313ae6b478b 100644
+--- a/arch/x86/lib/insn.c
++++ b/arch/x86/lib/insn.c
+@@ -28,7 +28,7 @@
+ 
+ /* Verify next sizeof(t) bytes can be on the same instruction */
+ #define validate_next(t, insn, n)	\
+-	((insn)->next_byte + sizeof(t) + n < (insn)->end_kaddr)
++	((insn)->next_byte + sizeof(t) + n <= (insn)->end_kaddr)
+ 
+ #define __get_next(t, insn)	\
+ 	({ t r = *(t*)insn->next_byte; insn->next_byte += sizeof(t); r; })
 -- 
 2.1.0
 
