@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306AbbALQLp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 11:11:45 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:49788 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481AbbALQLm (ORCPT
+	id S1751862AbbALPyg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 10:54:36 -0500
+Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:56927 "EHLO
+	emvm-gh1-uea08.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650AbbALPyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 11:11:42 -0500
-X-IronPort-AV: E=Sophos;i="5.07,744,1413244800"; 
-   d="scan'208";a="215536334"
-From: David Vrabel <david.vrabel@citrix.com>
-To: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>
-CC: David Vrabel <david.vrabel@citrix.com>, <linux-mm@kvack.org>,
-        "Jenny Herbert" <jennifer.herbert@citrix.com>
-Subject: [PATCH 2/2] mm: add 'foreign' alias for the 'pinned' page flag
-Date: Mon, 12 Jan 2015 15:53:13 +0000
-Message-ID: <1421077993-7909-3-git-send-email-david.vrabel@citrix.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1421077993-7909-1-git-send-email-david.vrabel@citrix.com>
-References: <1421077993-7909-1-git-send-email-david.vrabel@citrix.com>
+	Mon, 12 Jan 2015 10:54:35 -0500
+X-TM-IMSS-Message-ID: <08e5c7620000ad3c@nsa.gov>
+Message-ID: <54B3EDF4.2000801@tycho.nsa.gov>
+Date: Mon, 12 Jan 2015 10:53:24 -0500
+From: Stephen Smalley <sds@tycho.nsa.gov>
+Organization: National Security Agency
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+To: "Christopher J. PeBenito" <cpebenito@tresys.com>,
+        Dave Jones <davej@codemonkey.org.uk>,
+        Stephen Smalley <stephen.smalley@gmail.com>,
+        Paul Moore <pmoore@redhat.com>, selinux <selinux@tycho.nsa.gov>,
+        James Morris <james.l.morris@oracle.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: noisy selinux messages on tmpfs mount.
+References: <20150108190822.GB4365@codemonkey.org.uk> <3227891.DhTeT4XeAv@sifl> <2354586.80TRdrKbtf@sifl> <CAB9W1A2nTN2DJ699BXL_r_aXCk-O9-KrTLSi731isQWpPUmkwg@mail.gmail.com> <20150109191329.GA19400@codemonkey.org.uk> <54B03E45.8000106@tycho.nsa.gov> <54B3DF65.809@tresys.com>
+In-Reply-To: <54B3DF65.809@tresys.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jenny Herbert <jennifer.herbert@citrix.com>
+On 01/12/2015 09:51 AM, Christopher J. PeBenito wrote:
+> On 1/9/2015 3:47 PM, Stephen Smalley wrote:
+>> On 01/09/2015 02:13 PM, Dave Jones wrote:
+>>> On Fri, Jan 09, 2015 at 08:06:49AM -0500, Stephen Smalley wrote:
+>>>  
+>>>  > On Thu, Jan 8, 2015 at 2:39 PM, Paul Moore <pmoore@redhat.com> wrote:
+>>>  > > On Thursday, January 08, 2015 02:34:57 PM Paul Moore wrote:
+>>>  > >> On Thursday, January 08, 2015 02:08:22 PM Dave Jones wrote:
+>>>  > >> > systemd has started mounting a tmpfs in /run/user/<uid> every time a
+>>>  > >> > session begins.  So after ssh'ing into a box a number of times, dmesg
+>>>  > >> > looks like this..
+>>>  > >> >
+>>>  > >> > [...] SELinux: initialized (dev tmpfs, type tmpfs), uses transition SIDs
+>>>  > >> > [...] SELinux: initialized (dev tmpfs, type tmpfs), uses transition SIDs
+>>>  > >>
+>>>  > >> {snip}
+>>>  > >>
+>>>  > >> > What's a good solution to stopping this spew ? printk_once doesn't seem
+>>>  > >> > like a good fit, in case someone is doing different labelling behaviours
+>>>  > >> > between mounts.
+>>>  > >> >
+>>>  > >> > Could we only print it if the mount is being done with non-default
+>>>  > >> > behaviour perhaps?
+>>>  > >>
+>>>  > >> I'm very curious to hear Stephen's opinion on the issue, but I wonder how
+>>>  > >> much this would honestly impact us if we removed this message in the case
+>>>  > >> where we mount the filesystem with a known labeling behavior.
+>>>  >
+>>>  > We already reduced that message to KERN_DEBUG.  Is that not sufficient?
+>>>
+>>> That doesn't really help with the flooding of dmesg, so no.
+>>> I should also note that it's not just logging in that creates a new
+>>> session, it also seems to be getting triggered by cron jobs, or
+>>> whatever the systemd replacement is.
+>>
+>> Fair enough.  I think we can likely get rid of it then.
+> 
+> Are you saying completely get rid of the message in all cases?  If so,
+> how is a user supposed to debug situations where they mount a filesystem
+> and labeling doesn't work (i.e. no security label support or policy
+> hasn't been updated for that fs)?  Is there going to be another place to
+> look see what the labeling behavior is for all mounted filesystems?
 
-The foreign page flag will be used by Xen guests to mark pages that
-have grant mappings of frames from other (foreign) guests.
+In most cases, they can extract the information directly from the policy
+via seinfo or their favorite policy tool.  For mountpoint labeling, the
+printk in question only tells them that mountpoint labeling was used,
+not the specific option and value, so reading /proc/self/mounts is more
+informative.  /proc/self/mounts will also tell them whether the
+filesystem "supports" labeling via the seclabel option.  So I don't
+believe it offers us any information that isn't available elsewhere.
 
-The foreign flag is an alias for the existing (Xen-specific) pinned
-flag.  This is safe because pinned is only used on pages used for page
-tables and these cannot also be foreign.
-
-Signed-off-by: Jenny Herbert <jennifer.herbert@citrix.com>
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
----
- include/linux/page-flags.h |    2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
-index e1f5fcd..7734cc8 100644
---- a/include/linux/page-flags.h
-+++ b/include/linux/page-flags.h
-@@ -123,6 +123,7 @@ enum pageflags {
- 	/* XEN */
- 	PG_pinned = PG_owner_priv_1,
- 	PG_savepinned = PG_dirty,
-+	PG_foreign = PG_owner_priv_1,
- 
- 	/* SLOB */
- 	PG_slob_free = PG_private,
-@@ -215,6 +216,7 @@ __PAGEFLAG(Slab, slab)
- PAGEFLAG(Checked, checked)		/* Used by some filesystems */
- PAGEFLAG(Pinned, pinned) TESTSCFLAG(Pinned, pinned)	/* Xen */
- PAGEFLAG(SavePinned, savepinned);			/* Xen */
-+PAGEFLAG(Foreign, foreign);				/* Xen */
- PAGEFLAG(Reserved, reserved) __CLEARPAGEFLAG(Reserved, reserved)
- PAGEFLAG(SwapBacked, swapbacked) __CLEARPAGEFLAG(SwapBacked, swapbacked)
- 	__SETPAGEFLAG(SwapBacked, swapbacked)
--- 
-1.7.10.4
 
