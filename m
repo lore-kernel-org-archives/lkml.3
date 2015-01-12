@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523AbbALGPn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 01:15:43 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:61840 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751071AbbALGPk (ORCPT
+	id S1751267AbbALGYL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 01:24:11 -0500
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:62904 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909AbbALGYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 01:15:40 -0500
+	Mon, 12 Jan 2015 01:24:06 -0500
 MIME-Version: 1.0
-In-Reply-To: <CADcZZT+nQ_0LfurU+z5wLC_OxNhEs6n0kCoLSkfoFCDqyOu04g@mail.gmail.com>
-References: <CADcZZT+nQ_0LfurU+z5wLC_OxNhEs6n0kCoLSkfoFCDqyOu04g@mail.gmail.com>
-Date: Mon, 12 Jan 2015 11:45:39 +0530
-Message-ID: <CAP245DUypHRtjdF4+nRc0UX-VWqyne6NMsgoWaBxKTXFP4QAOw@mail.gmail.com>
-Subject: Re: ARM64: hibernation: How to use hibernation/suspend-to-disk on ARMv8?
-From: Amit Kucheria <amit.kucheria@linaro.org>
-To: George Bush <georgebush815@gmail.com>
-Cc: Russ Dill <Russ.Dill@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "Brown, Len" <len.brown@intel.com>, Nicolas Pitre <nico@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <will.deacon@arm.com>, jonathan.austin@arm.com,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        u.kleine-koenig@pengutronix.de, Stephen Boyd <sboyd@codeaurora.org>,
-        victor.kamensky@linaro.org, r.sricharan@ti.com, liuj97@gmail.com,
-        lauraa@codeaurora.org, zhou0283@gmail.com,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-omap@vger.kernel.org,
-        Lists LAKML <linux-arm-kernel@lists.infradead.org>,
-        Sebastian Capella <capellas@broadcom.com>
+In-Reply-To: <CALCETrXsSTPi2jmMgA_Muh6y6eU2yq-fs8_MGPhJVNnfYaop1A@mail.gmail.com>
+References: <1421017655-25561-1-git-send-email-dvlasenk@redhat.com> <CALCETrXsSTPi2jmMgA_Muh6y6eU2yq-fs8_MGPhJVNnfYaop1A@mail.gmail.com>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Mon, 12 Jan 2015 07:23:44 +0100
+Message-ID: <CAK1hOcMj6S+fzECOOp7jS47fRecjXXLkaQ=yQMHHwvfX7vhY6Q@mail.gmail.com>
+Subject: Re: [PATCH] x86: introduce push/pop macros which generate
+ CFI_REL_OFFSET and CFI_RESTORE
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Fixing Sebastian's email address)
-
-On Sat, Jan 10, 2015 at 8:44 PM, George Bush <georgebush815@gmail.com> wrote:
-> Hi all
+On Mon, Jan 12, 2015 at 1:38 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> Sequences
+>>         pushl_cfi %reg
+>>         CFI_REL_OFFSET reg, 0
+>> and
+>>         popl_cfi %reg
+>>         CFI_RESTORE reg
+>> happen quite often. This patch adds macros which generate them.
+>>
+>> No assembly changes (verified with objdump -dr vmlinux.o).
 >
-> I notice we have hibernation.c in arm/kernel, however, I don't find it in arm64.
-> Does it mean arm64 do not support hibernation/suspend-to-disk function?
+> Looks sane to me.  Where does this apply in relation to the rest of your series?
 
-Correct. arm64 is a separate architecture and will need to implement
-something similar to SHA 603fb42a66499ab353466c7afa3d38beea20a8a9.
-
-> I tried some path to search the reason, but found nothing, they all say arm64
-> has the backward compatibility. So I send this email to the community and
-> hope to get the reason.
-> Thanks!
->
-> I ported the arm hibernation.c to arm64/kernel(with LP64), but failed in a
-> strange way. When I do resume, the arch_restore_image() get a page_fault
-> when it calls the copy_page(), like:
-
-I'm afraid I can't help with the memory management aspects of arm64
-but you've cc'ed the right people who'd know.
-
-> "Unable to handle kernel paging request at virtual address 0xffffffbc055c3fa8"
-> I'm sure the copy_page()'s parameters is in the memory area, why and how
-> I get the strange address 0xffffffbc055c3fa8?
->
-> vmalloc:         0xffffff8000000000 - 0xffffffbb00000000
-> vmemmap:     0xffffffbc01400000 - 0xffffffbc04f88000
-> modules:       0xffffffbffc000000   -  0xffffffc000000000
-> memory:        0xffffffc000000000 - 0xffffffc0be800000
->
+On top of my latest four-patch set.
