@@ -1,117 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751282AbbALB6V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 20:58:21 -0500
-Received: from mailout.micron.com ([137.201.242.129]:30687 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750763AbbALB6T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 20:58:19 -0500
-From: =?gb2312?B?UGV0ZXIgUGFuIMXLtrAgKHBldGVycGFuZG9uZyk=?= 
-	<peterpandong@micron.com>
-To: Ezequiel Garcia <ezequiel.garcia@imgtec.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "Brian Norris" <computersforpeace@gmail.com>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?gb2312?B?UWkgV2FuZyDN9cbwIChxaXdhbmcp?= <qiwang@micron.com>,
-        =?gb2312?B?RnJhbmsgTGl1IMH1yLogKGZyYW5rbGl1KQ==?= 
-	<frankliu@micron.com>,
-        =?gb2312?B?TWVsYW5pZSBaaGFuZyDVxdHgIChtZWxhbmllemhhbmcp?= 
-	<melaniezhang@micron.com>
-Subject: RE: [PATCH 3/3] mtd: spi-nand: add devicetree binding
-Thread-Topic: [PATCH 3/3] mtd: spi-nand: add devicetree binding
-Thread-Index: AdAq2xIAAWi2EYo2S7+rJwTqE708CAAAgENw//+iloD//1zk8IABa0IA//oSWpA=
-Date: Mon, 12 Jan 2015 01:57:27 +0000
-Message-ID: <87F60714EC601C4C83DFF1D2E3D390A04AC98F@NTXXIAMBX02.xacn.micron.com>
-References: <87F60714EC601C4C83DFF1D2E3D390A04AB425@NTXXIAMBX02.xacn.micron.com>
- <54ADF66F.7090400@imgtec.com>
- <87F60714EC601C4C83DFF1D2E3D390A04AB4EA@NTXXIAMBX02.xacn.micron.com>
- <54AE9E54.2010506@imgtec.com>
-In-Reply-To: <54AE9E54.2010506@imgtec.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-21242.003
-X-TM-AS-Result: No--21.572600-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="gb2312"
+	id S1751230AbbALCYo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 21:24:44 -0500
+Received: from mga09.intel.com ([134.134.136.24]:13416 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750882AbbALCYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jan 2015 21:24:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,740,1413270000"; 
+   d="scan'208";a="635817584"
+Date: Mon, 12 Jan 2015 10:04:52 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Juri Lelli <juri.lelli@arm.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Kirill Tkhai <ktkhai@parallels.com>,
+        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: Re: [PATCH v7 0/7] sched: support dl task migration during cpu
+ hotplug and other fixes
+Message-ID: <20150112020452.GA2343@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1420338714-15624-1-git-send-email-wanpeng.li@linux.intel.com>
+ <20150105232011.GA13200@kernel>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150105232011.GA13200@kernel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0C1wat8015355
 
-> On 01/08/2015 02:04 AM, Peter Pan ÅË¶° (peterpandong) wrote:
-> >>> This commit adds the devicetree binding document that specifies the
-> >>> spi nand devices support.
-> >>>
-> >>> Signed-off-by: Peter Pan <peterpandong@micron.com>
-> >>> ---
-> >>>  Documentation/devicetree/bindings/mtd/spi-nand.txt | 22
-> >> ++++++++++++++++++++++
-> >>>  1 file changed, 22 insertions(+)
-> >>>  create mode 100644 Documentation/devicetree/bindings/mtd/spi-
-> >> nand.txt
-> >>>
-> >>> diff --git a/Documentation/devicetree/bindings/mtd/spi-nand.txt
-> >> b/Documentation/devicetree/bindings/mtd/spi-nand.txt
-> >>> new file mode 100644
-> >>> index 0000000..9dd3efd
-> >>> --- /dev/null
-> >>> +++ b/Documentation/devicetree/bindings/mtd/spi-nand.txt
-> >>> @@ -0,0 +1,22 @@
-> >>> +* NAND driver for MT29F, GD5F and similar SPI NAND flash chips
-> >>> +
-> >>> +Required properties:
-> >>> +- #address-cells, #size-cells : Must be present if the device has
-> >> sub-nodes
-> >>> +  representing partitions.
-> >>> +- compatible : Should be the manufacturer and the name of the chip.
-> >> Bear in mind
-> >>>
-> >>
-> >> Unless I'm mistaken, we don't need the chip ID here, as SPI NAND
-> allows
-> >> to autodetect the device. Any reason why we can't just use a generic
-> >> compatible "spi-nand" here?
-> >> --
-> >> Ezequiel
-> >
-> > In fact, I don't know how to autodetect the SPI NAND device. Micron
-> device and
-> > Gigadevice device have different read ID functions. The Chip ID here
-> is used to
-> > determine which function to use.
-> >
-> 
-> Isn't the difference between the Read ID very minor? One of the vendor
-> needs a 2-byte ID read, and the other one needs a 3-byte ID read.
-> 
-> So you can just try with 2-byte, and if that fails (no vendor ID is
-> found on the first byte), you can try with the 3-byte command.
-> 
-> It's not the most elegant solution, but it's not super awful either.
-> --
-> Ezequiel
-
-I agree with your idea about try different ways to read ID. It is a better way
-to detect the chip if it can work properly.
-
-The difference between the Read ID is that some chips need to send a dummy byte
-or address after opcode then read 2 byte, some chips needn't send any data after
-opcode but read 3 byte.
-
-I'm concerned maybe chip will get into unknown or vendor specified state if we
-send the wrong sequence.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Ping,
+On Tue, Jan 06, 2015 at 07:20:11AM +0800, Wanpeng Li wrote:
+>Ping Juri, Peter, 1/7~6/7 can be reviewed/applied separately since patch 7/7 
+>is still need more work.
+>On Sun, Jan 04, 2015 at 10:31:47AM +0800, Wanpeng Li wrote:
+>>v6 -> v7:
+>> * rebase 
+>>
+>>I collect recent send out patches to one patchset in order to get review easily.
+>>
+>>For 7/7 I will remove rd->span related modification if Pang's effort merged.
+>>https://lkml.org/lkml/2014/11/17/443
+>>
+>>Wanpeng Li (7):
+>>  sched/deadline: fix start high-res preemption tick for a non-leftmost task
+>>  sched/deadline: fix rt runtime corrupt when dl refuse a smaller bandwidth
+>>  sched/deadline: fix dl entity is still mark yield after replenishing
+>>  sched/deadline: reduce overhead if there are no scheduling parameters changed
+>>  sched/fair: fix idle balance when remaining tasks are all non-CFS tasks
+>>  sched: fix start hrtick for short schedule slices on UP
+>>  sched/deadline: support dl task migration during cpu hotplug
+>>
+>> kernel/sched/core.c     | 27 +++++++++++++++++----
+>> kernel/sched/deadline.c | 62 +++++++++++++++++++++++++++++++++++++++++++++----
+>> kernel/sched/fair.c     |  2 +-
+>> kernel/sched/sched.h    |  3 ++-
+>> 4 files changed, 84 insertions(+), 10 deletions(-)
+>>
+>>-- 
+>>1.9.1
