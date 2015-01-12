@@ -1,125 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752025AbbALRvc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 12:51:32 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:60244 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465AbbALRvb (ORCPT
+	id S1752172AbbALRvz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 12:51:55 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:56044 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426AbbALRvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 12:51:31 -0500
-Date: Mon, 12 Jan 2015 17:51:25 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Rob Herring <robh@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 12/16] pci/host: generic: convert to use generic config
- accesses
-Message-ID: <20150112175125.GM13360@arm.com>
-References: <1420857290-8373-1-git-send-email-robh@kernel.org>
- <1420857290-8373-13-git-send-email-robh@kernel.org>
+	Mon, 12 Jan 2015 12:51:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420857290-8373-13-git-send-email-robh@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Date: Mon, 12 Jan 2015 17:51:52 +0000
+Message-ID: <CAKv+Gu-svNbDNhHgFfiT0XPBhMNugWzPZiU4yUzkT9tf0OZ_bw@mail.gmail.com>
+Subject: [GIT PULL] UEFI updates for arm64
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>, Roy Franz <roy.franz@linaro.org>,
+        Mark Salter <msalter@redhat.com>, Mark Rutland <mark.rutland@arm.com>,
+        Geoff Levand <geoff.levand@linaro.org>, Dave Young <dyoung@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 02:34:46AM +0000, Rob Herring wrote:
-> Convert the generic host PCI driver to use the generic config access
-> functions.
-> 
-> Signed-off-by: Rob Herring <robh@kernel.org>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: linux-pci@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> ---
->  drivers/pci/host/pci-host-generic.c | 51 +++----------------------------------
->  1 file changed, 3 insertions(+), 48 deletions(-)
+Hello Catalin,
 
-Looks like a fairly straightforward conversion for this driver!
+The following changes since commit eaa27f34e91a14cdceed26ed6c6793ec1d186115:
 
-  Acked-by: Will Deacon <will.deacon@arm.com>
+  linux 3.19-rc4 (2015-01-11 12:44:53 -0800)
 
-Will
+are available in the git repository at:
 
-> diff --git a/drivers/pci/host/pci-host-generic.c b/drivers/pci/host/pci-host-generic.c
-> index 6eb1aa7..925e29e 100644
-> --- a/drivers/pci/host/pci-host-generic.c
-> +++ b/drivers/pci/host/pci-host-generic.c
-> @@ -76,55 +76,9 @@ static struct gen_pci_cfg_bus_ops gen_pci_cfg_ecam_bus_ops = {
->  	.map_bus	= gen_pci_map_cfg_bus_ecam,
->  };
->  
-> -static int gen_pci_config_read(struct pci_bus *bus, unsigned int devfn,
-> -				int where, int size, u32 *val)
-> -{
-> -	void __iomem *addr;
-> -	struct pci_sys_data *sys = bus->sysdata;
-> -	struct gen_pci *pci = sys->private_data;
-> -
-> -	addr = pci->cfg.ops->map_bus(bus, devfn, where);
-> -
-> -	switch (size) {
-> -	case 1:
-> -		*val = readb(addr);
-> -		break;
-> -	case 2:
-> -		*val = readw(addr);
-> -		break;
-> -	default:
-> -		*val = readl(addr);
-> -	}
-> -
-> -	return PCIBIOS_SUCCESSFUL;
-> -}
-> -
-> -static int gen_pci_config_write(struct pci_bus *bus, unsigned int devfn,
-> -				 int where, int size, u32 val)
-> -{
-> -	void __iomem *addr;
-> -	struct pci_sys_data *sys = bus->sysdata;
-> -	struct gen_pci *pci = sys->private_data;
-> -
-> -	addr = pci->cfg.ops->map_bus(bus, devfn, where);
-> -
-> -	switch (size) {
-> -	case 1:
-> -		writeb(val, addr);
-> -		break;
-> -	case 2:
-> -		writew(val, addr);
-> -		break;
-> -	default:
-> -		writel(val, addr);
-> -	}
-> -
-> -	return PCIBIOS_SUCCESSFUL;
-> -}
-> -
->  static struct pci_ops gen_pci_ops = {
-> -	.read	= gen_pci_config_read,
-> -	.write	= gen_pci_config_write,
-> +	.read	= pci_generic_config_read,
-> +	.write	= pci_generic_config_write,
->  };
->  
->  static const struct of_device_id gen_pci_of_match[] = {
-> @@ -287,6 +241,7 @@ static int gen_pci_probe(struct platform_device *pdev)
->  
->  	of_id = of_match_node(gen_pci_of_match, np);
->  	pci->cfg.ops = of_id->data;
-> +	gen_pci_ops.map_bus = pci->cfg.ops->map_bus;
->  	pci->host.dev.parent = dev;
->  	INIT_LIST_HEAD(&pci->host.windows);
->  	INIT_LIST_HEAD(&pci->resources);
-> -- 
-> 2.1.0
-> 
-> 
+  http://git.linaro.org/people/ard.biesheuvel/linux-arm.git tags/for-3.20
+
+for you to fetch changes up to 9679be103108926cfe9e6fd2f6829cefa77e47b0:
+
+  arm64/efi: remove idmap manipulations from UEFI code (2015-01-12
+16:29:32 +0000)
+
+Some patches touch files under drivers/firmware/efi, these have been
+acked by Matt
+Fleming, and he is aware that this series is being offered for merging
+through the
+arm64 tree
+
+Regards,
+Ard.
+
+
+----------------------------------------------------------------
+UEFI updates for arm64
+
+This series consists of a reimplementation of the virtual remapping of
+UEFI Runtime Services in a way that is stable across kexec, including
+the required preparatory refactoring and other work to set the stage,
+and some cleaning up afterwards to remove boot services memory and
+identitity map handling that has now become redundant.
+
+----------------------------------------------------------------
+Ard Biesheuvel (8):
+      arm64/mm: add explicit struct_mm argument to __create_mapping()
+      arm64/mm: add create_pgd_mapping() to create private page tables
+      efi: split off remapping code from efi_config_init()
+      efi: efistub: allow allocation alignment larger than EFI_PAGE_SIZE
+      arm64/efi: set EFI_ALLOC_ALIGN to 64 KB
+      arm64/efi: move SetVirtualAddressMap() to UEFI stub
+      arm64/efi: remove free_boot_services() and friends
+      arm64/efi: remove idmap manipulations from UEFI code
+
+ arch/arm64/include/asm/efi.h                   |  38 ++-
+ arch/arm64/include/asm/mmu.h                   |   5 +-
+ arch/arm64/include/asm/pgtable.h               |   5 +
+ arch/arm64/kernel/efi.c                        | 369 ++++++++-----------------
+ arch/arm64/kernel/setup.c                      |   2 +-
+ arch/arm64/mm/mmu.c                            |  60 ++--
+ drivers/firmware/efi/efi.c                     |  56 ++--
+ drivers/firmware/efi/libstub/arm-stub.c        |  59 ++++
+ drivers/firmware/efi/libstub/efi-stub-helper.c |  25 +-
+ drivers/firmware/efi/libstub/efistub.h         |   4 +
+ drivers/firmware/efi/libstub/fdt.c             |  62 ++++-
+ include/linux/efi.h                            |   2 +
+ 12 files changed, 362 insertions(+), 325 deletions(-)
