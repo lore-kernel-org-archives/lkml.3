@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914AbbALJa2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 04:30:28 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:39764 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752331AbbALJaW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 04:30:22 -0500
-Message-ID: <54B3942D.2080006@profitbricks.com>
-Date: Mon, 12 Jan 2015 10:30:21 +0100
-From: Sebastian Parschauer <sebastian.riemer@profitbricks.com>
+	id S1753131AbbALJcZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 04:32:25 -0500
+Received: from mga11.intel.com ([192.55.52.93]:30564 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752595AbbALJcW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 04:32:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,742,1413270000"; 
+   d="scan'208";a="649736844"
+Message-ID: <54B39438.8010701@intel.com>
+Date: Mon, 12 Jan 2015 11:30:32 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Fam Zheng <famz@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>,
-        Eduardo Otubo <eduardo.otubo@profitbricks.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: blk-mq v3.18: Oops during virtio_blk hot-unplug
-References: <54AFE664.6010002@profitbricks.com> <20150110012036.GC8570@fam-t430.nay.redhat.com>
-In-Reply-To: <20150110012036.GC8570@fam-t430.nay.redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, markus.t.metzger@intel.com,
+        mathieu.poirier@linaro.org, acme@infradead.org
+Subject: Re: [PATCH v8 14/14] perf: add ITRACE_START record to indicate that
+ tracing has started
+References: <1415972627-37514-1-git-send-email-alexander.shishkin@linux.intel.com> <1415972627-37514-15-git-send-email-alexander.shishkin@linux.intel.com> <20150109141248.GO3337@twins.programming.kicks-ass.net> <20150109141318.GR10476@twins.programming.kicks-ass.net>
+In-Reply-To: <20150109141318.GR10476@twins.programming.kicks-ass.net>
 Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10.01.2015 02:20, Fam Zheng wrote:
-> On Fri, 01/09 15:32, Sebastian Parschauer wrote:
->> Hi Jens,
+On 09/01/15 16:13, Peter Zijlstra wrote:
+> On Fri, Jan 09, 2015 at 03:12:48PM +0100, Peter Zijlstra wrote:
+>> On Fri, Nov 14, 2014 at 03:43:47PM +0200, Alexander Shishkin wrote:
+>>> +++ b/include/uapi/linux/perf_event.h
+>>> @@ -750,6 +750,17 @@ enum perf_event_type {
+>>>  	 */
+>>>  	PERF_RECORD_AUX				= 11,
+>>>  
+>>> +	/*
+>>> +	 * Indicates that instruction trace has started
+>>> +	 *
+>>> +	 * struct {
+>>> +	 *	struct perf_event_header	header;
+>>> +	 *	u32				pid;
+>>> +	 *	u32				tid;
 >>
->> my colleague Eduardo is sporadically seeing an Oops in blk-mq while
->> running continuous virtio_blk hot-plug/hot-unplug tests with I/O to the
->> device within an x86_64 QEMU/KVM 2.0 Debian Wheezy VM.
+>> The below function suggests we should have:
 >>
->> Please find the call trace attached and the full log here:
->> http://paste.ubuntu.com/9691873/
+>> 		struct sample_id		sample_id;
 >>
->> The kernel image has been taken from here and is the mainline kernel
->> from tag v3.18:
->> http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.18-vivid/
->>
->> Is there still an issue with block queue freezing?
+>>> +	 * };
+>>> +	 */
+>>> +	PERF_RECORD_ITRACE_START		= 12,
 > 
-> This one?
-> 
-> commit 45a9c9d909b24c6ad0e28a7946e7486e73010319
-> Author: Bart Van Assche <bvanassche@acm.org>
-> Date:   Tue Dec 9 16:57:48 2014 +0100
-> 
->     blk-mq: Fix a use-after-free
-> 
-> Fam
+> This also raises the question; why not use PERF_RECORD_COMM?
 
-Yes, pretty much looks like it, thanks!
+They mean slightly different things.
 
-Cheers,
-Sebastian
+PERF_RECORD_COMM means the comm string has been set. We could infer that tid
+was the currently running task but we don't at the moment, and it would be a
+constraint that should be documented if we are going to rely on it.
+Also it might mess up perf tools a little which calls the idle thread
+"swapper" but the kernel calls it "swapper/n" on SMP where n is the cpu number.
+
+PERF_RECORD_ITRACE_START just means that pid/tid was the currently running task.
 
