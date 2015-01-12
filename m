@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755106AbbALSaW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:30:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58093 "EHLO
+	id S1755046AbbALSaO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:30:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58105 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753757AbbALSaD (ORCPT
+	with ESMTP id S1754996AbbALSaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:30:03 -0500
+	Mon, 12 Jan 2015 13:30:05 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "security@kernel.org" <security@kernel.org>, Willy Tarreau <w@1wt.eu>,
+        Ingo Molnar <mingo@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 138/216] tracing/sched: Check preempt_count() for current when reading task->state
-Date: Mon, 12 Jan 2015 18:28:36 +0000
-Message-Id: <1421087394-2712-26-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 139/216] x86/tls: Validate TLS entries to protect espfix
+Date: Mon, 12 Jan 2015 18:28:37 +0000
+Message-Id: <1421087394-2712-27-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -28,67 +31,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit aee4e5f3d3abb7a2239dd02f6d8fb173413fd02f upstream.
+commit 41bdc78544b8a93a9c6814b8bbbfef966272abbe upstream.
 
-When recording the state of a task for the sched_switch tracepoint a check of
-task_preempt_count() is performed to see if PREEMPT_ACTIVE is set. This is
-because, technically, a task being preempted is really in the TASK_RUNNING
-state, and that is what should be recorded when tracing a sched_switch,
-even if the task put itself into another state (it hasn't scheduled out
-in that state yet).
+Installing a 16-bit RW data segment into the GDT defeats espfix.
+AFAICT this will not affect glibc, Wine, or dosemu at all.
 
-But with the change to use per_cpu preempt counts, the
-task_thread_info(p)->preempt_count is no longer used, and instead
-task_preempt_count(p) is used.
-
-The problem is that this does not use the current preempt count but a stale
-one from a previous sched_switch. The task_preempt_count(p) uses
-saved_preempt_count and not preempt_count(). But for tracing sched_switch,
-if p is current, we really want preempt_count().
-
-I hit this bug when I was tracing sleep and the call from do_nanosleep()
-scheduled out in the "RUNNING" state.
-
-           sleep-4290  [000] 537272.259992: sched_switch:         sleep:4290 [120] R ==> swapper/0:0 [120]
-           sleep-4290  [000] 537272.260015: kernel_stack:         <stack trace>
-=> __schedule (ffffffff8150864a)
-=> schedule (ffffffff815089f8)
-=> do_nanosleep (ffffffff8150b76c)
-=> hrtimer_nanosleep (ffffffff8108d66b)
-=> SyS_nanosleep (ffffffff8108d750)
-=> return_to_handler (ffffffff8150e8e5)
-=> tracesys_phase2 (ffffffff8150c844)
-
-After a bit of hair pulling, I found that the state was really
-TASK_INTERRUPTIBLE, but the saved_preempt_count had an old PREEMPT_ACTIVE
-set and caused the sched_switch tracepoint to show it as RUNNING.
-
-Link: http://lkml.kernel.org/r/20141210174428.3cb7542a@gandalf.local.home
-
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Fixes: 01028747559a "sched: Create more preempt_count accessors"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: security@kernel.org <security@kernel.org>
+Cc: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/trace/events/sched.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/tls.c | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index 0a68d5ae584e..a7d67bc14906 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -100,7 +100,7 @@ static inline long __trace_sched_switch_state(struct task_struct *p)
- 	/*
- 	 * For all intents and purposes a preempted task is a running task.
- 	 */
--	if (task_preempt_count(p) & PREEMPT_ACTIVE)
-+	if (preempt_count() & PREEMPT_ACTIVE)
- 		state = TASK_RUNNING | TASK_STATE_MAX;
- #endif
+diff --git a/arch/x86/kernel/tls.c b/arch/x86/kernel/tls.c
+index f7fec09e3e3a..e7650bd71109 100644
+--- a/arch/x86/kernel/tls.c
++++ b/arch/x86/kernel/tls.c
+@@ -27,6 +27,21 @@ static int get_free_idx(void)
+ 	return -ESRCH;
+ }
  
++static bool tls_desc_okay(const struct user_desc *info)
++{
++	if (LDT_empty(info))
++		return true;
++
++	/*
++	 * espfix is required for 16-bit data segments, but espfix
++	 * only works for LDT segments.
++	 */
++	if (!info->seg_32bit)
++		return false;
++
++	return true;
++}
++
+ static void set_tls_desc(struct task_struct *p, int idx,
+ 			 const struct user_desc *info, int n)
+ {
+@@ -66,6 +81,9 @@ int do_set_thread_area(struct task_struct *p, int idx,
+ 	if (copy_from_user(&info, u_info, sizeof(info)))
+ 		return -EFAULT;
+ 
++	if (!tls_desc_okay(&info))
++		return -EINVAL;
++
+ 	if (idx == -1)
+ 		idx = info.entry_number;
+ 
+@@ -192,6 +210,7 @@ int regset_tls_set(struct task_struct *target, const struct user_regset *regset,
+ {
+ 	struct user_desc infobuf[GDT_ENTRY_TLS_ENTRIES];
+ 	const struct user_desc *info;
++	int i;
+ 
+ 	if (pos >= GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
+ 	    (pos % sizeof(struct user_desc)) != 0 ||
+@@ -205,6 +224,10 @@ int regset_tls_set(struct task_struct *target, const struct user_regset *regset,
+ 	else
+ 		info = infobuf;
+ 
++	for (i = 0; i < count / sizeof(struct user_desc); i++)
++		if (!tls_desc_okay(info + i))
++			return -EINVAL;
++
+ 	set_tls_desc(target,
+ 		     GDT_ENTRY_TLS_MIN + (pos / sizeof(struct user_desc)),
+ 		     info, count / sizeof(struct user_desc));
 -- 
 2.1.4
 
