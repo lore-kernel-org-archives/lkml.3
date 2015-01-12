@@ -1,79 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751579AbbALRTy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 12:19:54 -0500
-Received: from mars.intermailgate.com ([80.242.145.70]:52945 "EHLO
-	mars.intermailgate.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120AbbALRTw (ORCPT
+	id S1752016AbbALRU0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 12:20:26 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:38807 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649AbbALRUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 12:19:52 -0500
-X-Antivirus-MYDOMAIN-Mail-From: netdev@bof.de via mars
-X-Antivirus-MYDOMAIN: 1.25-st-qms (Clear:RC:0(192.109.53.146):SA:0(1.3/10.0):. Processed in 0.462407 secs Process 7089)
-From: Patrick Schaaf <netdev@bof.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Richard Weinberger <richard@nod.at>, davem@davemloft.net,
-        coreteam@netfilter.org, netfilter-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        bhutchings@solarflare.com, john.fastabend@gmail.com,
-        herbert@gondor.apana.org.au, vyasevic@redhat.com, jiri@resnulli.us,
-        vfalico@gmail.com, therbert@google.com, edumazet@google.com,
-        yoshfuji@linux-ipv6.org, jmorris@namei.org, kuznet@ms2.inr.ac.ru,
-        kadlec@blackhole.kfki.hu, kaber@trash.net, pablo@netfilter.org,
-        kay@vrfy.org, stephen@networkplumber.org
-Subject: Re: [PATCH 2/3] x_tables: Use also dev->ifalias for interface matching
-Date: Mon, 12 Jan 2015 18:19:49 +0100
-Message-ID: <2868544.UBk2Y85taW@rofl>
-User-Agent: KMail/4.14.3 (Linux/3.18.2-1.ga393f37-desktop; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <1421081514.4099.14.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <1421009571-5279-1-git-send-email-richard@nod.at> <1425960.ovH4s7sjue@rofl> <1421081514.4099.14.camel@edumazet-glaptop2.roam.corp.google.com>
+	Mon, 12 Jan 2015 12:20:23 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [130.216.30.134]
+In-Reply-To: <1421012945.19708.27.camel@decadent.org.uk>
+References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
+	<1418653622-21105-31-git-send-email-luis.henriques@canonical.com>
+	<1421012945.19708.27.camel@decadent.org.uk>
+Date: Mon, 12 Jan 2015 18:20:22 +0100
+Message-ID: <CAKMK7uFDS339qaqaNeRJ-L+XXKBaS8CgDY1CzEB7ugDmOto+Dw@mail.gmail.com>
+Subject: Re: [PATCH 3.16.y-ckt 030/168] drm/i915: Handle failure to kick out a
+ conflicting fb driver
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Luis Henriques <luis.henriques@canonical.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, kernel-team@lists.ubuntu.com,
+        "Nikula, Jani" <jani.nikula@linux.intel.com>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 12 January 2015 08:51:54 Eric Dumazet wrote:
-> On Mon, 2015-01-12 at 17:39 +0100, Patrick Schaaf wrote:
-> > 
-> > Not to comment on the ifalias thing, which I think is unneccessary,
-> > too, but matching on interface names instead of only ifindex, is
-> > definitely needed, so that one can establish a full ruleset before
-> > interfaces even exist. That's good practise at boottime, but also
-> > needed for dynamic interface creation during runtime.
-> 
-> Please do not send html messages : Your reply did not reach the lists.
+On Sun, Jan 11, 2015 at 10:49 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
+> On Mon, 2014-12-15 at 14:24 +0000, Luis Henriques wrote:
+>> 3.16.7-ckt3 -stable review patch.  If anyone has any objections, please let me know.
+>>
+>> ------------------
+>>
+>> From: Chris Wilson <chris@chris-wilson.co.uk>
+>>
+>> commit f96de58fc7e7d3d717c7c63975c3b896c906b5e3 upstream.
+>>
+>> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+>> Reviewed-by: Jani Nikula <jani.nikula@intel.com>
+>> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+>> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+>
+> Should this also be applied to any older stable branches?
+>
+> i915_kick_out_firmware_fb() was introduced in 3.6 and it has always been
+> possible for the alloc_apertures() call to fail.
+>
+> remove_conflicting_framebuffers() has returned an error code since 3.14
+> (but could silently fail before then!) so this should be applicable to
+> the 3.14 stable branch too.
 
-Sigh. Sorry...
+tbh I don't know why this patch ended up in a stable kernel, at least
+I didn't find anything where we (drm/i915 maintainers) marked it as
+such. And there's no bugzilla references added either. Imo the patch
+doesn't qualify for stable (it's not a real-world bug afaik).
+-Daniel
 
-> Then, all you mention could have been solved by proper userspace
-> support.
-> 
-> Every time you add an interface or change device name, you could change
-> firewalls rules if needed. Nothing shocking here.
+>
+> Ben.
+>
+>> ---
+>>  drivers/gpu/drm/i915/i915_dma.c | 18 +++++++++++++-----
+>>  1 file changed, 13 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+>> index d44344140627..0663fb4fa606 100644
+>> --- a/drivers/gpu/drm/i915/i915_dma.c
+>> +++ b/drivers/gpu/drm/i915/i915_dma.c
+>> @@ -1425,15 +1425,16 @@ void i915_master_destroy(struct drm_device *dev, struct drm_master *master)
+>>  }
+>>
+>>  #if IS_ENABLED(CONFIG_FB)
+>> -static void i915_kick_out_firmware_fb(struct drm_i915_private *dev_priv)
+>> +static int i915_kick_out_firmware_fb(struct drm_i915_private *dev_priv)
+>>  {
+>>       struct apertures_struct *ap;
+>>       struct pci_dev *pdev = dev_priv->dev->pdev;
+>>       bool primary;
+>> +     int ret;
+>>
+>>       ap = alloc_apertures(1);
+>>       if (!ap)
+>> -             return;
+>> +             return -ENOMEM;
+>>
+>>       ap->ranges[0].base = dev_priv->gtt.mappable_base;
+>>       ap->ranges[0].size = dev_priv->gtt.mappable_end;
+>> @@ -1441,13 +1442,16 @@ static void i915_kick_out_firmware_fb(struct drm_i915_private *dev_priv)
+>>       primary =
+>>               pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW;
+>>
+>> -     remove_conflicting_framebuffers(ap, "inteldrmfb", primary);
+>> +     ret = remove_conflicting_framebuffers(ap, "inteldrmfb", primary);
+>>
+>>       kfree(ap);
+>> +
+>> +     return ret;
+>>  }
+>>  #else
+>> -static void i915_kick_out_firmware_fb(struct drm_i915_private *dev_priv)
+>> +static int i915_kick_out_firmware_fb(struct drm_i915_private *dev_priv)
+>>  {
+>> +     return 0;
+>>  }
+>>  #endif
+>>
+>> @@ -1664,7 +1668,11 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
+>>                       goto out_gtt;
+>>               }
+>>
+>> -             i915_kick_out_firmware_fb(dev_priv);
+>> +             ret = i915_kick_out_firmware_fb(dev_priv);
+>> +             if (ret) {
+>> +                     DRM_ERROR("failed to remove conflicting framebuffer drivers\n");
+>> +                     goto out_gtt;
+>> +             }
+>>       }
+>>
+>>       pci_set_master(dev->pdev);
+>
+> --
+> Ben Hutchings
+> One of the nice things about standards is that there are so many of them.
 
-That is totally impractical, IMO.
 
-Interfaces come and go through many different actions. There's the admin 
-downing and upping stuff like bridges or bonds. There's stuff like libvirt / 
-KVM / qemu creating and destroying interfaces. In all these cases, in my 
-practise, I give the interfaces useful names to that I can prefix-match them 
-in iptables rules.
 
-Dynamically modifying the ruleset for each such creation and destruction, 
-would be a huge burden. The base ruleset would need suitable "hooks" where 
-these rules were inserted (ordering matters!). The addition would hardly be 
-atomic (with traditional iptables, unless done by generating a whole new 
-ruleset and restoring). The programs (e.g. libvirt) would need to be able to 
-call out to these specially crafted rule generator scripts. The admin would 
-need to add them as pre/post actions to their static (manual) interface 
-configuration. Loading and looking at the ruleset before bringing up the 
-interface would be impossible.
-
-Note that I do fully agree that it's sad that iptables rules waste all that 
-memory for each and every rule! I remember musing about improving that in 
-talks with Harald Welte back in the 90ies. A simple match would be perfectly 
-fine for me. Only having ifindex support, isn't.
-
-best regards
-  Patrick
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
