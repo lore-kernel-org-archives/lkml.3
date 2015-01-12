@@ -1,107 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751223AbbALCFg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 21:05:36 -0500
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:9991 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750846AbbALCFe convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 21:05:34 -0500
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
-CC: "'Ard Biesheuvel'" <ard.biesheuvel@linaro.org>,
-        "'Will Deacon'" <will.deacon@arm.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'akinobu.mita@gmail.com'" <akinobu.mita@gmail.com>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'Joe Perches'" <joe@perches.com>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Mon, 12 Jan 2015 10:05:30 +0800
-Subject: FW: [RFC V6 2/3 resend] arm:add bitrev.h file to support rbit
- instruction   
-Thread-Topic: [RFC V6 2/3 resend] arm:add bitrev.h file to support rbit
- instruction   
-Thread-Index: AdAr/PXsSIMtzQSaQvaNR/yTI7onlQACpIuAAIEj8yA=
-Message-ID: <35FD53F367049845BC99AC72306C23D103EDAF89E19A@CNBJMBX05.corpusers.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	id S1751325AbbALC0c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 21:26:32 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:29772 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755AbbALC0b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jan 2015 21:26:31 -0500
+From: Wang Nan <wangnan0@huawei.com>
+To: <jolsa@redhat.com>, <namhyung@kernel.org>
+CC: <mingo@redhat.com>, <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>,
+        <acme@kernel.org>
+Subject: [PATCH] perf: fix building error in x86_64 when dwarf unwind is on.
+Date: Mon, 12 Jan 2015 10:20:55 +0800
+Message-ID: <1421029255-23039-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <20150109144332.GB14750@krava.brq.redhat.com>
+References: <20150109144332.GB14750@krava.brq.redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk]
-> Sent: Friday, January 09, 2015 7:11 PM
-> To: Wang, Yalin
-> Cc: 'Ard Biesheuvel'; 'Will Deacon'; 'linux-kernel@vger.kernel.org'; 
-> 'akinobu.mita@gmail.com'; 'linux-mm@kvack.org'; 'Joe Perches'; 
-> 'linux-arm- kernel@lists.infradead.org'
-> Subject: Re: [RFC V6 2/3] arm:add bitrev.h file to support rbit 
-> instruction
-> 
-> On Fri, Jan 09, 2015 at 10:16:32AM +0800, Wang, Yalin wrote:
-> > > -----Original Message-----
-> > > From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk]
-> > > Sent: Friday, January 09, 2015 2:41 AM
-> > > To: Wang, Yalin
-> > > Cc: 'Will Deacon'; 'Ard Biesheuvel'; 
-> > > 'linux-kernel@vger.kernel.org'; 'akinobu.mita@gmail.com'; 
-> > > 'linux-mm@kvack.org'; 'Joe Perches';
-> > > 'linux-arm- kernel@lists.infradead.org'
-> > > Subject: Re: [RFC V6 2/3] arm:add bitrev.h file to support rbit 
-> > > instruction
-> > >
-> > > The root cause is that the kernel being built is supposed to 
-> > > support both
-> > > ARMv7 and ARMv6K CPUs.  However, "rbit" is only available on
-> > > ARMv6T2 (thumb2) and ARMv7, and not plain ARMv6 or ARMv6K CPUs.
-> > >
-> > In the patch that you applied:
-> > 8205/1 	add bitrev.h file to support rbit instruction
-> >
-> > I have add :
-> > +	select HAVE_ARCH_BITREVERSE if ((CPU_V7M || CPU_V7) && !CPU_V6)
-> >
-> > If you build kernel support ARMv6K, should CONFIG_CPU_V6=y, isn't it ?
-> > Then will not build hardware rbit instruction, isn't it ?
-> 
-> The config has:
-> 
-> CONFIG_CPU_PJ4=y
-> # CONFIG_CPU_V6 is not set
-> CONFIG_CPU_V6K=y
-> CONFIG_CPU_V7=y
-> CONFIG_CPU_32v6=y
-> CONFIG_CPU_32v6K=y
-> CONFIG_CPU_32v7=y
-> 
-> And no, the CONFIG_CPU_V* flags refer to the CPUs.  The
-> CONFIG_CPU_32v* symbols refer to the CPU architectures.
-> 
-Oh, I see,
-How about change like this:
-+	select HAVE_ARCH_BITREVERSE if ((CPU_V7M || CPU_V7) && !CPU_V6 && 
-+!CPU_V6K)
-I am not sure if I also need add some older CPU types like !CPU_ARM9TDMI &&　!CPU_ARM940T ?
+From: Namhyung Kim <namhyung@kernel.org>
 
-Another solution is:
-+	select HAVE_ARCH_BITREVERSE if ((CPU_32V7M || CPU_32V7) && !CPU_32V6 
-+&& !CPU_32V5 && !CPU_32V4 && !CPU_32V4T && !CPU_32V3)
+When build with 'make ARCH=x86' and dwarf unwind is on, there is a
+compiling error:
 
-By the way, I am not clear about the difference between CPU_V6 and CPU_V6K, could you tell me? :)
+   CC       /home/wn/perf/arch/x86/util/unwind-libdw.o
+   CC       /home/wn/perf/arch/x86/tests/regs_load.o
+ arch/x86/tests/regs_load.S: Assembler messages:
+ arch/x86/tests/regs_load.S:65: Error: operand type mismatch for `push'
+ arch/x86/tests/regs_load.S:72: Error: operand type mismatch for `pop'
+ make[1]: *** [/home/wn/perf/arch/x86/tests/regs_load.o] Error 1
+ make[1]: INTERNAL: Exiting with 25 jobserver tokens available; should be 24!
+ make: *** [all] Error 2
+ ...
 
-Thank you 
+Which is caused by incorrectly undefine macro HAVE_ARCH_X86_64_SUPPORT.
+'config/Makefile.arch' tests __x86_64__ only when 'ARCH=x86_64'.
+However, when building x86_64 kernel, ARCH=x86 is valid and commonly
+used. Building systems, such as yocto, uses x86_64 compiler with
+'ARCH=x86' to build x86_64 perf, which causes mismatching.
 
+As __LP64__ is defined for x86_64 as well, we can consolidate the
+__x86_64__ check to the __LP64__ check and get rid of the IS_X86_64
+IMHO.
 
+(This patch is made by Namhyung Kim when replying my v1 patch:
 
+https://lkml.org/lkml/2015/1/7/17
 
+I modified the code to remove dependency on RAW_ARCH:
 
+https://lkml.org/lkml/2015/1/7/865
 
+Namhyung Kim didn't provide his SOB in his original email. I add
+mine only for my modification.)
+
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
+---
+ tools/perf/Makefile.perf        |  4 +++-
+ tools/perf/config/Makefile      |  2 +-
+ tools/perf/config/Makefile.arch | 26 +++++++++++++-------------
+ 3 files changed, 17 insertions(+), 15 deletions(-)
+
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 67a03a82..1f71a32 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -462,10 +462,12 @@ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+ # Benchmark modules
+ BUILTIN_OBJS += $(OUTPUT)bench/sched-messaging.o
+ BUILTIN_OBJS += $(OUTPUT)bench/sched-pipe.o
+-ifeq ($(RAW_ARCH),x86_64)
++ifeq ($(ARCH), x86)
++ifeq ($(IS_64_BIT), 1)
+ BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy-x86-64-asm.o
+ BUILTIN_OBJS += $(OUTPUT)bench/mem-memset-x86-64-asm.o
+ endif
++endif
+ BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy.o
+ BUILTIN_OBJS += $(OUTPUT)bench/futex-hash.o
+ BUILTIN_OBJS += $(OUTPUT)bench/futex-wake.o
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 5d4b039..648e31f 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -20,7 +20,7 @@ NO_PERF_REGS := 1
+ 
+ # Additional ARCH settings for x86
+ ifeq ($(ARCH),x86)
+-  ifeq (${IS_X86_64}, 1)
++  ifeq (${IS_64_BIT}, 1)
+     CFLAGS += -DHAVE_ARCH_X86_64_SUPPORT
+     ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
+     LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
+diff --git a/tools/perf/config/Makefile.arch b/tools/perf/config/Makefile.arch
+index 851cd01..ff95a68 100644
+--- a/tools/perf/config/Makefile.arch
++++ b/tools/perf/config/Makefile.arch
+@@ -1,7 +1,7 @@
+ 
+ uname_M := $(shell uname -m 2>/dev/null || echo not)
+ 
+-ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
++RAW_ARCH := $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
+                                   -e s/arm.*/arm/ -e s/sa110/arm/ \
+                                   -e s/s390x/s390/ -e s/parisc64/parisc/ \
+                                   -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+@@ -9,23 +9,23 @@ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
+                                   -e s/tile.*/tile/ )
+ 
+ # Additional ARCH settings for x86
+-ifeq ($(ARCH),i386)
+-  override ARCH := x86
++ifeq ($(RAW_ARCH),i386)
++  ARCH ?= x86
+ endif
+ 
+-ifeq ($(ARCH),x86_64)
+-  override ARCH := x86
+-  IS_X86_64 := 0
+-  ifeq (, $(findstring m32,$(CFLAGS)))
+-    IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
+-    RAW_ARCH := x86_64
++ifeq ($(RAW_ARCH),x86_64)
++  ARCH ?= x86
++
++  ifneq (, $(findstring m32,$(CFLAGS)))
++    RAW_ARCH := x86_32
+   endif
+ endif
+ 
+-ifeq (${IS_X86_64}, 1)
++ARCH ?= $(RAW_ARCH)
++
++LP64 := $(shell echo __LP64__ | ${CC} ${CFLAGS} -E -x c - | tail -n 1)
++ifeq ($(LP64), 1)
+   IS_64_BIT := 1
+-else ifeq ($(ARCH),x86)
+-  IS_64_BIT := 0
+ else
+-  IS_64_BIT := $(shell echo __LP64__ | ${CC} ${CFLAGS} -E -x c - | tail -n 1)
++  IS_64_BIT := 0
+ endif
+-- 
+1.8.4
 
