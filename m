@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755161AbbALUKT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 15:10:19 -0500
-Received: from laurent.telenet-ops.be ([195.130.137.89]:55412 "EHLO
-	laurent.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752836AbbALUKQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 15:10:16 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Airlie <airlied@linux.ie>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: dri-devel@lists.freedesktop.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH v2 2/2] video: Drop superfluous "select VT_HW_CONSOLE_BINDING"
-Date: Mon, 12 Jan 2015 21:10:13 +0100
-Message-Id: <1421093413-26336-2-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1421093413-26336-1-git-send-email-geert@linux-m68k.org>
-References: <1421093413-26336-1-git-send-email-geert@linux-m68k.org>
+	id S1755343AbbALULx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 15:11:53 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:59951 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754472AbbALULv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 15:11:51 -0500
+Date: Mon, 12 Jan 2015 21:11:45 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH] x86: introduce push/pop macros which generate
+ CFI_REL_OFFSET and CFI_RESTORE
+Message-ID: <20150112201145.GH3904@pd.tnic>
+References: <1421017655-25561-1-git-send-email-dvlasenk@redhat.com>
+ <20150112192314.GF3904@pd.tnic>
+ <CALCETrXzEPKPFKBeKF3UMduNe1ViQTC6vULEySo_0XTJcK7Qkw@mail.gmail.com>
+ <20150112193704.GG3904@pd.tnic>
+ <CALCETrUVXGnqqtgw1eZRK5g0B+5vwGuvSV6dwnm5witA-fJWLQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CALCETrUVXGnqqtgw1eZRK5g0B+5vwGuvSV6dwnm5witA-fJWLQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 765d5b9c2b72f5b99722cdfcf4bf8f88c556cf92 ("fbdev: fbcon: select
-VT_HW_CONSOLE_BINDING") made FRAMEBUFFER_CONSOLE always select
-VT_HW_CONSOLE_BINDING, but forgot to remove
+On Mon, Jan 12, 2015 at 11:46:53AM -0800, Andy Lutomirski wrote:
+> Dumb example:
+> 
+>     pushq_cfi $__KERNEL_DS /* ss */
+> 
+> This doesn't save anything that the unwinder would care about.
 
-	select VT_HW_CONSOLE_BINDING if FRAMEBUFFER_CONSOLE
+And? The unwinder or whatever looks at that info simply ignores stuff it
+is not interested in, no?
 
-from the individual drivers' sections that already did this before.
+> Better example:
+> 
+>     pushq_cfi \child_rip /* rip */
+>     CFI_REL_OFFSET    rip,0
+> 
+> Doing this with a macro would need a fancier macro.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
-v2:
-  - Split in two (drm and video) patches.
----
- drivers/video/fbdev/Kconfig | 1 -
- 1 file changed, 1 deletion(-)
+I'd ask first whether we really need this at all.
 
-diff --git a/drivers/video/fbdev/Kconfig b/drivers/video/fbdev/Kconfig
-index 4916c97216f880fc..f2c3fb7d03992ad1 100644
---- a/drivers/video/fbdev/Kconfig
-+++ b/drivers/video/fbdev/Kconfig
-@@ -2151,7 +2151,6 @@ config FB_PS3
- 	select FB_SYS_COPYAREA
- 	select FB_SYS_IMAGEBLIT
- 	select FB_SYS_FOPS
--	select VT_HW_CONSOLE_BINDING if FRAMEBUFFER_CONSOLE
- 	---help---
- 	  Include support for the virtual frame buffer in the PS3 platform.
- 
+> Then there's crap like:
+> 
+>     pushq_cfi %rdi
+>     SCHEDULE_USER
+>     popq_cfi %rdi
+
+I guess we can add a gas regname argument optional and if it is set, use
+it and if not, use the reg itself... Or something like that in the best
+effort type of approach.
+
+> I would need to look a lot more carefully to figure out whether this
+> would need CFI_REL_OFFSET.
+> 
+> If we actually had a DWARF unwinder in the kernel, maybe we could have
+> real test cases :-/
+
+I don't think that's ever going to happen.
+
+I'd say we do the CFI annotation on a best effort basis but not
+sacrifice readability in the process. If it can't be annotated, well,
+tough luck.
+
 -- 
-1.9.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
