@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755190AbbALSah (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:30:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58240 "EHLO
+	id S1755160AbbALSac (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:30:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58245 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755128AbbALSa1 (ORCPT
+	with ESMTP id S1755132AbbALSa1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Jan 2015 13:30:27 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
@@ -13,9 +13,9 @@ To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
 Cc: Sagi Grimberg <sagig@mellanox.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 166/216] iser-target: Fix flush + disconnect completion handling
-Date: Mon, 12 Jan 2015 18:29:04 +0000
-Message-Id: <1421087394-2712-54-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 167/216] iser-target: Parallelize CM connection establishment
+Date: Mon, 12 Jan 2015 18:29:05 +0000
+Message-Id: <1421087394-2712-55-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -30,167 +30,237 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sagi Grimberg <sagig@mellanox.com>
 
-commit 128e9cc84566a84146baea2335b3824288eed817 upstream.
+commit 2371e5da8cfe91443339b54444dec6254fdd6dfc upstream.
 
-ISER_CONN_UP state is not sufficient to know if
-we should wait for completion of flush errors and
-disconnected_handler event.
+There is no point in accepting a new CM request only
+when we are completely done with the last iscsi login.
+Instead we accept immediately, this will also cause the
+CM connection to reach connected state and the initiator
+is allowed to send the first login. We mark that we got
+the initial login and let iscsi layer pick it up when it
+gets there.
 
-Instead, split it to 2 states:
-- ISER_CONN_UP: Got to CM connected phase, This state
-indicates that we need to wait for a CM disconnect
-event before going to teardown.
+This reduces the parallel login sequence by a factor of
+more then 4 (and more for multi-login) and also prevents
+the initiator (who does all logins in parallel) from
+giving up on login timeout expiration.
 
-- ISER_CONN_FULL_FEATURE: Got to full feature phase
-after we posted login response, This state indicates
-that we posted recv buffers and we need to wait for
-flush completions before going to teardown.
-
-Also avoid deffering disconnected handler to a work,
-and handle it within disconnected handler.
-More work here is needed to handle DEVICE_REMOVAL event
-correctly (cleanup all resources).
+In order to support multiple login requests sequence (CHAP)
+we call isert_rx_login_req from isert_rx_completion insead
+of letting isert_get_login_rx call it.
 
 Squashed:
 
-iser-target: Don't deffer disconnected handler to a work
+iser-target: Use kref_get_unless_zero in connected_handler
+iser-target: Acquire conn_mutex when changing connection state
+iser-target: Reject connect request in failure path
 
 Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/ulp/isert/ib_isert.c | 52 +++++++++++++++++++--------------
- drivers/infiniband/ulp/isert/ib_isert.h |  2 +-
- 2 files changed, 31 insertions(+), 23 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c | 84 +++++++++++++++++++++++----------
+ drivers/infiniband/ulp/isert/ib_isert.h |  2 +
+ 2 files changed, 62 insertions(+), 24 deletions(-)
 
 diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index bf0c8b987ab8..dfb811a05b04 100644
+index dfb811a05b04..e8e8ae256bac 100644
 --- a/drivers/infiniband/ulp/isert/ib_isert.c
 +++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -754,6 +754,9 @@ isert_connected_handler(struct rdma_cm_id *cma_id)
- {
- 	struct isert_conn *isert_conn = cma_id->context;
- 
-+	pr_info("conn %p\n", isert_conn);
-+
-+	isert_conn->state = ISER_CONN_UP;
- 	kref_get(&isert_conn->conn_kref);
- }
- 
-@@ -780,8 +783,9 @@ isert_put_conn(struct isert_conn *isert_conn)
-  * @isert_conn: isert connection struct
-  *
-  * Notes:
-- * In case the connection state is UP, move state
-+ * In case the connection state is FULL_FEATURE, move state
-  * to TEMINATING and start teardown sequence (rdma_disconnect).
-+ * In case the connection state is UP, complete flush as well.
-  *
-  * This routine must be called with conn_mutex held. Thus it is
-  * safe to call multiple times.
-@@ -791,32 +795,31 @@ isert_conn_terminate(struct isert_conn *isert_conn)
- {
- 	int err;
- 
--	if (isert_conn->state == ISER_CONN_UP) {
--		isert_conn->state = ISER_CONN_TERMINATING;
-+	switch (isert_conn->state) {
-+	case ISER_CONN_TERMINATING:
-+		break;
-+	case ISER_CONN_UP:
-+		/*
-+		 * No flush completions will occur as we didn't
-+		 * get to ISER_CONN_FULL_FEATURE yet, complete
-+		 * to allow teardown progress.
-+		 */
-+		complete(&isert_conn->conn_wait_comp_err);
-+	case ISER_CONN_FULL_FEATURE: /* FALLTHRU */
- 		pr_info("Terminating conn %p state %d\n",
- 			   isert_conn, isert_conn->state);
-+		isert_conn->state = ISER_CONN_TERMINATING;
- 		err = rdma_disconnect(isert_conn->conn_cm_id);
- 		if (err)
- 			pr_warn("Failed rdma_disconnect isert_conn %p\n",
- 				   isert_conn);
-+		break;
-+	default:
-+		pr_warn("conn %p teminating in state %d\n",
-+			   isert_conn, isert_conn->state);
- 	}
- }
- 
--static void
--isert_disconnect_work(struct work_struct *work)
--{
--	struct isert_conn *isert_conn = container_of(work,
--				struct isert_conn, conn_logout_work);
--
--	pr_debug("isert_disconnect_work(): >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
--	mutex_lock(&isert_conn->conn_mutex);
--	isert_conn_terminate(isert_conn);
--	mutex_unlock(&isert_conn->conn_mutex);
--
--	pr_info("conn %p completing conn_wait\n", isert_conn);
--	complete(&isert_conn->conn_wait);
--}
--
+@@ -54,6 +54,10 @@ isert_reg_rdma(struct iscsi_conn *conn, struct iscsi_cmd *cmd,
+ 	       struct isert_rdma_wr *wr);
  static int
- isert_disconnected_handler(struct rdma_cm_id *cma_id)
- {
-@@ -831,8 +834,12 @@ isert_disconnected_handler(struct rdma_cm_id *cma_id)
+ isert_put_response(struct iscsi_conn *conn, struct iscsi_cmd *cmd);
++static int
++isert_rdma_post_recvl(struct isert_conn *isert_conn);
++static int
++isert_rdma_accept(struct isert_conn *isert_conn);
  
- 	isert_conn = (struct isert_conn *)cma_id->context;
+ static void
+ isert_qp_event_callback(struct ib_event *e, void *context)
+@@ -590,6 +594,7 @@ isert_connect_request(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
+ 	isert_conn->state = ISER_CONN_INIT;
+ 	INIT_LIST_HEAD(&isert_conn->conn_accept_node);
+ 	init_completion(&isert_conn->conn_login_comp);
++	init_completion(&isert_conn->login_req_comp);
+ 	init_completion(&isert_conn->conn_wait);
+ 	init_completion(&isert_conn->conn_wait_comp_err);
+ 	kref_init(&isert_conn->conn_kref);
+@@ -679,6 +684,14 @@ isert_connect_request(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
+ 	if (ret)
+ 		goto out_conn_dev;
  
--	INIT_WORK(&isert_conn->conn_logout_work, isert_disconnect_work);
--	schedule_work(&isert_conn->conn_logout_work);
-+	mutex_lock(&isert_conn->conn_mutex);
-+	isert_conn_terminate(isert_conn);
-+	mutex_unlock(&isert_conn->conn_mutex);
++	ret = isert_rdma_post_recvl(isert_conn);
++	if (ret)
++		goto out_conn_dev;
 +
-+	pr_info("conn %p completing conn_wait\n", isert_conn);
-+	complete(&isert_conn->conn_wait);
- 
- 	return 0;
++	ret = isert_rdma_accept(isert_conn);
++	if (ret)
++		goto out_conn_dev;
++
+ 	mutex_lock(&isert_np->np_accept_mutex);
+ 	list_add_tail(&isert_conn->conn_accept_node, &isert_np->np_accept_list);
+ 	mutex_unlock(&isert_np->np_accept_mutex);
+@@ -703,6 +716,7 @@ out_login_buf:
+ 	kfree(isert_conn->login_buf);
+ out:
+ 	kfree(isert_conn);
++	rdma_reject(cma_id, NULL, 0);
+ 	return ret;
  }
-@@ -1007,7 +1014,7 @@ isert_init_send_wr(struct isert_conn *isert_conn, struct isert_cmd *isert_cmd,
- 	 * bit for every ISERT_COMP_BATCH_COUNT number of ib_post_send() calls.
- 	 */
- 	mutex_lock(&isert_conn->conn_mutex);
--	if (coalesce && isert_conn->state == ISER_CONN_UP &&
-+	if (coalesce && isert_conn->state == ISER_CONN_FULL_FEATURE &&
- 	    ++isert_conn->conn_comp_batch < ISERT_COMP_BATCH_COUNT) {
- 		tx_desc->llnode_active = true;
- 		llist_add(&tx_desc->comp_llnode, &isert_conn->conn_comp_llist);
-@@ -1108,7 +1115,8 @@ isert_put_login_tx(struct iscsi_conn *conn, struct iscsi_login *login,
- 			if (ret)
+ 
+@@ -756,8 +770,15 @@ isert_connected_handler(struct rdma_cm_id *cma_id)
+ 
+ 	pr_info("conn %p\n", isert_conn);
+ 
+-	isert_conn->state = ISER_CONN_UP;
+-	kref_get(&isert_conn->conn_kref);
++	if (!kref_get_unless_zero(&isert_conn->conn_kref)) {
++		pr_warn("conn %p connect_release is running\n", isert_conn);
++		return;
++	}
++
++	mutex_lock(&isert_conn->conn_mutex);
++	if (isert_conn->state != ISER_CONN_FULL_FEATURE)
++		isert_conn->state = ISER_CONN_UP;
++	mutex_unlock(&isert_conn->conn_mutex);
+ }
+ 
+ static void
+@@ -1116,7 +1137,9 @@ isert_put_login_tx(struct iscsi_conn *conn, struct iscsi_login *login,
  				return ret;
  
--			isert_conn->state = ISER_CONN_UP;
-+			/* Now we are in FULL_FEATURE phase */
-+			isert_conn->state = ISER_CONN_FULL_FEATURE;
+ 			/* Now we are in FULL_FEATURE phase */
++			mutex_lock(&isert_conn->conn_mutex);
+ 			isert_conn->state = ISER_CONN_FULL_FEATURE;
++			mutex_unlock(&isert_conn->conn_mutex);
  			goto post_send;
  		}
  
+@@ -1133,18 +1156,17 @@ post_send:
+ }
+ 
+ static void
+-isert_rx_login_req(struct iser_rx_desc *rx_desc, int rx_buflen,
+-		   struct isert_conn *isert_conn)
++isert_rx_login_req(struct isert_conn *isert_conn)
+ {
++	struct iser_rx_desc *rx_desc = (void *)isert_conn->login_req_buf;
++	int rx_buflen = isert_conn->login_req_len;
+ 	struct iscsi_conn *conn = isert_conn->conn;
+ 	struct iscsi_login *login = conn->conn_login;
+ 	int size;
+ 
+-	if (!login) {
+-		pr_err("conn->conn_login is NULL\n");
+-		dump_stack();
+-		return;
+-	}
++	pr_info("conn %p\n", isert_conn);
++
++	WARN_ON_ONCE(!login);
+ 
+ 	if (login->first_request) {
+ 		struct iscsi_login_req *login_req =
+@@ -1507,11 +1529,20 @@ isert_rx_completion(struct iser_rx_desc *desc, struct isert_conn *isert_conn,
+ 		 hdr->opcode, hdr->itt, hdr->flags,
+ 		 (int)(xfer_len - ISER_HEADERS_LEN));
+ 
+-	if ((char *)desc == isert_conn->login_req_buf)
+-		isert_rx_login_req(desc, xfer_len - ISER_HEADERS_LEN,
+-				   isert_conn);
+-	else
++	if ((char *)desc == isert_conn->login_req_buf) {
++		isert_conn->login_req_len = xfer_len - ISER_HEADERS_LEN;
++		if (isert_conn->conn) {
++			struct iscsi_login *login = isert_conn->conn->conn_login;
++
++			if (login && !login->first_request)
++				isert_rx_login_req(isert_conn);
++		}
++		mutex_lock(&isert_conn->conn_mutex);
++		complete(&isert_conn->login_req_comp);
++		mutex_unlock(&isert_conn->conn_mutex);
++	} else {
+ 		isert_rx_do_work(desc, isert_conn);
++	}
+ 
+ 	ib_dma_sync_single_for_device(ib_dev, rx_dma, rx_buflen,
+ 				      DMA_FROM_DEVICE);
+@@ -3132,7 +3163,15 @@ isert_get_login_rx(struct iscsi_conn *conn, struct iscsi_login *login)
+ 	struct isert_conn *isert_conn = (struct isert_conn *)conn->context;
+ 	int ret;
+ 
+-	pr_debug("isert_get_login_rx before conn_login_comp conn: %p\n", conn);
++	pr_info("before login_req comp conn: %p\n", isert_conn);
++	ret = wait_for_completion_interruptible(&isert_conn->login_req_comp);
++	if (ret) {
++		pr_err("isert_conn %p interrupted before got login req\n",
++			  isert_conn);
++		return ret;
++	}
++	reinit_completion(&isert_conn->login_req_comp);
++
+ 	/*
+ 	 * For login requests after the first PDU, isert_rx_login_req() will
+ 	 * kick schedule_delayed_work(&conn->login_work) as the packet is
+@@ -3142,11 +3181,15 @@ isert_get_login_rx(struct iscsi_conn *conn, struct iscsi_login *login)
+ 	if (!login->first_request)
+ 		return 0;
+ 
++	isert_rx_login_req(isert_conn);
++
++	pr_info("before conn_login_comp conn: %p\n", conn);
+ 	ret = wait_for_completion_interruptible(&isert_conn->conn_login_comp);
+ 	if (ret)
+ 		return ret;
+ 
+-	pr_debug("isert_get_login_rx processing login->req: %p\n", login->req);
++	pr_info("processing login->req: %p\n", login->req);
++
+ 	return 0;
+ }
+ 
+@@ -3224,17 +3267,10 @@ accept_wait:
+ 	isert_conn->conn = conn;
+ 	max_accept = 0;
+ 
+-	ret = isert_rdma_post_recvl(isert_conn);
+-	if (ret)
+-		return ret;
+-
+-	ret = isert_rdma_accept(isert_conn);
+-	if (ret)
+-		return ret;
+-
+ 	isert_set_conn_info(np, conn, isert_conn);
+ 
+-	pr_debug("Processing isert_accept_np: isert_conn: %p\n", isert_conn);
++	pr_debug("Processing isert_conn: %p\n", isert_conn);
++
+ 	return 0;
+ }
+ 
 diff --git a/drivers/infiniband/ulp/isert/ib_isert.h b/drivers/infiniband/ulp/isert/ib_isert.h
-index a2e926452f76..dd4e0bf9563a 100644
+index dd4e0bf9563a..97cb270d402a 100644
 --- a/drivers/infiniband/ulp/isert/ib_isert.h
 +++ b/drivers/infiniband/ulp/isert/ib_isert.h
-@@ -23,6 +23,7 @@ enum iser_ib_op_code {
- enum iser_conn_state {
- 	ISER_CONN_INIT,
- 	ISER_CONN_UP,
-+	ISER_CONN_FULL_FEATURE,
- 	ISER_CONN_TERMINATING,
- 	ISER_CONN_DOWN,
- };
-@@ -138,7 +139,6 @@ struct isert_conn {
- 	struct ib_mr		*conn_mr;
- 	struct ib_qp		*conn_qp;
- 	struct isert_device	*conn_device;
--	struct work_struct	conn_logout_work;
- 	struct mutex		conn_mutex;
- 	struct completion	conn_wait;
- 	struct completion	conn_wait_comp_err;
+@@ -126,6 +126,7 @@ struct isert_conn {
+ 	char			*login_req_buf;
+ 	char			*login_rsp_buf;
+ 	u64			login_req_dma;
++	int			login_req_len;
+ 	u64			login_rsp_dma;
+ 	unsigned int		conn_rx_desc_head;
+ 	struct iser_rx_desc	*conn_rx_descs;
+@@ -133,6 +134,7 @@ struct isert_conn {
+ 	struct iscsi_conn	*conn;
+ 	struct list_head	conn_accept_node;
+ 	struct completion	conn_login_comp;
++	struct completion	login_req_comp;
+ 	struct iser_tx_desc	conn_login_tx_desc;
+ 	struct rdma_cm_id	*conn_cm_id;
+ 	struct ib_pd		*conn_pd;
 -- 
 2.1.4
 
