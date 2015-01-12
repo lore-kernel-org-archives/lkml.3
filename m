@@ -1,181 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751452AbbALIA0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 03:00:26 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:64645 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751044AbbALIAU (ORCPT
+	id S1751781AbbALIB7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 03:01:59 -0500
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:42499 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052AbbALIBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 03:00:20 -0500
-X-AuditID: cbfee68d-f79296d000004278-e7-54b37f1168ef
-Date: Mon, 12 Jan 2015 08:00:17 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCHv7 03/10] devfreq: event: Add resource-managed function for
- devfreq-event device
-To: =?utf-8?Q?=EC=B5=9C=EC=B0=AC=EC=9A=B0?= <cw00.choi@samsung.com>,
-        "kgene@kernel.org" <kgene@kernel.org>
-Cc: =?utf-8?Q?=EB=B0=95=EA=B2=BD=EB=AF=BC?= <kyungmin.park@samsung.com>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        ABHILASH KESAVAN <a.kesavan@samsung.com>,
-        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        =?utf-8?Q?=EB=8C=80=EC=9D=B8=EA=B8=B0?= <inki.dae@samsung.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20150112075952787@myungjoo.ham
-Msgkey: 20150112075952787@myungjoo.ham
-X-EPLocale: ko_KR.utf-8
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-MLAttribute: 
-X-RootMTR: 20150112075952787@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-X-ConfirmMail: N,general
-Content-type: text/plain; charset=utf-8
-MIME-version: 1.0
-Message-id: <765071676.891461421049614417.JavaMail.weblogic@epmlwas09a>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEIsWRmVeSWpSXmKPExsWyRsSkWFewfnOIwf4vRhaXd81hc2D0+LxJ
-	LoAxissmJTUnsyy1SN8ugStj86UP7AVflCqublvH1MD4R7GLkZNDSEBdYtGSk2wgtoSAicTs
-	zatYIGwxiQv31gPFuYBqljJKzHu3jBmm6M/XOywQiTmMEl9ufWcCSbAIqEr0ztrP2sXIwcEm
-	oCcx83MyiCkskCzx7HQMSIWIQJ7ElbszGEFamQV62CQ6rn5nhjhCSWLNvldgi3kFBCVOznzC
-	AtIrATSyY6YfRFhN4sLk2VB3iktcmHuJHcLmlZjR/hTqZjmJaV/XQJ0pLXF+1gZGmF8Wf38M
-	FeeXOHZ7BxOELSAx9cxBqBotibmXuqHm80msWfiWBaZ+16nlzDC77m+ZC9UrIbG15QkriM0s
-	oCgxpfshO8jJzAKaEut36aP6BMR2l5h/4gU41CQEpnJI/Fv6j3ECo9IsJHWzkIyahTAKWckC
-	RpZVjKKpBckFxUnpRYZ6xYm5xaV56XrJ+bmbGIFJ4fS/Z707GG8fsD7EKMDBqMTDayG1OUSI
-	NbGsuDL3EKMpMI4mMkuJJucDU09eSbyhsZmRhamJqbGRuaWZkjivotTPYCGB9MSS1OzU1ILU
-	ovii0pzU4kOMTBycUg2MDcdN7A+2tYhevFlcZdeW21wUJi8cNlGv8cyurB9TytoPNiuzl38x
-	a5shlnLIgNn+8lz1R5f83/F7b+YKtlrBmiPOf2Kds9QtU/3IW9LrNtiKyesrGlyTsVKozV64
-	/O3DdbOm6V9Ty7U888gza84sty26S7ze/t35c/eiRy/Kl90oWhd+efJvJZbijERDLeai4kQA
-	PZV+8gUDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMKsWRmVeSWpSXmKPExsVy+t/tXl3B+s0hBtf3aFtc3jWHzYHR4/Mm
-	uQDGqDSbjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
-	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWhDcyM9IwM9UyM9Q+NYK0MDAyNToJqEtIzN
-	lz6wF3xRqri6bR1TA+MfxS5GTg4hAXWJRUtOsoHYEgImEn++3mGBsMUkLtxbDxTnAqqZwyjx
-	5dZ3JpAEi4CqRO+s/axdjBwcbAJ6EjM/J4OYwgLJEs9Ox4BUiAjkSVy5O4MRpJVZoIdNouPq
-	d2aIXUoSa/a9ApvPKyAocXLmExaQXgmgkR0z/SDCahIXJs+GOkdc4sLcS+wQNq/EjPanUKfJ
-	SUz7uoYZwpaWOD9rAyPMyYu/P4aK80scu72DCcIWkJh65iBUjZbE3EvdUPP5JNYsfMsCU7/r
-	1HJmmF33t8yF6pWQ2NryhBXEZhZQlJjS/ZAd5GRmAU2J9bv0UX0CYrtLzD/xgmUCo+wsJKlZ
-	SLpnIXQjK1nAyLKKUTS1ILmgOCm9wkSvODG3uDQvXS85P3cTIzgBPVuyg7HhgvUhRgEORiUe
-	XgupzSFCrIllxZW5hxglOJiVRHhdy4BCvCmJlVWpRfnxRaU5qcWHGE2BMTaRWUo0OR+YHPNK
-	4g2NjU3MTEwtTSwMTM2VxHn/n8sNERJITyxJzU5NLUgtgulj4uCUamBkyrq12EFgY80Gxp0N
-	G36p3+hf9HPHFI/ZhyL6lk3jyGn88jDr14OfOW/kGP5ZvJlScMnuZbHB5GSRXf0pga6qtU2z
-	vz2Nq3RjLa0Q/mm1L+Jo7YeVH2xVd1/9ppXy5tUebgdj1Qmpyxhfv/q32/ufQxzrBNHtFyzO
-	fDmbp6Mx9crXqUeXqF7hU2Ipzkg01GIuKk4EAHDOnQVWAwAA
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Mon, 12 Jan 2015 03:01:55 -0500
+Message-ID: <54B37F2B.9050708@hp.com>
+Date: Mon, 12 Jan 2015 16:00:43 +0800
+From: "Li, ZhenHua" <zhen-hual@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: "Li, Zhen-Hua" <zhen-hual@hp.com>
+CC: dwmw2@infradead.org, indou.takao@jp.fujitsu.com, bhe@redhat.com,
+        joro@8bytes.org, vgoyal@redhat.com, dyoung@redhat.com,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, kexec@lists.infradead.org,
+        alex.williamson@redhat.com, ddutile@redhat.com,
+        ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com, doug.hatch@hp.com,
+        jerry.hoemann@hp.com, tom.vaden@hp.com, li.zhang6@hp.com,
+        lisa.mitchell@hp.com, billsumnerlinux@gmail.com, rwright@hp.com
+Subject: Re: [PATCH v8 0/10] iommu/vt-d: Fix intel vt-d faults in kdump kernel
+References: <1421046388-27925-1-git-send-email-zhen-hual@hp.com>
+In-Reply-To: <1421046388-27925-1-git-send-email-zhen-hual@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0C80euR016399
 
->   
->  This patch add the resource-managed function for devfreq-event device as
-> following functions. The devm_devfreq_event_add_edev() manages automatically
-> the memory of devfreq-event device using resource management.
-> - devm_devfreq_event_add_edev()
-> - devm_devfreq_event_remove_edev()
-> 
-> Cc: Myungjoo Ham <myungjoo.ham@samsung.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Comparing to v7, this version adds only a few lines code:
+
+In function copy_page_table,
+
++		__iommu_flush_cache(iommu, phys_to_virt(dma_pte_next),
++				VTD_PAGE_SIZE);
+
+
+On 01/12/2015 03:06 PM, Li, Zhen-Hua wrote:
+> This patchset is an update of Bill Sumner's patchset, implements a fix for:
+> If a kernel boots with intel_iommu=on on a system that supports intel vt-d,
+> when a panic happens, the kdump kernel will boot with these faults:
+>
+>      dmar: DRHD: handling fault status reg 102
+>      dmar: DMAR:[DMA Read] Request device [01:00.0] fault addr fff80000
+>      DMAR:[fault reason 01] Present bit in root entry is clear
+>
+>      dmar: DRHD: handling fault status reg 2
+>      dmar: INTR-REMAP: Request device [[61:00.0] fault index 42
+>      INTR-REMAP:[fault reason 34] Present field in the IRTE entry is clear
+>
+> On some system, the interrupt remapping fault will also happen even if the
+> intel_iommu is not set to on, because the interrupt remapping will be enabled
+> when x2apic is needed by the system.
+>
+> The cause of the DMA fault is described in Bill's original version, and the
+> INTR-Remap fault is caused by a similar reason. In short, the initialization
+> of vt-d drivers causes the in-flight DMA and interrupt requests get wrong
+> response.
+>
+> To fix this problem, we modifies the behaviors of the intel vt-d in the
+> crashdump kernel:
+>
+> For DMA Remapping:
+> 1. To accept the vt-d hardware in an active state,
+> 2. Do not disable and re-enable the translation, keep it enabled.
+> 3. Use the old root entry table, do not rewrite the RTA register.
+> 4. Malloc and use new context entry table and page table, copy data from the
+>     old ones that used by the old kernel.
+> 5. to use different portions of the iova address ranges for the device drivers
+>     in the crashdump kernel than the iova ranges that were in-use at the time
+>     of the panic.
+> 6. After device driver is loaded, when it issues the first dma_map command,
+>     free the dmar_domain structure for this device, and generate a new one, so
+>     that the device can be assigned a new and empty page table.
+> 7. When a new context entry table is generated, we also save its address to
+>     the old root entry table.
+>
+> For Interrupt Remapping:
+> 1. To accept the vt-d hardware in an active state,
+> 2. Do not disable and re-enable the interrupt remapping, keep it enabled.
+> 3. Use the old interrupt remapping table, do not rewrite the IRTA register.
+> 4. When ioapic entry is setup, the interrupt remapping table is changed, and
+>     the updated data will be stored to the old interrupt remapping table.
+>
+> Advantages of this approach:
+> 1. All manipulation of the IO-device is done by the Linux device-driver
+>     for that device.
+> 2. This approach behaves in a manner very similar to operation without an
+>     active iommu.
+> 3. Any activity between the IO-device and its RMRR areas is handled by the
+>     device-driver in the same manner as during a non-kdump boot.
+> 4. If an IO-device has no driver in the kdump kernel, it is simply left alone.
+>     This supports the practice of creating a special kdump kernel without
+>     drivers for any devices that are not required for taking a crashdump.
+> 5. Minimal code-changes among the existing mainline intel vt-d code.
+>
+> Summary of changes in this patch set:
+> 1. Added some useful function for root entry table in code intel-iommu.c
+> 2. Added new members to struct root_entry and struct irte;
+> 3. Functions to load old root entry table to iommu->root_entry from the memory
+>     of old kernel.
+> 4. Functions to malloc new context entry table and page table and copy the data
+>     from the old ones to the malloced new ones.
+> 5. Functions to enable support for DMA remapping in kdump kernel.
+> 6. Functions to load old irte data from the old kernel to the kdump kernel.
+> 7. Some code changes that support other behaviours that have been listed.
+> 8. In the new functions, use physical address as "unsigned long" type, not
+>     pointers.
+>
+> Original version by Bill Sumner:
+>      https://lkml.org/lkml/2014/1/10/518
+>      https://lkml.org/lkml/2014/4/15/716
+>      https://lkml.org/lkml/2014/4/24/836
+>
+> Zhenhua's updates:
+>      https://lkml.org/lkml/2014/10/21/134
+>      https://lkml.org/lkml/2014/12/15/121
+>      https://lkml.org/lkml/2014/12/22/53
+>      https://lkml.org/lkml/2015/1/6/1166
+>
+> Changelog[v8]:
+>      1. Add a missing __iommu_flush_cache in function copy_page_table.
+>
+> Changelog[v7]:
+>      1. Use __iommu_flush_cache to flush the data to hardware.
+>
+> Changelog[v6]:
+>      1. Use "unsigned long" as type of physical address.
+>      2. Use new function unmap_device_dma to unmap the old dma.
+>      3. Some small incorrect bits order for aw shift.
+>
+> Changelog[v5]:
+>      1. Do not disable and re-enable traslation and interrupt remapping.
+>      2. Use old root entry table.
+>      3. Use old interrupt remapping table.
+>      4. New functions to copy data from old kernel, and save to old kernel mem.
+>      5. New functions to save updated root entry table and irte table.
+>      6. Use intel_unmap to unmap the old dma;
+>      7. Allocate new pages while driver is being loaded.
+>
+> Changelog[v4]:
+>      1. Cut off the patches that move some defines and functions to new files.
+>      2. Reduce the numbers of patches to five, make it more easier to read.
+>      3. Changed the name of functions, make them consistent with current context
+>         get/set functions.
+>      4. Add change to function __iommu_attach_domain.
+>
+> Changelog[v3]:
+>      1. Commented-out "#define DEBUG 1" to eliminate debug messages.
+>      2. Updated the comments about changes in each version.
+>      3. Fixed: one-line added to Copy-Translations patch to initialize the iovad
+>            struct as recommended by Baoquan He [bhe@redhat.com]
+>            init_iova_domain(&domain->iovad, DMA_32BIT_PFN);
+>
+> Changelog[v2]:
+>      The following series implements a fix for:
+>      A kdump problem about DMA that has been discussed for a long time. That is,
+>      when a kernel panics and boots into the kdump kernel, DMA started by the
+>      panicked kernel is not stopped before the kdump kernel is booted and the
+>      kdump kernel disables the IOMMU while this DMA continues.  This causes the
+>      IOMMU to stop translating the DMA addresses as IOVAs and begin to treat
+>      them as physical memory addresses -- which causes the DMA to either:
+>          (1) generate DMAR errors or
+>          (2) generate PCI SERR errors or
+>          (3) transfer data to or from incorrect areas of memory. Often this
+>              causes the dump to fail.
+>
+> Changelog[v1]:
+>      The original version.
+>
+> Changed in this version:
+> 1. Do not disable and re-enable traslation and interrupt remapping.
+> 2. Use old root entry table.
+> 3. Use old interrupt remapping table.
+> 4. Use "unsigned long" as physical address.
+> 5. Use intel_unmap to unmap the old dma;
+>
+> Baoquan He <bhe@redhat.com> helps testing this patchset.
+> Takao Indoh <indou.takao@jp.fujitsu.com> gives valuable suggestions.
+>
+>    iommu/vt-d: Update iommu_attach_domain() and its callers
+>    iommu/vt-d: Items required for kdump
+>    iommu/vt-d: Add domain-id functions
+>    iommu/vt-d: functions to copy data from old mem
+>    iommu/vt-d: Add functions to load and save old re
+>    iommu/vt-d: datatypes and functions used for kdump
+>    iommu/vt-d: enable kdump support in iommu module
+>    iommu/vt-d: assign new page table for dma_map
+>    iommu/vt-d: Copy functions for irte
+>    iommu/vt-d: Use old irte in kdump kernel
+>
+> Signed-off-by: Bill Sumner <billsumnerlinux@gmail.com>
+> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
+> Tested-by: Baoquan He <bhe@redhat.com>
 > ---
->  drivers/devfreq/devfreq-event.c | 63 +++++++++++++++++++++++++++++++++++++++++
->  include/linux/devfreq-event.h   | 16 +++++++++++
->  2 files changed, 79 insertions(+)
-> 
-> diff --git a/drivers/devfreq/devfreq-event.c b/drivers/devfreq/devfreq-event.c
-> index 64c1764..5301e2b 100644
-> --- a/drivers/devfreq/devfreq-event.c
-> +++ b/drivers/devfreq/devfreq-event.c
-> @@ -451,6 +451,69 @@ int devfreq_event_remove_edev(struct devfreq_event_dev *edev)
->  }
->  EXPORT_SYMBOL_GPL(devfreq_event_remove_edev);
->  
-> +static int devm_devfreq_event_match(struct device *dev, void *res, void *data)
-> +{
-> +	struct devfreq_event_dev **r = res;
-> +
-> +	if (WARN_ON(!r || !*r))
-> +		return 0;
-> +
-> +	return *r == data;
-> +}
-> +
-> +static void devm_devfreq_event_release(struct device *dev, void *res)
-> +{
-> +	devfreq_event_remove_edev(*(struct devfreq_event_dev **)res);
-> +}
+>   drivers/iommu/intel-iommu.c         | 1054 +++++++++++++++++++++++++++++++++--
+>   drivers/iommu/intel_irq_remapping.c |  104 +++-
+>   include/linux/intel-iommu.h         |   18 +
+>   3 files changed, 1134 insertions(+), 42 deletions(-)
+>
 
-Isn't dev-free functions supposed to check if it is already freed or not?
-
-> +
-> +/**
-> + * devm_devfreq_event_add_edev() - Resource-managed devfreq_event_add_edev()
-> + * @dev		: the device owning the devfreq-event device being created
-> + * @desc	: the devfreq-event device's decriptor which include essential
-> + *		  data for devfreq-event device.
-> + *
-> + * Note that this function manages automatically the memory of devfreq-event
-> + * device using device resource management and simplify the free operation
-> + * for memory of devfreq-event device.
-> + */
-> +struct devfreq_event_dev *devm_devfreq_event_add_edev(struct device *dev,
-> +						struct devfreq_event_desc *desc)
-> +{
-> +	struct devfreq_event_dev **ptr, *edev;
-> +
-> +	ptr = devres_alloc(devm_devfreq_event_release, sizeof(*ptr), GFP_KERNEL);
-> +	if (!ptr)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	edev = devfreq_event_add_edev(dev, desc);
-> +	if (IS_ERR(edev)) {
-> +		devres_free(ptr);
-> +		return ERR_PTR(-ENOMEM);
-> +	}
-> +
-> +	*ptr = edev;
-> +	devres_add(dev, ptr);
-> +
-> +	return edev;
-> +}
-> +EXPORT_SYMBOL(devm_devfreq_event_add_edev);
-
-You are using GPL Symbol in this function (devres_alloc).
-
-> +
-> +/**
-> + * devm_devfreq_event_remove_edev()- Resource-managed devfreq_event_remove_edev()
-> + * @dev		: the device owning the devfreq-event device being created
-> + * @edev	: the devfreq-event device
-> + *
-> + * Note that this function manages automatically the memory of devfreq-event
-> + * device using device resource management.
-> + */
-> +void devm_devfreq_event_remove_edev(struct device *dev,
-> +				struct devfreq_event_dev *edev)
-> +{
-> +	WARN_ON(devres_release(dev, devm_devfreq_event_release,
-> +			       devm_devfreq_event_match, edev));
-> +}
-> +EXPORT_SYMBOL(devm_devfreq_event_remove_edev);
-
-Here you are using GPL symbol as well (devres_release).
-
-[]
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
