@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751011AbbALEvV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 23:51:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41406 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750724AbbALEvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 23:51:21 -0500
-Message-ID: <54B3528A.6070606@redhat.com>
-Date: Mon, 12 Jan 2015 10:20:18 +0530
-From: Pratyush Anand <panand@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751240AbbALE4o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 23:56:44 -0500
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:34719 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015AbbALE4m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jan 2015 23:56:42 -0500
+Date: Sun, 11 Jan 2015 20:56:38 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Julian Brost <linux-kernel@0x4a42.net>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, corbet@lwn.net,
+        tomas.winkler@intel.com, linux-mei@linux.intel.com,
+        linux-kernel@i4.cs.fau.de, fabian.hofmann@fau.de
+Subject: Re: [PATCH 4/4] Documentation/misc-devices/mei: Fix indentation of
+ embedded code.
+Message-ID: <20150112045638.GA19607@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Julian Brost <linux-kernel@0x4a42.net>, linux-doc@vger.kernel.org,
+	linux-kernel@vger.kernel.org, corbet@lwn.net,
+	tomas.winkler@intel.com, linux-mei@linux.intel.com,
+	linux-kernel@i4.cs.fau.de, fabian.hofmann@fau.de
+References: <1421020689-28332-1-git-send-email-linux-kernel@0x4a42.net>
+ <1421020689-28332-5-git-send-email-linux-kernel@0x4a42.net>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Will Deacon <will.deacon@arm.com>, "tixy@linaro.org" <tixy@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "ananth@in.ibm.com" <ananth@in.ibm.com>,
-        "sandeepa.prabhu@linaro.org" <sandeepa.prabhu@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "anil.s.keshavamurthy@intel.com" <anil.s.keshavamurthy@intel.com>,
-        "masami.hiramatsu.pt@hitachi.com" <masami.hiramatsu.pt@hitachi.com>,
-        "wcohen@redhat.com" <wcohen@redhat.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC 8/8] ARM64: Add uprobe support
-References: <cover.1420038188.git.panand@redhat.com> <0694af6935f9c6873ef8d25ad51630a40a74a116.1420038188.git.panand@redhat.com> <20150108170324.GT11583@arm.com> <54AEC470.50509@redhat.com> <20150109174524.GA13161@redhat.com>
-In-Reply-To: <20150109174524.GA13161@redhat.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421020689-28332-5-git-send-email-linux-kernel@0x4a42.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Julian,
 
+On Mon, Jan 12, 2015 at 12:58:09AM +0100, Julian Brost wrote:
+[...]
+>  static struct mei_cl_driver contact_driver = {
+> -       .id_table = contact_mei_tbl,
+> -       .name = CONTACT_DRIVER_NAME,
+> +	.id_table = contact_mei_tbl,
+> +	.name = CONTACT_DRIVER_NAME,
+>  
+> -       .probe = contact_probe,
+> -       .remove = contact_remove,
+> +	.probe = contact_probe,
+> +	.remove = contact_remove,
+>  };
+>  
 
-On Friday 09 January 2015 11:15 PM, Oleg Nesterov wrote:
-> On 01/08, Pratyush Anand wrote:
->>
->> On Thursday 08 January 2015 10:33 PM, Will Deacon wrote:
->>>
->>> I'm assuming that means you don't support compat (AArch32) tasks with this?
->>
->> Hummm.. Yes, compat not yet supported.
->>
->> I will come back on this.
->
-> I obviously do not know how difficult is to support the compat tasks, and
-> in any case I leave this to you and Will.
->
+Looking at this file the majority of the code is formatted at the left
+with tabs.  So I think your change is in agreement with the current
+design.
 
-I think most of the stuff can be picked from arch/arm. But I do not have 
-a platform to test this feature.So, I will not be taking up as of now.
+[...]
 
-~Pratyush
+Reviewed-by: Jeremiah Mahler <jmmahler@gmail.com>
+
+-- 
+- Jeremiah Mahler
