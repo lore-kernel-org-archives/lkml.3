@@ -1,122 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbbALHL6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 02:11:58 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:53445 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752168AbbALHLx (ORCPT
+	id S1751492AbbALHNA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 02:13:00 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:14823 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010AbbALHM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 02:11:53 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-a1-54b373b87ca9
+	Mon, 12 Jan 2015 02:12:58 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-88-54b373f94482
 From: Chao Yu <chao2.yu@samsung.com>
 To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
 Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [f2fs-dev][RFC PATCH 03/10] f2fs: introduce f2fs_map_bh to clean codes
- of check_extent_cache
-Date: Mon, 12 Jan 2015 15:11:04 +0800
-Message-id: <000701d02e37$0b11cfa0$21356ee0$@samsung.com>
+Subject: [f2fs-dev][RFC PATCH 04/10] f2fs: introduce universal lookup/update
+ interface for extent cache
+Date: Mon, 12 Jan 2015 15:12:13 +0800
+Message-id: <000801d02e37$31be79f0$953b6dd0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: AdAsy6dMiZu8xZwcSMe5p1AFP002UA==
+Thread-index: AdAuG5IN4RsD+ZeHQlWf6j/t9nT2ng==
 Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jAd0dxZtDDH63ilpc29fIZPFk/Sxm
-	i0uL3C0u75rD5sDisWlVJ5vH7gWfmTz6tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoEr48XNHraC
-	HpGK56ueMTYwzhHoYuTkkBAwkXi+5BgThC0mceHeerYuRi4OIYFFjBLfJ8xkhXB+MEpcXvOC
-	FaSKTUBFYnnHf7AOEQEviUn7T7CA2MwCHhKNHd/BaoQF0iWuvvvABmKzCKhKHF55lrmLkYOD
-	V8BS4tbKQpAwr4CgxI/J96BatSTW7zzOBGHLS2xe85YZ4iAFiR1nXzNCrNKTOLPjPhtEjbjE
-	xiO3WCYwCsxCMmoWklGzkIyahaRlASPLKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgkH4m
-	vYNxVYPFIUYBDkYlHl4Lqc0hQqyJZcWVuYcYJTiYlUR4w6yBQrwpiZVVqUX58UWlOanFhxil
-	OViUxHmV7NtChATSE0tSs1NTC1KLYLJMHJxSDYyOq0ru86+crNuzKOtox6snOxeevzuRa/qu
-	F/LbZnDcmdKQ6XbNRunor2e/s2/O4YyrbTte5L2kczJny7K4Tt+nLy76am9c4ru98SNfjL5Y
-	i7gvX3je553tHs5KNrf3z2xfeNil1iJB0T17W9HzmHMrn/Kc1MlLfKnYMXFXe+iqgMuSr86V
-	Rj9UYinOSDTUYi4qTgQAxGoY92UCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jQd2fxZtDDP7fkLS4tq+RyeLJ+lnM
+	FpcWuVtc3jWHzYHFY9OqTjaP3Qs+M3n0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxulNEQU9
+	ZhXdO9uZGxgn6XQxcnJICJhILGhYwwxhi0lcuLeerYuRi0NIYDqjxN+1t5khnB+MEu+v3GAE
+	qWITUJFY3vGfCcQWEfCSmLT/BAuIzSzgIdHY8Z0VxBYWyJRY/mQDWJxFQFXi0u+TYL28ApYS
+	P+Y9g7IFJX5MvgfVqyWxfudxJghbXmLzmrdQFylI7Dj7mhFil57E5dezoWrEJTYeucUygVFg
+	FpJRs5CMmoVk1CwkLQsYWVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBIf0M+kdjKsaLA4x
+	CnAwKvHwWkhtDhFiTSwrrsw9xCjBwawkwhtmDRTiTUmsrEotyo8vKs1JLT7EKM3BoiTOq2Tf
+	FiIkkJ5YkpqdmlqQWgSTZeLglGpg9FtdfHHrZHf91ATFk0WK2h/2dbZUcjgJGLTrzdltfzUu
+	5fl2KxX+Gm/mTwJ35psa85adfPbo91Rpt+P7H4THr/i6L8PJNOObx+0lsU+WSS7Sbi5N3XSk
+	/cTvRv0PGjdObvDl8Pnc3dxene+1qPP5/TvMaVMbHA8/+sBUoHD5z/L/RoK3hDjvKrEUZyQa
+	ajEXFScCALW+FTNlAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces f2fs_map_bh to clean codes of check_extent_cache.
+In this patch, we do these jobs:
+1. rename {check,update}_extent_cache to f2fs_{lookup,update}_extent_info;
+2. introduce universal lookup/update interface of extent cache:
+f2fs_{lookup,update}_extent_cache including above two real functions, then
+export them to function callers.
+
+So after above cleanup, we can add new rb-tree based extent cache into exported
+interfaces.
 
 Signed-off-by: Chao Yu <chao2.yu@samsung.com>
 ---
- fs/f2fs/data.c | 42 ++++++++++++++++++++++++++++--------------
- 1 file changed, 28 insertions(+), 14 deletions(-)
+ fs/f2fs/data.c     | 66 +++++++++++++++++++++++++++++++++---------------------
+ fs/f2fs/f2fs.h     |  2 +-
+ fs/f2fs/file.c     |  2 +-
+ fs/f2fs/inline.c   |  2 +-
+ fs/f2fs/recovery.c |  2 +-
+ 5 files changed, 44 insertions(+), 30 deletions(-)
 
 diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index 935a23b..5a3e489 100644
+index 5a3e489..4f5b871e 100644
 --- a/fs/f2fs/data.c
 +++ b/fs/f2fs/data.c
-@@ -248,8 +248,30 @@ int f2fs_reserve_block(struct dnode_of_data *dn, pgoff_t index)
- 	return err;
+@@ -270,20 +270,20 @@ static void f2fs_map_bh(struct inode *inode, pgoff_t pgofs,
+ 		bh_result->b_size = UINT_MAX;
  }
  
-+static void f2fs_map_bh(struct inode *inode, pgoff_t pgofs,
-+			struct extent_info *ei, struct buffer_head *bh_result)
-+{
-+	unsigned int blkbits = inode->i_sb->s_blocksize_bits;
-+	pgoff_t start_fofs, end_fofs;
-+	block_t start_blkaddr;
-+	size_t count;
-+
-+	start_fofs = ei->fofs;
-+	end_fofs = ei->fofs + ei->len - 1;
-+	start_blkaddr = ei->blk;
-+
-+	clear_buffer_new(bh_result);
-+	map_bh(bh_result, inode->i_sb,
-+			start_blkaddr + pgofs - start_fofs);
-+	count = end_fofs - pgofs + 1;
-+	if (count < (UINT_MAX >> blkbits))
-+		bh_result->b_size = (count << blkbits);
-+	else
-+		bh_result->b_size = UINT_MAX;
-+}
-+
- static int check_extent_cache(struct inode *inode, pgoff_t pgofs,
--					struct buffer_head *bh_result)
-+					struct extent_info *ei)
+-static int check_extent_cache(struct inode *inode, pgoff_t pgofs,
+-					struct extent_info *ei)
++static bool f2fs_lookup_extent_info(struct inode *inode, pgoff_t pgofs,
++							struct extent_info *ei)
  {
  	struct f2fs_inode_info *fi = F2FS_I(inode);
  	pgoff_t start_fofs, end_fofs;
-@@ -271,18 +293,7 @@ static int check_extent_cache(struct inode *inode, pgoff_t pgofs,
- 	start_blkaddr = fi->ext.blk;
+ 	block_t start_blkaddr;
  
- 	if (pgofs >= start_fofs && pgofs <= end_fofs) {
--		unsigned int blkbits = inode->i_sb->s_blocksize_bits;
--		size_t count;
--
--		clear_buffer_new(bh_result);
--		map_bh(bh_result, inode->i_sb,
--				start_blkaddr + pgofs - start_fofs);
--		count = end_fofs - pgofs + 1;
--		if (count < (UINT_MAX >> blkbits))
--			bh_result->b_size = (count << blkbits);
--		else
--			bh_result->b_size = UINT_MAX;
--
-+		*ei = fi->ext;
+ 	if (is_inode_flag_set(fi, FI_NO_EXTENT))
+-		return 0;
++		return false;
+ 
+ 	read_lock(&fi->ext_lock);
+ 	if (fi->ext.len == 0) {
+ 		read_unlock(&fi->ext_lock);
+-		return 0;
++		return false;
+ 	}
+ 
+ 	stat_inc_total_hit(inode->i_sb);
+@@ -296,29 +296,22 @@ static int check_extent_cache(struct inode *inode, pgoff_t pgofs,
+ 		*ei = fi->ext;
  		stat_inc_read_hit(inode->i_sb);
  		read_unlock(&fi->ext_lock);
- 		return 1;
-@@ -608,13 +619,16 @@ static int __get_data_block(struct inode *inode, sector_t iblock,
- 	int mode = create ? ALLOC_NODE : LOOKUP_NODE_RA;
- 	pgoff_t pgofs, end_offset;
- 	int err = 0, ofs = 1;
-+	struct extent_info ei;
- 	bool allocated = false;
+-		return 1;
++		return true;
+ 	}
+ 	read_unlock(&fi->ext_lock);
+-	return 0;
++	return false;
+ }
  
+-void update_extent_cache(struct dnode_of_data *dn)
++static bool f2fs_update_extent_info(struct inode *inode, pgoff_t fofs,
++								block_t blkaddr)
+ {
+-	struct f2fs_inode_info *fi = F2FS_I(dn->inode);
+-	pgoff_t fofs, start_fofs, end_fofs;
++	struct f2fs_inode_info *fi = F2FS_I(inode);
++	pgoff_t start_fofs, end_fofs;
+ 	block_t start_blkaddr, end_blkaddr;
+ 	int need_update = true;
+ 
+-	f2fs_bug_on(F2FS_I_SB(dn->inode), dn->data_blkaddr == NEW_ADDR);
+-
+-	/* Update the page address in the parent node */
+-	__set_data_blkaddr(dn);
+-
+ 	if (is_inode_flag_set(fi, FI_NO_EXTENT))
+-		return;
+-
+-	fofs = start_bidx_of_node(ofs_of_node(dn->node_page), fi) +
+-							dn->ofs_in_node;
++		return false;
+ 
+ 	write_lock(&fi->ext_lock);
+ 
+@@ -333,16 +326,16 @@ void update_extent_cache(struct dnode_of_data *dn)
+ 
+ 	/* Initial extent */
+ 	if (fi->ext.len == 0) {
+-		if (dn->data_blkaddr != NULL_ADDR) {
++		if (blkaddr != NULL_ADDR) {
+ 			fi->ext.fofs = fofs;
+-			fi->ext.blk = dn->data_blkaddr;
++			fi->ext.blk = blkaddr;
+ 			fi->ext.len = 1;
+ 		}
+ 		goto end_update;
+ 	}
+ 
+ 	/* Front merge */
+-	if (fofs == start_fofs - 1 && dn->data_blkaddr == start_blkaddr - 1) {
++	if (fofs == start_fofs - 1 && blkaddr == start_blkaddr - 1) {
+ 		fi->ext.fofs--;
+ 		fi->ext.blk--;
+ 		fi->ext.len++;
+@@ -350,7 +343,7 @@ void update_extent_cache(struct dnode_of_data *dn)
+ 	}
+ 
+ 	/* Back merge */
+-	if (fofs == end_fofs + 1 && dn->data_blkaddr == end_blkaddr + 1) {
++	if (fofs == end_fofs + 1 && blkaddr == end_blkaddr + 1) {
+ 		fi->ext.len++;
+ 		goto end_update;
+ 	}
+@@ -377,9 +370,30 @@ void update_extent_cache(struct dnode_of_data *dn)
+ 	}
+ end_update:
+ 	write_unlock(&fi->ext_lock);
+-	if (need_update)
++	return need_update;
++}
++
++static bool f2fs_lookup_extent_cache(struct inode *inode, pgoff_t pgofs,
++							struct extent_info *ei)
++{
++	return f2fs_lookup_extent_info(inode, pgofs, ei);
++}
++
++void f2fs_update_extent_cache(struct dnode_of_data *dn)
++{
++	struct f2fs_inode_info *fi = F2FS_I(dn->inode);
++	pgoff_t fofs;
++
++	f2fs_bug_on(F2FS_I_SB(dn->inode), dn->data_blkaddr == NEW_ADDR);
++
++	/* Update the page address in the parent node */
++	__set_data_blkaddr(dn);
++
++	fofs = start_bidx_of_node(ofs_of_node(dn->node_page), fi) +
++							dn->ofs_in_node;
++
++	if (f2fs_update_extent_info(dn->inode, fofs, dn->data_blkaddr))
+ 		sync_inode_page(dn);
+-	return;
+ }
+ 
+ struct page *find_data_page(struct inode *inode, pgoff_t index, bool sync)
+@@ -625,7 +639,7 @@ static int __get_data_block(struct inode *inode, sector_t iblock,
  	/* Get the page offset from the block offset(iblock) */
  	pgofs =	(pgoff_t)(iblock >> (PAGE_CACHE_SHIFT - blkbits));
  
--	if (check_extent_cache(inode, pgofs, bh_result))
-+	if (check_extent_cache(inode, pgofs, &ei)) {
-+		f2fs_map_bh(inode, pgofs, &ei, bh_result);
+-	if (check_extent_cache(inode, pgofs, &ei)) {
++	if (f2fs_lookup_extent_cache(inode, pgofs, &ei)) {
+ 		f2fs_map_bh(inode, pgofs, &ei, bh_result);
  		goto out;
-+	}
+ 	}
+@@ -792,7 +806,7 @@ int do_write_data_page(struct page *page, struct f2fs_io_info *fio)
+ 		set_inode_flag(F2FS_I(inode), FI_UPDATE_WRITE);
+ 	} else {
+ 		write_data_page(page, &dn, fio);
+-		update_extent_cache(&dn);
++		f2fs_update_extent_cache(&dn);
+ 		set_inode_flag(F2FS_I(inode), FI_APPEND_WRITE);
+ 	}
+ out_writepage:
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index a74ad85..eb9ffae 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -1475,7 +1475,7 @@ void f2fs_submit_page_mbio(struct f2fs_sb_info *, struct page *,
+ 						struct f2fs_io_info *);
+ int reserve_new_block(struct dnode_of_data *);
+ int f2fs_reserve_block(struct dnode_of_data *, pgoff_t);
+-void update_extent_cache(struct dnode_of_data *);
++void f2fs_update_extent_cache(struct dnode_of_data *);
+ struct page *find_data_page(struct inode *, pgoff_t, bool);
+ struct page *get_lock_data_page(struct inode *, pgoff_t);
+ struct page *get_new_data_page(struct inode *, struct page *, pgoff_t, bool);
+diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+index 5df3367..0dcd9fb 100644
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@ -430,7 +430,7 @@ int truncate_data_blocks_range(struct dnode_of_data *dn, int count)
+ 			continue;
  
- 	if (create) {
- 		f2fs_balance_fs(F2FS_I_SB(inode));
+ 		dn->data_blkaddr = NULL_ADDR;
+-		update_extent_cache(dn);
++		f2fs_update_extent_cache(dn);
+ 		invalidate_blocks(sbi, blkaddr);
+ 		nr_free++;
+ 	}
+diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
+index fa2aa2f..9f6c745 100644
+--- a/fs/f2fs/inline.c
++++ b/fs/f2fs/inline.c
+@@ -116,7 +116,7 @@ no_update:
+ 	set_page_writeback(page);
+ 	fio.blk_addr = dn->data_blkaddr;
+ 	write_data_page(page, dn, &fio);
+-	update_extent_cache(dn);
++	f2fs_update_extent_cache(dn);
+ 	f2fs_wait_on_page_writeback(page, DATA);
+ 	if (dirty)
+ 		inode_dec_dirty_pages(dn->inode);
+diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+index c4211a5..a7adbdb 100644
+--- a/fs/f2fs/recovery.c
++++ b/fs/f2fs/recovery.c
+@@ -397,7 +397,7 @@ static int do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
+ 			/* write dummy data page */
+ 			recover_data_page(sbi, NULL, &sum, src, dest);
+ 			dn.data_blkaddr = dest;
+-			update_extent_cache(&dn);
++			f2fs_update_extent_cache(&dn);
+ 			recovered++;
+ 		}
+ 		dn.ofs_in_node++;
 -- 
 2.2.1
 
