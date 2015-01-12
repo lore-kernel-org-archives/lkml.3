@@ -1,76 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943AbbALKIa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 05:08:30 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:53501 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752911AbbALKI1 (ORCPT
+	id S1753029AbbALKJE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 05:09:04 -0500
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:33506 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752989AbbALKI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 05:08:27 -0500
-MIME-Version: 1.0
-In-Reply-To: <1418357907-4215-1-git-send-email-harinik@xilinx.com>
-References: <1418357907-4215-1-git-send-email-harinik@xilinx.com>
-Date: Mon, 12 Jan 2015 15:38:25 +0530
-Message-ID: <CAFcVECJ9-aTu=FFNr-yctHfQQEJx1TL2R-uRuqszaSvJk-yLTA@mail.gmail.com>
-Subject: Re: [PATCH v5 0/2] Cadence I2C driver fixes
-From: Harini Katakam <harinikatakamlinux@gmail.com>
-To: "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        Mark Rutland <mark.rutland@arm.com>
-Cc: Michal Simek <michal.simek@xilinx.com>,
-        =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+	Mon, 12 Jan 2015 05:08:59 -0500
+X-Originating-IP: 50.43.58.154
+Date: Mon, 12 Jan 2015 02:08:37 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Fam Zheng <famz@redhat.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, Miklos Szeredi <mszeredi@suse.cz>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Harini Katakam <harinikatakamlinux@gmail.com>,
-        Harini Katakam <harinik@xilinx.com>
-Content-Type: text/plain; charset=UTF-8
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Juri Lelli <juri.lelli@gmail.com>, Zach Brown <zab@zabbo.net>,
+        David Drysdale <drysdale@google.com>,
+        Kees Cook <keescook@chromium.org>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Dario Faggioli <raistlin@linux.it>, "Theodore Ts'o" <tytso@mit.edu>,
+        Peter Zijlstra <peterz@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Fabian Frederick <fabf@skynet.be>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Subject: Re: [PATCH 0/3] epoll: Add epoll_pwait1 syscall
+Message-ID: <20150112100836.GA13150@thin>
+References: <1420705550-24245-1-git-send-email-famz@redhat.com>
+ <1420708372.18399.15.camel@suse.cz>
+ <CALCETrVyPij1Zxwmw7p06UrZjoyYDXqEjmxyQ-KJ8Y7dx7mL3g@mail.gmail.com>
+ <20150109011608.GA2924@fam-t430.nay.redhat.com>
+ <CALCETrWHGwPw2cH3RruaCFKj2ND8PdEbdWjTi4OJ8m2eF9fpLw@mail.gmail.com>
+ <20150109015248.GA5034@fam-t430.nay.redhat.com>
+ <CALCETrU+MKWCh1FBqvuf3MGo3dTcmdktcM4aVZZGGUAmDNoWtg@mail.gmail.com>
+ <20150109044908.GA10966@fam-t430.nay.redhat.com>
+ <20150109052129.GA6831@thin>
+ <20150112082400.GA21123@fam-t430.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150112082400.GA21123@fam-t430.nay.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Jan 12, 2015 at 04:24:00PM +0800, Fam Zheng wrote:
+> On Thu, 01/08 21:21, Josh Triplett wrote:
+> > On Fri, Jan 09, 2015 at 12:49:08PM +0800, Fam Zheng wrote:
+> > > On Thu, 01/08 18:24, Andy Lutomirski wrote:
+> > > > On Thu, Jan 8, 2015 at 5:52 PM, Fam Zheng <famz@redhat.com> wrote:
+> > > > > On Thu, 01/08 17:28, Andy Lutomirski wrote:
+> > > > >> On Thu, Jan 8, 2015 at 5:25 PM, Fam Zheng <famz@redhat.com> wrote:
+> > > > >> > On Thu, 01/08 09:57, Andy Lutomirski wrote:
+> > > > >> >> I'd like to see a more ambitious change, since the timer isn't the
+> > > > >> >> only problem like this.  Specifically, I'd like a syscall that does a
+> > > > >> >> list of epoll-related things and then waits.  The list of things could
+> > > > >> >> include, at least:
+> > > > >> >>
+> > > > >> >>  - EPOLL_CTL_MOD actions: level-triggered epoll users are likely to
+> > > > >> >> want to turn on and off their requests for events on a somewhat
+> > > > >> >> regular basis.
+> > > > >> >
+> > > > >> > This sounds good to me.
+> > > > >> >
+> > > > >> >>
+> > > > >> >>  - timerfd_settime actions: this allows a single syscall to wait and
+> > > > >> >> adjust *both* monotonic and real-time wakeups.
+> > > > >> >
+> > > > >> > I'm not sure, doesn't this break orthogonality between epoll and timerfd?
+> > > > >>
+> > > > >> Yes.  It's not very elegant, and more elegant ideas are welcome.
+> > > > >
+> > > > > What is the purpose of embedding timerfd operation here? Modifying timerfd
+> > > > > for each poll doesn't sound a common pattern to me.
+> > > > 
+> > > > Setting a timeout is definitely a common pattern, hence this thread.
+> > > > But the current timeout interface sucks, and people should really use
+> > > > absolute time.  (My epoll software uses absolute time.)  But then
+> > > > users need to decide whether to have their timeout based on the
+> > > > monotonic clock or the realtime clock (or something else entirely).
+> > > > Some bigger programs may want both -- they may have internal events
+> > > > queued for certain times and for certain timeouts, and those should
+> > > > use realtime and monotonic respectively.  Heck, users may also want
+> > > > separate slack values on those.
+> > > > 
+> > > > Timerfd is the only thing we have right now that is anywhere near
+> > > > flexible enough.  Obviously if epoll became fancy enough, then we
+> > > > could do away with the timerfd entirely here.
+> > > > 
+> > > > >
+> > > > >>
+> > > > >> >
+> > > > >> >>
+> > > > >> >> Would this make sense?  It could look like:
+> > > > >> >>
+> > > > >> >> int epoll_mod_and_pwait(int epfd,
+> > > > >> >>   struct epoll_event *events, int maxevents,
+> > > > >> >>   struct epoll_command *commands, int ncommands,
+> > > > >> >>   const sigset_t *sigmask);
+> > > > >> >
+> > > > >> > What about flags?
+> > > > >> >
+> > > > >>
+> > > > >> No room.  Maybe it should just be a struct for everything instead of
+> > > > >> separate args.
+> > > > >
+> > > > > Also no room for timeout. A single struct sounds the only way to go.
+> > > > 
+> > > > That's what timerfd is for.  I think it would be a bit weird to
+> > > > support "timeout" and detailed timerfd control.
+> > > 
+> > > I see what you mean. Thanks.
+> > > 
+> > > I still don't like hooking timerfd in the interface. Besides the unclean
+> > > interface, it also feels cubersome and overkill to let users setup and add a
+> > > dedicated timerfd to implement timeout.
+> > > 
+> > > How about this:
+> > > 
+> > > int epoll_mod_wait(int epfd, struct epoll_mod_wait_data *data);
+> > > 
+> > > struct epoll_mod_wait_data {
+> > > 	struct epoll_event *events;
+> > > 	int maxevents;
+> > > 	struct epoll_mod_cmd {
+> > > 		int op,
+> > > 		int fd;
+> > > 		void *data;
+> > > 	} *cmds;
+> > > 	int ncmds;
+> > > 	int flags;
+> > > 	sigset_t *sigmask;
+> > > };
+> > > 
+> > > Commands ops are:
+> > > 
+> > > 	EPOLL_CTL_ADD
+> > > 		@fd is the fd to modify; @data is epoll_event.
+> > > 	EPOLL_CTL_MOD
+> > > 		@fd is the fd to modify; @data is epoll_event.
+> > > 	EPOLL_CTL_DEL
+> > > 		@fd is the fd to modify; @data is epoll_event.
+> > > 
+> > > 	EPOLL_CTL_SET_TIMEOUT
+> > > 		@fd is ignored, @data is timespec.
+> > > 		Clock type and relative/absolute are selected by flags as below.
+> > > 
+> > > Flags are given to override timeout defaults:
+> > > 	EPOLL_FL_MONOTONIC_CLOCK
+> > > 		If set, don't use realtime clock, use monotonic clock.
+> > > 	EPOLL_FL_ABSOLUTE_TIMEOUT
+> > > 		If set, don't use relative timeout, use absolute timeout.
+> > 
+> > I'd suggest using an "int clockid" field instead, like timerfd_settime;
+> > even if it only accepts CLOCK_REALTIME and CLOCK_MONOTONIC, if it needs
+> > extending in the future, it'd be painful to have to remap new CLOCK_*
+> > constants into the EPOLL_FL_* namespace.  (I do think dropping timeouts
+> > in favor of timerfds makes things more nicely orthogonal, but epoll_wait
+> > already has a timeout parameter, so *shrug*.)
+> > 
+> > Also, I think that structure has too many levels of indirection; it'd
+> > produce many unnecessary cache misses; considering you're trying to
+> > eliminate the overhead of one or two extra syscalls, you don't want to
+> > introduce a pile of unnecessary cache misses in the processes.  I'd
+> > suggest inlining cmds as an array at the end of the structure, and
+> > turning "void *data" into an inline epoll_event.  (Or, you could use
+> > "events" as an in/out parameter.)
+> > 
+> > You could drop EPOLL_CTL_SET_TIMEOUT, and just include a clockid and
+> > timespec directly in the top-level structure.
+> > 
+> > And I'd suggest either making flags a top-level parameter or putting it
+> > at the start of the structure, to make future extension easier.
+> 
+> Makes sense to me, thanks.
+> 
+> Also the number of cmds are undecided until we do a copy_from_user for the
+> header fields before another one for specified number of cmds. So I think it's
+> better to move ncmds and cmds to top level parameter.
 
-Any further comments on this?
+That seems like an even better idea, yeah.
 
-Regards,
-Harini
-
-On Fri, Dec 12, 2014 at 9:48 AM, Harini Katakam <harinik@xilinx.com> wrote:
-> This series implements workarounds for some bugs in Cadence I2C controller.
->
-> - The I2C controller when configured in Master Mode generates invalid read transactions.
-> When HOLD bit is set and HW timeout occurs, invalid read transactions are
-> generated on the bus. This will affect repeated start conditions and large
-> data transfer condtions where transfer_size_register has to be updated again.
-> The transfer size register rolls over erroneously under these conditions.
-> Note that this HW timeout cannot be disabled even if the interrupt is unused.
-> Errata link: http://www.xilinx.com/support/answers/61664.html
->
-> -The I2C controller when configured in Master Mode is the missing master completion interrupt.
-> During repeated start condition, the driver has to set the HOLD bit for
-> the set of transfer being done together and clear the HOLD bit just before
-> the last transfer. But the controller does not indicate completion when
-> a read/receive transfer is done if the HOLD bit is set. This affects
-> all repeated start operation where a read/receive transfer is not
-> the last transfer.
-> Errata link: http://www.xilinx.com/support/answers/61665.html
->
-> To address the above,
-> - >252 byte transfers are done such that transfer_size never becomes zero.
-> - timeout register value is increased (even though the driver doesn't use this).
-> - A check is performed to see if there is any transfer following a
-> read/receive transfer in the set of messages using repeated start.
-> An error is returned in such cases because if we proceed, completion interrupt
-> is never obtained and a SW timeout will occur.
->
-> Harini Katakam (2):
->   i2c: cadence: Handle > 252 byte transfers
->   i2c: cadence: Check for errata condition involving master receive
->
->  drivers/i2c/busses/i2c-cadence.c |  185 +++++++++++++++++++++++---------------
->  1 file changed, 112 insertions(+), 73 deletions(-)
->
-> --
-> 1.7.9.5
->
+- Josh Triplett
