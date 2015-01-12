@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790AbbALQI6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 11:08:58 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:56695 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511AbbALQI4 (ORCPT
+	id S1752824AbbALQJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 11:09:27 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:50424 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436AbbALQJZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 11:08:56 -0500
-From: Chintan Pandya <cpandya@codeaurora.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        David Rientjes <rientjes@google.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, linux-mm@kvack.org,
-        Chintan Pandya <cpandya@codeaurora.org>
-Subject: [PATCH] lowmemorykiller: Avoid excessive/redundant calling of LMK
-Date: Mon, 12 Jan 2015 21:38:43 +0530
-Message-Id: <1421078923-29485-1-git-send-email-cpandya@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Mon, 12 Jan 2015 11:09:25 -0500
+MIME-Version: 1.0
+In-Reply-To: <20150112114600.GE26589@codeblueprint.co.uk>
+References: <1420742914-2404-1-git-send-email-ard.biesheuvel@linaro.org>
+	<1420742914-2404-7-git-send-email-ard.biesheuvel@linaro.org>
+	<20150112114600.GE26589@codeblueprint.co.uk>
+Date: Mon, 12 Jan 2015 16:09:24 +0000
+Message-ID: <CAKv+Gu9BQFEEpEpF3-O98W-kBYQC9yKf39ee2gvznuZYPiCo-g@mail.gmail.com>
+Subject: Re: [PATCH v5 6/8] arm64/efi: move SetVirtualAddressMap() to UEFI stub
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: Matt Fleming <matt@codeblueprint.co.uk>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>, Roy Franz <roy.franz@linaro.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Mark Salter <msalter@redhat.com>,
+        Geoff Levand <geoff.levand@linaro.org>, Dave Young <dyoung@redhat.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The global shrinker will invoke lowmem_shrink in a loop.
-The loop will be run (total_scan_pages/batch_size) times.
-The default batch_size will be 128 which will make
-shrinker invoking 100s of times. LMK does meaningful
-work only during first 2-3 times and then rest of the
-invocations are just CPU cycle waste. Fix that by giving
-excessively large batch size so that lowmem_shrink will
-be called just once and in the same try LMK does the
-needful.
+On 12 January 2015 at 11:46, Matt Fleming <matt@codeblueprint.co.uk> wrote:
+> On Thu, 08 Jan, at 06:48:32PM, Ard Biesheuvel wrote:
+>> @@ -46,4 +54,26 @@ extern void efi_idmap_init(void);
+>>
+>>  #define EFI_ALLOC_ALIGN              SZ_64K
+>>
+>> +/*
+>> + * On ARM systems, virtually remapped UEFI runtime services are set up in three
+>> + * distinct stages:
+>> + * - The stub retrieves the final version of the memory map from UEFI, populates
+>> + *   the virt_addr fields and calls the SetVirtualAddressMap() [SVAM] runtime
+>> + *   service to communicate the new mapping to the firmware (Note that the new
+>> + *   mapping is not live at this time)
+>> + * - During early boot, the page tables are allocated and populated based on the
+>> + *   virt_addr fields in the memory map, but only if all descriptors with the
+>> + *   EFI_MEMORY_RUNTIME attribute have a non-zero value for virt_addr. If this
+>> + *   succeeds, the EFI_VIRTMAP flag is set to indicate that the virtual mappings
+>> + *   have been installed successfully.
+>> + * - During an early initcall(), the UEFI Runtime Services are enabled and the
+>> + *   EFI_RUNTIME_SERVICES bit set if some conditions are met, i.e., we need a
+>> + *   non-early mapping of the UEFI system table, and we need to have the virtmap
+>> + *   installed.
+>> + */
+>> +#define EFI_VIRTMAP          EFI_ARCH_1
+>
+> Lucid. Thanks, Ard!
+>
 
-Signed-off-by: Chintan Pandya <cpandya@codeaurora.org>
----
- drivers/staging/android/lowmemorykiller.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+Cheers Matt
 
-diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
-index b545d3d..5bf483f 100644
---- a/drivers/staging/android/lowmemorykiller.c
-+++ b/drivers/staging/android/lowmemorykiller.c
-@@ -110,7 +110,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
- 	if (min_score_adj == OOM_SCORE_ADJ_MAX + 1) {
- 		lowmem_print(5, "lowmem_scan %lu, %x, return 0\n",
- 			     sc->nr_to_scan, sc->gfp_mask);
--		return 0;
-+		return SHRINK_STOP;
- 	}
- 
- 	selected_oom_score_adj = min_score_adj;
-@@ -163,6 +163,9 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
- 		set_tsk_thread_flag(selected, TIF_MEMDIE);
- 		send_sig(SIGKILL, selected, 0);
- 		rem += selected_tasksize;
-+	} else {
-+		rcu_read_unlock();
-+		return SHRINK_STOP;
- 	}
- 
- 	lowmem_print(4, "lowmem_scan %lu, %x, return %lu\n",
+It appears this series is converging in time for 3.20, but this patch
+still lacks acked/reviewed-bys
+
+Are you ok with the remainder of the patch as well? In that case, may
+I have your ack so the series can be merged through the arm64 tree?
+
 -- 
-Chintan Pandya
-
-QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
-member of the Code Aurora Forum, hosted by The Linux Foundation
-
+Ard.
