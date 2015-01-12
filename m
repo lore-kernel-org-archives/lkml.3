@@ -1,167 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754452AbbALSSN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:18:13 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:30355 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753624AbbALSSL (ORCPT
+	id S1754196AbbALSNq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:13:46 -0500
+Received: from smtp-1.concepts.nl ([213.197.30.124]:38108 "EHLO
+	smtp-1.concepts.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753800AbbALSNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:18:11 -0500
-X-IronPort-AV: E=Sophos;i="5.07,745,1413244800"; 
-   d="scan'208";a="215607694"
-Date: Mon, 12 Jan 2015 18:09:33 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: <stable@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        <xen-devel@lists.xensource.com>, <catalin.marinas@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>
-Subject: backport a4dba130891271084344c12537731542ec77cb85 to 3.16+
-Message-ID: <alpine.DEB.2.02.1501121704380.3058@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 12 Jan 2015 13:13:43 -0500
+Message-ID: <54B40ED0.5090004@xmsnet.nl>
+Date: Mon, 12 Jan 2015 19:13:36 +0100
+From: Hans de Bruin <jmdebruin@xmsnet.nl>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.8.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+To: Takashi Iwai <tiwai@suse.de>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Henningsson <david.henningsson@canonical.com>
+Subject: Re: 3.19-rc1 regression bisected No sound on Dell Latitude d430
+References: <54B26ACE.90406@xmsnet.nl>	<s5hy4p92ue0.wl-tiwai@suse.de>	<54B2EEC5.7050805@xmsnet.nl> <s5h1tn032ym.wl-tiwai@suse.de>
+In-Reply-To: <s5h1tn032ym.wl-tiwai@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Concepts-MailScanner-Information: Please contact abuse@concepts.nl for more information
+X-Concepts-MailScanner-ID: 1YAjUf-0005Zd-JV
+X-Concepts-MailScanner: Found to be clean
+X-Concepts-MailScanner-SpamCheck: 
+X-Concepts-MailScanner-From: jmdebruin@xmsnet.nl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-I would like to request a backport of the following commit:
+On 01/12/2015 07:52 AM, Takashi Iwai wrote:
+> At Sun, 11 Jan 2015 22:44:37 +0100,
+> Hans de Bruin wrote:
+>>
+>> On 01/11/2015 04:45 PM, Takashi Iwai wrote:
+>>> At Sun, 11 Jan 2015 13:21:34 +0100,
+>>> Hans de Bruin wrote:
+>>>>
+>>>> This commit:
+>>>>
+>>>> commit 3abb4f4d0e7aaad0d12004b5057f4486a688752b
+>>>> Author: David Henningsson <david.henningsson@canonical.com>
+>>>> Date:   Thu Oct 16 15:33:46 2014 +0200
+>>>>
+>>>>        ALSA: hda - Use "Line Out" name instead of "PCM" when there are
+>>>> other outputs
+>>>>
+>>>>        In case there are speakers or headphones as well, anything that only
+>>>>        covers the line out should not be labelled "PCM". Let's name it
+>>>>        "Line Out" instead for clarity.
+>>>>
+>>>>        Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+>>>>        Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>>>>
+>>>> breaks the sound on my dell laptop.
+>>>
+>>> What sound?  From the speaker, the headphone or the dock output?
+>>
+>> The speaker. I have not checked the other exits
+>>
+>>> Are you using PulseAudio?
+>>
+>> No
+>>
+>>> What if you adjust/unmute the volume
+>>> (likely "Line Out") manually?
+>>
+>> running 3.18 alsamixer show these options:
+>>
+>> Master
+>> PCM
+>> Mic Boost
+>> Auto Mute mode
+>>
+>> PCM affects the volume of the speaker.
+>>
+>> running 3.19-rc1 alsamixer show these options:
+>>
+>> Master
+>> PCM
+>> Line Out
+>> Mic Boost
+>> Auto Mute mode
+>>
+>> Line out now controls the vole of the speaker (this 'new' channel had
+>> volume 0 so did not hear anything). Changing PCM has no effect.
+>
+> OK, then this is the expected change.  It was a bug that we assigned
+> "PCM" only for the speaker and now it's corrected.  Now "PCM" is still
+> present but this was created by alsa-lib softvol pcm, and has nothing
+> to do directly with the driver itself.  This control is used only when
+> you play the stream with the dedicated setup, i.e. via "default" or
+> "sysdefault" device name, not via "hw", "plughw", etc.
+>
+
+Thanks for the explanation and the quick response. The issue can be closed.
+
+-- 
+Hans
 
 
-commit a4dba130891271084344c12537731542ec77cb85
-Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Date:   Fri Nov 21 11:07:39 2014 +0000
 
-    xen/arm/arm64: introduce xen_arch_need_swiotlb
-
-
-to stable trees from 3.16 onward (3.16 included).
-
-
-The commit needs to be slightly modified because is_device_dma_coherent
-is not available on kernels < 3.19, so I just removed the call,
-thus assuming that the device is not coherent on arm (slower but safe):
-
- diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
--index ab700e1..28ebf3e 100644
-+index b0e77de..f8a576b 100644
- --- a/arch/arm/xen/mm.c
- +++ b/arch/arm/xen/mm.c
--@@ -100,6 +100,13 @@ void __xen_dma_sync_single_for_device(struct device *hwdev,
-- 	__xen_dma_page_cpu_to_dev(hwdev, handle, size, dir);
-- }
-+@@ -16,6 +16,13 @@
-+ #include <asm/xen/hypercall.h>
-+ #include <asm/xen/interface.h>
-  
- +bool xen_arch_need_swiotlb(struct device *dev,
- +			   unsigned long pfn,
- +			   unsigned long mfn)
- +{
--+	return ((pfn != mfn) && !is_device_dma_coherent(dev));
-++	return (pfn != mfn);
- +}
- +
-  int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
-
-
-The modified patch follows.
-
-
----
-
-xen/arm/arm64: introduce xen_arch_need_swiotlb
-
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-
-Introduce an arch specific function to find out whether a particular dma
-mapping operation needs to bounce on the swiotlb buffer.
-
-On ARM and ARM64, if the page involved is a foreign page and the device
-is not coherent, we need to bounce because at unmap time we cannot
-execute any required cache maintenance operations (we don't know how to
-find the pfn from the mfn).
-
-No change of behaviour for x86.
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
-diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
-index 135c24a..68c739b 100644
---- a/arch/arm/include/asm/xen/page.h
-+++ b/arch/arm/include/asm/xen/page.h
-@@ -107,4 +107,8 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
- #define xen_remap(cookie, size) ioremap_cache((cookie), (size))
- #define xen_unmap(cookie) iounmap((cookie))
- 
-+bool xen_arch_need_swiotlb(struct device *dev,
-+			   unsigned long pfn,
-+			   unsigned long mfn);
-+
- #endif /* _ASM_ARM_XEN_PAGE_H */
-diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
-index b0e77de..f8a576b 100644
---- a/arch/arm/xen/mm.c
-+++ b/arch/arm/xen/mm.c
-@@ -16,6 +16,13 @@
- #include <asm/xen/hypercall.h>
- #include <asm/xen/interface.h>
- 
-+bool xen_arch_need_swiotlb(struct device *dev,
-+			   unsigned long pfn,
-+			   unsigned long mfn)
-+{
-+	return (pfn != mfn);
-+}
-+
- int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
- 				 unsigned int address_bits,
- 				 dma_addr_t *dma_handle)
-diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-index c949923..f58ef6c 100644
---- a/arch/x86/include/asm/xen/page.h
-+++ b/arch/x86/include/asm/xen/page.h
-@@ -236,4 +236,11 @@ void make_lowmem_page_readwrite(void *vaddr);
- #define xen_remap(cookie, size) ioremap((cookie), (size));
- #define xen_unmap(cookie) iounmap((cookie))
- 
-+static inline bool xen_arch_need_swiotlb(struct device *dev,
-+					 unsigned long pfn,
-+					 unsigned long mfn)
-+{
-+	return false;
-+}
-+
- #endif /* _ASM_X86_XEN_PAGE_H */
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index ebd8f21..ac5d41b 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -399,7 +399,9 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
- 	 * buffering it.
- 	 */
- 	if (dma_capable(dev, dev_addr, size) &&
--	    !range_straddles_page_boundary(phys, size) && !swiotlb_force) {
-+	    !range_straddles_page_boundary(phys, size) &&
-+		!xen_arch_need_swiotlb(dev, PFN_DOWN(phys), PFN_DOWN(dev_addr)) &&
-+		!swiotlb_force) {
- 		/* we are not interested in the dma_addr returned by
- 		 * xen_dma_map_page, only in the potential cache flushes executed
- 		 * by the function. */
-@@ -557,6 +559,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
- 		dma_addr_t dev_addr = xen_phys_to_bus(paddr);
- 
- 		if (swiotlb_force ||
-+		    xen_arch_need_swiotlb(hwdev, PFN_DOWN(paddr), PFN_DOWN(dev_addr)) ||
- 		    !dma_capable(hwdev, dev_addr, sg->length) ||
- 		    range_straddles_page_boundary(paddr, sg->length)) {
- 			phys_addr_t map = swiotlb_tbl_map_single(hwdev,
