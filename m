@@ -1,53 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755352AbbALTC5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 14:02:57 -0500
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:49996 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755442AbbALTCy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 14:02:54 -0500
+	id S1756598AbbALTEE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 14:04:04 -0500
+Received: from www.sr71.net ([198.145.64.142]:60107 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754328AbbALTEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 14:04:01 -0500
+Message-ID: <54B41A9E.4030705@sr71.net>
+Date: Mon, 12 Jan 2015 11:03:58 -0800
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <CALAqxLX2Th7-kEM1vQBJn5hnPTJ5ujg-Zx-aa-oOhP5cb=hXLQ@mail.gmail.com>
-References: <1420850068-27828-1-git-send-email-john.stultz@linaro.org>
-	<1420850068-27828-7-git-send-email-john.stultz@linaro.org>
-	<20150111124146.GA15387@localhost.localdomain>
-	<CALAqxLX2Th7-kEM1vQBJn5hnPTJ5ujg-Zx-aa-oOhP5cb=hXLQ@mail.gmail.com>
-Date: Tue, 13 Jan 2015 08:02:53 +1300
-X-Google-Sender-Auth: jJ2MXdLjwvVArEzP16pTl0y1luU
-Message-ID: <CA+55aFxwtAG243YL5xJwCy1tJOOONx_ZqYBFsJwwbaFTmKWfLg@mail.gmail.com>
-Subject: Re: [PATCH 06/10] time: Cap clocksource reads to the clocksource
- max_cycles value
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@codemonkey.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Will Deacon <will.deacon@arm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: Laszlo Ersek <lersek@redhat.com>, Mark Langsdorf <mlangsdo@redhat.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Steve Capper <steve.capper@linaro.org>,
+        "vishnu.ps@samsung.com" <vishnu.ps@samsung.com>,
+        main kernel list <linux-kernel@vger.kernel.org>,
+        arm kernel list <linux-arm-kernel@lists.infradead.org>,
+        Kyle McMartin <kmcmarti@redhat.com>
+Subject: Re: Linux 3.19-rc3
+References: <20150109121348.GD12942@leverpostej> <CAPvkgC23LHhs7Tw4rdAPFooimonji8R7kEAbWYRKPJwouwUzBA@mail.gmail.com> <54AFE53A.4020004@redhat.com> <20150109175702.GA27787@leverpostej> <54B01FF0.3020900@arm.com> <20150109194333.GA23028@arm.com> <54B09CA3.1060501@redhat.com> <CA+55aFw3aGeiWOiKxQaC23VVX_Q9B0cDeZc37vVfK+SJVjGwFw@mail.gmail.com> <20150110133742.GA6999@arm.com> <CA+55aFxBA6F4Kr89iZwPPeBnkiRO4GnrbUSd0CqVG-LD6ZQyiw@mail.gmail.com> <20150112124256.GB13360@arm.com>
+In-Reply-To: <20150112124256.GB13360@arm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 7:54 AM, John Stultz <john.stultz@linaro.org> wrote:
->
-> So I disagree this is papering over the problem.
+On 01/12/2015 04:42 AM, Will Deacon wrote:
+> Since this effectively reverts f045bbb9fa1b, I've added Dave to Cc. It
+> should fix the leak without reintroducing the performance regression.
 
-Indeed. It's making things more robust in the face of _known_ issues.
-Even with a perfectly designed timer (which we so far have never
-seen), interrupts get delayed etc, so trying to stretch it to the
-limit of the timer is simply not a good idea. Quite the reverse.
-
-More importantly, if the timer is actually any good, the safety margin
-won't actually matter, since the timer cycle is so long that 50% of
-essentially infinite is still essentially infinite.
-
-And if the timer isn't very good, then some slop for safety is just
-being robust.
-
-At no point is it "papering over" anything at all.
-
-           Linus
+I ran this on the big system that showed the earlier issue.  Everything
+seems OK, at least with the test that showed the issue earlier (the brk1
+test from will-it-scale).
