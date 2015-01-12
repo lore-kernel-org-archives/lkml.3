@@ -1,113 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396AbbALPIS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 10:08:18 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:46197 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054AbbALPIR (ORCPT
+	id S1753234AbbALPLg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 10:11:36 -0500
+Received: from mailout.micron.com ([137.201.242.129]:29361 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131AbbALPLe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 10:08:17 -0500
-Message-ID: <54B3E35E.50400@atmel.com>
-Date: Mon, 12 Jan 2015 16:08:14 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 12 Jan 2015 10:11:34 -0500
+From: =?utf-8?B?UWkgV2FuZyDnjovotbcgKHFpd2FuZyk=?= <qiwang@micron.com>
+To: Ezequiel Garcia <ezequiel.garcia@imgtec.com>,
+        Brian Norris <computersforpeace@gmail.com>
+CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        =?utf-8?B?RnJhbmsgTGl1IOWImOe+pCAoZnJhbmtsaXUp?= 
+	<frankliu@micron.com>,
+        =?utf-8?B?TWVsYW5pZSBaaGFuZyDlvKDnh5UgKG1lbGFuaWV6aGFuZyk=?= 
+	<melaniezhang@micron.com>,
+        =?utf-8?B?UGV0ZXIgUGFuIOa9mOagiyAocGV0ZXJwYW5kb25nKQ==?= 
+	<peterpandong@micron.com>
+Subject: [PATCH 0/3] An alternative to SPI NAND
+Thread-Topic: [PATCH 0/3] An alternative to SPI NAND
+Thread-Index: AdAq2q78IdxvQLPKQ322Hb2GbRwNjAAAGruwAAAwq2D//3/+gP//ZSPQgADC/oD/+NfYMA==
+Date: Mon, 12 Jan 2015 15:10:55 +0000
+Message-ID: <71CF8D7F32C5C24C9CD1D0E02D52498A7714F043@NTXXIAMBX02.xacn.micron.com>
+References: <87F60714EC601C4C83DFF1D2E3D390A04AB3F3@NTXXIAMBX02.xacn.micron.com>
+ <20150108010257.GP9759@ld-irv-0074>
+ <71CF8D7F32C5C24C9CD1D0E02D52498A7714DD2A@NTXXIAMBX02.xacn.micron.com>
+ <54ADF90B.1070800@imgtec.com>
+In-Reply-To: <54ADF90B.1070800@imgtec.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-21242.005
+X-TM-AS-Result: No--10.158700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Arnd Bergmann <arnd@arndb.de>, <arm@kernel.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Ludovic Desroches" <ludovic.desroches@atmel.com>
-Subject: Re: [GIT PULL] at91: fixes for 3.19 #1 (bis)
-References: <1420456477-18204-1-git-send-email-nicolas.ferre@atmel.com> <20150108224150.GB13612@quad.lixom.net> <54AF993A.7070707@atmel.com> <20150111211215.GC25777@quad.lixom.net>
-In-Reply-To: <20150111211215.GC25777@quad.lixom.net>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0CFBgIj019249
 
-Le 11/01/2015 22:12, Olof Johansson a écrit :
-> On Fri, Jan 09, 2015 at 10:02:50AM +0100, Nicolas Ferre wrote:
->> Le 08/01/2015 23:41, Olof Johansson a écrit :
->>> On Mon, Jan 05, 2015 at 12:14:37PM +0100, Nicolas Ferre wrote:
->>>> Arnd, Olof, Kevin,
->>>>
->>>> This is the rebase of my previous pull-request on top of 3.19-rc1. As said at
->>>> the time of my early messages, I was waiting for the arm-soc *and* pinctrl
->>>> material to reach Linus T.'s tree before sending this pull-request. In fact
->>>> this sequence was needed for the gpio header removal. The little patch about
->>>> #include deletion just follows an earlier merge conflict in arm-soc tree: I was
->>>> also waiting for this moment before sending the definitive fix, just to be
->>>> sure.
->>>>
->>>> In comparison with the previous pull-request, I also added a tiny correction of
->>>> the sama5d4.dtsi timer entry. All the rest is pretty straightforward.
->>>>
->>>> Thanks, best regards,
->>>>
->>>> The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
->>>>
->>>>   Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
->>>>
->>>> are available in the git repository at:
->>>>
->>>>   git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-fixes
->>>>
->>>> for you to fetch changes up to 0e049c66ebf56a415cadd6c593b7ee0a2cb9d19d:
->>>>
->>>>   ARM: at91/dt: sama5d4: fix the timer reg length (2015-01-05 11:07:14 +0100)
->>>>
->>>> ----------------------------------------------------------------
->>>> First fixes batch for AT91 on 3.19 folowing The big cleanup:
->>>> - removal of unused Kconfig RTC options
->>>> - GPIO header file is now in same directory as the pinctrl driver
->>>> - little fix on #includes
->>>> - removal of DEBUG_LL from the sama5 common defconfig
->>>> - little fix of reg size in sama5d4.dtsi
->>>>
->>>> ----------------------------------------------------------------
->>>> Bo Shen (1):
->>>>       ARM: at91/dt: sama5d4: fix the timer reg length
+Hi Ezequiel,
+
+On 01/08/2015 11:27 AM, Ezequiel Garcia wrote:
+>
+>Hi Qi Wang,
+>
+>On 01/07/2015 11:45 PM, Qi Wang ç‹èµ· (qiwang) wrote:
+>> Hi Brian,
+>>
+>> On Thu, Jan 08, 2015 at 9:03:24AM +0000, Brian Norris wrote:
 >>>
->>> This is the only fix among these patches, isn't it? The others seem to
->>> be code removals/cleanups better targeted for 3.20, as far as I can tell.
+>>> On Thu, Jan 08, 2015 at 12:47:24AM +0000, Peter Pan æ½˜æ ‹ (peterpandong)
+>>> wrote:
+>>>> Documentation/devicetree/bindings/mtd/spi-nand.txt |   22 +
+>>>> drivers/mtd/Kconfig                                |    2 +
+>>>> drivers/mtd/Makefile                               |    1 +
+>>>> drivers/mtd/spi-nand/Kconfig                       |    7 +
+>>>> drivers/mtd/spi-nand/Makefile                      |    3 +
+>>>> drivers/mtd/spi-nand/spi-nand-base.c               | 2034
+>>> ++++++++++++++++++++
+>>>> drivers/mtd/spi-nand/spi-nand-bbt.c                | 1279 ++++++++++++
+>>>
+>>> I can already tell by the diffstat that I don't like this. We probably
+>>> don't need 3000 new lines of code for this, but we especially don't want
+>>> to duplicate nand_bbt.c. It won't take a lot of work to augment
+>>> nand_bbt.c to make it shareable. (I can whip that patch up if needed.)
 >>
->> Well, this is why I sent the first version of this pull-request very
->> early in the process. I didn't have the possibility to re-send it
->> earlier on top of -rc1 until this pull-request.
+>> Yes, I agree with you, Nand_bbt.c do can be shared by Parallel NAND and
+>> SPI NAND. Actually, we are working at this now. Will send patches to you
+>> Once we finished it.
 >>
->> For me, the remaining of a dead Kconfig option, some issues with
->> DEGUG_LL and to a lesser extend the remaining of dead code are worth
->> cleaning now. I do have more cleanup patches to come in 3.20, but
->> waiting more for this simple material to be included is IMHO not
->> necessary...
->>
->> I may have some more fixes remaining for 3.19 and will be cautious about
->> their nature.
-> 
-> I'm a bit confused -- I said this branch isn't actually a fixes branch so we
-> can't merge it for 3.19, but there is _one_ patch from it that looks like it
-> should go in.
-> 
-> It's not really about whether the material is simple or not -- all maintainers
-> need to keep focus on only sending up fixes during the -rc series. Sometimes we
-> pick up a cleanup or two for -rc2 or so, but the time for that for 3.19 is past
-> us.
-> 
-> Since you mention that you have more fixes coming (why hold off on them?), do
-> you want me to cherry-pick over that one fix to our fixes branch, or can you
-> queue it with the other fixes when you send them up?
+>
+>Thanks for the quick submission!
+>
+>However, Brian is right, this code duplication is a no go.
+>
+>Perhaps a more valid approach would be to first identify the code that
+>needs to be shared in nand_bbt.c and nand_base.c, and export those
+>symbols (or maybe do the required refactor).
 
-Fair enough, I build a new "at91: fixes for 3.19 #1 (ter)" with tree
-more patches right now.
+Yes, I agree Brian's suggestion in another mail. 
 
-Thanks, bye.
--- 
-Nicolas Ferre
+" The BBT code is something we definitely want to share, but it's actually
+not very closely tied to nand_base.c, and it looks pretty easy to adapt
+to any MTD that implements mtd_read_oob()/mtd_write_oob(). We'd just
+need to parameterize a few relevant device details into a new nand_bbt
+struct, rather than using struct nand_chip directly."
 
+To abstract a new nand_bbt struct instead of nand_chip to make SPI NAND 
+and parallel NAND can share nand_bbt.c file, I already begin to work on 
+this.
+
+For code shared in nand_base.c, I agree it would be better if we can find
+a good method to share nand_base.c code between spi nand and parallel nand.
+But frankly speaking, I'm not satisfied for the remap command method. This
+method make code difficult to maintain when SPI NAND and Parallel NAND 
+evolve much differently in the future.
+
+Take some example, 
+If one new command (cache operation, multiple plane operation) implemented 
+in parallel NAND code, and is used in nand_read or nand_write, that will 
+cause maintainer to modify SPI NAND code to remap this new command, though 
+this modification probably could be slight. That means modification on 
+Parallel NAND flash need to consider SPI NAND as well. 
+
+How do you think about this?
+
+For Peter Pan's patchset, if we do some modification to make nand_bbt.c to
+make it shareable for Parallel and SPI NAND. The code line should be 2000.
+I believe I can review this spi-nand-base.c to remove some redundant code
+that may hundreds line. Is 1700 or 1800 code line is more acceptable?
+
+Let me know your opinions.
+
+>
+>Then, separate the SPI NAND upper and lower logic (in a similar to my
+>proposal, which I still consider turned out to be clean).
+>
+>These two things would lead to a simpler and smaller patchset. I also
+>suggest to cut off everything that we don't utterly need on a first
+>submission, so it's easier to review.
+>--
+>Ezequiel
+
+
+--
+Qi Wang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
