@@ -1,27 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515AbbALShz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:37:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58418 "EHLO
+	id S932094AbbALSjW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:39:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58387 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755204AbbALSaw (ORCPT
+	with ESMTP id S1755116AbbALSar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:30:52 -0500
+	Mon, 12 Jan 2015 13:30:47 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Frederic Weisbecker <frederic@kernel.org>,
-        Pan Jacob jun <jacob.jun.pan@intel.com>, LKP <lkp@01.org>,
-        Peter Zijlstra <peterz@infradead.org>, Zhang Rui <rui.zhang@intel.com>,
+Cc: Richard Guy Briggs <rgb@redhat.com>, Paul Moore <pmoore@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 189/216] tick/powerclamp: Remove tick_nohz_idle abuse
-Date: Mon, 12 Jan 2015 18:29:27 +0000
-Message-Id: <1421087394-2712-77-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 190/216] audit: don't attempt to lookup PIDs when changing PID filtering audit rules
+Date: Mon, 12 Jan 2015 18:29:28 +0000
+Message-Id: <1421087394-2712-78-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -34,90 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Paul Moore <pmoore@redhat.com>
 
-commit a5fd9733a30d18d7ac23f17080e7e07bb3205b69 upstream.
+commit 3640dcfa4fd00cd91d88bb86250bdb496f7070c0 upstream.
 
-commit 4dbd27711cd9 "tick: export nohz tick idle symbols for module
-use" was merged via the thermal tree without an explicit ack from the
-relevant maintainers.
+Commit f1dc4867 ("audit: anchor all pid references in the initial pid
+namespace") introduced a find_vpid() call when adding/removing audit
+rules with PID/PPID filters; unfortunately this is problematic as
+find_vpid() only works if there is a task with the associated PID
+alive on the system.  The following commands demonstrate a simple
+reproducer.
 
-The exports are abused by the intel powerclamp driver which implements
-a fake idle state from a sched FIFO task. This causes all kinds of
-wreckage in the NOHZ core code which rightfully assumes that
-tick_nohz_idle_enter/exit() are only called from the idle task itself.
+	# auditctl -D
+	# auditctl -l
+	# autrace /bin/true
+	# auditctl -l
 
-Recent changes in the NOHZ core lead to a failure of the powerclamp
-driver and now people try to hack completely broken and backwards
-workarounds into the NOHZ core code. This is completely unacceptable
-and just papers over the real problem. There are way more subtle
-issues lurking around the corner.
+This patch resolves the problem by simply using the PID provided by
+the user without any additional validation, e.g. no calls to check to
+see if the task/PID exists.
 
-The real solution is to fix the powerclamp driver by rewriting it with
-a sane concept, but that's beyond the scope of this.
-
-So the only solution for now is to remove the calls into the core NOHZ
-code from the powerclamp trainwreck along with the exports.
-
-Fixes: d6d71ee4a14a "PM: Introduce Intel PowerClamp Driver"
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Frederic Weisbecker <frederic@kernel.org>
-Cc: Pan Jacob jun <jacob.jun.pan@intel.com>
-Cc: LKP <lkp@01.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Zhang Rui <rui.zhang@intel.com>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.11.1412181110110.17382@nanos
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
+Acked-by: Eric Paris <eparis@redhat.com>
+Reviewed-by: Richard Guy Briggs <rgb@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/thermal/intel_powerclamp.c | 2 --
- kernel/time/tick-sched.c           | 2 --
- 2 files changed, 4 deletions(-)
+ kernel/auditfilter.c | 13 -------------
+ 1 file changed, 13 deletions(-)
 
-diff --git a/drivers/thermal/intel_powerclamp.c b/drivers/thermal/intel_powerclamp.c
-index 95cb7fc20e17..6cb78497076a 100644
---- a/drivers/thermal/intel_powerclamp.c
-+++ b/drivers/thermal/intel_powerclamp.c
-@@ -435,7 +435,6 @@ static int clamp_thread(void *arg)
- 		 * allowed. thus jiffies are updated properly.
- 		 */
- 		preempt_disable();
--		tick_nohz_idle_enter();
- 		/* mwait until target jiffies is reached */
- 		while (time_before(jiffies, target_jiffies)) {
- 			unsigned long ecx = 1;
-@@ -451,7 +450,6 @@ static int clamp_thread(void *arg)
- 			start_critical_timings();
- 			atomic_inc(&idle_wakeup_counter);
+diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+index 8e9bc9c3dbb7..b2e63ba5f815 100644
+--- a/kernel/auditfilter.c
++++ b/kernel/auditfilter.c
+@@ -433,19 +433,6 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
+ 			f->val = 0;
  		}
--		tick_nohz_idle_exit();
- 		preempt_enable();
- 	}
- 	del_timer_sync(&wakeup_timer);
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 6558b7ac112d..8c08a6f9cca0 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -807,7 +807,6 @@ void tick_nohz_idle_enter(void)
  
- 	local_irq_enable();
- }
--EXPORT_SYMBOL_GPL(tick_nohz_idle_enter);
- 
- /**
-  * tick_nohz_irq_exit - update next tick event from interrupt exit
-@@ -934,7 +933,6 @@ void tick_nohz_idle_exit(void)
- 
- 	local_irq_enable();
- }
--EXPORT_SYMBOL_GPL(tick_nohz_idle_exit);
- 
- static int tick_nohz_reprogram(struct tick_sched *ts, ktime_t now)
- {
+-		if ((f->type == AUDIT_PID) || (f->type == AUDIT_PPID)) {
+-			struct pid *pid;
+-			rcu_read_lock();
+-			pid = find_vpid(f->val);
+-			if (!pid) {
+-				rcu_read_unlock();
+-				err = -ESRCH;
+-				goto exit_free;
+-			}
+-			f->val = pid_nr(pid);
+-			rcu_read_unlock();
+-		}
+-
+ 		err = audit_field_valid(entry, f);
+ 		if (err)
+ 			goto exit_free;
 -- 
 2.1.4
 
