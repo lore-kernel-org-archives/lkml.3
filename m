@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752AbbALPiM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 10:38:12 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:52835 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159AbbALPiI (ORCPT
+	id S1752535AbbALPh6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 10:37:58 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:48288 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905AbbALPh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 10:38:08 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-99-54b3ea5dfe68
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene@kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH] ARM: EXYNOS: Handle of of_iomap() failure
-Date: Mon, 12 Jan 2015 16:37:45 +0100
-Message-id: <1421077065-30175-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOJMWRmVeSWpSXmKPExsVy+t/xa7qxrzaHGJzcLW/x+oWhRf/j18wW
-	mx5fY7W4vGsOm8WM8/uYLG5f5nVg82hp7mHz2LSqk81j85J6j74tqxg9Pm+SC2CN4rJJSc3J
-	LEst0rdL4Mr48Woza0EDe8Xrbz+ZGhhfs3YxcnJICJhITDvczw5hi0lcuLeerYuRi0NIYCmj
-	xNJNVxkhnD4miTNbX4JVsQkYS2xevgSsSkRgM6NEf+NusFHMAoYSP9/9ASsSFrCS2Hh8ATOI
-	zSKgKrH12hQWEJtXwF1i18wtzBDr5CROHpvMOoGRewEjwypG0dTS5ILipPRcQ73ixNzi0rx0
-	veT83E2MkMD4soNx8TGrQ4wCHIxKPLwTZDaHCLEmlhVX5h5ilOBgVhLhdS0DCvGmJFZWpRbl
-	xxeV5qQWH2Jk4uCUamDMbAgJviv/10yIS23ZJet5Dqm7fFZeubpaxSGyLzx3lsTMHUsVpuom
-	lr2ocy4TV9l/ScJn2tn+xKML61btll4gvWJ/S85Zu1nmJova0o7IJPmEMfVfmrfxtYfpD9bJ
-	AbNMK+5mfv9ftb9J7k7dV78Fbzh6dovFTNG6FnXp+fr7xZX2Oo+Mza4osRRnJBpqMRcVJwIA
-	pyPKO+oBAAA=
+	Mon, 12 Jan 2015 10:37:57 -0500
+Date: Mon, 12 Jan 2015 16:37:47 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com
+Subject: Re: [RFC 1/4] lockdep: additional lock specific information when
+ dumping locks
+Message-ID: <20150112153747.GE25256@twins.programming.kicks-ass.net>
+References: <1421074631-18831-1-git-send-email-sasha.levin@oracle.com>
+ <20150112150633.GD25256@twins.programming.kicks-ass.net>
+ <54B3E466.2030006@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54B3E466.2030006@oracle.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prevent possible NULL pointer dereference if of_iomap() fails. Handle
-the error by skipping such power domain.
+On Mon, Jan 12, 2015 at 10:12:38AM -0500, Sasha Levin wrote:
+> The reason for my patch is simple: 
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- arch/arm/mach-exynos/pm_domains.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+That might have maybe been good changelog material?
 
-diff --git a/arch/arm/mach-exynos/pm_domains.c b/arch/arm/mach-exynos/pm_domains.c
-index 20f267121b3e..fd7640a6b503 100644
---- a/arch/arm/mach-exynos/pm_domains.c
-+++ b/arch/arm/mach-exynos/pm_domains.c
-@@ -128,6 +128,13 @@ static __init int exynos4_pm_init_power_domain(void)
- 		pd->pd.name = kstrdup(np->name, GFP_KERNEL);
- 		pd->name = pd->pd.name;
- 		pd->base = of_iomap(np, 0);
-+		if (!pd->base) {
-+			dev_warn(&pdev->dev, "Failed to map memory\n");
-+			kfree(pd);
-+			of_node_put(np);
-+			continue;
-+		}
-+
- 		pd->pd.power_off = exynos_pd_power_off;
- 		pd->pd.power_on = exynos_pd_power_on;
- 
--- 
-1.9.1
+> I'm fuzzing with hundreds of worker threads
+> which at some point trigger a complete system lockup for some reason.
+> 
+> When lockdep dumps the list of held locks it shows that pretty much every one
+> of those threads is holding the lock which caused the lockup, which is incorrect
+> because it considers locks in the process of getting acquired as "held".
+> 
+> This is my solution to that issue. I wanted to know which one of the threads is
+> really holding the lock rather than just waiting on it.
+> 
+> Is there a better way to solve that problem?
 
+Sure, think moar, if the accompanying stack trace is in the middle
+of the blocking primitive, ignore the top held lock ;-)
+
+Alternatively, make better/more use of lock_acquired() and track the
+acquire vs acquired information in the held_lock (1 bit) and look at it
+when printing.
