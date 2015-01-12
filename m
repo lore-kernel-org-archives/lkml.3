@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751872AbbALGKL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 01:10:11 -0500
-Received: from exprod7og120.obsmtp.com ([64.18.2.18]:38092 "EHLO
-	exprod7og120.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751762AbbALGKG (ORCPT
+	id S1752002AbbALGKr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 01:10:47 -0500
+Received: from exprod7og106.obsmtp.com ([64.18.2.165]:48869 "EHLO
+	exprod7og106.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569AbbALGKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 01:10:06 -0500
+	Mon, 12 Jan 2015 01:10:10 -0500
 From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
 X-Google-Original-From: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
 To: jejb@kernel.org, hch@infradead.org
@@ -14,9 +14,9 @@ Cc: martin.petersen@oracle.com, linux-scsi@vger.kernel.org,
         JBottomley@Parallels.com, Sathya.Prakash@avagotech.com,
         Nagalakshmi.Nandigama@avagotech.com, linux-kernel@vger.kernel.org,
         Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-Subject: [PATCH 08/22] [SCSI] mpt2sas, mpt3sas: Update Attribution Language to Avago
-Date: Mon, 12 Jan 2015 11:39:02 +0530
-Message-Id: <1421042944-14988-9-git-send-email-Sreekanth.Reddy@avagotech.com>
+Subject: [PATCH v2 09/22] [SCSI] mpt2sas, mpt3sas: Added a support to set cpu affinity for each MSIX vector enabled by the HBA
+Date: Mon, 12 Jan 2015 11:39:03 +0530
+Message-Id: <1421042944-14988-10-git-send-email-Sreekanth.Reddy@avagotech.com>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <1421042944-14988-1-git-send-email-Sreekanth.Reddy@avagotech.com>
 References: <1421042944-14988-1-git-send-email-Sreekanth.Reddy@avagotech.com>
@@ -24,301 +24,185 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Copyright, Trademark & Confidentiality legal statements throughout source code changed from LSI to Avago.
+Added a support to set cpu affinity mask for each MSIX vector enabled by the HBA.
+So that, running the irqbalancer will balance interrupts among the cpus.
+
+Change_set:
+1. Added affinity_hint varable of type cpumask_var_t in adapter_reply_queue
+   structure. And allocated a memory for this varable by calling alloc_cpumask_var.
+2. Call the API irq_set_affinity_hint for each MSIx vector to affiniate it
+   with calculated cpus at driver inilization time.
+3. While freeing the MSIX vector, call this same API to release the cpu affinity mask
+   for each MSIx vector by providing the NULL value in cpumask argument.
+4. then call the free_cpumask_var API to free the memory allocated in step 2.
 
 Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
 Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
 ---
- drivers/scsi/mpt2sas/mpt2sas_base.c         | 3 ++-
- drivers/scsi/mpt2sas/mpt2sas_base.h         | 5 +++--
- drivers/scsi/mpt2sas/mpt2sas_config.c       | 3 ++-
- drivers/scsi/mpt2sas/mpt2sas_ctl.c          | 3 ++-
- drivers/scsi/mpt2sas/mpt2sas_ctl.h          | 3 ++-
- drivers/scsi/mpt2sas/mpt2sas_debug.h        | 3 ++-
- drivers/scsi/mpt2sas/mpt2sas_scsih.c        | 3 ++-
- drivers/scsi/mpt2sas/mpt2sas_transport.c    | 3 ++-
- drivers/scsi/mpt3sas/mpt3sas_base.c         | 3 ++-
- drivers/scsi/mpt3sas/mpt3sas_base.h         | 5 +++--
- drivers/scsi/mpt3sas/mpt3sas_config.c       | 3 ++-
- drivers/scsi/mpt3sas/mpt3sas_ctl.c          | 3 ++-
- drivers/scsi/mpt3sas/mpt3sas_ctl.h          | 3 ++-
- drivers/scsi/mpt3sas/mpt3sas_debug.h        | 3 ++-
- drivers/scsi/mpt3sas/mpt3sas_scsih.c        | 3 ++-
- drivers/scsi/mpt3sas/mpt3sas_transport.c    | 3 ++-
- drivers/scsi/mpt3sas/mpt3sas_trigger_diag.c | 3 ++-
- drivers/scsi/mpt3sas/mpt3sas_trigger_diag.h | 3 ++-
- 18 files changed, 38 insertions(+), 20 deletions(-)
+ drivers/scsi/mpt2sas/mpt2sas_base.c | 24 +++++++++++++++++++++---
+ drivers/scsi/mpt2sas/mpt2sas_base.h |  1 +
+ drivers/scsi/mpt3sas/mpt3sas_base.c | 24 +++++++++++++++++++++---
+ drivers/scsi/mpt3sas/mpt3sas_base.h |  1 +
+ 4 files changed, 44 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
-index dc088ac..137862c 100644
+index 137862c..599606b 100644
 --- a/drivers/scsi/mpt2sas/mpt2sas_base.c
 +++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -4,7 +4,8 @@
-  *
-  * This code is based on drivers/scsi/mpt2sas/mpt2_base.c
-  * Copyright (C) 2007-2014  LSI Corporation
-- *  (mailto:DL-MPTFusionLinux@lsi.com)
-+ * Copyright (C) 20013-2014 Avago Technologies
-+ *  (mailto: MPT-FusionLinux.pdl@avagotech.com)
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
+@@ -1300,6 +1300,8 @@ _base_free_irq(struct MPT2SAS_ADAPTER *ioc)
+ 
+ 	list_for_each_entry_safe(reply_q, next, &ioc->reply_queue_list, list) {
+ 		list_del(&reply_q->list);
++		irq_set_affinity_hint(reply_q->vector, NULL);
++		free_cpumask_var(reply_q->affinity_hint);
+ 		synchronize_irq(reply_q->vector);
+ 		free_irq(reply_q->vector, reply_q);
+ 		kfree(reply_q);
+@@ -1329,6 +1331,11 @@ _base_request_irq(struct MPT2SAS_ADAPTER *ioc, u8 index, u32 vector)
+ 	reply_q->ioc = ioc;
+ 	reply_q->msix_index = index;
+ 	reply_q->vector = vector;
++
++	if (!alloc_cpumask_var(&reply_q->affinity_hint, GFP_KERNEL))
++		return -ENOMEM;
++	cpumask_clear(reply_q->affinity_hint);
++
+ 	atomic_set(&reply_q->busy, 0);
+ 	if (ioc->msix_enable)
+ 		snprintf(reply_q->name, MPT_NAME_LENGTH, "%s%d-msix%d",
+@@ -1363,6 +1370,7 @@ static void
+ _base_assign_reply_queues(struct MPT2SAS_ADAPTER *ioc)
+ {
+ 	unsigned int cpu, nr_cpus, nr_msix, index = 0;
++	struct adapter_reply_queue *reply_q;
+ 
+ 	if (!_base_is_controller_msix_enabled(ioc))
+ 		return;
+@@ -1377,20 +1385,30 @@ _base_assign_reply_queues(struct MPT2SAS_ADAPTER *ioc)
+ 
+ 	cpu = cpumask_first(cpu_online_mask);
+ 
+-	do {
++	list_for_each_entry(reply_q, &ioc->reply_queue_list, list) {
++
+ 		unsigned int i, group = nr_cpus / nr_msix;
+ 
++		if (cpu >= nr_cpus)
++			break;
++
+ 		if (index < nr_cpus % nr_msix)
+ 			group++;
+ 
+ 		for (i = 0 ; i < group ; i++) {
+ 			ioc->cpu_msix_table[cpu] = index;
++			cpumask_or(reply_q->affinity_hint,
++				   reply_q->affinity_hint, get_cpu_mask(cpu));
+ 			cpu = cpumask_next(cpu, cpu_online_mask);
+ 		}
+ 
++		if (irq_set_affinity_hint(reply_q->vector,
++					   reply_q->affinity_hint))
++			dinitprintk(ioc, pr_info(MPT2SAS_FMT
++			    "error setting affinity hint for irq vector %d\n",
++			    ioc->name, reply_q->vector));
+ 		index++;
+-
+-	} while (cpu < nr_cpus);
++	}
+ }
+ 
+ /**
 diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.h b/drivers/scsi/mpt2sas/mpt2sas_base.h
-index 3faad45..72bffec 100644
+index 72bffec..46e8d51 100644
 --- a/drivers/scsi/mpt2sas/mpt2sas_base.h
 +++ b/drivers/scsi/mpt2sas/mpt2sas_base.h
-@@ -4,7 +4,8 @@
-  *
-  * This code is based on drivers/scsi/mpt2sas/mpt2_base.h
-  * Copyright (C) 2007-2014  LSI Corporation
-- *  (mailto:DL-MPTFusionLinux@lsi.com)
-+ * Copyright (C) 20013-2014 Avago Technologies
-+ *  (mailto: MPT-FusionLinux.pdl@avagotech.com)
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-@@ -67,7 +68,7 @@
+@@ -587,6 +587,7 @@ struct adapter_reply_queue {
+ 	Mpi2ReplyDescriptorsUnion_t *reply_post_free;
+ 	char			name[MPT_NAME_LENGTH];
+ 	atomic_t		busy;
++	cpumask_var_t		affinity_hint;
+ 	struct list_head	list;
+ };
  
- /* driver versioning info */
- #define MPT2SAS_DRIVER_NAME		"mpt2sas"
--#define MPT2SAS_AUTHOR	"LSI Corporation <DL-MPTFusionLinux@lsi.com>"
-+#define MPT2SAS_AUTHOR "Avago Technologies <MPT-FusionLinux.pdl@avagotech.com>"
- #define MPT2SAS_DESCRIPTION	"LSI MPT Fusion SAS 2.0 Device Driver"
- #define MPT2SAS_DRIVER_VERSION		"19.100.00.00"
- #define MPT2SAS_MAJOR_VERSION		19
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_config.c b/drivers/scsi/mpt2sas/mpt2sas_config.c
-index 41a8f84..c43815b 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_config.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_config.c
-@@ -3,7 +3,8 @@
-  *
-  * This code is based on drivers/scsi/mpt2sas/mpt2_base.c
-  * Copyright (C) 2007-2014  LSI Corporation
-- *  (mailto:DL-MPTFusionLinux@lsi.com)
-+ * Copyright (C) 20013-2014 Avago Technologies
-+ *  (mailto: MPT-FusionLinux.pdl@avagotech.com)
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_ctl.c b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-index ca4e563..4e50960 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-@@ -4,7 +4,8 @@
-  *
-  * This code is based on drivers/scsi/mpt2sas/mpt2_ctl.c
-  * Copyright (C) 2007-2014  LSI Corporation
-- *  (mailto:DL-MPTFusionLinux@lsi.com)
-+ * Copyright (C) 20013-2014 Avago Technologies
-+ *  (mailto: MPT-FusionLinux.pdl@avagotech.com)
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_ctl.h b/drivers/scsi/mpt2sas/mpt2sas_ctl.h
-index 7f842c8..46b2fc5 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_ctl.h
-+++ b/drivers/scsi/mpt2sas/mpt2sas_ctl.h
-@@ -4,7 +4,8 @@
-  *
-  * This code is based on drivers/scsi/mpt2sas/mpt2_ctl.h
-  * Copyright (C) 2007-2014  LSI Corporation
-- *  (mailto:DL-MPTFusionLinux@lsi.com)
-+ * Copyright (C) 20013-2014 Avago Technologies
-+ *  (mailto: MPT-FusionLinux.pdl@avagotech.com)
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_debug.h b/drivers/scsi/mpt2sas/mpt2sas_debug.h
-index cc57ef3..277120d 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_debug.h
-+++ b/drivers/scsi/mpt2sas/mpt2sas_debug.h
-@@ -3,7 +3,8 @@
-  *
-  * This code is based on drivers/scsi/mpt2sas/mpt2_debug.c
-  * Copyright (C) 2007-2014  LSI Corporation
-- *  (mailto:DL-MPTFusionLinux@lsi.com)
-+ * Copyright (C) 20013-2014 Avago Technologies
-+ *  (mailto: MPT-FusionLinux.pdl@avagotech.com)
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-index bbbec9d..5950731 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -3,7 +3,8 @@
-  *
-  * This code is based on drivers/scsi/mpt2sas/mpt2_scsih.c
-  * Copyright (C) 2007-2014  LSI Corporation
-- *  (mailto:DL-MPTFusionLinux@lsi.com)
-+ * Copyright (C) 20013-2014 Avago Technologies
-+ *  (mailto: MPT-FusionLinux.pdl@avagotech.com)
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_transport.c b/drivers/scsi/mpt2sas/mpt2sas_transport.c
-index e689bf2..ff2500a 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_transport.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_transport.c
-@@ -3,7 +3,8 @@
-  *
-  * This code is based on drivers/scsi/mpt2sas/mpt2_transport.c
-  * Copyright (C) 2007-2014  LSI Corporation
-- *  (mailto:DL-MPTFusionLinux@lsi.com)
-+ * Copyright (C) 20013-2014 Avago Technologies
-+ *  (mailto: MPT-FusionLinux.pdl@avagotech.com)
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
 diff --git a/drivers/scsi/mpt3sas/mpt3sas_base.c b/drivers/scsi/mpt3sas/mpt3sas_base.c
-index 0b8210b..961bd9d 100644
+index 961bd9d..4f6fb88 100644
 --- a/drivers/scsi/mpt3sas/mpt3sas_base.c
 +++ b/drivers/scsi/mpt3sas/mpt3sas_base.c
-@@ -4,7 +4,8 @@
-  *
-  * This code is based on drivers/scsi/mpt3sas/mpt3sas_base.c
-  * Copyright (C) 2012-2014  LSI Corporation
-- *  (mailto:DL-MPTFusionLinux@lsi.com)
-+ * Copyright (C) 2013-2014 Avago Technologies
-+ *  (mailto: MPT-FusionLinux.pdl@avagotech.com)
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
+@@ -1584,6 +1584,8 @@ _base_free_irq(struct MPT3SAS_ADAPTER *ioc)
+ 
+ 	list_for_each_entry_safe(reply_q, next, &ioc->reply_queue_list, list) {
+ 		list_del(&reply_q->list);
++		irq_set_affinity_hint(reply_q->vector, NULL);
++		free_cpumask_var(reply_q->affinity_hint);
+ 		synchronize_irq(reply_q->vector);
+ 		free_irq(reply_q->vector, reply_q);
+ 		kfree(reply_q);
+@@ -1613,6 +1615,11 @@ _base_request_irq(struct MPT3SAS_ADAPTER *ioc, u8 index, u32 vector)
+ 	reply_q->ioc = ioc;
+ 	reply_q->msix_index = index;
+ 	reply_q->vector = vector;
++
++	if (!alloc_cpumask_var(&reply_q->affinity_hint, GFP_KERNEL))
++		return -ENOMEM;
++	cpumask_clear(reply_q->affinity_hint);
++
+ 	atomic_set(&reply_q->busy, 0);
+ 	if (ioc->msix_enable)
+ 		snprintf(reply_q->name, MPT_NAME_LENGTH, "%s%d-msix%d",
+@@ -1647,6 +1654,7 @@ static void
+ _base_assign_reply_queues(struct MPT3SAS_ADAPTER *ioc)
+ {
+ 	unsigned int cpu, nr_cpus, nr_msix, index = 0;
++	struct adapter_reply_queue *reply_q;
+ 
+ 	if (!_base_is_controller_msix_enabled(ioc))
+ 		return;
+@@ -1661,20 +1669,30 @@ _base_assign_reply_queues(struct MPT3SAS_ADAPTER *ioc)
+ 
+ 	cpu = cpumask_first(cpu_online_mask);
+ 
+-	do {
++	list_for_each_entry(reply_q, &ioc->reply_queue_list, list) {
++
+ 		unsigned int i, group = nr_cpus / nr_msix;
+ 
++		if (cpu >= nr_cpus)
++			break;
++
+ 		if (index < nr_cpus % nr_msix)
+ 			group++;
+ 
+ 		for (i = 0 ; i < group ; i++) {
+ 			ioc->cpu_msix_table[cpu] = index;
++			cpumask_or(reply_q->affinity_hint,
++				   reply_q->affinity_hint, get_cpu_mask(cpu));
+ 			cpu = cpumask_next(cpu, cpu_online_mask);
+ 		}
+ 
++		if (irq_set_affinity_hint(reply_q->vector,
++					   reply_q->affinity_hint))
++			dinitprintk(ioc, pr_info(MPT3SAS_FMT
++			    "error setting affinity hint for irq vector %d\n",
++			    ioc->name, reply_q->vector));
+ 		index++;
+-
+-	} while (cpu < nr_cpus);
++	}
+ }
+ 
+ /**
 diff --git a/drivers/scsi/mpt3sas/mpt3sas_base.h b/drivers/scsi/mpt3sas/mpt3sas_base.h
-index 4fef8f3..7e9f55b 100644
+index 7e9f55b..afa8816 100644
 --- a/drivers/scsi/mpt3sas/mpt3sas_base.h
 +++ b/drivers/scsi/mpt3sas/mpt3sas_base.h
-@@ -4,7 +4,8 @@
-  *
-  * This code is based on drivers/scsi/mpt3sas/mpt3sas_base.h
-  * Copyright (C) 2012-2014  LSI Corporation
-- *  (mailto:DL-MPTFusionLinux@lsi.com)
-+ * Copyright (C) 2013-2014 Avago Technologies
-+ *  (mailto: MPT-FusionLinux.pdl@avagotech.com)
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-@@ -68,7 +69,7 @@
+@@ -507,6 +507,7 @@ struct adapter_reply_queue {
+ 	Mpi2ReplyDescriptorsUnion_t *reply_post_free;
+ 	char			name[MPT_NAME_LENGTH];
+ 	atomic_t		busy;
++	cpumask_var_t		affinity_hint;
+ 	struct list_head	list;
+ };
  
- /* driver versioning info */
- #define MPT3SAS_DRIVER_NAME		"mpt3sas"
--#define MPT3SAS_AUTHOR	"LSI Corporation <DL-MPTFusionLinux@lsi.com>"
-+#define MPT3SAS_AUTHOR "Avago Technologies <MPT-FusionLinux.pdl@avagotech.com>"
- #define MPT3SAS_DESCRIPTION	"LSI MPT Fusion SAS 3.0 Device Driver"
- #define MPT3SAS_DRIVER_VERSION		"04.100.00.00"
- #define MPT3SAS_MAJOR_VERSION		4
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_config.c b/drivers/scsi/mpt3sas/mpt3sas_config.c
-index 6582193..e45c461 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_config.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_config.c
-@@ -3,7 +3,8 @@
-  *
-  * This code is based on drivers/scsi/mpt3sas/mpt3sas_base.c
-  * Copyright (C) 2012-2014  LSI Corporation
-- *  (mailto:DL-MPTFusionLinux@lsi.com)
-+ * Copyright (C) 2013-2014 Avago Technologies
-+ *  (mailto: MPT-FusionLinux.pdl@avagotech.com)
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_ctl.c b/drivers/scsi/mpt3sas/mpt3sas_ctl.c
-index dca1487..080c8a7 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_ctl.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_ctl.c
-@@ -4,7 +4,8 @@
-  *
-  * This code is based on drivers/scsi/mpt3sas/mpt3sas_ctl.c
-  * Copyright (C) 2012-2014  LSI Corporation
-- *  (mailto:DL-MPTFusionLinux@lsi.com)
-+ * Copyright (C) 2013-2014 Avago Technologies
-+ *  (mailto: MPT-FusionLinux.pdl@avagotech.com)
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_ctl.h b/drivers/scsi/mpt3sas/mpt3sas_ctl.h
-index 5f3d7fd..aee99ce 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_ctl.h
-+++ b/drivers/scsi/mpt3sas/mpt3sas_ctl.h
-@@ -4,7 +4,8 @@
-  *
-  * This code is based on drivers/scsi/mpt3sas/mpt3sas_ctl.h
-  * Copyright (C) 2012-2014  LSI Corporation
-- *  (mailto:DL-MPTFusionLinux@lsi.com)
-+ * Copyright (C) 2013-2014 Avago Technologies
-+ *  (mailto: MPT-FusionLinux.pdl@avagotech.com)
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_debug.h b/drivers/scsi/mpt3sas/mpt3sas_debug.h
-index 4778e7d..4e8a63f 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_debug.h
-+++ b/drivers/scsi/mpt3sas/mpt3sas_debug.h
-@@ -3,7 +3,8 @@
-  *
-  * This code is based on drivers/scsi/mpt3sas/mpt3sas_debug.c
-  * Copyright (C) 2012-2014  LSI Corporation
-- *  (mailto:DL-MPTFusionLinux@lsi.com)
-+ * Copyright (C) 2013-2014 Avago Technologies
-+ *  (mailto: MPT-FusionLinux.pdl@avagotech.com)
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_scsih.c b/drivers/scsi/mpt3sas/mpt3sas_scsih.c
-index 8cbd078..e8e6bd4 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_scsih.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_scsih.c
-@@ -3,7 +3,8 @@
-  *
-  * This code is based on drivers/scsi/mpt3sas/mpt3sas_scsih.c
-  * Copyright (C) 2012-2014  LSI Corporation
-- *  (mailto:DL-MPTFusionLinux@lsi.com)
-+ * Copyright (C) 2013-2014 Avago Technologies
-+ *  (mailto: MPT-FusionLinux.pdl@avagotech.com)
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_transport.c b/drivers/scsi/mpt3sas/mpt3sas_transport.c
-index 3637ae6..efb98af 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_transport.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_transport.c
-@@ -3,7 +3,8 @@
-  *
-  * This code is based on drivers/scsi/mpt3sas/mpt3sas_transport.c
-  * Copyright (C) 2012-2014  LSI Corporation
-- *  (mailto:DL-MPTFusionLinux@lsi.com)
-+ * Copyright (C) 2013-2014 Avago Technologies
-+ *  (mailto: MPT-FusionLinux.pdl@avagotech.com)
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_trigger_diag.c b/drivers/scsi/mpt3sas/mpt3sas_trigger_diag.c
-index 8a2dd11..b60fd7a 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_trigger_diag.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_trigger_diag.c
-@@ -4,7 +4,8 @@
-  *
-  * This code is based on drivers/scsi/mpt3sas/mpt3sas_trigger_diag.c
-  * Copyright (C) 2012-2014  LSI Corporation
-- *  (mailto:DL-MPTFusionLinux@lsi.com)
-+ * Copyright (C) 2013-2014 Avago Technologies
-+ *  (mailto: MPT-FusionLinux.pdl@avagotech.com)
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_trigger_diag.h b/drivers/scsi/mpt3sas/mpt3sas_trigger_diag.h
-index f681db5..6586a46 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_trigger_diag.h
-+++ b/drivers/scsi/mpt3sas/mpt3sas_trigger_diag.h
-@@ -5,7 +5,8 @@
-  *
-  * This code is based on drivers/scsi/mpt3sas/mpt3sas_base.h
-  * Copyright (C) 2012-2014  LSI Corporation
-- *  (mailto:DL-MPTFusionLinux@lsi.com)
-+ * Copyright (C) 2013-2014 Avago Technologies
-+ *  (mailto: MPT-FusionLinux.pdl@avagotech.com)
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
 -- 
 2.0.2
 
