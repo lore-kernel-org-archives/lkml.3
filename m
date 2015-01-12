@@ -1,61 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751230AbbALCYo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 21:24:44 -0500
-Received: from mga09.intel.com ([134.134.136.24]:13416 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750882AbbALCYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 21:24:41 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,740,1413270000"; 
-   d="scan'208";a="635817584"
-Date: Mon, 12 Jan 2015 10:04:52 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Juri Lelli <juri.lelli@arm.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Kirill Tkhai <ktkhai@parallels.com>,
-        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: Re: [PATCH v7 0/7] sched: support dl task migration during cpu
- hotplug and other fixes
-Message-ID: <20150112020452.GA2343@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1420338714-15624-1-git-send-email-wanpeng.li@linux.intel.com>
- <20150105232011.GA13200@kernel>
+	id S1751223AbbALCFg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 21:05:36 -0500
+Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:9991 "EHLO
+	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750846AbbALCFe convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jan 2015 21:05:34 -0500
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
+CC: "'Ard Biesheuvel'" <ard.biesheuvel@linaro.org>,
+        "'Will Deacon'" <will.deacon@arm.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'akinobu.mita@gmail.com'" <akinobu.mita@gmail.com>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'Joe Perches'" <joe@perches.com>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 12 Jan 2015 10:05:30 +0800
+Subject: FW: [RFC V6 2/3 resend] arm:add bitrev.h file to support rbit
+ instruction   
+Thread-Topic: [RFC V6 2/3 resend] arm:add bitrev.h file to support rbit
+ instruction   
+Thread-Index: AdAr/PXsSIMtzQSaQvaNR/yTI7onlQACpIuAAIEj8yA=
+Message-ID: <35FD53F367049845BC99AC72306C23D103EDAF89E19A@CNBJMBX05.corpusers.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150105232011.GA13200@kernel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping,
-On Tue, Jan 06, 2015 at 07:20:11AM +0800, Wanpeng Li wrote:
->Ping Juri, Peter, 1/7~6/7 can be reviewed/applied separately since patch 7/7 
->is still need more work.
->On Sun, Jan 04, 2015 at 10:31:47AM +0800, Wanpeng Li wrote:
->>v6 -> v7:
->> * rebase 
->>
->>I collect recent send out patches to one patchset in order to get review easily.
->>
->>For 7/7 I will remove rd->span related modification if Pang's effort merged.
->>https://lkml.org/lkml/2014/11/17/443
->>
->>Wanpeng Li (7):
->>  sched/deadline: fix start high-res preemption tick for a non-leftmost task
->>  sched/deadline: fix rt runtime corrupt when dl refuse a smaller bandwidth
->>  sched/deadline: fix dl entity is still mark yield after replenishing
->>  sched/deadline: reduce overhead if there are no scheduling parameters changed
->>  sched/fair: fix idle balance when remaining tasks are all non-CFS tasks
->>  sched: fix start hrtick for short schedule slices on UP
->>  sched/deadline: support dl task migration during cpu hotplug
->>
->> kernel/sched/core.c     | 27 +++++++++++++++++----
->> kernel/sched/deadline.c | 62 +++++++++++++++++++++++++++++++++++++++++++++----
->> kernel/sched/fair.c     |  2 +-
->> kernel/sched/sched.h    |  3 ++-
->> 4 files changed, 84 insertions(+), 10 deletions(-)
->>
->>-- 
->>1.9.1
+> -----Original Message-----
+> From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk]
+> Sent: Friday, January 09, 2015 7:11 PM
+> To: Wang, Yalin
+> Cc: 'Ard Biesheuvel'; 'Will Deacon'; 'linux-kernel@vger.kernel.org'; 
+> 'akinobu.mita@gmail.com'; 'linux-mm@kvack.org'; 'Joe Perches'; 
+> 'linux-arm- kernel@lists.infradead.org'
+> Subject: Re: [RFC V6 2/3] arm:add bitrev.h file to support rbit 
+> instruction
+> 
+> On Fri, Jan 09, 2015 at 10:16:32AM +0800, Wang, Yalin wrote:
+> > > -----Original Message-----
+> > > From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk]
+> > > Sent: Friday, January 09, 2015 2:41 AM
+> > > To: Wang, Yalin
+> > > Cc: 'Will Deacon'; 'Ard Biesheuvel'; 
+> > > 'linux-kernel@vger.kernel.org'; 'akinobu.mita@gmail.com'; 
+> > > 'linux-mm@kvack.org'; 'Joe Perches';
+> > > 'linux-arm- kernel@lists.infradead.org'
+> > > Subject: Re: [RFC V6 2/3] arm:add bitrev.h file to support rbit 
+> > > instruction
+> > >
+> > > The root cause is that the kernel being built is supposed to 
+> > > support both
+> > > ARMv7 and ARMv6K CPUs.  However, "rbit" is only available on
+> > > ARMv6T2 (thumb2) and ARMv7, and not plain ARMv6 or ARMv6K CPUs.
+> > >
+> > In the patch that you applied:
+> > 8205/1 	add bitrev.h file to support rbit instruction
+> >
+> > I have add :
+> > +	select HAVE_ARCH_BITREVERSE if ((CPU_V7M || CPU_V7) && !CPU_V6)
+> >
+> > If you build kernel support ARMv6K, should CONFIG_CPU_V6=y, isn't it ?
+> > Then will not build hardware rbit instruction, isn't it ?
+> 
+> The config has:
+> 
+> CONFIG_CPU_PJ4=y
+> # CONFIG_CPU_V6 is not set
+> CONFIG_CPU_V6K=y
+> CONFIG_CPU_V7=y
+> CONFIG_CPU_32v6=y
+> CONFIG_CPU_32v6K=y
+> CONFIG_CPU_32v7=y
+> 
+> And no, the CONFIG_CPU_V* flags refer to the CPUs.  The
+> CONFIG_CPU_32v* symbols refer to the CPU architectures.
+> 
+Oh, I see,
+How about change like this:
++	select HAVE_ARCH_BITREVERSE if ((CPU_V7M || CPU_V7) && !CPU_V6 && 
++!CPU_V6K)
+I am not sure if I also need add some older CPU types like !CPU_ARM9TDMI &&　!CPU_ARM940T ?
+
+Another solution is:
++	select HAVE_ARCH_BITREVERSE if ((CPU_32V7M || CPU_32V7) && !CPU_32V6 
++&& !CPU_32V5 && !CPU_32V4 && !CPU_32V4T && !CPU_32V3)
+
+By the way, I am not clear about the difference between CPU_V6 and CPU_V6K, could you tell me? :)
+
+Thank you 
+
+
+
+
+
+
+
