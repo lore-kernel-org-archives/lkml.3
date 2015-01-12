@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146AbbALQAC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 11:00:02 -0500
-Received: from 8bytes.org ([81.169.241.247]:46253 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751951AbbALQAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 11:00:00 -0500
-Date: Mon, 12 Jan 2015 16:59:57 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Oded Gabbay <oded.gabbay@amd.com>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        John Bridgman <John.Bridgman@amd.com>,
-        "Elifaz, Dana" <Dana.Elifaz@amd.com>
-Subject: Re: [PATCH] iommu/amd: Track when amd_iommu_v2 init is complete
-Message-ID: <20150112155957.GE6343@8bytes.org>
-References: <1419106352-6486-1-git-send-email-oded.gabbay@amd.com>
- <5495DB96.6070608@amd.com>
- <5497F130.7040508@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5497F130.7040508@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751892AbbALQBv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 11:01:51 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:38096 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275AbbALQBu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 11:01:50 -0500
+From: Ming Lei <ming.lei@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>,
+        Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH 1/2] firmware_loader: abort request if wait_for_completion is interrupted
+Date: Tue, 13 Jan 2015 00:01:35 +0800
+Message-Id: <1421078495-12081-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oded,
+If current request is interrupted by signal, such as 'ctrl + c',
+this request has to be aborted for the following reasons:
 
-On Mon, Dec 22, 2014 at 12:23:44PM +0200, Oded Gabbay wrote:
-> The drm guys suggested we move iommu/ subsystem before gpu/
-> subsystem in drivers/Makefile instead of the above patch (and the
-> complementing patch-set in amdkfd).
-> I did that and it works, so please see this patch as discarded for now.
-> I will send a new patch-set shortly.
+	- the buf need to be removed from pending list
+	- same requests from other contexts need to be completed
 
-Yeah, this is still a hack, but a better solution than tracking the
-initialization order manually.
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ drivers/base/firmware_class.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-
-	Joerg
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 58470c3..6bed4ae 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -927,6 +927,13 @@ static int _request_firmware_load(struct firmware_priv *fw_priv,
+ 	retval = wait_for_completion_interruptible(&buf->completion);
+ 
+ 	cancel_delayed_work_sync(&fw_priv->timeout_work);
++
++	if (retval == -ERESTARTSYS) {
++		mutex_lock(&fw_lock);
++		fw_load_abort(fw_priv);
++		mutex_unlock(&fw_lock);
++	}
++
+ 	if (is_fw_load_aborted(buf))
+ 		retval = -EAGAIN;
+ 	else if (!buf->data)
+-- 
+1.7.9.5
 
