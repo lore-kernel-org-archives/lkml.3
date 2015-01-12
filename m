@@ -1,108 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199AbbALLF7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 06:05:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55988 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752924AbbALLF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 06:05:56 -0500
-Date: Mon, 12 Jan 2015 12:05:22 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: acme@redhat.com, namhyung@kernel.org, peterz@infradead.org,
-        jolsa@kernel.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        linux-perf-users@vger.kernel.org, linux-arch@vger.kernel.org,
-        Alexey.Brodkin@synopsys.com, Borislav Petkov <bp@suse.de>,
-        Cody P Schafer <dev@codyps.com>
-Subject: Re: [PATCH v2 1/5] perf tools: [uclibc] fix statfs.f_type data type
- mismatch build error
-Message-ID: <20150112110522.GC26229@krava.redhat.com>
-References: <1420888254-17504-1-git-send-email-vgupta@synopsys.com>
- <1420888254-17504-2-git-send-email-vgupta@synopsys.com>
+	id S1753263AbbALLGH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 06:06:07 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58467 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753201AbbALLGD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 06:06:03 -0500
+Message-ID: <54B3AA86.80601@pengutronix.de>
+Date: Mon, 12 Jan 2015 12:05:42 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420888254-17504-2-git-send-email-vgupta@synopsys.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Ahmed S. Darwish" <darwish.07@gmail.com>,
+        Olivier Sobrie <olivier@sobrie.be>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 01/04] can: kvaser_usb: Don't dereference skb after
+ a netif_rx()
+References: <20141223154654.GB6460@vivalin-002> <20150111200544.GA8855@linux> <20150111201116.GB8855@linux> <20150111204952.GC8999@linux>
+In-Reply-To: <20150111204952.GC8999@linux>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="4PlGDeJOEFVMrRB3MARqu2Kfs0klrlCr2"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 04:40:50PM +0530, Vineet Gupta wrote:
-> From: Alexey Brodkin <abrodkin@synopsys.com>
-> 
-> ARC Linux uses the no legacy syscalls abi and corresponding uClibc headers
-> statfs defines f_type to be U32 which causes perf build breakage
-> 
-> http://git.uclibc.org/uClibc/tree/libc/sysdeps/linux/common-generic/bits/statfs.h
-> 
-> ----------->8---------------
->   CC       fs/fs.o
-> fs/fs.c: In function 'fs__valid_mount':
-> fs/fs.c:82:24: error: comparison between signed and unsigned integer
-> expressions [-Werror=sign-compare]
->   else if (st_fs.f_type != magic)
->                         ^
-> cc1: all warnings being treated as errors
-> ----------->8---------------
-> 
-> Cc: Borislav Petkov <bp@suse.de>
-> Cc: Jiri Olsa <jolsa@kernel.org>
-> Cc: Cody P Schafer <dev@codyps.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: linux-perf-users@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--4PlGDeJOEFVMrRB3MARqu2Kfs0klrlCr2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Jiri Olsa <jolsa@kernel.org>
+On 01/11/2015 09:49 PM, Ahmed S. Darwish wrote:
+> From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+>=20
+> We should not touch the packet after a netif_rx: it might
+> get freed behind our back.
+>=20
+> Suggested-by: Marc Kleine-Budde <mkl@pengutronix.de>
+> Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
 
-thanks,
-jirka
+Applied to can/master.
 
-> 
-> ---
-> v3: Changes since v2 [2]
->  * Made Changelog a bit more concise, no code changes [vgupta]
-> 
-> v2: Changes since v1 [1]
->  * Added type cast to DEBUGFS_MAGIC in "debugfs.c" [Arnaldo]
->  * Added verbose explanation of root cause
-> 
-> [2] https://lkml.org/lkml/2014/9/16/296
-> [1] https://lkml.org/lkml/2014/8/13/529
-> 
-> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-> ---
->  tools/lib/api/fs/debugfs.c | 2 +-
->  tools/lib/api/fs/fs.c      | 2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/tools/lib/api/fs/debugfs.c b/tools/lib/api/fs/debugfs.c
-> index a74fba6d7743..93aa4cd2416f 100644
-> --- a/tools/lib/api/fs/debugfs.c
-> +++ b/tools/lib/api/fs/debugfs.c
-> @@ -67,7 +67,7 @@ int debugfs_valid_mountpoint(const char *debugfs)
->  
->  	if (statfs(debugfs, &st_fs) < 0)
->  		return -ENOENT;
-> -	else if (st_fs.f_type != (long) DEBUGFS_MAGIC)
-> +	else if ((long) st_fs.f_type != (long) DEBUGFS_MAGIC)
->  		return -ENOENT;
->  
->  	return 0;
-> diff --git a/tools/lib/api/fs/fs.c b/tools/lib/api/fs/fs.c
-> index 65d9be3f9887..15e64921ea84 100644
-> --- a/tools/lib/api/fs/fs.c
-> +++ b/tools/lib/api/fs/fs.c
-> @@ -79,7 +79,7 @@ static int fs__valid_mount(const char *fs, long magic)
->  
->  	if (statfs(fs, &st_fs) < 0)
->  		return -ENOENT;
-> -	else if (st_fs.f_type != magic)
-> +	else if ((long) st_fs.f_type != magic)
->  		return -ENOENT;
->  
->  	return 0;
-> -- 
-> 1.9.1
-> 
+tnx,
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--4PlGDeJOEFVMrRB3MARqu2Kfs0klrlCr2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUs6qJAAoJECte4hHFiupUIo8P/As2NRoUap9CJAq1ryczTUof
+TwOkhzFgCdXQO+h9jwP5QCeKWxHjNZyLsT8cJ7M+5S1fWzG4XMPHJ9PRnyNi8+l7
+7pDcMy7t0Ag53r0lumErv+Du9h/SoPZUOWknzUlPnIxNSevjZiVjiGLLZY6ultEq
+KwGK1e4xOYCvmD1EWSFMb4Z6zo+YrSVPGKf1Goan6pnMRCU9gtXYfAYAixpTOiiq
+p5PHgRP8qNJZ2q4u7F/M4a06v7SN9zckSYJgFAmN90AFU4DrllduRZwDt9BChWdF
+C6vHG5Ziyf2fJovq3QHnuuRrMc93fGxJpkNVOJLXWo5bGpuu+WPYbiJ14hkHFw+J
+CEbw5+HlxkyyZVUbjVsDYZcWcIit0o1ugbWnARmxa9yLqT//3staTzZ2IL5RnbON
+lu84vWMoTCaw3z8QrbGPNUsdVTJO4oibbB6n2YCD9snHIws069HI+7tyztYl6wOn
+dvgjzw3hDEuq6MmAEJqcmLqqq2jyAJ47B6xsi8ZASSBMq4wENH0OsV3AcEcBEQ0N
+OsJ4U0mJyg0o8Vht+AapsNowEbXAM21BoTjBGIbv22xa9AAryg+YIf0uEU36UiET
+5Mfrgz9wDyCfdp9mgewx2OfPoL8npVJDAld4ltWwIJANfguYM4I0/42Am85zrRB6
+5qEGMDPUTcaMlM8vwv3P
+=jS76
+-----END PGP SIGNATURE-----
+
+--4PlGDeJOEFVMrRB3MARqu2Kfs0klrlCr2--
