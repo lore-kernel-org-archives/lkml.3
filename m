@@ -1,124 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368AbbALJqc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 04:46:32 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:29849 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607AbbALJqa (ORCPT
+	id S1752514AbbALJsi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 04:48:38 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:8856 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752261AbbALJsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 04:46:30 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-60-54b397f3960c
-Message-id: <54B397F2.6060205@samsung.com>
-Date: Mon, 12 Jan 2015 10:46:26 +0100
-From: Jacek Anaszewski <j.anaszewski@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
- Thunderbird/17.0.8
+	Mon, 12 Jan 2015 04:48:36 -0500
+X-AuditID: cbfee68d-f79296d000004278-10-54b39872e910
+Date: Mon, 12 Jan 2015 09:48:34 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCHv7 06/10] ARM: dts: Add PPMU dt node for Exynos3250 SoC
+To: =?utf-8?Q?=EC=B5=9C=EC=B0=AC=EC=9A=B0?= <cw00.choi@samsung.com>,
+        "kgene@kernel.org" <kgene@kernel.org>
+Cc: =?utf-8?Q?=EB=B0=95=EA=B2=BD=EB=AF=BC?= <kyungmin.park@samsung.com>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        ABHILASH KESAVAN <a.kesavan@samsung.com>,
+        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        =?utf-8?Q?=EB=8C=80=EC=9D=B8=EA=B8=B0?= <inki.dae@samsung.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
+Reply-to: myungjoo.ham@samsung.com
 MIME-version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
-        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
-        s.nawrocki@samsung.com, Hans Verkuil <hans.verkuil@cisco.com>
-Subject: Re: [PATCH/RFC v10 15/19] media: Add registration helpers for V4L2
- flash sub-devices
-References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
- <1420816989-1808-16-git-send-email-j.anaszewski@samsung.com>
- <20150109205432.GP18076@amd>
-In-reply-to: <20150109205432.GP18076@amd>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t/xa7qfp28OMbjfYGCxccZ6VoujOycy
-	Wcw/co7VYsnPXUwWZ5vesFtc3jWHzWLrm3WMFj0btrJa3D11lM1i966nrBaH37SzWpzZv5LN
-	gcdjyu+NrB47Z91l9zj8dSGLx575P1g9+rasYvRYsfo7u8fnTXIB7FFcNimpOZllqUX6dglc
-	GVOW/mAt2CFecWDSLbYGxr9CXYycHBICJhKHl91mhrDFJC7cW8/WxcjFISSwlFHi48+DTBDO
-	R0aJtU8vg1XxCmhJvLy5mBHEZhFQldi64yAbiM0mYCjx88VrJhBbVCBC4s/pfawQ9YISPybf
-	YwGxRQTkJbb2rWAGGcossJZJovvNVSCHg0NYIF5iw6wEuM3Hur+CLeAU0JT4fPMhmM0sYC2x
-	ctI2KFteYvOat8wTGAVmIdkxC0nZLCRlCxiZVzGKppYmFxQnpeca6hUn5haX5qXrJefnbmKE
-	xMuXHYyLj1kdYhTgYFTi4Z0gszlEiDWxrLgy9xCjBAezkgivaxlQiDclsbIqtSg/vqg0J7X4
-	ECMTB6dUA6P/v1XLnugc7GySY3tzxfMYV3Dsbbkvb43Lgj+1vV28cta0K5z/kp9xlr2oEtJ9
-	7fFq4u5+i3XflksIH124+eSDVzPfWseY3/HevN2MZX7Eg8nnYg+GLTrNoZWj32WmvyBwR/dR
-	my6eaCOhzDPZ507ku16YMXWvzBQD67O2z4U2bwsR2c+zVMdNiaU4I9FQi7moOBEAN4D7JnUC	AAA=
+X-MTR: 20150112094759699@myungjoo.ham
+Msgkey: 20150112094759699@myungjoo.ham
+X-EPLocale: ko_KR.utf-8
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-MLAttribute: 
+X-RootMTR: 20150112094759699@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+X-ConfirmMail: N,general
+Content-type: text/plain; charset=utf-8
+MIME-version: 1.0
+Message-id: <673354552.903841421056111417.JavaMail.weblogic@epmlwas01a>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsWyRsSkWLdoxuYQg4frLSwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAldGY8MCxoJpnBW7//YxNTB+4ehi5OQQElCXWLTkJBuILSFgIrF6
+	5nYWCFtM4sK99UBxLqCapYwSSz+8YoQperhtKTtEYg6jRNPH5awgCRYBVYm5m+YwdzFycLAJ
+	6EnM/JwMEhYW8JL4/XwzWImIQJ7ElbszGEF6mQV62CQ6rn5nhrhCSWLNvldgm3kFBCVOznwC
+	dYWqxOaPh5gg4moSi7s+sEPExSUuzL0EZfNKzGh/ClUvJzHt6xpmCFta4vysDYww3yz+/hgq
+	zi9x7PYOJghbQGLqmYOMIDdLCGhJPFiaChHmk1iz8C0LTPmuU8uZYVbd3zIXqlVCYmvLE7C/
+	mAUUJaZ0P2QHGcMsoCmxfpc+uk94BdwlGt9MZQF5XUJgJofEze2v2SYwKs1CUjcLyahZCKOQ
+	lSxgZFnFKJpakFxQnJReZKhXnJhbXJqXrpecn7uJEZgWTv971ruD8fYB60OMAhyMSjy8FlKb
+	Q4RYE8uKK3MPMZoCI2kis5Rocj4w+eSVxBsamxlZmJqYGhuZW5opifMqSv0MFhJITyxJzU5N
+	LUgtii8qzUktPsTIxMEp1cC4z8dSaf9ShsnJay32JNYZax6MqjzXGfeD82P8bpcZ0Qs2r+OX
+	Plb2IfT5GuGnN1LD0o9PEZU9e+Rx09ErZXp3szgFotoXPU4qXhKgwSNVdK3Y69BZN6EV3vcy
+	ZLw7c6VWtMznlVaaolIeMTV00uWVJ6KX3d50eL7rw4s2P2P9Is4FfLN5vtBGiaU4I9FQi7mo
+	OBEAafimWQYDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCKsWRmVeSWpSXmKPExsVy+t/tXt2iGZtDDB5PN7S4vGsOmwOjx+dN
+	cgGMUWk2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBD
+	lRTKEnNKgUIBicXFSvp2NkX5pSWpChn5xSW2StGG5kZ6RgZ6pkZ6hsaxVoYGBkamQDUJaRmN
+	DQsYC6ZxVuz+28fUwPiFo4uRk0NIQF1i0ZKTbCC2hICJxMNtS9khbDGJC/fWA8W5gGrmMEo0
+	fVzOCpJgEVCVmLtpDnMXIwcHm4CexMzPySBhYQEvid/PN4OViAjkSVy5O4MRpJdZoIdNouPq
+	d2aIZUoSa/a9YgGxeQUEJU7OfMICsUxVYvPHQ0wQcTWJxV0foI4Ql7gw9xKUzSsxo/0pVL2c
+	xLSva5ghbGmJ87M2MMIcvfj7Y6g4v8Sx2zuYIGwBialnDjKC3CwhoCXxYGkqRJhPYs3Ctyww
+	5btOLWeGWXV/y1yoVgmJrS1PwP5iFlCUmNL9kB1kDLOApsT6XfroPuEVcJdofDOVZQKj7Cwk
+	qVlIumchdCMrWcDIsopRNLUguaA4Kb3CSK84Mbe4NC9dLzk/dxMjOAU9W7SD8d9560OMAhyM
+	Sjy8FlKbQ4RYE8uKK3MPMUpwMCuJ8LqWAYV4UxIrq1KL8uOLSnNSiw8xmgKjbCKzlGhyPjA9
+	5pXEGxobm5iZmFqaWBiYmiuJ8/4/lxsiJJCeWJKanZpakFoE08fEwSnVwHhPgvssR6NtytYN
+	ttteubdv6Hpm8UV86iG752UKyfdnMS4/tOG3w4V2gaJHm37ItT7aMsNcc/NjC6/oSyt3LxHd
+	X/Qq5UAnS3L+5Uea30Q1r3373Z/VFOIudeT1A5+t/TJscyeEh108zrJgXT0jP6uZwRR7tpTD
+	G25cX318xiGFucxBMz1uX7moxFKckWioxVxUnAgAQPEht1cDAAA=
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0C9mjOl017169
 
-Hi Pavel,
+>   
+>  This patch add PPMU (Platform Performance Monitoring Unit) dt node
+> to estimate the utilization of each IP in Exynos SoC throught DEVFREQ Event
+> subsystem.
+> 
+> This patch adds following PPMU dt nodes:
+> - PPMU_DMC0     0x106a0000
+> - PPMU_DMC1     0x106b0000
+> - PPMU_RIGHTBUS 0x112A0000
+> - PPMU_LEFTBUS  0x116A0000
+> - PPMU_CAMIF    0x11AC0000
+> - PPMU_LCD0     0x11E40000
+> - PPMU_FSYS     0x12630000
+> - PPMU_3D       0x13220000
+> - PPMU_MFC      0x13660000
+> - PPMU_CPU      0x106c0000
+> 
+> Cc: Kukjin Kim <kgene@kernel.org>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  arch/arm/boot/dts/exynos3250.dtsi | 74 +++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 74 insertions(+)
+> 
 
-Thanks for the review.
+Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
-On 01/09/2015 09:54 PM, Pavel Machek wrote:
-> On Fri 2015-01-09 16:23:05, Jacek Anaszewski wrote:
->> This patch adds helper functions for registering/unregistering
->> LED Flash class devices as V4L2 sub-devices. The functions should
->> be called from the LED subsystem device driver. In case the
->> support for V4L2 Flash sub-devices is disabled in the kernel
->> config the functions' empty versions will be used.
->>
->> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
->> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->> Cc: Sakari Ailus <sakari.ailus@iki.fi>
->> Cc: Hans Verkuil <hans.verkuil@cisco.com>
->
-> Acked-by: Pavel Machek <pavel@ucw.cz>
->
->> +	/*
->> +	 * Indicator leds, unlike torch leds, are turned on/off basing
->> on
->
-> leds -> LEDs.
-
-Sure.
-
->> +	 * the state of V4L2_CID_FLASH_INDICATOR_INTENSITY control only.
->> +	 * Therefore it must be possible to set it to 0 level which in
->> +	 * the LED subsystem reflects LED_OFF state.
->> +	 */
->> +	if (cdata_id != INDICATOR_INTENSITY)
->> +		++__intensity;
->
-> And normally we'd do i++ instead of ++i, and avoid __ for local
-> variables...?
-
-Pre-incrementation operator is favourable over the post-incrementation
-one if we don't want to have an access to the value of a variable before
-incrementation, which is the case here.
-Maybe gcc detects the cases when the value of a variable is not assigned
-and doesn't copy it before incrementing, however I haven't found any
-reference. I see that often in the for loops the i++ version
-is used, but I am not sure if this is done because developers are
-aware that gcc will optimize it anyway or it is just an omission.
-
-And regarding __ for local variable - I haven't found any restriction
-about it in the Documentation/CodingStyle. Nevertheless I can rename
-it to tmp or something.
-
->> +/**
->> + * struct v4l2_flash_ctrl_config - V4L2 Flash controls initialization data
->> + * @intensity:			constraints for the led in a non-flash mode
->> + * @flash_intensity:		V4L2_CID_FLASH_INTENSITY settings constraints
->> + * @flash_timeout:		V4L2_CID_FLASH_TIMEOUT constraints
->> + * @flash_faults:		possible flash faults
->> + * @has_external_strobe:	external strobe capability
->> + * @indicator_led:		signifies that a led is of indicator type
->> + */
->> +struct v4l2_flash_ctrl_config {
->> +	struct v4l2_ctrl_config intensity;
->> +	struct v4l2_ctrl_config flash_intensity;
->> +	struct v4l2_ctrl_config flash_timeout;
->> +	u32 flash_faults;
->> +	bool has_external_strobe:1;
->> +	bool indicator_led:1;
->> +};
->
-> I don't think you are supposed to do boolean bit arrays.
-
-These bit fields allow to reduce memory usage. If they were not bit
-fields, the address of the next variable would be aligned to the
-multiply of the CPU word size.
-Please look e.g. at struct dev_pm_info in the file include/linux/pm.h.
-It also contains boolean bit fields.
-
--- 
-Best Regards,
-Jacek Anaszewski
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
