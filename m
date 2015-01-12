@@ -1,78 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752345AbbALIlB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 03:41:01 -0500
-Received: from smtprelay0238.hostedemail.com ([216.40.44.238]:44334 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752299AbbALIk5 (ORCPT
+	id S1752448AbbALImY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 03:42:24 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47669 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752420AbbALImU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 03:40:57 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2828:2911:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:4362:4425:5007:6119:6261:6742:6743:7576:7903:10004:10400:10848:10967:11232:11473:11658:11914:12517:12519:12740:13069:13161:13229:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: fan23_7a7bdf492457
-X-Filterd-Recvd-Size: 2566
-Message-ID: <1421052051.9233.11.camel@perches.com>
-Subject: Re: [PATCH 3/3] x_tables: Factor out 16bit aligment ifname_compare()
-From: Joe Perches <joe@perches.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: David Miller <davem@davemloft.net>, coreteam@netfilter.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, bhutchings@solarflare.com,
-        john.fastabend@gmail.com, herbert@gondor.apana.org.au,
-        vyasevic@redhat.com, jiri@resnulli.us, vfalico@gmail.com,
-        therbert@google.com, edumazet@google.com, yoshfuji@linux-ipv6.org,
-        jmorris@namei.org, kuznet@ms2.inr.ac.ru, kadlec@blackhole.kfki.hu,
-        kaber@trash.net, pablo@netfilter.org, kay@vrfy.org,
-        stephen@networkplumber.org
-Date: Mon, 12 Jan 2015 00:40:51 -0800
-In-Reply-To: <54B3834D.6090602@nod.at>
-References: <54B2EB81.5050604@nod.at>	<1421012376.9233.9.camel@perches.com>
-	 <54B2EE4D.2080802@nod.at>
-	 <20150111.215050.458358747958425038.davem@davemloft.net>
-	 <54B3834D.6090602@nod.at>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
+	Mon, 12 Jan 2015 03:42:20 -0500
+Message-ID: <1421052137.3081.4.camel@pengutronix.de>
+Subject: Re: [PATCH v2] clk: Do not complain about correctly set read-only
+ muxes when assigning clock parents from device tree
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Date: Mon, 12 Jan 2015 09:42:17 +0100
+In-Reply-To: <54B0233C.60201@codeaurora.org>
+References: <1420559120-17405-1-git-send-email-p.zabel@pengutronix.de>
+		 <54AEF788.3060401@codeaurora.org>
+	 <1420815016.3914.16.camel@pengutronix.de> <54B0233C.60201@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.9-1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2015-01-12 at 09:18 +0100, Richard Weinberger wrote:
-> Am 12.01.2015 um 03:50 schrieb David Miller:
-> > From: Richard Weinberger <richard@nod.at>
-> > Date: Sun, 11 Jan 2015 22:42:37 +0100
-> > 
-> >> Joe, I really don't care. This is the least significant
-> >> patch of the series.
-> >> I'll no longer waste my time with that.
-> > 
-> > If you're not willing to fix stylistic issues now, then nobody should
-> > bother wasting their time on the high level issues of your patch.
-> > 
-> > Just fix these things now rather than being difficult, this is a part
-> > of patch review that everyone has to do, not just you.
+Am Freitag, den 09.01.2015, 10:51 -0800 schrieb Stephen Boyd:
+> On 01/09/2015 06:50 AM, Philipp Zabel wrote:
+> > Hi Stephen,
+> >
+> > Am Donnerstag, den 08.01.2015, 13:32 -0800 schrieb Stephen Boyd:
+> > [...]
+> >> Why not do this in the core? As far as I can tell other drivers could
+> >> run into the same problem, no? Does this work?
+> >>
+> >> -----8<-------
+> >>
+> >> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> >> index f4963b7d4e17..3278645f4729 100644
+> >> --- a/drivers/clk/clk.c
+> >> +++ b/drivers/clk/clk.c
+> >> @@ -1677,16 +1677,18 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
+> >>  	if (!clk)
+> >>  		return 0;
+> >>  
+> >> -	/* verify ops for for multi-parent clks */
+> >> -	if ((clk->num_parents > 1) && (!clk->ops->set_parent))
+> >> -		return -ENOSYS;
+> >> -
+> >>  	/* prevent racing with updates to the clock topology */
+> >>  	clk_prepare_lock();
+> >>  
+> >>  	if (clk->parent == parent)
+> >>  		goto out;
+> >>  
+> >> +	/* verify ops for for multi-parent clks */
+> >> +	if ((clk->num_parents > 1) && (!clk->ops->set_parent)) {
+> >> +		ret = -ENOSYS;
+> >> +		goto out;
+> >> +	}
+> >> +
+> >>  	/* check that we are allowed to re-parent if the clock is in use */
+> >>  	if ((clk->flags & CLK_SET_PARENT_GATE) && clk->prepare_count) {
+> >>  		ret = -EBUSY;
+> > "[PATCH] clk: make set_parent succeed for any clock if the parent to be
+> > set is the same as the current parent" ?
+> >
+> > It works, but it also changes the API, as it makes
+> >    clk_set_parent(some_non_mux, its_current_parent)
+> > succeed instead of return -ENOSYS.
 > 
-> I apologize, it was not my intention to be difficult.
+> I would think a non_mux clk would have clk->num_parents == 1, so I don't
+> see how it would return -ENOSYS here. What you mention should succeed
+> today. Otherwise we have a bug.
 
-No worries.
+Right. In that case, I'm all for it.
 
-The unsigned long return is kind of odd with a
-compare_<foo> name as those are generally, as Jan
-mentioned, signed comparison style return values.
-
-I'd probably use a different function name too
-
-bool ifname_equal(const char *a, const char *b, const char *mask)
-{
-}
-
-to try to make the return value more obvious too.
-
-> If you and netfilter folks now prefer bool
-> for such string compare functions I'll happily address this in
-> v2 of my series.
-
-Thanks
-
+regards
+Philipp
 
