@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752319AbbALNAH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 08:00:07 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:59201 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991AbbALNAF (ORCPT
+	id S1752547AbbALNAe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 08:00:34 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:59952 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501AbbALNAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 08:00:05 -0500
-Date: Mon, 12 Jan 2015 15:59:56 +0300
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Tejun Heo <tj@kernel.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>,
-        "Suzuki K. Poulose" <Suzuki.Poulose@arm.com>, <linux-mm@kvack.org>,
+	Mon, 12 Jan 2015 08:00:33 -0500
+Date: Mon, 12 Jan 2015 13:00:21 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Robin Murphy <Robin.Murphy@arm.com>,
+        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH cgroup/for-3.19-fixes] cgroup: implement
- cgroup_subsys->unbind() callback
-Message-ID: <20150112125956.GF2110@esperanza>
-References: <54B01335.4060901@arm.com>
- <20150110085525.GD2110@esperanza>
- <20150110214316.GF25319@htj.dyndns.org>
- <20150111205543.GA5480@phnom.home.cmpxchg.org>
- <20150112080114.GE2110@esperanza>
- <20150112112845.GS25319@htj.dyndns.org>
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH RESEND] dma-mapping: tidy up dma_parms default handling
+Message-ID: <20150112130021.GC13360@arm.com>
+References: <ffdc5455d698d2525f2d126d0adabf9418fd76b1.1418990609.git.robin.murphy@arm.com>
+ <2031542.TLqIP3YVGc@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150112112845.GS25319@htj.dyndns.org>
+In-Reply-To: <2031542.TLqIP3YVGc@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 06:28:45AM -0500, Tejun Heo wrote:
-> On Mon, Jan 12, 2015 at 11:01:14AM +0300, Vladimir Davydov wrote:
-> > Come to think of it, I wonder how many users actually want to mount
-> > different controllers subset after unmount. Because we could allow
+On Fri, Jan 09, 2015 at 07:45:49PM +0000, Arnd Bergmann wrote:
+> On Friday 09 January 2015 16:56:03 Robin Murphy wrote:
+> > 
+> > This one's a bit tricky to find a home for - I think technically it's 
+> > probably an IOMMU patch, but then the long-underlying problem doesn't
+> > seem to have blown up anything until arm64, and my motivation is to
+> > make bits of Juno work, which seems to nudge it towards arm64/arm-soc
+> > territory. Could anyone suggest which tree is most appropriate?
 > 
-> It wouldn't be a common use case but, on the face of it, we still
-> support it.  If we collecctively decide that once a sub cgroup is
-> created for any controller no further hierarchy configuration for that
-> controller is allowed, that'd work too, but one way or the other, the
-> behavior, I believe, should be well-defined.  As it currently stands,
-> the conditions and failure mode are opaque to userland, which is never
-> a good thing.
-> 
-> > mounting the same subset perfectly well, even if it includes memcg. BTW,
-> > AFAIU in the unified hierarchy we won't have this problem at all,
-> > because by definition it mounts all controllers IIRC, so do we need to
-> > bother fixing this in such a complicated manner at all for the setup
-> > that's going to be deprecated anyway?
-> 
-> There will likely be a quite long transition period and if and when
-> the old things can be removed, this added cleanup logic can go away
-> with it.  It depends on how complex the implementation would get but
-> as long as it isn't too much and stays mostly isolated from the saner
-> paths, I think it's probably the right thing to do.
+> I have a set of patches touching various dma-mapping.h related bits
+> across architectures and in ARM in particular. Your patch fits into
+> that series, and I guess we could either have it in my asm-generic
+> tree or in Andrew Morton's mm tree. Possibly also arm-soc for practical
+> reasons, although it really doesn't belong in there.
 
-We can't just move kmem objects from a per-memcg kmem_cache to the
-global one fixing page counters, because in contrast to page cache and
-swap we don't even track all kmem allocations. So we have to keep all
-per-memcg kmem_cache's somewhere after unmount until they can finally be
-destroyed, but the whole logic behind per-memcg kmem_cache's destruction
-is currently tightly interwoven with that of css's (we destroy
-kmem_cache's from css_free), and there won't be any css's after unmount.
+I also have a couple of fixes for issues found by Laurent for tearing
+down the IOMMU dma ops, so you could include those too.
 
-That said, it isn't possible to add a couple of isolated functions,
-which will live their own lives and can be easily removed once we've
-switched to the unified hierarchy. Quite the contrary, implementing of
-kmem reparenting would make me rethink and complicate kmemcg code all
-over the place. That's why I'm rather reluctant to do it.
+I'll send them out this afternoon.
 
-I haven't dug deep into the cgroup core, but may be we could detach the
-old root in cgroup_kill_sb() and leave it dangling until the last
-reference to it has gone?
-
-BTW, IIRC the problem always existed for kmem-active memory cgroups,
-because we never had kmem reparenting. May be, we could therefore just
-document somewhere that kmem accounting is highly discouraged to be used
-in the legacy hierarchy and merge these two patches as is to handle page
-cache and swap charges? We won't break anything, because it was always
-broken :-)
-
-Thanks,
-Vladimir
+Will
