@@ -1,104 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265AbbALIkm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 03:40:42 -0500
-Received: from baptiste.telenet-ops.be ([195.130.132.51]:39489 "EHLO
-	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880AbbALIk1 (ORCPT
+	id S1752345AbbALIlB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 03:41:01 -0500
+Received: from smtprelay0238.hostedemail.com ([216.40.44.238]:44334 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752299AbbALIk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 03:40:27 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "David S. Miller" <davem@davemloft.net>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 5/5] m68k/atari: Remove obsolete IRQ_TYPE_*
-Date: Mon, 12 Jan 2015 09:40:21 +0100
-Message-Id: <1421052021-12560-6-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1421052021-12560-1-git-send-email-geert@linux-m68k.org>
-References: <1421052021-12560-1-git-send-email-geert@linux-m68k.org>
+	Mon, 12 Jan 2015 03:40:57 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2828:2911:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:4362:4425:5007:6119:6261:6742:6743:7576:7903:10004:10400:10848:10967:11232:11473:11658:11914:12517:12519:12740:13069:13161:13229:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: fan23_7a7bdf492457
+X-Filterd-Recvd-Size: 2566
+Message-ID: <1421052051.9233.11.camel@perches.com>
+Subject: Re: [PATCH 3/3] x_tables: Factor out 16bit aligment ifname_compare()
+From: Joe Perches <joe@perches.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: David Miller <davem@davemloft.net>, coreteam@netfilter.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, bhutchings@solarflare.com,
+        john.fastabend@gmail.com, herbert@gondor.apana.org.au,
+        vyasevic@redhat.com, jiri@resnulli.us, vfalico@gmail.com,
+        therbert@google.com, edumazet@google.com, yoshfuji@linux-ipv6.org,
+        jmorris@namei.org, kuznet@ms2.inr.ac.ru, kadlec@blackhole.kfki.hu,
+        kaber@trash.net, pablo@netfilter.org, kay@vrfy.org,
+        stephen@networkplumber.org
+Date: Mon, 12 Jan 2015 00:40:51 -0800
+In-Reply-To: <54B3834D.6090602@nod.at>
+References: <54B2EB81.5050604@nod.at>	<1421012376.9233.9.camel@perches.com>
+	 <54B2EE4D.2080802@nod.at>
+	 <20150111.215050.458358747958425038.davem@davemloft.net>
+	 <54B3834D.6090602@nod.at>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IRQ_TYPE_SLOW, IRQ_TYPE_FAST, and IRQ_TYPE_PRIO are no longer used by
-the Atari platform interrupt code since commit 734085651c9b80aa
-("[PATCH] m68k: convert atari irq code") in v2.6.18-rc1, so drop them.
+On Mon, 2015-01-12 at 09:18 +0100, Richard Weinberger wrote:
+> Am 12.01.2015 um 03:50 schrieb David Miller:
+> > From: Richard Weinberger <richard@nod.at>
+> > Date: Sun, 11 Jan 2015 22:42:37 +0100
+> > 
+> >> Joe, I really don't care. This is the least significant
+> >> patch of the series.
+> >> I'll no longer waste my time with that.
+> > 
+> > If you're not willing to fix stylistic issues now, then nobody should
+> > bother wasting their time on the high level issues of your patch.
+> > 
+> > Just fix these things now rather than being difficult, this is a part
+> > of patch review that everyone has to do, not just you.
+> 
+> I apologize, it was not my intention to be difficult.
 
-Note that their values have been reused for different purposes
-(IRQ_TYPE_NONE, IRQ_TYPE_EDGE_RISING, and IRQ_TYPE_EDGE_FALLING) since
-commit 6a6de9ef5850d063 ("[PATCH] genirq: core") in v2.6.18-rc1.
+No worries.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/m68k/atari/atakeyb.c         | 5 ++---
- arch/m68k/atari/stdma.c           | 2 +-
- arch/m68k/atari/time.c            | 3 +--
- arch/m68k/include/asm/atariints.h | 5 -----
- 4 files changed, 4 insertions(+), 11 deletions(-)
+The unsigned long return is kind of odd with a
+compare_<foo> name as those are generally, as Jan
+mentioned, signed comparison style return values.
 
-diff --git a/arch/m68k/atari/atakeyb.c b/arch/m68k/atari/atakeyb.c
-index 7bea01ceff55785f..264db11268039329 100644
---- a/arch/m68k/atari/atakeyb.c
-+++ b/arch/m68k/atari/atakeyb.c
-@@ -504,9 +504,8 @@ int atari_keyb_init(void)
- 	kb_state.state = KEYBOARD;
- 	kb_state.len = 0;
- 
--	error = request_irq(IRQ_MFP_ACIA, atari_keyboard_interrupt,
--			    IRQ_TYPE_SLOW, "keyboard,mouse,MIDI",
--			    atari_keyboard_interrupt);
-+	error = request_irq(IRQ_MFP_ACIA, atari_keyboard_interrupt, 0,
-+			    "keyboard,mouse,MIDI", atari_keyboard_interrupt);
- 	if (error)
- 		return error;
- 
-diff --git a/arch/m68k/atari/stdma.c b/arch/m68k/atari/stdma.c
-index e5a66596b116dc76..ba65f942d0c789c5 100644
---- a/arch/m68k/atari/stdma.c
-+++ b/arch/m68k/atari/stdma.c
-@@ -198,7 +198,7 @@ EXPORT_SYMBOL(stdma_islocked);
- void __init stdma_init(void)
- {
- 	stdma_isr = NULL;
--	if (request_irq(IRQ_MFP_FDC, stdma_int, IRQ_TYPE_SLOW | IRQF_SHARED,
-+	if (request_irq(IRQ_MFP_FDC, stdma_int, IRQF_SHARED,
- 			"ST-DMA floppy,ACSI,IDE,Falcon-SCSI", stdma_int))
- 		pr_err("Couldn't register ST-DMA interrupt\n");
- }
-diff --git a/arch/m68k/atari/time.c b/arch/m68k/atari/time.c
-index da8f981c36d647ea..c549b48174ec8342 100644
---- a/arch/m68k/atari/time.c
-+++ b/arch/m68k/atari/time.c
-@@ -32,8 +32,7 @@ atari_sched_init(irq_handler_t timer_routine)
-     /* start timer C, div = 1:100 */
-     st_mfp.tim_ct_cd = (st_mfp.tim_ct_cd & 15) | 0x60;
-     /* install interrupt service routine for MFP Timer C */
--    if (request_irq(IRQ_MFP_TIMC, timer_routine, IRQ_TYPE_SLOW,
--		    "timer", timer_routine))
-+    if (request_irq(IRQ_MFP_TIMC, timer_routine, 0, "timer", timer_routine))
- 	pr_err("Couldn't register timer interrupt\n");
- }
- 
-diff --git a/arch/m68k/include/asm/atariints.h b/arch/m68k/include/asm/atariints.h
-index 953e0ac6855eed9e..6321c44956206f00 100644
---- a/arch/m68k/include/asm/atariints.h
-+++ b/arch/m68k/include/asm/atariints.h
-@@ -40,11 +40,6 @@
- /* convert irq_handler index to vector number */
- #define IRQ_SOURCE_TO_VECTOR(i)	((i) + ((i) < 8 ? 0x18 : (0x40-8)))
- 
--/* interrupt service types */
--#define IRQ_TYPE_SLOW     0
--#define IRQ_TYPE_FAST     1
--#define IRQ_TYPE_PRIO     2
--
- /* ST-MFP interrupts */
- #define IRQ_MFP_BUSY      (8)
- #define IRQ_MFP_DCD       (9)
--- 
-1.9.1
+I'd probably use a different function name too
+
+bool ifname_equal(const char *a, const char *b, const char *mask)
+{
+}
+
+to try to make the return value more obvious too.
+
+> If you and netfilter folks now prefer bool
+> for such string compare functions I'll happily address this in
+> v2 of my series.
+
+Thanks
+
 
