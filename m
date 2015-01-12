@@ -1,43 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600AbbALSVh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:21:37 -0500
-Received: from smarthost01b.mail.zen.net.uk ([212.23.1.3]:57985 "EHLO
-	smarthost01b.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751881AbbALSVg (ORCPT
+	id S1754641AbbALSWQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:22:16 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:48648 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754070AbbALSWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:21:36 -0500
-Message-ID: <1421086886.18443.23.camel@linaro.org>
-Subject: What's the correct tree to route kprobes patches through?
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+	Mon, 12 Jan 2015 13:22:12 -0500
+MIME-Version: 1.0
+In-Reply-To: <20150111114124.GD4467@localhost.localdomain>
+References: <1420850068-27828-1-git-send-email-john.stultz@linaro.org>
+	<20150111114124.GD4467@localhost.localdomain>
+Date: Mon, 12 Jan 2015 10:22:11 -0800
+Message-ID: <CALAqxLW7xymopptsq5zWMyY_P25WmNvKne4u_LH-kZKK25N5fQ@mail.gmail.com>
+Subject: Re: [PATCH 00/10][RFC] Increased clocksource validation and cleanups
+From: John Stultz <john.stultz@linaro.org>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@codemonkey.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         "David S. Miller" <davem@davemloft.net>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Wang Nan <wangnan0@huawei.com>
-Date: Mon, 12 Jan 2015 18:21:26 +0000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01b-IP: [82.69.122.217]
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All
+On Sun, Jan 11, 2015 at 3:41 AM, Richard Cochran
+<richardcochran@gmail.com> wrote:
+> On Fri, Jan 09, 2015 at 04:34:18PM -0800, John Stultz wrote:
+>> So this series is the result of earlier discussions with Linus
+>> and his suggestions around improvements to clocksource validation
+>> in the hope we can more easily catch bad hardware.
+>
+> Why penalize most users just because of a random hardware failure?
+> Why not make the "catching code" a compile time option?
 
-I'm wondering what the correct route is for getting kprobes patches into
-mainline Linux. In particular I'm interested in a patch from Masami
-Hiramatsu [1] which is a dependency for some ARM kprobes work we want to
-merge. If acceptable, we could submit that one though the ARM
-maintainer's tree with our other work.
-
-[1] http://marc.info/?l=linux-kernel&m=142045769001242&w=2
-    (kprobes: Pass the original kprobe for preparing optimized kprobe)
-
-Thanks
-
--- 
-Tixy
-
+Yea, I've not looked at the actual performance impact yet, but things
+like the read-time capping (which is in the hot path) could be put
+under a debug config. Thanks for the suggestion!
+-john
