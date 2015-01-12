@@ -1,51 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535AbbALPh6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 10:37:58 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:48288 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905AbbALPh5 (ORCPT
+	id S1752781AbbALPik (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 10:38:40 -0500
+Received: from lb3-smtp-cloud6.xs4all.net ([194.109.24.31]:57702 "EHLO
+	lb3-smtp-cloud6.xs4all.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751699AbbALPij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 10:37:57 -0500
-Date: Mon, 12 Jan 2015 16:37:47 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com
-Subject: Re: [RFC 1/4] lockdep: additional lock specific information when
- dumping locks
-Message-ID: <20150112153747.GE25256@twins.programming.kicks-ass.net>
-References: <1421074631-18831-1-git-send-email-sasha.levin@oracle.com>
- <20150112150633.GD25256@twins.programming.kicks-ass.net>
- <54B3E466.2030006@oracle.com>
+	Mon, 12 Jan 2015 10:38:39 -0500
+Message-ID: <54B3EA71.9020005@xs4all.nl>
+Date: Mon, 12 Jan 2015 16:38:25 +0100
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54B3E466.2030006@oracle.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Philipp Zabel <p.zabel@pengutronix.de>
+CC: Kamil Debski <k.debski@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?RnLDqWTDqXJpYyBTdXJlYXU=?= <frederic.sureau@vodalys.com>,
+        Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>,
+        Nicolas Dufresne <nicolas.dufresne@collabora.com>
+Subject: Re: [RFC PATCH] [media] coda: Use S_PARM to set nominal framerate
+ for h.264 encoder
+References: <1419264000-11761-1-git-send-email-p.zabel@pengutronix.de>	 <54B3E24B.5030403@xs4all.nl> <1421076959.3081.63.camel@pengutronix.de>
+In-Reply-To: <1421076959.3081.63.camel@pengutronix.de>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 10:12:38AM -0500, Sasha Levin wrote:
-> The reason for my patch is simple: 
-
-That might have maybe been good changelog material?
-
-> I'm fuzzing with hundreds of worker threads
-> which at some point trigger a complete system lockup for some reason.
+On 01/12/2015 04:35 PM, Philipp Zabel wrote:
+> Hi Hans,
 > 
-> When lockdep dumps the list of held locks it shows that pretty much every one
-> of those threads is holding the lock which caused the lockup, which is incorrect
-> because it considers locks in the process of getting acquired as "held".
+> thank you for the comments!
 > 
-> This is my solution to that issue. I wanted to know which one of the threads is
-> really holding the lock rather than just waiting on it.
+> Am Montag, den 12.01.2015, 16:03 +0100 schrieb Hans Verkuil:
+>> On 12/22/2014 05:00 PM, Philipp Zabel wrote:
+>>> The encoder needs to know the nominal framerate for the constant bitrate
+>>> control mechanism to work. Currently the only way to set the framerate is
+>>> by using VIDIOC_S_PARM on the output queue.
+>>>
+>>> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+>>> ---
+>>>  drivers/media/platform/coda/coda-common.c | 29 +++++++++++++++++++++++++++++
+>>>  1 file changed, 29 insertions(+)
+>>>
+>>> diff --git a/drivers/media/platform/coda/coda-common.c b/drivers/media/platform/coda/coda-common.c
+>>> index 39330a7..63eb510 100644
+>>> --- a/drivers/media/platform/coda/coda-common.c
+>>> +++ b/drivers/media/platform/coda/coda-common.c
+>>> @@ -803,6 +803,32 @@ static int coda_decoder_cmd(struct file *file, void *fh,
+>>>  	return 0;
+>>>  }
+>>>  
+>>> +static int coda_g_parm(struct file *file, void *fh, struct v4l2_streamparm *a)
+>>> +{
+>>> +	struct coda_ctx *ctx = fh_to_ctx(fh);
+>>> +
+>>
+>> If a->type != V4L2_BUF_TYPE_VIDEO_OUTPUT, then return -EINVAL.
 > 
-> Is there a better way to solve that problem?
+> If the decoder can retrieve the framerate from the stream, wouldn't it
+> make sense to allow G_PARM for a->type == V4L2_BUF_TYPE_VIDEO_CAPTURE ?
 
-Sure, think moar, if the accompanying stack trace is in the middle
-of the blocking primitive, ignore the top held lock ;-)
+Certainly. But that wasn't in the patch :-)
 
-Alternatively, make better/more use of lock_acquired() and track the
-acquire vs acquired information in the held_lock (1 bit) and look at it
-when printing.
+Regards,
+
+	Hans
+
+> 
+>>  Ditto for s_parm.
+> 
+> Will do.
+> 
+>>> +	a->parm.output.timeperframe.denominator = 1;
+>>> +	a->parm.output.timeperframe.numerator = ctx->params.framerate;
+>>> +
+>>> +	return 0;
+>>> +}
+>>> +
+>>> +static int coda_s_parm(struct file *file, void *fh, struct v4l2_streamparm *a)
+>>> +{
+>>> +	struct coda_ctx *ctx = fh_to_ctx(fh);
+>>> +
+>>> +	if (a->type == V4L2_BUF_TYPE_VIDEO_OUTPUT &&
+>>> +	    a->parm.output.timeperframe.numerator != 0) {
+>>> +		ctx->params.framerate = a->parm.output.timeperframe.denominator
+>>> +				      / a->parm.output.timeperframe.numerator;
+>>
+>> Hmm, what happens if the denominator is 1 and the numerator is 2?
+>> You probably want to clamp ctx->params.framerate to the range of allowed framerates.
+>> And at least ensure a framerate > 0.
+>>
+>> Also check with v4l2_compliance! You'd have caught at least the missing a->type check.
+> 
+> Oh dear, I need to improve my v4l-utils update habits. I'll fix this
+> patch and resend it.
+> 
+> regards
+> Philipp
+> 
+
