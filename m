@@ -1,342 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226AbbALLPt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 06:15:49 -0500
-Received: from mga02.intel.com ([134.134.136.20]:59204 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752538AbbALLPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 06:15:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,743,1413270000"; 
-   d="scan'208";a="660438894"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Greg KH <gregkh@linuxfoundation.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] driver core: property: support for generic property
-Date: Mon, 12 Jan 2015 13:15:44 +0200
-Message-Id: <1421061344-195095-1-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 2.1.4
+	id S1752926AbbALLRZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 06:17:25 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:62252 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752003AbbALLRX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 06:17:23 -0500
+X-AuditID: cbfee68d-f79296d000004278-2a-54b3ad40a455
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+Message-id: <54B3AD40.3040308@samsung.com>
+Date: Mon, 12 Jan 2015 20:17:20 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+To: myungjoo.ham@samsung.com
+Cc: "kgene@kernel.org" <kgene@kernel.org>,
+        =?UTF-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        ABHILASH KESAVAN <a.kesavan@samsung.com>,
+        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        =?UTF-8?B?64yA7J246riw?= <inki.dae@samsung.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCHv7 02/10] devfreq: event: Add the list of supported
+ devfreq-event type
+References: <768125446.886831421046952335.JavaMail.weblogic@epmlwas09a>
+In-reply-to: <768125446.886831421046952335.JavaMail.weblogic@epmlwas09a>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsWyRsSkQNdh7eYQgxdTrC0er1nMZLFxxnpW
+	i0n3J7BYvH5haNH/+DWzxdmmN+wWmx5fY7W4vGsOm8Xn3iOMFjPO72OyWHr9IpPF7cYVbBaP
+	V7xlt2jde4TdYtWuP4wO/B5r5q1h9Ng56y67x+I9L5k8Nq3qZPPYvKTeo2/LKkaPz5vkAtij
+	uGxSUnMyy1KL9O0SuDLeLz7HVvBSqeLb3K9MDYzLZbsYOTkkBEwk5p35xAJhi0lcuLeerYuR
+	i0NIYCmjRM+ZGywwRZ87ljKD2EIC0xkllty1BrF5BQQlfky+B1bDLKAuMWneImYIW0Ti1Isd
+	ULa2xLKFr5khhr5mlDg7aQMzRLOWxJ1J7awgNouAqsSaFVPBBrEBxfe/uMEGYosKhEmsnH4F
+	LC4iICNxdeN2FpBBzAK9bBLv1kNsExaIlthys4O9i5EDaIO7xLqZ4SBhTgEPiUs/74LVSwjM
+	5JA4ubiTGWKZgMS3yYdYQOolBGQlNh1ghnhSUuLgihssExjFZyH5bRaS32Yh+W0Wkt8WMLKs
+	YhRNLUguKE5KLzLUK07MLS7NS9dLzs/dxAhMA6f/PevdwXj7gPUhRgEORiUeXgupzSFCrIll
+	xZW5hxhNgS6ayCwlmpwPTDZ5JfGGxmZGFqYmpsZG5pZmSuK8ilI/g4UE0hNLUrNTUwtSi+KL
+	SnNSiw8xMnFwSjUwxp4UNH6Vp29jMu2Vnfn2Vyy6M+dl8l9fYfP+Dse6pTf/1vdkqxklz+Vh
+	19x5T+j6S1erWP6WW90X9q/+8cCw4dDKuJcnznx58+RnGQdbyYYD37c1zEtP/fHmjOz+m1s8
+	JrQ0HoqLe69297xnEeO6vffeNulsDtuzs39jNOfSvTE1z4Sn6N5uFVBiKc5INNRiLipOBACi
+	/q2J/gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jQV2HtZtDDFauNbR4vGYxk8XGGetZ
+	LSbdn8Bi8fqFoUX/49fMFmeb3rBbbHp8jdXi8q45bBafe48wWsw4v4/JYun1i0wWtxtXsFk8
+	XvGW3aJ17xF2i1W7/jA68HusmbeG0WPnrLvsHov3vGTy2LSqk81j85J6j74tqxg9Pm+SC2CP
+	amC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAG6W0mh
+	LDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMOYMW/RbPaC6fIVPQu+MDYwXpXs
+	YuTkkBAwkfjcsZQZwhaTuHBvPRuILSQwnVFiyV1rEJtXQFDix+R7LF2MHBzMAvISRy5lg4SZ
+	BdQlJs1bBNTKBVT+mlHi7KQNzBD1WhJ3JrWzgtgsAqoSa1ZMZQGx2YDi+1/cAJsvKhAmsXL6
+	FbC4iICMxNWN21lABjEL9LJJvFu/CGyQsEC0xJabHewgi4UE3CXWzQwHCXMKeEhc+nmXZQKj
+	wCwk581COG8WkvMWMDKvYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAhOGM+kdzCuarA4xCjA
+	wajEw2shtTlEiDWxrLgy9xCjBAezkgivaxlQiDclsbIqtSg/vqg0J7X4EKMp0HMTmaVEk/OB
+	ySyvJN7Q2MTMyNLI3NDCyNhcSZxXyb4tREggPbEkNTs1tSC1CKaPiYNTqoFxXu/rkJoyy+Lm
+	7zJNv7oEisX/x/VzuW8NfL5t56cDXwz9TTTnvLmYFxzMGPdhxQMWPgaBwpUKKrrhpznWiag5
+	b9m7+ftGdsVjThunL1+2lZvjq8DODB7/P7UZQnNv73eKtbjDu+iZb88hRVuhaIY1Drn/Spl9
+	vJjtTx6ap8DdpR4h+GmdxlMlluKMREMt5qLiRABQ4QwzLgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This extends the Unified Property Interface by adding
-"Generic Property" to it for cases where device tree or ACPI
-are not being used.
+Dear Myungjoo,
 
-That makes the Unified Property Interface cover most of the
-cases where information is extracted from custom
-platform_data in the drivers, i.e. removing also the need
-for them to handle custom platform data separately.
+On 01/12/2015 04:15 PM, MyungJoo Ham wrote:
+>>   
+>>  This patch adds the list of supported devfreq-event type as following.
+>> Each devfreq-event device driver would support the various devfreq-event type
+>> for devfreq governor at the same time.
+>> - DEVFREQ_EVENT_TYPE_RAW_DATA
+>> - DEVFREQ_EVENT_TYPE_UTILIZATION
+>> - DEVFREQ_EVENT_TYPE_BANDWIDTH
+>> - DEVFREQ_EVENT_TYPE_LATENCY
+> 
+> Did you try to say:
+> 
+> A devfreq-event device may support multiple devfreq-event types
+> simultaneously.
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
----
- drivers/base/property.c  | 188 +++++++++++++++++++++++++++++++++++++++++------
- include/linux/device.h   |   2 +
- include/linux/property.h |  13 ++++
- 3 files changed, 182 insertions(+), 21 deletions(-)
+I think that one devfreq-event device can support multiple devfreq-event types.
+but, devfreq-event device might provide only value at one point.
 
-diff --git a/drivers/base/property.c b/drivers/base/property.c
-index c458458..99990e2 100644
---- a/drivers/base/property.c
-+++ b/drivers/base/property.c
-@@ -15,6 +15,129 @@
- #include <linux/acpi.h>
- #include <linux/of.h>
- 
-+static struct dev_gen_prop *dev_prop_get(struct device *dev, const char *name)
-+{
-+	struct dev_gen_prop *prop;
-+
-+	if (!dev->gen_prop)
-+		return NULL;
-+
-+	for (prop = dev->gen_prop; prop->name; prop++)
-+		if (!strcmp(name, prop->name))
-+			return prop;
-+	return NULL;
-+}
-+
-+static int dev_prop_copy_array_u8(const char **src, u8 *val, size_t nval)
-+{
-+	int ret;
-+	int i;
-+
-+	for (i = 0; i < nval; i++) {
-+		if (!src[i])
-+			return -EOVERFLOW;
-+		ret = kstrtou8(src[i], 0, &val[i]);
-+		if (ret)
-+			return ret;
-+	}
-+	return 0;
-+}
-+
-+static int dev_prop_copy_array_u16(const char **src, u16 *val, size_t nval)
-+{
-+	int ret;
-+	int i;
-+
-+	for (i = 0; i < nval; i++) {
-+		if (!src[i])
-+			return -EOVERFLOW;
-+		ret = kstrtou16(src[i], 0, &val[i]);
-+		if (ret)
-+			return ret;
-+	}
-+	return 0;
-+}
-+
-+static int dev_prop_copy_array_u32(const char **src, u32 *val, size_t nval)
-+{
-+	int ret;
-+	int i;
-+
-+	for (i = 0; i < nval; i++) {
-+		if (!src[i])
-+			return -EOVERFLOW;
-+		ret = kstrtou32(src[i], 0, &val[i]);
-+		if (ret)
-+			return ret;
-+	}
-+	return 0;
-+}
-+
-+static int dev_prop_copy_array_u64(const char **src, u64 *val, size_t nval)
-+{
-+	int ret;
-+	int i;
-+
-+	for (i = 0; i < nval; i++) {
-+		if (!src[i])
-+			return -EOVERFLOW;
-+		ret = kstrtou64(src[i], 0, &val[i]);
-+		if (ret)
-+			return ret;
-+	}
-+	return 0;
-+}
-+
-+static int dev_prop_copy_array_string(const char **src, const char **val,
-+				      size_t nval)
-+{
-+	int i;
-+
-+	for (i = 0; i < nval; i++) {
-+		if (!src[i])
-+			return -EOVERFLOW;
-+		val[i] = src[i];
-+	}
-+	return 0;
-+}
-+
-+static int dev_prop_read_array(struct device *dev, const char *name,
-+			       enum dev_prop_type type, void *val, size_t nval)
-+{
-+	struct dev_gen_prop *prop;
-+	int ret = 0;
-+
-+	prop = dev_prop_get(dev, name);
-+	if (!prop)
-+		return -ENODATA;
-+
-+	if (prop->type != type)
-+		return -EPROTO;
-+
-+	switch (prop->type) {
-+	case DEV_PROP_U8:
-+		ret = dev_prop_copy_array_u8(prop->val, (u8 *)val, nval);
-+		break;
-+	case DEV_PROP_U16:
-+		ret = dev_prop_copy_array_u16(prop->val, (u16 *)val, nval);
-+		break;
-+	case DEV_PROP_U32:
-+		ret = dev_prop_copy_array_u32(prop->val, (u32 *)val, nval);
-+		break;
-+	case DEV_PROP_U64:
-+		ret = dev_prop_copy_array_u64(prop->val, (u64 *)val, nval);
-+		break;
-+	case DEV_PROP_STRING:
-+		ret = dev_prop_copy_array_string(prop->val, (const char **)val,
-+						 nval);
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
-+	}
-+	return ret;
-+}
-+
- /**
-  * device_property_present - check if a property of a device is present
-  * @dev: Device whose property is being checked
-@@ -26,8 +149,9 @@ bool device_property_present(struct device *dev, const char *propname)
- {
- 	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
- 		return of_property_read_bool(dev->of_node, propname);
--
--	return !acpi_dev_prop_get(ACPI_COMPANION(dev), propname, NULL);
-+	if (ACPI_HANDLE(dev))
-+		return !acpi_dev_prop_get(ACPI_COMPANION(dev), propname, NULL);
-+	return !!dev_prop_get(dev, propname);
- }
- EXPORT_SYMBOL_GPL(device_property_present);
- 
-@@ -51,13 +175,6 @@ EXPORT_SYMBOL_GPL(fwnode_property_present);
- 	(val) ? of_property_read_##type##_array((node), (propname), (val), (nval)) \
- 	      : of_property_count_elems_of_size((node), (propname), sizeof(type))
- 
--#define DEV_PROP_READ_ARRAY(_dev_, _propname_, _type_, _proptype_, _val_, _nval_) \
--	IS_ENABLED(CONFIG_OF) && _dev_->of_node ? \
--		(OF_DEV_PROP_READ_ARRAY(_dev_->of_node, _propname_, _type_, \
--					_val_, _nval_)) : \
--		acpi_dev_prop_read(ACPI_COMPANION(_dev_), _propname_, \
--				   _proptype_, _val_, _nval_)
--
- /**
-  * device_property_read_u8_array - return a u8 array property of a device
-  * @dev: Device to get the property of
-@@ -77,7 +194,13 @@ EXPORT_SYMBOL_GPL(fwnode_property_present);
- int device_property_read_u8_array(struct device *dev, const char *propname,
- 				  u8 *val, size_t nval)
- {
--	return DEV_PROP_READ_ARRAY(dev, propname, u8, DEV_PROP_U8, val, nval);
-+	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
-+		return OF_DEV_PROP_READ_ARRAY(dev->of_node, propname, u8,
-+					      val, nval);
-+	if (ACPI_HANDLE(dev))
-+		return acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
-+					  DEV_PROP_U8, val, nval);
-+	return dev_prop_read_array(dev, propname, DEV_PROP_U8, val, nval);
- }
- EXPORT_SYMBOL_GPL(device_property_read_u8_array);
- 
-@@ -100,7 +223,13 @@ EXPORT_SYMBOL_GPL(device_property_read_u8_array);
- int device_property_read_u16_array(struct device *dev, const char *propname,
- 				   u16 *val, size_t nval)
- {
--	return DEV_PROP_READ_ARRAY(dev, propname, u16, DEV_PROP_U16, val, nval);
-+	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
-+		return OF_DEV_PROP_READ_ARRAY(dev->of_node, propname, u16, val,
-+					      nval);
-+	if (ACPI_HANDLE(dev))
-+		return acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
-+					  DEV_PROP_U16, val, nval);
-+	return dev_prop_read_array(dev, propname, DEV_PROP_U16, val, nval);
- }
- EXPORT_SYMBOL_GPL(device_property_read_u16_array);
- 
-@@ -123,7 +252,13 @@ EXPORT_SYMBOL_GPL(device_property_read_u16_array);
- int device_property_read_u32_array(struct device *dev, const char *propname,
- 				   u32 *val, size_t nval)
- {
--	return DEV_PROP_READ_ARRAY(dev, propname, u32, DEV_PROP_U32, val, nval);
-+	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
-+		return OF_DEV_PROP_READ_ARRAY(dev->of_node, propname, u32, val,
-+					      nval);
-+	if (ACPI_HANDLE(dev))
-+		return acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
-+					  DEV_PROP_U32, val, nval);
-+	return dev_prop_read_array(dev, propname, DEV_PROP_U32, val, nval);
- }
- EXPORT_SYMBOL_GPL(device_property_read_u32_array);
- 
-@@ -146,7 +281,13 @@ EXPORT_SYMBOL_GPL(device_property_read_u32_array);
- int device_property_read_u64_array(struct device *dev, const char *propname,
- 				   u64 *val, size_t nval)
- {
--	return DEV_PROP_READ_ARRAY(dev, propname, u64, DEV_PROP_U64, val, nval);
-+	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
-+		return OF_DEV_PROP_READ_ARRAY(dev->of_node, propname, u64, val,
-+					      nval);
-+	if (ACPI_HANDLE(dev))
-+		return acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
-+					  DEV_PROP_U64, val, nval);
-+	return dev_prop_read_array(dev, propname, DEV_PROP_U64, val, nval);
- }
- EXPORT_SYMBOL_GPL(device_property_read_u64_array);
- 
-@@ -169,10 +310,13 @@ EXPORT_SYMBOL_GPL(device_property_read_u64_array);
- int device_property_read_string_array(struct device *dev, const char *propname,
- 				      const char **val, size_t nval)
- {
--	return IS_ENABLED(CONFIG_OF) && dev->of_node ?
--		of_property_read_string_array(dev->of_node, propname, val, nval) :
--		acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
--				   DEV_PROP_STRING, val, nval);
-+	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
-+		return of_property_read_string_array(dev->of_node, propname,
-+						     val, nval);
-+	if (ACPI_HANDLE(dev))
-+		return acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
-+					  DEV_PROP_STRING, val, nval);
-+	return dev_prop_read_array(dev, propname, DEV_PROP_STRING, val, nval);
- }
- EXPORT_SYMBOL_GPL(device_property_read_string_array);
- 
-@@ -193,10 +337,12 @@ EXPORT_SYMBOL_GPL(device_property_read_string_array);
- int device_property_read_string(struct device *dev, const char *propname,
- 				const char **val)
- {
--	return IS_ENABLED(CONFIG_OF) && dev->of_node ?
--		of_property_read_string(dev->of_node, propname, val) :
--		acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
--				   DEV_PROP_STRING, val, 1);
-+	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
-+		return of_property_read_string(dev->of_node, propname, val);
-+	if (ACPI_HANDLE(dev))
-+		return acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
-+					  DEV_PROP_STRING, val, 1);
-+	return dev_prop_read_array(dev, propname, DEV_PROP_STRING, val, 1);
- }
- EXPORT_SYMBOL_GPL(device_property_read_string);
- 
-diff --git a/include/linux/device.h b/include/linux/device.h
-index fb50673..bd1e292 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -27,6 +27,7 @@
- #include <linux/ratelimit.h>
- #include <linux/uidgid.h>
- #include <linux/gfp.h>
-+#include <linux/property.h>
- #include <asm/device.h>
- 
- struct device;
-@@ -780,6 +781,7 @@ struct device {
- 
- 	struct device_node	*of_node; /* associated device tree node */
- 	struct acpi_dev_node	acpi_node; /* associated ACPI device node */
-+	struct dev_gen_prop	*gen_prop;
- 
- 	dev_t			devt;	/* dev_t, creates the sysfs "dev" */
- 	u32			id;	/* device instance */
-diff --git a/include/linux/property.h b/include/linux/property.h
-index a6a3d98..6ac8e508 100644
---- a/include/linux/property.h
-+++ b/include/linux/property.h
-@@ -26,6 +26,19 @@ enum dev_prop_type {
- 	DEV_PROP_MAX,
- };
- 
-+/**
-+ * struct dev_gen_prop - Generic Device Property
-+ * @name: property name
-+ * @val: value array
-+ *
-+ * Used when of_node and acpi_node are missing.
-+ */
-+struct dev_gen_prop {
-+	enum dev_prop_type type;
-+	const char *name;
-+	const char **val;
-+};
-+
- bool device_property_present(struct device *dev, const char *propname);
- int device_property_read_u8_array(struct device *dev, const char *propname,
- 				  u8 *val, size_t nval);
--- 
-2.1.4
+But,
+This patch is ambiguous and includes a bug according to your comment
+(below switch statement). I'll drop this patch on next patch-set.
+
+This patch will be posted on further patch-set after resolving some issue.
+
+Best Regards,
+Chanwoo Choi
+
+> 
+> If so, your switch expressions are going to screw up.
+> 
+> 
+>>
+>> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+>> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> ---
+>>  drivers/devfreq/devfreq-event.c | 58 ++++++++++++++++++++++++++++++++++++-----
+>>  include/linux/devfreq-event.h   | 25 +++++++++++++++---
+>>  2 files changed, 73 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/drivers/devfreq/devfreq-event.c b/drivers/devfreq/devfreq-event.c
+>> index 81448ba..64c1764 100644
+>> --- a/drivers/devfreq/devfreq-event.c
+>> +++ b/drivers/devfreq/devfreq-event.c
+>>  
+> []
+>> -	mutex_lock(&edev->lock);
+>> -	ret = edev->desc->ops->get_event(edev, edata);
+>> -	mutex_unlock(&edev->lock);
+>> +	switch (type) {
+> 
+> Bitwise value with switch? (what if type = RAW_DATA | BANDWIDTH, meaning
+> this is raw data of the bandwitdh.)
+> 
+>> +	case DEVFREQ_EVENT_TYPE_RAW_DATA:
+>> +	case DEVFREQ_EVENT_TYPE_BANDWIDTH:
+>> +	case DEVFREQ_EVENT_TYPE_LATENCY:
+>> +		if ((edata->event > EVENT_TYPE_RAW_DATA_MAX) ||
+>> +			(edata->total_event > EVENT_TYPE_RAW_DATA_MAX)) {
+> 
+> Is it possible for unsigned long edata->event/total_event to be
+>   > EVENT_TYPE_RAW_DATA_MAX = ULONG_MAX?
+> 
+> What was your intention?
+> 
+> If you were trying to detect overflow, you need to rethink about it.
+> If not, (overflow is harmless or not going to happen) you don't need to
+> check it.
+> 
+> 
+>> +			edata->event = edata->total_event = 0;
+>> +			ret = -EINVAL;
+>> +		}
+>> +		break;
+>> +	case DEVFREQ_EVENT_TYPE_UTILIZATION:
+>> +		edata->total_event = EVENT_TYPE_UTILIZATION_MAX;
+>>  
+>> -	if ((edata->total_event <= 0)
+>> -		|| (edata->event > edata->total_event)) {
+>> +		if (edata->event > EVENT_TYPE_UTILIZATION_MAX) {
+>> +			edata->event = edata->total_event = 0;
+>> +			ret = -EINVAL;
+>> +		}
+>> +		break;
+>> +	default:
+>>  		edata->event = edata->total_event = 0;
+>>  		ret = -EINVAL;
+>> +		break;
+>>  	}
+>>  
+>> +	mutex_unlock(&edev->lock);
+>> +
+>>  	return ret;
+>>  }
+>>  EXPORT_SYMBOL_GPL(devfreq_event_get_event);
+>> diff --git a/include/linux/devfreq-event.h b/include/linux/devfreq-event.h
+>> index b7363f5..13a5703 100644
+>> --- a/include/linux/devfreq-event.h
+>> +++ b/include/linux/devfreq-event.h
+>> @@ -36,6 +36,14 @@ struct devfreq_event_dev {
+>>  	const struct devfreq_event_desc *desc;
+>>  };
+>>  
+>> +/* The supported type by devfreq-event device */
+>> +enum devfreq_event_type {
+>> +	DEVFREQ_EVENT_TYPE_RAW_DATA	= BIT(0),
+>> +	DEVFREQ_EVENT_TYPE_UTILIZATION	= BIT(1),
+>> +	DEVFREQ_EVENT_TYPE_BANDWIDTH	= BIT(2),
+>> +	DEVFREQ_EVENT_TYPE_LATENCY	= BIT(3),
+>> +};
+>> +
+> 
+> (Being curious) Is it possible to have multiple types
+> simultaneously?
+> 
+> 
+> []
+> N�����r��y���b�X��ǧv�^�)޺{.n�+����{�����x,�ȧ���ܨ}���Ơz�&j:+v�������zZ+��+zf���h���~����i���z��w���?����&�)ߢfl===
+> 
 
