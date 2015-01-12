@@ -1,54 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687AbbALTHW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 14:07:22 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:50292 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755486AbbALTHN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 14:07:13 -0500
+	id S1756811AbbALTM3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 14:12:29 -0500
+Received: from mail-by2on0082.outbound.protection.outlook.com ([207.46.100.82]:62528
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756785AbbALTM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 14:12:26 -0500
+Message-ID: <54B41BED.5090809@opensource.altera.com>
+Date: Mon, 12 Jan 2015 13:09:33 -0600
+From: Graham Moore <grmoore@opensource.altera.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxD63S0PE4zBnEw2jn3pPSALO0BdxY7tP++8wKVdRKJ5g@mail.gmail.com>
-References: <20150109121348.GD12942@leverpostej>
-	<CAPvkgC23LHhs7Tw4rdAPFooimonji8R7kEAbWYRKPJwouwUzBA@mail.gmail.com>
-	<54AFE53A.4020004@redhat.com>
-	<20150109175702.GA27787@leverpostej>
-	<54B01FF0.3020900@arm.com>
-	<20150109194333.GA23028@arm.com>
-	<54B09CA3.1060501@redhat.com>
-	<CA+55aFw3aGeiWOiKxQaC23VVX_Q9B0cDeZc37vVfK+SJVjGwFw@mail.gmail.com>
-	<20150110133742.GA6999@arm.com>
-	<CA+55aFxBA6F4Kr89iZwPPeBnkiRO4GnrbUSd0CqVG-LD6ZQyiw@mail.gmail.com>
-	<20150112124256.GB13360@arm.com>
-	<CA+55aFxD63S0PE4zBnEw2jn3pPSALO0BdxY7tP++8wKVdRKJ5g@mail.gmail.com>
-Date: Tue, 13 Jan 2015 08:07:12 +1300
-X-Google-Sender-Auth: KdnPFzB2Y52pjBjOwDIlyCJ0V34
-Message-ID: <CA+55aFw=urngjyQvuOWHP1BBe-tNKy0E4DC0c5PwP+XuvpSmEg@mail.gmail.com>
-Subject: Re: Linux 3.19-rc3
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Laszlo Ersek <lersek@redhat.com>, Mark Langsdorf <mlangsdo@redhat.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Steve Capper <steve.capper@linaro.org>,
-        "vishnu.ps@samsung.com" <vishnu.ps@samsung.com>,
-        main kernel list <linux-kernel@vger.kernel.org>,
-        arm kernel list <linux-arm-kernel@lists.infradead.org>,
-        Kyle McMartin <kmcmarti@redhat.com>, Dave Hansen <dave@sr71.net>
-Content-Type: text/plain; charset=UTF-8
+To: Rob Herring <robherring2@gmail.com>
+CC: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alan Tull <atull@opensource.altera.com>,
+        Dinh Nguyen <dinguyen@opensource.altera.com>,
+        Yves Vandervennet <yvanderv@opensource.altera.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH V2 2/2] mtd: spi-nor: Bindings for Cadence Quad SPI Flash
+ Controller driver.
+References: <1420564094-1086-1-git-send-email-grmoore@opensource.altera.com> <1420564094-1086-2-git-send-email-grmoore@opensource.altera.com> <54AD31F8.4050100@vanguardiasur.com.ar> <CAL_Jsq+nbZMnJZ=Wm--DODWRXm5aqEJ_7BVDuET9oSXJaJtWug@mail.gmail.com>
+In-Reply-To: <CAL_Jsq+nbZMnJZ=Wm--DODWRXm5aqEJ_7BVDuET9oSXJaJtWug@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: CO2PR06CA052.namprd06.prod.outlook.com (10.141.242.52) To
+ BL2PR03MB433.namprd03.prod.outlook.com (10.141.92.19)
+Authentication-Results: spf=none (sender IP is )
+ smtp.mailfrom=grmoore@opensource.altera.com; 
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BL2PR03MB433;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BL2PR03MB433;
+X-Forefront-PRVS: 0454444834
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(6049001)(199003)(164054003)(479174004)(377454003)(51704005)(189002)(50986999)(54356999)(66066001)(65956001)(65806001)(50466002)(1411001)(68736005)(77096005)(64706001)(47776003)(64126003)(105586002)(86362001)(93886004)(76176999)(83506001)(19580395003)(2950100001)(46102003)(80316001)(65816999)(40100003)(87976001)(101416001)(97736003)(110136001)(122386002)(23676002)(42186005)(62966003)(551934003)(33656002)(92566002)(77156002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB433;H:[137.57.160.195];FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB433;
+X-OriginatorOrg: opensource.altera.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 12 Jan 2015 19:12:21.6463 (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BL2PR03MB433
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 8:06 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> So I'm ok with it, as long as we don't have a performance regression.
->
-> Your "don't bother freeing when the batch is empty" should hopefully
-> be fine. Dave, does that work for your case?
 
-Oh, and Dave just replied that it's ok. So should I just take it
-directly, or expect it through the arm64 tree? Either works for me.
+On 01/08/2015 04:30 PM, Rob Herring wrote:
+>
+> This controller only works with flash devices and is different than this one:?
+>
+> Documentation/devicetree/bindings/spi/spi-cadence.txt
+>
 
-            Linus
+Yes, it is a different controller and is for flash only.  The docs call 
+it the "QSPI Flash Controller".
+...
+
+>
+> The above binding already uses "is-decoded-cs". Let's not invent something new.
+>
+
+OK.
+...
+
+>
+>>> +- cdns,tshsl-ns : Delay in master reference clocks for the length that the master mode chip select outputs are de-asserted between transactions.
+>>> +- cdns,tsd2d-ns : Delay in master reference clocks between one chip select being de-activated and the activation of another.
+>>> +- cdns,tchsh-ns : Delay in master reference clocks between last bit of current transaction and deasserting the device chip select (qspi_n_ss_out).
+>>> +- cdns,tslch-ns : Delay in master reference clocks between setting qspi_n_ss_out low and first bit transfer.
+>
+> Aren't these properties probeable at all? We really should have
+> standard bindings for this. It seems spi NOR flash devices have gone
+> somewhat undocumented, but it is not hard to find examples already in
+> use.
+>
+
+They are not probeable, afaik.  I don't see these values in any 
+probeable info block in the datasheet, only in the AC params table.
+
+I can't find an example of these timing parameters, do you have one in mind?
+
+> Is it master reference clocks or nanoseconds for the units?
+
+Yeah, they are actually nanoseconds in the dts, converted to clocks in 
+the driver.  I'll change the docs.
+
+...
+
+Thanks,
+Graham
