@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401AbbALNc5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 08:32:57 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:49426 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138AbbALNcy (ORCPT
+	id S1753413AbbALNdD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 08:33:03 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:43693 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751451AbbALNdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 08:32:54 -0500
+	Mon, 12 Jan 2015 08:33:00 -0500
 From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
 To: Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -14,73 +14,75 @@ Cc: Steven Honeyman <stevenhoneyman@gmail.com>,
         Jean Delvare <jdelvare@suse.de>,
         Gabriele Mazzotta <gabriele.mzt@gmail.com>,
         Jochen Eisinger <jochen@penguin-breeder.org>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 5/9] i8k: Add support for Dell XPS 13
-Date: Mon, 12 Jan 2015 14:32:01 +0100
-Message-Id: <1421069525-12875-6-git-send-email-pali.rohar@gmail.com>
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+Subject: [PATCH 6/9] i8k: Make fan module parameters an unsigned
+Date: Mon, 12 Jan 2015 14:32:02 +0100
+Message-Id: <1421069525-12875-7-git-send-email-pali.rohar@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1421069525-12875-1-git-send-email-pali.rohar@gmail.com>
 References: <1421069525-12875-1-git-send-email-pali.rohar@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guenter Roeck <linux@roeck-us.net>
+Setting negative fan multiplier or maximal fan speed does make any sense and
+can cause problems. So ensure that negative values will not be accepted.
 
-XPS 13 does not support turbo speed, so its initialization data
-matches that of XPS M140. Make XPS initialization data generic,
-and add support for XPS 13.
-
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/char/i8k.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ drivers/char/i8k.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
-index 0e332fc..8ec4c37 100644
+index 8ec4c37..d6e8a26 100644
 --- a/drivers/char/i8k.c
 +++ b/drivers/char/i8k.c
-@@ -705,7 +705,7 @@ enum i8k_configs {
- 	DELL_LATITUDE_E6540,
- 	DELL_PRECISION_490,
- 	DELL_STUDIO,
--	DELL_XPS_M140,
-+	DELL_XPS,
+@@ -64,9 +64,9 @@ static DEFINE_MUTEX(i8k_mutex);
+ static char bios_version[4];
+ static struct device *i8k_hwmon_dev;
+ static u32 i8k_hwmon_flags;
+-static int i8k_fan_mult;
+-static int i8k_pwm_mult;
+-static int i8k_fan_max = I8K_FAN_HIGH;
++static uint i8k_fan_mult;
++static uint i8k_pwm_mult;
++static uint i8k_fan_max = I8K_FAN_HIGH;
+ 
+ #define I8K_HWMON_HAVE_TEMP1	(1 << 0)
+ #define I8K_HWMON_HAVE_TEMP2	(1 << 1)
+@@ -95,12 +95,12 @@ static bool power_status;
+ module_param(power_status, bool, 0600);
+ MODULE_PARM_DESC(power_status, "Report power status in /proc/i8k");
+ 
+-static int fan_mult = I8K_FAN_MULT;
+-module_param(fan_mult, int, 0);
++static uint fan_mult = I8K_FAN_MULT;
++module_param(fan_mult, uint, 0);
+ MODULE_PARM_DESC(fan_mult, "Factor to multiply fan speed with");
+ 
+-static int fan_max = I8K_FAN_HIGH;
+-module_param(fan_max, int, 0);
++static uint fan_max = I8K_FAN_HIGH;
++module_param(fan_max, uint, 0);
+ MODULE_PARM_DESC(fan_max, "Maximum configurable fan speed");
+ 
+ static int i8k_open_fs(struct inode *inode, struct file *file);
+@@ -696,8 +696,8 @@ static int __init i8k_init_hwmon(void)
+ }
+ 
+ struct i8k_config_data {
+-	int fan_mult;
+-	int fan_max;
++	uint fan_mult;
++	uint fan_max;
  };
  
- static const struct i8k_config_data i8k_config_data[] = {
-@@ -725,7 +725,7 @@ static const struct i8k_config_data i8k_config_data[] = {
- 		.fan_mult = 1,
- 		.fan_max = I8K_FAN_HIGH,
- 	},
--	[DELL_XPS_M140] = {
-+	[DELL_XPS] = {
- 		.fan_mult = 1,
- 		.fan_max = I8K_FAN_HIGH,
- 	},
-@@ -837,12 +837,20 @@ static struct dmi_system_id i8k_dmi_table[] __initdata = {
- 		.driver_data = (void *)&i8k_config_data[DELL_STUDIO],
- 	},
- 	{
-+		.ident = "Dell XPS 13",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "XPS13"),
-+		},
-+		.driver_data = (void *)&i8k_config_data[DELL_XPS],
-+	},
-+	{
- 		.ident = "Dell XPS M140",
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
- 			DMI_MATCH(DMI_PRODUCT_NAME, "MXC051"),
- 		},
--		.driver_data = (void *)&i8k_config_data[DELL_XPS_M140],
-+		.driver_data = (void *)&i8k_config_data[DELL_XPS],
- 	},
- 	{ }
- };
+ enum i8k_configs {
 -- 
 1.7.9.5
 
