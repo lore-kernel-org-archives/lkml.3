@@ -1,136 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752459AbbALJ54 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 04:57:56 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:16902 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752282AbbALJ5z (ORCPT
+	id S1752714AbbALKBL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 05:01:11 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:55150 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752103AbbALKBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 04:57:55 -0500
-Date: Mon, 12 Jan 2015 10:58:47 +0100
-From: Ludovic Desroches <ludovic.desroches@atmel.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: <linux-i2c@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-mips@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 02/11] i2c: add quirk checks to core
-Message-ID: <20150112095847.GD3625@ldesroches-Latitude-E6320>
-Mail-Followup-To: Wolfram Sang <wsa@the-dreams.de>,
-	linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-	linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	Yingjoe Chen <yingjoe.chen@mediatek.com>,
-	linux-kernel@vger.kernel.org
-References: <1420824103-24169-1-git-send-email-wsa@the-dreams.de>
- <1420824103-24169-3-git-send-email-wsa@the-dreams.de>
+	Mon, 12 Jan 2015 05:01:09 -0500
+X-IronPort-AV: E=Sophos;i="5.07,743,1413270000"; 
+   d="scan'208";a="54594534"
+Message-ID: <54B39B59.8000907@broadcom.com>
+Date: Mon, 12 Jan 2015 11:00:57 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1420824103-24169-3-git-send-email-wsa@the-dreams.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
+CC: <brudley@broadcom.com>, Franky Lin <frankyl@broadcom.com>,
+        <meuleman@broadcom.com>, <kvalo@codeaurora.org>,
+        <linville@tuxdriver.com>, <pieterpg@broadcom.com>,
+        <hdegoede@redhat.com>, <wens@csie.org>,
+        <linux-wireless@vger.kernel.org>, <brcm80211-dev-list@broadcom.com>,
+        <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
+References: <54B36C88.3030609@linux.intel.com>
+In-Reply-To: <54B36C88.3030609@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
+On 01/12/15 07:41, Fu, Zhonghui wrote:
+>  From 8685c3c2746b4275fc808d9db23c364b2f54b52a Mon Sep 17 00:00:00 2001
+> From: Zhonghui Fu<zhonghui.fu@linux.intel.com>
+> Date: Mon, 12 Jan 2015 14:25:46 +0800
+> Subject: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
+>
+> WiFi chip has 2 SDIO functions, and PM core will trigger
+> twice suspend/resume operations for one WiFi chip to do
+> the same things. This patch avoid this case.
+>
+> Acked-by: Arend van Spriel<arend@broadcom.com>
+> Acked-by: Sergei Shtylyov<sergei.shtylyov@cogentembedded.com>
+> Signed-off-by: Zhonghui Fu<zhonghui.fu@linux.intel.com>
 
-On Fri, Jan 09, 2015 at 06:21:32PM +0100, Wolfram Sang wrote:
-> Let the core do the checks if HW quirks prevent a transfer. Saves code
-> from drivers and adds consistency.
-> 
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+This patch needs to be rebased.
+
+Kalle,
+
+Please drop this one.
+
+Regards,
+Arend
+
 > ---
->  drivers/i2c/i2c-core.c | 53 ++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 53 insertions(+)
-> 
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index 39d25a8cb1ad..7b10a19abf5b 100644
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -2063,6 +2063,56 @@ module_exit(i2c_exit);
->   * ----------------------------------------------------
->   */
->  
-> +/* Check if val is exceeding the quirk IFF quirk is non 0 */
-> +#define i2c_quirk_exceeded(val, quirk) ((quirk) && ((val) > (quirk)))
+>   drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c |   21 +++++++++++++++++----
+>   1 files changed, 17 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
+> index 9880dae..8f71485 100644
+> --- a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
+> +++ b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
+> @@ -1070,7 +1070,7 @@ static int brcmf_ops_sdio_probe(struct sdio_func *func,
+>   	 */
+>   	if ((sdio_get_host_pm_caps(sdiodev->func[1])&  MMC_PM_KEEP_POWER)&&
+>   	((sdio_get_host_pm_caps(sdiodev->func[1])&  MMC_PM_WAKE_SDIO_IRQ) ||
+> -	     (sdiodev->pdata&&  sdiodev->pdata->oob_irq_supported)))
+> +	     (sdiodev->pdata->oob_irq_supported)))
+>   		bus_if->wowl_supported = true;
+>   #endif
+>
+> @@ -1139,11 +1139,17 @@ void brcmf_sdio_wowl_config(struct device *dev, bool enabled)
+>   static int brcmf_ops_sdio_suspend(struct device *dev)
+>   {
+>   	struct brcmf_bus *bus_if = dev_get_drvdata(dev);
+> -	struct brcmf_sdio_dev *sdiodev = bus_if->bus_priv.sdio;
+> +	struct brcmf_sdio_dev *sdiodev;
+>   	mmc_pm_flag_t sdio_flags;
+> +	struct sdio_func *func = dev_to_sdio_func(dev);
+>
+>   	brcmf_dbg(SDIO, "Enter\n");
+>
+> +	if (func->num == 2)
+> +		return 0;
 > +
-> +static int i2c_quirk_error(struct i2c_adapter *adap, struct i2c_msg *msg, char *err_msg)
-> +{
-> +	dev_err(&adap->dev, "quirk: %s (addr 0x%04x, size %u)\n", err_msg, msg->addr, msg->len);
-> +	return -EOPNOTSUPP;
-> +}
+> +	sdiodev = bus_if->bus_priv.sdio;
 > +
-> +static int i2c_check_for_quirks(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
-> +{
-> +	struct i2c_adapter_quirks *q = adap->quirks;
-> +	u16 max_read = q->max_read_len, max_write = q->max_write_len;
-> +	int max_num = q->max_num_msgs, i;
+>   	atomic_set(&sdiodev->suspend, true);
+>
+>   	if (sdiodev->wowl_enabled) {
+> @@ -1164,10 +1170,17 @@ static int brcmf_ops_sdio_suspend(struct device *dev)
+>   static int brcmf_ops_sdio_resume(struct device *dev)
+>   {
+>   	struct brcmf_bus *bus_if = dev_get_drvdata(dev);
+> -	struct brcmf_sdio_dev *sdiodev = bus_if->bus_priv.sdio;
+> +	struct brcmf_sdio_dev *sdiodev;
+> +	struct sdio_func *func = dev_to_sdio_func(dev);
+>
+>   	brcmf_dbg(SDIO, "Enter\n");
+> -	if (sdiodev->pdata&&  sdiodev->pdata->oob_irq_supported)
 > +
-> +	if (q->flags & I2C_ADAPTER_QUIRK_COMB_WRITE_THEN_READ)
-> +		max_num = 2;
+> +	if (func->num == 2)
+> +		return 0;
 > +
-> +	if (i2c_quirk_exceeded(num, max_num))
-> +		return i2c_quirk_error(adap, &msgs[0], "too many messages");
+> +	sdiodev = bus_if->bus_priv.sdio;
 > +
-> +	if (num == 2 && q->flags & I2C_ADAPTER_QUIRK_COMB_WRITE_FIRST) {
-> +		if (msgs[0].flags & I2C_M_RD)
-> +			return i2c_quirk_error(adap, &msgs[0], "invalid first write msg");
-> +
-> +		max_write = q->max_comb_write_len;
-> +	}
-> +
-> +	if (num == 2 && q->flags & I2C_ADAPTER_QUIRK_COMB_READ_SECOND) {
-> +		if (!(msgs[1].flags & I2C_M_RD) || msgs[0].addr != msgs[1].addr)
-> +			return i2c_quirk_error(adap, &msgs[1], "invalid second read msg");
-> +
-> +		max_read = q->max_comb_read_len;
-> +	}
-> +
-> +	for (i = 0; i < num; i++) {
-> +		u16 len = msgs[i].len;
-> +
-> +		if (msgs[i].flags & I2C_M_RD) {
-> +			if (i2c_quirk_exceeded(len, max_read))
-> +				return i2c_quirk_error(adap, &msgs[i], "msg too long");
-> +		} else {
-> +			if (i2c_quirk_exceeded(len, max_write))
-> +				return i2c_quirk_error(adap, &msgs[i], "msg too long");
-> +		}
-> +	}
-> +
+> +	if (sdiodev->pdata->oob_irq_supported)
+>   		disable_irq_wake(sdiodev->pdata->oob_irq_nr);
+>   	brcmf_sdio_wd_timer(sdiodev->bus, BRCMF_WD_POLL_MS);
+>   	atomic_set(&sdiodev->suspend, false);
+> -- 1.7.1
+>
 
-I am not sure it will perfectly fit at91 quirks.
-
-The hardware can handle two messages by using the internal address
-feature. The internal address size is from one byte to three bytes. Then
-the length of the first message is limited to three but we don't have
-this constraint for the second one. If we have 'write then read' no problem
-but if we have two write messages, the second one will cause a quirk
-exceeded error.
-
-Regards
-
-Ludovic
-
-> +	return 0;
-> +}
-> +
->  /**
->   * __i2c_transfer - unlocked flavor of i2c_transfer
->   * @adap: Handle to I2C bus
-> @@ -2080,6 +2130,9 @@ int __i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
->  	unsigned long orig_jiffies;
->  	int ret, try;
->  
-> +	if (adap->quirks && i2c_check_for_quirks(adap, msgs, num))
-> +		return -EOPNOTSUPP;
-> +
->  	/* i2c_trace_msg gets enabled when tracepoint i2c_transfer gets
->  	 * enabled.  This is an efficient way of keeping the for-loop from
->  	 * being executed when not needed.
-> -- 
-> 2.1.3
-> 
