@@ -1,75 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310AbbALODh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 09:03:37 -0500
-Received: from mail.kernel.org ([198.145.29.136]:53404 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222AbbALODg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 09:03:36 -0500
-Date: Mon, 12 Jan 2015 11:03:31 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 4/4] perf probe: Propagate error code when write(2) failed
-Message-ID: <20150112140331.GH12406@kernel.org>
-References: <1420886028-15135-1-git-send-email-namhyung@kernel.org>
- <1420886028-15135-4-git-send-email-namhyung@kernel.org>
- <54B3AD60.5000503@hitachi.com>
+	id S1753377AbbALOEE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 09:04:04 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:22412 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753137AbbALOEB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 09:04:01 -0500
+Message-ID: <54B3D450.7050405@atmel.com>
+Date: Mon, 12 Jan 2015 15:04:00 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54B3AD60.5000503@hitachi.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: <daniel.lezcano@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        <sylvain.rochet@finsecur.com>
+Subject: Re: [PATCH] clocksource: timer-atmel-pit: don't suspend/resume if
+ unused
+References: <1418911523-28492-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <1418911523-28492-1-git-send-email-nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jan 12, 2015 at 08:17:52PM +0900, Masami Hiramatsu escreveu:
-> (2015/01/10 19:33), Namhyung Kim wrote:
-> > When it failed to write probe commands to the probe_event file in
-> > debugfs, it needs to propagate the error code properly.  Current code
-> > blindly uses the return value of the write(2) so it always uses
-> > -1 (-EPERM) and it might confuse users.
-> > 
+Le 18/12/2014 15:05, Nicolas Ferre a écrit :
+> From: Sylvain Rochet <sylvain.rochet@finsecur.com>
 > 
-> Good catch! :)
+> Waiting for PIT to stop counting takes a long time:
+>   1/(Master clock/prescaler/PIVR)
+> = 1/(133 MHz     /16       /2^20)
+> = 126 ms
 > 
-> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Up to 126 ms if master clock is set to 133 MHz, skipping suspend/resume
+> of the unused PIT device reduce (suspend time + resume time) from ~140 ms
+> to ~17 ms.
+> 
+> Signed-off-by: Sylvain Rochet <sylvain.rochet@finsecur.com>
+> [nicolas.ferre@atmel.com: move to newer clocksource driver]
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> ---
+> Hi Sylvain,
+> 
+> I re-worked (and "Acked") your patch so it can be applied on the newer Mainline
+> kernels. Beware, I changed the "subject line" as well. The PIT driver moved
+> recently (3.18).
+> 
+> Daniel,
+> Can you take this patch in your tree?
 
-Thanks, applied to perf/urgent
- 
-> > Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> > Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> > ---
-> >  tools/perf/util/probe-event.c | 4 +++-
-> >  1 file changed, 3 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> > index 6fe5aa357efc..ddc295885af0 100644
-> > --- a/tools/perf/util/probe-event.c
-> > +++ b/tools/perf/util/probe-event.c
-> > @@ -2052,9 +2052,11 @@ static int write_probe_trace_event(int fd, struct probe_trace_event *tev)
-> >  	pr_debug("Writing event: %s\n", buf);
-> >  	if (!probe_event_dry_run) {
-> >  		ret = write(fd, buf, strlen(buf));
-> > -		if (ret <= 0)
-> > +		if (ret <= 0) {
-> > +			ret = -errno;
-> >  			pr_warning("Failed to write event: %s\n",
-> >  				   strerror_r(errno, sbuf, sizeof(sbuf)));
-> > +		}
-> >  	}
-> >  	free(buf);
-> >  	return ret;
-> > 
+Hi Daniel,
+
+Anything prevents this patch from being merged (aka ping ;-))?
+
+Bye,
+
+
+> Thanks, bye.
+>   Nicolas.
 > 
+>  drivers/clocksource/timer-atmel-pit.c | 8 ++++++++
+>  1 file changed, 8 insertions(+)
 > 
-> -- 
-> Masami HIRAMATSU
-> Software Platform Research Dept. Linux Technology Research Center
-> Hitachi, Ltd., Yokohama Research Laboratory
-> E-mail: masami.hiramatsu.pt@hitachi.com
+> diff --git a/drivers/clocksource/timer-atmel-pit.c b/drivers/clocksource/timer-atmel-pit.c
+> index b5b4d4585c9a..5408bc7c68d8 100644
+> --- a/drivers/clocksource/timer-atmel-pit.c
+> +++ b/drivers/clocksource/timer-atmel-pit.c
+> @@ -123,6 +123,10 @@ static void at91sam926x_pit_suspend(struct clock_event_device *cedev)
+>  {
+>  	struct pit_data *data = clkevt_to_pit_data(cedev);
+>  
+> +	/* Don't suspend PIT if unused */
+> +	if (cedev->mode == CLOCK_EVT_MODE_UNUSED)
+> +		return;
+> +
+>  	/* Disable timer */
+>  	pit_write(data->base, AT91_PIT_MR, 0);
+>  }
+> @@ -145,6 +149,10 @@ static void at91sam926x_pit_resume(struct clock_event_device *cedev)
+>  {
+>  	struct pit_data *data = clkevt_to_pit_data(cedev);
+>  
+> +	/* Don't resume PIT if unused */
+> +	if (cedev->mode == CLOCK_EVT_MODE_UNUSED)
+> +		return;
+> +
+>  	at91sam926x_pit_reset(data);
+>  }
+>  
 > 
+
+
+-- 
+Nicolas Ferre
