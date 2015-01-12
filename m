@@ -1,110 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685AbbALPhZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 10:37:25 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:54943 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752610AbbALPhM (ORCPT
+	id S1752752AbbALPiM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 10:38:12 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:52835 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159AbbALPiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 10:37:12 -0500
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-watchdog@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH v3 8/8] ARM: at91: remove useless include
-Date: Mon, 12 Jan 2015 16:37:03 +0100
-Message-Id: <1421077023-30954-9-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1421077023-30954-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1421077023-30954-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Mon, 12 Jan 2015 10:38:08 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-99-54b3ea5dfe68
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene@kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH] ARM: EXYNOS: Handle of of_iomap() failure
+Date: Mon, 12 Jan 2015 16:37:45 +0100
+Message-id: <1421077065-30175-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOJMWRmVeSWpSXmKPExsVy+t/xa7qxrzaHGJzcLW/x+oWhRf/j18wW
+	mx5fY7W4vGsOm8WM8/uYLG5f5nVg82hp7mHz2LSqk81j85J6j74tqxg9Pm+SC2CN4rJJSc3J
+	LEst0rdL4Mr48Woza0EDe8Xrbz+ZGhhfs3YxcnJICJhITDvczw5hi0lcuLeerYuRi0NIYCmj
+	xNJNVxkhnD4miTNbX4JVsQkYS2xevgSsSkRgM6NEf+NusFHMAoYSP9/9ASsSFrCS2Hh8ATOI
+	zSKgKrH12hQWEJtXwF1i18wtzBDr5CROHpvMOoGRewEjwypG0dTS5ILipPRcQ73ixNzi0rx0
+	veT83E2MkMD4soNx8TGrQ4wCHIxKPLwTZDaHCLEmlhVX5h5ilOBgVhLhdS0DCvGmJFZWpRbl
+	xxeV5qQWH2Jk4uCUamDMbAgJviv/10yIS23ZJet5Dqm7fFZeubpaxSGyLzx3lsTMHUsVpuom
+	lr2ocy4TV9l/ScJn2tn+xKML61btll4gvWJ/S85Zu1nmJova0o7IJPmEMfVfmrfxtYfpD9bJ
+	AbNMK+5mfv9ftb9J7k7dV78Fbzh6dovFTNG6FnXp+fr7xZX2Oo+Mza4osRRnJBpqMRcVJwIA
+	pyPKO+oBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both drivers using the system timer are now converted to an MFD. mach/at91_st.h
-is now useless.
+Prevent possible NULL pointer dereference if of_iomap() fails. Handle
+the error by skipping such power domain.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- arch/arm/mach-at91/include/mach/at91_st.h | 61 -------------------------------
- 1 file changed, 61 deletions(-)
- delete mode 100644 arch/arm/mach-at91/include/mach/at91_st.h
+ arch/arm/mach-exynos/pm_domains.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/arch/arm/mach-at91/include/mach/at91_st.h b/arch/arm/mach-at91/include/mach/at91_st.h
-deleted file mode 100644
-index 67fdbd13c3ed..000000000000
---- a/arch/arm/mach-at91/include/mach/at91_st.h
-+++ /dev/null
-@@ -1,61 +0,0 @@
--/*
-- * arch/arm/mach-at91/include/mach/at91_st.h
-- *
-- * Copyright (C) 2005 Ivan Kokshaysky
-- * Copyright (C) SAN People
-- *
-- * System Timer (ST) - System peripherals registers.
-- * Based on AT91RM9200 datasheet revision E.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- */
--
--#ifndef AT91_ST_H
--#define AT91_ST_H
--
--#ifndef __ASSEMBLY__
--extern void __iomem *at91_st_base;
--
--#define at91_st_read(field) \
--	__raw_readl(at91_st_base + field)
--
--#define at91_st_write(field, value) \
--	__raw_writel(value, at91_st_base + field)
--#else
--.extern at91_st_base
--#endif
--
--#define	AT91_ST_CR		0x00			/* Control Register */
--#define 	AT91_ST_WDRST		(1 << 0)		/* Watchdog Timer Restart */
--
--#define	AT91_ST_PIMR		0x04			/* Period Interval Mode Register */
--#define		AT91_ST_PIV		(0xffff <<  0)		/* Period Interval Value */
--
--#define	AT91_ST_WDMR		0x08			/* Watchdog Mode Register */
--#define		AT91_ST_WDV		(0xffff <<  0)		/* Watchdog Counter Value */
--#define		AT91_ST_RSTEN		(1	<< 16)		/* Reset Enable */
--#define		AT91_ST_EXTEN		(1	<< 17)		/* External Signal Assertion Enable */
--
--#define	AT91_ST_RTMR		0x0c			/* Real-time Mode Register */
--#define		AT91_ST_RTPRES		(0xffff <<  0)		/* Real-time Prescalar Value */
--
--#define	AT91_ST_SR		0x10			/* Status Register */
--#define		AT91_ST_PITS		(1 << 0)		/* Period Interval Timer Status */
--#define		AT91_ST_WDOVF		(1 << 1) 		/* Watchdog Overflow */
--#define		AT91_ST_RTTINC		(1 << 2) 		/* Real-time Timer Increment */
--#define		AT91_ST_ALMS		(1 << 3) 		/* Alarm Status */
--
--#define	AT91_ST_IER		0x14			/* Interrupt Enable Register */
--#define	AT91_ST_IDR		0x18			/* Interrupt Disable Register */
--#define	AT91_ST_IMR		0x1c			/* Interrupt Mask Register */
--
--#define	AT91_ST_RTAR		0x20			/* Real-time Alarm Register */
--#define		AT91_ST_ALMV		(0xfffff << 0)		/* Alarm Value */
--
--#define	AT91_ST_CRTR		0x24			/* Current Real-time Register */
--#define		AT91_ST_CRTV		(0xfffff << 0)		/* Current Real-Time Value */
--
--#endif
+diff --git a/arch/arm/mach-exynos/pm_domains.c b/arch/arm/mach-exynos/pm_domains.c
+index 20f267121b3e..fd7640a6b503 100644
+--- a/arch/arm/mach-exynos/pm_domains.c
++++ b/arch/arm/mach-exynos/pm_domains.c
+@@ -128,6 +128,13 @@ static __init int exynos4_pm_init_power_domain(void)
+ 		pd->pd.name = kstrdup(np->name, GFP_KERNEL);
+ 		pd->name = pd->pd.name;
+ 		pd->base = of_iomap(np, 0);
++		if (!pd->base) {
++			dev_warn(&pdev->dev, "Failed to map memory\n");
++			kfree(pd);
++			of_node_put(np);
++			continue;
++		}
++
+ 		pd->pd.power_off = exynos_pd_power_off;
+ 		pd->pd.power_on = exynos_pd_power_on;
+ 
 -- 
-2.1.0
+1.9.1
 
