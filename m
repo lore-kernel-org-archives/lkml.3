@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755613AbbALSl1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:41:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58338 "EHLO
+	id S1755251AbbALSat (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:30:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58342 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755197AbbALSal (ORCPT
+	with ESMTP id S1755204AbbALSam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:30:41 -0500
+	Mon, 12 Jan 2015 13:30:42 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Simon Farnsworth <simon@farnz.org.uk>,
+Cc: Simon Farnsworth <simon@farnz.org.uk>, Daniel Vetter <daniel@ffwll.ch>,
         =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
 	<ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Chris Wilson <chris@chris-wilson.co.uk>,
         Jani Nikula <jani.nikula@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 179/216] drm/i915: Invalidate media caches on gen7
-Date: Mon, 12 Jan 2015 18:29:17 +0000
-Message-Id: <1421087394-2712-67-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 180/216] drm/i915: Force the CS stall for invalidate flushes
+Date: Mon, 12 Jan 2015 18:29:18 +0000
+Message-Id: <1421087394-2712-68-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -37,49 +36,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 148b83d0815a3778c8949e6a97cb798cbaa0efb3 upstream.
+commit add284a3a2481e759d6bec35f6444c32c8ddc383 upstream.
 
-In the gen7 pipe control there is an extra bit to flush the media
-caches, so let's set it during cache invalidation flushes.
+In order to act as a full command barrier by itself, we need to tell the
+pipecontrol to actually stall the command streamer while the flush runs.
+We require the full command barrier before operations like
+MI_SET_CONTEXT, which currently rely on a prior invalidate flush.
 
-v2: Rename to MEDIA_STATE_CLEAR to be more inline with spec.
-
+References: https://bugs.freedesktop.org/show_bug.cgi?id=83677
 Cc: Simon Farnsworth <simon@farnz.org.uk>
+Cc: Daniel Vetter <daniel@ffwll.ch>
 Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_reg.h         | 1 +
- drivers/gpu/drm/i915/intel_ringbuffer.c | 1 +
- 2 files changed, 2 insertions(+)
+ drivers/gpu/drm/i915/intel_ringbuffer.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index 6b9626567cfa..4fcff20cab98 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -352,6 +352,7 @@
- #define   PIPE_CONTROL_STORE_DATA_INDEX			(1<<21)
- #define   PIPE_CONTROL_CS_STALL				(1<<20)
- #define   PIPE_CONTROL_TLB_INVALIDATE			(1<<18)
-+#define   PIPE_CONTROL_MEDIA_STATE_CLEAR		(1<<16)
- #define   PIPE_CONTROL_QW_WRITE				(1<<14)
- #define   PIPE_CONTROL_POST_SYNC_OP_MASK                (3<<14)
- #define   PIPE_CONTROL_DEPTH_STALL			(1<<13)
 diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
-index 7add7eead21d..e831be6bcbae 100644
+index e831be6bcbae..db8e92f27289 100644
 --- a/drivers/gpu/drm/i915/intel_ringbuffer.c
 +++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -352,6 +352,7 @@ gen7_render_ring_flush(struct intel_engine_cs *ring,
- 		flags |= PIPE_CONTROL_VF_CACHE_INVALIDATE;
- 		flags |= PIPE_CONTROL_CONST_CACHE_INVALIDATE;
- 		flags |= PIPE_CONTROL_STATE_CACHE_INVALIDATE;
-+		flags |= PIPE_CONTROL_MEDIA_STATE_CLEAR;
- 		/*
- 		 * TLB invalidate requires a post-sync write.
- 		 */
+@@ -359,6 +359,8 @@ gen7_render_ring_flush(struct intel_engine_cs *ring,
+ 		flags |= PIPE_CONTROL_QW_WRITE;
+ 		flags |= PIPE_CONTROL_GLOBAL_GTT_IVB;
+ 
++		flags |= PIPE_CONTROL_STALL_AT_SCOREBOARD;
++
+ 		/* Workaround: we must issue a pipe_control with CS-stall bit
+ 		 * set before a pipe_control command that has the state cache
+ 		 * invalidate bit set. */
 -- 
 2.1.4
 
