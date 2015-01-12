@@ -1,142 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188AbbALQKd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 11:10:33 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:54126 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089AbbALQK2 (ORCPT
+	id S1753239AbbALQKq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 11:10:46 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:58358 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751846AbbALQKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 11:10:28 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-f1-54b3f1f26d58
-Message-id: <54B3F1EF.4060506@samsung.com>
-Date: Mon, 12 Jan 2015 17:10:23 +0100
-From: Jacek Anaszewski <j.anaszewski@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-leds@vger.kernel.org,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Pavel Machek <pavel@ucw.cz>, Bryan Wu <cooloney@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>, sakari.ailus@iki.fi,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH/RFC v10 03/19] DT: leds: Add led-sources property
-References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
- <1420816989-1808-4-git-send-email-j.anaszewski@samsung.com>
- <CAL_JsqJKEp6TWaRhJimg3AWBh+MCCr2Bk9+1o7orLLdp5E+n-g@mail.gmail.com>
- <54B38682.5080605@samsung.com>
- <CAL_Jsq+UaA41DvawdOMmOib=Fi0hC-nBdKV-+P4DFo+MoOy-bQ@mail.gmail.com>
-In-reply-to: <CAL_Jsq+UaA41DvawdOMmOib=Fi0hC-nBdKV-+P4DFo+MoOy-bQ@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupikeLIzCtJLcpLzFFi42I5/e/4Nd1PHzeHGByeKmyxccZ6VoujOycy
-	Wcw/co7Vov/NQlaLc69WMlqcbXrDbnF51xw2i61v1jFa9GzYymqx9PpFJou7p46yWUyYvpbF
-	onXvEXaL79++sVns3vWU1eLwm3ZWizP7V7I5CHqsmbeG0eNyXy+Tx85Zd9k9Vi7/wuZx+OtC
-	Fo9NqzrZPPbM/8Hq0bdlFaPHitXf2T0+b5IL4IrisklJzcksSy3St0vgyvj2/w5TwXKZit/7
-	3jI1MB4U62Lk5JAQMJG4dHElM4QtJnHh3nq2LkYuDiGBpYwSr241skM4Hxkl9u//CJTh4OAV
-	0JJ4t4sJpIFFQFVi0t71YM1sAoYSP1+8BouLCkRI/Dm9jxXE5hUQlPgx+R4LiC0ioC7xbflx
-	sAXMAktZJc6/nsEOkhAWcJWY3b6YGWLZFiaJe4ePM4IkOAWCJbpW/gMrYhYwk3jUso4ZwpaX
-	2LzmLfMERoFZSJbMQlI2C0nZAkbmVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxgh8fd1B+PS
-	Y1aHGAU4GJV4eC2lNocIsSaWFVfmHmKU4GBWEuF1LQMK8aYkVlalFuXHF5XmpBYfYmTi4JRq
-	YHSRaf1Zzvzebe5dK7MMvYPRNiIOZ6LiNR48aOI8Inl7o8YC3pyKCzPezCw6xfS8Z4e20KTt
-	hVceG8meYkw1+vTAaN6RPptIDdMNtjo7/h3aMO1Z9P13Kw598REuKHyS96pP+VqtpdTjz+2N
-	BQZHH660OTnx+pLDihwLEkP652X+EF7sUnWCV02JpTgj0VCLuag4EQAuqxNGnQIAAA==
+	Mon, 12 Jan 2015 11:10:43 -0500
+Date: Mon, 12 Jan 2015 17:10:42 +0100
+From: Quentin Lambert <lambert.quentin@gmail.com>
+To: Chas Williams <chas@cmf.nrl.navy.mil>
+Cc: linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/1] atm: remove deprecated use of pci api
+Message-ID: <20150112161042.GA11374@sloth>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2015 02:52 PM, Rob Herring wrote:
-> On Mon, Jan 12, 2015 at 2:32 AM, Jacek Anaszewski
-> <j.anaszewski@samsung.com> wrote:
->> On 01/09/2015 07:33 PM, Rob Herring wrote:
->>>
->>> On Fri, Jan 9, 2015 at 9:22 AM, Jacek Anaszewski
->>> <j.anaszewski@samsung.com> wrote:
->>>>
->>>> Add a property for defining the device outputs the LED
->>>> represented by the DT child node is connected to.
->>>>
->>>> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
->>>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->>>> Cc: Bryan Wu <cooloney@gmail.com>
->>>> Cc: Richard Purdie <rpurdie@rpsys.net>
->>>> Cc: Rob Herring <robh+dt@kernel.org>
->>>> Cc: Pawel Moll <pawel.moll@arm.com>
->>>> Cc: Mark Rutland <mark.rutland@arm.com>
->>>> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
->>>> Cc: Kumar Gala <galak@codeaurora.org>
->>>> ---
->>>>    Documentation/devicetree/bindings/leds/common.txt |    5 +++++
->>>>    1 file changed, 5 insertions(+)
->>>>
->>>> diff --git a/Documentation/devicetree/bindings/leds/common.txt
->>>> b/Documentation/devicetree/bindings/leds/common.txt
->>>> index a2c3f7a..29295bf 100644
->>>> --- a/Documentation/devicetree/bindings/leds/common.txt
->>>> +++ b/Documentation/devicetree/bindings/leds/common.txt
->>>> @@ -1,6 +1,10 @@
->>>>    Common leds properties.
->>>>
->>>>    Optional properties for child nodes:
->>>> +- led-sources : Array of bits signifying the LED current regulator
->>>> outputs the
->>>> +               LED represented by the child node is connected to (1 -
->>>> the LED
->>>> +               is connected to the output, 0 - the LED isn't connected
->>>> to the
->>>> +               output).
->>>
->>>
->>> Sorry, I just don't understand this.
->>
->>
->> In some Flash LED devices one LED can be connected to one or more
->> electric current outputs, which allows for multiplying the maximum
->> current allowed for the LED. Each sub-LED is represented by a child
->> node in the DT binding of the Flash LED device and it needs to declare
->> which outputs it is connected to. In the example below the led-sources
->> property is a two element array, which means that the flash LED device
->> has two current outputs, and the bits signify if the LED is connected
->> to the output.
->
-> Sounds like a regulator for which we already have bindings for and we
-> have a driver for regulator based LEDs (but no binding for it).
+Replace occurences of the pci api by appropriate call to the dma api.
 
-Do you think of drivers/leds/leds-regulator.c driver? This driver just
-allows for registering an arbitrary regulator device as a LED subsystem
-device.
+A simplified version of the semantic patch that finds this problem is as
+follows: (http://coccinelle.lip6.fr)
 
-There are however devices that don't fall into this category, i.e. they
-have many outputs, that can be connected to a single LED or to many LEDs
-and the driver has to know what is the actual arrangement.
+@deprecated@
+idexpression id;
+position p;
+@@
 
-> Please use the regulator binding.
+(
+  pci_dma_supported@p ( id, ...)
+|
+  pci_alloc_consistent@p ( id, ...)
+)
 
->> Do your doubts stem from the ambiguity of the word "current" or the
->> form of the description itself is unclear? Probably there should be
->> explicit explanation added that the size of the array depends on the
->> number of current outputs of the flash LED device.
->
-> The size of the array and meaning of array indexes was not clear.
+@bad1@
+idexpression id;
+position deprecated.p;
+@@
+...when != &id->dev
+   when != pci_get_drvdata ( id )
+   when != pci_enable_device ( id )
+(
+  pci_dma_supported@p ( id, ...)
+|
+  pci_alloc_consistent@p ( id, ...)
+)
 
-What about this:
+@depends on !bad1@
+idexpression id;
+expression direction;
+position deprecated.p;
+@@
 
-led-sources : Array of connection states between all LED current
-	      sources exposed by the device and this LED (1 - this LED
-	      is connected to the current output with index N, 0 -
-	      this LED isn't connected to the current output with
-	      index N); the mapping of N-th element of the array to the
-	      physical device output should be defined in the LED
-	      driver binding.
+(
+- pci_dma_supported@p ( id,
++ dma_supported ( &id->dev,
+...
++ , GFP_ATOMIC
+  )
+|
+- pci_alloc_consistent@p ( id,
++ dma_alloc_coherent ( &id->dev,
+...
++ , GFP_ATOMIC
+  )
+)
 
+Signed-off-by: Quentin Lambert <lambert.quentin@gmail.com>
+---
+ drivers/atm/eni.c       | 8 +++++---
+ drivers/atm/he.c        | 2 +-
+ drivers/atm/lanai.c     | 9 +++++----
+ drivers/atm/nicstar.c   | 4 ++--
+ drivers/atm/solos-pci.c | 2 +-
+ drivers/atm/zatm.c      | 8 +++++---
+ 6 files changed, 19 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/atm/eni.c b/drivers/atm/eni.c
+index c7fab3e..a128020 100644
+--- a/drivers/atm/eni.c
++++ b/drivers/atm/eni.c
+@@ -2246,7 +2246,8 @@ static int eni_init_one(struct pci_dev *pci_dev,
+ 		goto err_disable;
+ 
+ 	zero = &eni_dev->zero;
+-	zero->addr = pci_alloc_consistent(pci_dev, ENI_ZEROES_SIZE, &zero->dma);
++	zero->addr = dma_alloc_coherent(&pci_dev->dev, ENI_ZEROES_SIZE,
++					&zero->dma, GFP_ATOMIC);
+ 	if (!zero->addr)
+ 		goto err_kfree;
+ 
+@@ -2277,7 +2278,8 @@ err_eni_release:
+ err_unregister:
+ 	atm_dev_deregister(dev);
+ err_free_consistent:
+-	pci_free_consistent(pci_dev, ENI_ZEROES_SIZE, zero->addr, zero->dma);
++	dma_free_coherent(&pci_dev->dev, ENI_ZEROES_SIZE, zero->addr,
++			  zero->dma);
+ err_kfree:
+ 	kfree(eni_dev);
+ err_disable:
+@@ -2302,7 +2304,7 @@ static void eni_remove_one(struct pci_dev *pdev)
+ 
+ 	eni_do_release(dev);
+ 	atm_dev_deregister(dev);
+-	pci_free_consistent(pdev, ENI_ZEROES_SIZE, zero->addr, zero->dma);
++	dma_free_coherent(&pdev->dev, ENI_ZEROES_SIZE, zero->addr, zero->dma);
+ 	kfree(ed);
+ 	pci_disable_device(pdev);
+ }
+diff --git a/drivers/atm/he.c b/drivers/atm/he.c
+index c39702b..69a2598 100644
+--- a/drivers/atm/he.c
++++ b/drivers/atm/he.c
+@@ -359,7 +359,7 @@ static int he_init_one(struct pci_dev *pci_dev,
+ 
+ 	if (pci_enable_device(pci_dev))
+ 		return -EIO;
+-	if (pci_set_dma_mask(pci_dev, DMA_BIT_MASK(32)) != 0) {
++	if (dma_set_mask(&pci_dev->dev, DMA_BIT_MASK(32)) != 0) {
+ 		printk(KERN_WARNING "he: no suitable dma available\n");
+ 		err = -EIO;
+ 		goto init_one_failure;
+diff --git a/drivers/atm/lanai.c b/drivers/atm/lanai.c
+index 93eaf8d..70fe734 100644
+--- a/drivers/atm/lanai.c
++++ b/drivers/atm/lanai.c
+@@ -346,7 +346,8 @@ static void lanai_buf_allocate(struct lanai_buffer *buf,
+ 		 * everything, but the way the lanai uses DMA memory would
+ 		 * make that a terrific pain.  This is much simpler.
+ 		 */
+-		buf->start = pci_alloc_consistent(pci, size, &buf->dmaaddr);
++		buf->start = dma_alloc_coherent(&pci->dev, size, &buf->dmaaddr,
++						GFP_ATOMIC);
+ 		if (buf->start != NULL) {	/* Success */
+ 			/* Lanai requires 256-byte alignment of DMA bufs */
+ 			APRINTK((buf->dmaaddr & ~0xFFFFFF00) == 0,
+@@ -372,7 +373,7 @@ static void lanai_buf_deallocate(struct lanai_buffer *buf,
+ 	struct pci_dev *pci)
+ {
+ 	if (buf->start != NULL) {
+-		pci_free_consistent(pci, lanai_buf_size(buf),
++		dma_free_coherent(&pci->dev, lanai_buf_size(buf),
+ 		    buf->start, buf->dmaaddr);
+ 		buf->start = buf->end = buf->ptr = NULL;
+ 	}
+@@ -1953,12 +1954,12 @@ static int lanai_pci_start(struct lanai_dev *lanai)
+ 		return -ENXIO;
+ 	}
+ 	pci_set_master(pci);
+-	if (pci_set_dma_mask(pci, DMA_BIT_MASK(32)) != 0) {
++	if (dma_set_mask(&pci->dev, DMA_BIT_MASK(32)) != 0) {
+ 		printk(KERN_WARNING DEV_LABEL
+ 		    "(itf %d): No suitable DMA available.\n", lanai->number);
+ 		return -EBUSY;
+ 	}
+-	if (pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(32)) != 0) {
++	if (dma_set_coherent_mask(&pci->dev, DMA_BIT_MASK(32)) != 0) {
+ 		printk(KERN_WARNING DEV_LABEL
+ 		    "(itf %d): No suitable DMA available.\n", lanai->number);
+ 		return -EBUSY;
+diff --git a/drivers/atm/nicstar.c b/drivers/atm/nicstar.c
+index 9988ac9..aabb528 100644
+--- a/drivers/atm/nicstar.c
++++ b/drivers/atm/nicstar.c
+@@ -370,8 +370,8 @@ static int ns_init_card(int i, struct pci_dev *pcidev)
+ 		ns_init_card_error(card, error);
+ 		return error;
+ 	}
+-        if ((pci_set_dma_mask(pcidev, DMA_BIT_MASK(32)) != 0) ||
+-	    (pci_set_consistent_dma_mask(pcidev, DMA_BIT_MASK(32)) != 0)) {
++	if ((dma_set_mask(&pcidev->dev, DMA_BIT_MASK(32)) != 0) ||
++	    (dma_set_coherent_mask(&pcidev->dev, DMA_BIT_MASK(32)) != 0)) {
+                 printk(KERN_WARNING
+ 		       "nicstar%d: No suitable DMA available.\n", i);
+ 		error = 2;
+diff --git a/drivers/atm/solos-pci.c b/drivers/atm/solos-pci.c
+index 21b0bc6..48531b8 100644
+--- a/drivers/atm/solos-pci.c
++++ b/drivers/atm/solos-pci.c
+@@ -1210,7 +1210,7 @@ static int fpga_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 		goto out;
+ 	}
+ 
+-	err = pci_set_dma_mask(dev, DMA_BIT_MASK(32));
++	err = dma_set_mask(&dev->dev, DMA_BIT_MASK(32));
+ 	if (err) {
+ 		dev_warn(&dev->dev, "Failed to set 32-bit DMA mask\n");
+ 		goto out;
+diff --git a/drivers/atm/zatm.c b/drivers/atm/zatm.c
+index 969c3c2..b6456b1 100644
+--- a/drivers/atm/zatm.c
++++ b/drivers/atm/zatm.c
+@@ -1306,7 +1306,8 @@ static int zatm_start(struct atm_dev *dev)
+ 
+ 		if (!mbx_entries[i])
+ 			continue;
+-		mbx = pci_alloc_consistent(pdev, 2*MBX_SIZE(i), &mbx_dma);
++		mbx = dma_alloc_coherent(&pdev->dev, 2*MBX_SIZE(i), &mbx_dma,
++					 GFP_ATOMIC);
+ 		if (!mbx) {
+ 			error = -ENOMEM;
+ 			goto out;
+@@ -1318,7 +1319,8 @@ static int zatm_start(struct atm_dev *dev)
+ 		if (((unsigned long)mbx ^ mbx_dma) & 0xffff) {
+ 			printk(KERN_ERR DEV_LABEL "(itf %d): system "
+ 			       "bus incompatible with driver\n", dev->number);
+-			pci_free_consistent(pdev, 2*MBX_SIZE(i), mbx, mbx_dma);
++			dma_free_coherent(&pdev->dev, 2*MBX_SIZE(i), mbx,
++					  mbx_dma);
+ 			error = -ENODEV;
+ 			goto out;
+ 		}
+@@ -1354,7 +1356,7 @@ out_tx:
+ 	kfree(zatm_dev->tx_map);
+ out:
+ 	while (i-- > 0) {
+-		pci_free_consistent(pdev, 2*MBX_SIZE(i), 
++		dma_free_coherent(&pdev->dev, 2*MBX_SIZE(i),
+ 				    (void *)zatm_dev->mbx_start[i],
+ 				    zatm_dev->mbx_dma[i]);
+ 	}
 -- 
-Best Regards,
-Jacek Anaszewski
+1.9.1
+
