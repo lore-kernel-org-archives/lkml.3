@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254AbbALOG6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 09:06:58 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:36057 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329AbbALOG4 (ORCPT
+	id S1753387AbbALOIk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 09:08:40 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:54252 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753126AbbALOIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 09:06:56 -0500
-Message-ID: <54B3D4FC.1090806@cogentembedded.com>
-Date: Mon, 12 Jan 2015 17:06:52 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 12 Jan 2015 09:08:38 -0500
+Date: Mon, 12 Jan 2015 15:08:36 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH v2 3/8] watchdog: at91rm9200: use the regmap from mfd
+Message-ID: <20150112140836.GL2447@piout.net>
+References: <1420797094-9444-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1420797094-9444-4-git-send-email-alexandre.belloni@free-electrons.com>
+ <54B074B9.2090704@roeck-us.net>
+ <20150110184146.GH2447@piout.net>
+ <54B1CE58.4040407@roeck-us.net>
 MIME-Version: 1.0
-To: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>, brudley@broadcom.com,
-        "arend@broadcom.com >> Arend van Spriel" <arend@broadcom.com>,
-        Franky Lin <frankyl@broadcom.com>, meuleman@broadcom.com,
-        kvalo@codeaurora.org, linville@tuxdriver.com, pieterpg@broadcom.com,
-        hdegoede@redhat.com, wens@csie.org, linux-wireless@vger.kernel.org,
-        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
-References: <54B36C88.3030609@linux.intel.com>
-In-Reply-To: <54B36C88.3030609@linux.intel.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54B1CE58.4040407@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 10/01/2015 at 17:14:00 -0800, Guenter Roeck wrote :
+> Not sure I understand what my comment has to do with 'parent'.
+> 
+> The fact that the code checks if it has already been instantiated
+> suggests that the original author of the driver was concerned about
+> that case. Since you did not remove that check I have to assume that
+> this can still happen. If so, the second instantiation attempt will
+> overwrite regmap_st, since that variable is written prior to checking
+> for the dual instantiation.
+> 
 
-On 1/12/2015 9:41 AM, Fu, Zhonghui wrote:
+I'll move the regmap_st assignment after the check. But I really believe
+it will never be probed more than once.
 
->  From 8685c3c2746b4275fc808d9db23c364b2f54b52a Mon Sep 17 00:00:00 2001
-> From: Zhonghui Fu <zhonghui.fu@linux.intel.com>
-> Date: Mon, 12 Jan 2015 14:25:46 +0800
-> Subject: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
-
-    The lines above are not needed.
-
-> WiFi chip has 2 SDIO functions, and PM core will trigger
-> twice suspend/resume operations for one WiFi chip to do
-> the same things. This patch avoid this case.
-
-> Acked-by: Arend van Spriel<arend@broadcom.com>
-> Acked-by: Sergei Shtylyov<sergei.shtylyov@cogentembedded.com>
-> Signed-off-by: Zhonghui Fu <zhonghui.fu@linux.intel.com>
-> ---
->   drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c |   21 +++++++++++++++++----
->   1 files changed, 17 insertions(+), 4 deletions(-)
-
-> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
-> index 9880dae..8f71485 100644
-> --- a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
-> +++ b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
-> @@ -1070,7 +1070,7 @@ static int brcmf_ops_sdio_probe(struct sdio_func *func,
->   	 */
->   	if ((sdio_get_host_pm_caps(sdiodev->func[1]) & MMC_PM_KEEP_POWER) &&
->   	    ((sdio_get_host_pm_caps(sdiodev->func[1]) & MMC_PM_WAKE_SDIO_IRQ) ||
-> -	     (sdiodev->pdata && sdiodev->pdata->oob_irq_supported)))
-> +	     (sdiodev->pdata->oob_irq_supported)))
-
-    Inner parens not needed on this line.
-
-[...]
-
-WBR, Sergei
-
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
