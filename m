@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534AbbAMA5j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 19:57:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37797 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486AbbAMA5i (ORCPT
+	id S1752136AbbALXDa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 18:03:30 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:34985 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751389AbbALXD2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 19:57:38 -0500
-Date: Mon, 12 Jan 2015 15:03:21 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andrew Milkovich <amilkovich@gmail.com>
-Cc: benjamin.romer@unisys.com, david.kershner@unisys.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: unisys: virtpci: fixed coding style errors
-Message-ID: <20150112230321.GA22984@kroah.com>
-References: <1418865910-21337-1-git-send-email-amilkovich@gmail.com>
- <20150110014123.GA30739@kroah.com>
- <20150112225353.GA22382@zenbook.hsd1.ca.comcast.net>
+	Mon, 12 Jan 2015 18:03:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150112225353.GA22382@zenbook.hsd1.ca.comcast.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1421103310-25755-1-git-send-email-king.feruke@gmail.com>
+References: <1421103310-25755-1-git-send-email-king.feruke@gmail.com>
+Date: Mon, 12 Jan 2015 18:03:27 -0500
+Message-ID: <CAHQdGtR-8MHXWVcYun1-_w632miEg7Tfrnih1q9Z_SNYSd=kSw@mail.gmail.com>
+Subject: Re: [PATCH] nfs: correct typo in nfs Kconfig
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Kevin Mulvey <king.feruke@gmail.com>
+Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Kevin Mulvey <kmulvey@linux.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 02:53:53PM -0800, Andrew Milkovich wrote:
-> Hi,
-> 
-> On Fri, Jan 09, 2015 at 05:41:23PM -0800, Greg KH wrote:
-> > On Wed, Dec 17, 2014 at 05:25:10PM -0800, Andrew Milkovich wrote:
-> > > Fixed coding style errors per checkpatch.pl. Inline comments removed.
-> > 
-> > What coding errors did you fix?  Please be specific.
-> 
-> Some inline comments were removed. Some talked about chanptr, which is known
-> because the first argument is the chan.
-> 
-> The other comments talked about no parent bus, but NULL signifies that there is
-> no parent bus.
+On Mon, Jan 12, 2015 at 5:55 PM, Kevin Mulvey <king.feruke@gmail.com> wrote:
+> From: Kevin Mulvey <kmulvey@linux.com>
+>
+> The help section of NFS_V3_ACL currently mentions the "noacl" option
+> but the correct syntax is "no_acl".
+>
+> Signed-off-by: Kevin Mulvey <kmulvey@linux.com>
+> ---
+>  fs/nfs/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
+> index 3dece03..7de164b 100644
+> --- a/fs/nfs/Kconfig
+> +++ b/fs/nfs/Kconfig
+> @@ -65,7 +65,7 @@ config NFS_V3_ACL
+>           applications to access and modify ACLs on files on the server.
+>
+>           Most NFS servers don't support the Solaris NFSv3 ACL protocol
+> -         extension.  You can choose N here or specify the "noacl" mount
+> +         extension.  You can choose N here or specify the "no_acl" mount
+>           option to prevent your NFS client from trying to use the NFSv3
+>           ACL protocol.
+>
 
-I was trying to hint that this needs to be in the changelog entry...
+Not in the Linux kernel:
+http://lxr.free-electrons.com/source/fs/nfs/super.c#L121
+
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer, PrimaryData
+trond.myklebust@primarydata.com
