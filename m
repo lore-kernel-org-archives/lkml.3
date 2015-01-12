@@ -1,47 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312AbbALLGc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 06:06:32 -0500
-Received: from smtp10.smtpout.orange.fr ([80.12.242.132]:35403 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752980AbbALLG3 (ORCPT
+	id S1752184AbbALLIU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 06:08:20 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:48254 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638AbbALLIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 06:06:29 -0500
-X-ME-Helo: beldin
-X-ME-Date: Mon, 12 Jan 2015 12:06:27 +0100
-X-ME-IP: 109.222.243.71
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, Daniel Mack <daniel@zonque.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] Transition of pxa25x and pxa27x to clock framework
-In-Reply-To: <1419688528-760-1-git-send-email-robert.jarzmik@free.fr> (Robert
-	Jarzmik's message of "Sat, 27 Dec 2014 14:55:24 +0100")
-References: <1419688528-760-1-git-send-email-robert.jarzmik@free.fr>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.92 (gnu/linux)
-X-URL: http://belgarath.falguerolles.org/
-Date: Mon, 12 Jan 2015 12:06:25 +0100
-Message-ID: <87y4p8xnpq.fsf@free.fr>
+	Mon, 12 Jan 2015 06:08:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1420818636.31075.15.camel@stressinduktion.org>
+References: <CAFB3abzYNYqtzd_n+Ym0Lo=DYbV0HPU=Tqw=stALNnu188hMKQ@mail.gmail.com>
+	<20150106224706.GA7416@salvia>
+	<CAFB3abwKpR1VqZXUrsexqveAZrA2LTSmTe8a=-H7z2HjAptjwA@mail.gmail.com>
+	<1420627396.26870.36.camel@stressinduktion.org>
+	<20150108205328.GA3361@salvia>
+	<1420756756.1755002.211556745.0418D128@webmail.messagingengine.com>
+	<20150109000546.GA3488@salvia>
+	<CAFB3abwrjp61LLOk3RWwXYEq1g4QZUC8OTKuO2cAr+GbV3n4rw@mail.gmail.com>
+	<1420803255.1978819.211762005.707EFFB9@webmail.messagingengine.com>
+	<20150109114506.GA4857@salvia>
+	<1420818636.31075.15.camel@stressinduktion.org>
+Date: Mon, 12 Jan 2015 16:38:16 +0530
+Message-ID: <CAFB3abwetkNa4753g9d-z8xU0fMThyApuESQNkbxGa8Yz2YRfQ@mail.gmail.com>
+Subject: Re: [PATCH net] ipv6: Prevent ipv6_find_hdr() from returning ENOENT
+ for valid non-first fragments
+From: Rahul Sharma <rsharma@arista.com>
+To: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Robert Jarzmik <robert.jarzmik@free.fr> writes:
+Hi Pablo, Hannes
 
-> Once reviewed, I'd like this serie to go through the pxa tree. Therefore an ack
-> from Mike is necesary for the last patch (add missing pxa27x clocks).
+On Fri, Jan 9, 2015 at 9:20 PM, Hannes Frederic Sowa
+<hannes@stressinduktion.org> wrote:
+> On Fr, 2015-01-09 at 12:45 +0100, Pablo Neira Ayuso wrote:
+>> Hi Hannes,
+>>
+>> On Fri, Jan 09, 2015 at 12:34:15PM +0100, Hannes Frederic Sowa wrote:
+>> > On Fri, Jan 9, 2015, at 08:18, Rahul Sharma wrote:
+>> > > Hi Pablo,
+>> > >
+>> > > On Fri, Jan 9, 2015 at 5:35 AM, Pablo Neira Ayuso <pablo@netfilter.org>
+>> > > wrote:
+>> > > > On Thu, Jan 08, 2015 at 11:39:16PM +0100, Hannes Frederic Sowa wrote:
+>> > > >> Hi Pablo,
+>> > > >>
+>> > > >> On Thu, Jan 8, 2015, at 21:53, Pablo Neira Ayuso wrote:
+>> > > >> > I'm afraid we cannot just get rid of that !ipv6_ext_hdr() check. The
+>> > > >> > ipv6_find_hdr() function is designed to return the transport protocol.
+>> > > >> > After the proposed change, it will return extension header numbers.
+>> > > >> > This will break existing ip6tables rulesets since the `-p' option
+>> > > >> > relies on this function to match the transport protocol.
+>> > > >> >
+>> > > >> > Note that the AH header is skipped (see code a bit below this
+>> > > >> > problematic fragmentation handling) so the follow up header after the
+>> > > >> > AH header is returned as the transport header.
+>> > > >> >
+>> > > >> > We can probably return the AH protocol number for non-1st fragments.
+>> > > >> > However, that would be something new to ip6tables since nobody has
+>> > > >> > ever seen packet matching `-p ah' rules. Thus, we restore control to
+>> > > >> > the user to allow this, but we would accept all kind of fragmented AH
+>> > > >> > traffic through the firewall since we cannot know what transport
+>> > > >> > protocol contains from non-1st fragments (unless I'm missing anything,
+>> > > >> > I need to have a closer look at this again tomorrow with fresher
+>> > > >> > mind).
+>> > > >>
+>> > > >> The code in question is guarded by (_frag_off != 0), so we are
+>> > > >> definitely processing a non-1st fragment currently. The -p match would
+>> > > >> happen at the time when the packet is reassembled and thus ipv6_find_hdr
+>> > > >> will find the real transport (final) header at this point (I hope I
+>> > > >> followed the code correctly here).
+>> > > >
+>> > > > Then, Rahul should get things working by modprobing nf_defrag_ipv6.
+>> > >
+>> > > I already had nf_defrag_ipv6 installed when the issue occured. But I
+>> > > see ip6table_raw_hook returning NF_DROP for the second fragment.
+>> >
+>> > That's what I expected. I think the change only affects hooks before
+>> > reassembly.
+>>
+>> reassembly happens at NF_IP6_PRI_CONNTRACK_DEFRAG (-400), so that
+>> happens before NF_IP6_PRI_RAW (-300) in IPv6 which is where the raw
+>> table is placed.
 >
-> This is targeted at 3.20 window.
-Well, no review is good news ... or not. Mike I still need an ack for patch 4/4,
-and then I'll schedule these patches for 3.21 window.
+> I tried to reproduce it, but couldn't get non-1st fragments getting
+> dropped during traversal of the raw table. They get dropped earlier at
+> during reassembly or pass.
+>
+> I agree with Pablo, I also would like to see more data.
+>
+> Thanks,
+> Hannes
+>
+>
 
-Cheers.
+I enabled pr_debug() and there was no error in nf_ct_frag6_gather().
+It seems to have defragmented the packet correctly. As expected,
+ipv6_defrag() returns NF_STOLEN for the first packet after queuing it.
+For the next fragment, ipv6_defrag() calls nf_ct_frag6_output() after
+after reassembling it. I checked skb->len inside nf_ct_frag6_output()
+and it implies that they were indeed reassembled. Now from what I
+follow from the code, this function seems to iterate over both the
+fragments with corresponding skb's and incrementing
+thresh(NF_IP6_PRI_CONNTRACK_DEFRAG) by 1 so the subsequent hooks
+(ip6table_raw_hook, ipv6_conntrack_in, ip6table_mangle_hook) should
+get called in order for both the fragments. This works fine for the
+first fragment as I had mentioned, but the ip6table_raw_hook returns
+NF_DROP for the second fragment. Please let me know if you need more
+inputs.
 
---
-Robert
+Thanks,
+Rahul
