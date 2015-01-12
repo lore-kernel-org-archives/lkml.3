@@ -1,71 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755744AbbALSmd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:42:33 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:56627 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755688AbbALSm1 (ORCPT
+	id S1755895AbbALSoB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:44:01 -0500
+Received: from mail-oi0-f41.google.com ([209.85.218.41]:54421 "EHLO
+	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754677AbbALSnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:42:27 -0500
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 7/7] ARM: at91: remove useless at91rm9200_set_type()
-Date: Mon, 12 Jan 2015 19:42:16 +0100
-Message-Id: <1421088136-10172-8-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1421088136-10172-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1421088136-10172-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Mon, 12 Jan 2015 13:43:55 -0500
+Date: Mon, 12 Jan 2015 11:43:49 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mohit Kumar <mohit.kumar@st.com>, Jingoo Han <jg1.han@samsung.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        Fabrice Gasnier <fabrice.gasnier@st.com>,
+        Arnd Bergmann <arnd@arndb.de>, Viresh Kumar <viresh.kumar@linaro.org>,
+        Thierry Reding <treding@nvidia.com>,
+        Minghuan Lian <Minghuan.Lian@freescale.com>,
+        Magnus Damm <damm@opensource.se>, Will Deacon <will.deacon@arm.com>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Murali Karicheri <m-karicheri2@ti.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Pratyush Anand <pratyush.anand@st.com>,
+        Sachin Kamat <sachin.kamat@samsung.com>, Andrew Lunn <andrew@lunn.ch>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Srikanth Thokala <sthokal@xilinx.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@stlinux.com, linux-pci@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 3/5] PCI: st: Provide support for the sti PCIe controller
+Message-ID: <20150112184349.GB2776@google.com>
+References: <1418812486-12394-1-git-send-email-gabriel.fernandez@linaro.org>
+ <1418812486-12394-4-git-send-email-gabriel.fernandez@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418812486-12394-4-git-send-email-gabriel.fernandez@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since all rm9200 board files have been removed, there is no user of
-at91rm9200_set_type() left. Remove it
+On Wed, Dec 17, 2014 at 11:34:44AM +0100, Gabriel FERNANDEZ wrote:
+> sti pcie is built around a Synopsis Designware PCIe IP.
+> 
+> Signed-off-by: Fabrice Gasnier <fabrice.gasnier@st.com>
+> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+> ---
+>  drivers/pci/host/Kconfig  |   5 +
+>  drivers/pci/host/Makefile |   1 +
+>  drivers/pci/host/pci-st.c | 713 ++++++++++++++++++++++++++++++++++++++++++++++
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- arch/arm/mach-at91/generic.h |  1 -
- arch/arm/mach-at91/setup.c   | 11 -----------
- 2 files changed, 12 deletions(-)
+Hi Gabriel,
 
-diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
-index c10c2ddaae6d..54f3837a0a4d 100644
---- a/arch/arm/mach-at91/generic.h
-+++ b/arch/arm/mach-at91/generic.h
-@@ -21,7 +21,6 @@ extern void __init at91_init_sram(int bank, unsigned long base,
- 				  unsigned int length);
- 
-  /* Processors */
--extern void __init at91rm9200_set_type(int type);
- extern void __init at91_dt_initialize(void);
- 
-  /* Timer */
-diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-index acb8d7724609..e3c21b458bb8 100644
---- a/arch/arm/mach-at91/setup.c
-+++ b/arch/arm/mach-at91/setup.c
-@@ -31,17 +31,6 @@ struct at91_init_soc __initdata at91_boot_soc;
- struct at91_socinfo at91_soc_initdata;
- EXPORT_SYMBOL(at91_soc_initdata);
- 
--void __init at91rm9200_set_type(int type)
--{
--	if (type == ARCH_REVISON_9200_PQFP)
--		at91_soc_initdata.subtype = AT91_SOC_RM9200_PQFP;
--	else
--		at91_soc_initdata.subtype = AT91_SOC_RM9200_BGA;
--
--	pr_info("filled in soc subtype: %s\n",
--		at91_get_soc_subtype(&at91_soc_initdata));
--}
--
- void __iomem *at91_ramc_base[2];
- EXPORT_SYMBOL_GPL(at91_ramc_base);
- 
--- 
-2.1.0
+Can you add a MAINTAINERS update so I know who should ack changes to this
+driver?
 
+>  3 files changed, 719 insertions(+)
+>  create mode 100644 drivers/pci/host/pci-st.c
+> 
+> diff --git a/drivers/pci/host/Kconfig b/drivers/pci/host/Kconfig
+> index c4b6568..999d2b9 100644
+> --- a/drivers/pci/host/Kconfig
+> +++ b/drivers/pci/host/Kconfig
+> @@ -102,4 +102,9 @@ config PCI_LAYERSCAPE
+>  	help
+>  	  Say Y here if you want PCIe controller support on Layerscape SoCs.
+>  
+> +config PCI_ST
+> +	bool "ST STiH41x PCIe controller"
+> +	depends on ARCH_STI
+> +	select PCIE_DW
+
+Please add help text here.
+
+> +static int st_pcie_rd_other_conf(struct pcie_port *pp, struct pci_bus *bus,
+> +				 unsigned int devfn, int where, int size,
+> +				 u32 *val)
+> +{
+> +	u32 data;
+> +	u32 bdf;
+> +	struct st_pcie *pcie = to_st_pcie(pp);
+> +	int is_root_bus = pci_is_root_bus(bus);
+> +	int retry_count = 0;
+> +	int ret;
+> +	void __iomem *addr;
+> +
+> +	/*
+> +	 * Prerequisite
+> +	 * PCI express devices will respond to all config type 0 cycles, since
+> +	 * they are point to point links. Thus to avoid probing for multiple
+> +	 * devices on the root, dw-pcie already check for us if it is on the
+> +	 * root bus / other slots. Also, dw-pcie checks for the link being up
+> +	 * as we will hang if we issue a config request and the link is down.
+> +	 * A switch will reject requests for slots it knows do not exist.
+> +	 */
+> +	bdf = bdf_num(bus->number, devfn, is_root_bus);
+> +	addr = pcie->config_area + config_addr(where,
+> +			bus->parent->number == pp->root_bus_nr);
+> +retry:
+> +	/* Set the config packet devfn */
+> +	writel_relaxed(bdf, pp->dbi_base + FUNC0_BDF_NUM);
+> +	readl_relaxed(pp->dbi_base + FUNC0_BDF_NUM);
+> +
+> +	ret = dw_pcie_cfg_read(addr, where, size, &data);
+> +
+> +	/*
+> +	 * This is intended to help with when we are probing the bus. The
+> +	 * problem is that the wrapper logic doesn't have any way to
+> +	 * interrogate if the configuration request failed or not.
+> +	 * On the ARM we actually get a real bus error.
+> +	 *
+> +	 * Unfortunately this means it is impossible to tell the difference
+> +	 * between when a device doesn't exist (the switch will return a UR
+> +	 * completion) or the device does exist but isn't yet ready to accept
+> +	 * configuration requests (the device will return a CRS completion)
+
+We do have CRS support in the Linux PCI core, so I guess this comment means
+that the ST host bridge doesn't handle CRS correctly?
+
+> +	 *
+> +	 * The result of this is that we will miss devices when probing.
+> +	 *
+> +	 * So if we are trying to read the dev/vendor id on devfn 0 and we
+> +	 * appear to get zero back, then we retry the request.  We know that
+> +	 * zero can never be a valid device/vendor id. The specification says
+> +	 * we must retry for up to a second before we decide the device is
+> +	 * dead. If we are still dead then we assume there is nothing there and
+> +	 * return ~0
+> +	 *
+> +	 * The downside of this is that we incur a delay of 1s for every pci
+> +	 * express link that doesn't have a device connected.
+
+That sounds pretty bad and I assume is a consequence of CRS handling being
+broken in hardware.
+
+> +	 */
+> +	if (((where & ~3) == 0) && devfn == 0 && (data == 0 || data == ~0)) {
+> +		if (retry_count++ < 1000) {
+> +			mdelay(1);
+> +			goto retry;
+> +		} else {
+> +			*val = ~0;
+> +			return PCIBIOS_DEVICE_NOT_FOUND;
+> +		}
+> +	}
+> +
+> +	*val = data;
+> +	return ret;
+> +}
+
+> +MODULE_LICENSE("GPLv2");
+
+See license_is_gpl_compatible().  This string needs to be "GPL v2", not
+"GPLv2" to avoid tainting the kernel.
+
+Bjorn
