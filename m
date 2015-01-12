@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751465AbbALAFP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 19:05:15 -0500
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:58582 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750955AbbALAFN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 19:05:13 -0500
+	id S1751400AbbALANs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 19:13:48 -0500
+Received: from ozlabs.org ([103.22.144.67]:48307 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750835AbbALANr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jan 2015 19:13:47 -0500
+Date: Mon, 12 Jan 2015 11:13:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Felipe Balbi <balbi@ti.com>, Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Thierry Reding <treding@nvidia.com>
+Subject: linux-next: manual merge of the usb-gadget-fixes tree with the
+ usb.current tree
+Message-ID: <20150112111339.591e766e@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <4938579.0KIk3QtTCP@wuerfel>
-References: <1420857290-8373-1-git-send-email-robh@kernel.org>
-	<1420857290-8373-8-git-send-email-robh@kernel.org>
-	<CACRpkdbwKN9LenqrWeu4WykhdZOGAdxpC_BYr2cYpc2_cn5GfA@mail.gmail.com>
-	<4938579.0KIk3QtTCP@wuerfel>
-Date: Mon, 12 Jan 2015 01:05:12 +0100
-Message-ID: <CACRpkdZSXWrVudiadVjbhQDS_zQrYttaytW-TUoeFUrc=beD1A@mail.gmail.com>
-Subject: Re: [PATCH 07/16] ARM: integrator: convert PCI to use generic config accesses
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Rob Herring <robh@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/tjuTYxf3o92sNdx5LC8zX6A"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 10:53 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Saturday 10 January 2015 22:40:22 Linus Walleij wrote:
->> >  static int v3_read_config(struct pci_bus *bus, unsigned int devfn, int where,
->> >                           int size, u32 *val)
->> >  {
->> > -       addr = v3_open_config_window(bus, devfn, where);
->> > +       int ret = pci_generic_config_read(bus, devfn, where, size, val);
->> >         v3_close_config_window();
->> > +       return ret;
->> >  }
->> >
->> >  static int v3_write_config(struct pci_bus *bus, unsigned int devfn, int where,
->> >                            int size, u32 val)
->> >  {
->> > +       int ret = pci_generic_config_write(bus, devfn, where, size, val);
->> >         v3_close_config_window();
->> > -       raw_spin_unlock_irqrestore(&v3_lock, flags);
->> > +       return ret;
->> >  }
->> >
->> >  static struct pci_ops pci_v3_ops = {
->> > +       .map_bus = v3_open_config_window,
->> >         .read   = v3_read_config,
->> >         .write  = v3_write_config,
->>
->> So .map_bus is called before every .read/.write operation I take it.
->>
->> Wouldn't it be proper to call the v3_close_config_window() from a
->> matching .unmap_bus() callback for symmetry?
->
-> It would be nicer for integrator but useless for anything else, so
-> I'd vote for leaving it the way Rob posted.
+--Sig_/tjuTYxf3o92sNdx5LC8zX6A
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-OK I buy that, throw in a comment about it in the code if there
-is some time for iterating the patch.
+Hi Felipe,
 
-Yours,
-Linus Walleij
+Today's linux-next merge of the usb-gadget-fixes tree got a conflict in
+drivers/usb/phy/phy.c between commit 9c9d82492b73 ("usb: phy: Fix
+deferred probing") from the usb.current tree and commit c818a94c77a9
+("usb: phy: Restore deferred probing path") from the usb-gadget-fixes
+tree.
+
+These seem to try to fix the same problem (from reading their commit messag=
+es).
+
+I fixed it up (I used the version from the usb-gadget-fixes tree) and
+can carry the fix as necessary (no action is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/tjuTYxf3o92sNdx5LC8zX6A
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUsxG4AAoJEMDTa8Ir7ZwVse0P/0vyBonkg3HYXAPFJgEWwXqP
+BhIYnIXxtA7OEsDEoFRmomqHOl1vt0D2j4SVminFmHpzTl9pQDHOyUo22q3Eliay
+rv8ty4KQ0381Q+simIjOaVvDfcXn5OOXvftKepG0EYJANwyW+nQE2/ASbqGx/O+p
+PqxO2xrbwnvMWBPIMWSevSPfX9yyMwiVBQ5MXX2EAHnnO1ANRH5Zx7BAknxpf4Wc
+zpmUXDB/br4DuX/OCfVpflrfKKz5946GptMUKZDrg3TgZtH/mE/vG+TIRqo2XJOn
+vZjw3woAIRm8YGGOwIJE1adI5F4nGH1q6/TcZrLYKsT2TX+TyiMFv+cvW4/fk2wN
+X/dx9QKQHMQHeNuYVgjhLOkGu2K3oMEKLCXwrFPOmP4QtcibDx/U0dQRiqrKSEyZ
+tj8OfHSRbrCg6Eo7Dw9eeN/FhGNQdCoo5zRXtWW+4irT7zheznjsJE8aqfRFrGTf
+e9w62c7KD/GbbGqg0/RbV19bd+oJfqJmUAxBljOYubnz1G42AWtVe9mC8B5skTc/
+NMEO+stOaWuZoiPyWLnbzRnn5u5t/+qRB50BZfG25k2QaAToch4Pxr9biug5saVI
+M24UbEnCD3jtg+21TGVNdYoGhGuu6wlBRrut8AFC69RT+nE5jKd9umWljwq+hgor
+GdQMJrRGjU8T4V/9Cxd6
+=2dnt
+-----END PGP SIGNATURE-----
+
+--Sig_/tjuTYxf3o92sNdx5LC8zX6A--
