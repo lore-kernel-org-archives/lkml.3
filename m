@@ -1,126 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739AbbALKZl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 05:25:41 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60085 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752389AbbALKZj (ORCPT
+	id S1752811AbbALK2G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 05:28:06 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:18684 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752020AbbALK2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 05:25:39 -0500
-Message-ID: <54B3A118.5000907@pengutronix.de>
-Date: Mon, 12 Jan 2015 11:25:28 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Mon, 12 Jan 2015 05:28:04 -0500
+X-IronPort-AV: E=Sophos;i="5.07,743,1413270000"; 
+   d="scan'208";a="54462795"
+Message-ID: <54B3A1B0.1010005@broadcom.com>
+Date: Mon, 12 Jan 2015 11:28:00 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: "Ahmed S. Darwish" <darwish.07@gmail.com>
-CC: Olivier Sobrie <olivier@sobrie.be>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux-USB <linux-usb@vger.kernel.org>,
-        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 4/4] can: kvaser_usb: Retry first bulk transfer on
- -ETIMEDOUT
-References: <20141223154654.GB6460@vivalin-002> <20150111200544.GA8855@linux> <20150111201116.GB8855@linux> <20150111201519.GC8855@linux> <20150111203612.GA8999@linux> <20150111204508.GB8999@linux> <54B2E23E.1090108@pengutronix.de> <20150112101407.GA9213@linux>
-In-Reply-To: <20150112101407.GA9213@linux>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="9v9aGvt0WxUxsUVtwToHBBAcGdKSKKAIF"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Benoit Parrot <bparrot@ti.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "Maxime Ripard" <maxime.ripard@free-electrons.com>,
+        Jiri Prchal <jiri.prchal@aksignal.cz>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Subject: Re: [Patch v5 2/2] gpio: Document GPIO hogging mechanism
+References: <1419019671-25377-1-git-send-email-bparrot@ti.com>	<1419019671-25377-3-git-send-email-bparrot@ti.com> <CACRpkdb7Wq7-rBypqPkefejY5Qfq_KKx91H+DxKWv-TM2y04bg@mail.gmail.com>
+In-Reply-To: <CACRpkdb7Wq7-rBypqPkefejY5Qfq_KKx91H+DxKWv-TM2y04bg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---9v9aGvt0WxUxsUVtwToHBBAcGdKSKKAIF
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-On 01/12/2015 11:14 AM, Ahmed S. Darwish wrote:
-> On Sun, Jan 11, 2015 at 09:51:10PM +0100, Marc Kleine-Budde wrote:
->> On 01/11/2015 09:45 PM, Ahmed S. Darwish wrote:
->>> From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
->>>
->>> (This is a draft patch, I'm not sure if this fixes the USB
->>> bug or only its psymptom. Feedback from the linux-usb folks
->>> is really appreciated.)
->>>
->>> When plugging the Kvaser USB/CAN dongle the first time, everything
->>> works as expected and all of the transfers from and to the USB
->>> device succeeds.
->>>
->>> Meanwhile, after unplugging the device and plugging it again, the
->>> first bulk transfer _always_ returns an -ETIMEDOUT. The following
->>> behaviour was observied:
->>>
->>> - Setting higher timeout values for the first bulk transfer never
->>>   solved the issue.
->>>
->>> - Unloading, then loading, our kvaser_usb module in question
->>>   __always__ solved the issue.
->>>
->>> - Checking first bulk transfer status, and retry the transfer
->>>   again in case of an -ETIMEDOUT also __always__ solved the issue.
->>>   This is what the patch below does.
->>>
->>> - In the testing done so far, this issue appears only on laptops
->>>   but never on PCs (possibly power related?)
->>>
->>> Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+On 01/12/15 11:20, Linus Walleij wrote:
+> On Fri, Dec 19, 2014 at 9:07 PM, Benoit Parrot<bparrot@ti.com>  wrote:
+>
+>> Add GPIO hogging documentation to gpio.txt
 >>
->> Does this patch apply apply between 3 and 4? If not, please re-arrange=
+>> Signed-off-by: Benoit Parrot<bparrot@ti.com>
+>> Reviewed-by: Alexandre Courbot<acourbot@nvidia.com>
+>
+> This is starting to look good ...
+>
+>> +               line_b {
+>> +                       gpio-hog;
+>> +                       gpios =<6 0>;
+>> +                       state = "output-low";
+>
+> I don't like the state string.
+>
+> Instead have boolean properties for all states.
+>
+> line_b {
+>      gpio-hog;
+>      gpios =<6 0>;
+>      output-low;
+>      line-name = "foo-bar-gpio";
+> }
+>
+> Then use of_property_read_bool() in the code to check which
+> state is to be selected intially. You can check that no mutually
+> exclusive state are selected, I don't like that an arbitrary string
+> select the state like that, if we do it that way an enumerator would
+> be better, I prefer bools.
 
->> the series. As this is a bug fix, patches 1, 2 and 4 will go via
->> net/master, 3 will go via net-next/master.
->=20
-> Since no one complained earlier, I guess this issue only affects
-> USBCAN devices. That's why I've based it above patch #3: adding
-> USBCAN hardware support.
->=20
-> Nonetheless, it won't do any harm for the current Leaf-only
-> driver. So _if_ this is the correct fix, I will update the commit
-> log, refactor the check into a 'do { } while()' loop, and then
-> base it above the Leaf-only net/master fixes on patch #1, and #2.
->=20
-> Any feedback on the USB side of things?
+To avoid the mutual exclusive state checking, would it not be more 
+straightforward to use numeric enum values defined in boot/dts/include.
 
-Maybe you have to change the subject of this patch to be more visible on
-the USB list and/or add the right USB people on Cc.
+Regards,
+Arend
 
-Marc
+> Yours,
+> Linus Walleij
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---9v9aGvt0WxUxsUVtwToHBBAcGdKSKKAIF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUs6EYAAoJECte4hHFiupU2FQP/0k3HDCuGX9VlOIC2bGhNSMZ
-O7h0l9q35wvi6x2nD1mpsv0rNQUYE4HnZkFrq3ci75i6w6PB92KbOwwXrxwr4yZU
-PwMepf1NLYsocGWVyszBXtsqEx0c1DDBhMA6mh/XI3ouG9kGeIuIKndEIE+1Hs20
-oDx0U1dD9buQg7TjKxTq9qlHS/hluLCZx1GRZ4tXDiBgi+VNU7/FfLQ0tYtywTBx
-fzC6KCn4rAyeVMIIdHNg2me53TJcLw8SVRtkDXbKphZFydTbAWAwhvdsqqxAYr9q
-abSyySbjfLa+JHS2dgsb7P38NwqAU+O0LuYLJdMPvHG6EK6pAzghe6Ptk0e5qSw4
-JkGg5l0+2WWHvfaimZ/WL9SMxOa9J5Uh/X6VUnjl8bwoXFXqCV+iZU0XEADN7IJq
-m2Gr1EqpX9NooH2MHuXpcnBv3PXzePlj0DAcegqhtlLIHDp0+DLNQPWEH9rxc/7v
-QfAHPlS5xAidiydAmsbXkxOIu3cuFCsecmmx2tKEnsep1tvQKW9wtjGW5W7mSZ6y
-pFsLfbDsQSoKtk+mp+IovsS0QDSDdSm2uBlyDxiJTtMC0irOBfWdpa9+t4n8WDNa
-CogWYL4cG/CrBfTwitb9Qr7WKD8SY5O6N67jbbZ+ELDKm1TiGyrF6UtIQQQoBMJQ
-zH8xPg8sKWpaY2yt9J4n
-=AwgF
------END PGP SIGNATURE-----
-
---9v9aGvt0WxUxsUVtwToHBBAcGdKSKKAIF--
