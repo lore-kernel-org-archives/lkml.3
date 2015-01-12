@@ -1,98 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577AbbALSkI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:40:08 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:60625 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754509AbbALSkB (ORCPT
+	id S1755889AbbALSnf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:43:35 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:56600 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755679AbbALSmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:40:01 -0500
-Date: Mon, 12 Jan 2015 18:39:55 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Roman Pen <r.peniaev@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sekhar Nori <nsekhar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Subject: Re: [PATCH 1/2] ARM: entry-common: fix forgotten set of
- thread_info->syscall
-Message-ID: <20150112183955.GO13360@arm.com>
-References: <1420986751-30364-1-git-send-email-r.peniaev@gmail.com>
- <1420986751-30364-2-git-send-email-r.peniaev@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420986751-30364-2-git-send-email-r.peniaev@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 12 Jan 2015 13:42:23 -0500
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH 0/7] AT91 cleanup for 3.20 #1
+Date: Mon, 12 Jan 2015 19:42:09 +0100
+Message-Id: <1421088136-10172-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 11, 2015 at 02:32:30PM +0000, Roman Pen wrote:
-> thread_info->syscall is used only for ptrace, but syscall number
-> is also used by syscall_get_nr and returned to userspace by the
-> following proc file access:
-> 
->  $ cat /proc/self/syscall
->  0 0x3 0xbe928bd8 0x1000 0x0 0xac9e0 0x3 0xbe928bb4 0xb6f5dfbc
->  ^
-> The first number is the syscall number, currently it is zero.
-> Patch fixes this:
-> 
->  $ cat /proc/self/syscall
->  3 0x3 0xbefc7bd8 0x1000 0x0 0xac9e0 0x3 0xbefc7bb4 0xb6e82fbc
->  ^
-> Right, read syscall
+Hi,
 
-Yes, it seems that despite requiring CONFIG_HAVE_ARCH_TRACEHOOK,
-the /proc code requires syscall_get_nr to work regardless of
-TIF_SYSCALL_TRACE.
+This patch set cleans a lot of remaining header, config options and functions
+that are not used anymore since the switch to DT only.
 
-> Signed-off-by: Roman Pen <r.peniaev@gmail.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Marc Zyngier <marc.zyngier@arm.com>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Christoffer Dall <christoffer.dall@linaro.org>
-> Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Cc: Sekhar Nori <nsekhar@ti.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: stable@vger.kernel.org
-> ---
->  arch/arm/kernel/asm-offsets.c  | 1 +
->  arch/arm/kernel/entry-common.S | 1 +
->  2 files changed, 2 insertions(+)
-> 
-> diff --git a/arch/arm/kernel/asm-offsets.c b/arch/arm/kernel/asm-offsets.c
-> index 2d2d608..6911bad 100644
-> --- a/arch/arm/kernel/asm-offsets.c
-> +++ b/arch/arm/kernel/asm-offsets.c
-> @@ -70,6 +70,7 @@ int main(void)
->    DEFINE(TI_CPU,		offsetof(struct thread_info, cpu));
->    DEFINE(TI_CPU_DOMAIN,		offsetof(struct thread_info, cpu_domain));
->    DEFINE(TI_CPU_SAVE,		offsetof(struct thread_info, cpu_context));
-> +  DEFINE(TI_SYSCALL,		offsetof(struct thread_info, syscall));
->    DEFINE(TI_USED_CP,		offsetof(struct thread_info, used_cp));
->    DEFINE(TI_TP_VALUE,		offsetof(struct thread_info, tp_value));
->    DEFINE(TI_FPSTATE,		offsetof(struct thread_info, fpstate));
-> diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
-> index f8ccc21..89452ff 100644
-> --- a/arch/arm/kernel/entry-common.S
-> +++ b/arch/arm/kernel/entry-common.S
-> @@ -189,6 +189,7 @@ ENTRY(vector_swi)
->  #endif
->  
->  local_restart:
-> +	str scno, [tsk, #TI_SYSCALL]		@ set syscall number
->  	ldr	r10, [tsk, #TI_FLAGS]		@ check for syscall tracing
->  	stmdb	sp!, {r4, r5}			@ push fifth and sixth args
+Patch 5 is moving mach/debug-macro.S to include/debug/at91.S to prepare the
+upcoming switch to multiplatform.
 
-Do we definitely want to update scno on syscall restarting?
 
-Will
+Alexandre Belloni (7):
+  ARM: at91: remove unused mach/memory.h
+  ARM: at91: remove useless config MACH_AT91RM9200_DT
+  ARM: at91: remove useless config MACH_AT91SAM9_DT
+  ARM: at91: remove useless at91_sysirq_mask_rtx
+  ARM: at91: move debug-macro.S into the common space
+  ARM: at91: remove useless at91rm9200_dt_initialize()
+  ARM: at91: remove useless at91rm9200_set_type()
+
+ MAINTAINERS                                        |  1 +
+ arch/arm/Kconfig.debug                             |  9 ++-
+ .../mach/debug-macro.S => include/debug/at91.S}    | 19 +++---
+ arch/arm/mach-at91/Kconfig                         |  8 ---
+ arch/arm/mach-at91/Makefile                        |  6 +-
+ arch/arm/mach-at91/at91sam9260.c                   |  2 -
+ arch/arm/mach-at91/at91sam9261.c                   |  2 -
+ arch/arm/mach-at91/at91sam9263.c                   |  3 -
+ arch/arm/mach-at91/at91sam9g45.c                   |  3 -
+ arch/arm/mach-at91/at91sam9n12.c                   |  6 --
+ arch/arm/mach-at91/at91sam9rl.c                    |  3 -
+ arch/arm/mach-at91/at91sam9x5.c                    | 10 ---
+ arch/arm/mach-at91/board-dt-rm9200.c               |  2 +-
+ arch/arm/mach-at91/generic.h                       |  6 --
+ arch/arm/mach-at91/include/mach/at91_rtt.h         | 35 ----------
+ arch/arm/mach-at91/include/mach/memory.h           | 26 --------
+ arch/arm/mach-at91/sama5d3.c                       |  6 --
+ arch/arm/mach-at91/setup.c                         | 18 ------
+ arch/arm/mach-at91/sysirq_mask.c                   | 75 ----------------------
+ 19 files changed, 23 insertions(+), 217 deletions(-)
+ rename arch/arm/{mach-at91/include/mach/debug-macro.S => include/debug/at91.S} (68%)
+ delete mode 100644 arch/arm/mach-at91/include/mach/at91_rtt.h
+ delete mode 100644 arch/arm/mach-at91/include/mach/memory.h
+ delete mode 100644 arch/arm/mach-at91/sysirq_mask.c
+
+-- 
+2.1.0
+
