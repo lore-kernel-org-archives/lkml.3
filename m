@@ -1,44 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754394AbbALUQg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 15:16:36 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:43679 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181AbbALUQf (ORCPT
+	id S1754865AbbALURG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 15:17:06 -0500
+Received: from albert.telenet-ops.be ([195.130.137.90]:39208 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753201AbbALURD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 15:16:35 -0500
-Date: Mon, 12 Jan 2015 21:16:25 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@codemonkey.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 03/10] clocksource: Remove clocksource_max_deferment()
-Message-ID: <20150112201625.GA4233@localhost.localdomain>
-References: <1420850068-27828-1-git-send-email-john.stultz@linaro.org>
- <1420850068-27828-4-git-send-email-john.stultz@linaro.org>
- <20150111114724.GE4467@localhost.localdomain>
- <CALAqxLWnAQhVzJH4VzVN9oyYAPu88R1jX3CvDatrra8XKC1djw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALAqxLWnAQhVzJH4VzVN9oyYAPu88R1jX3CvDatrra8XKC1djw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 12 Jan 2015 15:17:03 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH resend] console/dummy: Move screen size selection from CPP to Kconfig
+Date: Mon, 12 Jan 2015 21:17:02 +0100
+Message-Id: <1421093822-26761-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 10:36:58AM -0800, John Stultz wrote:
-> So, the first patch had a cleanup which removed case where the max
-> mult value was being calculated assuming nanoseconds was a s64 instead
-> of a u64, which resulted in the max_idle_ns to be halved. So this
-> doesn't actually cost us more over what the current kernel does.
+PA-RISC already handled the dummy console screen size selection in
+Kconfig, so generalize this to other platforms.
 
-Ok, fine, missed that.
+ARM keeps on using screen_info, which is filled in by
+platform-specific code, or from ATAGS.
 
-Thanks
-Richard
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ drivers/video/console/Kconfig    | 16 ++++++++++------
+ drivers/video/console/dummycon.c |  5 +----
+ 2 files changed, 11 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/video/console/Kconfig b/drivers/video/console/Kconfig
+index fe1cd0148e139eaa..ba97efc3bf707db8 100644
+--- a/drivers/video/console/Kconfig
++++ b/drivers/video/console/Kconfig
+@@ -77,18 +77,22 @@ config DUMMY_CONSOLE
+ 
+ config DUMMY_CONSOLE_COLUMNS
+         int "Initial number of console screen columns"
+-        depends on PARISC && DUMMY_CONSOLE
+-        default "160"
++        depends on DUMMY_CONSOLE && !ARM
++        default 160 if PARISC
++        default 80
+         help
+-          The default value is 160, which should fit a 1280x1024 monitor.
++          On PA-RISC, the default value is 160, which should fit a 1280x1024
++          monitor.
+           Select 80 if you use a 640x480 resolution by default.
+ 
+ config DUMMY_CONSOLE_ROWS
+         int "Initial number of console screen rows"
+-        depends on PARISC && DUMMY_CONSOLE
+-        default "64"
++        depends on DUMMY_CONSOLE && !ARM
++        default 64 if PARISC
++        default 25
+         help
+-          The default value is 64, which should fit a 1280x1024 monitor.
++          On PA-RISC, the default value is 64, which should fit a 1280x1024
++          monitor.
+           Select 25 if you use a 640x480 resolution by default.
+ 
+ config FRAMEBUFFER_CONSOLE
+diff --git a/drivers/video/console/dummycon.c b/drivers/video/console/dummycon.c
+index 40bec8d64b0a4a56..0efc52f11ad003ae 100644
+--- a/drivers/video/console/dummycon.c
++++ b/drivers/video/console/dummycon.c
+@@ -20,13 +20,10 @@
+ #if defined(__arm__)
+ #define DUMMY_COLUMNS	screen_info.orig_video_cols
+ #define DUMMY_ROWS	screen_info.orig_video_lines
+-#elif defined(__hppa__)
++#else
+ /* set by Kconfig. Use 80x25 for 640x480 and 160x64 for 1280x1024 */
+ #define DUMMY_COLUMNS	CONFIG_DUMMY_CONSOLE_COLUMNS
+ #define DUMMY_ROWS	CONFIG_DUMMY_CONSOLE_ROWS
+-#else
+-#define DUMMY_COLUMNS	80
+-#define DUMMY_ROWS	25
+ #endif
+ 
+ static const char *dummycon_startup(void)
+-- 
+1.9.1
+
