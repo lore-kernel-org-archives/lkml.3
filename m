@@ -1,63 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213AbbALXKF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 18:10:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36120 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055AbbALXKA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 18:10:00 -0500
+	id S1753724AbbALXKs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 18:10:48 -0500
+Received: from mga09.intel.com ([134.134.136.24]:32013 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753649AbbALXKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 18:10:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="511204080"
+From: Sudeep Dutt <sudeep.dutt@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Jonathan Corbet <corbet@lwn.net>,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Dave Jiang <dave.jiang@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Sudeep Dutt <sudeep.dutt@intel.com>
+Subject: [PATCH char-misc-next v2 04/13] misc: mic: SCIF Peer Bus
 Date: Mon, 12 Jan 2015 15:09:58 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, willy@linux.intel.com
-Subject: Re: [PATCH v12 09/20] dax,ext2: Replace xip_truncate_page with
- dax_truncate_page
-Message-Id: <20150112150958.2e6bd85dc3e25b953d28c6cb@linux-foundation.org>
-In-Reply-To: <1414185652-28663-10-git-send-email-matthew.r.wilcox@intel.com>
-References: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
-	<1414185652-28663-10-git-send-email-matthew.r.wilcox@intel.com>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Message-Id: <58fd2e8fbad7cab8346be8f8b6de5ec905120b3a.1421097390.git.sudeep.dutt@intel.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <cover.1421097390.git.sudeep.dutt@intel.com>
+References: <cover.1421097390.git.sudeep.dutt@intel.com>
+In-Reply-To: <cover.1421097390.git.sudeep.dutt@intel.com>
+References: <cover.1421097390.git.sudeep.dutt@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Oct 2014 17:20:41 -0400 Matthew Wilcox <matthew.r.wilcox@intel.com> wrote:
+The SCIF peer bus is used to register and unregister SCIF peer devices
+internally by the SCIF driver to signify the addition and removal of
+peer nodes respectively from the SCIF network. This simplifies remote node
+handling within SCIF and will also be used to support device probe/remove
+for SCIF client drivers (e.g. netdev over SCIF)
 
-> It takes a get_block parameter just like nobh_truncate_page() and
-> block_truncate_page()
-> 
-> --- a/fs/dax.c
-> +++ b/fs/dax.c
-> @@ -458,3 +458,47 @@ int dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
->  	return result;
->  }
->  EXPORT_SYMBOL_GPL(dax_fault);
-> +
-> +/**
-> + * dax_truncate_page - handle a partial page being truncated in a DAX file
-> + * @inode: The file being truncated
-> + * @from: The file offset that is being truncated to
-> + * @get_block: The filesystem method used to translate file offsets to blocks
-> + *
-> + * Similar to block_truncate_page(), this function can be called by a
-> + * filesystem when it is truncating an DAX file to handle the partial page.
-> + *
-> + * We work in terms of PAGE_CACHE_SIZE here for commonality with
-> + * block_truncate_page(), but we could go down to PAGE_SIZE if the filesystem
-> + * took care of disposing of the unnecessary blocks.
+Reviewed-by: Nikhil Rao <nikhil.rao@intel.com>
+Reviewed-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
+Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
+---
+ drivers/misc/mic/scif/scif_peer_bus.h |  65 ++++++++++++++++++
+ drivers/misc/mic/scif/scif_peer_bus.c | 124 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 189 insertions(+)
+ create mode 100644 drivers/misc/mic/scif/scif_peer_bus.h
+ create mode 100644 drivers/misc/mic/scif/scif_peer_bus.c
 
-But PAGE_SIZE==PAGE_CACHE_SIZE.  Unclear what you're saying here.
-
-> + Even if the filesystem
-> + * block size is smaller than PAGE_SIZE, we have to zero the rest of the page
-> + * since the file might be mmaped.
-> + */
-> 
-> ...
->
+diff --git a/drivers/misc/mic/scif/scif_peer_bus.h b/drivers/misc/mic/scif/scif_peer_bus.h
+new file mode 100644
+index 0000000..33f0dbb
+--- /dev/null
++++ b/drivers/misc/mic/scif/scif_peer_bus.h
+@@ -0,0 +1,65 @@
++/*
++ * Intel MIC Platform Software Stack (MPSS)
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, version 2, as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++ * General Public License for more details.
++ *
++ * Intel SCIF driver.
++ */
++#ifndef _SCIF_PEER_BUS_H_
++#define _SCIF_PEER_BUS_H_
++
++#include <linux/device.h>
++#include <linux/mic_common.h>
++
++/*
++ * Peer devices show up as PCIe devices for the mgmt node but not the cards.
++ * The mgmt node discovers all the cards on the PCIe bus and informs the other
++ * cards about their peers. Upon notification of a peer a node adds a peer
++ * device to the peer bus to maintain symmetry in the way devices are
++ * discovered across all nodes in the SCIF network.
++ */
++/**
++ * scif_peer_dev - representation of a peer SCIF device
++ * @dev: underlying device
++ * @dnode - The destination node which this device will communicate with.
++ */
++struct scif_peer_dev {
++	struct device dev;
++	u8 dnode;
++};
++
++/**
++ * scif_peer_driver - operations for a scif_peer I/O driver
++ * @driver: underlying device driver (populate name and owner).
++ * @id_table: the ids serviced by this driver.
++ * @probe: the function to call when a device is found.  Returns 0 or -errno.
++ * @remove: the function to call when a device is removed.
++ */
++struct scif_peer_driver {
++	struct device_driver driver;
++	const struct scif_peer_dev_id *id_table;
++
++	int (*probe)(struct scif_peer_dev *dev);
++	void (*remove)(struct scif_peer_dev *dev);
++};
++
++struct scif_dev;
++
++int scif_peer_register_driver(struct scif_peer_driver *driver);
++void scif_peer_unregister_driver(struct scif_peer_driver *driver);
++
++struct scif_peer_dev *scif_peer_register_device(struct scif_dev *sdev);
++void scif_peer_unregister_device(struct scif_peer_dev *sdev);
++
++int scif_peer_bus_init(void);
++void scif_peer_bus_exit(void);
++#endif /* _SCIF_PEER_BUS_H */
+diff --git a/drivers/misc/mic/scif/scif_peer_bus.c b/drivers/misc/mic/scif/scif_peer_bus.c
+new file mode 100644
+index 0000000..589ae9a
+--- /dev/null
++++ b/drivers/misc/mic/scif/scif_peer_bus.c
+@@ -0,0 +1,124 @@
++/*
++ * Intel MIC Platform Software Stack (MPSS)
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, version 2, as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++ * General Public License for more details.
++ *
++ * Intel SCIF driver.
++ */
++#include "scif_main.h"
++#include "../bus/scif_bus.h"
++#include "scif_peer_bus.h"
++
++static inline struct scif_peer_dev *
++dev_to_scif_peer(struct device *dev)
++{
++	return container_of(dev, struct scif_peer_dev, dev);
++}
++
++static inline struct scif_peer_driver *
++drv_to_scif_peer(struct device_driver *drv)
++{
++	return container_of(drv, struct scif_peer_driver, driver);
++}
++
++static int scif_peer_dev_match(struct device *dv, struct device_driver *dr)
++{
++	return !strncmp(dev_name(dv), dr->name, 4);
++}
++
++static int scif_peer_dev_probe(struct device *d)
++{
++	struct scif_peer_dev *dev = dev_to_scif_peer(d);
++	struct scif_peer_driver *drv = drv_to_scif_peer(dev->dev.driver);
++
++	return drv->probe(dev);
++}
++
++static int scif_peer_dev_remove(struct device *d)
++{
++	struct scif_peer_dev *dev = dev_to_scif_peer(d);
++	struct scif_peer_driver *drv = drv_to_scif_peer(dev->dev.driver);
++
++	drv->remove(dev);
++	return 0;
++}
++
++static struct bus_type scif_peer_bus = {
++	.name  = "scif_peer_bus",
++	.match = scif_peer_dev_match,
++	.probe = scif_peer_dev_probe,
++	.remove = scif_peer_dev_remove,
++};
++
++int scif_peer_register_driver(struct scif_peer_driver *driver)
++{
++	driver->driver.bus = &scif_peer_bus;
++	return driver_register(&driver->driver);
++}
++
++void scif_peer_unregister_driver(struct scif_peer_driver *driver)
++{
++	driver_unregister(&driver->driver);
++}
++
++static void scif_peer_release_dev(struct device *d)
++{
++	struct scif_peer_dev *sdev = dev_to_scif_peer(d);
++	struct scif_dev *scifdev = &scif_dev[sdev->dnode];
++
++	scif_cleanup_scifdev(scifdev);
++	kfree(sdev);
++}
++
++struct scif_peer_dev *
++scif_peer_register_device(struct scif_dev *scifdev)
++{
++	int ret;
++	struct scif_peer_dev *spdev;
++
++	spdev = kzalloc(sizeof(*spdev), GFP_KERNEL);
++	if (!spdev)
++		return ERR_PTR(-ENOMEM);
++
++	spdev->dev.parent = scifdev->sdev->dev.parent;
++	spdev->dev.release = scif_peer_release_dev;
++	spdev->dnode = scifdev->node;
++	spdev->dev.bus = &scif_peer_bus;
++
++	dev_set_name(&spdev->dev, "scif_peer-dev%u", spdev->dnode);
++	/*
++	 * device_register() causes the bus infrastructure to look for a
++	 * matching driver.
++	 */
++	ret = device_register(&spdev->dev);
++	if (ret)
++		goto free_spdev;
++	return spdev;
++free_spdev:
++	kfree(spdev);
++	return ERR_PTR(ret);
++}
++
++void scif_peer_unregister_device(struct scif_peer_dev *sdev)
++{
++	device_unregister(&sdev->dev);
++}
++
++int scif_peer_bus_init(void)
++{
++	return bus_register(&scif_peer_bus);
++}
++
++void scif_peer_bus_exit(void)
++{
++	bus_unregister(&scif_peer_bus);
++}
+-- 
+1.8.2.1
 
