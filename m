@@ -1,116 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351AbbALNmD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 08:42:03 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:39787 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204AbbALNl6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 08:41:58 -0500
-Message-ID: <54B3CEBF.3020108@linaro.org>
-Date: Mon, 12 Jan 2015 14:40:15 +0100
-From: Eric Auger <eric.auger@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752389AbbALNoz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 08:44:55 -0500
+Received: from mga02.intel.com ([134.134.136.20]:30726 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750921AbbALNoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 08:44:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,744,1413270000"; 
+   d="scan'208";a="660487265"
+From: Jani Nikula <jani.nikula@intel.com>
+To: intel-gfx@lists.freedesktop.org
+Cc: Rob Clark <robdclark@gmail.com>, Jim Davis <jim.epost@gmail.com>,
+        jani.nikula@intel.com, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, daniel.vetter@intel.com,
+        David Airlie <airlied@linux.ie>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Subject: [PATCH] drm/i915: fix build for CONFIG_BUG=n
+Date: Mon, 12 Jan 2015 15:45:31 +0200
+Message-Id: <1421070331-29650-1-git-send-email-jani.nikula@intel.com>
+X-Mailer: git-send-email 2.1.4
+In-Reply-To: <CA+r1ZhgHTi7bS2irhtuSUs9aO=Br1dumN8=oAOeaMJDZ_ZhwBw@mail.gmail.com>
+References: <CA+r1ZhgHTi7bS2irhtuSUs9aO=Br1dumN8=oAOeaMJDZ_ZhwBw@mail.gmail.com>
 MIME-Version: 1.0
-To: Christoffer Dall <christoffer.dall@linaro.org>
-CC: eric.auger@st.com, marc.zyngier@arm.com,
-        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        kvm@vger.kernel.org, alex.williamson@redhat.com, agraf@suse.de,
-        joel.schopp@amd.com, gleb@kernel.org, pbonzini@redhat.com,
-        borntraeger@de.ibm.com, cornelia.huck@de.ibm.com,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        a.motakis@virtualopensystems.com
-Subject: Re: [PATCH v5 3/5] KVM: arm/arm64: implement kvm_arch_is_virtual_intc_initialized
-References: <1417622832-5460-1-git-send-email-eric.auger@linaro.org> <1417622832-5460-4-git-send-email-eric.auger@linaro.org> <20150111211250.GE3868@cbox>
-In-Reply-To: <20150111211250.GE3868@cbox>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2015 10:12 PM, Christoffer Dall wrote:
-> On Wed, Dec 03, 2014 at 05:07:10PM +0100, Eric Auger wrote:
->> on arm/arm64 the VGIC is dynamically instantiated and it is useful
->> to expose its state, especially for irqfd setup.
->>
->> This patch defines __KVM_HAVE_ARCH_VIRTUAL_INTC_INITIALIZED
->> and implements kvm_arch_is_virtual_intc_initialized
->>
->> Signed-off-by: Eric Auger <eric.auger@linaro.org>
->> ---
->>  arch/arm/include/asm/kvm_host.h   | 6 ++++++
->>  arch/arm/kvm/arm.c                | 5 +++++
->>  arch/arm64/include/asm/kvm_host.h | 5 +++++
->>  3 files changed, 16 insertions(+)
->>
->> diff --git a/arch/arm/include/asm/kvm_host.h b/arch/arm/include/asm/kvm_host.h
->> index 53036e2..fe2c89b 100644
->> --- a/arch/arm/include/asm/kvm_host.h
->> +++ b/arch/arm/include/asm/kvm_host.h
->> @@ -27,6 +27,8 @@
->>  #include <asm/fpstate.h>
->>  #include <kvm/arm_arch_timer.h>
->>  
->> +#define __KVM_HAVE_ARCH_VIRTUAL_INTC_INITIALIZED
->> +
->>  #if defined(CONFIG_KVM_ARM_MAX_VCPUS)
->>  #define KVM_MAX_VCPUS CONFIG_KVM_ARM_MAX_VCPUS
->>  #else
->> @@ -242,4 +244,8 @@ static inline void kvm_arch_sync_events(struct kvm *kvm) {}
->>  static inline void kvm_arch_vcpu_uninit(struct kvm_vcpu *vcpu) {}
->>  static inline void kvm_arch_sched_in(struct kvm_vcpu *vcpu, int cpu) {}
->>  
->> +/* returns true if the vgic dynamic initialization is done*/
->> +bool kvm_arch_is_virtual_intc_initialized(struct kvm *kvm);
-> 
-> I feel like this should go in include/linux/kvm_host.h where there's
-> already a description of the function API.
-agreed
+If CONFIG_BUG=n __WARN_printf won't be defined leading to the below
+build failure. The double underscores should have told us to steer clear
+of it anyway.
 
-Eric
-> 
->> +
->> +
->>  #endif /* __ARM_KVM_HOST_H__ */
->> diff --git a/arch/arm/kvm/arm.c b/arch/arm/kvm/arm.c
->> index 9e193c8..5309e4b 100644
->> --- a/arch/arm/kvm/arm.c
->> +++ b/arch/arm/kvm/arm.c
->> @@ -439,6 +439,11 @@ static int kvm_vcpu_first_run_init(struct kvm_vcpu *vcpu)
->>  	return 0;
->>  }
->>  
->> +bool kvm_arch_is_virtual_intc_initialized(struct kvm *kvm)
->> +{
->> +	return vgic_initialized(kvm);
->> +}
->> +
->>  static void vcpu_pause(struct kvm_vcpu *vcpu)
->>  {
->>  	wait_queue_head_t *wq = kvm_arch_vcpu_wq(vcpu);
->> diff --git a/arch/arm64/include/asm/kvm_host.h b/arch/arm64/include/asm/kvm_host.h
->> index 2012c4b..5badd30 100644
->> --- a/arch/arm64/include/asm/kvm_host.h
->> +++ b/arch/arm64/include/asm/kvm_host.h
->> @@ -28,6 +28,8 @@
->>  #include <asm/kvm_asm.h>
->>  #include <asm/kvm_mmio.h>
->>  
->> +#define __KVM_HAVE_ARCH_VIRTUAL_INTC_INITIALIZED
->> +
->>  #if defined(CONFIG_KVM_ARM_MAX_VCPUS)
->>  #define KVM_MAX_VCPUS CONFIG_KVM_ARM_MAX_VCPUS
->>  #else
->> @@ -254,4 +256,7 @@ static inline void kvm_arch_sync_events(struct kvm *kvm) {}
->>  static inline void kvm_arch_vcpu_uninit(struct kvm_vcpu *vcpu) {}
->>  static inline void kvm_arch_sched_in(struct kvm_vcpu *vcpu, int cpu) {}
->>  
->> +/* returns true if the vgic dynamic initialization is done*/
->> +bool kvm_arch_is_virtual_intc_initialized(struct kvm *kvm);
->> +
->>  #endif /* __ARM64_KVM_HOST_H__ */
->> -- 
->> 1.9.1
->>
+drivers/gpu/drm/i915/intel_display.c: In function ‘assert_pll’:
+drivers/gpu/drm/i915/intel_display.c:1027:2: error: implicit declaration
+of function ‘__WARN_printf’ [-Werror=implicit-function-declaration]
+  I915_STATE_WARN(cur_state != state,
+
+Use WARN(1, ...) instead. It handles CONFIG_BUG=n gracefully and, with
+the constant condition, a sane compiler should reduce it to
+__WARN_printf.
+
+This is a regression introduced by
+
+commit e2c719b75c8c186deb86570d8466df9e9eff919b
+Author: Rob Clark <robdclark@gmail.com>
+Date:   Mon Dec 15 13:56:32 2014 -0500
+
+    drm/i915: tame the chattermouth (v2)
+
+Reported-by: Jim Davis <jim.epost@gmail.com>
+Reference: http://mid.gmane.org/CA+r1ZhgHTi7bS2irhtuSUs9aO=Br1dumN8=oAOeaMJDZ_ZhwBw@mail.gmail.com
+Cc: Rob Clark <robdclark@gmail.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+---
+ drivers/gpu/drm/i915/i915_drv.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index e008fa0c58da..66f0c607dbef 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -83,7 +83,7 @@
+ 	int __ret_warn_on = !!(condition);				\
+ 	if (unlikely(__ret_warn_on)) {					\
+ 		if (i915.verbose_state_checks)				\
+-			__WARN_printf(format);				\
++			WARN(1, format);				\
+ 		else 							\
+ 			DRM_ERROR(format);				\
+ 	}								\
+@@ -94,7 +94,7 @@
+ 	int __ret_warn_on = !!(condition);				\
+ 	if (unlikely(__ret_warn_on)) {					\
+ 		if (i915.verbose_state_checks)				\
+-			__WARN_printf("WARN_ON(" #condition ")\n");	\
++			WARN(1, "WARN_ON(" #condition ")\n");		\
+ 		else 							\
+ 			DRM_ERROR("WARN_ON(" #condition ")\n");		\
+ 	}								\
+-- 
+2.1.4
 
