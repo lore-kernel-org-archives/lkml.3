@@ -1,121 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541AbbALMAK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 07:00:10 -0500
-Received: from smtprelay4.synopsys.com ([198.182.47.9]:48660 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997AbbALMAI convert rfc822-to-8bit (ORCPT
+	id S1751722AbbALMHs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 07:07:48 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:63521 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927AbbALMHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 07:00:08 -0500
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Jiri Olsa <jolsa@redhat.com>
-CC: "acme@redhat.com" <acme@redhat.com>,
-        "namhyung@kernel.org" <namhyung@kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "jolsa@kernel.org" <jolsa@kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-perf-users@vger.kernel.org" <linux-perf-users@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "Alexey.Brodkin@synopsys.com" <Alexey.Brodkin@synopsys.com>
-Subject: Re: [PATCH v2 3/5] perf tools: [uclibc] Avoid build splat for
- syscall numbers
-Thread-Topic: [PATCH v2 3/5] perf tools: [uclibc] Avoid build splat for
- syscall numbers
-Thread-Index: AQHQLlhCspcOCVl0p0SSVinnfeP6Iw==
-Date: Mon, 12 Jan 2015 12:00:02 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA2307565BCBA99@IN01WEMBXA.internal.synopsys.com>
-References: <1420888254-17504-1-git-send-email-vgupta@synopsys.com>
- <1420888254-17504-4-git-send-email-vgupta@synopsys.com>
- <20150112110907.GD26229@krava.redhat.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.12.196.223]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 12 Jan 2015 07:07:46 -0500
+Date: Mon, 12 Jan 2015 07:07:41 -0500
+From: "Ahmed S. Darwish" <darwish.07@gmail.com>
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: Olivier Sobrie <olivier@sobrie.be>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 3/4] can: kvaser_usb: Add support for the Usbcan-II
+ family
+Message-ID: <20150112120741.GC9213@linux>
+References: <20141223154654.GB6460@vivalin-002>
+ <20150111200544.GA8855@linux>
+ <20150111201116.GB8855@linux>
+ <20150111201519.GC8855@linux>
+ <20150111203612.GA8999@linux>
+ <54B3B37C.7090002@pengutronix.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54B3B37C.7090002@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+Hi Marc,
 
-On Monday 12 January 2015 04:39 PM, Jiri Olsa wrote:
-> On Sat, Jan 10, 2015 at 04:40:52PM +0530, Vineet Gupta wrote:
->> This is due to duplicated unistd inclusion (via uClibc headers + kernel headers)
->> Also seen on ARM uClibc based tools
->>
->> ------- ARC build ---------->8-------------
->>
->>   CC       util/evlist.o
->> In file included from
->> ~/arc/k.org/arch/arc/include/uapi/asm/unistd.h:25:0,
->>                  from util/../perf-sys.h:10,
->>                  from util/../perf.h:15,
->>                  from util/event.h:7,
->>                  from util/event.c:3:
->> ~/arc/k.org/include/uapi/asm-generic/unistd.h:906:0:
->> warning: "__NR_fcntl64" redefined [enabled by default]
->>  #define __NR_fcntl64 __NR3264_fcntl
->>  ^
->> In file included from
->> ~/arc/gnu/INSTALL_1412-arc-2014.12-rc1/arc-snps-linux-uclibc/sysroot/usr/include/sys/syscall.h:24:0,
->>                  from util/../perf-sys.h:6,
->> ----------------->8-------------------
->>
->> ------- ARM build ---------->8-------------
->>
->>   CC FPIC  plugin_scsi.o
->> In file included from util/../perf-sys.h:9:0,
->>                  from util/../perf.h:15,
->>                  from util/cache.h:7,
->>                  from perf.c:12:
->> ~/arc/k.org/arch/arm/include/uapi/asm/unistd.h:28:0:
->> warning: "__NR_restart_syscall" redefined [enabled by default]
->> In file included from
->> ~/buildroot/host/usr/arm-buildroot-linux-uclibcgnueabi/sysroot/usr/include/sys/syscall.h:25:0,
->>                  from util/../perf-sys.h:6,
->>                  from util/../perf.h:15,
->>                  from util/cache.h:7,
->>                  from perf.c:12:
->> ~/buildroot/host/usr/arm-buildroot-linux-uclibcgnueabi/sysroot/usr/include/bits/sysnum.h:17:0:
->> note: this is the location of the previous definition
->> ----------------->8-------------------
-> Could you please point out what's the right logic for including those headers?
+On Mon, Jan 12, 2015 at 12:43:56PM +0100, Marc Kleine-Budde wrote:
+> On 01/11/2015 09:36 PM, Ahmed S. Darwish wrote:
+[...]
+> > diff --git a/drivers/net/can/usb/kvaser_usb.c b/drivers/net/can/usb/kvaser_usb.c
+> > index 0eb870b..da47d17 100644
+> > --- a/drivers/net/can/usb/kvaser_usb.c
+> > +++ b/drivers/net/can/usb/kvaser_usb.c
+> > @@ -6,10 +6,12 @@
+> >   * Parts of this driver are based on the following:
+> >   *  - Kvaser linux leaf driver (version 4.78)
+> >   *  - CAN driver for esd CAN-USB/2
+> > + *  - Kvaser linux usbcanII driver (version 5.3)
+> >   *
+> >   * Copyright (C) 2002-2006 KVASER AB, Sweden. All rights reserved.
+> >   * Copyright (C) 2010 Matthias Fuchs <matthias.fuchs@esd.eu>, esd gmbh
+> >   * Copyright (C) 2012 Olivier Sobrie <olivier@sobrie.be>
+> > + * Copyright (C) 2015 Valeo Corporation
+> >   */
+> >  
+> >  #include <linux/completion.h>
+> > @@ -21,6 +23,15 @@
+> >  #include <linux/can/dev.h>
+> >  #include <linux/can/error.h>
+> >  
+> > +/* Kvaser USB CAN dongles are divided into two major families:
+> > + * - Leaf: Based on Renesas M32C, running firmware labeled as 'filo'
+> > + * - UsbcanII: Based on Renesas M16C, running firmware labeled as 'helios'
+> > + */
+> > +enum kvaser_usb_family {
+> > +	KVASER_LEAF,
+> > +	KVASER_USBCAN,
+> > +};
+> 
+> Nitpick: please move after the #defines
+> 
 
-I'm not sure why you were including <linux/unistd.h> in first place. Vanilla
-<unistd.h> shd suffice for the functions exported by that file. OTOH, if the
-intent was to get SYS_xxx or NR_xxx, then per syscall man page, <sys/syscall.h> is
-the recommended way.
+Will do.
 
-I just tried a small test program which uses __NR_restart_syscall for both x86
-(glibc) and ARC (uClibc) and including <sys/syscall.h> seems to work.
+[...]
+> > @@ -616,53 +810,24 @@ static void kvaser_usb_unlink_tx_urbs(struct kvaser_usb_net_priv *priv)
+> >  }
+> >  
+> >  static void kvaser_usb_rx_error(const struct kvaser_usb *dev,
+> > -				const struct kvaser_msg *msg)
+> > +				struct kvaser_error_summary *es)
+> 
+> Can you make "struct kvaser_error_summary *es" const?
+> 
 
-Also replacing <linux/unistd.h> with <sys/syscall.h> in the first 2 hunks of this
-patch equally fixes my perf build splat. The 3rd one (perf-sys.h) already includes
-<sys/syscall.h> so no change required there.
+Sure.
 
-I'll send out a v3 to same effect.
-
+[...]
+> > +/* For USBCAN, report error to userspace iff the channels's errors counter
+> > + * has increased, or we're the only channel seeing a bus error state.
+> > + */
+> > +static void kvaser_usbcan_conditionally_rx_error(const struct kvaser_usb *dev,
+> > +						 struct kvaser_error_summary *es)
+> 
+> const struct kvaser_error_summary *es?
 >
-> I've always thought that just adding:
->
->   #include <linux/unistd.h>
->
-> should be safe no matter what.. feels like bug in one of those
-> header files? (uClibc headers & kernel headers)
 
-Well the design of asm-generic/unistd.h (no legacy syscalls ABI) which ARC uses
-does require duplicate inclusion of asm/unistd.h so a simple guard in header is
-not sufficient (and actually caused me embarrassing grief when I naively submitted
-that into mainline some time last year)
+Ditto.
 
-Thx,
--Vineet
+[...]
+> > +
+> > +		/* The USBCAN firmware does not support more than 2 channels.
+> 
+> Does USBCAN support always 2 channels or are there models with 1
+> channels, too. I'd rephrase ..."does support up to 2 channels."
+> 
 
->
-> thanks for info,
-> jirka
+Yup, that will be more accurate.
 
+[...]
+> > +
+> > +	switch (dev->family) {
+> > +	case KVASER_LEAF:
+> > +		rx_msg = msg->u.leaf.rx_can.msg;
+> > +		break;
+> > +	case KVASER_USBCAN:
+> > +		rx_msg = msg->u.usbcan.rx_can.msg;
+> > +		break;
+> > +	default:
+> > +		dev_err(dev->udev->dev.parent,
+> > +			"Invalid device family (%d)\n", dev->family);
+> >  		return;
+> 
+> should not happen.
+> 
+
+Yes, but otherwise I get GCC warnings of 'rx_msg' possibly
+being unused. I can add __maybe_unused to rx_msg of course,
+but such annotation may hide possible errors in the future.
+
+> > +	switch (dev->family) {
+> > +	case KVASER_LEAF:
+> > +		msg_tx_can_flags = &msg->u.tx_can.leaf.flags;
+> > +		break;
+> > +	case KVASER_USBCAN:
+> > +		msg_tx_can_flags = &msg->u.tx_can.usbcan.flags;
+> > +		break;
+> > +	default:
+> > +		dev_err(dev->udev->dev.parent,
+> > +			"Invalid device family (%d)\n", dev->family);
+> > +		goto releasebuf;
+> should not happen, please remove
+
+Like the 'rx_msg' case above.
+
+Thanks,
+Darwish
