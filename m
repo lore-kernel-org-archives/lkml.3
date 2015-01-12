@@ -1,91 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839AbbALWrv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 17:47:51 -0500
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:47126 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751304AbbALWrt (ORCPT
+	id S1752134AbbALWsr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 17:48:47 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:48231 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322AbbALWsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 17:47:49 -0500
+	Mon, 12 Jan 2015 17:48:46 -0500
 MIME-Version: 1.0
-X-Originating-IP: [130.216.30.134]
-In-Reply-To: <1421093413-26336-1-git-send-email-geert@linux-m68k.org>
-References: <1421093413-26336-1-git-send-email-geert@linux-m68k.org>
-Date: Mon, 12 Jan 2015 23:47:48 +0100
-X-Google-Sender-Auth: OMzZeCUO97BcaGkOauvKA0l6Er0
-Message-ID: <CAKMK7uEmzoZBfbErfc9r2CWq9Uyvw9aZtvYSjwA8Ou5PFcyUCw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] drm: Drop superfluous "select VT_HW_CONSOLE_BINDING"
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: David Airlie <airlied@linux.ie>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
+In-Reply-To: <54AD6B6A.4000701@linux.intel.com>
+References: <cover.1419900414.git.luto@amacapital.net> <8207ea76edd142f4a118ad3093b28ec422d92e53.1419900414.git.luto@amacapital.net>
+ <54AD6B6A.4000701@linux.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 12 Jan 2015 14:48:24 -0800
+Message-ID: <CALCETrWazCZ6a4UKEUqzSUFDyyibhXkgiBQcXSdMci97RTtGuA@mail.gmail.com>
+Subject: Re: [PATCH 3.19 1/3] x86, mpx: Check user mode bitness correctly when
+ decoding instructions
+To: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 09:10:12PM +0100, Geert Uytterhoeven wrote:
-> commit 765d5b9c2b72f5b9 ("fbdev: fbcon: select VT_HW_CONSOLE_BINDING")
-> made FRAMEBUFFER_CONSOLE always select VT_HW_CONSOLE_BINDING, but forgot
-> to remove
+On Wed, Jan 7, 2015 at 9:22 AM, Dave Hansen <dave.hansen@linux.intel.com> wrote:
+> On 12/29/2014 04:52 PM, Andy Lutomirski wrote:
+>> --- a/arch/x86/mm/mpx.c
+>> +++ b/arch/x86/mm/mpx.c
+>> @@ -217,7 +217,7 @@ static int mpx_insn_decode(struct insn *insn,
+>>                          struct pt_regs *regs)
+>>  {
+>>       unsigned char buf[MAX_INSN_SIZE];
+>> -     int x86_64 = !test_thread_flag(TIF_IA32);
+>> +     int x86_64 = user_64bit_mode(regs);
+>>       int not_copied;
+>>       int nr_copied;
 >
-> select VT_HW_CONSOLE_BINDING if FRAMEBUFFER_CONSOLE
+> There are (at least) 3 other uses of the instruction decoder that use
+> some form of a check on TIF_IA32:
 >
-> from the individual drivers' sections that already did this before.
+>> perf_event_intel_ds.c  intel_pmu_pebs_fixup_ip 785 insn_init(&insn, kaddr, size, is_64bit);
+>> perf_event_intel_lbr.c branch_type             532 insn_init(&insn, addr, bytes_read, is64);
+>> uprobes.c              uprobe_init_insn        222 insn_init(insn, auprobe->insn, sizeof(auprobe->insn), x86_64);
 >
-> Remove it, also from new drivers.
+> Basically doing this:
 >
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>                 is_64bit = kernel_ip(to) || !test_thread_flag(TIF_IA32);
+>
+> So this method *must* work, at least in practice.
+>
+> If userspace has MPX on and switches between 32 and 64-bit itself, the
+> kernel *and* the hardware will suddenly be trying to walk the bounds
+> tables in the wrong format.  I just don't see an application surviving
+> very long in that situation.
+>
+> So I don't have a problem with doing this, long term, as long as we do
+> it for all of these locations and we do it in a consistent way.  For
+> MPX, we may even want to enforce that:
+>
+>         !test_thread_flag(TIF_IA32) == user_64bit_mode(regs)
+>
+> and freak out if that fails.
+>
+> But I don't think it's 3.19 material.
 
-Merged into my drm misc branch, thanks.
--Daniel
+Fair enough.  Will send for 3.20 instead.
 
-> ---
-> v2:
->   - Split in two (drm and video) patches,
->   - Fix recently added rockchip.
-> ---
->  drivers/gpu/drm/exynos/Kconfig   | 1 -
->  drivers/gpu/drm/rockchip/Kconfig | 1 -
->  2 files changed, 2 deletions(-)
->
-> diff --git a/drivers/gpu/drm/exynos/Kconfig b/drivers/gpu/drm/exynos/Kconfig
-> index 7f9f6f9e9b7e7992..c072999b7e0345c6 100644
-> --- a/drivers/gpu/drm/exynos/Kconfig
-> +++ b/drivers/gpu/drm/exynos/Kconfig
-> @@ -6,7 +6,6 @@ config DRM_EXYNOS
->   select FB_CFB_FILLRECT
->   select FB_CFB_COPYAREA
->   select FB_CFB_IMAGEBLIT
-> - select VT_HW_CONSOLE_BINDING if FRAMEBUFFER_CONSOLE
->   select VIDEOMODE_HELPERS
->   help
->    Choose this option if you have a Samsung SoC EXYNOS chipset.
-> diff --git a/drivers/gpu/drm/rockchip/Kconfig b/drivers/gpu/drm/rockchip/Kconfig
-> index ca9f085efa922982..8652dad82009e3ce 100644
-> --- a/drivers/gpu/drm/rockchip/Kconfig
-> +++ b/drivers/gpu/drm/rockchip/Kconfig
-> @@ -7,7 +7,6 @@ config DRM_ROCKCHIP
->   select FB_CFB_FILLRECT
->   select FB_CFB_COPYAREA
->   select FB_CFB_IMAGEBLIT
-> - select VT_HW_CONSOLE_BINDING if FRAMEBUFFER_CONSOLE
->   select VIDEOMODE_HELPERS
->   help
->    Choose this option if you have a Rockchip soc chipset.
-> --
-> 1.9.1
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+--Andy
 
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Andy Lutomirski
+AMA Capital Management, LLC
