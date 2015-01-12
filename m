@@ -1,294 +1,342 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212AbbALLPQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 06:15:16 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:39237 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827AbbALLPO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 06:15:14 -0500
-Date: Mon, 12 Jan 2015 11:15:09 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Rob Herring <robh+dt@kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] irqchip: gic: Allow interrupt level to be set for
- PPIs.
-Message-ID: <20150112111509.GC823@e106497-lin.cambridge.arm.com>
-References: <1417437909-20923-1-git-send-email-Liviu.Dudau@arm.com>
- <54AA53C2.9040903@arm.com>
-MIME-Version: 1.0
-In-Reply-To: <54AA53C2.9040903@arm.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 12 Jan 2015 11:15:09.0966 (UTC) FILETIME=[071702E0:01D02E59]
-X-MC-Unique: 115011211151202201
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1753226AbbALLPt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 06:15:49 -0500
+Received: from mga02.intel.com ([134.134.136.20]:59204 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752538AbbALLPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 06:15:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,743,1413270000"; 
+   d="scan'208";a="660438894"
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Greg KH <gregkh@linuxfoundation.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] driver core: property: support for generic property
+Date: Mon, 12 Jan 2015 13:15:44 +0200
+Message-Id: <1421061344-195095-1-git-send-email-heikki.krogerus@linux.intel.com>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 05, 2015 at 09:05:06AM +0000, Marc Zyngier wrote:
-> Hi Liviu,
+This extends the Unified Property Interface by adding
+"Generic Property" to it for cases where device tree or ACPI
+are not being used.
 
-Hi Marc,
+That makes the Unified Property Interface cover most of the
+cases where information is extracted from custom
+platform_data in the drivers, i.e. removing also the need
+for them to handle custom platform data separately.
 
-> 
-> On 01/12/14 12:45, Liviu Dudau wrote:
-> > During a recent cleanup of the arm64 DTs it has become clear that
-> > the handling of PPIs in xxxx_set_type() is incorrect. The ARM TRMs
-> > for GICv2 and later allow for "implementation defined" support for
-> > setting the edge or level type of the PPI interrupts and don't restrict
-> > the activation level of the signal. Current ARM implementations
-> > do restrict the PPI level type to IRQ_TYPE_LEVEL_LOW, but licensees
-> > of the IP can decide to shoot themselves in the foot at any time.
-> > 
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> > ---
-> > 
-> > Made a stupid mistake in v2 and got my bit test confused with logical test.
-> > 
-> >  Documentation/devicetree/bindings/arm/gic.txt |  8 ++++++--
-> >  drivers/irqchip/irq-gic-common.c              | 21 +++++++++++++--------
-> >  drivers/irqchip/irq-gic-common.h              |  2 +-
-> >  drivers/irqchip/irq-gic-v3.c                  |  8 ++++----
-> >  drivers/irqchip/irq-gic.c                     |  9 ++++++---
-> >  drivers/irqchip/irq-hip04.c                   |  9 ++++++---
-> >  6 files changed, 36 insertions(+), 21 deletions(-)
-> > 
-> > diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
-> > index 8112d0c..c97484b 100644
-> > --- a/Documentation/devicetree/bindings/arm/gic.txt
-> > +++ b/Documentation/devicetree/bindings/arm/gic.txt
-> > @@ -32,12 +32,16 @@ Main node required properties:
-> >    The 3rd cell is the flags, encoded as follows:
-> >  	bits[3:0] trigger type and level flags.
-> >  		1 = low-to-high edge triggered
-> > -		2 = high-to-low edge triggered
-> > +		2 = high-to-low edge triggered (invalid for SPIs)
-> >  		4 = active high level-sensitive
-> > -		8 = active low level-sensitive
-> > +		8 = active low level-sensitive (invalid for SPIs).
-> >  	bits[15:8] PPI interrupt cpu mask.  Each bit corresponds to each of
-> >  	the 8 possible cpus attached to the GIC.  A bit set to '1' indicated
-> >  	the interrupt is wired to that CPU.  Only valid for PPI interrupts.
-> > +	Also note that the configurability of PPI interrupts is IMPLEMENTATION
-> > +	DEFINED and as such not guaranteed to be present (most SoC available
-> > +	in 2014 seem to ignore the setting of this flag and use the hardware
-> > +	default value).
-> >  
-> >  - reg : Specifies base physical address(s) and size of the GIC registers. The
-> >    first region is the GIC distributor register base and size. The 2nd region is
-> > diff --git a/drivers/irqchip/irq-gic-common.c b/drivers/irqchip/irq-gic-common.c
-> > index 61541ff..ffee521 100644
-> > --- a/drivers/irqchip/irq-gic-common.c
-> > +++ b/drivers/irqchip/irq-gic-common.c
-> > @@ -21,7 +21,7 @@
-> >  
-> >  #include "irq-gic-common.h"
-> >  
-> > -void gic_configure_irq(unsigned int irq, unsigned int type,
-> > +int gic_configure_irq(unsigned int irq, unsigned int type,
-> >  		       void __iomem *base, void (*sync_access)(void))
-> >  {
-> >  	u32 enablemask = 1 << (irq % 32);
-> > @@ -29,16 +29,17 @@ void gic_configure_irq(unsigned int irq, unsigned int type,
-> >  	u32 confmask = 0x2 << ((irq % 16) * 2);
-> >  	u32 confoff = (irq / 16) * 4;
-> >  	bool enabled = false;
-> > -	u32 val;
-> > +	u32 val, oldval;
-> > +	int ret = 0;
-> >  
-> >  	/*
-> >  	 * Read current configuration register, and insert the config
-> >  	 * for "irq", depending on "type".
-> >  	 */
-> > -	val = readl_relaxed(base + GIC_DIST_CONFIG + confoff);
-> > -	if (type == IRQ_TYPE_LEVEL_HIGH)
-> > +	val = oldval = readl_relaxed(base + GIC_DIST_CONFIG + confoff);
-> > +	if (type & IRQ_TYPE_LEVEL_MASK)
-> >  		val &= ~confmask;
-> > -	else if (type == IRQ_TYPE_EDGE_RISING)
-> > +	else if (type & IRQ_TYPE_EDGE_BOTH)
-> >  		val |= confmask;
-> >  
-> >  	/*
-> > @@ -54,15 +55,19 @@ void gic_configure_irq(unsigned int irq, unsigned int type,
-> >  
-> >  	/*
-> >  	 * Write back the new configuration, and possibly re-enable
-> > -	 * the interrupt.
-> > +	 * the interrupt. If we tried to write a new configuration and failed,
-> > +	 * return an error.
-> >  	 */
-> >  	writel_relaxed(val, base + GIC_DIST_CONFIG + confoff);
-> > -
-> > -	if (enabled)
-> > +	if (readl_relaxed(base + GIC_DIST_CONFIG + confoff) != val && val != oldval)
-> > +		ret = -EINVAL;
-> > +	else if (enabled)
-> >  		writel_relaxed(enablemask, base + GIC_DIST_ENABLE_SET + enableoff);
-> 
-> So if you change the configuration of an enabled interrupt and fail to
-> do so, you end-up with the interrupt disabled. This is a change in
-> behaviour, and is likely to introduce regressions.
+Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+---
+ drivers/base/property.c  | 188 +++++++++++++++++++++++++++++++++++++++++------
+ include/linux/device.h   |   2 +
+ include/linux/property.h |  13 ++++
+ 3 files changed, 182 insertions(+), 21 deletions(-)
 
-Is it? Beforehand we were silently ignoring the fact that the new values haven't been
-set, now we return an error. Should we continue to ignore the fact that there is now
-a difference between what the kernel believes the setup is and what the hardware is
-configured to do?
-
-(Sorry for delay in responding, just returned from my extended holiday.)
-
-Best regards,
-Liviu
-
-> 
-> >  
-> >  	if (sync_access)
-> >  		sync_access();
-> > +
-> > +	return ret;
-> >  }
-> >  
-> >  void __init gic_dist_config(void __iomem *base, int gic_irqs,
-> > diff --git a/drivers/irqchip/irq-gic-common.h b/drivers/irqchip/irq-gic-common.h
-> > index b41f024..35a9884 100644
-> > --- a/drivers/irqchip/irq-gic-common.h
-> > +++ b/drivers/irqchip/irq-gic-common.h
-> > @@ -20,7 +20,7 @@
-> >  #include <linux/of.h>
-> >  #include <linux/irqdomain.h>
-> >  
-> > -void gic_configure_irq(unsigned int irq, unsigned int type,
-> > +int gic_configure_irq(unsigned int irq, unsigned int type,
-> >                         void __iomem *base, void (*sync_access)(void));
-> >  void gic_dist_config(void __iomem *base, int gic_irqs,
-> >  		     void (*sync_access)(void));
-> > diff --git a/drivers/irqchip/irq-gic-v3.c b/drivers/irqchip/irq-gic-v3.c
-> > index 1a146cc..6e50803 100644
-> > --- a/drivers/irqchip/irq-gic-v3.c
-> > +++ b/drivers/irqchip/irq-gic-v3.c
-> > @@ -238,7 +238,9 @@ static int gic_set_type(struct irq_data *d, unsigned int type)
-> >  	if (irq < 16)
-> >  		return -EINVAL;
-> >  
-> > -	if (type != IRQ_TYPE_LEVEL_HIGH && type != IRQ_TYPE_EDGE_RISING)
-> > +	/* SPIs have restrictions on the supported types */
-> > +	if (irq >= 32 && type != IRQ_TYPE_LEVEL_HIGH &&
-> > +			 type != IRQ_TYPE_EDGE_RISING)
-> >  		return -EINVAL;
-> >  
-> >  	if (gic_irq_in_rdist(d)) {
-> > @@ -249,9 +251,7 @@ static int gic_set_type(struct irq_data *d, unsigned int type)
-> >  		rwp_wait = gic_dist_wait_for_rwp;
-> >  	}
-> >  
-> > -	gic_configure_irq(irq, type, base, rwp_wait);
-> > -
-> > -	return 0;
-> > +	return gic_configure_irq(irq, type, base, rwp_wait);
-> >  }
-> >  
-> >  static u64 gic_mpidr_to_affinity(u64 mpidr)
-> > diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> > index d617ee5..4634cf7 100644
-> > --- a/drivers/irqchip/irq-gic.c
-> > +++ b/drivers/irqchip/irq-gic.c
-> > @@ -188,12 +188,15 @@ static int gic_set_type(struct irq_data *d, unsigned int type)
-> >  {
-> >  	void __iomem *base = gic_dist_base(d);
-> >  	unsigned int gicirq = gic_irq(d);
-> > +	int ret;
-> >  
-> >  	/* Interrupt configuration for SGIs can't be changed */
-> >  	if (gicirq < 16)
-> >  		return -EINVAL;
-> >  
-> > -	if (type != IRQ_TYPE_LEVEL_HIGH && type != IRQ_TYPE_EDGE_RISING)
-> > +	/* SPIs have restrictions on the supported types */
-> > +	if (gicirq >= 32 && type != IRQ_TYPE_LEVEL_HIGH &&
-> > +			    type != IRQ_TYPE_EDGE_RISING)
-> >  		return -EINVAL;
-> >  
-> >  	raw_spin_lock(&irq_controller_lock);
-> > @@ -201,11 +204,11 @@ static int gic_set_type(struct irq_data *d, unsigned int type)
-> >  	if (gic_arch_extn.irq_set_type)
-> >  		gic_arch_extn.irq_set_type(d, type);
-> >  
-> > -	gic_configure_irq(gicirq, type, base, NULL);
-> > +	ret = gic_configure_irq(gicirq, type, base, NULL);
-> >  
-> >  	raw_spin_unlock(&irq_controller_lock);
-> >  
-> > -	return 0;
-> > +	return ret;
-> >  }
-> >  
-> >  static int gic_retrigger(struct irq_data *d)
-> > diff --git a/drivers/irqchip/irq-hip04.c b/drivers/irqchip/irq-hip04.c
-> > index 29b8f21..d059e66 100644
-> > --- a/drivers/irqchip/irq-hip04.c
-> > +++ b/drivers/irqchip/irq-hip04.c
-> > @@ -120,21 +120,24 @@ static int hip04_irq_set_type(struct irq_data *d, unsigned int type)
-> >  {
-> >  	void __iomem *base = hip04_dist_base(d);
-> >  	unsigned int irq = hip04_irq(d);
-> > +	int ret;
-> >  
-> >  	/* Interrupt configuration for SGIs can't be changed */
-> >  	if (irq < 16)
-> >  		return -EINVAL;
-> >  
-> > -	if (type != IRQ_TYPE_LEVEL_HIGH && type != IRQ_TYPE_EDGE_RISING)
-> > +	/* SPIs have restrictions on the supported types */
-> > +	if (irq >= 32 && type != IRQ_TYPE_LEVEL_HIGH &&
-> > +			 type != IRQ_TYPE_EDGE_RISING)
-> >  		return -EINVAL;
-> >  
-> >  	raw_spin_lock(&irq_controller_lock);
-> >  
-> > -	gic_configure_irq(irq, type, base, NULL);
-> > +	ret = gic_configure_irq(irq, type, base, NULL);
-> >  
-> >  	raw_spin_unlock(&irq_controller_lock);
-> >  
-> > -	return 0;
-> > +	return ret;
-> >  }
-> >  
-> >  #ifdef CONFIG_SMP
-> > 
-> 
-> I have exactly zero knowledge about the hip04 controller, and despite it
-> looking like a GIC, it is quite different from the real thing. I'd like
-> to see confirmation from the HiSilicon guys that this is the right thing
-> to do, and possibly this to be moved to a separate patch if that
-> requires extra changes.
-> 
-> Thanks,
-> 
-> 	M.
-> -- 
-> Jazz is not dead. It just smells funny...
-> 
-
+diff --git a/drivers/base/property.c b/drivers/base/property.c
+index c458458..99990e2 100644
+--- a/drivers/base/property.c
++++ b/drivers/base/property.c
+@@ -15,6 +15,129 @@
+ #include <linux/acpi.h>
+ #include <linux/of.h>
+ 
++static struct dev_gen_prop *dev_prop_get(struct device *dev, const char *name)
++{
++	struct dev_gen_prop *prop;
++
++	if (!dev->gen_prop)
++		return NULL;
++
++	for (prop = dev->gen_prop; prop->name; prop++)
++		if (!strcmp(name, prop->name))
++			return prop;
++	return NULL;
++}
++
++static int dev_prop_copy_array_u8(const char **src, u8 *val, size_t nval)
++{
++	int ret;
++	int i;
++
++	for (i = 0; i < nval; i++) {
++		if (!src[i])
++			return -EOVERFLOW;
++		ret = kstrtou8(src[i], 0, &val[i]);
++		if (ret)
++			return ret;
++	}
++	return 0;
++}
++
++static int dev_prop_copy_array_u16(const char **src, u16 *val, size_t nval)
++{
++	int ret;
++	int i;
++
++	for (i = 0; i < nval; i++) {
++		if (!src[i])
++			return -EOVERFLOW;
++		ret = kstrtou16(src[i], 0, &val[i]);
++		if (ret)
++			return ret;
++	}
++	return 0;
++}
++
++static int dev_prop_copy_array_u32(const char **src, u32 *val, size_t nval)
++{
++	int ret;
++	int i;
++
++	for (i = 0; i < nval; i++) {
++		if (!src[i])
++			return -EOVERFLOW;
++		ret = kstrtou32(src[i], 0, &val[i]);
++		if (ret)
++			return ret;
++	}
++	return 0;
++}
++
++static int dev_prop_copy_array_u64(const char **src, u64 *val, size_t nval)
++{
++	int ret;
++	int i;
++
++	for (i = 0; i < nval; i++) {
++		if (!src[i])
++			return -EOVERFLOW;
++		ret = kstrtou64(src[i], 0, &val[i]);
++		if (ret)
++			return ret;
++	}
++	return 0;
++}
++
++static int dev_prop_copy_array_string(const char **src, const char **val,
++				      size_t nval)
++{
++	int i;
++
++	for (i = 0; i < nval; i++) {
++		if (!src[i])
++			return -EOVERFLOW;
++		val[i] = src[i];
++	}
++	return 0;
++}
++
++static int dev_prop_read_array(struct device *dev, const char *name,
++			       enum dev_prop_type type, void *val, size_t nval)
++{
++	struct dev_gen_prop *prop;
++	int ret = 0;
++
++	prop = dev_prop_get(dev, name);
++	if (!prop)
++		return -ENODATA;
++
++	if (prop->type != type)
++		return -EPROTO;
++
++	switch (prop->type) {
++	case DEV_PROP_U8:
++		ret = dev_prop_copy_array_u8(prop->val, (u8 *)val, nval);
++		break;
++	case DEV_PROP_U16:
++		ret = dev_prop_copy_array_u16(prop->val, (u16 *)val, nval);
++		break;
++	case DEV_PROP_U32:
++		ret = dev_prop_copy_array_u32(prop->val, (u32 *)val, nval);
++		break;
++	case DEV_PROP_U64:
++		ret = dev_prop_copy_array_u64(prop->val, (u64 *)val, nval);
++		break;
++	case DEV_PROP_STRING:
++		ret = dev_prop_copy_array_string(prop->val, (const char **)val,
++						 nval);
++		break;
++	default:
++		ret = -EINVAL;
++		break;
++	}
++	return ret;
++}
++
+ /**
+  * device_property_present - check if a property of a device is present
+  * @dev: Device whose property is being checked
+@@ -26,8 +149,9 @@ bool device_property_present(struct device *dev, const char *propname)
+ {
+ 	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
+ 		return of_property_read_bool(dev->of_node, propname);
+-
+-	return !acpi_dev_prop_get(ACPI_COMPANION(dev), propname, NULL);
++	if (ACPI_HANDLE(dev))
++		return !acpi_dev_prop_get(ACPI_COMPANION(dev), propname, NULL);
++	return !!dev_prop_get(dev, propname);
+ }
+ EXPORT_SYMBOL_GPL(device_property_present);
+ 
+@@ -51,13 +175,6 @@ EXPORT_SYMBOL_GPL(fwnode_property_present);
+ 	(val) ? of_property_read_##type##_array((node), (propname), (val), (nval)) \
+ 	      : of_property_count_elems_of_size((node), (propname), sizeof(type))
+ 
+-#define DEV_PROP_READ_ARRAY(_dev_, _propname_, _type_, _proptype_, _val_, _nval_) \
+-	IS_ENABLED(CONFIG_OF) && _dev_->of_node ? \
+-		(OF_DEV_PROP_READ_ARRAY(_dev_->of_node, _propname_, _type_, \
+-					_val_, _nval_)) : \
+-		acpi_dev_prop_read(ACPI_COMPANION(_dev_), _propname_, \
+-				   _proptype_, _val_, _nval_)
+-
+ /**
+  * device_property_read_u8_array - return a u8 array property of a device
+  * @dev: Device to get the property of
+@@ -77,7 +194,13 @@ EXPORT_SYMBOL_GPL(fwnode_property_present);
+ int device_property_read_u8_array(struct device *dev, const char *propname,
+ 				  u8 *val, size_t nval)
+ {
+-	return DEV_PROP_READ_ARRAY(dev, propname, u8, DEV_PROP_U8, val, nval);
++	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
++		return OF_DEV_PROP_READ_ARRAY(dev->of_node, propname, u8,
++					      val, nval);
++	if (ACPI_HANDLE(dev))
++		return acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
++					  DEV_PROP_U8, val, nval);
++	return dev_prop_read_array(dev, propname, DEV_PROP_U8, val, nval);
+ }
+ EXPORT_SYMBOL_GPL(device_property_read_u8_array);
+ 
+@@ -100,7 +223,13 @@ EXPORT_SYMBOL_GPL(device_property_read_u8_array);
+ int device_property_read_u16_array(struct device *dev, const char *propname,
+ 				   u16 *val, size_t nval)
+ {
+-	return DEV_PROP_READ_ARRAY(dev, propname, u16, DEV_PROP_U16, val, nval);
++	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
++		return OF_DEV_PROP_READ_ARRAY(dev->of_node, propname, u16, val,
++					      nval);
++	if (ACPI_HANDLE(dev))
++		return acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
++					  DEV_PROP_U16, val, nval);
++	return dev_prop_read_array(dev, propname, DEV_PROP_U16, val, nval);
+ }
+ EXPORT_SYMBOL_GPL(device_property_read_u16_array);
+ 
+@@ -123,7 +252,13 @@ EXPORT_SYMBOL_GPL(device_property_read_u16_array);
+ int device_property_read_u32_array(struct device *dev, const char *propname,
+ 				   u32 *val, size_t nval)
+ {
+-	return DEV_PROP_READ_ARRAY(dev, propname, u32, DEV_PROP_U32, val, nval);
++	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
++		return OF_DEV_PROP_READ_ARRAY(dev->of_node, propname, u32, val,
++					      nval);
++	if (ACPI_HANDLE(dev))
++		return acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
++					  DEV_PROP_U32, val, nval);
++	return dev_prop_read_array(dev, propname, DEV_PROP_U32, val, nval);
+ }
+ EXPORT_SYMBOL_GPL(device_property_read_u32_array);
+ 
+@@ -146,7 +281,13 @@ EXPORT_SYMBOL_GPL(device_property_read_u32_array);
+ int device_property_read_u64_array(struct device *dev, const char *propname,
+ 				   u64 *val, size_t nval)
+ {
+-	return DEV_PROP_READ_ARRAY(dev, propname, u64, DEV_PROP_U64, val, nval);
++	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
++		return OF_DEV_PROP_READ_ARRAY(dev->of_node, propname, u64, val,
++					      nval);
++	if (ACPI_HANDLE(dev))
++		return acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
++					  DEV_PROP_U64, val, nval);
++	return dev_prop_read_array(dev, propname, DEV_PROP_U64, val, nval);
+ }
+ EXPORT_SYMBOL_GPL(device_property_read_u64_array);
+ 
+@@ -169,10 +310,13 @@ EXPORT_SYMBOL_GPL(device_property_read_u64_array);
+ int device_property_read_string_array(struct device *dev, const char *propname,
+ 				      const char **val, size_t nval)
+ {
+-	return IS_ENABLED(CONFIG_OF) && dev->of_node ?
+-		of_property_read_string_array(dev->of_node, propname, val, nval) :
+-		acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
+-				   DEV_PROP_STRING, val, nval);
++	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
++		return of_property_read_string_array(dev->of_node, propname,
++						     val, nval);
++	if (ACPI_HANDLE(dev))
++		return acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
++					  DEV_PROP_STRING, val, nval);
++	return dev_prop_read_array(dev, propname, DEV_PROP_STRING, val, nval);
+ }
+ EXPORT_SYMBOL_GPL(device_property_read_string_array);
+ 
+@@ -193,10 +337,12 @@ EXPORT_SYMBOL_GPL(device_property_read_string_array);
+ int device_property_read_string(struct device *dev, const char *propname,
+ 				const char **val)
+ {
+-	return IS_ENABLED(CONFIG_OF) && dev->of_node ?
+-		of_property_read_string(dev->of_node, propname, val) :
+-		acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
+-				   DEV_PROP_STRING, val, 1);
++	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
++		return of_property_read_string(dev->of_node, propname, val);
++	if (ACPI_HANDLE(dev))
++		return acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
++					  DEV_PROP_STRING, val, 1);
++	return dev_prop_read_array(dev, propname, DEV_PROP_STRING, val, 1);
+ }
+ EXPORT_SYMBOL_GPL(device_property_read_string);
+ 
+diff --git a/include/linux/device.h b/include/linux/device.h
+index fb50673..bd1e292 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -27,6 +27,7 @@
+ #include <linux/ratelimit.h>
+ #include <linux/uidgid.h>
+ #include <linux/gfp.h>
++#include <linux/property.h>
+ #include <asm/device.h>
+ 
+ struct device;
+@@ -780,6 +781,7 @@ struct device {
+ 
+ 	struct device_node	*of_node; /* associated device tree node */
+ 	struct acpi_dev_node	acpi_node; /* associated ACPI device node */
++	struct dev_gen_prop	*gen_prop;
+ 
+ 	dev_t			devt;	/* dev_t, creates the sysfs "dev" */
+ 	u32			id;	/* device instance */
+diff --git a/include/linux/property.h b/include/linux/property.h
+index a6a3d98..6ac8e508 100644
+--- a/include/linux/property.h
++++ b/include/linux/property.h
+@@ -26,6 +26,19 @@ enum dev_prop_type {
+ 	DEV_PROP_MAX,
+ };
+ 
++/**
++ * struct dev_gen_prop - Generic Device Property
++ * @name: property name
++ * @val: value array
++ *
++ * Used when of_node and acpi_node are missing.
++ */
++struct dev_gen_prop {
++	enum dev_prop_type type;
++	const char *name;
++	const char **val;
++};
++
+ bool device_property_present(struct device *dev, const char *propname);
+ int device_property_read_u8_array(struct device *dev, const char *propname,
+ 				  u8 *val, size_t nval);
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+2.1.4
 
