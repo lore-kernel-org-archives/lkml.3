@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081AbbALUwE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 15:52:04 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:34580 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132AbbALUwB (ORCPT
+	id S1753516AbbALUzF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 15:55:05 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:65243 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174AbbALUzC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 15:52:01 -0500
-From: Paul Moore <paul@paul-moore.com>
-To: Steve Grubb <sgrubb@redhat.com>, linux-audit@redhat.com,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>, rgb@redhat.com
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] TaskTracker : Simplified thread information tracker.
-Date: Mon, 12 Jan 2015 15:51:58 -0500
-Message-ID: <2562166.o5FKhBijgA@sifl>
-User-Agent: KMail/4.14.3 (Linux/3.16.7-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <14076510.2zuEr3QEsx@x2>
-References: <20141007213054.GJ26201@madcap2.tricolour.ca> <201501121513.GAD65121.OOJQVSFFLOFMHt@I-love.SAKURA.ne.jp> <14076510.2zuEr3QEsx@x2>
+	Mon, 12 Jan 2015 15:55:02 -0500
+From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+To: Suman Tripathi <stripathi@apm.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: SATA link power management issues
+Date: Mon, 12 Jan 2015 21:54:59 +0100
+Message-ID: <1609988.v8ICLj4Nnx@xps13>
+In-Reply-To: <CAOHikRC43JBMwCahBqT1znJLBnbr3Ui+szKhVQoK8cpfapTQyg@mail.gmail.com>
+References: <3352987.ugV1Ipy7Z5@xps13> <83596004.97VzmK2jef@xps13> <CAOHikRC43JBMwCahBqT1znJLBnbr3Ui+szKhVQoK8cpfapTQyg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
@@ -24,30 +24,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 12, 2015 10:14:34 AM Steve Grubb wrote:
-> On Monday, January 12, 2015 03:13:12 PM Tetsuo Handa wrote:
-> > This record contains multiple user-influenced comm names. If I use
-> > audit_log_untrustedstring(), I would need to split this record into
-> > multiple records like history[0]='...' history[1]='...' history[2]='...'
-> > in order to avoid matching delimiters (i.e. ';', '=' and '>') used in
-> > this record.
+On Tuesday 13 January 2015 02:17:00 Suman Tripathi wrote:
+> Hi,
 > 
-> That sounds like a good change to me. Audit records are always name=value
-> with a space between fields. We need this to always stay like this because
-> the tooling expects that format. There is nowhere in the audit logs we use
-> =>.
+> On Tuesday 13 January 2015 02:00:45 Suman Tripathi wrote:
+> > On Monday 12 January 2015 22:46:02 Suman Tripathi wrote:
+> > > Can you dump the ata_id parameters(LPM section) from the drive and we
+> > > can check the related LPM parameters of the drive ?
+> >
+> > Hi,
+> >
+> > I'm sorry, but I'm not really familiar with ata, could you be a bit
+> > more specific about what you'd like to see?
+> > ok no issues. First can show the log from the point the drive got
+> > enumerated ? Like for eg :
+> > ata2.00: ATA-8: WDC WD5000AAKX-08U6AA0, 19.01H19, max UDMA/100
+> >
+> > ata2.00: 976773168 sectors, multi 0: LBA48 NCQ (depth 0/32)
+> >
+> > ata2.00: configured for UDMA/100
+> >
+> > I would like to the ATA version the drive is complaint. In the above case
+> > it is ATA-8
+> 
+> [    0.698842] ata3: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
+> [    0.701419] ata3.00: ATA-8: LITEONIT LMT-256M6M mSATA 256GB, DM8110F,
+> max UDMA/133
+> [    0.701421] ata3.00: 500118192 sectors, multi 1: LBA48 NCQ (depth
+> 31/32), AA
+> [    0.701982] ata3.00: configured for UDMA/133
+> 
+> You can see the entire log here:
+> http://www.spinics.net/lists/linux-ide/msg50069.html
+> 
+> Can you try the below fix ? In the libata-core.c
 
-As a FYI, I'm putting a hold on any new audit messages for the time being so 
-we can evaluate the current kernel audit API to determine the possibility of 
-transitioning to a less ugly API.  I'll leave the door open for messages 
-needed to fix bugs, but that's it.  If we do end up providing a new API and 
-record format, I want to limit the number of message types in the existing 
-API.
+Tried, unfortunately it does not solve the problem. I no longer get
+"ahci 0000:00:1f.2: port does not support device sleep"
 
-My apologies, but this is long overdue and the longer we wait the more 
-difficult it will become.
-
--- 
-paul moore
-www.paul-moore.com
-
+[   60.170199] ata3.00: exception Emask 0x10 SAct 0x2000 SErr 0x50000 action 0xe frozen
+[   60.170209] ata3.00: irq_stat 0x00400000, PHY RDY changed
+[   60.170215] ata3: SError: { PHYRdyChg CommWake }
+[   60.170221] ata3.00: failed command: WRITE FPDMA QUEUED
+[   60.170231] ata3.00: cmd 61/01:68:01:08:00/00:00:00:00:00/40 tag 13 ncq 512 out
+         res 40/00:6c:01:08:00/00:00:00:00:00/40 Emask 0x10 (ATA bus error)
+[   60.170236] ata3.00: status: { DRDY }
+[   60.170244] ata3: hard resetting link
+[   60.894728] ata3: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
+[   60.897672] ata3.00: configured for UDMA/133
+[   60.910690] ata3: EH complete
