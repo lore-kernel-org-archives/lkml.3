@@ -1,102 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572AbbALVYV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 16:24:21 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:58026 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751955AbbALVYP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 16:24:15 -0500
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 6/6] ARM: at91: move at91rm9200_idle() to clk/at91/pmc.c
-Date: Mon, 12 Jan 2015 22:23:45 +0100
-Message-Id: <1421097825-396-7-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1421097825-396-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1421097825-396-1-git-send-email-alexandre.belloni@free-electrons.com>
+	id S1752650AbbALVY5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 16:24:57 -0500
+Received: from fieldses.org ([174.143.236.118]:38480 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752406AbbALVYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 16:24:55 -0500
+Date: Mon, 12 Jan 2015 16:24:53 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lockd: xdr: Remove unused function
+Message-ID: <20150112212453.GA1940@fieldses.org>
+References: <1420909362-31705-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420909362-31705-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move at91rm9200_idle() along with at91sam9_idle() in clk/at91/pmc.c.
+On Sat, Jan 10, 2015 at 06:02:42PM +0100, Rickard Strandqvist wrote:
+> Remove the function nlm_encode_fh() that is not used anywhere.
+> 
+> This was partially found by using a static code analysis program called cppcheck.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
-Cc: Mike Turquette <mturquette@linaro.org>
+Huh.  OK, thanks--applying.
 
-Mike, Boris,
-I guess that one can go through the at91 tree unless you have any objections.
+--b.
 
- arch/arm/mach-at91/at91rm9200.c | 9 ---------
- arch/arm/mach-at91/generic.h    | 1 +
- drivers/clk/at91/pmc.c          | 9 +++++++++
- 3 files changed, 10 insertions(+), 9 deletions(-)
-
-diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
-index fc7c26138037..3be1963f5c56 100644
---- a/arch/arm/mach-at91/at91rm9200.c
-+++ b/arch/arm/mach-at91/at91rm9200.c
-@@ -21,14 +21,6 @@
- #include "soc.h"
- #include "generic.h"
- 
--static void at91rm9200_idle(void)
--{
--	/*
--	 * Disable the processor clock.  The processor will be automatically
--	 * re-enabled by an interrupt or by a reset.
--	 */
--	at91_pmc_write(AT91_PMC_SCDR, AT91_PMC_PCK);
--}
- 
- static void at91rm9200_restart(enum reboot_mode reboot_mode, const char *cmd)
- {
-@@ -49,7 +41,6 @@ static void __init at91rm9200_initialize(void)
- 	arm_pm_restart = at91rm9200_restart;
- }
- 
--
- AT91_SOC_START(at91rm9200)
- 	.init = at91rm9200_initialize,
- AT91_SOC_END
-diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
-index 18d5547f11d5..c4aa21fb765f 100644
---- a/arch/arm/mach-at91/generic.h
-+++ b/arch/arm/mach-at91/generic.h
-@@ -25,6 +25,7 @@ extern void __init at91_dt_initialize(void);
- extern void at91rm9200_timer_init(void);
- 
- /* idle */
-+extern void at91rm9200_idle(void);
- extern void at91sam9_idle(void);
- 
- /* Matrix */
-diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
-index 386999b4f8eb..f07c8152e5cc 100644
---- a/drivers/clk/at91/pmc.c
-+++ b/drivers/clk/at91/pmc.c
-@@ -27,6 +27,15 @@
- void __iomem *at91_pmc_base;
- EXPORT_SYMBOL_GPL(at91_pmc_base);
- 
-+void at91rm9200_idle(void)
-+{
-+	/*
-+	 * Disable the processor clock.  The processor will be automatically
-+	 * re-enabled by an interrupt or by a reset.
-+	 */
-+	at91_pmc_write(AT91_PMC_SCDR, AT91_PMC_PCK);
-+}
-+
- void at91sam9_idle(void)
- {
- 	at91_pmc_write(AT91_PMC_SCDR, AT91_PMC_PCK);
--- 
-2.1.0
-
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  fs/lockd/xdr.c |    8 --------
+>  1 file changed, 8 deletions(-)
+> 
+> diff --git a/fs/lockd/xdr.c b/fs/lockd/xdr.c
+> index 9340e7e..5b651da 100644
+> --- a/fs/lockd/xdr.c
+> +++ b/fs/lockd/xdr.c
+> @@ -95,14 +95,6 @@ nlm_decode_fh(__be32 *p, struct nfs_fh *f)
+>  	return p + XDR_QUADLEN(NFS2_FHSIZE);
+>  }
+>  
+> -static inline __be32 *
+> -nlm_encode_fh(__be32 *p, struct nfs_fh *f)
+> -{
+> -	*p++ = htonl(NFS2_FHSIZE);
+> -	memcpy(p, f->data, NFS2_FHSIZE);
+> -	return p + XDR_QUADLEN(NFS2_FHSIZE);
+> -}
+> -
+>  /*
+>   * Encode and decode owner handle
+>   */
+> -- 
+> 1.7.10.4
+> 
