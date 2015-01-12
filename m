@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932260AbbALTT4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 14:19:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57277 "EHLO
+	id S1752655AbbALSFa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:05:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57278 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030AbbALSFU (ORCPT
+	with ESMTP id S1752174AbbALSFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Jan 2015 13:05:20 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jani Nikula <jani.nikula@intel.com>, Scot Doyle <lkml14@scotdoyle.com>,
+Cc: Todd Previte <tprevite@gmail.com>, Jani Nikula <jani.nikula@intel.com>,
         Ben Hutchings <ben@decadent.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 001/216] drm/i915: don't warn if backlight unexpectedly enabled
-Date: Mon, 12 Jan 2015 18:01:58 +0000
-Message-Id: <1421085933-32536-2-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 002/216] drm/i915/dp: only use training pattern 3 on platforms that support it
+Date: Mon, 12 Jan 2015 18:01:59 +0000
+Message-Id: <1421085933-32536-3-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,64 +31,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Scot Doyle <lkml14@scotdoyle.com>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit 813008cd3e93ea8a571b2b7d5b9360a3105b50f7 upstream.
+commit 7809a61176b385ebb3299ea43c58b1bb31ffb8c0 upstream.
 
-BIOS or firmware can modify hardware state during suspend/resume,
-for example on the Toshiba CB35 or Lenovo T400, so log a debug message
-instead of a warning if the backlight is unexpectedly enabled.
+Ivybridge + 30" monitor prints a drm error on every modeset, since IVB
+doesn't support DP3 we should even bother trying to use it.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=80930
-Cc: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
+This regression has been introduced in
+
+commit 06ea66b6bb445043dc25a9626254d5c130093199
+Author: Todd Previte <tprevite@gmail.com>
+Date:   Mon Jan 20 10:19:39 2014 -0700
+
+    drm/i915: Enable 5.4Ghz (HBR2) link rate for Displayport 1.2-capable
+devices
+
+Reported-by: Dave Airlie <airlied@redhat.com>
+Reference: http://mid.gmane.org/1414566170-9868-1-git-send-email-airlied@gmail.com
+Cc: Todd Previte <tprevite@gmail.com>
+Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
 Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Cc: Ben Hutchings <ben@decadent.org.uk>
+[ luis: backported to 3.16:
+  - use dev instead of dev_priv in IS_HASWELL() and INTEL_INFO() ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_panel.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/intel_dp.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-index 12b02fe1d0ae..59b294c5fe41 100644
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -711,7 +711,7 @@ static void pch_enable_backlight(struct intel_connector *connector)
- 
- 	cpu_ctl2 = I915_READ(BLC_PWM_CPU_CTL2);
- 	if (cpu_ctl2 & BLM_PWM_ENABLE) {
--		WARN(1, "cpu backlight already enabled\n");
-+		DRM_DEBUG_KMS("cpu backlight already enabled\n");
- 		cpu_ctl2 &= ~BLM_PWM_ENABLE;
- 		I915_WRITE(BLC_PWM_CPU_CTL2, cpu_ctl2);
- 	}
-@@ -755,7 +755,7 @@ static void i9xx_enable_backlight(struct intel_connector *connector)
- 
- 	ctl = I915_READ(BLC_PWM_CTL);
- 	if (ctl & BACKLIGHT_DUTY_CYCLE_MASK_PNV) {
--		WARN(1, "backlight already enabled\n");
-+		DRM_DEBUG_KMS("backlight already enabled\n");
- 		I915_WRITE(BLC_PWM_CTL, 0);
+diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+index ca6a8cf58ab0..a8221d9349ee 100644
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -3209,9 +3209,10 @@ intel_dp_get_dpcd(struct intel_dp *intel_dp)
+ 		}
  	}
  
-@@ -786,7 +786,7 @@ static void i965_enable_backlight(struct intel_connector *connector)
- 
- 	ctl2 = I915_READ(BLC_PWM_CTL2);
- 	if (ctl2 & BLM_PWM_ENABLE) {
--		WARN(1, "backlight already enabled\n");
-+		DRM_DEBUG_KMS("backlight already enabled\n");
- 		ctl2 &= ~BLM_PWM_ENABLE;
- 		I915_WRITE(BLC_PWM_CTL2, ctl2);
- 	}
-@@ -820,7 +820,7 @@ static void vlv_enable_backlight(struct intel_connector *connector)
- 
- 	ctl2 = I915_READ(VLV_BLC_PWM_CTL2(pipe));
- 	if (ctl2 & BLM_PWM_ENABLE) {
--		WARN(1, "backlight already enabled\n");
-+		DRM_DEBUG_KMS("backlight already enabled\n");
- 		ctl2 &= ~BLM_PWM_ENABLE;
- 		I915_WRITE(VLV_BLC_PWM_CTL2(pipe), ctl2);
- 	}
+-	/* Training Pattern 3 support */
++	/* Training Pattern 3 support, both source and sink */
+ 	if (intel_dp->dpcd[DP_DPCD_REV] >= 0x12 &&
+-	    intel_dp->dpcd[DP_MAX_LANE_COUNT] & DP_TPS3_SUPPORTED) {
++	    intel_dp->dpcd[DP_MAX_LANE_COUNT] & DP_TPS3_SUPPORTED &&
++	    (IS_HASWELL(dev) || INTEL_INFO(dev)->gen >= 8)) {
+ 		intel_dp->use_tps3 = true;
+ 		DRM_DEBUG_KMS("Displayport TPS3 supported");
+ 	} else
 -- 
 2.1.4
 
