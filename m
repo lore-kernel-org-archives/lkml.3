@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689AbbALNCD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 08:02:03 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55692 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823AbbALNCB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 08:02:01 -0500
-Date: Mon, 12 Jan 2015 13:02:21 +0000
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Robert Jarzmik <robert.jarzmik@free.fr>
-Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, kernel-team@lists.ubuntu.com
-Subject: Re: [PATCH 3.16.y-ckt 053/168] ARM: pxa: fix hang on startup with
- DEBUG_LL
-Message-ID: <20150112130221.GC2455@charon>
-References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
- <1418653622-21105-54-git-send-email-luis.henriques@canonical.com>
- <1421015948.19708.34.camel@decadent.org.uk>
- <20150112100943.GA2455@charon>
- <878uh8z2pz.fsf@free.fr>
+	id S1752935AbbALNG1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 08:06:27 -0500
+Received: from vps0.lunn.ch ([178.209.37.122]:50170 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751808AbbALNG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 08:06:26 -0500
+Date: Mon, 12 Jan 2015 14:04:30 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Valentin Rothberg <valentinrothberg@gmail.com>
+Subject: Re: ARM: mvebu: CONFIG_DEBUG_MVEBU_UART_ALTERNATE
+Message-ID: <20150112130430.GC19533@lunn.ch>
+References: <1421055236.22660.12.camel@x220>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <878uh8z2pz.fsf@free.fr>
+In-Reply-To: <1421055236.22660.12.camel@x220>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 11:56:56AM +0100, Robert Jarzmik wrote:
-> Luis Henriques <luis.henriques@canonical.com> writes:
+On Mon, Jan 12, 2015 at 10:33:56AM +0100, Paul Bolle wrote:
+> Maxime,
 > 
-> > On Sun, Jan 11, 2015 at 10:39:08PM +0000, Ben Hutchings wrote:
-> > Thanks Ben.
-> >
-> > Robert, do you think this is a problem?  I can revert this patch as
-> > it has already been released in 3.16.7-ckt3.
-> Hi Luis,
+> Your commit d91125ddf962 ("ARM: mvebu: Rename DEBUG_LL to indicate UART
+> index") is included in today's linux-next (ie, next-20150112). So is the
+> related commit bd920490047a ("ARM: mvebu: Add UART1 as DEBUG_LL possible
+> target"). I noticed because a script I use, spotted a minor issue with
+> the first commit.
 > 
-> No, no problem. It'll be an unused kconfig variable, that's all, as
-> debug_ll_io_init() is not called in v3.16 in pxa_map_io().
-> 
+> See, the first commit renamed DEBUG_MVEBU_UART_ALTERNATE to
+> DEBUG_MVEBU_UART0_ALTERNATE (so "0" was added). But there's still a last
+> reference to CONFIG_DEBUG_MVEBU_UART_ALTERNATE in a comment in
+> arch/arm/boot/dts/armada-xp-axpwifiap.dts. Is a patch to rename that
+> last reference queued somewhere? If not, should I submit a trivial patch
+> to do that?
 
-Great, thanks for your feedback.  And since this variable was already
-there anyway, I'll just keep this patch in 3.16 instead of reverting
-it.
+Hi Paul
 
-Cheers,
---
-Luís
+Nothing queued, so please do submit a patch.
 
-> Cheers.
-> 
-> --
-> Robert
+Thanks
+	Andrew
