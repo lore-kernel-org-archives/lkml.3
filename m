@@ -1,57 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888AbbALTvQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 14:51:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33923 "EHLO
+	id S1755019AbbALTwa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 14:52:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33931 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753471AbbALTvN (ORCPT
+	with ESMTP id S1753464AbbALTw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 14:51:13 -0500
-Date: Mon, 12 Jan 2015 11:51:12 -0800
+	Mon, 12 Jan 2015 14:52:29 -0500
+Date: Mon, 12 Jan 2015 11:52:27 -0800
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Sam van Kampen <sam@tehsvk.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, Chris Bajumpaa <cbajumpa@gmail.com>,
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Chris Rorvick <chris@rorvick.com>,
+        Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Davide Berardi <berardi.dav@gmail.com>, devel@driverdev.osuosl.org,
+        Fabian Mewes <architekt@coding4coffee.org>,
+        Gulsah Kose <gulsah.1004@gmail.com>,
+        Himangi Saraogi <himangi774@gmail.com>,
+        Jerry Snitselaar <dev@snitselaar.org>,
+        =?iso-8859-1?Q?L=2E_Alberto_Gim=E9nez?= <agimenez@sysvalve.es>,
+        linux-kernel@vger.kernel.org, Mikhail Boiko <mm.boiko@yandex.ru>,
         Monam Agarwal <monamagarwal123@gmail.com>,
-        Davide Berardi <berardi.dav@gmail.com>, devel@driverdev.osuosl.org
-Subject: Re: [PATCH] Staging: line6: fix parentheses around macro in usbdefs.h
-Message-ID: <20150112195111.GA10572@kroah.com>
-References: <20141203183442.GA3480@nsa.gov>
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Stefan Hajnoczi <stefanha@gmail.com>
+Subject: Re: [PATCH 00/25] line6usb cleanup
+Message-ID: <20150112195227.GA5452@kroah.com>
+References: <1420868171-2031-1-git-send-email-chris@rorvick.com>
+ <s5h8uh94nce.wl-tiwai@suse.de>
+ <CAEUsAPaDdXO_0z0sWp_M_sYV69N44+Ea7eqm1VvPA2mONUerag@mail.gmail.com>
+ <s5hh9vwj6tm.wl-tiwai@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141203183442.GA3480@nsa.gov>
+In-Reply-To: <s5hh9vwj6tm.wl-tiwai@suse.de>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 03, 2014 at 07:34:42PM +0100, Sam van Kampen wrote:
-> This patch fixes the error "Macros with complex values should be enclosed in
-> parentheses", as reported by checkpatch.pl.
+On Mon, Jan 12, 2015 at 05:35:01PM +0100, Takashi Iwai wrote:
+> At Sun, 11 Jan 2015 15:04:55 -0600,
+> Chris Rorvick wrote:
+> > 
+> > > At Fri,  9 Jan 2015 23:35:46 -0600,
+> > > Chris Rorvick wrote:
+> > >>
+> > >> I have a TonePort UX2 that I've used for testing, meaning that some of
+> > >> this is really only compile-tested.
+> > >
+> > > If anyone is responsible for testing with real hardware, I'll happily
+> > > review.
+> > 
+> > To be clear, the TonePort UX2 is real hardware.  But this driver
+> > basically supports four classes of Line 6 devices and I'm only covering
+> > one of them.
+> > 
+> > So this series is a first step in trying to address this.  Having this
+> > as a single driver probably made sense when it was a separate project,
+> > but now that it is in-tree it seems like the POD, PODHD, TonePort, and
+> > Variax pieces should each be separate drivers that each depend on a core
+> > Line 6 driver.  I think the cleanup in this series will make that
+> > easier.  None of this is my area of expertise, though, so advice and
+> > feedback is very welcome.
+> > 
+> > > are there any active developers for this driver?
+> > 
+> > I intended to do further work.  I know there is quite a bit of mundane
+> > checkpatch cleanup that would need to get done before this could get
+> > promoted, and I believe I read that it's using sysfs for stuff that
+> > would normally be done via an ALSA interface, and the sysfs interface
+> > has not been documented nor has it been justified.  All stuff I thought
+> > I might look into.
+> > 
+> > But I'm just doing this for fun so I can't promise anything.  :-)
 > 
-> Signed-off-by: Sam van Kampen <sam@tehsvk.net>
-> ---
->  drivers/staging/line6/usbdefs.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> OK, so the situation looks fairly good, we have a few active
+> developers and/or testers.  And the current code doesn't look so
+> terrible despite of it being in staging directory.  That said, I think
+> we can promote this stuff into sound/usb/line6 directory, then apply
+> Chris' cleanup patches, and work on it further.
 > 
-> diff --git a/drivers/staging/line6/usbdefs.h b/drivers/staging/line6/usbdefs.h
-> index 2d1cc47..48958b5 100644
-> --- a/drivers/staging/line6/usbdefs.h
-> +++ b/drivers/staging/line6/usbdefs.h
-> @@ -40,7 +40,7 @@
->  #define LINE6_DEVID_TONEPORT_UX2  0x4142
->  #define LINE6_DEVID_VARIAX        0x534d
->  
-> -#define LINE6_BIT(x) LINE6_BIT_ ## x = 1 << LINE6_INDEX_ ## x
-> +#define LINE6_BIT(x) (LINE6_BIT_ ## x = 1 << LINE6_INDEX_ ## x)
->  
->  enum {
->  	LINE6_INDEX_BASSPODXT,
+> Does it sound OK for you guys?  Greg?
+> 
+> Once when I get approval, I'll start a new clean branch on sound.git
+> tree so that you guys can work on it further for 3.20 kernel.
 
-I love this line in the driver, it proves that people make changes to
-the code without even building it.
+That sounds fine with me.  I have 4 other patches in my "to-apply" queue
+other than these 25 for this driver that I'll forward on to you for
+inclusion in your tree.
 
-Please ALWAYS test-build your patches, otherwise you waste people's time
-and make them grumpy.
+thanks,
 
 greg k-h
