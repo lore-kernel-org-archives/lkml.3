@@ -1,107 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199AbbALQys (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 11:54:48 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:33493 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978AbbALQyr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 11:54:47 -0500
-Message-ID: <54B3FC53.7080702@landley.net>
-Date: Mon, 12 Jan 2015 10:54:43 -0600
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Junjie Mao <eternal.n08@gmail.com>, Kees Cook <keescook@chromium.org>,
-        stable@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCHv2] remove recently added perl build requirement
-References: <54AC72AF.5090609@landley.net> <20150106155024.5efa209d575fff4868758482@linux-foundation.org>
-In-Reply-To: <20150106155024.5efa209d575fff4868758482@linux-foundation.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1752298AbbALQzv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 11:55:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52996 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752235AbbALQzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 11:55:49 -0500
+From: Mark Salter <msalter@redhat.com>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Mark Salter <msalter@redhat.com>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Subject: [PATCH] arm64: allow late use of early_ioremap
+Date: Mon, 12 Jan 2015 11:55:11 -0500
+Message-Id: <1421081711-1128-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Landley <rob@landley.net>
+Commit 0e63ea48b4d8 (arm64/efi: add missing call to early_ioremap_reset())
+added a missing call to early_ioremap_reset(). This triggers a BUG if code
+tries using early_ioremap() after the early_ioremap_reset(). This is a
+problem for some ACPI code which needs short-lived temporary mappings
+after paging_init() but before mm_init(). This patch adds definitions for
+the __late_set_fixmap() and __late_clear_fixmap() which avoids the BUG
+by allowing later use of early_ioremap().
 
-Commit e6023367d779 ("x86, kaslr: Prevent .bss from overlaping initrd")
-added perl back to the kernel build dependencies in -rc6.
-
-Replace those 39 lines of perl with 4 lines of shell script.
-
-Signed-off-by: Rob Landley <rob@landley.net>
-Acked-by: Anca Emanuel <anca.emanuel@gmail.com>
+Signed-off-by: Mark Salter <msalter@redhat.com>
+CC: Leif Lindholm <leif.lindholm@linaro.org>
+CC: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 ---
+ arch/arm64/include/asm/fixmap.h | 3 +++
+ 1 file changed, 3 insertions(+)
 
- arch/x86/boot/compressed/Makefile |    6 ++--
- arch/x86/tools/calc_run_size.pl   |   39 ----------------------------
- 2 files changed, 4 insertions(+), 41 deletions(-)
-
-Note: checkpatch.pl isn't a build dependency, it's a development dependency
-(like bloat-o-meter being written in python or "make xconfig" needing QT).
-Those aren't things you need to add to your cross compile environment
-to produce a binary. Different category of dependency.
-
-For more history on the issue, see https://lkml.org/lkml/2013/2/27/18
-
---- linux/arch/x86/boot/compressed/Makefile
-+++ linux/arch/x86/boot/compressed/Makefile
-@@ -89,8 +76,10 @@
- suffix-$(CONFIG_KERNEL_LZO) 	:= lzo
- suffix-$(CONFIG_KERNEL_LZ4) 	:= lz4
+diff --git a/arch/arm64/include/asm/fixmap.h b/arch/arm64/include/asm/fixmap.h
+index 9ef6eca..e629c70 100644
+--- a/arch/arm64/include/asm/fixmap.h
++++ b/arch/arm64/include/asm/fixmap.h
+@@ -61,6 +61,9 @@ void __init early_fixmap_init(void);
  
--RUN_SIZE = $(shell $(OBJDUMP) -h vmlinux | \
--	     perl $(srctree)/arch/x86/tools/calc_run_size.pl)
-+RUN_SIZE = $(shell NUM='\([0-9a-fA-F]*[ \t]*\)'; $(OBJDUMP) -h vmlinux | \
-+sed -n 's/^[ \t0-9]*.b[sr][sk][ \t]*'"$$NUM$$NUM$$NUM$$NUM"'.*/\1\4/p' | \
-+xargs | while read a b c d; do [ "$$b" != "$$d" ] && exit 1; \
-+expr $$(printf "%d + %d + %d" 0x$$a 0x$$b 0x$$c); done)
- quiet_cmd_mkpiggy = MKPIGGY $@
-       cmd_mkpiggy = $(obj)/mkpiggy $< $(RUN_SIZE) > $@ || ( rm -f $@ ; false )
+ #define __early_set_fixmap __set_fixmap
  
---- linux/arch/x86/tools/calc_run_size.pl
-+++ /dev/null
-@@ -1,39 +0,0 @@
--#!/usr/bin/perl
--#
--# Calculate the amount of space needed to run the kernel, including room for
--# the .bss and .brk sections.
--#
--# Usage:
--# objdump -h a.out | perl calc_run_size.pl
--use strict;
--
--my $mem_size = 0;
--my $file_offset = 0;
--
--my $sections=" *[0-9]+ \.(?:bss|brk) +";
--while (<>) {
--	if (/^$sections([0-9a-f]+) +(?:[0-9a-f]+ +){2}([0-9a-f]+)/) {
--		my $size = hex($1);
--		my $offset = hex($2);
--		$mem_size += $size;
--		if ($file_offset == 0) {
--			$file_offset = $offset;
--		} elsif ($file_offset != $offset) {
--			# BFD linker shows the same file offset in ELF.
--			# Gold linker shows them as consecutive.
--			next if ($file_offset + $mem_size == $offset + $size);
--
--			printf STDERR "file_offset: 0x%lx\n", $file_offset;
--			printf STDERR "mem_size: 0x%lx\n", $mem_size;
--			printf STDERR "offset: 0x%lx\n", $offset;
--			printf STDERR "size: 0x%lx\n", $size;
--
--			die ".bss and .brk are non-contiguous\n";
--		}
--	}
--}
--
--if ($file_offset == 0) {
--	die "Never found .bss or .brk file offset\n";
--}
--printf("%d\n", $mem_size + $file_offset);
++#define __late_set_fixmap __set_fixmap
++#define __late_clear_fixmap(idx) __set_fixmap((idx), 0, FIXMAP_PAGE_CLEAR)
++
+ extern void __set_fixmap(enum fixed_addresses idx, phys_addr_t phys, pgprot_t prot);
+ 
+ #include <asm-generic/fixmap.h>
+-- 
+1.8.3.1
+
