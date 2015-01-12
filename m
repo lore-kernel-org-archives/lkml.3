@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482AbbALOkx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 09:40:53 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:46421 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751204AbbALOkw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 09:40:52 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX195CrUggUKzAC6lZpGFsLjs3wQvcZszEzA=
-X-DKIM: OpenDKIM Filter v2.0.1 titan C7FE1644134
-Date: Mon, 12 Jan 2015 09:40:47 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Arno Tiemersma <arno.tiemersma@gmail.com>, devel@driverdev.osuosl.org,
-        eric.rost@mybabylon.net, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, jake@lwn.net, antonysaraev@gmail.com
-Subject: Re: [PATCH] staging: skein: Fix checkpatch warnings
-Message-ID: <20150112144047.GY24989@titan.lakedaemon.net>
-References: <1420902047-7569-1-git-send-email-arno.tiemersma@gmail.com>
- <20150112141418.GW24989@titan.lakedaemon.net>
- <20150112143347.GE7568@mwanda>
+	id S1752238AbbALOse (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 09:48:34 -0500
+Received: from mga11.intel.com ([192.55.52.93]:51287 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750964AbbALOsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 09:48:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="439484140"
+Date: Mon, 12 Jan 2015 09:47:57 -0500
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Milosz Tanski <milosz@adfin.com>
+Subject: Re: [PATCH v12 00/20] DAX: Page cache bypass for filesystems on
+ memory storage
+Message-ID: <20150112144757.GE5661@wil.cx>
+References: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
+ <20141210140347.GA23252@infradead.org>
+ <20141210141211.GD2220@wil.cx>
+ <20150105184143.GA665@infradead.org>
+ <20150106004714.6d63023c.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150112143347.GE7568@mwanda>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20150106004714.6d63023c.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 05:33:47PM +0300, Dan Carpenter wrote:
-> On Mon, Jan 12, 2015 at 09:14:18AM -0500, Jason Cooper wrote:
-> > Arno,
-> > 
-> > On Sat, Jan 10, 2015 at 04:00:47PM +0100, Arno Tiemersma wrote:
-> > > Remove do {} while (0) loops around single statements in
-> > > skein/skein_block.c
-> > > 
-> > > Signed-off-by: Arno Tiemersma <arno.tiemersma@gmail.com>
-> > > ---
-> > >  drivers/staging/skein/skein_block.c | 16 ++++------------
-> > >  1 file changed, 4 insertions(+), 12 deletions(-)
-> > 
-> > Is this a V2?  Several people have been submitting patches for this
-> > checkpatch issue.  Please check the staging ML and deconflict with other
-> > submitters.
+On Tue, Jan 06, 2015 at 12:47:14AM -0800, Andrew Morton wrote:
+> On Mon, 5 Jan 2015 10:41:43 -0800 Christoph Hellwig <hch@infradead.org> wrote:
 > 
-> Why would it be a v2?
+> > On Wed, Dec 10, 2014 at 09:12:11AM -0500, Matthew Wilcox wrote:
+> > > On Wed, Dec 10, 2014 at 06:03:47AM -0800, Christoph Hellwig wrote:
+> > > > What is the status of this patch set?
+> > > 
+> > > I have no outstanding bug reports against it.  Linus told me that he
+> > > wants to see it come through Andrew's tree.  I have an email two weeks
+> > > ago from Andrew saying that it's on his list.  I would love to see it
+> > > merged since it's almost a year old at this point.
+> > 
+> > And since then another month and aother merge window has passed.  Is
+> > there any way to speed up merging big patch sets like this one?
+> 
+> I took a look at dax last time and found it to be unreviewable due to
+> lack of design description, objectives and code comments.  Hopefully
+> that's been addressed - I should get back to it fairly soon as I chew
+> through merge window and holiday backlog.
 
-I had asked one person to do a little extra work validating that
-removing the do{}while's hadn't changed the resulting object code.
-Unfortunately, I forgot who that was :(  Only because there have been so
-many people submitting the exact same thing, though...
-
-> It's really normal to get a wave of people sending the exact same patch.
-> There was one time where 7 people deleted the same whitespace in
-> panel.c.
-
-I suspect this is a combination of a) checkpatch.pl getting a more
-enhanced handling of do{}while's in macros, and b) more folks doing the
-Eudiptula (sp?) challenge.
-
-> Don't worry too much about conflicts.  It either applies when Greg reads
-> it or it doesn't and he kicks off an email.  Not a big deal.
-
-Agreed from a patch management side.  I was attempting to encourage the
-new submitters to starting integrating the mailinglist into their
-workflow.
-
-thx,
-
-Jason.
+Now that Jens has merged patches 1 and 2 into his block tree, you don't
+need to spend any time looking at those.  If I could trouble you to
+merge patches 3 & 4 through mm, the rest of the patches are VFS/ext2,
+and maye we could merge those through Al's tree instead of taking your
+valuable time?
