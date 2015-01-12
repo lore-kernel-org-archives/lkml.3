@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752515AbbAKX6h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 18:58:37 -0500
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:47192 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751280AbbAKX6T (ORCPT
+	id S1752298AbbALAAY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 19:00:24 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:54308 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133AbbALAAV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 18:58:19 -0500
-From: Julian Brost <linux-kernel@0x4a42.net>
-To: linux-doc@vger.kernel.org
-Cc: Julian Brost <linux-kernel@0x4a42.net>, linux-kernel@vger.kernel.org,
-        corbet@lwn.net, tomas.winkler@intel.com, linux-mei@linux.intel.com,
-        linux-kernel@i4.cs.fau.de, fabian.hofmann@fau.de
-Subject: [PATCH 4/4] Documentation/misc-devices/mei: Fix indentation of embedded code.
-Date: Mon, 12 Jan 2015 00:58:09 +0100
-Message-Id: <1421020689-28332-5-git-send-email-linux-kernel@0x4a42.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1421020689-28332-1-git-send-email-linux-kernel@0x4a42.net>
-References: <1421020689-28332-1-git-send-email-linux-kernel@0x4a42.net>
+	Sun, 11 Jan 2015 19:00:21 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141127223402.GA11418@gmail.com>
+References: <1416168856-12747-1-git-send-email-b.galvani@gmail.com>
+	<1416168856-12747-3-git-send-email-b.galvani@gmail.com>
+	<CACRpkda-U5OuKdBVGJ8UWprJkAtmTL1m11+AbNskVULPfyS72A@mail.gmail.com>
+	<20141127223402.GA11418@gmail.com>
+Date: Mon, 12 Jan 2015 01:00:16 +0100
+Message-ID: <CACRpkdY0tv77GgOF91EG8wEzsgQ4OsLUjogNxFjO-rjfY2Q15g@mail.gmail.com>
+Subject: Re: [PATCH v3 2/3] pinctrl: add driver for Amlogic Meson SoCs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Beniamino Galvani <b.galvani@gmail.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Carlo Caione <carlo@caione.org>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
+        Victor Wan <victor.wan@amlogic.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some of the source code embedded in mei-client-bus.txt was indented
-using spaces. This properly indents it with tabs and also removes a
-single space that was placed in front of a closing curly brace.
+On Thu, Nov 27, 2014 at 11:34 PM, Beniamino Galvani <b.galvani@gmail.com> wrote:
+> On Thu, Nov 27, 2014 at 02:48:31PM +0100, Linus Walleij wrote:
+>> On Sun, Nov 16, 2014 at 9:14 PM, Beniamino Galvani <b.galvani@gmail.com> wrote:
+>>
+>> > This is a driver for the pinmux and GPIO controller available in
+>> > Amlogic Meson SoCs. At the moment it only supports Meson8 devices,
+>> > however other SoC families like Meson6 and Meson8b (the Cortex-A5
+>> > variant) appear to be similar, with just different sets of banks and
+>> > registers.
+>> >
+>> > GPIO interrupts are not supported at the moment due to lack of
+>> > documentation.
+>> >
+>> > Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
+>>
+>> This is dependent on Sören's patches I guess?
+>>
+>> OK I'll merge this once we have that other code sorted out.
+>
+> Yes, this depends on Soren's patches.
 
-Signed-off-by: Julian Brost <linux-kernel@0x4a42.net>
-Signed-off-by: Fabian Hofmann <fabian.hofmann@fau.de>
----
- Documentation/misc-devices/mei/mei-client-bus.txt | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+Hi Beniamino,
 
-diff --git a/Documentation/misc-devices/mei/mei-client-bus.txt b/Documentation/misc-devices/mei/mei-client-bus.txt
-index 6ca486b..743be4e 100644
---- a/Documentation/misc-devices/mei/mei-client-bus.txt
-+++ b/Documentation/misc-devices/mei/mei-client-bus.txt
-@@ -72,11 +72,11 @@ static struct mei_cl_device_id contact_mei_cl_tbl[] = {
- MODULE_DEVICE_TABLE(mei_cl, contact_mei_cl_tbl);
- 
- static struct mei_cl_driver contact_driver = {
--       .id_table = contact_mei_tbl,
--       .name = CONTACT_DRIVER_NAME,
-+	.id_table = contact_mei_tbl,
-+	.name = CONTACT_DRIVER_NAME,
- 
--       .probe = contact_probe,
--       .remove = contact_remove,
-+	.probe = contact_probe,
-+	.remove = contact_remove,
- };
- 
- static int contact_init(void)
-@@ -112,7 +112,7 @@ int contact_probe(struct mei_cl_device *dev, struct mei_cl_device_id *id)
- 	mei_cl_register_event_cb(dev, contact_event_cb, contact);
- 
- 	return 0;
-- }
-+}
- 
- In the probe routine the driver first enable the MEI device and then registers
- an ME bus event handler which is as close as it can get to registering a
--- 
-2.2.1
+sorry for the delay to merging Sören's patches.
 
+Can you rebase this patch on top of the pin control "devel" branch:
+https://git.kernel.org/cgit/linux/kernel/git/linusw/linux-pinctrl.git/log/?h=devel
+
+Some stuff like structs and functions were renamed by me since it was
+not generic enough.
+
+Yours,
+Linus Walleij
