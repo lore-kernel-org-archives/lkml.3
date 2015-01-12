@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115AbbALMy3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 07:54:29 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:53537 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751204AbbALMy2 (ORCPT
+	id S1752319AbbALNAH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 08:00:07 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:59201 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991AbbALNAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 07:54:28 -0500
-Date: Mon, 12 Jan 2015 13:54:11 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Laight <David.Laight@ACULAB.COM>
-Subject: Re: [PATCH v3 1/5] usb: atmel_usba_udc: Rework at91sam9rl errata
- handling
-Message-ID: <20150112135411.29c6315e@bbrezillon>
-In-Reply-To: <1421064958.22660.54.camel@x220>
-References: <1421060278-27329-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1421060278-27329-2-git-send-email-boris.brezillon@free-electrons.com>
-	<1421064958.22660.54.camel@x220>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 12 Jan 2015 08:00:05 -0500
+Date: Mon, 12 Jan 2015 15:59:56 +0300
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Tejun Heo <tj@kernel.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>,
+        "Suzuki K. Poulose" <Suzuki.Poulose@arm.com>, <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH cgroup/for-3.19-fixes] cgroup: implement
+ cgroup_subsys->unbind() callback
+Message-ID: <20150112125956.GF2110@esperanza>
+References: <54B01335.4060901@arm.com>
+ <20150110085525.GD2110@esperanza>
+ <20150110214316.GF25319@htj.dyndns.org>
+ <20150111205543.GA5480@phnom.home.cmpxchg.org>
+ <20150112080114.GE2110@esperanza>
+ <20150112112845.GS25319@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20150112112845.GS25319@htj.dyndns.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
-
-On Mon, 12 Jan 2015 13:15:58 +0100
-Paul Bolle <pebolle@tiscali.nl> wrote:
-
-> On Mon, 2015-01-12 at 11:57 +0100, Boris Brezillon wrote:
-> > at91sam9rl SoC has an erratum forcing us to toggle the BIAS on USB
-> > suspend/resume events.
-> > 
-> > This specific handling is only activated when CONFIG_ARCH_AT91SAM9RL is
-> > set and this option is only set when building a non-DT kernel, which is
-> > problematic since non-DT support for at91sam9rl SoC has been removed.
+On Mon, Jan 12, 2015 at 06:28:45AM -0500, Tejun Heo wrote:
+> On Mon, Jan 12, 2015 at 11:01:14AM +0300, Vladimir Davydov wrote:
+> > Come to think of it, I wonder how many users actually want to mount
+> > different controllers subset after unmount. Because we could allow
 > 
-> This sentence is not entirely correct. Commit bcf8c7e7703b ("ARM: at91:
-> remove at91sam9rl legacy board support") actually removed the Kconfig
-> symbol ARCH_AT91SAM9RL entirely. So the check for CONFIG_ARCH_AT91SAM9RL
-> has been pointless since (next-20141110 and) v3.19-rc1. See my report at
-> https://lkml.org/lkml/2014/11/10/232 .
-
-I'll rework my commit message.
-
+> It wouldn't be a common use case but, on the face of it, we still
+> support it.  If we collecctively decide that once a sub cgroup is
+> created for any controller no further hierarchy configuration for that
+> controller is allowed, that'd work too, but one way or the other, the
+> behavior, I believe, should be well-defined.  As it currently stands,
+> the conditions and failure mode are opaque to userland, which is never
+> a good thing.
 > 
-> (I stumbled on this patch because I contemplated sending a patch to
-> simply remove the check for CONFIG_ARCH_AT91SAM9RL and the currently
-> useless function toggle_bias.)
+> > mounting the same subset perfectly well, even if it includes memcg. BTW,
+> > AFAIU in the unified hierarchy we won't have this problem at all,
+> > because by definition it mounts all controllers IIRC, so do we need to
+> > bother fixing this in such a complicated manner at all for the setup
+> > that's going to be deprecated anyway?
+> 
+> There will likely be a quite long transition period and if and when
+> the old things can be removed, this added cleanup logic can go away
+> with it.  It depends on how complex the implementation would get but
+> as long as it isn't too much and stays mostly isolated from the saner
+> paths, I think it's probably the right thing to do.
 
-Sorry, I forgot to add you in Cc of this series :-(, I'll do it it for
-the future iterations.
+We can't just move kmem objects from a per-memcg kmem_cache to the
+global one fixing page counters, because in contrast to page cache and
+swap we don't even track all kmem allocations. So we have to keep all
+per-memcg kmem_cache's somewhere after unmount until they can finally be
+destroyed, but the whole logic behind per-memcg kmem_cache's destruction
+is currently tightly interwoven with that of css's (we destroy
+kmem_cache's from css_free), and there won't be any css's after unmount.
 
-Best Regards,
+That said, it isn't possible to add a couple of isolated functions,
+which will live their own lives and can be easily removed once we've
+switched to the unified hierarchy. Quite the contrary, implementing of
+kmem reparenting would make me rethink and complicate kmemcg code all
+over the place. That's why I'm rather reluctant to do it.
 
-Boris
+I haven't dug deep into the cgroup core, but may be we could detach the
+old root in cgroup_kill_sb() and leave it dangling until the last
+reference to it has gone?
 
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+BTW, IIRC the problem always existed for kmem-active memory cgroups,
+because we never had kmem reparenting. May be, we could therefore just
+document somewhere that kmem accounting is highly discouraged to be used
+in the legacy hierarchy and merge these two patches as is to handle page
+cache and swap charges? We won't break anything, because it was always
+broken :-)
+
+Thanks,
+Vladimir
