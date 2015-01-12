@@ -1,133 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034AbbALPXs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 10:23:48 -0500
-Received: from mout1.freenet.de ([195.4.92.91]:55776 "EHLO mout1.freenet.de"
+	id S1752772AbbALPVW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 10:21:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47495 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750860AbbALPXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 10:23:47 -0500
-Message-ID: <54B3E653.8020900@maya.org>
-Date: Mon, 12 Jan 2015 16:20:51 +0100
-From: Andreas Hartmann <andihartmann@freenet.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:34.0) Gecko/20100101 Firefox/34.0 SeaMonkey/2.31
+	id S1751083AbbALPVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 10:21:20 -0500
+Date: Mon, 12 Jan 2015 10:21:12 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-audit@redhat.com
+Subject: Re: [PATCH] TaskTracker : Simplified thread information tracker.
+Message-ID: <20150112152112.GA30774@madcap2.tricolour.ca>
+References: <20141007213054.GJ26201@madcap2.tricolour.ca>
+ <201410102140.HHB30768.tFVJSFQOMLOOFH@I-love.SAKURA.ne.jp>
+ <20141010124923.GD2966@madcap2.tricolour.ca>
+ <201501042050.EEH30201.FJVtFHMQOLSFOO@I-love.SAKURA.ne.jp>
+ <20150105180743.GI29998@madcap2.tricolour.ca>
+ <201501121513.GAD65121.OOJQVSFFLOFMHt@I-love.SAKURA.ne.jp>
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] PCI: quirk Atheros AR93xx to avoid bus reset
-References: <20141121180322.26669.65689.stgit@gimli.home>	 <20141121182427.26669.82417.stgit@gimli.home>	 <20150108160733.GA6575@google.com> <1420745423.25367.77.camel@redhat.com>
-In-Reply-To: <1420745423.25367.77.camel@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Originated-At: 79.222.1.217!35086
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201501121513.GAD65121.OOJQVSFFLOFMHt@I-love.SAKURA.ne.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alex Williamson wrote:
-> On Thu, 2015-01-08 at 09:07 -0700, Bjorn Helgaas wrote:
->> On Fri, Nov 21, 2014 at 11:24:27AM -0700, Alex Williamson wrote:
->>> Reports against the TL-WDN4800 card indicate that PCI bus reset of
->>> this Atheros device cause system lock-ups and resets.  I've also
->>> been able to confirm this behavior on multiple systems.  The device
->>> never returns from reset and attempts to access config space of the
->>> device after reset result in hangs.  Blacklist bus reset for the
->>> device to avoid this issue.
->>>
->>> Reported-by: Andreas Hartmann <andihartmann@freenet.de>
->>> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
->>> Tested-by: Andreas Hartmann <andihartmann@freenet.de>
->>
->> If I understand correctly, these two (patches 3 & 4) fix a v3.14 regression
->> caused by 425c1b223dac ("PCI: Add Virtual Channel to save/restore support").
->>
->> If so, these should go to for-linus for v3.19.  What about patches 1 & 2?
->> Do they fix a regression?  Is there a pointer to a bugzilla or problem
->> report about that issue?
->>
->> I don't understand the connection between 425c1b223dac and
->> PCI_DEV_FLAGS_NO_BUS_RESET, because 425c1b223dac doesn't seem to do any
->> resets.  Is that the wrong commit, or can you outline the connection for
->> me?
+On 15/01/12, Tetsuo Handa wrote:
+> Thank you for comments.
 > 
-> TBH, I don't have a lot of faith in associating this to 425c1b223dac,
-> I'm not sure how Andreas' bisect landed there. 
-
-Because removing this patch made it working again :-)
-
-And too:
-http://thread.gmane.org/gmane.linux.kernel.pci/35170/focus=35984
-
-Kernel 2.10. and 2.12. and 2.13. did work fine for me. 2.14 is the first
-kernel, which hangs the machine at startup of the VM. The userland
-(qemu) didn't change in between.
-
-Therefore: from my point of view, it is a regression, because things
-have been working < 2.14.
-
-Besides that: It is undoubted, that there is a problem with resetting
-this card. But the difference between >= 3.14 and < 3.14 is, that < 3.14
-has been working nevertheless. The patch
-425c1b223dac456d00a61fd6b451b6d1cf00d065 obviously changed something
-which I can't say and I don't know off. Therefore, the quirk-patch is
-definitely required, because things work completely fine again w/ this
-patch.
-
-"Working" means for me here: I was able to start (and use) the VM w/o
-crashing the machine and this isn't possible w/ unpatched 2.14+ any
-more. Yes, w/ 2.12, I wasn't able to restart the VM (it then crashed the
-machine), but w/ 2.10 even this was possible.
-
-
-> IME, this device cannot,
-> and has never been able to handle a bus reset.  A simple setpci
-> experiment on the commandline can confirm this.  What I think happened
-> is that with the PCI bus reset infrastructure we added, we switched QEMU
-> to prefer PCI bus resets over things like PM D3hot->D0 resets.  So it's
-> just more prolific use of bus resets by userspace.
+> Richard Guy Briggs wrote:
+> > Steve already mentioned any user-influenced fields need to be escaped,
+> > so I'd recommend audit_log_untrustedstring() as being much simpler from
+> > your perspective and much better tested and understood from audit
+> > maintainer's perspective.  At least use the existing 'o' printf format
+> > specifier instead of inventing your own.  I do acknowledge that the
+> > resulting output from your function is easier to read in its raw format
+> > passed from the kernel, however, it makes your code harder to maintain.
 > 
-> There's also no regression in 1 & 2, PM reset has never done anything
-> useful on those devices.  Thanks,
+> I'm not sure whether I should use audit_log_untrustedstring().
 > 
-> Alex
-> 
->>> ---
->>>
->>>  drivers/pci/quirks.c |   14 ++++++++++++++
->>>  1 file changed, 14 insertions(+)
->>>
->>> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
->>> index 561e10d..ebbd5b4 100644
->>> --- a/drivers/pci/quirks.c
->>> +++ b/drivers/pci/quirks.c
->>> @@ -3029,6 +3029,20 @@ static void quirk_no_pm_reset(struct pci_dev *dev)
->>>  DECLARE_PCI_FIXUP_CLASS_HEADER(PCI_VENDOR_ID_ATI, PCI_ANY_ID,
->>>  			       PCI_CLASS_DISPLAY_VGA, 8, quirk_no_pm_reset);
->>>  
->>> +static void quirk_no_bus_reset(struct pci_dev *dev)
->>> +{
->>> +	dev->dev_flags |= PCI_DEV_FLAGS_NO_BUS_RESET;
->>> +}
->>> +
->>> +/*
->>> + * Atheros AR93xx chips do not behave after a bus reset.  The device will
->>> + * throw a Link Down error on AER capable system and regardless of AER,
->>> + * config space of the device is never accessible again and typically
->>> + * causes the system to hang or reset when access is attempted.
->>> + * http://www.spinics.net/lists/linux-pci/msg34797.html
->>> + */
->>> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATHEROS, 0x0030, quirk_no_bus_reset);
->>> +
->>>  #ifdef CONFIG_ACPI
->>>  /*
->>>   * Apple: Shutdown Cactus Ridge Thunderbolt controller.
->>>
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> This record contains multiple user-influenced comm names. If I use
+> audit_log_untrustedstring(), I would need to split this record into
+> multiple records like history[0]='...' history[1]='...' history[2]='...'
+> in order to avoid matching delimiters (i.e. ';', '=' and '>') used in
+> this record. This would also change from "char *" in "struct task_struct"
+> to array of struct { "comm name", "pid", "stamp" } in "struct task_struct".
+> I don't know whether such change makes easier to maintain than now.
 
+This will end up producing a varying number of fields.  The userspace
+tools are looking for a constant number of fields per record type.
+
+> > As for the date-stamping bits, they seem to be the majority of the code
+> > in audit_update_history().  I'd just emit a number and punt that to
+> > userspace for decoding.  Alternatively, I'd use an existing service in
+> > the kernel to do that date formatting, or at least call a new function
+> > to format that date string should a suitable one not already exist, so
+> > you can remove that complexity from audit_update_history().
+> 
+> Since I don't know existing functions for date formatting, I split it as
+> a new function. If it is acceptable, I'd like to make that function public
+> and replace tomoyo_convert_time() in security/tomoyo/util.c with that
+> function.
+
+That is an improvement, but would still like to see existing functions
+used or punt to userspace.
+
+> diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+> index 072566d..2edeba2 100644
+> --- a/kernel/auditsc.c
+> +++ b/kernel/auditsc.c
+> @@ -1344,6 +1354,17 @@ out:
+>  	audit_log_end(ab);
+>  }
+>  
+> +static void audit_log_history(struct audit_context *context)
+> +{
+> +	struct audit_buffer *ab;
+> +
+> +	ab = audit_log_start(context, GFP_KERNEL, AUDIT_PROCHISTORY);
+> +	if (!ab)
+> +		return;	/* audit_panic or being filtered */
+> +	audit_log_format(ab, "history='%s'", current->comm_history);
+
+This is where I would seperate them to:
+
+	audit_log_format(ab, "history=");
+	audit_log_untrustedstring(ab, current->comm_history);
+
+Making sure, of course, that there are no NULLs printed from any of the
+comm fields (which should be impossible due to your "if (!c) break;").
+
+> +	audit_log_end(ab);
+> +}
+> +
+>  static void audit_log_exit(struct audit_context *context, struct task_struct *tsk)
+>  {
+...
+> +void audit_update_history(void)
+> +		*cp++ = '\\';
+> +		*cp++ = (c >> 6) + '0';
+> +		*cp++ = ((c >> 3) & 7) + '0';
+> +		*cp++ = (c & 7) + '0';
+
+Is there a reason you are not using the printf 'o' octal converter?
+
+> +	/* Append timestamp. */
+> +	{
+> +		struct yyyymmdd_hhmmss stamp;
+> +
+> +		tt_get_time(&stamp);
+> +		cp += snprintf(cp, buf - cp + sizeof(buf) - 1,
+> +			       ";start=%04u%02u%02u%02u%02u%02u", stamp.year,
+> +			       stamp.month, stamp.day, stamp.hour, stamp.min,
+> +			       stamp.sec);
+> +	}
+
+Why not just return a string?  Better yet, punt to userspace.
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
