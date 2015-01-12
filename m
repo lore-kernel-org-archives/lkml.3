@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592AbbALHH5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 02:07:57 -0500
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:57004 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537AbbALHHx (ORCPT
+	id S1751690AbbALHIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 02:08:13 -0500
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:39270 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751618AbbALHIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 02:07:53 -0500
+	Mon, 12 Jan 2015 02:08:10 -0500
 From: "Li, Zhen-Hua" <zhen-hual@hp.com>
 To: <dwmw2@infradead.org>, <indou.takao@jp.fujitsu.com>, <bhe@redhat.com>,
         <joro@8bytes.org>, <vgoyal@redhat.com>, <dyoung@redhat.com>
@@ -17,9 +17,9 @@ Cc: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
         <doug.hatch@hp.com>, <jerry.hoemann@hp.com>, <tom.vaden@hp.com>,
         <li.zhang6@hp.com>, <lisa.mitchell@hp.com>,
         <billsumnerlinux@gmail.com>, <zhen-hual@hp.com>, <rwright@hp.com>
-Subject: [PATCH v8 01/10] iommu/vt-d: Update iommu_attach_domain() and its callers
-Date: Mon, 12 Jan 2015 15:06:19 +0800
-Message-Id: <1421046388-27925-2-git-send-email-zhen-hual@hp.com>
+Subject: [PATCH v8 02/10] iommu/vt-d: Items required for kdump
+Date: Mon, 12 Jan 2015 15:06:20 +0800
+Message-Id: <1421046388-27925-3-git-send-email-zhen-hual@hp.com>
 X-Mailer: git-send-email 2.0.0-rc0
 In-Reply-To: <1421046388-27925-1-git-send-email-zhen-hual@hp.com>
 References: <1421046388-27925-1-git-send-email-zhen-hual@hp.com>
@@ -27,121 +27,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow specification of the domain-id for the new domain.
-This patch only adds the 'did' parameter to iommu_attach_domain()
-and modifies all of its callers to specify the default value of -1
-which says "no did specified, allocate a new one".
-
-This is no functional change from current behaviour -- just enables
-a functional change to be made in a later patch.
+Add structure type domain_values_entry used for kdump;
+Add context entry functions needed for kdump.
 
 Bill Sumner:
-    Original version.
+    Original version;
 
 Li, Zhenhua:
-    Minor change, add change to function __iommu_attach_domain.
+    Changed the name of new functions, make them consistent with current
+    context get/set functions.
 
 Signed-off-by: Bill Sumner <billsumnerlinux@gmail.com>
 Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
 ---
- drivers/iommu/intel-iommu.c | 34 ++++++++++++++++++++--------------
- 1 file changed, 20 insertions(+), 14 deletions(-)
+ drivers/iommu/intel-iommu.c | 70 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 70 insertions(+)
 
 diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 40dfbc0..8d5c400 100644
+index 8d5c400..a71de3f 100644
 --- a/drivers/iommu/intel-iommu.c
 +++ b/drivers/iommu/intel-iommu.c
-@@ -1534,31 +1534,36 @@ static struct dmar_domain *alloc_domain(int flags)
+@@ -40,6 +40,7 @@
+ #include <linux/pci-ats.h>
+ #include <linux/memblock.h>
+ #include <linux/dma-contiguous.h>
++#include <linux/crash_dump.h>
+ #include <asm/irq_remapping.h>
+ #include <asm/cacheflush.h>
+ #include <asm/iommu.h>
+@@ -208,6 +209,12 @@ get_context_addr_from_root(struct root_entry *root)
+ 		NULL);
  }
  
- static int __iommu_attach_domain(struct dmar_domain *domain,
--				 struct intel_iommu *iommu)
-+				 struct intel_iommu *iommu,
-+				 int domain_number)
++static inline unsigned long
++get_context_phys_from_root(struct root_entry *root)
++{
++	return  root_present(root) ? (root->val & VTD_PAGE_MASK) : 0;
++}
++
+ /*
+  * low 64 bits:
+  * 0: present
+@@ -228,6 +235,32 @@ static inline bool context_present(struct context_entry *context)
  {
- 	int num;
- 	unsigned long ndomains;
- 
- 	ndomains = cap_ndoms(iommu->cap);
--	num = find_first_zero_bit(iommu->domain_ids, ndomains);
--	if (num < ndomains) {
--		set_bit(num, iommu->domain_ids);
--		iommu->domains[num] = domain;
--	} else {
--		num = -ENOSPC;
--	}
-+	if (domain_number < 0) {
-+		num = find_first_zero_bit(iommu->domain_ids, ndomains);
-+		if (num < ndomains) {
-+			set_bit(num, iommu->domain_ids);
-+			iommu->domains[num] = domain;
-+		} else {
-+			num = -ENOSPC;
-+		}
-+	} else
-+		num = domain_number;
- 
- 	return num;
+ 	return (context->lo & 1);
  }
- 
- static int iommu_attach_domain(struct dmar_domain *domain,
--			       struct intel_iommu *iommu)
-+			       struct intel_iommu *iommu,
-+			       int domain_number)
++
++static inline int context_fault_enable(struct context_entry *c)
++{
++	return((c->lo >> 1) & 0x1);
++}
++
++static inline int context_translation_type(struct context_entry *c)
++{
++	return((c->lo >> 2) & 0x3);
++}
++
++static inline u64 context_address_root(struct context_entry *c)
++{
++	return((c->lo >> VTD_PAGE_SHIFT));
++}
++
++static inline int context_address_width(struct context_entry *c)
++{
++	return((c->hi >> 0) & 0x7);
++}
++
++static inline int context_domain_id(struct context_entry *c)
++{
++	return((c->hi >> 8) & 0xffff);
++}
++
+ static inline void context_set_present(struct context_entry *context)
  {
- 	int num;
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&iommu->lock, flags);
--	num = __iommu_attach_domain(domain, iommu);
-+	num = __iommu_attach_domain(domain, iommu, domain_number);
- 	spin_unlock_irqrestore(&iommu->lock, flags);
- 	if (num < 0)
- 		pr_err("IOMMU: no free domain ids\n");
-@@ -1577,7 +1582,7 @@ static int iommu_attach_vm_domain(struct dmar_domain *domain,
- 		if (iommu->domains[num] == domain)
- 			return num;
- 
--	return __iommu_attach_domain(domain, iommu);
-+	return __iommu_attach_domain(domain, iommu, -1);
+ 	context->lo |= 1;
+@@ -313,6 +346,43 @@ static inline int first_pte_in_page(struct dma_pte *pte)
+ 	return !((unsigned long)pte & ~VTD_PAGE_MASK);
  }
  
- static void iommu_detach_domain(struct dmar_domain *domain,
-@@ -2231,6 +2236,7 @@ static struct dmar_domain *get_domain_for_dev(struct device *dev, int gaw)
- 	u16 dma_alias;
- 	unsigned long flags;
- 	u8 bus, devfn;
-+	int did = -1;   /* Default to "no domain_id supplied" */
- 
- 	domain = find_domain(dev);
- 	if (domain)
-@@ -2264,7 +2270,7 @@ static struct dmar_domain *get_domain_for_dev(struct device *dev, int gaw)
- 	domain = alloc_domain(0);
- 	if (!domain)
- 		return NULL;
--	domain->id = iommu_attach_domain(domain, iommu);
-+	domain->id = iommu_attach_domain(domain, iommu, did);
- 	if (domain->id < 0) {
- 		free_domain_mem(domain);
- 		return NULL;
-@@ -2442,7 +2448,7 @@ static int __init si_domain_init(int hw)
- 		return -EFAULT;
- 
- 	for_each_active_iommu(iommu, drhd) {
--		ret = iommu_attach_domain(si_domain, iommu);
-+		ret = iommu_attach_domain(si_domain, iommu, -1);
- 		if (ret < 0) {
- 			domain_exit(si_domain);
- 			return -EFAULT;
-@@ -3866,7 +3872,7 @@ static int intel_iommu_add(struct dmar_drhd_unit *dmaru)
- 	iommu_enable_translation(iommu);
- 
- 	if (si_domain) {
--		ret = iommu_attach_domain(si_domain, iommu);
-+		ret = iommu_attach_domain(si_domain, iommu, -1);
- 		if (ret < 0 || si_domain->id != ret)
- 			goto disable_iommu;
- 		domain_attach_iommu(si_domain, iommu);
++
++#ifdef CONFIG_CRASH_DUMP
++
++/*
++ * Fix Crashdump failure caused by leftover DMA through a hardware IOMMU
++ *
++ * Fixes the crashdump kernel to deal with an active iommu and legacy
++ * DMA from the (old) panicked kernel in a manner similar to how legacy
++ * DMA is handled when no hardware iommu was in use by the old kernel --
++ * allow the legacy DMA to continue into its current buffers.
++ *
++ * In the crashdump kernel, this code:
++ * 1. skips disabling the IOMMU's translating of IO Virtual Addresses (IOVA).
++ * 2. Do not re-enable IOMMU's translating.
++ * 3. In kdump kernel, use the old root entry table.
++ * 4. Leaves the current translations in-place so that legacy DMA will
++ *    continue to use its current buffers.
++ * 5. Allocates to the device drivers in the crashdump kernel
++ *    portions of the iova address ranges that are different
++ *    from the iova address ranges that were being used by the old kernel
++ *    at the time of the panic.
++ *
++ */
++
++struct domain_values_entry {
++	struct list_head link;		/* link entries into a list */
++	struct iova_domain iovad;	/* iova's that belong to this domain */
++	struct dma_pte	*pgd;		/* virtual address */
++	int    did;			/* domain id */
++	int    gaw;			/* max guest address width */
++	int    iommu_superpage;		/* Level of superpages supported:
++					   0 == 4KiB (no superpages), 1 == 2MiB,
++					   2 == 1GiB, 3 == 512GiB, 4 == 1TiB */
++};
++
++#endif /* CONFIG_CRASH_DUMP */
++
+ /*
+  * This domain is a statically identity mapping domain.
+  *	1. This domain creats a static 1:1 mapping to all usable memory.
 -- 
 2.0.0-rc0
 
