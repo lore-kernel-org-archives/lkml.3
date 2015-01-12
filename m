@@ -1,81 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927AbbALSIu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:08:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57829 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753928AbbALSGy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:06:54 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 112/216] drm/i915: Don't complain about stolen conflicts on gen3
-Date: Mon, 12 Jan 2015 18:03:49 +0000
-Message-Id: <1421085933-32536-113-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
-References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	id S1754023AbbALSHV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:07:21 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:50724 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751325AbbALSHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 13:07:16 -0500
+Date: Mon, 12 Jan 2015 11:06:08 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: atull <atull@opensource.altera.com>
+Cc: Pavel Machek <pavel@denx.de>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, hpa@zytor.com,
+        Michal Simek <monstr@monstr.eu>,
+        Michal Simek <michal.simek@xilinx.com>, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org, robh+dt@kernel.org,
+        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
+        linux-doc@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        philip@balister.org, rubini@gnudd.com,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>, jason@lakedaemon.net,
+        kyle.teske@ni.com, nico@linaro.org, Felipe Balbi <balbi@ti.com>,
+        m.chehab@samsung.com, davidb@codeaurora.org,
+        Rob Landley <rob@landley.net>, davem@davemloft.net, cesarb@cesarb.net,
+        sameo@linux.intel.com, akpm@linux-foundation.org,
+        Linus Walleij <linus.walleij@linaro.org>, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devel@driverdev.osuosl.org,
+        Alan Tull <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
+Message-ID: <20150112180608.GA11295@obsidianresearch.com>
+References: <1420575219-27061-1-git-send-email-atull@opensource.altera.com>
+ <1420575219-27061-3-git-send-email-atull@opensource.altera.com>
+ <20150107084819.GA1887@amd>
+ <alpine.DEB.2.02.1501091302370.30067@linuxheads99>
+ <20150109205643.GA5761@amd>
+ <4D4EA2D5-68DD-49F7-9E2D-3A0A8F6AF9CA@konsulko.com>
+ <20150110151118.GA16036@amd>
+ <alpine.DEB.2.10.1501111009180.2556@shineypoop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1501111009180.2556@shineypoop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.183
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt4 -stable review patch.  If anyone has any objections, please let me know.
+On Sun, Jan 11, 2015 at 10:29:00AM -0600, atull wrote:
+> the FPGA image.  If someone wants there to be only one FPGA image on
+> the FGPA forever, they will probably not be using this framework; their
+> FPGA will probably be loaded before Linux boots up.
 
-------------------
+Nonsense, loading the FPGA through Linux is much better, it avoids
+having to deal with this complexity in the boot loader and means that
+Linux can be used to locate the huge image in some kind of sensible
+filesystem, log failures, do any FPGA startup sequence/etc.
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+With hotplug and DT I find this this works very well. The FPGA devices
+simply are not registered with the kernel until userspace gives the OK
+(in future a DT overload can handle this)
 
-commit 0b6d24c01932db99fc95304235e751e7f7625c41 upstream.
+If you keep with the notion that the DT overload specifies the
+matching FPGA firmware then it makes alot more sense to me to use DT
+overlays as the API to change the file name - not sysfs.
 
-Apparently stuff works that way on those machines.
+To reload a FPGA, unload the DT overlay (this would have to disconnect
+all the drivers), de-program the FPGA, the load a new DT overlay,
+which reprograms and re-binds the new drivers. All those steps have to
+be done anyhow, you can't just swap the HW while drivers are attached.
 
-I agree with Chris' concern that this is a bit risky but imo worth a
-shot in -next just for fun. Afaics all these machines have the pci
-resources allocated like that by the BIOS, so I suspect that it's all
-ok.
+.. and if there are no drivers then Alan is right, this is the wrong
+interface for the 'FPGA as a user space co-processor' model.
 
-This regression goes back to
+I would also re-iterate my earlier comments: requiring the whole FPGA
+image to be held in ram makes this useless for any of my applications.
 
-commit eaba1b8f3379b5d100bd146b9a41d28348bdfd09
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Thu Jul 4 12:28:35 2013 +0100
-
-    drm/i915: Verify that our stolen memory doesn't conflict
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76983
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=71031
-Tested-by: lu hua <huax.lu@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Tested-by: Paul Menzel <paulepanter@users.sourceforge.net>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/gpu/drm/i915/i915_gem_stolen.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/gpu/drm/i915/i915_gem_stolen.c b/drivers/gpu/drm/i915/i915_gem_stolen.c
-index 7465ab0fd396..936571622b43 100644
---- a/drivers/gpu/drm/i915/i915_gem_stolen.c
-+++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
-@@ -137,7 +137,11 @@ static unsigned long i915_stolen_to_physical(struct drm_device *dev)
- 		r = devm_request_mem_region(dev->dev, base + 1,
- 					    dev_priv->gtt.stolen_size - 1,
- 					    "Graphics Stolen Memory");
--		if (r == NULL) {
-+		/*
-+		 * GEN3 firmware likes to smash pci bridges into the stolen
-+		 * range. Apparently this works.
-+		 */
-+		if (r == NULL && !IS_GEN3(dev)) {
- 			DRM_ERROR("conflict detected with stolen region: [0x%08x - 0x%08x]\n",
- 				  base, base + (uint32_t)dev_priv->gtt.stolen_size);
- 			base = 0;
--- 
-2.1.4
-
+Jason
