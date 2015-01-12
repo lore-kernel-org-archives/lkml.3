@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514AbbALJsi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 04:48:38 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:8856 "EHLO
+	id S1752579AbbALJuA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 04:50:00 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:9052 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261AbbALJsg (ORCPT
+	with ESMTP id S1752374AbbALJt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 04:48:36 -0500
-X-AuditID: cbfee68d-f79296d000004278-10-54b39872e910
-Date: Mon, 12 Jan 2015 09:48:34 +0000 (GMT)
+	Mon, 12 Jan 2015 04:49:58 -0500
+X-AuditID: cbfee68d-f79296d000004278-d6-54b398c200c1
+Date: Mon, 12 Jan 2015 09:49:54 +0000 (GMT)
 From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCHv7 06/10] ARM: dts: Add PPMU dt node for Exynos3250 SoC
+Subject: Re: [PATCHv7 07/10] ARM: dts: Add PPMU dt node for Exynos4 SoCs
 To: =?utf-8?Q?=EC=B5=9C=EC=B0=AC=EC=9A=B0?= <cw00.choi@samsung.com>,
         "kgene@kernel.org" <kgene@kernel.org>
 Cc: =?utf-8?Q?=EB=B0=95=EA=B2=BD=EB=AF=BC?= <kyungmin.park@samsung.com>,
@@ -30,8 +30,8 @@ Cc: =?utf-8?Q?=EB=B0=95=EA=B2=BD=EB=AF=BC?= <kyungmin.park@samsung.com>,
 	<linux-samsung-soc@vger.kernel.org>
 Reply-to: myungjoo.ham@samsung.com
 MIME-version: 1.0
-X-MTR: 20150112094759699@myungjoo.ham
-Msgkey: 20150112094759699@myungjoo.ham
+X-MTR: 20150112094944746@myungjoo.ham
+Msgkey: 20150112094944746@myungjoo.ham
 X-EPLocale: ko_KR.utf-8
 X-Priority: 3
 X-EPWebmail-Msg-Type: personal
@@ -39,72 +39,79 @@ X-EPWebmail-Reply-Demand: 0
 X-EPApproval-Locale: 
 X-EPHeader: ML
 X-MLAttribute: 
-X-RootMTR: 20150112094759699@myungjoo.ham
+X-RootMTR: 20150112094944746@myungjoo.ham
 X-ParentMTR: 
 X-ArchiveUser: 
 X-CPGSPASS: N
 X-ConfirmMail: N,general
 Content-type: text/plain; charset=utf-8
 MIME-version: 1.0
-Message-id: <673354552.903841421056111417.JavaMail.weblogic@epmlwas01a>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsWyRsSkWLdoxuYQg4frLSwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAldGY8MCxoJpnBW7//YxNTB+4ehi5OQQElCXWLTkJBuILSFgIrF6
-	5nYWCFtM4sK99UBxLqCapYwSSz+8YoQperhtKTtEYg6jRNPH5awgCRYBVYm5m+YwdzFycLAJ
-	6EnM/JwMEhYW8JL4/XwzWImIQJ7ElbszGEF6mQV62CQ6rn5nhrhCSWLNvldgm3kFBCVOznwC
-	dYWqxOaPh5gg4moSi7s+sEPExSUuzL0EZfNKzGh/ClUvJzHt6xpmCFta4vysDYww3yz+/hgq
-	zi9x7PYOJghbQGLqmYOMIDdLCGhJPFiaChHmk1iz8C0LTPmuU8uZYVbd3zIXqlVCYmvLE7C/
-	mAUUJaZ0P2QHGcMsoCmxfpc+uk94BdwlGt9MZQF5XUJgJofEze2v2SYwKs1CUjcLyahZCKOQ
-	lSxgZFnFKJpakFxQnJReZKhXnJhbXJqXrpecn7uJEZgWTv971ruD8fYB60OMAhyMSjy8FlKb
-	Q4RYE8uKK3MPMZoCI2kis5Rocj4w+eSVxBsamxlZmJqYGhuZW5opifMqSv0MFhJITyxJzU5N
-	LUgtii8qzUktPsTIxMEp1cC4z8dSaf9ShsnJay32JNYZax6MqjzXGfeD82P8bpcZ0Qs2r+OX
-	Plb2IfT5GuGnN1LD0o9PEZU9e+Rx09ErZXp3szgFotoXPU4qXhKgwSNVdK3Y69BZN6EV3vcy
-	ZLw7c6VWtMznlVaaolIeMTV00uWVJ6KX3d50eL7rw4s2P2P9Is4FfLN5vtBGiaU4I9FQi7mo
-	OBEAafimWQYDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCKsWRmVeSWpSXmKPExsVy+t/tXt2iGZtDDB5PN7S4vGsOmwOjx+dN
-	cgGMUWk2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBD
-	lRTKEnNKgUIBicXFSvp2NkX5pSWpChn5xSW2StGG5kZ6RgZ6pkZ6hsaxVoYGBkamQDUJaRmN
-	DQsYC6ZxVuz+28fUwPiFo4uRk0NIQF1i0ZKTbCC2hICJxMNtS9khbDGJC/fWA8W5gGrmMEo0
-	fVzOCpJgEVCVmLtpDnMXIwcHm4CexMzPySBhYQEvid/PN4OViAjkSVy5O4MRpJdZoIdNouPq
-	d2aIZUoSa/a9YgGxeQUEJU7OfMICsUxVYvPHQ0wQcTWJxV0foI4Ql7gw9xKUzSsxo/0pVL2c
-	xLSva5ghbGmJ87M2MMIcvfj7Y6g4v8Sx2zuYIGwBialnDjKC3CwhoCXxYGkqRJhPYs3Ctyww
-	5btOLWeGWXV/y1yoVgmJrS1PwP5iFlCUmNL9kB1kDLOApsT6XfroPuEVcJdofDOVZQKj7Cwk
-	qVlIumchdCMrWcDIsopRNLUguaA4Kb3CSK84Mbe4NC9dLzk/dxMjOAU9W7SD8d9560OMAhyM
-	Sjy8FlKbQ4RYE8uKK3MPMUpwMCuJ8LqWAYV4UxIrq1KL8uOLSnNSiw8xmgKjbCKzlGhyPjA9
-	5pXEGxobm5iZmFqaWBiYmiuJ8/4/lxsiJJCeWJKanZpakFoE08fEwSnVwHhPgvssR6NtytYN
-	ttteubdv6Hpm8UV86iG752UKyfdnMS4/tOG3w4V2gaJHm37ItT7aMsNcc/NjC6/oSyt3LxHd
-	X/Qq5UAnS3L+5Uea30Q1r3373Z/VFOIudeT1A5+t/TJscyeEh108zrJgXT0jP6uZwRR7tpTD
-	G25cX318xiGFucxBMz1uX7moxFKckWioxVxUnAgAQPEht1cDAAA=
+Message-id: <1120420862.904031421056191722.JavaMail.weblogic@epmlwas01a>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCIsWRmVeSWpSXmKPExsWyRsSkUPfQjM0hBv0PrSwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGpJ3nmQpm8FTM3jifpYHxDXcXIyeHkIC6xKIlJ9lAbAkBE4n1
+	Z16zQthiEhfurQeKcwHVLGWUmPLhOVzRlxNtUIk5jBJXdp9nB0mwCKhK/N3XAGRzcLAJ6EnM
+	/JwMEhYW8JBou3EarEREIE/iyt0ZjCC9zAI9bBIdV78zQ1yhJLFm3ysWEJtXQFDi5MwnLBDL
+	VCXO3LrNChFXk2g88pAZIi4ucWHuJXYIm1diRvtTqHo5iWlf10DVSEucn7WBEeabxd8fQ8X5
+	JY7d3sEEYQtITD1zEKpGS+JX6z2oJ/kk1ix8ywJTv+vUcmaYXfe3zIXqlZDY2vIE7DZmAUWJ
+	Kd0PwX5nFtCUWL9LH90rvMBw6L6xjBnkdwmBiRwS2/v+sk1gVJqFpG4WklGzEEYhK1nAyLKK
+	UTS1ILmgOCm9yFCvODG3uDQvXS85P3cTIzAxnP73rHcH4+0D1ocYBTgYlXh4LaQ2hwixJpYV
+	V+YeYjQFxtJEZinR5Hxg+skriTc0NjOyMDUxNTYytzRTEudVlPoZLCSQnliSmp2aWpBaFF9U
+	mpNafIiRiYNTqoHRed+v6AvK937duruycMMhjV8RG1XfeLjelF0nmXhk+uNttpdrHK0rC7q8
+	ctXnK4cWWCxVXvj8zvU00+2ecebhC17Zv+VQPzNrcoK3eeK5H6neYpYTk65or8/T11FwaMwT
+	9fXOLkiWiJWQEJ4oM7mo7UDyogXTejgOvYuWutBo9UVh4Yu5sxOVWIozEg21mIuKEwEc5Ca3
+	BwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKKsWRmVeSWpSXmKPExsVy+t/tPt1DMzaHGBz6Z2hxedccNgdGj8+b
+	5AIYo9JsMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4CG
+	KimUJeaUAoUCEouLlfTtbIryS0tSFTLyi0tslaINzY30jAz0TI30DI1jrQwNDIxMgWoS0jIm
+	7TzPVDCDp2L2xvksDYxvuLsYOTmEBNQlFi05yQZiSwiYSHw50QZli0lcuLceyOYCqpnDKHFl
+	93l2kASLgKrE330NQDYHB5uAnsTMz8kgYWEBD4m2G6fBSkQE8iSu3J3BCNLLLNDDJtFx9Tsz
+	xDIliTX7XrGA2LwCghInZz5hgVimKnHm1m1WiLiaROORh8wQcXGJC3MvsUPYvBIz2p9C1ctJ
+	TPu6BqpGWuL8rA2MMEcv/v4YKs4vcez2DiYIW0Bi6pmDUDVaEr9a70E9ySexZuFbFpj6XaeW
+	M8Psur9lLlSvhMTWlidgtzELKEpM6X4I9juzgKbE+l366F7hBYZD941lzBMYZWchSc1C0j0L
+	oRtZyQJGllWMoqkFyQXFSekVJnrFibnFpXnpesn5uZsYwUno2ZIdjA0XrA8xCnAwKvHwWkht
+	DhFiTSwrrsw9xCjBwawkwutaBhTiTUmsrEotyo8vKs1JLT7EaAqMs4nMUqLJ+cAEmVcSb2hs
+	bGJmYmppYmFgaq4kzvv/XG6IkEB6YklqdmpqQWoRTB8TB6dUA6OvPNedpEAXFnEbr8emvIvT
+	v3+9dEP+xp5opoNSd3YYRy13PL375/2Oxa9ni87PnHu181bjz7TX65rumrHs/Zpy/31DQ2zI
+	oZLkLZbODxa93saeuLb6CtuxH7WpSzRV5nx5t05twaKFZ3TmefBtnns+0K/xlVmicv2sF2Lr
+	80tMZokye20+s9NRiaU4I9FQi7moOBEAoOXIfVgDAAA=
 DLP-Filter: Pass
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0C9mjOl017169
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0C9o6s0017173
 
 >   
->  This patch add PPMU (Platform Performance Monitoring Unit) dt node
-> to estimate the utilization of each IP in Exynos SoC throught DEVFREQ Event
-> subsystem.
+>  This patch add PPMU (Platform Performance Monitoring Unit) dt node for Exynos4
+> (Exynos4210/4212/4412) SoC. PPMU dt node is used to monitor the utilization of
+> each IP.
 > 
-> This patch adds following PPMU dt nodes:
-> - PPMU_DMC0     0x106a0000
-> - PPMU_DMC1     0x106b0000
-> - PPMU_RIGHTBUS 0x112A0000
-> - PPMU_LEFTBUS  0x116A0000
-> - PPMU_CAMIF    0x11AC0000
-> - PPMU_LCD0     0x11E40000
-> - PPMU_FSYS     0x12630000
-> - PPMU_3D       0x13220000
-> - PPMU_MFC      0x13660000
-> - PPMU_CPU      0x106c0000
+> The Exynos4210/Exynos4212/Exynos4412 SoC includes following PPMUs:
+> - PPMU_DMC0      0x106A_0000
+> - PPMU_DMC1      0x106B_0000
+> - PPMU_CPU       0x106C_0000
+> - PPMU_ACP       0x10AE_0000
+> - PPMU_RIGHT_BUS 0x112A_0000
+> - PPMU_LEFT_BUS  0x116A_0000
+> - PPMU_FSYS      0x1263_0000
+> - PPMU_LCD0      0x11E4_0000
+> - PPMU_CAMIF     0x11AC_0000
+> - PPMU_IMAGE     0x12AA_0000
+> - PPMU_TV        0x12E4_0000
+> - PPMU_3D        0x1322_0000
+> - PPMU_MFC_LEFT  0x1366_0000
+> - PPMU_MFC_RIGHT 0x1367_0000
+> 
+> Additionally, the Exynos4210 SoC includes following PPMUs:
+> - PPMU_LCD1      0x1224_0000
 > 
 > Cc: Kukjin Kim <kgene@kernel.org>
 > Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 > ---
->  arch/arm/boot/dts/exynos3250.dtsi | 74 +++++++++++++++++++++++++++++++++++++++
->  1 file changed, 74 insertions(+)
+>  arch/arm/boot/dts/exynos4.dtsi    | 108 ++++++++++++++++++++++++++++++++++++++
+>  arch/arm/boot/dts/exynos4210.dtsi |   8 +++
+>  2 files changed, 116 insertions(+)
 > 
 
 Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
