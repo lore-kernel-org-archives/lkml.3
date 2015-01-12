@@ -1,89 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865AbbALURG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 15:17:06 -0500
-Received: from albert.telenet-ops.be ([195.130.137.90]:39208 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753201AbbALURD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 15:17:03 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH resend] console/dummy: Move screen size selection from CPP to Kconfig
-Date: Mon, 12 Jan 2015 21:17:02 +0100
-Message-Id: <1421093822-26761-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.9.1
+	id S1753157AbbALUVH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 15:21:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33257 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750973AbbALUVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 15:21:05 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org
+Subject: [patch] cfq-iosched: fix incorrect filing of rt async cfqq
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 12 Jan 2015 15:21:01 -0500
+Message-ID: <x494mrvu4wi.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PA-RISC already handled the dummy console screen size selection in
-Kconfig, so generalize this to other platforms.
+Hi,
 
-ARM keeps on using screen_info, which is filled in by
-platform-specific code, or from ATAGS.
+If you can manage to submit an async write as the first async I/O from
+the context of a process with realtime scheduling priority, then a
+cfq_queue is allocated, but filed into the wrong async_cfqq bucket.  It
+ends up in the best effort array, but actually has realtime I/O
+scheduling priority set in cfqq->ioprio.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/video/console/Kconfig    | 16 ++++++++++------
- drivers/video/console/dummycon.c |  5 +----
- 2 files changed, 11 insertions(+), 10 deletions(-)
+The reason is that cfq_get_queue assumes the default scheduling class and
+priority when there is no information present (i.e. when the async cfqq
+is created):
 
-diff --git a/drivers/video/console/Kconfig b/drivers/video/console/Kconfig
-index fe1cd0148e139eaa..ba97efc3bf707db8 100644
---- a/drivers/video/console/Kconfig
-+++ b/drivers/video/console/Kconfig
-@@ -77,18 +77,22 @@ config DUMMY_CONSOLE
- 
- config DUMMY_CONSOLE_COLUMNS
-         int "Initial number of console screen columns"
--        depends on PARISC && DUMMY_CONSOLE
--        default "160"
-+        depends on DUMMY_CONSOLE && !ARM
-+        default 160 if PARISC
-+        default 80
-         help
--          The default value is 160, which should fit a 1280x1024 monitor.
-+          On PA-RISC, the default value is 160, which should fit a 1280x1024
-+          monitor.
-           Select 80 if you use a 640x480 resolution by default.
- 
- config DUMMY_CONSOLE_ROWS
-         int "Initial number of console screen rows"
--        depends on PARISC && DUMMY_CONSOLE
--        default "64"
-+        depends on DUMMY_CONSOLE && !ARM
-+        default 64 if PARISC
-+        default 25
-         help
--          The default value is 64, which should fit a 1280x1024 monitor.
-+          On PA-RISC, the default value is 64, which should fit a 1280x1024
-+          monitor.
-           Select 25 if you use a 640x480 resolution by default.
- 
- config FRAMEBUFFER_CONSOLE
-diff --git a/drivers/video/console/dummycon.c b/drivers/video/console/dummycon.c
-index 40bec8d64b0a4a56..0efc52f11ad003ae 100644
---- a/drivers/video/console/dummycon.c
-+++ b/drivers/video/console/dummycon.c
-@@ -20,13 +20,10 @@
- #if defined(__arm__)
- #define DUMMY_COLUMNS	screen_info.orig_video_cols
- #define DUMMY_ROWS	screen_info.orig_video_lines
--#elif defined(__hppa__)
-+#else
- /* set by Kconfig. Use 80x25 for 640x480 and 160x64 for 1280x1024 */
- #define DUMMY_COLUMNS	CONFIG_DUMMY_CONSOLE_COLUMNS
- #define DUMMY_ROWS	CONFIG_DUMMY_CONSOLE_ROWS
--#else
--#define DUMMY_COLUMNS	80
--#define DUMMY_ROWS	25
- #endif
- 
- static const char *dummycon_startup(void)
--- 
-1.9.1
+static struct cfq_queue *
+cfq_get_queue(struct cfq_data *cfqd, bool is_sync, struct cfq_io_cq *cic,
+	      struct bio *bio, gfp_t gfp_mask)
+{
+	const int ioprio_class = IOPRIO_PRIO_CLASS(cic->ioprio);
+	const int ioprio = IOPRIO_PRIO_DATA(cic->ioprio);
 
+cic->ioprio starts out as 0, which is "invalid".  So, class of 0
+(IOPRIO_CLASS_NONE) is passed to cfq_async_queue_prio like so:
+
+		async_cfqq = cfq_async_queue_prio(cfqd, ioprio_class, ioprio);
+
+static struct cfq_queue **
+cfq_async_queue_prio(struct cfq_data *cfqd, int ioprio_class, int ioprio)
+{
+        switch (ioprio_class) {
+        case IOPRIO_CLASS_RT:
+                return &cfqd->async_cfqq[0][ioprio];
+        case IOPRIO_CLASS_NONE:
+                ioprio = IOPRIO_NORM;
+                /* fall through */
+        case IOPRIO_CLASS_BE:
+                return &cfqd->async_cfqq[1][ioprio];
+        case IOPRIO_CLASS_IDLE:
+                return &cfqd->async_idle_cfqq;
+        default:
+                BUG();
+        }
+}
+
+Here, instead of returning a class mapped from the process' scheduling
+priority, we get back the bucket associated with IOPRIO_CLASS_BE.
+
+Now, there is no queue allocated there yet, so we create it:
+
+		cfqq = cfq_find_alloc_queue(cfqd, is_sync, cic, bio, gfp_mask);
+
+That function ends up doing this:
+
+			cfq_init_cfqq(cfqd, cfqq, current->pid, is_sync);
+			cfq_init_prio_data(cfqq, cic);
+
+cfq_init_cfqq marks the priority as having changed.  Then, cfq_init_prio
+data does this:
+
+	ioprio_class = IOPRIO_PRIO_CLASS(cic->ioprio);
+	switch (ioprio_class) {
+	default:
+		printk(KERN_ERR "cfq: bad prio %x\n", ioprio_class);
+	case IOPRIO_CLASS_NONE:
+		/*
+		 * no prio set, inherit CPU scheduling settings
+		 */
+		cfqq->ioprio = task_nice_ioprio(tsk);
+		cfqq->ioprio_class = task_nice_ioclass(tsk);
+		break;
+
+So we basically have two code paths that treat IOPRIO_CLASS_NONE
+differently, which results in an RT async cfqq filed into a best effort
+bucket.
+
+Attached is a patch which fixes the problem.  I'm not sure how to make
+it cleaner.  Suggestions would be welcome.
+
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 6f2751d..b9abdca 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -3656,12 +3656,17 @@ static struct cfq_queue *
+ cfq_get_queue(struct cfq_data *cfqd, bool is_sync, struct cfq_io_cq *cic,
+ 	      struct bio *bio, gfp_t gfp_mask)
+ {
+-	const int ioprio_class = IOPRIO_PRIO_CLASS(cic->ioprio);
+-	const int ioprio = IOPRIO_PRIO_DATA(cic->ioprio);
++	int ioprio_class = IOPRIO_PRIO_CLASS(cic->ioprio);
++	int ioprio = IOPRIO_PRIO_DATA(cic->ioprio);
+ 	struct cfq_queue **async_cfqq = NULL;
+ 	struct cfq_queue *cfqq = NULL;
+ 
+ 	if (!is_sync) {
++		if (!ioprio_valid(cic->ioprio)) {
++			struct task_struct *tsk = current;
++			ioprio = task_nice_ioprio(tsk);
++			ioprio_class = task_nice_ioclass(tsk);
++		}
+ 		async_cfqq = cfq_async_queue_prio(cfqd, ioprio_class, ioprio);
+ 		cfqq = *async_cfqq;
+ 	}
