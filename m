@@ -1,79 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752818AbbALMrX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 07:47:23 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52804 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388AbbALMrV (ORCPT
+	id S1752810AbbALMqe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 07:46:34 -0500
+Received: from smtp113.ord1c.emailsrvr.com ([108.166.43.113]:60078 "EHLO
+	smtp113.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752305AbbALMqc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 07:47:21 -0500
-Date: Mon, 12 Jan 2015 12:45:37 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Alexandre Courbot <gnurou@gmail.com>, Benoit Parrot <bparrot@ti.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Jiri Prchal <jiri.prchal@aksignal.cz>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Message-ID: <20150112124537.GH4160@sirena.org.uk>
-References: <1416527684-19017-1-git-send-email-bparrot@ti.com>
- <1416527684-19017-2-git-send-email-bparrot@ti.com>
- <CAAVeFu+VZiuzobB7McSAUehKUHJjBv1o8ZpYjSHJAKjr3o5wTA@mail.gmail.com>
- <20141201163639.GI25249@lukather>
- <CAAVeFuLTupDenZdSi8KO+dYsf-ekcqjsDaQ2GEzYpBG34oF7Zw@mail.gmail.com>
- <CACRpkdZcNcPBYQM438CZJx1gYst9BFBSTj-3Qv2aPGF9pdWa5g@mail.gmail.com>
- <20141202161227.GH30256@lukather>
- <CACRpkdYuRSi8B7jr2F1zYZB4OHvpH9EXOmU0qGa9+O77gcNA7g@mail.gmail.com>
+	Mon, 12 Jan 2015 07:46:32 -0500
+X-Sender-Id: pramod.gurav@smartplayin.com
+Message-ID: <54B3C233.3020306@smartplayin.com>
+Date: Mon, 12 Jan 2015 18:16:43 +0530
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DwoPkXS38qd3dnhB"
-Content-Disposition: inline
-In-Reply-To: <CACRpkdYuRSi8B7jr2F1zYZB4OHvpH9EXOmU0qGa9+O77gcNA7g@mail.gmail.com>
-X-Cookie: Keep out of reach of children.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [Patch v2 1/2] gpio: add GPIO hogging mechanism
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-arm-msm@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] tty: serial: msm_serial: Remove duplicate code in
+ msm_console_setup
+References: <1420708545-6477-1-git-send-email-pramod.gurav@smartplayin.com> <54AEFAA0.3010605@codeaurora.org>
+In-Reply-To: <54AEFAA0.3010605@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Stephen,
 
---DwoPkXS38qd3dnhB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Friday 09 January 2015 03:16 AM, Stephen Boyd wrote:
+> On 01/08/2015 01:15 AM, Pramod Gurav wrote:
+>>  drivers/tty/serial/msm_serial.c |   15 ---------------
+>>  1 file changed, 15 deletions(-)
+>>
+>> diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
+>> index c88b522..057008d 100644
+>> --- a/drivers/tty/serial/msm_serial.c
+>> +++ b/drivers/tty/serial/msm_serial.c
+>> @@ -932,27 +932,12 @@ static int __init msm_console_setup(struct console *co, char *options)
+>>  	if (unlikely(!port->membase))
+>>  		return -ENXIO;
+>>  
+>> -	msm_init_clock(port);
+>> -
+> 
+> Hm.. doesn't the console setup happen before the port is opened though?
+> I would think that we need to keep this around so that the clock is
+> actually enabled before we go and write to hardware registers.
+> 
+>>  	if (options)
+>>  		uart_parse_options(options, &baud, &parity, &bits, &flow);
+>>  
+>>  	bits = 8;
+>>  	parity = 'n';
+>>  	flow = 'n';
 
-On Mon, Jan 12, 2015 at 10:40:04AM +0100, Linus Walleij wrote:
-> On Tue, Dec 2, 2014 at 5:12 PM, Maxime Ripard
+Checked some of the driver registering console and they mostly have this
+but this initialization is done when these variables are declared so
+that user provided setting won't be overwritten. I think we too should
+follow the same. With these variables initialized when they are declared
+user's values will be retained.
 
-> > We do have one board where we have a pin (let's say GPIO14 of the bank
-> > A) that enables a regulator that will provide VCC the bank B.
-
-> I think it's a hog in this case though, not a GPIO regulator,
-> definately not both. But let's check Mark's opinion on this.
-
-I'm lacking some context here but my first thought is that if VCC might
-be supplied by some other thing we need to use a regulator since
-otherwise we can't substitute in the other regulator.
-
---DwoPkXS38qd3dnhB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUs8HwAAoJECTWi3JdVIfQYiQH/1nDd83kFMRVgndnF6Jt9p8y
-FZPACvCGo8ThE8aFdODAQEXwl0uxs7duSSnSo7FMODl/YCqpfoil611D3BwvhPnR
-jOPRzKP6vXjez/KIsADo8GhdtPf6Kj8bNvFkgsMpUfLyZqiyEZiCcz2RY+vxdahr
-ue/njPwe+XZHDbolO2P6njFyI29iGz9xkNh3Iv53ikiOQgIxdVBmQRBOoV41hM0c
-Z6Xd/l8KFCemE0olxuUFOmzeZHdF4rQgWbyYLCByQeMgesieAod/kVaPYXIdbAfC
-DWZuQOq0iIIpSYc8OJegoB4YHMnfgnSpdjQ3M01CXuZHaH75/sUE64cpt0veNZE=
-=lHho
------END PGP SIGNATURE-----
-
---DwoPkXS38qd3dnhB--
+> 
+> I wonder if we should leave this here? Maybe we can rely on the user
+> specifying the right values on the command line?
+> 
+>> -	msm_write(port, UART_MR2_BITS_PER_CHAR_8 | UART_MR2_STOP_BIT_LEN_ONE,
+>> -		  UART_MR2);	/* 8N1 */
+>> -
+>> -	if (baud < 300 || baud > 115200)
+>> -		baud = 115200;
+>> -	msm_set_baud_rate(port, baud);
+>> -
+>> -	msm_reset(port);
+>> -
+>> -	if (msm_port->is_uartdm) {
+> 
+> msm_port is unused now. Please remove it in the same patch.
+> 
