@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008AbbALKS1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 05:18:27 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:48399 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752433AbbALKS0 (ORCPT
+	id S1752857AbbALKUS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 05:20:18 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:64549 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752263AbbALKUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 05:18:26 -0500
-Message-ID: <54B39F6C.2030709@collabora.co.uk>
-Date: Mon, 12 Jan 2015 11:18:20 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Mon, 12 Jan 2015 05:20:15 -0500
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>, Olof Johansson <olof@lixom.net>
-CC: Doug Anderson <dianders@chromium.org>,
-        Bill Richardson <wfrichar@chromium.org>, Simon Glass <sjg@google.com>,
-        Gwendal Grignou <gwendal@google.com>, Jonathan Corbet <corbet@lwn.net>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND v2 0/7] platform/chrome: Add user-space dev inferface
- support
-References: <1420205572-2640-1-git-send-email-javier.martinez@collabora.co.uk>
-In-Reply-To: <1420205572-2640-1-git-send-email-javier.martinez@collabora.co.uk>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1419019671-25377-3-git-send-email-bparrot@ti.com>
+References: <1419019671-25377-1-git-send-email-bparrot@ti.com>
+	<1419019671-25377-3-git-send-email-bparrot@ti.com>
+Date: Mon, 12 Jan 2015 11:20:14 +0100
+Message-ID: <CACRpkdb7Wq7-rBypqPkefejY5Qfq_KKx91H+DxKWv-TM2y04bg@mail.gmail.com>
+Subject: Re: [Patch v5 2/2] gpio: Document GPIO hogging mechanism
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Benoit Parrot <bparrot@ti.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Jiri Prchal <jiri.prchal@aksignal.cz>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Dec 19, 2014 at 9:07 PM, Benoit Parrot <bparrot@ti.com> wrote:
 
-On 01/02/2015 02:32 PM, Javier Martinez Canillas wrote:
-> 
-> The mainline ChromeOS Embedded Controller (EC) driver is still missing some
-> features that are present in the downstream ChromiumOS tree. These are:
-> 
->   - Low Pin Count (LPC) interface
->   - User-space device interface
->   - Access to vboot context stored on a block device
->   - Access to vboot context stored on EC's nvram
->   - Power Delivery Device
->   - Support for multiple EC in a system
-> 
-> This is a second version of a series that adds support for the first two of
-> the missing features: the EC LPC and EC character device interfaces that
-> are used by user-space to access the ChromeOS EC. The support patches were
-> taken from the downstream ChromiumOS 3.14 tree with the fixes and cleanups
-> squashed to have a minimal patch-set.
-> 
+> Add GPIO hogging documentation to gpio.txt
+>
+> Signed-off-by: Benoit Parrot <bparrot@ti.com>
+> Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
 
-Any comments about this series? This is already a resend of a series posted
-first on December, 9. I know it has been holiday season but I would really
-appreciate some feedback since the patches have been in the list for a month.
+This is starting to look good ...
 
-Thanks a lot and best regards,
-Javier
+> +               line_b {
+> +                       gpio-hog;
+> +                       gpios = <6 0>;
+> +                       state = "output-low";
+
+I don't like the state string.
+
+Instead have boolean properties for all states.
+
+line_b {
+    gpio-hog;
+    gpios = <6 0>;
+    output-low;
+    line-name = "foo-bar-gpio";
+}
+
+Then use of_property_read_bool() in the code to check which
+state is to be selected intially. You can check that no mutually
+exclusive state are selected, I don't like that an arbitrary string
+select the state like that, if we do it that way an enumerator would
+be better, I prefer bools.
+
+Yours,
+Linus Walleij
