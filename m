@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314AbbALOPV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 09:15:21 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:64550 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752004AbbALOPT (ORCPT
+	id S1753121AbbALOSn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 09:18:43 -0500
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:57012 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751607AbbALOSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 09:15:19 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+OmVbTx7bUiLDoW06Re+YJb015NkPDGmE=
-X-DKIM: OpenDKIM Filter v2.0.1 titan E7F066440D4
-Date: Mon, 12 Jan 2015 09:15:16 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Shirish Gajera <gajerashirish@gmail.com>
-Cc: gregkh@linuxfoundation.org, eric.rost@mybabylon.net, jake@lwn.net,
-        antonysaraev@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] staging: skein: Remove all do{} while (0) loop from
- single statement.
-Message-ID: <20150112141516.GX24989@titan.lakedaemon.net>
-References: <20150111234105.GA2744@shirish-ThinkPad-Edge-E430>
+	Mon, 12 Jan 2015 09:18:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150111234105.GA2744@shirish-ThinkPad-Edge-E430>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20150109215042.GM22149@ZenIV.linux.org.uk>
+References: <1416830039-21952-1-git-send-email-drysdale@google.com>
+ <1416830039-21952-6-git-send-email-drysdale@google.com> <54AFF813.7050604@gmail.com>
+ <20150109161302.GQ4574@brightrain.aerifal.cx> <CAHse=S88Jy5ZKM_VY5onfvxX7dTMngnxuHfuLeSuzvKvQNP19A@mail.gmail.com>
+ <20150109204815.GR4574@brightrain.aerifal.cx> <20150109205626.GK22149@ZenIV.linux.org.uk>
+ <20150109205926.GT4574@brightrain.aerifal.cx> <20150109210941.GL22149@ZenIV.linux.org.uk>
+ <20150109212852.GU4574@brightrain.aerifal.cx> <20150109215042.GM22149@ZenIV.linux.org.uk>
+From: David Drysdale <drysdale@google.com>
+Date: Mon, 12 Jan 2015 14:18:18 +0000
+Message-ID: <CAHse=S9qP19WrNRefOzJ1yKiT9qWof67-y5wHBcxAfR-r4HzmQ@mail.gmail.com>
+Subject: Re: [PATCHv10 man-pages 5/5] execveat.2: initial man page for execveat(2)
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Rich Felker <dalias@aerifal.cx>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, sparclinux@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 11, 2015 at 03:41:05PM -0800, Shirish Gajera wrote:
-> This patch fixes the checkpatch.pl warning:
-> 
-> WARNING: Single statement macros should not use a do {} while (0) loop
-> 
-> I remove do while from the single statement macro.
-> 
-> Signed-off-by: Shirish Gajera <gajerashirish@gmail.com>
-> ---
->  drivers/staging/skein/skein_block.c | 31 +++++++++----------------------
->  1 file changed, 9 insertions(+), 22 deletions(-)
+On Fri, Jan 9, 2015 at 9:50 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Fri, Jan 09, 2015 at 04:28:52PM -0500, Rich Felker wrote:
+>
+>> The "magic open-once magic symlink" approach is really the cleanest
+>> solution I can find. In the case where the interpreter does not open
+>> the script, nothing terribly bad happens; the magic symlink just
+>> sticks around until _exit or exec. In the case where the interpreter
+>> opens it more than once, you get a failure, but as far as I know
+>> existing interpreters don't do this, and it's arguably bad design. In
+>> any case it's a caught error.
+>
+> You know what's cleaner than that?  git revert 27d6ec7ad
+> It has just been merged; until 3.19 it's fair game for removal.
+>
+> And yes, I should've NAKed the damn thing loud and clear, rather than
+> asking questions back then, getting no answers and letting it slip.
+> Mea culpa.
 
-Several people have submitted patches for this checkpatch warning.
-Please check the mailinglist archives and deconflict with the other
-submitters.
+Al, I'm sorry if I missed a question or concern of yours back in
+October -- I certainly didn't intend to (that would be foolish indeed!).
 
-thx,
+[I thought the main open question was whether a dupfs
+implementation would help with /dev/fd/ and /proc/ semantics, but I
+had the (possibly incorrect) understanding that that was somewhat
+orthogonal to the execveat implementation.]
 
-Jason.
+Are there any changes/fixes/refactorings that I could do (especially
+within the 3.19 timeframe) that would help mollify at all?
+
+> Back then the procfs-free environments had been pushed as a serious argument
+> in favour of merging the damn thing.  Now you guys turn around and say that
+> we not only need procfs mounted, we need a yet-to-be-added kludge in there
+> to cope with the actual intended uses.
+
+Not me!
