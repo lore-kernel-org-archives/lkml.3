@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752253AbbALJJO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 04:09:14 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:36414 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751607AbbALJJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 04:09:11 -0500
-Message-ID: <1421053751.28652.9.camel@mm-sol.com>
-Subject: Re: [PATCH v4 7/7] pinctrl: qcom-spmi-gpio: Migrate to
- pinconf-generic
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Kumar Gala <galak@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Beniamino Galvani <b.galvani@gmail.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Date: Mon, 12 Jan 2015 11:09:11 +0200
-In-Reply-To: <CACRpkdbDEcStJhabgKEm8H=z2umEr+bd-0oK4_HvCO+rz0pTXQ@mail.gmail.com>
-References: <1420818231-13451-1-git-send-email-soren.brinkmann@xilinx.com>
-	 <1420818231-13451-8-git-send-email-soren.brinkmann@xilinx.com>
-	 <CACRpkdbDEcStJhabgKEm8H=z2umEr+bd-0oK4_HvCO+rz0pTXQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.13.7-fta1.2~trusty 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1752351AbbALJJf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 04:09:35 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:51608 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752302AbbALJJd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 04:09:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <1421052212-13287-1-git-send-email-geert@linux-m68k.org>
+References: <1421052212-13287-1-git-send-email-geert@linux-m68k.org>
+Date: Mon, 12 Jan 2015 10:09:32 +0100
+X-Google-Sender-Auth: yJtawCbUnLtk3pTlG28tr4pAipA
+Message-ID: <CAMuHMdVZYjkP+R+zY4Q+r-a=4XFnqJTqjHC00LEhZiG34YYZOg@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.19-rc4
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 12, 2015 at 9:43 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> JFYI, when comparing v3.19-rc4[1] to v3.19-rc3[3], the summaries are:
+>   - build errors: +6/-67
 
-On Sun, 2015-01-11 at 22:40 +0100, Linus Walleij wrote:
-> On Fri, Jan 9, 2015 at 4:43 PM, Soren Brinkmann
-> brinkmann@xilinx.com> wrote:
-> 
-> > Instead of the driver caring about implementation details like device
-> > tree, just provide information about driver specific pinconf parameters
-> > to pinconf-generic which takes care of parsing the DT.
-> > 
-> > Signed-off-by: Soren Brinkmann brinkmann@xilinx.com>
-> 
-> Patch applied: qualcomm folks, can you make sure that the Qualcomm
-> stuff is still working as expected with Sören's core parser?
-> 
+Nothing serious, but
 
-Yep, it still works. Tested on pm8941 and pma8084. Thanks.
+  + error: br_input.c: undefined reference to `arp_send':  => .text+0x82e77)
+  + error: br_input.c: undefined reference to `arp_tbl':  => .text+0x82d8b)
 
-Tested-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+i386-randconfig
+
+> [1] http://kisskb.ellerman.id.au/kisskb/head/8294/ (255 out of 262 configs)
+> [3] http://kisskb.ellerman.id.au/kisskb/head/8277/ (255 out of 262 configs)
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
