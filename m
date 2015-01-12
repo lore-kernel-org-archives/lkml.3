@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262AbbALSQJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:16:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57688 "EHLO
+	id S1754230AbbALSPr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:15:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57690 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753726AbbALSGa (ORCPT
+	with ESMTP id S1753742AbbALSGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:06:30 -0500
+	Mon, 12 Jan 2015 13:06:31 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dylan Rajaratnam <dylan.rajaratnam@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>,
+Cc: James Hogan <james.hogan@imgtec.com>, Sifan Naeem <sifan.naeem@imgtec.com>,
         Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 084/216] [media] img-ir/hw: Always read data to clear buffer
-Date: Mon, 12 Jan 2015 18:03:21 +0000
-Message-Id: <1421085933-32536-85-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 085/216] [media] img-ir/hw: Fix potential deadlock stopping timer
+Date: Mon, 12 Jan 2015 18:03:22 +0000
+Message-Id: <1421085933-32536-86-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -29,56 +28,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dylan Rajaratnam <dylan.rajaratnam@imgtec.com>
+From: James Hogan <james.hogan@imgtec.com>
 
-commit ea0de4ec5489da0fe738b274effac4f950e93d76 upstream.
+commit ac03086067a5524ae9e020ba5712a208c67b2736 upstream.
 
-A problem was found on Polaris where if the unit it booted via the power
-button on the infrared remote then the next button press on the remote
-would return the key code used to power on the unit.
+The end timer is used for switching back from repeat code timings when
+no repeat codes have been received for a certain amount of time. When
+the protocol is changed, the end timer is deleted synchronously with
+del_timer_sync(), however this takes place while holding the main spin
+lock, and the timer handler also needs to acquire the spin lock.
 
-The sequence is:
- - The polaris powered off but with the powerdown controller (PDC) block
-   still powered.
- - Press power key on remote, IR block receives the key.
- - Kernel starts, IR code is in IMG_IR_DATA_x but neither IMG_IR_RXDVAL
-   or IMG_IR_RXDVALD2 are set.
- - Wait any amount of time.
- - Press any key.
- - IMG_IR_RXDVAL or IMG_IR_RXDVALD2 is set but IMG_IR_DATA_x is
-   unchanged since the powerup key data was never read.
+This opens the possibility of a deadlock on an SMP system if the
+protocol is changed just as the repeat timer is expiring. One CPU could
+end up in img_ir_set_decoder() holding the lock and waiting for the end
+timer to complete, while the other CPU is stuck in the timer handler
+spinning on the lock held by the first CPU.
 
-This is worked around by always reading the IMG_IR_DATA_x in
-img_ir_set_decoder(), rather than only when the IMG_IR_RXDVAL or
-IMG_IR_RXDVALD2 bit is set.
+Lockdep also spots a possible lock inversion in the same code, since
+img_ir_set_decoder() acquires the img-ir lock before the timer lock, but
+the timer handler will try and acquire them the other way around:
 
-Signed-off-by: Dylan Rajaratnam <dylan.rajaratnam@imgtec.com>
+=========================================================
+[ INFO: possible irq lock inversion dependency detected ]
+3.18.0-rc5+ #957 Not tainted
+---------------------------------------------------------
+swapper/0/0 just changed the state of lock:
+ (((&hw->end_timer))){+.-...}, at: [<4006ae5c>] _call_timer_fn+0x0/0xfc
+but this lock was taken by another, HARDIRQ-safe lock in the past:
+ (&(&priv->lock)->rlock#2){-.....}
+
+and interrupts could create inverse lock ordering between them.
+
+other info that might help us debug this:
+ Possible interrupt unsafe locking scenario:
+
+       CPU0                    CPU1
+       ----                    ----
+  lock(((&hw->end_timer)));
+                               local_irq_disable();
+                               lock(&(&priv->lock)->rlock#2);
+                               lock(((&hw->end_timer)));
+  <Interrupt>
+    lock(&(&priv->lock)->rlock#2);
+
+ *** DEADLOCK ***
+
+This is fixed by releasing the main spin lock while performing the
+del_timer_sync() call. The timer is prevented from restarting before the
+lock is reacquired by a new "stopping" flag which img_ir_handle_data()
+checks before updating the timer.
+
+---------------------------------------------------------
+swapper/0/0 just changed the state of lock:
+ (((&hw->end_timer))){+.-...}, at: [<4006ae5c>] _call_timer_fn+0x0/0xfc
+but this lock was taken by another, HARDIRQ-safe lock in the past:
+ (&(&priv->lock)->rlock#2){-.....}
+and interrupts could create inverse lock ordering between them.
+other info that might help us debug this:
+ Possible interrupt unsafe locking scenario:
+       CPU0                    CPU1
+       ----                    ----
+  lock(((&hw->end_timer)));
+                               local_irq_disable();
+                               lock(&(&priv->lock)->rlock#2);
+                               lock(((&hw->end_timer)));
+  <Interrupt>
+    lock(&(&priv->lock)->rlock#2);
+ *** DEADLOCK ***
+This is fixed by releasing the main spin lock while performing the
+del_timer_sync() call. The timer is prevented from restarting before the
+lock is reacquired by a new "stopping" flag which img_ir_handle_data()
+checks before updating the timer.
+
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Sifan Naeem <sifan.naeem@imgtec.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/media/rc/img-ir/img-ir-hw.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/media/rc/img-ir/img-ir-hw.c | 22 +++++++++++++++++++---
+ drivers/media/rc/img-ir/img-ir-hw.h |  3 +++
+ 2 files changed, 22 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/media/rc/img-ir/img-ir-hw.c b/drivers/media/rc/img-ir/img-ir-hw.c
-index 0127dd257a57..5dfd0e9c2d5a 100644
+index 5dfd0e9c2d5a..cd1b7ac021b2 100644
 --- a/drivers/media/rc/img-ir/img-ir-hw.c
 +++ b/drivers/media/rc/img-ir/img-ir-hw.c
-@@ -542,10 +542,12 @@ static void img_ir_set_decoder(struct img_ir_priv *priv,
- 	if (ir_status & (IMG_IR_RXDVAL | IMG_IR_RXDVALD2)) {
- 		ir_status &= ~(IMG_IR_RXDVAL | IMG_IR_RXDVALD2);
- 		img_ir_write(priv, IMG_IR_STATUS, ir_status);
--		img_ir_read(priv, IMG_IR_DATA_LW);
--		img_ir_read(priv, IMG_IR_DATA_UP);
+@@ -531,6 +531,22 @@ static void img_ir_set_decoder(struct img_ir_priv *priv,
+ 	u32 ir_status, irq_en;
+ 	spin_lock_irq(&priv->lock);
+ 
++	/*
++	 * First record that the protocol is being stopped so that the end timer
++	 * isn't restarted while we're trying to stop it.
++	 */
++	hw->stopping = true;
++
++	/*
++	 * Release the lock to stop the end timer, since the end timer handler
++	 * acquires the lock and we don't want to deadlock waiting for it.
++	 */
++	spin_unlock_irq(&priv->lock);
++	del_timer_sync(&hw->end_timer);
++	spin_lock_irq(&priv->lock);
++
++	hw->stopping = false;
++
+ 	/* switch off and disable interrupts */
+ 	img_ir_write(priv, IMG_IR_CONTROL, 0);
+ 	irq_en = img_ir_read(priv, IMG_IR_IRQ_ENABLE);
+@@ -548,8 +564,7 @@ static void img_ir_set_decoder(struct img_ir_priv *priv,
+ 	img_ir_read(priv, IMG_IR_DATA_LW);
+ 	img_ir_read(priv, IMG_IR_DATA_UP);
+ 
+-	/* stop the end timer and switch back to normal mode */
+-	del_timer_sync(&hw->end_timer);
++	/* switch back to normal mode */
+ 	hw->mode = IMG_IR_M_NORMAL;
+ 
+ 	/* clear the wakeup scancode filter */
+@@ -818,7 +833,8 @@ static void img_ir_handle_data(struct img_ir_priv *priv, u32 len, u64 raw)
  	}
  
-+	/* always read data to clear buffer if IR wakes the device */
-+	img_ir_read(priv, IMG_IR_DATA_LW);
-+	img_ir_read(priv, IMG_IR_DATA_UP);
-+
- 	/* stop the end timer and switch back to normal mode */
- 	del_timer_sync(&hw->end_timer);
- 	hw->mode = IMG_IR_M_NORMAL;
+ 
+-	if (dec->repeat) {
++	/* we mustn't update the end timer while trying to stop it */
++	if (dec->repeat && !hw->stopping) {
+ 		unsigned long interval;
+ 
+ 		img_ir_begin_repeat(priv);
+diff --git a/drivers/media/rc/img-ir/img-ir-hw.h b/drivers/media/rc/img-ir/img-ir-hw.h
+index 6c9a94a81190..837843921344 100644
+--- a/drivers/media/rc/img-ir/img-ir-hw.h
++++ b/drivers/media/rc/img-ir/img-ir-hw.h
+@@ -202,6 +202,8 @@ enum img_ir_mode {
+  * @flags:		IMG_IR_F_*.
+  * @filters:		HW filters (derived from scancode filters).
+  * @mode:		Current decode mode.
++ * @stopping:		Indicates that decoder is being taken down and timers
++ *			should not be restarted.
+  * @suspend_irqen:	Saved IRQ enable mask over suspend.
+  */
+ struct img_ir_priv_hw {
+@@ -217,6 +219,7 @@ struct img_ir_priv_hw {
+ 	struct img_ir_filter		filters[RC_FILTER_MAX];
+ 
+ 	enum img_ir_mode		mode;
++	bool				stopping;
+ 	u32				suspend_irqen;
+ };
+ 
 -- 
 2.1.4
 
