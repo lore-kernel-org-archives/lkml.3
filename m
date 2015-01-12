@@ -1,56 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752409AbbALQEb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 11:04:31 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:35103 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751412AbbALQEa (ORCPT
+	id S1752544AbbALQEi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 11:04:38 -0500
+Received: from andre.telenet-ops.be ([195.130.132.53]:44042 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752425AbbALQEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 11:04:30 -0500
-Message-ID: <1421078666.4099.6.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH 2/3] x_tables: Use also dev->ifalias for interface
- matching
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: davem@davemloft.net, coreteam@netfilter.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, bhutchings@solarflare.com,
-        john.fastabend@gmail.com, herbert@gondor.apana.org.au,
-        vyasevic@redhat.com, jiri@resnulli.us, vfalico@gmail.com,
-        therbert@google.com, edumazet@google.com, yoshfuji@linux-ipv6.org,
-        jmorris@namei.org, kuznet@ms2.inr.ac.ru, kadlec@blackhole.kfki.hu,
-        kaber@trash.net, pablo@netfilter.org, kay@vrfy.org,
-        stephen@networkplumber.org
-Date: Mon, 12 Jan 2015 08:04:26 -0800
-In-Reply-To: <1421009571-5279-3-git-send-email-richard@nod.at>
-References: <1421009571-5279-1-git-send-email-richard@nod.at>
-	 <1421009571-5279-3-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 12 Jan 2015 11:04:33 -0500
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Santosh Shilimkar <ssantosh@kernel.org>, linux-gpio@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH resend 1/2] gpio: pcf857x: Propagate wake-up setting to parent irq controller
+Date: Mon, 12 Jan 2015 17:04:30 +0100
+Message-Id: <1421078671-5920-1-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2015-01-11 at 21:52 +0100, Richard Weinberger wrote:
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->  include/linux/netfilter/x_tables.h | 22 ++++++++++++++++++++++
->  net/ipv4/netfilter/arp_tables.c    | 28 +++++++++++++++++-----------
->  net/ipv4/netfilter/ip_tables.c     | 15 +++++----------
->  net/ipv6/netfilter/ip6_tables.c    | 18 +++++++-----------
->  net/netfilter/xt_physdev.c         |  9 ++-------
->  5 files changed, 53 insertions(+), 39 deletions(-)
+The pcf857x GPIO and interrupt controller uses dummy_irq_chip, which
+does not implement irq_chip.irq_set_wake() and does not set
+IRQCHIP_SKIP_SET_WAKE.
 
-Richard, I dislike this, sorry.
+This causes two s2ram issues if wake-up is enabled for the pcf857x GPIO
+pins:
+  1. During resume from s2ram, the following warning is printed:
 
-iptables is already horribly expensive, you add another expensive step
-for every rule.
+     WARNING: CPU: 0 PID: 1046 at kernel/irq/manage.c:537 irq_set_irq_wake+0x9c/0xf8()
+     Unbalanced IRQ 113 wake disable
 
-device aliasing can be done from user space.
+  2. Wake-up through the pcf857x GPIO pins may fail, as the parent
+     interrupt controller may be suspended.
 
-iptables should have used ifindex, its sad we allowed the substring
-match in first place.
+Migrate the pcf857x GPIO and interrupt controller from dummy_irq_chip to
+its own irq_chip. This irq chip implements irq_chip.irq_set_wake() to
+propagate its wake-up setting to the parent interrupt controller.
 
+This fixes wake-up through gpio-keys on sh73a0/kzm9g, where the pcf857x
+interrupt is cascaded to irq-renesas-intc-irqpin, and the latter must
+not be suspended when wake-up is enabled.
+
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+---
+Resend: Use Santosh' new email address
+
+ drivers/gpio/gpio-pcf857x.c | 33 ++++++++++++++++++++++++++++++++-
+ 1 file changed, 32 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpio/gpio-pcf857x.c b/drivers/gpio/gpio-pcf857x.c
+index 236708ad0a5ba0ab..22dbecb004cf6c5b 100644
+--- a/drivers/gpio/gpio-pcf857x.c
++++ b/drivers/gpio/gpio-pcf857x.c
+@@ -218,14 +218,45 @@ static irqreturn_t pcf857x_irq(int irq, void *data)
+ 	return IRQ_HANDLED;
+ }
+ 
++/*
++ * NOP functions
++ */
++static void noop(struct irq_data *data) { }
++
++static unsigned int noop_ret(struct irq_data *data)
++{
++	return 0;
++}
++
++static int pcf857x_irq_set_wake(struct irq_data *data, unsigned int on)
++{
++	struct pcf857x *gpio = irq_data_get_irq_chip_data(data);
++
++	irq_set_irq_wake(gpio->client->irq, on);
++	return 0;
++}
++
++static struct irq_chip pcf857x_irq_chip = {
++	.name		= "pcf857x",
++	.irq_startup	= noop_ret,
++	.irq_shutdown	= noop,
++	.irq_enable	= noop,
++	.irq_disable	= noop,
++	.irq_ack	= noop,
++	.irq_mask	= noop,
++	.irq_unmask	= noop,
++	.irq_set_wake	= pcf857x_irq_set_wake,
++};
++
+ static int pcf857x_irq_domain_map(struct irq_domain *domain, unsigned int irq,
+ 				 irq_hw_number_t hw)
+ {
+ 	struct pcf857x *gpio = domain->host_data;
+ 
+ 	irq_set_chip_and_handler(irq,
+-				 &dummy_irq_chip,
++				 &pcf857x_irq_chip,
+ 				 handle_level_irq);
++	irq_set_chip_data(irq, gpio);
+ #ifdef CONFIG_ARM
+ 	set_irq_flags(irq, IRQF_VALID);
+ #else
+-- 
+1.9.1
 
