@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342AbbALTE0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 14:04:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58035 "EHLO
+	id S1756467AbbALTBV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 14:01:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58037 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753802AbbALS3y (ORCPT
+	with ESMTP id S1754924AbbALS3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Jan 2015 13:29:54 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
@@ -19,9 +19,9 @@ Cc: Johan Hovold <johan@kernel.org>, Alessandro Zummo <a.zummo@towertech.it>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 118/216] rtc: omap: fix clock-source configuration
-Date: Mon, 12 Jan 2015 18:28:16 +0000
-Message-Id: <1421087394-2712-6-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 119/216] rtc: omap: fix missing wakealarm attribute
+Date: Mon, 12 Jan 2015 18:28:17 +0000
+Message-Id: <1421087394-2712-7-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -36,25 +36,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <johan@kernel.org>
 
-commit 44c63a570aaec3c5d5569d63b7c4a31ddd88cae0 upstream.
+commit 7ecd9a3f062147400e605713724dd67dbb7e5053 upstream.
 
-This series fixes a few issues with the omap rtc-driver, cleans up a
-bit, adds device abstraction, and finally adds support for the PMIC
-control feature found in some revisions of this RTC IP block.
+The platform device must be registered as wakeup capable before
+registering the class device, or the wakealarm attribute will not be
+created.
 
-Ultimately, this allows for powering off the Beaglebone and waking it up
-again on RTC alarms.
+Also make sure to unregister the wakeup source on probe errors.
 
-This patch (of 20):
-
-Make sure not to reset the clock-source configuration when enabling the
-32kHz clock mux.
-
-Until the clock source can be configured through device tree we must not
-overwrite settings made by the bootloader (e.g.  clock-source
-selection).
-
-Fixes: cd914bba03d8 ("drivers/rtc/rtc-omap.c: add support for enabling 32khz clock")
+Fixes: 1d2e2b65d098 ("rtc: omap: restore back (hard-code) wakeup support")
 Signed-off-by: Johan Hovold <johan@kernel.org>
 Reviewed-by: Felipe Balbi <balbi@ti.com>
 Tested-by: Felipe Balbi <balbi@ti.com>
@@ -70,26 +60,39 @@ Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/rtc/rtc-omap.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/rtc/rtc-omap.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
-index 21142e6574a9..f842c216f2dd 100644
+index f842c216f2dd..828cb9983cc2 100644
 --- a/drivers/rtc/rtc-omap.c
 +++ b/drivers/rtc/rtc-omap.c
-@@ -431,8 +431,10 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 	rtc_write(0, OMAP_RTC_INTERRUPTS_REG);
+@@ -416,6 +416,8 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 		rtc_writel(KICK1_VALUE, OMAP_RTC_KICK1_REG);
+ 	}
  
- 	/* enable RTC functional clock */
--	if (id_entry->driver_data & OMAP_RTC_HAS_32KCLK_EN)
--		rtc_writel(OMAP_RTC_OSC_32KCLK_EN, OMAP_RTC_OSC_REG);
-+	if (id_entry->driver_data & OMAP_RTC_HAS_32KCLK_EN) {
-+		reg = rtc_read(OMAP_RTC_OSC_REG);
-+		rtc_writel(reg | OMAP_RTC_OSC_32KCLK_EN, OMAP_RTC_OSC_REG);
-+	}
++	device_init_wakeup(&pdev->dev, true);
++
+ 	rtc = devm_rtc_device_register(&pdev->dev, pdev->name,
+ 			&omap_rtc_ops, THIS_MODULE);
+ 	if (IS_ERR(rtc)) {
+@@ -484,8 +486,6 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 	 *    is write-only, and always reads as zero...)
+ 	 */
  
- 	/* clear old status */
- 	reg = rtc_read(OMAP_RTC_STATUS_REG);
+-	device_init_wakeup(&pdev->dev, true);
+-
+ 	if (new_ctrl & (u8) OMAP_RTC_CTRL_SPLIT)
+ 		pr_info("%s: split power mode\n", pdev->name);
+ 
+@@ -495,6 +495,7 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ fail0:
++	device_init_wakeup(&pdev->dev, false);
+ 	if (id_entry->driver_data & OMAP_RTC_HAS_KICKER)
+ 		rtc_writel(0, OMAP_RTC_KICK0_REG);
+ 	pm_runtime_put_sync(&pdev->dev);
 -- 
 2.1.4
 
