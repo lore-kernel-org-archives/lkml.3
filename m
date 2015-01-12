@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504AbbALS4D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:56:03 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58142 "EHLO
+	id S1756184AbbALS5B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:57:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58127 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755029AbbALSaM (ORCPT
+	with ESMTP id S1755006AbbALSaJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:30:12 -0500
+	Mon, 12 Jan 2015 13:30:09 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Junxiao Bi <junxiao.bi@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 146/216] ocfs2: fix journal commit deadlock
-Date: Mon, 12 Jan 2015 18:28:44 +0000
-Message-Id: <1421087394-2712-34-git-send-email-luis.henriques@canonical.com>
+Cc: NeilBrown <neilb@suse.de>, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 147/216] md/bitmap: always wait for writes on unplug.
+Date: Mon, 12 Jan 2015 18:28:45 +0000
+Message-Id: <1421087394-2712-35-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -29,85 +26,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 136f49b9171074872f2a14ad0ab10486d1ba13ca upstream.
+commit 4b5060ddae2b03c5387321fafc089d242225697a upstream.
 
-For buffer write, page lock will be got in write_begin and released in
-write_end, in ocfs2_write_end_nolock(), before it unlock the page in
-ocfs2_free_write_ctxt(), it calls ocfs2_run_deallocs(), this will ask
-for the read lock of journal->j_trans_barrier.  Holding page lock and
-ask for journal->j_trans_barrier breaks the locking order.
+If two threads call bitmap_unplug at the same time, then
+one might schedule all the writes, and the other might
+decide that it doesn't need to wait.  But really it does.
 
-This will cause a deadlock with journal commit threads, ocfs2cmt will
-get write lock of journal->j_trans_barrier first, then it wakes up
-kjournald2 to do the commit work, at last it waits until done.  To
-commit journal, kjournald2 needs flushing data first, it needs get the
-cache page lock.
+It rarely hurts to wait when it isn't absolutely necessary,
+and the current code doesn't really focus on 'absolutely necessary'
+anyway.  So just wait always.
 
-Since some ocfs2 cluster locks are holding by write process, this
-deadlock may hung the whole cluster.
+This can potentially lead to data corruption if a crash happens
+at an awkward time and data was written before the bitmap was
+updated.  It is very unlikely, but this should go to -stable
+just to be safe.  Appropriate for any -stable.
 
-unlock pages before ocfs2_run_deallocs() can fix the locking order, also
-put unlock before ocfs2_commit_trans() to make page lock is unlocked
-before j_trans_barrier to preserve unlocking order.
-
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Reviewed-by: Wengang Wang <wen.gang.wang@oracle.com>
-Reviewed-by: Mark Fasheh <mfasheh@suse.de>
-Cc: Joel Becker <jlbec@evilplan.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ocfs2/aops.c | 16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/md/bitmap.c | 16 ++++++----------
+ 1 file changed, 6 insertions(+), 10 deletions(-)
 
-diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
-index 4a231a166cf8..c04183b008da 100644
---- a/fs/ocfs2/aops.c
-+++ b/fs/ocfs2/aops.c
-@@ -894,7 +894,7 @@ void ocfs2_unlock_and_free_pages(struct page **pages, int num_pages)
- 	}
- }
- 
--static void ocfs2_free_write_ctxt(struct ocfs2_write_ctxt *wc)
-+static void ocfs2_unlock_pages(struct ocfs2_write_ctxt *wc)
+diff --git a/drivers/md/bitmap.c b/drivers/md/bitmap.c
+index 67f8b31e2054..da3604e73e8a 100644
+--- a/drivers/md/bitmap.c
++++ b/drivers/md/bitmap.c
+@@ -879,7 +879,6 @@ void bitmap_unplug(struct bitmap *bitmap)
  {
- 	int i;
+ 	unsigned long i;
+ 	int dirty, need_write;
+-	int wait = 0;
  
-@@ -915,7 +915,11 @@ static void ocfs2_free_write_ctxt(struct ocfs2_write_ctxt *wc)
- 		page_cache_release(wc->w_target_page);
+ 	if (!bitmap || !bitmap->storage.filemap ||
+ 	    test_bit(BITMAP_STALE, &bitmap->flags))
+@@ -897,16 +896,13 @@ void bitmap_unplug(struct bitmap *bitmap)
+ 			clear_page_attr(bitmap, i, BITMAP_PAGE_PENDING);
+ 			write_page(bitmap, bitmap->storage.filemap[i], 0);
+ 		}
+-		if (dirty)
+-			wait = 1;
+-	}
+-	if (wait) { /* if any writes were performed, we need to wait on them */
+-		if (bitmap->storage.file)
+-			wait_event(bitmap->write_wait,
+-				   atomic_read(&bitmap->pending_writes)==0);
+-		else
+-			md_super_wait(bitmap->mddev);
  	}
- 	ocfs2_unlock_and_free_pages(wc->w_pages, wc->w_num_pages);
-+}
- 
-+static void ocfs2_free_write_ctxt(struct ocfs2_write_ctxt *wc)
-+{
-+	ocfs2_unlock_pages(wc);
- 	brelse(wc->w_di_bh);
- 	kfree(wc);
- }
-@@ -2041,11 +2045,19 @@ out_write_size:
- 	ocfs2_update_inode_fsync_trans(handle, inode, 1);
- 	ocfs2_journal_dirty(handle, wc->w_di_bh);
- 
-+	/* unlock pages before dealloc since it needs acquiring j_trans_barrier
-+	 * lock, or it will cause a deadlock since journal commit threads holds
-+	 * this lock and will ask for the page lock when flushing the data.
-+	 * put it here to preserve the unlock order.
-+	 */
-+	ocfs2_unlock_pages(wc);
++	if (bitmap->storage.file)
++		wait_event(bitmap->write_wait,
++			   atomic_read(&bitmap->pending_writes)==0);
++	else
++		md_super_wait(bitmap->mddev);
 +
- 	ocfs2_commit_trans(osb, handle);
- 
- 	ocfs2_run_deallocs(osb, &wc->w_dealloc);
- 
--	ocfs2_free_write_ctxt(wc);
-+	brelse(wc->w_di_bh);
-+	kfree(wc);
- 
- 	return copied;
+ 	if (test_bit(BITMAP_WRITE_ERROR, &bitmap->flags))
+ 		bitmap_file_kick(bitmap);
  }
 -- 
 2.1.4
