@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbbALThL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 14:37:11 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:37285 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750921AbbALThJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 14:37:09 -0500
-Date: Mon, 12 Jan 2015 20:37:04 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH] x86: introduce push/pop macros which generate
- CFI_REL_OFFSET and CFI_RESTORE
-Message-ID: <20150112193704.GG3904@pd.tnic>
-References: <1421017655-25561-1-git-send-email-dvlasenk@redhat.com>
- <20150112192314.GF3904@pd.tnic>
- <CALCETrXzEPKPFKBeKF3UMduNe1ViQTC6vULEySo_0XTJcK7Qkw@mail.gmail.com>
+	id S1754521AbbALTmL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 14:42:11 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:57391 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753510AbbALTmG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 14:42:06 -0500
+Date: Mon, 12 Jan 2015 20:42:00 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        David Laight <David.Laight@ACULAB.COM>
+Subject: Re: [PATCH v3 3/5] ARM: at91/dt: update udc compatible strings
+Message-ID: <20150112204200.4ffefdd4@bbrezillon>
+In-Reply-To: <20150112193126.GC2858@saruman>
+References: <1421060278-27329-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1421060278-27329-4-git-send-email-boris.brezillon@free-electrons.com>
+	<20150112182349.GJ6525@saruman>
+	<20150112201816.6e57fe74@bbrezillon>
+	<20150112193126.GC2858@saruman>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CALCETrXzEPKPFKBeKF3UMduNe1ViQTC6vULEySo_0XTJcK7Qkw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy, please trim your replies.
+On Mon, 12 Jan 2015 13:31:26 -0600
+Felipe Balbi <balbi@ti.com> wrote:
 
-On Mon, Jan 12, 2015 at 11:25:39AM -0800, Andy Lutomirski wrote:
-> I think that some users don't want the CFI_REL_OFFSET.
+> On Mon, Jan 12, 2015 at 08:18:16PM +0100, Boris Brezillon wrote:
+> > Hi Felipe,
+> > 
+> > On Mon, 12 Jan 2015 12:23:49 -0600
+> > Felipe Balbi <balbi@ti.com> wrote:
+> > 
+> > > On Mon, Jan 12, 2015 at 11:57:56AM +0100, Boris Brezillon wrote:
+> > > > at91sam9g45, at91sam9x5 and sama5 SoCs should not use
+> > > > "atmel,at91sam9rl-udc" for their USB device compatible property since
+> > > > this compatible is attached to a specific hardware bug fix.
+> > > > 
+> > > > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> > > > Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> > > 
+> > > WARNING: DT compatible string "atmel,at91sam9g45-udc" appears un-documented -- check ./Documentation/devicetree/bindings/
+> > > #177: FILE: drivers/usb/gadget/udc/atmel_usba_udc.c:1827:
+> > > +       { .compatible = "atmel,at91sam9g45-udc" },
+> > > 
+> > > WARNING: DT compatible string "atmel,sama5d3-udc" appears un-documented -- check ./Documentation/devicetree/bindings/
+> > > #178: FILE: drivers/usb/gadget/udc/atmel_usba_udc.c:1828:
+> > > +       { .compatible = "atmel,sama5d3-udc" },
+> > > 
+> > > please fix and resend. Also, when resending, could you add Nicolas'
+> > > Acked-by since he's already given it ?
+> > 
+> > Actually these compatible strings are documented in the first patch
+> > (where they were introduced), but I'll send a v4 with Nicolas' ack.
+> 
+> heh, checkpatch stupidity :-) My bad.
+> 
 
-Why? I thought those two annotations are independent? As you said:
+You took v3 of the first patch instead of v4.
+Don't know if you can replace it (anyway, that's not such a big deal
+since the only change is the commit message)...
 
-"IOW, one is to keep the stack frame tracking consistent and the other
-is to tell the unwinder about the register we just saved."
-
-Sounds to me like we want both...
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
