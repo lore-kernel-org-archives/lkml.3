@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964AbbALS35 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:29:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58017 "EHLO
+	id S1754977AbbALS37 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:29:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58026 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754899AbbALS3w (ORCPT
+	with ESMTP id S1754917AbbALS3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:29:52 -0500
+	Mon, 12 Jan 2015 13:29:53 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 128/216] userns: Allow setting gid_maps without privilege when setgroups is disabled
-Date: Mon, 12 Jan 2015 18:28:26 +0000
-Message-Id: <1421087394-2712-16-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 129/216] userns: Unbreak the unprivileged remount tests
+Date: Mon, 12 Jan 2015 18:28:27 +0000
+Message-Id: <1421087394-2712-17-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -29,40 +29,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 66d2f338ee4c449396b6f99f5e75cd18eb6df272 upstream.
+commit db86da7cb76f797a1a8b445166a15cb922c6ff85 upstream.
 
-Now that setgroups can be disabled and not reenabled, setting gid_map
-without privielge can now be enabled when setgroups is disabled.
+A security fix in caused the way the unprivileged remount tests were
+using user namespaces to break.  Tweak the way user namespaces are
+being used so the test works again.
 
-This restores most of the functionality that was lost when unprivileged
-setting of gid_map was removed.  Applications that use this functionality
-will need to check to see if they use setgroups or init_groups, and if they
-don't they can be fixed by simply disabling setgroups before writing to
-gid_map.
-
-Reviewed-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/user_namespace.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ .../selftests/mount/unprivileged-remount-test.c    | 32 ++++++++++++++++------
+ 1 file changed, 24 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-index c960426a46fc..a4017e14a5b0 100644
---- a/kernel/user_namespace.c
-+++ b/kernel/user_namespace.c
-@@ -826,6 +826,11 @@ static bool new_idmap_permitted(const struct file *file,
- 			kuid_t uid = make_kuid(ns->parent, id);
- 			if (uid_eq(uid, cred->euid))
- 				return true;
-+		} else if (cap_setid == CAP_SETGID) {
-+			kgid_t gid = make_kgid(ns->parent, id);
-+			if (!(ns->flags & USERNS_SETGROUPS_ALLOWED) &&
-+			    gid_eq(gid, cred->egid))
-+				return true;
- 		}
+diff --git a/tools/testing/selftests/mount/unprivileged-remount-test.c b/tools/testing/selftests/mount/unprivileged-remount-test.c
+index 9669d375625a..517785052f1c 100644
+--- a/tools/testing/selftests/mount/unprivileged-remount-test.c
++++ b/tools/testing/selftests/mount/unprivileged-remount-test.c
+@@ -53,17 +53,14 @@ static void die(char *fmt, ...)
+ 	exit(EXIT_FAILURE);
+ }
+ 
+-static void write_file(char *filename, char *fmt, ...)
++static void vmaybe_write_file(bool enoent_ok, char *filename, char *fmt, va_list ap)
+ {
+ 	char buf[4096];
+ 	int fd;
+ 	ssize_t written;
+ 	int buf_len;
+-	va_list ap;
+ 
+-	va_start(ap, fmt);
+ 	buf_len = vsnprintf(buf, sizeof(buf), fmt, ap);
+-	va_end(ap);
+ 	if (buf_len < 0) {
+ 		die("vsnprintf failed: %s\n",
+ 		    strerror(errno));
+@@ -74,6 +71,8 @@ static void write_file(char *filename, char *fmt, ...)
+ 
+ 	fd = open(filename, O_WRONLY);
+ 	if (fd < 0) {
++		if ((errno == ENOENT) && enoent_ok)
++			return;
+ 		die("open of %s failed: %s\n",
+ 		    filename, strerror(errno));
+ 	}
+@@ -92,6 +91,26 @@ static void write_file(char *filename, char *fmt, ...)
+ 	}
+ }
+ 
++static void maybe_write_file(char *filename, char *fmt, ...)
++{
++	va_list ap;
++
++	va_start(ap, fmt);
++	vmaybe_write_file(true, filename, fmt, ap);
++	va_end(ap);
++
++}
++
++static void write_file(char *filename, char *fmt, ...)
++{
++	va_list ap;
++
++	va_start(ap, fmt);
++	vmaybe_write_file(false, filename, fmt, ap);
++	va_end(ap);
++
++}
++
+ static int read_mnt_flags(const char *path)
+ {
+ 	int ret;
+@@ -144,13 +163,10 @@ static void create_and_enter_userns(void)
+ 			strerror(errno));
  	}
  
++	maybe_write_file("/proc/self/setgroups", "deny");
+ 	write_file("/proc/self/uid_map", "0 %d 1", uid);
+ 	write_file("/proc/self/gid_map", "0 %d 1", gid);
+ 
+-	if (setgroups(0, NULL) != 0) {
+-		die("setgroups failed: %s\n",
+-			strerror(errno));
+-	}
+ 	if (setgid(0) != 0) {
+ 		die ("setgid(0) failed %s\n",
+ 			strerror(errno));
 -- 
 2.1.4
 
