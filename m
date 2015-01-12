@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756288AbbALS65 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:58:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58062 "EHLO
+	id S1756263AbbALS6i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:58:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58065 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754899AbbALS36 (ORCPT
+	with ESMTP id S1753811AbbALS37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:29:58 -0500
+	Mon, 12 Jan 2015 13:29:59 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
+Cc: Jiri Slaby <jslaby@suse.cz>, Jan Kara <jack@suse.cz>,
+        reiserfs-devel@vger.kernel.org,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 135/216] cfg80211: don't WARN about two consecutive Country IE hint
-Date: Mon, 12 Jan 2015 18:28:33 +0000
-Message-Id: <1421087394-2712-23-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 136/216] reiserfs: destroy allocated commit workqueue
+Date: Mon, 12 Jan 2015 18:28:34 +0000
+Message-Id: <1421087394-2712-24-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,44 +31,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit 70dcec5a488a7b81779190ac8089475fe4b8b962 upstream.
+commit fa0c5540739320258c3e3a45aaae9dae467b2504 upstream.
 
-This can happen and there is no point in added more
-detection code lower in the stack. Catching these in one
-single point (cfg80211) is enough. Stop WARNING about this
-case.
+When resirefs is trying to mount a partition, it creates a commit
+workqueue (sbi->commit_wq). But when mount fails later, the workqueue
+is not freed.
 
-This fixes:
-https://bugzilla.kernel.org/show_bug.cgi?id=89001
-
-Fixes: 2f1c6c572d7b ("cfg80211: process non country IE conflicting first")
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Reported-by: auxsvr@gmail.com
+Reported-by: Benoît Monin <benoit.monin@gmx.fr>
+Cc: Jan Kara <jack@suse.cz>
+Cc: reiserfs-devel@vger.kernel.org
+Fixes: 797d9016ceca69879bb273218810fa0beef46aac
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/wireless/reg.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ fs/reiserfs/super.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/net/wireless/reg.c b/net/wireless/reg.c
-index ff7ffeb7947a..20ccc79d53a2 100644
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -1802,11 +1802,8 @@ __reg_process_hint_country_ie(struct wiphy *wiphy,
- 			return REG_REQ_IGNORE;
- 		return REG_REQ_ALREADY_SET;
+diff --git a/fs/reiserfs/super.c b/fs/reiserfs/super.c
+index 5fd8f57e07fc..27575041bea3 100644
+--- a/fs/reiserfs/super.c
++++ b/fs/reiserfs/super.c
+@@ -2161,6 +2161,9 @@ error_unlocked:
+ 		reiserfs_write_unlock(s);
  	}
--	/*
--	 * Two consecutive Country IE hints on the same wiphy.
--	 * This should be picked up early by the driver/stack
--	 */
--	if (WARN_ON(regdom_changes(country_ie_request->alpha2)))
+ 
++	if (sbi->commit_wq)
++		destroy_workqueue(sbi->commit_wq);
 +
-+	if (regdom_changes(country_ie_request->alpha2))
- 		return REG_REQ_OK;
- 	return REG_REQ_ALREADY_SET;
- }
+ 	cancel_delayed_work_sync(&REISERFS_SB(s)->old_work);
+ 
+ 	reiserfs_free_bitmap_cache(s);
 -- 
 2.1.4
 
