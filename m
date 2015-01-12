@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050AbbALLav (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 06:30:51 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:12155 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923AbbALLau (ORCPT
+	id S1751546AbbALLeM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 06:34:12 -0500
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:50526 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955AbbALLeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 06:30:50 -0500
-X-IronPort-AV: E=Sophos;i="5.07,743,1413244800"; 
-   d="scan'208";a="215409854"
-Message-ID: <54B3B067.4060002@citrix.com>
-Date: Mon, 12 Jan 2015 11:30:47 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Mon, 12 Jan 2015 06:34:10 -0500
 MIME-Version: 1.0
-To: Imre Palik <imrep.amz@gmail.com>, Ian Campbell <Ian.Campbell@citrix.com>
-CC: "Palik, Imre" <imrep@amazon.de>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Anthony Liguori <aliguori@amazon.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <xen-devel@lists.xenproject.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Xen-devel] [PATCH RFC] xen-time: decreasing the rating of the
- xen clocksource below that of the tsc clocksource for dom0's
-References: <1420647398-20207-1-git-send-email-imrep.amz@gmail.com>	<1420648234.18631.117.camel@citrix.com> <54AE9CF0.8060907@gmail.com>
-In-Reply-To: <54AE9CF0.8060907@gmail.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-DLP: MIA2
+In-Reply-To: <20150110013324.GB4574@brightrain.aerifal.cx>
+References: <20150109161302.GQ4574@brightrain.aerifal.cx> <CAHse=S88Jy5ZKM_VY5onfvxX7dTMngnxuHfuLeSuzvKvQNP19A@mail.gmail.com>
+ <20150109204815.GR4574@brightrain.aerifal.cx> <20150109205626.GK22149@ZenIV.linux.org.uk>
+ <20150109205926.GT4574@brightrain.aerifal.cx> <20150109210941.GL22149@ZenIV.linux.org.uk>
+ <20150109212852.GU4574@brightrain.aerifal.cx> <87lhlbvbzs.fsf@x220.int.ebiederm.org>
+ <20150109223843.GX4574@brightrain.aerifal.cx> <87mw5rtowa.fsf@x220.int.ebiederm.org>
+ <20150110013324.GB4574@brightrain.aerifal.cx>
+From: David Drysdale <drysdale@google.com>
+Date: Mon, 12 Jan 2015 11:33:49 +0000
+Message-ID: <CAHse=S822QjRE_FF6JHi-5cUsrXHJnyjRwYJuyYn2O6tsz2dHQ@mail.gmail.com>
+Subject: Re: [PATCHv10 man-pages 5/5] execveat.2: initial man page for execveat(2)
+To: Rich Felker <dalias@aerifal.cx>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, sparclinux@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/15 15:06, Imre Palik wrote:
-> On 01/07/15 17:30, Ian Campbell wrote:
->> On Wed, 2015-01-07 at 17:16 +0100, Imre Palik wrote:
->>> From: "Palik, Imre" <imrep@amazon.de>
->>>
->>> In Dom0's the use of the TSC clocksource (whenever it is stable enough to
->>> be used) instead of the Xen clocksource should not cause any issues, as
->>> Dom0 VMs never live-migrated.
+On Sat, Jan 10, 2015 at 1:33 AM, Rich Felker <dalias@aerifal.cx> wrote:
+> On Fri, Jan 09, 2015 at 07:17:41PM -0600, Eric W. Biederman wrote:
+>> Rich Felker <dalias@aerifal.cx> writes:
 >>
->> Is this still true given that dom0's vcpus are migrated amongst pcpus on
->> the host? The tsc are not synchronised on some generations of hardware
->> so the result there would be the TSC appearing to do very odd things
->> under dom0's feet. Does Linux cope with that or does it not matter for
->> some other reason?
-> 
-> First of all, if the initial pcpus are not synchronised, linux won't consider
-> TSC as a viable clocksource.
-> 
-> If the initial pcpus are synchronised, but then the dom0 vcpus are migrated to
-> unsynchronised pcpus, then hopefully the tsc watchdog catches the issue, and
-> the kernel falls back to the xen clocksource.  The issue here is that the
-> watchdog can only detect clock skews bigger than 0.0625s/0.5s.  Hopefully this
-> is enough to avoid the weirdest things.
+>> > I'm not proposing code because I'm a libc developer not a kernel
+>> > developer. I know what's needed for userspace to provide a conforming
+>> > fexecve to applications, not how to implement that on the kernel side,
+>> > although I'm trying to provide constructive ideas. The hostility is
+>> > really not necessary.
+>>
+>> Conforming to what?
+>>
+>> The open group fexecve says nothing about requiring a file descriptor
+>> passed to fexecve to have O_CLOEXEC.
+>
+> It doesn't require it but it allows it, and in multithreaded programs
+> that might run child processes (or library code that might be used in
+> such situations), O_CLOEXEC is mandatory everywhere to avoid fd leaks.
 
-I don't think any such hardware exists.  Either TSC is synchronized
-across all CPUs or none.
+As a naive idea related to Andy's suggestion elsewhere, could you
+just have an environment convention for fexecve-ing scripts?  That
+would reduce FD leaks without any need for kernel involvement/changes.
 
-> Also, some parts of the kernel (e.g., scheduling) will always use the paravirt
-> clock.  No matter what priorities are set.
-> 
-> So it should be safe for some definition of safe.
-> But I was unable to test it on a hardware platform that would hit the problematic
-> case described above.
+For example, set _FEXECVED_VIA_FD=4 but don't set
+O_CLOEXEC before fexecve, and the interpreter reads then
+closes that FD.  Or just get the interpreter to spot scripts named
+"/dev/fd/%d" and read-then-close the FD that way, cf. Eric's suggestion
+at https://lkml.org/lkml/2014/10/22/652.
 
-Ok.  Can you list the various time sources and their ratings in the
-commit message for clarity.  i.e, to justify 275 (below TSC = 300. above
-hpet = 250).
-
-David
+By the way, FreeBSD has a fexecve(2) syscall that behaves
+in the same way as the current Linux code for an O_CLOEXEC
+script -- the interpreter fails to open "/dev/fd/6" as it's gone.
+Do you know if there are any other OSes that already do
+something more sophisticated for this case?
