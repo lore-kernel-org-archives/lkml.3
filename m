@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952AbbALLrS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 06:47:18 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:50388 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751412AbbALLrO (ORCPT
+	id S1752068AbbALLsj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 06:48:39 -0500
+Received: from smtp-out6.electric.net ([192.162.217.181]:57804 "EHLO
+	smtp-out6.electric.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753121AbbALLsf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 06:47:14 -0500
+	Mon, 12 Jan 2015 06:48:35 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Al Viro'" <viro@ZenIV.linux.org.uk>,
+        "Carlos R. Mafra" <crmafra@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Hauke Mehrtens <hauke@hauke-m.de>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: RE: /proc/net/dev regression
+Thread-Topic: /proc/net/dev regression
+Thread-Index: AQHQLT9BrcazbLU9VU6D1mpk+8xNCZy8X8hQ
+Date: Mon, 12 Jan 2015 11:47:13 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1CAC5823@AcuExch.aculab.com>
+References: <20150110232518.GA3212@linux-g29b.site>
+ <20150111002706.GC22149@ZenIV.linux.org.uk>
+ <20150111010036.GD22149@ZenIV.linux.org.uk>
+ <20150111013335.GA5753@linux-g29b.site>
+ <20150111013913.GE22149@ZenIV.linux.org.uk>
+In-Reply-To: <20150111013913.GE22149@ZenIV.linux.org.uk>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <14289.1421063001@warthog.procyon.org.uk>
-References: <1417824042-539-1-git-send-email-linux@rasmusvillemoes.dk>
-	<1417824042-539-2-git-send-email-linux@rasmusvillemoes.dk>
-	<2258.1420801223@warthog.procyon.org.uk>
-	<CACE9dm8N31zAdxC5J0N=dCAqRMA25k8cnTK25NqvaE=tOAWs0A@mail.gmail.com>
-	<14289.1421063001@warthog.procyon.org.uk>
-Date: Mon, 12 Jan 2015 13:47:13 +0200
-Message-ID: <CACE9dm9dbzcXrVoTf3KwWagtP5x+nt-sJ96hmRZ5B4uZi=2WCw@mail.gmail.com>
-Subject: Re: [Keyrings] [PATCH 2/2] MPILIB: Deobfuscate mpi_cmp
-From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        keyrings <keyrings@linux-nfs.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+X-Outbound-IP: 213.249.233.130
+X-Env-From: David.Laight@ACULAB.COM
+X-PolicySMART: 3396946, 3397078
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-correct.
+From: Al Viro
+> > I think the problem with wmnet is not that it was expecting the fields
+> > to be aligned because it never had problems before (when definitely more
+> > than 10 megabytes were received, wmnet is crappy but not _that_ crappy).
+> >
+> > I think the problem really was here,
+> >
+> > 	totalbytes_in = strtoul(&buffer[7], NULL, 10);
+> >
+> > After the patch the device name is 8 characters long and &buffer[7]
+> > overlaps with the name instead of reading the bytes. Before the
+> > patch is was fine because the call to strtoul() seems correct in the
+> > sense that it would read everything until the NULL. So more than 10
+> > megabytes was still ok.
+> >
+> > So I guess I was wrong when suggesting that the problem was the
+> > alignment.
+> 
+> Several lines below there's this:
+>                         totalpackets_out = strtoul(&buffer[74], NULL, 10);
+>                         if (totalpackets_out != lastpackets_out) {
+>                                 totalbytes_out = strtoul(&buffer[66], NULL, 10);
+>                                 diffpackets_out += totalpackets_out - lastpackets_out;
+>                                 diffbytes_out += totalbytes_out - lastbytes_out;
+>                                 lastpackets_out = totalpackets_out;
+>                                 lastbytes_out = totalbytes_out;
+>                                 tx = True;
+>                         }
+> 
+> So I'm afraid it *is* that crappy.  This function really should use scanf();
+> note that updateStats_ipchains() in the same file does just that (well,
+> fgets()+sscanf() for fsck knows what reason).  And I'd be careful with all
+> those %d, actually - it's not _that_ hard to get more than 4Gb sent.
+> scanf formats really ought to match the kernel-side (seq_)printf one...
 
-Acked-by: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+IMHO it is safer to use strchr(p, ' '); to skip the interface name and then
+use repeated calls to strtoull() to read the numbers.
+Correctly/safely using scanf() is really too hard.
 
-Dmitry
+	David
 
-On 12 January 2015 at 13:43, David Howells <dhowells@redhat.com> wrote:
-> Dmitry Kasatkin <dmitry.kasatkin@gmail.com> wrote:
->
->> Ack.
->
-> To what email address do I translate that now?
->
->         Acked-by: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
->
-> perchance?
->
-> David
-
-
-
--- 
-Thanks,
-Dmitry
