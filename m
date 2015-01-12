@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298AbbALAAY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 19:00:24 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:54308 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133AbbALAAV convert rfc822-to-8bit (ORCPT
+	id S1751465AbbALAFP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 19:05:15 -0500
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:58582 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955AbbALAFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 19:00:21 -0500
+	Sun, 11 Jan 2015 19:05:13 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141127223402.GA11418@gmail.com>
-References: <1416168856-12747-1-git-send-email-b.galvani@gmail.com>
-	<1416168856-12747-3-git-send-email-b.galvani@gmail.com>
-	<CACRpkda-U5OuKdBVGJ8UWprJkAtmTL1m11+AbNskVULPfyS72A@mail.gmail.com>
-	<20141127223402.GA11418@gmail.com>
-Date: Mon, 12 Jan 2015 01:00:16 +0100
-Message-ID: <CACRpkdY0tv77GgOF91EG8wEzsgQ4OsLUjogNxFjO-rjfY2Q15g@mail.gmail.com>
-Subject: Re: [PATCH v3 2/3] pinctrl: add driver for Amlogic Meson SoCs
+In-Reply-To: <4938579.0KIk3QtTCP@wuerfel>
+References: <1420857290-8373-1-git-send-email-robh@kernel.org>
+	<1420857290-8373-8-git-send-email-robh@kernel.org>
+	<CACRpkdbwKN9LenqrWeu4WykhdZOGAdxpC_BYr2cYpc2_cn5GfA@mail.gmail.com>
+	<4938579.0KIk3QtTCP@wuerfel>
+Date: Mon, 12 Jan 2015 01:05:12 +0100
+Message-ID: <CACRpkdZSXWrVudiadVjbhQDS_zQrYttaytW-TUoeFUrc=beD1A@mail.gmail.com>
+Subject: Re: [PATCH 07/16] ARM: integrator: convert PCI to use generic config accesses
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Beniamino Galvani <b.galvani@gmail.com>
-Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Rob Herring <robh@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Carlo Caione <carlo@caione.org>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
-        Victor Wan <victor.wan@amlogic.com>
+        linux-pci <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 27, 2014 at 11:34 PM, Beniamino Galvani <b.galvani@gmail.com> wrote:
-> On Thu, Nov 27, 2014 at 02:48:31PM +0100, Linus Walleij wrote:
->> On Sun, Nov 16, 2014 at 9:14 PM, Beniamino Galvani <b.galvani@gmail.com> wrote:
->>
->> > This is a driver for the pinmux and GPIO controller available in
->> > Amlogic Meson SoCs. At the moment it only supports Meson8 devices,
->> > however other SoC families like Meson6 and Meson8b (the Cortex-A5
->> > variant) appear to be similar, with just different sets of banks and
->> > registers.
+On Sat, Jan 10, 2015 at 10:53 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Saturday 10 January 2015 22:40:22 Linus Walleij wrote:
+>> >  static int v3_read_config(struct pci_bus *bus, unsigned int devfn, int where,
+>> >                           int size, u32 *val)
+>> >  {
+>> > -       addr = v3_open_config_window(bus, devfn, where);
+>> > +       int ret = pci_generic_config_read(bus, devfn, where, size, val);
+>> >         v3_close_config_window();
+>> > +       return ret;
+>> >  }
 >> >
->> > GPIO interrupts are not supported at the moment due to lack of
->> > documentation.
+>> >  static int v3_write_config(struct pci_bus *bus, unsigned int devfn, int where,
+>> >                            int size, u32 val)
+>> >  {
+>> > +       int ret = pci_generic_config_write(bus, devfn, where, size, val);
+>> >         v3_close_config_window();
+>> > -       raw_spin_unlock_irqrestore(&v3_lock, flags);
+>> > +       return ret;
+>> >  }
 >> >
->> > Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
+>> >  static struct pci_ops pci_v3_ops = {
+>> > +       .map_bus = v3_open_config_window,
+>> >         .read   = v3_read_config,
+>> >         .write  = v3_write_config,
 >>
->> This is dependent on Sören's patches I guess?
+>> So .map_bus is called before every .read/.write operation I take it.
 >>
->> OK I'll merge this once we have that other code sorted out.
+>> Wouldn't it be proper to call the v3_close_config_window() from a
+>> matching .unmap_bus() callback for symmetry?
 >
-> Yes, this depends on Soren's patches.
+> It would be nicer for integrator but useless for anything else, so
+> I'd vote for leaving it the way Rob posted.
 
-Hi Beniamino,
-
-sorry for the delay to merging Sören's patches.
-
-Can you rebase this patch on top of the pin control "devel" branch:
-https://git.kernel.org/cgit/linux/kernel/git/linusw/linux-pinctrl.git/log/?h=devel
-
-Some stuff like structs and functions were renamed by me since it was
-not generic enough.
+OK I buy that, throw in a comment about it in the code if there
+is some time for iterating the patch.
 
 Yours,
 Linus Walleij
