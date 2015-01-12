@@ -1,77 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121AbbALOSn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 09:18:43 -0500
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:57012 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607AbbALOSj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 09:18:39 -0500
+	id S1753335AbbALOSr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 09:18:47 -0500
+Received: from mail.kernel.org ([198.145.29.136]:54396 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752103AbbALOSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 09:18:45 -0500
+Date: Mon, 12 Jan 2015 11:18:38 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Paul Mackerras <paulus@samba.org>, dev@codyps.com,
+        peterz@infradead.org, hbabu@us.ibm.com, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v7 0/4] Add support for parametrized events
+Message-ID: <20150112141838.GJ12406@kernel.org>
+References: <1420679633-28856-1-git-send-email-sukadev@linux.vnet.ibm.com>
+ <20150108095434.GA16059@krava.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20150109215042.GM22149@ZenIV.linux.org.uk>
-References: <1416830039-21952-1-git-send-email-drysdale@google.com>
- <1416830039-21952-6-git-send-email-drysdale@google.com> <54AFF813.7050604@gmail.com>
- <20150109161302.GQ4574@brightrain.aerifal.cx> <CAHse=S88Jy5ZKM_VY5onfvxX7dTMngnxuHfuLeSuzvKvQNP19A@mail.gmail.com>
- <20150109204815.GR4574@brightrain.aerifal.cx> <20150109205626.GK22149@ZenIV.linux.org.uk>
- <20150109205926.GT4574@brightrain.aerifal.cx> <20150109210941.GL22149@ZenIV.linux.org.uk>
- <20150109212852.GU4574@brightrain.aerifal.cx> <20150109215042.GM22149@ZenIV.linux.org.uk>
-From: David Drysdale <drysdale@google.com>
-Date: Mon, 12 Jan 2015 14:18:18 +0000
-Message-ID: <CAHse=S9qP19WrNRefOzJ1yKiT9qWof67-y5wHBcxAfR-r4HzmQ@mail.gmail.com>
-Subject: Re: [PATCHv10 man-pages 5/5] execveat.2: initial man page for execveat(2)
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Rich Felker <dalias@aerifal.cx>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, sparclinux@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150108095434.GA16059@krava.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 9, 2015 at 9:50 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Fri, Jan 09, 2015 at 04:28:52PM -0500, Rich Felker wrote:
->
->> The "magic open-once magic symlink" approach is really the cleanest
->> solution I can find. In the case where the interpreter does not open
->> the script, nothing terribly bad happens; the magic symlink just
->> sticks around until _exit or exec. In the case where the interpreter
->> opens it more than once, you get a failure, but as far as I know
->> existing interpreters don't do this, and it's arguably bad design. In
->> any case it's a caught error.
->
-> You know what's cleaner than that?  git revert 27d6ec7ad
-> It has just been merged; until 3.19 it's fair game for removal.
->
-> And yes, I should've NAKed the damn thing loud and clear, rather than
-> asking questions back then, getting no answers and letting it slip.
-> Mea culpa.
+Em Thu, Jan 08, 2015 at 10:54:34AM +0100, Jiri Olsa escreveu:
+> for the patchset:
+> 
+> Acked-by: Jiri Olsa <jolsa@kernel.org>
 
-Al, I'm sorry if I missed a question or concern of yours back in
-October -- I certainly didn't intend to (that would be foolish indeed!).
+Applied to perf/core
 
-[I thought the main open question was whether a dupfs
-implementation would help with /dev/fd/ and /proc/ semantics, but I
-had the (possibly incorrect) understanding that that was somewhat
-orthogonal to the execveat implementation.]
+Thanks,
 
-Are there any changes/fixes/refactorings that I could do (especially
-within the 3.19 timeframe) that would help mollify at all?
-
-> Back then the procfs-free environments had been pushed as a serious argument
-> in favour of merging the damn thing.  Now you guys turn around and say that
-> we not only need procfs mounted, we need a yet-to-be-added kludge in there
-> to cope with the actual intended uses.
-
-Not me!
+- Arnaldo
