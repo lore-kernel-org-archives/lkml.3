@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007AbbALXN1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 18:13:27 -0500
-Received: from mga09.intel.com ([134.134.136.24]:6926 "EHLO mga09.intel.com"
+	id S1753929AbbALXMa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 18:12:30 -0500
+Received: from mga09.intel.com ([134.134.136.24]:19750 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753714AbbALXKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 18:10:48 -0500
+	id S1753747AbbALXKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 18:10:50 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="511204101"
+   d="scan'208";a="511204104"
 From: Sudeep Dutt <sudeep.dutt@intel.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Arnd Bergmann <arnd@arndb.de>, Jonathan Corbet <corbet@lwn.net>,
@@ -16,9 +16,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>, Jonathan Corbet <corbet@lwn.net>,
         Dave Jiang <dave.jiang@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
         Ashutosh Dixit <ashutosh.dixit@intel.com>,
         Sudeep Dutt <sudeep.dutt@intel.com>
-Subject: [PATCH char-misc-next v2 10/13] misc: mic: SCIF messaging and node enumeration APIs
-Date: Mon, 12 Jan 2015 15:10:04 -0800
-Message-Id: <0631e66e68af678e99fcbe91ed3ab061b69c410c.1421097390.git.sudeep.dutt@intel.com>
+Subject: [PATCH char-misc-next v2 11/13] misc: mic: MIC host driver specific changes to enable SCIF
+Date: Mon, 12 Jan 2015 15:10:05 -0800
+Message-Id: <62ee4568eacaa22dae3f9215f279609de52ecb95.1421097390.git.sudeep.dutt@intel.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <cover.1421097390.git.sudeep.dutt@intel.com>
 References: <cover.1421097390.git.sudeep.dutt@intel.com>
@@ -28,696 +28,575 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SCIF messaging APIs which allow sending messages between the SCIF
-endpoints via a byte stream based ring buffer which has been
-optimized to avoid reads across PCIe. The SCIF messaging APIs
-are typically used for short < 1024 byte messages for best
-performance while the RDMA APIs which will be submitted in a future
-patch series is recommended for larger transfers. The node
-enumeration API enables a user to query for the number of nodes
-online in the SCIF network and their node ids.
+MIC host driver specific changes to enable SCIF. This patch implements
+the SCIF hardware bus operations and registers a SCIF device on the
+SCIF hardware bus.
 
+Reviewed-by: Nikhil Rao <nikhil.rao@intel.com>
 Reviewed-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
-Signed-off-by: Nikhil Rao <nikhil.rao@intel.com>
 Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
 ---
- drivers/misc/mic/scif/scif_epd.h    |   4 +
- drivers/misc/mic/scif/scif_api.c    | 402 ++++++++++++++++++++++++++++++++++++
- drivers/misc/mic/scif/scif_epd.c    |  32 +++
- drivers/misc/mic/scif/scif_fd.c     |  93 +++++++++
- drivers/misc/mic/scif/scif_nm.c     |  17 ++
- drivers/misc/mic/scif/scif_nodeqp.c |  36 +++-
- 6 files changed, 583 insertions(+), 1 deletion(-)
+ drivers/misc/mic/Kconfig            |   2 +-
+ drivers/misc/mic/host/mic_device.h  |  11 +-
+ drivers/misc/mic/host/mic_intr.h    |   3 +-
+ drivers/misc/mic/host/mic_smpt.h    |   1 +
+ drivers/misc/mic/host/mic_boot.c    | 264 ++++++++++++++++++++++++++++++++++--
+ drivers/misc/mic/host/mic_debugfs.c |  13 ++
+ drivers/misc/mic/host/mic_main.c    |   6 +
+ drivers/misc/mic/host/mic_smpt.c    |   7 +-
+ drivers/misc/mic/host/mic_virtio.c  |   6 +-
+ drivers/misc/mic/host/mic_x100.c    |   3 +-
+ 10 files changed, 292 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/misc/mic/scif/scif_epd.h b/drivers/misc/mic/scif/scif_epd.h
-index 65c628e..331322a 100644
---- a/drivers/misc/mic/scif/scif_epd.h
-+++ b/drivers/misc/mic/scif/scif_epd.h
-@@ -144,6 +144,8 @@ int scif_rsrv_port(u16 port);
- void scif_get_port(u16 port);
- int scif_get_new_port(void);
- void scif_put_port(u16 port);
-+int scif_user_send(scif_epd_t epd, void __user *msg, int len, int flags);
-+int scif_user_recv(scif_epd_t epd, void __user *msg, int len, int flags);
- void scif_cnctreq(struct scif_dev *scifdev, struct scifmsg *msg);
- void scif_cnctgnt(struct scif_dev *scifdev, struct scifmsg *msg);
- void scif_cnctgnt_ack(struct scif_dev *scifdev, struct scifmsg *msg);
-@@ -151,6 +153,8 @@ void scif_cnctgnt_nack(struct scif_dev *scifdev, struct scifmsg *msg);
- void scif_cnctrej(struct scif_dev *scifdev, struct scifmsg *msg);
- void scif_discnct(struct scif_dev *scifdev, struct scifmsg *msg);
- void scif_discnt_ack(struct scif_dev *scifdev, struct scifmsg *msg);
-+void scif_clientsend(struct scif_dev *scifdev, struct scifmsg *msg);
-+void scif_clientrcvd(struct scif_dev *scifdev, struct scifmsg *msg);
- int __scif_connect(scif_epd_t epd, struct scif_port_id *dst, bool non_block);
- int __scif_flush(scif_epd_t epd);
- #endif /* SCIF_EPD_H */
-diff --git a/drivers/misc/mic/scif/scif_api.c b/drivers/misc/mic/scif/scif_api.c
-index 8b55b59..41fba06 100644
---- a/drivers/misc/mic/scif/scif_api.c
-+++ b/drivers/misc/mic/scif/scif_api.c
-@@ -867,3 +867,405 @@ scif_accept_error_epalloc:
- 	return err;
- }
- EXPORT_SYMBOL_GPL(scif_accept);
-+
-+/*
-+ * scif_msg_param_check:
-+ * @epd: The end point returned from scif_open()
-+ * @len: Length to receive
-+ * @flags: blocking or non blocking
-+ *
-+ * Validate parameters for messaging APIs scif_send(..)/scif_recv(..).
-+ */
-+static inline int scif_msg_param_check(scif_epd_t epd, int len, int flags)
-+{
-+	int ret = -EINVAL;
-+
-+	if (len < 0)
-+		goto err_ret;
-+	if (flags && (!(flags & SCIF_RECV_BLOCK)))
-+		goto err_ret;
-+	ret = 0;
-+err_ret:
-+	return ret;
-+}
-+
-+static int _scif_send(scif_epd_t epd, void *msg, int len, int flags)
-+{
-+	struct scif_endpt *ep = (struct scif_endpt *)epd;
-+	struct scifmsg notif_msg;
-+	int curr_xfer_len = 0, sent_len = 0, write_count;
-+	int ret = 0;
-+	struct scif_qp *qp = ep->qp_info.qp;
-+
-+	if (flags & SCIF_SEND_BLOCK)
-+		might_sleep();
-+
-+	spin_lock(&ep->lock);
-+	while (sent_len != len && SCIFEP_CONNECTED == ep->state) {
-+		write_count = scif_rb_space(&qp->outbound_q);
-+		if (write_count) {
-+			/* Best effort to send as much data as possible */
-+			curr_xfer_len = min(len - sent_len, write_count);
-+			ret = scif_rb_write(&qp->outbound_q, msg,
-+					    curr_xfer_len);
-+			if (ret < 0)
-+				break;
-+			/* Success. Update write pointer */
-+			scif_rb_commit(&qp->outbound_q);
-+			/*
-+			 * Send a notification to the peer about the
-+			 * produced data message.
-+			 */
-+			notif_msg.src = ep->port;
-+			notif_msg.uop = SCIF_CLIENT_SENT;
-+			notif_msg.payload[0] = ep->remote_ep;
-+			ret = _scif_nodeqp_send(ep->remote_dev, &notif_msg);
-+			if (ret)
-+				break;
-+			sent_len += curr_xfer_len;
-+			msg = msg + curr_xfer_len;
-+			continue;
-+		}
-+		curr_xfer_len = min(len - sent_len, SCIF_ENDPT_QP_SIZE - 1);
-+		/* Not enough RB space. return for the Non Blocking case */
-+		if (!(flags & SCIF_SEND_BLOCK))
-+			break;
-+
-+		spin_unlock(&ep->lock);
-+		/* Wait for a SCIF_CLIENT_RCVD message in the Blocking case */
-+		ret =
-+		wait_event_interruptible(ep->sendwq,
-+					 (SCIFEP_CONNECTED != ep->state) ||
-+					 (scif_rb_space(&qp->outbound_q) >=
-+					 curr_xfer_len));
-+		spin_lock(&ep->lock);
-+		if (ret)
-+			break;
-+	}
-+	if (sent_len)
-+		ret = sent_len;
-+	else if (!ret && SCIFEP_CONNECTED != ep->state)
-+		ret = SCIFEP_DISCONNECTED == ep->state ?
-+			-ECONNRESET : -ENOTCONN;
-+	spin_unlock(&ep->lock);
-+	return ret;
-+}
-+
-+static int _scif_recv(scif_epd_t epd, void *msg, int len, int flags)
-+{
-+	int read_size;
-+	struct scif_endpt *ep = (struct scif_endpt *)epd;
-+	struct scifmsg notif_msg;
-+	int curr_recv_len = 0, remaining_len = len, read_count;
-+	int ret = 0;
-+	struct scif_qp *qp = ep->qp_info.qp;
-+
-+	if (flags & SCIF_RECV_BLOCK)
-+		might_sleep();
-+	spin_lock(&ep->lock);
-+	while (remaining_len && (SCIFEP_CONNECTED == ep->state ||
-+				 SCIFEP_DISCONNECTED == ep->state)) {
-+		read_count = scif_rb_count(&qp->inbound_q, remaining_len);
-+		if (read_count) {
-+			/*
-+			 * Best effort to recv as much data as there
-+			 * are bytes to read in the RB particularly
-+			 * important for the Non Blocking case.
-+			 */
-+			curr_recv_len = min(remaining_len, read_count);
-+			read_size = scif_rb_get_next(&qp->inbound_q,
-+						     msg, curr_recv_len);
-+			if (ep->state == SCIFEP_CONNECTED) {
-+				/*
-+				 * Update the read pointer only if the endpoint
-+				 * is still connected else the read pointer
-+				 * might no longer exist since the peer has
-+				 * freed resources!
-+				 */
-+				scif_rb_update_read_ptr(&qp->inbound_q);
-+				/*
-+				 * Send a notification to the peer about the
-+				 * consumed data message only if the EP is in
-+				 * SCIFEP_CONNECTED state.
-+				 */
-+				notif_msg.src = ep->port;
-+				notif_msg.uop = SCIF_CLIENT_RCVD;
-+				notif_msg.payload[0] = ep->remote_ep;
-+				ret = _scif_nodeqp_send(ep->remote_dev,
-+							&notif_msg);
-+				if (ret)
-+					break;
-+			}
-+			remaining_len -= curr_recv_len;
-+			msg = msg + curr_recv_len;
-+			continue;
-+		}
-+		/*
-+		 * Bail out now if the EP is in SCIFEP_DISCONNECTED state else
-+		 * we will keep looping forever.
-+		 */
-+		if (ep->state == SCIFEP_DISCONNECTED)
-+			break;
-+		/*
-+		 * Return in the Non Blocking case if there is no data
-+		 * to read in this iteration.
-+		 */
-+		if (!(flags & SCIF_RECV_BLOCK))
-+			break;
-+		curr_recv_len = min(remaining_len, SCIF_ENDPT_QP_SIZE - 1);
-+		spin_unlock(&ep->lock);
-+		/*
-+		 * Wait for a SCIF_CLIENT_SEND message in the blocking case
-+		 * or until other side disconnects.
-+		 */
-+		ret =
-+		wait_event_interruptible(ep->recvwq,
-+					 SCIFEP_CONNECTED != ep->state ||
-+					 scif_rb_count(&qp->inbound_q,
-+						       curr_recv_len)
-+					 >= curr_recv_len);
-+		spin_lock(&ep->lock);
-+		if (ret)
-+			break;
-+	}
-+	if (len - remaining_len)
-+		ret = len - remaining_len;
-+	else if (!ret && ep->state != SCIFEP_CONNECTED)
-+		ret = ep->state == SCIFEP_DISCONNECTED ?
-+			-ECONNRESET : -ENOTCONN;
-+	spin_unlock(&ep->lock);
-+	return ret;
-+}
-+
-+/**
-+ * scif_user_send() - Send data to connection queue
-+ * @epd: The end point returned from scif_open()
-+ * @msg: Address to place data
-+ * @len: Length to receive
-+ * @flags: blocking or non blocking
-+ *
-+ * This function is called from the driver IOCTL entry point
-+ * only and is a wrapper for _scif_send().
-+ */
-+int scif_user_send(scif_epd_t epd, void __user *msg, int len, int flags)
-+{
-+	struct scif_endpt *ep = (struct scif_endpt *)epd;
-+	int err = 0;
-+	int sent_len = 0;
-+	char *tmp;
-+	int loop_len;
-+	int chunk_len = min(len, (1 << (MAX_ORDER + PAGE_SHIFT - 1)));
-+
-+	dev_dbg(scif_info.mdev.this_device,
-+		"SCIFAPI send (U): ep %p %s\n", ep, scif_ep_states[ep->state]);
-+	if (!len)
-+		return 0;
-+
-+	err = scif_msg_param_check(epd, len, flags);
-+	if (err)
-+		goto send_err;
-+
-+	tmp = kmalloc(chunk_len, GFP_KERNEL);
-+	if (!tmp) {
-+		err = -ENOMEM;
-+		goto send_err;
-+	}
-+	/*
-+	 * Grabbing the lock before breaking up the transfer in
-+	 * multiple chunks is required to ensure that messages do
-+	 * not get fragmented and reordered.
-+	 */
-+	mutex_lock(&ep->sendlock);
-+	while (sent_len != len) {
-+		loop_len = len - sent_len;
-+		loop_len = min(chunk_len, loop_len);
-+		if (copy_from_user(tmp, msg, loop_len)) {
-+			err = -EFAULT;
-+			goto send_free_err;
-+		}
-+		err = _scif_send(epd, tmp, loop_len, flags);
-+		if (err < 0)
-+			goto send_free_err;
-+		sent_len += err;
-+		msg += err;
-+		if (err != loop_len)
-+			goto send_free_err;
-+	}
-+send_free_err:
-+	mutex_unlock(&ep->sendlock);
-+	kfree(tmp);
-+send_err:
-+	return err < 0 ? err : sent_len;
-+}
-+
-+/**
-+ * scif_user_recv() - Receive data from connection queue
-+ * @epd: The end point returned from scif_open()
-+ * @msg: Address to place data
-+ * @len: Length to receive
-+ * @flags: blocking or non blocking
-+ *
-+ * This function is called from the driver IOCTL entry point
-+ * only and is a wrapper for _scif_recv().
-+ */
-+int scif_user_recv(scif_epd_t epd, void __user *msg, int len, int flags)
-+{
-+	struct scif_endpt *ep = (struct scif_endpt *)epd;
-+	int err = 0;
-+	int recv_len = 0;
-+	char *tmp;
-+	int loop_len;
-+	int chunk_len = min(len, (1 << (MAX_ORDER + PAGE_SHIFT - 1)));
-+
-+	dev_dbg(scif_info.mdev.this_device,
-+		"SCIFAPI recv (U): ep %p %s\n", ep, scif_ep_states[ep->state]);
-+	if (!len)
-+		return 0;
-+
-+	err = scif_msg_param_check(epd, len, flags);
-+	if (err)
-+		goto recv_err;
-+
-+	tmp = kmalloc(chunk_len, GFP_KERNEL);
-+	if (!tmp) {
-+		err = -ENOMEM;
-+		goto recv_err;
-+	}
-+	/*
-+	 * Grabbing the lock before breaking up the transfer in
-+	 * multiple chunks is required to ensure that messages do
-+	 * not get fragmented and reordered.
-+	 */
-+	mutex_lock(&ep->recvlock);
-+	while (recv_len != len) {
-+		loop_len = len - recv_len;
-+		loop_len = min(chunk_len, loop_len);
-+		err = _scif_recv(epd, tmp, loop_len, flags);
-+		if (err < 0)
-+			goto recv_free_err;
-+		if (copy_to_user(msg, tmp, err)) {
-+			err = -EFAULT;
-+			goto recv_free_err;
-+		}
-+		recv_len += err;
-+		msg += err;
-+		if (err != loop_len)
-+			goto recv_free_err;
-+	}
-+recv_free_err:
-+	mutex_unlock(&ep->recvlock);
-+	kfree(tmp);
-+recv_err:
-+	return err < 0 ? err : recv_len;
-+}
-+
-+/**
-+ * scif_send() - Send data to connection queue
-+ * @epd: The end point returned from scif_open()
-+ * @msg: Address to place data
-+ * @len: Length to receive
-+ * @flags: blocking or non blocking
-+ *
-+ * This function is called from the kernel mode only and is
-+ * a wrapper for _scif_send().
-+ */
-+int scif_send(scif_epd_t epd, void *msg, int len, int flags)
-+{
-+	struct scif_endpt *ep = (struct scif_endpt *)epd;
-+	int ret;
-+
-+	dev_dbg(scif_info.mdev.this_device,
-+		"SCIFAPI send (K): ep %p %s\n", ep, scif_ep_states[ep->state]);
-+	if (!len)
-+		return 0;
-+
-+	ret = scif_msg_param_check(epd, len, flags);
-+	if (ret)
-+		return ret;
-+	if (!ep->remote_dev)
-+		return -ENOTCONN;
-+	/*
-+	 * Grab the mutex lock in the blocking case only
-+	 * to ensure messages do not get fragmented/reordered.
-+	 * The non blocking mode is protected using spin locks
-+	 * in _scif_send().
-+	 */
-+	if (flags & SCIF_SEND_BLOCK)
-+		mutex_lock(&ep->sendlock);
-+
-+	ret = _scif_send(epd, msg, len, flags);
-+
-+	if (flags & SCIF_SEND_BLOCK)
-+		mutex_unlock(&ep->sendlock);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(scif_send);
-+
-+/**
-+ * scif_recv() - Receive data from connection queue
-+ * @epd: The end point returned from scif_open()
-+ * @msg: Address to place data
-+ * @len: Length to receive
-+ * @flags: blocking or non blocking
-+ *
-+ * This function is called from the kernel mode only and is
-+ * a wrapper for _scif_recv().
-+ */
-+int scif_recv(scif_epd_t epd, void *msg, int len, int flags)
-+{
-+	struct scif_endpt *ep = (struct scif_endpt *)epd;
-+	int ret;
-+
-+	dev_dbg(scif_info.mdev.this_device,
-+		"SCIFAPI recv (K): ep %p %s\n", ep, scif_ep_states[ep->state]);
-+	if (!len)
-+		return 0;
-+
-+	ret = scif_msg_param_check(epd, len, flags);
-+	if (ret)
-+		return ret;
-+	/*
-+	 * Grab the mutex lock in the blocking case only
-+	 * to ensure messages do not get fragmented/reordered.
-+	 * The non blocking mode is protected using spin locks
-+	 * in _scif_send().
-+	 */
-+	if (flags & SCIF_RECV_BLOCK)
-+		mutex_lock(&ep->recvlock);
-+
-+	ret = _scif_recv(epd, msg, len, flags);
-+
-+	if (flags & SCIF_RECV_BLOCK)
-+		mutex_unlock(&ep->recvlock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(scif_recv);
-+
-+int scif_get_node_ids(u16 *nodes, int len, u16 *self)
-+{
-+	int online = 0;
-+	int offset = 0;
-+	int node;
-+
-+	if (!scif_is_mgmt_node())
-+		scif_get_node_info();
-+
-+	*self = scif_info.nodeid;
-+	mutex_lock(&scif_info.conflock);
-+	len = min_t(int, len, scif_info.total);
-+	for (node = 0; node <= scif_info.maxid; node++) {
-+		if (_scifdev_alive(&scif_dev[node])) {
-+			online++;
-+			if (offset < len)
-+				nodes[offset++] = node;
-+		}
-+	}
-+	dev_dbg(scif_info.mdev.this_device,
-+		"SCIFAPI get_node_ids total %d online %d filled in %d nodes\n",
-+		scif_info.total, online, offset);
-+	mutex_unlock(&scif_info.conflock);
-+
-+	return online;
-+}
-+EXPORT_SYMBOL_GPL(scif_get_node_ids);
-diff --git a/drivers/misc/mic/scif/scif_epd.c b/drivers/misc/mic/scif/scif_epd.c
-index 685ee5c..b4bfbb0 100644
---- a/drivers/misc/mic/scif/scif_epd.c
-+++ b/drivers/misc/mic/scif/scif_epd.c
-@@ -319,3 +319,35 @@ void scif_discnt_ack(struct scif_dev *scifdev, struct scifmsg *msg)
- 	spin_unlock(&ep->lock);
- 	complete(&ep->discon);
- }
-+
-+/**
-+ * scif_clientsend() - Respond to SCIF_CLIENT_SEND interrupt message
-+ * @msg:        Interrupt message
-+ *
-+ * Remote side is confirming send or receive interrupt handling is complete.
-+ */
-+void scif_clientsend(struct scif_dev *scifdev, struct scifmsg *msg)
-+{
-+	struct scif_endpt *ep = (struct scif_endpt *)msg->payload[0];
-+
-+	spin_lock(&ep->lock);
-+	if (SCIFEP_CONNECTED == ep->state)
-+		wake_up_interruptible(&ep->recvwq);
-+	spin_unlock(&ep->lock);
-+}
-+
-+/**
-+ * scif_clientrcvd() - Respond to SCIF_CLIENT_RCVD interrupt message
-+ * @msg:        Interrupt message
-+ *
-+ * Remote side is confirming send or receive interrupt handling is complete.
-+ */
-+void scif_clientrcvd(struct scif_dev *scifdev, struct scifmsg *msg)
-+{
-+	struct scif_endpt *ep = (struct scif_endpt *)msg->payload[0];
-+
-+	spin_lock(&ep->lock);
-+	if (SCIFEP_CONNECTED == ep->state)
-+		wake_up_interruptible(&ep->sendwq);
-+	spin_unlock(&ep->lock);
-+}
-diff --git a/drivers/misc/mic/scif/scif_fd.c b/drivers/misc/mic/scif/scif_fd.c
-index c1d6bc3..b1678fe 100644
---- a/drivers/misc/mic/scif/scif_fd.c
-+++ b/drivers/misc/mic/scif/scif_fd.c
-@@ -69,6 +69,7 @@ static long scif_fdioctl(struct file *f, unsigned int cmd, unsigned long arg)
- 	struct scif_endpt *priv = f->private_data;
- 	void __user *argp = (void __user *)arg;
- 	int err = 0;
-+	struct scifioctl_msg request;
- 	bool non_block = false;
+diff --git a/drivers/misc/mic/Kconfig b/drivers/misc/mic/Kconfig
+index bcf6e36..a2ea3ab 100644
+--- a/drivers/misc/mic/Kconfig
++++ b/drivers/misc/mic/Kconfig
+@@ -36,7 +36,7 @@ comment "Intel MIC Host Driver"
  
- 	non_block = !!(f->f_flags & O_NONBLOCK);
-@@ -197,6 +198,98 @@ static long scif_fdioctl(struct file *f, unsigned int cmd, unsigned long arg)
- 		f->private_data = newep;
- 		return 0;
- 	}
-+	case SCIF_SEND:
-+	{
-+		struct scif_endpt *priv = f->private_data;
-+
-+		if (copy_from_user(&request, argp,
-+				   sizeof(struct scifioctl_msg))) {
-+			err = -EFAULT;
-+			goto send_err;
-+		}
-+		err = scif_user_send(priv, request.msg,
-+				     request.len, request.flags);
-+		if (err < 0)
-+			goto send_err;
-+		if (copy_to_user(&
-+				 ((struct scifioctl_msg __user *)argp)->out_len,
-+				 &err, sizeof(err))) {
-+			err = -EFAULT;
-+			goto send_err;
-+		}
-+		err = 0;
-+send_err:
-+		scif_err_debug(err, "scif_send");
-+		return err;
-+	}
-+	case SCIF_RECV:
-+	{
-+		struct scif_endpt *priv = f->private_data;
-+
-+		if (copy_from_user(&request, argp,
-+				   sizeof(struct scifioctl_msg))) {
-+			err = -EFAULT;
-+			goto recv_err;
-+		}
-+
-+		err = scif_user_recv(priv, request.msg,
-+				     request.len, request.flags);
-+		if (err < 0)
-+			goto recv_err;
-+
-+		if (copy_to_user(&
-+				 ((struct scifioctl_msg __user *)argp)->out_len,
-+			&err, sizeof(err))) {
-+			err = -EFAULT;
-+			goto recv_err;
-+		}
-+		err = 0;
-+recv_err:
-+		scif_err_debug(err, "scif_recv");
-+		return err;
-+	}
-+	case SCIF_GET_NODEIDS:
-+	{
-+		struct scifioctl_node_ids node_ids;
-+		int entries;
-+		u16 *nodes;
-+		void __user *unodes, *uself;
-+		u16 self;
-+
-+		if (copy_from_user(&node_ids, argp, sizeof(node_ids))) {
-+			err = -EFAULT;
-+			goto getnodes_err2;
-+		}
-+
-+		entries = min_t(int, scif_info.maxid, node_ids.len);
-+		nodes = kmalloc_array(entries, sizeof(u16), GFP_KERNEL);
-+		if (entries && !nodes) {
-+			err = -ENOMEM;
-+			goto getnodes_err2;
-+		}
-+		node_ids.len = scif_get_node_ids(nodes, entries, &self);
-+
-+		unodes = node_ids.nodes;
-+		if (copy_to_user(unodes, nodes, sizeof(u16) * entries)) {
-+			err = -EFAULT;
-+			goto getnodes_err1;
-+		}
-+
-+		uself = node_ids.self;
-+		if (copy_to_user(uself, &self, sizeof(u16))) {
-+			err = -EFAULT;
-+			goto getnodes_err1;
-+		}
-+
-+		if (copy_to_user(argp, &node_ids, sizeof(node_ids))) {
-+			err = -EFAULT;
-+			goto getnodes_err1;
-+		}
-+getnodes_err1:
-+		kfree(nodes);
-+getnodes_err2:
-+		return err;
-+	}
- 	}
- 	return -EINVAL;
- }
-diff --git a/drivers/misc/mic/scif/scif_nm.c b/drivers/misc/mic/scif/scif_nm.c
-index 0469aad..9b4c538 100644
---- a/drivers/misc/mic/scif/scif_nm.c
-+++ b/drivers/misc/mic/scif/scif_nm.c
-@@ -218,3 +218,20 @@ void scif_disconnect_node(u32 node_id, bool mgmt_initiated)
- 				   (atomic_read(&scifdev->disconn_rescnt) == 1),
- 				   SCIF_NODE_ALIVE_TIMEOUT);
- }
-+
-+void scif_get_node_info(void)
-+{
-+	struct scifmsg msg;
-+	DECLARE_COMPLETION_ONSTACK(node_info);
-+
-+	msg.uop = SCIF_GET_NODE_INFO;
-+	msg.src.node = scif_info.nodeid;
-+	msg.dst.node = SCIF_MGMT_NODE;
-+	msg.payload[3] = (u64)&node_info;
-+
-+	if ((scif_nodeqp_send(&scif_dev[SCIF_MGMT_NODE], &msg)))
-+		return;
-+
-+	/* Wait for a response with SCIF_GET_NODE_INFO */
-+	wait_for_completion(&node_info);
-+}
-diff --git a/drivers/misc/mic/scif/scif_nodeqp.c b/drivers/misc/mic/scif/scif_nodeqp.c
-index aee9025..141923c 100644
---- a/drivers/misc/mic/scif/scif_nodeqp.c
-+++ b/drivers/misc/mic/scif/scif_nodeqp.c
-@@ -576,7 +576,10 @@ static char *message_types[] = {"BAD",
- 				"CNCT_GNTNACK",
- 				"CNCT_REJ",
- 				"DISCNCT",
--				"DISCNT_ACK"};
-+				"DISCNT_ACK",
-+				"CLIENT_SENT",
-+				"CLIENT_RCVD",
-+				"SCIF_GET_NODE_INFO"};
+ config INTEL_MIC_HOST
+ 	tristate "Intel MIC Host Driver"
+-	depends on 64BIT && PCI && X86 && INTEL_MIC_BUS
++	depends on 64BIT && PCI && X86 && INTEL_MIC_BUS && SCIF_BUS
+ 	select VHOST_RING
+ 	help
+ 	  This enables Host Driver support for the Intel Many Integrated
+diff --git a/drivers/misc/mic/host/mic_device.h b/drivers/misc/mic/host/mic_device.h
+index 016bd15..01a7555 100644
+--- a/drivers/misc/mic/host/mic_device.h
++++ b/drivers/misc/mic/host/mic_device.h
+@@ -27,7 +27,7 @@
+ #include <linux/irqreturn.h>
+ #include <linux/dmaengine.h>
+ #include <linux/mic_bus.h>
+-
++#include "../bus/scif_bus.h"
+ #include "mic_intr.h"
  
- static void
- scif_display_message(struct scif_dev *scifdev, struct scifmsg *msg,
-@@ -946,6 +949,34 @@ scif_node_remove_ack(struct scif_dev *scifdev, struct scifmsg *msg)
- 	wake_up(&sdev->disconn_wq);
- }
- 
-+/**
-+ * scif_get_node_info: Respond to SCIF_GET_NODE_INFO interrupt message
-+ * @msg:        Interrupt message
-+ *
-+ * Retrieve node info i.e maxid and total from the mgmt node.
-+ */
-+static __always_inline void
-+scif_get_node_info_resp(struct scif_dev *scifdev, struct scifmsg *msg)
-+{
-+	if (scif_is_mgmt_node()) {
-+		swap(msg->dst.node, msg->src.node);
-+		mutex_lock(&scif_info.conflock);
-+		msg->payload[1] = scif_info.maxid;
-+		msg->payload[2] = scif_info.total;
-+		mutex_unlock(&scif_info.conflock);
-+		scif_nodeqp_send(scifdev, msg);
-+	} else {
-+		struct completion *node_info =
-+			(struct completion *)msg->payload[3];
-+
-+		mutex_lock(&scif_info.conflock);
-+		scif_info.maxid = msg->payload[1];
-+		scif_info.total = msg->payload[2];
-+		complete_all(node_info);
-+		mutex_unlock(&scif_info.conflock);
-+	}
-+}
-+
- static void
- scif_msg_unknown(struct scif_dev *scifdev, struct scifmsg *msg)
- {
-@@ -973,6 +1004,9 @@ static void (*scif_intr_func[SCIF_MAX_MSG + 1])
- 	scif_cnctrej,		/* SCIF_CNCT_REJ */
- 	scif_discnct,		/* SCIF_DISCNCT */
- 	scif_discnt_ack,	/* SCIF_DISCNT_ACK */
-+	scif_clientsend,	/* SCIF_CLIENT_SENT */
-+	scif_clientrcvd,	/* SCIF_CLIENT_RCVD */
-+	scif_get_node_info_resp,/* SCIF_GET_NODE_INFO */
+ /* The maximum number of MIC devices supported in a single host system. */
+@@ -90,7 +90,9 @@ enum mic_stepping {
+  * @vdev_list: list of virtio devices.
+  * @pm_notifier: Handles PM notifications from the OS.
+  * @dma_mbdev: MIC BUS DMA device.
+- * @dma_ch: DMA channel reserved by this driver for use by virtio devices.
++ * @dma_ch - Array of DMA channels
++ * @num_dma_ch - Number of DMA channels available
++ * @scdev: SCIF device on the SCIF virtual bus.
+  */
+ struct mic_device {
+ 	struct mic_mw mmio;
+@@ -129,7 +131,9 @@ struct mic_device {
+ 	struct list_head vdev_list;
+ 	struct notifier_block pm_notifier;
+ 	struct mbus_device *dma_mbdev;
+-	struct dma_chan *dma_ch;
++	struct dma_chan *dma_ch[MIC_MAX_DMA_CHAN];
++	int num_dma_ch;
++	struct scif_hw_dev *scdev;
  };
  
  /**
+@@ -228,4 +232,5 @@ void mic_exit_debugfs(void);
+ void mic_prepare_suspend(struct mic_device *mdev);
+ void mic_complete_resume(struct mic_device *mdev);
+ void mic_suspend(struct mic_device *mdev);
++extern atomic_t g_num_mics;
+ #endif
+diff --git a/drivers/misc/mic/host/mic_intr.h b/drivers/misc/mic/host/mic_intr.h
+index 9f783d4a..cce2882 100644
+--- a/drivers/misc/mic/host/mic_intr.h
++++ b/drivers/misc/mic/host/mic_intr.h
+@@ -28,8 +28,9 @@
+  * 3 for virtio network, console and block devices.
+  * 1 for card shutdown notifications.
+  * 4 for host owned DMA channels.
++ * 1 for SCIF
+  */
+-#define MIC_MIN_MSIX 8
++#define MIC_MIN_MSIX 9
+ #define MIC_NUM_OFFSETS 32
+ 
+ /**
+diff --git a/drivers/misc/mic/host/mic_smpt.h b/drivers/misc/mic/host/mic_smpt.h
+index 51970ab..68721c6 100644
+--- a/drivers/misc/mic/host/mic_smpt.h
++++ b/drivers/misc/mic/host/mic_smpt.h
+@@ -78,6 +78,7 @@ void mic_unmap_single(struct mic_device *mdev,
+ dma_addr_t mic_map(struct mic_device *mdev,
+ 	dma_addr_t dma_addr, size_t size);
+ void mic_unmap(struct mic_device *mdev, dma_addr_t mic_addr, size_t size);
++dma_addr_t mic_to_dma_addr(struct mic_device *mdev, dma_addr_t mic_addr);
+ 
+ /**
+  * mic_map_error - Check a MIC address for errors.
+diff --git a/drivers/misc/mic/host/mic_boot.c b/drivers/misc/mic/host/mic_boot.c
+index ff2b0fb..bb15506 100644
+--- a/drivers/misc/mic/host/mic_boot.c
++++ b/drivers/misc/mic/host/mic_boot.c
+@@ -21,6 +21,7 @@
+ #include <linux/delay.h>
+ #include <linux/firmware.h>
+ #include <linux/pci.h>
++#include <linux/kmod.h>
+ 
+ #include <linux/mic_common.h>
+ #include <linux/mic_bus.h>
+@@ -29,6 +30,188 @@
+ #include "mic_smpt.h"
+ #include "mic_virtio.h"
+ 
++static inline struct mic_device *scdev_to_mdev(struct scif_hw_dev *scdev)
++{
++	return dev_get_drvdata(scdev->dev.parent);
++}
++
++static void *__mic_dma_alloc(struct device *dev, size_t size,
++			     dma_addr_t *dma_handle, gfp_t gfp,
++			     struct dma_attrs *attrs)
++{
++	struct scif_hw_dev *scdev = dev_get_drvdata(dev);
++	struct mic_device *mdev = scdev_to_mdev(scdev);
++	dma_addr_t tmp;
++	void *va = kmalloc(size, gfp);
++
++	if (va) {
++		tmp = mic_map_single(mdev, va, size);
++		if (dma_mapping_error(dev, tmp)) {
++			kfree(va);
++			va = NULL;
++		} else {
++			*dma_handle = tmp;
++		}
++	}
++	return va;
++}
++
++static void __mic_dma_free(struct device *dev, size_t size, void *vaddr,
++			   dma_addr_t dma_handle, struct dma_attrs *attrs)
++{
++	struct scif_hw_dev *scdev = dev_get_drvdata(dev);
++	struct mic_device *mdev = scdev_to_mdev(scdev);
++
++	mic_unmap_single(mdev, dma_handle, size);
++	kfree(vaddr);
++}
++
++static dma_addr_t
++__mic_dma_map_page(struct device *dev, struct page *page, unsigned long offset,
++		   size_t size, enum dma_data_direction dir,
++		   struct dma_attrs *attrs)
++{
++	void *va = phys_to_virt(page_to_phys(page)) + offset;
++	struct scif_hw_dev *scdev = dev_get_drvdata(dev);
++	struct mic_device *mdev = scdev_to_mdev(scdev);
++
++	return mic_map_single(mdev, va, size);
++}
++
++static void
++__mic_dma_unmap_page(struct device *dev, dma_addr_t dma_addr,
++		     size_t size, enum dma_data_direction dir,
++		     struct dma_attrs *attrs)
++{
++	struct scif_hw_dev *scdev = dev_get_drvdata(dev);
++	struct mic_device *mdev = scdev_to_mdev(scdev);
++
++	mic_unmap_single(mdev, dma_addr, size);
++}
++
++static int __mic_dma_map_sg(struct device *dev, struct scatterlist *sg,
++			    int nents, enum dma_data_direction dir,
++			    struct dma_attrs *attrs)
++{
++	struct scif_hw_dev *scdev = dev_get_drvdata(dev);
++	struct mic_device *mdev = scdev_to_mdev(scdev);
++	struct scatterlist *s;
++	int i, j, ret;
++	dma_addr_t da;
++
++	ret = dma_map_sg(mdev->sdev->parent, sg, nents, dir);
++	if (ret <= 0)
++		return 0;
++
++	for_each_sg(sg, s, nents, i) {
++		da = mic_map(mdev, sg_dma_address(s) + s->offset, s->length);
++		if (!da)
++			goto err;
++		sg_dma_address(s) = da;
++	}
++	return nents;
++err:
++	for_each_sg(sg, s, i, j) {
++		mic_unmap(mdev, sg_dma_address(s), s->length);
++		sg_dma_address(s) = mic_to_dma_addr(mdev, sg_dma_address(s));
++	}
++	dma_unmap_sg(mdev->sdev->parent, sg, nents, dir);
++	return 0;
++}
++
++static void __mic_dma_unmap_sg(struct device *dev,
++			       struct scatterlist *sg, int nents,
++			       enum dma_data_direction dir,
++			       struct dma_attrs *attrs)
++{
++	struct scif_hw_dev *scdev = dev_get_drvdata(dev);
++	struct mic_device *mdev = scdev_to_mdev(scdev);
++	struct scatterlist *s;
++	dma_addr_t da;
++	int i;
++
++	for_each_sg(sg, s, nents, i) {
++		da = mic_to_dma_addr(mdev, sg_dma_address(s));
++		mic_unmap(mdev, sg_dma_address(s), s->length);
++		sg_dma_address(s) = da;
++	}
++	dma_unmap_sg(mdev->sdev->parent, sg, nents, dir);
++}
++
++static struct dma_map_ops __mic_dma_ops = {
++	.alloc = __mic_dma_alloc,
++	.free = __mic_dma_free,
++	.map_page = __mic_dma_map_page,
++	.unmap_page = __mic_dma_unmap_page,
++	.map_sg = __mic_dma_map_sg,
++	.unmap_sg = __mic_dma_unmap_sg,
++};
++
++static struct mic_irq *
++___mic_request_irq(struct scif_hw_dev *scdev,
++		   irqreturn_t (*func)(int irq, void *data),
++				       const char *name,
++				       void *data, int db)
++{
++	struct mic_device *mdev = scdev_to_mdev(scdev);
++
++	return mic_request_threaded_irq(mdev, func, NULL, name, data,
++					db, MIC_INTR_DB);
++}
++
++static void
++___mic_free_irq(struct scif_hw_dev *scdev,
++		struct mic_irq *cookie, void *data)
++{
++	struct mic_device *mdev = scdev_to_mdev(scdev);
++
++	return mic_free_irq(mdev, cookie, data);
++}
++
++static void ___mic_ack_interrupt(struct scif_hw_dev *scdev, int num)
++{
++	struct mic_device *mdev = scdev_to_mdev(scdev);
++
++	mdev->ops->intr_workarounds(mdev);
++}
++
++static int ___mic_next_db(struct scif_hw_dev *scdev)
++{
++	struct mic_device *mdev = scdev_to_mdev(scdev);
++
++	return mic_next_db(mdev);
++}
++
++static void ___mic_send_intr(struct scif_hw_dev *scdev, int db)
++{
++	struct mic_device *mdev = scdev_to_mdev(scdev);
++
++	mdev->ops->send_intr(mdev, db);
++}
++
++static void __iomem *___mic_ioremap(struct scif_hw_dev *scdev,
++				    phys_addr_t pa, size_t len)
++{
++	struct mic_device *mdev = scdev_to_mdev(scdev);
++
++	return mdev->aper.va + pa;
++}
++
++static void ___mic_iounmap(struct scif_hw_dev *scdev, void __iomem *va)
++{
++	/* nothing to do */
++}
++
++static struct scif_hw_ops scif_hw_ops = {
++	.request_irq = ___mic_request_irq,
++	.free_irq = ___mic_free_irq,
++	.ack_interrupt = ___mic_ack_interrupt,
++	.next_db = ___mic_next_db,
++	.send_intr = ___mic_send_intr,
++	.ioremap = ___mic_ioremap,
++	.iounmap = ___mic_iounmap,
++};
++
+ static inline struct mic_device *mbdev_to_mdev(struct mbus_device *mbdev)
+ {
+ 	return dev_get_drvdata(mbdev->dev.parent);
+@@ -127,6 +310,58 @@ void mic_bootparam_init(struct mic_device *mdev)
+ 	bootparam->h2c_config_db = -1;
+ 	bootparam->shutdown_status = 0;
+ 	bootparam->shutdown_card = 0;
++	/* Total nodes = number of MICs + 1 for self node */
++	bootparam->tot_nodes = atomic_read(&g_num_mics) + 1;
++	bootparam->node_id = mdev->id + 1;
++	bootparam->scif_host_dma_addr = 0x0;
++	bootparam->scif_card_dma_addr = 0x0;
++	bootparam->c2h_scif_db = -1;
++	bootparam->h2c_scif_db = -1;
++}
++
++/**
++ * mic_request_dma_chans - Request DMA channels
++ * @mdev: pointer to mic_device instance
++ *
++ * returns number of DMA channels acquired
++ */
++static int mic_request_dma_chans(struct mic_device *mdev)
++{
++	dma_cap_mask_t mask;
++	struct dma_chan *chan;
++
++	request_module("mic_x100_dma");
++	dma_cap_zero(mask);
++	dma_cap_set(DMA_MEMCPY, mask);
++
++	do {
++		chan = dma_request_channel(mask, mdev->ops->dma_filter,
++					   mdev->sdev->parent);
++		if (chan) {
++			mdev->dma_ch[mdev->num_dma_ch++] = chan;
++			if (mdev->num_dma_ch >= MIC_MAX_DMA_CHAN)
++				break;
++		}
++	} while (chan);
++	dev_info(mdev->sdev->parent, "DMA channels # %d\n", mdev->num_dma_ch);
++	return mdev->num_dma_ch;
++}
++
++/**
++ * mic_free_dma_chans - release DMA channels
++ * @mdev: pointer to mic_device instance
++ *
++ * returns none
++ */
++static void mic_free_dma_chans(struct mic_device *mdev)
++{
++	int i = 0;
++
++	for (i = 0; i < mdev->num_dma_ch; i++) {
++		dma_release_channel(mdev->dma_ch[i]);
++		mdev->dma_ch[i] = NULL;
++	}
++	mdev->num_dma_ch = 0;
+ }
+ 
+ /**
+@@ -141,6 +376,7 @@ int mic_start(struct mic_device *mdev, const char *buf)
+ {
+ 	int rc;
+ 	mutex_lock(&mdev->mic_mutex);
++	mic_bootparam_init(mdev);
+ retry:
+ 	if (MIC_OFFLINE != mdev->state) {
+ 		rc = -EINVAL;
+@@ -161,14 +397,22 @@ retry:
+ 		rc = PTR_ERR(mdev->dma_mbdev);
+ 		goto unlock_ret;
+ 	}
+-	mdev->dma_ch = mic_request_dma_chan(mdev);
+-	if (!mdev->dma_ch) {
+-		rc = -ENXIO;
++	if (!mic_request_dma_chans(mdev)) {
++		rc = -ENODEV;
+ 		goto dma_remove;
+ 	}
++	mdev->scdev = scif_register_device(mdev->sdev->parent, MIC_SCIF_DEV,
++					   &__mic_dma_ops, &scif_hw_ops,
++					   mdev->id + 1, 0, &mdev->mmio,
++					   &mdev->aper, mdev->dp, NULL,
++					   mdev->dma_ch, mdev->num_dma_ch);
++	if (IS_ERR(mdev->scdev)) {
++		rc = PTR_ERR(mdev->scdev);
++		goto dma_free;
++	}
+ 	rc = mdev->ops->load_mic_fw(mdev, buf);
+ 	if (rc)
+-		goto dma_release;
++		goto scif_remove;
+ 	mic_smpt_restore(mdev);
+ 	mic_intr_restore(mdev);
+ 	mdev->intr_ops->enable_interrupts(mdev);
+@@ -177,8 +421,10 @@ retry:
+ 	mdev->ops->send_firmware_intr(mdev);
+ 	mic_set_state(mdev, MIC_ONLINE);
+ 	goto unlock_ret;
+-dma_release:
+-	dma_release_channel(mdev->dma_ch);
++scif_remove:
++	scif_unregister_device(mdev->scdev);
++dma_free:
++	mic_free_dma_chans(mdev);
+ dma_remove:
+ 	mbus_unregister_device(mdev->dma_mbdev);
+ unlock_ret:
+@@ -197,11 +443,9 @@ void mic_stop(struct mic_device *mdev, bool force)
+ {
+ 	mutex_lock(&mdev->mic_mutex);
+ 	if (MIC_OFFLINE != mdev->state || force) {
++		scif_unregister_device(mdev->scdev);
+ 		mic_virtio_reset_devices(mdev);
+-		if (mdev->dma_ch) {
+-			dma_release_channel(mdev->dma_ch);
+-			mdev->dma_ch = NULL;
+-		}
++		mic_free_dma_chans(mdev);
+ 		mbus_unregister_device(mdev->dma_mbdev);
+ 		mic_bootparam_init(mdev);
+ 		mic_reset(mdev);
+diff --git a/drivers/misc/mic/host/mic_debugfs.c b/drivers/misc/mic/host/mic_debugfs.c
+index 687e9aa..3c9ea48 100644
+--- a/drivers/misc/mic/host/mic_debugfs.c
++++ b/drivers/misc/mic/host/mic_debugfs.c
+@@ -214,6 +214,19 @@ static int mic_dp_show(struct seq_file *s, void *pos)
+ 		   bootparam->shutdown_status);
+ 	seq_printf(s, "Bootparam: shutdown_card %d\n",
+ 		   bootparam->shutdown_card);
++	seq_printf(s, "Bootparam: tot_nodes %d\n",
++		   bootparam->tot_nodes);
++	seq_printf(s, "Bootparam: node_id %d\n",
++		   bootparam->node_id);
++	seq_printf(s, "Bootparam: c2h_scif_db %d\n",
++		   bootparam->c2h_scif_db);
++	seq_printf(s, "Bootparam: h2c_scif_db %d\n",
++		   bootparam->h2c_scif_db);
++	seq_printf(s, "Bootparam: scif_host_dma_addr 0x%llx\n",
++		   bootparam->scif_host_dma_addr);
++	seq_printf(s, "Bootparam: scif_card_dma_addr 0x%llx\n",
++		   bootparam->scif_card_dma_addr);
++
+ 
+ 	for (i = sizeof(*bootparam); i < MIC_DP_SIZE;
+ 	     i += mic_total_desc_size(d)) {
+diff --git a/drivers/misc/mic/host/mic_main.c b/drivers/misc/mic/host/mic_main.c
+index ab37a31..4564629 100644
+--- a/drivers/misc/mic/host/mic_main.c
++++ b/drivers/misc/mic/host/mic_main.c
+@@ -67,6 +67,8 @@ static struct ida g_mic_ida;
+ static struct class *g_mic_class;
+ /* Base device node number for MIC devices */
+ static dev_t g_mic_devno;
++/* Track the total number of MIC devices */
++atomic_t g_num_mics;
+ 
+ static const struct file_operations mic_fops = {
+ 	.open = mic_open,
+@@ -408,6 +410,7 @@ static int mic_probe(struct pci_dev *pdev,
+ 		dev_err(&pdev->dev, "cdev_add err id %d rc %d\n", mdev->id, rc);
+ 		goto cleanup_debug_dir;
+ 	}
++	atomic_inc(&g_num_mics);
+ 	return 0;
+ cleanup_debug_dir:
+ 	mic_delete_debug_dir(mdev);
+@@ -459,6 +462,7 @@ static void mic_remove(struct pci_dev *pdev)
+ 		return;
+ 
+ 	mic_stop(mdev, false);
++	atomic_dec(&g_num_mics);
+ 	cdev_del(&mdev->cdev);
+ 	mic_delete_debug_dir(mdev);
+ 	mutex_lock(&mdev->mic_mutex);
+@@ -478,6 +482,7 @@ static void mic_remove(struct pci_dev *pdev)
+ 	ida_simple_remove(&g_mic_ida, mdev->id);
+ 	kfree(mdev);
+ }
++
+ static struct pci_driver mic_driver = {
+ 	.name = mic_driver_name,
+ 	.id_table = mic_pci_tbl,
+@@ -512,6 +517,7 @@ static int __init mic_init(void)
+ 	}
+ 	return ret;
+ cleanup_debugfs:
++	ida_destroy(&g_mic_ida);
+ 	mic_exit_debugfs();
+ 	class_destroy(g_mic_class);
+ cleanup_chrdev:
+diff --git a/drivers/misc/mic/host/mic_smpt.c b/drivers/misc/mic/host/mic_smpt.c
+index fae474c..cec8203 100644
+--- a/drivers/misc/mic/host/mic_smpt.c
++++ b/drivers/misc/mic/host/mic_smpt.c
+@@ -174,8 +174,7 @@ static int mic_get_smpt_ref_count(struct mic_device *mdev, dma_addr_t dma_addr,
+  *
+  * returns a DMA address.
+  */
+-static dma_addr_t
+-mic_to_dma_addr(struct mic_device *mdev, dma_addr_t mic_addr)
++dma_addr_t mic_to_dma_addr(struct mic_device *mdev, dma_addr_t mic_addr)
+ {
+ 	struct mic_smpt_info *smpt_info = mdev->smpt;
+ 	int spt;
+@@ -214,7 +213,7 @@ dma_addr_t mic_map(struct mic_device *mdev, dma_addr_t dma_addr, size_t size)
+ 	if (!size || size > mic_max_system_memory(mdev))
+ 		return mic_addr;
+ 
+-	ref = kmalloc(mdev->smpt->info.num_reg * sizeof(s64), GFP_KERNEL);
++	ref = kmalloc_array(mdev->smpt->info.num_reg, sizeof(s64), GFP_ATOMIC);
+ 	if (!ref)
+ 		return mic_addr;
+ 
+@@ -271,7 +270,7 @@ void mic_unmap(struct mic_device *mdev, dma_addr_t mic_addr, size_t size)
+ 	}
+ 
+ 	spt = mic_sys_addr_to_smpt(mdev, mic_addr);
+-	ref = kmalloc(mdev->smpt->info.num_reg * sizeof(s64), GFP_KERNEL);
++	ref = kmalloc_array(mdev->smpt->info.num_reg, sizeof(s64), GFP_ATOMIC);
+ 	if (!ref)
+ 		return;
+ 
+diff --git a/drivers/misc/mic/host/mic_virtio.c b/drivers/misc/mic/host/mic_virtio.c
+index a020e4e..cc08e9f 100644
+--- a/drivers/misc/mic/host/mic_virtio.c
++++ b/drivers/misc/mic/host/mic_virtio.c
+@@ -40,7 +40,7 @@ static int mic_sync_dma(struct mic_device *mdev, dma_addr_t dst,
+ {
+ 	int err = 0;
+ 	struct dma_async_tx_descriptor *tx;
+-	struct dma_chan *mic_ch = mdev->dma_ch;
++	struct dma_chan *mic_ch = mdev->dma_ch[0];
+ 
+ 	if (!mic_ch) {
+ 		err = -EBUSY;
+@@ -80,7 +80,7 @@ static int mic_virtio_copy_to_user(struct mic_vdev *mvdev, void __user *ubuf,
+ 	struct mic_device *mdev = mvdev->mdev;
+ 	void __iomem *dbuf = mdev->aper.va + daddr;
+ 	struct mic_vringh *mvr = &mvdev->mvr[vr_idx];
+-	size_t dma_alignment = 1 << mdev->dma_ch->device->copy_align;
++	size_t dma_alignment = 1 << mdev->dma_ch[0]->device->copy_align;
+ 	size_t dma_offset;
+ 	size_t partlen;
+ 	int err;
+@@ -129,7 +129,7 @@ static int mic_virtio_copy_from_user(struct mic_vdev *mvdev, void __user *ubuf,
+ 	struct mic_device *mdev = mvdev->mdev;
+ 	void __iomem *dbuf = mdev->aper.va + daddr;
+ 	struct mic_vringh *mvr = &mvdev->mvr[vr_idx];
+-	size_t dma_alignment = 1 << mdev->dma_ch->device->copy_align;
++	size_t dma_alignment = 1 << mdev->dma_ch[0]->device->copy_align;
+ 	size_t partlen;
+ 	int err;
+ 
+diff --git a/drivers/misc/mic/host/mic_x100.c b/drivers/misc/mic/host/mic_x100.c
+index b7a21e1..3341e90 100644
+--- a/drivers/misc/mic/host/mic_x100.c
++++ b/drivers/misc/mic/host/mic_x100.c
+@@ -167,8 +167,7 @@ static void mic_x100_send_intr(struct mic_device *mdev, int doorbell)
+ 	if (doorbell < MIC_X100_NUM_SBOX_IRQ) {
+ 		mic_x100_send_sbox_intr(mdev, doorbell);
+ 	} else {
+-		rdmasr_db = doorbell - MIC_X100_NUM_SBOX_IRQ +
+-			MIC_X100_RDMASR_IRQ_BASE;
++		rdmasr_db = doorbell - MIC_X100_NUM_SBOX_IRQ;
+ 		mic_x100_send_rdmasr_intr(mdev, rdmasr_db);
+ 	}
+ }
 -- 
 1.8.2.1
 
