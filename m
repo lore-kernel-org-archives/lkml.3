@@ -1,109 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751010AbbALLT0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 06:19:26 -0500
-Received: from mta-out1.inet.fi ([62.71.2.195]:56552 "EHLO kirsi1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750725AbbALLTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 06:19:24 -0500
-Date: Mon, 12 Jan 2015 13:19:06 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, LKP ML <lkp@01.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [LKP] [mm] Find a way to test remap_file_pages
-Message-ID: <20150112111906.GB16935@node.dhcp.inet.fi>
-References: <1421032741.6201.162.camel@intel.com>
- <20150112142629.46c45532@canb.auug.org.au>
+	id S1751314AbbALLTg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 06:19:36 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:59812 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113AbbALLTe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 06:19:34 -0500
+Message-ID: <54B3ADBD.6050009@arm.com>
+Date: Mon, 12 Jan 2015 11:19:25 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150112142629.46c45532@canb.auug.org.au>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+CC: Russell King <linux@arm.linux.org.uk>, Rob Herring <robh+dt@kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] irqchip: gic: Allow interrupt level to be set for
+ PPIs.
+References: <1417437909-20923-1-git-send-email-Liviu.Dudau@arm.com> <54AA53C2.9040903@arm.com> <20150112111509.GC823@e106497-lin.cambridge.arm.com>
+In-Reply-To: <20150112111509.GC823@e106497-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 02:26:29PM +1100, Stephen Rothwell wrote:
-> [Just cc'ing Andrew as this patch is in his tree]
+Hi Liviu,
+
+Welcome back! ;-)
+
+On 12/01/15 11:15, Liviu Dudau wrote:
+> On Mon, Jan 05, 2015 at 09:05:06AM +0000, Marc Zyngier wrote:
+>> Hi Liviu,
 > 
-> On Mon, 12 Jan 2015 11:19:01 +0800 Huang Ying <ying.huang@intel.com> wrote:
-> >
-> > FYI, we noticed the below changes on
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
-> > commit 974bb1d5d44f008d7f207437d63d46658ff41dff ("mm: replace remap_file_pages() syscall with emulation")
-> > 
-> > That is, trinity can be used to test some aspect of remap_file_pages.
-> > 
-> > +---------------------------------------------------+------------+------------+
-> > |                                                   | d96eeaf2cb | 974bb1d5d4 |
-> > +---------------------------------------------------+------------+------------+
-> > | boot_successes                                    | 0          | 0          |
-> > | boot_failures                                     | 10         | 10         |
-> > | WARNING:at_net/netlink/genetlink.c:#genl_unbind() | 10         | 5          |
-> > | backtrace:netlink_setsockopt                      | 3          | 2          |
-> > | backtrace:SyS_setsockopt                          | 3          | 2          |
-> > | backtrace:SyS_socketcall                          | 3          | 2          |
-> > | backtrace:do_group_exit                           | 10         | 5          |
-> > | backtrace:SyS_exit_group                          | 10         | 5          |
-> > | page_allocation_failure:order:#,mode              | 0          | 5          |
-> > | backtrace:btrfs_test_extent_io                    | 0          | 5          |
-> > | backtrace:init_btrfs_fs                           | 0          | 5          |
-> > | backtrace:kernel_init_freeable                    | 0          | 5          |
-> > +---------------------------------------------------+------------+------------+
-> > 
-> > 
-> > [   29.665081] Bits 55-60 of /proc/PID/pagemap entries are about to stop being page-shift some time soon. See the linux/Documentation/vm/pagemap.txt for details.
-> > [   29.675960] mmap: trinity-c0 (873) uses deprecated remap_file_pages() syscall. See Documentation/vm/remap_file_pages.txt.
-> > [   29.681044] ------------[ cut here ]------------
-> > [   29.681841] WARNING: CPU: 0 PID: 870 at net/netlink/genetlink.c:1037 genl_unbind+0x96/0xaa()
-> > [   29.683610] warning: process `trinity-c0' used the obsolete bdflush system call
-> > [   29.684911] Fix your initscripts?
-> > [   29.685683] VFS: Warning: trinity-c0 using old stat() call. Recompile your binary.
-> > [   29.686963] CPU: 0 PID: 870 Comm: trinity-main Not tainted 3.19.0-rc3-next-20150109-g06f367d #290
-> > [   29.688399] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> > [   29.689349]  00000000 00000000 d34f3ea4
-> > [   29.694083] ------------[ cut here ]------------
-> > [   29.695096] WARNING: CPU: 0 PID: 872 at net/netlink/genetlink.c:1037 genl_unbind+0x96/0xaa()
-> > [   29.696724]  c15933f7 d34f3ec0 c103c7ff 0000040d c1581310
-> > [   29.698051]  00000001 00000001 00000000 d34f3ed0 c103c89c 00000009 00000000 d34f3ee8
-> > [   29.699904] CPU: 0 PID: 872 Comm: trinity-main Not tainted 3.19.0-rc3-next-20150109-g06f367d #290
-> > [   29.701406] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> > [   29.702291]  00000000 00000000 d34d9ea4 c15933f7 d34d9ec0
-> > [   29.703253]  c1581310 c18836fc 00000001 d341f840 00000000 d34f3f0c c157f810 d15b0b40
-> > [   29.705361] Call Trace:
-> > [   29.705868]  [<c15933f7>] dump_stack+0x16/0x18
-> > [   29.706652]  [<c103c7ff>] warn_slowpath_common+0x79/0x90
-> > [   29.707496]  [<c1581310>] ? genl_unbind+0x96/0xaa
-> > [   29.708295]  [<c103c89c>] warn_slowpath_null+0xf/0x13
-> > [   29.709142]  [<c1581310>] genl_unbind+0x96/0xaa
-> > [   29.709943]  [<c157f810>] netlink_release+0x2d7/0x2ed
-> > [   29.710776]  [<c1553efd>] sock_release+0x10/0x5a
-> > [   29.711531]  [<c1553f52>] sock_close+0xb/0xf
-> > [   29.712286]  [<c1109a69>] __fput+0xf7/0x1f0
-> > [   29.713044]  [<c1109b88>] ____fput+0x8/0xa
-> > [   29.713794]  [<c1052412>] task_work_run+0x4e/0x70
-> > [   29.714566]  [<c103e771>] do_exit+0x43a/0x9c7
-> > [   29.715300]  [<c103ed6f>] do_group_exit+0x4a/0xd6
-> > [   29.716111]  [<c103ee0c>] SyS_exit_group+0x11/0x11
-> > [   29.716975]  [<c1598cfd>] syscall_call+0x7/0x7
-> > [   29.717722]  [<c1590000>] ? io_submit_one+0x5b3/0x72a
-> > [   29.719207]  c103c7ff 0000040d c1581310
-> > [   29.720122]  00000001 00000001 00000000 d34d9ed0 c103c89c 00000009 00000000 d34d9ee8
-> > [   29.721973]  c1581310 c18836fc 00000004 d0ebb840 00000000 d34d9f0c c157f810
-> > [   29.723252] ---[ end trace 28426633f87b780a ]---
-> > [   29.724282] ------------[ cut here ]------------
+> Hi Marc,
+> 
+>>
+>> On 01/12/14 12:45, Liviu Dudau wrote:
+>>> During a recent cleanup of the arm64 DTs it has become clear that
+>>> the handling of PPIs in xxxx_set_type() is incorrect. The ARM TRMs
+>>> for GICv2 and later allow for "implementation defined" support for
+>>> setting the edge or level type of the PPI interrupts and don't restrict
+>>> the activation level of the signal. Current ARM implementations
+>>> do restrict the PPI level type to IRQ_TYPE_LEVEL_LOW, but licensees
+>>> of the IP can decide to shoot themselves in the foot at any time.
+>>>
+>>> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+>>> ---
+>>>
+>>> Made a stupid mistake in v2 and got my bit test confused with logical test.
+>>>
+>>>  Documentation/devicetree/bindings/arm/gic.txt |  8 ++++++--
+>>>  drivers/irqchip/irq-gic-common.c              | 21 +++++++++++++--------
+>>>  drivers/irqchip/irq-gic-common.h              |  2 +-
+>>>  drivers/irqchip/irq-gic-v3.c                  |  8 ++++----
+>>>  drivers/irqchip/irq-gic.c                     |  9 ++++++---
+>>>  drivers/irqchip/irq-hip04.c                   |  9 ++++++---
+>>>  6 files changed, 36 insertions(+), 21 deletions(-)
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
+>>> index 8112d0c..c97484b 100644
+>>> --- a/Documentation/devicetree/bindings/arm/gic.txt
+>>> +++ b/Documentation/devicetree/bindings/arm/gic.txt
+>>> @@ -32,12 +32,16 @@ Main node required properties:
+>>>    The 3rd cell is the flags, encoded as follows:
+>>>  	bits[3:0] trigger type and level flags.
+>>>  		1 = low-to-high edge triggered
+>>> -		2 = high-to-low edge triggered
+>>> +		2 = high-to-low edge triggered (invalid for SPIs)
+>>>  		4 = active high level-sensitive
+>>> -		8 = active low level-sensitive
+>>> +		8 = active low level-sensitive (invalid for SPIs).
+>>>  	bits[15:8] PPI interrupt cpu mask.  Each bit corresponds to each of
+>>>  	the 8 possible cpus attached to the GIC.  A bit set to '1' indicated
+>>>  	the interrupt is wired to that CPU.  Only valid for PPI interrupts.
+>>> +	Also note that the configurability of PPI interrupts is IMPLEMENTATION
+>>> +	DEFINED and as such not guaranteed to be present (most SoC available
+>>> +	in 2014 seem to ignore the setting of this flag and use the hardware
+>>> +	default value).
+>>>  
+>>>  - reg : Specifies base physical address(s) and size of the GIC registers. The
+>>>    first region is the GIC distributor register base and size. The 2nd region is
+>>> diff --git a/drivers/irqchip/irq-gic-common.c b/drivers/irqchip/irq-gic-common.c
+>>> index 61541ff..ffee521 100644
+>>> --- a/drivers/irqchip/irq-gic-common.c
+>>> +++ b/drivers/irqchip/irq-gic-common.c
+>>> @@ -21,7 +21,7 @@
+>>>  
+>>>  #include "irq-gic-common.h"
+>>>  
+>>> -void gic_configure_irq(unsigned int irq, unsigned int type,
+>>> +int gic_configure_irq(unsigned int irq, unsigned int type,
+>>>  		       void __iomem *base, void (*sync_access)(void))
+>>>  {
+>>>  	u32 enablemask = 1 << (irq % 32);
+>>> @@ -29,16 +29,17 @@ void gic_configure_irq(unsigned int irq, unsigned int type,
+>>>  	u32 confmask = 0x2 << ((irq % 16) * 2);
+>>>  	u32 confoff = (irq / 16) * 4;
+>>>  	bool enabled = false;
+>>> -	u32 val;
+>>> +	u32 val, oldval;
+>>> +	int ret = 0;
+>>>  
+>>>  	/*
+>>>  	 * Read current configuration register, and insert the config
+>>>  	 * for "irq", depending on "type".
+>>>  	 */
+>>> -	val = readl_relaxed(base + GIC_DIST_CONFIG + confoff);
+>>> -	if (type == IRQ_TYPE_LEVEL_HIGH)
+>>> +	val = oldval = readl_relaxed(base + GIC_DIST_CONFIG + confoff);
+>>> +	if (type & IRQ_TYPE_LEVEL_MASK)
+>>>  		val &= ~confmask;
+>>> -	else if (type == IRQ_TYPE_EDGE_RISING)
+>>> +	else if (type & IRQ_TYPE_EDGE_BOTH)
+>>>  		val |= confmask;
+>>>  
+>>>  	/*
+>>> @@ -54,15 +55,19 @@ void gic_configure_irq(unsigned int irq, unsigned int type,
+>>>  
+>>>  	/*
+>>>  	 * Write back the new configuration, and possibly re-enable
+>>> -	 * the interrupt.
+>>> +	 * the interrupt. If we tried to write a new configuration and failed,
+>>> +	 * return an error.
+>>>  	 */
+>>>  	writel_relaxed(val, base + GIC_DIST_CONFIG + confoff);
+>>> -
+>>> -	if (enabled)
+>>> +	if (readl_relaxed(base + GIC_DIST_CONFIG + confoff) != val && val != oldval)
+>>> +		ret = -EINVAL;
+>>> +	else if (enabled)
+>>>  		writel_relaxed(enablemask, base + GIC_DIST_ENABLE_SET + enableoff);
+>>
+>> So if you change the configuration of an enabled interrupt and fail to
+>> do so, you end-up with the interrupt disabled. This is a change in
+>> behaviour, and is likely to introduce regressions.
+> 
+> Is it? Beforehand we were silently ignoring the fact that the new values haven't been
+> set, now we return an error. Should we continue to ignore the fact that there is now
+> a difference between what the kernel believes the setup is and what the hardware is
+> configured to do?
 
+Returning the error is fine. It is the fact that you've now disabled a
+line that was previously enabled.I don't think that sort of side effect
+is acceptable.
 
-It doesn't make much sense to me. I don't see anything
-remap_file_pages()-related here. Or even VMA related.
+Thanks,
 
-And why now? The commit is in Andrew's tree for few release cycles.
-
-Could you elaborate on what you observe? And what the table above means?
-
+	M.
 -- 
- Kirill A. Shutemov
+Jazz is not dead. It just smells funny...
