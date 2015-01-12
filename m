@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936AbbALSFh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:05:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57364 "EHLO
+	id S1756838AbbALTNy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 14:13:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57384 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766AbbALSFe (ORCPT
+	with ESMTP id S1752890AbbALSFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:05:34 -0500
+	Mon, 12 Jan 2015 13:05:37 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Richard Weinberger <richard@nod.at>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+Cc: Vitaly Kuznetsov <vkuznets@redhat.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 020/216] UBI: Fix invalid vfree()
-Date: Mon, 12 Jan 2015 18:02:17 +0000
-Message-Id: <1421085933-32536-21-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 021/216] Drivers: hv: util: make struct hv_do_fcopy match Hyper-V host messages
+Date: Mon, 12 Jan 2015 18:02:18 +0000
+Message-Id: <1421085933-32536-22-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -28,74 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Weinberger <richard@nod.at>
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
 
-commit f38aed975c0c3645bbdfc5ebe35726e64caaf588 upstream.
+commit 31d4ea1a093fcf668d5f95af44b8d41488bdb7ec upstream.
 
-The logic of vfree()'ing vol->upd_buf is tied to vol->updating.
-In ubi_start_update() vol->updating is set long before vmalloc()'ing
-vol->upd_buf. If we encounter a write failure in ubi_start_update()
-before vmalloc() the UBI device release function will try to vfree()
-vol->upd_buf because vol->updating is set.
-Fix this by allocating vol->upd_buf directly after setting vol->updating.
+An attempt to fix fcopy on i586 (bc5a5b0 Drivers: hv: util: Properly pack the data
+for file copy functionality) led to a regression on x86_64 (and actually didn't fix
+i586 breakage). Fcopy messages from Hyper-V host come in the following format:
 
-Fixes:
-[   31.559338] UBI warning: vol_cdev_release: update of volume 2 not finished, volume is damaged
-[   31.559340] ------------[ cut here ]------------
-[   31.559343] WARNING: CPU: 1 PID: 2747 at mm/vmalloc.c:1446 __vunmap+0xe3/0x110()
-[   31.559344] Trying to vfree() nonexistent vm area (ffffc90001f2b000)
-[   31.559345] Modules linked in:
-[   31.565620]  0000000000000bba ffff88002a0cbdb0 ffffffff818f0497 ffff88003b9ba148
-[   31.566347]  ffff88002a0cbde0 ffffffff8156f515 ffff88003b9ba148 0000000000000bba
-[   31.567073]  0000000000000000 0000000000000000 ffff88002a0cbe88 ffffffff8156c10a
-[   31.567793] Call Trace:
-[   31.568034]  [<ffffffff818f0497>] dump_stack+0x4e/0x7a
-[   31.568510]  [<ffffffff8156f515>] ubi_io_write_vid_hdr+0x155/0x160
-[   31.569084]  [<ffffffff8156c10a>] ubi_eba_write_leb+0x23a/0x870
-[   31.569628]  [<ffffffff81569b36>] vol_cdev_write+0x226/0x380
-[   31.570155]  [<ffffffff81179265>] vfs_write+0xb5/0x1f0
-[   31.570627]  [<ffffffff81179f8a>] SyS_pwrite64+0x6a/0xa0
-[   31.571123]  [<ffffffff818fde12>] system_call_fastpath+0x16/0x1b
+struct do_fcopy_hdr   |   36 bytes
+0000                  |    4 bytes
+offset                |    8 bytes
+size                  |    4 bytes
+data                  | 6144 bytes
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+On x86_64 struct hv_do_fcopy matched this format without ' __attribute__((packed))'
+and on i586 adding ' __attribute__((packed))' to it doesn't change anything. Keep
+the structure packed and add padding to match re reality. Tested both i586 and x86_64
+on Hyper-V Server 2012 R2.
+
+Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mtd/ubi/upd.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ include/uapi/linux/hyperv.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/mtd/ubi/upd.c b/drivers/mtd/ubi/upd.c
-index ec2c2dc1c1ca..2a1b6e037e1a 100644
---- a/drivers/mtd/ubi/upd.c
-+++ b/drivers/mtd/ubi/upd.c
-@@ -133,6 +133,10 @@ int ubi_start_update(struct ubi_device *ubi, struct ubi_volume *vol,
- 	ubi_assert(!vol->updating && !vol->changing_leb);
- 	vol->updating = 1;
+diff --git a/include/uapi/linux/hyperv.h b/include/uapi/linux/hyperv.h
+index 0a8e6badb29b..bb1cb73c927a 100644
+--- a/include/uapi/linux/hyperv.h
++++ b/include/uapi/linux/hyperv.h
+@@ -134,6 +134,7 @@ struct hv_start_fcopy {
  
-+	vol->upd_buf = vmalloc(ubi->leb_size);
-+	if (!vol->upd_buf)
-+		return -ENOMEM;
-+
- 	err = set_update_marker(ubi, vol);
- 	if (err)
- 		return err;
-@@ -152,14 +156,12 @@ int ubi_start_update(struct ubi_device *ubi, struct ubi_volume *vol,
- 		err = clear_update_marker(ubi, vol, 0);
- 		if (err)
- 			return err;
-+
-+		vfree(vol->upd_buf);
- 		vol->updating = 0;
- 		return 0;
- 	}
- 
--	vol->upd_buf = vmalloc(ubi->leb_size);
--	if (!vol->upd_buf)
--		return -ENOMEM;
--
- 	vol->upd_ebs = div_u64(bytes + vol->usable_leb_size - 1,
- 			       vol->usable_leb_size);
- 	vol->upd_bytes = bytes;
+ struct hv_do_fcopy {
+ 	struct hv_fcopy_hdr hdr;
++	__u32   pad;
+ 	__u64	offset;
+ 	__u32	size;
+ 	__u8	data[DATA_FRAGMENT];
 -- 
 2.1.4
 
