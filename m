@@ -1,79 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900AbbALKbi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 05:31:38 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:58236 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752361AbbALKbg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 05:31:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAJAp7Oi0AyLxy1KFpZ-Cz1-ts9Lh2UaxP3+e6n3EyQjVaEfoXg@mail.gmail.com>
-References: <54584260.8030602@nvidia.com>
-	<CAD7vxxKb668Y0hpYRhwMjQnNrDCQMzn=XGtLEU+ZAtY=OFjHLg@mail.gmail.com>
-	<545895B2.2000101@nvidia.com>
-	<CAD7vxxLmLsRpxrYqc30nV0m6atO7jyNgv1Wh4R8GCAy3+y-1dw@mail.gmail.com>
-	<CAJAp7OgmrEX1XQcwvwf4jzW3eK9TUgde2MQQOp7fOJzvmO=tCQ@mail.gmail.com>
-	<CAD7vxxJaCdKiG9h_32OUSUkQMQk6AAwi6d0v01KEnSVTF8cN1w@mail.gmail.com>
-	<CAJAp7Oh+ziadeEDWsus_k_2w33vPJxGGcGZyMNQkpLemf7SAhg@mail.gmail.com>
-	<CAJAp7OhWKoAoZfq+zWspLnqUkoJb3izMD41Vyfn0AW4Jni8HAQ@mail.gmail.com>
-	<CAD7vxxLe5COSrsnVZ2G_uhtUXfjFnDA45HSG2dNT1LrxcyFcQw@mail.gmail.com>
-	<CAJAp7OhAP-rDM2zyo0Yr0-7erUp4ewKJ+tC=vyU-YMP_MzXJbA@mail.gmail.com>
-	<CAD7vxxJy2sE1os+ipJZV7_GvEyhu8cE-0QLBS5SVHUqfjkYBwQ@mail.gmail.com>
-	<CAJAp7Oi0AyLxy1KFpZ-Cz1-ts9Lh2UaxP3+e6n3EyQjVaEfoXg@mail.gmail.com>
-Date: Mon, 12 Jan 2015 11:31:35 +0100
-Message-ID: <CAPDyKFpVo2+jRTXfWV9U+ejDc5-4G+O_b1mnLhA+WXtrRbFfeA@mail.gmail.com>
-Subject: Re: Possible regression with commit 52221610d
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Bjorn Andersson <bjorn@kryo.se>, Tim Kryger <tim.kryger@gmail.com>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        Sachin Kamat <spk.linux@gmail.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
+	id S1752954AbbALKeS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 05:34:18 -0500
+Received: from mga09.intel.com ([134.134.136.24]:45173 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751916AbbALKeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 05:34:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,743,1413270000"; 
+   d="scan'208";a="660424627"
+From: "Enkovich, Ilya" <ilya.enkovich@intel.com>
+To: "'Dave Hansen'" <dave.hansen@linux.intel.com>,
+        Andy Lutomirski <luto@amacapital.net>
+CC: Andi Kleen <andi@firstfloor.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: RE: [PATCH 3.19 3/3] x86, mpx: Change the MPX enable/disable API to
+ arch_prctl
+Thread-Topic: [PATCH 3.19 3/3] x86, mpx: Change the MPX enable/disable API
+ to arch_prctl
+Thread-Index: AQHQKd7YkM/S/qPkI0qoiu9Z5jiOS5y8UN+g
+Date: Mon, 12 Jan 2015 10:34:13 +0000
+Message-ID: <DE23079E55E16D4A8E81C0628427A65834CDCDB4@IRSMSX103.ger.corp.intel.com>
+References: <cover.1419900414.git.luto@amacapital.net>
+ <d5efe02b133f6d9fb4cb9d03e0f0b9e17211c06f.1419900414.git.luto@amacapital.net>
+ <54A64E6D.1020304@linux.intel.com> <87mw5x0xjz.fsf@tassilo.jf.intel.com>
+ <54AAFFA3.6000901@linux.intel.com>
+ <CALCETrUeMS7zwjXfSMN-6A8-gpLc68n7U5Y6SPdzgw6hSbYGNg@mail.gmail.com>
+ <20150106040428.GR2915@two.firstfloor.org>
+ <CALCETrU3oHO5Rjqp_DmJaOkEBOtZpQ+f99xXiY5=84JfJphZCA@mail.gmail.com>
+ <54AC1FFB.7030504@linux.intel.com>
+ <CALCETrVJyBR7NoZvC=A4htRtm-fLe5NUEGUdvJRL28adU4MhUg@mail.gmail.com>
+ <54AC29B1.70004@linux.intel.com>
+In-Reply-To: <54AC29B1.70004@linux.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.180]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0CAYNhA017394
 
-On 5 January 2015 at 20:52, Bjorn Andersson <bjorn@kryo.se> wrote:
-> On Sun, Dec 21, 2014 at 7:01 PM, Tim Kryger <tim.kryger@gmail.com> wrote:
->> On Wed, Dec 17, 2014 at 11:57 AM, Bjorn Andersson <bjorn@kryo.se> wrote:
-> [..]
->>> Non-the-less, feel free to propose a patch and I will give it a test.
->>
->> Lets start with the simplest change first.  Please give this a try and
->> let me know what you think.
->>
->> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
->> index ada1a3e..59a328a 100644
->> --- a/drivers/mmc/host/sdhci.c
->> +++ b/drivers/mmc/host/sdhci.c
->> @@ -1239,6 +1239,12 @@ static void sdhci_set_power(struct sdhci_host
->> *host, unsigned char mode,
->>                 spin_unlock_irq(&host->lock);
->>                 mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, vdd);
->>                 spin_lock_irq(&host->lock);
->> +
->> +               if (mode != MMC_POWER_OFF)
->> +                       sdhci_writeb(host, SDHCI_POWER_ON, SDHCI_POWER_CONTROL);
->> +               else
->> +                       sdhci_writeb(host, 0, SDHCI_POWER_CONTROL);
->> +
->>                 return;
->>         }
->>
->>
->> Thanks again for your help in getting to the bottom of this.
->
-> Sorry for the delay, but
->
-> Tested-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
->
 
-This looks an okay approach. Please send a proper patch for me to
-apply as a fix.
 
-Kind regards
-Uffe
+> -----Original Message-----
+> From: Dave Hansen [mailto:dave.hansen@linux.intel.com]
+> Sent: Tuesday, January 6, 2015 9:30 PM
+> To: Andy Lutomirski
+> Cc: Andi Kleen; linux-kernel@vger.kernel.org; X86 ML; Thomas Gleixner;
+> Enkovich, Ilya
+> Subject: Re: [PATCH 3.19 3/3] x86, mpx: Change the MPX enable/disable API
+> to arch_prctl
+> 
+> On 01/06/2015 10:06 AM, Andy Lutomirski wrote:
+> > On Tue, Jan 6, 2015 at 9:48 AM, Dave Hansen
+> <dave.hansen@linux.intel.com> wrote:
+> >> On 01/05/2015 09:59 PM, Andy Lutomirski wrote:
+> >>> But I decided to check whether libmpx links against glibc, and I
+> >>> can't find sources for it at all.  Do they exist?  Is there any code
+> >>> with source available that invokes this prctl?
+> >>>
+> >>> If not, I personally have very little sympathy for the argument that
+> >>> a binary buried in the depths of the Intel SDE would need to change
+> >>> if we switched to using arch_prctl.  And I think that it should
+> >>> issue the syscall itself without using glibc, in which case the
+> >>> syscall wrapper issue is moot.
+> >>
+> >> Andy, as I mentioned previously, there is code in a GCC branch that
+> >> uses the existing prctl().  It's also been posted for review to one
+> >> of the GCC mailing lists.  I've been told that it will be in gcc 5.0.
+> >
+> > Can you point me to it?  I found the code generation stuff in the gcc
+> > branch, but I couldn't find the runtime.
+> 
+> cc'ing Ilya who is working on the gcc parts...
+> 
+> Ilya, is the MPX runtime that uses the prctl() calls available somewhere
+> publicly that it can be grabbed?
+> 
+> I couldn't find it in GCC SVN anywhere.
+
+Runtime library is not in GCC trunk yet.  It is available as a patch in GCC mailing list (https://gcc.gnu.org/ml/gcc-patches/2014-12/msg00752.html) and also can be downloaded from Intel Developer Zone (https://software.intel.com/en-us/articles/mpx-support-in-gcc-50).
+
+Ilya
+
+> 
+> >> The Intel SDE does not use the prctl() in any way that I know of.
+> >
+> > I found a couple references suggesting that libmpx lived in the SDE.
+> > For example:
+> >
+> > https://software.intel.com/en-us/articles/using-intel-mpx-with-the-int
+> > el-software-development-emulator
+> 
+> Andy, I think you're mistaken.  The SDE allows you to run MPX code on a
+> system without MPX support in hardware.  It does not, itself, provide MPX
+> code.  The references you see there are to a runtime library that you obtain
+> separately from the SDE.  You run the library _under_ the SDE.
+> 
+> I hope this clears things up.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
