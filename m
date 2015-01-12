@@ -1,81 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261AbbALWff (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 17:35:35 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:57207 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751000AbbALWfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 17:35:34 -0500
-Date: Mon, 12 Jan 2015 17:35:28 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 1/2] mm: provide a find_page vma operation
-Message-ID: <20150112223528.GD25609@phnom.home.cmpxchg.org>
-References: <1421077993-7909-1-git-send-email-david.vrabel@citrix.com>
- <1421077993-7909-2-git-send-email-david.vrabel@citrix.com>
+	id S1751839AbbALWrv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 17:47:51 -0500
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:47126 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751304AbbALWrt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 17:47:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421077993-7909-2-git-send-email-david.vrabel@citrix.com>
+X-Originating-IP: [130.216.30.134]
+In-Reply-To: <1421093413-26336-1-git-send-email-geert@linux-m68k.org>
+References: <1421093413-26336-1-git-send-email-geert@linux-m68k.org>
+Date: Mon, 12 Jan 2015 23:47:48 +0100
+X-Google-Sender-Auth: OMzZeCUO97BcaGkOauvKA0l6Er0
+Message-ID: <CAKMK7uEmzoZBfbErfc9r2CWq9Uyvw9aZtvYSjwA8Ou5PFcyUCw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] drm: Drop superfluous "select VT_HW_CONSOLE_BINDING"
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: David Airlie <airlied@linux.ie>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 03:53:12PM +0000, David Vrabel wrote:
-> The optional find_page VMA operation is used to lookup the pages
-> backing a VMA.  This is useful in cases where the normal mechanisms
-> for finding the page don't work.  This is only called if the PTE is
-> special.
-> 
-> One use case is a Xen PV guest mapping foreign pages into userspace.
-> 
-> In a Xen PV guest, the PTEs contain MFNs so get_user_pages() (for
-> example) must do an MFN to PFN (M2P) lookup before it can get the
-> page.  For foreign pages (those owned by another guest) the M2P lookup
-> returns the PFN as seen by the foreign guest (which would be
-> completely the wrong page for the local guest).
-> 
-> This cannot be fixed up improving the M2P lookup since one MFN may be
-> mapped onto two or more pages so getting the right page is impossible
-> given just the MFN.
-> 
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+On Mon, Jan 12, 2015 at 09:10:12PM +0100, Geert Uytterhoeven wrote:
+> commit 765d5b9c2b72f5b9 ("fbdev: fbcon: select VT_HW_CONSOLE_BINDING")
+> made FRAMEBUFFER_CONSOLE always select VT_HW_CONSOLE_BINDING, but forgot
+> to remove
+>
+> select VT_HW_CONSOLE_BINDING if FRAMEBUFFER_CONSOLE
+>
+> from the individual drivers' sections that already did this before.
+>
+> Remove it, also from new drivers.
+>
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-Looks much better to me, thanks.
+Merged into my drm misc branch, thanks.
+-Daniel
 
 > ---
->  include/linux/mm.h |    3 +++
->  mm/memory.c        |    2 ++
->  2 files changed, 5 insertions(+)
-> 
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index 80fc92a..1306643 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -290,6 +290,9 @@ struct vm_operations_struct {
->  	/* called by sys_remap_file_pages() to populate non-linear mapping */
->  	int (*remap_pages)(struct vm_area_struct *vma, unsigned long addr,
->  			   unsigned long size, pgoff_t pgoff);
-> +
-> +	struct page * (*find_page)(struct vm_area_struct *vma,
-> +				   unsigned long addr);
+> v2:
+>   - Split in two (drm and video) patches,
+>   - Fix recently added rockchip.
+> ---
+>  drivers/gpu/drm/exynos/Kconfig   | 1 -
+>  drivers/gpu/drm/rockchip/Kconfig | 1 -
+>  2 files changed, 2 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/exynos/Kconfig b/drivers/gpu/drm/exynos/Kconfig
+> index 7f9f6f9e9b7e7992..c072999b7e0345c6 100644
+> --- a/drivers/gpu/drm/exynos/Kconfig
+> +++ b/drivers/gpu/drm/exynos/Kconfig
+> @@ -6,7 +6,6 @@ config DRM_EXYNOS
+>   select FB_CFB_FILLRECT
+>   select FB_CFB_COPYAREA
+>   select FB_CFB_IMAGEBLIT
+> - select VT_HW_CONSOLE_BINDING if FRAMEBUFFER_CONSOLE
+>   select VIDEOMODE_HELPERS
+>   help
+>    Choose this option if you have a Samsung SoC EXYNOS chipset.
+> diff --git a/drivers/gpu/drm/rockchip/Kconfig b/drivers/gpu/drm/rockchip/Kconfig
+> index ca9f085efa922982..8652dad82009e3ce 100644
+> --- a/drivers/gpu/drm/rockchip/Kconfig
+> +++ b/drivers/gpu/drm/rockchip/Kconfig
+> @@ -7,7 +7,6 @@ config DRM_ROCKCHIP
+>   select FB_CFB_FILLRECT
+>   select FB_CFB_COPYAREA
+>   select FB_CFB_IMAGEBLIT
+> - select VT_HW_CONSOLE_BINDING if FRAMEBUFFER_CONSOLE
+>   select VIDEOMODE_HELPERS
+>   help
+>    Choose this option if you have a Rockchip soc chipset.
+> --
+> 1.9.1
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
 
-Could you please add a comment what that method is used for?
-
-It would probably also be useful if the name reflected that this only
-applies to special ptes.  find_special_page()?  lookup_special_pte()?
-pte_special_page()?
-
-Thanks
-
-> @@ -754,6 +754,8 @@ struct page *vm_normal_page(struct vm_area_struct *vma, unsigned long addr,
->  	if (HAVE_PTE_SPECIAL) {
->  		if (likely(!pte_special(pte)))
->  			goto check_pfn;
-> +		if (vma->vm_ops && vma->vm_ops->find_page)
-> +			return vma->vm_ops->find_page(vma, addr);
->  		if (vma->vm_flags & (VM_PFNMAP | VM_MIXEDMAP))
->  			return NULL;
->  		if (!is_zero_pfn(pfn))
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
