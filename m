@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751546AbbALLeM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 06:34:12 -0500
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:50526 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750955AbbALLeK (ORCPT
+	id S1751868AbbALLek (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 06:34:40 -0500
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:60186 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751039AbbALLej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 06:34:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <20150110013324.GB4574@brightrain.aerifal.cx>
-References: <20150109161302.GQ4574@brightrain.aerifal.cx> <CAHse=S88Jy5ZKM_VY5onfvxX7dTMngnxuHfuLeSuzvKvQNP19A@mail.gmail.com>
- <20150109204815.GR4574@brightrain.aerifal.cx> <20150109205626.GK22149@ZenIV.linux.org.uk>
- <20150109205926.GT4574@brightrain.aerifal.cx> <20150109210941.GL22149@ZenIV.linux.org.uk>
- <20150109212852.GU4574@brightrain.aerifal.cx> <87lhlbvbzs.fsf@x220.int.ebiederm.org>
- <20150109223843.GX4574@brightrain.aerifal.cx> <87mw5rtowa.fsf@x220.int.ebiederm.org>
- <20150110013324.GB4574@brightrain.aerifal.cx>
-From: David Drysdale <drysdale@google.com>
-Date: Mon, 12 Jan 2015 11:33:49 +0000
-Message-ID: <CAHse=S822QjRE_FF6JHi-5cUsrXHJnyjRwYJuyYn2O6tsz2dHQ@mail.gmail.com>
-Subject: Re: [PATCHv10 man-pages 5/5] execveat.2: initial man page for execveat(2)
-To: Rich Felker <dalias@aerifal.cx>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, sparclinux@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 12 Jan 2015 06:34:39 -0500
+Message-ID: <1421062476.22660.46.camel@x220>
+Subject: Re: [PATCH v9 07/12] coresight-etm: add CoreSight ETM/PTM driver
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mathieu Poirier <mathieu.poirier@linaro.org>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pratik Patel <pratikp@codeaurora.org>,
+        Vikas Varshney <varshney@ti.com>, Al Grant <Al.Grant@arm.com>,
+        Jonas Svennebring <jonas.svennebring@avagotech.com>,
+        James King <james.king@linaro.org>, Kaixu Xia <kaixu.xia@linaro.org>,
+        Marcin Jabrzyk <marcin.jabrzyk@gmail.com>,
+        "r.sengupta@samsung.com" <r.sengupta@samsung.com>,
+        trollkarlen Marklund <robbelibobban@gmail.com>,
+        Patch Tracking <patches@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 12 Jan 2015 12:34:36 +0100
+In-Reply-To: <1415647928.21229.23.camel@x220>
+References: <1415038066-22423-1-git-send-email-mathieu.poirier@linaro.org>
+	 <1415038066-22423-8-git-send-email-mathieu.poirier@linaro.org>
+	 <1415615671.4862.30.camel@x220>
+	 <CANLsYkxivqgyRZspS2uP9Mkwit4obCjZxYr0YUhR3G_zQejERg@mail.gmail.com>
+	 <1415647928.21229.23.camel@x220>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Jan 2015 11:34:36.0651 (UTC) FILETIME=[BE7D03B0:01D02E5B]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 1:33 AM, Rich Felker <dalias@aerifal.cx> wrote:
-> On Fri, Jan 09, 2015 at 07:17:41PM -0600, Eric W. Biederman wrote:
->> Rich Felker <dalias@aerifal.cx> writes:
->>
->> > I'm not proposing code because I'm a libc developer not a kernel
->> > developer. I know what's needed for userspace to provide a conforming
->> > fexecve to applications, not how to implement that on the kernel side,
->> > although I'm trying to provide constructive ideas. The hostility is
->> > really not necessary.
->>
->> Conforming to what?
->>
->> The open group fexecve says nothing about requiring a file descriptor
->> passed to fexecve to have O_CLOEXEC.
->
-> It doesn't require it but it allows it, and in multithreaded programs
-> that might run child processes (or library code that might be used in
-> such situations), O_CLOEXEC is mandatory everywhere to avoid fd leaks.
+On Mon, 2014-11-10 at 20:32 +0100, Paul Bolle wrote:
+> On Mon, 2014-11-10 at 08:40 -0700, Mathieu Poirier wrote:
+> > On 10 November 2014 03:34, Paul Bolle <pebolle@tiscali.nl> wrote:
+> > > On Mon, 2014-11-03 at 11:07 -0700, mathieu.poirier@linaro.org wrote:
+> > >> +#ifdef CONFIG_CORESIGHT_SOURCE_ETM_DEFAULT_ENABLE
+> > >
+> > > There's no Kconfig symbol CORESIGHT_SOURCE_ETM_DEFAULT_ENABLE. Neither
+> > > is there a preprocessor definition of this macro. So why was this
+> > > added?
+> > 
+> > Correct - the feature (as we really want it) is currently being worked
+> > on but not yet part of the code base.  The default option probably
+> > should have been removed but it doesn't do much else when mandating
+> > one to add a boot option on the kernel cmd line.
+> 
+> I'm afraid I'm not sure what you mean here. Anyhow, using a Kconfig
+> symbol to set a default for something that can also be set through a
+> kernel parameter might be considered overdoing it. But that's not for me
+> to decide.
+> 
+> Unless the patch that adds this Kconfig symbol takes a long time to land
+> in linux-next, I won't be bothering you again.
 
-As a naive idea related to Andy's suggestion elsewhere, could you
-just have an environment convention for fexecve-ing scripts?  That
-would reduce FD leaks without any need for kernel involvement/changes.
+Two months have passed. This code made it unchanged into v3.19-rc1. A
+Kconfig symbol CORESIGHT_SOURCE_ETM_DEFAULT_ENABLE is not yet part of
+linux-next.
 
-For example, set _FEXECVED_VIA_FD=4 but don't set
-O_CLOEXEC before fexecve, and the interpreter reads then
-closes that FD.  Or just get the interpreter to spot scripts named
-"/dev/fd/%d" and read-then-close the FD that way, cf. Eric's suggestion
-at https://lkml.org/lkml/2014/10/22/652.
+Should I submit a trivial patch to drop the useless check for
+CONFIG_CORESIGHT_SOURCE_ETM_DEFAULT_ENABLE?
 
-By the way, FreeBSD has a fexecve(2) syscall that behaves
-in the same way as the current Linux code for an O_CLOEXEC
-script -- the interpreter fails to open "/dev/fd/6" as it's gone.
-Do you know if there are any other OSes that already do
-something more sophisticated for this case?
+
+Paul Bolle
+
