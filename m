@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140AbbALSMV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:12:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57749 "EHLO
+	id S1754130AbbALSL6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:11:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57754 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753840AbbALSGk (ORCPT
+	with ESMTP id S1753713AbbALSGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:06:40 -0500
+	Mon, 12 Jan 2015 13:06:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Doug Anderson <dianders@chromium.org>, Wolfram Sang <wsa@the-dreams.de>,
+Cc: Dave Airlie <airlied@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 097/216] i2c: designware: Fix falling time bindings doc
-Date: Mon, 12 Jan 2015 18:03:34 +0000
-Message-Id: <1421085933-32536-98-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 098/216] drm/dp: retry AUX transactions 32 times (v1.1)
+Date: Mon, 12 Jan 2015 18:03:35 +0000
+Message-Id: <1421085933-32536-99-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -27,48 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Doug Anderson <dianders@chromium.org>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 8e2596e81a9dd8f9efcf78476f3990f211e25edb upstream.
+commit 19a93f042fc241ecdf98543cedfe7c171f8cdf53 upstream.
 
-In (6468276 i2c: designware: make SCL and SDA falling time
-configurable) new device tree properties were added for setting the
-falling time of SDA and SCL.  The device tree bindings doc had a typo
-in it: it forgot the "-ns" suffix for both properies in the prose of
-the bindings.
+At least on two MST devices I've tested with, when
+they are link training downstream, they are totally
+unable to handle aux ch msgs, so they defer like nuts.
+I tried 16, it wasn't enough, 32 seems better.
 
-I assume this is a typo because:
-* The source code includes the "-ns"
-* The example in the bindings includes the "-ns".
+This fixes one Dell 4k monitor and one of the
+MST hubs.
 
-Fix the typo.
+v1.1: fixup comment (Tom).
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Fixes: 6468276b2206 ("i2c: designware: make SCL and SDA falling time configurable")
-Acked-by: Romain Baeriswyl <romain.baeriswyl@alitech.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Acked-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- Documentation/devicetree/bindings/i2c/i2c-designware.txt | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/drm_dp_helper.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/i2c/i2c-designware.txt b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
-index 5199b0c8cf7a..fee26dc3e858 100644
---- a/Documentation/devicetree/bindings/i2c/i2c-designware.txt
-+++ b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
-@@ -14,10 +14,10 @@ Optional properties :
-  - i2c-sda-hold-time-ns : should contain the SDA hold time in nanoseconds.
-    This option is only supported in hardware blocks version 1.11a or newer.
+diff --git a/drivers/gpu/drm/drm_dp_helper.c b/drivers/gpu/drm/drm_dp_helper.c
+index 08e33b8b13a4..9f59c9027ebe 100644
+--- a/drivers/gpu/drm/drm_dp_helper.c
++++ b/drivers/gpu/drm/drm_dp_helper.c
+@@ -378,10 +378,11 @@ static int drm_dp_dpcd_access(struct drm_dp_aux *aux, u8 request,
  
-- - i2c-scl-falling-time : should contain the SCL falling time in nanoseconds.
-+ - i2c-scl-falling-time-ns : should contain the SCL falling time in nanoseconds.
-    This value which is by default 300ns is used to compute the tLOW period.
+ 	/*
+ 	 * The specification doesn't give any recommendation on how often to
+-	 * retry native transactions, so retry 7 times like for I2C-over-AUX
+-	 * transactions.
++	 * retry native transactions. We used to retry 7 times like for
++	 * aux i2c transactions but real world devices this wasn't
++	 * sufficient, bump to 32 which makes Dell 4k monitors happier.
+ 	 */
+-	for (retry = 0; retry < 7; retry++) {
++	for (retry = 0; retry < 32; retry++) {
  
-- - i2c-sda-falling-time : should contain the SDA falling time in nanoseconds.
-+ - i2c-sda-falling-time-ns : should contain the SDA falling time in nanoseconds.
-    This value which is by default 300ns is used to compute the tHIGH period.
- 
- Example :
+ 		mutex_lock(&aux->hw_mutex);
+ 		err = aux->transfer(aux, &msg);
 -- 
 2.1.4
 
