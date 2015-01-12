@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074AbbALLuo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 06:50:44 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:52673 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848AbbALLul (ORCPT
+	id S1753391AbbALLys (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 06:54:48 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:51523 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113AbbALLum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 06:50:41 -0500
+	Mon, 12 Jan 2015 06:50:42 -0500
 From: Dongsu Park <dongsu.park@profitbricks.com>
 To: linux-kernel@vger.kernel.org
 Cc: Christoph Hellwig <hch@infradead.org>, Kent Overstreet <kmo@daterainc.com>,
-        Jens Axboe <axboe@kernel.dk>, Ming Lin <mlin@minggr.net>,
+        Jens Axboe <axboe@kernel.dk>,
         Dongsu Park <dongsu.park@profitbricks.com>
-Subject: [PATCH v2 2/9] block: simplify bio_add_page()
-Date: Mon, 12 Jan 2015 12:49:41 +0100
-Message-Id: <ed9c9f3b8190cd64cddbe58a753c811aee69471f.1421052746.git.dongsu.park@profitbricks.com>
+Subject: [PATCH v2 3/9] block: allow __blk_queue_bounce() to handle bios larger than BIO_MAX_PAGES
+Date: Mon, 12 Jan 2015 12:49:42 +0100
+Message-Id: <641ab3a0eeb225316784b8a22a285eab911d48fd.1421052746.git.dongsu.park@profitbricks.com>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <4e7cfbce77dcf72474e1b930ef017c9efaea36d7.1421052746.git.dongsu.park@profitbricks.com>
+In-Reply-To: <ed9c9f3b8190cd64cddbe58a753c811aee69471f.1421052746.git.dongsu.park@profitbricks.com>
 References: <cover.1421052745.git.dongsu.park@profitbricks.com>
  <4e7cfbce77dcf72474e1b930ef017c9efaea36d7.1421052746.git.dongsu.park@profitbricks.com>
+ <ed9c9f3b8190cd64cddbe58a753c811aee69471f.1421052746.git.dongsu.park@profitbricks.com>
 In-Reply-To: <cover.1421052745.git.dongsu.park@profitbricks.com>
 References: <cover.1421052745.git.dongsu.park@profitbricks.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,212 +28,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kent Overstreet <kmo@daterainc.com>
 
-Since generic_make_request() can now handle arbitrary size bios, all we
-have to do is make sure the bvec array doesn't overflow.
-__bio_add_page() doesn't need to call ->merge_bvec_fn(), where
-we can get rid of unnecessary code paths.
+Allow __blk_queue_bounce() to handle bios with more than BIO_MAX_PAGES
+segments. Doing that, it becomes possible to simplify the block layer
+in the kernel.
 
-Note that removing call to ->merge_bvec_fn() is fine for
-bio_add_pc_page(), as SCSI devices usually don't even need that.
-Few exceptional cases like pscsi or osd are not affected either.
+The issue is that any code that clones the bio and must clone the biovec
+(i.e. it can't use bio_clone_fast()) won't be able to allocate a bio with
+more than BIO_MAX_PAGES - bio_alloc_bioset() always fails in that case.
+
+Fortunately, it's easy to make __blk_queue_bounce() just process part of
+the bio if necessary, using bi_remaining to count the splits and punting
+the rest back to generic_make_request().
 
 Cc: Christoph Hellwig <hch@infradead.org>
 Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Ming Lin <mlin@minggr.net>
 Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-[dpark: rebase and resolve merge conflicts, change a couple of comments,
- make bio_add_page() warn once upon a cloned bio.]
+[dpark: add more description in commit message]
 Signed-off-by: Dongsu Park <dongsu.park@profitbricks.com>
 ---
- block/bio.c | 135 +++++++++++++++++++++++++-----------------------------------
- 1 file changed, 55 insertions(+), 80 deletions(-)
+ block/bounce.c | 60 ++++++++++++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 52 insertions(+), 8 deletions(-)
 
-diff --git a/block/bio.c b/block/bio.c
-index 7ff846d..136b78b 100644
---- a/block/bio.c
-+++ b/block/bio.c
-@@ -700,9 +700,23 @@ int bio_get_nr_vecs(struct block_device *bdev)
+diff --git a/block/bounce.c b/block/bounce.c
+index ab21ba2..689ea89 100644
+--- a/block/bounce.c
++++ b/block/bounce.c
+@@ -196,6 +196,43 @@ static int must_snapshot_stable_pages(struct request_queue *q, struct bio *bio)
  }
- EXPORT_SYMBOL(bio_get_nr_vecs);
+ #endif /* CONFIG_NEED_BOUNCE_POOL */
  
--static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
--			  *page, unsigned int len, unsigned int offset,
--			  unsigned int max_sectors)
-+/**
-+ *	bio_add_pc_page	-	attempt to add page to bio
-+ *	@q: the target queue
-+ *	@bio: destination bio
-+ *	@page: page to add
-+ *	@len: vec entry length
-+ *	@offset: vec entry offset
-+ *
-+ *	Attempt to add a page to the bio_vec maplist. This can fail for a
-+ *	number of reasons, such as the bio being full or target block device
-+ *	limitations. The target block device must allow bio's up to PAGE_SIZE,
-+ *	so it is always possible to add a single page to an empty bio.
-+ *
-+ *	This should only be used by REQ_PC bios.
-+ */
-+int bio_add_pc_page(struct request_queue *q, struct bio *bio, struct page
-+		    *page, unsigned int len, unsigned int offset)
- {
- 	int retried_segments = 0;
- 	struct bio_vec *bvec;
-@@ -713,7 +727,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
- 	if (unlikely(bio_flagged(bio, BIO_CLONED)))
- 		return 0;
- 
--	if (((bio->bi_iter.bi_size + len) >> 9) > max_sectors)
-+	if (((bio->bi_iter.bi_size + len) >> 9) > queue_max_hw_sectors(q))
- 		return 0;
- 
- 	/*
-@@ -726,28 +740,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
- 
- 		if (page == prev->bv_page &&
- 		    offset == prev->bv_offset + prev->bv_len) {
--			unsigned int prev_bv_len = prev->bv_len;
- 			prev->bv_len += len;
--
--			if (q->merge_bvec_fn) {
--				struct bvec_merge_data bvm = {
--					/* prev_bvec is already charged in
--					   bi_size, discharge it in order to
--					   simulate merging updated prev_bvec
--					   as new bvec. */
--					.bi_bdev = bio->bi_bdev,
--					.bi_sector = bio->bi_iter.bi_sector,
--					.bi_size = bio->bi_iter.bi_size -
--						prev_bv_len,
--					.bi_rw = bio->bi_rw,
--				};
--
--				if (q->merge_bvec_fn(q, &bvm, prev) < prev->bv_len) {
--					prev->bv_len -= len;
--					return 0;
--				}
--			}
--
- 			bio->bi_iter.bi_size += len;
- 			goto done;
- 		}
-@@ -790,27 +783,6 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
- 		blk_recount_segments(q, bio);
- 	}
- 
--	/*
--	 * if queue has other restrictions (eg varying max sector size
--	 * depending on offset), it can specify a merge_bvec_fn in the
--	 * queue to get further control
--	 */
--	if (q->merge_bvec_fn) {
--		struct bvec_merge_data bvm = {
--			.bi_bdev = bio->bi_bdev,
--			.bi_sector = bio->bi_iter.bi_sector,
--			.bi_size = bio->bi_iter.bi_size - len,
--			.bi_rw = bio->bi_rw,
--		};
--
--		/*
--		 * merge_bvec_fn() returns number of bytes it can accept
--		 * at this offset
--		 */
--		if (q->merge_bvec_fn(q, &bvm, bvec) < bvec->bv_len)
--			goto failed;
--	}
--
- 	/* If we may be able to merge these biovecs, force a recount */
- 	if (bio->bi_vcnt > 1 && (BIOVEC_PHYS_MERGEABLE(bvec-1, bvec)))
- 		bio->bi_flags &= ~(1 << BIO_SEG_VALID);
-@@ -827,28 +799,6 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
- 	blk_recount_segments(q, bio);
- 	return 0;
- }
--
--/**
-- *	bio_add_pc_page	-	attempt to add page to bio
-- *	@q: the target queue
-- *	@bio: destination bio
-- *	@page: page to add
-- *	@len: vec entry length
-- *	@offset: vec entry offset
-- *
-- *	Attempt to add a page to the bio_vec maplist. This can fail for a
-- *	number of reasons, such as the bio being full or target block device
-- *	limitations. The target block device must allow bio's up to PAGE_SIZE,
-- *	so it is always possible to add a single page to an empty bio.
-- *
-- *	This should only be used by REQ_PC bios.
-- */
--int bio_add_pc_page(struct request_queue *q, struct bio *bio, struct page *page,
--		    unsigned int len, unsigned int offset)
--{
--	return __bio_add_page(q, bio, page, len, offset,
--			      queue_max_hw_sectors(q));
--}
- EXPORT_SYMBOL(bio_add_pc_page);
- 
- /**
-@@ -858,22 +808,47 @@ EXPORT_SYMBOL(bio_add_pc_page);
-  *	@len: vec entry length
-  *	@offset: vec entry offset
-  *
-- *	Attempt to add a page to the bio_vec maplist. This can fail for a
-- *	number of reasons, such as the bio being full or target block device
-- *	limitations. The target block device must allow bio's up to PAGE_SIZE,
-- *	so it is always possible to add a single page to an empty bio.
-+ *	Attempt to add a page to the bio_vec maplist. This will only fail
-+ *	if either bio->bi_vcnt == bio->bi_max_vecs or it's a cloned bio.
-  */
--int bio_add_page(struct bio *bio, struct page *page, unsigned int len,
--		 unsigned int offset)
-+int bio_add_page(struct bio *bio, struct page *page,
-+		 unsigned int len, unsigned int offset)
- {
--	struct request_queue *q = bdev_get_queue(bio->bi_bdev);
--	unsigned int max_sectors;
-+	struct bio_vec *bv;
- 
--	max_sectors = blk_max_size_offset(q, bio->bi_iter.bi_sector);
--	if ((max_sectors < (len >> 9)) && !bio->bi_iter.bi_size)
--		max_sectors = len >> 9;
-+	/*
-+	 * cloned bio must not modify vec list
-+	 */
-+	if (WARN_ON_ONCE(bio_flagged(bio, BIO_CLONED)))
-+		return 0;
- 
--	return __bio_add_page(q, bio, page, len, offset, max_sectors);
-+	/*
-+	 * For filesystems with a blocksize smaller than the pagesize
-+	 * we will often be called with the same page as last time and
-+	 * a consecutive offset.  Optimize this special case.
-+	 */
-+	if (bio->bi_vcnt > 0) {
-+		bv = &bio->bi_io_vec[bio->bi_vcnt - 1];
++static struct bio *bio_clone_segments(struct bio *bio_src, gfp_t gfp_mask,
++				      struct bio_set *bs, unsigned nsegs)
++{
++	struct bvec_iter iter;
++	struct bio_vec bv;
++	struct bio *bio;
 +
-+		if (page == bv->bv_page &&
-+		    offset == bv->bv_offset + bv->bv_len) {
-+			bv->bv_len += len;
-+			goto done;
++	bio = bio_alloc_bioset(gfp_mask, nsegs, bs);
++	if (!bio)
++		return NULL;
++
++	bio->bi_bdev		= bio_src->bi_bdev;
++	bio->bi_rw		= bio_src->bi_rw;
++	bio->bi_iter.bi_sector	= bio_src->bi_iter.bi_sector;
++
++	bio_for_each_segment(bv, bio_src, iter) {
++		bio->bi_io_vec[bio->bi_vcnt++] = bv;
++		bio->bi_iter.bi_size += bv.bv_len;
++		if (!--nsegs)
++			break;
++	}
++
++	if (bio_integrity(bio_src)) {
++		int ret;
++
++		ret = bio_integrity_clone(bio, bio_src, gfp_mask);
++		if (ret < 0) {
++			bio_put(bio);
++			return NULL;
 +		}
 +	}
 +
-+	if (bio->bi_vcnt >= bio->bi_max_vecs)
-+		return 0;
++	bio_src->bi_iter = iter;
 +
-+	bv		= &bio->bi_io_vec[bio->bi_vcnt];
-+	bv->bv_page	= page;
-+	bv->bv_len	= len;
-+	bv->bv_offset	= offset;
++	return bio;
++}
 +
-+	bio->bi_vcnt++;
-+done:
-+	bio->bi_iter.bi_size += len;
-+	return len;
- }
- EXPORT_SYMBOL(bio_add_page);
+ static void __blk_queue_bounce(struct request_queue *q, struct bio **bio_orig,
+ 			       mempool_t *pool, int force)
+ {
+@@ -203,17 +240,24 @@ static void __blk_queue_bounce(struct request_queue *q, struct bio **bio_orig,
+ 	int rw = bio_data_dir(*bio_orig);
+ 	struct bio_vec *to, from;
+ 	struct bvec_iter iter;
+-	unsigned i;
++	int i, nsegs = 0, bounce = force;
  
+-	if (force)
+-		goto bounce;
+-	bio_for_each_segment(from, *bio_orig, iter)
++	bio_for_each_segment(from, *bio_orig, iter) {
++		nsegs++;
+ 		if (page_to_pfn(from.bv_page) > queue_bounce_pfn(q))
+-			goto bounce;
++			bounce = 1;
++	}
++
++	if (!bounce)
++		return;
+ 
+-	return;
+-bounce:
+-	bio = bio_clone_bioset(*bio_orig, GFP_NOIO, fs_bio_set);
++	bio = bio_clone_segments(*bio_orig, GFP_NOIO, fs_bio_set,
++				 min(nsegs, BIO_MAX_PAGES));
++
++	if ((*bio_orig)->bi_iter.bi_size) {
++		atomic_inc(&(*bio_orig)->bi_remaining);
++		generic_make_request(*bio_orig);
++	}
+ 
+ 	bio_for_each_segment_all(to, bio, i) {
+ 		struct page *page = to->bv_page;
 -- 
 2.1.0
 
