@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032AbbALV5v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 16:57:51 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:45195 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313AbbALV5u (ORCPT
+	id S1752520AbbALV7X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 16:59:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59405 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325AbbALV7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 16:57:50 -0500
+	Mon, 12 Jan 2015 16:59:22 -0500
+Date: Mon, 12 Jan 2015 21:59:41 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Thomas Voegtle <tv@lio96.de>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Subject: Re: [3.16.y-ckt stable] Linux 3.16.7-ckt4 stable review
+Message-ID: <20150112215941.GJ2455@charon>
+References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
+ <alpine.LSU.2.11.1501122121450.16281@er-systems.de>
 MIME-Version: 1.0
-Date: Mon, 12 Jan 2015 22:57:49 +0100
-Message-ID: <CACRpkdZFGLWF3h8AjKiUMPWNheLy+dFG4cYnsYXc_CZC+BpouA@mail.gmail.com>
-Subject: [GIT PULL] GPIO fixes for the v3.19 series
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.LSU.2.11.1501122121450.16281@er-systems.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, Jan 12, 2015 at 09:30:45PM +0100, Thomas Voegtle wrote:
+> On Mon, 12 Jan 2015, Luis Henriques wrote:
+> 
+> >This is the start of the review cycle for the Linux 3.16.7-ckt4 stable kernel.
+> >
+> >This version contains 216 new patches, summarized below.  The new patches are
+> >posted as replies to this message and also available in this git branch:
+> >
+> >http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=linux-3.16.y-review;a=shortlog
+> >
+> >git://kernel.ubuntu.com/ubuntu/linux.git  linux-3.16.y-review
+> >
+> >The review period for version 3.16.7-ckt4 will be open for the next three days.
+> >To report a problem, please reply to the relevant follow-up patch message.
+> >
+> >For more information about the Linux 3.16.y-ckt extended stable kernel version,
+> >see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable .
+> 
+> 
+> Something is wrong with drm/i915 (I guess). I had a terrible memleak on Xorg
+> when using mplayer using more and more RAM, and then the system is swapping
+> itself to death.
+> 
+> I'm using a openSUSE 13.1 (x86_64) on a Baytrail J1900 (this is Intel HD
+> Gen7).
+> 
+> 
 
-here are some GPIO fixes, mainly affecting the DLN2 IRQ handling.
-Nothing special about them, just fixes.
+Thank you for reporting, Thomas.  Can you please confirm that this is
+actually a regression in 3.16.7-ckt4 (i.e., that you can't reproduce
+it in 3.16.7-ckt3)?  If so, is it possible to bisecting it?
 
-Please pull them in!
+Cheers,
+--
+Luís
 
-Yours,
-Linus Walleij
-
-The following changes since commit b7392d2247cfe6771f95d256374f1a8e6a6f48d6:
-
-  Linux 3.19-rc2 (2014-12-28 16:49:37 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
-tags/gpio-v3.19-3
-
-for you to fetch changes up to 96b932b84409a5c1037827b4432a2b53adc09a61:
-
-  gpio: dln2: use bus_sync_unlock instead of scheduling work
-(2015-01-09 07:57:35 +0100)
-
-----------------------------------------------------------------
-Some GPIO fixes for the v3.19 series:
-- Three patches fixing IRQ handling for the DLN2
-- Null pointer handling for grgpio
-
-----------------------------------------------------------------
-Axel Lin (2):
-      gpio: dln2: Fix gpio output value in dln2_gpio_direction_output()
-      gpio: grgpio: Avoid potential NULL pointer dereference
-
-Octavian Purdila (2):
-      gpio: dln2: fix issue when an IRQ is unmasked then enabled
-      gpio: dln2: use bus_sync_unlock instead of scheduling work
-
- drivers/gpio/gpio-dln2.c   | 156 +++++++++++++++++++--------------------------
- drivers/gpio/gpio-grgpio.c |   3 +-
- 2 files changed, 69 insertions(+), 90 deletions(-)
+>       Thomas
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
