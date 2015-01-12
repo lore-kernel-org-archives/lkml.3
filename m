@@ -1,164 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753295AbbALNtZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 08:49:25 -0500
-Received: from mail-bn1on0074.outbound.protection.outlook.com ([157.56.110.74]:43616
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1753368AbbALNt5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 08:49:57 -0500
+Received: from mail-by2on0089.outbound.protection.outlook.com ([207.46.100.89]:30286
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751675AbbALNtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 08:49:22 -0500
-Date: Mon, 12 Jan 2015 14:48:47 +0100
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Pavel Machek <pavel@denx.de>, atull <atull@opensource.altera.com>
-CC: Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <jgunthorpe@obsidianresearch.com>, <hpa@zytor.com>,
-        Michal Simek <monstr@monstr.eu>,
-        Michal Simek <michal.simek@xilinx.com>, <rdunlap@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, <iws@ovro.caltech.edu>,
-        <linux-doc@vger.kernel.org>, Mark Brown <broonie@kernel.org>,
-        <philip@balister.org>, <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>, <jason@lakedaemon.net>,
-        <kyle.teske@ni.com>, <nico@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        <m.chehab@samsung.com>, <davidb@codeaurora.org>,
-        Rob Landley <rob@landley.net>, <davem@davemloft.net>,
-        <cesarb@cesarb.net>, <sameo@linux.intel.com>,
-        <akpm@linux-foundation.org>, Linus Walleij <linus.walleij@linaro.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <devel@driverdev.osuosl.org>, Alan Tull <delicious.quinoa@gmail.com>,
-        <dinguyen@opensource.altera.com>, <yvanderv@opensource.altera.com>
-Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
-References: <1420575219-27061-1-git-send-email-atull@opensource.altera.com>
- <1420575219-27061-3-git-send-email-atull@opensource.altera.com>
- <20150107084819.GA1887@amd>
- <alpine.DEB.2.02.1501091302370.30067@linuxheads99>
- <20150109205643.GA5761@amd>
- <4D4EA2D5-68DD-49F7-9E2D-3A0A8F6AF9CA@konsulko.com>
- <20150110151118.GA16036@amd> <alpine.DEB.2.10.1501111009180.2556@shineypoop>
- <20150112084530.GA28681@amd>
-In-Reply-To: <20150112084530.GA28681@amd>
+	id S1751341AbbALNtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 08:49:55 -0500
+X-Greylist: delayed 24595 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Jan 2015 08:49:55 EST
+From: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+CC: "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Soren Brinkmann" <sorenb@xilinx.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "wg@grandegger.com" <wg@grandegger.com>,
+        "Michal Simek" <michals@xilinx.com>
+Subject: RE: [PATCH v4] can: Convert to runtime_pm
+Thread-Topic: [PATCH v4] can: Convert to runtime_pm
+Thread-Index: AQHQKnV50g8srEE1sk2hKt6qk1yee5y7FUPsgAFsa5yAAANdwA==
+Date: Mon, 12 Jan 2015 13:49:48 +0000
+References: <58f37b6fd9104ce185c413c473fe047b@BY2FFO11FD050.protection.gbl>
+ <54AD267C.4060004@pengutronix.de>
+ <12e7202e137e4d5680185748ebf0cf2d@BY2FFO11FD060.protection.gbl>
+ <54B299A0.1000504@pengutronix.de>
+ <bb20847c9546459592241f801be2b536@BY2FFO11FD027.protection.gbl>
+ <54B3CB51.3060207@pengutronix.de>
+In-Reply-To: <54B3CB51.3060207@pengutronix.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.23.97.106]
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
 X-RCIS-Action: ALLOW
 X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21242.006
-X-TM-AS-User-Approved-Sender: Yes
-Message-ID: <bed1d7ce1b984c79acc75a47495cb959@BL2FFO11FD043.protection.gbl>
+X-TM-AS-User-Approved-Sender: Yes;Yes
+Message-ID: <4a61c12b2e1d4103a41a3faf1d58837a@BN1BFFO11FD030.protection.gbl>
 X-EOPAttributedMessage: 0
-Authentication-Results: spf=pass (sender IP is 62.221.5.235)
- smtp.mailfrom=michal.simek@xilinx.com; 
-X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(164054003)(479174004)(51704005)(377454003)(50944004)(377424004)(199003)(24454002)(52044002)(189002)(65956001)(6806004)(19580405001)(19580395003)(83506001)(106466001)(86362001)(50986999)(54356999)(76176999)(50466002)(87936001)(64706001)(64126003)(47776003)(65806001)(74316001)(62966003)(108616004)(93886004)(77096005)(2950100001)(77156002)(92726002)(104016003)(23676002)(92566002)(46102003)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB019;H:xir-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;A:1;MX:1;LANG:en;
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=appana.durga.rao@xilinx.com; 
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(479174004)(24454002)(13464003)(51704005)(199003)(189002)(377454003)(62966003)(87936001)(64706001)(33646002)(104016003)(93886004)(86362001)(16601075003)(106116001)(2950100001)(108616004)(76176999)(15975445007)(92726002)(46102003)(102836002)(50986999)(2656002)(54356999)(77156002)(6806004)(53416004)(110136001)(47776003)(106466001)(19580395003)(23676002)(19580405001)(74316001)(50466002)(92566002)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB026;H:xsj-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB019;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB026;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:(601004);SRVR:BL2FFO11HUB019;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1BFFO11HUB026;
 X-Forefront-PRVS: 0454444834
-X-Exchange-Antispam-Report-CFA: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB019;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB026;
 X-OriginatorOrg: xilinx.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 12 Jan 2015 13:49:14.9513
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 12 Jan 2015 13:49:52.5021
  (UTC)
 X-MS-Exchange-CrossTenant-Id: 657af505-d5df-48d0-8300-c31994686c5c
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=657af505-d5df-48d0-8300-c31994686c5c;Ip=[62.221.5.235]
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=657af505-d5df-48d0-8300-c31994686c5c;Ip=[149.199.60.83]
 X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BL2FFO11HUB019
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1BFFO11HUB026
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0CDo3mr018746
 
-On 01/12/2015 09:45 AM, Pavel Machek wrote:
-> On Sun 2015-01-11 10:29:00, atull wrote:
->> On Sat, 10 Jan 2015, Pavel Machek wrote:
->>
->>> On Sat 2015-01-10 10:10:51, Pantelis Antoniou wrote:
->>>> Hi Pavel,
->>>>
->>>>> On Jan 9, 2015, at 22:56 , Pavel Machek <pavel@denx.de> wrote:
->>>>>
->>>>> On Fri 2015-01-09 13:14:24, atull wrote:
->>>>>> On Wed, 7 Jan 2015, Pavel Machek wrote:
->>>>>>
->>>>>>> On Tue 2015-01-06 14:13:37, atull@opensource.altera.com wrote:
->>>>>>>> +
->>>>>>>> +What:		/sys/class/fpga_manager/<fpga>/firmware
->>>>>>>> +Date:		October 2014
->>>>>>>> +KernelVersion:	3.18
->>>>>>>> +Contact:	Alan Tull <atull@opensource.altera.com>
->>>>>>>> +Description:	Name of the FPGA image file to load using firmware
->>>>>>>> class.
->>>>>>>
->>>>>>> This one is ugly: it unneccessarily passes firmware name through the
->>>>>>> kernel. Just make interface and code simpler by always passing
->>>>>>> "socfpga-fpga-image" or something like that.
->>>>>>>
->>>>>>> Thanks,
->>>>>>> 									Pavel
->>>>>>
->>>>>> Hi Pavel,
->>>>>>
->>>>>> It might be ugly.  It's not unnecessary.  Some uses of FPGAs involve
->>>>>> switching out the FPGA images dynamically under control of the userspace.
->>>>>
->>>>> Then configure udev to load right firmware for you, or ln -s
->>>>> image-i-want-now socfpga-fpga-image to select the one to read‚Ä¶?
->>>>>
->>>>
->>>> Who said that udev is going to be available in the kind of system this is going to end in?
->>>
->>> Noone.
->>>
->>>> Doing ln -s tricks to load a different image? Really?
->>>
->>> But if you don't have udev, you can do ln -s. It is better than
->>> open-coding symlink functionality into
->>> /sys/class/fpga_manager/<fpga>/firmware ... cause that's what this is.
->>>
->>> Actually, clean implementation of "firmware" would be symlink in
->>> sysfs; but I'd say that would be overdoing it.
->>>
->>>> I say the interface is fine as it is.
->>>
->>> I say it is not.
->>> 									Pavel
->>
->> Hi Pavel,
->>
->> I see that we could do it that way and it would eliminate one of the
->> sysfs files (../fpga_manager/<fpga>/firmware).  Either way we are assuming
->> that there are fpga images in the filesystem in the firmware search path,
->> so I don't see why adding a piece of indirection (symlink) makes things
->> better.
-> 
-> Well.. you are basically re-implementing symlink with
-> ../fpga_manager/<fpga>/firmware "file" in sysfs, and doing it
-> badly. It has no advantages over real symlink.
-> 
->> We want to be able to switch out the FPGA image
->> under control of userspace.  So we don't want an interface that makes
->> it more cumbersome or tries to pretend that there's only one image.
-> 
-> What is cumbersome about symlink? Why is "fake" symlink in sysfs better?
-> 
->> Previous uses of the firmware layer has been to use it to load once after
->> bootup; this is different since some use cases will want to switch out
->> the FPGA image.  If someone wants there to be only one FPGA image on
->> the FGPA forever, they will probably not be using this framework; their
->> FPGA will probably be loaded before Linux boots up.
-> 
-> Why? I have just one image on the fpga, and would prefer to load it
-> from Linux.
+Hi Marc,
 
-Pavel: These patches target staging and sysfs interface doesn't need to be stable
-at this time. I would prefer to add these patches to staging for 3.20
-and feel free to send the patch which fix this.
-With your code will be exactly clear how you want to use it and we can
-talk about it.
+> -----Original Message-----
+> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
+> Sent: Monday, January 12, 2015 6:56 PM
+> To: Appana Durga Kedareswara Rao
+> Cc: linux-can@vger.kernel.org; netdev@vger.kernel.org; linux-
+> kernel@vger.kernel.org; Soren Brinkmann; grant.likely@linaro.org;
+> wg@grandegger.com; Michal Simek
+> Subject: Re: [PATCH v4] can: Convert to runtime_pm
+>
+> On 01/12/2015 07:59 AM, Appana Durga Kedareswara Rao wrote:
+> > Hi Marc,
+> >
+> >> -----Original Message-----
+> >> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
+> >> Sent: Sunday, January 11, 2015 9:11 PM
+> >> To: Appana Durga Kedareswara Rao
+> >> Cc: linux-can@vger.kernel.org; netdev@vger.kernel.org; linux-
+> >> kernel@vger.kernel.org; Soren Brinkmann; grant.likely@linaro.org;
+> >> wg@grandegger.com
+> >> Subject: Re: [PATCH v4] can: Convert to runtime_pm
+> >>
+> >> On 01/11/2015 06:34 AM, Appana Durga Kedareswara Rao wrote:
+> >> [...]
+> >>>>>             return ret;
+> >>>>>     }
+> >>>>>
+> >>>>>     priv->write_reg(priv, XCAN_MSR_OFFSET, 0);
+> >>>>>     priv->write_reg(priv, XCAN_SRR_OFFSET, XCAN_SRR_CEN_MASK);
+> >>>>>
+> >>>>>     if (netif_running(ndev)) {
+> >>>>>             priv->can.state = CAN_STATE_ERROR_ACTIVE;
+> >>>>
+> >>>> What happens if the device was not in ACTIVE state prior to the
+> >>>> runtime_suspend?
+> >>>>
+> >>>
+> >>> I am not sure about the state of CAN at this point of time.
+> >>> I just followed what other drivers are following for run time  suspend :).
+> >>
+> >> Please check the state of the hardware if you go with bus off into
+> >> suspend and then resume.
+> >>
+> >
+> >         if (netif_running(ndev)) {
+> >                         if (isr & XCAN_IXR_BSOFF_MASK) {
+> >                                 priv->can.state = CAN_STATE_BUS_OFF;
+> >                            priv->write_reg(priv, XCAN_SRR_OFFSET,
+> >                                         XCAN_SRR_RESET_MASK);
+> >                 } else if ((status & XCAN_SR_ESTAT_MASK) ==
+> >                                         XCAN_SR_ESTAT_MASK) {
+> >                         priv->can.state = CAN_STATE_ERROR_PASSIVE;
+> >                 } else if (status & XCAN_SR_ERRWRN_MASK) {
+> >                         priv->can.state = CAN_STATE_ERROR_WARNING;
+> >                 } else {
+> >                         priv->can.state = CAN_STATE_ERROR_ACTIVE;
+> >                 }
+> >         }
+> >
+> > Is the above code snippet ok for you?
+>
+> Yes, but what's the state of the hardware when it wakes up again?
 
-Thanks,
-Michal
+It depends on the previous state of the CAN.
+I mean In Suspend we are putting the device in sleep mode and in resume we are waking up by putting the device into the
+Configuration mode. We are not doing any reset of the core in the suspend/resume so it depends on the previous state of the CAN
+when it wakes up that's why  checking for the status of the CAN in the status register here to put the device in appropriate mode.
+
+>
+> >
+> >>>>>             netif_device_attach(ndev);
+> >>>>>             netif_start_queue(ndev);
+> >>>>>     }
+> >>>>>
+> >>>>>     return 0;
+> >>>>> }
+> >>>>
+> >>>>
+> >>>>>
+> >>>>> @@ -1020,9 +1035,9 @@ static int __maybe_unused
+> xcan_resume(struct
+> >>>>> device *dev)
+> >>>>>
+> >>>>>     priv->write_reg(priv, XCAN_MSR_OFFSET, 0);
+> >>>>>     priv->write_reg(priv, XCAN_SRR_OFFSET, XCAN_SRR_CEN_MASK);
+> >>>>> -   priv->can.state = CAN_STATE_ERROR_ACTIVE;
+> >>>>>
+> >>>>>     if (netif_running(ndev)) {
+> >>>>> +           priv->can.state = CAN_STATE_ERROR_ACTIVE;
+> >>>>>             netif_device_attach(ndev);
+> >>>>>             netif_start_queue(ndev);
+> >>>>>     }
+> >>>>> @@ -1030,7 +1045,10 @@ static int __maybe_unused
+> >> xcan_resume(struct
+> >>>> device *dev)
+> >>>>>     return 0;
+> >>>>>  }
+> >>>>>
+> >>>>> -static SIMPLE_DEV_PM_OPS(xcan_dev_pm_ops, xcan_suspend,
+> >>>> xcan_resume);
+> >>>>> +static const struct dev_pm_ops xcan_dev_pm_ops = {
+> >>>>> +   SET_SYSTEM_SLEEP_PM_OPS(xcan_suspend, xcan_resume)
+> >>>>> +   SET_PM_RUNTIME_PM_OPS(xcan_runtime_suspend,
+> >>>> xcan_runtime_resume,
+> >>>>> +NULL) };
+> >>>>>
+> >>>>>  /**
+> >>>>>   * xcan_probe - Platform registration call @@ -1071,7 +1089,7 @@
+> >>>>> static int xcan_probe(struct platform_device *pdev)
+> >>>>>             return -ENOMEM;
+> >>>>>
+> >>>>>     priv = netdev_priv(ndev);
+> >>>>> -   priv->dev = ndev;
+> >>>>> +   priv->dev = &pdev->dev;
+> >>>>>     priv->can.bittiming_const = &xcan_bittiming_const;
+> >>>>>     priv->can.do_set_mode = xcan_do_set_mode;
+> >>>>>     priv->can.do_get_berr_counter = xcan_get_berr_counter; @@ -
+> >>>> 1137,15
+> >>>>> +1155,22 @@ static int xcan_probe(struct platform_device *pdev)
+> >>>>>
+> >>>>>     netif_napi_add(ndev, &priv->napi, xcan_rx_poll, rx_max);
+> >>>>>
+> >>>>> +   pm_runtime_set_active(&pdev->dev);
+> >>>>> +   pm_runtime_irq_safe(&pdev->dev);
+> >>>>> +   pm_runtime_enable(&pdev->dev);
+> >>>>> +   pm_runtime_get_sync(&pdev->dev);
+> >>>> Check error values?
+> >>>
+> >>> Ok
+> >>>>> +
+> >>>>>     ret = register_candev(ndev);
+> >>>>>     if (ret) {
+> >>>>>             dev_err(&pdev->dev, "fail to register failed
+> >>>>> (err=%d)\n",
+> >>>> ret);
+> >>>>> +           pm_runtime_put(priv->dev);
+> >>>>
+> >>>> Please move the pm_runtime_put into the common error exit path.
+> >>>>
+> >>>
+> >>> Ok
+> >>>
+> >>>>>             goto err_unprepare_disable_busclk;
+> >>>>>     }
+> >>>>>
+> >>>>>     devm_can_led_init(ndev);
+> >>>>> -   clk_disable_unprepare(priv->bus_clk);
+> >>>>> -   clk_disable_unprepare(priv->can_clk);
+> >>>>> +
+> >>>>> +   pm_runtime_put(&pdev->dev);
+> >>>>> +
+> >>>>>     netdev_dbg(ndev, "reg_base=0x%p irq=%d clock=%d, tx fifo
+> >>>> depth:%d\n",
+> >>>>>                     priv->reg_base, ndev->irq, priv->can.clock.freq,
+> >>>>>                     priv->tx_max);
+> >>>>>
+> >>>>
+> >>>> I think you have to convert the _remove() function, too. Have a
+> >>>> look at the gpio-zynq.c driver:
+> >>>>
+> >>>>> static int zynq_gpio_remove(struct platform_device *pdev) {
+> >>>>>     struct zynq_gpio *gpio = platform_get_drvdata(pdev);
+> >>>>>
+> >>>>>     pm_runtime_get_sync(&pdev->dev);
+> >>>>
+> >>>> However I don't understand why the get_sync() is here. Maybe S√∂ren
+> >>>> can help?
+> >>>
+> >>> I converted the remove function to use the run-time PM and .
+> >>> Below is the remove code snippet.
+> >>>
+> >>>        ret = pm_runtime_get_sync(&pdev->dev);
+> >>>         if (ret < 0) {
+> >>>                 netdev_err(ndev, "%s: pm_runtime_get failed(%d)\n",
+> >>>                                 __func__, ret);
+> >>>                 return ret;
+> >>>         }
+> >>>
+> >>>         if (set_reset_mode(ndev) < 0)
+> >>>                 netdev_err(ndev, "mode resetting failed!\n");
+> >>>
+> >>>         unregister_candev(ndev);
+> >>>         netif_napi_del(&priv->napi);
+> >>>         free_candev(ndev);
+> >>
+> >>>         pm_runtime_disable(&pdev->dev);
+> >>
+> >> Can this make a call to xcan_runtime_*()? I'm asking since the ndev
+> >> has been unregistered and already free()ed. Better move this directly
+> >> after the set_reset_mode(). This way you are symmetric to the probe()
+> function.
+> >
+> > If I move the  pm_runtime_disable after the set_reset_mode I am
+> > getting the below error.
+> > ERROR:
+> > xilinx_can e0008000.can can0 (unregistering): xcan_get_berr_counter:
+> > pm_runtime_get fail
+> >
+> > If I move the pm_runtime_disable after unregister_candev everything is
+> working fine.
+>
+> Fine - but who calls xcan_get_berr_counter here? Can you add a
+> dump_stack() here?
+>
+
+I think it is getting called from the atomic context.
+When I  am trying to do a rmmod I am getting the above error.
+ERROR:
+xilinx_can e0008000.can can0 (unregistering): xcan_get_berr_counter:
+ pm_runtime_get fail.
+
+I am getting only the above error in the console when I do rmmod.
+
+Regards,
+Kedar.
+
+> Marc
+> --
+> Pengutronix e.K.                  | Marc Kleine-Budde           |
+> Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+> Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+> Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
 
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
