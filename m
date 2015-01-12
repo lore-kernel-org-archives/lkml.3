@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929AbbALUaO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 15:30:14 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:62510 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725AbbALUaM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 15:30:12 -0500
-Date: Mon, 12 Jan 2015 21:30:07 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@codemonkey.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 06/10] time: Cap clocksource reads to the clocksource
- max_cycles value
-Message-ID: <20150112203006.GB4233@localhost.localdomain>
-References: <1420850068-27828-1-git-send-email-john.stultz@linaro.org>
- <1420850068-27828-7-git-send-email-john.stultz@linaro.org>
- <20150111124146.GA15387@localhost.localdomain>
- <CALAqxLX2Th7-kEM1vQBJn5hnPTJ5ujg-Zx-aa-oOhP5cb=hXLQ@mail.gmail.com>
+	id S1753876AbbALUh2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 15:37:28 -0500
+Received: from er-systems.de ([46.4.18.139]:36912 "EHLO er-systems.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753832AbbALUhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 15:37:25 -0500
+X-Greylist: delayed 388 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Jan 2015 15:37:25 EST
+Date: Mon, 12 Jan 2015 21:30:45 +0100 (CET)
+From: Thomas Voegtle <tv@lio96.de>
+X-X-Sender: thomas@er-systems.de
+To: Luis Henriques <luis.henriques@canonical.com>
+cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Subject: Re: [3.16.y-ckt stable] Linux 3.16.7-ckt4 stable review
+In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
+Message-ID: <alpine.LSU.2.11.1501122121450.16281@er-systems.de>
+References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALAqxLX2Th7-kEM1vQBJn5hnPTJ5ujg-Zx-aa-oOhP5cb=hXLQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII; format=flowed
+X-Virus-Checker-Version: clamassassin 1.2.4 with clamdscan / ClamAV 0.98.5/19912/Mon Jan 12 12:55:27 2015 signatures 55.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 10:54:50AM -0800, John Stultz wrote:
-> On Sun, Jan 11, 2015 at 4:41 AM, Richard Cochran
-> <richardcochran@gmail.com> wrote:
-> > On Fri, Jan 09, 2015 at 04:34:24PM -0800, John Stultz wrote:
-> >> When calculating the current delta since the last tick, we
-> >> currently have no hard protections to prevent a multiplciation
-> >> overflow from ocurring.
-> >
-> > This is just papering over the problem. The "hard protection" should
-> > be having a tick scheduled before the range of the clock source is
-> > exhausted.
-> 
-> So I disagree this is papering over the problem.
-> 
-> You say the tick should be scheduled before the clocksource wraps -
-> but we have logic to do that.
+On Mon, 12 Jan 2015, Luis Henriques wrote:
 
-Well that is a shame.  To my way of thinking, having a reliable
-watchdog (clock readout) at half the period would be a real solution.
-Yes, I do mean providing some sort of "soft real time" guarantee.
+> This is the start of the review cycle for the Linux 3.16.7-ckt4 stable kernel.
+>
+> This version contains 216 new patches, summarized below.  The new patches are
+> posted as replies to this message and also available in this git branch:
+>
+> http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=linux-3.16.y-review;a=shortlog
+>
+> git://kernel.ubuntu.com/ubuntu/linux.git  linux-3.16.y-review
+>
+> The review period for version 3.16.7-ckt4 will be open for the next three days.
+> To report a problem, please reply to the relevant follow-up patch message.
+>
+> For more information about the Linux 3.16.y-ckt extended stable kernel version,
+> see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable .
 
-What is the use case here?  I thought we are trying to fix unreliable
-clocks with random jumps.  It is hard to see how substituting
-MAX_DURATION for RANDOM_JUMP_VALUE is helping to catch bad hardware.
- 
-> However there are many ways that can still go wrong.  Virtualization
-> can delay interrupts for long periods of time,
 
-fixable with some soft RT?
+Something is wrong with drm/i915 (I guess). I had a terrible memleak on 
+Xorg when using mplayer using more and more RAM, and then the system 
+is swapping itself to death.
 
-> the timer/irq code isn't the simplest and there can be bugs,
+I'm using a openSUSE 13.1 (x86_64) on a Baytrail J1900 (this is Intel HD 
+Gen7).
 
-simplify and fix?
 
-> or timer hardware itself can have issues.
+       Thomas
 
-for this we can have a compile time timer validation module, just like
-we have for locks, mutexs, rcu, etc.
 
-> The difficulty is that when something has gone wrong, the
-> only thing we have to measure the problem may become corrupted.  And
-> worse, once the timekeeping code is having problems,  that can result
-> in bugs that manifest in all sorts of strange ways that are very
-> difficult to debug (you can't trust your log timestamps, etc).
-
-But this this patch make the timestamps trustworthy?  Not really.
- 
-Thanks,
-Richard
