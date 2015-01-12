@@ -1,86 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112AbbALKlT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 05:41:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48813 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753082AbbALKlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 05:41:17 -0500
-Date: Mon, 12 Jan 2015 11:36:05 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Wang Nan <wangnan0@huawei.com>, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, lizefan@huawei.com, acme@kernel.org
-Subject: Re: [PATCH] perf: fix building error in x86_64 when dwarf unwind is
- on.
-Message-ID: <20150112103605.GA26229@krava.redhat.com>
-References: <20150109144332.GB14750@krava.brq.redhat.com>
- <1421029255-23039-1-git-send-email-wangnan0@huawei.com>
- <20150112032810.GA25581@sejong>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150112032810.GA25581@sejong>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752879AbbALKj4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 05:39:56 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:57822 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752217AbbALKjy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 05:39:54 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-2d-54b3a478ef24
+Message-id: <54B3A477.8080705@samsung.com>
+Date: Mon, 12 Jan 2015 19:39:51 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Kukjin Kim <kgene@kernel.org>
+Cc: ben-linux@fluff.org, kyungmin.park@samsung.com, inki.dae@samsung.com,
+        k.kozlowski@samsung.com, b.zolnierkie@samsung.com,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RESEND PATCH] ARM: EXYNOS: Add exynos3250 suspend-to-ram support
+References: <1420681838-4292-1-git-send-email-cw00.choi@samsung.com>
+ <54B38989.4030700@kernel.org> <54B38B24.20804@samsung.com>
+ <54B393B9.6060806@kernel.org>
+In-reply-to: <54B393B9.6060806@kernel.org>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNIsWRmVeSWpSXmKPExsWyRsSkULdiyeYQgz8LuSw2zljPajFp3QEm
+	i0n3J7BYvH5haNH/+DWzxdmmN+wWmx5fY7W4vGsOm8WM8/uYHDg9/q56weyxaVUnm8fmJfUe
+	fVtWMXp83iQXwBrFZZOSmpNZllqkb5fAldG+/wxrwVOuiidN85kbGD9wdDFyckgImEisf36A
+	DcIWk7hwbz2QzcUhJLCUUeLd/l2MMEWfLoHYIInpjBIHtq9mAUkICbxmlOg6zwNi8wpoSUx/
+	eQiom4ODRUBVYtJlSZAwG1B4/4sbYAtEBcIkVk6/wgJRLijxY/I9FpByEQFFic0LFEDGMwu8
+	YJR4/uYcM0iNsICfxMNrD5gh9i5klNj1sJEJJMEJNHTekV9gg5gFdCT2t05jg7DlJTaveQvW
+	ICFwi13i8dNHYA0sAgIS3yYfAtsmISArsekAM8RjkhIHV9xgmcAoNgvJTbOQjJ2FZOwCRuZV
+	jKKpBckFxUnpRSZ6xYm5xaV56XrJ+bmbGIFxePrfswk7GO8dsD7EKMDBqMTDayG1OUSINbGs
+	uDL3EKMp0BUTmaVEk/OB0Z5XEm9obGZkYWpiamxkbmmmJM77WupnsJBAemJJanZqakFqUXxR
+	aU5q8SFGJg5OqQbGtSeFFOcsfSufE295r734gXTFo3LPHXKBL5Lesj35PF/xhMD5y8tbV4qo
+	bVok8Xz5AhEOV1GjW21BtbJBjzTmG15Uq9Uv2/Zp9QKuy4sKQ8Pz+x+9+VTabvMztfTQlr8N
+	9is+e756Fm/69M2TD5w3u5Km1tZp3ZoY+cNZKsvpBPevdScNi6yllViKMxINtZiLihMBBRc7
+	Tr4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsVy+t9jQd2KJZtDDM4/ZbLYOGM9q8WkdQeY
+	LCbdn8Bi8fqFoUX/49fMFmeb3rBbbHp8jdXi8q45bBYzzu9jcuD0+LvqBbPHplWdbB6bl9R7
+	9G1ZxejxeZNcAGtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2S
+	i0+ArltmDtA9SgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaM9v1nWAue
+	clU8aZrP3MD4gaOLkZNDQsBE4tOlXYwQtpjEhXvr2boYuTiEBKYzShzYvpoFJCEk8JpRous8
+	D4jNK6AlMf3lIaAiDg4WAVWJSZclQcJsQOH9L26wgdiiAmESK6dfYYEoF5T4MfkeC0i5iICi
+	xOYFCiDjmQVeMEo8f3OOGaRGWMBP4uG1B8wQexcySux62MgEkuAEGjrvyC+wQcwCOhL7W6ex
+	QdjyEpvXvGWewCgwC8mOWUjKZiEpW8DIvIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOMqf
+	Se9gXNVgcYhRgINRiYfXQmpziBBrYllxZe4hRgkOZiURXtcyoBBvSmJlVWpRfnxRaU5q8SFG
+	U2AITGSWEk3OByagvJJ4Q2MTMyNLI3NDCyNjcyVxXiX7thAhgfTEktTs1NSC1CKYPiYOTqkG
+	Rq5AjoV7PP2Y7aafvaG0VTE4/dSJ2BLTCY7yhm6i/o8Vf2y2WCjB8d9G8vr1iNgl0u6smyNz
+	w/e93rv19s3JviYrfU89n8at9S722fbCXepxcyV5GwL2XJzrLMjte/3iTr9+g71bnLfH8uTY
+	7V0nLjPzc1vmnO8bWWOLxX8KeHzJtIi6OzfUTYmlOCPRUIu5qDgRAC61TpAIAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 12:28:10PM +0900, Namhyung Kim wrote:
-> On Mon, Jan 12, 2015 at 10:20:55AM +0800, Wang Nan wrote:
-> > From: Namhyung Kim <namhyung@kernel.org>
-> > 
-> > When build with 'make ARCH=x86' and dwarf unwind is on, there is a
-> > compiling error:
-> > 
-> >    CC       /home/wn/perf/arch/x86/util/unwind-libdw.o
-> >    CC       /home/wn/perf/arch/x86/tests/regs_load.o
-> >  arch/x86/tests/regs_load.S: Assembler messages:
-> >  arch/x86/tests/regs_load.S:65: Error: operand type mismatch for `push'
-> >  arch/x86/tests/regs_load.S:72: Error: operand type mismatch for `pop'
-> >  make[1]: *** [/home/wn/perf/arch/x86/tests/regs_load.o] Error 1
-> >  make[1]: INTERNAL: Exiting with 25 jobserver tokens available; should be 24!
-> >  make: *** [all] Error 2
-> >  ...
-> > 
-> > Which is caused by incorrectly undefine macro HAVE_ARCH_X86_64_SUPPORT.
-> > 'config/Makefile.arch' tests __x86_64__ only when 'ARCH=x86_64'.
-> > However, when building x86_64 kernel, ARCH=x86 is valid and commonly
-> > used. Building systems, such as yocto, uses x86_64 compiler with
-> > 'ARCH=x86' to build x86_64 perf, which causes mismatching.
-> > 
-> > As __LP64__ is defined for x86_64 as well, we can consolidate the
-> > __x86_64__ check to the __LP64__ check and get rid of the IS_X86_64
-> > IMHO.
-> > 
-> > (This patch is made by Namhyung Kim when replying my v1 patch:
-> > 
-> > https://lkml.org/lkml/2015/1/7/17
-> > 
-> > I modified the code to remove dependency on RAW_ARCH:
-> > 
-> > https://lkml.org/lkml/2015/1/7/865
-> > 
-> > Namhyung Kim didn't provide his SOB in his original email. I add
-> > mine only for my modification.)
-> 
-> Please feel free to add my SOB to this patch.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Dear Kukjin,
 
-Acked-by: Jiri Olsa <jolsa@kernel.org>
+On 01/12/2015 06:28 PM, Kukjin Kim wrote:
+> On 01/12/15 17:51, Chanwoo Choi wrote:
+>> Dear Kukjin,
+>>
+>> On 01/12/2015 05:44 PM, Kukjin Kim wrote:
+>>> On 01/08/15 10:50, Chanwoo Choi wrote:
+>>>> This patch adds the support for suspend-to-ram feature of Exynos3250 SoC.
+>>>> Exynos3250 don't contain the L2 cache.
+>>>>
+>>>> Cc: Kukjin Kim <kgene@kernel.org>
+>>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>>>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>>> ---
+>>>> Depend on:
+>>>> - v3.19-rc3
+>>>>
+>>> Chanwoo,
+>>>
+>>> Can you please let me know why this is depending on v3.19-rc3?
+>>> If I apply this on top of my tree not including some stuff between
+>>> v3.19-rc1 and v3.19-rc3, is there a problem?
+>>
+>> No problem.
+>> I'm sorry. It is my mistake about using meaning of dependency.
+>> This patch can be applied on v3.19-rc1. I just tested it on v3.19-rc3.
+>>
+> OK, applied.
 
-also.. I tried 32bit build on x86_64, but I had to disable python
-support explicitly to succeed:
+Thanks for your apply.
 
-  $ make EXTRA_CFLAGS=-m32 NO_LIBPYTHON=1
+I check this patch on your git repository on following:
+https://git.kernel.org/cgit/linux/kernel/git/kgene/linux-samsung.git/commit/?h=v3.20-next/update-samsung&id=e2fb3668567d0b70563cca0d1e350afd5053e4a3
 
-seems like 'python-config --cflags' returns -m64, which beats -m32,
-and the features code always detects 64bit version, which fails
-to link at the end with all the rest 32bit stuff
+Although this patch contains a little decription of patch,
+applied patch don't include any description of patch.
 
-hopefully some python enthusiast will fix it one day,
-anyway it's great the 32bit build works.. sort of ;-)
+If you possible, please add the description of patch.
 
-thanks,
-jirka
+Best Regards,
+Chanwoo Choi
