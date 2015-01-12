@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768AbbALQIL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 11:08:11 -0500
-Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:36487 "EHLO
-	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537AbbALQIH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 11:08:07 -0500
-Date: Mon, 12 Jan 2015 11:07:21 -0500
-From: Rich Felker <dalias@aerifal.cx>
-To: David Drysdale <drysdale@google.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, sparclinux@vger.kernel.org
-Subject: Re: [PATCHv10 man-pages 5/5] execveat.2: initial man page for
- execveat(2)
-Message-ID: <20150112160721.GJ4574@brightrain.aerifal.cx>
-References: <20150109204815.GR4574@brightrain.aerifal.cx>
- <20150109205626.GK22149@ZenIV.linux.org.uk>
- <20150109205926.GT4574@brightrain.aerifal.cx>
- <20150109210941.GL22149@ZenIV.linux.org.uk>
- <20150109212852.GU4574@brightrain.aerifal.cx>
- <87lhlbvbzs.fsf@x220.int.ebiederm.org>
- <20150109223843.GX4574@brightrain.aerifal.cx>
- <87mw5rtowa.fsf@x220.int.ebiederm.org>
- <20150110013324.GB4574@brightrain.aerifal.cx>
- <CAHse=S822QjRE_FF6JHi-5cUsrXHJnyjRwYJuyYn2O6tsz2dHQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHse=S822QjRE_FF6JHi-5cUsrXHJnyjRwYJuyYn2O6tsz2dHQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752898AbbALQJh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 11:09:37 -0500
+Received: from mga02.intel.com ([134.134.136.20]:30543 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752831AbbALQJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 11:09:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,744,1413270000"; 
+   d="scan'208";a="649876591"
+Message-ID: <1421078918.31978.32.camel@linux.intel.com>
+Subject: Re: [PATCH v2 1/4] tty: serial: Add 8250 earlycon to support noinit
+ option
+From: Alan Cox <alan@linux.intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Eddie Huang <eddie.huang@mediatek.com>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>, devicetree@vger.kernel.org,
+        Vladimir Murzin <vladimir.murzin@arm.com>, srv_heupstream@mediatek.com,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Jonathan Corbet <corbet@lwn.net>, Will Deacon <will.deacon@arm.com>,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        yh.chen@mediatek.com, Howard Chen <ibanezchen@gmail.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        linux-serial@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        "Joe.C" <yingjoe.chen@mediatek.com>, Jiri Slaby <jslaby@suse.cz>
+Date: Mon, 12 Jan 2015 16:08:38 +0000
+In-Reply-To: <3712986.8SuKNvhKTk@wuerfel>
+References: <1421068104-30463-1-git-send-email-eddie.huang@mediatek.com>
+	 <1421068104-30463-2-git-send-email-eddie.huang@mediatek.com>
+	 <3712986.8SuKNvhKTk@wuerfel>
+Organization: Intel Corporation
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.9 (3.12.9-1.fc21) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 11:33:49AM +0000, David Drysdale wrote:
-> On Sat, Jan 10, 2015 at 1:33 AM, Rich Felker <dalias@aerifal.cx> wrote:
-> > On Fri, Jan 09, 2015 at 07:17:41PM -0600, Eric W. Biederman wrote:
-> >> Rich Felker <dalias@aerifal.cx> writes:
-> >>
-> >> > I'm not proposing code because I'm a libc developer not a kernel
-> >> > developer. I know what's needed for userspace to provide a conforming
-> >> > fexecve to applications, not how to implement that on the kernel side,
-> >> > although I'm trying to provide constructive ideas. The hostility is
-> >> > really not necessary.
-> >>
-> >> Conforming to what?
-> >>
-> >> The open group fexecve says nothing about requiring a file descriptor
-> >> passed to fexecve to have O_CLOEXEC.
-> >
-> > It doesn't require it but it allows it, and in multithreaded programs
-> > that might run child processes (or library code that might be used in
-> > such situations), O_CLOEXEC is mandatory everywhere to avoid fd leaks.
+On Mon, 2015-01-12 at 16:35 +0100, Arnd Bergmann wrote:
+> On Monday 12 January 2015 21:08:21 Eddie Huang wrote:
+> > Add earlycon support not only baudrate option, but also add noinit option.
+> > If use noinit option, 8250 earlycon will not init serial hardware and use
+> > loader setting.
+> > 
+> > Signed-off-by: Eddie Huang <eddie.huang@mediatek.com>
 > 
-> As a naive idea related to Andy's suggestion elsewhere, could you
-> just have an environment convention for fexecve-ing scripts?  That
-> would reduce FD leaks without any need for kernel involvement/changes.
-> 
-> For example, set _FEXECVED_VIA_FD=4 but don't set
-> O_CLOEXEC before fexecve, and the interpreter reads then
-> closes that FD.  Or just get the interpreter to spot scripts named
-> "/dev/fd/%d" and read-then-close the FD that way, cf. Eric's suggestion
-> at https://lkml.org/lkml/2014/10/22/652.
+> I probably missed something in the previous discussion, but why is
+> "noinit" not just the default? I believe that is how we handle early
+> serial ports on PowerPC, and I see no downsides to it.
 
-No. Any omission of O_CLOEXEC even momentarily is a potentially
-dangerous fd leak. This is the case whenever the process is
-multithreaded and it's possible that other threads might fork and
-exec. Think of the case of a privileged daemon re-execing itself (e.g.
-to switch to an updated version) while there are potentially other
-threads spawning non-privileged processes.
+Most PC hardware at least needs the port initialised to use it. It won't
+have been configured by the firmware in many cases.
 
-Rich
+Alan
+
+
