@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982AbbALSOZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:14:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57718 "EHLO
+	id S1753822AbbALSGi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:06:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57702 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753789AbbALSGf (ORCPT
+	with ESMTP id S1752469AbbALSGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:06:35 -0500
+	Mon, 12 Jan 2015 13:06:32 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
+Cc: Nathan Lynch <nathan_lynch@mentor.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 086/216] powerpc/book3s: Fix partial invalidation of TLBs in MCE code.
-Date: Mon, 12 Jan 2015 18:03:23 +0000
-Message-Id: <1421085933-32536-87-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 087/216] clocksource: arm_arch_timer: Change clocksource name if CP15 unavailable
+Date: Mon, 12 Jan 2015 18:03:24 +0000
+Message-Id: <1421085933-32536-88-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -28,44 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+From: Nathan Lynch <nathan_lynch@mentor.com>
 
-commit 682e77c861c4c60f79ffbeae5e1938ffed24a575 upstream.
+commit 423bd69e69f565167ba14e2fe61df76c3c4a0d26 upstream.
 
-The existing MCE code calls flush_tlb hook with IS=0 (single page) resulting
-in partial invalidation of TLBs which is not right. This patch fixes
-that by passing IS=0xc00 to invalidate whole TLB for successful recovery
-from TLB and ERAT errors.
+The arm and arm64 VDSOs need CP15 access to the architected counter.
+If this is unavailable (which is allowed by ARM v7), indicate this by
+changing the clocksource name to "arch_mem_counter" before registering
+the clocksource.
 
-Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+Suggested by Stephen Boyd.
+
+Signed-off-by: Nathan Lynch <nathan_lynch@mentor.com>
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Acked-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/kernel/mce_power.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/clocksource/arm_arch_timer.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/kernel/mce_power.c b/arch/powerpc/kernel/mce_power.c
-index aa9aff3d6ad3..b6f123ab90ed 100644
---- a/arch/powerpc/kernel/mce_power.c
-+++ b/arch/powerpc/kernel/mce_power.c
-@@ -79,7 +79,7 @@ static long mce_handle_derror(uint64_t dsisr, uint64_t slb_error_bits)
- 	}
- 	if (dsisr & P7_DSISR_MC_TLB_MULTIHIT_MFTLB) {
- 		if (cur_cpu_spec && cur_cpu_spec->flush_tlb)
--			cur_cpu_spec->flush_tlb(TLBIEL_INVAL_PAGE);
-+			cur_cpu_spec->flush_tlb(TLBIEL_INVAL_SET);
- 		/* reset error bits */
- 		dsisr &= ~P7_DSISR_MC_TLB_MULTIHIT_MFTLB;
- 	}
-@@ -110,7 +110,7 @@ static long mce_handle_common_ierror(uint64_t srr1)
- 		break;
- 	case P7_SRR1_MC_IFETCH_TLB_MULTIHIT:
- 		if (cur_cpu_spec && cur_cpu_spec->flush_tlb) {
--			cur_cpu_spec->flush_tlb(TLBIEL_INVAL_PAGE);
-+			cur_cpu_spec->flush_tlb(TLBIEL_INVAL_SET);
- 			handled = 1;
- 		}
- 		break;
+diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+index 5163ec13429d..c99afdf12e98 100644
+--- a/drivers/clocksource/arm_arch_timer.c
++++ b/drivers/clocksource/arm_arch_timer.c
+@@ -429,11 +429,19 @@ static void __init arch_counter_register(unsigned type)
+ 	u64 start_count;
+ 
+ 	/* Register the CP15 based counter if we have one */
+-	if (type & ARCH_CP15_TIMER)
++	if (type & ARCH_CP15_TIMER) {
+ 		arch_timer_read_counter = arch_counter_get_cntvct;
+-	else
++	} else {
+ 		arch_timer_read_counter = arch_counter_get_cntvct_mem;
+ 
++		/* If the clocksource name is "arch_sys_counter" the
++		 * VDSO will attempt to read the CP15-based counter.
++		 * Ensure this does not happen when CP15-based
++		 * counter is not available.
++		 */
++		clocksource_counter.name = "arch_mem_counter";
++	}
++
+ 	start_count = arch_timer_read_counter();
+ 	clocksource_register_hz(&clocksource_counter, arch_timer_rate);
+ 	cyclecounter.mult = clocksource_counter.mult;
 -- 
 2.1.4
 
