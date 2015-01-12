@@ -1,137 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234AbbALPLg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 10:11:36 -0500
-Received: from mailout.micron.com ([137.201.242.129]:29361 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131AbbALPLe (ORCPT
+	id S1753541AbbALPNI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 10:13:08 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:51836 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281AbbALPNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 10:11:34 -0500
-From: =?utf-8?B?UWkgV2FuZyDnjovotbcgKHFpd2FuZyk=?= <qiwang@micron.com>
-To: Ezequiel Garcia <ezequiel.garcia@imgtec.com>,
-        Brian Norris <computersforpeace@gmail.com>
-CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        =?utf-8?B?RnJhbmsgTGl1IOWImOe+pCAoZnJhbmtsaXUp?= 
-	<frankliu@micron.com>,
-        =?utf-8?B?TWVsYW5pZSBaaGFuZyDlvKDnh5UgKG1lbGFuaWV6aGFuZyk=?= 
-	<melaniezhang@micron.com>,
-        =?utf-8?B?UGV0ZXIgUGFuIOa9mOagiyAocGV0ZXJwYW5kb25nKQ==?= 
-	<peterpandong@micron.com>
-Subject: [PATCH 0/3] An alternative to SPI NAND
-Thread-Topic: [PATCH 0/3] An alternative to SPI NAND
-Thread-Index: AdAq2q78IdxvQLPKQ322Hb2GbRwNjAAAGruwAAAwq2D//3/+gP//ZSPQgADC/oD/+NfYMA==
-Date: Mon, 12 Jan 2015 15:10:55 +0000
-Message-ID: <71CF8D7F32C5C24C9CD1D0E02D52498A7714F043@NTXXIAMBX02.xacn.micron.com>
-References: <87F60714EC601C4C83DFF1D2E3D390A04AB3F3@NTXXIAMBX02.xacn.micron.com>
- <20150108010257.GP9759@ld-irv-0074>
- <71CF8D7F32C5C24C9CD1D0E02D52498A7714DD2A@NTXXIAMBX02.xacn.micron.com>
- <54ADF90B.1070800@imgtec.com>
-In-Reply-To: <54ADF90B.1070800@imgtec.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-21242.005
-X-TM-AS-Result: No--10.158700-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="utf-8"
+	Mon, 12 Jan 2015 10:13:06 -0500
+Message-ID: <54B3E466.2030006@oracle.com>
+Date: Mon, 12 Jan 2015 10:12:38 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com
+Subject: Re: [RFC 1/4] lockdep: additional lock specific information when
+ dumping locks
+References: <1421074631-18831-1-git-send-email-sasha.levin@oracle.com> <20150112150633.GD25256@twins.programming.kicks-ass.net>
+In-Reply-To: <20150112150633.GD25256@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0CFBgIj019249
 
-Hi Ezequiel,
-
-On 01/08/2015 11:27 AM, Ezequiel Garcia wrote:
->
->Hi Qi Wang,
->
->On 01/07/2015 11:45 PM, Qi Wang ç‹èµ· (qiwang) wrote:
->> Hi Brian,
+On 01/12/2015 10:06 AM, Peter Zijlstra wrote:
+> On Mon, Jan 12, 2015 at 09:57:08AM -0500, Sasha Levin wrote:
+>> When dumping held locks, it might be useful to get additional lock-specific
+>> information about each lock.
 >>
->> On Thu, Jan 08, 2015 at 9:03:24AM +0000, Brian Norris wrote:
->>>
->>> On Thu, Jan 08, 2015 at 12:47:24AM +0000, Peter Pan æ½˜æ ‹ (peterpandong)
->>> wrote:
->>>> Documentation/devicetree/bindings/mtd/spi-nand.txt |   22 +
->>>> drivers/mtd/Kconfig                                |    2 +
->>>> drivers/mtd/Makefile                               |    1 +
->>>> drivers/mtd/spi-nand/Kconfig                       |    7 +
->>>> drivers/mtd/spi-nand/Makefile                      |    3 +
->>>> drivers/mtd/spi-nand/spi-nand-base.c               | 2034
->>> ++++++++++++++++++++
->>>> drivers/mtd/spi-nand/spi-nand-bbt.c                | 1279 ++++++++++++
->>>
->>> I can already tell by the diffstat that I don't like this. We probably
->>> don't need 3000 new lines of code for this, but we especially don't want
->>> to duplicate nand_bbt.c. It won't take a lot of work to augment
->>> nand_bbt.c to make it shareable. (I can whip that patch up if needed.)
->>
->> Yes, I agree with you, Nand_bbt.c do can be shared by Parallel NAND and
->> SPI NAND. Actually, we are working at this now. Will send patches to you
->> Once we finished it.
->>
->
->Thanks for the quick submission!
->
->However, Brian is right, this code duplication is a no go.
->
->Perhaps a more valid approach would be to first identify the code that
->needs to be shared in nand_bbt.c and nand_base.c, and export those
->symbols (or maybe do the required refactor).
+>> This is mainly useful to figure out who really holds each lock rather then
+>> who's just waiting on it, but it could be extended further or extended to
+>> the other lockdep users if required.
+> 
+> I really don't see the point in this; I would much rather have something
+> useful like:
+> 
+>  http://lwn.net/Articles/579849/
 
-Yes, I agree Brian's suggestion in another mail. 
+As far as I can tell, they have completely different purposes.
 
-" The BBT code is something we definitely want to share, but it's actually
-not very closely tied to nand_base.c, and it looks pretty easy to adapt
-to any MTD that implements mtd_read_oob()/mtd_write_oob(). We'd just
-need to parameterize a few relevant device details into a new nand_bbt
-struct, rather than using struct nand_chip directly."
+The reason for my patch is simple: I'm fuzzing with hundreds of worker threads
+which at some point trigger a complete system lockup for some reason.
 
-To abstract a new nand_bbt struct instead of nand_chip to make SPI NAND 
-and parallel NAND can share nand_bbt.c file, I already begin to work on 
-this.
+When lockdep dumps the list of held locks it shows that pretty much every one
+of those threads is holding the lock which caused the lockup, which is incorrect
+because it considers locks in the process of getting acquired as "held".
 
-For code shared in nand_base.c, I agree it would be better if we can find
-a good method to share nand_base.c code between spi nand and parallel nand.
-But frankly speaking, I'm not satisfied for the remap command method. This
-method make code difficult to maintain when SPI NAND and Parallel NAND 
-evolve much differently in the future.
+This is my solution to that issue. I wanted to know which one of the threads is
+really holding the lock rather than just waiting on it.
 
-Take some example, 
-If one new command (cache operation, multiple plane operation) implemented 
-in parallel NAND code, and is used in nand_read or nand_write, that will 
-cause maintainer to modify SPI NAND code to remap this new command, though 
-this modification probably could be slight. That means modification on 
-Parallel NAND flash need to consider SPI NAND as well. 
-
-How do you think about this?
-
-For Peter Pan's patchset, if we do some modification to make nand_bbt.c to
-make it shareable for Parallel and SPI NAND. The code line should be 2000.
-I believe I can review this spi-nand-base.c to remove some redundant code
-that may hundreds line. Is 1700 or 1800 code line is more acceptable?
-
-Let me know your opinions.
-
->
->Then, separate the SPI NAND upper and lower logic (in a similar to my
->proposal, which I still consider turned out to be clean).
->
->These two things would lead to a simpler and smaller patchset. I also
->suggest to cut off everything that we don't utterly need on a first
->submission, so it's easier to review.
->--
->Ezequiel
+Is there a better way to solve that problem?
 
 
---
-Qi Wang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks,
+Sasha
