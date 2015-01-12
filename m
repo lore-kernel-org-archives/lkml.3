@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130AbbALSL6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:11:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57754 "EHLO
+	id S1754115AbbALSLk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:11:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57758 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753713AbbALSGl (ORCPT
+	with ESMTP id S1753850AbbALSGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:06:41 -0500
+	Mon, 12 Jan 2015 13:06:42 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Dave Airlie <airlied@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 098/216] drm/dp: retry AUX transactions 32 times (v1.1)
-Date: Mon, 12 Jan 2015 18:03:35 +0000
-Message-Id: <1421085933-32536-99-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 099/216] drm/fb_helper: move deferred fb checking into restore mode (v2)
+Date: Mon, 12 Jan 2015 18:03:36 +0000
+Message-Id: <1421085933-32536-100-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -29,44 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Airlie <airlied@redhat.com>
 
-commit 19a93f042fc241ecdf98543cedfe7c171f8cdf53 upstream.
+commit e2809c7db818df6bbd0edf843e1beb2fbc9d8541 upstream.
 
-At least on two MST devices I've tested with, when
-they are link training downstream, they are totally
-unable to handle aux ch msgs, so they defer like nuts.
-I tried 16, it wasn't enough, 32 seems better.
+On MST systems the monitors don't appear when we set the fb up,
+but plymouth opens the drm device and holds it open while they
+come up, when plymouth finishes and lastclose gets called we
+don't do the delayed fb probe, so the monitor never appears on the
+console.
 
-This fixes one Dell 4k monitor and one of the
-MST hubs.
+Fix this by moving the delayed checking into the mode restore.
 
-v1.1: fixup comment (Tom).
+v2: Daniel suggested that ->delayed_hotplug is set under
+the mode_config mutex, so we should check it under that as
+well, while we are in the area.
 
-Acked-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/drm_dp_helper.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/drm_fb_helper.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/drm/drm_dp_helper.c b/drivers/gpu/drm/drm_dp_helper.c
-index 08e33b8b13a4..9f59c9027ebe 100644
---- a/drivers/gpu/drm/drm_dp_helper.c
-+++ b/drivers/gpu/drm/drm_dp_helper.c
-@@ -378,10 +378,11 @@ static int drm_dp_dpcd_access(struct drm_dp_aux *aux, u8 request,
+diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
+index d5d8cea1a679..20e820c3abbb 100644
+--- a/drivers/gpu/drm/drm_fb_helper.c
++++ b/drivers/gpu/drm/drm_fb_helper.c
+@@ -331,9 +331,18 @@ bool drm_fb_helper_restore_fbdev_mode_unlocked(struct drm_fb_helper *fb_helper)
+ {
+ 	struct drm_device *dev = fb_helper->dev;
+ 	bool ret;
++	bool do_delayed = false;
++
+ 	drm_modeset_lock_all(dev);
+ 	ret = restore_fbdev_mode(fb_helper);
++
++	do_delayed = fb_helper->delayed_hotplug;
++	if (do_delayed)
++		fb_helper->delayed_hotplug = false;
+ 	drm_modeset_unlock_all(dev);
++
++	if (do_delayed)
++		drm_fb_helper_hotplug_event(fb_helper);
+ 	return ret;
+ }
+ EXPORT_SYMBOL(drm_fb_helper_restore_fbdev_mode_unlocked);
+@@ -858,10 +867,6 @@ int drm_fb_helper_set_par(struct fb_info *info)
  
- 	/*
- 	 * The specification doesn't give any recommendation on how often to
--	 * retry native transactions, so retry 7 times like for I2C-over-AUX
--	 * transactions.
-+	 * retry native transactions. We used to retry 7 times like for
-+	 * aux i2c transactions but real world devices this wasn't
-+	 * sufficient, bump to 32 which makes Dell 4k monitors happier.
- 	 */
--	for (retry = 0; retry < 7; retry++) {
-+	for (retry = 0; retry < 32; retry++) {
+ 	drm_fb_helper_restore_fbdev_mode_unlocked(fb_helper);
  
- 		mutex_lock(&aux->hw_mutex);
- 		err = aux->transfer(aux, &msg);
+-	if (fb_helper->delayed_hotplug) {
+-		fb_helper->delayed_hotplug = false;
+-		drm_fb_helper_hotplug_event(fb_helper);
+-	}
+ 	return 0;
+ }
+ EXPORT_SYMBOL(drm_fb_helper_set_par);
 -- 
 2.1.4
 
