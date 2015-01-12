@@ -1,104 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176AbbALLNZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 06:13:25 -0500
-Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:33157 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752234AbbALLNW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 06:13:22 -0500
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Jiri Olsa <jolsa@redhat.com>
-CC: "acme@redhat.com" <acme@redhat.com>,
-        "namhyung@kernel.org" <namhyung@kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "jolsa@kernel.org" <jolsa@kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-perf-users@vger.kernel.org" <linux-perf-users@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "Alexey.Brodkin@synopsys.com" <Alexey.Brodkin@synopsys.com>
-Subject: Re: [PATCH v2 5/5] perf tools: [uclibc] provide stub for
- pthread_attr_setaffinity_np
-Thread-Topic: [PATCH v2 5/5] perf tools: [uclibc] provide stub for
- pthread_attr_setaffinity_np
-Thread-Index: AQHQLlen5xqztihQaEK9LN7Zkyjhbg==
-Date: Mon, 12 Jan 2015 11:13:17 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA2307565BCBA7D@IN01WEMBXA.internal.synopsys.com>
-References: <1420888254-17504-1-git-send-email-vgupta@synopsys.com>
- <1420888254-17504-6-git-send-email-vgupta@synopsys.com>
- <20150112110443.GB26229@krava.redhat.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.12.196.223]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S1753202AbbALLNm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 06:13:42 -0500
+Received: from mta-out1.inet.fi ([62.71.2.195]:49238 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752234AbbALLNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 06:13:41 -0500
+Date: Mon, 12 Jan 2015 13:13:18 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Hugh Dickins <hughd@google.com>, stable@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Konstantin Khlebnikov <koct9i@gmail.com>,
+        Mel Gorman <mgorman@suse.de>, Bob Liu <bob.liu@oracle.com>,
+        Christoph Lameter <cl@gentwo.org>, Dave Jones <davej@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 3.12 78/78] mm: let mm_find_pmd fix buggy race with THP
+ fault
+Message-ID: <20150112111318.GA16935@node.dhcp.inet.fi>
+References: <72002f1f248c28d1715d10454190e209d5a20fe1.1420799385.git.jslaby@suse.cz>
+ <e1c34dac913e87ee8d03c06d7a328a7c2137cafb.1420799385.git.jslaby@suse.cz>
+ <alpine.LSU.2.11.1501092048090.2283@eggly.anvils>
+ <54B39B8A.7000002@suse.cz>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54B39B8A.7000002@suse.cz>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+On Mon, Jan 12, 2015 at 11:01:46AM +0100, Jiri Slaby wrote:
+> On 01/10/2015, 06:01 AM, Hugh Dickins wrote:
+> > On Fri, 9 Jan 2015, Jiri Slaby wrote:
+> > 
+> >> From: Hugh Dickins <hughd@google.com>
+> >>
+> >> 3.12-stable review patch.  If anyone has any objections, please let me know.
+> >>
+> >> ===============
+> >>
+> >> commit f72e7dcdd25229446b102e587ef2f826f76bff28 upstream.
+> ...
+> > Fine for this to go in, but there is one catch, which I discovered when
+> > backporting to v3.11: it needed one more hunk.  I haven't checked your
+> > base tree, but if this applies then I believe you need it - most of the
+> > time no problem, but it can case page migration to fail to find a
+> > migration entry it inserted earlier, then BUG_ON(!PageLocked(p)) in
+> > migration_entry_to_page() soon after.  Here's what I wrote back then:
+> > 
+> > Note on rebase to v3.11: added a hunk to replace the use of mm_find_pmd()
+> > in page_check_address_pmd().  This call had been similarly replaced by
+> > the time of my v3.16 commit, in Kirill Shutemov's v3.15 b5a8cad376ee
+> > ("thp: close race between split and zap huge pages"): which we do not
+> > need as such, since it's fixing v3.13 117b0791ac42 ("mm, thp: move ptl
+> > taking inside page_check_address_pmd()"), from a split page-table-lock
+> > series we are not backporting.  But without this additional hunk, rmap
+> > sometimes broke when the new semantic for mm_find_pmd() was used here.
+> > 
+> > (Adding Kirill to Cc: shouldn't he have been Cc'ed already?)
+> > 
+> > Hugh
+> 
+> Thanks, I see. So the diff between the hunk below and 117b0791ac42 are
+> two things:
+> 
+> > --- a/mm/huge_memory.c
+> > +++ b/mm/huge_memory.c
+> > @@ -1584,12 +1584,20 @@ pmd_t *page_check_address_pmd(struct page *page,
+> >  			      unsigned long address,
+> >  			      enum page_check_address_pmd_flag flag)
+> >  {
+> > +	pgd_t *pgd;
+> > +	pud_t *pud;
+> >  	pmd_t *pmd, *ret = NULL;
+> >  
+> >  	if (address & ~HPAGE_PMD_MASK)
+> >  		goto out;
+> >  
+> > -	pmd = mm_find_pmd(mm, address);
+> > +	pgd = pgd_offset(mm, address);
+> > +	if (!pgd_present(*pgd))
+> > +		goto out;
+> > +	pud = pud_offset(pgd, address);
+> > +	if (!pud_present(*pud))
+> > +		goto out;
+> > +	pmd = pmd_offset(pud, address);
+> >  	if (!pmd)
+> >  		goto out;
+> 
+> This check is removed by 117b0791ac42. Can actually pmd returned from
+> pmd_offset be NULL?
 
-On Monday 12 January 2015 04:35 PM, Jiri Olsa wrote:
-> On Sat, Jan 10, 2015 at 04:40:54PM +0530, Vineet Gupta wrote:
->
-> SNIP
->
->> [SNIP]
->>  	test-timerfd.bin		\
->>  	test-libdw-dwarf-unwind.bin	\
->> @@ -47,6 +48,9 @@ test-all.bin:
->>  test-hello.bin:
->>  	$(BUILD)
->>  
->> +test-pthread-attr-setaffinity-np.bin:
->> +	$(BUILD) -Werror
-> this does not works for me unless I add -lpthread (check patch below)
-> is it possible you pushed that through LDFLAGS?
->
-> otherwise I'm getting following error:
-> 	---
-> 	In file included from bench/futex-hash.c:17:0:
-> 	bench/futex.h:73:19: error: conflicting types for ‘pthread_attr_setaffinity_np’
-> 	 static inline int pthread_attr_setaffinity_np(pthread_attr_t *attr,
-> [snip]
-> 			   ^
-> 	In file included from bench/futex.h:72:0,
-> 			 from bench/futex-requeue.c:17:
-> 	/usr/include/pthread.h:407:12: note: previous declaration of ‘pthread_attr_setaffinity_np’ was here
-> 	 extern int pthread_attr_setaffinity_np (pthread_attr_t *__attr,
-> 		    ^
-> 	make[1]: *** [bench/futex-requeue.o] Error 1
-> 	make: *** [all] Error 2
-> 	---
->
-> my system is x86_64 on F20
->
-> thanks,
-> jirka
->
->
-> diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-> index e9b99bb29348..42ac05aaf8ac 100644
-> --- a/tools/perf/config/feature-checks/Makefile
-> +++ b/tools/perf/config/feature-checks/Makefile
-> @@ -49,7 +49,7 @@ test-hello.bin:
->  	$(BUILD)
->  
->  test-pthread-attr-setaffinity-np.bin:
-> -	$(BUILD) -Werror
-> +	$(BUILD) -Werror -lpthread
->  
->  test-stackprotector-all.bin:
->  	$(BUILD) -Werror -fstack-protector-all
+[ I believe, you mean by b5a8cad376ee, right? ]
 
-Right - that fix is indeed needed to make it pass. Thing is, with my uClibc config
-it always fails - so I couldn't make it fail because of this reason :-)
+No, pmd cannot be NULL here, if pud is present and valid (pud_page_vaddr()
+is not NULL).
 
-I'll add that hunk in v3.
+> 
+> >  	if (pmd_none(*pmd))
+> 
+> pmd_none() is replaced by !pmd_present().
 
-Thx,
--Vineet
+Both pmd_none() and !pmd_present() would work. pmd_none() can be slightly
+faster.
+
+> My question is: is it OK to take the backport of 117b0791ac42 attached
+> (to stay with what upstream has)?
+
+The commit message would be totally misleading, since the fixed bug is not
+present in v3.12. It's better to fold the patch into "mm: let mm_find_pmd
+fix buggy race with THP".
+
+-- 
+ Kirill A. Shutemov
