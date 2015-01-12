@@ -1,216 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709AbbALJlY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 04:41:24 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:30025 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027AbbALJlW (ORCPT
+	id S1752368AbbALJqc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 04:46:32 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:29849 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751607AbbALJqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 04:41:22 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-b3-54b396b7e7f4
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>
-Cc: "'Changman Lee'" <cm224.lee@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-References: <009401d0297a$41523580$c3f6a080$@samsung.com>
- <20150106194419.GB54001@jaegeuk-mac02>
- <000101d02cce$4bed1c60$e3c75520$@samsung.com>
- <20150111053212.GB91790@jaegeuk-mac02.hsd1.ca.comcast.net>
-In-reply-to: <20150111053212.GB91790@jaegeuk-mac02.hsd1.ca.comcast.net>
-Subject: RE: [f2fs-dev][PATCH 2/2] f2fs: enable recover_xattr_data to avoid cp
- when fsync after operating xattr
-Date: Mon, 12 Jan 2015 17:40:28 +0800
-Message-id: <000301d02e4b$e768bbd0$b63a3370$@samsung.com>
+	Mon, 12 Jan 2015 04:46:30 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-60-54b397f3960c
+Message-id: <54B397F2.6060205@samsung.com>
+Date: Mon, 12 Jan 2015 10:46:26 +0100
+From: Jacek Anaszewski <j.anaszewski@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
+ Thunderbird/17.0.8
 MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
+        s.nawrocki@samsung.com, Hans Verkuil <hans.verkuil@cisco.com>
+Subject: Re: [PATCH/RFC v10 15/19] media: Add registration helpers for V4L2
+ flash sub-devices
+References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
+ <1420816989-1808-16-git-send-email-j.anaszewski@samsung.com>
+ <20150109205432.GP18076@amd>
+In-reply-to: <20150109205432.GP18076@amd>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
 Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQGwcrxFvM/bD0iZoRVUq2UPSe0nQwFF+kkaAcN/el0BRfqfS5zZLSVw
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFLMWRmVeSWpSXmKPExsVy+t9jQd3t0zaHGBy8JG1xbV8jk8WT9bOY
-	LS4tcre4vGsOmwOLx6ZVnWweuxd8ZvLo27KK0ePzJrkAligum5TUnMyy1CJ9uwSujJ7dF9gK
-	TutXTNyzhbmB8aJaFyMnh4SAicShRbPZIWwxiQv31rN1MXJxCAlMZ5S4/+o6C4Tzg1Gi6e85
-	ZpAqNgEVieUd/5lAbBEBNYnefVOAbA4OZoEiiVUrBCDqzzNKTJzwnhWkhlPAXWLl9desIDXC
-	AoUSR74JgoRZBFQljhyfygZi8wpYSrw+/IUdwhaU+DH5HguIzSygJbF+53EmCFteYvOat8wQ
-	hypI7Dj7mhHiBDeJ0/3/2CBqxCU2HrnFMoFRaBaSUbOQjJqFZNQsJC0LGFlWMYqmFiQXFCel
-	5xrpFSfmFpfmpesl5+duYgTHwDPpHYyrGiwOMQpwMCrx8FpIbQ4RYk0sK67MPcQowcGsJMLr
-	WgYU4k1JrKxKLcqPLyrNSS0+xCjNwaIkzqtk3xYiJJCeWJKanZpakFoEk2Xi4JRqYNywWmba
-	i60r9hY/PSP75rnAXVVbhrN/ub7z/GeoPn9H9ZndlQwp5s18u2d+yPuv3vlK3CZBeoe8qZqE
-	4JV5Rmd1Z64/tJfdL9LlV+n/xbtPnZkd/jFGoezv/O5dBbx2Ije+rWKd84zj2jbzY/nH19/Z
-	13p+n9D9kiU6tycJxKovNbn1+qb5/7/HlViKMxINtZiLihMBc/Xcl30CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t/xa7qfp28OMbjfYGCxccZ6VoujOycy
+	Wcw/co7VYsnPXUwWZ5vesFtc3jWHzWLrm3WMFj0btrJa3D11lM1i966nrBaH37SzWpzZv5LN
+	gcdjyu+NrB47Z91l9zj8dSGLx575P1g9+rasYvRYsfo7u8fnTXIB7FFcNimpOZllqUX6dglc
+	GVOW/mAt2CFecWDSLbYGxr9CXYycHBICJhKHl91mhrDFJC7cW8/WxcjFISSwlFHi48+DTBDO
+	R0aJtU8vg1XxCmhJvLy5mBHEZhFQldi64yAbiM0mYCjx88VrJhBbVCBC4s/pfawQ9YISPybf
+	YwGxRQTkJbb2rWAGGcossJZJovvNVSCHg0NYIF5iw6wEuM3Hur+CLeAU0JT4fPMhmM0sYC2x
+	ctI2KFteYvOat8wTGAVmIdkxC0nZLCRlCxiZVzGKppYmFxQnpeca6hUn5haX5qXrJefnbmKE
+	xMuXHYyLj1kdYhTgYFTi4Z0gszlEiDWxrLgy9xCjBAezkgivaxlQiDclsbIqtSg/vqg0J7X4
+	ECMTB6dUA6P/v1XLnugc7GySY3tzxfMYV3Dsbbkvb43Lgj+1vV28cta0K5z/kp9xlr2oEtJ9
+	7fFq4u5+i3XflksIH124+eSDVzPfWseY3/HevN2MZX7Eg8nnYg+GLTrNoZWj32WmvyBwR/dR
+	my6eaCOhzDPZ507ku16YMXWvzBQD67O2z4U2bwsR2c+zVMdNiaU4I9FQi7moOBEAN4D7JnUC	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jaegeuk,
+Hi Pavel,
 
-> -----Original Message-----
-> From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> Sent: Sunday, January 11, 2015 1:32 PM
-> To: Chao Yu
-> Cc: 'Changman Lee'; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org
-> Subject: Re: [f2fs-dev][PATCH 2/2] f2fs: enable recover_xattr_data to avoid cp when fsync after
-> operating xattr
-> 
-> On Sat, Jan 10, 2015 at 08:08:33PM +0800, Chao Yu wrote:
-> > Hi Jaegeuk,
-> >
-> > > -----Original Message-----
-> > > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> > > Sent: Wednesday, January 07, 2015 3:44 AM
-> > > To: Chao Yu
-> > > Cc: Changman Lee; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org
-> > > Subject: Re: [f2fs-dev][PATCH 2/2] f2fs: enable recover_xattr_data to avoid cp when fsync
-> after
-> > > operating xattr
-> > >
-> > > Hi Chao,
-> > >
-> > > On Tue, Jan 06, 2015 at 02:29:40PM +0800, Chao Yu wrote:
-> > > > Now if we call fsync() after we update the xattr date belongs to the file, f2fs
-> > > > will do checkpoint to keep data.
-> > > > This can cause low performance because checkpoint block most operation and write
-> > > > lots of blocks. So we'd better to avoid doing checkpoint by writing modified
-> > > > xattr node page to warm node segment, and then it can be recovered when we mount
-> > > > this device later on.
-> > >
-> > > You're trying to change the writing policy as xattr blocks are written into
-> > > WARM_NODE area instead of COLD_NODE area.
-> > > I don't think xattrs are frequently changed between each fsync calls.
-> > >
-> > > How do you think?
-> >
-> > I'm not sure whether there is a scenario that setxattr and fsync are invoked
-> > alternately, but if there is, our performance will decrease obviously.
-> >
-> > If you don't want to change writing policy, how about writing xattr node with
-> > fsync flag into cold node segment when fsync() is called, then try to recover
-> > it from cold node chain when recovery after abnormally pow-cut, this way can
-> > avoid cp frequently in above scenario.
-> 
-> Firt of all, I don't think this scenario is frequent enough that we have to
-> break the exisiting writing and recovery procedures.
-> Moreover, if xattr entries are covered by inline_xattr, it doesn't trigger
-> checkpoint.
+Thanks for the review.
 
-Agree, that's a good solution.
+On 01/09/2015 09:54 PM, Pavel Machek wrote:
+> On Fri 2015-01-09 16:23:05, Jacek Anaszewski wrote:
+>> This patch adds helper functions for registering/unregistering
+>> LED Flash class devices as V4L2 sub-devices. The functions should
+>> be called from the LED subsystem device driver. In case the
+>> support for V4L2 Flash sub-devices is disabled in the kernel
+>> config the functions' empty versions will be used.
+>>
+>> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> Cc: Sakari Ailus <sakari.ailus@iki.fi>
+>> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+>
+> Acked-by: Pavel Machek <pavel@ucw.cz>
+>
+>> +	/*
+>> +	 * Indicator leds, unlike torch leds, are turned on/off basing
+>> on
+>
+> leds -> LEDs.
 
-> 
-> Let me know, if I'm missing something.
-> 
-> If you try to change the recovery procedure, it needs to think about the
-> disk full condition. (i.e., space_for_roll_forward())
-> And, I don't want to search cold node chain.
+Sure.
 
-OK, if we keep writing policy and recovery procedure as it is, then, shouldn't our
-recover_xattr_data be dropped because it will be not used from any call path?
-How do you think of below patch?
+>> +	 * the state of V4L2_CID_FLASH_INDICATOR_INTENSITY control only.
+>> +	 * Therefore it must be possible to set it to 0 level which in
+>> +	 * the LED subsystem reflects LED_OFF state.
+>> +	 */
+>> +	if (cdata_id != INDICATOR_INTENSITY)
+>> +		++__intensity;
+>
+> And normally we'd do i++ instead of ++i, and avoid __ for local
+> variables...?
 
->From 4fee238292aa0198a1530492afbd529e84e83141 Mon Sep 17 00:00:00 2001
-From: Chao Yu <chao2.yu@samsung.com>
-Date: Mon, 12 Jan 2015 17:25:44 +0800
-Subject: [PATCH] f2fs: drop recover_xattr_data
+Pre-incrementation operator is favourable over the post-incrementation
+one if we don't want to have an access to the value of a variable before
+incrementation, which is the case here.
+Maybe gcc detects the cases when the value of a variable is not assigned
+and doesn't copy it before incrementing, however I haven't found any
+reference. I see that often in the for loops the i++ version
+is used, but I am not sure if this is done because developers are
+aware that gcc will optimize it anyway or it is just an omission.
 
-Because xattr node will be written to cold node segment, so in current procedure
-it's wrong that we try to find and recover it from warm node chain in
-recover_xattr_data.
+And regarding __ for local variable - I haven't found any restriction
+about it in the Documentation/CodingStyle. Nevertheless I can rename
+it to tmp or something.
 
-Let's drop this related function and invoking.
+>> +/**
+>> + * struct v4l2_flash_ctrl_config - V4L2 Flash controls initialization data
+>> + * @intensity:			constraints for the led in a non-flash mode
+>> + * @flash_intensity:		V4L2_CID_FLASH_INTENSITY settings constraints
+>> + * @flash_timeout:		V4L2_CID_FLASH_TIMEOUT constraints
+>> + * @flash_faults:		possible flash faults
+>> + * @has_external_strobe:	external strobe capability
+>> + * @indicator_led:		signifies that a led is of indicator type
+>> + */
+>> +struct v4l2_flash_ctrl_config {
+>> +	struct v4l2_ctrl_config intensity;
+>> +	struct v4l2_ctrl_config flash_intensity;
+>> +	struct v4l2_ctrl_config flash_timeout;
+>> +	u32 flash_faults;
+>> +	bool has_external_strobe:1;
+>> +	bool indicator_led:1;
+>> +};
+>
+> I don't think you are supposed to do boolean bit arrays.
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- fs/f2fs/f2fs.h     |  1 -
- fs/f2fs/node.c     | 36 ------------------------------------
- fs/f2fs/recovery.c |  8 ++------
- 3 files changed, 2 insertions(+), 43 deletions(-)
+These bit fields allow to reduce memory usage. If they were not bit
+fields, the address of the next variable would be aligned to the
+multiply of the CPU word size.
+Please look e.g. at struct dev_pm_info in the file include/linux/pm.h.
+It also contains boolean bit fields.
 
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 209532c..3b18072 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -1392,7 +1392,6 @@ bool alloc_nid(struct f2fs_sb_info *, nid_t *);
- void alloc_nid_done(struct f2fs_sb_info *, nid_t);
- void alloc_nid_failed(struct f2fs_sb_info *, nid_t);
- void recover_inline_xattr(struct inode *, struct page *);
--void recover_xattr_data(struct inode *, struct page *, block_t);
- int recover_inode_page(struct f2fs_sb_info *, struct page *);
- int restore_node_summary(struct f2fs_sb_info *, unsigned int,
- 				struct f2fs_summary_block *);
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index d7c1436..75aa233 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -1656,42 +1656,6 @@ update_inode:
- 	f2fs_put_page(ipage, 1);
- }
- 
--void recover_xattr_data(struct inode *inode, struct page *page, block_t blkaddr)
--{
--	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
--	nid_t prev_xnid = F2FS_I(inode)->i_xattr_nid;
--	nid_t new_xnid = nid_of_node(page);
--	struct node_info ni;
--
--	/* 1: invalidate the previous xattr nid */
--	if (!prev_xnid)
--		goto recover_xnid;
--
--	/* Deallocate node address */
--	get_node_info(sbi, prev_xnid, &ni);
--	f2fs_bug_on(sbi, ni.blk_addr == NULL_ADDR);
--	invalidate_blocks(sbi, ni.blk_addr);
--	dec_valid_node_count(sbi, inode);
--	set_node_addr(sbi, &ni, NULL_ADDR, false);
--
--recover_xnid:
--	/* 2: allocate new xattr nid */
--	if (unlikely(!inc_valid_node_count(sbi, inode)))
--		f2fs_bug_on(sbi, 1);
--
--	remove_free_nid(NM_I(sbi), new_xnid);
--	get_node_info(sbi, new_xnid, &ni);
--	ni.ino = inode->i_ino;
--	set_node_addr(sbi, &ni, NEW_ADDR, false);
--	F2FS_I(inode)->i_xattr_nid = new_xnid;
--
--	/* 3: update xattr blkaddr */
--	refresh_sit_entry(sbi, NEW_ADDR, blkaddr);
--	set_node_addr(sbi, &ni, blkaddr, false);
--
--	update_inode_page(inode);
--}
--
- int recover_inode_page(struct f2fs_sb_info *sbi, struct page *page)
- {
- 	struct f2fs_inode *src, *dst;
-diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-index c4211a5..f70c2e7 100644
---- a/fs/f2fs/recovery.c
-+++ b/fs/f2fs/recovery.c
-@@ -342,13 +342,9 @@ static int do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
- 	struct node_info ni;
- 	int err = 0, recovered = 0;
- 
--	/* step 1: recover xattr */
--	if (IS_INODE(page)) {
-+	/* step 1: recover inline xattr */
-+	if (IS_INODE(page))
- 		recover_inline_xattr(inode, page);
--	} else if (f2fs_has_xattr_block(ofs_of_node(page))) {
--		recover_xattr_data(inode, page, blkaddr);
--		goto out;
--	}
- 
- 	/* step 2: recover inline data */
- 	if (recover_inline_data(inode, page))
 -- 
-2.2.1
-
-
-> 
-> Thanks,
-> 
-> >
-> > Thanks,
-> > Yu
-
+Best Regards,
+Jacek Anaszewski
