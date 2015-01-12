@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418AbbALSbS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:31:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58530 "EHLO
+	id S1754303AbbALSbi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:31:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58541 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754307AbbALSbO (ORCPT
+	with ESMTP id S1755400AbbALSbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:31:14 -0500
+	Mon, 12 Jan 2015 13:31:17 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Moritz Muehlenhoff <jmm@inutil.org>,
+Cc: Sasha Levin <sasha.levin@oracle.com>, David Howells <dhowells@redhat.com>,
+        Moritz Muehlenhoff <jmm@inutil.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 215/216] deal with deadlock in d_walk()
-Date: Mon, 12 Jan 2015 18:29:53 +0000
-Message-Id: <1421087394-2712-103-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 216/216] KEYS: close race between key lookup and freeing
+Date: Mon, 12 Jan 2015 18:29:54 +0000
+Message-Id: <1421087394-2712-104-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -27,91 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-commit ca5358ef75fc69fee5322a38a340f5739d997c10 upstream.
+commit a3a8784454692dd72e5d5d34dcdab17b4420e74c upstream.
 
-... by not hitting rename_retry for reasons other than rename having
-happened.  In other words, do _not_ restart when finding that
-between unlocking the child and locking the parent the former got
-into __dentry_kill().  Skip the killed siblings instead...
+When a key is being garbage collected, it's key->user would get put before
+the ->destroy() callback is called, where the key is removed from it's
+respective tracking structures.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+This leaves a key hanging in a semi-invalid state which leaves a window open
+for a different task to try an access key->user. An example is
+find_keyring_by_name() which would dereference key->user for a key that is
+in the process of being garbage collected (where key->user was freed but
+->destroy() wasn't called yet - so it's still present in the linked list).
+
+This would cause either a panic, or corrupt memory.
+
+Fixes CVE-2014-9529.
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 Cc: Moritz Muehlenhoff <jmm@inutil.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/dcache.c | 31 ++++++++++++++++---------------
- 1 file changed, 16 insertions(+), 15 deletions(-)
+ security/keys/gc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index c73c777b7c3f..e2dc0874a1f0 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -466,7 +466,7 @@ static void __dentry_kill(struct dentry *dentry)
- 	}
- 	/* if it was on the hash then remove it */
- 	__d_drop(dentry);
--	list_del(&dentry->d_child);
-+	__list_del_entry(&dentry->d_child);
- 	/*
- 	 * Inform d_walk() that we are no longer attached to the
- 	 * dentry tree
-@@ -1120,33 +1120,31 @@ resume:
- 	/*
- 	 * All done at this level ... ascend and resume the search.
- 	 */
-+	rcu_read_lock();
-+ascend:
- 	if (this_parent != parent) {
- 		struct dentry *child = this_parent;
- 		this_parent = child->d_parent;
+diff --git a/security/keys/gc.c b/security/keys/gc.c
+index d3222b6d7d59..009d9370c8fd 100644
+--- a/security/keys/gc.c
++++ b/security/keys/gc.c
+@@ -157,12 +157,12 @@ static noinline void key_gc_unused_keys(struct list_head *keys)
+ 		if (test_bit(KEY_FLAG_INSTANTIATED, &key->flags))
+ 			atomic_dec(&key->user->nikeys);
  
--		rcu_read_lock();
- 		spin_unlock(&child->d_lock);
- 		spin_lock(&this_parent->d_lock);
+-		key_user_put(key->user);
+-
+ 		/* now throw away the key memory */
+ 		if (key->type->destroy)
+ 			key->type->destroy(key);
  
--		/*
--		 * might go back up the wrong parent if we have had a rename
--		 * or deletion
--		 */
--		if (this_parent != child->d_parent ||
--			 (child->d_flags & DCACHE_DENTRY_KILLED) ||
--			 need_seqretry(&rename_lock, seq)) {
--			spin_unlock(&this_parent->d_lock);
--			rcu_read_unlock();
-+		/* might go back up the wrong parent if we have had a rename. */
-+		if (need_seqretry(&rename_lock, seq))
- 			goto rename_retry;
-+		next = child->d_child.next;
-+		while (unlikely(child->d_flags & DCACHE_DENTRY_KILLED)) {
-+			if (next == &this_parent->d_subdirs)
-+				goto ascend;
-+			child = list_entry(next, struct dentry, d_child);
-+			next = next->next;
- 		}
- 		rcu_read_unlock();
--		next = child->d_child.next;
- 		goto resume;
- 	}
--	if (need_seqretry(&rename_lock, seq)) {
--		spin_unlock(&this_parent->d_lock);
-+	if (need_seqretry(&rename_lock, seq))
- 		goto rename_retry;
--	}
-+	rcu_read_unlock();
- 	if (finish)
- 		finish(data);
++		key_user_put(key->user);
++
+ 		kfree(key->description);
  
-@@ -1156,6 +1154,9 @@ out_unlock:
- 	return;
- 
- rename_retry:
-+	spin_unlock(&this_parent->d_lock);
-+	rcu_read_unlock();
-+	BUG_ON(seq & 1);
- 	if (!retry)
- 		return;
- 	seq = 1;
+ #ifdef KEY_DEBUGGING
 -- 
 2.1.4
 
