@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721AbbALKN7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 05:13:59 -0500
-Received: from sauhun.de ([89.238.76.85]:59542 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752108AbbALKN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 05:13:57 -0500
-Date: Mon, 12 Jan 2015 11:13:49 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 02/11] i2c: add quirk checks to core
-Message-ID: <20150112101349.GA995@katana>
-References: <1420824103-24169-1-git-send-email-wsa@the-dreams.de>
- <1420824103-24169-3-git-send-email-wsa@the-dreams.de>
- <20150112095847.GD3625@ldesroches-Latitude-E6320>
+	id S1752859AbbALKOQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 05:14:16 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:62682 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108AbbALKOM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 05:14:12 -0500
+Date: Mon, 12 Jan 2015 05:14:07 -0500
+From: "Ahmed S. Darwish" <darwish.07@gmail.com>
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: Olivier Sobrie <olivier@sobrie.be>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux-USB <linux-usb@vger.kernel.org>,
+        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 4/4] can: kvaser_usb: Retry first bulk transfer on
+ -ETIMEDOUT
+Message-ID: <20150112101407.GA9213@linux>
+References: <20141223154654.GB6460@vivalin-002>
+ <20150111200544.GA8855@linux>
+ <20150111201116.GB8855@linux>
+ <20150111201519.GC8855@linux>
+ <20150111203612.GA8999@linux>
+ <20150111204508.GB8999@linux>
+ <54B2E23E.1090108@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SUOF0GtieIMvvwua"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150112095847.GD3625@ldesroches-Latitude-E6320>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54B2E23E.1090108@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jan 11, 2015 at 09:51:10PM +0100, Marc Kleine-Budde wrote:
+> On 01/11/2015 09:45 PM, Ahmed S. Darwish wrote:
+> > From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+> > 
+> > (This is a draft patch, I'm not sure if this fixes the USB
+> > bug or only its psymptom. Feedback from the linux-usb folks
+> > is really appreciated.)
+> > 
+> > When plugging the Kvaser USB/CAN dongle the first time, everything
+> > works as expected and all of the transfers from and to the USB
+> > device succeeds.
+> > 
+> > Meanwhile, after unplugging the device and plugging it again, the
+> > first bulk transfer _always_ returns an -ETIMEDOUT. The following
+> > behaviour was observied:
+> > 
+> > - Setting higher timeout values for the first bulk transfer never
+> >   solved the issue.
+> > 
+> > - Unloading, then loading, our kvaser_usb module in question
+> >   __always__ solved the issue.
+> > 
+> > - Checking first bulk transfer status, and retry the transfer
+> >   again in case of an -ETIMEDOUT also __always__ solved the issue.
+> >   This is what the patch below does.
+> > 
+> > - In the testing done so far, this issue appears only on laptops
+> >   but never on PCs (possibly power related?)
+> > 
+> > Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+> 
+> Does this patch apply apply between 3 and 4? If not, please re-arrange
+> the series. As this is a bug fix, patches 1, 2 and 4 will go via
+> net/master, 3 will go via net-next/master.
+> 
 
---SUOF0GtieIMvvwua
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Since no one complained earlier, I guess this issue only affects
+USBCAN devices. That's why I've based it above patch #3: adding
+USBCAN hardware support.
 
+Nonetheless, it won't do any harm for the current Leaf-only
+driver. So _if_ this is the correct fix, I will update the commit
+log, refactor the check into a 'do { } while()' loop, and then
+base it above the Leaf-only net/master fixes on patch #1, and #2.
 
-> I am not sure it will perfectly fit at91 quirks.
+Any feedback on the USB side of things?
 
-I think it does.
-
-> The hardware can handle two messages by using the internal address
-> feature. The internal address size is from one byte to three bytes. Then
-> the length of the first message is limited to three but we don't have
-> this constraint for the second one. If we have 'write then read' no problem
-> but if we have two write messages, the second one will cause a quirk
-> exceeded error.
-
-Yeah, for this reason I seperated I2C_ADAPTER_QUIRK_COMB_WRITE_FIRST
-out. The first message is checked against max_comb_write_len which is
-set to 3 for your driver. The second is checked agains max_write_len
-which is unset in your driver and thus can be of any length.
-
-That should work, no?
-
-
---SUOF0GtieIMvvwua
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUs55dAAoJEBQN5MwUoCm2gf4P+QECpDMLwMrK3kh5i4CYdzF3
-c6wzWfew04QCEjN5xmZNJqcTeFZWcQ9x+RX8NWRhVSx6gVqsc8jGxKzZDALM63TF
-1j3Zvn54NK99hBPVgeyI1VLqLrRfNDoSIp3Pdf9paGFO6cvsEY38FT9P/qTGC3fH
-ckIiaCjlg/QLV8bp+gSJLUPyo5V8n7eLXi6tmzCYh79AfuFMZ0s8Ct4IAQA/hiOE
-Kxyw1jVundVZatdmIsfVSdSrdbV5WE2m1vasj426uvVoVTFgp2Zz+ANNxzj3Z7aL
-yQvYFUjbnFIunPAplVF8CTAUcPpfa3uv1EY9T+iN0rFeTVs9HIIBz+PfDDLgvvfB
-gtniH+vqId9NK4JPKlmJcKzK8AXrfeEHIEiRMpofve6ts8QTDcpFJnJw3lvVn2yS
-Y+GGKAqmOTLUwzMDk0I0/JYw+OoFQOdaEGZJogYCuvR/yVwagzoJKKq/dZpvqghY
-By8yNEIZgfDDXYI2ZeMgn9tNpYUlBpka7pXtl0jhrQxrNm2p8SEnDsd9ZrbtECjZ
-k6HSiPMhmWfg1X3856qQVm6OxNz4n+PJLjMCkh5kR956tIlK42x5bnJFIQVtLczB
-Q1ITIUfeWpXOus1OX1rw5NQU5jibczKT4PK7ZcjbXGRefAhJYXRnDlLjzkgW1r7f
-WzSXkfbxs+E6D0NLDa43
-=Hhq0
------END PGP SIGNATURE-----
-
---SUOF0GtieIMvvwua--
+Thanks,
+Darwish
