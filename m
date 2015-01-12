@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137AbbALTBZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 14:01:25 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:35287 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754919AbbALTBW (ORCPT
+	id S1756530AbbALTCG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 14:02:06 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:56930 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756509AbbALTCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 14:01:22 -0500
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Jani Nikula <jani.nikula@linux.intel.com>
-Cc: Daniel Vetter <daniel.vetter@intel.com>, David Airlie <airlied@linux.ie>,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Jeremiah Mahler <jmmahler@gmail.com>
-Subject: [PATCH v2] drm/i915: fix inconsistent brightness after resume
-Date: Mon, 12 Jan 2015 11:01:03 -0800
-Message-Id: <1421089263-30398-1-git-send-email-jmmahler@gmail.com>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <20150112184701.GA23217@hudson.localdomain>
-References: <20150112184701.GA23217@hudson.localdomain>
+	Mon, 12 Jan 2015 14:02:03 -0500
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH 0/6] AT91 DT for 3.20 #1
+Date: Mon, 12 Jan 2015 20:01:51 +0100
+Message-Id: <1421089317-12607-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 6dda730e55f4 introduced a bug which resulted in inconsistent
-brightness levels on different machines. If a suspended was entered
-with the screen off some machines would resume with the screen
-at minimum brightness and others at maximum brightness.
+This series enables RTC on the at91sam9n12 and at91rm9200.
+It also adds nodes for the SRAM availabe on at91 SoCs.
 
-The following commands can be used to produce this behavior.
+Finally it adds a dtsi for the at91sam9xe and uses it for the ethernut5 dts.
 
-  xset dpms force off
-  sleep 1
-  sudo systemctl suspend
-  (resume ...)
+Alexandre Belloni (6):
+  ARM: at91/dt: at91sam9n12: Add RTC node
+  ARM: at91/dt: rm9200: add RTC node
+  ARM: at91/dt: at91rm9200ek: enable RTC
+  ARM: at91/dt: add SRAM nodes
+  ARM: at91/dt: Add a dtsi for at91sam9xe
+  ARM: at91/dt: ethernut5: use at91sam9xe.dtsi
 
-The root cause of this problem is a comparison which checks to see if
-the backlight level is zero when the panel is enabled.  If it is zero,
-it is set to the maximum level.  Unfortunately, not all machines have a
-minimum level of zero. On those machines the level is left at the
-minimum instead of begin set to the maximum.
+ .../devicetree/bindings/arm/atmel-at91.txt         |  1 +
+ arch/arm/boot/dts/at91rm9200.dtsi                  | 12 +++++
+ arch/arm/boot/dts/at91rm9200ek.dts                 |  4 ++
+ arch/arm/boot/dts/at91sam9260.dtsi                 |  5 ++
+ arch/arm/boot/dts/at91sam9261.dtsi                 |  5 ++
+ arch/arm/boot/dts/at91sam9263.dtsi                 | 10 ++++
+ arch/arm/boot/dts/at91sam9g20.dtsi                 |  9 ++++
+ arch/arm/boot/dts/at91sam9g45.dtsi                 |  7 ++-
+ arch/arm/boot/dts/at91sam9n12.dtsi                 | 12 +++++
+ arch/arm/boot/dts/at91sam9rl.dtsi                  |  5 ++
+ arch/arm/boot/dts/at91sam9x5.dtsi                  |  5 ++
+ arch/arm/boot/dts/at91sam9xe.dtsi                  | 60 ++++++++++++++++++++++
+ arch/arm/boot/dts/ethernut5.dts                    |  2 +-
+ arch/arm/boot/dts/sama5d3.dtsi                     |  5 ++
+ arch/arm/boot/dts/sama5d4.dtsi                     |  5 ++
+ 15 files changed, 144 insertions(+), 3 deletions(-)
+ create mode 100644 arch/arm/boot/dts/at91sam9xe.dtsi
 
-Fix the bug by updating the comparison to check for the minimum
-backlight level instead of zero.  Also, expand the comparison for
-the possible case when the level is less than the minimum.
-
-Fixes: 6dda730e55f4 ("respect the VBT minimum backlight brightness")
-Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
----
-
-Notes:
-    Changes in v2:
-    
-      - Expand the comparision for the possible case when
-        the level is less than the minimum.
-
- drivers/gpu/drm/i915/intel_panel.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-index 4d63839..dfb783a 100644
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -962,7 +962,7 @@ void intel_panel_enable_backlight(struct intel_connector *connector)
- 
- 	WARN_ON(panel->backlight.max == 0);
- 
--	if (panel->backlight.level == 0) {
-+	if (panel->backlight.level <= panel->backlight.min) {
- 		panel->backlight.level = panel->backlight.max;
- 		if (panel->backlight.device)
- 			panel->backlight.device->props.brightness =
 -- 
-2.1.4
+2.1.0
 
