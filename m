@@ -1,20 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755516AbbALSkm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:40:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58374 "EHLO
+	id S1755515AbbALShz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:37:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58418 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755214AbbALSap (ORCPT
+	with ESMTP id S1755204AbbALSaw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:30:45 -0500
+	Mon, 12 Jan 2015 13:30:52 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Jaburek <jjaburek@redhat.com>, Takashi Iwai <tiwai@suse.de>,
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Frederic Weisbecker <frederic@kernel.org>,
+        Pan Jacob jun <jacob.jun.pan@intel.com>, LKP <lkp@01.org>,
+        Peter Zijlstra <peterz@infradead.org>, Zhang Rui <rui.zhang@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 188/216] ALSA: usb-audio: extend KEF X300A FU 10 tweak to Arcam rPAC
-Date: Mon, 12 Jan 2015 18:29:26 +0000
-Message-Id: <1421087394-2712-76-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 189/216] tick/powerclamp: Remove tick_nohz_idle abuse
+Date: Mon, 12 Jan 2015 18:29:27 +0000
+Message-Id: <1421087394-2712-77-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -27,62 +34,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Jaburek <jjaburek@redhat.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit d70a1b9893f820fdbcdffac408c909c50f2e6b43 upstream.
+commit a5fd9733a30d18d7ac23f17080e7e07bb3205b69 upstream.
 
-The Arcam rPAC seems to have the same problem - whenever anything
-(alsamixer, udevd, 3.9+ kernel from 60af3d037eb8c, ..) attempts to
-access mixer / control interface of the card, the firmware "locks up"
-the entire device, resulting in
-  SNDRV_PCM_IOCTL_HW_PARAMS failed (-5): Input/output error
-from alsa-lib.
+commit 4dbd27711cd9 "tick: export nohz tick idle symbols for module
+use" was merged via the thermal tree without an explicit ack from the
+relevant maintainers.
 
-Other operating systems can somehow read the mixer (there seems to be
-playback volume/mute), but any manipulation is ignored by the device
-(which has hardware volume controls).
+The exports are abused by the intel powerclamp driver which implements
+a fake idle state from a sched FIFO task. This causes all kinds of
+wreckage in the NOHZ core code which rightfully assumes that
+tick_nohz_idle_enter/exit() are only called from the idle task itself.
 
-Signed-off-by: Jiri Jaburek <jjaburek@redhat.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Recent changes in the NOHZ core lead to a failure of the powerclamp
+driver and now people try to hack completely broken and backwards
+workarounds into the NOHZ core code. This is completely unacceptable
+and just papers over the real problem. There are way more subtle
+issues lurking around the corner.
+
+The real solution is to fix the powerclamp driver by rewriting it with
+a sane concept, but that's beyond the scope of this.
+
+So the only solution for now is to remove the calls into the core NOHZ
+code from the powerclamp trainwreck along with the exports.
+
+Fixes: d6d71ee4a14a "PM: Introduce Intel PowerClamp Driver"
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Frederic Weisbecker <frederic@kernel.org>
+Cc: Pan Jacob jun <jacob.jun.pan@intel.com>
+Cc: LKP <lkp@01.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Zhang Rui <rui.zhang@intel.com>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.11.1412181110110.17382@nanos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/usb/mixer_maps.c | 15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ drivers/thermal/intel_powerclamp.c | 2 --
+ kernel/time/tick-sched.c           | 2 --
+ 2 files changed, 4 deletions(-)
 
-diff --git a/sound/usb/mixer_maps.c b/sound/usb/mixer_maps.c
-index d1d72ff50347..621bc9ebb55e 100644
---- a/sound/usb/mixer_maps.c
-+++ b/sound/usb/mixer_maps.c
-@@ -328,8 +328,11 @@ static struct usbmix_name_map gamecom780_map[] = {
- 	{}
- };
+diff --git a/drivers/thermal/intel_powerclamp.c b/drivers/thermal/intel_powerclamp.c
+index 95cb7fc20e17..6cb78497076a 100644
+--- a/drivers/thermal/intel_powerclamp.c
++++ b/drivers/thermal/intel_powerclamp.c
+@@ -435,7 +435,6 @@ static int clamp_thread(void *arg)
+ 		 * allowed. thus jiffies are updated properly.
+ 		 */
+ 		preempt_disable();
+-		tick_nohz_idle_enter();
+ 		/* mwait until target jiffies is reached */
+ 		while (time_before(jiffies, target_jiffies)) {
+ 			unsigned long ecx = 1;
+@@ -451,7 +450,6 @@ static int clamp_thread(void *arg)
+ 			start_critical_timings();
+ 			atomic_inc(&idle_wakeup_counter);
+ 		}
+-		tick_nohz_idle_exit();
+ 		preempt_enable();
+ 	}
+ 	del_timer_sync(&wakeup_timer);
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 6558b7ac112d..8c08a6f9cca0 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -807,7 +807,6 @@ void tick_nohz_idle_enter(void)
  
--static const struct usbmix_name_map kef_x300a_map[] = {
--	{ 10, NULL }, /* firmware locks up (?) when we try to access this FU */
-+/* some (all?) SCMS USB3318 devices are affected by a firmware lock up
-+ * when anything attempts to access FU 10 (control)
-+ */
-+static const struct usbmix_name_map scms_usb3318_map[] = {
-+	{ 10, NULL },
- 	{ 0 }
- };
+ 	local_irq_enable();
+ }
+-EXPORT_SYMBOL_GPL(tick_nohz_idle_enter);
  
-@@ -425,8 +428,14 @@ static struct usbmix_ctl_map usbmix_ctl_maps[] = {
- 		.map = ebox44_map,
- 	},
- 	{
-+		/* KEF X300A */
- 		.id = USB_ID(0x27ac, 0x1000),
--		.map = kef_x300a_map,
-+		.map = scms_usb3318_map,
-+	},
-+	{
-+		/* Arcam rPAC */
-+		.id = USB_ID(0x25c4, 0x0003),
-+		.map = scms_usb3318_map,
- 	},
- 	{ 0 } /* terminator */
- };
+ /**
+  * tick_nohz_irq_exit - update next tick event from interrupt exit
+@@ -934,7 +933,6 @@ void tick_nohz_idle_exit(void)
+ 
+ 	local_irq_enable();
+ }
+-EXPORT_SYMBOL_GPL(tick_nohz_idle_exit);
+ 
+ static int tick_nohz_reprogram(struct tick_sched *ts, ktime_t now)
+ {
 -- 
 2.1.4
 
