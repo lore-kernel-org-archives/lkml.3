@@ -1,83 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605AbbALQEj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 11:04:39 -0500
-Received: from andre.telenet-ops.be ([195.130.132.53]:44056 "EHLO
-	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752422AbbALQEd (ORCPT
+	id S1752197AbbALQGO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 11:06:14 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:63318 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436AbbALQGL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 11:04:33 -0500
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Santosh Shilimkar <ssantosh@kernel.org>, linux-gpio@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH resend 2/2] [RFC] genirq: Set IRQCHIP_SKIP_SET_WAKE for no_irq_chip and dummy_irq_chip
-Date: Mon, 12 Jan 2015 17:04:31 +0100
-Message-Id: <1421078671-5920-2-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1421078671-5920-1-git-send-email-geert+renesas@glider.be>
-References: <1421078671-5920-1-git-send-email-geert+renesas@glider.be>
+	Mon, 12 Jan 2015 11:06:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.10.1501111009180.2556@shineypoop>
+References: <1420575219-27061-1-git-send-email-atull@opensource.altera.com>
+ <1420575219-27061-3-git-send-email-atull@opensource.altera.com>
+ <20150107084819.GA1887@amd> <alpine.DEB.2.02.1501091302370.30067@linuxheads99>
+ <20150109205643.GA5761@amd> <4D4EA2D5-68DD-49F7-9E2D-3A0A8F6AF9CA@konsulko.com>
+ <20150110151118.GA16036@amd> <alpine.DEB.2.10.1501111009180.2556@shineypoop>
+From: Rob Herring <robherring2@gmail.com>
+Date: Mon, 12 Jan 2015 10:05:49 -0600
+Message-ID: <CAL_Jsq+ZfCajLXhLCi4MFbLRYGgs+BcDTsKg3r5rSBPv9yjGEQ@mail.gmail.com>
+Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
+To: atull <atull@opensource.altera.com>
+Cc: Pavel Machek <pavel@denx.de>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Simek <monstr@monstr.eu>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>, Philip Balister <philip@balister.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>, Kyle Teske <kyle.teske@ni.com>,
+        Nicolas Pitre <nico@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
+        David Miller <davem@davemloft.net>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devel@driverdev.osuosl.org,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Dinh Nguyen <dinguyen@opensource.altera.com>,
+        "yvanderv@opensource.altera.com" <yvanderv@opensource.altera.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If no_irq_chip or dummy_irq_chip are used for wake up (e.g. gpio-keys
-with a simple GPIO controller), the following warning is printed on
-resume from s2ram:
+On Sun, Jan 11, 2015 at 10:29 AM, atull <atull@opensource.altera.com> wrote:
+> On Sat, 10 Jan 2015, Pavel Machek wrote:
+>
+>> On Sat 2015-01-10 10:10:51, Pantelis Antoniou wrote:
+>> > Hi Pavel,
+>> >
+>> > > On Jan 9, 2015, at 22:56 , Pavel Machek <pavel@denx.de> wrote:
+>> > >
+>> > > On Fri 2015-01-09 13:14:24, atull wrote:
+>> > >> On Wed, 7 Jan 2015, Pavel Machek wrote:
+>> > >>
+>> > >>> On Tue 2015-01-06 14:13:37, atull@opensource.altera.com wrote:
+>> > >>>> +
+>> > >>>> +What:         /sys/class/fpga_manager/<fpga>/firmware
+>> > >>>> +Date:         October 2014
+>> > >>>> +KernelVersion:        3.18
+>> > >>>> +Contact:      Alan Tull <atull@opensource.altera.com>
+>> > >>>> +Description:  Name of the FPGA image file to load using firmware
+>> > >>>> class.
+>> > >>>
+>> > >>> This one is ugly: it unneccessarily passes firmware name through the
+>> > >>> kernel. Just make interface and code simpler by always passing
+>> > >>> "socfpga-fpga-image" or something like that.
+>> > >>>
+>> > >>> Thanks,
+>> > >>>                                                                         Pavel
+>> > >>
+>> > >> Hi Pavel,
+>> > >>
+>> > >> It might be ugly.  It's not unnecessary.  Some uses of FPGAs involve
+>> > >> switching out the FPGA images dynamically under control of the userspace.
+>> > >
+>> > > Then configure udev to load right firmware for you, or ln -s
+>> > > image-i-want-now socfpga-fpga-image to select the one to read…?
+>> > >
+>> >
+>> > Who said that udev is going to be available in the kind of system this is going to end in?
+>>
+>> Noone.
+>>
+>> > Doing ln -s tricks to load a different image? Really?
+>>
+>> But if you don't have udev, you can do ln -s. It is better than
+>> open-coding symlink functionality into
+>> /sys/class/fpga_manager/<fpga>/firmware ... cause that's what this is.
+>>
+>> Actually, clean implementation of "firmware" would be symlink in
+>> sysfs; but I'd say that would be overdoing it.
+>>
+>> > I say the interface is fine as it is.
+>>
+>> I say it is not.
+>>                                                                       Pavel
+>
+> Hi Pavel,
+>
+> I see that we could do it that way and it would eliminate one of the
+> sysfs files (../fpga_manager/<fpga>/firmware).  Either way we are assuming
+> that there are fpga images in the filesystem in the firmware search path,
+> so I don't see why adding a piece of indirection (symlink) makes things
+> better.
+>
+> We want to be able to switch out the FPGA image
+> under control of userspace.  So we don't want an interface that makes
+> it more cumbersome or tries to pretend that there's only one image.
+>
+> Previous uses of the firmware layer has been to use it to load once after
+> bootup; this is different since some use cases will want to switch out
+> the FPGA image.  If someone wants there to be only one FPGA image on
+> the FGPA forever, they will probably not be using this framework; their
+> FPGA will probably be loaded before Linux boots up.
 
-    WANING: CPU: 0 PID: 1046 at kernel/irq/manage.c:537 irq_set_irq_wake+0x9c/0xf8()
-    Unbalanced IRQ 113 wake disable
+That's not really true. Some WiFi devices have to load different
+firmware for client and AP modes and switching is a common usecase in
+phones.
 
-This happens because no_irq_chip and dummy_irq_chip do not implement
-irq_chip.irq_set_wake(), causing set_irq_wake_real() to return -ENXIO,
-and irq_set_irq_wake() to reset the wake_depth to zero.
+There may be other instances of drivers wanting configurable firmware
+names already. A common interface here would be nice. It could also be
+useful to expose the firmware names such that you could generate a
+list of all firmware files needed for a machine (that may already be
+possible with uevents?).
 
-Set IRQCHIP_SKIP_SET_WAKE to indicate that irq_chip.irq_set_wake() is
-not implemented.
-
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
----
-Alternatively, can't we remove IRQCHIP_SKIP_SET_WAKE, and just check for
-the presence of irq_chip.irq_set_wake()?
-I'll be happy to send a patch to do that instead...
-
-Is there anything that relies on this -ENXIO error code?
-All irq_chip implementations that set IRQCHIP_SKIP_SET_WAKE do not
-implement irq_chip.irq_set_wake(). There are probably more of them that
-forgot to set IRQCHIP_SKIP_SET_WAKE though.
-Am I missing something?
-Commit 60f96b41f71d2a13 ("genirq: Add IRQCHIP_SKIP_SET_WAKE flag")
-doesn't explain why adding the flag was chosen.
-
-Thanks!
----
-Resend: Use Santosh' new email address
-
- kernel/irq/dummychip.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/kernel/irq/dummychip.c b/kernel/irq/dummychip.c
-index 988dc58e8847f6eb..326a67f2410bf95c 100644
---- a/kernel/irq/dummychip.c
-+++ b/kernel/irq/dummychip.c
-@@ -42,6 +42,7 @@ struct irq_chip no_irq_chip = {
- 	.irq_enable	= noop,
- 	.irq_disable	= noop,
- 	.irq_ack	= ack_bad,
-+	.flags		= IRQCHIP_SKIP_SET_WAKE,
- };
- 
- /*
-@@ -57,5 +58,6 @@ struct irq_chip dummy_irq_chip = {
- 	.irq_ack	= noop,
- 	.irq_mask	= noop,
- 	.irq_unmask	= noop,
-+	.flags		= IRQCHIP_SKIP_SET_WAKE,
- };
- EXPORT_SYMBOL_GPL(dummy_irq_chip);
--- 
-1.9.1
-
+Rob
