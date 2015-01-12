@@ -1,140 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197AbbALQGO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 11:06:14 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:63318 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436AbbALQGL convert rfc822-to-8bit (ORCPT
+	id S1752734AbbALQH2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 11:07:28 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:18584 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602AbbALQHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 11:06:11 -0500
+	Mon, 12 Jan 2015 11:07:24 -0500
+Message-ID: <54B3F0F9.9040202@oracle.com>
+Date: Mon, 12 Jan 2015 11:06:17 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.10.1501111009180.2556@shineypoop>
-References: <1420575219-27061-1-git-send-email-atull@opensource.altera.com>
- <1420575219-27061-3-git-send-email-atull@opensource.altera.com>
- <20150107084819.GA1887@amd> <alpine.DEB.2.02.1501091302370.30067@linuxheads99>
- <20150109205643.GA5761@amd> <4D4EA2D5-68DD-49F7-9E2D-3A0A8F6AF9CA@konsulko.com>
- <20150110151118.GA16036@amd> <alpine.DEB.2.10.1501111009180.2556@shineypoop>
-From: Rob Herring <robherring2@gmail.com>
-Date: Mon, 12 Jan 2015 10:05:49 -0600
-Message-ID: <CAL_Jsq+ZfCajLXhLCi4MFbLRYGgs+BcDTsKg3r5rSBPv9yjGEQ@mail.gmail.com>
-Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
-To: atull <atull@opensource.altera.com>
-Cc: Pavel Machek <pavel@denx.de>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Simek <monstr@monstr.eu>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>, Kyle Teske <kyle.teske@ni.com>,
-        Nicolas Pitre <nico@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
-        David Miller <davem@davemloft.net>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devel@driverdev.osuosl.org,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>,
-        "yvanderv@opensource.altera.com" <yvanderv@opensource.altera.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com
+Subject: Re: [RFC 1/4] lockdep: additional lock specific information when
+ dumping locks
+References: <1421074631-18831-1-git-send-email-sasha.levin@oracle.com> <20150112150633.GD25256@twins.programming.kicks-ass.net> <54B3E466.2030006@oracle.com> <20150112153747.GE25256@twins.programming.kicks-ass.net>
+In-Reply-To: <20150112153747.GE25256@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 11, 2015 at 10:29 AM, atull <atull@opensource.altera.com> wrote:
-> On Sat, 10 Jan 2015, Pavel Machek wrote:
->
->> On Sat 2015-01-10 10:10:51, Pantelis Antoniou wrote:
->> > Hi Pavel,
->> >
->> > > On Jan 9, 2015, at 22:56 , Pavel Machek <pavel@denx.de> wrote:
->> > >
->> > > On Fri 2015-01-09 13:14:24, atull wrote:
->> > >> On Wed, 7 Jan 2015, Pavel Machek wrote:
->> > >>
->> > >>> On Tue 2015-01-06 14:13:37, atull@opensource.altera.com wrote:
->> > >>>> +
->> > >>>> +What:         /sys/class/fpga_manager/<fpga>/firmware
->> > >>>> +Date:         October 2014
->> > >>>> +KernelVersion:        3.18
->> > >>>> +Contact:      Alan Tull <atull@opensource.altera.com>
->> > >>>> +Description:  Name of the FPGA image file to load using firmware
->> > >>>> class.
->> > >>>
->> > >>> This one is ugly: it unneccessarily passes firmware name through the
->> > >>> kernel. Just make interface and code simpler by always passing
->> > >>> "socfpga-fpga-image" or something like that.
->> > >>>
->> > >>> Thanks,
->> > >>>                                                                         Pavel
->> > >>
->> > >> Hi Pavel,
->> > >>
->> > >> It might be ugly.  It's not unnecessary.  Some uses of FPGAs involve
->> > >> switching out the FPGA images dynamically under control of the userspace.
->> > >
->> > > Then configure udev to load right firmware for you, or ln -s
->> > > image-i-want-now socfpga-fpga-image to select the one to read…?
->> > >
->> >
->> > Who said that udev is going to be available in the kind of system this is going to end in?
+On 01/12/2015 10:37 AM, Peter Zijlstra wrote:
+> On Mon, Jan 12, 2015 at 10:12:38AM -0500, Sasha Levin wrote:
+>> The reason for my patch is simple: 
+> 
+> That might have maybe been good changelog material?
+> 
+>> I'm fuzzing with hundreds of worker threads
+>> which at some point trigger a complete system lockup for some reason.
 >>
->> Noone.
+>> When lockdep dumps the list of held locks it shows that pretty much every one
+>> of those threads is holding the lock which caused the lockup, which is incorrect
+>> because it considers locks in the process of getting acquired as "held".
 >>
->> > Doing ln -s tricks to load a different image? Really?
+>> This is my solution to that issue. I wanted to know which one of the threads is
+>> really holding the lock rather than just waiting on it.
 >>
->> But if you don't have udev, you can do ln -s. It is better than
->> open-coding symlink functionality into
->> /sys/class/fpga_manager/<fpga>/firmware ... cause that's what this is.
->>
->> Actually, clean implementation of "firmware" would be symlink in
->> sysfs; but I'd say that would be overdoing it.
->>
->> > I say the interface is fine as it is.
->>
->> I say it is not.
->>                                                                       Pavel
->
-> Hi Pavel,
->
-> I see that we could do it that way and it would eliminate one of the
-> sysfs files (../fpga_manager/<fpga>/firmware).  Either way we are assuming
-> that there are fpga images in the filesystem in the firmware search path,
-> so I don't see why adding a piece of indirection (symlink) makes things
-> better.
->
-> We want to be able to switch out the FPGA image
-> under control of userspace.  So we don't want an interface that makes
-> it more cumbersome or tries to pretend that there's only one image.
->
-> Previous uses of the firmware layer has been to use it to load once after
-> bootup; this is different since some use cases will want to switch out
-> the FPGA image.  If someone wants there to be only one FPGA image on
-> the FGPA forever, they will probably not be using this framework; their
-> FPGA will probably be loaded before Linux boots up.
+>> Is there a better way to solve that problem?
+> 
+> Sure, think moar, if the accompanying stack trace is in the middle
+> of the blocking primitive, ignore the top held lock ;-)
 
-That's not really true. Some WiFi devices have to load different
-firmware for client and AP modes and switching is a common usecase in
-phones.
+Tried that, it's a pain.
 
-There may be other instances of drivers wanting configurable firmware
-names already. A common interface here would be nice. It could also be
-useful to expose the firmware names such that you could generate a
-list of all firmware files needed for a machine (that may already be
-possible with uevents?).
+Consider this scenario:
 
-Rob
+Process A	|	Process B	| Process C-[...]
+----------------|-----------------------|----------------
+mutex_lock(x)	|			|
+[busy working]	|			|
+		|	mutex_lock(z)	|
+		|	mutex_lock(x)	|
+		|	[waiting on x]	|
+		|			|	mutex_lock(z)
+		|			|	[waiting on z]
+
+So at the end of all of that I have 1000 processes waiting on 'z', while
+the process that has 'z' is waiting on 'x'. So if I look at which processes
+are not stuck inside a blocking primitive I'll miss on process B., and it's
+link between process A and process B.
+
+> Alternatively, make better/more use of lock_acquired() and track the
+> acquire vs acquired information in the held_lock (1 bit) and look at it
+> when printing.
+
+We could do that, but then we'd lose the ability to get information out of
+locks, what's the benefit of doing that?
+
+
+Thanks,
+Sasha
