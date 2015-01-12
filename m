@@ -1,59 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849AbbALRHl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 12:07:41 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:43453 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573AbbALRHj (ORCPT
+	id S1751965AbbALRLn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 12:11:43 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:59128 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751938AbbALRLk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 12:07:39 -0500
-Date: Mon, 12 Jan 2015 12:07:34 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: SATA link power management issues
-Message-ID: <20150112170734.GA22156@htj.dyndns.org>
-References: <3352987.ugV1Ipy7Z5@xps13>
- <1437237.yiFxI2gUSM@xps13>
- <20150112131602.GX25319@htj.dyndns.org>
- <3361938.rq9uq9yRiO@xps13>
+	Mon, 12 Jan 2015 12:11:40 -0500
+Date: Mon, 12 Jan 2015 18:13:41 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Philipp Zabel <p.zabel@pengutronix.de>,
+        Andrew Jackson <Andrew.Jackson@arm.com>, Jyri Sarha <jsarha@ti.com>,
+        Mark Brown <broonie@kernel.org>, Dave Airlie <airlied@gmail.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v9 1/4] drm/i2c: tda998x: Add DT support for audio
+Message-ID: <20150112181341.4a53ea24@armhf>
+In-Reply-To: <20150112140456.GI12302@n2100.arm.linux.org.uk>
+References: <20150109114529.GH12302@n2100.arm.linux.org.uk>
+	<20150109135401.5b270d46@armhf>
+	<20150109130725.GN12302@n2100.arm.linux.org.uk>
+	<54AFDE8D.3000504@arm.com>
+	<20150109145741.GP12302@n2100.arm.linux.org.uk>
+	<20150109183857.53d701a4@armhf>
+	<20150109200127.GD12302@n2100.arm.linux.org.uk>
+	<1421054728.3081.28.camel@pengutronix.de>
+	<20150112122527.GF12302@n2100.arm.linux.org.uk>
+	<1421071197.3081.44.camel@pengutronix.de>
+	<20150112140456.GI12302@n2100.arm.linux.org.uk>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3361938.rq9uq9yRiO@xps13>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Gabriele.
+On Mon, 12 Jan 2015 14:04:56 +0000
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 
-On Mon, Jan 12, 2015 at 06:03:41PM +0100, Gabriele Mazzotta wrote:
-> I tried it and got the same result:
+> On Mon, Jan 12, 2015 at 02:59:57PM +0100, Philipp Zabel wrote:
+> > Am Montag, den 12.01.2015, 12:25 +0000 schrieb Russell King - ARM Linux:
+> > > It's not quite that simple, because the SPDIF AP pins are multiplexed
+> > > with the I2S pins - and there is variation between chip models and
+> > > packages.
+> > >
+> > > So, it's probably best if port@0 is the video port, and then port@1..n
+> > > can describe the audio inputs, including a property which specifies
+> > > whether they are I2S or SPDIF, and the value to be programmed into
+> > > the AP enable register (which is a bit field of the AP pins which
+> > > should be unmasked.)  I guess we can re-use the reg= property for that
+> > > value, since video will always be zero.
+> > 
+> > Note that of_graph_parse_endpoint interprets the port node's reg
+> > property as port id. And the unit address part of the node name should
+> > match the first address in the reg property.
+
+This is not the case in vexpress-v2p-ca15_a7.dts.
+
+> So that's not going to work very well... because the AP register is a
+> bitmask.
 > 
-> [  451.077463] ahci 0000:00:1f.2: port does not support device sleep
-> [  452.162451] ata3.00: exception Emask 0x10 SAct 0x400 SErr 0x50000 action 0xe frozen
-> [  452.162461] ata3.00: irq_stat 0x00400008, PHY RDY changed
-> [  452.162467] ata3: SError: { PHYRdyChg CommWake }
-> [  452.162473] ata3.00: failed command: WRITE FPDMA QUEUED
-> [  452.162484] ata3.00: cmd 61/58:50:98:7c:4b/00:00:17:00:00/40 tag 10 ncq 45056 out
->          res 40/00:54:98:7c:4b/00:00:17:00:00/40 Emask 0x10 (ATA bus error)
-> [  452.162489] ata3.00: status: { DRDY }
-> [  452.162497] ata3: hard resetting link
-> [  452.886958] ata3: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
-> [  452.890384] ata3.00: configured for UDMA/133
-> [  452.902976] ahci 0000:00:1f.2: port does not support device sleep
-> [  452.903002] ata3: EH complete
+> I guess we could specify a node unit and reg, which the code otherwise
+> ignores, and specify a philipps,ap-mask = property for the audio ports
+> instead.
 
-Hah, that's weird.  Can you please double check that you're actually
-running the patched kernel by throwing in a printk around the
-commented out section?  If leaving phy irqs turned off doesn't make
-the problem go away, I'm not sure there's much we can do.  Hmmm... one
-option could be holding off speed-down verdict after LPM state
-transition, but it looks like the ssd in question is misbehaving
-pretty badly.
+Also, the video and audio ports must be distinguished. They could be
+defined in different port groups.
 
-Thanks.
+Example from the Cubox:
+
+	video-ports: ports@0 {
+		port {
+			tda998x_video: endpoint {
+				remote-endpoint = <&lcd0_0>;
+				nxp,video-port = <0x230145>;
+			};
+		};
+	};
+	audio-ports: ports@1 {
+		port@0 {			/* AP1 = I2S */
+			tda998x_i2s: endpoint@0 {
+				remote-endpoint = <&audio1_i2s>;
+				nxp,audio-port = <0x03>;
+			};
+		};
+		port@1 {			 /* AP2 = S/PDIF */
+			tda998x_spdif: endpoint@1 {
+				remote-endpoint = <&audio1_spdif1>;
+				nxp,audio-port = <0x04>;
+			};
+		};
+	};
+
+The port type is identified by the bit AP0.
 
 -- 
-tejun
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
