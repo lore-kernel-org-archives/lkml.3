@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758AbbALS0I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:26:08 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57525 "EHLO
+	id S1753564AbbALSGH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:06:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57536 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753461AbbALSGA (ORCPT
+	with ESMTP id S1753394AbbALSGC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:06:00 -0500
+	Mon, 12 Jan 2015 13:06:02 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
+Cc: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>,
+        Antonio Borneo <borneo.antonio@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 051/216] [media] uvcvideo: Fix destruction order in uvc_delete()
-Date: Mon, 12 Jan 2015 18:02:48 +0000
-Message-Id: <1421085933-32536-52-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 052/216] HID: i2c-hid: fix race condition reading reports
+Date: Mon, 12 Jan 2015 18:02:49 +0000
+Message-Id: <1421085933-32536-53-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -29,86 +29,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
 
-commit 2228d80dd05a4fc5a410fde847677b8fb3eb23d7 upstream.
+commit 6296f4a8eb86f9abcc370fb7a1a116b8441c17fd upstream.
 
-We've got a bug report at disconnecting a Webcam, where the kernel
-spews warnings like below:
-  WARNING: CPU: 0 PID: 8385 at ../fs/sysfs/group.c:219 sysfs_remove_group+0x87/0x90()
-  sysfs group c0b2350c not found for kobject 'event3'
-  CPU: 0 PID: 8385 Comm: queue2:src Not tainted 3.16.2-1.gdcee397-default #1
-  Hardware name: ASUSTeK Computer INC. A7N8X-E/A7N8X-E, BIOS ASUS A7N8X-E Deluxe ACPI BIOS Rev 1013  11/12/2004
-    c08d0705 ddc75cbc c0718c5b ddc75ccc c024b654 c08c6d44 ddc75ce8 000020c1
-    c08d0705 000000db c03d1ec7 c03d1ec7 00000009 00000000 c0b2350c d62c9064
-    ddc75cd4 c024b6a3 00000009 ddc75ccc c08c6d44 ddc75ce8 ddc75cfc c03d1ec7
-  Call Trace:
-    [<c0205ba6>] try_stack_unwind+0x156/0x170
-    [<c02046f3>] dump_trace+0x53/0x180
-    [<c0205c06>] show_trace_log_lvl+0x46/0x50
-    [<c0204871>] show_stack_log_lvl+0x51/0xe0
-    [<c0205c67>] show_stack+0x27/0x50
-    [<c0718c5b>] dump_stack+0x3e/0x4e
-    [<c024b654>] warn_slowpath_common+0x84/0xa0
-    [<c024b6a3>] warn_slowpath_fmt+0x33/0x40
-    [<c03d1ec7>] sysfs_remove_group+0x87/0x90
-    [<c05a2c54>] device_del+0x34/0x180
-    [<c05e3989>] evdev_disconnect+0x19/0x50
-    [<c05e06fa>] __input_unregister_device+0x9a/0x140
-    [<c05e0845>] input_unregister_device+0x45/0x80
-    [<f854b1d6>] uvc_delete+0x26/0x110 [uvcvideo]
-    [<f84d66f8>] v4l2_device_release+0x98/0xc0 [videodev]
-    [<c05a25bb>] device_release+0x2b/0x90
-    [<c04ad8bf>] kobject_cleanup+0x6f/0x1a0
-    [<f84d5453>] v4l2_release+0x43/0x70 [videodev]
-    [<c0372f31>] __fput+0xb1/0x1b0
-    [<c02650c1>] task_work_run+0x91/0xb0
-    [<c024d845>] do_exit+0x265/0x910
-    [<c024df64>] do_group_exit+0x34/0xa0
-    [<c025a76f>] get_signal_to_deliver+0x17f/0x590
-    [<c0201b6a>] do_signal+0x3a/0x960
-    [<c02024f7>] do_notify_resume+0x67/0x90
-    [<c071ebb5>] work_notifysig+0x30/0x3b
-    [<b7739e60>] 0xb7739e5f
-   ---[ end trace b1e56095a485b631 ]---
+Current driver uses a common buffer for reading reports either
+synchronously in i2c_hid_get_raw_report() and asynchronously in
+the interrupt handler.
+There is race condition if an interrupt arrives immediately after
+the report is received in i2c_hid_get_raw_report(); the common
+buffer is modified by the interrupt handler with the new report
+and then i2c_hid_get_raw_report() proceed using wrong data.
 
-The cause is that uvc_status_cleanup() is called after usb_put_*() in
-uvc_delete().  usb_put_*() removes the sysfs parent and eventually
-removes the children recursively, so the later device_del() can't find
-its sysfs.  The fix is simply rearrange the call orders in
-uvc_delete() so that the child is removed before the parent.
+Fix it by using a separate buffers for synchronous reports.
 
-Bugzilla: https://bugzilla.suse.com/show_bug.cgi?id=897736
-Reported-and-tested-by: Martin Pluskal <mpluskal@suse.com>
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Signed-off-by: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
+[Antonio Borneo: cleanup, rebase to v3.17, submit mainline]
+Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/media/usb/uvc/uvc_driver.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/hid/i2c-hid/i2c-hid.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index a2207f1a821b..0c2a2466fc36 100644
---- a/drivers/media/usb/uvc/uvc_driver.c
-+++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -1623,12 +1623,12 @@ static void uvc_delete(struct uvc_device *dev)
+diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+index 21aafc8f48c8..523ebb74097d 100644
+--- a/drivers/hid/i2c-hid/i2c-hid.c
++++ b/drivers/hid/i2c-hid/i2c-hid.c
+@@ -137,6 +137,7 @@ struct i2c_hid {
+ 						   * descriptor. */
+ 	unsigned int		bufsize;	/* i2c buffer size */
+ 	char			*inbuf;		/* Input buffer */
++	char			*rawbuf;	/* Raw Input buffer */
+ 	char			*cmdbuf;	/* Command buffer */
+ 	char			*argsbuf;	/* Command arguments buffer */
+ 
+@@ -504,9 +505,11 @@ static void i2c_hid_find_max_report(struct hid_device *hid, unsigned int type,
+ static void i2c_hid_free_buffers(struct i2c_hid *ihid)
  {
- 	struct list_head *p, *n;
+ 	kfree(ihid->inbuf);
++	kfree(ihid->rawbuf);
+ 	kfree(ihid->argsbuf);
+ 	kfree(ihid->cmdbuf);
+ 	ihid->inbuf = NULL;
++	ihid->rawbuf = NULL;
+ 	ihid->cmdbuf = NULL;
+ 	ihid->argsbuf = NULL;
+ 	ihid->bufsize = 0;
+@@ -522,10 +525,11 @@ static int i2c_hid_alloc_buffers(struct i2c_hid *ihid, size_t report_size)
+ 		       report_size; /* report */
  
--	usb_put_intf(dev->intf);
--	usb_put_dev(dev->udev);
--
- 	uvc_status_cleanup(dev);
- 	uvc_ctrl_cleanup_device(dev);
+ 	ihid->inbuf = kzalloc(report_size, GFP_KERNEL);
++	ihid->rawbuf = kzalloc(report_size, GFP_KERNEL);
+ 	ihid->argsbuf = kzalloc(args_len, GFP_KERNEL);
+ 	ihid->cmdbuf = kzalloc(sizeof(union command) + args_len, GFP_KERNEL);
  
-+	usb_put_intf(dev->intf);
-+	usb_put_dev(dev->udev);
-+
- 	if (dev->vdev.dev)
- 		v4l2_device_unregister(&dev->vdev);
- #ifdef CONFIG_MEDIA_CONTROLLER
+-	if (!ihid->inbuf || !ihid->argsbuf || !ihid->cmdbuf) {
++	if (!ihid->inbuf || !ihid->rawbuf || !ihid->argsbuf || !ihid->cmdbuf) {
+ 		i2c_hid_free_buffers(ihid);
+ 		return -ENOMEM;
+ 	}
+@@ -552,12 +556,12 @@ static int i2c_hid_get_raw_report(struct hid_device *hid,
+ 
+ 	ret = i2c_hid_get_report(client,
+ 			report_type == HID_FEATURE_REPORT ? 0x03 : 0x01,
+-			report_number, ihid->inbuf, ask_count);
++			report_number, ihid->rawbuf, ask_count);
+ 
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	ret_count = ihid->inbuf[0] | (ihid->inbuf[1] << 8);
++	ret_count = ihid->rawbuf[0] | (ihid->rawbuf[1] << 8);
+ 
+ 	if (ret_count <= 2)
+ 		return 0;
+@@ -566,7 +570,7 @@ static int i2c_hid_get_raw_report(struct hid_device *hid,
+ 
+ 	/* The query buffer contains the size, dropping it in the reply */
+ 	count = min(count, ret_count - 2);
+-	memcpy(buf, ihid->inbuf + 2, count);
++	memcpy(buf, ihid->rawbuf + 2, count);
+ 
+ 	return count;
+ }
 -- 
 2.1.4
 
