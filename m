@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547AbbALNAe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 08:00:34 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:59952 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501AbbALNAd (ORCPT
+	id S1752689AbbALNCD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 08:02:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:55692 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823AbbALNCB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 08:00:33 -0500
-Date: Mon, 12 Jan 2015 13:00:21 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Robin Murphy <Robin.Murphy@arm.com>,
-        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH RESEND] dma-mapping: tidy up dma_parms default handling
-Message-ID: <20150112130021.GC13360@arm.com>
-References: <ffdc5455d698d2525f2d126d0adabf9418fd76b1.1418990609.git.robin.murphy@arm.com>
- <2031542.TLqIP3YVGc@wuerfel>
+	Mon, 12 Jan 2015 08:02:01 -0500
+Date: Mon, 12 Jan 2015 13:02:21 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, kernel-team@lists.ubuntu.com
+Subject: Re: [PATCH 3.16.y-ckt 053/168] ARM: pxa: fix hang on startup with
+ DEBUG_LL
+Message-ID: <20150112130221.GC2455@charon>
+References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
+ <1418653622-21105-54-git-send-email-luis.henriques@canonical.com>
+ <1421015948.19708.34.camel@decadent.org.uk>
+ <20150112100943.GA2455@charon>
+ <878uh8z2pz.fsf@free.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <2031542.TLqIP3YVGc@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <878uh8z2pz.fsf@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 07:45:49PM +0000, Arnd Bergmann wrote:
-> On Friday 09 January 2015 16:56:03 Robin Murphy wrote:
-> > 
-> > This one's a bit tricky to find a home for - I think technically it's 
-> > probably an IOMMU patch, but then the long-underlying problem doesn't
-> > seem to have blown up anything until arm64, and my motivation is to
-> > make bits of Juno work, which seems to nudge it towards arm64/arm-soc
-> > territory. Could anyone suggest which tree is most appropriate?
+On Mon, Jan 12, 2015 at 11:56:56AM +0100, Robert Jarzmik wrote:
+> Luis Henriques <luis.henriques@canonical.com> writes:
 > 
-> I have a set of patches touching various dma-mapping.h related bits
-> across architectures and in ARM in particular. Your patch fits into
-> that series, and I guess we could either have it in my asm-generic
-> tree or in Andrew Morton's mm tree. Possibly also arm-soc for practical
-> reasons, although it really doesn't belong in there.
+> > On Sun, Jan 11, 2015 at 10:39:08PM +0000, Ben Hutchings wrote:
+> > Thanks Ben.
+> >
+> > Robert, do you think this is a problem?  I can revert this patch as
+> > it has already been released in 3.16.7-ckt3.
+> Hi Luis,
+> 
+> No, no problem. It'll be an unused kconfig variable, that's all, as
+> debug_ll_io_init() is not called in v3.16 in pxa_map_io().
+> 
 
-I also have a couple of fixes for issues found by Laurent for tearing
-down the IOMMU dma ops, so you could include those too.
+Great, thanks for your feedback.  And since this variable was already
+there anyway, I'll just keep this patch in 3.16 instead of reverting
+it.
 
-I'll send them out this afternoon.
+Cheers,
+--
+Luís
 
-Will
+> Cheers.
+> 
+> --
+> Robert
