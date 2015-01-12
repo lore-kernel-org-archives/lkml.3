@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757119AbbALT0F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 14:26:05 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:36659 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757096AbbALT0B (ORCPT
+	id S932384AbbALT0O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 14:26:14 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:57280 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757122AbbALT0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 14:26:01 -0500
+	Mon, 12 Jan 2015 14:26:07 -0500
+Date: Mon, 12 Jan 2015 20:26:03 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] AT91 cleanup for 3.20 #1
+Message-ID: <20150112202603.6a7b691d@bbrezillon>
+In-Reply-To: <1421088136-10172-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1421088136-10172-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20150112192314.GF3904@pd.tnic>
-References: <1421017655-25561-1-git-send-email-dvlasenk@redhat.com> <20150112192314.GF3904@pd.tnic>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 12 Jan 2015 11:25:39 -0800
-Message-ID: <CALCETrXzEPKPFKBeKF3UMduNe1ViQTC6vULEySo_0XTJcK7Qkw@mail.gmail.com>
-Subject: Re: [PATCH] x86: introduce push/pop macros which generate
- CFI_REL_OFFSET and CFI_RESTORE
-To: Borislav Petkov <bp@alien8.de>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 11:23 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Mon, Jan 12, 2015 at 12:07:35AM +0100, Denys Vlasenko wrote:
->> Sequences
->>         pushl_cfi %reg
->>         CFI_REL_OFFSET reg, 0
->> and
->>         popl_cfi %reg
->>         CFI_RESTORE reg
->> happen quite often. This patch adds macros which generate them.
->>
->> No assembly changes (verified with objdump -dr vmlinux.o).
->
-> ...
->
->> diff --git a/arch/x86/include/asm/dwarf2.h b/arch/x86/include/asm/dwarf2.h
->> index f6f1598..de1cdaf 100644
->> --- a/arch/x86/include/asm/dwarf2.h
->> +++ b/arch/x86/include/asm/dwarf2.h
->> @@ -86,11 +86,23 @@
->>       CFI_ADJUST_CFA_OFFSET 8
->>       .endm
->>
->> +     .macro pushq_cfi_reg reg
->> +     pushq %\reg
->> +     CFI_ADJUST_CFA_OFFSET 8
->> +     CFI_REL_OFFSET \reg, 0
->> +     .endm
->
-> What's wrong with adding the CFI_REL_OFFSET to the pushl/popl_cfi macro
-> and not add two new _reg macros?
->
-> I.e., have the _cfi macros add all the CFI annotations needed.
->
+Hi Alexandre,
 
-I think that some users don't want the CFI_REL_OFFSET.  Also, there's
-that pesky % sign.
+On Mon, 12 Jan 2015 19:42:09 +0100
+Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
 
---Andy
+> Hi,
+> 
+> This patch set cleans a lot of remaining header, config options and functions
+> that are not used anymore since the switch to DT only.
+> 
+> Patch 5 is moving mach/debug-macro.S to include/debug/at91.S to prepare the
+> upcoming switch to multiplatform.
+> 
 
-> --
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+Thanks for those cleanup changes.
+
+To the whole series:
+
+Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+
+> 
+> Alexandre Belloni (7):
+>   ARM: at91: remove unused mach/memory.h
+>   ARM: at91: remove useless config MACH_AT91RM9200_DT
+>   ARM: at91: remove useless config MACH_AT91SAM9_DT
+>   ARM: at91: remove useless at91_sysirq_mask_rtx
+>   ARM: at91: move debug-macro.S into the common space
+>   ARM: at91: remove useless at91rm9200_dt_initialize()
+>   ARM: at91: remove useless at91rm9200_set_type()
+> 
+>  MAINTAINERS                                        |  1 +
+>  arch/arm/Kconfig.debug                             |  9 ++-
+>  .../mach/debug-macro.S => include/debug/at91.S}    | 19 +++---
+>  arch/arm/mach-at91/Kconfig                         |  8 ---
+>  arch/arm/mach-at91/Makefile                        |  6 +-
+>  arch/arm/mach-at91/at91sam9260.c                   |  2 -
+>  arch/arm/mach-at91/at91sam9261.c                   |  2 -
+>  arch/arm/mach-at91/at91sam9263.c                   |  3 -
+>  arch/arm/mach-at91/at91sam9g45.c                   |  3 -
+>  arch/arm/mach-at91/at91sam9n12.c                   |  6 --
+>  arch/arm/mach-at91/at91sam9rl.c                    |  3 -
+>  arch/arm/mach-at91/at91sam9x5.c                    | 10 ---
+>  arch/arm/mach-at91/board-dt-rm9200.c               |  2 +-
+>  arch/arm/mach-at91/generic.h                       |  6 --
+>  arch/arm/mach-at91/include/mach/at91_rtt.h         | 35 ----------
+>  arch/arm/mach-at91/include/mach/memory.h           | 26 --------
+>  arch/arm/mach-at91/sama5d3.c                       |  6 --
+>  arch/arm/mach-at91/setup.c                         | 18 ------
+>  arch/arm/mach-at91/sysirq_mask.c                   | 75 ----------------------
+>  19 files changed, 23 insertions(+), 217 deletions(-)
+>  rename arch/arm/{mach-at91/include/mach/debug-macro.S => include/debug/at91.S} (68%)
+>  delete mode 100644 arch/arm/mach-at91/include/mach/at91_rtt.h
+>  delete mode 100644 arch/arm/mach-at91/include/mach/memory.h
+>  delete mode 100644 arch/arm/mach-at91/sysirq_mask.c
+> 
 
 
 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
