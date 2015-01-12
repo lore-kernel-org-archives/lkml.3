@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752119AbbALGLn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 01:11:43 -0500
-Received: from exprod7og124.obsmtp.com ([64.18.2.26]:48602 "EHLO
-	exprod7og124.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451AbbALGJy (ORCPT
+	id S1751785AbbALGKF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 01:10:05 -0500
+Received: from exprod7og116.obsmtp.com ([64.18.2.219]:60900 "EHLO
+	exprod7og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569AbbALGJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 01:09:54 -0500
+	Mon, 12 Jan 2015 01:09:58 -0500
 From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
 X-Google-Original-From: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
 To: jejb@kernel.org, hch@infradead.org
@@ -14,9 +14,9 @@ Cc: martin.petersen@oracle.com, linux-scsi@vger.kernel.org,
         JBottomley@Parallels.com, Sathya.Prakash@avagotech.com,
         Nagalakshmi.Nandigama@avagotech.com, linux-kernel@vger.kernel.org,
         Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-Subject: [PATCH v2 05/22] [SCSI] mpt2sas: MPI2 Rev BB (2.00.20) specification and 2.00.35 header files
-Date: Mon, 12 Jan 2015 11:38:59 +0530
-Message-Id: <1421042944-14988-6-git-send-email-Sreekanth.Reddy@avagotech.com>
+Subject: [PATCH v2 06/22] [SCSI] mpt2sas, mpt3sas: Removing uppper boundary restriction for the module parameter max_sgl_entries
+Date: Mon, 12 Jan 2015 11:39:00 +0530
+Message-Id: <1421042944-14988-7-git-send-email-Sreekanth.Reddy@avagotech.com>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <1421042944-14988-1-git-send-email-Sreekanth.Reddy@avagotech.com>
 References: <1421042944-14988-1-git-send-email-Sreekanth.Reddy@avagotech.com>
@@ -24,99 +24,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change List in this MPI2 specification,
+Change Set:
 
-1. Added SSUTimeout field to MPI2_CONFIG_PAGE_BIOS_1,
-   and more defines for the BiosOptions field.
+1. Extended the upper boundary restriction for the module parameter max_sgl_entries.
+   Earlier, the max_sgl_entries was capped at the SCSI_MAX_SG_SEGMENTS kernel definition.
+   With this change, the user would be able to set the max_sgl_entries to
+   any value which is greater than SCSI_MAX_SG_SEGMENTS and less than the minimum of
+   SCSI_MAX_SG_CHAIN_SEGMENTS & hardware limit(Calculated using IOCFacts's MaxChainDepth).
+
+2. Added a print for the message log whenever the user sets the max_sgl_entries to a value
+   greater than SCSI_MAX_SG_SEGMENTS to warn about the kernel definition overriding.
 
 Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
 Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
 ---
- drivers/scsi/mpt2sas/mpi/mpi2.h      |  5 +++--
- drivers/scsi/mpt2sas/mpi/mpi2_cnfg.h | 17 ++++++++++++++---
- 2 files changed, 17 insertions(+), 5 deletions(-)
+ drivers/scsi/mpt2sas/mpt2sas_base.c | 10 +++++++---
+ drivers/scsi/mpt3sas/mpt3sas_base.c | 10 ++++++++--
+ 2 files changed, 15 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/scsi/mpt2sas/mpi/mpi2.h b/drivers/scsi/mpt2sas/mpi/mpi2.h
-index 76cde3f..7fc6f23 100644
---- a/drivers/scsi/mpt2sas/mpi/mpi2.h
-+++ b/drivers/scsi/mpt2sas/mpi/mpi2.h
-@@ -8,7 +8,7 @@
-  *                  scatter/gather formats.
-  *  Creation Date:  June 21, 2006
-  *
-- *  mpi2.h Version:  02.00.34
-+ *  mpi2.h Version:  02.00.35
-  *
-  *  Version History
-  *  ---------------
-@@ -85,6 +85,7 @@
-  *  08-19-13  02.00.32  Bumped MPI2_HEADER_VERSION_UNIT.
-  *  12-05-13  02.00.33  Bumped MPI2_HEADER_VERSION_UNIT.
-  *  01-08-14  02.00.34  Bumped MPI2_HEADER_VERSION_UNIT.
-+ *  06-13-14  02.00.35  Bumped MPI2_HEADER_VERSION_UNIT.
-  *  --------------------------------------------------------------------------
-  */
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
+index 13d1d5b..dc088ac 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -2492,9 +2492,13 @@ _base_allocate_memory_pools(struct MPT2SAS_ADAPTER *ioc,  int sleep_flag)
  
-@@ -110,7 +111,7 @@
- #define MPI2_VERSION_02_00                  (0x0200)
+ 	/* command line tunables  for max sgl entries */
+ 	if (max_sgl_entries != -1) {
+-		ioc->shost->sg_tablesize = (max_sgl_entries <
+-		    MPT2SAS_SG_DEPTH) ? max_sgl_entries :
+-		    MPT2SAS_SG_DEPTH;
++		ioc->shost->sg_tablesize =  min_t(unsigned short,
++			     max_sgl_entries, SCSI_MAX_SG_CHAIN_SEGMENTS);
++		if (ioc->shost->sg_tablesize > MPT2SAS_SG_DEPTH)
++			printk(MPT2SAS_WARN_FMT
++			 "sg_tablesize(%u) is bigger than kernel defined"
++			 " SCSI_MAX_SG_SEGMENTS(%u)\n", ioc->name,
++			  ioc->shost->sg_tablesize, MPT2SAS_SG_DEPTH);
+ 	} else {
+ 		ioc->shost->sg_tablesize = MPT2SAS_SG_DEPTH;
+ 	}
+diff --git a/drivers/scsi/mpt3sas/mpt3sas_base.c b/drivers/scsi/mpt3sas/mpt3sas_base.c
+index f1918cf..0b8210b 100644
+--- a/drivers/scsi/mpt3sas/mpt3sas_base.c
++++ b/drivers/scsi/mpt3sas/mpt3sas_base.c
+@@ -2666,8 +2666,14 @@ _base_allocate_memory_pools(struct MPT3SAS_ADAPTER *ioc,  int sleep_flag)
  
- /* versioning for this MPI header set */
--#define MPI2_HEADER_VERSION_UNIT            (0x20)
-+#define MPI2_HEADER_VERSION_UNIT            (0x23)
- #define MPI2_HEADER_VERSION_DEV             (0x00)
- #define MPI2_HEADER_VERSION_UNIT_MASK       (0xFF00)
- #define MPI2_HEADER_VERSION_UNIT_SHIFT      (8)
-diff --git a/drivers/scsi/mpt2sas/mpi/mpi2_cnfg.h b/drivers/scsi/mpt2sas/mpi/mpi2_cnfg.h
-index f055310..ee8d2d6 100644
---- a/drivers/scsi/mpt2sas/mpi/mpi2_cnfg.h
-+++ b/drivers/scsi/mpt2sas/mpi/mpi2_cnfg.h
-@@ -6,7 +6,7 @@
-  *          Title:  MPI Configuration messages and pages
-  *  Creation Date:  November 10, 2006
-  *
-- *    mpi2_cnfg.h Version:  02.00.28
-+ *    mpi2_cnfg.h Version:  02.00.29
-  *
-  *  Version History
-  *  ---------------
-@@ -169,6 +169,8 @@
-  *			MPI2_CONFIG_PAGE_SAS_ENCLOSURE_0.
-  *  01-08-14  02.00.28  Added more defines for the BiosOptions field of
-  *			MPI2_CONFIG_PAGE_BIOS_1.
-+ *  06-13-14  02.00.29  Added SSUTimeout field to MPI2_CONFIG_PAGE_BIOS_1, and
-+ *			more defines for the BiosOptions field.
-  *  --------------------------------------------------------------------------
-  */
+ 	if (sg_tablesize < MPT3SAS_MIN_PHYS_SEGMENTS)
+ 		sg_tablesize = MPT3SAS_MIN_PHYS_SEGMENTS;
+-	else if (sg_tablesize > MPT3SAS_MAX_PHYS_SEGMENTS)
+-		sg_tablesize = MPT3SAS_MAX_PHYS_SEGMENTS;
++	else if (sg_tablesize > MPT3SAS_MAX_PHYS_SEGMENTS) {
++		sg_tablesize = min_t(unsigned short, sg_tablesize,
++				      SCSI_MAX_SG_CHAIN_SEGMENTS);
++		pr_warn(MPT3SAS_FMT
++		 "sg_tablesize(%u) is bigger than kernel"
++		 " defined SCSI_MAX_SG_SEGMENTS(%u)\n", ioc->name,
++		 sg_tablesize, MPT3SAS_MAX_PHYS_SEGMENTS);
++	}
+ 	ioc->shost->sg_tablesize = sg_tablesize;
  
-@@ -1237,7 +1239,9 @@ typedef struct _MPI2_CONFIG_PAGE_BIOS_1
- 	MPI2_CONFIG_PAGE_HEADER Header;                     /* 0x00 */
- 	U32                     BiosOptions;                /* 0x04 */
- 	U32                     IOCSettings;                /* 0x08 */
--	U32                     Reserved1;                  /* 0x0C */
-+	U8			SSUTimeout;		    /* 0x0C */
-+	U8			Reserved1;		    /* 0x0D */
-+	U16			Reserved2;		    /* 0x0E */
- 	U32                     DeviceSettings;             /* 0x10 */
- 	U16                     NumberOfDevices;            /* 0x14 */
- 	U16                     UEFIVersion;                /* 0x16 */
-@@ -1248,9 +1252,16 @@ typedef struct _MPI2_CONFIG_PAGE_BIOS_1
- } MPI2_CONFIG_PAGE_BIOS_1, MPI2_POINTER PTR_MPI2_CONFIG_PAGE_BIOS_1,
-   Mpi2BiosPage1_t, MPI2_POINTER pMpi2BiosPage1_t;
- 
--#define MPI2_BIOSPAGE1_PAGEVERSION                      (0x06)
-+#define MPI2_BIOSPAGE1_PAGEVERSION                      (0x07)
- 
- /* values for BIOS Page 1 BiosOptions field */
-+#define MPI2_BIOSPAGE1_OPTIONS_PNS_MASK			(0x00003800)
-+#define MPI2_BIOSPAGE1_OPTIONS_PNS_PBDHL			(0x00000000)
-+#define MPI2_BIOSPAGE1_OPTIONS_PNS_ENCSLOSURE			(0x00000800)
-+#define MPI2_BIOSPAGE1_OPTIONS_PNS_LWWID			(0x00001000)
-+#define MPI2_BIOSPAGE1_OPTIONS_PNS_PSENS			(0x00001800)
-+#define MPI2_BIOSPAGE1_OPTIONS_PNS_ESPHY			(0x00002000)
-+
- #define MPI2_BIOSPAGE1_OPTIONS_X86_DISABLE_BIOS                 (0x00000400)
- 
- #define MPI2_BIOSPAGE1_OPTIONS_MASK_REGISTRATION_UEFI_BSD       (0x00000300)
+ 	ioc->hi_priority_depth = facts->HighPriorityCredit;
 -- 
 2.0.2
 
