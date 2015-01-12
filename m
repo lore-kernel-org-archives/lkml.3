@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683AbbALRlr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 12:41:47 -0500
-Received: from mars.intermailgate.com ([80.242.145.70]:53448 "EHLO
-	mars.intermailgate.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192AbbALRlp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 12:41:45 -0500
-X-Antivirus-MYDOMAIN-Mail-From: netdev@bof.de via mars
-X-Antivirus-MYDOMAIN: 1.25-st-qms (Clear:RC:0(192.109.53.146):SA:0(1.3/10.0):. Processed in 0.287458 secs Process 14711)
-From: Patrick Schaaf <netdev@bof.de>
-To: Patrick McHardy <kaber@trash.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Richard Weinberger <richard@nod.at>,
-        davem@davemloft.net, coreteam@netfilter.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, bhutchings@solarflare.com,
-        john.fastabend@gmail.com, herbert@gondor.apana.org.au,
-        vyasevic@redhat.com, jiri@resnulli.us, vfalico@gmail.com,
-        therbert@google.com, edumazet@google.com, yoshfuji@linux-ipv6.org,
-        jmorris@namei.org, kuznet@ms2.inr.ac.ru, kadlec@blackhole.kfki.hu,
-        pablo@netfilter.org, kay@vrfy.org, stephen@networkplumber.org
-Subject: Re: [PATCH 2/3] x_tables: Use also dev->ifalias for interface matching
-Date: Mon, 12 Jan 2015 18:41:42 +0100
-Message-ID: <2245326.CTMNrtX3Ao@rofl>
-User-Agent: KMail/4.14.3 (Linux/3.18.2-1.ga393f37-desktop; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20150112172257.GG17329@acer.localdomain>
-References: <1421009571-5279-1-git-send-email-richard@nod.at> <2868544.UBk2Y85taW@rofl> <20150112172257.GG17329@acer.localdomain>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1752081AbbALRl5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 12:41:57 -0500
+Received: from mga02.intel.com ([134.134.136.20]:62049 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751929AbbALRlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 12:41:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,745,1413270000"; 
+   d="scan'208";a="668556208"
+From: kan.liang@intel.com
+To: a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com,
+        Kan Liang <kan.liang@intel.com>
+Subject: [PATCH V2 1/1] perf, x86: bug fix for cycles:p and cycles:pp on SLM
+Date: Mon, 12 Jan 2015 17:42:21 +0000
+Message-Id: <1421084541-31639-1-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 12 January 2015 17:22:57 Patrick McHardy wrote:
-> On 12.01, Patrick Schaaf wrote:
-> >
-> > Interfaces come and go through many different actions. There's the admin
-> > downing and upping stuff like bridges or bonds. There's stuff like libvirt
-> > / KVM / qemu creating and destroying interfaces. In all these cases, in
-> > my practise, I give the interfaces useful names to that I can
-> > prefix-match them in iptables rules.
-> > 
-> > Dynamically modifying the ruleset for each such creation and destruction,
-> > would be a huge burden. The base ruleset would need suitable "hooks" where
-> > these rules were inserted (ordering matters!). The addition would hardly
-> > be
-> > atomic (with traditional iptables, unless done by generating a whole new
-> > ruleset and restoring). The programs (e.g. libvirt) would need to be able
-> > to call out to these specially crafted rule generator scripts. The admin
-> > would need to add them as pre/post actions to their static (manual)
-> > interface configuration. Loading and looking at the ruleset before
-> > bringing up the interface would be impossible.
-> 
-> devgroups seem like the best solution for this.
+From: Kan Liang <kan.liang@intel.com>
 
-Could be, technically.
+cycles:p and cycles:pp do not work on SLM since
+86a04461a99f ("perf/x86: Revamp PEBS event selection")
 
-Is there devgroup support in libvirt, ifcfg, whatever other distros use for 
-their static interface configuration? Or, do I again have to write pre/post 
-scripts to set devgroups? Wouldn't bother me too much nowadays, I've automated 
-that for ifcfg style stuff in my production environment a year ago, but it's 
-something an admin must actively manage...
+UOPS_RETIRED.ALL is not a PEBS capable event, so it should not be used
+to count cycle number.
+Actually SLM call intel_pebs_aliases_core2 which uses INST_RETIRED.ANY_P
+counts the number of cycles. It's a PEBS capable event. But inv and
+cmask must be set to count cycles.
+Considering SLM allows all events as PEBS with no flags, here only
+INST_RETIRED.ANY_P, inv=1, cmask=16 need to specially handled.
 
-There is other stuff, apart from libvirt, that creates and destroys interfaces 
-on the fly. From my production environment, there's at least keepalived, which 
-creates macvlan interfaces on the fly for VRRP VMAC support. I can configure 
-the name for that, but nothing else, nor can I call a script pre/post for 
-that. And my iptables rules on that boxen _do_ match specially on these 
-interfaces.
+Signed-off-by: Kan Liang <kan.liang@intel.com>
+---
+Changes since V1
+ - Only handle INST_RETIRED.ANY_P, inv=1, cmask=16
 
-Gooling a bit around does not immediately turn up any good documentation on it 
-at all (four year old iproute2 commits, once I give that as a search term 
-too?). Looks very sketchy (although the fundamental idea is clear to me. I'm 
-looking through the normal admin practise lens....)
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-best regards
-  Patrick
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 3c895d4..0739833 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -568,8 +568,8 @@ struct event_constraint intel_atom_pebs_event_constraints[] = {
+ };
+ 
+ struct event_constraint intel_slm_pebs_event_constraints[] = {
+-	/* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
+-	INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
++	/* INST_RETIRED.ANY_P, inv=1, cmask=16 (cycles:p). */
++	INTEL_FLAGS_EVENT_CONSTRAINT(0x108000c0, 0x1),
+ 	/* Allow all events as PEBS with no flags */
+ 	INTEL_ALL_EVENT_CONSTRAINT(0, 0x1),
+ 	EVENT_CONSTRAINT_END
+-- 
+1.7.11.7
+
