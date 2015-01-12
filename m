@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775AbbALOZJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 09:25:09 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:53572 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220AbbALOZG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 09:25:06 -0500
-Message-ID: <54B3D8F9.9030003@roeck-us.net>
-Date: Mon, 12 Jan 2015 06:23:53 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752323AbbALO3t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 09:29:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50400 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750788AbbALO3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 09:29:47 -0500
+Date: Mon, 12 Jan 2015 15:28:12 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Pratyush Anand <panand@redhat.com>
+Cc: tixy@linaro.org, linux@arm.linux.org.uk, ananth@in.ibm.com,
+        sandeepa.prabhu@linaro.org, catalin.marinas@arm.com,
+        will.deacon@arm.com, linux-kernel@vger.kernel.org,
+        anil.s.keshavamurthy@intel.com, masami.hiramatsu.pt@hitachi.com,
+        wcohen@redhat.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 8/8] ARM64: Add uprobe support
+Message-ID: <20150112142812.GB25914@redhat.com>
+References: <cover.1420038188.git.panand@redhat.com> <0694af6935f9c6873ef8d25ad51630a40a74a116.1420038188.git.panand@redhat.com> <20150109175936.GB13161@redhat.com> <54B355FA.60702@redhat.com>
 MIME-Version: 1.0
-To: Bartosz Golaszewski <bgolaszewski@baylibre.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Patrick Titiano <ptitiano@baylibre.com>,
-        LM Sensors <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH 0/2] hwmon: (ina2xx) code clean-up and minor fixes
-References: <1421070442-9635-1-git-send-email-bgolaszewski@baylibre.com>
-In-Reply-To: <1421070442-9635-1-git-send-email-bgolaszewski@baylibre.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020205.54B3D942.0010,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54B355FA.60702@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2015 05:47 AM, Bartosz Golaszewski wrote:
-> This small series fixes two minor issues in the driver after recent
-> implementation of new attributes. The first patch removes an unnecessary
-> result check after calling dev_get_drvdata() and the second one adds
-> calls to DIV_ROUND_CLOSEST() to avoid rounding errors.
+On 01/12, Pratyush Anand wrote:
 >
-> This series is rebased against current hwmon-next.
 >
-> Bartosz Golaszewski (2):
->    hwmon: (ina2xx) remove an unnecessary dev_get_drvdata() result check
->    hwmon: (ina2xx) use DIV_ROUND_CLOSEST() to avoid rounding errors
+> On Friday 09 January 2015 11:29 PM, Oleg Nesterov wrote:
+>> On 12/31, Pratyush Anand wrote:
+>>>
+>>> +int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+>>> +		unsigned long addr)
+>>> +{
+>>> +	probe_opcode_t insn;
+>>> +
+>>> +	insn = *(probe_opcode_t *)(&auprobe->insn[0]);
+>>> +
+>>> +	switch (arm_probe_decode_insn(insn, &auprobe->ainsn)) {
+>>> +	case INSN_REJECTED:
+>>> +		return -EINVAL;
+>>> +
+>>> +	case INSN_GOOD_NO_SLOT:
+>>> +		auprobe->simulate = true;
+>>> +		if (auprobe->ainsn.prepare)
+>>> +			auprobe->ainsn.prepare(insn, &auprobe->ainsn);
+>>> +		break;
+>>> +
+>>> +	case INSN_GOOD:
+>>> +	default:
+>>> +		break;
+>>> +	}
+>>> +
+>>> +	return 0;
+>>> +}
+>>
+>> forgot to mention... shouldn't it also check IS_ALIGNED(addr, AARCH64_INSN_SIZE) ?
+>>
+>> I do not know if unaligned insn address is valid on arm64 or not, but please
 >
-Both applied to -next.
+> AARCH64 instructions are always of fixed lenght ie 4 bytes. I do not see
+> possibility of addr being unaligned. Please let me know, if I am missing
+> something.
 
-Thanks,
-Guenter
+A user can write any offset into uprobe_events, and the generic code doesn't
+check it is aligned.
 
+>> note that at least it should not cross the page boundary, set_swbp() needs to
+>> write AARCH64_INSN_SIZE == UPROBE_SWBP_INSN bytes and it assumes that this
+>> should fit the single page.
+>
+> So, again I do not see the possibility of crossing of page boundary for
+> any instruction address.
+
+See above. So yes, it should really check IS_ALIGNED(AARCH64_INSN_SIZE).
+
+Oleg.
 
