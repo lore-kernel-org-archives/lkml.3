@@ -1,243 +1,847 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920AbbALHTk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 02:19:40 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:16294 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212AbbALHTj (ORCPT
+	id S1751684AbbALHVI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 02:21:08 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:56336 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995AbbALHVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 02:19:39 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-a7-54b3758990a8
-From: Chao Yu <chao2.yu@samsung.com>
-To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [f2fs-dev][RFC PATCH 10/10] f2fs: add trace for rb-tree extent cache
- ops
-Date: Mon, 12 Jan 2015 15:18:54 +0800
-Message-id: <000e01d02e38$2067bc60$61373520$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AdAuBsZ9gYtr+k3oQIyYhiC2wa8J8g==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsVy+t9jAd3O0s0hBuvuqFlc29fIZPFk/Sxm
-	i0uL3C0u75rD5sDisWlVJ5vH7gWfmTz6tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoEro+NTN0tB
-	p2ZFc+d11gbGG4pdjBwcEgImEl0HS7oYOYFMMYkL99azdTFycQgJLGKUuNr0GMr5wSix7MJL
-	dpAqNgEVieUd/5lAbBEBL4lJ+0+wgNjMAh4SjR3fWUFsYYFgiZ7771hBFrAIqEpMXmoFEuYV
-	sJR4cPgEG4QtKPFj8j2oVi2J9TuPM0HY8hKb17xlhjhIQWLH2deMEKv0JK4tXwdVIy6x8cgt
-	lgmMArOQjJqFZNQsJKNmIWlZwMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4oJ9J7WBc
-	2WBxiFGAg1GJh9dCanOIEGtiWXFl7iFGCQ5mJRHeMGugEG9KYmVValF+fFFpTmrxIUZpDhYl
-	cV4l+7YQIYH0xJLU7NTUgtQimCwTB6dUA2N7ZL147ru955snOJStDVzZdJbt8lHecA/xD3mR
-	BrNiTb51WyVOvnJj/dot/RbOnvddEwy98viPHS0pPfvim7erqIn+xb5y9mrZIyyrDK5qvp0R
-	PWHyadXm7vMpMw9eZJ2qUcNU7ck+kUH07Zu6cv5UlQ0dm4K//cxUtPrvvPLODtm0PYtCxZRY
-	ijMSDbWYi4oTAS8SPhZkAgAA
+	Mon, 12 Jan 2015 02:21:04 -0500
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Mike Turquette <mturquette@linaro.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Max Filippov <jcmvbkbc@gmail.com>
+Subject: [PATCH v2] clk: TI CDCE706 clock synthesizer driver
+Date: Mon, 12 Jan 2015 10:20:46 +0300
+Message-Id: <1421047246-15890-1-git-send-email-jcmvbkbc@gmail.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds trace for lookup/update/shrink/destroy ops in rb-tree extent cache.
+The driver allows using CDCE706 in its default configuration recorded in
+EEPROM and adjusting of synthesized clocks by consumers.
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 ---
- fs/f2fs/data.c              |   9 +++
- include/trace/events/f2fs.h | 134 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 143 insertions(+)
+Changes v1->v2:
+- add example usage to devicetree binding doc.
 
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index ed7b9c5..d636475 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -572,6 +572,8 @@ static bool f2fs_lookup_extent_tree(struct inode *inode, pgoff_t pgofs,
- 	if (is_inode_flag_set(F2FS_I(inode), FI_NO_EXTENT))
- 		return false;
+ .../devicetree/bindings/clock/ti,cdce706.txt       |  42 ++
+ MAINTAINERS                                        |   5 +
+ drivers/clk/Kconfig                                |   8 +
+ drivers/clk/Makefile                               |   1 +
+ drivers/clk/clk-cdce706.c                          | 700 +++++++++++++++++++++
+ 5 files changed, 756 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/ti,cdce706.txt
+ create mode 100644 drivers/clk/clk-cdce706.c
+
+diff --git a/Documentation/devicetree/bindings/clock/ti,cdce706.txt b/Documentation/devicetree/bindings/clock/ti,cdce706.txt
+new file mode 100644
+index 0000000..616836e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/ti,cdce706.txt
+@@ -0,0 +1,42 @@
++Bindings for Texas Instruments CDCE706 programmable 3-PLL clock
++synthesizer/multiplier/divider.
++
++Reference: http://www.ti.com/lit/ds/symlink/cdce706.pdf
++
++I2C device node required properties:
++- compatible: shall be "ti,cdce706".
++- reg: i2c device address, shall be in range [0x68...0x6b].
++- #clock-cells: from common clock binding; shall be set to 1.
++- clocks: from common clock binding; list of parent clock
++  handles, shall be reference clock(s) connected to CLK_IN0
++  and CLK_IN1 pins.
++- clock-names: shall be clk_in0 and/or clk_in1. Use clk_in0
++  in case of crystal oscillator or differential signal input
++  configuration. Use clk_in0 and clk_in1 in case of independent
++  single-ended LVCMOS inputs configuration.
++
++Example:
++
++	clocks {
++		clk54: clk54 {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <54000000>;
++		};
++	};
++	...
++	i2c0: i2c-master@0d090000 {
++		...
++		cdce706: clock-synth@69 {
++			compatible = "ti,cdce706";
++			#clock-cells = <1>;
++			reg = <0x69>;
++			clocks = <&clk54>;
++			clock-names = "clk_in0";
++		};
++	};
++	...
++	simple-audio-card,codec {
++		...
++		clocks = <&cdce706 4>;
++	};
+diff --git a/MAINTAINERS b/MAINTAINERS
+index f1eb40f..923d9b3 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -9536,6 +9536,11 @@ L:	linux-pm@vger.kernel.org
+ S:	Supported
+ F:	drivers/thermal/ti-soc-thermal/
  
-+	trace_f2fs_lookup_extent_tree_start(inode, pgofs);
++TI CDCE706 CLOCK DRIVER
++M:	Max Filippov <jcmvbkbc@gmail.com>
++S:	Maintained
++F:	drivers/clk/clk-cdce706.c
 +
- 	down_read(&sbi->extent_tree_lock);
- 	et = radix_tree_lookup(&sbi->extent_tree_root, inode->i_ino);
- 	if (!et) {
-@@ -594,6 +596,8 @@ static bool f2fs_lookup_extent_tree(struct inode *inode, pgoff_t pgofs,
- 	stat_inc_total_hit(sbi->sb);
- 	read_unlock(&et->lock);
+ TI CLOCK DRIVER
+ M:	Tero Kristo <t-kristo@ti.com>
+ L:	linux-omap@vger.kernel.org
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index 3f44f292..975af6a 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -134,6 +134,14 @@ config COMMON_CLK_PXA
+ 	---help---
+ 	  Sypport for the Marvell PXA SoC.
  
-+	trace_f2fs_lookup_extent_tree_end(inode, pgofs, en);
++config COMMON_CLK_CDCE706
++	tristate "Clock driver for TI CDCE706 clock synthesizer"
++	depends on I2C
++	select REGMAP_I2C
++	select RATIONAL
++	---help---
++	  This driver supports TI CDCE706 programmable 3-PLL clock synthesizer.
 +
- 	atomic_dec(&et->refcount);
- 	return en ? true : false;
- }
-@@ -613,6 +617,8 @@ static void f2fs_update_extent_tree(struct inode *inode, pgoff_t fofs,
- 	if (is_inode_flag_set(F2FS_I(inode), FI_NO_EXTENT))
- 		return;
+ source "drivers/clk/qcom/Kconfig"
  
-+	trace_f2fs_update_extent_tree(inode, fofs, blkaddr);
+ endmenu
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index d5fba5b..929e11a 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -19,6 +19,7 @@ endif
+ obj-$(CONFIG_COMMON_CLK_AXI_CLKGEN)	+= clk-axi-clkgen.o
+ obj-$(CONFIG_ARCH_AXXIA)		+= clk-axm5516.o
+ obj-$(CONFIG_ARCH_BCM2835)		+= clk-bcm2835.o
++obj-$(CONFIG_COMMON_CLK_CDCE706)	+= clk-cdce706.o
+ obj-$(CONFIG_ARCH_CLPS711X)		+= clk-clps711x.o
+ obj-$(CONFIG_ARCH_EFM32)		+= clk-efm32gg.o
+ obj-$(CONFIG_ARCH_HIGHBANK)		+= clk-highbank.o
+diff --git a/drivers/clk/clk-cdce706.c b/drivers/clk/clk-cdce706.c
+new file mode 100644
+index 0000000..c386ad2
+--- /dev/null
++++ b/drivers/clk/clk-cdce706.c
+@@ -0,0 +1,700 @@
++/*
++ * TI CDCE706 programmable 3-PLL clock synthesizer driver
++ *
++ * Copyright (c) 2014 Cadence Design Systems Inc.
++ *
++ * Reference: http://www.ti.com/lit/ds/symlink/cdce706.pdf
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
 +
- retry:
- 	down_write(&sbi->extent_tree_lock);
- 	et = radix_tree_lookup(&sbi->extent_tree_root, ino);
-@@ -763,6 +769,8 @@ void f2fs_shrink_extent_tree(struct f2fs_sb_info *sbi, int nr_shrink)
- 		}
- 	}
- 	up_write(&sbi->extent_tree_lock);
++#include <linux/clk-provider.h>
++#include <linux/delay.h>
++#include <linux/i2c.h>
++#include <linux/interrupt.h>
++#include <linux/mod_devicetable.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/rational.h>
++#include <linux/regmap.h>
++#include <linux/slab.h>
 +
-+	trace_f2fs_shrink_extent_tree(sbi, node_cnt, tree_cnt);
- }
- 
- void f2fs_destroy_extent_tree(struct inode *inode)
-@@ -803,6 +811,7 @@ void f2fs_destroy_extent_tree(struct inode *inode)
- 	sbi->total_ext_tree--;
- 	up_write(&sbi->extent_tree_lock);
- out:
-+	trace_f2fs_destroy_extent_tree(inode, node_cnt);
- 	return;
- }
- 
-diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
-index 13992f3..8f53fda 100644
---- a/include/trace/events/f2fs.h
-+++ b/include/trace/events/f2fs.h
-@@ -1009,6 +1009,140 @@ TRACE_EVENT(f2fs_issue_flush,
- 		__entry->nobarrier ? "skip (nobarrier)" : "issue",
- 		__entry->flush_merge ? " with flush_merge" : "")
- );
++#define CDCE706_CLKIN_CLOCK		10
++#define CDCE706_CLKIN_SOURCE		11
++#define CDCE706_PLL_M_LOW(pll)		(1 + 3 * (pll))
++#define CDCE706_PLL_N_LOW(pll)		(2 + 3 * (pll))
++#define CDCE706_PLL_HI(pll)		(3 + 3 * (pll))
++#define CDCE706_PLL_MUX			3
++#define CDCE706_PLL_FVCO		6
++#define CDCE706_DIVIDER(div)		(13 + (div))
++#define CDCE706_CLKOUT(out)		(19 + (out))
 +
-+TRACE_EVENT(f2fs_lookup_extent_tree_start,
++#define CDCE706_CLKIN_CLOCK_MASK	0x10
++#define CDCE706_CLKIN_SOURCE_SHIFT	6
++#define CDCE706_CLKIN_SOURCE_MASK	0xc0
++#define CDCE706_CLKIN_SOURCE_LVCMOS	0x40
 +
-+	TP_PROTO(struct inode *inode, unsigned int pgofs),
++#define CDCE706_PLL_MUX_MASK(pll)	(0x80 >> (pll))
++#define CDCE706_PLL_LOW_M_MASK		0xff
++#define CDCE706_PLL_LOW_N_MASK		0xff
++#define CDCE706_PLL_HI_M_MASK		0x1
++#define CDCE706_PLL_HI_N_MASK		0x1e
++#define CDCE706_PLL_HI_N_SHIFT		1
++#define CDCE706_PLL_M_MAX		0x1ff
++#define CDCE706_PLL_N_MAX		0xfff
++#define CDCE706_PLL_FVCO_MASK(pll)	(0x80 >> (pll))
++#define CDCE706_PLL_FREQ_MIN		 80000000
++#define CDCE706_PLL_FREQ_MAX		300000000
++#define CDCE706_PLL_FREQ_HI		180000000
 +
-+	TP_ARGS(inode, pgofs),
++#define CDCE706_DIVIDER_PLL(div)	(9 + (div) - ((div) > 2) - ((div) > 4))
++#define CDCE706_DIVIDER_PLL_SHIFT(div)	((div) < 2 ? 5 : 3 * ((div) & 1))
++#define CDCE706_DIVIDER_PLL_MASK(div)	(0x7 << CDCE706_DIVIDER_PLL_SHIFT(div))
++#define CDCE706_DIVIDER_DIVIDER_MASK	0x7f
++#define CDCE706_DIVIDER_DIVIDER_MAX	0x7f
 +
-+	TP_STRUCT__entry(
-+		__field(dev_t,	dev)
-+		__field(ino_t,	ino)
-+		__field(unsigned int, pgofs)
-+	),
++#define CDCE706_CLKOUT_DIVIDER_MASK	0x7
++#define CDCE706_CLKOUT_ENABLE_MASK	0x8
 +
-+	TP_fast_assign(
-+		__entry->dev = inode->i_sb->s_dev;
-+		__entry->ino = inode->i_ino;
-+		__entry->pgofs = pgofs;
-+	),
++static struct regmap_config cdce706_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.val_format_endian = REGMAP_ENDIAN_NATIVE,
++};
 +
-+	TP_printk("dev = (%d,%d), ino = %lu, pgofs = %u",
-+		show_dev_ino(__entry),
-+		__entry->pgofs)
-+);
++#define to_hw_data(phw) (container_of((phw), struct cdce706_hw_data, hw))
 +
-+TRACE_EVENT_CONDITION(f2fs_lookup_extent_tree_end,
++struct cdce706_hw_data {
++	struct cdce706_dev_data *dev_data;
++	unsigned idx;
++	unsigned parent;
++	struct clk *clk;
++	struct clk_hw hw;
++	unsigned div;
++	unsigned mul;
++	unsigned mux;
++};
 +
-+	TP_PROTO(struct inode *inode, unsigned int pgofs,
-+						struct extent_node *en),
++struct cdce706_dev_data {
++	struct i2c_client *client;
++	struct regmap *regmap;
++	struct clk_onecell_data onecell;
++	struct clk *clks[6];
++	struct clk *clkin_clk[2];
++	const char *clkin_name[2];
++	struct cdce706_hw_data clkin[1];
++	struct cdce706_hw_data pll[3];
++	struct cdce706_hw_data divider[6];
++	struct cdce706_hw_data clkout[6];
++};
 +
-+	TP_ARGS(inode, pgofs, en),
++static const char * const cdce706_source_name[] = {
++	"clk_in0", "clk_in1",
++};
 +
-+	TP_CONDITION(en),
++static const char *cdce706_clkin_name[] = {
++	"clk_in",
++};
 +
-+	TP_STRUCT__entry(
-+		__field(dev_t,	dev)
-+		__field(ino_t,	ino)
-+		__field(unsigned int, pgofs)
-+		__field(unsigned int, fofs)
-+		__field(u32, blk)
-+		__field(unsigned int, len)
-+	),
++static const char * const cdce706_pll_name[] = {
++	"pll1", "pll2", "pll3",
++};
 +
-+	TP_fast_assign(
-+		__entry->dev = inode->i_sb->s_dev;
-+		__entry->ino = inode->i_ino;
-+		__entry->pgofs = pgofs;
-+		__entry->fofs = en->ei.fofs;
-+		__entry->blk = en->ei.blk;
-+		__entry->len = en->ei.len;
-+	),
++static const char *cdce706_divider_parent_name[] = {
++	"clk_in", "pll1", "pll2", "pll2", "pll3",
++};
 +
-+	TP_printk("dev = (%d,%d), ino = %lu, pgofs = %u, "
-+		"ext_info(fofs: %u, blk: %u, len: %u)",
-+		show_dev_ino(__entry),
-+		__entry->pgofs,
-+		__entry->fofs,
-+		__entry->blk,
-+		__entry->len)
-+);
++static const char *cdce706_divider_name[] = {
++	"p0", "p1", "p2", "p3", "p4", "p5",
++};
 +
-+TRACE_EVENT(f2fs_update_extent_tree,
++static const char * const cdce706_clkout_name[] = {
++	"clk_out0", "clk_out1", "clk_out2", "clk_out3", "clk_out4", "clk_out5",
++};
 +
-+	TP_PROTO(struct inode *inode, unsigned int pgofs, block_t blkaddr),
++static int cdce706_reg_read(struct cdce706_dev_data *dev_data, unsigned reg,
++			    unsigned *val)
++{
++	int rc = regmap_read(dev_data->regmap, reg | 0x80, val);
 +
-+	TP_ARGS(inode, pgofs, blkaddr),
++	if (rc < 0)
++		dev_err(&dev_data->client->dev, "error reading reg %u", reg);
++	return rc;
++}
 +
-+	TP_STRUCT__entry(
-+		__field(dev_t,	dev)
-+		__field(ino_t,	ino)
-+		__field(unsigned int, pgofs)
-+		__field(u32, blk)
-+	),
++static int cdce706_reg_write(struct cdce706_dev_data *dev_data, unsigned reg,
++			     unsigned val)
++{
++	int rc = regmap_write(dev_data->regmap, reg | 0x80, val);
 +
-+	TP_fast_assign(
-+		__entry->dev = inode->i_sb->s_dev;
-+		__entry->ino = inode->i_ino;
-+		__entry->pgofs = pgofs;
-+		__entry->blk = blkaddr;
-+	),
++	if (rc < 0)
++		dev_err(&dev_data->client->dev, "error writing reg %u", reg);
++	return rc;
++}
 +
-+	TP_printk("dev = (%d,%d), ino = %lu, pgofs = %u, blkaddr = %u",
-+		show_dev_ino(__entry),
-+		__entry->pgofs,
-+		__entry->blk)
-+);
++static int cdce706_reg_update(struct cdce706_dev_data *dev_data, unsigned reg,
++			      unsigned mask, unsigned val)
++{
++	int rc = regmap_update_bits(dev_data->regmap, reg | 0x80, mask, val);
 +
-+TRACE_EVENT(f2fs_shrink_extent_tree,
++	if (rc < 0)
++		dev_err(&dev_data->client->dev, "error updating reg %u", reg);
++	return rc;
++}
 +
-+	TP_PROTO(struct f2fs_sb_info *sbi, unsigned int node_cnt,
-+						unsigned int tree_cnt),
++static int cdce706_clkin_set_parent(struct clk_hw *hw, u8 index)
++{
++	struct cdce706_hw_data *hwd = to_hw_data(hw);
 +
-+	TP_ARGS(sbi, node_cnt, tree_cnt),
++	hwd->parent = index;
++	return 0;
++}
 +
-+	TP_STRUCT__entry(
-+		__field(dev_t,	dev)
-+		__field(unsigned int, node_cnt)
-+		__field(unsigned int, tree_cnt)
-+	),
++static u8 cdce706_clkin_get_parent(struct clk_hw *hw)
++{
++	struct cdce706_hw_data *hwd = to_hw_data(hw);
 +
-+	TP_fast_assign(
-+		__entry->dev = sbi->sb->s_dev;
-+		__entry->node_cnt = node_cnt;
-+		__entry->tree_cnt = tree_cnt;
-+	),
++	return hwd->parent;
++}
 +
-+	TP_printk("dev = (%d,%d), shrunk: node_cnt = %u, tree_cnt = %u",
-+		show_dev(__entry),
-+		__entry->node_cnt,
-+		__entry->tree_cnt)
-+);
++static const struct clk_ops cdce706_clkin_ops = {
++	.set_parent = cdce706_clkin_set_parent,
++	.get_parent = cdce706_clkin_get_parent,
++};
 +
-+TRACE_EVENT(f2fs_destroy_extent_tree,
++static unsigned long cdce706_pll_recalc_rate(struct clk_hw *hw,
++					     unsigned long parent_rate)
++{
++	struct cdce706_hw_data *hwd = to_hw_data(hw);
 +
-+	TP_PROTO(struct inode *inode, unsigned int node_cnt),
++	dev_dbg(&hwd->dev_data->client->dev,
++		"%s, pll: %d, mux: %d, mul: %u, div: %u\n",
++		__func__, hwd->idx, hwd->mux, hwd->mul, hwd->div);
 +
-+	TP_ARGS(inode, node_cnt),
++	if (!hwd->mux) {
++		if (hwd->div && hwd->mul) {
++			u64 res = (u64)parent_rate * hwd->mul;
 +
-+	TP_STRUCT__entry(
-+		__field(dev_t,	dev)
-+		__field(ino_t,	ino)
-+		__field(unsigned int, node_cnt)
-+	),
++			do_div(res, hwd->div);
++			return res;
++		}
++	} else {
++		if (hwd->div)
++			return parent_rate / hwd->div;
++	}
++	return 0;
++}
 +
-+	TP_fast_assign(
-+		__entry->dev = inode->i_sb->s_dev;
-+		__entry->ino = inode->i_ino;
-+		__entry->node_cnt = node_cnt;
-+	),
++static long cdce706_pll_round_rate(struct clk_hw *hw, unsigned long rate,
++				   unsigned long *parent_rate)
++{
++	struct cdce706_hw_data *hwd = to_hw_data(hw);
++	unsigned long mul, div;
++	u64 res;
 +
-+	TP_printk("dev = (%d,%d), ino = %lu, destroyed: node_cnt = %u",
-+		show_dev_ino(__entry),
-+		__entry->node_cnt)
-+);
++	dev_dbg(&hwd->dev_data->client->dev,
++		"%s, rate: %lu, parent_rate: %lu\n",
++		__func__, rate, *parent_rate);
 +
- #endif /* _TRACE_F2FS_H */
- 
-  /* This part must be outside protection */
++	rational_best_approximation(rate, *parent_rate,
++				    CDCE706_PLL_N_MAX, CDCE706_PLL_M_MAX,
++				    &mul, &div);
++	hwd->mul = mul;
++	hwd->div = div;
++
++	dev_dbg(&hwd->dev_data->client->dev,
++		"%s, pll: %d, mul: %lu, div: %lu\n",
++		__func__, hwd->idx, mul, div);
++
++	res = (u64)*parent_rate * hwd->mul;
++	do_div(res, hwd->div);
++	return res;
++}
++
++static int cdce706_pll_set_rate(struct clk_hw *hw, unsigned long rate,
++				unsigned long parent_rate)
++{
++	struct cdce706_hw_data *hwd = to_hw_data(hw);
++	unsigned long mul = hwd->mul, div = hwd->div;
++	int err;
++
++	dev_dbg(&hwd->dev_data->client->dev,
++		"%s, pll: %d, mul: %lu, div: %lu\n",
++		__func__, hwd->idx, mul, div);
++
++	err = cdce706_reg_update(hwd->dev_data,
++				 CDCE706_PLL_HI(hwd->idx),
++				 CDCE706_PLL_HI_M_MASK | CDCE706_PLL_HI_N_MASK,
++				 ((div >> 8) & CDCE706_PLL_HI_M_MASK) |
++				 ((mul >> (8 - CDCE706_PLL_HI_N_SHIFT)) &
++				  CDCE706_PLL_HI_N_MASK));
++	if (err < 0)
++		return err;
++
++	err = cdce706_reg_write(hwd->dev_data,
++				CDCE706_PLL_M_LOW(hwd->idx),
++				div & CDCE706_PLL_LOW_M_MASK);
++	if (err < 0)
++		return err;
++
++	err = cdce706_reg_write(hwd->dev_data,
++				CDCE706_PLL_N_LOW(hwd->idx),
++				mul & CDCE706_PLL_LOW_N_MASK);
++	if (err < 0)
++		return err;
++
++	err = cdce706_reg_update(hwd->dev_data,
++				 CDCE706_PLL_FVCO,
++				 CDCE706_PLL_FVCO_MASK(hwd->idx),
++				 rate > CDCE706_PLL_FREQ_HI ?
++				 CDCE706_PLL_FVCO_MASK(hwd->idx) : 0);
++	return err;
++}
++
++static const struct clk_ops cdce706_pll_ops = {
++	.recalc_rate = cdce706_pll_recalc_rate,
++	.round_rate = cdce706_pll_round_rate,
++	.set_rate = cdce706_pll_set_rate,
++};
++
++static int cdce706_divider_set_parent(struct clk_hw *hw, u8 index)
++{
++	struct cdce706_hw_data *hwd = to_hw_data(hw);
++
++	if (hwd->parent == index)
++		return 0;
++	hwd->parent = index;
++	return cdce706_reg_update(hwd->dev_data,
++				  CDCE706_DIVIDER_PLL(hwd->idx),
++				  CDCE706_DIVIDER_PLL_MASK(hwd->idx),
++				  index << CDCE706_DIVIDER_PLL_SHIFT(hwd->idx));
++}
++
++static u8 cdce706_divider_get_parent(struct clk_hw *hw)
++{
++	struct cdce706_hw_data *hwd = to_hw_data(hw);
++
++	return hwd->parent;
++}
++
++static unsigned long cdce706_divider_recalc_rate(struct clk_hw *hw,
++						 unsigned long parent_rate)
++{
++	struct cdce706_hw_data *hwd = to_hw_data(hw);
++
++	dev_dbg(&hwd->dev_data->client->dev,
++		"%s, divider: %d, div: %u\n",
++		__func__, hwd->idx, hwd->div);
++	if (hwd->div)
++		return parent_rate / hwd->div;
++	return 0;
++}
++
++static long cdce706_divider_round_rate(struct clk_hw *hw, unsigned long rate,
++				       unsigned long *parent_rate)
++{
++	struct cdce706_hw_data *hwd = to_hw_data(hw);
++	struct cdce706_dev_data *cdce = hwd->dev_data;
++	unsigned long mul, div;
++
++	dev_dbg(&hwd->dev_data->client->dev,
++		"%s, rate: %lu, parent_rate: %lu\n",
++		__func__, rate, *parent_rate);
++
++	rational_best_approximation(rate, *parent_rate,
++				    1, CDCE706_DIVIDER_DIVIDER_MAX,
++				    &mul, &div);
++	if (!mul)
++		div = CDCE706_DIVIDER_DIVIDER_MAX;
++
++	if (__clk_get_flags(hw->clk) & CLK_SET_RATE_PARENT) {
++		unsigned long best_diff = rate;
++		unsigned long best_div = 0;
++		struct clk *gp_clk = cdce->clkin_clk[cdce->clkin[0].parent];
++		unsigned long gp_rate = gp_clk ? clk_get_rate(gp_clk) : 0;
++
++		for (div = CDCE706_PLL_FREQ_MIN / rate; best_diff &&
++		     div <= CDCE706_PLL_FREQ_MAX / rate; ++div) {
++			unsigned long n, m;
++			unsigned long diff;
++			unsigned long div_rate;
++			u64 div_rate64;
++
++			if (rate * div < CDCE706_PLL_FREQ_MIN)
++				continue;
++
++			rational_best_approximation(rate * div, gp_rate,
++						    CDCE706_PLL_N_MAX,
++						    CDCE706_PLL_M_MAX,
++						    &n, &m);
++			div_rate64 = (u64)gp_rate * n;
++			do_div(div_rate64, m);
++			do_div(div_rate64, div);
++			div_rate = div_rate64;
++			diff = max(div_rate, rate) - min(div_rate, rate);
++
++			if (diff < best_diff) {
++				best_diff = diff;
++				best_div = div;
++				dev_dbg(&hwd->dev_data->client->dev,
++					"%s, %lu * %lu / %lu / %lu = %lu\n",
++					__func__, gp_rate, n, m, div, div_rate);
++			}
++		}
++
++		div = best_div;
++
++		dev_dbg(&hwd->dev_data->client->dev,
++			"%s, altering parent rate: %lu -> %lu\n",
++			__func__, *parent_rate, rate * div);
++		*parent_rate = rate * div;
++	}
++	hwd->div = div;
++
++	dev_dbg(&hwd->dev_data->client->dev,
++		"%s, divider: %d, div: %lu\n",
++		__func__, hwd->idx, div);
++
++	return *parent_rate / div;
++}
++
++static int cdce706_divider_set_rate(struct clk_hw *hw, unsigned long rate,
++				    unsigned long parent_rate)
++{
++	struct cdce706_hw_data *hwd = to_hw_data(hw);
++
++	dev_dbg(&hwd->dev_data->client->dev,
++		"%s, divider: %d, div: %u\n",
++		__func__, hwd->idx, hwd->div);
++
++	return cdce706_reg_update(hwd->dev_data,
++				  CDCE706_DIVIDER(hwd->idx),
++				  CDCE706_DIVIDER_DIVIDER_MASK,
++				  hwd->div);
++}
++
++static const struct clk_ops cdce706_divider_ops = {
++	.set_parent = cdce706_divider_set_parent,
++	.get_parent = cdce706_divider_get_parent,
++	.recalc_rate = cdce706_divider_recalc_rate,
++	.round_rate = cdce706_divider_round_rate,
++	.set_rate = cdce706_divider_set_rate,
++};
++
++static int cdce706_clkout_prepare(struct clk_hw *hw)
++{
++	struct cdce706_hw_data *hwd = to_hw_data(hw);
++
++	return cdce706_reg_update(hwd->dev_data, CDCE706_CLKOUT(hwd->idx),
++				  CDCE706_CLKOUT_ENABLE_MASK,
++				  CDCE706_CLKOUT_ENABLE_MASK);
++}
++
++static void cdce706_clkout_unprepare(struct clk_hw *hw)
++{
++	struct cdce706_hw_data *hwd = to_hw_data(hw);
++
++	cdce706_reg_update(hwd->dev_data, CDCE706_CLKOUT(hwd->idx),
++			   CDCE706_CLKOUT_ENABLE_MASK, 0);
++}
++
++static int cdce706_clkout_set_parent(struct clk_hw *hw, u8 index)
++{
++	struct cdce706_hw_data *hwd = to_hw_data(hw);
++
++	if (hwd->parent == index)
++		return 0;
++	hwd->parent = index;
++	return cdce706_reg_update(hwd->dev_data,
++				  CDCE706_CLKOUT(hwd->idx),
++				  CDCE706_CLKOUT_ENABLE_MASK, index);
++}
++
++static u8 cdce706_clkout_get_parent(struct clk_hw *hw)
++{
++	struct cdce706_hw_data *hwd = to_hw_data(hw);
++
++	return hwd->parent;
++}
++
++static unsigned long cdce706_clkout_recalc_rate(struct clk_hw *hw,
++						unsigned long parent_rate)
++{
++	return parent_rate;
++}
++
++static long cdce706_clkout_round_rate(struct clk_hw *hw, unsigned long rate,
++				      unsigned long *parent_rate)
++{
++	*parent_rate = rate;
++	return rate;
++}
++
++static int cdce706_clkout_set_rate(struct clk_hw *hw, unsigned long rate,
++				   unsigned long parent_rate)
++{
++	return 0;
++}
++
++static const struct clk_ops cdce706_clkout_ops = {
++	.prepare = cdce706_clkout_prepare,
++	.unprepare = cdce706_clkout_unprepare,
++	.set_parent = cdce706_clkout_set_parent,
++	.get_parent = cdce706_clkout_get_parent,
++	.recalc_rate = cdce706_clkout_recalc_rate,
++	.round_rate = cdce706_clkout_round_rate,
++	.set_rate = cdce706_clkout_set_rate,
++};
++
++static int cdce706_register_hw(struct cdce706_dev_data *cdce,
++			       struct cdce706_hw_data *hw, unsigned num_hw,
++			       const char * const *clk_names,
++			       struct clk_init_data *init)
++{
++	unsigned i;
++
++	for (i = 0; i < num_hw; ++i, ++hw) {
++		init->name = clk_names[i];
++		hw->dev_data = cdce;
++		hw->idx = i;
++		hw->hw.init = init;
++		hw->clk = devm_clk_register(&cdce->client->dev,
++					    &hw->hw);
++		if (IS_ERR(hw->clk)) {
++			dev_err(&cdce->client->dev, "Failed to register %s\n",
++				clk_names[i]);
++			return PTR_ERR(hw->clk);
++		}
++	}
++	return 0;
++}
++
++static int cdce706_register_clkin(struct cdce706_dev_data *cdce)
++{
++	struct clk_init_data init = {
++		.ops = &cdce706_clkin_ops,
++		.parent_names = cdce->clkin_name,
++		.num_parents = ARRAY_SIZE(cdce->clkin_name),
++	};
++	unsigned i;
++	int ret;
++	unsigned clock, source;
++
++	for (i = 0; i < ARRAY_SIZE(cdce->clkin_name); ++i) {
++		struct clk *parent = devm_clk_get(&cdce->client->dev,
++						  cdce706_source_name[i]);
++
++		if (IS_ERR(parent)) {
++			cdce->clkin_name[i] = cdce706_source_name[i];
++		} else {
++			cdce->clkin_name[i] = __clk_get_name(parent);
++			cdce->clkin_clk[i] = parent;
++		}
++	}
++
++	ret = cdce706_reg_read(cdce, CDCE706_CLKIN_SOURCE, &source);
++	if (ret < 0)
++		return ret;
++	if ((source & CDCE706_CLKIN_SOURCE_MASK) ==
++	    CDCE706_CLKIN_SOURCE_LVCMOS) {
++		ret = cdce706_reg_read(cdce, CDCE706_CLKIN_CLOCK, &clock);
++		if (ret < 0)
++			return ret;
++		cdce->clkin[0].parent = !!(clock & CDCE706_CLKIN_CLOCK_MASK);
++	}
++
++	ret = cdce706_register_hw(cdce, cdce->clkin,
++				  ARRAY_SIZE(cdce->clkin),
++				  cdce706_clkin_name, &init);
++	return ret;
++}
++
++static int cdce706_register_plls(struct cdce706_dev_data *cdce)
++{
++	struct clk_init_data init = {
++		.ops = &cdce706_pll_ops,
++		.parent_names = cdce706_clkin_name,
++		.num_parents = ARRAY_SIZE(cdce706_clkin_name),
++	};
++	unsigned i;
++	int ret;
++	unsigned mux;
++
++	ret = cdce706_reg_read(cdce, CDCE706_PLL_MUX, &mux);
++	if (ret < 0)
++		return ret;
++
++	for (i = 0; i < ARRAY_SIZE(cdce->pll); ++i) {
++		unsigned m, n, v;
++
++		ret = cdce706_reg_read(cdce, CDCE706_PLL_M_LOW(i), &m);
++		if (ret < 0)
++			return ret;
++		ret = cdce706_reg_read(cdce, CDCE706_PLL_N_LOW(i), &n);
++		if (ret < 0)
++			return ret;
++		ret = cdce706_reg_read(cdce, CDCE706_PLL_HI(i), &v);
++		if (ret < 0)
++			return ret;
++		cdce->pll[i].div = m | ((v & CDCE706_PLL_HI_M_MASK) << 8);
++		cdce->pll[i].mul = n | ((v & CDCE706_PLL_HI_N_MASK) <<
++					(8 - CDCE706_PLL_HI_N_SHIFT));
++		cdce->pll[i].mux = mux & CDCE706_PLL_MUX_MASK(i);
++		dev_dbg(&cdce->client->dev,
++			"%s: i: %u, div: %u, mul: %u, mux: %d\n", __func__, i,
++			cdce->pll[i].div, cdce->pll[i].mul, cdce->pll[i].mux);
++	}
++
++	ret = cdce706_register_hw(cdce, cdce->pll,
++				  ARRAY_SIZE(cdce->pll),
++				  cdce706_pll_name, &init);
++	return ret;
++}
++
++static int cdce706_register_dividers(struct cdce706_dev_data *cdce)
++{
++	struct clk_init_data init = {
++		.ops = &cdce706_divider_ops,
++		.parent_names = cdce706_divider_parent_name,
++		.num_parents = ARRAY_SIZE(cdce706_divider_parent_name),
++		.flags = CLK_SET_RATE_PARENT,
++	};
++	unsigned i;
++	int ret;
++
++	for (i = 0; i < ARRAY_SIZE(cdce->divider); ++i) {
++		unsigned val;
++
++		ret = cdce706_reg_read(cdce, CDCE706_DIVIDER_PLL(i), &val);
++		if (ret < 0)
++			return ret;
++		cdce->divider[i].parent =
++			(val & CDCE706_DIVIDER_PLL_MASK(i)) >>
++			CDCE706_DIVIDER_PLL_SHIFT(i);
++
++		ret = cdce706_reg_read(cdce, CDCE706_DIVIDER(i), &val);
++		if (ret < 0)
++			return ret;
++		cdce->divider[i].div = val & CDCE706_DIVIDER_DIVIDER_MASK;
++		dev_dbg(&cdce->client->dev,
++			"%s: i: %u, parent: %u, div: %u\n", __func__, i,
++			cdce->divider[i].parent, cdce->divider[i].div);
++	}
++
++	ret = cdce706_register_hw(cdce, cdce->divider,
++				  ARRAY_SIZE(cdce->divider),
++				  cdce706_divider_name, &init);
++	return ret;
++}
++
++static int cdce706_register_clkouts(struct cdce706_dev_data *cdce)
++{
++	struct clk_init_data init = {
++		.ops = &cdce706_clkout_ops,
++		.parent_names = cdce706_divider_name,
++		.num_parents = ARRAY_SIZE(cdce706_divider_name),
++		.flags = CLK_SET_RATE_PARENT,
++	};
++	unsigned i;
++	int ret;
++
++	for (i = 0; i < ARRAY_SIZE(cdce->clkout); ++i) {
++		unsigned val;
++
++		ret = cdce706_reg_read(cdce, CDCE706_CLKOUT(i), &val);
++		if (ret < 0)
++			return ret;
++		cdce->clkout[i].parent = val & CDCE706_CLKOUT_DIVIDER_MASK;
++		dev_dbg(&cdce->client->dev,
++			"%s: i: %u, parent: %u\n", __func__, i,
++			cdce->clkout[i].parent);
++	}
++
++	ret = cdce706_register_hw(cdce, cdce->clkout,
++				  ARRAY_SIZE(cdce->clkout),
++				  cdce706_clkout_name, &init);
++	for (i = 0; i < ARRAY_SIZE(cdce->clkout); ++i)
++		cdce->clks[i] = cdce->clkout[i].clk;
++
++	return ret;
++}
++
++static int cdce706_probe(struct i2c_client *client,
++			 const struct i2c_device_id *id)
++{
++	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
++	struct cdce706_dev_data *cdce;
++	int ret;
++
++	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE_DATA))
++		return -EIO;
++
++	cdce = devm_kzalloc(&client->dev, sizeof(*cdce), GFP_KERNEL);
++	if (!cdce)
++		return -ENOMEM;
++
++	cdce->client = client;
++	cdce->regmap = devm_regmap_init_i2c(client, &cdce706_regmap_config);
++	if (IS_ERR(cdce->regmap)) {
++		dev_err(&client->dev, "Failed to initialize regmap\n");
++		return -EINVAL;
++	}
++
++	i2c_set_clientdata(client, cdce);
++
++	ret = cdce706_register_clkin(cdce);
++	if (ret < 0)
++		return ret;
++	ret = cdce706_register_plls(cdce);
++	if (ret < 0)
++		return ret;
++	ret = cdce706_register_dividers(cdce);
++	if (ret < 0)
++		return ret;
++	ret = cdce706_register_clkouts(cdce);
++	if (ret < 0)
++		return ret;
++	cdce->onecell.clks = cdce->clks;
++	cdce->onecell.clk_num = ARRAY_SIZE(cdce->clks);
++	ret = of_clk_add_provider(client->dev.of_node, of_clk_src_onecell_get,
++				  &cdce->onecell);
++
++	return ret;
++}
++
++static int cdce706_remove(struct i2c_client *client)
++{
++	return 0;
++}
++
++
++#ifdef CONFIG_OF
++static const struct of_device_id cdce706_dt_match[] = {
++	{ .compatible = "ti,cdce706" },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, cdce706_dt_match);
++#endif
++
++static const struct i2c_device_id cdce706_id[] = {
++	{ "cdce706", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, cdce706_id);
++
++static struct i2c_driver cdce706_i2c_driver = {
++	.driver	= {
++		.name	= "cdce706",
++		.of_match_table = of_match_ptr(cdce706_dt_match),
++	},
++	.probe		= cdce706_probe,
++	.remove		= cdce706_remove,
++	.id_table	= cdce706_id,
++};
++module_i2c_driver(cdce706_i2c_driver);
++
++MODULE_AUTHOR("Max Filippov <jcmvbkbc@gmail.com>");
++MODULE_DESCRIPTION("TI CDCE 706 clock synthesizer driver");
++MODULE_LICENSE("GPL");
 -- 
-2.2.1
-
+1.8.1.4
 
