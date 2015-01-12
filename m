@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239AbbALRW6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 12:22:58 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:65162 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190AbbALRW4 (ORCPT
+	id S1752565AbbALRbn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 12:31:43 -0500
+Received: from stinky.trash.net ([213.144.137.162]:36976 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882AbbALRbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 12:22:56 -0500
-Date: Mon, 12 Jan 2015 12:22:51 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "\\\"Rafael J. Wysocki\\\"" <rjw@rjwysocki.net>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Oleg Nesterov <oleg@redhat.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH -v3 5/5] oom, PM: make OOM detection in the freezer path
- raceless
-Message-ID: <20150112172251.GB22156@htj.dyndns.org>
-References: <1420801555-22659-1-git-send-email-mhocko@suse.cz>
- <1420801555-22659-6-git-send-email-mhocko@suse.cz>
- <20150110194322.GE25319@htj.dyndns.org>
- <20150112161011.GE4877@dhcp22.suse.cz>
+	Mon, 12 Jan 2015 12:31:42 -0500
+X-Greylist: delayed 518 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Jan 2015 12:31:42 EST
+Date: Mon, 12 Jan 2015 17:22:57 +0000
+From: Patrick McHardy <kaber@trash.net>
+To: Patrick Schaaf <netdev@bof.de>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Richard Weinberger <richard@nod.at>,
+        davem@davemloft.net, coreteam@netfilter.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, bhutchings@solarflare.com,
+        john.fastabend@gmail.com, herbert@gondor.apana.org.au,
+        vyasevic@redhat.com, jiri@resnulli.us, vfalico@gmail.com,
+        therbert@google.com, edumazet@google.com, yoshfuji@linux-ipv6.org,
+        jmorris@namei.org, kuznet@ms2.inr.ac.ru, kadlec@blackhole.kfki.hu,
+        pablo@netfilter.org, kay@vrfy.org, stephen@networkplumber.org
+Subject: Re: [PATCH 2/3] x_tables: Use also dev->ifalias for interface
+ matching
+Message-ID: <20150112172257.GG17329@acer.localdomain>
+References: <1421009571-5279-1-git-send-email-richard@nod.at>
+ <1425960.ovH4s7sjue@rofl>
+ <1421081514.4099.14.camel@edumazet-glaptop2.roam.corp.google.com>
+ <2868544.UBk2Y85taW@rofl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150112161011.GE4877@dhcp22.suse.cz>
+In-Reply-To: <2868544.UBk2Y85taW@rofl>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 05:10:11PM +0100, Michal Hocko wrote:
-> Yes I had it this way but it didn't work out because thaw_kernel_threads
-> is not called on the resume because it is only used as a fail
-> path when kernel threads freezing fails. I would rather keep the
+On 12.01, Patrick Schaaf wrote:
+> On Monday 12 January 2015 08:51:54 Eric Dumazet wrote:
+> > On Mon, 2015-01-12 at 17:39 +0100, Patrick Schaaf wrote:
+> > > 
+> > > Not to comment on the ifalias thing, which I think is unneccessary,
+> > > too, but matching on interface names instead of only ifindex, is
+> > > definitely needed, so that one can establish a full ruleset before
+> > > interfaces even exist. That's good practise at boottime, but also
+> > > needed for dynamic interface creation during runtime.
+> > 
+> > Please do not send html messages : Your reply did not reach the lists.
+> 
+> Sigh. Sorry...
+> 
+> > Then, all you mention could have been solved by proper userspace
+> > support.
+> > 
+> > Every time you add an interface or change device name, you could change
+> > firewalls rules if needed. Nothing shocking here.
+> 
+> That is totally impractical, IMO.
+> 
+> Interfaces come and go through many different actions. There's the admin 
+> downing and upping stuff like bridges or bonds. There's stuff like libvirt / 
+> KVM / qemu creating and destroying interfaces. In all these cases, in my 
+> practise, I give the interfaces useful names to that I can prefix-match them 
+> in iptables rules.
+> 
+> Dynamically modifying the ruleset for each such creation and destruction, 
+> would be a huge burden. The base ruleset would need suitable "hooks" where 
+> these rules were inserted (ordering matters!). The addition would hardly be 
+> atomic (with traditional iptables, unless done by generating a whole new 
+> ruleset and restoring). The programs (e.g. libvirt) would need to be able to 
+> call out to these specially crafted rule generator scripts. The admin would 
+> need to add them as pre/post actions to their static (manual) interface 
+> configuration. Loading and looking at the ruleset before bringing up the 
+> interface would be impossible.
 
-Ooh, that's kinda asymmetric.
-
-> enabling/disabling points as we had them. This is less risky IMHO.
-
-Okay, please feel free to add
-
- Acked-by: Tejun Heo <tj@kernel.org>
-
-Thanks.
-
--- 
-tejun
+devgroups seem like the best solution for this.
