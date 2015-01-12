@@ -1,99 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218AbbALNp1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 08:45:27 -0500
-Received: from smtp105.ord1c.emailsrvr.com ([108.166.43.105]:47156 "EHLO
-	smtp105.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752628AbbALNpZ (ORCPT
+	id S1753059AbbALNrH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 08:47:07 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:45597 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751578AbbALNrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 08:45:25 -0500
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-arm-msm@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pramod Gurav <pramod.gurav@smartplayin.com>
-Subject: [PATCH v3] tty: serial: msm_serial: code cleanup in msm_console_setup
-Date: Mon, 12 Jan 2015 19:15:32 +0530
-Message-Id: <1421070332-24420-1-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 12 Jan 2015 08:47:03 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-24-54b3d056433a
+Message-id: <54B3D053.4010300@samsung.com>
+Date: Mon, 12 Jan 2015 14:46:59 +0100
+From: Jacek Anaszewski <j.anaszewski@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
+        s.nawrocki@samsung.com, Andrzej Hajda <a.hajda@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>, Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [PATCH/RFC v10 08/19] leds: Add support for max77693 mfd flash cell
+References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
+ <1420816989-1808-9-git-send-email-j.anaszewski@samsung.com>
+ <20150109184606.GJ18076@amd> <54B38B55.7080503@samsung.com>
+ <20150112132521.GA15838@amd>
+In-reply-to: <20150112132521.GA15838@amd>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsVy+t/xK7phFzaHGPzu4bK4te4cq8XGGetZ
+	LY7unMhkcf3Lc1aL+UeAYmeb3rBb3P96lNHi8q45bBZb36xjtOjZsJXV4u6po2wWu3c9ZbU4
+	/Kad1eLM/pVsDnweO2fdZfc4/HUhi8eda3vYPPbM/8Hq0bdlFaPHitXf2T0+b5ILYI/isklJ
+	zcksSy3St0vgynjafpqx4A9XRff2T4wNjBs4uhg5OSQETCQ6v/9ghbDFJC7cW88GYgsJLGWU
+	mL67touRC8j+yCixadl6sCJeAS2Jub9WgRWxCKhKHJnyiB3EZhMwlPj54jUTiC0qECHx5/Q+
+	qHpBiR+T77GA2CIC8hJb+1YwgwxlFvjKJNHUsg9skLBAgMSRqevYILY9YpRYfXQTWDengKZE
+	6/NHYFOZBawlVk7axghhy0tsXvOWeQKjwCwkS2YhKZuFpGwBI/MqRtHU0uSC4qT0XCO94sTc
+	4tK8dL3k/NxNjJAY+rqDcekxq0OMAhyMSjy8llKbQ4RYE8uKK3MPMUpwMCuJ8LqWAYV4UxIr
+	q1KL8uOLSnNSiw8xMnFwSjUw6kqwL1+y/pbB2e1N3xx1Pr/pkmUouDutQuwvn/ifqc2340pu
+	L/dP3Z0isDAv+v2nB2WvpDfuu2aziuPdlYf+l/kN9Q5c8Zll+kt7loKhg/7zmd53/873dLrP
+	9e/w0sVufctk1t79sPruuXwlh9VBPj/NmqL3Vp7YGLbegXmqZNd//1tH9Z/eaFFiKc5INNRi
+	LipOBAAosgOafwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The change does following:
- - baud, flow, bits, parity were being overwritten as they were
-   being reinitialized after parsing.  Initialize them when they are
-   declared so that user provided setting are not overwritten.
- - msm_set_baud_rate() is anyway called in uart_set_options when it calls
-   msm_set_termios(). msm_reset() is called when we change the baud rate.
-   Hence doing away with both of these calls.
- - CR_CMD_PROTECTION_EN and CR_TX_ENABLE settings are done in msm_set_baud_rate.
-   So do away with this here.
+On 01/12/2015 02:25 PM, Pavel Machek wrote:
+> Hi!
+>
+>>>> +struct max77693_sub_led {
+>>>> +	/* related FLED output identifier */
+>>>
+>>> ->flash LED, about 4x.
+>>>
+>>>> +/* split composite current @i into two @iout according to @imax weights */
+>>>> +static void __max77693_calc_iout(u32 iout[2], u32 i, u32 imax[2])
+>>>> +{
+>>>> +	u64 t = i;
+>>>> +
+>>>> +	t *= imax[1];
+>>>> +	do_div(t, imax[0] + imax[1]);
+>>>> +
+>>>> +	iout[1] = (u32)t / FLASH_IOUT_STEP * FLASH_IOUT_STEP;
+>>>> +	iout[0] = i - iout[1];
+>>>> +}
+>>>
+>>> Is 64-bit arithmetics neccessary here? Could we do the FLASH_IOUT_STEP
+>>> divisons before t *=, so that 64-bit division is not neccessary?
+>>
+>> It is required. All these operations allow for splitting the composite
+>> current into both outputs according to weights given in the imax
+>> array.
+>
+> I know.
+>
+> What about this?
+>
+> static void __max77693_calc_iout(u32 iout[2], u32 i, u32 imax[2])
+> {
+> 	u32 t = i;
+>
+> 	t *= imax[1] / FLASH_IOUT_STEP;
 
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
----
+Let's consider following case:
 
-Changes since v2:
- - initialize baud, flow, bits, parity when they are declared.
- - undo msm_init_clock removal as suggested by Stephen.
- - Remove unused variable msm_port
+t = 1000000
+imax[1] = 1000000
 
-Tested on IFC6410.
+multiplication of the above will give 10^12 - much more than
+it is possible to encode on 32 bits.
 
- drivers/tty/serial/msm_serial.c |   24 ++++--------------------
- 1 file changed, 4 insertions(+), 20 deletions(-)
+> 	t = t / (imax[0] + imax[1]);
+> 	t /= FLASH_IOUT_STEP
+>
+> 	iout[1] = (u32)t;
+> 	iout[0] = i - iout[1];
+> }
+>
+> Does it lack precision?
+>
+> Thanks,
+> 									Pavel
+>
 
-diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
-index c88b522..a0cc6e0 100644
---- a/drivers/tty/serial/msm_serial.c
-+++ b/drivers/tty/serial/msm_serial.c
-@@ -920,14 +920,15 @@ static void msm_console_write(struct console *co, const char *s,
- static int __init msm_console_setup(struct console *co, char *options)
- {
- 	struct uart_port *port;
--	struct msm_port *msm_port;
--	int baud = 0, flow, bits, parity;
-+	int baud = 115200;
-+	int bits = 8;
-+	int parity = 'n';
-+	int flow = 'n';
- 
- 	if (unlikely(co->index >= UART_NR || co->index < 0))
- 		return -ENXIO;
- 
- 	port = get_port_from_line(co->index);
--	msm_port = UART_TO_MSM(port);
- 
- 	if (unlikely(!port->membase))
- 		return -ENXIO;
-@@ -937,23 +938,6 @@ static int __init msm_console_setup(struct console *co, char *options)
- 	if (options)
- 		uart_parse_options(options, &baud, &parity, &bits, &flow);
- 
--	bits = 8;
--	parity = 'n';
--	flow = 'n';
--	msm_write(port, UART_MR2_BITS_PER_CHAR_8 | UART_MR2_STOP_BIT_LEN_ONE,
--		  UART_MR2);	/* 8N1 */
--
--	if (baud < 300 || baud > 115200)
--		baud = 115200;
--	msm_set_baud_rate(port, baud);
--
--	msm_reset(port);
--
--	if (msm_port->is_uartdm) {
--		msm_write(port, UART_CR_CMD_PROTECTION_EN, UART_CR);
--		msm_write(port, UART_CR_TX_ENABLE, UART_CR);
--	}
--
- 	pr_info("msm_serial: console setup on port #%d\n", port->line);
- 
- 	return uart_set_options(port, co, baud, parity, bits, flow);
+
 -- 
-1.7.9.5
-
+Best Regards,
+Jacek Anaszewski
