@@ -1,86 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332AbbALUam (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 15:30:42 -0500
-Received: from mta-out1.inet.fi ([62.71.2.195]:42059 "EHLO jenni1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752005AbbALUal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 15:30:41 -0500
-Date: Mon, 12 Jan 2015 22:30:03 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Darren Hart <dvhart@infradead.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+	id S1751929AbbALUaO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 15:30:14 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:62510 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725AbbALUaM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 15:30:12 -0500
+Date: Mon, 12 Jan 2015 21:30:07 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@codemonkey.org.uk>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] platform-drivers-x86 for 3.19
-Message-ID: <20150112203003.GB23277@node.dhcp.inet.fi>
-References: <20141218175126.GA78864@vmdeb7>
- <20150111225802.GA12944@node.dhcp.inet.fi>
- <20150112183831.GA99900@vmdeb7>
- <CAObL_7FCiZJuTQNUfqjoxaRscB+_2fvwpnXDt3d8E+0dFm=i6A@mail.gmail.com>
- <20150112200331.GA23277@node.dhcp.inet.fi>
- <CAObL_7FwxW=oq9L+POVx_4S9HSZW2QM3bnTNW37rDsUA=-U3FA@mail.gmail.com>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 06/10] time: Cap clocksource reads to the clocksource
+ max_cycles value
+Message-ID: <20150112203006.GB4233@localhost.localdomain>
+References: <1420850068-27828-1-git-send-email-john.stultz@linaro.org>
+ <1420850068-27828-7-git-send-email-john.stultz@linaro.org>
+ <20150111124146.GA15387@localhost.localdomain>
+ <CALAqxLX2Th7-kEM1vQBJn5hnPTJ5ujg-Zx-aa-oOhP5cb=hXLQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAObL_7FwxW=oq9L+POVx_4S9HSZW2QM3bnTNW37rDsUA=-U3FA@mail.gmail.com>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+In-Reply-To: <CALAqxLX2Th7-kEM1vQBJn5hnPTJ5ujg-Zx-aa-oOhP5cb=hXLQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 12:05:45PM -0800, Andrew Lutomirski wrote:
-> On Mon, Jan 12, 2015 at 12:03 PM, Kirill A. Shutemov
-> <kirill@shutemov.name> wrote:
-> > On Mon, Jan 12, 2015 at 10:42:11AM -0800, Andrew Lutomirski wrote:
-> >> On Mon, Jan 12, 2015 at 10:38 AM, Darren Hart <dvhart@infradead.org> wrote:
-> >> > On Mon, Jan 12, 2015 at 12:58:02AM +0200, Kirill A. Shutemov wrote:
-> >> >> On Thu, Dec 18, 2014 at 09:51:27AM -0800, Darren Hart wrote:
-> >> >> > thinkpad-acpi using software mute simplifies the driver and the user experience
-> >> >> > significantly.
-> >> >>
-> >> >> Except when it doesn't.
-> >> >>
-> >> >> I'm probably in minority, but I don't use fancy userspace to mess with my
-> >> >> mixer and the mute button worked just fine for me before the change.
-> >> >> Wasted half an hour to find out what happened is not a pure win from user
-> >> >> experience point of view.
-> >> >>
-> >> >> Is it really necessary to have software_mute_requested == true by default?
-> >> >> Can fancy userspace ask for desired behaviour instead and change kernel to
-> >> >> not send hotkeys change notification until software_mute is enabled?
-> >> >>
-> >> >> --
-> >> >>  Kirill A. Shutemov
-> >> >>
-> >> >
-> >> > Thanks for the report Kirill,
-> >> >
-> >> > Andy, we're at RC4, so if we need to fix (or revert) this fix, we only have a
-> >> > couple weeks to do so.
-> >> >
-> >> > Kirill, to define the scope of the problem, if you specify
-> >> > software_mute_requested as false on the kernel command line, does your system
-> >> > function as expected?
-> >>
-> >> If I understood Kirill's email correctly, the only issue is that he
-> >> liked the old behavior.  Kirill, is that correct?
+On Mon, Jan 12, 2015 at 10:54:50AM -0800, John Stultz wrote:
+> On Sun, Jan 11, 2015 at 4:41 AM, Richard Cochran
+> <richardcochran@gmail.com> wrote:
+> > On Fri, Jan 09, 2015 at 04:34:24PM -0800, John Stultz wrote:
+> >> When calculating the current delta since the last tick, we
+> >> currently have no hard protections to prevent a multiplciation
+> >> overflow from ocurring.
 > >
-> > Yes. For now I use thinkpad_acpi.software_mute=0 to get old behaviour.
-> >
+> > This is just papering over the problem. The "hard protection" should
+> > be having a tick scheduled before the range of the clock source is
+> > exhausted.
 > 
-> What aspect of the old behavior is better than the new default behavior?
+> So I disagree this is papering over the problem.
+> 
+> You say the tick should be scheduled before the clocksource wraps -
+> but we have logic to do that.
 
-It's not necessary better. The new behavior just broke my use-case.
+Well that is a shame.  To my way of thinking, having a reliable
+watchdog (clock readout) at half the period would be a real solution.
+Yes, I do mean providing some sort of "soft real time" guarantee.
 
-I don't have anything in my system what would react on KEY_MUTE and I used
-the functionality platform provides until it suddenly stopped working.
+What is the use case here?  I thought we are trying to fix unreliable
+clocks with random jumps.  It is hard to see how substituting
+MAX_DURATION for RANDOM_JUMP_VALUE is helping to catch bad hardware.
+ 
+> However there are many ways that can still go wrong.  Virtualization
+> can delay interrupts for long periods of time,
 
-I personally can live with new thinkpad_acpi. I'll probably update my
-configuration to react on the software button.
+fixable with some soft RT?
 
-But who else will get frustrated after update to v3.19?
+> the timer/irq code isn't the simplest and there can be bugs,
 
--- 
- Kirill A. Shutemov
+simplify and fix?
+
+> or timer hardware itself can have issues.
+
+for this we can have a compile time timer validation module, just like
+we have for locks, mutexs, rcu, etc.
+
+> The difficulty is that when something has gone wrong, the
+> only thing we have to measure the problem may become corrupted.  And
+> worse, once the timekeeping code is having problems,  that can result
+> in bugs that manifest in all sorts of strange ways that are very
+> difficult to debug (you can't trust your log timestamps, etc).
+
+But this this patch make the timestamps trustworthy?  Not really.
+ 
+Thanks,
+Richard
