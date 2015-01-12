@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844AbbALSGk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:06:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57708 "EHLO
+	id S1754210AbbALSO5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:14:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57712 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753713AbbALSGd (ORCPT
+	with ESMTP id S1753765AbbALSGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:06:33 -0500
+	Mon, 12 Jan 2015 13:06:34 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 089/216] ALSA: hda - Fix built-in mic at resume on Lenovo Ideapad S210
-Date: Mon, 12 Jan 2015 18:03:26 +0000
-Message-Id: <1421085933-32536-90-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 090/216] groups: Consolidate the setgroups permission checks
+Date: Mon, 12 Jan 2015 18:03:27 +0000
+Message-Id: <1421085933-32536-91-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -27,33 +27,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit fedb2245cbb8d823e449ebdd48ba9bb35c071ce0 upstream.
+commit 7ff4d90b4c24a03666f296c3d4878cd39001e81e upstream.
 
-The built-in mic boost volume gets almost muted after suspend/resume
-on Lenovo Ideapad S210.
+Today there are 3 instances of setgroups and due to an oversight their
+permission checking has diverged.  Add a common function so that
+they may all share the same permission checking code.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=88121
-Reported-and-tested-by: Roman Kagan <rkagan@mail.ru>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This corrects the current oversight in the current permission checks
+and adds a helper to avoid this in the future.
+
+A user namespace security fix will update this new helper, shortly.
+
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/s390/kernel/compat_linux.c | 2 +-
+ include/linux/cred.h            | 1 +
+ kernel/groups.c                 | 9 ++++++++-
+ kernel/uid16.c                  | 2 +-
+ 4 files changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index e517902cbd66..fafabf28cba3 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4906,6 +4906,7 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x17aa, 0x2212, "Thinkpad T440", ALC292_FIXUP_TPT440_DOCK),
- 	SND_PCI_QUIRK(0x17aa, 0x2214, "Thinkpad X240", ALC292_FIXUP_TPT440_DOCK),
- 	SND_PCI_QUIRK(0x17aa, 0x2215, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
-+	SND_PCI_QUIRK(0x17aa, 0x3977, "IdeaPad S210", ALC283_FIXUP_INT_MIC),
- 	SND_PCI_QUIRK(0x17aa, 0x3978, "IdeaPad Y410P", ALC269_FIXUP_NO_SHUTUP),
- 	SND_PCI_QUIRK(0x17aa, 0x5013, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
- 	SND_PCI_QUIRK(0x17aa, 0x501a, "Thinkpad", ALC283_FIXUP_INT_MIC),
+diff --git a/arch/s390/kernel/compat_linux.c b/arch/s390/kernel/compat_linux.c
+index ca38139423ae..437e61159279 100644
+--- a/arch/s390/kernel/compat_linux.c
++++ b/arch/s390/kernel/compat_linux.c
+@@ -249,7 +249,7 @@ COMPAT_SYSCALL_DEFINE2(s390_setgroups16, int, gidsetsize, u16 __user *, grouplis
+ 	struct group_info *group_info;
+ 	int retval;
+ 
+-	if (!capable(CAP_SETGID))
++	if (!may_setgroups())
+ 		return -EPERM;
+ 	if ((unsigned)gidsetsize > NGROUPS_MAX)
+ 		return -EINVAL;
+diff --git a/include/linux/cred.h b/include/linux/cred.h
+index f61d6c8f5ef3..e88316355c66 100644
+--- a/include/linux/cred.h
++++ b/include/linux/cred.h
+@@ -68,6 +68,7 @@ extern void groups_free(struct group_info *);
+ extern int set_current_groups(struct group_info *);
+ extern void set_groups(struct cred *, struct group_info *);
+ extern int groups_search(const struct group_info *, kgid_t);
++extern bool may_setgroups(void);
+ 
+ /* access the groups "array" with this macro */
+ #define GROUP_AT(gi, i) \
+diff --git a/kernel/groups.c b/kernel/groups.c
+index 451698f86cfa..02d8a251c476 100644
+--- a/kernel/groups.c
++++ b/kernel/groups.c
+@@ -213,6 +213,13 @@ out:
+ 	return i;
+ }
+ 
++bool may_setgroups(void)
++{
++	struct user_namespace *user_ns = current_user_ns();
++
++	return ns_capable(user_ns, CAP_SETGID);
++}
++
+ /*
+  *	SMP: Our groups are copy-on-write. We can set them safely
+  *	without another task interfering.
+@@ -223,7 +230,7 @@ SYSCALL_DEFINE2(setgroups, int, gidsetsize, gid_t __user *, grouplist)
+ 	struct group_info *group_info;
+ 	int retval;
+ 
+-	if (!ns_capable(current_user_ns(), CAP_SETGID))
++	if (!may_setgroups())
+ 		return -EPERM;
+ 	if ((unsigned)gidsetsize > NGROUPS_MAX)
+ 		return -EINVAL;
+diff --git a/kernel/uid16.c b/kernel/uid16.c
+index 602e5bbbceff..d58cc4d8f0d1 100644
+--- a/kernel/uid16.c
++++ b/kernel/uid16.c
+@@ -176,7 +176,7 @@ SYSCALL_DEFINE2(setgroups16, int, gidsetsize, old_gid_t __user *, grouplist)
+ 	struct group_info *group_info;
+ 	int retval;
+ 
+-	if (!ns_capable(current_user_ns(), CAP_SETGID))
++	if (!may_setgroups())
+ 		return -EPERM;
+ 	if ((unsigned)gidsetsize > NGROUPS_MAX)
+ 		return -EINVAL;
 -- 
 2.1.4
 
