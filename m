@@ -1,207 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752774AbbALNY7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 08:24:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34304 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751233AbbALNY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 08:24:56 -0500
-Date: Mon, 12 Jan 2015 21:23:38 +0800
-From: Fam Zheng <famz@redhat.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, Miklos Szeredi <mszeredi@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Juri Lelli <juri.lelli@gmail.com>, Zach Brown <zab@zabbo.net>,
-        David Drysdale <drysdale@google.com>,
-        Kees Cook <keescook@chromium.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Dario Faggioli <raistlin@linux.it>, "Theodore Ts'o" <tytso@mit.edu>,
-        Peter Zijlstra <peterz@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Fabian Frederick <fabf@skynet.be>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Subject: Re: [PATCH 0/3] epoll: Add epoll_pwait1 syscall
-Message-ID: <20150112132338.GA2119@fam-t430.nay.redhat.com>
-References: <1420708372.18399.15.camel@suse.cz>
- <CALCETrVyPij1Zxwmw7p06UrZjoyYDXqEjmxyQ-KJ8Y7dx7mL3g@mail.gmail.com>
- <20150109011608.GA2924@fam-t430.nay.redhat.com>
- <CALCETrWHGwPw2cH3RruaCFKj2ND8PdEbdWjTi4OJ8m2eF9fpLw@mail.gmail.com>
- <20150109015248.GA5034@fam-t430.nay.redhat.com>
- <CALCETrU+MKWCh1FBqvuf3MGo3dTcmdktcM4aVZZGGUAmDNoWtg@mail.gmail.com>
- <20150109044908.GA10966@fam-t430.nay.redhat.com>
- <20150109052129.GA6831@thin>
- <20150112082400.GA21123@fam-t430.nay.redhat.com>
- <20150112100836.GA13150@thin>
+	id S1753240AbbALNZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 08:25:28 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35831 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753203AbbALNZZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 08:25:25 -0500
+Date: Mon, 12 Jan 2015 14:25:21 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
+        s.nawrocki@samsung.com, Andrzej Hajda <a.hajda@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>, Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [PATCH/RFC v10 08/19] leds: Add support for max77693 mfd flash
+ cell
+Message-ID: <20150112132521.GA15838@amd>
+References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
+ <1420816989-1808-9-git-send-email-j.anaszewski@samsung.com>
+ <20150109184606.GJ18076@amd>
+ <54B38B55.7080503@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150112100836.GA13150@thin>
+In-Reply-To: <54B38B55.7080503@samsung.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 01/12 02:08, Josh Triplett wrote:
-> On Mon, Jan 12, 2015 at 04:24:00PM +0800, Fam Zheng wrote:
-> > On Thu, 01/08 21:21, Josh Triplett wrote:
-> > > On Fri, Jan 09, 2015 at 12:49:08PM +0800, Fam Zheng wrote:
-> > > > On Thu, 01/08 18:24, Andy Lutomirski wrote:
-> > > > > On Thu, Jan 8, 2015 at 5:52 PM, Fam Zheng <famz@redhat.com> wrote:
-> > > > > > On Thu, 01/08 17:28, Andy Lutomirski wrote:
-> > > > > >> On Thu, Jan 8, 2015 at 5:25 PM, Fam Zheng <famz@redhat.com> wrote:
-> > > > > >> > On Thu, 01/08 09:57, Andy Lutomirski wrote:
-> > > > > >> >> I'd like to see a more ambitious change, since the timer isn't the
-> > > > > >> >> only problem like this.  Specifically, I'd like a syscall that does a
-> > > > > >> >> list of epoll-related things and then waits.  The list of things could
-> > > > > >> >> include, at least:
-> > > > > >> >>
-> > > > > >> >>  - EPOLL_CTL_MOD actions: level-triggered epoll users are likely to
-> > > > > >> >> want to turn on and off their requests for events on a somewhat
-> > > > > >> >> regular basis.
-> > > > > >> >
-> > > > > >> > This sounds good to me.
-> > > > > >> >
-> > > > > >> >>
-> > > > > >> >>  - timerfd_settime actions: this allows a single syscall to wait and
-> > > > > >> >> adjust *both* monotonic and real-time wakeups.
-> > > > > >> >
-> > > > > >> > I'm not sure, doesn't this break orthogonality between epoll and timerfd?
-> > > > > >>
-> > > > > >> Yes.  It's not very elegant, and more elegant ideas are welcome.
-> > > > > >
-> > > > > > What is the purpose of embedding timerfd operation here? Modifying timerfd
-> > > > > > for each poll doesn't sound a common pattern to me.
-> > > > > 
-> > > > > Setting a timeout is definitely a common pattern, hence this thread.
-> > > > > But the current timeout interface sucks, and people should really use
-> > > > > absolute time.  (My epoll software uses absolute time.)  But then
-> > > > > users need to decide whether to have their timeout based on the
-> > > > > monotonic clock or the realtime clock (or something else entirely).
-> > > > > Some bigger programs may want both -- they may have internal events
-> > > > > queued for certain times and for certain timeouts, and those should
-> > > > > use realtime and monotonic respectively.  Heck, users may also want
-> > > > > separate slack values on those.
-> > > > > 
-> > > > > Timerfd is the only thing we have right now that is anywhere near
-> > > > > flexible enough.  Obviously if epoll became fancy enough, then we
-> > > > > could do away with the timerfd entirely here.
-> > > > > 
-> > > > > >
-> > > > > >>
-> > > > > >> >
-> > > > > >> >>
-> > > > > >> >> Would this make sense?  It could look like:
-> > > > > >> >>
-> > > > > >> >> int epoll_mod_and_pwait(int epfd,
-> > > > > >> >>   struct epoll_event *events, int maxevents,
-> > > > > >> >>   struct epoll_command *commands, int ncommands,
-> > > > > >> >>   const sigset_t *sigmask);
-> > > > > >> >
-> > > > > >> > What about flags?
-> > > > > >> >
-> > > > > >>
-> > > > > >> No room.  Maybe it should just be a struct for everything instead of
-> > > > > >> separate args.
-> > > > > >
-> > > > > > Also no room for timeout. A single struct sounds the only way to go.
-> > > > > 
-> > > > > That's what timerfd is for.  I think it would be a bit weird to
-> > > > > support "timeout" and detailed timerfd control.
-> > > > 
-> > > > I see what you mean. Thanks.
-> > > > 
-> > > > I still don't like hooking timerfd in the interface. Besides the unclean
-> > > > interface, it also feels cubersome and overkill to let users setup and add a
-> > > > dedicated timerfd to implement timeout.
-> > > > 
-> > > > How about this:
-> > > > 
-> > > > int epoll_mod_wait(int epfd, struct epoll_mod_wait_data *data);
-> > > > 
-> > > > struct epoll_mod_wait_data {
-> > > > 	struct epoll_event *events;
-> > > > 	int maxevents;
-> > > > 	struct epoll_mod_cmd {
-> > > > 		int op,
-> > > > 		int fd;
-> > > > 		void *data;
-> > > > 	} *cmds;
-> > > > 	int ncmds;
-> > > > 	int flags;
-> > > > 	sigset_t *sigmask;
-> > > > };
-> > > > 
-> > > > Commands ops are:
-> > > > 
-> > > > 	EPOLL_CTL_ADD
-> > > > 		@fd is the fd to modify; @data is epoll_event.
-> > > > 	EPOLL_CTL_MOD
-> > > > 		@fd is the fd to modify; @data is epoll_event.
-> > > > 	EPOLL_CTL_DEL
-> > > > 		@fd is the fd to modify; @data is epoll_event.
-> > > > 
-> > > > 	EPOLL_CTL_SET_TIMEOUT
-> > > > 		@fd is ignored, @data is timespec.
-> > > > 		Clock type and relative/absolute are selected by flags as below.
-> > > > 
-> > > > Flags are given to override timeout defaults:
-> > > > 	EPOLL_FL_MONOTONIC_CLOCK
-> > > > 		If set, don't use realtime clock, use monotonic clock.
-> > > > 	EPOLL_FL_ABSOLUTE_TIMEOUT
-> > > > 		If set, don't use relative timeout, use absolute timeout.
-> > > 
-> > > I'd suggest using an "int clockid" field instead, like timerfd_settime;
-> > > even if it only accepts CLOCK_REALTIME and CLOCK_MONOTONIC, if it needs
-> > > extending in the future, it'd be painful to have to remap new CLOCK_*
-> > > constants into the EPOLL_FL_* namespace.  (I do think dropping timeouts
-> > > in favor of timerfds makes things more nicely orthogonal, but epoll_wait
-> > > already has a timeout parameter, so *shrug*.)
-> > > 
-> > > Also, I think that structure has too many levels of indirection; it'd
-> > > produce many unnecessary cache misses; considering you're trying to
-> > > eliminate the overhead of one or two extra syscalls, you don't want to
-> > > introduce a pile of unnecessary cache misses in the processes.  I'd
-> > > suggest inlining cmds as an array at the end of the structure, and
-> > > turning "void *data" into an inline epoll_event.  (Or, you could use
-> > > "events" as an in/out parameter.)
-> > > 
-> > > You could drop EPOLL_CTL_SET_TIMEOUT, and just include a clockid and
-> > > timespec directly in the top-level structure.
-> > > 
-> > > And I'd suggest either making flags a top-level parameter or putting it
-> > > at the start of the structure, to make future extension easier.
-> > 
-> > Makes sense to me, thanks.
-> > 
-> > Also the number of cmds are undecided until we do a copy_from_user for the
-> > header fields before another one for specified number of cmds. So I think it's
-> > better to move ncmds and cmds to top level parameter.
-> 
-> That seems like an even better idea, yeah.
-> 
+Hi!
 
-One more question I'm not sure regarding the semantics: should we make the
-syscall atomic?  I.e if one of the cmds failed even before wait, or if all the
-cmds are executed, but the eventual wait failed, should we revert the commands'
-effect? Or return overall result and result for each cmd if failed?  Or just
-claim that it's possible for a first few cmds to be effective even on error?
+> >>+struct max77693_sub_led {
+> >>+	/* related FLED output identifier */
+> >
+> >->flash LED, about 4x.
+> >
+> >>+/* split composite current @i into two @iout according to @imax weights */
+> >>+static void __max77693_calc_iout(u32 iout[2], u32 i, u32 imax[2])
+> >>+{
+> >>+	u64 t = i;
+> >>+
+> >>+	t *= imax[1];
+> >>+	do_div(t, imax[0] + imax[1]);
+> >>+
+> >>+	iout[1] = (u32)t / FLASH_IOUT_STEP * FLASH_IOUT_STEP;
+> >>+	iout[0] = i - iout[1];
+> >>+}
+> >
+> >Is 64-bit arithmetics neccessary here? Could we do the FLASH_IOUT_STEP
+> >divisons before t *=, so that 64-bit division is not neccessary?
+> 
+> It is required. All these operations allow for splitting the composite
+> current into both outputs according to weights given in the imax
+>array.
 
-It will be way more complicated to make it atomic, so I'd like to be clear what
-we should do. Ideas?
+I know.
+
+What about this?
+
+static void __max77693_calc_iout(u32 iout[2], u32 i, u32 imax[2])
+{
+	u32 t = i;
+
+	t *= imax[1] / FLASH_IOUT_STEP;
+	t = t / (imax[0] + imax[1]);
+	t /= FLASH_IOUT_STEP
+
+	iout[1] = (u32)t;
+	iout[0] = i - iout[1];
+}
+
+Does it lack precision?
 
 Thanks,
-Fam
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
