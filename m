@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763AbbALTMA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 14:12:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57414 "EHLO
+	id S932211AbbALTLm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 14:11:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57415 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752945AbbALSFl (ORCPT
+	with ESMTP id S1753065AbbALSFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:05:41 -0500
+	Mon, 12 Jan 2015 13:05:42 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Dmitry Osipenko <digetx@gmail.com>, Thierry Reding <treding@nvidia.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 028/216] drm/radeon: fix typo in CI dpm disable
-Date: Mon, 12 Jan 2015 18:02:25 +0000
-Message-Id: <1421085933-32536-29-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 029/216] ARM: tegra: Re-add removed SoC id macro to tegra_resume()
+Date: Mon, 12 Jan 2015 18:02:26 +0000
+Message-Id: <1421085933-32536-30-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -27,31 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Dmitry Osipenko <digetx@gmail.com>
 
-commit 129acb7c0b682512e89c4f65c33593d50f2f49a9 upstream.
+commit e4a680099a6e97ecdbb81081cff9e4a489a4dc44 upstream.
 
-Need to disable DS, not enable it when disabling dpm.
+Commit d127e9c ("ARM: tegra: make tegra_resume can work with current and later
+chips") removed tegra_get_soc_id macro leaving used cpu register corrupted after
+branching to v7_invalidate_l1() and as result causing execution of unintended
+code on tegra20. Possibly it was expected that r6 would be SoC id func argument
+since common cpu reset handler is setting r6 before branching to tegra_resume(),
+but neither tegra20_lp1_reset() nor tegra30_lp1_reset() aren't setting r6
+register before jumping to resume function. Fix it by re-adding macro.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Fixes: d127e9c (ARM: tegra: make tegra_resume can work with current and later chips)
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
+Signed-off-by: Thierry Reding <treding@nvidia.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/ci_dpm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-tegra/reset-handler.S | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpu/drm/radeon/ci_dpm.c b/drivers/gpu/drm/radeon/ci_dpm.c
-index d416bb2ff48d..c224eaef272e 100644
---- a/drivers/gpu/drm/radeon/ci_dpm.c
-+++ b/drivers/gpu/drm/radeon/ci_dpm.c
-@@ -4754,7 +4754,7 @@ void ci_dpm_disable(struct radeon_device *rdev)
- 	ci_enable_spread_spectrum(rdev, false);
- 	ci_enable_auto_throttle_source(rdev, RADEON_DPM_AUTO_THROTTLE_SRC_THERMAL, false);
- 	ci_stop_dpm(rdev);
--	ci_enable_ds_master_switch(rdev, true);
-+	ci_enable_ds_master_switch(rdev, false);
- 	ci_enable_ulv(rdev, false);
- 	ci_clear_vc(rdev);
- 	ci_reset_to_default(rdev);
+diff --git a/arch/arm/mach-tegra/reset-handler.S b/arch/arm/mach-tegra/reset-handler.S
+index 578d4d1ad648..6448324aa9b4 100644
+--- a/arch/arm/mach-tegra/reset-handler.S
++++ b/arch/arm/mach-tegra/reset-handler.S
+@@ -50,6 +50,7 @@ ENTRY(tegra_resume)
+  THUMB(	it	ne )
+ 	bne	cpu_resume			@ no
+ 
++	tegra_get_soc_id TEGRA_APB_MISC_BASE, r6
+ 	/* Are we on Tegra20? */
+ 	cmp	r6, #TEGRA20
+ 	beq	1f				@ Yes
 -- 
 2.1.4
 
