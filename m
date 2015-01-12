@@ -1,82 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068AbbALLsj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 06:48:39 -0500
-Received: from smtp-out6.electric.net ([192.162.217.181]:57804 "EHLO
-	smtp-out6.electric.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121AbbALLsf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753125AbbALLsf (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 12 Jan 2015 06:48:35 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Al Viro'" <viro@ZenIV.linux.org.uk>,
-        "Carlos R. Mafra" <crmafra@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Hauke Mehrtens <hauke@hauke-m.de>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: /proc/net/dev regression
-Thread-Topic: /proc/net/dev regression
-Thread-Index: AQHQLT9BrcazbLU9VU6D1mpk+8xNCZy8X8hQ
-Date: Mon, 12 Jan 2015 11:47:13 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1CAC5823@AcuExch.aculab.com>
-References: <20150110232518.GA3212@linux-g29b.site>
- <20150111002706.GC22149@ZenIV.linux.org.uk>
- <20150111010036.GD22149@ZenIV.linux.org.uk>
- <20150111013335.GA5753@linux-g29b.site>
- <20150111013913.GE22149@ZenIV.linux.org.uk>
-In-Reply-To: <20150111013913.GE22149@ZenIV.linux.org.uk>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
+Received: from mx-relay13.cloudservice.ag ([81.20.94.219]:44273 "EHLO
+	mx-relay13.cloudservice.ag" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752098AbbALLsc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 06:48:32 -0500
+From: "Stoidner, Christoph" <c.stoidner@arvero.de>
+To: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: AW: Question concerning RCU
+Thread-Topic: Question concerning RCU
+Thread-Index: AQHQKdgN5pYhqCTrrEydsWtlbI+1KpyzbZSAgAdiVA6AAIVJAIAA8bH3
+Date: Mon, 12 Jan 2015 11:48:28 +0000
+Message-ID: <249b36ec1afa43a699b281a4192c6afd@EX132MBOX1A.de2.local>
+References: <94921a144a97457385ae95b838c3c6fa@EX132MBOX1A.de2.local>
+ <20150106194317.GG5280@linux.vnet.ibm.com>
+ <81b94fc89c774b71a967fc93823e9c63@EX132MBOX1A.de2.local>,<20150111202604.GC8063@linux.vnet.ibm.com>
+In-Reply-To: <20150111202604.GC8063@linux.vnet.ibm.com>
+Accept-Language: de-DE, en-US
+Content-Language: de-DE
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
+x-originating-ip: [217.91.168.120]
+x-exclaimer-md-config: 2329e0da-e5c9-454a-b62b-9269baa51382
+x-hoag-tnef: done
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Outbound-IP: 213.249.233.130
-X-Env-From: David.Laight@ACULAB.COM
-X-PolicySMART: 3396946, 3397078
+X-cloud-security-sender: c.stoidner@oujhf.hostedoffice.ag
+X-cloud-security-recipient: linux-kernel@vger.kernel.org
+X-cloud-security-Virusscan: CLEAN
+X-cloud-security-disclaimer: This E-Mail was scanned by E-Mailservice on mx-gate13 with 957482118001
+X-cloud-security-connect: fw1.hostedoffice.ag[81.20.90.82], TLS=, IP=81.20.90.82
+X-cloud-security: scantime:.1103
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro
-> > I think the problem with wmnet is not that it was expecting the fields
-> > to be aligned because it never had problems before (when definitely more
-> > than 10 megabytes were received, wmnet is crappy but not _that_ crappy).
-> >
-> > I think the problem really was here,
-> >
-> > 	totalbytes_in = strtoul(&buffer[7], NULL, 10);
-> >
-> > After the patch the device name is 8 characters long and &buffer[7]
-> > overlaps with the name instead of reading the bytes. Before the
-> > patch is was fine because the call to strtoul() seems correct in the
-> > sense that it would read everything until the NULL. So more than 10
-> > megabytes was still ok.
-> >
-> > So I guess I was wrong when suggesting that the problem was the
-> > alignment.
-> 
-> Several lines below there's this:
->                         totalpackets_out = strtoul(&buffer[74], NULL, 10);
->                         if (totalpackets_out != lastpackets_out) {
->                                 totalbytes_out = strtoul(&buffer[66], NULL, 10);
->                                 diffpackets_out += totalpackets_out - lastpackets_out;
->                                 diffbytes_out += totalbytes_out - lastbytes_out;
->                                 lastpackets_out = totalpackets_out;
->                                 lastbytes_out = totalbytes_out;
->                                 tx = True;
->                         }
-> 
-> So I'm afraid it *is* that crappy.  This function really should use scanf();
-> note that updateStats_ipchains() in the same file does just that (well,
-> fgets()+sscanf() for fsck knows what reason).  And I'd be careful with all
-> those %d, actually - it's not _that_ hard to get more than 4Gb sent.
-> scanf formats really ought to match the kernel-side (seq_)printf one...
+Hi Paul,
 
-IMHO it is safer to use strchr(p, ' '); to skip the interface name and then
-use repeated calls to strtoull() to read the numbers.
-Correctly/safely using scanf() is really too hard.
+> You got stack traces with the stall warnings, correct?  If so, please look
+> at them and at Documentation/RCU/stallwarn.txt and see if the kernel is
+> looping somewhere inappropriate.
 
-	David
+Yes and no. I have a stack trace, but it is not generated by a stall warning. More
+precise: I can never see any stall warning. The reason is that the system freezes 
+when it is about to output such a warning. Instead the stack trace is generated 
+by gdb and JTAG hardware debugging, when freezing has occurred.
 
+So I am not sure if there is really a CPU-stall condition or it is just a misrepresented
+stall detection. However, outputting a stall warning leads to system freeze. The 
+warning is never seen.
+
+> I am not familiar with the low-level ARM kernel code, but the stack below
+> leads me to suspect that your kernel is interrupting itself to death or
+> is improperly handling interrupts.
+
+The stack trace must be read from bottom to top. The repetitive occurrence of
+"__irq_svc () at arch/arm/kernel/entry-armv.S:202" on bottom of stack trace is 
+caused by the stack frame of the interrupt context. This is completely legal and 
+also the case in normal situations. Instead the problem is on the top of the stack 
+trace, in function rcu_print_task_stall(). The loop rcutree_plugin.h in line 528 
+never ends:
+
+static int rcu_print_task_stall(struct rcu_node *rnp)
+{
+	...
+	...
+
+	list_for_each_entry_continue(t, &rnp->blkd_tasks, rcu_node_entry) {
+		printk(KERN_CONT " P%d", t->pid);
+		ndetected++;
+	}
+
+	...    
+	...
+}        
+
+That means list_for_each_entry_continue () never ends since rcu_node_entry.next 
+seems to point to it-self but not to rnp->blkd_tasks. I have no idea how this can
+happen.
+
+One more thing: Just for testing I have now enabled CONFIG_TINY_PREEMPT_RCU. 
+Until now the problem has not occurred anymore. Do you have any idea what makes
+the differences here?
+
+Thanks and regards,
+Christoph
