@@ -1,78 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521AbbALTmL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 14:42:11 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:57391 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753510AbbALTmG (ORCPT
+	id S1754746AbbALTnK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 14:43:10 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:40986 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753812AbbALTnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 14:42:06 -0500
-Date: Mon, 12 Jan 2015 20:42:00 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Laight <David.Laight@ACULAB.COM>
-Subject: Re: [PATCH v3 3/5] ARM: at91/dt: update udc compatible strings
-Message-ID: <20150112204200.4ffefdd4@bbrezillon>
-In-Reply-To: <20150112193126.GC2858@saruman>
-References: <1421060278-27329-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1421060278-27329-4-git-send-email-boris.brezillon@free-electrons.com>
-	<20150112182349.GJ6525@saruman>
-	<20150112201816.6e57fe74@bbrezillon>
-	<20150112193126.GC2858@saruman>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 12 Jan 2015 14:43:06 -0500
+Date: Mon, 12 Jan 2015 11:43:02 -0800
+From: Omar Sandoval <osandov@osandov.com>
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Devel FS Linux <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH RESEND] nfs: prevent truncate on active swapfile
+Message-ID: <20150112194302.GA27355@mew.dhcp4.washington.edu>
+References: <fdc56e2887c3ed93f4e6a6e784ee0748c2d13295.1420708562.git.osandov@osandov.com>
+ <CAHQdGtT=sXmDk=samGCD92mC-Rjr57NAOURudD9TRyFy3=YaBA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHQdGtT=sXmDk=samGCD92mC-Rjr57NAOURudD9TRyFy3=YaBA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Jan 2015 13:31:26 -0600
-Felipe Balbi <balbi@ti.com> wrote:
-
-> On Mon, Jan 12, 2015 at 08:18:16PM +0100, Boris Brezillon wrote:
-> > Hi Felipe,
-> > 
-> > On Mon, 12 Jan 2015 12:23:49 -0600
-> > Felipe Balbi <balbi@ti.com> wrote:
-> > 
-> > > On Mon, Jan 12, 2015 at 11:57:56AM +0100, Boris Brezillon wrote:
-> > > > at91sam9g45, at91sam9x5 and sama5 SoCs should not use
-> > > > "atmel,at91sam9rl-udc" for their USB device compatible property since
-> > > > this compatible is attached to a specific hardware bug fix.
-> > > > 
-> > > > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> > > > Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> > > 
-> > > WARNING: DT compatible string "atmel,at91sam9g45-udc" appears un-documented -- check ./Documentation/devicetree/bindings/
-> > > #177: FILE: drivers/usb/gadget/udc/atmel_usba_udc.c:1827:
-> > > +       { .compatible = "atmel,at91sam9g45-udc" },
-> > > 
-> > > WARNING: DT compatible string "atmel,sama5d3-udc" appears un-documented -- check ./Documentation/devicetree/bindings/
-> > > #178: FILE: drivers/usb/gadget/udc/atmel_usba_udc.c:1828:
-> > > +       { .compatible = "atmel,sama5d3-udc" },
-> > > 
-> > > please fix and resend. Also, when resending, could you add Nicolas'
-> > > Acked-by since he's already given it ?
-> > 
-> > Actually these compatible strings are documented in the first patch
-> > (where they were introduced), but I'll send a v4 with Nicolas' ack.
+On Sat, Jan 10, 2015 at 05:08:03PM -0500, Trond Myklebust wrote:
+> Hi Omar,
 > 
-> heh, checkpatch stupidity :-) My bad.
+> On Thu, Jan 8, 2015 at 4:18 AM, Omar Sandoval <osandov@osandov.com> wrote:
+> > Most filesystems prevent truncation of an active swapfile by way of
+> > inode_newsize_ok, called from inode_change_ok. NFS doesn't call either
+> > from nfs_setattr, presumably because most of these checks are expected
+> > to be done server-side. However, the IS_SWAPFILE check can only be done
+> > client-side, and truncating a swapfile can't possibly be good.
+> >
+> > Signed-off-by: Omar Sandoval <osandov@osandov.com>
+> > ---
+> > Hi, Trond,
+> >
+> > Now that the holidays are over, could you take a look at this? It was
+> > generated against v3.19-rc3.
+> >
+> > Thanks!
+> >
+> >  fs/nfs/inode.c | 7 ++++++-
+> >  1 file changed, 6 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+> > index 4bffe63..9205513 100644
+> > --- a/fs/nfs/inode.c
+> > +++ b/fs/nfs/inode.c
+> > @@ -506,10 +506,15 @@ nfs_setattr(struct dentry *dentry, struct iattr *attr)
+> >                 attr->ia_valid &= ~ATTR_MODE;
+> >
+> >         if (attr->ia_valid & ATTR_SIZE) {
+> > +               loff_t i_size;
+> > +
+> >                 BUG_ON(!S_ISREG(inode->i_mode));
+> >
+> > -               if (attr->ia_size == i_size_read(inode))
+> > +               i_size = i_size_read(inode);
+> > +               if (attr->ia_size == i_size)
+> >                         attr->ia_valid &= ~ATTR_SIZE;
+> > +               else if (attr->ia_size < i_size && IS_SWAPFILE(inode))
+> > +                       return -ETXTBSY;
+> >         }
+> >
+> >         /* Optimization: if the end result is no change, don't RPC */
+> > --
+> > 2.2.1
+> >
 > 
+> I agree that truncating a swap file is bad, however as you point out,
+> this really only addresses the case on the client that knows about
+> this being a swap file.
+> I'll take the patch,
 
-You took v3 of the first patch instead of v4.
-Don't know if you can replace it (anyway, that's not such a big deal
-since the only change is the commit message)...
+Thanks, I appreciate it.
 
+> but I'm wondering if we couldn't do better in the
+> case where we're using NFSv4 by using share deny modes (which are
+> enforced by the server). The problem is that there appears to be
+> nothing in swapon() that tells the filesystem this is an open of a
+> swap file...
+
+Yeah, it would be nice for completeness to prevent one client from
+truncating another client's swapfile. However, I'd hope that anyone
+using swap-over-NFS on a shared NFS mount would take the necessary
+precautions in terms of permissions, etc. to prevent someone from doing
+that. Also, since the failure mode of truncating an NFS swapfile is a
+corrupt swapfile rather than a corrupt filesystem (like on a local
+filesystem), it's probably okay to just deal with the low-hanging fruit
+for now.
+
+Thanks!
+
+> 
+> Cheers
+>   Trond
+> -- 
+> Trond Myklebust
+> Linux NFS client maintainer, PrimaryData
+> trond.myklebust@primarydata.com
 
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+Omar
