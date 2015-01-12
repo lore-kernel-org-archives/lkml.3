@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752483AbbALJUF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 04:20:05 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:25111 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752385AbbALJT7 (ORCPT
+	id S1752537AbbALJUK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 04:20:10 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:27669 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752445AbbALJUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 04:19:59 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-c4-54b391bc5d64
+	Mon, 12 Jan 2015 04:20:05 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-dd-54b391c15d0c
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: linux-mm@kvack.org
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -17,115 +17,91 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         Mike Turquette <mturquette@linaro.org>,
         Alexander Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/5] mm/util: add kstrdup_const
-Date: Mon, 12 Jan 2015 10:18:39 +0100
-Message-id: <1421054323-14430-2-git-send-email-a.hajda@samsung.com>
+Subject: [PATCH 2/5] kernfs: convert node name allocation to kstrdup_const
+Date: Mon, 12 Jan 2015 10:18:40 +0100
+Message-id: <1421054323-14430-3-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1421054323-14430-1-git-send-email-a.hajda@samsung.com>
 References: <1421054323-14430-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCLMWRmVeSWpSXmKPExsVy+t/xK7p7Jm4OMXi/WsPi1rpzrBZz1q9h
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCLMWRmVeSWpSXmKPExsVy+t/xK7oHJ24OMZi3Qdvi1rpzrBZz1q9h
 	szhy7Tu7xeV/b1gszja9AbJ2zWGzuLfmP6vF2iN32S2eTrjIZnH+73FWBy6P+Ts/Mnps+jSJ
-	3ePOtT1sHidm/GbxWHJTzaNvyypGj8+b5Dw2PXnLFMARxWWTkpqTWZZapG+XwJWxfccFtoIj
-	ohULL/xmaWDcJtjFyMkhIWAi8fDaI3YIW0ziwr31bF2MXBxCAksZJY4eXMMC4fQxSbyc9Y4R
-	pIpNQFPi7+abbCC2CFDHxzOXmUGKmAVOMEms/9XIBJIQFtCXaJr4nxnEZhFQlZg/eSNYnFfA
-	WeLx7/WsEOvkJE4emwxmcwq4SFzc+RasXgio5urB88wTGHkXMDKsYhRNLU0uKE5KzzXUK07M
-	LS7NS9dLzs/dxAgJyS87GBcfszrEKMDBqMTDO0Fmc4gQa2JZcWXuIUYJDmYlEV7XMqAQb0pi
-	ZVVqUX58UWlOavEhRiYOTqkGRu17d9Is97D6NpdxN/fu6NzXkrzd92qv9Jyj8owrBN/ZbXs7
-	VXBBxNWGC4f8Jywsfv7+4STPmHMu9/d+sE693TA5+BXT/rhJ/EYvGEU3zO28+7Rqjc/bZ+//
-	vznnbXvh94FDy++2MHbWybFm8lndFTwSfvZO0wuvHYyff7pob3ZfVjdbcL/kQn4lluKMREMt
-	5qLiRAB83Zh9JwIAAA==
+	3ePOtT1sHidm/GbxWHJTzaNvyypGj8+b5Dw2PXnLFMARxWWTkpqTWZZapG+XwJXxd+sVtoKn
+	/BV3emawNTDe4+li5OSQEDCRuD7hPyOELSZx4d56ti5GLg4hgaWMErdfTWSFcPqYJB79v8YO
+	UsUmoCnxd/NNNhBbBKjj45nLzCBFzAInmCTW/2pkAkkIC3hJ7J55HKyBRUBV4v2HnWAreAWc
+	JXpvbINaJydx8thkVhCbU8BF4uLOt8wgthBQzdWD55knMPIuYGRYxSiaWppcUJyUnmuoV5yY
+	W1yal66XnJ+7iRESkl92MC4+ZnWIUYCDUYmHd4LM5hAh1sSy4srcQ4wSHMxKIryuZUAh3pTE
+	yqrUovz4otKc1OJDjEwcnFINjCbtMzRNS/J+Xnu+gnnNmuiMA9+1ha9NnGGZEiwtdaU886t/
+	d/lR24keTOrLetddMhM3EeQv2fVoZXTBok9f9n/+kfVogYc4j6/d288TfmszC8npbNgn/cBZ
+	ta5yeW2BRPDEX5odK+7IM/rbFO08ct68bpL1rOa+mEfimyU27lQ70V+w+UKQgRJLcUaioRZz
+	UXEiAMqHjIcnAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch adds alternative version of kstrdup which returns pointer
-to constant char array. The function checks if input string is in
-persistent and read-only memory section, if yes it returns the input string,
-otherwise it fallbacks to kstrdup.
-kstrdup_const is accompanied by kfree_const performing conditional memory
-deallocation of the string.
+sysfs frequently performs duplication of strings located
+in read-only memory section. Replacing kstrdup by kstrdup_const
+allows to avoid such operations.
 
 Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 ---
- include/linux/string.h |  3 +++
- mm/util.c              | 38 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 41 insertions(+)
+ fs/kernfs/dir.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/string.h b/include/linux/string.h
-index 2e22a2e..b11ed1e 100644
---- a/include/linux/string.h
-+++ b/include/linux/string.h
-@@ -115,7 +115,10 @@ extern void * memchr(const void *,int,__kernel_size_t);
- #endif
- void *memchr_inv(const void *s, int c, size_t n);
+diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
+index 37989f0..259e92a 100644
+--- a/fs/kernfs/dir.c
++++ b/fs/kernfs/dir.c
+@@ -408,7 +408,7 @@ void kernfs_put(struct kernfs_node *kn)
+ 	if (kernfs_type(kn) == KERNFS_LINK)
+ 		kernfs_put(kn->symlink.target_kn);
+ 	if (!(kn->flags & KERNFS_STATIC_NAME))
+-		kfree(kn->name);
++		kfree_const(kn->name);
+ 	if (kn->iattr) {
+ 		if (kn->iattr->ia_secdata)
+ 			security_release_secctx(kn->iattr->ia_secdata,
+@@ -502,12 +502,12 @@ static struct kernfs_node *__kernfs_new_node(struct kernfs_root *root,
+ 					     const char *name, umode_t mode,
+ 					     unsigned flags)
+ {
+-	char *dup_name = NULL;
++	const char *dup_name = NULL;
+ 	struct kernfs_node *kn;
+ 	int ret;
  
-+extern void kfree_const(const void *x);
-+
- extern char *kstrdup(const char *s, gfp_t gfp);
-+extern const char *kstrdup_const(const char *s, gfp_t gfp);
- extern char *kstrndup(const char *s, size_t len, gfp_t gfp);
- extern void *kmemdup(const void *src, size_t len, gfp_t gfp);
+ 	if (!(flags & KERNFS_STATIC_NAME)) {
+-		name = dup_name = kstrdup(name, GFP_KERNEL);
++		name = dup_name = kstrdup_const(name, GFP_KERNEL);
+ 		if (!name)
+ 			return NULL;
+ 	}
+@@ -534,7 +534,7 @@ static struct kernfs_node *__kernfs_new_node(struct kernfs_root *root,
+  err_out2:
+ 	kmem_cache_free(kernfs_node_cache, kn);
+  err_out1:
+-	kfree(dup_name);
++	kfree_const(dup_name);
+ 	return NULL;
+ }
  
-diff --git a/mm/util.c b/mm/util.c
-index fec39d4..7c62128 100644
---- a/mm/util.c
-+++ b/mm/util.c
-@@ -12,10 +12,30 @@
- #include <linux/hugetlb.h>
- #include <linux/vmalloc.h>
+@@ -1260,7 +1260,7 @@ int kernfs_rename_ns(struct kernfs_node *kn, struct kernfs_node *new_parent,
+ 	/* rename kernfs_node */
+ 	if (strcmp(kn->name, new_name) != 0) {
+ 		error = -ENOMEM;
+-		new_name = kstrdup(new_name, GFP_KERNEL);
++		new_name = kstrdup_const(new_name, GFP_KERNEL);
+ 		if (!new_name)
+ 			goto out;
+ 	} else {
+@@ -1293,7 +1293,7 @@ int kernfs_rename_ns(struct kernfs_node *kn, struct kernfs_node *new_parent,
+ 	kernfs_link_sibling(kn);
  
-+#include <asm/sections.h>
- #include <asm/uaccess.h>
+ 	kernfs_put(old_parent);
+-	kfree(old_name);
++	kfree_const(old_name);
  
- #include "internal.h"
- 
-+static inline int is_kernel_rodata(unsigned long addr)
-+{
-+	return addr >= (unsigned long)__start_rodata &&
-+		addr < (unsigned long)__end_rodata;
-+}
-+
-+/**
-+ * kfree_const - conditionally free memory
-+ * @x: pointer to the memory
-+ *
-+ * Function calls kfree only if @x is not in .rodata section.
-+ */
-+void kfree_const(const void *x)
-+{
-+	if (!is_kernel_rodata((unsigned long)x))
-+		kfree(x);
-+}
-+EXPORT_SYMBOL(kfree_const);
-+
- /**
-  * kstrdup - allocate space for and copy an existing string
-  * @s: the string to duplicate
-@@ -38,6 +58,24 @@ char *kstrdup(const char *s, gfp_t gfp)
- EXPORT_SYMBOL(kstrdup);
- 
- /**
-+ * kstrdup_const - conditionally duplicate an existing const string
-+ * @s: the string to duplicate
-+ * @gfp: the GFP mask used in the kmalloc() call when allocating memory
-+ *
-+ * Function returns source string if it is in .rodata section otherwise it
-+ * fallbacks to kstrdup.
-+ * Strings allocated by kstrdup_const should be freed by kfree_const.
-+ */
-+const char *kstrdup_const(const char *s, gfp_t gfp)
-+{
-+	if (is_kernel_rodata((unsigned long)s))
-+		return s;
-+
-+	return kstrdup(s, gfp);
-+}
-+EXPORT_SYMBOL(kstrdup_const);
-+
-+/**
-  * kstrndup - allocate space for and copy an existing string
-  * @s: the string to duplicate
-  * @max: read at most @max chars from @s
+ 	error = 0;
+  out:
 -- 
 1.9.1
 
