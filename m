@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104AbbALXOj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 18:14:39 -0500
-Received: from mga09.intel.com ([134.134.136.24]:19750 "EHLO mga09.intel.com"
+	id S1753980AbbALXNA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 18:13:00 -0500
+Received: from mga09.intel.com ([134.134.136.24]:32013 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753694AbbALXKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 18:10:46 -0500
+	id S1753241AbbALXKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 18:10:49 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="511204094"
+   d="scan'208";a="511204098"
 From: Sudeep Dutt <sudeep.dutt@intel.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Arnd Bergmann <arnd@arndb.de>, Jonathan Corbet <corbet@lwn.net>,
@@ -16,9 +16,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>, Jonathan Corbet <corbet@lwn.net>,
         Dave Jiang <dave.jiang@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
         Ashutosh Dixit <ashutosh.dixit@intel.com>,
         Sudeep Dutt <sudeep.dutt@intel.com>
-Subject: [PATCH char-misc-next v2 08/13] misc: mic: SCIF open close bind and listen APIs
-Date: Mon, 12 Jan 2015 15:10:02 -0800
-Message-Id: <1630a2e8dd674dad9f06863378121e809b794982.1421097390.git.sudeep.dutt@intel.com>
+Subject: [PATCH char-misc-next v2 09/13] misc: mic: SCIF connections APIs i.e. accept and connect
+Date: Mon, 12 Jan 2015 15:10:03 -0800
+Message-Id: <6505b394d6407986bd5596a1e8db4cd2d5a2c034.1421097390.git.sudeep.dutt@intel.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <cover.1421097390.git.sudeep.dutt@intel.com>
 References: <cover.1421097390.git.sudeep.dutt@intel.com>
@@ -28,1040 +28,981 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SCIF character device file operations and kernel APIs for opening and
-closing a user and kernel mode SCIF endpoint. This patch also enables
-binding to a SCIF port and listening for incoming SCIF connections.
+From: Nikhil Rao <nikhil.rao@intel.com>
 
-Reviewed-by: Nikhil Rao <nikhil.rao@intel.com>
+SCIF connection APIs which establish a SCIF connection between
+a pair of SCIF endpoints. A SCIF connection consists of a
+dedicated queue-pair between the endpoints. Client messages are
+sent over the queue-pair whereas the signaling associated with the
+message is multiplexed over the node queue-pair. Similarly other
+control messages such as exposing registered memory are also sent
+over the node queue-pair. The SCIF endpoints must be in connected
+state to exchange messages, register memory, map remote memory and
+trigger DMA transfers. SCIF connections can be set up
+asynchronously or synchronously.
+
+Thanks to Johnnie S Peters for authoring parts of this patch during
+early bring up of the SCIF driver.
+
 Reviewed-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
 Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
+Signed-off-by: Nikhil Rao <nikhil.rao@intel.com>
 ---
- drivers/misc/mic/Kconfig            |  19 ++
- drivers/misc/mic/Makefile           |   1 +
- drivers/misc/mic/scif/Makefile      |  15 ++
- drivers/misc/mic/scif/scif_epd.h    | 148 +++++++++++++
- drivers/misc/mic/scif/scif_main.h   |   2 +
- drivers/misc/mic/scif/scif_nodeqp.h |  12 +-
- drivers/misc/mic/scif/scif_api.c    | 417 ++++++++++++++++++++++++++++++++++++
- drivers/misc/mic/scif/scif_epd.c    |  92 ++++++++
- drivers/misc/mic/scif/scif_fd.c     | 104 +++++++++
- drivers/misc/mic/scif/scif_ports.c  | 124 +++++++++++
- 10 files changed, 933 insertions(+), 1 deletion(-)
- create mode 100644 drivers/misc/mic/scif/Makefile
- create mode 100644 drivers/misc/mic/scif/scif_epd.h
- create mode 100644 drivers/misc/mic/scif/scif_api.c
- create mode 100644 drivers/misc/mic/scif/scif_epd.c
- create mode 100644 drivers/misc/mic/scif/scif_fd.c
- create mode 100644 drivers/misc/mic/scif/scif_ports.c
+ drivers/misc/mic/scif/scif_epd.h    |   8 +
+ drivers/misc/mic/scif/scif_api.c    | 452 ++++++++++++++++++++++++++++++++++++
+ drivers/misc/mic/scif/scif_epd.c    | 229 ++++++++++++++++++
+ drivers/misc/mic/scif/scif_fd.c     | 106 +++++++++
+ drivers/misc/mic/scif/scif_main.c   |   1 +
+ drivers/misc/mic/scif/scif_nm.c     |  36 +++
+ drivers/misc/mic/scif/scif_nodeqp.c |  16 +-
+ 7 files changed, 847 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/misc/mic/Kconfig b/drivers/misc/mic/Kconfig
-index afc9f53..bcf6e36 100644
---- a/drivers/misc/mic/Kconfig
-+++ b/drivers/misc/mic/Kconfig
-@@ -69,3 +69,22 @@ config INTEL_MIC_CARD
- 
- 	  For more information see
- 	  <http://software.intel.com/en-us/mic-developer>.
-+
-+comment "SCIF Driver"
-+
-+config SCIF
-+	tristate "SCIF Driver"
-+	depends on 64BIT && PCI && X86 && SCIF_BUS
-+	help
-+	  This enables SCIF Driver support for the Intel Many Integrated
-+	  Core (MIC) family of PCIe form factor coprocessor devices that
-+	  run a 64 bit Linux OS. The Symmetric Communication Interface
-+	  (SCIF (pronounced as skiff)) is a low level communications API
-+	  across PCIe currently implemented for MIC.
-+
-+	  If you are building a host kernel with an Intel MIC device then
-+	  say M (recommended) or Y, else say N. If unsure say N.
-+
-+	  More information about the Intel MIC family as well as the Linux
-+	  OS and tools for MIC to use with this driver are available from
-+	  <http://software.intel.com/en-us/mic-developer>.
-diff --git a/drivers/misc/mic/Makefile b/drivers/misc/mic/Makefile
-index 6bc6083..a74042c 100644
---- a/drivers/misc/mic/Makefile
-+++ b/drivers/misc/mic/Makefile
-@@ -5,3 +5,4 @@
- obj-$(CONFIG_INTEL_MIC_HOST) += host/
- obj-$(CONFIG_INTEL_MIC_CARD) += card/
- obj-y += bus/
-+obj-$(CONFIG_SCIF) += scif/
-diff --git a/drivers/misc/mic/scif/Makefile b/drivers/misc/mic/scif/Makefile
-new file mode 100644
-index 0000000..bf10bb7
---- /dev/null
-+++ b/drivers/misc/mic/scif/Makefile
-@@ -0,0 +1,15 @@
-+#
-+# Makefile - SCIF driver.
-+# Copyright(c) 2014, Intel Corporation.
-+#
-+obj-$(CONFIG_SCIF) += scif.o
-+scif-objs := scif_main.o
-+scif-objs += scif_peer_bus.o
-+scif-objs += scif_ports.o
-+scif-objs += scif_debugfs.o
-+scif-objs += scif_fd.o
-+scif-objs += scif_api.o
-+scif-objs += scif_epd.o
-+scif-objs += scif_rb.o
-+scif-objs += scif_nodeqp.o
-+scif-objs += scif_nm.o
 diff --git a/drivers/misc/mic/scif/scif_epd.h b/drivers/misc/mic/scif/scif_epd.h
-new file mode 100644
-index 0000000..b973b99
---- /dev/null
+index b973b99..65c628e 100644
+--- a/drivers/misc/mic/scif/scif_epd.h
 +++ b/drivers/misc/mic/scif/scif_epd.h
-@@ -0,0 +1,148 @@
-+/*
-+ * Intel MIC Platform Software Stack (MPSS)
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License, version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-+ * General Public License for more details.
-+ *
-+ * Intel SCIF driver.
-+ *
-+ */
-+#ifndef SCIF_EPD_H
-+#define SCIF_EPD_H
-+
-+#include <linux/delay.h>
-+#include <linux/scif.h>
-+#include <linux/scif_ioctl.h>
-+
-+#define SCIF_EPLOCK_HELD true
-+
-+enum scif_epd_state {
-+	SCIFEP_UNBOUND,
-+	SCIFEP_BOUND,
-+	SCIFEP_LISTENING,
-+	SCIFEP_CONNECTED,
-+	SCIFEP_CONNECTING,
-+	SCIFEP_MAPPING,
-+	SCIFEP_CLOSING,
-+	SCIFEP_CLLISTEN,
-+	SCIFEP_DISCONNECTED,
-+	SCIFEP_ZOMBIE
-+};
+@@ -144,5 +144,13 @@ int scif_rsrv_port(u16 port);
+ void scif_get_port(u16 port);
+ int scif_get_new_port(void);
+ void scif_put_port(u16 port);
++void scif_cnctreq(struct scif_dev *scifdev, struct scifmsg *msg);
++void scif_cnctgnt(struct scif_dev *scifdev, struct scifmsg *msg);
++void scif_cnctgnt_ack(struct scif_dev *scifdev, struct scifmsg *msg);
++void scif_cnctgnt_nack(struct scif_dev *scifdev, struct scifmsg *msg);
++void scif_cnctrej(struct scif_dev *scifdev, struct scifmsg *msg);
++void scif_discnct(struct scif_dev *scifdev, struct scifmsg *msg);
++void scif_discnt_ack(struct scif_dev *scifdev, struct scifmsg *msg);
++int __scif_connect(scif_epd_t epd, struct scif_port_id *dst, bool non_block);
+ int __scif_flush(scif_epd_t epd);
+ #endif /* SCIF_EPD_H */
+diff --git a/drivers/misc/mic/scif/scif_api.c b/drivers/misc/mic/scif/scif_api.c
+index cbdc27b..8b55b59 100644
+--- a/drivers/misc/mic/scif/scif_api.c
++++ b/drivers/misc/mic/scif/scif_api.c
+@@ -415,3 +415,455 @@ int scif_listen(scif_epd_t epd, int backlog)
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(scif_listen);
 +
 +/*
-+ * struct scif_conreq - Data structure added to the connection list.
++ ************************************************************************
++ * SCIF connection flow:
 + *
-+ * @msg: connection request message received
-+ * @list: link to list of connection requests
++ * 1) A SCIF listening endpoint can call scif_accept(..) to wait for SCIF
++ *	connections via a SCIF_CNCT_REQ message
++ * 2) A SCIF endpoint can initiate a SCIF connection by calling
++ *	scif_connect(..) which calls scif_setup_qp_connect(..) which
++ *	allocates the local qp for the endpoint ring buffer and then sends
++ *	a SCIF_CNCT_REQ to the remote node and waits for a SCIF_CNCT_GNT or
++ *	a SCIF_CNCT_REJ message
++ * 3) The peer node handles a SCIF_CNCT_REQ via scif_cnctreq_resp(..) which
++ *	wakes up any threads blocked in step 1 or sends a SCIF_CNCT_REJ
++ *	message otherwise
++ * 4) A thread blocked waiting for incoming connections allocates its local
++ *	endpoint QP and ring buffer following which it sends a SCIF_CNCT_GNT
++ *	and waits for a SCIF_CNCT_GNT(N)ACK. If the allocation fails then
++ *	the node sends a SCIF_CNCT_REJ message
++ * 5) Upon receipt of a SCIF_CNCT_GNT or a SCIF_CNCT_REJ message the
++ *	connecting endpoint is woken up as part of handling
++ *	scif_cnctgnt_resp(..) following which it maps the remote endpoints'
++ *	QP, updates its outbound QP and sends a SCIF_CNCT_GNTACK message on
++ *	success or a SCIF_CNCT_GNTNACK message on failure and completes
++ *	the scif_connect(..) API
++ * 6) Upon receipt of a SCIF_CNCT_GNT(N)ACK the accepting endpoint blocked
++ *	in step 4 is woken up and completes the scif_accept(..) API
++ * 7) The SCIF connection is now established between the two SCIF endpoints.
 + */
-+struct scif_conreq {
-+	struct scifmsg msg;
-+	struct list_head list;
-+};
-+
-+/* Size of the RB for the Endpoint QP */
-+#define SCIF_ENDPT_QP_SIZE 0x1000
-+
-+/*
-+ * scif_endpt_qp_info - SCIF endpoint queue pair
-+ *
-+ * @qp - Qpair for this endpoint
-+ * @qp_offset - DMA address of the QP
-+ * @gnt_pld - Payload in a SCIF_CNCT_GNT message containing the
-+ * physical address of the remote_qp.
-+ */
-+struct scif_endpt_qp_info {
-+	struct scif_qp *qp;
-+	dma_addr_t qp_offset;
-+	dma_addr_t gnt_pld;
-+};
-+
-+/*
-+ * struct scif_endpt - The SCIF endpoint data structure
-+ *
-+ * @state: end point state
-+ * @lock: lock synchronizing access to endpoint fields like state etc
-+ * @port: self port information
-+ * @peer: peer port information
-+ * @backlog: maximum pending connection requests
-+ * @qp_info: Endpoint QP information for SCIF messaging
-+ * @remote_dev: scifdev used by this endpt to communicate with remote node.
-+ * @remote_ep: remote endpoint
-+ * @conreqcnt: Keep track of number of connection requests.
-+ * @files: Open file information used to match the id passed in with
-+ *         the flush routine.
-+ * @conlist: list of connection requests
-+ * @conwq: waitqueue for connection processing
-+ * @discon: completion used during disconnection
-+ * @sendwq: waitqueue used during sending messages
-+ * @recvwq: waitqueue used during message receipt
-+ * @sendlock: Synchronize ordering of messages sent
-+ * @recvlock: Synchronize ordering of messages received
-+ * @list: link to list of various endpoints like connected, listening etc
-+ * @li_accept: pending ACCEPTREG
-+ * @acceptcnt: pending ACCEPTREG cnt
-+ * @liacceptlist: link to listen accept
-+ * @miacceptlist: link to uaccept
-+ * @listenep: associated listen ep
-+ * @conn_work: Non blocking connect work
-+ * @conn_port: Connection port
-+ * @conn_err: Errors during connection
-+ * @conn_async_state: Async connection
-+ * @conn_list: List of async connection requests
-+ */
-+struct scif_endpt {
-+	enum scif_epd_state state;
-+	spinlock_t lock;
-+	struct scif_port_id port;
-+	struct scif_port_id peer;
-+	int backlog;
-+	struct scif_endpt_qp_info qp_info;
-+	struct scif_dev *remote_dev;
-+	u64 remote_ep;
-+	int conreqcnt;
-+	struct files_struct *files;
-+	struct list_head conlist;
-+	wait_queue_head_t conwq;
-+	struct completion discon;
-+	wait_queue_head_t sendwq;
-+	wait_queue_head_t recvwq;
-+	struct mutex sendlock;
-+	struct mutex recvlock;
-+	struct list_head list;
-+	struct list_head li_accept;
-+	int acceptcnt;
-+	struct list_head liacceptlist;
-+	struct list_head miacceptlist;
-+	struct scif_endpt *listenep;
-+	struct scif_port_id conn_port;
-+	int conn_err;
-+	int conn_async_state;
-+	struct list_head conn_list;
-+};
-+
-+static inline int scifdev_alive(struct scif_endpt *ep)
++static int scif_conn_func(struct scif_endpt *ep)
 +{
-+	return _scifdev_alive(ep->remote_dev);
++	int err = 0;
++	struct scifmsg msg;
++	struct device *spdev;
++
++	/* Initiate the first part of the endpoint QP setup */
++	err = scif_setup_qp_connect(ep->qp_info.qp, &ep->qp_info.qp_offset,
++				    SCIF_ENDPT_QP_SIZE, ep->remote_dev);
++	if (err) {
++		dev_err(&ep->remote_dev->sdev->dev,
++			"%s err %d qp_offset 0x%llx\n",
++			__func__, err, ep->qp_info.qp_offset);
++		ep->state = SCIFEP_BOUND;
++		goto connect_error_simple;
++	}
++
++	spdev = scif_get_peer_dev(ep->remote_dev);
++	if (IS_ERR(spdev)) {
++		err = PTR_ERR(spdev);
++		goto cleanup_qp;
++	}
++	/* Format connect message and send it */
++	msg.src = ep->port;
++	msg.dst = ep->conn_port;
++	msg.uop = SCIF_CNCT_REQ;
++	msg.payload[0] = (u64)ep;
++	msg.payload[1] = ep->qp_info.qp_offset;
++	err = _scif_nodeqp_send(ep->remote_dev, &msg);
++	if (err)
++		goto connect_error_dec;
++	scif_put_peer_dev(spdev);
++	/*
++	 * Wait for the remote node to respond with SCIF_CNCT_GNT or
++	 * SCIF_CNCT_REJ message.
++	 */
++	wait_event_timeout(ep->conwq, ep->state != SCIFEP_CONNECTING,
++			   SCIF_NODE_ALIVE_TIMEOUT);
++	spdev = scif_get_peer_dev(ep->remote_dev);
++	if (IS_ERR(spdev)) {
++		err = PTR_ERR(spdev);
++		goto cleanup_qp;
++	}
++	if (ep->state == SCIFEP_MAPPING) {
++		err = scif_setup_qp_connect_response(ep->remote_dev,
++						     ep->qp_info.qp,
++						     ep->qp_info.gnt_pld);
++		/*
++		 * If the resource to map the queue are not available then
++		 * we need to tell the other side to terminate the accept
++		 */
++		if (err) {
++			dev_err(&ep->remote_dev->sdev->dev,
++				"%s %d err %d\n", __func__, __LINE__, err);
++			msg.uop = SCIF_CNCT_GNTNACK;
++			msg.payload[0] = ep->remote_ep;
++			_scif_nodeqp_send(ep->remote_dev, &msg);
++			ep->state = SCIFEP_BOUND;
++			goto connect_error_dec;
++		}
++
++		msg.uop = SCIF_CNCT_GNTACK;
++		msg.payload[0] = ep->remote_ep;
++		err = _scif_nodeqp_send(ep->remote_dev, &msg);
++		if (err) {
++			ep->state = SCIFEP_BOUND;
++			goto connect_error_dec;
++		}
++		ep->state = SCIFEP_CONNECTED;
++		mutex_lock(&scif_info.connlock);
++		list_add_tail(&ep->list, &scif_info.connected);
++		mutex_unlock(&scif_info.connlock);
++		dev_dbg(&ep->remote_dev->sdev->dev,
++			"SCIFAPI connect: ep %p connected\n", ep);
++	} else if (ep->state == SCIFEP_BOUND) {
++		dev_dbg(&ep->remote_dev->sdev->dev,
++			"SCIFAPI connect: ep %p connection refused\n", ep);
++		err = -ECONNREFUSED;
++		goto connect_error_dec;
++	}
++	scif_put_peer_dev(spdev);
++	return err;
++connect_error_dec:
++	scif_put_peer_dev(spdev);
++cleanup_qp:
++	scif_cleanup_ep_qp(ep);
++connect_error_simple:
++	return err;
 +}
 +
-+void scif_cleanup_zombie_epd(void);
-+void scif_teardown_ep(void *endpt);
-+void scif_cleanup_ep_qp(struct scif_endpt *ep);
-+void scif_add_epd_to_zombie_list(struct scif_endpt *ep, bool eplock_held);
-+void scif_get_node_info(void);
-+void scif_send_acks(struct scif_dev *dev);
-+void scif_conn_handler(struct work_struct *work);
-+int scif_rsrv_port(u16 port);
-+void scif_get_port(u16 port);
-+int scif_get_new_port(void);
-+void scif_put_port(u16 port);
-+int __scif_flush(scif_epd_t epd);
-+#endif /* SCIF_EPD_H */
-diff --git a/drivers/misc/mic/scif/scif_main.h b/drivers/misc/mic/scif/scif_main.h
-index 0bc091b..ce8d0c9 100644
---- a/drivers/misc/mic/scif/scif_main.h
-+++ b/drivers/misc/mic/scif/scif_main.h
-@@ -236,6 +236,8 @@ static inline int _scifdev_alive(struct scif_dev *scifdev)
- 	return !!spdev;
- }
- 
-+#include "scif_epd.h"
-+
- void __init scif_init_debugfs(void);
- void scif_exit_debugfs(void);
- int scif_setup_intr_wq(struct scif_dev *scifdev);
-diff --git a/drivers/misc/mic/scif/scif_nodeqp.h b/drivers/misc/mic/scif/scif_nodeqp.h
-index 4d8f53c..9540233 100644
---- a/drivers/misc/mic/scif/scif_nodeqp.h
-+++ b/drivers/misc/mic/scif/scif_nodeqp.h
-@@ -64,7 +64,17 @@
- #define SCIF_NODE_ADD_NACK 6 /* SCIF_NODE_ADD failed */
- #define SCIF_NODE_REMOVE 7 /* Request to deactivate a SCIF node */
- #define SCIF_NODE_REMOVE_ACK 8 /* Response to a SCIF_NODE_REMOVE message */
--#define SCIF_MAX_MSG SCIF_NODE_REMOVE_ACK
-+#define SCIF_CNCT_REQ 9  /* Phys addr of Request connection to a port */
-+#define SCIF_CNCT_GNT 10  /* Phys addr of new Grant connection request */
-+#define SCIF_CNCT_GNTACK 11  /* Error type Reject a connection request */
-+#define SCIF_CNCT_GNTNACK 12  /* Error type Reject a connection request */
-+#define SCIF_CNCT_REJ 13  /* Error type Reject a connection request */
-+#define SCIF_DISCNCT 14 /* Notify peer that connection is being terminated */
-+#define SCIF_DISCNT_ACK 15 /* Notify peer that connection is being terminated */
-+#define SCIF_CLIENT_SENT 16 /* Notify the peer that data has been written */
-+#define SCIF_CLIENT_RCVD 17 /* Notify the peer that data has been read */
-+#define SCIF_GET_NODE_INFO 18 /* Get current node mask from the mgmt node*/
-+#define SCIF_MAX_MSG SCIF_GET_NODE_INFO
- 
- /*
-  * struct scifmsg - Node QP message format
-diff --git a/drivers/misc/mic/scif/scif_api.c b/drivers/misc/mic/scif/scif_api.c
-new file mode 100644
-index 0000000..cbdc27b
---- /dev/null
-+++ b/drivers/misc/mic/scif/scif_api.c
-@@ -0,0 +1,417 @@
 +/*
-+ * Intel MIC Platform Software Stack (MPSS)
++ * scif_conn_handler:
 + *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License, version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-+ * General Public License for more details.
-+ *
-+ * Intel SCIF driver.
++ * Workqueue handler for servicing non-blocking SCIF connect
 + *
 + */
-+#include <linux/scif.h>
-+#include "scif_main.h"
-+#include "scif_map.h"
-+
-+static const char * const scif_ep_states[] = {
-+	"Unbound",
-+	"Bound",
-+	"Listening",
-+	"Connected",
-+	"Connecting",
-+	"Mapping",
-+	"Closing",
-+	"Close Listening",
-+	"Disconnected",
-+	"Zombie"};
-+
-+enum conn_async_state {
-+	ASYNC_CONN_IDLE = 1,	/* ep setup for async connect */
-+	ASYNC_CONN_INPROGRESS,	/* async connect in progress */
-+	ASYNC_CONN_FLUSH_WORK	/* async work flush in progress  */
-+};
-+
-+scif_epd_t scif_open(void)
++void scif_conn_handler(struct work_struct *work)
 +{
 +	struct scif_endpt *ep;
 +
++	do {
++		ep = NULL;
++		spin_lock(&scif_info.nb_connect_lock);
++		if (!list_empty(&scif_info.nb_connect_list)) {
++			ep = list_first_entry(&scif_info.nb_connect_list,
++					      struct scif_endpt, conn_list);
++			list_del(&ep->conn_list);
++		}
++		spin_unlock(&scif_info.nb_connect_lock);
++		if (ep)
++			ep->conn_err = scif_conn_func(ep);
++	} while (ep);
++}
++
++int __scif_connect(scif_epd_t epd, struct scif_port_id *dst, bool non_block)
++{
++	struct scif_endpt *ep = (struct scif_endpt *)epd;
++	int err = 0;
++	struct scif_dev *remote_dev;
++	struct device *spdev;
++
++	dev_dbg(scif_info.mdev.this_device, "SCIFAPI connect: ep %p %s\n", ep,
++		scif_ep_states[ep->state]);
++
++	if (!scif_dev || dst->node > scif_info.maxid)
++		return -ENODEV;
++
 +	might_sleep();
-+	ep = kzalloc(sizeof(*ep), GFP_KERNEL);
-+	if (!ep)
-+		goto err_ep_alloc;
 +
-+	ep->qp_info.qp = kzalloc(sizeof(*ep->qp_info.qp), GFP_KERNEL);
-+	if (!ep->qp_info.qp)
-+		goto err_qp_alloc;
++	remote_dev = &scif_dev[dst->node];
++	spdev = scif_get_peer_dev(remote_dev);
++	if (IS_ERR(spdev)) {
++		err = PTR_ERR(spdev);
++		return err;
++	}
 +
-+	spin_lock_init(&ep->lock);
-+	mutex_init(&ep->sendlock);
-+	mutex_init(&ep->recvlock);
++	spin_lock(&ep->lock);
++	switch (ep->state) {
++	case SCIFEP_ZOMBIE:
++	case SCIFEP_CLOSING:
++		err = -EINVAL;
++		break;
++	case SCIFEP_DISCONNECTED:
++		if (ep->conn_async_state == ASYNC_CONN_INPROGRESS)
++			ep->conn_async_state = ASYNC_CONN_FLUSH_WORK;
++		else
++			err = -EINVAL;
++		break;
++	case SCIFEP_LISTENING:
++	case SCIFEP_CLLISTEN:
++		err = -EOPNOTSUPP;
++		break;
++	case SCIFEP_CONNECTING:
++	case SCIFEP_MAPPING:
++		if (ep->conn_async_state == ASYNC_CONN_INPROGRESS)
++			err = -EINPROGRESS;
++		else
++			err = -EISCONN;
++		break;
++	case SCIFEP_CONNECTED:
++		if (ep->conn_async_state == ASYNC_CONN_INPROGRESS)
++			ep->conn_async_state = ASYNC_CONN_FLUSH_WORK;
++		else
++			err = -EISCONN;
++		break;
++	case SCIFEP_UNBOUND:
++		ep->port.port = scif_get_new_port();
++		if (!ep->port.port) {
++			err = -ENOSPC;
++		} else {
++			ep->port.node = scif_info.nodeid;
++			ep->conn_async_state = ASYNC_CONN_IDLE;
++		}
++		/* Fall through */
++	case SCIFEP_BOUND:
++		/*
++		 * If a non-blocking connect has been already initiated
++		 * (conn_async_state is either ASYNC_CONN_INPROGRESS or
++		 * ASYNC_CONN_FLUSH_WORK), the end point could end up in
++		 * SCIF_BOUND due an error in the connection process
++		 * (e.g., connection refused) If conn_async_state is
++		 * ASYNC_CONN_INPROGRESS - transition to ASYNC_CONN_FLUSH_WORK
++		 * so that the error status can be collected. If the state is
++		 * already ASYNC_CONN_FLUSH_WORK - then set the error to
++		 * EINPROGRESS since some other thread is waiting to collect
++		 * error status.
++		 */
++		if (ep->conn_async_state == ASYNC_CONN_INPROGRESS) {
++			ep->conn_async_state = ASYNC_CONN_FLUSH_WORK;
++		} else if (ep->conn_async_state == ASYNC_CONN_FLUSH_WORK) {
++			err = -EINPROGRESS;
++		} else {
++			ep->conn_port = *dst;
++			init_waitqueue_head(&ep->sendwq);
++			init_waitqueue_head(&ep->recvwq);
++			init_waitqueue_head(&ep->conwq);
++			ep->conn_async_state = 0;
 +
-+	ep->state = SCIFEP_UNBOUND;
++			if (unlikely(non_block))
++				ep->conn_async_state = ASYNC_CONN_INPROGRESS;
++		}
++		break;
++	}
++
++	if (err || ep->conn_async_state == ASYNC_CONN_FLUSH_WORK)
++			goto connect_simple_unlock1;
++
++	ep->state = SCIFEP_CONNECTING;
++	ep->remote_dev = &scif_dev[dst->node];
++	ep->qp_info.qp->magic = SCIFEP_MAGIC;
++	if (ep->conn_async_state == ASYNC_CONN_INPROGRESS) {
++		spin_lock(&scif_info.nb_connect_lock);
++		list_add_tail(&ep->conn_list, &scif_info.nb_connect_list);
++		spin_unlock(&scif_info.nb_connect_lock);
++		err = -EINPROGRESS;
++		schedule_work(&scif_info.conn_work);
++	}
++connect_simple_unlock1:
++	spin_unlock(&ep->lock);
++	scif_put_peer_dev(spdev);
++	if (err) {
++		return err;
++	} else if (ep->conn_async_state == ASYNC_CONN_FLUSH_WORK) {
++		flush_work(&scif_info.conn_work);
++		err = ep->conn_err;
++		spin_lock(&ep->lock);
++		ep->conn_async_state = ASYNC_CONN_IDLE;
++		spin_unlock(&ep->lock);
++	} else {
++		err = scif_conn_func(ep);
++	}
++	return err;
++}
++
++int scif_connect(scif_epd_t epd, struct scif_port_id *dst)
++{
++	return __scif_connect(epd, dst, false);
++}
++EXPORT_SYMBOL_GPL(scif_connect);
++
++/**
++ * scif_accept() - Accept a connection request from the remote node
++ *
++ * The function accepts a connection request from the remote node.  Successful
++ * complete is indicate by a new end point being created and passed back
++ * to the caller for future reference.
++ *
++ * Upon successful complete a zero will be returned and the peer information
++ * will be filled in.
++ *
++ * If the end point is not in the listening state -EINVAL will be returned.
++ *
++ * If during the connection sequence resource allocation fails the -ENOMEM
++ * will be returned.
++ *
++ * If the function is called with the ASYNC flag set and no connection requests
++ * are pending it will return -EAGAIN.
++ *
++ * If the remote side is not sending any connection requests the caller may
++ * terminate this function with a signal.  If so a -EINTR will be returned.
++ */
++int scif_accept(scif_epd_t epd, struct scif_port_id *peer,
++		scif_epd_t *newepd, int flags)
++{
++	struct scif_endpt *lep = (struct scif_endpt *)epd;
++	struct scif_endpt *cep;
++	struct scif_conreq *conreq;
++	struct scifmsg msg;
++	int err;
++	struct device *spdev;
++
 +	dev_dbg(scif_info.mdev.this_device,
-+		"SCIFAPI open: ep %p success\n", ep);
-+	return ep;
++		"SCIFAPI accept: ep %p %s\n", lep, scif_ep_states[lep->state]);
 +
-+err_qp_alloc:
-+	kfree(ep);
-+err_ep_alloc:
++	if (flags & ~SCIF_ACCEPT_SYNC)
++		return -EINVAL;
++
++	if (!peer || !newepd)
++		return -EINVAL;
++
++	might_sleep();
++	spin_lock(&lep->lock);
++	if (lep->state != SCIFEP_LISTENING) {
++		spin_unlock(&lep->lock);
++		return -EINVAL;
++	}
++
++	if (!lep->conreqcnt && !(flags & SCIF_ACCEPT_SYNC)) {
++		/* No connection request present and we do not want to wait */
++		spin_unlock(&lep->lock);
++		return -EAGAIN;
++	}
++
++	lep->files = current->files;
++retry_connection:
++	spin_unlock(&lep->lock);
++	/* Wait for the remote node to send us a SCIF_CNCT_REQ */
++	err = wait_event_interruptible(lep->conwq,
++				       (lep->conreqcnt ||
++				       (lep->state != SCIFEP_LISTENING)));
++	if (err)
++		return err;
++
++	if (lep->state != SCIFEP_LISTENING)
++		return -EINTR;
++
++	spin_lock(&lep->lock);
++
++	if (!lep->conreqcnt)
++		goto retry_connection;
++
++	/* Get the first connect request off the list */
++	conreq = list_first_entry(&lep->conlist, struct scif_conreq, list);
++	list_del(&conreq->list);
++	lep->conreqcnt--;
++	spin_unlock(&lep->lock);
++
++	/* Fill in the peer information */
++	peer->node = conreq->msg.src.node;
++	peer->port = conreq->msg.src.port;
++
++	cep = kzalloc(sizeof(*cep), GFP_KERNEL);
++	if (!cep) {
++		err = -ENOMEM;
++		goto scif_accept_error_epalloc;
++	}
++	spin_lock_init(&cep->lock);
++	mutex_init(&cep->sendlock);
++	mutex_init(&cep->recvlock);
++	cep->state = SCIFEP_CONNECTING;
++	cep->remote_dev = &scif_dev[peer->node];
++	cep->remote_ep = conreq->msg.payload[0];
++
++	cep->qp_info.qp = kzalloc(sizeof(*cep->qp_info.qp), GFP_KERNEL);
++	if (!cep->qp_info.qp) {
++		err = -ENOMEM;
++		goto scif_accept_error_qpalloc;
++	}
++
++	cep->qp_info.qp->magic = SCIFEP_MAGIC;
++	spdev = scif_get_peer_dev(cep->remote_dev);
++	if (IS_ERR(spdev)) {
++		err = PTR_ERR(spdev);
++		goto scif_accept_error_map;
++	}
++	err = scif_setup_qp_accept(cep->qp_info.qp, &cep->qp_info.qp_offset,
++				   conreq->msg.payload[1], SCIF_ENDPT_QP_SIZE,
++				   cep->remote_dev);
++	if (err) {
++		dev_dbg(&cep->remote_dev->sdev->dev,
++			"SCIFAPI accept: ep %p new %p scif_setup_qp_accept %d qp_offset 0x%llx\n",
++			lep, cep, err, cep->qp_info.qp_offset);
++		scif_put_peer_dev(spdev);
++		goto scif_accept_error_map;
++	}
++
++	cep->port.node = lep->port.node;
++	cep->port.port = lep->port.port;
++	cep->peer.node = peer->node;
++	cep->peer.port = peer->port;
++	init_waitqueue_head(&cep->sendwq);
++	init_waitqueue_head(&cep->recvwq);
++	init_waitqueue_head(&cep->conwq);
++
++	msg.uop = SCIF_CNCT_GNT;
++	msg.src = cep->port;
++	msg.payload[0] = cep->remote_ep;
++	msg.payload[1] = cep->qp_info.qp_offset;
++	msg.payload[2] = (u64)cep;
++
++	err = _scif_nodeqp_send(cep->remote_dev, &msg);
++	scif_put_peer_dev(spdev);
++	if (err)
++		goto scif_accept_error_map;
++retry:
++	/* Wait for the remote node to respond with SCIF_CNCT_GNT(N)ACK */
++	err = wait_event_timeout(cep->conwq, cep->state != SCIFEP_CONNECTING,
++				 SCIF_NODE_ACCEPT_TIMEOUT);
++	if (!err && scifdev_alive(cep))
++		goto retry;
++	err = !err ? -ENODEV : 0;
++	if (err)
++		goto scif_accept_error_map;
++	kfree(conreq);
++
++	spin_lock(&cep->lock);
++
++	if (cep->state == SCIFEP_CLOSING) {
++		/*
++		 * Remote failed to allocate resources and NAKed the grant.
++		 * There is at this point nothing referencing the new end point.
++		 */
++		spin_unlock(&cep->lock);
++		scif_teardown_ep(cep);
++		kfree(cep);
++
++		/* If call with sync flag then go back and wait. */
++		if (flags & SCIF_ACCEPT_SYNC) {
++			spin_lock(&lep->lock);
++			goto retry_connection;
++		}
++		return -EAGAIN;
++	}
++
++	scif_get_port(cep->port.port);
++	*newepd = (scif_epd_t)cep;
++	spin_unlock(&cep->lock);
++	return 0;
++scif_accept_error_map:
++	scif_teardown_ep(cep);
++scif_accept_error_qpalloc:
++	kfree(cep);
++scif_accept_error_epalloc:
++	msg.uop = SCIF_CNCT_REJ;
++	msg.dst.node = conreq->msg.src.node;
++	msg.dst.port = conreq->msg.src.port;
++	msg.payload[0] = conreq->msg.payload[0];
++	msg.payload[1] = conreq->msg.payload[1];
++	scif_nodeqp_send(&scif_dev[conreq->msg.src.node], &msg);
++	kfree(conreq);
++	return err;
++}
++EXPORT_SYMBOL_GPL(scif_accept);
+diff --git a/drivers/misc/mic/scif/scif_epd.c b/drivers/misc/mic/scif/scif_epd.c
+index a2b728a..685ee5c 100644
+--- a/drivers/misc/mic/scif/scif_epd.c
++++ b/drivers/misc/mic/scif/scif_epd.c
+@@ -76,6 +76,24 @@ void scif_add_epd_to_zombie_list(struct scif_endpt *ep, bool eplock_held)
+ 	schedule_work(&scif_info.misc_work);
+ }
+ 
++static struct scif_endpt *scif_find_listen_ep(u16 port)
++{
++	struct scif_endpt *ep = NULL;
++	struct list_head *pos, *tmpq;
++
++	spin_lock(&scif_info.eplock);
++	list_for_each_safe(pos, tmpq, &scif_info.listen) {
++		ep = list_entry(pos, struct scif_endpt, list);
++		if (ep->port.port == port) {
++			spin_lock(&ep->lock);
++			spin_unlock(&scif_info.eplock);
++			return ep;
++		}
++	}
++	spin_unlock(&scif_info.eplock);
 +	return NULL;
 +}
-+EXPORT_SYMBOL_GPL(scif_open);
 +
-+/*
-+ * scif_disconnect_ep - Disconnects the endpoint if found
-+ * @epd: The end point returned from scif_open()
+ void scif_cleanup_zombie_epd(void)
+ {
+ 	struct list_head *pos, *tmpq;
+@@ -90,3 +108,214 @@ void scif_cleanup_zombie_epd(void)
+ 	}
+ 	spin_unlock(&scif_info.eplock);
+ }
++
++/**
++ * scif_cnctreq() - Respond to SCIF_CNCT_REQ interrupt message
++ * @msg:        Interrupt message
++ *
++ * This message is initiated by the remote node to request a connection
++ * to the local node.  This function looks for an end point in the
++ * listen state on the requested port id.
++ *
++ * If it finds a listening port it places the connect request on the
++ * listening end points queue and wakes up any pending accept calls.
++ *
++ * If it does not find a listening end point it sends a connection
++ * reject message to the remote node.
 + */
-+static struct scif_endpt *scif_disconnect_ep(struct scif_endpt *ep)
++void scif_cnctreq(struct scif_dev *scifdev, struct scifmsg *msg)
 +{
-+	struct scifmsg msg;
-+	struct scif_endpt *fep = NULL;
++	struct scif_endpt *ep = NULL;
++	struct scif_conreq *conreq;
++
++	conreq = kmalloc(sizeof(*conreq), GFP_KERNEL);
++	if (!conreq)
++		/* Lack of resources so reject the request. */
++		goto conreq_sendrej;
++
++	ep = scif_find_listen_ep(msg->dst.port);
++	if (!ep)
++		/*  Send reject due to no listening ports */
++		goto conreq_sendrej_free;
++
++	if (ep->backlog <= ep->conreqcnt) {
++		/*  Send reject due to too many pending requests */
++		spin_unlock(&ep->lock);
++		goto conreq_sendrej_free;
++	}
++
++	conreq->msg = *msg;
++	list_add_tail(&conreq->list, &ep->conlist);
++	ep->conreqcnt++;
++	wake_up_interruptible(&ep->conwq);
++	spin_unlock(&ep->lock);
++	return;
++
++conreq_sendrej_free:
++	kfree(conreq);
++conreq_sendrej:
++	msg->uop = SCIF_CNCT_REJ;
++	scif_nodeqp_send(&scif_dev[msg->src.node], msg);
++}
++
++/**
++ * scif_cnctgnt() - Respond to SCIF_CNCT_GNT interrupt message
++ * @msg:        Interrupt message
++ *
++ * An accept() on the remote node has occurred and sent this message
++ * to indicate success.  Place the end point in the MAPPING state and
++ * save the remote nodes memory information.  Then wake up the connect
++ * request so it can finish.
++ */
++void scif_cnctgnt(struct scif_dev *scifdev, struct scifmsg *msg)
++{
++	struct scif_endpt *ep = (struct scif_endpt *)msg->payload[0];
++
++	spin_lock(&ep->lock);
++	if (SCIFEP_CONNECTING == ep->state) {
++		ep->peer.node = msg->src.node;
++		ep->peer.port = msg->src.port;
++		ep->qp_info.gnt_pld = msg->payload[1];
++		ep->remote_ep = msg->payload[2];
++		ep->state = SCIFEP_MAPPING;
++
++		wake_up(&ep->conwq);
++	}
++	spin_unlock(&ep->lock);
++}
++
++/**
++ * scif_cnctgnt_ack() - Respond to SCIF_CNCT_GNTACK interrupt message
++ * @msg:        Interrupt message
++ *
++ * The remote connection request has finished mapping the local memory.
++ * Place the connection in the connected state and wake up the pending
++ * accept() call.
++ */
++void scif_cnctgnt_ack(struct scif_dev *scifdev, struct scifmsg *msg)
++{
++	struct scif_endpt *ep = (struct scif_endpt *)msg->payload[0];
++
++	mutex_lock(&scif_info.connlock);
++	spin_lock(&ep->lock);
++	/* New ep is now connected with all resources set. */
++	ep->state = SCIFEP_CONNECTED;
++	list_add_tail(&ep->list, &scif_info.connected);
++	wake_up(&ep->conwq);
++	spin_unlock(&ep->lock);
++	mutex_unlock(&scif_info.connlock);
++}
++
++/**
++ * scif_cnctgnt_nack() - Respond to SCIF_CNCT_GNTNACK interrupt message
++ * @msg:        Interrupt message
++ *
++ * The remote connection request failed to map the local memory it was sent.
++ * Place the end point in the CLOSING state to indicate it and wake up
++ * the pending accept();
++ */
++void scif_cnctgnt_nack(struct scif_dev *scifdev, struct scifmsg *msg)
++{
++	struct scif_endpt *ep = (struct scif_endpt *)msg->payload[0];
++
++	spin_lock(&ep->lock);
++	ep->state = SCIFEP_CLOSING;
++	wake_up(&ep->conwq);
++	spin_unlock(&ep->lock);
++}
++
++/**
++ * scif_cnctrej() - Respond to SCIF_CNCT_REJ interrupt message
++ * @msg:        Interrupt message
++ *
++ * The remote end has rejected the connection request.  Set the end
++ * point back to the bound state and wake up the pending connect().
++ */
++void scif_cnctrej(struct scif_dev *scifdev, struct scifmsg *msg)
++{
++	struct scif_endpt *ep = (struct scif_endpt *)msg->payload[0];
++
++	spin_lock(&ep->lock);
++	if (SCIFEP_CONNECTING == ep->state) {
++		ep->state = SCIFEP_BOUND;
++		wake_up(&ep->conwq);
++	}
++	spin_unlock(&ep->lock);
++}
++
++/**
++ * scif_discnct() - Respond to SCIF_DISCNCT interrupt message
++ * @msg:        Interrupt message
++ *
++ * The remote node has indicated close() has been called on its end
++ * point.  Remove the local end point from the connected list, set its
++ * state to disconnected and ensure accesses to the remote node are
++ * shutdown.
++ *
++ * When all accesses to the remote end have completed then send a
++ * DISCNT_ACK to indicate it can remove its resources and complete
++ * the close routine.
++ */
++void scif_discnct(struct scif_dev *scifdev, struct scifmsg *msg)
++{
++	struct scif_endpt *ep = NULL;
 +	struct scif_endpt *tmpep;
 +	struct list_head *pos, *tmpq;
-+	int err;
 +
-+	/*
-+	 * Wake up any threads blocked in send()/recv() before closing
-+	 * out the connection. Grabbing and releasing the send/recv lock
-+	 * will ensure that any blocked senders/receivers have exited for
-+	 * Ring 0 endpoints. It is a Ring 0 bug to call send/recv after
-+	 * close. Ring 3 endpoints are not affected since close will not
-+	 * be called while there are IOCTLs executing.
-+	 */
-+	wake_up_interruptible(&ep->sendwq);
-+	wake_up_interruptible(&ep->recvwq);
-+	mutex_lock(&ep->sendlock);
-+	mutex_unlock(&ep->sendlock);
-+	mutex_lock(&ep->recvlock);
-+	mutex_unlock(&ep->recvlock);
-+
-+	/* Remove from the connected list */
 +	mutex_lock(&scif_info.connlock);
 +	list_for_each_safe(pos, tmpq, &scif_info.connected) {
 +		tmpep = list_entry(pos, struct scif_endpt, list);
-+		if (tmpep == ep) {
++		/*
++		 * The local ep may have sent a disconnect and and been closed
++		 * due to a message response time out. It may have been
++		 * allocated again and formed a new connection so we want to
++		 * check if the remote ep matches
++		 */
++		if (((u64)tmpep == msg->payload[1]) &&
++		    ((u64)tmpep->remote_ep == msg->payload[0])) {
 +			list_del(pos);
-+			fep = tmpep;
++			ep = tmpep;
 +			spin_lock(&ep->lock);
 +			break;
 +		}
 +	}
 +
-+	if (!fep) {
-+		/*
-+		 * The other side has completed the disconnect before
-+		 * the end point can be removed from the list. Therefore
-+		 * the ep lock is not locked, traverse the disconnected
-+		 * list to find the endpoint and release the conn lock.
-+		 */
-+		list_for_each_safe(pos, tmpq, &scif_info.disconnected) {
-+			tmpep = list_entry(pos, struct scif_endpt, list);
-+			if (tmpep == ep) {
-+				list_del(pos);
-+				break;
-+			}
-+		}
++	/*
++	 * If the terminated end is not found then this side started closing
++	 * before the other side sent the disconnect.  If so the ep will no
++	 * longer be on the connected list.  Regardless the other side
++	 * needs to be acked to let it know close is complete.
++	 */
++	if (!ep) {
 +		mutex_unlock(&scif_info.connlock);
-+		return NULL;
++		goto discnct_ack;
 +	}
 +
-+	init_completion(&ep->discon);
-+	msg.uop = SCIF_DISCNCT;
-+	msg.src = ep->port;
-+	msg.dst = ep->peer;
-+	msg.payload[0] = (u64)ep;
-+	msg.payload[1] = ep->remote_ep;
++	ep->state = SCIFEP_DISCONNECTED;
++	list_add_tail(&ep->list, &scif_info.disconnected);
 +
-+	err = scif_nodeqp_send(ep->remote_dev, &msg);
++	wake_up_interruptible(&ep->sendwq);
++	wake_up_interruptible(&ep->recvwq);
 +	spin_unlock(&ep->lock);
 +	mutex_unlock(&scif_info.connlock);
 +
-+	if (!err)
-+		/* Wait for the remote node to respond with SCIF_DISCNT_ACK */
-+		wait_for_completion_timeout(&ep->discon,
-+					    SCIF_NODE_ALIVE_TIMEOUT);
-+	return ep;
++discnct_ack:
++	msg->uop = SCIF_DISCNT_ACK;
++	scif_nodeqp_send(&scif_dev[msg->src.node], msg);
 +}
-+
-+int scif_close(scif_epd_t epd)
-+{
-+	struct scif_endpt *ep = (struct scif_endpt *)epd;
-+	struct scif_endpt *tmpep;
-+	struct list_head *pos, *tmpq;
-+	enum scif_epd_state oldstate;
-+	bool flush_conn;
-+
-+	dev_dbg(scif_info.mdev.this_device, "SCIFAPI close: ep %p %s\n",
-+		ep, scif_ep_states[ep->state]);
-+	might_sleep();
-+	spin_lock(&ep->lock);
-+	flush_conn = (ep->conn_async_state == ASYNC_CONN_INPROGRESS);
-+	spin_unlock(&ep->lock);
-+
-+	if (flush_conn)
-+		flush_work(&scif_info.conn_work);
-+
-+	spin_lock(&ep->lock);
-+	oldstate = ep->state;
-+
-+	ep->state = SCIFEP_CLOSING;
-+
-+	switch (oldstate) {
-+	case SCIFEP_ZOMBIE:
-+	case SCIFEP_DISCONNECTED:
-+		spin_unlock(&ep->lock);
-+		/* Remove from the disconnected list */
-+		mutex_lock(&scif_info.connlock);
-+		list_for_each_safe(pos, tmpq, &scif_info.disconnected) {
-+			tmpep = list_entry(pos, struct scif_endpt, list);
-+			if (tmpep == ep) {
-+				list_del(pos);
-+				break;
-+			}
-+		}
-+		mutex_unlock(&scif_info.connlock);
-+		break;
-+	case SCIFEP_UNBOUND:
-+	case SCIFEP_BOUND:
-+	case SCIFEP_CONNECTING:
-+		spin_unlock(&ep->lock);
-+		break;
-+	case SCIFEP_MAPPING:
-+	case SCIFEP_CONNECTED:
-+	case SCIFEP_CLOSING:
-+	{
-+		spin_unlock(&ep->lock);
-+		scif_disconnect_ep(ep);
-+		break;
-+	}
-+	case SCIFEP_LISTENING:
-+	case SCIFEP_CLLISTEN:
-+	{
-+		struct scif_conreq *conreq;
-+		struct scifmsg msg;
-+		struct scif_endpt *aep;
-+
-+		spin_unlock(&ep->lock);
-+		spin_lock(&scif_info.eplock);
-+
-+		/* remove from listen list */
-+		list_for_each_safe(pos, tmpq, &scif_info.listen) {
-+			tmpep = list_entry(pos, struct scif_endpt, list);
-+			if (tmpep == ep)
-+				list_del(pos);
-+		}
-+		/* Remove any dangling accepts */
-+		while (ep->acceptcnt) {
-+			aep = list_first_entry(&ep->li_accept,
-+					       struct scif_endpt, liacceptlist);
-+			list_del(&aep->liacceptlist);
-+			scif_put_port(aep->port.port);
-+			list_for_each_safe(pos, tmpq, &scif_info.uaccept) {
-+				tmpep = list_entry(pos, struct scif_endpt,
-+						   miacceptlist);
-+				if (tmpep == aep) {
-+					list_del(pos);
-+					break;
-+				}
-+			}
-+			spin_unlock(&scif_info.eplock);
-+			mutex_lock(&scif_info.connlock);
-+			list_for_each_safe(pos, tmpq, &scif_info.connected) {
-+				tmpep = list_entry(pos,
-+						   struct scif_endpt, list);
-+				if (tmpep == aep) {
-+					list_del(pos);
-+					break;
-+				}
-+			}
-+			list_for_each_safe(pos, tmpq, &scif_info.disconnected) {
-+				tmpep = list_entry(pos,
-+						   struct scif_endpt, list);
-+				if (tmpep == aep) {
-+					list_del(pos);
-+					break;
-+				}
-+			}
-+			mutex_unlock(&scif_info.connlock);
-+			scif_teardown_ep(aep);
-+			spin_lock(&scif_info.eplock);
-+			scif_add_epd_to_zombie_list(aep, SCIF_EPLOCK_HELD);
-+			ep->acceptcnt--;
-+		}
-+
-+		spin_lock(&ep->lock);
-+		spin_unlock(&scif_info.eplock);
-+
-+		/* Remove and reject any pending connection requests. */
-+		while (ep->conreqcnt) {
-+			conreq = list_first_entry(&ep->conlist,
-+						  struct scif_conreq, list);
-+			list_del(&conreq->list);
-+
-+			msg.uop = SCIF_CNCT_REJ;
-+			msg.dst.node = conreq->msg.src.node;
-+			msg.dst.port = conreq->msg.src.port;
-+			msg.payload[0] = conreq->msg.payload[0];
-+			msg.payload[1] = conreq->msg.payload[1];
-+			/*
-+			 * No Error Handling on purpose for scif_nodeqp_send().
-+			 * If the remote node is lost we still want free the
-+			 * connection requests on the self node.
-+			 */
-+			scif_nodeqp_send(&scif_dev[conreq->msg.src.node],
-+					 &msg);
-+			ep->conreqcnt--;
-+			kfree(conreq);
-+		}
-+
-+		spin_unlock(&ep->lock);
-+		/* If a kSCIF accept is waiting wake it up */
-+		wake_up_interruptible(&ep->conwq);
-+		break;
-+	}
-+	}
-+	scif_put_port(ep->port.port);
-+	scif_teardown_ep(ep);
-+	scif_add_epd_to_zombie_list(ep, !SCIF_EPLOCK_HELD);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(scif_close);
 +
 +/**
-+ * scif_flush() - Wakes up any blocking accepts. The endpoint will no longer
-+ *			accept new connections.
-+ * @epd: The end point returned from scif_open()
++ * scif_discnct_ack() - Respond to SCIF_DISCNT_ACK interrupt message
++ * @msg:        Interrupt message
++ *
++ * Remote side has indicated it has not more references to local resources
 + */
-+int __scif_flush(scif_epd_t epd)
++void scif_discnt_ack(struct scif_dev *scifdev, struct scifmsg *msg)
 +{
-+	struct scif_endpt *ep = (struct scif_endpt *)epd;
-+
-+	switch (ep->state) {
-+	case SCIFEP_LISTENING:
-+	{
-+		ep->state = SCIFEP_CLLISTEN;
-+
-+		/* If an accept is waiting wake it up */
-+		wake_up_interruptible(&ep->conwq);
-+		break;
-+	}
-+	default:
-+		break;
-+	}
-+	return 0;
-+}
-+
-+int scif_bind(scif_epd_t epd, u16 pn)
-+{
-+	struct scif_endpt *ep = (struct scif_endpt *)epd;
-+	int ret = 0;
-+	int tmp;
-+
-+	dev_dbg(scif_info.mdev.this_device,
-+		"SCIFAPI bind: ep %p %s requested port number %d\n",
-+		ep, scif_ep_states[ep->state], pn);
-+	if (pn) {
-+		/*
-+		 * Similar to IETF RFC 1700, SCIF ports below
-+		 * SCIF_ADMIN_PORT_END can only be bound by system (or root)
-+		 * processes or by processes executed by privileged users.
-+		 */
-+		if (pn < SCIF_ADMIN_PORT_END && !capable(CAP_SYS_ADMIN)) {
-+			ret = -EACCES;
-+			goto scif_bind_admin_exit;
-+		}
-+	}
++	struct scif_endpt *ep = (struct scif_endpt *)msg->payload[0];
 +
 +	spin_lock(&ep->lock);
-+	if (ep->state == SCIFEP_BOUND) {
-+		ret = -EINVAL;
-+		goto scif_bind_exit;
-+	} else if (ep->state != SCIFEP_UNBOUND) {
-+		ret = -EISCONN;
-+		goto scif_bind_exit;
-+	}
-+
-+	if (pn) {
-+		tmp = scif_rsrv_port(pn);
-+		if (tmp != pn) {
-+			ret = -EINVAL;
-+			goto scif_bind_exit;
-+		}
-+	} else {
-+		pn = scif_get_new_port();
-+		if (!pn) {
-+			ret = -ENOSPC;
-+			goto scif_bind_exit;
-+		}
-+	}
-+
-+	ep->state = SCIFEP_BOUND;
-+	ep->port.node = scif_info.nodeid;
-+	ep->port.port = pn;
-+	ep->conn_async_state = ASYNC_CONN_IDLE;
-+	ret = pn;
-+	dev_dbg(scif_info.mdev.this_device,
-+		"SCIFAPI bind: bound to port number %d\n", pn);
-+scif_bind_exit:
++	ep->state = SCIFEP_DISCONNECTED;
 +	spin_unlock(&ep->lock);
-+scif_bind_admin_exit:
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(scif_bind);
-+
-+int scif_listen(scif_epd_t epd, int backlog)
-+{
-+	struct scif_endpt *ep = (struct scif_endpt *)epd;
-+
-+	dev_dbg(scif_info.mdev.this_device,
-+		"SCIFAPI listen: ep %p %s\n", ep, scif_ep_states[ep->state]);
-+	spin_lock(&ep->lock);
-+	switch (ep->state) {
-+	case SCIFEP_ZOMBIE:
-+	case SCIFEP_CLOSING:
-+	case SCIFEP_CLLISTEN:
-+	case SCIFEP_UNBOUND:
-+	case SCIFEP_DISCONNECTED:
-+		spin_unlock(&ep->lock);
-+		return -EINVAL;
-+	case SCIFEP_LISTENING:
-+	case SCIFEP_CONNECTED:
-+	case SCIFEP_CONNECTING:
-+	case SCIFEP_MAPPING:
-+		spin_unlock(&ep->lock);
-+		return -EISCONN;
-+	case SCIFEP_BOUND:
-+		break;
-+	}
-+
-+	ep->state = SCIFEP_LISTENING;
-+	ep->backlog = backlog;
-+
-+	ep->conreqcnt = 0;
-+	ep->acceptcnt = 0;
-+	INIT_LIST_HEAD(&ep->conlist);
-+	init_waitqueue_head(&ep->conwq);
-+	INIT_LIST_HEAD(&ep->li_accept);
-+	spin_unlock(&ep->lock);
-+
-+	/*
-+	 * Listen status is complete so delete the qp information not needed
-+	 * on a listen before placing on the list of listening ep's
-+	 */
-+	scif_teardown_ep(ep);
-+	ep->qp_info.qp = NULL;
-+
-+	spin_lock(&scif_info.eplock);
-+	list_add_tail(&ep->list, &scif_info.listen);
-+	spin_unlock(&scif_info.eplock);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(scif_listen);
-diff --git a/drivers/misc/mic/scif/scif_epd.c b/drivers/misc/mic/scif/scif_epd.c
-new file mode 100644
-index 0000000..a2b728a
---- /dev/null
-+++ b/drivers/misc/mic/scif/scif_epd.c
-@@ -0,0 +1,92 @@
-+/*
-+ * Intel MIC Platform Software Stack (MPSS)
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License, version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-+ * General Public License for more details.
-+ *
-+ * Intel SCIF driver.
-+ *
-+ */
-+#include "scif_main.h"
-+#include "scif_map.h"
-+
-+void scif_cleanup_ep_qp(struct scif_endpt *ep)
-+{
-+	struct scif_qp *qp = ep->qp_info.qp;
-+
-+	if (qp->outbound_q.rb_base) {
-+		scif_iounmap((void *)qp->outbound_q.rb_base,
-+			     qp->outbound_q.size, ep->remote_dev);
-+		qp->outbound_q.rb_base = NULL;
-+	}
-+	if (qp->remote_qp) {
-+		scif_iounmap((void *)qp->remote_qp,
-+			     sizeof(struct scif_qp), ep->remote_dev);
-+		qp->remote_qp = NULL;
-+	}
-+	if (qp->local_qp) {
-+		scif_unmap_single(qp->local_qp, ep->remote_dev,
-+				  sizeof(struct scif_qp));
-+		qp->local_qp = 0x0;
-+	}
-+	if (qp->local_buf) {
-+		scif_unmap_single(qp->local_buf, ep->remote_dev,
-+				  SCIF_ENDPT_QP_SIZE);
-+		qp->local_buf = 0;
-+	}
-+}
-+
-+void scif_teardown_ep(void *endpt)
-+{
-+	struct scif_endpt *ep = endpt;
-+	struct scif_qp *qp = ep->qp_info.qp;
-+
-+	if (qp) {
-+		spin_lock(&ep->lock);
-+		scif_cleanup_ep_qp(ep);
-+		spin_unlock(&ep->lock);
-+		kfree(qp->inbound_q.rb_base);
-+		kfree(qp);
-+	}
-+}
-+
-+/*
-+ * Enqueue the endpoint to the zombie list for cleanup.
-+ * The endpoint should not be accessed once this API returns.
-+ */
-+void scif_add_epd_to_zombie_list(struct scif_endpt *ep, bool eplock_held)
-+{
-+	if (!eplock_held)
-+		spin_lock(&scif_info.eplock);
-+	spin_lock(&ep->lock);
-+	ep->state = SCIFEP_ZOMBIE;
-+	spin_unlock(&ep->lock);
-+	list_add_tail(&ep->list, &scif_info.zombie);
-+	scif_info.nr_zombies++;
-+	if (!eplock_held)
-+		spin_unlock(&scif_info.eplock);
-+	schedule_work(&scif_info.misc_work);
-+}
-+
-+void scif_cleanup_zombie_epd(void)
-+{
-+	struct list_head *pos, *tmpq;
-+	struct scif_endpt *ep;
-+
-+	spin_lock(&scif_info.eplock);
-+	list_for_each_safe(pos, tmpq, &scif_info.zombie) {
-+		ep = list_entry(pos, struct scif_endpt, list);
-+		list_del(pos);
-+		scif_info.nr_zombies--;
-+		kfree(ep);
-+	}
-+	spin_unlock(&scif_info.eplock);
++	complete(&ep->discon);
 +}
 diff --git a/drivers/misc/mic/scif/scif_fd.c b/drivers/misc/mic/scif/scif_fd.c
-new file mode 100644
-index 0000000..812c23f
---- /dev/null
+index 812c23f..c1d6bc3 100644
+--- a/drivers/misc/mic/scif/scif_fd.c
 +++ b/drivers/misc/mic/scif/scif_fd.c
-@@ -0,0 +1,104 @@
-+/*
-+ * Intel MIC Platform Software Stack (MPSS)
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License, version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-+ * General Public License for more details.
-+ *
-+ * Intel SCIF driver.
-+ *
-+ */
-+#include "scif_main.h"
-+
-+static int scif_fdopen(struct inode *inode, struct file *f)
-+{
-+	struct scif_endpt *priv = scif_open();
-+
-+	if (!priv)
-+		return -ENOMEM;
-+	f->private_data = priv;
-+	return 0;
-+}
-+
-+static int scif_fdclose(struct inode *inode, struct file *f)
-+{
-+	struct scif_endpt *priv = f->private_data;
-+
-+	return scif_close(priv);
-+}
-+
-+static int scif_fdflush(struct file *f, fl_owner_t id)
-+{
-+	struct scif_endpt *ep = f->private_data;
-+
-+	spin_lock(&ep->lock);
-+	/*
-+	 * The listening endpoint stashes the open file information before
-+	 * waiting for incoming connections. The release callback would never be
-+	 * called if the application closed the endpoint, while waiting for
-+	 * incoming connections from a separate thread since the file descriptor
-+	 * reference count is bumped up in the accept IOCTL. Call the flush
-+	 * routine if the id matches the endpoint open file information so that
-+	 * the listening endpoint can be woken up and the fd released.
-+	 */
-+	if (ep->files == id)
-+		__scif_flush(ep);
-+	spin_unlock(&ep->lock);
-+	return 0;
-+}
-+
-+static __always_inline void scif_err_debug(int err, const char *str)
-+{
-+	/*
-+	 * ENOTCONN is a common uninteresting error which is
-+	 * flooding debug messages to the console unnecessarily.
-+	 */
-+	if (err < 0 && err != -ENOTCONN)
-+		dev_dbg(scif_info.mdev.this_device, "%s err %d\n", str, err);
-+}
-+
-+static long scif_fdioctl(struct file *f, unsigned int cmd, unsigned long arg)
-+{
-+	struct scif_endpt *priv = f->private_data;
-+	void __user *argp = (void __user *)arg;
-+	bool non_block = false;
-+
-+	non_block = !!(f->f_flags & O_NONBLOCK);
-+
-+	switch (cmd) {
-+	case SCIF_BIND:
+@@ -68,6 +68,7 @@ static long scif_fdioctl(struct file *f, unsigned int cmd, unsigned long arg)
+ {
+ 	struct scif_endpt *priv = f->private_data;
+ 	void __user *argp = (void __user *)arg;
++	int err = 0;
+ 	bool non_block = false;
+ 
+ 	non_block = !!(f->f_flags & O_NONBLOCK);
+@@ -91,6 +92,111 @@ static long scif_fdioctl(struct file *f, unsigned int cmd, unsigned long arg)
+ 	}
+ 	case SCIF_LISTEN:
+ 		return scif_listen(priv, arg);
++	case SCIF_CONNECT:
 +	{
-+		int pn;
++		struct scifioctl_connect req;
++		struct scif_endpt *ep = (struct scif_endpt *)priv;
 +
-+		if (copy_from_user(&pn, argp, sizeof(pn)))
++		if (copy_from_user(&req, argp, sizeof(req)))
 +			return -EFAULT;
 +
-+		pn = scif_bind(priv, pn);
-+		if (pn < 0)
-+			return pn;
++		err = __scif_connect(priv, &req.peer, non_block);
++		if (err < 0)
++			return err;
 +
-+		if (copy_to_user(argp, &pn, sizeof(pn)))
++		req.self.node = ep->port.node;
++		req.self.port = ep->port.port;
++
++		if (copy_to_user(argp, &req, sizeof(req)))
 +			return -EFAULT;
 +
 +		return 0;
 +	}
-+	case SCIF_LISTEN:
-+		return scif_listen(priv, arg);
++	/*
++	 * Accept is done in two halves.  The request ioctl does the basic
++	 * functionality of accepting the request and returning the information
++	 * about it including the internal ID of the end point.  The register
++	 * is done with the internal ID on a new file descriptor opened by the
++	 * requesting process.
++	 */
++	case SCIF_ACCEPTREQ:
++	{
++		struct scifioctl_accept request;
++		scif_epd_t *ep = (scif_epd_t *)&request.endpt;
++
++		if (copy_from_user(&request, argp, sizeof(request)))
++			return -EFAULT;
++
++		err = scif_accept(priv, &request.peer, ep, request.flags);
++		if (err < 0)
++			return err;
++
++		if (copy_to_user(argp, &request, sizeof(request))) {
++			scif_close(*ep);
++			return -EFAULT;
++		}
++		/*
++		 * Add to the list of user mode eps where the second half
++		 * of the accept is not yet completed.
++		 */
++		spin_lock(&scif_info.eplock);
++		list_add_tail(&((*ep)->miacceptlist), &scif_info.uaccept);
++		list_add_tail(&((*ep)->liacceptlist), &priv->li_accept);
++		(*ep)->listenep = priv;
++		priv->acceptcnt++;
++		spin_unlock(&scif_info.eplock);
++
++		return 0;
 +	}
-+	return -EINVAL;
-+}
++	case SCIF_ACCEPTREG:
++	{
++		struct scif_endpt *priv = f->private_data;
++		struct scif_endpt *newep;
++		struct scif_endpt *lisep;
++		struct scif_endpt *fep = NULL;
++		struct scif_endpt *tmpep;
++		struct list_head *pos, *tmpq;
 +
-+const struct file_operations scif_fops = {
-+	.open = scif_fdopen,
-+	.release = scif_fdclose,
-+	.unlocked_ioctl = scif_fdioctl,
-+	.flush = scif_fdflush,
-+	.owner = THIS_MODULE,
-+};
-diff --git a/drivers/misc/mic/scif/scif_ports.c b/drivers/misc/mic/scif/scif_ports.c
-new file mode 100644
-index 0000000..594e18d
---- /dev/null
-+++ b/drivers/misc/mic/scif/scif_ports.c
-@@ -0,0 +1,124 @@
-+/*
-+ * Intel MIC Platform Software Stack (MPSS)
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License, version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-+ * General Public License for more details.
-+ *
-+ * Intel SCIF driver.
-+ *
-+ */
-+#include <linux/idr.h>
++		/* Finally replace the pointer to the accepted endpoint */
++		if (copy_from_user(&newep, argp, sizeof(void *)))
++			return -EFAULT;
 +
-+#include "scif_main.h"
++		/* Remove form the user accept queue */
++		spin_lock(&scif_info.eplock);
++		list_for_each_safe(pos, tmpq, &scif_info.uaccept) {
++			tmpep = list_entry(pos,
++					   struct scif_endpt, miacceptlist);
++			if (tmpep == newep) {
++				list_del(pos);
++				fep = tmpep;
++				break;
++			}
++		}
 +
-+#define SCIF_PORT_COUNT	0x10000	/* Ports available */
++		if (!fep) {
++			spin_unlock(&scif_info.eplock);
++			return -ENOENT;
++		}
 +
-+struct idr scif_ports;
++		lisep = newep->listenep;
++		list_for_each_safe(pos, tmpq, &lisep->li_accept) {
++			tmpep = list_entry(pos,
++					   struct scif_endpt, liacceptlist);
++			if (tmpep == newep) {
++				list_del(pos);
++				lisep->acceptcnt--;
++				break;
++			}
++		}
 +
-+/*
-+ * struct scif_port - SCIF port information
-+ *
-+ * @ref_cnt - Reference count since there can be multiple endpoints
-+ *		created via scif_accept(..) simultaneously using a port.
-+ */
-+struct scif_port {
-+	int ref_cnt;
-+};
++		spin_unlock(&scif_info.eplock);
 +
++		/* Free the resources automatically created from the open. */
++		scif_teardown_ep(priv);
++		scif_add_epd_to_zombie_list(priv, !SCIF_EPLOCK_HELD);
++		f->private_data = newep;
++		return 0;
++	}
+ 	}
+ 	return -EINVAL;
+ }
+diff --git a/drivers/misc/mic/scif/scif_main.c b/drivers/misc/mic/scif/scif_main.c
+index 714bfea..2393274 100644
+--- a/drivers/misc/mic/scif/scif_main.c
++++ b/drivers/misc/mic/scif/scif_main.c
+@@ -330,6 +330,7 @@ static int _scif_init(void)
+ 	scif_info.en_msg_log = 0;
+ 	scif_info.p2p_enable = 1;
+ 	INIT_WORK(&scif_info.misc_work, scif_misc_handler);
++	INIT_WORK(&scif_info.conn_work, scif_conn_handler);
+ 	idr_init(&scif_ports);
+ 	return 0;
+ }
+diff --git a/drivers/misc/mic/scif/scif_nm.c b/drivers/misc/mic/scif/scif_nm.c
+index 5fefacc..0469aad 100644
+--- a/drivers/misc/mic/scif/scif_nm.c
++++ b/drivers/misc/mic/scif/scif_nm.c
+@@ -20,6 +20,41 @@
+ #include "scif_main.h"
+ #include "scif_map.h"
+ 
 +/**
-+ * __scif_get_port - Reserve a specified port # for SCIF and add it
-+ * to the global list.
-+ * @port : port # to be reserved.
-+ *
-+ * @return : Allocated SCIF port #, or -ENOSPC if port unavailable.
-+ *		On memory allocation failure, returns -ENOMEM.
++ * scif_invalidate_ep() - Set state for all connected endpoints
++ * to disconnected and wake up all send/recv waitqueues
 + */
-+static int __scif_get_port(int start, int end)
++static void scif_invalidate_ep(int node)
 +{
-+	int id;
-+	struct scif_port *port = kzalloc(sizeof(*port), GFP_ATOMIC);
++	struct scif_endpt *ep;
++	struct list_head *pos, *tmpq;
 +
-+	if (!port)
-+		return -ENOMEM;
-+	spin_lock(&scif_info.port_lock);
-+	id = idr_alloc(&scif_ports, port, start, end, GFP_ATOMIC);
-+	if (id >= 0)
-+		port->ref_cnt++;
-+	spin_unlock(&scif_info.port_lock);
-+	return id;
-+}
-+
-+/**
-+ * scif_rsrv_port - Reserve a specified port # for SCIF.
-+ * @port : port # to be reserved.
-+ *
-+ * @return : Allocated SCIF port #, or -ENOSPC if port unavailable.
-+ *		On memory allocation failure, returns -ENOMEM.
-+ */
-+int scif_rsrv_port(u16 port)
-+{
-+	return __scif_get_port(port, port + 1);
-+}
-+
-+/**
-+ * scif_get_new_port - Get and reserve any port # for SCIF in the range
-+ *			SCIF_PORT_RSVD + 1 to SCIF_PORT_COUNT - 1.
-+ *
-+ * @return : Allocated SCIF port #, or -ENOSPC if no ports available.
-+ *		On memory allocation failure, returns -ENOMEM.
-+ */
-+int scif_get_new_port(void)
-+{
-+	return __scif_get_port(SCIF_PORT_RSVD + 1, SCIF_PORT_COUNT);
-+}
-+
-+/**
-+ * scif_get_port - Increment the reference count for a SCIF port
-+ * @id : SCIF port
-+ *
-+ * @return : None
-+ */
-+void scif_get_port(u16 id)
-+{
-+	struct scif_port *port;
-+
-+	if (!id)
-+		return;
-+	spin_lock(&scif_info.port_lock);
-+	port = idr_find(&scif_ports, id);
-+	if (port)
-+		port->ref_cnt++;
-+	spin_unlock(&scif_info.port_lock);
-+}
-+
-+/**
-+ * scif_put_port - Release a reserved SCIF port
-+ * @id : SCIF port to be released.
-+ *
-+ * @return : None
-+ */
-+void scif_put_port(u16 id)
-+{
-+	struct scif_port *port;
-+
-+	if (!id)
-+		return;
-+	spin_lock(&scif_info.port_lock);
-+	port = idr_find(&scif_ports, id);
-+	if (port) {
-+		port->ref_cnt--;
-+		if (!port->ref_cnt) {
-+			idr_remove(&scif_ports, id);
-+			kfree(port);
++	flush_work(&scif_info.conn_work);
++	mutex_lock(&scif_info.connlock);
++	list_for_each_safe(pos, tmpq, &scif_info.disconnected) {
++		ep = list_entry(pos, struct scif_endpt, list);
++		if (ep->remote_dev->node == node) {
++			spin_lock(&ep->lock);
++			scif_cleanup_ep_qp(ep);
++			spin_unlock(&ep->lock);
 +		}
 +	}
-+	spin_unlock(&scif_info.port_lock);
++	list_for_each_safe(pos, tmpq, &scif_info.connected) {
++		ep = list_entry(pos, struct scif_endpt, list);
++		if (ep->remote_dev->node == node) {
++			list_del(pos);
++			spin_lock(&ep->lock);
++			ep->state = SCIFEP_DISCONNECTED;
++			list_add_tail(&ep->list, &scif_info.disconnected);
++			scif_cleanup_ep_qp(ep);
++			wake_up_interruptible(&ep->sendwq);
++			wake_up_interruptible(&ep->recvwq);
++			spin_unlock(&ep->lock);
++		}
++	}
++	mutex_unlock(&scif_info.connlock);
 +}
++
+ void scif_free_qp(struct scif_dev *scifdev)
+ {
+ 	struct scif_qp *qp = scifdev->qpairs;
+@@ -91,6 +126,7 @@ void scif_cleanup_scifdev(struct scif_dev *dev)
+ 		scif_destroy_intr_wq(dev);
+ 	}
+ 	scif_destroy_p2p(dev);
++	scif_invalidate_ep(dev->node);
+ 	scif_send_acks(dev);
+ 	if (!dev->node && scif_info.card_initiated_exit) {
+ 		/*
+diff --git a/drivers/misc/mic/scif/scif_nodeqp.c b/drivers/misc/mic/scif/scif_nodeqp.c
+index 8978af9..aee9025 100644
+--- a/drivers/misc/mic/scif/scif_nodeqp.c
++++ b/drivers/misc/mic/scif/scif_nodeqp.c
+@@ -569,7 +569,14 @@ static char *message_types[] = {"BAD",
+ 				"SCIF_NODE_ADD_ACK",
+ 				"SCIF_NODE_ADD_NACK",
+ 				"REMOVE_NODE",
+-				"REMOVE_NODE_ACK"};
++				"REMOVE_NODE_ACK",
++				"CNCT_REQ",
++				"CNCT_GNT",
++				"CNCT_GNTACK",
++				"CNCT_GNTNACK",
++				"CNCT_REJ",
++				"DISCNCT",
++				"DISCNT_ACK"};
+ 
+ static void
+ scif_display_message(struct scif_dev *scifdev, struct scifmsg *msg,
+@@ -959,6 +966,13 @@ static void (*scif_intr_func[SCIF_MAX_MSG + 1])
+ 	scif_node_add_nack,	/* SCIF_NODE_ADD_NACK */
+ 	scif_node_remove,	/* SCIF_NODE_REMOVE */
+ 	scif_node_remove_ack,	/* SCIF_NODE_REMOVE_ACK */
++	scif_cnctreq,		/* SCIF_CNCT_REQ */
++	scif_cnctgnt,		/* SCIF_CNCT_GNT */
++	scif_cnctgnt_ack,	/* SCIF_CNCT_GNTACK */
++	scif_cnctgnt_nack,	/* SCIF_CNCT_GNTNACK */
++	scif_cnctrej,		/* SCIF_CNCT_REJ */
++	scif_discnct,		/* SCIF_DISCNCT */
++	scif_discnt_ack,	/* SCIF_DISCNT_ACK */
+ };
+ 
+ /**
 -- 
 1.8.2.1
 
