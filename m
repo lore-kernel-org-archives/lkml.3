@@ -1,57 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695AbbALIBy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 03:01:54 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:26837 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964AbbALIBx (ORCPT
+	id S1751981AbbALIEi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 03:04:38 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:22633 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751891AbbALIEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 03:01:53 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-c1-54b37f70d126
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH] regulator: Update documentation after renaming function
- argument
-Date: Mon, 12 Jan 2015 09:01:39 +0100
-Message-id: <1421049699-5851-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJJMWRmVeSWpSXmKPExsVy+t/xK7oF9ZtDDOZN47CY+vAJm8XrF4YW
-	3650MFlc3jWHzYHFY+esu+wem1Z1snn0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxuxNc9gL
-	PrJVNB9Zx9LA+Iy1i5GTQ0LAROLog+3MELaYxIV769m6GLk4hASWMkp87H/ECOH0MUnMfniO
-	CaSKTcBYYvPyJWwgtohAhsTmeVPBJjELGEr8fPeHHcQWFgiWOPnlE5jNIqAqsevIf7BeXgE3
-	idlbVjBCbJOTOHlsMusERu4FjAyrGEVTS5MLipPSc430ihNzi0vz0vWS83M3MUK8/3UH49Jj
-	VocYBTgYlXh4LaU2hwixJpYVV+YeYpTgYFYS4XUtAwrxpiRWVqUW5ccXleakFh9iZOLglGpg
-	bGlgb676ud7ccqHZVNHihBn/pKe1TH602Pnu7Cf2Rsbnvl9+8y84ZNffBwYq//58XVLxVKv4
-	dejDDOdFbEHRBqn3zec18J/LbMu9Fr7ukXaakkdptvCTfycXrN53e9GeLaEOla8u7UnwMm+r
-	+Prs0ieBLxyHfD9vntpyX3LB3ebZT7dOS67q+6nEUpyRaKjFXFScCABFqfW/3AEAAA==
+	Mon, 12 Jan 2015 03:04:35 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-d7-54b38010c367
+Message-id: <54B3800C.2000704@samsung.com>
+Date: Mon, 12 Jan 2015 09:04:28 +0100
+From: Jacek Anaszewski <j.anaszewski@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
+        s.nawrocki@samsung.com
+Subject: Re: [PATCH/RFC v10 02/19] Documentation: leds: Add description of LED
+ Flash class extension
+References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
+ <1420816989-1808-3-git-send-email-j.anaszewski@samsung.com>
+ <20150109174058.GC18076@amd>
+In-reply-to: <20150109174058.GC18076@amd>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBLMWRmVeSWpSXmKPExsVy+t/xa7oCDZtDDHp/GVtsnLGe1eLozolM
+	FvOPnGO1ONv0ht3i8q45bBZb36xjtOjZsJXV4u6po2wWu3c9ZbU4/Kad1eLM/pVsDtweO2fd
+	Zfc4/HUhi8ee+T9YPfq2rGL0WLH6O7vH501yAWxRXDYpqTmZZalF+nYJXBmHrugXXBKuuDjh
+	KGsD4wr+LkZODgkBE4lnb1qZIGwxiQv31rN1MXJxCAksZZQ4+PgyO4TzkVFi1ew7jCBVvAJa
+	Elsnf2AHsVkEVCVurjrPCmKzCRhK/HzxGmySqECExJ/T+1gh6gUlfky+xwJiiwjIS2ztW8EM
+	MpRZoIVJ4v3zFWCDhAXSJD5f/sQKsW0Jo8SCfX/AOjgFNCXuvv3ADGIzC1hLrJy0jRHClpfY
+	vOYt8wRGgVlIlsxCUjYLSdkCRuZVjKKppckFxUnpuYZ6xYm5xaV56XrJ+bmbGCGx8WUH4+Jj
+	VocYBTgYlXh4J8hsDhFiTSwrrsw9xCjBwawkwutaBhTiTUmsrEotyo8vKs1JLT7EyMTBKdXA
+	OHVp3/plkkWrmx7tvdx0aJ17WGutX3oJixGLzvwDWVMMOwpOHli7+5TSWn2jwMebTnELWpak
+	2ifOvT3T/9kfwRuqsdfL73NxWM1vvGpwKXWPDfe8DbtPHFo8ibGo5v7/rmVrjiRVuPKLnTv2
+	Mi/WvY83P91EYOdslivznTe/ZvJ4vpz5mPjFx0osxRmJhlrMRcWJADPM3f5rAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update documentation for regulator_register() function after renaming
-its argument.
+Hi Pavel,
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
----
- drivers/regulator/core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks for the review.
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 5fae8cabd254..c5201b1530ee 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -3573,7 +3573,7 @@ static void rdev_init_debugfs(struct regulator_dev *rdev)
- /**
-  * regulator_register - register regulator
-  * @regulator_desc: regulator to register
-- * @config: runtime configuration for regulator
-+ * @cfg: runtime configuration for regulator
-  *
-  * Called by regulator drivers to register a regulator.
-  * Returns a valid pointer to struct regulator_dev on success
+On 01/09/2015 06:40 PM, Pavel Machek wrote:
+> Hi!
+>
+>> The documentation being added contains overall description of the
+>> LED Flash Class and the related sysfs attributes.
+>>
+>> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> Cc: Bryan Wu <cooloney@gmail.com>
+>> Cc: Richard Purdie <rpurdie@rpsys.net>
+>
+>> +In order to enable support for flash LEDs CONFIG_LEDS_CLASS_FLASH symbol
+>> +must be defined in the kernel config. A flash LED driver must register
+>> +in the LED subsystem with led_classdev_flash_register function to gain flash
+>> +related capabilities.
+>> +
+>> +There are flash LED devices which can control more than one LED and allow for
+>> +strobing the sub-leds synchronously. A LED will be strobed synchronously with
+>> +the one whose identifier is written to the flash_sync_strobe sysfs attribute.
+>> +The list of available sub-led identifiers can be read from the
+>
+> sub-LED?
+
+Indeed, this naming will be more consistent.
+
+>> +	- flash_fault - bitmask of flash faults that may have occurred
+>> +			possible flags are:
+>> +		* 0x01 - flash controller voltage to the flash LED has exceeded
+>> +			 the limit specific to the flash controller
+>> +		* 0x02 - the flash strobe was still on when the timeout set by
+>> +			 the user has expired; not all flash controllers may
+>> +			 set this in all such conditions
+>> +		* 0x04 - the flash controller has overheated
+>> +		* 0x08 - the short circuit protection of the flash controller
+>> +			 has been triggered
+>> +		* 0x10 - current in the LED power supply has exceeded the limit
+>> +			 specific to the flash controller
+>> +		* 0x20 - the flash controller has detected a short or open
+>> +			 circuit condition on the indicator LED
+>> +		* 0x40 - flash controller voltage to the flash LED has been
+>> +			 below the minimum limit specific to the flash
+>> +		* 0x80 - the input voltage of the flash controller is below
+>> +			 the limit under which strobing the flash at full
+>> +			 current will not be possible. The condition persists
+>> +			 until this flag is no longer set
+>> +		* 0x100 - the temperature of the LED has exceeded its allowed
+>> +			  upper limit
+>
+> Did not everyone agree that text strings are preferable to bitmasks?
+>
+> 									Pavel
+>
+
+I just forgot to update the flash_fault documentation. Will fix in the
+next version.
+
 -- 
-1.9.1
-
+Best Regards,
+Jacek Anaszewski
