@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374AbbALNT2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 08:19:28 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55770 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054AbbALNT1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 08:19:27 -0500
-From: Colin King <colin.king@canonical.com>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>, linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] kconfig: use va_end to match corresponding va_start
-Date: Mon, 12 Jan 2015 13:18:26 +0000
-Message-Id: <1421068706-3689-1-git-send-email-colin.king@canonical.com>
-X-Mailer: git-send-email 2.1.4
+	id S1752718AbbALNUv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 08:20:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54585 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751132AbbALNUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 08:20:50 -0500
+Message-ID: <54B3CA2A.2030004@redhat.com>
+Date: Mon, 12 Jan 2015 08:20:42 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>,
+        Daniel Baluta <daniel.baluta@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] checkpatch: Update git commit message
+References: <1420840730.32628.13.camel@perches.com>
+In-Reply-To: <1420840730.32628.13.camel@perches.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Ian King <colin.king@canonical.com>
 
-Although on some systems va_end is a no-op, it is good practice
-to use va_end, especially since the manual states:
 
-"Each invocation of va_start() must be matched by a corresponding
-invocation of va_end() in the same function."
+On 01/09/2015 04:58 PM, Joe Perches wrote:
+> The git commit message can be confusing,
+> 
+> Try to clarify the message a bit to reduce
+> the confusion when emitted.
+> 
+> Show the correct form using
+> 	Please use git commit description style 'commit <12+ chars of sha1> ("<title line>")'
+> and if the git commit sha1 is unique, show
+> the right sha1 to use with the actual title
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> Original-patch-by: Prarit Bhargava <prarit@redhat.com>
+> ---
 
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
----
- scripts/kconfig/confdata.c | 1 +
- 1 file changed, 1 insertion(+)
+Acked-by: Prarit Bhargava <prarit@redhat.com>
 
-diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
-index f88d90f..28df18d 100644
---- a/scripts/kconfig/confdata.c
-+++ b/scripts/kconfig/confdata.c
-@@ -59,6 +59,7 @@ static void conf_message(const char *fmt, ...)
- 	va_start(ap, fmt);
- 	if (conf_message_callback)
- 		conf_message_callback(fmt, ap);
-+	va_end(ap);
- }
- 
- const char *conf_get_configname(void)
--- 
-2.1.4
-
+P.
