@@ -1,107 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779AbbALMpc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 07:45:32 -0500
-Received: from mga09.intel.com ([134.134.136.24]:45166 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751257AbbALMpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 07:45:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,743,1413270000"; 
-   d="scan'208";a="649798022"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com, adrian.hunter@intel.com,
-        markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
-        acme@infradead.org
-Subject: Re: [PATCH v8 12/14] x86: perf: intel_pt: Intel PT PMU driver
-In-Reply-To: <20150109131045.GM3337@twins.programming.kicks-ass.net>
-References: <1415972627-37514-1-git-send-email-alexander.shishkin@linux.intel.com> <1415972627-37514-13-git-send-email-alexander.shishkin@linux.intel.com> <20150109131045.GM3337@twins.programming.kicks-ass.net>
-User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.4.1 (x86_64-pc-linux-gnu)
-Date: Mon, 12 Jan 2015 14:45:25 +0200
-Message-ID: <87iogcnp5m.fsf@ashishki-desk.ger.corp.intel.com>
+	id S1752818AbbALMrX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 07:47:23 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52804 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751388AbbALMrV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 07:47:21 -0500
+Date: Mon, 12 Jan 2015 12:45:37 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Alexandre Courbot <gnurou@gmail.com>, Benoit Parrot <bparrot@ti.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Jiri Prchal <jiri.prchal@aksignal.cz>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Message-ID: <20150112124537.GH4160@sirena.org.uk>
+References: <1416527684-19017-1-git-send-email-bparrot@ti.com>
+ <1416527684-19017-2-git-send-email-bparrot@ti.com>
+ <CAAVeFu+VZiuzobB7McSAUehKUHJjBv1o8ZpYjSHJAKjr3o5wTA@mail.gmail.com>
+ <20141201163639.GI25249@lukather>
+ <CAAVeFuLTupDenZdSi8KO+dYsf-ekcqjsDaQ2GEzYpBG34oF7Zw@mail.gmail.com>
+ <CACRpkdZcNcPBYQM438CZJx1gYst9BFBSTj-3Qv2aPGF9pdWa5g@mail.gmail.com>
+ <20141202161227.GH30256@lukather>
+ <CACRpkdYuRSi8B7jr2F1zYZB4OHvpH9EXOmU0qGa9+O77gcNA7g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DwoPkXS38qd3dnhB"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdYuRSi8B7jr2F1zYZB4OHvpH9EXOmU0qGa9+O77gcNA7g@mail.gmail.com>
+X-Cookie: Keep out of reach of children.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [Patch v2 1/2] gpio: add GPIO hogging mechanism
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
 
-> On Fri, Nov 14, 2014 at 03:43:45PM +0200, Alexander Shishkin wrote:
->> +static void pt_handle_status(struct pt *pt)
->> +{
->> +	struct pt_buffer *buf = perf_get_aux(&pt->handle);
->> +	int advance = 0;
->> +	u64 status;
->> +
->> +	rdmsrl(MSR_IA32_RTIT_STATUS, status);
->> +
->> +	if (status & RTIT_STATUS_ERROR) {
->> +		pr_err_ratelimited("ToPA ERROR encountered, trying to recover\n");
->> +		pt_topa_dump(buf);
->> +		status &= ~RTIT_STATUS_ERROR;
->> +	}
->> +
->> +	if (status & RTIT_STATUS_STOPPED) {
->> +		status &= ~RTIT_STATUS_STOPPED;
->> +
->> +		/*
->> +		 * On systems that only do single-entry ToPA, hitting STOP
->> +		 * means we are already losing data; need to let the decoder
->> +		 * know.
->> +		 */
->> +		if (!pt_cap_get(PT_CAP_topa_multiple_entries) ||
->> +		    buf->output_off == sizes(TOPA_ENTRY(buf->cur, buf->cur_idx)->size)) {
->> +			local_inc(&buf->lost);
->> +			advance++;
->> +		}
->> +	}
->> +
->> +	/*
->> +	 * Also on single-entry ToPA implementations, interrupt will come
->> +	 * before the output reaches its output region's boundary.
->> +	 */
->
-> My understanding was that, while yes it will attempt to generate the
-> interrupt early, there is absolutely no guarantee it will in fact arrive
-> in time or even it if does, guarantee that there is buffer left by the
-> time you're ready to read it.
+--DwoPkXS38qd3dnhB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-That's correct. If the PMI didn't arrive on time and the buffer got
-filled up, the STOPPED bit will be set in the STATUS register, which is
-what we're handling above.
+On Mon, Jan 12, 2015 at 10:40:04AM +0100, Linus Walleij wrote:
+> On Tue, Dec 2, 2014 at 5:12 PM, Maxime Ripard
 
->> +	if (!pt_cap_get(PT_CAP_topa_multiple_entries) && !buf->snapshot &&
->> +	    pt_buffer_region_size(buf) - buf->output_off <= TOPA_PMI_MARGIN) {
->
-> Now this check appears to indeed cater for this scenario where the
-> buffer is overran, right?
+> > We do have one board where we have a pin (let's say GPIO14 of the bank
+> > A) that enables a regulator that will provide VCC the bank B.
 
-The check above is for the case when the PMI did make it before the end
-of the physical buffer was reached.
+> I think it's a hog in this case though, not a GPIO regulator,
+> definately not both. But let's check Mark's opinion on this.
 
->
->> +		void *head = pt_buffer_region(buf);
->> +
->> +		/* everything within this margin needs to be zeroed out */
->> +		memset(head + buf->output_off, 0,
->> +		       pt_buffer_region_size(buf) -
->> +		       buf->output_off);
->> +		advance++;
->> +	}
->> +
->> +	if (advance)
->> +		pt_buffer_advance(buf);
->> +
->> +	wrmsrl(MSR_IA32_RTIT_STATUS, status);
->> +}
+I'm lacking some context here but my first thought is that if VCC might
+be supplied by some other thing we need to use a regulator since
+otherwise we can't substitute in the other regulator.
 
-Regards,
---
-Alex
+--DwoPkXS38qd3dnhB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUs8HwAAoJECTWi3JdVIfQYiQH/1nDd83kFMRVgndnF6Jt9p8y
+FZPACvCGo8ThE8aFdODAQEXwl0uxs7duSSnSo7FMODl/YCqpfoil611D3BwvhPnR
+jOPRzKP6vXjez/KIsADo8GhdtPf6Kj8bNvFkgsMpUfLyZqiyEZiCcz2RY+vxdahr
+ue/njPwe+XZHDbolO2P6njFyI29iGz9xkNh3Iv53ikiOQgIxdVBmQRBOoV41hM0c
+Z6Xd/l8KFCemE0olxuUFOmzeZHdF4rQgWbyYLCByQeMgesieAod/kVaPYXIdbAfC
+DWZuQOq0iIIpSYc8OJegoB4YHMnfgnSpdjQ3M01CXuZHaH75/sUE64cpt0veNZE=
+=lHho
+-----END PGP SIGNATURE-----
+
+--DwoPkXS38qd3dnhB--
