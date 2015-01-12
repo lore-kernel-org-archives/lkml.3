@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829AbbALJZh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 04:25:37 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:43493 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752511AbbALJZe (ORCPT
+	id S1752870AbbALJ1m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 04:27:42 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:53890 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752854AbbALJ1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 04:25:34 -0500
+	Mon, 12 Jan 2015 04:27:40 -0500
 MIME-Version: 1.0
-In-Reply-To: <1418831474-24428-5-git-send-email-ricardo.ribalda@gmail.com>
+In-Reply-To: <1418831474-24428-6-git-send-email-ricardo.ribalda@gmail.com>
 References: <1418831474-24428-1-git-send-email-ricardo.ribalda@gmail.com>
-	<1418831474-24428-5-git-send-email-ricardo.ribalda@gmail.com>
-Date: Mon, 12 Jan 2015 10:25:33 +0100
-Message-ID: <CACRpkdacCrECm0k7AW4EHMrG+ycNHQD0xH1Ru26X_XEoxA9qUg@mail.gmail.com>
-Subject: Re: [PATCH v5 4/7] gpio/xilinx: Fix kernel-doc
+	<1418831474-24428-6-git-send-email-ricardo.ribalda@gmail.com>
+Date: Mon, 12 Jan 2015 10:27:39 +0100
+Message-ID: <CACRpkdZZFrjD1LTZK9_wS=TnOKnY57LiMZUV5uD1_Ks04Kgzzg@mail.gmail.com>
+Subject: Re: [PATCH v5 5/7] gpio/xilinx: Create a single gpio chip on dual cores
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 Cc: Alexandre Courbot <gnurou@gmail.com>,
@@ -29,12 +29,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Wed, Dec 17, 2014 at 4:51 PM, Ricardo Ribalda Delgado
 <ricardo.ribalda@gmail.com> wrote:
 
-> Some documentation were not following the kernel-doc format.
-> Backporting patch from Xilinx git repository.
+> Currently, we had two gpio chips on cores configured as dual.
 >
-> Suggested-by: Michal Simek <michal.simek@xilinx.com>
-> Acked-by: Michal Simek <michal.simek@xilinx.com>
-> Acked-by: Alexandre Courbot <acourbot@nvidia.com>
+> This lead to mapping the same memory region twice and duplicating the
+> init and remove code.
+>
+> This patch creates a single gpiochip for single and dual cores.
+>
+> Suggested-by: Alexandre Courbot <gnurou@gmail.com>
 > Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 
 Patch applied.
