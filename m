@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270AbbALNlr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 08:41:47 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:49493 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753157AbbALNlq (ORCPT
+	id S1753351AbbALNmD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 08:42:03 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:39787 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753204AbbALNl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 08:41:46 -0500
-Message-ID: <54B3CEB3.1010709@linaro.org>
-Date: Mon, 12 Jan 2015 14:40:03 +0100
+	Mon, 12 Jan 2015 08:41:58 -0500
+Message-ID: <54B3CEBF.3020108@linaro.org>
+Date: Mon, 12 Jan 2015 14:40:15 +0100
 From: Eric Auger <eric.auger@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
@@ -20,52 +20,96 @@ CC: eric.auger@st.com, marc.zyngier@arm.com,
         borntraeger@de.ibm.com, cornelia.huck@de.ibm.com,
         linux-kernel@vger.kernel.org, patches@linaro.org,
         a.motakis@virtualopensystems.com
-Subject: Re: [PATCH v5 4/5] KVM: irqfd: use kvm_arch_is_virtual_intc_initialized
-References: <1417622832-5460-1-git-send-email-eric.auger@linaro.org> <1417622832-5460-5-git-send-email-eric.auger@linaro.org> <20150111211713.GF3868@cbox>
-In-Reply-To: <20150111211713.GF3868@cbox>
+Subject: Re: [PATCH v5 3/5] KVM: arm/arm64: implement kvm_arch_is_virtual_intc_initialized
+References: <1417622832-5460-1-git-send-email-eric.auger@linaro.org> <1417622832-5460-4-git-send-email-eric.auger@linaro.org> <20150111211250.GE3868@cbox>
+In-Reply-To: <20150111211250.GE3868@cbox>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2015 10:17 PM, Christoffer Dall wrote:
-> On Wed, Dec 03, 2014 at 05:07:11PM +0100, Eric Auger wrote:
->> On arm/arm64, the interrupt controller is dynamically instantiated.
->> There is a risk the user-space assigns an irqfd before this latter
->> is initialized and ready to accept virtual irq injection. On such
->> attempt, the IRQFD setup is rejected and -EAGAIN is returned.
+On 01/11/2015 10:12 PM, Christoffer Dall wrote:
+> On Wed, Dec 03, 2014 at 05:07:10PM +0100, Eric Auger wrote:
+>> on arm/arm64 the VGIC is dynamically instantiated and it is useful
+>> to expose its state, especially for irqfd setup.
+>>
+>> This patch defines __KVM_HAVE_ARCH_VIRTUAL_INTC_INITIALIZED
+>> and implements kvm_arch_is_virtual_intc_initialized
 >>
 >> Signed-off-by: Eric Auger <eric.auger@linaro.org>
 >> ---
->>  virt/kvm/eventfd.c | 3 +++
->>  1 file changed, 3 insertions(+)
+>>  arch/arm/include/asm/kvm_host.h   | 6 ++++++
+>>  arch/arm/kvm/arm.c                | 5 +++++
+>>  arch/arm64/include/asm/kvm_host.h | 5 +++++
+>>  3 files changed, 16 insertions(+)
 >>
->> diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
->> index b0fb390..f837c83 100644
->> --- a/virt/kvm/eventfd.c
->> +++ b/virt/kvm/eventfd.c
->> @@ -314,6 +314,9 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
->>  	unsigned int events;
->>  	int idx;
+>> diff --git a/arch/arm/include/asm/kvm_host.h b/arch/arm/include/asm/kvm_host.h
+>> index 53036e2..fe2c89b 100644
+>> --- a/arch/arm/include/asm/kvm_host.h
+>> +++ b/arch/arm/include/asm/kvm_host.h
+>> @@ -27,6 +27,8 @@
+>>  #include <asm/fpstate.h>
+>>  #include <kvm/arm_arch_timer.h>
 >>  
->> +	if (!kvm_arch_is_virtual_intc_initialized(kvm))
->> +		return -EAGAIN;
+>> +#define __KVM_HAVE_ARCH_VIRTUAL_INTC_INITIALIZED
 >> +
+>>  #if defined(CONFIG_KVM_ARM_MAX_VCPUS)
+>>  #define KVM_MAX_VCPUS CONFIG_KVM_ARM_MAX_VCPUS
+>>  #else
+>> @@ -242,4 +244,8 @@ static inline void kvm_arch_sync_events(struct kvm *kvm) {}
+>>  static inline void kvm_arch_vcpu_uninit(struct kvm_vcpu *vcpu) {}
+>>  static inline void kvm_arch_sched_in(struct kvm_vcpu *vcpu, int cpu) {}
+>>  
+>> +/* returns true if the vgic dynamic initialization is done*/
+>> +bool kvm_arch_is_virtual_intc_initialized(struct kvm *kvm);
 > 
-> You can fold this into the patch that defines the static inline since
-> nothing defines the KVM_HAVE_ARCH_... yet.
-Not sure to understand what you mean:
-__KVM_HAVE_ARCH_VIRTUAL_INTC_INITIALIZED was defined in previous patch
-file (3/5). Nethertheless I can drop that patch file.
-
-Thanks
+> I feel like this should go in include/linux/kvm_host.h where there's
+> already a description of the function API.
+agreed
 
 Eric
 > 
->>  	irqfd = kzalloc(sizeof(*irqfd), GFP_KERNEL);
->>  	if (!irqfd)
->>  		return -ENOMEM;
+>> +
+>> +
+>>  #endif /* __ARM_KVM_HOST_H__ */
+>> diff --git a/arch/arm/kvm/arm.c b/arch/arm/kvm/arm.c
+>> index 9e193c8..5309e4b 100644
+>> --- a/arch/arm/kvm/arm.c
+>> +++ b/arch/arm/kvm/arm.c
+>> @@ -439,6 +439,11 @@ static int kvm_vcpu_first_run_init(struct kvm_vcpu *vcpu)
+>>  	return 0;
+>>  }
+>>  
+>> +bool kvm_arch_is_virtual_intc_initialized(struct kvm *kvm)
+>> +{
+>> +	return vgic_initialized(kvm);
+>> +}
+>> +
+>>  static void vcpu_pause(struct kvm_vcpu *vcpu)
+>>  {
+>>  	wait_queue_head_t *wq = kvm_arch_vcpu_wq(vcpu);
+>> diff --git a/arch/arm64/include/asm/kvm_host.h b/arch/arm64/include/asm/kvm_host.h
+>> index 2012c4b..5badd30 100644
+>> --- a/arch/arm64/include/asm/kvm_host.h
+>> +++ b/arch/arm64/include/asm/kvm_host.h
+>> @@ -28,6 +28,8 @@
+>>  #include <asm/kvm_asm.h>
+>>  #include <asm/kvm_mmio.h>
+>>  
+>> +#define __KVM_HAVE_ARCH_VIRTUAL_INTC_INITIALIZED
+>> +
+>>  #if defined(CONFIG_KVM_ARM_MAX_VCPUS)
+>>  #define KVM_MAX_VCPUS CONFIG_KVM_ARM_MAX_VCPUS
+>>  #else
+>> @@ -254,4 +256,7 @@ static inline void kvm_arch_sync_events(struct kvm *kvm) {}
+>>  static inline void kvm_arch_vcpu_uninit(struct kvm_vcpu *vcpu) {}
+>>  static inline void kvm_arch_sched_in(struct kvm_vcpu *vcpu, int cpu) {}
+>>  
+>> +/* returns true if the vgic dynamic initialization is done*/
+>> +bool kvm_arch_is_virtual_intc_initialized(struct kvm *kvm);
+>> +
+>>  #endif /* __ARM64_KVM_HOST_H__ */
 >> -- 
 >> 1.9.1
 >>
