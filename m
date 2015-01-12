@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061AbbALRgW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 12:36:22 -0500
-Received: from mx02.posteo.de ([89.146.194.165]:59048 "EHLO mx02.posteo.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751000AbbALRgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 12:36:21 -0500
-Message-ID: <54B4060C.4010004@posteo.de>
-Date: Mon, 12 Jan 2015 18:36:12 +0100
-From: Martin Kepplinger <martink@posteo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	id S1751683AbbALRlr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 12:41:47 -0500
+Received: from mars.intermailgate.com ([80.242.145.70]:53448 "EHLO
+	mars.intermailgate.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192AbbALRlp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 12:41:45 -0500
+X-Antivirus-MYDOMAIN-Mail-From: netdev@bof.de via mars
+X-Antivirus-MYDOMAIN: 1.25-st-qms (Clear:RC:0(192.109.53.146):SA:0(1.3/10.0):. Processed in 0.287458 secs Process 14711)
+From: Patrick Schaaf <netdev@bof.de>
+To: Patrick McHardy <kaber@trash.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Richard Weinberger <richard@nod.at>,
+        davem@davemloft.net, coreteam@netfilter.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, bhutchings@solarflare.com,
+        john.fastabend@gmail.com, herbert@gondor.apana.org.au,
+        vyasevic@redhat.com, jiri@resnulli.us, vfalico@gmail.com,
+        therbert@google.com, edumazet@google.com, yoshfuji@linux-ipv6.org,
+        jmorris@namei.org, kuznet@ms2.inr.ac.ru, kadlec@blackhole.kfki.hu,
+        pablo@netfilter.org, kay@vrfy.org, stephen@networkplumber.org
+Subject: Re: [PATCH 2/3] x_tables: Use also dev->ifalias for interface matching
+Date: Mon, 12 Jan 2015 18:41:42 +0100
+Message-ID: <2245326.CTMNrtX3Ao@rofl>
+User-Agent: KMail/4.14.3 (Linux/3.18.2-1.ga393f37-desktop; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <20150112172257.GG17329@acer.localdomain>
+References: <1421009571-5279-1-git-send-email-richard@nod.at> <2868544.UBk2Y85taW@rofl> <20150112172257.GG17329@acer.localdomain>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: peterz@infradead.org, mingo@kernel.org, tytso@mit.edu,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] hwmon: jc42: use bitops' sign_extend16
-References: <1418660317-21750-1-git-send-email-martink@posteo.de> <1418660317-21750-4-git-send-email-martink@posteo.de> <20141215212948.GA23765@roeck-us.net> <548FDC85.3060400@posteo.de> <54B251A7.3000403@posteo.de> <54B2AA69.80305@roeck-us.net>
-In-Reply-To: <54B2AA69.80305@roeck-us.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2015-01-11 um 17:52 schrieb Guenter Roeck:
-> On 01/11/2015 02:34 AM, Martin Kepplinger wrote:
->> Am 2014-12-16 um 08:17 schrieb Martin Kepplinger:
->>> Am 2014-12-15 um 22:29 schrieb Guenter Roeck:
->>>> On Mon, Dec 15, 2014 at 05:18:34PM +0100, Martin Kepplinger wrote:
->>>>> ---
->>>>
->>>> Some description would be nice. Also, please consider adding
->>>> relevant subsystem mailing lists and maintainers to your patches.
->>>>
->>>
->>> I shouldn't have added the Signed-off-by line to some of them. Sorry.
->>>
->>> The driver-patches are meant to be examples of what can be changed if
->>> the sign_extend functions are added. I don't know if they are taken and
->>> planned to post the driver patches (probably more) thereafter, and of
->>> course to the relevant people.
->>
->> Is this sign_extendXX() set of functions considered to be added to
->> bitops.h ?
->>
->> Just checking if I can prepare some driver-patches (the ones I posted
->> are just examples, meant to be re-sent to relevant maintainers when it's
->> time), or not.
->>
+On Monday 12 January 2015 17:22:57 Patrick McHardy wrote:
+> On 12.01, Patrick Schaaf wrote:
+> >
+> > Interfaces come and go through many different actions. There's the admin
+> > downing and upping stuff like bridges or bonds. There's stuff like libvirt
+> > / KVM / qemu creating and destroying interfaces. In all these cases, in
+> > my practise, I give the interfaces useful names to that I can
+> > prefix-match them in iptables rules.
+> > 
+> > Dynamically modifying the ruleset for each such creation and destruction,
+> > would be a huge burden. The base ruleset would need suitable "hooks" where
+> > these rules were inserted (ordering matters!). The addition would hardly
+> > be
+> > atomic (with traditional iptables, unless done by generating a whole new
+> > ruleset and restoring). The programs (e.g. libvirt) would need to be able
+> > to call out to these specially crafted rule generator scripts. The admin
+> > would need to add them as pre/post actions to their static (manual)
+> > interface configuration. Loading and looking at the ruleset before
+> > bringing up the interface would be impossible.
 > 
-> You should probably ask the question as response to patch 1/6.
-> 
-> In general, it might be useful to send example patches like this one as
-> RFC.
-> Sending it as real patch and then saying "it is just an example" may result
-> in the entire series being ignored. This is not a matter of Signed-off
-> or not
-> (originally I didn't even understand what you wanted to say with your
-> reply),
-> but a matter of a non-misleading headline.
-> 
-> Thanks,
-> Guenter
-> 
+> devgroups seem like the best solution for this.
 
-Thanks for the advice. I resent, https://lkml.org/lkml/2015/1/12/590
-because the thing is easier than it might now seem, and hope that
-doesn't add confusion.
+Could be, technically.
 
-thanks again,
-                         martin
+Is there devgroup support in libvirt, ifcfg, whatever other distros use for 
+their static interface configuration? Or, do I again have to write pre/post 
+scripts to set devgroups? Wouldn't bother me too much nowadays, I've automated 
+that for ifcfg style stuff in my production environment a year ago, but it's 
+something an admin must actively manage...
+
+There is other stuff, apart from libvirt, that creates and destroys interfaces 
+on the fly. From my production environment, there's at least keepalived, which 
+creates macvlan interfaces on the fly for VRRP VMAC support. I can configure 
+the name for that, but nothing else, nor can I call a script pre/post for 
+that. And my iptables rules on that boxen _do_ match specially on these 
+interfaces.
+
+Gooling a bit around does not immediately turn up any good documentation on it 
+at all (four year old iproute2 commits, once I give that as a search term 
+too?). Looks very sketchy (although the fundamental idea is clear to me. I'm 
+looking through the normal admin practise lens....)
+
+best regards
+  Patrick
