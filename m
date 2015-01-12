@@ -1,49 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152AbbALSyc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:54:32 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:60900 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691AbbALSy2 (ORCPT
+	id S1754765AbbALSyx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:54:53 -0500
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:42249 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752095AbbALSyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:54:28 -0500
-From: Greg Thelen <gthelen@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Greg Thelen <gthelen@google.com>
-Subject: [PATCH] memcg: add BUILD_BUG_ON() for string tables
-Date: Mon, 12 Jan 2015 10:54:23 -0800
-Message-Id: <1421088863-14270-1-git-send-email-gthelen@google.com>
-X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
+	Mon, 12 Jan 2015 13:54:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <20150111124146.GA15387@localhost.localdomain>
+References: <1420850068-27828-1-git-send-email-john.stultz@linaro.org>
+	<1420850068-27828-7-git-send-email-john.stultz@linaro.org>
+	<20150111124146.GA15387@localhost.localdomain>
+Date: Mon, 12 Jan 2015 10:54:50 -0800
+Message-ID: <CALAqxLX2Th7-kEM1vQBJn5hnPTJ5ujg-Zx-aa-oOhP5cb=hXLQ@mail.gmail.com>
+Subject: Re: [PATCH 06/10] time: Cap clocksource reads to the clocksource
+ max_cycles value
+From: John Stultz <john.stultz@linaro.org>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@codemonkey.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use BUILD_BUG_ON() to compile assert that memcg string tables are in
-sync with corresponding enums.  There aren't currently any issues with
-these tables.  This is just defensive.
+On Sun, Jan 11, 2015 at 4:41 AM, Richard Cochran
+<richardcochran@gmail.com> wrote:
+> On Fri, Jan 09, 2015 at 04:34:24PM -0800, John Stultz wrote:
+>> When calculating the current delta since the last tick, we
+>> currently have no hard protections to prevent a multiplciation
+>> overflow from ocurring.
+>
+> This is just papering over the problem. The "hard protection" should
+> be having a tick scheduled before the range of the clock source is
+> exhausted.
 
-Signed-off-by: Greg Thelen <gthelen@google.com>
----
- mm/memcontrol.c | 4 ++++
- 1 file changed, 4 insertions(+)
+So I disagree this is papering over the problem.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index ef91e856c7e4..8d1ca6c55480 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3699,6 +3699,10 @@ static int memcg_stat_show(struct seq_file *m, void *v)
- 	struct mem_cgroup *mi;
- 	unsigned int i;
- 
-+	BUILD_BUG_ON(ARRAY_SIZE(mem_cgroup_stat_names) !=
-+		     MEM_CGROUP_STAT_NSTATS);
-+	BUILD_BUG_ON(ARRAY_SIZE(mem_cgroup_events_names) !=
-+		     MEM_CGROUP_EVENTS_NSTATS);
- 	BUILD_BUG_ON(ARRAY_SIZE(mem_cgroup_lru_names) != NR_LRU_LISTS);
- 
- 	for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
--- 
-2.2.0.rc0.207.ga3a616c
+You say the tick should be scheduled before the clocksource wraps -
+but we have logic to do that.
 
+However there are many ways that can still go wrong.  Virtualization
+can delay interrupts for long periods of time, the timer/irq code
+isn't the simplest and there can be bugs, or timer hardware itself can
+have issues. The difficulty is that when something has gone wrong, the
+only thing we have to measure the problem may become corrupted.  And
+worse, once the timekeeping code is having problems,  that can result
+in bugs that manifest in all sorts of strange ways that are very
+difficult to debug (you can't trust your log timestamps, etc).
+
+So I think having some extra measures of protection is useful here.
+
+I'll admit that its always difficult to manage, since we have to layer
+our checks, we have circular dependencies (timer code needs
+timekeeping to be correct, timekeeping code needs timer code to be
+correct), and hardware problems are rampant - so we get trouble like
+the clocksource watchdog which uses more trustworthy clocksources to
+watch less trustworthy ones, but then hardware starts adding bugs to
+the trustworthy ones which cause false positives, etc.   And these
+checks make the code add complexity to the code that we'd be happier
+without, but we can't throw out supporting the majority of hardware
+that have some quirk and imperfection, so I'm not sure what the
+alternative should be.
+
+thanks
+-john
