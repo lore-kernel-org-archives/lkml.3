@@ -1,58 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936AbbALUiE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 15:38:04 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:62094 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753557AbbALUiD (ORCPT
+	id S1753991AbbALUjI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 15:39:08 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:53577 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751319AbbALUjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 15:38:03 -0500
-Date: Mon, 12 Jan 2015 21:37:57 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@codemonkey.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 06/10] time: Cap clocksource reads to the clocksource
- max_cycles value
-Message-ID: <20150112203757.GC4233@localhost.localdomain>
-References: <1420850068-27828-1-git-send-email-john.stultz@linaro.org>
- <1420850068-27828-7-git-send-email-john.stultz@linaro.org>
- <20150111124146.GA15387@localhost.localdomain>
- <CALAqxLX2Th7-kEM1vQBJn5hnPTJ5ujg-Zx-aa-oOhP5cb=hXLQ@mail.gmail.com>
- <CA+55aFxwtAG243YL5xJwCy1tJOOONx_ZqYBFsJwwbaFTmKWfLg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxwtAG243YL5xJwCy1tJOOONx_ZqYBFsJwwbaFTmKWfLg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 12 Jan 2015 15:39:05 -0500
+Date: Mon, 12 Jan 2015 15:39:01 -0500 (EST)
+Message-Id: <20150112.153901.1394819040600142883.davem@davemloft.net>
+To: ani@arista.com
+Cc: corbet@lwn.net, edumazet@google.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, P@draigbrady.com, netdev@vger.kernel.org,
+        fruggeri@arista.com
+Subject: Re: [PATCH 1/1] update ip-sysctl.txt documentation (v2)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1420674356-32210-1-git-send-email-ani@arista.com>
+References: <1420674356-32210-1-git-send-email-ani@arista.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 12 Jan 2015 12:39:04 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 08:02:53AM +1300, Linus Torvalds wrote:
-> Indeed. It's making things more robust in the face of _known_ issues.
-> Even with a perfectly designed timer (which we so far have never
-> seen), interrupts get delayed etc, so trying to stretch it to the
-> limit of the timer is simply not a good idea. Quite the reverse.
+From: Ani Sinha <ani@arista.com>
+Date: Wed,  7 Jan 2015 15:45:56 -0800
 
-So is this patch supposed to fix the case when a tick just missed the
-range of the clock?  Or is this to deal with really broken sources?
-
-> More importantly, if the timer is actually any good, the safety margin
-> won't actually matter, since the timer cycle is so long that 50% of
-> essentially infinite is still essentially infinite.
+> Update documentation to reflect the fact that
+> /proc/sys/net/ipv4/route/max_size is no longer used for ipv4.
 > 
-> And if the timer isn't very good, then some slop for safety is just
-> being robust.
+> Signed-off-by: Ani Sinha <ani@arista.com>
 
-Here "isn't very good" means that the clock rolls over too frequently.
-Well, if you cannot be sure to sample the clock in time, then you
-shouldn't use that clock source at all.
-
-Thanks,
-Richard
+Applied, thank you.
