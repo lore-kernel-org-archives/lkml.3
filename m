@@ -1,115 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714AbbALKBL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 05:01:11 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:55150 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752103AbbALKBJ (ORCPT
+	id S1753123AbbALKJs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 05:09:48 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:54068 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753091AbbALKJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 05:01:09 -0500
-X-IronPort-AV: E=Sophos;i="5.07,743,1413270000"; 
-   d="scan'208";a="54594534"
-Message-ID: <54B39B59.8000907@broadcom.com>
-Date: Mon, 12 Jan 2015 11:00:57 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+	Mon, 12 Jan 2015 05:09:46 -0500
+Date: Mon, 12 Jan 2015 11:01:33 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Rob Herring <robh@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-pci@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH 05/16] pci: introduce common pci config space accessors
+Message-ID: <20150112100131.GA27700@ulmo>
+References: <1420857290-8373-1-git-send-email-robh@kernel.org>
+ <1420857290-8373-6-git-send-email-robh@kernel.org>
 MIME-Version: 1.0
-To: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
-CC: <brudley@broadcom.com>, Franky Lin <frankyl@broadcom.com>,
-        <meuleman@broadcom.com>, <kvalo@codeaurora.org>,
-        <linville@tuxdriver.com>, <pieterpg@broadcom.com>,
-        <hdegoede@redhat.com>, <wens@csie.org>,
-        <linux-wireless@vger.kernel.org>, <brcm80211-dev-list@broadcom.com>,
-        <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
-References: <54B36C88.3030609@linux.intel.com>
-In-Reply-To: <54B36C88.3030609@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="W/nzBZO5zC0uMSeA"
+Content-Disposition: inline
+In-Reply-To: <1420857290-8373-6-git-send-email-robh@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/15 07:41, Fu, Zhonghui wrote:
->  From 8685c3c2746b4275fc808d9db23c364b2f54b52a Mon Sep 17 00:00:00 2001
-> From: Zhonghui Fu<zhonghui.fu@linux.intel.com>
-> Date: Mon, 12 Jan 2015 14:25:46 +0800
-> Subject: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
->
-> WiFi chip has 2 SDIO functions, and PM core will trigger
-> twice suspend/resume operations for one WiFi chip to do
-> the same things. This patch avoid this case.
->
-> Acked-by: Arend van Spriel<arend@broadcom.com>
-> Acked-by: Sergei Shtylyov<sergei.shtylyov@cogentembedded.com>
-> Signed-off-by: Zhonghui Fu<zhonghui.fu@linux.intel.com>
 
-This patch needs to be rebased.
+--W/nzBZO5zC0uMSeA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Kalle,
-
-Please drop this one.
-
-Regards,
-Arend
-
+On Fri, Jan 09, 2015 at 08:34:39PM -0600, Rob Herring wrote:
+> Many PCI controllers' configuration space accesses are memory mapped
+> varying only in address calculation and access checks. There are 2 main
+> access methods: a decoded address space such as ECAM or a single address
+> and data register similar to x86. This implementation can support both
+> cases as well as be used in cases that need additional pre or post access
+> handling.
+>=20
+> A new pci_ops member map_bus is introduced which can do access checks and
+> any necessary setup. It returns the address to use for the configuration
+> space access. The access types supported are 32-bit only accesses or
+> correct byte, word, or dword sized accesses.
+>=20
+> Signed-off-by: Rob Herring <robh@kernel.org>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: linux-pci@vger.kernel.org
 > ---
->   drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c |   21 +++++++++++++++++----
->   1 files changed, 17 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
-> index 9880dae..8f71485 100644
-> --- a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
-> +++ b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
-> @@ -1070,7 +1070,7 @@ static int brcmf_ops_sdio_probe(struct sdio_func *func,
->   	 */
->   	if ((sdio_get_host_pm_caps(sdiodev->func[1])&  MMC_PM_KEEP_POWER)&&
->   	((sdio_get_host_pm_caps(sdiodev->func[1])&  MMC_PM_WAKE_SDIO_IRQ) ||
-> -	     (sdiodev->pdata&&  sdiodev->pdata->oob_irq_supported)))
-> +	     (sdiodev->pdata->oob_irq_supported)))
->   		bus_if->wowl_supported = true;
->   #endif
->
-> @@ -1139,11 +1139,17 @@ void brcmf_sdio_wowl_config(struct device *dev, bool enabled)
->   static int brcmf_ops_sdio_suspend(struct device *dev)
->   {
->   	struct brcmf_bus *bus_if = dev_get_drvdata(dev);
-> -	struct brcmf_sdio_dev *sdiodev = bus_if->bus_priv.sdio;
-> +	struct brcmf_sdio_dev *sdiodev;
->   	mmc_pm_flag_t sdio_flags;
-> +	struct sdio_func *func = dev_to_sdio_func(dev);
->
->   	brcmf_dbg(SDIO, "Enter\n");
->
-> +	if (func->num == 2)
-> +		return 0;
-> +
-> +	sdiodev = bus_if->bus_priv.sdio;
-> +
->   	atomic_set(&sdiodev->suspend, true);
->
->   	if (sdiodev->wowl_enabled) {
-> @@ -1164,10 +1170,17 @@ static int brcmf_ops_sdio_suspend(struct device *dev)
->   static int brcmf_ops_sdio_resume(struct device *dev)
->   {
->   	struct brcmf_bus *bus_if = dev_get_drvdata(dev);
-> -	struct brcmf_sdio_dev *sdiodev = bus_if->bus_priv.sdio;
-> +	struct brcmf_sdio_dev *sdiodev;
-> +	struct sdio_func *func = dev_to_sdio_func(dev);
->
->   	brcmf_dbg(SDIO, "Enter\n");
-> -	if (sdiodev->pdata&&  sdiodev->pdata->oob_irq_supported)
-> +
-> +	if (func->num == 2)
-> +		return 0;
-> +
-> +	sdiodev = bus_if->bus_priv.sdio;
-> +
-> +	if (sdiodev->pdata->oob_irq_supported)
->   		disable_irq_wake(sdiodev->pdata->oob_irq_nr);
->   	brcmf_sdio_wd_timer(sdiodev->bus, BRCMF_WD_POLL_MS);
->   	atomic_set(&sdiodev->suspend, false);
-> -- 1.7.1
->
+>  drivers/pci/access.c | 87 ++++++++++++++++++++++++++++++++++++++++++++++=
+++++++
+>  include/linux/pci.h  | 11 +++++++
+>  2 files changed, 98 insertions(+)
 
+Reviewed-by: Thierry Reding <treding@nvidia.com>
+Tested-by: Thierry Reding <treding@nvidia.com>
+
+--W/nzBZO5zC0uMSeA
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUs5t7AAoJEN0jrNd/PrOhpIQP/3QkOnAM62rtzWKkbvYGSvFw
+wZyOfZPsp411pZdJKBV0fo2tCZmb3MFEdNhSGMIucSvB3bO1VJMQuuqunLbJGGvB
+7/GVJi1zmz242nrkKMbCVcuSCozAk3lFnUdzwpU3ADl28EV5jwGHFjIYGSiOqqLR
+fJLE0KhPdAoq/p7vkesP+FG1tVsVyiTNXPc3BnktNpHJxEpQoujJG+hRX8cTA7G8
+FPLV12rdUt93Ahi9PlYPKrDfEjoZHvqlxUiG50dBVirebI2wl2xyYkp52/nmqFhD
+fHzAy9aG+d86MakONP74ps6EFfKvs0ZzbJ0Y/MizdjMfCj8NKvqU5+oMec9DiNtn
+eXim41gZxSIO0kKBomFkKTq6Ja9qP0vJ+5gRSitqSCsUrb1uA+YXNXJItMYpqttp
+HzoHxHc8BqqJkmYsBCBvwT8AamFRVJNIi0dwcgGukv2UDrPy1HJcfiQTG4XTZO7b
+YpOqxtvuNf9KWFVDnQiJar3W633Tn6e45YwJFgHVw2qbud+AXwRo5ypssDcPI59G
+WCdaCjOzCP1Jnxc8kWOy0NVYZXdGo+mgbSp0PiwjEuxLEL0+eG9qxMmI5snYXad5
+ywiHQ+FaNfFjjlwV7p9VbKCpSpnpwMl4iSIIaP7rmrWjIfIY1GBb6DEMHjgECseb
+tFqCmTti4cXQHJVua6UP
+=A6kk
+-----END PGP SIGNATURE-----
+
+--W/nzBZO5zC0uMSeA--
