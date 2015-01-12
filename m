@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478AbbALSdc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:33:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58496 "EHLO
+	id S1755384AbbALSbM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:31:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58491 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755334AbbALSbJ (ORCPT
+	with ESMTP id S1754307AbbALSbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Jan 2015 13:31:09 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Benson Leung <bleung@chromium.org>, Olof Johansson <olof@lixom.net>,
+Cc: Benson Leung <bleung@chromium.org>, Olof Johansson <olof@lixom.net>,
         Scot Doyle <lkml14@scotdoyle.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 208/216] platform/chrome: chromeos_laptop - Add support for Acer C720
-Date: Mon, 12 Jan 2015 18:29:46 +0000
-Message-Id: <1421087394-2712-96-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 209/216] platform/chrome: chromeos_laptop - Add HP Chromebook 14
+Date: Mon, 12 Jan 2015 18:29:47 +0000
+Message-Id: <1421087394-2712-97-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -29,131 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+From: Benson Leung <bleung@chromium.org>
 
-commit da3b0ab75aadab63d1ffd5563100c9386e444dad upstream.
+commit 5ea9567f6126846f5dcfa8515d7ef2c238133c0d upstream.
 
-Acer C720 has touchpad and light sensor connected to a separate I2C buses.
-Since the designware I2C host controller driver has two instances on this
-particular machine we need a way to match the correct instance. Add support
-for this and then register both C720 touchpad and light sensor.
+Add support for the trackpad on HP Chromebook 14.
 
-This code is based on following patch from Benson Leung:
-
-https://patchwork.kernel.org/patch/3074411/
-
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Tested-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 Signed-off-by: Benson Leung <bleung@chromium.org>
 Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 Signed-off-by: Olof Johansson <olof@lixom.net>
 Cc: Scot Doyle <lkml14@scotdoyle.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/platform/chrome/chromeos_laptop.c | 45 ++++++++++++++++++++++++++-----
- 1 file changed, 39 insertions(+), 6 deletions(-)
+ drivers/platform/chrome/chromeos_laptop.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
 diff --git a/drivers/platform/chrome/chromeos_laptop.c b/drivers/platform/chrome/chromeos_laptop.c
-index 7f1a2e2711bd..a241e5fa6c83 100644
+index a241e5fa6c83..02e014b8927c 100644
 --- a/drivers/platform/chrome/chromeos_laptop.c
 +++ b/drivers/platform/chrome/chromeos_laptop.c
-@@ -45,6 +45,8 @@ static const char *i2c_adapter_names[] = {
- 	"SMBus I801 adapter",
- 	"i915 gmbus vga",
- 	"i915 gmbus panel",
-+	"i2c-designware-pci",
-+	"i2c-designware-pci",
- };
- 
- /* Keep this enum consistent with i2c_adapter_names */
-@@ -52,6 +54,8 @@ enum i2c_adapter_type {
- 	I2C_ADAPTER_SMBUS = 0,
- 	I2C_ADAPTER_VGADDC,
- 	I2C_ADAPTER_PANEL,
-+	I2C_ADAPTER_DESIGNWARE_0,
-+	I2C_ADAPTER_DESIGNWARE_1,
- };
- 
- struct i2c_peripheral {
-@@ -172,29 +176,42 @@ static struct i2c_client *__add_probed_i2c_device(
- 	return client;
- }
- 
-+struct i2c_lookup {
-+	const char *name;
-+	int instance;
-+	int n;
-+};
-+
- static int __find_i2c_adap(struct device *dev, void *data)
- {
--	const char *name = data;
-+	struct i2c_lookup *lookup = data;
- 	static const char *prefix = "i2c-";
- 	struct i2c_adapter *adapter;
- 	if (strncmp(dev_name(dev), prefix, strlen(prefix)) != 0)
- 		return 0;
- 	adapter = to_i2c_adapter(dev);
--	return (strncmp(adapter->name, name, strlen(name)) == 0);
-+	if (strncmp(adapter->name, lookup->name, strlen(lookup->name)) == 0 &&
-+	    lookup->n++ == lookup->instance)
-+		return 1;
-+	return 0;
- }
- 
- static int find_i2c_adapter_num(enum i2c_adapter_type type)
- {
- 	struct device *dev = NULL;
- 	struct i2c_adapter *adapter;
--	const char *name = i2c_adapter_names[type];
-+	struct i2c_lookup lookup;
-+
-+	memset(&lookup, 0, sizeof(lookup));
-+	lookup.name = i2c_adapter_names[type];
-+	lookup.instance = (type == I2C_ADAPTER_DESIGNWARE_1) ? 1 : 0;
-+
- 	/* find the adapter by name */
--	dev = bus_find_device(&i2c_bus_type, NULL, (void *)name,
--			      __find_i2c_adap);
-+	dev = bus_find_device(&i2c_bus_type, NULL, &lookup, __find_i2c_adap);
- 	if (!dev) {
- 		/* Adapters may appear later. Deferred probing will retry */
- 		pr_notice("%s: i2c adapter %s not found on system.\n", __func__,
--			  name);
-+			  lookup.name);
- 		return -ENODEV;
- 	}
- 	adapter = to_i2c_adapter(dev);
-@@ -377,6 +394,15 @@ static struct chromeos_laptop acer_ac700 = {
+@@ -380,6 +380,13 @@ static struct chromeos_laptop chromebook_pixel = {
  	},
  };
  
-+static struct chromeos_laptop acer_c720 = {
++static struct chromeos_laptop hp_chromebook_14 = {
 +	.i2c_peripherals = {
 +		/* Touchpad. */
 +		{ .add = setup_cyapa_tp, I2C_ADAPTER_DESIGNWARE_0 },
-+		/* Light Sensor. */
-+		{ .add = setup_isl29018_als, I2C_ADAPTER_DESIGNWARE_1 },
 +	},
 +};
 +
- static struct chromeos_laptop hp_pavilion_14_chromebook = {
+ static struct chromeos_laptop acer_c7_chromebook = {
  	.i2c_peripherals = {
  		/* Touchpad. */
-@@ -434,6 +460,13 @@ static struct dmi_system_id chromeos_laptop_dmi_table[] __initdata = {
- 		_CBDD(acer_ac700),
+@@ -446,6 +453,14 @@ static struct dmi_system_id chromeos_laptop_dmi_table[] __initdata = {
+ 		_CBDD(chromebook_pixel),
  	},
  	{
-+		.ident = "Acer C720",
++		.ident = "HP Chromebook 14",
 +		.matches = {
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Peppy"),
++			DMI_MATCH(DMI_BIOS_VENDOR, "coreboot"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Falco"),
 +		},
-+		_CBDD(acer_c720),
++		_CBDD(hp_chromebook_14),
 +	},
 +	{
- 		.ident = "HP Pavilion 14 Chromebook",
+ 		.ident = "Acer C7 Chromebook",
  		.matches = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "Butterfly"),
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Parrot"),
 -- 
 2.1.4
 
