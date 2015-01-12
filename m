@@ -1,127 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752401AbbALMfE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 07:35:04 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60526 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752263AbbALMfA (ORCPT
+	id S1752826AbbALMfU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 07:35:20 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:22243 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707AbbALMfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 07:35:00 -0500
-Message-ID: <54B3BF6C.4000004@pengutronix.de>
-Date: Mon, 12 Jan 2015 13:34:52 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: "Ahmed S. Darwish" <darwish.07@gmail.com>
-CC: Olivier Sobrie <olivier@sobrie.be>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 4/4] can: kvaser_usb: Add support for the Usbcan-II
- family
-References: <20141223154654.GB6460@vivalin-002> <20150105174910.GA6304@linux> <20150105175206.GB6304@linux> <20150105175713.GC6304@linux> <20150105183131.GD6304@linux> <54AE6FC1.6050007@pengutronix.de> <20150108151901.GA11398@vivalin-002> <54B3B555.5010804@pengutronix.de> <20150112122619.GD9213@linux>
-In-Reply-To: <20150112122619.GD9213@linux>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="T0LURvIkHTpnhlvomdKmUGfCCmAGA2loP"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 12 Jan 2015 07:35:13 -0500
+X-AuditID: cbfee691-f79b86d000004a5a-83-54b3bf752e5d
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: myungjoo.ham@samsung.com, kgene@kernel.org
+Cc: kyungmin.park@samsung.com, rafael.j.wysocki@intel.com,
+        mark.rutland@arm.com, a.kesavan@samsung.com, tomasz.figa@gmail.com,
+        k.kozlowski@samsung.com, b.zolnierkie@samsung.com, robh+dt@kernel.org,
+        cw00.choi@samsung.com, inki.dae@samsung.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Subject: [PATCHv8 5/9] ARM: dts: Add PPMU dt node for Exynos3250 SoC
+Date: Mon, 12 Jan 2015 21:34:53 +0900
+Message-id: <1421066097-26237-6-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.5.5
+In-reply-to: <1421066097-26237-1-git-send-email-cw00.choi@samsung.com>
+References: <1421066097-26237-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnkeLIzCtJLcpLzFFi42JZI2JSolu6f3OIwfb5/BaP1yxmstg4Yz2r
+	xfUvz1ktJt2fwGLx+oWhRf/j18wWZ5vesFtsenyN1eLyrjlsFp97jzBazDi/j8li6fWLTBa3
+	G1ewWTxe8ZbdonXvEXaLVbv+MDoIeKyZt4bRY+esu+wei/e8ZPLYtKqTzWPzknqPvi2rGD0+
+	b5ILYI/isklJzcksSy3St0vgynj7/htjwRXxirUP1jA3MB4Q6mLk5JAQMJFYcvsgG4QtJnHh
+	3nowW0hgKaPElU0yMDV991azdDFyAcUXMUo07fjGCuE0MUnc7L3IBFLFJqAlsf/FDbBuEQE9
+	ic5je9hBbGaBP0wSTZtYQGxhAReJhZ3fwGwWAVWJyWeXMYLYvAKuEl177jBCbFOQWLZ8JiuI
+	zSngJvFu9xqgmRxAy1wlbqyvB9krIfCSXeLa/GdsEHMEJL5NPsQCUiMhICux6QAzxBhJiYMr
+	brBMYBRewMiwilE0tSC5oDgpvchUrzgxt7g0L10vOT93EyMwnk7/ezZxB+P9A9aHGAU4GJV4
+	eC2kNocIsSaWFVfmHmI0BdowkVlKNDkfGLV5JfGGxmZGFqYmpsZG5pZmSuK8OtI/g4UE0hNL
+	UrNTUwtSi+KLSnNSiw8xMnFwSjUwRke94eM0WLaF2V6c+czl/0XGv9I5nh02rpy98GPYxIfO
+	N0ykBBf0Wm+/mCye+mL/ZJb4H01LTRT8X+XpVPyq8J6rcPiTSsUj5v8qXDxnA6xM+NZODNm/
+	fv83hY0HeBZmnvvtGJJ89cb8354fJ5qWZXR96MusKOaN+vt1tdXD4sAddnMcw6bcVmIpzkg0
+	1GIuKk4EAE3YVceiAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t9jAd3S/ZtDDFYeZLN4vGYxk8XGGetZ
+	La5/ec5qMen+BBaL1y8MLfofv2a2ONv0ht1i0+NrrBaXd81hs/jce4TRYsb5fUwWS69fZLK4
+	3bgCqH/FW3aL1r1H2C1W7frD6CDgsWbeGkaPnbPusnss3vOSyWPTqk42j81L6j36tqxi9Pi8
+	SS6APaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH
+	6HglhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8bb998YC66IV6x9sIa5
+	gfGAUBcjJ4eEgIlE373VLBC2mMSFe+vZuhi5OIQEFjFKNO34xgrhNDFJ3Oy9yARSxSagJbH/
+	xQ02EFtEQE+i89gedhCbWeAPk0TTJrBJwgIuEgs7v4HZLAKqEpPPLmMEsXkFXCW69txhhNim
+	ILFs+UxWEJtTwE3i3e41QDM5gJa5StxYXz+BkXcBI8MqRtHUguSC4qT0XEO94sTc4tK8dL3k
+	/NxNjOB4fSa1g3Flg8UhRgEORiUeXgupzSFCrIllxZW5hxglOJiVRHhdy4BCvCmJlVWpRfnx
+	RaU5qcWHGE2BjprILCWanA9MJXkl8YbGJmZGlkbmhhZGxuZK4rxK9m0hQgLpiSWp2ampBalF
+	MH1MHJxSDYxTXs+ROi7/6exW852sVYULJjmY//vx0fpA754fZYc7xdRrtl7m05Fv2WM553em
+	1DrBtX/3fVr2UUd3yf28zu5J93dLXo4W1lBelMDv4vX5uT6nw+7Ar0vPTtKRCTAqbmGvTFmz
+	xvTNxxlbMtomCsutq5Ap3LCw2Knu7qHMXUv3JH4yOuxXwCakxFKckWioxVxUnAgAncubIO0C	AAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---T0LURvIkHTpnhlvomdKmUGfCCmAGA2loP
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+This patch add PPMU (Platform Performance Monitoring Unit) dt node
+to estimate the utilization of each IP in Exynos SoC throught DEVFREQ Event
+subsystem.
 
-On 01/12/2015 01:26 PM, Ahmed S. Darwish wrote:
-> On Mon, Jan 12, 2015 at 12:51:49PM +0100, Marc Kleine-Budde wrote:
->> On 01/08/2015 04:19 PM, Ahmed S. Darwish wrote:
->>
->> [...]
->>
->>>>>  MODULE_DEVICE_TABLE(usb, kvaser_usb_table);
->>>>> @@ -463,7 +631,18 @@ static int kvaser_usb_get_software_info(struct=
- kvaser_usb *dev)
->>>>>  	if (err)
->>>>>  		return err;
->>>>> =20
->>>>> -	dev->fw_version =3D le32_to_cpu(msg.u.softinfo.fw_version);
->>>>> +	switch (dev->family) {
->>>>> +	case KVASER_LEAF:
->>>>> +		dev->fw_version =3D le32_to_cpu(msg.u.leaf.softinfo.fw_version);=
+This patch adds following PPMU dt nodes:
+- PPMU_DMC0     0x106a0000
+- PPMU_DMC1     0x106b0000
+- PPMU_RIGHTBUS 0x112A0000
+- PPMU_LEFTBUS  0x116A0000
+- PPMU_CAMIF    0x11AC0000
+- PPMU_LCD0     0x11E40000
+- PPMU_FSYS     0x12630000
+- PPMU_3D       0x13220000
+- PPMU_MFC      0x13660000
+- PPMU_CPU      0x106c0000
 
->>>>> +		break;
->>>>> +	case KVASER_USBCAN:
->>>>> +		dev->fw_version =3D le32_to_cpu(msg.u.usbcan.softinfo.fw_version=
-);
->>>>> +		break;
->>>>> +	default:
->>>>> +		dev_err(dev->udev->dev.parent,
->>>>> +			"Invalid device family (%d)\n", dev->family);
->>>>> +		return -EINVAL;
->>>>
->>>> The default case should not happen. I think you can remove it.
->>
->>> It's true, it _should_ never happen. But I only add such checks if
->>> the follow-up code critically depends on a certain `dev->family`
->>> behavior. So it's kind of a defensive check against any possible
->>> bug in driver or memory.
->>>
->>> What do you think?
->>
->> The kernel is full of callback functions, if you have a bit flip there=
+Cc: Kukjin Kim <kgene@kernel.org>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+---
+ arch/arm/boot/dts/exynos3250.dtsi | 74 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 74 insertions(+)
 
->> you're in trouble anyways. A bug in the driver (or other parts of the
->> kernel) might overwrite the memory of dev->family, but if this happens=
-,
->> more things will break.
->>
->=20
-> I see. Thanks for the explanation.
->=20
-> Most of them are now removed in latest submission, except two to
-> avoid GCC warnings of variables that "may be used uninitialized".
+diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
+index 2246549..9ed1260 100644
+--- a/arch/arm/boot/dts/exynos3250.dtsi
++++ b/arch/arm/boot/dts/exynos3250.dtsi
+@@ -515,6 +515,80 @@
+ 			compatible = "arm,cortex-a7-pmu";
+ 			interrupts = <0 18 0>, <0 19 0>;
+ 		};
++
++		ppmu_dmc0: ppmu_dmc0@106a0000 {
++			compatible = "samsung,exynos-ppmu";
++			reg = <0x106a0000 0x2000>;
++			status = "disabled";
++		};
++
++		ppmu_dmc1: ppmu_dmc1@106b0000 {
++			compatible = "samsung,exynos-ppmu";
++			reg = <0x106b0000 0x2000>;
++			status = "disabled";
++		};
++
++		ppmu_cpu: ppmu_cpu@106c0000 {
++			compatible = "samsung,exynos-ppmu";
++			reg = <0x106c0000 0x2000>;
++			status = "disabled";
++		};
++
++		ppmu_rightbus: ppmu_rightbus@112a0000 {
++			compatible = "samsung,exynos-ppmu";
++			reg = <0x112a0000 0x2000>;
++			clocks = <&cmu CLK_PPMURIGHT>;
++			clock-names = "ppmu";
++			status = "disabled";
++		};
++
++		ppmu_leftbus: ppmu_leftbus0@116a0000 {
++			compatible = "samsung,exynos-ppmu";
++			reg = <0x116a0000 0x2000>;
++			clocks = <&cmu CLK_PPMULEFT>;
++			clock-names = "ppmu";
++			status = "disabled";
++		};
++
++		ppmu_camif: ppmu_camif@11ac0000 {
++			compatible = "samsung,exynos-ppmu";
++			reg = <0x11ac0000 0x2000>;
++			clocks = <&cmu CLK_PPMUCAMIF>;
++			clock-names = "ppmu";
++			status = "disabled";
++		};
++
++		ppmu_lcd0: ppmu_lcd0@11e40000 {
++			compatible = "samsung,exynos-ppmu";
++			reg = <0x11e40000 0x2000>;
++			clocks = <&cmu CLK_PPMULCD0>;
++			clock-names = "ppmu";
++			status = "disabled";
++		};
++
++		ppmu_fsys: ppmu_fsys@12630000 {
++			compatible = "samsung,exynos-ppmu";
++			reg = <0x12630000 0x2000>;
++			clocks = <&cmu CLK_PPMUFILE>;
++			clock-names = "ppmu";
++			status = "disabled";
++		};
++
++		ppmu_g3d: ppmu_g3d@13220000 {
++			compatible = "samsung,exynos-ppmu";
++			reg = <0x13220000 0x2000>;
++			clocks = <&cmu CLK_PPMUG3D>;
++			clock-names = "ppmu";
++			status = "disabled";
++		};
++
++		ppmu_mfc: ppmu_mfc@13660000 {
++			compatible = "samsung,exynos-ppmu";
++			reg = <0x13660000 0x2000>;
++			clocks = <&cmu CLK_PPMUMFC_L>;
++			clock-names = "ppmu";
++			status = "disabled";
++		};
+ 	};
+ };
+ 
+-- 
+1.8.5.5
 
-Thanks, I'll look at the code later and try to figure out what gcc's
-problem might be.
-
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---T0LURvIkHTpnhlvomdKmUGfCCmAGA2loP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUs79sAAoJECte4hHFiupUfqIQAJxCHPt1UzhgEQVZNt0ONQY/
-0PKUDb3ekgok4PyTJk5YZvwbAksKUqXithIcjognePZeKyPcPJkslEjoDp0lmtt4
-OBumJIHzlm38Udop7d8wSZBatVr0CkkkBvI/xWEy0kKOj6aQ9sQqTbDkQ86ZjRFs
-qi6X8qpfUzOH5ZSqR80VBw41bBDiqdzuQ+tKAxUK5+5ZtubkBKrXSic6COavYP30
-AV8xXWWt9u3+1OM/Exdjd6tUs1W/7zUJxjK8idYkcsn7TKD+RBJVL7e2XSWmolAq
-k1bW+aIo2oMRDxiVFwCkBR49s0LgN9QGQ6BIEAwLid3WWGYKcluFMaRD4WfvaCwI
-vfuFL7mXjz16e8Wi4ntzjYp9hjJR1aBKznU28QkXXjJeG4LMVL2I+MRQiawInjKT
-KPXR9M1lh+nL33OV14wIe62/bC8tzOpqzVdmasUyQ1STsDNIOR9xaAsj66t0NH1l
-io+CwdnCpxVaL6c4uvwfa0WV4Yd1dwR08TYS8e8JSikKX+vHYNstTruG9JNAq0Pl
-X8xBdnu2HsYuBtrM0azHp4KsKmLYSAj/2to3nbdmrk400JuVd0YqAx1IjFrbOz9u
-aPuu58UBKxm6YrH+tk48M6xqD4S7YmqbLKyyk2zbxeSlkNXL6fRmjo2mFEuXyhSV
-itmnu+CZF1XI1858+j4F
-=M+PH
------END PGP SIGNATURE-----
-
---T0LURvIkHTpnhlvomdKmUGfCCmAGA2loP--
