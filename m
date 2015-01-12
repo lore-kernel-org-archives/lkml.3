@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752304AbbALWF6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 17:05:58 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:54598 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000AbbALWF4 (ORCPT
+	id S1751754AbbALWMV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 17:12:21 -0500
+Received: from mail-yk0-f169.google.com ([209.85.160.169]:53324 "EHLO
+	mail-yk0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000AbbALWMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 17:05:56 -0500
-Date: Mon, 12 Jan 2015 17:05:51 -0500 (EST)
-Message-Id: <20150112.170551.2256606651908771184.davem@davemloft.net>
-To: pagupta@redhat.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, jasowang@redhat.com,
-        mst@redhat.com, dgibson@redhat.com, vfalico@gmail.com,
-        edumazet@google.com, vyasevic@redhat.com, hkchu@google.com,
-        wuzhy@linux.vnet.ibm.com, xemul@parallels.com, therbert@google.com,
-        bhutchings@solarflare.com, xii@google.com, stephen@networkplumber.org,
-        jiri@resnulli.us, sergei.shtylyov@cogentembedded.com
-Subject: Re: [PATCH v5 net-net 0/2] Increase the limit of tuntap queues
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1421043089-30103-1-git-send-email-pagupta@redhat.com>
-References: <1421043089-30103-1-git-send-email-pagupta@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 12 Jan 2015 14:05:55 -0800 (PST)
+	Mon, 12 Jan 2015 17:12:19 -0500
+Date: Mon, 12 Jan 2015 14:12:30 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Wenyou Yang <wenyou.yang@atmel.com>,
+        Alexander Stein <alexanders83@web.de>, Bo Shen <voice.shen@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL] at91: fixes for 3.19 #1 (ter)
+Message-ID: <20150112221230.GD22090@quad.lixom.net>
+References: <1421076472-10589-1-git-send-email-nicolas.ferre@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421076472-10589-1-git-send-email-nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pankaj Gupta <pagupta@redhat.com>
-Date: Mon, 12 Jan 2015 11:41:27 +0530
+On Mon, Jan 12, 2015 at 04:27:52PM +0100, Nicolas Ferre wrote:
+> Arnd, Olof, Kevin,
+> 
+> Here is the fixes pull-request for 3.19 that supersedes the ones already sent.
+> It collects all the fixes that I have currently for this kernel revision.
+> 
+> Thanks, best regards,
+> 
+> The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
+> 
+>   Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-fixes
+> 
+> for you to fetch changes up to b8659752c37ec157ee254cff443b1c9d523aea22:
+> 
+>   ARM: at91: board-dt-sama5: add phy_fixup to override NAND_Tree (2015-01-12 15:50:23 +0100)
 
-> Networking under KVM works best if we allocate a per-vCPU rx and tx
-> queue in a virtual NIC. This requires a per-vCPU queue on the host side.
-> Modern physical NICs have multiqueue support for large number of queues.
-> To scale vNIC to run multiple queues parallel to maximum number of vCPU's
-> we need to increase number of queues support in tuntap.   
+Thanks Nicolas, now merged!
 
-Series applied, thanks for following up on this.
+
+-Olof
