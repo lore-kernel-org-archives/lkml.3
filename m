@@ -1,138 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753089AbbALLFT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 06:05:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58301 "EHLO mx1.redhat.com"
+	id S1753199AbbALLF7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 06:05:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55988 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752726AbbALLFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 06:05:16 -0500
-Date: Mon, 12 Jan 2015 12:04:43 +0100
+	id S1752924AbbALLF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 06:05:56 -0500
+Date: Mon, 12 Jan 2015 12:05:22 +0100
 From: Jiri Olsa <jolsa@redhat.com>
 To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 Cc: acme@redhat.com, namhyung@kernel.org, peterz@infradead.org,
         jolsa@kernel.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
         linux-perf-users@vger.kernel.org, linux-arch@vger.kernel.org,
-        Alexey.Brodkin@synopsys.com
-Subject: Re: [PATCH v2 5/5] perf tools: [uclibc] provide stub for
- pthread_attr_setaffinity_np
-Message-ID: <20150112110443.GB26229@krava.redhat.com>
+        Alexey.Brodkin@synopsys.com, Borislav Petkov <bp@suse.de>,
+        Cody P Schafer <dev@codyps.com>
+Subject: Re: [PATCH v2 1/5] perf tools: [uclibc] fix statfs.f_type data type
+ mismatch build error
+Message-ID: <20150112110522.GC26229@krava.redhat.com>
 References: <1420888254-17504-1-git-send-email-vgupta@synopsys.com>
- <1420888254-17504-6-git-send-email-vgupta@synopsys.com>
+ <1420888254-17504-2-git-send-email-vgupta@synopsys.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1420888254-17504-6-git-send-email-vgupta@synopsys.com>
+In-Reply-To: <1420888254-17504-2-git-send-email-vgupta@synopsys.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 04:40:54PM +0530, Vineet Gupta wrote:
+On Sat, Jan 10, 2015 at 04:40:50PM +0530, Vineet Gupta wrote:
+> From: Alexey Brodkin <abrodkin@synopsys.com>
+> 
+> ARC Linux uses the no legacy syscalls abi and corresponding uClibc headers
+> statfs defines f_type to be U32 which causes perf build breakage
+> 
+> http://git.uclibc.org/uClibc/tree/libc/sysdeps/linux/common-generic/bits/statfs.h
+> 
+> ----------->8---------------
+>   CC       fs/fs.o
+> fs/fs.c: In function 'fs__valid_mount':
+> fs/fs.c:82:24: error: comparison between signed and unsigned integer
+> expressions [-Werror=sign-compare]
+>   else if (st_fs.f_type != magic)
+>                         ^
+> cc1: all warnings being treated as errors
+> ----------->8---------------
+> 
+> Cc: Borislav Petkov <bp@suse.de>
+> Cc: Jiri Olsa <jolsa@kernel.org>
+> Cc: Cody P Schafer <dev@codyps.com>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: linux-perf-users@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
 
-SNIP
-
-> @@ -198,6 +198,7 @@ CORE_FEATURE_TESTS =			\
->  	libpython-version		\
->  	libslang			\
->  	libunwind			\
-> +	pthread-attr-setaffinity-np	\
->  	stackprotector-all		\
->  	timerfd				\
->  	libdw-dwarf-unwind		\
-> @@ -226,6 +227,7 @@ VF_FEATURE_TESTS =			\
->  	libelf-getphdrnum		\
->  	libelf-mmap			\
->  	libpython-version		\
-> +	pthread-attr-setaffinity-np	\
->  	stackprotector-all		\
->  	timerfd				\
->  	libunwind-debug-frame		\
-> @@ -301,6 +303,10 @@ ifeq ($(feature-sync-compare-and-swap), 1)
->    CFLAGS += -DHAVE_SYNC_COMPARE_AND_SWAP_SUPPORT
->  endif
->  
-> +ifeq ($(feature-pthread-attr-setaffinity-np), 1)
-> +  CFLAGS += -DHAVE_PTHREAD_ATTR_SETAFFINITY_NP
-> +endif
-> +
->  ifndef NO_BIONIC
->    $(call feature_check,bionic)
->    ifeq ($(feature-bionic), 1)
-> diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-> index 53f19b5dbc37..e9b99bb29348 100644
-> --- a/tools/perf/config/feature-checks/Makefile
-> +++ b/tools/perf/config/feature-checks/Makefile
-> @@ -25,6 +25,7 @@ FILES=					\
->  	test-libslang.bin		\
->  	test-libunwind.bin		\
->  	test-libunwind-debug-frame.bin	\
-> +	test-pthread-attr-setaffinity-np.bin	\
->  	test-stackprotector-all.bin	\
->  	test-timerfd.bin		\
->  	test-libdw-dwarf-unwind.bin	\
-> @@ -47,6 +48,9 @@ test-all.bin:
->  test-hello.bin:
->  	$(BUILD)
->  
-> +test-pthread-attr-setaffinity-np.bin:
-> +	$(BUILD) -Werror
-
-this does not works for me unless I add -lpthread (check patch below)
-is it possible you pushed that through LDFLAGS?
-
-otherwise I'm getting following error:
-	---
-	In file included from bench/futex-hash.c:17:0:
-	bench/futex.h:73:19: error: conflicting types for ‘pthread_attr_setaffinity_np’
-	 static inline int pthread_attr_setaffinity_np(pthread_attr_t *attr,
-			   ^
-	In file included from bench/futex.h:72:0,
-			 from bench/futex-hash.c:17:
-	/usr/include/pthread.h:407:12: note: previous declaration of ‘pthread_attr_setaffinity_np’ was here
-	 extern int pthread_attr_setaffinity_np (pthread_attr_t *__attr,
-		    ^
-	make[1]: *** [bench/futex-hash.o] Error 1
-	make[1]: *** Waiting for unfinished jobs....
-	In file included from bench/futex-wake.c:17:0:
-	bench/futex.h:73:19: error: conflicting types for ‘pthread_attr_setaffinity_np’
-	 static inline int pthread_attr_setaffinity_np(pthread_attr_t *attr,
-			   ^
-	In file included from bench/futex.h:72:0,
-			 from bench/futex-wake.c:17:
-	/usr/include/pthread.h:407:12: note: previous declaration of ‘pthread_attr_setaffinity_np’ was here
-	 extern int pthread_attr_setaffinity_np (pthread_attr_t *__attr,
-		    ^
-	make[1]: *** [bench/futex-wake.o] Error 1
-	In file included from bench/futex-requeue.c:17:0:
-	bench/futex.h:73:19: error: conflicting types for ‘pthread_attr_setaffinity_np’
-	 static inline int pthread_attr_setaffinity_np(pthread_attr_t *attr,
-			   ^
-	In file included from bench/futex.h:72:0,
-			 from bench/futex-requeue.c:17:
-	/usr/include/pthread.h:407:12: note: previous declaration of ‘pthread_attr_setaffinity_np’ was here
-	 extern int pthread_attr_setaffinity_np (pthread_attr_t *__attr,
-		    ^
-	make[1]: *** [bench/futex-requeue.o] Error 1
-	make: *** [all] Error 2
-	---
-
-my system is x86_64 on F20
+Acked-by: Jiri Olsa <jolsa@kernel.org>
 
 thanks,
 jirka
 
-
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index e9b99bb29348..42ac05aaf8ac 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -49,7 +49,7 @@ test-hello.bin:
- 	$(BUILD)
- 
- test-pthread-attr-setaffinity-np.bin:
--	$(BUILD) -Werror
-+	$(BUILD) -Werror -lpthread
- 
- test-stackprotector-all.bin:
- 	$(BUILD) -Werror -fstack-protector-all
+> 
+> ---
+> v3: Changes since v2 [2]
+>  * Made Changelog a bit more concise, no code changes [vgupta]
+> 
+> v2: Changes since v1 [1]
+>  * Added type cast to DEBUGFS_MAGIC in "debugfs.c" [Arnaldo]
+>  * Added verbose explanation of root cause
+> 
+> [2] https://lkml.org/lkml/2014/9/16/296
+> [1] https://lkml.org/lkml/2014/8/13/529
+> 
+> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+> ---
+>  tools/lib/api/fs/debugfs.c | 2 +-
+>  tools/lib/api/fs/fs.c      | 2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/tools/lib/api/fs/debugfs.c b/tools/lib/api/fs/debugfs.c
+> index a74fba6d7743..93aa4cd2416f 100644
+> --- a/tools/lib/api/fs/debugfs.c
+> +++ b/tools/lib/api/fs/debugfs.c
+> @@ -67,7 +67,7 @@ int debugfs_valid_mountpoint(const char *debugfs)
+>  
+>  	if (statfs(debugfs, &st_fs) < 0)
+>  		return -ENOENT;
+> -	else if (st_fs.f_type != (long) DEBUGFS_MAGIC)
+> +	else if ((long) st_fs.f_type != (long) DEBUGFS_MAGIC)
+>  		return -ENOENT;
+>  
+>  	return 0;
+> diff --git a/tools/lib/api/fs/fs.c b/tools/lib/api/fs/fs.c
+> index 65d9be3f9887..15e64921ea84 100644
+> --- a/tools/lib/api/fs/fs.c
+> +++ b/tools/lib/api/fs/fs.c
+> @@ -79,7 +79,7 @@ static int fs__valid_mount(const char *fs, long magic)
+>  
+>  	if (statfs(fs, &st_fs) < 0)
+>  		return -ENOENT;
+> -	else if (st_fs.f_type != magic)
+> +	else if ((long) st_fs.f_type != magic)
+>  		return -ENOENT;
+>  
+>  	return 0;
+> -- 
+> 1.9.1
+> 
