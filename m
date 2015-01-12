@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901AbbALSGt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:06:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57776 "EHLO
+	id S1753719AbbALSG2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:06:28 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57658 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752453AbbALSGq (ORCPT
+	with ESMTP id S1753688AbbALSGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:06:46 -0500
+	Mon, 12 Jan 2015 13:06:25 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Imre Deak <imre.deak@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Daniel Vetter <daniel.vetter@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 074/216] drm/i915: Only warn the first time we attempt to mmio whilst suspended
-Date: Mon, 12 Jan 2015 18:03:11 +0000
-Message-Id: <1421085933-32536-75-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 075/216] drm/i915: Disallow pin ioctl completely for kms drivers
+Date: Mon, 12 Jan 2015 18:03:12 +0000
+Message-Id: <1421085933-32536-76-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -30,48 +28,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 2b387059817fd100cddc5a97118d63e3f3fade74 upstream.
+commit d472fcc8379c062bd56a3876fc6ef22258f14a91 upstream.
 
-In all likelihood we will do a few hundred errnoneous register
-operations if we do a single invalid register access whilst the device
-is suspended. As each instance causes a WARN, this floods the system
-logs and can make the system unresponsive.
+The problem here is that SNA pins batchbuffers to etch out a bit more
+performance. Iirc it started out as a w/a for i830M (which we've
+implemented in the kernel since a long time already). The problem is
+that the pin ioctl wasn't added in
 
-The warning was first introduced in
-commit b2ec142cb0101f298f8e091c7d75b1ec5b809b65
-Author: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Date:   Fri Feb 21 13:52:25 2014 -0300
+commit d23db88c3ab233daed18709e3a24d6c95344117f
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Fri May 23 08:48:08 2014 +0200
 
-    drm/i915: call assert_device_not_suspended at gen6_force_wake_work
+    drm/i915: Prevent negative relocation deltas from wrapping
 
-and despite the claims the WARN is still encountered in the wild today.
+Fix this by simply disallowing pinning from userspace so that the
+kernel is in full control of batch placement again. Especially since
+distros are moving towards running X as non-root, so most users won't
+even be able to see any benefits.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Cc: Imre Deak <imre.deak@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+UMS support is dead now, but we need this minimal patch for
+backporting. Follow-up patch will remove the pin ioctl code
+completely.
+
+Note to backporters: You must have both
+
+commit b45305fce5bb1abec263fcff9d81ebecd6306ede
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Mon Dec 17 16:21:27 2012 +0100
+
+    drm/i915: Implement workaround for broken CS tlb on i830/845
+
+which laned in 3.8 and
+
+commit c4d69da167fa967749aeb70bc0e94a457e5d00c1
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Mon Sep 8 14:25:41 2014 +0100
+
+    drm/i915: Evict CS TLBs between batches
+
+which is also marked cc: stable. Otherwise this could introduce a
+regression by disabling the userspace w/a without the kernel w/a being
+fully functional on i830/45.
+
+References: https://bugs.freedesktop.org/show_bug.cgi?id=76554#c116
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_uncore.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_uncore.c b/drivers/gpu/drm/i915/intel_uncore.c
-index 4f6fef7ac069..28ac6156ec1d 100644
---- a/drivers/gpu/drm/i915/intel_uncore.c
-+++ b/drivers/gpu/drm/i915/intel_uncore.c
-@@ -43,8 +43,8 @@
- static void
- assert_device_not_suspended(struct drm_i915_private *dev_priv)
- {
--	WARN(HAS_RUNTIME_PM(dev_priv->dev) && dev_priv->pm.suspended,
--	     "Device suspended\n");
-+	WARN_ONCE(HAS_RUNTIME_PM(dev_priv->dev) && dev_priv->pm.suspended,
-+		  "Device suspended\n");
- }
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index ef3b4798da02..05cf35a972e5 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -4129,7 +4129,7 @@ i915_gem_pin_ioctl(struct drm_device *dev, void *data,
+ 	struct drm_i915_gem_object *obj;
+ 	int ret;
  
- static void __gen6_gt_wait_for_thread_c0(struct drm_i915_private *dev_priv)
+-	if (INTEL_INFO(dev)->gen >= 6)
++	if (drm_core_check_feature(dev, DRIVER_MODESET))
+ 		return -ENODEV;
+ 
+ 	ret = i915_mutex_lock_interruptible(dev);
+@@ -4222,6 +4222,9 @@ i915_gem_busy_ioctl(struct drm_device *dev, void *data,
+ 	struct drm_i915_gem_object *obj;
+ 	int ret;
+ 
++	if (drm_core_check_feature(dev, DRIVER_MODESET))
++		return -ENODEV;
++
+ 	ret = i915_mutex_lock_interruptible(dev);
+ 	if (ret)
+ 		return ret;
 -- 
 2.1.4
 
