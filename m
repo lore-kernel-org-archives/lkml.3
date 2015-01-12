@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830AbbALXvZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 18:51:25 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:55417 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971AbbALXvY convert rfc822-to-8bit (ORCPT
+	id S1752871AbbALXxG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 18:53:06 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:58345 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077AbbALXxE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 18:51:24 -0500
+	Mon, 12 Jan 2015 18:53:04 -0500
 Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
@@ -18,71 +18,79 @@ To: Robert Jarzmik <robert.jarzmik@free.fr>, "Daniel Mack" <daniel@zonque.org>,
         "Dmitry Eremin-Solenikov" <dbaryshkov@gmail.com>,
         "Arnd Bergmann" <arnd@arndb.de>
 From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1419688528-760-4-git-send-email-robert.jarzmik@free.fr>
+In-Reply-To: <1419688528-760-5-git-send-email-robert.jarzmik@free.fr>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 References: <1419688528-760-1-git-send-email-robert.jarzmik@free.fr>
- <1419688528-760-4-git-send-email-robert.jarzmik@free.fr>
-Message-ID: <20150112235117.20842.79524@quantum>
+ <1419688528-760-5-git-send-email-robert.jarzmik@free.fr>
+Message-ID: <20150112235256.20842.68349@quantum>
 User-Agent: alot/0.3.5
-Subject: Re: [PATCH 3/4] arm: pxa: move gpio11 clock to board files
-Date: Mon, 12 Jan 2015 15:51:17 -0800
+Subject: Re: [PATCH 4/4] clk: pxa: add missing pxa27x clocks for Irda and sa1100-rtc
+Date: Mon, 12 Jan 2015 15:52:56 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Robert Jarzmik (2014-12-27 05:55:27)
-> The pxa25x gpio11 clock output was previously selected on its pin by the
-> clock enabling, toggling the pin function.
-> 
-> As we transition to common clock framework, the pin function is moved to
-> board file for the 2 users, ie. lubbock and eseries.
+Quoting Robert Jarzmik (2014-12-27 05:55:28)
+> Add 2 clocks which were erronously forgotten by the clock framework
+> port, namely :
+>  - sa1100-rtc
+>  - irda for pxa2xx-ir:UARTCLK
 > 
 > Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
 
-Reviewed-by: Michael Turquette <mturquette@linaro.org>
+Acked-by: Michael Turquette <mturquette@linaro.org>
 
 > ---
->  arch/arm/mach-pxa/eseries.c | 5 ++++-
->  arch/arm/mach-pxa/lubbock.c | 3 +++
->  2 files changed, 7 insertions(+), 1 deletion(-)
+>  drivers/clk/pxa/clk-pxa27x.c | 29 +++++++++++++++++++++++++++++
+>  1 file changed, 29 insertions(+)
 > 
-> diff --git a/arch/arm/mach-pxa/eseries.c b/arch/arm/mach-pxa/eseries.c
-> index cfb8641..d8fc9a3 100644
-> --- a/arch/arm/mach-pxa/eseries.c
-> +++ b/arch/arm/mach-pxa/eseries.c
-> @@ -683,7 +683,7 @@ static unsigned long e750_pin_config[] __initdata = {
->         /* PC Card */
->         GPIO8_GPIO,   /* CD0 */
->         GPIO44_GPIO,  /* CD1 */
-> -       GPIO11_GPIO,  /* IRQ0 */
-> +       /* GPIO11_GPIO,  IRQ0 */
->         GPIO6_GPIO,   /* IRQ1 */
->         GPIO27_GPIO,  /* RST0 */
->         GPIO24_GPIO,  /* RST1 */
-> @@ -778,6 +778,9 @@ static unsigned long e800_pin_config[] __initdata = {
->         GPIO29_AC97_SDATA_IN_0,
->         GPIO30_AC97_SDATA_OUT,
->         GPIO31_AC97_SYNC,
-> +
-> +       /* tc6393xb */
-> +       GPIO11_3_6MHz,
->  };
+> diff --git a/drivers/clk/pxa/clk-pxa27x.c b/drivers/clk/pxa/clk-pxa27x.c
+> index 2b8343a..9a31b77 100644
+> --- a/drivers/clk/pxa/clk-pxa27x.c
+> +++ b/drivers/clk/pxa/clk-pxa27x.c
+> @@ -353,6 +353,34 @@ static u8 clk_pxa27x_memory_get_parent(struct clk_hw *hw)
+>  PARENTS(clk_pxa27x_memory) = { "osc_13mhz", "system_bus", "run" };
+>  MUX_RO_RATE_RO_OPS(clk_pxa27x_memory, "memory");
 >  
->  static struct w100_gen_regs e800_lcd_regs = {
-> diff --git a/arch/arm/mach-pxa/lubbock.c b/arch/arm/mach-pxa/lubbock.c
-> index d8a1be6..b742708 100644
-> --- a/arch/arm/mach-pxa/lubbock.c
-> +++ b/arch/arm/mach-pxa/lubbock.c
-> @@ -101,6 +101,9 @@ static unsigned long lubbock_pin_config[] __initdata = {
->         GPIO6_MMC_CLK,
->         GPIO8_MMC_CS0,
->  
-> +       /* SA1111 chip */
-> +       GPIO11_3_6MHz,
+> +#define DUMMY_CLK(_con_id, _dev_id, _parent) \
+> +       { .con_id = _con_id, .dev_id = _dev_id, .parent = _parent }
+> +struct dummy_clk {
+> +       const char *con_id;
+> +       const char *dev_id;
+> +       const char *parent;
+> +};
+> +static struct dummy_clk dummy_clks[] __initdata = {
+> +       DUMMY_CLK(NULL, "pxa27x-gpio", "osc_32_768khz"),
+> +       DUMMY_CLK(NULL, "sa1100-rtc", "osc_32_768khz"),
+> +       DUMMY_CLK("UARTCLK", "pxa2xx-ir", "STUART"),
+> +};
 > +
->         /* wakeup */
->         GPIO1_GPIO | WAKEUP_ON_EDGE_RISE,
->  };
+> +static void __init pxa27x_dummy_clocks_init(void)
+> +{
+> +       struct clk *clk;
+> +       struct dummy_clk *d;
+> +       const char *name;
+> +       int i;
+> +
+> +       for (i = 0; i < ARRAY_SIZE(dummy_clks); i++) {
+> +               d = &dummy_clks[i];
+> +               name = d->dev_id ? d->dev_id : d->con_id;
+> +               clk = clk_register_fixed_factor(NULL, name, d->parent, 0, 1, 1);
+> +               clk_register_clkdev(clk, d->con_id, d->dev_id);
+> +       }
+> +}
+> +
+>  static void __init pxa27x_base_clocks_init(void)
+>  {
+>         pxa27x_register_plls();
+> @@ -365,6 +393,7 @@ static void __init pxa27x_base_clocks_init(void)
+>  int __init pxa27x_clocks_init(void)
+>  {
+>         pxa27x_base_clocks_init();
+> +       pxa27x_dummy_clocks_init();
+>         return clk_pxa_cken_init(pxa27x_clocks, ARRAY_SIZE(pxa27x_clocks));
+>  }
+>  
 > -- 
 > 2.1.0
 > 
