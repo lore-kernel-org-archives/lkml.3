@@ -1,34 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751304AbbALFYK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 00:24:10 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:44405 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952AbbALFYH (ORCPT
+	id S1751194AbbALGJf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 01:09:35 -0500
+Received: from exprod7og119.obsmtp.com ([64.18.2.16]:58572 "EHLO
+	exprod7og119.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921AbbALGJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 00:24:07 -0500
-Date: Mon, 12 Jan 2015 00:24:05 -0500 (EST)
-Message-Id: <20150112.002405.468448503179324247.davem@davemloft.net>
-To: kvalo@codeaurora.org
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull-request: wireless-drivers 2015-01-09
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <87lhlbj4pp.fsf@kamboji.qca.qualcomm.com>
-References: <87lhlbj4pp.fsf@kamboji.qca.qualcomm.com>
-X-Mailer: Mew version 6.6 on Emacs 24.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 11 Jan 2015 21:24:06 -0800 (PST)
+	Mon, 12 Jan 2015 01:09:34 -0500
+From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+X-Google-Original-From: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
+To: jejb@kernel.org, hch@infradead.org
+Cc: martin.petersen@oracle.com, linux-scsi@vger.kernel.org,
+        JBottomley@Parallels.com, Sathya.Prakash@avagotech.com,
+        Nagalakshmi.Nandigama@avagotech.com, linux-kernel@vger.kernel.org,
+        Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
+Subject: [PATCH 00/10] mpt2sas: Phase19 and Phase20 patch set
+Date: Mon, 12 Jan 2015 11:38:54 +0530
+Message-Id: <1421042944-14988-1-git-send-email-Sreekanth.Reddy@avagotech.com>
+X-Mailer: git-send-email 2.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kalle Valo <kvalo@codeaurora.org>
-Date: Fri, 09 Jan 2015 18:31:30 +0200
+Please consider this mpt2sas drivers Phase19 and Phase20 patch series.
+All these patches are reviewed by Martin K. Petersen.
 
-> here are few more fixes to 3.19. Please let me know if there are any
-> problems.
+Some of these features are exists for both mpt2sas & mpt3sas drives,
+so some of these patches contains code changes for both mpt2sas & mpt3sas
+drivers.
 
-Pulled, thanks Kalle.
+Sreekanth Reddy (10):
+  [SCSI] mpt2sas: MPI2 Rev AA (2.00.19) specifications
+  [SCSI] mpt2sas, mpt3sas: Added support to log message when Temperature
+    Threshold exceeds for any Sensor
+  [PATCH] mpt2sas, mpt3sas: Fail the host reset initiated due to
+    discovery related I/O timeouts at driver load time
+  [SCSI] mpt2sas: Bump driver version to 19.100.00.00
+  [SCSI] mpt2sas: MPI2 Rev BB (2.00.20) specification and 2.00.35 header
+    files
+  [SCSI] mpt2sas, mpt3sas: Removing uppper boundary restriction for the
+    module parameter max_sgl_entries
+  [SCSI] mpt2sas: Complete the SCSI command with DID_RESET status for
+    log_info value 0x0x32010081
+  [SCSI] mpt2sas, mpt3sas: Update Attribution Language to Avago
+  [SCSI] mpt2sas, mpt3sas: Added a support to set cpu affinity for each
+    MSIX vector enabled by the HBA
+  [SCSI] mpt2sas: Bump driver version to 20.100.00.00
+
+ drivers/scsi/mpt2sas/mpi/mpi2.h             |  7 ++--
+ drivers/scsi/mpt2sas/mpi/mpi2_cnfg.h        | 51 ++++++++++++++++++++++++-----
+ drivers/scsi/mpt2sas/mpi/mpi2_ioc.h         |  4 ++-
+ drivers/scsi/mpt2sas/mpi/mpi2_tool.h        |  6 ++--
+ drivers/scsi/mpt2sas/mpt2sas_base.c         | 44 +++++++++++++++++++++----
+ drivers/scsi/mpt2sas/mpt2sas_base.h         | 16 ++++++---
+ drivers/scsi/mpt2sas/mpt2sas_config.c       | 39 +++++++++++++++++++++-
+ drivers/scsi/mpt2sas/mpt2sas_ctl.c          |  3 +-
+ drivers/scsi/mpt2sas/mpt2sas_ctl.h          |  3 +-
+ drivers/scsi/mpt2sas/mpt2sas_debug.h        |  3 +-
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c        | 47 +++++++++++++++++++++++++-
+ drivers/scsi/mpt2sas/mpt2sas_transport.c    |  3 +-
+ drivers/scsi/mpt3sas/mpt3sas_base.c         | 45 +++++++++++++++++++++----
+ drivers/scsi/mpt3sas/mpt3sas_base.h         | 12 +++++--
+ drivers/scsi/mpt3sas/mpt3sas_config.c       | 39 +++++++++++++++++++++-
+ drivers/scsi/mpt3sas/mpt3sas_ctl.c          |  3 +-
+ drivers/scsi/mpt3sas/mpt3sas_ctl.h          |  3 +-
+ drivers/scsi/mpt3sas/mpt3sas_debug.h        |  3 +-
+ drivers/scsi/mpt3sas/mpt3sas_scsih.c        | 42 +++++++++++++++++++++++-
+ drivers/scsi/mpt3sas/mpt3sas_transport.c    |  3 +-
+ drivers/scsi/mpt3sas/mpt3sas_trigger_diag.c |  3 +-
+ drivers/scsi/mpt3sas/mpt3sas_trigger_diag.h |  3 +-
+ 22 files changed, 336 insertions(+), 46 deletions(-)
+
+-- 
+2.0.2
+
