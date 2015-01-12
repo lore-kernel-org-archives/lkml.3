@@ -1,41 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243AbbALVEp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 16:04:45 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:41792 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753420AbbALVEn (ORCPT
+	id S1752767AbbALVK1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 16:10:27 -0500
+Received: from mail2.candelatech.com ([208.74.158.173]:35821 "EHLO
+	mail2.candelatech.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204AbbALVK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 16:04:43 -0500
-Date: Mon, 12 Jan 2015 21:04:22 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Ezequiel Garcia <ezequiel.garcia@imgtec.com>
-Cc: Andrew Bresticker <abrestic@chromium.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        James Hartley <james.hartley@imgtec.com>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pwm@vger.kernel.org>, <vladimir_zapolskiy@mentor.com>,
-        Naidu Tellapati <naidu.tellapati@gmail.com>,
-        Naidu Tellapati <Naidu.Tellapati@imgtec.com>,
-        Sai Masarapu <Sai.Masarapu@imgtec.com>
-Subject: Re: [PATCH v8 1/2] pwm: Imagination Technologies PWM DAC driver
-Message-ID: <20150112210422.39f715a2@lxorguk.ukuu.org.uk>
-In-Reply-To: <1420826088-13113-2-git-send-email-ezequiel.garcia@imgtec.com>
-References: <1420826088-13113-1-git-send-email-ezequiel.garcia@imgtec.com>
-	<1420826088-13113-2-git-send-email-ezequiel.garcia@imgtec.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
+	Mon, 12 Jan 2015 16:10:26 -0500
+Message-ID: <54B43840.4010303@candelatech.com>
+Date: Mon, 12 Jan 2015 13:10:24 -0800
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: 3.19.0-rc4+ fails to compile, missing 'usr/missing-syscalls'
+References: <54B429B6.6070809@candelatech.com> <20150112205550.GA10471@roeck-us.net>
+In-Reply-To: <20150112205550.GA10471@roeck-us.net>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+On 01/12/2015 12:55 PM, Guenter Roeck wrote:
+> On Mon, Jan 12, 2015 at 12:08:22PM -0800, Ben Greear wrote:
+>>
+>> Any idea what is wrong?
+>>
+>> -rc3 compiled ok, then I rebased just now, and get this:
+>>
+> My auto-builders are all happy, with no build or qemu failures.
+> Did you try "make mrproper" prior to rebuilding ?
 
-What if you've not been given a resource ?
+yes, and blew away .ccache too.
 
-Otherwise looks fine to me
+But, I saw something weird like git suddenly got confused a bit earlier,
+so I will re-clone and try again in case the 'reset --hard HEAD' didn't
+clean up as much as I had hoped.
+
+Thanks,
+Ben
+
+> 
+> Guenter
+> 
+
+
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
+
