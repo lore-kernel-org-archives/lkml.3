@@ -1,90 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752844AbbALKad (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 05:30:33 -0500
-Received: from mga03.intel.com ([134.134.136.65]:14044 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752317AbbALKac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 05:30:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,743,1413270000"; 
-   d="scan'208";a="660423568"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: Jeremiah Mahler <jmmahler@gmail.com>
-Cc: Daniel Vetter <daniel.vetter@intel.com>, David Airlie <airlied@linux.ie>,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Jeremiah Mahler <jmmahler@gmail.com>
-Subject: Re: [PATCH] drm/i915: fix inconsistent brightness after resume
-In-Reply-To: <1420925135-1589-1-git-send-email-jmmahler@gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <87fvbkz7nd.fsf@intel.com> <1420925135-1589-1-git-send-email-jmmahler@gmail.com>
-User-Agent: Notmuch/0.19~rc1+1~g08b4944 (http://notmuchmail.org) Emacs/24.4.1 (x86_64-pc-linux-gnu)
-Date: Mon, 12 Jan 2015 12:31:09 +0200
-Message-ID: <877fwsxpci.fsf@intel.com>
+	id S1752900AbbALKbi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 05:31:38 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:58236 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752361AbbALKbg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 05:31:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAJAp7Oi0AyLxy1KFpZ-Cz1-ts9Lh2UaxP3+e6n3EyQjVaEfoXg@mail.gmail.com>
+References: <54584260.8030602@nvidia.com>
+	<CAD7vxxKb668Y0hpYRhwMjQnNrDCQMzn=XGtLEU+ZAtY=OFjHLg@mail.gmail.com>
+	<545895B2.2000101@nvidia.com>
+	<CAD7vxxLmLsRpxrYqc30nV0m6atO7jyNgv1Wh4R8GCAy3+y-1dw@mail.gmail.com>
+	<CAJAp7OgmrEX1XQcwvwf4jzW3eK9TUgde2MQQOp7fOJzvmO=tCQ@mail.gmail.com>
+	<CAD7vxxJaCdKiG9h_32OUSUkQMQk6AAwi6d0v01KEnSVTF8cN1w@mail.gmail.com>
+	<CAJAp7Oh+ziadeEDWsus_k_2w33vPJxGGcGZyMNQkpLemf7SAhg@mail.gmail.com>
+	<CAJAp7OhWKoAoZfq+zWspLnqUkoJb3izMD41Vyfn0AW4Jni8HAQ@mail.gmail.com>
+	<CAD7vxxLe5COSrsnVZ2G_uhtUXfjFnDA45HSG2dNT1LrxcyFcQw@mail.gmail.com>
+	<CAJAp7OhAP-rDM2zyo0Yr0-7erUp4ewKJ+tC=vyU-YMP_MzXJbA@mail.gmail.com>
+	<CAD7vxxJy2sE1os+ipJZV7_GvEyhu8cE-0QLBS5SVHUqfjkYBwQ@mail.gmail.com>
+	<CAJAp7Oi0AyLxy1KFpZ-Cz1-ts9Lh2UaxP3+e6n3EyQjVaEfoXg@mail.gmail.com>
+Date: Mon, 12 Jan 2015 11:31:35 +0100
+Message-ID: <CAPDyKFpVo2+jRTXfWV9U+ejDc5-4G+O_b1mnLhA+WXtrRbFfeA@mail.gmail.com>
+Subject: Re: Possible regression with commit 52221610d
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Bjorn Andersson <bjorn@kryo.se>, Tim Kryger <tim.kryger@gmail.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Sachin Kamat <spk.linux@gmail.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 10 Jan 2015, Jeremiah Mahler <jmmahler@gmail.com> wrote:
-> Commit 6dda730e55f4 introduced a bug which resulted in inconsistent
-> brightness levels on different machines. If a suspended was entered
-> with the screen off some machines would resume with the screen
-> at minimum brightness and others at maximum brightness.
+On 5 January 2015 at 20:52, Bjorn Andersson <bjorn@kryo.se> wrote:
+> On Sun, Dec 21, 2014 at 7:01 PM, Tim Kryger <tim.kryger@gmail.com> wrote:
+>> On Wed, Dec 17, 2014 at 11:57 AM, Bjorn Andersson <bjorn@kryo.se> wrote:
+> [..]
+>>> Non-the-less, feel free to propose a patch and I will give it a test.
+>>
+>> Lets start with the simplest change first.  Please give this a try and
+>> let me know what you think.
+>>
+>> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+>> index ada1a3e..59a328a 100644
+>> --- a/drivers/mmc/host/sdhci.c
+>> +++ b/drivers/mmc/host/sdhci.c
+>> @@ -1239,6 +1239,12 @@ static void sdhci_set_power(struct sdhci_host
+>> *host, unsigned char mode,
+>>                 spin_unlock_irq(&host->lock);
+>>                 mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, vdd);
+>>                 spin_lock_irq(&host->lock);
+>> +
+>> +               if (mode != MMC_POWER_OFF)
+>> +                       sdhci_writeb(host, SDHCI_POWER_ON, SDHCI_POWER_CONTROL);
+>> +               else
+>> +                       sdhci_writeb(host, 0, SDHCI_POWER_CONTROL);
+>> +
+>>                 return;
+>>         }
+>>
+>>
+>> Thanks again for your help in getting to the bottom of this.
 >
-> The following commands can be used to produce this behavior.
+> Sorry for the delay, but
 >
->   xset dpms force off
->   sleep 1
->   sudo systemctl suspend
->   (resume ...)
->
-> The root cause of this problem is a comparison which checks to see if
-> the backlight level is zero when the panel is enabled.  If it is zero,
-> it is set to the maximum level.  Unfortunately, not all machines have a
-> minimum level of zero. On those machines the level is left at the
-> minimum instead of begin set to the maximum.
-
-Good catch!
-
-I think part of the problem is that the userspace sets brightness to
-minimum before suspend, but apparently does not restore it after
-resume. The dmesg would confirm this. But I guess it doesn't matter,
-since we're pretty much stuck with having to do this anyway.
-
-> Fix the bug by updating the comparison to check for the minimum
-> backlight level instead of zero.
->
-> Fixes: 6dda730e55f4 ("respect the VBT minimum backlight brightness")
-> Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
-> ---
->  drivers/gpu/drm/i915/intel_panel.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-> index 4d63839..4ef4d66 100644
-> --- a/drivers/gpu/drm/i915/intel_panel.c
-> +++ b/drivers/gpu/drm/i915/intel_panel.c
-> @@ -962,7 +962,7 @@ void intel_panel_enable_backlight(struct intel_connector *connector)
->  
->  	WARN_ON(panel->backlight.max == 0);
->  
-> -	if (panel->backlight.level == 0) {
-> +	if (panel->backlight.level == panel->backlight.min) {
-
-Perhaps <= instead of == would be safest?
-
-
-BR,
-Jani.
-
->  		panel->backlight.level = panel->backlight.max;
->  		if (panel->backlight.device)
->  			panel->backlight.device->props.brightness =
-> -- 
-> 2.1.4
+> Tested-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 >
 
--- 
-Jani Nikula, Intel Open Source Technology Center
+This looks an okay approach. Please send a proper patch for me to
+apply as a fix.
+
+Kind regards
+Uffe
