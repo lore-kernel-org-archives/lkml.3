@@ -1,148 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699AbbALMnG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 07:43:06 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:59931 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991AbbALMnE (ORCPT
+	id S1752713AbbALMp0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 07:45:26 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:44068 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751054AbbALMpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 07:43:04 -0500
-Date: Mon, 12 Jan 2015 12:42:56 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Laszlo Ersek <lersek@redhat.com>, Mark Langsdorf <mlangsdo@redhat.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Steve Capper <steve.capper@linaro.org>,
-        "vishnu.ps@samsung.com" <vishnu.ps@samsung.com>,
-        main kernel list <linux-kernel@vger.kernel.org>,
-        arm kernel list <linux-arm-kernel@lists.infradead.org>,
-        Kyle McMartin <kmcmarti@redhat.com>, dave@sr71.net
-Subject: Re: Linux 3.19-rc3
-Message-ID: <20150112124256.GB13360@arm.com>
-References: <20150109121348.GD12942@leverpostej>
- <CAPvkgC23LHhs7Tw4rdAPFooimonji8R7kEAbWYRKPJwouwUzBA@mail.gmail.com>
- <54AFE53A.4020004@redhat.com>
- <20150109175702.GA27787@leverpostej>
- <54B01FF0.3020900@arm.com>
- <20150109194333.GA23028@arm.com>
- <54B09CA3.1060501@redhat.com>
- <CA+55aFw3aGeiWOiKxQaC23VVX_Q9B0cDeZc37vVfK+SJVjGwFw@mail.gmail.com>
- <20150110133742.GA6999@arm.com>
- <CA+55aFxBA6F4Kr89iZwPPeBnkiRO4GnrbUSd0CqVG-LD6ZQyiw@mail.gmail.com>
+	Mon, 12 Jan 2015 07:45:24 -0500
+Message-ID: <54B3C1DD.6090400@hitachi.com>
+Date: Mon, 12 Jan 2015 21:45:17 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxBA6F4Kr89iZwPPeBnkiRO4GnrbUSd0CqVG-LD6ZQyiw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Josh Poimboeuf <jpoimboe@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        live-patching@vger.kernel.org, linux-next@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: Re: livepatching tree for linux-next
+References: <alpine.LNX.2.00.1412221412360.1680@pobox.suse.cz> <20141223094607.GA16445@infradead.org> <20141223151056.GA4789@treble.redhat.com> <20141226155613.36dd95b9@canb.auug.org.au> <20150107144317.61ab2080877a4d8227990551@linux-foundation.org> <alpine.LNX.2.00.1501072346400.15299@pobox.suse.cz> <20150107153006.60ed354e3458f402e6819b9e@linux-foundation.org> <alpine.LNX.2.00.1501080037030.15299@pobox.suse.cz> <20150107155701.4839545f63701412003edd88@linux-foundation.org> <alpine.LNX.2.00.1501080104190.15299@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1501080104190.15299@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 07:51:03PM +0000, Linus Torvalds wrote:
-> On Sat, Jan 10, 2015 at 5:37 AM, Will Deacon <will.deacon@arm.com> wrote:
-> >>
-> >> Will?
-> >
-> > I'm wondering if this is now broken in the fullmm case, because tlb->end
-> > will be zero and we won't actually free any of the pages being unmapped
-> > on task exit. Does that sound plausible?
+(2015/01/08 9:11), Jiri Kosina wrote:
+> On Wed, 7 Jan 2015, Andrew Morton wrote:
 > 
-> But did anything change wrt fullmm? I don't see any changes wrt fullmm
-> logic in generic code.
+>>> --- a/kernel/livepatch/core.c
+>>> +++ b/kernel/livepatch/core.c
+>>> @@ -911,6 +911,12 @@ static int klp_init(void)
+>>>  {
+>>>  	int ret;
+>>>  
+>>> +	ret = klp_check_compiler_support();
+>>> +	if (ret) {
+>>> +		pr_info("Your compiler is too old; turning off.\n");
+>>> +		return -EINVAL;
+>>> +	}
+>>> +
+>>
+>> Looks reasonable.  
+> 
+> Thanks. Can I treat this as your Reported-and-tested-by .. ?
+> 
+>> It's a shame we've never figured out a way to do this at Kconfig-time.
+> 
+> That's something that has been on my TODO list for very long time (this is 
+> not the first time I've been biten by that), but unfortunately rather low. 
+> I will talk to Michal Marek to see whether he doesn't have any idea how to 
+> implement this in an elegant way ... but let's keep that separate from 
+> this thread.
+> 
+> In any case, Masami, I really think you would like to do something like 
+> that for IPMODIFY as well ... or are you deliberately defering the 
+> responsibility to handle the possible mcount fallout to the ftrace_ops 
+> owner?
 
-No, and now that I've had a play, the issue is worse than I thought.
+Ah, good point. I just tried to use ftrace and WARN if not possible
+to use it. I'll see it tomorrow. Anyway, I'd prefer to have this
+kind of checking functionality in ftrace.
 
-> The arm64 code changed more, so maybe there was somethinig I missed.
-> Again, arm64 uses tlb_end_vma() etc, so arm64 certainly triggers code
-> that x86 does not.
+Thank you,
 
-Yup, and I think tlb_end_vma is also problematic. The issue is that we
-reset the range in __tlb_end_vma, and therefore the batched pages don't
-get freed. We also have an issue in the fullmm case, because
-tlb_flush_mmu tests tlb->end != 0 before doing any freeing.
+>> That second #error doing in livepatch.h is a bit odd.  It errors out if 
+>> anyone includes livepatch.h when CONFIG_LIVE_PATCHING=n.  Methinks it 
+>> would be saner to change it to
+>>
+>> #error include linux/livepatch.h, not asm/livepatch.h
+> 
+> I guess that's a nice cleanup. Noted, thanks.
+> 
 
-The fundamental problem is that tlb->end *only* indicates whether or not
-TLB invalidation is required, *not* whether there are pages to be freed.
-The advantage of the old need_flush flag was that it was sticky over
-calls to things like tlb_flush_mmu_tlbonly.
 
-> I can revert the commit that causes problems, but considering the
-> performance impact on x86 (it would be a regression since 3.18), I
-> would *really* like to fix the arm64 problem instead. So I'll wait
-> with the revert for at least a week, I think, hoping that the arm64
-> people figure this out. Sound reasonable?
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-Sure. I've put together the following patch which:
 
-  (1) Uses tlb->end != 0 only as the predicate for TLB invalidation
-
-  (2) Uses tlb->local.nr as the predicate for page freeing in
-      tlb_flush_mmu_free
-
-  (3) Ensures tlb->end != 0 for the fullmm case (I think this was a
-      benign change introduced by my original patch, but this puts us
-      back to 3.18 behaviour)
-
-Since this effectively reverts f045bbb9fa1b, I've added Dave to Cc. It
-should fix the leak without reintroducing the performance regression.
-
-Linus: this moves the tlb->end check back into tlb_flush_mmu_tlbonly.
-How much do you hate that?
-
-Will
-
---->8
-
-diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
-index 08848050922e..db284bff29dc 100644
---- a/include/asm-generic/tlb.h
-+++ b/include/asm-generic/tlb.h
-@@ -136,8 +136,12 @@ static inline void __tlb_adjust_range(struct mmu_gather *tlb,
- 
- static inline void __tlb_reset_range(struct mmu_gather *tlb)
- {
--	tlb->start = TASK_SIZE;
--	tlb->end = 0;
-+	if (tlb->fullmm) {
-+		tlb->start = tlb->end = ~0;
-+	} else {
-+		tlb->start = TASK_SIZE;
-+		tlb->end = 0;
-+	}
- }
- 
- /*
-diff --git a/mm/memory.c b/mm/memory.c
-index c6565f00fb38..54f3a9b00956 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -235,6 +235,9 @@ void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned long
- 
- static void tlb_flush_mmu_tlbonly(struct mmu_gather *tlb)
- {
-+	if (!tlb->end)
-+		return;
-+
- 	tlb_flush(tlb);
- 	mmu_notifier_invalidate_range(tlb->mm, tlb->start, tlb->end);
- #ifdef CONFIG_HAVE_RCU_TABLE_FREE
-@@ -247,7 +250,7 @@ static void tlb_flush_mmu_free(struct mmu_gather *tlb)
- {
- 	struct mmu_gather_batch *batch;
- 
--	for (batch = &tlb->local; batch; batch = batch->next) {
-+	for (batch = &tlb->local; batch && batch->nr; batch = batch->next) {
- 		free_pages_and_swap_cache(batch->pages, batch->nr);
- 		batch->nr = 0;
- 	}
-@@ -256,9 +259,6 @@ static void tlb_flush_mmu_free(struct mmu_gather *tlb)
- 
- void tlb_flush_mmu(struct mmu_gather *tlb)
- {
--	if (!tlb->end)
--		return;
--
- 	tlb_flush_mmu_tlbonly(tlb);
- 	tlb_flush_mmu_free(tlb);
- }
