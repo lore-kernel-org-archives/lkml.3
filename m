@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932102AbbALSrd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:47:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58288 "EHLO
+	id S1755931AbbALSqz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:46:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58289 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753715AbbALSad (ORCPT
+	with ESMTP id S1754048AbbALSae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:30:33 -0500
+	Mon, 12 Jan 2015 13:30:34 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Thomas Gleixner <tglx@linutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 173/216] iscsi,iser-target: Expose supported protection ops according to t10_pi
-Date: Mon, 12 Jan 2015 18:29:11 +0000
-Message-Id: <1421087394-2712-61-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 174/216] genirq: Prevent proc race against freeing of irq descriptors
+Date: Mon, 12 Jan 2015 18:29:12 +0000
+Message-Id: <1421087394-2712-62-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -28,104 +27,237 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 23a548ee656c8ba6da8cb2412070edcd62e2ac5d upstream.
+commit c291ee622165cb2c8d4e7af63fffd499354a23be upstream.
 
-iSER will report supported protection operations based on
-the tpg attribute t10_pi settings and HCA PI offload capabilities.
-If the HCA does not support PI offload or tpg attribute t10_pi is
-not set, we fall to SW PI mode.
+Since the rework of the sparse interrupt code to actually free the
+unused interrupt descriptors there exists a race between the /proc
+interfaces to the irq subsystem and the code which frees the interrupt
+descriptor.
 
-In order to do that, we move iscsit_get_sup_prot_ops after connection
-tpg assignment.
+CPU0				CPU1
+				show_interrupts()
+				  desc = irq_to_desc(X);
+free_desc(desc)
+  remove_from_radix_tree();
+  kfree(desc);
+				  raw_spinlock_irq(&desc->lock);
 
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+/proc/interrupts is the only interface which can actively corrupt
+kernel memory via the lock access. /proc/stat can only read from freed
+memory. Extremly hard to trigger, but possible.
+
+The interfaces in /proc/irq/N/ are not affected by this because the
+removal of the proc file is serialized in procfs against concurrent
+readers/writers. The removal happens before the descriptor is freed.
+
+For architectures which have CONFIG_SPARSE_IRQ=n this is a non issue
+as the descriptor is never freed. It's merely cleared out with the irq
+descriptor lock held. So any concurrent proc access will either see
+the old correct value or the cleared out ones.
+
+Protect the lookup and access to the irq descriptor in
+show_interrupts() with the sparse_irq_lock.
+
+Provide kstat_irqs_usr() which is protecting the lookup and access
+with sparse_irq_lock and switch /proc/stat to use it.
+
+Document the existing kstat_irqs interfaces so it's clear that the
+caller needs to take care about protection. The users of these
+interfaces are either not affected due to SPARSE_IRQ=n or already
+protected against removal.
+
+Fixes: 1f5a5b87f78f "genirq: Implement a sane sparse_irq allocator"
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/ulp/isert/ib_isert.c   | 14 +++++++++++---
- drivers/infiniband/ulp/isert/ib_isert.h   |  1 +
- drivers/target/iscsi/iscsi_target_login.c |  7 ++++---
- 3 files changed, 16 insertions(+), 6 deletions(-)
+ fs/proc/stat.c              |  2 +-
+ include/linux/kernel_stat.h |  1 +
+ kernel/irq/internals.h      |  4 ++++
+ kernel/irq/irqdesc.c        | 52 +++++++++++++++++++++++++++++++++++++++++++++
+ kernel/irq/proc.c           | 22 ++++++++++++++++++-
+ 5 files changed, 79 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index 8a25ebee717a..3a36b8bbca33 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -64,7 +64,7 @@ struct rdma_cm_id *isert_setup_id(struct isert_np *isert_np);
- static inline bool
- isert_prot_cmd(struct isert_conn *conn, struct se_cmd *cmd)
+diff --git a/fs/proc/stat.c b/fs/proc/stat.c
+index bf2d03f8fd3e..510413eb25b8 100644
+--- a/fs/proc/stat.c
++++ b/fs/proc/stat.c
+@@ -159,7 +159,7 @@ static int show_stat(struct seq_file *p, void *v)
+ 
+ 	/* sum again ? it could be updated? */
+ 	for_each_irq_nr(j)
+-		seq_put_decimal_ull(p, ' ', kstat_irqs(j));
++		seq_put_decimal_ull(p, ' ', kstat_irqs_usr(j));
+ 
+ 	seq_printf(p,
+ 		"\nctxt %llu\n"
+diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
+index ecbc52f9ff77..a6a8c409bbc3 100644
+--- a/include/linux/kernel_stat.h
++++ b/include/linux/kernel_stat.h
+@@ -68,6 +68,7 @@ static inline unsigned int kstat_softirqs_cpu(unsigned int irq, int cpu)
+  * Number of interrupts per specific IRQ source, since bootup
+  */
+ extern unsigned int kstat_irqs(unsigned int irq);
++extern unsigned int kstat_irqs_usr(unsigned int irq);
+ 
+ /*
+  * Number of interrupts per cpu, since bootup
+diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
+index 099ea2e0eb88..08122140576f 100644
+--- a/kernel/irq/internals.h
++++ b/kernel/irq/internals.h
+@@ -78,8 +78,12 @@ extern void unmask_threaded_irq(struct irq_desc *desc);
+ 
+ #ifdef CONFIG_SPARSE_IRQ
+ static inline void irq_mark_irq(unsigned int irq) { }
++extern void irq_lock_sparse(void);
++extern void irq_unlock_sparse(void);
+ #else
+ extern void irq_mark_irq(unsigned int irq);
++static inline void irq_lock_sparse(void) { }
++static inline void irq_unlock_sparse(void) { }
+ #endif
+ 
+ extern void init_kstat_irqs(struct irq_desc *desc, int node, int nr);
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index 1487a123db5c..3922869d927a 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -131,6 +131,16 @@ static void free_masks(struct irq_desc *desc)
+ static inline void free_masks(struct irq_desc *desc) { }
+ #endif
+ 
++void irq_lock_sparse(void)
++{
++	mutex_lock(&sparse_irq_lock);
++}
++
++void irq_unlock_sparse(void)
++{
++	mutex_unlock(&sparse_irq_lock);
++}
++
+ static struct irq_desc *alloc_desc(int irq, int node, struct module *owner)
  {
--	return (conn->conn_device->pi_capable &&
-+	return (conn->pi_support &&
- 		cmd->prot_op != TARGET_PROT_NORMAL);
+ 	struct irq_desc *desc;
+@@ -167,6 +177,12 @@ static void free_desc(unsigned int irq)
+ 
+ 	unregister_irq_proc(irq, desc);
+ 
++	/*
++	 * sparse_irq_lock protects also show_interrupts() and
++	 * kstat_irq_usr(). Once we deleted the descriptor from the
++	 * sparse tree we can free it. Access in proc will fail to
++	 * lookup the descriptor.
++	 */
+ 	mutex_lock(&sparse_irq_lock);
+ 	delete_irq_desc(irq);
+ 	mutex_unlock(&sparse_irq_lock);
+@@ -532,6 +548,15 @@ void kstat_incr_irq_this_cpu(unsigned int irq)
+ 	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
  }
  
-@@ -2322,8 +2322,16 @@ isert_get_sup_prot_ops(struct iscsi_conn *conn)
- 	struct isert_conn *isert_conn = (struct isert_conn *)conn->context;
- 	struct isert_device *device = isert_conn->conn_device;
- 
--	if (device->pi_capable)
--		return TARGET_PROT_ALL;
-+	if (conn->tpg->tpg_attrib.t10_pi) {
-+		if (device->pi_capable) {
-+			pr_info("conn %p PI offload enabled\n", isert_conn);
-+			isert_conn->pi_support = true;
-+			return TARGET_PROT_ALL;
-+		}
-+	}
-+
-+	pr_info("conn %p PI offload disabled\n", isert_conn);
-+	isert_conn->pi_support = false;
- 
- 	return TARGET_PROT_NORMAL;
- }
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.h b/drivers/infiniband/ulp/isert/ib_isert.h
-index 2e7868c5ad14..141905f446dd 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.h
-+++ b/drivers/infiniband/ulp/isert/ib_isert.h
-@@ -128,6 +128,7 @@ struct isert_conn {
- 	atomic_t		post_send_buf_count;
- 	u32			responder_resources;
- 	u32			initiator_depth;
-+	bool			pi_support;
- 	u32			max_sge;
- 	char			*login_buf;
- 	char			*login_req_buf;
-diff --git a/drivers/target/iscsi/iscsi_target_login.c b/drivers/target/iscsi/iscsi_target_login.c
-index e8d022d25146..dabc7e770b00 100644
---- a/drivers/target/iscsi/iscsi_target_login.c
-+++ b/drivers/target/iscsi/iscsi_target_login.c
-@@ -281,7 +281,6 @@ static int iscsi_login_zero_tsih_s1(
++/**
++ * kstat_irqs_cpu - Get the statistics for an interrupt on a cpu
++ * @irq:	The interrupt number
++ * @cpu:	The cpu number
++ *
++ * Returns the sum of interrupt counts on @cpu since boot for
++ * @irq. The caller must ensure that the interrupt is not removed
++ * concurrently.
++ */
+ unsigned int kstat_irqs_cpu(unsigned int irq, int cpu)
  {
- 	struct iscsi_session *sess = NULL;
- 	struct iscsi_login_req *pdu = (struct iscsi_login_req *)buf;
--	enum target_prot_op sup_pro_ops;
- 	int ret;
+ 	struct irq_desc *desc = irq_to_desc(irq);
+@@ -540,6 +565,14 @@ unsigned int kstat_irqs_cpu(unsigned int irq, int cpu)
+ 			*per_cpu_ptr(desc->kstat_irqs, cpu) : 0;
+ }
  
- 	sess = kzalloc(sizeof(struct iscsi_session), GFP_KERNEL);
-@@ -343,9 +342,8 @@ static int iscsi_login_zero_tsih_s1(
- 		kfree(sess);
- 		return -ENOMEM;
- 	}
--	sup_pro_ops = conn->conn_transport->iscsit_get_sup_prot_ops(conn);
- 
--	sess->se_sess = transport_init_session(sup_pro_ops);
-+	sess->se_sess = transport_init_session(TARGET_PROT_NORMAL);
- 	if (IS_ERR(sess->se_sess)) {
- 		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
- 				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-@@ -1371,6 +1369,9 @@ static int __iscsi_target_login_thread(struct iscsi_np *np)
- 	}
- 	login->zero_tsih = zero_tsih;
- 
-+	conn->sess->se_sess->sup_prot_ops =
-+		conn->conn_transport->iscsit_get_sup_prot_ops(conn);
++/**
++ * kstat_irqs - Get the statistics for an interrupt
++ * @irq:	The interrupt number
++ *
++ * Returns the sum of interrupt counts on all cpus since boot for
++ * @irq. The caller must ensure that the interrupt is not removed
++ * concurrently.
++ */
+ unsigned int kstat_irqs(unsigned int irq)
+ {
+ 	struct irq_desc *desc = irq_to_desc(irq);
+@@ -552,3 +585,22 @@ unsigned int kstat_irqs(unsigned int irq)
+ 		sum += *per_cpu_ptr(desc->kstat_irqs, cpu);
+ 	return sum;
+ }
 +
- 	tpg = conn->tpg;
- 	if (!tpg) {
- 		pr_err("Unable to locate struct iscsi_conn->tpg\n");
++/**
++ * kstat_irqs_usr - Get the statistics for an interrupt
++ * @irq:	The interrupt number
++ *
++ * Returns the sum of interrupt counts on all cpus since boot for
++ * @irq. Contrary to kstat_irqs() this can be called from any
++ * preemptible context. It's protected against concurrent removal of
++ * an interrupt descriptor when sparse irqs are enabled.
++ */
++unsigned int kstat_irqs_usr(unsigned int irq)
++{
++	int sum;
++
++	irq_lock_sparse();
++	sum = kstat_irqs(irq);
++	irq_unlock_sparse();
++	return sum;
++}
+diff --git a/kernel/irq/proc.c b/kernel/irq/proc.c
+index ac1ba2f11032..9dc9bfd8a678 100644
+--- a/kernel/irq/proc.c
++++ b/kernel/irq/proc.c
+@@ -15,6 +15,23 @@
+ 
+ #include "internals.h"
+ 
++/*
++ * Access rules:
++ *
++ * procfs protects read/write of /proc/irq/N/ files against a
++ * concurrent free of the interrupt descriptor. remove_proc_entry()
++ * immediately prevents new read/writes to happen and waits for
++ * already running read/write functions to complete.
++ *
++ * We remove the proc entries first and then delete the interrupt
++ * descriptor from the radix tree and free it. So it is guaranteed
++ * that irq_to_desc(N) is valid as long as the read/writes are
++ * permitted by procfs.
++ *
++ * The read from /proc/interrupts is a different problem because there
++ * is no protection. So the lookup and the access to irqdesc
++ * information must be protected by sparse_irq_lock.
++ */
+ static struct proc_dir_entry *root_irq_dir;
+ 
+ #ifdef CONFIG_SMP
+@@ -437,9 +454,10 @@ int show_interrupts(struct seq_file *p, void *v)
+ 		seq_putc(p, '\n');
+ 	}
+ 
++	irq_lock_sparse();
+ 	desc = irq_to_desc(i);
+ 	if (!desc)
+-		return 0;
++		goto outsparse;
+ 
+ 	raw_spin_lock_irqsave(&desc->lock, flags);
+ 	for_each_online_cpu(j)
+@@ -479,6 +497,8 @@ int show_interrupts(struct seq_file *p, void *v)
+ 	seq_putc(p, '\n');
+ out:
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
++outsparse:
++	irq_unlock_sparse();
+ 	return 0;
+ }
+ #endif
 -- 
 2.1.4
 
