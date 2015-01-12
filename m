@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184AbbALSFp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:05:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57419 "EHLO
+	id S1756741AbbALTKP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 14:10:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57428 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104AbbALSFm (ORCPT
+	with ESMTP id S1753128AbbALSFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:05:42 -0500
+	Mon, 12 Jan 2015 13:05:44 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
+Cc: Martin Hauke <mardnh@gmx.de>, Johan Hovold <johan@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 030/216] arm64: Add COMPAT_HWCAP_LPAE
-Date: Mon, 12 Jan 2015 18:02:27 +0000
-Message-Id: <1421085933-32536-31-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 031/216] USB: qcserial: Add support for HP lt4112 LTE/HSPA+ Gobi 4G Modem
+Date: Mon, 12 Jan 2015 18:02:28 +0000
+Message-Id: <1421085933-32536-32-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -28,49 +27,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+From: Martin Hauke <mardnh@gmx.de>
 
-commit 7d57511d2dba03a8046c8b428dd9192a4bfc1e73 upstream.
+commit e7181d005e84b15fe3121a8d22840adc3395d496 upstream.
 
-Commit a469abd0f868 (ARM: elf: add new hwcap for identifying atomic
-ldrd/strd instructions) introduces HWCAP_ELF for 32-bit ARM
-applications. As LPAE is always present on arm64, report the
-corresponding compat HWCAP to user space.
+Added new device layout "DEVICE_HWI" and also added the USB VID/PID for the
+HP lt4112 LTE/HSPA+ Gobi 4G Modem (Huawei me906e)
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Martin Hauke <mardnh@gmx.de>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm64/include/asm/hwcap.h | 1 +
- arch/arm64/kernel/setup.c      | 3 ++-
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/serial/qcserial.c | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
-diff --git a/arch/arm64/include/asm/hwcap.h b/arch/arm64/include/asm/hwcap.h
-index 024c46183c3c..0ad735166d9f 100644
---- a/arch/arm64/include/asm/hwcap.h
-+++ b/arch/arm64/include/asm/hwcap.h
-@@ -30,6 +30,7 @@
- #define COMPAT_HWCAP_IDIVA	(1 << 17)
- #define COMPAT_HWCAP_IDIVT	(1 << 18)
- #define COMPAT_HWCAP_IDIV	(COMPAT_HWCAP_IDIVA|COMPAT_HWCAP_IDIVT)
-+#define COMPAT_HWCAP_LPAE	(1 << 20)
- #define COMPAT_HWCAP_EVTSTRM	(1 << 21)
+diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
+index b2aa003bf411..cb3e14780a7e 100644
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -27,12 +27,15 @@ enum qcserial_layouts {
+ 	QCSERIAL_G2K = 0,	/* Gobi 2000 */
+ 	QCSERIAL_G1K = 1,	/* Gobi 1000 */
+ 	QCSERIAL_SWI = 2,	/* Sierra Wireless */
++	QCSERIAL_HWI = 3,	/* Huawei */
+ };
  
- #define COMPAT_HWCAP2_AES	(1 << 0)
-diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-index 46d1125571f6..9e03a1485cc3 100644
---- a/arch/arm64/kernel/setup.c
-+++ b/arch/arm64/kernel/setup.c
-@@ -71,7 +71,8 @@ EXPORT_SYMBOL_GPL(elf_hwcap);
- 				 COMPAT_HWCAP_FAST_MULT|COMPAT_HWCAP_EDSP|\
- 				 COMPAT_HWCAP_TLS|COMPAT_HWCAP_VFP|\
- 				 COMPAT_HWCAP_VFPv3|COMPAT_HWCAP_VFPv4|\
--				 COMPAT_HWCAP_NEON|COMPAT_HWCAP_IDIV)
-+				 COMPAT_HWCAP_NEON|COMPAT_HWCAP_IDIV|\
-+				 COMPAT_HWCAP_LPAE)
- unsigned int compat_elf_hwcap __read_mostly = COMPAT_ELF_HWCAP_DEFAULT;
- unsigned int compat_elf_hwcap2 __read_mostly;
- #endif
+ #define DEVICE_G1K(v, p) \
+ 	USB_DEVICE(v, p), .driver_info = QCSERIAL_G1K
+ #define DEVICE_SWI(v, p) \
+ 	USB_DEVICE(v, p), .driver_info = QCSERIAL_SWI
++#define DEVICE_HWI(v, p) \
++	USB_DEVICE(v, p), .driver_info = QCSERIAL_HWI
+ 
+ static const struct usb_device_id id_table[] = {
+ 	/* Gobi 1000 devices */
+@@ -157,6 +160,9 @@ static const struct usb_device_id id_table[] = {
+ 	{DEVICE_SWI(0x413c, 0x81a8)},	/* Dell Wireless 5808 Gobi(TM) 4G LTE Mobile Broadband Card */
+ 	{DEVICE_SWI(0x413c, 0x81a9)},	/* Dell Wireless 5808e Gobi(TM) 4G LTE Mobile Broadband Card */
+ 
++	/* Huawei devices */
++	{DEVICE_HWI(0x03f0, 0x581d)},	/* HP lt4112 LTE/HSPA+ Gobi 4G Modem (Huawei me906e) */
++
+ 	{ }				/* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, id_table);
+@@ -287,6 +293,33 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
+ 			break;
+ 		}
+ 		break;
++	case QCSERIAL_HWI:
++		/*
++		 * Huawei layout:
++		 * 0: AT-capable modem port
++		 * 1: DM/DIAG
++		 * 2: AT-capable modem port
++		 * 3: CCID-compatible PCSC interface
++		 * 4: QMI/net
++		 * 5: NMEA
++		 */
++		switch (ifnum) {
++		case 0:
++		case 2:
++			dev_dbg(dev, "Modem port found\n");
++			break;
++		case 1:
++			dev_dbg(dev, "DM/DIAG interface found\n");
++			break;
++		case 5:
++			dev_dbg(dev, "NMEA GPS interface found\n");
++			break;
++		default:
++			/* don't claim any unsupported interface */
++			altsetting = -1;
++			break;
++		}
++		break;
+ 	default:
+ 		dev_err(dev, "unsupported device layout type: %lu\n",
+ 			id->driver_info);
 -- 
 2.1.4
 
