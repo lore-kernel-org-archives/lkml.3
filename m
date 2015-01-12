@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028AbbALSvm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:51:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58181 "EHLO
+	id S1755130AbbALSa0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:30:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58199 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755069AbbALSaS (ORCPT
+	with ESMTP id S1755095AbbALSaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:30:18 -0500
+	Mon, 12 Jan 2015 13:30:22 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+Cc: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>,
+        Christoph Hellwig <hch@lst.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 157/216] clk: samsung: Fix double add of syscore ops after driver rebind
-Date: Mon, 12 Jan 2015 18:28:55 +0000
-Message-Id: <1421087394-2712-45-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 158/216] Revert "[SCSI] mpt2sas: Remove phys on topology change."
+Date: Mon, 12 Jan 2015 18:28:56 +0000
+Message-Id: <1421087394-2712-46-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -28,62 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
 
-commit c31844ffdbd4e73a16c66e9d7df8ec290ab4b159 upstream.
+commit 81a89c2d891b78695aa7e4cc0d5a7427785ae078 upstream.
 
-During driver unbind the syscore ops were not unregistered which lead to
-double add on syscore list:
+This reverts commit 3520f9c779bed098ca76dd3fb6377264301d57ed
+("mpt2sas: Remove phys on topology change")
 
-$ echo "3810000.audss-clock-controller" > /sys/bus/platform/drivers/exynos-audss-clk/unbind
-$ echo "3810000.audss-clock-controller" > /sys/bus/platform/drivers/exynos-audss-clk/bind
-[ 1463.044061] ------------[ cut here ]------------
-[ 1463.047255] WARNING: CPU: 0 PID: 1 at lib/list_debug.c:36 __list_add+0x8c/0xc0()
-[ 1463.054613] list_add double add: new=c06e52c0, prev=c06e52c0, next=c06d5f84.
-[ 1463.061625] Modules linked in:
-[ 1463.064623] CPU: 0 PID: 1 Comm: bash Tainted: G        W      3.18.0-rc5-next-20141121-00005-ga8fab06eab42-dirty #1022
-[ 1463.075338] [<c0014e2c>] (unwind_backtrace) from [<c0011d80>] (show_stack+0x10/0x14)
-[ 1463.083046] [<c0011d80>] (show_stack) from [<c048bb70>] (dump_stack+0x70/0xbc)
-[ 1463.090236] [<c048bb70>] (dump_stack) from [<c00233d4>] (warn_slowpath_common+0x74/0xb0)
-[ 1463.098295] [<c00233d4>] (warn_slowpath_common) from [<c00234a4>] (warn_slowpath_fmt+0x30/0x40)
-[ 1463.106962] [<c00234a4>] (warn_slowpath_fmt) from [<c020fe80>] (__list_add+0x8c/0xc0)
-[ 1463.114760] [<c020fe80>] (__list_add) from [<c0282094>] (register_syscore_ops+0x30/0x3c)
-[ 1463.122819] [<c0282094>] (register_syscore_ops) from [<c0392f20>] (exynos_audss_clk_probe+0x36c/0x460)
-[ 1463.132091] [<c0392f20>] (exynos_audss_clk_probe) from [<c0283084>] (platform_drv_probe+0x48/0xa4)
-[ 1463.141013] [<c0283084>] (platform_drv_probe) from [<c0281a14>] (driver_probe_device+0x13c/0x37c)
-[ 1463.149852] [<c0281a14>] (driver_probe_device) from [<c0280560>] (bind_store+0x90/0xe0)
-[ 1463.157822] [<c0280560>] (bind_store) from [<c027fd10>] (drv_attr_store+0x20/0x2c)
-[ 1463.165363] [<c027fd10>] (drv_attr_store) from [<c0143898>] (sysfs_kf_write+0x4c/0x50)
-[ 1463.173252] [<c0143898>] (sysfs_kf_write) from [<c0142c80>] (kernfs_fop_write+0xbc/0x198)
-[ 1463.181395] [<c0142c80>] (kernfs_fop_write) from [<c00e2be0>] (vfs_write+0xa0/0x1a8)
-[ 1463.189104] [<c00e2be0>] (vfs_write) from [<c00e2f00>] (SyS_write+0x40/0x8c)
-[ 1463.196122] [<c00e2f00>] (SyS_write) from [<c000f2a0>] (ret_fast_syscall+0x0/0x48)
-[ 1463.203655] ---[ end trace 08f6710c9bc8d8f3 ]---
-[ 1463.208244] exynos-audss-clk 3810000.audss-clock-controller: setup completed
+Reverting the previous mpt2sas drives patch changes,
+since we will observe below issue
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Fixes: 1241ef94ccc3 ("clk: samsung: register audio subsystem clocks using common clock framework")
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Issue:
+Drives connected Enclosure/Expander will unregister with
+SCSI Transport Layer, if any one remove and add expander
+cable with in DMD (Device Missing Delay) time period or
+even any one power-off and power-on the Enclosure with in
+the DMD period.
+
+Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
+Reviewed-by: Tomas Henzl <thenzl@redhat.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/clk/samsung/clk-exynos-audss.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/scsi/mpt2sas/mpt2sas_transport.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/drivers/clk/samsung/clk-exynos-audss.c b/drivers/clk/samsung/clk-exynos-audss.c
-index 13eae14c2cc2..b50469faf70c 100644
---- a/drivers/clk/samsung/clk-exynos-audss.c
-+++ b/drivers/clk/samsung/clk-exynos-audss.c
-@@ -210,6 +210,10 @@ static int exynos_audss_clk_remove(struct platform_device *pdev)
- {
- 	int i;
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_transport.c b/drivers/scsi/mpt2sas/mpt2sas_transport.c
+index 410f4a3e8888..72f9c55d0e00 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_transport.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_transport.c
+@@ -1006,12 +1006,9 @@ mpt2sas_transport_update_links(struct MPT2SAS_ADAPTER *ioc,
+ 		    &mpt2sas_phy->remote_identify);
+ 		_transport_add_phy_to_an_existing_port(ioc, sas_node,
+ 		    mpt2sas_phy, mpt2sas_phy->remote_identify.sas_address);
+-	} else {
++	} else
+ 		memset(&mpt2sas_phy->remote_identify, 0 , sizeof(struct
+ 		    sas_identify));
+-		_transport_del_phy_from_an_existing_port(ioc, sas_node,
+-		    mpt2sas_phy);
+-	}
  
-+#ifdef CONFIG_PM_SLEEP
-+	unregister_syscore_ops(&exynos_audss_clk_syscore_ops);
-+#endif
-+
- 	of_clk_del_provider(pdev->dev.of_node);
- 
- 	for (i = 0; i < clk_data.clk_num; i++) {
+ 	if (mpt2sas_phy->phy)
+ 		mpt2sas_phy->phy->negotiated_linkrate =
 -- 
 2.1.4
 
