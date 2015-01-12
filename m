@@ -1,35 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbbALW0n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 17:26:43 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:57203 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751322AbbALW0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 17:26:42 -0500
-Date: Mon, 12 Jan 2015 17:26:34 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm 2/2] mm: vmscan: init reclaim_state in
- do_try_to_free_pages
-Message-ID: <20150112222634.GC25609@phnom.home.cmpxchg.org>
-References: <880700a513472a8b86fd3100aef674322c66c68e.1421054931.git.vdavydov@parallels.com>
- <20a8ae66cc2b9412b1bf81c0a46f4e8c737aa537.1421054931.git.vdavydov@parallels.com>
+	id S1752247AbbALWbO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 17:31:14 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:32881 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318AbbALWbK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 17:31:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20a8ae66cc2b9412b1bf81c0a46f4e8c737aa537.1421054931.git.vdavydov@parallels.com>
+In-Reply-To: <1421090600-9750-11-git-send-email-yinghai@kernel.org>
+References: <1421090600-9750-1-git-send-email-yinghai@kernel.org>
+	<1421090600-9750-11-git-send-email-yinghai@kernel.org>
+Date: Mon, 12 Jan 2015 23:31:09 +0100
+Message-ID: <CALMQjD91+0o=DjQDV3ydkakrG6X=3RkHoCf-T5=wLbC01WkdEA@mail.gmail.com>
+Subject: Re: [PATCH 10/10] PCI, sparc: clip firmware assigned resource under
+ parent bridge's
+From: Kjetil Oftedal <oftedal@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Yijing Wang <wangyijing@huawei.com>, Sam Ravnborg <sam@ravnborg.org>,
+        sparclinux@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 12:30:38PM +0300, Vladimir Davydov wrote:
-> All users of do_try_to_free_pages() want to have current->reclaim_state
-> set in order to account reclaimed slab pages. So instead of duplicating
-> the reclaim_state initialization code in each call site, let's do it
-> directly in do_try_to_free_pages().
+Hi,
 
-Couldn't this be contained in shrink_slab() directly?
+Am I missing something or is this just code to get the the resource
+subsystem to accept the bus resources, not caring if the resources are
+actually usable? PCI BARs usually have a given size for a reason?
+
+-
+Kjetil Oftedal
+
+
+On 12/01/2015, Yinghai Lu <yinghai@kernel.org> wrote:
+> Some bios put range that is not fully coverred by root bus resources.
+> Try to clip them and update them in pci bridge bars.
+>
+> We'd like to fix other arches instead of just x86.
+>
+> Link: https://bugzilla.kernel.org/show_bug.cgi?id=85491
+> Reported-by: Marek Kordik <kordikmarek@gmail.com>
+> Fixes: 5b28541552ef ("PCI: Restrict 64-bit prefetchable bridge windows to
+> 64-bit resources")
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Cc: Yijing Wang <wangyijing@huawei.com>
+> Cc: Sam Ravnborg <sam@ravnborg.org>
+> Cc: sparclinux@vger.kernel.org
+> ---
+>  arch/sparc/kernel/pci.c | 20 +++++++++++++++++++-
+>  1 file changed, 19 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/sparc/kernel/pci.c b/arch/sparc/kernel/pci.c
+> index b36365f..0e391e5 100644
+> --- a/arch/sparc/kernel/pci.c
+> +++ b/arch/sparc/kernel/pci.c
+> @@ -623,6 +623,7 @@ static void pci_claim_bus_resources(struct pci_bus
+> *bus)
+>  	struct pci_dev *dev;
+>
+>  	list_for_each_entry(dev, &bus->devices, bus_list) {
+> +		bool changed = false;
+>  		int i;
+>
+>  		for (i = 0; i < PCI_NUM_RESOURCES; i++) {
+> @@ -639,8 +640,25 @@ static void pci_claim_bus_resources(struct pci_bus
+> *bus)
+>  				       (unsigned long long)r->end,
+>  				       (unsigned int)r->flags);
+>
+> -			pci_claim_resource(dev, i);
+> +			if (pci_claim_resource(dev, i) >= 0)
+> +				continue;
+> +
+> +			if (dev->subordinate &&
+> +			    i >= PCI_BRIDGE_RESOURCES &&
+> +			    i < PCI_NUM_RESOURCES &&
+> +			    (dev->class >> 8) == PCI_CLASS_BRIDGE_PCI &&
+> +			    pci_bus_clip_resource(dev, r)) {
+> +				changed = true;
+> +				pci_claim_resource(dev, i);
+> +			} else if (i < PCI_BRIDGE_RESOURCES &&
+> +				   i != PCI_ROM_RESOURCE &&
+> +				   pci_bus_clip_resource(dev, r)) {
+> +					pci_update_resource(dev, i);
+> +					pci_claim_resource(dev, i);
+> +			}
+>  		}
+> +		if (changed)
+> +			pci_setup_bridge(dev->subordinate);
+>  	}
+>
+>  	list_for_each_entry(child_bus, &bus->children, node)
+> --
+> 1.8.4.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe sparclinux" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
