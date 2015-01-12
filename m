@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752404AbbALJT6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 04:19:58 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:31738 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607AbbALJTy (ORCPT
+	id S1752483AbbALJUF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 04:20:05 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:25111 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752385AbbALJT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 04:19:54 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-73-54b391b92d91
+	Mon, 12 Jan 2015 04:19:59 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-c4-54b391bc5d64
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: linux-mm@kvack.org
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -17,76 +17,115 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         Mike Turquette <mturquette@linaro.org>,
         Alexander Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 0/5] kstrdup optimization
-Date: Mon, 12 Jan 2015 10:18:38 +0100
-Message-id: <1421054323-14430-1-git-send-email-a.hajda@samsung.com>
+Subject: [PATCH 1/5] mm/util: add kstrdup_const
+Date: Mon, 12 Jan 2015 10:18:39 +0100
+Message-id: <1421054323-14430-2-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJJMWRmVeSWpSXmKPExsVy+t/xK7o7J24OMdjdpmZxa905Vos569ew
-	WRy59p3d4vK/NywWZ5veAFm75rBZ3Fvzn9Vi7ZG77BZPJ1xkszj/9zirA5fH/J0fGT02fZrE
-	7nHn2h42jxMzfrN4LLmp5tG3ZRWjx+dNch6bnrxlCuCI4rJJSc3JLEst0rdL4MronH2VpWC1
-	QMX7zcvYGhg7eLsYOTgkBEwkZsy36WLkBDLFJC7cW8/WxcjFISSwlFHid8ctNpCEkEAfk8Sp
-	z+YgNpuApsTfzTfB4iJADR/PXGYGaWAWOMEksf5XIxNIQhio6FrfbzaQBSwCqhJPz+SBhHkF
-	nCX2/zjJBLFMTuLkscmsExi5FzAyrGIUTS1NLihOSs810itOzC0uzUvXS87P3cQICa6vOxiX
-	HrM6xCjAwajEw2sptTlEiDWxrLgy9xCjBAezkgivaxlQiDclsbIqtSg/vqg0J7X4ECMTB6dU
-	A6PZ1/OOBza+NzfdK3ts5YrbXkHybyeXJF3wut9dLfX6gm2u83VjhXu7UlY4hBzmededLrj/
-	98abdZNsz07cfLKAOdzlTPOsmJmLXptOXXb/5rqHnW5zliWeT7Xk3H70ucgb7zshR5Kv/Di8
-	6t6ij0km7NdfJPo9PXvtzvUzR8QOm+XPZuUQZFnppsRSnJFoqMVcVJwIAAL1yXwMAgAA
+In-reply-to: <1421054323-14430-1-git-send-email-a.hajda@samsung.com>
+References: <1421054323-14430-1-git-send-email-a.hajda@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCLMWRmVeSWpSXmKPExsVy+t/xK7p7Jm4OMXi/WsPi1rpzrBZz1q9h
+	szhy7Tu7xeV/b1gszja9AbJ2zWGzuLfmP6vF2iN32S2eTrjIZnH+73FWBy6P+Ts/Mnps+jSJ
+	3ePOtT1sHidm/GbxWHJTzaNvyypGj8+b5Dw2PXnLFMARxWWTkpqTWZZapG+XwJWxfccFtoIj
+	ohULL/xmaWDcJtjFyMkhIWAi8fDaI3YIW0ziwr31bF2MXBxCAksZJY4eXMMC4fQxSbyc9Y4R
+	pIpNQFPi7+abbCC2CFDHxzOXmUGKmAVOMEms/9XIBJIQFtCXaJr4nxnEZhFQlZg/eSNYnFfA
+	WeLx7/WsEOvkJE4emwxmcwq4SFzc+RasXgio5urB88wTGHkXMDKsYhRNLU0uKE5KzzXUK07M
+	LS7NS9dLzs/dxAgJyS87GBcfszrEKMDBqMTDO0Fmc4gQa2JZcWXuIUYJDmYlEV7XMqAQb0pi
+	ZVVqUX58UWlOavEhRiYOTqkGRu17d9Is97D6NpdxN/fu6NzXkrzd92qv9Jyj8owrBN/ZbXs7
+	VXBBxNWGC4f8Jywsfv7+4STPmHMu9/d+sE693TA5+BXT/rhJ/EYvGEU3zO28+7Rqjc/bZ+//
+	vznnbXvh94FDy++2MHbWybFm8lndFTwSfvZO0wuvHYyff7pob3ZfVjdbcL/kQn4lluKMREMt
+	5qLiRAB83Zh9JwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The patch adds alternative version of kstrdup which returns pointer
+to constant char array. The function checks if input string is in
+persistent and read-only memory section, if yes it returns the input string,
+otherwise it fallbacks to kstrdup.
+kstrdup_const is accompanied by kfree_const performing conditional memory
+deallocation of the string.
 
-kstrdup if often used to duplicate strings where neither source neither
-destination will be ever modified. In such case we can just reuse the source
-instead of duplicating it. The problem is that we must be sure that
-the source is non-modifiable and its life-time is long enough.
-
-I suspect the good candidates for such strings are strings located in kernel
-.rodata section, they cannot be modifed because the section is read-only and
-their life-time is equal to kernel life-time.
-
-This small patchset proposes alternative version of kstrdup - kstrdup_const,
-which returns source string if it is located in .rodata otherwise it fallbacks
-to kstrdup.
-To verify if the source is in .rodata function checks if the address is between
-sentinels __start_rodata, __end_rodata. I guess it should work with all
-architectures.
-
-The main patch is accompanied by four patches constifying kstrdup for cases
-where situtation described above happens frequently.
-
-As I have tested the patchset on mobile platform (exynos4210-trats) it saves
-3272 string allocations. Since minimal allocation is 32 or 64 bytes depending
-on Kconfig options the patchset saves respectively about 100KB or 200KB of memory.
-
-The patchset is based on 3.19-rc4.
-
-This patchset have been already sent to the list as RFC.
-Current version have following changes:
-- added missing export,
-- added kerneldocs,
-- constified kstrdup in VFS devname allocation.
-
-Regards
-Andrzej
-
-
-Andrzej Hajda (5):
-  mm/util: add kstrdup_const
-  kernfs: convert node name allocation to kstrdup_const
-  clk: convert clock name allocations to kstrdup_const
-  mm/slab: convert cache name allocations to kstrdup_const
-  fs/namespace: convert devname allocation to kstrdup_const
-
- drivers/clk/clk.c      | 12 ++++++------
- fs/kernfs/dir.c        | 12 ++++++------
- fs/namespace.c         |  6 +++---
+Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+---
  include/linux/string.h |  3 +++
- mm/slab_common.c       |  6 +++---
  mm/util.c              | 38 ++++++++++++++++++++++++++++++++++++++
- 6 files changed, 59 insertions(+), 18 deletions(-)
+ 2 files changed, 41 insertions(+)
 
+diff --git a/include/linux/string.h b/include/linux/string.h
+index 2e22a2e..b11ed1e 100644
+--- a/include/linux/string.h
++++ b/include/linux/string.h
+@@ -115,7 +115,10 @@ extern void * memchr(const void *,int,__kernel_size_t);
+ #endif
+ void *memchr_inv(const void *s, int c, size_t n);
+ 
++extern void kfree_const(const void *x);
++
+ extern char *kstrdup(const char *s, gfp_t gfp);
++extern const char *kstrdup_const(const char *s, gfp_t gfp);
+ extern char *kstrndup(const char *s, size_t len, gfp_t gfp);
+ extern void *kmemdup(const void *src, size_t len, gfp_t gfp);
+ 
+diff --git a/mm/util.c b/mm/util.c
+index fec39d4..7c62128 100644
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -12,10 +12,30 @@
+ #include <linux/hugetlb.h>
+ #include <linux/vmalloc.h>
+ 
++#include <asm/sections.h>
+ #include <asm/uaccess.h>
+ 
+ #include "internal.h"
+ 
++static inline int is_kernel_rodata(unsigned long addr)
++{
++	return addr >= (unsigned long)__start_rodata &&
++		addr < (unsigned long)__end_rodata;
++}
++
++/**
++ * kfree_const - conditionally free memory
++ * @x: pointer to the memory
++ *
++ * Function calls kfree only if @x is not in .rodata section.
++ */
++void kfree_const(const void *x)
++{
++	if (!is_kernel_rodata((unsigned long)x))
++		kfree(x);
++}
++EXPORT_SYMBOL(kfree_const);
++
+ /**
+  * kstrdup - allocate space for and copy an existing string
+  * @s: the string to duplicate
+@@ -38,6 +58,24 @@ char *kstrdup(const char *s, gfp_t gfp)
+ EXPORT_SYMBOL(kstrdup);
+ 
+ /**
++ * kstrdup_const - conditionally duplicate an existing const string
++ * @s: the string to duplicate
++ * @gfp: the GFP mask used in the kmalloc() call when allocating memory
++ *
++ * Function returns source string if it is in .rodata section otherwise it
++ * fallbacks to kstrdup.
++ * Strings allocated by kstrdup_const should be freed by kfree_const.
++ */
++const char *kstrdup_const(const char *s, gfp_t gfp)
++{
++	if (is_kernel_rodata((unsigned long)s))
++		return s;
++
++	return kstrdup(s, gfp);
++}
++EXPORT_SYMBOL(kstrdup_const);
++
++/**
+  * kstrndup - allocate space for and copy an existing string
+  * @s: the string to duplicate
+  * @max: read at most @max chars from @s
 -- 
 1.9.1
 
