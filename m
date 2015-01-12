@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806AbbALJYl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 04:24:41 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:40798 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752446AbbALJYf (ORCPT
+	id S1752817AbbALJZR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 04:25:17 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:47638 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752241AbbALJZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 04:24:35 -0500
+	Mon, 12 Jan 2015 04:25:08 -0500
 MIME-Version: 1.0
-In-Reply-To: <1418831474-24428-4-git-send-email-ricardo.ribalda@gmail.com>
-References: <1418831474-24428-1-git-send-email-ricardo.ribalda@gmail.com>
-	<1418831474-24428-4-git-send-email-ricardo.ribalda@gmail.com>
-Date: Mon, 12 Jan 2015 10:24:34 +0100
-Message-ID: <CACRpkdYr6OZUjQ8JLzpktQK1xg1Un_SKtU+xr=gFzpSo+A2C-g@mail.gmail.com>
-Subject: Re: [PATCH v5 3/7] gpio/xilinx: Add support for X86 Arch
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Darren Hart <dvhart@linux.intel.com>
+In-Reply-To: <1420857290-8373-14-git-send-email-robh@kernel.org>
+References: <1420857290-8373-1-git-send-email-robh@kernel.org>
+	<1420857290-8373-14-git-send-email-robh@kernel.org>
+Date: Mon, 12 Jan 2015 10:25:06 +0100
+X-Google-Sender-Auth: XfYAeZnaVylw5i6aW9_gyDyJbQQ
+Message-ID: <CAMuHMdX0om4EjS35YKUxo+-W-YLXQ0uJRyr-PLC9VYm=Jcu+TQ@mail.gmail.com>
+Subject: Re: [PATCH 13/16] pci/host: rcar-gen2: convert to use generic config accesses
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Rob Herring <robh@kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-pci <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Simon Horman <horms@verge.net.au>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Valentine <valentine.barshak@cogentembedded.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 4:51 PM, Ricardo Ribalda Delgado
-<ricardo.ribalda@gmail.com> wrote:
-
-> Core can be accessed via PCIe on X86 platform.
-> This patch also allows the driver to be used as module.
+On Sat, Jan 10, 2015 at 3:34 AM, Rob Herring <robh@kernel.org> wrote:
+> Convert the rcar-gen2 host PCI driver to use the generic config access
+> functions.
 >
-> Acked-by: Michal Simek <michal.simek@xilinx.com>
-> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+> This changes the i/o accessors from io(read|write)X to readX/writeX
+> variants which are equivalent on ARM.
+>
+> Signed-off-by: Rob Herring <robh@kernel.org>
+> Cc: Simon Horman <horms@verge.net.au>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: linux-pci@vger.kernel.org
+> Cc: linux-sh@vger.kernel.org
 
-PCIe on x86, using device tree? The ACPI people are just gonna love this.
+Thanks, look OK to me.
 
-Patch applied, anyway. DT on x86 is not unheard of.
+Acked-by: Geert Uytterhoeven <geert+renesas@glider.be>
 
->  config GPIO_XILINX
-> -       bool "Xilinx GPIO support"
-> -       depends on PPC_OF || MICROBLAZE || ARCH_ZYNQ
-> +       tristate "Xilinx GPIO support"
-> +       depends on OF_GPIO && (PPC_OF || MICROBLAZE || ARCH_ZYNQ || ARCH_X86)
+Gr{oetje,eeting}s,
 
-Maybe you want to add COMPILE_TEST too?
+                        Geert
 
-Yours,
-Linus Walleij
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
