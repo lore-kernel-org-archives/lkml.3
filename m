@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756722AbbALTJf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 14:09:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57465 "EHLO
+	id S1754244AbbALS3L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:29:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57489 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753241AbbALSFw (ORCPT
+	with ESMTP id S1753192AbbALSFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:05:52 -0500
+	Mon, 12 Jan 2015 13:05:55 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Josef Bacik <jbacik@fb.com>, Chris Mason <clm@fb.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 041/216] Btrfs: make sure we wait on logged extents when fsycning two subvols
-Date: Mon, 12 Jan 2015 18:02:38 +0000
-Message-Id: <1421085933-32536-42-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 042/216] Btrfs: make sure logged extents complete in the current transaction V3
+Date: Mon, 12 Jan 2015 18:02:39 +0000
+Message-Id: <1421085933-32536-43-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -29,37 +29,284 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Josef Bacik <jbacik@fb.com>
 
-commit 9dba8cf128ef98257ca719722280c9634e7e9dc7 upstream.
+commit 50d9aa99bd35c77200e0e3dd7a72274f8304701f upstream.
 
-If we have two fsync()'s race on different subvols one will do all of its work
-to get into the log_tree, wait on it's outstanding IO, and then allow the
-log_tree to finish it's commit.  The problem is we were just free'ing that
-subvols logged extents instead of waiting on them, so whoever lost the race
-wouldn't really have their data on disk.  Fix this by waiting properly instead
-of freeing the logged extents.  Thanks,
+Liu Bo pointed out that my previous fix would lose the generation update in the
+scenario I described.  It is actually much worse than that, we could lose the
+entire extent if we lose power right after the transaction commits.  Consider
+the following
+
+write extent 0-4k
+log extent in log tree
+commit transaction
+	< power fail happens here
+ordered extent completes
+
+We would lose the 0-4k extent because it hasn't updated the actual fs tree, and
+the transaction commit will reset the log so it isn't replayed.  If we lose
+power before the transaction commit we are save, otherwise we are not.
+
+Fix this by keeping track of all extents we logged in this transaction.  Then
+when we go to commit the transaction make sure we wait for all of those ordered
+extents to complete before proceeding.  This will make sure that if we lose
+power after the transaction commit we still have our data.  This also fixes the
+problem of the improperly updated extent generation.  Thanks,
 
 Signed-off-by: Josef Bacik <jbacik@fb.com>
 Signed-off-by: Chris Mason <clm@fb.com>
+[ luis: backported to 3.16: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/btrfs/tree-log.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/btrfs/disk-io.c      | 20 ++++++++++++++++++++
+ fs/btrfs/ordered-data.c |  9 +++++++--
+ fs/btrfs/ordered-data.h |  8 +++++++-
+ fs/btrfs/transaction.c  | 33 +++++++++++++++++++++++++++++++++
+ fs/btrfs/transaction.h  |  2 ++
+ fs/btrfs/tree-log.c     |  6 +++---
+ 6 files changed, 72 insertions(+), 6 deletions(-)
 
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index 0229c3720b30..de92db33ec7a 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -4065,6 +4065,25 @@ again:
+ 	return 0;
+ }
+ 
++static void btrfs_free_pending_ordered(struct btrfs_transaction *cur_trans,
++				       struct btrfs_fs_info *fs_info)
++{
++	struct btrfs_ordered_extent *ordered;
++
++	spin_lock(&fs_info->trans_lock);
++	while (!list_empty(&cur_trans->pending_ordered)) {
++		ordered = list_first_entry(&cur_trans->pending_ordered,
++					   struct btrfs_ordered_extent,
++					   trans_list);
++		list_del_init(&ordered->trans_list);
++		spin_unlock(&fs_info->trans_lock);
++
++		btrfs_put_ordered_extent(ordered);
++		spin_lock(&fs_info->trans_lock);
++	}
++	spin_unlock(&fs_info->trans_lock);
++}
++
+ void btrfs_cleanup_one_transaction(struct btrfs_transaction *cur_trans,
+ 				   struct btrfs_root *root)
+ {
+@@ -4076,6 +4095,7 @@ void btrfs_cleanup_one_transaction(struct btrfs_transaction *cur_trans,
+ 	cur_trans->state = TRANS_STATE_UNBLOCKED;
+ 	wake_up(&root->fs_info->transaction_wait);
+ 
++	btrfs_free_pending_ordered(cur_trans, root->fs_info);
+ 	btrfs_destroy_delayed_inodes(root);
+ 	btrfs_assert_delayed_root_empty(root);
+ 
+diff --git a/fs/btrfs/ordered-data.c b/fs/btrfs/ordered-data.c
+index ac734ec4cc20..269e21dd1506 100644
+--- a/fs/btrfs/ordered-data.c
++++ b/fs/btrfs/ordered-data.c
+@@ -220,6 +220,7 @@ static int __btrfs_add_ordered_extent(struct inode *inode, u64 file_offset,
+ 	INIT_LIST_HEAD(&entry->work_list);
+ 	init_completion(&entry->completion);
+ 	INIT_LIST_HEAD(&entry->log_list);
++	INIT_LIST_HEAD(&entry->trans_list);
+ 
+ 	trace_btrfs_ordered_extent_add(inode, entry);
+ 
+@@ -443,6 +444,8 @@ void btrfs_get_logged_extents(struct inode *inode,
+ 		ordered = rb_entry(n, struct btrfs_ordered_extent, rb_node);
+ 		if (!list_empty(&ordered->log_list))
+ 			continue;
++		if (test_bit(BTRFS_ORDERED_LOGGED, &ordered->flags))
++			continue;
+ 		list_add_tail(&ordered->log_list, logged_list);
+ 		atomic_inc(&ordered->refs);
+ 	}
+@@ -472,7 +475,8 @@ void btrfs_submit_logged_extents(struct list_head *logged_list,
+ 	spin_unlock_irq(&log->log_extents_lock[index]);
+ }
+ 
+-void btrfs_wait_logged_extents(struct btrfs_root *log, u64 transid)
++void btrfs_wait_logged_extents(struct btrfs_trans_handle *trans,
++			       struct btrfs_root *log, u64 transid)
+ {
+ 	struct btrfs_ordered_extent *ordered;
+ 	int index = transid % 2;
+@@ -497,7 +501,8 @@ void btrfs_wait_logged_extents(struct btrfs_root *log, u64 transid)
+ 		wait_event(ordered->wait, test_bit(BTRFS_ORDERED_IO_DONE,
+ 						   &ordered->flags));
+ 
+-		btrfs_put_ordered_extent(ordered);
++		if (!test_and_set_bit(BTRFS_ORDERED_LOGGED, &ordered->flags))
++			list_add_tail(&ordered->trans_list, &trans->ordered);
+ 		spin_lock_irq(&log->log_extents_lock[index]);
+ 	}
+ 	spin_unlock_irq(&log->log_extents_lock[index]);
+diff --git a/fs/btrfs/ordered-data.h b/fs/btrfs/ordered-data.h
+index d81a274d621e..0124bffc775f 100644
+--- a/fs/btrfs/ordered-data.h
++++ b/fs/btrfs/ordered-data.h
+@@ -71,6 +71,8 @@ struct btrfs_ordered_sum {
+ 				       ordered extent */
+ #define BTRFS_ORDERED_TRUNCATED 9 /* Set when we have to truncate an extent */
+ 
++#define BTRFS_ORDERED_LOGGED 10 /* Set when we've waited on this ordered extent
++				 * in the logging code. */
+ struct btrfs_ordered_extent {
+ 	/* logical offset in the file */
+ 	u64 file_offset;
+@@ -121,6 +123,9 @@ struct btrfs_ordered_extent {
+ 	/* If we need to wait on this to be done */
+ 	struct list_head log_list;
+ 
++	/* If the transaction needs to wait on this ordered extent */
++	struct list_head trans_list;
++
+ 	/* used to wait for the BTRFS_ORDERED_COMPLETE bit */
+ 	wait_queue_head_t wait;
+ 
+@@ -197,7 +202,8 @@ void btrfs_get_logged_extents(struct inode *inode,
+ void btrfs_put_logged_extents(struct list_head *logged_list);
+ void btrfs_submit_logged_extents(struct list_head *logged_list,
+ 				 struct btrfs_root *log);
+-void btrfs_wait_logged_extents(struct btrfs_root *log, u64 transid);
++void btrfs_wait_logged_extents(struct btrfs_trans_handle *trans,
++			       struct btrfs_root *log, u64 transid);
+ void btrfs_free_logged_extents(struct btrfs_root *log, u64 transid);
+ int __init ordered_data_init(void);
+ void ordered_data_exit(void);
+diff --git a/fs/btrfs/transaction.c b/fs/btrfs/transaction.c
+index 98a25df1c430..6c4a9cdef79b 100644
+--- a/fs/btrfs/transaction.c
++++ b/fs/btrfs/transaction.c
+@@ -220,6 +220,7 @@ loop:
+ 	INIT_LIST_HEAD(&cur_trans->pending_snapshots);
+ 	INIT_LIST_HEAD(&cur_trans->pending_chunks);
+ 	INIT_LIST_HEAD(&cur_trans->switch_commits);
++	INIT_LIST_HEAD(&cur_trans->pending_ordered);
+ 	list_add_tail(&cur_trans->list, &fs_info->trans_list);
+ 	extent_io_tree_init(&cur_trans->dirty_pages,
+ 			     fs_info->btree_inode->i_mapping);
+@@ -488,6 +489,7 @@ again:
+ 	h->sync = false;
+ 	INIT_LIST_HEAD(&h->qgroup_ref_list);
+ 	INIT_LIST_HEAD(&h->new_bgs);
++	INIT_LIST_HEAD(&h->ordered);
+ 
+ 	smp_mb();
+ 	if (cur_trans->state >= TRANS_STATE_BLOCKED &&
+@@ -719,6 +721,12 @@ static int __btrfs_end_transaction(struct btrfs_trans_handle *trans,
+ 	if (!list_empty(&trans->new_bgs))
+ 		btrfs_create_pending_block_groups(trans, root);
+ 
++	if (!list_empty(&trans->ordered)) {
++		spin_lock(&info->trans_lock);
++		list_splice(&trans->ordered, &cur_trans->pending_ordered);
++		spin_unlock(&info->trans_lock);
++	}
++
+ 	trans->delayed_ref_updates = 0;
+ 	if (!trans->sync) {
+ 		must_run_delayed_refs =
+@@ -1630,6 +1638,28 @@ static inline void btrfs_wait_delalloc_flush(struct btrfs_fs_info *fs_info)
+ 		btrfs_wait_ordered_roots(fs_info, -1);
+ }
+ 
++static inline void
++btrfs_wait_pending_ordered(struct btrfs_transaction *cur_trans,
++			   struct btrfs_fs_info *fs_info)
++{
++	struct btrfs_ordered_extent *ordered;
++
++	spin_lock(&fs_info->trans_lock);
++	while (!list_empty(&cur_trans->pending_ordered)) {
++		ordered = list_first_entry(&cur_trans->pending_ordered,
++					   struct btrfs_ordered_extent,
++					   trans_list);
++		list_del_init(&ordered->trans_list);
++		spin_unlock(&fs_info->trans_lock);
++
++		wait_event(ordered->wait, test_bit(BTRFS_ORDERED_COMPLETE,
++						   &ordered->flags));
++		btrfs_put_ordered_extent(ordered);
++		spin_lock(&fs_info->trans_lock);
++	}
++	spin_unlock(&fs_info->trans_lock);
++}
++
+ int btrfs_commit_transaction(struct btrfs_trans_handle *trans,
+ 			     struct btrfs_root *root)
+ {
+@@ -1679,6 +1709,7 @@ int btrfs_commit_transaction(struct btrfs_trans_handle *trans,
+ 	}
+ 
+ 	spin_lock(&root->fs_info->trans_lock);
++	list_splice(&trans->ordered, &cur_trans->pending_ordered);
+ 	if (cur_trans->state >= TRANS_STATE_COMMIT_START) {
+ 		spin_unlock(&root->fs_info->trans_lock);
+ 		atomic_inc(&cur_trans->use_count);
+@@ -1731,6 +1762,8 @@ int btrfs_commit_transaction(struct btrfs_trans_handle *trans,
+ 
+ 	btrfs_wait_delalloc_flush(root->fs_info);
+ 
++	btrfs_wait_pending_ordered(cur_trans, root->fs_info);
++
+ 	btrfs_scrub_pause(root);
+ 	/*
+ 	 * Ok now we need to make sure to block out any other joins while we
+diff --git a/fs/btrfs/transaction.h b/fs/btrfs/transaction.h
+index 579be51b27e5..25bd9abc60e6 100644
+--- a/fs/btrfs/transaction.h
++++ b/fs/btrfs/transaction.h
+@@ -56,6 +56,7 @@ struct btrfs_transaction {
+ 	wait_queue_head_t commit_wait;
+ 	struct list_head pending_snapshots;
+ 	struct list_head pending_chunks;
++	struct list_head pending_ordered;
+ 	struct list_head switch_commits;
+ 	struct btrfs_delayed_ref_root delayed_refs;
+ 	int aborted;
+@@ -105,6 +106,7 @@ struct btrfs_trans_handle {
+ 	 */
+ 	struct btrfs_root *root;
+ 	struct seq_list delayed_ref_elem;
++	struct list_head ordered;
+ 	struct list_head qgroup_ref_list;
+ 	struct list_head new_bgs;
+ };
 diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
-index 9e1f2cd5e67a..b190efaf5688 100644
+index b190efaf5688..4347890fa71d 100644
 --- a/fs/btrfs/tree-log.c
 +++ b/fs/btrfs/tree-log.c
-@@ -2596,9 +2596,9 @@ int btrfs_sync_log(struct btrfs_trans_handle *trans,
+@@ -2596,7 +2596,7 @@ int btrfs_sync_log(struct btrfs_trans_handle *trans,
  	if (atomic_read(&log_root_tree->log_commit[index2])) {
  		blk_finish_plug(&plug);
  		btrfs_wait_marked_extents(log, &log->dirty_log_pages, mark);
-+		btrfs_wait_logged_extents(log, log_transid);
+-		btrfs_wait_logged_extents(log, log_transid);
++		btrfs_wait_logged_extents(trans, log, log_transid);
  		wait_log_commit(trans, log_root_tree,
  				root_log_ctx.log_transid);
--		btrfs_free_logged_extents(log, log_transid);
  		mutex_unlock(&log_root_tree->log_mutex);
- 		ret = root_log_ctx.log_ret;
- 		goto out;
+@@ -2641,7 +2641,7 @@ int btrfs_sync_log(struct btrfs_trans_handle *trans,
+ 	btrfs_wait_marked_extents(log_root_tree,
+ 				  &log_root_tree->dirty_log_pages,
+ 				  EXTENT_NEW | EXTENT_DIRTY);
+-	btrfs_wait_logged_extents(log, log_transid);
++	btrfs_wait_logged_extents(trans, log, log_transid);
+ 
+ 	btrfs_set_super_log_root(root->fs_info->super_for_commit,
+ 				log_root_tree->node->start);
+@@ -3607,7 +3607,7 @@ static int log_one_extent(struct btrfs_trans_handle *trans,
+ 	fi = btrfs_item_ptr(leaf, path->slots[0],
+ 			    struct btrfs_file_extent_item);
+ 
+-	btrfs_set_token_file_extent_generation(leaf, fi, em->generation,
++	btrfs_set_token_file_extent_generation(leaf, fi, trans->transid,
+ 					       &token);
+ 	if (test_bit(EXTENT_FLAG_PREALLOC, &em->flags)) {
+ 		skip_csum = true;
 -- 
 2.1.4
 
