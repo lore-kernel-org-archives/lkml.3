@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785AbbALGKF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 01:10:05 -0500
-Received: from exprod7og116.obsmtp.com ([64.18.2.219]:60900 "EHLO
-	exprod7og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569AbbALGJ6 (ORCPT
+	id S1752064AbbALGLT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 01:11:19 -0500
+Received: from exprod7og123.obsmtp.com ([64.18.2.24]:59712 "EHLO
+	exprod7og123.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751658AbbALGKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 01:09:58 -0500
+	Mon, 12 Jan 2015 01:10:04 -0500
 From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
 X-Google-Original-From: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
 To: jejb@kernel.org, hch@infradead.org
@@ -14,9 +14,9 @@ Cc: martin.petersen@oracle.com, linux-scsi@vger.kernel.org,
         JBottomley@Parallels.com, Sathya.Prakash@avagotech.com,
         Nagalakshmi.Nandigama@avagotech.com, linux-kernel@vger.kernel.org,
         Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-Subject: [PATCH v2 06/22] [SCSI] mpt2sas, mpt3sas: Removing uppper boundary restriction for the module parameter max_sgl_entries
-Date: Mon, 12 Jan 2015 11:39:00 +0530
-Message-Id: <1421042944-14988-7-git-send-email-Sreekanth.Reddy@avagotech.com>
+Subject: [PATCH v2 07/22] [SCSI] mpt2sas: Complete the SCSI command with DID_RESET status for log_info value 0x0x32010081
+Date: Mon, 12 Jan 2015 11:39:01 +0530
+Message-Id: <1421042944-14988-8-git-send-email-Sreekanth.Reddy@avagotech.com>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <1421042944-14988-1-git-send-email-Sreekanth.Reddy@avagotech.com>
 References: <1421042944-14988-1-git-send-email-Sreekanth.Reddy@avagotech.com>
@@ -24,66 +24,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change Set:
+For any SCSI command, if the driver receives IOC status = SCSI_IOC_TERMINATED and log info = 0x32010081
+ then that command will be completed with DID_RESET host status.
 
-1. Extended the upper boundary restriction for the module parameter max_sgl_entries.
-   Earlier, the max_sgl_entries was capped at the SCSI_MAX_SG_SEGMENTS kernel definition.
-   With this change, the user would be able to set the max_sgl_entries to
-   any value which is greater than SCSI_MAX_SG_SEGMENTS and less than the minimum of
-   SCSI_MAX_SG_CHAIN_SEGMENTS & hardware limit(Calculated using IOCFacts's MaxChainDepth).
+The definition of this log info value is "Virtual IO has failed and has to be retried".
 
-2. Added a print for the message log whenever the user sets the max_sgl_entries to a value
-   greater than SCSI_MAX_SG_SEGMENTS to warn about the kernel definition overriding.
+Firmware will provide this log info value with IOC Status
+"SCSI_IOC_TERMINATED", whenever a drive (with is a part of a volume)
+is pulled and pushed back within some minimal delay.  With this log info
+value, firmware informs the driver to retry the failed IO command
+infinite times, so to provide some time for the firmware to discover
+the reinserted drive successfully instated of just retrying failed
+command for five times( doesn't giving enough time for firmware to
+complete the drive discovery) and failing the IO permanently even
+though drive came back successfully.
 
 Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
 Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
 ---
- drivers/scsi/mpt2sas/mpt2sas_base.c | 10 +++++++---
- drivers/scsi/mpt3sas/mpt3sas_base.c | 10 ++++++++--
- 2 files changed, 15 insertions(+), 5 deletions(-)
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
-index 13d1d5b..dc088ac 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -2492,9 +2492,13 @@ _base_allocate_memory_pools(struct MPT2SAS_ADAPTER *ioc,  int sleep_flag)
- 
- 	/* command line tunables  for max sgl entries */
- 	if (max_sgl_entries != -1) {
--		ioc->shost->sg_tablesize = (max_sgl_entries <
--		    MPT2SAS_SG_DEPTH) ? max_sgl_entries :
--		    MPT2SAS_SG_DEPTH;
-+		ioc->shost->sg_tablesize =  min_t(unsigned short,
-+			     max_sgl_entries, SCSI_MAX_SG_CHAIN_SEGMENTS);
-+		if (ioc->shost->sg_tablesize > MPT2SAS_SG_DEPTH)
-+			printk(MPT2SAS_WARN_FMT
-+			 "sg_tablesize(%u) is bigger than kernel defined"
-+			 " SCSI_MAX_SG_SEGMENTS(%u)\n", ioc->name,
-+			  ioc->shost->sg_tablesize, MPT2SAS_SG_DEPTH);
- 	} else {
- 		ioc->shost->sg_tablesize = MPT2SAS_SG_DEPTH;
- 	}
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_base.c b/drivers/scsi/mpt3sas/mpt3sas_base.c
-index f1918cf..0b8210b 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_base.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_base.c
-@@ -2666,8 +2666,14 @@ _base_allocate_memory_pools(struct MPT3SAS_ADAPTER *ioc,  int sleep_flag)
- 
- 	if (sg_tablesize < MPT3SAS_MIN_PHYS_SEGMENTS)
- 		sg_tablesize = MPT3SAS_MIN_PHYS_SEGMENTS;
--	else if (sg_tablesize > MPT3SAS_MAX_PHYS_SEGMENTS)
--		sg_tablesize = MPT3SAS_MAX_PHYS_SEGMENTS;
-+	else if (sg_tablesize > MPT3SAS_MAX_PHYS_SEGMENTS) {
-+		sg_tablesize = min_t(unsigned short, sg_tablesize,
-+				      SCSI_MAX_SG_CHAIN_SEGMENTS);
-+		pr_warn(MPT3SAS_FMT
-+		 "sg_tablesize(%u) is bigger than kernel"
-+		 " defined SCSI_MAX_SG_SEGMENTS(%u)\n", ioc->name,
-+		 sg_tablesize, MPT3SAS_MAX_PHYS_SEGMENTS);
-+	}
- 	ioc->shost->sg_tablesize = sg_tablesize;
- 
- 	ioc->hi_priority_depth = facts->HighPriorityCredit;
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+index 9803d8f..bbbec9d 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -4543,6 +4543,10 @@ _scsih_io_done(struct MPT2SAS_ADAPTER *ioc, u16 smid, u8 msix_index, u32 reply)
+ 			scmd->result = DID_TRANSPORT_DISRUPTED << 16;
+ 			goto out;
+ 		}
++		if (log_info == 0x32010081) {
++			scmd->result = DID_RESET << 16;
++			break;
++		}
+ 		scmd->result = DID_SOFT_ERROR << 16;
+ 		break;
+ 	case MPI2_IOCSTATUS_SCSI_TASK_TERMINATED:
 -- 
 2.0.2
 
