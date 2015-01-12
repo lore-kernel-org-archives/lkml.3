@@ -1,116 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753103AbbALOWJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 09:22:09 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:59144 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451AbbALOWH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 09:22:07 -0500
-Message-ID: <54B3D88C.80702@linaro.org>
-Date: Mon, 12 Jan 2015 15:22:04 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1753414AbbALOij (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 09:38:39 -0500
+Received: from mail-by2on0131.outbound.protection.outlook.com ([207.46.100.131]:13910
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752111AbbALOii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 09:38:38 -0500
+X-Greylist: delayed 951 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Jan 2015 09:38:37 EST
+Message-ID: <54B3D899.5060204@freescale.com>
+Date: Mon, 12 Jan 2015 16:22:17 +0200
+From: Claudiu Manoil <claudiu.manoil@freescale.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-CC: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        sylvain.rochet@finsecur.com, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] clocksource: timer-atmel-pit: don't suspend/resume if
- unused
-References: <1418911523-28492-1-git-send-email-nicolas.ferre@atmel.com> <54B3D450.7050405@atmel.com>
-In-Reply-To: <54B3D450.7050405@atmel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Sanjeev Sharma <sanjeev_sharma@mentor.com>
+CC: <davem@davemloft.net>, <peter.senna@gmail.com>,
+        <shemminger@linux-foundation.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gianfar: correct the bad expression while writing bit-pattern
+References: <1421048596-22639-1-git-send-email-sanjeev_sharma@mentor.com>
+In-Reply-To: <1421048596-22639-1-git-send-email-sanjeev_sharma@mentor.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=claudiu.manoil@freescale.com; 
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(164054003)(479174004)(24454002)(189002)(51704005)(377454003)(87936001)(65956001)(77156002)(62966003)(36756003)(120886001)(23746002)(104016003)(105606002)(97736003)(110136001)(106466001)(46102003)(83506001)(6806004)(85426001)(19580395003)(64126003)(33656002)(64706001)(76176999)(50986999)(87266999)(54356999)(47776003)(80316001)(86362001)(19580405001)(65816999)(59896002)(92566002)(50466002)(65806001)(2950100001)(68736005)(77096005);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0628;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BN1PR0301MB0628;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1PR0301MB0628;
+X-Forefront-PRVS: 0454444834
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0628;
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 12 Jan 2015 14:22:43.5366
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR0301MB0628
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0754;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2015 03:04 PM, Nicolas Ferre wrote:
-> Le 18/12/2014 15:05, Nicolas Ferre a écrit :
->> From: Sylvain Rochet <sylvain.rochet@finsecur.com>
->>
->> Waiting for PIT to stop counting takes a long time:
->>    1/(Master clock/prescaler/PIVR)
->> = 1/(133 MHz     /16       /2^20)
->> = 126 ms
->>
->> Up to 126 ms if master clock is set to 133 MHz, skipping suspend/resume
->> of the unused PIT device reduce (suspend time + resume time) from ~140 ms
->> to ~17 ms.
->>
->> Signed-off-by: Sylvain Rochet <sylvain.rochet@finsecur.com>
->> [nicolas.ferre@atmel.com: move to newer clocksource driver]
->> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
->> ---
->> Hi Sylvain,
->>
->> I re-worked (and "Acked") your patch so it can be applied on the newer Mainline
->> kernels. Beware, I changed the "subject line" as well. The PIT driver moved
->> recently (3.18).
->>
->> Daniel,
->> Can you take this patch in your tree?
+On 1/12/2015 9:43 AM, Sanjeev Sharma wrote:
+> This patch correct the bad expression while writing the
+> bit-pattern from software's buffer to hardware registers.
 >
-> Hi Daniel,
+> Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+> ---
+>   drivers/net/ethernet/freescale/gianfar_ethtool.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> Anything prevents this patch from being merged (aka ping ;-))?
-
-[Cc'ed tglx].
-
-Hi Nico,
-
-thanks for the head up.
-
-Nothing prevents it but I am wondering if this change shouldn't be in 
-the generic framework (kernel/time/clocksource.c and 
-kernel/time/clockevents.c), so all drivers will benefit this change ?
-
-
->> Thanks, bye.
->>    Nicolas.
->>
->>   drivers/clocksource/timer-atmel-pit.c | 8 ++++++++
->>   1 file changed, 8 insertions(+)
->>
->> diff --git a/drivers/clocksource/timer-atmel-pit.c b/drivers/clocksource/timer-atmel-pit.c
->> index b5b4d4585c9a..5408bc7c68d8 100644
->> --- a/drivers/clocksource/timer-atmel-pit.c
->> +++ b/drivers/clocksource/timer-atmel-pit.c
->> @@ -123,6 +123,10 @@ static void at91sam926x_pit_suspend(struct clock_event_device *cedev)
->>   {
->>   	struct pit_data *data = clkevt_to_pit_data(cedev);
->>
->> +	/* Don't suspend PIT if unused */
->> +	if (cedev->mode == CLOCK_EVT_MODE_UNUSED)
->> +		return;
->> +
->>   	/* Disable timer */
->>   	pit_write(data->base, AT91_PIT_MR, 0);
->>   }
->> @@ -145,6 +149,10 @@ static void at91sam926x_pit_resume(struct clock_event_device *cedev)
->>   {
->>   	struct pit_data *data = clkevt_to_pit_data(cedev);
->>
->> +	/* Don't resume PIT if unused */
->> +	if (cedev->mode == CLOCK_EVT_MODE_UNUSED)
->> +		return;
->> +
->>   	at91sam926x_pit_reset(data);
->>   }
->>
->>
+> diff --git a/drivers/net/ethernet/freescale/gianfar_ethtool.c b/drivers/net/ethernet/freescale/gianfar_ethtool.c
+> index 3e1a9c1..1ccca72 100644
+> --- a/drivers/net/ethernet/freescale/gianfar_ethtool.c
+> +++ b/drivers/net/ethernet/freescale/gianfar_ethtool.c
+> @@ -1586,7 +1586,7 @@ static int gfar_write_filer_table(struct gfar_private *priv,
+>   		return -EBUSY;
 >
->
+>   	/* Fill regular entries */
+> -	for (; i < MAX_FILER_IDX - 1 && (tab->fe[i].ctrl | tab->fe[i].ctrl);
+> +	for (; i < MAX_FILER_IDX - 1 && ( i < tab->fe[i].ctrl);
+>   	     i++)
 
+Why do you think 'i' can be compared with the 'ctrl' field?
+Is the control field an index (provide proof if yes)?  I doubt it...
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Thanks,
+Claudiu
 
