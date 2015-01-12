@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851AbbALS2m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:28:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57490 "EHLO
+	id S1756714AbbALTJI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 14:09:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57466 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753343AbbALSFz (ORCPT
+	with ESMTP id S1753243AbbALSFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:05:55 -0500
+	Mon, 12 Jan 2015 13:05:52 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Dave Airlie <airlied@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 036/216] ftrace/x86: Add frames pointers to trampoline as necessary
-Date: Mon, 12 Jan 2015 18:02:33 +0000
-Message-Id: <1421085933-32536-37-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 037/216] drm/ttm: Avoid memory allocation from shrinker functions.
+Date: Mon, 12 Jan 2015 18:02:34 +0000
+Message-Id: <1421085933-32536-38-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -28,114 +28,236 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-commit 9960efeb80f73bd073483dab0855ee0ddc27085c upstream.
+commit 881fdaa5e4cb0d68e52acab0ad4e1820e2bfffa4 upstream.
 
-When CONFIG_FRAME_POINTERS are enabled, it is required that the
-ftrace_caller and ftrace_regs_caller trampolines set up frame pointers
-otherwise a stack trace from a function call wont print the functions
-that called the trampoline. This is due to a check in
-__save_stack_address():
+Andrew Morton wrote:
+> On Wed, 12 Nov 2014 13:08:55 +0900 Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp> wrote:
+>
+> > Andrew Morton wrote:
+> > > Poor ttm guys - this is a bit of a trap we set for them.
+> >
+> > Commit a91576d7916f6cce ("drm/ttm: Pass GFP flags in order to avoid deadlock.")
+> > changed to use sc->gfp_mask rather than GFP_KERNEL.
+> >
+> > -       pages_to_free = kmalloc(npages_to_free * sizeof(struct page *),
+> > -                       GFP_KERNEL);
+> > +       pages_to_free = kmalloc(npages_to_free * sizeof(struct page *), gfp);
+> >
+> > But this bug is caused by sc->gfp_mask containing some flags which are not
+> > in GFP_KERNEL, right? Then, I think
+> >
+> > -       pages_to_free = kmalloc(npages_to_free * sizeof(struct page *), gfp);
+> > +       pages_to_free = kmalloc(npages_to_free * sizeof(struct page *), gfp & GFP_KERNEL);
+> >
+> > would hide this bug.
+> >
+> > But I think we should use GFP_ATOMIC (or drop __GFP_WAIT flag)
+>
+> Well no - ttm_page_pool_free() should stop calling kmalloc altogether.
+> Just do
+>
+> 	struct page *pages_to_free[16];
+>
+> and rework the code to free 16 pages at a time.  Easy.
 
- #ifdef CONFIG_FRAME_POINTER
-	if (!reliable)
-		return;
- #endif
+Well, ttm code wants to process 512 pages at a time for performance.
+Memory footprint increased by 512 * sizeof(struct page *) buffer is
+only 4096 bytes. What about using static buffer like below?
+----------
+>From d3cb5393c9c8099d6b37e769f78c31af1541fe8c Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Thu, 13 Nov 2014 22:21:54 +0900
+Subject: [PATCH] drm/ttm: Avoid memory allocation from shrinker functions.
 
-The "reliable" variable is only set if the function address is equal to
-contents of the address before the address the frame pointer register
-points to. If the frame pointer is not set up for the ftrace caller
-then this will fail the reliable test. It will miss the function that
-called the trampoline. Worse yet, if fentry is used (gcc 4.6 and
-beyond), it will also miss the parent, as the fentry is called before
-the stack frame is set up. That means the bp frame pointer points
-to the stack of just before the parent function was called.
+Commit a91576d7916f6cce ("drm/ttm: Pass GFP flags in order to avoid
+deadlock.") caused BUG_ON() due to sc->gfp_mask containing flags
+which are not in GFP_KERNEL.
 
-Link: http://lkml.kernel.org/r/20141119034829.355440340@goodmis.org
+  https://bugzilla.kernel.org/show_bug.cgi?id=87891
 
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Changing from sc->gfp_mask to (sc->gfp_mask & GFP_KERNEL) would
+avoid the BUG_ON(), but avoiding memory allocation from shrinker
+function is better and reliable fix.
+
+Shrinker function is already serialized by global lock, and
+clean up function is called after shrinker function is unregistered.
+Thus, we can use static buffer when called from shrinker function
+and clean up function.
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/mcount_64.S | 41 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
+ drivers/gpu/drm/ttm/ttm_page_alloc.c     | 26 +++++++++++++++-----------
+ drivers/gpu/drm/ttm/ttm_page_alloc_dma.c | 25 +++++++++++++++----------
+ 2 files changed, 30 insertions(+), 21 deletions(-)
 
-diff --git a/arch/x86/kernel/mcount_64.S b/arch/x86/kernel/mcount_64.S
-index c050a0153168..0b15b5b3957c 100644
---- a/arch/x86/kernel/mcount_64.S
-+++ b/arch/x86/kernel/mcount_64.S
-@@ -45,6 +45,39 @@ END(function_hook)
+diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+index cf4bad2c1d59..76329d27385b 100644
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+@@ -297,11 +297,12 @@ static void ttm_pool_update_free_locked(struct ttm_page_pool *pool,
+  *
+  * @pool: to free the pages from
+  * @free_all: If set to true will free all pages in pool
+- * @gfp: GFP flags.
++ * @use_static: Safe to use static buffer
+  **/
+ static int ttm_page_pool_free(struct ttm_page_pool *pool, unsigned nr_free,
+-			      gfp_t gfp)
++			      bool use_static)
+ {
++	static struct page *static_buf[NUM_PAGES_TO_ALLOC];
+ 	unsigned long irq_flags;
+ 	struct page *p;
+ 	struct page **pages_to_free;
+@@ -311,7 +312,11 @@ static int ttm_page_pool_free(struct ttm_page_pool *pool, unsigned nr_free,
+ 	if (NUM_PAGES_TO_ALLOC < nr_free)
+ 		npages_to_free = NUM_PAGES_TO_ALLOC;
+ 
+-	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *), gfp);
++	if (use_static)
++		pages_to_free = static_buf;
++	else
++		pages_to_free = kmalloc(npages_to_free * sizeof(struct page *),
++					GFP_KERNEL);
+ 	if (!pages_to_free) {
+ 		pr_err("Failed to allocate memory for pool free operation\n");
+ 		return 0;
+@@ -374,7 +379,8 @@ restart:
+ 	if (freed_pages)
+ 		ttm_pages_put(pages_to_free, freed_pages);
+ out:
+-	kfree(pages_to_free);
++	if (pages_to_free != static_buf)
++		kfree(pages_to_free);
+ 	return nr_free;
+ }
+ 
+@@ -383,8 +389,6 @@ out:
+  *
+  * XXX: (dchinner) Deadlock warning!
+  *
+- * We need to pass sc->gfp_mask to ttm_page_pool_free().
+- *
+  * This code is crying out for a shrinker per pool....
+  */
+ static unsigned long
+@@ -407,8 +411,8 @@ ttm_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
+ 		if (shrink_pages == 0)
+ 			break;
+ 		pool = &_manager->pools[(i + pool_offset)%NUM_POOLS];
+-		shrink_pages = ttm_page_pool_free(pool, nr_free,
+-						  sc->gfp_mask);
++		/* OK to use static buffer since global mutex is held. */
++		shrink_pages = ttm_page_pool_free(pool, nr_free, true);
+ 		freed += nr_free - shrink_pages;
+ 	}
+ 	mutex_unlock(&lock);
+@@ -710,7 +714,7 @@ static void ttm_put_pages(struct page **pages, unsigned npages, int flags,
+ 	}
+ 	spin_unlock_irqrestore(&pool->lock, irq_flags);
+ 	if (npages)
+-		ttm_page_pool_free(pool, npages, GFP_KERNEL);
++		ttm_page_pool_free(pool, npages, false);
+ }
+ 
+ /*
+@@ -849,9 +853,9 @@ void ttm_page_alloc_fini(void)
+ 	pr_info("Finalizing pool allocator\n");
+ 	ttm_pool_mm_shrink_fini(_manager);
+ 
++	/* OK to use static buffer since global mutex is no longer used. */
+ 	for (i = 0; i < NUM_POOLS; ++i)
+-		ttm_page_pool_free(&_manager->pools[i], FREE_ALL_PAGES,
+-				   GFP_KERNEL);
++		ttm_page_pool_free(&_manager->pools[i], FREE_ALL_PAGES, true);
+ 
+ 	kobject_put(&_manager->kobj);
+ 	_manager = NULL;
+diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+index ca65df144765..3dfa97d04e51 100644
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+@@ -411,11 +411,12 @@ static void ttm_dma_page_put(struct dma_pool *pool, struct dma_page *d_page)
+  *
+  * @pool: to free the pages from
+  * @nr_free: If set to true will free all pages in pool
+- * @gfp: GFP flags.
++ * @use_static: Safe to use static buffer
+  **/
+ static unsigned ttm_dma_page_pool_free(struct dma_pool *pool, unsigned nr_free,
+-				       gfp_t gfp)
++				       bool use_static)
+ {
++	static struct page *static_buf[NUM_PAGES_TO_ALLOC];
+ 	unsigned long irq_flags;
+ 	struct dma_page *dma_p, *tmp;
+ 	struct page **pages_to_free;
+@@ -432,7 +433,11 @@ static unsigned ttm_dma_page_pool_free(struct dma_pool *pool, unsigned nr_free,
+ 			 npages_to_free, nr_free);
+ 	}
  #endif
- .endm
+-	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *), gfp);
++	if (use_static)
++		pages_to_free = static_buf;
++	else
++		pages_to_free = kmalloc(npages_to_free * sizeof(struct page *),
++					GFP_KERNEL);
  
-+#ifdef CONFIG_FRAME_POINTER
-+/*
-+ * Stack traces will stop at the ftrace trampoline if the frame pointer
-+ * is not set up properly. If fentry is used, we need to save a frame
-+ * pointer for the parent as well as the function traced, because the
-+ * fentry is called before the stack frame is set up, where as mcount
-+ * is called afterward.
-+ */
-+.macro create_frame parent rip
-+#ifdef CC_USING_FENTRY
-+	pushq \parent
-+	pushq %rbp
-+	movq %rsp, %rbp
-+#endif
-+	pushq \rip
-+	pushq %rbp
-+	movq %rsp, %rbp
-+.endm
-+
-+.macro restore_frame
-+#ifdef CC_USING_FENTRY
-+	addq $16, %rsp
-+#endif
-+	popq %rbp
-+	addq $8, %rsp
-+.endm
-+#else
-+.macro create_frame parent rip
-+.endm
-+.macro restore_frame
-+.endm
-+#endif /* CONFIG_FRAME_POINTER */
-+
- ENTRY(ftrace_caller)
- 	/* Check if tracing was disabled (quick check) */
- 	cmpl $0, function_trace_stop
-@@ -54,9 +87,13 @@ ENTRY(ftrace_caller)
- 	/* regs go into 4th parameter (but make it NULL) */
- 	movq $0, %rcx
+ 	if (!pages_to_free) {
+ 		pr_err("%s: Failed to allocate memory for pool free operation\n",
+@@ -502,7 +507,8 @@ restart:
+ 	if (freed_pages)
+ 		ttm_dma_pages_put(pool, &d_pages, pages_to_free, freed_pages);
+ out:
+-	kfree(pages_to_free);
++	if (pages_to_free != static_buf)
++		kfree(pages_to_free);
+ 	return nr_free;
+ }
  
-+	create_frame %rsi, %rdi
-+
- GLOBAL(ftrace_call)
- 	call ftrace_stub
+@@ -531,7 +537,8 @@ static void ttm_dma_free_pool(struct device *dev, enum pool_type type)
+ 		if (pool->type != type)
+ 			continue;
+ 		/* Takes a spinlock.. */
+-		ttm_dma_page_pool_free(pool, FREE_ALL_PAGES, GFP_KERNEL);
++		/* OK to use static buffer since global mutex is held. */
++		ttm_dma_page_pool_free(pool, FREE_ALL_PAGES, true);
+ 		WARN_ON(((pool->npages_in_use + pool->npages_free) != 0));
+ 		/* This code path is called after _all_ references to the
+ 		 * struct device has been dropped - so nobody should be
+@@ -984,7 +991,7 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
  
-+	restore_frame
-+
- 	MCOUNT_RESTORE_FRAME
- ftrace_return:
+ 	/* shrink pool if necessary (only on !is_cached pools)*/
+ 	if (npages)
+-		ttm_dma_page_pool_free(pool, npages, GFP_KERNEL);
++		ttm_dma_page_pool_free(pool, npages, false);
+ 	ttm->state = tt_unpopulated;
+ }
+ EXPORT_SYMBOL_GPL(ttm_dma_unpopulate);
+@@ -994,8 +1001,6 @@ EXPORT_SYMBOL_GPL(ttm_dma_unpopulate);
+  *
+  * XXX: (dchinner) Deadlock warning!
+  *
+- * We need to pass sc->gfp_mask to ttm_dma_page_pool_free().
+- *
+  * I'm getting sadder as I hear more pathetical whimpers about needing per-pool
+  * shrinkers
+  */
+@@ -1028,8 +1033,8 @@ ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
+ 		if (++idx < pool_offset)
+ 			continue;
+ 		nr_free = shrink_pages;
+-		shrink_pages = ttm_dma_page_pool_free(p->pool, nr_free,
+-						      sc->gfp_mask);
++		/* OK to use static buffer since global mutex is held. */
++		shrink_pages = ttm_dma_page_pool_free(p->pool, nr_free, true);
+ 		freed += nr_free - shrink_pages;
  
-@@ -104,9 +141,13 @@ ENTRY(ftrace_regs_caller)
- 	/* regs go into 4th parameter */
- 	leaq (%rsp), %rcx
- 
-+	create_frame %rsi, %rdi
-+
- GLOBAL(ftrace_regs_call)
- 	call ftrace_stub
- 
-+	restore_frame
-+
- 	/* Copy flags back to SS, to restore them */
- 	movq EFLAGS(%rsp), %rax
- 	movq %rax, SS(%rsp)
+ 		pr_debug("%s: (%s:%d) Asked to shrink %d, have %d more to go\n",
 -- 
 2.1.4
 
