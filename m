@@ -1,38 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752998AbbALLKe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 06:10:34 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:45712 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752928AbbALLKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 06:10:32 -0500
-X-IronPort-AV: E=Sophos;i="5.07,743,1413244800"; 
-   d="scan'208";a="214692074"
-Message-ID: <54B3ABA5.6090400@citrix.com>
-Date: Mon, 12 Jan 2015 11:10:29 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1753107AbbALLL7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 06:11:59 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:51650 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752441AbbALLL5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 06:11:57 -0500
+Date: Mon, 12 Jan 2015 14:11:48 +0300
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 1/3] mm: memcontrol: remove unnecessary soft limit tree
+ node test
+Message-ID: <20150112111148.GB384@esperanza>
+References: <1420856041-27647-1-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-To: Juergen Gross <jgross@suse.com>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
-        <david.vrabel@citrix.com>, <boris.ostrovsky@oracle.com>,
-        <jbeulich@suse.com>
-Subject: Re: [Xen-devel] [Patch V2 0/4] xen: correct several bugs in new p2m
- list setup
-References: <1421039110-11207-1-git-send-email-jgross@suse.com>
-In-Reply-To: <1421039110-11207-1-git-send-email-jgross@suse.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1420856041-27647-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/15 05:05, Juergen Gross wrote:
-> In the setup code of the linear mapped p2m list several bugs have
-> been found, especially for 32 bit dom0. These patches correct the
-> errors and make 32 bit dom0 bootable again.
+On Fri, Jan 09, 2015 at 09:13:59PM -0500, Johannes Weiner wrote:
+> kzalloc_node() automatically falls back to nodes with suitable memory.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Applied to stable/for-linus-3.19, thanks.
-
-David
+Reviewed-by: Vladimir Davydov <vdavydov@parallels.com>
