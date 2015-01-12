@@ -1,47 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847AbbALMf4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 07:35:56 -0500
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:55192 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752204AbbALMfz (ORCPT
+	id S1752980AbbALMgp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 07:36:45 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:48347 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752188AbbALMgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 07:35:55 -0500
-Message-ID: <1421066153.22660.64.camel@x220>
-Subject: Re: MIPS: ralink: CONFIG_SOC_MT7621?
-From: Paul Bolle <pebolle@tiscali.nl>
-To: John Crispin <blogic@openwrt.org>, Ralf Baechle <ralf@linux-mips.org>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 12 Jan 2015 13:35:53 +0100
-In-Reply-To: <1414406687.28499.17.camel@x220>
-References: <1414406687.28499.17.camel@x220>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 12 Jan 2015 12:35:54.0117 (UTC) FILETIME=[4E6DCB50:01D02E64]
-X-RcptDomain: vger.kernel.org
+	Mon, 12 Jan 2015 07:36:41 -0500
+Date: Mon, 12 Jan 2015 07:36:36 -0500
+From: "Ahmed S. Darwish" <darwish.07@gmail.com>
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: Olivier Sobrie <olivier@sobrie.be>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 3/4] can: kvaser_usb: Add support for the Usbcan-II
+ family
+Message-ID: <20150112123636.GE9213@linux>
+References: <20141223154654.GB6460@vivalin-002>
+ <20150111200544.GA8855@linux>
+ <20150111201116.GB8855@linux>
+ <20150111201519.GC8855@linux>
+ <20150111203612.GA8999@linux>
+ <54B3B37C.7090002@pengutronix.de>
+ <20150112120741.GC9213@linux>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150112120741.GC9213@linux>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-John,
-
-On Mon, 2014-10-27 at 11:44 +0100, Paul Bolle wrote:
-> Your commit 715f2e581856 ("MIPS: ralink: cleanup early_printk") landed
-> in today's linux-next (ie, next-20141027). It adds two checks for
-> CONFIG_SOC_MT7621. The patch to add Kconfig symbol SOC_MT7621 is still
-> pending (see http://patchwork.linux-mips.org/patch/8033/ ).
+On Mon, Jan 12, 2015 at 07:07:41AM -0500, Ahmed S. Darwish wrote:
+> Hi Marc,
 > 
-> Obviously, until that patch lands these two checks will always evaluate
-> to false.
+> On Mon, Jan 12, 2015 at 12:43:56PM +0100, Marc Kleine-Budde wrote:
+> > On 01/11/2015 09:36 PM, Ahmed S. Darwish wrote:
+> > > +
+> > > +	switch (dev->family) {
+> > > +	case KVASER_LEAF:
+> > > +		rx_msg = msg->u.leaf.rx_can.msg;
+> > > +		break;
+> > > +	case KVASER_USBCAN:
+> > > +		rx_msg = msg->u.usbcan.rx_can.msg;
+> > > +		break;
+> > > +	default:
+> > > +		dev_err(dev->udev->dev.parent,
+> > > +			"Invalid device family (%d)\n", dev->family);
+> > >  		return;
+> > 
+> > should not happen.
+> > 
+> 
+> Yes, but otherwise I get GCC warnings of 'rx_msg' possibly
+> being unused. I can add __maybe_unused to rx_msg of course,
+> but such annotation may hide possible errors in the future.
+> 
 
-These useless checks have now made it into v3.19-rc1 and later. What's
-the current status of the patch I quoted above?
+Ah, what I meant is using uninitialized_var() to suppress the
+GCC warning. But, really, using that macro has a bad history
+of hiding errors in the future.
 
-Thanks,
+Kindly check http://lwn.net/Articles/529954/ for context.
 
+Another solution might be initializing rx_msg to NULL.
 
-Paul Bolle
-
+> > > +	switch (dev->family) {
+> > > +	case KVASER_LEAF:
+> > > +		msg_tx_can_flags = &msg->u.tx_can.leaf.flags;
+> > > +		break;
+> > > +	case KVASER_USBCAN:
+> > > +		msg_tx_can_flags = &msg->u.tx_can.usbcan.flags;
+> > > +		break;
+> > > +	default:
+> > > +		dev_err(dev->udev->dev.parent,
+> > > +			"Invalid device family (%d)\n", dev->family);
+> > > +		goto releasebuf;
+> > should not happen, please remove
+> 
+> Like the 'rx_msg' case above.
+> 
+> Thanks,
+> Darwish
