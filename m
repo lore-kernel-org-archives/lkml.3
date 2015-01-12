@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042AbbALSJU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:09:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57822 "EHLO
+	id S1753927AbbALSIu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:08:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57829 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753917AbbALSGw (ORCPT
+	with ESMTP id S1753928AbbALSGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:06:52 -0500
+	Mon, 12 Jan 2015 13:06:54 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 111/216] userns: Rename id_map_mutex to userns_state_mutex
-Date: Mon, 12 Jan 2015 18:03:48 +0000
-Message-Id: <1421085933-32536-112-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 112/216] drm/i915: Don't complain about stolen conflicts on gen3
+Date: Mon, 12 Jan 2015 18:03:49 +0000
+Message-Id: <1421085933-32536-113-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -27,83 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit f0d62aec931e4ae3333c797d346dc4f188f454ba upstream.
+commit 0b6d24c01932db99fc95304235e751e7f7625c41 upstream.
 
-Generalize id_map_mutex so it can be used for more state of a user namespace.
+Apparently stuff works that way on those machines.
 
-Reviewed-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+I agree with Chris' concern that this is a bit risky but imo worth a
+shot in -next just for fun. Afaics all these machines have the pci
+resources allocated like that by the BIOS, so I suspect that it's all
+ok.
+
+This regression goes back to
+
+commit eaba1b8f3379b5d100bd146b9a41d28348bdfd09
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Thu Jul 4 12:28:35 2013 +0100
+
+    drm/i915: Verify that our stolen memory doesn't conflict
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76983
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=71031
+Tested-by: lu hua <huax.lu@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Tested-by: Paul Menzel <paulepanter@users.sourceforge.net>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/user_namespace.c | 14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/i915/i915_gem_stolen.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-index 48ba6d8af564..d3981e7fabab 100644
---- a/kernel/user_namespace.c
-+++ b/kernel/user_namespace.c
-@@ -24,6 +24,7 @@
- #include <linux/fs_struct.h>
- 
- static struct kmem_cache *user_ns_cachep __read_mostly;
-+static DEFINE_MUTEX(userns_state_mutex);
- 
- static bool new_idmap_permitted(const struct file *file,
- 				struct user_namespace *ns, int cap_setid,
-@@ -583,9 +584,6 @@ static bool mappings_overlap(struct uid_gid_map *new_map,
- 	return false;
- }
- 
--
--static DEFINE_MUTEX(id_map_mutex);
--
- static ssize_t map_write(struct file *file, const char __user *buf,
- 			 size_t count, loff_t *ppos,
- 			 int cap_setid,
-@@ -602,7 +600,7 @@ static ssize_t map_write(struct file *file, const char __user *buf,
- 	ssize_t ret = -EINVAL;
- 
- 	/*
--	 * The id_map_mutex serializes all writes to any given map.
-+	 * The userns_state_mutex serializes all writes to any given map.
- 	 *
- 	 * Any map is only ever written once.
- 	 *
-@@ -620,7 +618,7 @@ static ssize_t map_write(struct file *file, const char __user *buf,
- 	 * order and smp_rmb() is guaranteed that we don't have crazy
- 	 * architectures returning stale data.
- 	 */
--	mutex_lock(&id_map_mutex);
-+	mutex_lock(&userns_state_mutex);
- 
- 	ret = -EPERM;
- 	/* Only allow one successful write to the map */
-@@ -750,7 +748,7 @@ static ssize_t map_write(struct file *file, const char __user *buf,
- 	*ppos = count;
- 	ret = count;
- out:
--	mutex_unlock(&id_map_mutex);
-+	mutex_unlock(&userns_state_mutex);
- 	if (page)
- 		free_page(page);
- 	return ret;
-@@ -845,12 +843,12 @@ bool userns_may_setgroups(const struct user_namespace *ns)
- {
- 	bool allowed;
- 
--	mutex_lock(&id_map_mutex);
-+	mutex_lock(&userns_state_mutex);
- 	/* It is not safe to use setgroups until a gid mapping in
- 	 * the user namespace has been established.
- 	 */
- 	allowed = ns->gid_map.nr_extents != 0;
--	mutex_unlock(&id_map_mutex);
-+	mutex_unlock(&userns_state_mutex);
- 
- 	return allowed;
- }
+diff --git a/drivers/gpu/drm/i915/i915_gem_stolen.c b/drivers/gpu/drm/i915/i915_gem_stolen.c
+index 7465ab0fd396..936571622b43 100644
+--- a/drivers/gpu/drm/i915/i915_gem_stolen.c
++++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
+@@ -137,7 +137,11 @@ static unsigned long i915_stolen_to_physical(struct drm_device *dev)
+ 		r = devm_request_mem_region(dev->dev, base + 1,
+ 					    dev_priv->gtt.stolen_size - 1,
+ 					    "Graphics Stolen Memory");
+-		if (r == NULL) {
++		/*
++		 * GEN3 firmware likes to smash pci bridges into the stolen
++		 * range. Apparently this works.
++		 */
++		if (r == NULL && !IS_GEN3(dev)) {
+ 			DRM_ERROR("conflict detected with stolen region: [0x%08x - 0x%08x]\n",
+ 				  base, base + (uint32_t)dev_priv->gtt.stolen_size);
+ 			base = 0;
 -- 
 2.1.4
 
