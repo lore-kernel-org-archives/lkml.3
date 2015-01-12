@@ -1,55 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443AbbALPS7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 10:18:59 -0500
-Received: from 8bytes.org ([81.169.241.247]:45815 "EHLO theia.8bytes.org"
+	id S1753034AbbALPXs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 10:23:48 -0500
+Received: from mout1.freenet.de ([195.4.92.91]:55776 "EHLO mout1.freenet.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753031AbbALPS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 10:18:57 -0500
-Date: Mon, 12 Jan 2015 16:18:55 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: "Li, Zhen-Hua" <zhen-hual@hp.com>
-Cc: dwmw2@infradead.org, indou.takao@jp.fujitsu.com, bhe@redhat.com,
-        vgoyal@redhat.com, dyoung@redhat.com, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        kexec@lists.infradead.org, alex.williamson@redhat.com,
-        ddutile@redhat.com, ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com,
-        doug.hatch@hp.com, jerry.hoemann@hp.com, tom.vaden@hp.com,
-        li.zhang6@hp.com, lisa.mitchell@hp.com, billsumnerlinux@gmail.com,
-        rwright@hp.com
-Subject: Re: [PATCH v8 01/10] iommu/vt-d: Update iommu_attach_domain() and
- its callers
-Message-ID: <20150112151855.GB6343@8bytes.org>
-References: <1421046388-27925-1-git-send-email-zhen-hual@hp.com>
- <1421046388-27925-2-git-send-email-zhen-hual@hp.com>
+	id S1750860AbbALPXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 10:23:47 -0500
+Message-ID: <54B3E653.8020900@maya.org>
+Date: Mon, 12 Jan 2015 16:20:51 +0100
+From: Andreas Hartmann <andihartmann@freenet.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:34.0) Gecko/20100101 Firefox/34.0 SeaMonkey/2.31
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421046388-27925-2-git-send-email-zhen-hual@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alex Williamson <alex.williamson@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] PCI: quirk Atheros AR93xx to avoid bus reset
+References: <20141121180322.26669.65689.stgit@gimli.home>	 <20141121182427.26669.82417.stgit@gimli.home>	 <20150108160733.GA6575@google.com> <1420745423.25367.77.camel@redhat.com>
+In-Reply-To: <1420745423.25367.77.camel@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Originated-At: 79.222.1.217!35086
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 03:06:19PM +0800, Li, Zhen-Hua wrote:
-> Allow specification of the domain-id for the new domain.
-> This patch only adds the 'did' parameter to iommu_attach_domain()
-> and modifies all of its callers to specify the default value of -1
-> which says "no did specified, allocate a new one".
+Alex Williamson wrote:
+> On Thu, 2015-01-08 at 09:07 -0700, Bjorn Helgaas wrote:
+>> On Fri, Nov 21, 2014 at 11:24:27AM -0700, Alex Williamson wrote:
+>>> Reports against the TL-WDN4800 card indicate that PCI bus reset of
+>>> this Atheros device cause system lock-ups and resets.  I've also
+>>> been able to confirm this behavior on multiple systems.  The device
+>>> never returns from reset and attempts to access config space of the
+>>> device after reset result in hangs.  Blacklist bus reset for the
+>>> device to avoid this issue.
+>>>
+>>> Reported-by: Andreas Hartmann <andihartmann@freenet.de>
+>>> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+>>> Tested-by: Andreas Hartmann <andihartmann@freenet.de>
+>>
+>> If I understand correctly, these two (patches 3 & 4) fix a v3.14 regression
+>> caused by 425c1b223dac ("PCI: Add Virtual Channel to save/restore support").
+>>
+>> If so, these should go to for-linus for v3.19.  What about patches 1 & 2?
+>> Do they fix a regression?  Is there a pointer to a bugzilla or problem
+>> report about that issue?
+>>
+>> I don't understand the connection between 425c1b223dac and
+>> PCI_DEV_FLAGS_NO_BUS_RESET, because 425c1b223dac doesn't seem to do any
+>> resets.  Is that the wrong commit, or can you outline the connection for
+>> me?
+> 
+> TBH, I don't have a lot of faith in associating this to 425c1b223dac,
+> I'm not sure how Andreas' bisect landed there. 
 
-I think its better to keep the old iommu_attach_domain() interface in
-place and introduce a new function (like iommu_attach_domain_with_id()
-or something) which has the additional parameter. Then you can rewrite
-iommu_attach_domain():
+Because removing this patch made it working again :-)
 
-	iommu_attach_domai(...)
-	{
-		return iommu_attach_domain_with_id(..., -1);
-	}
+And too:
+http://thread.gmane.org/gmane.linux.kernel.pci/35170/focus=35984
 
-This way you don't have to update all the callers of
-iommu_attach_domain() and the interface is more readable.
+Kernel 2.10. and 2.12. and 2.13. did work fine for me. 2.14 is the first
+kernel, which hangs the machine at startup of the VM. The userland
+(qemu) didn't change in between.
+
+Therefore: from my point of view, it is a regression, because things
+have been working < 2.14.
+
+Besides that: It is undoubted, that there is a problem with resetting
+this card. But the difference between >= 3.14 and < 3.14 is, that < 3.14
+has been working nevertheless. The patch
+425c1b223dac456d00a61fd6b451b6d1cf00d065 obviously changed something
+which I can't say and I don't know off. Therefore, the quirk-patch is
+definitely required, because things work completely fine again w/ this
+patch.
+
+"Working" means for me here: I was able to start (and use) the VM w/o
+crashing the machine and this isn't possible w/ unpatched 2.14+ any
+more. Yes, w/ 2.12, I wasn't able to restart the VM (it then crashed the
+machine), but w/ 2.10 even this was possible.
 
 
-	Joerg
+> IME, this device cannot,
+> and has never been able to handle a bus reset.  A simple setpci
+> experiment on the commandline can confirm this.  What I think happened
+> is that with the PCI bus reset infrastructure we added, we switched QEMU
+> to prefer PCI bus resets over things like PM D3hot->D0 resets.  So it's
+> just more prolific use of bus resets by userspace.
+> 
+> There's also no regression in 1 & 2, PM reset has never done anything
+> useful on those devices.  Thanks,
+> 
+> Alex
+> 
+>>> ---
+>>>
+>>>  drivers/pci/quirks.c |   14 ++++++++++++++
+>>>  1 file changed, 14 insertions(+)
+>>>
+>>> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+>>> index 561e10d..ebbd5b4 100644
+>>> --- a/drivers/pci/quirks.c
+>>> +++ b/drivers/pci/quirks.c
+>>> @@ -3029,6 +3029,20 @@ static void quirk_no_pm_reset(struct pci_dev *dev)
+>>>  DECLARE_PCI_FIXUP_CLASS_HEADER(PCI_VENDOR_ID_ATI, PCI_ANY_ID,
+>>>  			       PCI_CLASS_DISPLAY_VGA, 8, quirk_no_pm_reset);
+>>>  
+>>> +static void quirk_no_bus_reset(struct pci_dev *dev)
+>>> +{
+>>> +	dev->dev_flags |= PCI_DEV_FLAGS_NO_BUS_RESET;
+>>> +}
+>>> +
+>>> +/*
+>>> + * Atheros AR93xx chips do not behave after a bus reset.  The device will
+>>> + * throw a Link Down error on AER capable system and regardless of AER,
+>>> + * config space of the device is never accessible again and typically
+>>> + * causes the system to hang or reset when access is attempted.
+>>> + * http://www.spinics.net/lists/linux-pci/msg34797.html
+>>> + */
+>>> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATHEROS, 0x0030, quirk_no_bus_reset);
+>>> +
+>>>  #ifdef CONFIG_ACPI
+>>>  /*
+>>>   * Apple: Shutdown Cactus Ridge Thunderbolt controller.
+>>>
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
