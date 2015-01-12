@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165AbbALTF4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 14:05:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57968 "EHLO
+	id S1756626AbbALTEo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 14:04:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57994 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754009AbbALS3r (ORCPT
+	with ESMTP id S1754911AbbALS3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:29:47 -0500
+	Mon, 12 Jan 2015 13:29:50 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bandan Das <bsd@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+Cc: Nadav Amit <namit@cs.technion.ac.il>, Paolo Bonzini <pbonzini@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 122/216] KVM: nVMX: Disable unrestricted mode if ept=0
-Date: Mon, 12 Jan 2015 18:28:20 +0000
-Message-Id: <1421087394-2712-10-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 123/216] KVM: x86: em_ret_far overrides cpl
+Date: Mon, 12 Jan 2015 18:28:21 +0000
+Message-Id: <1421087394-2712-11-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -27,42 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bandan Das <bsd@redhat.com>
+From: Nadav Amit <nadav.amit@gmail.com>
 
-commit 78051e3b7e35722ad3f31dd611f1b34770bddab8 upstream.
+commit ab646f54f4fd1a8b9671b8707f0739fdd28ce2b1 upstream.
 
-If L0 has disabled EPT, don't advertise unrestricted
-mode at all since it depends on EPT to run real mode code.
+commit d50eaa18039b ("KVM: x86: Perform limit checks when assigning EIP")
+mistakenly used zero as cpl on em_ret_far. Use the actual one.
 
-Fixes: 92fbc7b195b824e201d9f06f2b93105f72384d65
-Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
-Signed-off-by: Bandan Das <bsd@redhat.com>
+Fixes: d50eaa18039b8b848c2285478d0775335ad5e930
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-[ luis: backported to 3.16: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kvm/vmx.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kvm/emulate.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 515704968236..2557e8e2193d 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -2344,12 +2344,12 @@ static __init void nested_vmx_setup_ctls_msrs(void)
- 	nested_vmx_secondary_ctls_low = 0;
- 	nested_vmx_secondary_ctls_high &=
- 		SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES |
--		SECONDARY_EXEC_UNRESTRICTED_GUEST |
- 		SECONDARY_EXEC_WBINVD_EXITING;
- 
- 	if (enable_ept) {
- 		/* nested EPT: emulate EPT also to L1 */
--		nested_vmx_secondary_ctls_high |= SECONDARY_EXEC_ENABLE_EPT;
-+		nested_vmx_secondary_ctls_high |= SECONDARY_EXEC_ENABLE_EPT |
-+			SECONDARY_EXEC_UNRESTRICTED_GUEST;
- 		nested_vmx_ept_caps = VMX_EPT_PAGE_WALK_4_BIT |
- 			 VMX_EPTP_WB_BIT | VMX_EPT_2MB_PAGE_BIT |
- 			 VMX_EPT_INVEPT_BIT;
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index 27362eceec9c..bf9e8fdc2425 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -2088,7 +2088,7 @@ static int em_ret_far(struct x86_emulate_ctxt *ctxt)
+ 	/* Outer-privilege level return is not implemented */
+ 	if (ctxt->mode >= X86EMUL_MODE_PROT16 && (cs & 3) > cpl)
+ 		return X86EMUL_UNHANDLEABLE;
+-	rc = __load_segment_descriptor(ctxt, (u16)cs, VCPU_SREG_CS, 0, false,
++	rc = __load_segment_descriptor(ctxt, (u16)cs, VCPU_SREG_CS, cpl, false,
+ 				       &new_desc);
+ 	if (rc != X86EMUL_CONTINUE)
+ 		return rc;
 -- 
 2.1.4
 
