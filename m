@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755025AbbALSaK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:30:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58106 "EHLO
+	id S1756202AbbALS5Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:57:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58119 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753491AbbALSaF (ORCPT
+	with ESMTP id S1755003AbbALSaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:30:05 -0500
+	Mon, 12 Jan 2015 13:30:08 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johannes Berg <johannes.berg@intel.com>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Ilya Dryomov <idryomov@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 143/216] mac80211: free management frame keys when removing station
-Date: Mon, 12 Jan 2015 18:28:41 +0000
-Message-Id: <1421087394-2712-31-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 144/216] ceph: do_sync is never initialized
+Date: Mon, 12 Jan 2015 18:28:42 +0000
+Message-Id: <1421087394-2712-32-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -27,37 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 28a9bc68124c319b2b3dc861e80828a8865fd1ba upstream.
+commit 021b77bee210843bed1ea91b5cad58235ff9c8e5 upstream.
 
-When writing the code to allow per-station GTKs, I neglected to
-take into account the management frame keys (index 4 and 5) when
-freeing the station and only added code to free the first four
-data frame keys.
+Probably this code was syncing a lot more often then intended because
+the do_sync variable wasn't set to zero.
 
-Fix this by iterating the array of keys over the right length.
-
-Fixes: e31b82136d1a ("cfg80211/mac80211: allow per-station GTKs")
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Fixes: c62988ec0910 ('ceph: avoid meaningless calling ceph_caps_revoking if sync_mode == WB_SYNC_ALL.')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Ilya Dryomov <idryomov@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/mac80211/key.c | 2 +-
+ fs/ceph/addr.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/mac80211/key.c b/net/mac80211/key.c
-index 16d97f044a20..947daa9d3346 100644
---- a/net/mac80211/key.c
-+++ b/net/mac80211/key.c
-@@ -653,7 +653,7 @@ void ieee80211_free_sta_keys(struct ieee80211_local *local,
- 	int i;
+diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
+index 90b3954d48ed..9bfd1af53b08 100644
+--- a/fs/ceph/addr.c
++++ b/fs/ceph/addr.c
+@@ -673,7 +673,7 @@ static int ceph_writepages_start(struct address_space *mapping,
+ 	int rc = 0;
+ 	unsigned wsize = 1 << inode->i_blkbits;
+ 	struct ceph_osd_request *req = NULL;
+-	int do_sync;
++	int do_sync = 0;
+ 	u64 truncate_size, snap_size;
+ 	u32 truncate_seq;
  
- 	mutex_lock(&local->key_mtx);
--	for (i = 0; i < NUM_DEFAULT_KEYS; i++) {
-+	for (i = 0; i < ARRAY_SIZE(sta->gtk); i++) {
- 		key = key_mtx_dereference(local, sta->gtk[i]);
- 		if (!key)
- 			continue;
 -- 
 2.1.4
 
