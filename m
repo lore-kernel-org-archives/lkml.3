@@ -1,110 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746AbbALTnK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 14:43:10 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:40986 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753812AbbALTnG (ORCPT
+	id S1754791AbbALToc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 14:44:32 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:57807 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752340AbbALToa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 14:43:06 -0500
-Date: Mon, 12 Jan 2015 11:43:02 -0800
-From: Omar Sandoval <osandov@osandov.com>
-To: Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Devel FS Linux <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH RESEND] nfs: prevent truncate on active swapfile
-Message-ID: <20150112194302.GA27355@mew.dhcp4.washington.edu>
-References: <fdc56e2887c3ed93f4e6a6e784ee0748c2d13295.1420708562.git.osandov@osandov.com>
- <CAHQdGtT=sXmDk=samGCD92mC-Rjr57NAOURudD9TRyFy3=YaBA@mail.gmail.com>
+	Mon, 12 Jan 2015 14:44:30 -0500
+Date: Mon, 12 Jan 2015 11:44:12 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Stoidner, Christoph" <c.stoidner@arvero.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Question concerning RCU
+Message-ID: <20150112194412.GE9719@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <94921a144a97457385ae95b838c3c6fa@EX132MBOX1A.de2.local>
+ <20150106194317.GG5280@linux.vnet.ibm.com>
+ <81b94fc89c774b71a967fc93823e9c63@EX132MBOX1A.de2.local>
+ <20150111202604.GC8063@linux.vnet.ibm.com>
+ <249b36ec1afa43a699b281a4192c6afd@EX132MBOX1A.de2.local>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAHQdGtT=sXmDk=samGCD92mC-Rjr57NAOURudD9TRyFy3=YaBA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <249b36ec1afa43a699b281a4192c6afd@EX132MBOX1A.de2.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15011219-8236-0000-0000-0000088DE2F4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 05:08:03PM -0500, Trond Myklebust wrote:
-> Hi Omar,
+On Mon, Jan 12, 2015 at 11:48:28AM +0000, Stoidner, Christoph wrote:
+> Hi Paul,
 > 
-> On Thu, Jan 8, 2015 at 4:18 AM, Omar Sandoval <osandov@osandov.com> wrote:
-> > Most filesystems prevent truncation of an active swapfile by way of
-> > inode_newsize_ok, called from inode_change_ok. NFS doesn't call either
-> > from nfs_setattr, presumably because most of these checks are expected
-> > to be done server-side. However, the IS_SWAPFILE check can only be done
-> > client-side, and truncating a swapfile can't possibly be good.
-> >
-> > Signed-off-by: Omar Sandoval <osandov@osandov.com>
-> > ---
-> > Hi, Trond,
-> >
-> > Now that the holidays are over, could you take a look at this? It was
-> > generated against v3.19-rc3.
-> >
-> > Thanks!
-> >
-> >  fs/nfs/inode.c | 7 ++++++-
-> >  1 file changed, 6 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-> > index 4bffe63..9205513 100644
-> > --- a/fs/nfs/inode.c
-> > +++ b/fs/nfs/inode.c
-> > @@ -506,10 +506,15 @@ nfs_setattr(struct dentry *dentry, struct iattr *attr)
-> >                 attr->ia_valid &= ~ATTR_MODE;
-> >
-> >         if (attr->ia_valid & ATTR_SIZE) {
-> > +               loff_t i_size;
-> > +
-> >                 BUG_ON(!S_ISREG(inode->i_mode));
-> >
-> > -               if (attr->ia_size == i_size_read(inode))
-> > +               i_size = i_size_read(inode);
-> > +               if (attr->ia_size == i_size)
-> >                         attr->ia_valid &= ~ATTR_SIZE;
-> > +               else if (attr->ia_size < i_size && IS_SWAPFILE(inode))
-> > +                       return -ETXTBSY;
-> >         }
-> >
-> >         /* Optimization: if the end result is no change, don't RPC */
-> > --
-> > 2.2.1
-> >
+> > You got stack traces with the stall warnings, correct?  If so, please look
+> > at them and at Documentation/RCU/stallwarn.txt and see if the kernel is
+> > looping somewhere inappropriate.
 > 
-> I agree that truncating a swap file is bad, however as you point out,
-> this really only addresses the case on the client that knows about
-> this being a swap file.
-> I'll take the patch,
-
-Thanks, I appreciate it.
-
-> but I'm wondering if we couldn't do better in the
-> case where we're using NFSv4 by using share deny modes (which are
-> enforced by the server). The problem is that there appears to be
-> nothing in swapon() that tells the filesystem this is an open of a
-> swap file...
-
-Yeah, it would be nice for completeness to prevent one client from
-truncating another client's swapfile. However, I'd hope that anyone
-using swap-over-NFS on a shared NFS mount would take the necessary
-precautions in terms of permissions, etc. to prevent someone from doing
-that. Also, since the failure mode of truncating an NFS swapfile is a
-corrupt swapfile rather than a corrupt filesystem (like on a local
-filesystem), it's probably okay to just deal with the low-hanging fruit
-for now.
-
-Thanks!
-
+> Yes and no. I have a stack trace, but it is not generated by a stall warning. More
+> precise: I can never see any stall warning. The reason is that the system freezes 
+> when it is about to output such a warning. Instead the stack trace is generated 
+> by gdb and JTAG hardware debugging, when freezing has occurred.
 > 
-> Cheers
->   Trond
-> -- 
-> Trond Myklebust
-> Linux NFS client maintainer, PrimaryData
-> trond.myklebust@primarydata.com
+> So I am not sure if there is really a CPU-stall condition or it is just a misrepresented
+> stall detection. However, outputting a stall warning leads to system freeze. The 
+> warning is never seen.
 
--- 
-Omar
+Two things to try:
+
+1.	alt-sysreq-t to get all tasks' stacks, or
+2.	disable RCU CPU stall warnings and see if the hangs go away.
+
+Hmmm...  Are you by chance pushing all dmesg through a serial console?
+
+> > I am not familiar with the low-level ARM kernel code, but the stack below
+> > leads me to suspect that your kernel is interrupting itself to death or
+> > is improperly handling interrupts.
+> 
+> The stack trace must be read from bottom to top. The repetitive occurrence of
+> "__irq_svc () at arch/arm/kernel/entry-armv.S:202" on bottom of stack trace is 
+> caused by the stack frame of the interrupt context. This is completely legal and 
+> also the case in normal situations. Instead the problem is on the top of the stack 
+> trace, in function rcu_print_task_stall(). The loop rcutree_plugin.h in line 528 
+> never ends:
+> 
+> static int rcu_print_task_stall(struct rcu_node *rnp)
+> {
+> 	...
+> 	...
+> 
+> 	list_for_each_entry_continue(t, &rnp->blkd_tasks, rcu_node_entry) {
+> 		printk(KERN_CONT " P%d", t->pid);
+> 		ndetected++;
+> 	}
+> 
+> 	...    
+> 	...
+> }        
+> 
+> That means list_for_each_entry_continue () never ends since rcu_node_entry.next 
+> seems to point to it-self but not to rnp->blkd_tasks. I have no idea how this can
+> happen.
+
+It is not supposed to happen, and I haven't heard of it happening
+anywhere else.  I do hold the appropriate lock across that code.
+
+One thing to try would be to add a counter and break out of the loop
+after (say) 10 iterations.  Is that a change you are comfortable making?
+
+> One more thing: Just for testing I have now enabled CONFIG_TINY_PREEMPT_RCU. 
+> Until now the problem has not occurred anymore. Do you have any idea what makes
+> the differences here?
+
+Any number of things, including that I am not sure that your version
+of CONFIG_TINY_PREEMPT_RCU correctly detects RCU CPU stalls.  ;-)
+Please note that CONFIG_TINY_PREEMPT_RCU was removed a few versions ago.
+
+							Thanx, Paul
+
