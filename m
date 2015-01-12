@@ -1,72 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751639AbbALXgI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 18:36:08 -0500
-Received: from er-systems.de ([46.4.18.139]:39080 "EHLO er-systems.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751043AbbALXgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 18:36:07 -0500
-Date: Tue, 13 Jan 2015 00:35:58 +0100 (CET)
-From: Thomas Voegtle <tv@lio96.de>
-X-X-Sender: thomas@er-systems.de
-To: Luis Henriques <luis.henriques@canonical.com>
-cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Subject: Re: [3.16.y-ckt stable] Linux 3.16.7-ckt4 stable review
-In-Reply-To: <20150112215941.GJ2455@charon>
-Message-ID: <alpine.LSU.2.11.1501130035110.20153@er-systems.de>
-References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com> <alpine.LSU.2.11.1501122121450.16281@er-systems.de> <20150112215941.GJ2455@charon>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII; format=flowed
-X-Virus-Checker-Version: clamassassin 1.2.4 with clamdscan / ClamAV 0.98.5/19912/Mon Jan 12 12:55:27 2015 signatures 55.
+	id S1752219AbbALXhT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 18:37:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36947 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168AbbALXhR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 18:37:17 -0500
+Date: Mon, 12 Jan 2015 15:37:16 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Vladimir Davydov <vdavydov@parallels.com>,
+        Greg Thelen <gthelen@google.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] mm: memcontrol: default hierarchy interface for
+ memory
+Message-Id: <20150112153716.d54e90c634b70d49e8bb8688@linux-foundation.org>
+In-Reply-To: <1420776904-8559-2-git-send-email-hannes@cmpxchg.org>
+References: <1420776904-8559-1-git-send-email-hannes@cmpxchg.org>
+	<1420776904-8559-2-git-send-email-hannes@cmpxchg.org>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Jan 2015, Luis Henriques wrote:
+On Thu,  8 Jan 2015 23:15:04 -0500 Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-> On Mon, Jan 12, 2015 at 09:30:45PM +0100, Thomas Voegtle wrote:
->> On Mon, 12 Jan 2015, Luis Henriques wrote:
->>
->>> This is the start of the review cycle for the Linux 3.16.7-ckt4 stable kernel.
->>>
->>> This version contains 216 new patches, summarized below.  The new patches are
->>> posted as replies to this message and also available in this git branch:
->>>
->>> http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=linux-3.16.y-review;a=shortlog
->>>
->>> git://kernel.ubuntu.com/ubuntu/linux.git  linux-3.16.y-review
->>>
->>> The review period for version 3.16.7-ckt4 will be open for the next three days.
->>> To report a problem, please reply to the relevant follow-up patch message.
->>>
->>> For more information about the Linux 3.16.y-ckt extended stable kernel version,
->>> see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable .
->>
->>
->> Something is wrong with drm/i915 (I guess). I had a terrible memleak on Xorg
->> when using mplayer using more and more RAM, and then the system is swapping
->> itself to death.
->>
->> I'm using a openSUSE 13.1 (x86_64) on a Baytrail J1900 (this is Intel HD
->> Gen7).
->>
->>
->
-> Thank you for reporting, Thomas.  Can you please confirm that this is
-> actually a regression in 3.16.7-ckt4 (i.e., that you can't reproduce
-> it in 3.16.7-ckt3)?  If so, is it possible to bisecting it?
+> Introduce the basic control files to account, partition, and limit
+> memory using cgroups in default hierarchy mode.
+> 
+> This interface versioning allows us to address fundamental design
+> issues in the existing memory cgroup interface, further explained
+> below.  The old interface will be maintained indefinitely, but a
+> clearer model and improved workload performance should encourage
+> existing users to switch over to the new one eventually.
+> 
+> The control files are thus:
+> 
+>   - memory.current shows the current consumption of the cgroup and its
+>     descendants, in bytes.
+> 
+>   - memory.low configures the lower end of the cgroup's expected
+>     memory consumption range.  The kernel considers memory below that
+>     boundary to be a reserve - the minimum that the workload needs in
+>     order to make forward progress - and generally avoids reclaiming
+>     it, unless there is an imminent risk of entering an OOM situation.
 
+The code appears to be ascribing a special meaning to low==0: you can
+write "none" to set this.  But I'm not seeing any description of this?
 
-3.16.7-ckt3 was fine for me.
+>   - memory.high configures the upper end of the cgroup's expected
+>     memory consumption range.  A cgroup whose consumption grows beyond
+>     this threshold is forced into direct reclaim, to work off the
+>     excess and to throttle new allocations heavily, but is generally
+>     allowed to continue and the OOM killer is not invoked.
+> 
+>   - memory.max configures the hard maximum amount of memory that the
+>     cgroup is allowed to consume before the OOM killer is invoked.
+> 
+>   - memory.events shows event counters that indicate how often the
+>     cgroup was reclaimed while below memory.low, how often it was
+>     forced to reclaim excess beyond memory.high, how often it hit
+>     memory.max, and how often it entered OOM due to memory.max.  This
+>     allows users to identify configuration problems when observing a
+>     degradation in workload performance.  An overcommitted system will
+>     have an increased rate of low boundary breaches, whereas increased
+>     rates of high limit breaches, maximum hits, or even OOM situations
+>     will indicate internally overcommitted cgroups.
+> 
+> For existing users of memory cgroups, the following deviations from
+> the current interface are worth pointing out and explaining:
+> 
+>   - The original lower boundary, the soft limit, is defined as a limit
+>     that is per default unset.  As a result, the set of cgroups that
+>     global reclaim prefers is opt-in, rather than opt-out.  The costs
+>     for optimizing these mostly negative lookups are so high that the
+>     implementation, despite its enormous size, does not even provide
+>     the basic desirable behavior.  First off, the soft limit has no
+>     hierarchical meaning.  All configured groups are organized in a
+>     global rbtree and treated like equal peers, regardless where they
+>     are located in the hierarchy.  This makes subtree delegation
+>     impossible.  Second, the soft limit reclaim pass is so aggressive
+>     that it not just introduces high allocation latencies into the
+>     system, but also impacts system performance due to overreclaim, to
+>     the point where the feature becomes self-defeating.
+> 
+>     The memory.low boundary on the other hand is a top-down allocated
+>     reserve.  A cgroup enjoys reclaim protection when it and all its
+>     ancestors are below their low boundaries, which makes delegation
+>     of subtrees possible.  Secondly, new cgroups have no reserve per
+>     default and in the common case most cgroups are eligible for the
+>     preferred reclaim pass.  This allows the new low boundary to be
+>     efficiently implemented with just a minor addition to the generic
+>     reclaim code, without the need for out-of-band data structures and
+>     reclaim passes.  Because the generic reclaim code considers all
+>     cgroups except for the ones running low in the preferred first
+>     reclaim pass, overreclaim of individual groups is eliminated as
+>     well, resulting in much better overall workload performance.
+> 
+>   - The original high boundary, the hard limit, is defined as a strict
+>     limit that can not budge, even if the OOM killer has to be called.
+>     But this generally goes against the goal of making the most out of
+>     the available memory.  The memory consumption of workloads varies
+>     during runtime, and that requires users to overcommit.  But doing
+>     that with a strict upper limit requires either a fairly accurate
+>     prediction of the working set size or adding slack to the limit.
+>     Since working set size estimation is hard and error prone, and
+>     getting it wrong results in OOM kills, most users tend to err on
+>     the side of a looser limit and end up wasting precious resources.
+> 
+>     The memory.high boundary on the other hand can be set much more
+>     conservatively.  When hit, it throttles allocations by forcing
+>     them into direct reclaim to work off the excess, but it never
+>     invokes the OOM killer.  As a result, a high boundary that is
+>     chosen too aggressively will not terminate the processes, but
+>     instead it will lead to gradual performance degradation.  The user
+>     can monitor this and make corrections until the minimal memory
+>     footprint that still gives acceptable performance is found.
+> 
+>     In extreme cases, with many concurrent allocations and a complete
+>     breakdown of reclaim progress within the group, the high boundary
+>     can be exceeded.  But even then it's mostly better to satisfy the
+>     allocation from the slack available in other groups or the rest of
+>     the system than killing the group.  Otherwise, memory.max is there
+>     to limit this type of spillover and ultimately contain buggy or
+>     even malicious applications.
+> 
+>   - The existing control file names are unwieldy and inconsistent in
+>     many different ways.  For example, the upper boundary hit count is
+>     exported in the memory.failcnt file, but an OOM event count has to
+>     be manually counted by listening to memory.oom_control events, and
+>     lower boundary / soft limit events have to be counted by first
+>     setting a threshold for that value and then counting those events.
+>     Also, usage and limit files encode their units in the filename.
+>     That makes the filenames very long, even though this is not
+>     information that a user needs to be reminded of every time they
+>     type out those names.
+> 
+>     To address these naming issues, as well as to signal clearly that
+>     the new interface carries a new configuration model, the naming
+>     conventions in it necessarily differ from the old interface.
 
-I tried to revert the drm/i915 patches in the review branch, and I got 
-lucky with (only) reverting cb58c663d940a "drm/i915: Disallow pin ioctl 
-completely for kms drivers".
+This all sounds pretty major.  How much trouble is this change likely to
+cause existing memcg users?
 
-No clue, why reverting these few lines helps, but then I have no memleak.
+> include/linux/memcontrol.h |  32 ++++++
+> mm/memcontrol.c            | 247 +++++++++++++++++++++++++++++++++++++++++++--
+> mm/vmscan.c                |  22 +++-
 
+No Documentation/cgroups/memory.txt?
 
-      Thomas
 
