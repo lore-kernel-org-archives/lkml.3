@@ -1,198 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725AbbALOc5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 09:32:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49392 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751335AbbALOc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 09:32:56 -0500
-Message-ID: <54B3DB16.8030205@suse.cz>
-Date: Mon, 12 Jan 2015 15:32:54 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753223AbbALOdQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 09:33:16 -0500
+Received: from lb3-smtp-cloud2.xs4all.net ([194.109.24.29]:49232 "EHLO
+	lb3-smtp-cloud2.xs4all.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752919AbbALOdO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 09:33:14 -0500
+Message-ID: <54B3DB1C.50505@xs4all.nl>
+Date: Mon, 12 Jan 2015 15:33:00 +0100
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/5] mm/compaction: enhance tracepoint output for compaction
- begin/end
-References: <1421050875-26332-1-git-send-email-iamjoonsoo.kim@lge.com> <1421050875-26332-2-git-send-email-iamjoonsoo.kim@lge.com>
-In-Reply-To: <1421050875-26332-2-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: text/plain; charset=iso-8859-2
+To: Shuah Khan <shuahkh@osg.samsung.com>, m.chehab@samsung.com,
+        hans.verkuil@cisco.com, dheitmueller@kernellabs.com,
+        prabhakar.csengg@gmail.com, sakari.ailus@linux.intel.com,
+        laurent.pinchart@ideasonboard.com, ttmesterr@gmail.com
+CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] media: au0828 - convert to use videobuf2
+References: <cover.1418918401.git.shuahkh@osg.samsung.com> <14b955f13c972a55bcfeaf6734f3487c320260bb.1418918402.git.shuahkh@osg.samsung.com>
+In-Reply-To: <14b955f13c972a55bcfeaf6734f3487c320260bb.1418918402.git.shuahkh@osg.samsung.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2015 09:21 AM, Joonsoo Kim wrote:
-> We now have tracepoint for begin event of compaction and it prints
-> start position of both scanners, but, tracepoint for end event of
-> compaction doesn't print finish position of both scanners. It'd be
-> also useful to know finish position of both scanners so this patch
-> add it. It will help to find odd behavior or problem on compaction
-> internal logic.
-> 
-> And, mode is added to both begin/end tracepoint output, since
-> according to mode, compaction behavior is quite different.
-> 
-> And, lastly, status format is changed to string rather than
-> status number for readability.
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Hi Shuah,
 
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
+Looks good! I do have a few small comments, see below.
 
+On 12/18/2014 05:20 PM, Shuah Khan wrote:
+> Convert au0828 to use videobuf2. Tested with NTSC.
+> Tested video and vbi devices with xawtv, tvtime,
+> and vlc. Ran v4l2-compliance to ensure there are
+> no new regressions in video and vbi now has 3 fewer
+> failures.
+> 
+> video before:
+> test VIDIOC_G_FMT: FAIL 3 failures
+> Total: 72, Succeeded: 69, Failed: 3, Warnings: 0
+> 
+> Video after:
+> test VIDIOC_G_FMT: FAIL 3 failures
+> Total: 72, Succeeded: 69, Failed: 3, Warnings: 0
+> 
+> vbi before:
+> test VIDIOC_REQBUFS/CREATE_BUFS/QUERYBUF: FAIL
+> test VIDIOC_EXPBUF: FAIL
+> test USERPTR: FAIL
+> Total: 72, Succeeded: 66, Failed: 6, Warnings: 0
+> 
+> vbi after:
+> test VIDIOC_REQBUFS/CREATE_BUFS/QUERYBUF: OK
+> test VIDIOC_EXPBUF: OK (Not Supported)
+> test USERPTR: OK
+> Total: 72, Succeeded: 69, Failed: 3, Warnings: 0
+> 
+> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 > ---
->  include/linux/compaction.h        |    2 ++
->  include/trace/events/compaction.h |   49 ++++++++++++++++++++++++++-----------
->  mm/compaction.c                   |   14 +++++++++--
->  3 files changed, 49 insertions(+), 16 deletions(-)
+>  drivers/media/usb/au0828/Kconfig        |   2 +-
+>  drivers/media/usb/au0828/au0828-cards.c |   2 +-
+>  drivers/media/usb/au0828/au0828-vbi.c   | 122 ++--
+>  drivers/media/usb/au0828/au0828-video.c | 949 +++++++++++++-------------------
+>  drivers/media/usb/au0828/au0828.h       |  61 +-
+>  5 files changed, 444 insertions(+), 692 deletions(-)
 > 
-> diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-> index 3238ffa..a9547b6 100644
-> --- a/include/linux/compaction.h
-> +++ b/include/linux/compaction.h
-> @@ -12,6 +12,7 @@
->  #define COMPACT_PARTIAL		3
->  /* The full zone was compacted */
->  #define COMPACT_COMPLETE	4
-> +/* When adding new state, please change compaction_status_string, too */
->  
->  /* Used to signal whether compaction detected need_sched() or lock contention */
->  /* No contention detected */
-> @@ -22,6 +23,7 @@
->  #define COMPACT_CONTENDED_LOCK	2
->  
->  #ifdef CONFIG_COMPACTION
-> +extern char *compaction_status_string[];
->  extern int sysctl_compact_memory;
->  extern int sysctl_compaction_handler(struct ctl_table *table, int write,
->  			void __user *buffer, size_t *length, loff_t *ppos);
-> diff --git a/include/trace/events/compaction.h b/include/trace/events/compaction.h
-> index 1337d9e..839f6fa 100644
-> --- a/include/trace/events/compaction.h
-> +++ b/include/trace/events/compaction.h
-> @@ -85,46 +85,67 @@ TRACE_EVENT(mm_compaction_migratepages,
->  );
->  
->  TRACE_EVENT(mm_compaction_begin,
-> -	TP_PROTO(unsigned long zone_start, unsigned long migrate_start,
-> -		unsigned long free_start, unsigned long zone_end),
-> +	TP_PROTO(unsigned long zone_start, unsigned long migrate_pfn,
-> +		unsigned long free_pfn, unsigned long zone_end, bool sync),
->  
-> -	TP_ARGS(zone_start, migrate_start, free_start, zone_end),
-> +	TP_ARGS(zone_start, migrate_pfn, free_pfn, zone_end, sync),
->  
->  	TP_STRUCT__entry(
->  		__field(unsigned long, zone_start)
-> -		__field(unsigned long, migrate_start)
-> -		__field(unsigned long, free_start)
-> +		__field(unsigned long, migrate_pfn)
-> +		__field(unsigned long, free_pfn)
->  		__field(unsigned long, zone_end)
-> +		__field(bool, sync)
->  	),
->  
->  	TP_fast_assign(
->  		__entry->zone_start = zone_start;
-> -		__entry->migrate_start = migrate_start;
-> -		__entry->free_start = free_start;
-> +		__entry->migrate_pfn = migrate_pfn;
-> +		__entry->free_pfn = free_pfn;
->  		__entry->zone_end = zone_end;
-> +		__entry->sync = sync;
->  	),
->  
-> -	TP_printk("zone_start=0x%lx migrate_start=0x%lx free_start=0x%lx zone_end=0x%lx",
-> +	TP_printk("zone_start=0x%lx migrate_pfn=0x%lx free_pfn=0x%lx zone_end=0x%lx, mode=%s",
->  		__entry->zone_start,
-> -		__entry->migrate_start,
-> -		__entry->free_start,
-> -		__entry->zone_end)
-> +		__entry->migrate_pfn,
-> +		__entry->free_pfn,
-> +		__entry->zone_end,
-> +		__entry->sync ? "sync" : "async")
->  );
->  
->  TRACE_EVENT(mm_compaction_end,
-> -	TP_PROTO(int status),
-> +	TP_PROTO(unsigned long zone_start, unsigned long migrate_pfn,
-> +		unsigned long free_pfn, unsigned long zone_end, bool sync,
-> +		int status),
->  
-> -	TP_ARGS(status),
-> +	TP_ARGS(zone_start, migrate_pfn, free_pfn, zone_end, sync, status),
->  
->  	TP_STRUCT__entry(
-> +		__field(unsigned long, zone_start)
-> +		__field(unsigned long, migrate_pfn)
-> +		__field(unsigned long, free_pfn)
-> +		__field(unsigned long, zone_end)
-> +		__field(bool, sync)
->  		__field(int, status)
->  	),
->  
->  	TP_fast_assign(
-> +		__entry->zone_start = zone_start;
-> +		__entry->migrate_pfn = migrate_pfn;
-> +		__entry->free_pfn = free_pfn;
-> +		__entry->zone_end = zone_end;
-> +		__entry->sync = sync;
->  		__entry->status = status;
->  	),
->  
-> -	TP_printk("status=%d", __entry->status)
-> +	TP_printk("zone_start=0x%lx migrate_pfn=0x%lx free_pfn=0x%lx zone_end=0x%lx, mode=%s status=%s",
-> +		__entry->zone_start,
-> +		__entry->migrate_pfn,
-> +		__entry->free_pfn,
-> +		__entry->zone_end,
-> +		__entry->sync ? "sync" : "async",
-> +		compaction_status_string[__entry->status])
->  );
->  
->  #endif /* _TRACE_COMPACTION_H */
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 546e571..2d86a20 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -19,6 +19,14 @@
->  #include "internal.h"
->  
->  #ifdef CONFIG_COMPACTION
-> +char *compaction_status_string[] = {
-> +	"deferred",
-> +	"skipped",
-> +	"continue",
-> +	"partial",
-> +	"complete",
-> +};
-> +
->  static inline void count_compact_event(enum vm_event_item item)
+> diff --git a/drivers/media/usb/au0828/au0828-video.c b/drivers/media/usb/au0828/au0828-video.c
+> index 5f337b1..3011ca8 100644
+> --- a/drivers/media/usb/au0828/au0828-video.c
+> +++ b/drivers/media/usb/au0828/au0828-video.c
+> +void au0828_analog_unregister(struct au0828_dev *dev)
 >  {
->  	count_vm_event(item);
-> @@ -1197,7 +1205,8 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
->  		zone->compact_cached_migrate_pfn[1] = cc->migrate_pfn;
->  	}
->  
-> -	trace_mm_compaction_begin(start_pfn, cc->migrate_pfn, cc->free_pfn, end_pfn);
-> +	trace_mm_compaction_begin(start_pfn, cc->migrate_pfn,
-> +				cc->free_pfn, end_pfn, sync);
->  
->  	migrate_prep_local();
->  
-> @@ -1299,7 +1308,8 @@ out:
->  			zone->compact_cached_free_pfn = free_pfn;
->  	}
->  
-> -	trace_mm_compaction_end(ret);
-> +	trace_mm_compaction_end(start_pfn, cc->migrate_pfn,
-> +				cc->free_pfn, end_pfn, sync, ret);
->  
->  	return ret;
+> -	switch (fh->type) {
+> -	case V4L2_BUF_TYPE_VIDEO_CAPTURE:
+> -		return AU0828_RESOURCE_VIDEO;
+> -	case V4L2_BUF_TYPE_VBI_CAPTURE:
+> -		return AU0828_RESOURCE_VBI;
+> -	default:
+> -		BUG();
+> -		return 0;
+> -	}
+> +	dprintk(1, "au0828_analog_unregister called\n");
+> +	mutex_lock(&au0828_sysfs_lock);
+> +
+> +	if (dev->vdev)
+> +		video_unregister_device(dev->vdev);
+> +	if (dev->vbi_dev)
+> +		video_unregister_device(dev->vbi_dev);
+> +
+> +	mutex_unlock(&au0828_sysfs_lock);
 >  }
-> 
+>  
+>  /* This function ensures that video frames continue to be delivered even if
+> @@ -951,8 +932,8 @@ static void au0828_vid_buffer_timeout(unsigned long data)
+>  
+>  	buf = dev->isoc_ctl.buf;
+>  	if (buf != NULL) {
+> -		vid_data = videobuf_to_vmalloc(&buf->vb);
+> -		memset(vid_data, 0x00, buf->vb.size); /* Blank green frame */
+> +		vid_data = vb2_plane_vaddr(&buf->vb, 0);
+> +		memset(vid_data, 0x00, buf->length); /* Blank green frame */
+>  		buffer_filled(dev, dma_q, buf);
+>  	}
+>  	get_next_buf(dma_q, &buf);
+> @@ -975,8 +956,8 @@ static void au0828_vbi_buffer_timeout(unsigned long data)
+>  
+>  	buf = dev->isoc_ctl.vbi_buf;
+>  	if (buf != NULL) {
+> -		vbi_data = videobuf_to_vmalloc(&buf->vb);
+> -		memset(vbi_data, 0x00, buf->vb.size);
+> +		vbi_data = vb2_plane_vaddr(&buf->vb, 0);
+> +		memset(vbi_data, 0x00, buf->length);
+>  		vbi_buffer_filled(dev, dma_q, buf);
+>  	}
+>  	vbi_get_next_buf(dma_q, &buf);
+> @@ -986,14 +967,12 @@ static void au0828_vbi_buffer_timeout(unsigned long data)
+>  	spin_unlock_irqrestore(&dev->slock, flags);
+>  }
+>  
+> -
+>  static int au0828_v4l2_open(struct file *filp)
+>  {
+> -	int ret = 0;
+>  	struct video_device *vdev = video_devdata(filp);
+>  	struct au0828_dev *dev = video_drvdata(filp);
+> -	struct au0828_fh *fh;
+>  	int type;
+> +	int ret = 0;
+>  
+>  	switch (vdev->vfl_type) {
+>  	case VFL_TYPE_GRABBER:
+
+This switch can be removed.
+
+> @@ -1957,17 +1693,23 @@ static const struct v4l2_ioctl_ops video_ioctl_ops = {
+>  	.vidioc_g_audio             = vidioc_g_audio,
+>  	.vidioc_s_audio             = vidioc_s_audio,
+>  	.vidioc_cropcap             = vidioc_cropcap,
+> -	.vidioc_reqbufs             = vidioc_reqbufs,
+> -	.vidioc_querybuf            = vidioc_querybuf,
+> -	.vidioc_qbuf                = vidioc_qbuf,
+> -	.vidioc_dqbuf               = vidioc_dqbuf,
+> +
+> +	.vidioc_reqbufs             = vb2_ioctl_reqbufs,
+> +	.vidioc_create_bufs         = vb2_ioctl_create_bufs,
+> +	.vidioc_prepare_buf         = vb2_ioctl_prepare_buf,
+> +	.vidioc_querybuf            = vb2_ioctl_querybuf,
+> +	.vidioc_qbuf                = vb2_ioctl_qbuf,
+> +	.vidioc_dqbuf               = vb2_ioctl_dqbuf,
+
+Add vidioc_expbuf as well. That is now supported by videobuf2-vmalloc.
+
+> +
+>  	.vidioc_s_std               = vidioc_s_std,
+>  	.vidioc_g_std               = vidioc_g_std,
+>  	.vidioc_enum_input          = vidioc_enum_input,
+>  	.vidioc_g_input             = vidioc_g_input,
+>  	.vidioc_s_input             = vidioc_s_input,
+> -	.vidioc_streamon            = vidioc_streamon,
+> -	.vidioc_streamoff           = vidioc_streamoff,
+> +
+> +	.vidioc_streamon            = vb2_ioctl_streamon,
+> +	.vidioc_streamoff           = vb2_ioctl_streamoff,
+> +
+>  	.vidioc_g_tuner             = vidioc_g_tuner,
+>  	.vidioc_s_tuner             = vidioc_s_tuner,
+>  	.vidioc_g_frequency         = vidioc_g_frequency,
+> @@ -1988,6 +1730,42 @@ static const struct video_device au0828_video_template = {
+>  	.tvnorms                    = V4L2_STD_NTSC_M | V4L2_STD_PAL_M,
+>  };
+>  
+> +static int au0828_vb2_setup(struct au0828_dev *dev)
+> +{
+> +	int rc;
+> +	struct vb2_queue *q;
+> +
+> +	/* Setup Videobuf2 for Video capture */
+> +	q = &dev->vb_vidq;
+> +	q->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+> +	q->io_modes = VB2_READ | VB2_MMAP | VB2_USERPTR | VB2_DMABUF;
+> +	q->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC;
+> +	q->drv_priv = dev;
+> +	q->buf_struct_size = sizeof(struct au0828_buffer);
+> +	q->ops = &au0828_video_qops;
+> +	q->mem_ops = &vb2_vmalloc_memops;
+> +
+> +	rc = vb2_queue_init(q);
+> +	if (rc < 0)
+> +		return rc;
+> +
+> +	/* Setup Videobuf2 for VBI capture */
+> +	q = &dev->vb_vbiq;
+> +	q->type = V4L2_BUF_TYPE_VBI_CAPTURE;
+> +	q->io_modes = VB2_READ | VB2_MMAP | VB2_USERPTR;
+
+Add VB2_DMABUF here as well.
+
+Admittedly, nobody will use it, but it comes for free, so why not?
+
+> +	q->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC;
+> +	q->drv_priv = dev;
+> +	q->buf_struct_size = sizeof(struct au0828_buffer);
+> +	q->ops = &au0828_vbi_qops;
+> +	q->mem_ops = &vb2_vmalloc_memops;
+> +
+> +	rc = vb2_queue_init(q);
+> +	if (rc < 0)
+> +		return rc;
+> +
+> +	return 0;
+> +}
+> +
+>  /**************************************************************************/
+>  
+>  int au0828_analog_register(struct au0828_dev *dev,
+> @@ -2039,9 +1817,7 @@ int au0828_analog_register(struct au0828_dev *dev,
+>  
+>  	/* init video dma queues */
+>  	INIT_LIST_HEAD(&dev->vidq.active);
+> -	INIT_LIST_HEAD(&dev->vidq.queued);
+>  	INIT_LIST_HEAD(&dev->vbiq.active);
+> -	INIT_LIST_HEAD(&dev->vbiq.queued);
+>  
+>  	dev->vid_timeout.function = au0828_vid_buffer_timeout;
+>  	dev->vid_timeout.data = (unsigned long) dev;
+> @@ -2078,18 +1854,34 @@ int au0828_analog_register(struct au0828_dev *dev,
+>  		goto err_vdev;
+>  	}
+>  
+> +	mutex_init(&dev->vb_queue_lock);
+> +	mutex_init(&dev->vb_vbi_queue_lock);
+> +
+>  	/* Fill the video capture device struct */
+>  	*dev->vdev = au0828_video_template;
+>  	dev->vdev->v4l2_dev = &dev->v4l2_dev;
+>  	dev->vdev->lock = &dev->lock;
+> +	dev->vdev->queue = &dev->vb_vidq;
+> +	dev->vdev->queue->lock = &dev->vb_queue_lock;
+>  	strcpy(dev->vdev->name, "au0828a video");
+>  
+>  	/* Setup the VBI device */
+>  	*dev->vbi_dev = au0828_video_template;
+>  	dev->vbi_dev->v4l2_dev = &dev->v4l2_dev;
+>  	dev->vbi_dev->lock = &dev->lock;
+> +	dev->vbi_dev->queue = &dev->vb_vbiq;
+> +	dev->vbi_dev->queue->lock = &dev->vb_vbi_queue_lock;
+>  	strcpy(dev->vbi_dev->name, "au0828a vbi");
+>  
+> +	/* initialize videobuf2 stuff */
+> +	retval = au0828_vb2_setup(dev);
+> +	if (retval != 0) {
+> +		dprintk(1, "unable to setup videobuf2 queues (error = %d).\n",
+> +			retval);
+> +		ret = -ENODEV;
+> +		goto err_vbi_dev;
+> +	}
+> +
+>  	/* Register the v4l2 device */
+>  	video_set_drvdata(dev->vdev, dev);
+>  	retval = video_register_device(dev->vdev, VFL_TYPE_GRABBER, -1);
+> @@ -2110,6 +1902,7 @@ int au0828_analog_register(struct au0828_dev *dev,
+>  		goto err_vbi_dev;
+>  	}
+>  
+> +
+
+This spurious line can be removed.
+
+>  	dprintk(1, "%s completed!\n", __func__);
+>  
+>  	return 0;
+
+Regards,
+
+	Hans
 
