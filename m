@@ -1,43 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753106AbbALVLG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 16:11:06 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:53868 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191AbbALVLE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 16:11:04 -0500
-Date: Mon, 12 Jan 2015 16:11:01 -0500 (EST)
-Message-Id: <20150112.161101.337036741119753652.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net-next v2 0/2 RESEND] r8152: adjust r8152_submit_rx
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1394712342-15778-114-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-114-Taiwan-albertk@realtek.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 12 Jan 2015 13:11:03 -0800 (PST)
+	id S1751547AbbALVSK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 16:18:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55711 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751107AbbALVSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 16:18:09 -0500
+Date: Mon, 12 Jan 2015 22:18:02 +0100
+From: Borislav Petkov <bp@suse.de>
+To: riel@redhat.com
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        matt.fleming@intel.com, oleg@redhat.com, pbonzini@redhat.com,
+        tglx@linutronix.de, luto@amacapital.net
+Subject: Re: [RFC PATCH 01/11] x86,fpu: document the data structures a little
+Message-ID: <20150112211802.GE5016@pd.tnic>
+References: <1421012793-30106-1-git-send-email-riel@redhat.com>
+ <1421012793-30106-2-git-send-email-riel@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1421012793-30106-2-git-send-email-riel@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Fri, 9 Jan 2015 10:26:34 +0800
+On Sun, Jan 11, 2015 at 04:46:23PM -0500, riel@redhat.com wrote:
+> From: Rik van Riel <riel@redhat.com>
+> 
+> Add some documentation to data structures used for FPU context
+> switching.
+> 
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> ---
+>  arch/x86/include/asm/processor.h | 9 +++++++--
+>  arch/x86/kernel/cpu/common.c     | 1 +
+>  2 files changed, 8 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+> index a092a0c..17bd8a0 100644
+> --- a/arch/x86/include/asm/processor.h
+> +++ b/arch/x86/include/asm/processor.h
+> @@ -400,6 +400,11 @@ struct xsave_struct {
+>  	/* new processor state extensions will go here */
+>  } __attribute__ ((packed, aligned (64)));
+>  
+> +/*
+> + * The FPU state used depends on the capabilities of the hardware; the
+> + * registers used for vector instructions on newer hardware are included
+> + * in the FPU state.
+> + */
+>  union thread_xstate {
+>  	struct i387_fsave_struct	fsave;
+>  	struct i387_fxsave_struct	fxsave;
+> @@ -408,8 +413,8 @@ union thread_xstate {
+>  };
+>  
+>  struct fpu {
+> -	unsigned int last_cpu;
+> -	unsigned int has_fpu;
+> +	unsigned int last_cpu;		/* FPU state last loaded on this CPU */
 
-> v2:
-> Replace the patch #1 with "call rtl_start_rx after netif_carrier_on".
-> 
-> For patch #2, replace checking tp->speed with netif_carrier_ok.
-> 
-> v1:
-> Avoid r8152_submit_rx() from submitting rx during unexpected
-> moment. This could reduce the time of stopping rx.
-> 
-> For patch #1, the tp->speed should be updated early. Then,
-> the patch #2 could use it to check the current linking status.
+Isn't that the last CPU which had the FPU?
 
-Series applied, thanks.
+> +	unsigned int has_fpu;		/* FPU state in current use on CPU */
+
+I understand ->has_fpu as this thread has the FPU. See comment over
+user_has_fpu().
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
