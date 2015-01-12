@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068AbbALKlN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 05:41:13 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:48461 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752573AbbALKlL (ORCPT
+	id S1753147AbbALKm6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 05:42:58 -0500
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:62847 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751969AbbALKm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 05:41:11 -0500
-Message-ID: <54B3A4C2.8070304@collabora.co.uk>
-Date: Mon, 12 Jan 2015 11:41:06 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: Kukjin Kim <kgene.kim@samsung.com>
-CC: Doug Anderson <dianders@chromium.org>, Kevin Hilman <khilman@linaro.org>,
-        Olof Johansson <olof@lixom.net>, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND 0/4] Small updates to Snow and Peach Pit/Pi DTS
-References: <1420212257-22443-1-git-send-email-javier.martinez@collabora.co.uk>
-In-Reply-To: <1420212257-22443-1-git-send-email-javier.martinez@collabora.co.uk>
-Content-Type: text/plain; charset=utf-8
+	Mon, 12 Jan 2015 05:42:56 -0500
+Message-ID: <1421059373.22660.34.camel@x220>
+Subject: Re: [PATCH v2 0/3] power: rt5033: Add Richtek RT533 drivers
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Beomho Seo <beomho.seo@samsung.com>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, sre@kernel.org, lee.jones@linaro.org,
+        broonie@kernel.org, dbaryshkov@gmail.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        cw00.choi@samsung.com, inki.dae@samsung.com, sw0312.kim@samsung.com
+Date: Mon, 12 Jan 2015 11:42:53 +0100
+In-Reply-To: <1421059225.22660.33.camel@x220>
+References: <1420793114-20586-1-git-send-email-beomho.seo@samsung.com>
+	 <1421059225.22660.33.camel@x220>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Jan 2015 10:42:52.0995 (UTC) FILETIME=[8490B130:01D02E54]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Kukjin,
+[s/lee.jone@linaro.org/lee.jones@linaro.org]
 
-On 01/02/2015 04:24 PM, Javier Martinez Canillas wrote:
+On Mon, 2015-01-12 at 11:40 +0100, Paul Bolle wrote:
+> Beomho,
 > 
-> This series adds some DTS snippets that were missing in the mainline
-> Snow and Peach Pit/Pi Device Trees but are present in the downstream
-> ChromeOS kernel.
+> On Fri, 2015-01-09 at 17:45 +0900, Beomho Seo wrote:
+> > This patchset adds driver for Richtek rt5033 chip The chip contains
+> > switching charge mode Li-Ion/Li-Polymer battery charger, fuelgauge.
+> > Additionally, This includes document for device tree of RT5033 device.
+> > 
+> > RT5033 core driver is applied by Lee Jones.
+> > RT5033 regulator driver have been merged by Mark Brown. commit is below,
+> > 
+> > commit b1917578fd5d8efa67afa05a0d6d7e323f2802da
+> > 
+> > Changes in v2:
+> > - Revise binding documentation..
+> >  
+> > Beomho Seo (3):
+> >   power: rt5033_battery: Add RT5033 Fuel gauge device driver
+> >   power: rt5033_charger: Add RT5033 charger device driver
+> >   Documentation: Add documentation for rt5033 multifunction device
+> > 
+> >  Documentation/devicetree/bindings/mfd/rt5033.txt   |  101 ++++
+> >  .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+> >  drivers/power/Kconfig                              |   16 +
+> >  drivers/power/Makefile                             |    2 +
+> >  drivers/power/rt5033_battery.c                     |  177 +++++++
+> >  drivers/power/rt5033_charger.c                     |  485 ++++++++++++++++++++
+> >  6 files changed, 782 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/mfd/rt5033.txt
+> >  create mode 100644 drivers/power/rt5033_battery.c
+> >  create mode 100644 drivers/power/rt5033_charger.c
 > 
-> The series is composed of the following patches:
+> This series adds two drivers that depend on MFD_RT5033. But there's
+> currently no Kconfig symbol MFD_RT5033.
 > 
-> Javier Martinez Canillas (4):
->   ARM: dts: Add power and lid GPIO keys pinctrl for exynos5250-snow
->   ARM: dts: Add lid GPIO key device node for Peach boards
->   ARM: dts: Set Peach boards USB WebCam regulators to always on
->   ARM: dts: Configure regulators for suspend on exynos Peach boards
+> The regulator driver mentioned above is another driver that depends on
+> MFD_RT5033. It was included first in next-20141117. It is also included
+> in mainline since v3.19-rc1. That regulator driver has never been
+> buildable, even if one bypasses its dependency on MFD_RT5033. That is
+> because it includes two headers that are not yet part of the tree
+> (linux/mfd/rt5033.h and linux/mfd/rt5033-private.h).
 > 
->  arch/arm/boot/dts/exynos5250-snow.dts      |  16 +++++
->  arch/arm/boot/dts/exynos5420-peach-pit.dts | 100 +++++++++++++++++++++++++++-
->  arch/arm/boot/dts/exynos5800-peach-pi.dts  | 101 ++++++++++++++++++++++++++++-
->  3 files changed, 215 insertions(+), 2 deletions(-)
+> When is the Kconfig symbol MFD_RT5033 expected to be included in the
+> tree?
 > 
-> Patch #1 adds some pinctrl lines for the GPIO keys in the Snow DTS.
 > 
-> Patch #2 adds a device node and pinctrl lines for the lid GPIO in
-> the Peach boards DTS.
-> 
-> Patch #3 sets the regulators that supply voltage to the USB WebCam
-> in Peach boards as always on.
-> 
-> Patch #4 configures the max77802 regulators on the Peach Pit and Pi
-> boards to be enabled or disabled during system suspend.
-> 
+> Paul Bolle
 
-I saw that you collected some DTS patches for 3.20 but these are not
-included. Any comments about this series?
 
-Thanks a lot and best regards,
-Javier
