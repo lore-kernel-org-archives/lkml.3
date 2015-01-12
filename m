@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755928AbbALSqh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:46:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58298 "EHLO
+	id S1755655AbbALSpv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:45:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58316 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755172AbbALSaf (ORCPT
+	with ESMTP id S1755192AbbALSai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:30:35 -0500
+	Mon, 12 Jan 2015 13:30:38 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>,
+Cc: Long Li <longli@microsoft.com>, Christoph Hellwig <hch@lst.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 176/216] scsi: blacklist RSOC for Microsoft iSCSI target devices
-Date: Mon, 12 Jan 2015 18:29:14 +0000
-Message-Id: <1421087394-2712-64-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 177/216] storvsc: ring buffer failures may result in I/O freeze
+Date: Mon, 12 Jan 2015 18:29:15 +0000
+Message-Id: <1421087394-2712-65-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -28,34 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
+From: Long Li <longli@microsoft.com>
 
-commit 198a956a11b15b564ac06d1411881e215b587408 upstream.
+commit e86fb5e8ab95f10ec5f2e9430119d5d35020c951 upstream.
 
-The Microsoft iSCSI target does not support REPORT SUPPORTED OPERATION
-CODES. Blacklist these devices so we don't attempt to send the command.
+When ring buffer returns an error indicating retry, storvsc may not
+return a proper error code to SCSI when bounce buffer is not used.
+This has introduced I/O freeze on RAID running atop storvsc devices.
+This patch fixes it by always returning a proper error code.
 
-Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-Tested-by: Mike Christie <michaelc@cs.wisc.edu>
-Reported-by: jazz@deti74.ru
+Signed-off-by: Long Li <longli@microsoft.com>
+Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/scsi/scsi_devinfo.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/scsi/storvsc_drv.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/scsi/scsi_devinfo.c b/drivers/scsi/scsi_devinfo.c
-index c1d04d4d3c6c..262ab837a704 100644
---- a/drivers/scsi/scsi_devinfo.c
-+++ b/drivers/scsi/scsi_devinfo.c
-@@ -211,6 +211,7 @@ static struct {
- 	{"Medion", "Flash XL  MMC/SD", "2.6D", BLIST_FORCELUN},
- 	{"MegaRAID", "LD", NULL, BLIST_FORCELUN},
- 	{"MICROP", "4110", NULL, BLIST_NOTQ},
-+	{"MSFT", "Virtual HD", NULL, BLIST_NO_RSOC},
- 	{"MYLEX", "DACARMRB", "*", BLIST_REPORTLUN2},
- 	{"nCipher", "Fastness Crypto", NULL, BLIST_FORCELUN},
- 	{"NAKAMICH", "MJ-4.8S", NULL, BLIST_FORCELUN | BLIST_SINGLELUN},
+diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+index ed0f899e8aa5..86b05151fdab 100644
+--- a/drivers/scsi/storvsc_drv.c
++++ b/drivers/scsi/storvsc_drv.c
+@@ -1690,13 +1690,12 @@ static int storvsc_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *scmnd)
+ 	if (ret == -EAGAIN) {
+ 		/* no more space */
+ 
+-		if (cmd_request->bounce_sgl_count) {
++		if (cmd_request->bounce_sgl_count)
+ 			destroy_bounce_buffer(cmd_request->bounce_sgl,
+ 					cmd_request->bounce_sgl_count);
+ 
+-			ret = SCSI_MLQUEUE_DEVICE_BUSY;
+-			goto queue_error;
+-		}
++		ret = SCSI_MLQUEUE_DEVICE_BUSY;
++		goto queue_error;
+ 	}
+ 
+ 	return 0;
 -- 
 2.1.4
 
