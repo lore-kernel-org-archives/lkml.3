@@ -1,58 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541AbbALPNI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 10:13:08 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:51836 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281AbbALPNG (ORCPT
+	id S1753490AbbALPM5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 10:12:57 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:54698 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751281AbbALPMz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 10:13:06 -0500
-Message-ID: <54B3E466.2030006@oracle.com>
-Date: Mon, 12 Jan 2015 10:12:38 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com
-Subject: Re: [RFC 1/4] lockdep: additional lock specific information when
- dumping locks
-References: <1421074631-18831-1-git-send-email-sasha.levin@oracle.com> <20150112150633.GD25256@twins.programming.kicks-ass.net>
-In-Reply-To: <20150112150633.GD25256@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Mon, 12 Jan 2015 10:12:55 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Bo Shen <voice.shen@atmel.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        stable@vger.kernel.org
+Subject: [RESEND PATCH] clk: at91: keep slow clk enabled to prevent system hang
+Date: Mon, 12 Jan 2015 16:12:50 +0100
+Message-Id: <1421075570-31200-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2015 10:06 AM, Peter Zijlstra wrote:
-> On Mon, Jan 12, 2015 at 09:57:08AM -0500, Sasha Levin wrote:
->> When dumping held locks, it might be useful to get additional lock-specific
->> information about each lock.
->>
->> This is mainly useful to figure out who really holds each lock rather then
->> who's just waiting on it, but it could be extended further or extended to
->> the other lockdep users if required.
-> 
-> I really don't see the point in this; I would much rather have something
-> useful like:
-> 
->  http://lwn.net/Articles/579849/
+All slow clk users are not properly requesting it (get + prepare + enable)
+before using it.
+If all users properly requesting this clock decide that they don't need it
+anymore (or are removed), this lead to this clock being disabled while
+faulty users are still requiring it, which in turn hangs the system.
 
-As far as I can tell, they have completely different purposes.
+Prevent slow oscillator clock from being disabled until all users are
+properly requesting it.
 
-The reason for my patch is simple: I'm fuzzing with hundreds of worker threads
-which at some point trigger a complete system lockup for some reason.
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Reported-by: Bo Shen <voice.shen@atmel.com>
+Cc: stable@vger.kernel.org
+---
+Hi Mike,
 
-When lockdep dumps the list of held locks it shows that pretty much every one
-of those threads is holding the lock which caused the lockup, which is incorrect
-because it considers locks in the process of getting acquired as "held".
+Sorry for the noise, but I forgot to add the LKML and LAKML in Cc.
 
-This is my solution to that issue. I wanted to know which one of the threads is
-really holding the lock rather than just waiting on it.
+Can you have a look at this fix and let me know if this is how you want this
+problem addressed ?
+I can also request (get + prepare + enable) the clk in the pmc probe function,
+so that it can never be disabled.
 
-Is there a better way to solve that problem?
+If you're fine with the approach, can you queue it for the next -rc ?
 
+Best Regards,
 
-Thanks,
-Sasha
+Boris
+
+ drivers/clk/at91/clk-slow.c | 28 ++++++++++++++++++++++++++--
+ 1 file changed, 26 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/clk/at91/clk-slow.c b/drivers/clk/at91/clk-slow.c
+index 32f7c1b..effe3b0 100644
+--- a/drivers/clk/at91/clk-slow.c
++++ b/drivers/clk/at91/clk-slow.c
+@@ -96,7 +96,19 @@ static void clk_slow_osc_unprepare(struct clk_hw *hw)
+ 	if (tmp & AT91_SCKC_OSC32BYP)
+ 		return;
+ 
+-	writel(tmp & ~AT91_SCKC_OSC32EN, sckcr);
++	/*
++	 * FIXME: All slow clk users are not properly requesting it (get +
++	 * prepare + enable) before using it.
++	 * If all users properly requesting this clock decide that they don't
++	 * need it anymore (or are removed), this lead to this clock being
++	 * disabled while faulty users are still requiring it, which in turn
++	 * hangs the system.
++	 * Prevent this clock from being disabled until all users are properly
++	 * requesting it.
++	 * Once this is done we should re-introduce this line:
++	 *
++	 * writel(tmp & ~AT91_SCKC_OSC32EN, sckcr);
++	 */
+ }
+ 
+ static int clk_slow_osc_is_prepared(struct clk_hw *hw)
+@@ -211,7 +223,19 @@ static void clk_slow_rc_osc_unprepare(struct clk_hw *hw)
+ 	struct clk_slow_rc_osc *osc = to_clk_slow_rc_osc(hw);
+ 	void __iomem *sckcr = osc->sckcr;
+ 
+-	writel(readl(sckcr) & ~AT91_SCKC_RCEN, sckcr);
++	/*
++	 * FIXME: All slow clk users are not properly requesting it (get +
++	 * prepare + enable) before using it.
++	 * If all users properly requesting this clock decide that they don't
++	 * need it anymore (or are removed), this lead to this clock being
++	 * disabled while faulty users are still requiring it, which in turn
++	 * hangs the system.
++	 * Prevent this clock from being disabled until all users are properly
++	 * requesting it.
++	 * Once this is done we should re-introduce this line:
++	 *
++	 * writel(readl(sckcr) & ~AT91_SCKC_RCEN, sckcr);
++	 */
+ }
+ 
+ static int clk_slow_rc_osc_is_prepared(struct clk_hw *hw)
+-- 
+1.9.1
+
