@@ -1,56 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902AbbALLKW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 06:10:22 -0500
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:55660 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752441AbbALLKU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 06:10:20 -0500
-Message-ID: <1421061017.22660.41.camel@x220>
-Subject: Re: [PATCH v2 0/3] power: rt5033: Add Richtek RT533 drivers
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Beomho Seo <beomho.seo@samsung.com>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, sre@kernel.org, lee.jones@linaro.org,
-        broonie@kernel.org, dbaryshkov@gmail.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        cw00.choi@samsung.com, inki.dae@samsung.com, sw0312.kim@samsung.com
-Date: Mon, 12 Jan 2015 12:10:17 +0100
-In-Reply-To: <54B3A72A.8020700@samsung.com>
-References: <1420793114-20586-1-git-send-email-beomho.seo@samsung.com>
-	 <1421059225.22660.33.camel@x220> <54B3A72A.8020700@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S1752998AbbALLKe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 06:10:34 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:45712 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752928AbbALLKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 06:10:32 -0500
+X-IronPort-AV: E=Sophos;i="5.07,743,1413244800"; 
+   d="scan'208";a="214692074"
+Message-ID: <54B3ABA5.6090400@citrix.com>
+Date: Mon, 12 Jan 2015 11:10:29 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+MIME-Version: 1.0
+To: Juergen Gross <jgross@suse.com>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
+        <david.vrabel@citrix.com>, <boris.ostrovsky@oracle.com>,
+        <jbeulich@suse.com>
+Subject: Re: [Xen-devel] [Patch V2 0/4] xen: correct several bugs in new p2m
+ list setup
+References: <1421039110-11207-1-git-send-email-jgross@suse.com>
+In-Reply-To: <1421039110-11207-1-git-send-email-jgross@suse.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 12 Jan 2015 11:10:18.0168 (UTC) FILETIME=[592A2B80:01D02E58]
-X-RcptDomain: vger.kernel.org
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Beomho,
+On 12/01/15 05:05, Juergen Gross wrote:
+> In the setup code of the linear mapped p2m list several bugs have
+> been found, especially for 32 bit dom0. These patches correct the
+> errors and make 32 bit dom0 bootable again.
 
-On Mon, 2015-01-12 at 19:51 +0900, Beomho Seo wrote:
-> On 01/12/2015 07:40 PM, Paul Bolle wrote:
-> > When is the Kconfig symbol MFD_RT5033 expected to be included in the
-> > tree? 
-> 
-> MFD_RT5033 have been applied in 09 Dec 2014.
-> http://marc.info/?l=linux-pm&m=141822463218774&w=2
-> According to the mail, That is expected to include next version.
+Applied to stable/for-linus-3.19, thanks.
 
-I see. I'd expected v3.20 stuff to be included in linux-next by now, but
-I guess that this commit will be added in a few weeks or so.
-
-Thanks.
-
-
-Paul Bolle
-
-PS Even in the patch you dropped the "s" from Lee's address. Perhaps you
-should edit it in your addressbook.
-
+David
