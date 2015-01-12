@@ -1,112 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217AbbALNFD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 08:05:03 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:31149 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751083AbbALNFB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 08:05:01 -0500
-X-IronPort-AV: E=Sophos;i="5.07,744,1413244800"; 
-   d="scan'208";a="214730655"
-Message-ID: <54B3C673.3040609@citrix.com>
-Date: Mon, 12 Jan 2015 13:04:51 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1752858AbbALNFh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 08:05:37 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:46877 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752306AbbALNFJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 08:05:09 -0500
+Date: Mon, 12 Jan 2015 08:05:02 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        "Suzuki K. Poulose" <Suzuki.Poulose@arm.com>, linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH cgroup/for-3.19-fixes] cgroup: implement
+ cgroup_subsys->unbind() callback
+Message-ID: <20150112130502.GV25319@htj.dyndns.org>
+References: <54B01335.4060901@arm.com>
+ <20150110085525.GD2110@esperanza>
+ <20150110214316.GF25319@htj.dyndns.org>
+ <20150111205543.GA5480@phnom.home.cmpxchg.org>
+ <20150112080114.GE2110@esperanza>
+ <20150112112845.GS25319@htj.dyndns.org>
+ <20150112125956.GF2110@esperanza>
 MIME-Version: 1.0
-To: =?windows-1252?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>,
-        Bob Liu <bob.liu@oracle.com>
-CC: <xen-devel@lists.xen.org>, <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, <junxiao.bi@oracle.com>
-Subject: Re: [PATCH] xen/blkfront: restart request queue when there is enough
- persistent_gnts_c
-References: <1420550343-14013-1-git-send-email-bob.liu@oracle.com> <54AFF909.3090909@citrix.com> <54B37336.40109@oracle.com> <54B3B1B7.40700@citrix.com>
-In-Reply-To: <54B3B1B7.40700@citrix.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150112125956.GF2110@esperanza>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/15 11:36, Roger Pau Monné wrote:
-> El 12/01/15 a les 8.09, Bob Liu ha escrit:
->>
->> On 01/09/2015 11:51 PM, Roger Pau Monné wrote:
->>> El 06/01/15 a les 14.19, Bob Liu ha escrit:
->>>> When there is no enough free grants, gnttab_alloc_grant_references()
->>>> will fail and block request queue will stop.
->>>> If the system is always lack of grants, blkif_restart_queue_callback() can't be
->>>> scheduled and block request queue can't be restart(block I/O hang).
->>>>
->>>> But when there are former requests complete, some grants may free to
->>>> persistent_gnts_c, we can give the request queue another chance to restart and
->>>> avoid block hang.
->>>>
->>>> Reported-by: Junxiao Bi <junxiao.bi@oracle.com>
->>>> Signed-off-by: Bob Liu <bob.liu@oracle.com>
->>>> ---
->>>>  drivers/block/xen-blkfront.c |   11 +++++++++++
->>>>  1 file changed, 11 insertions(+)
->>>>
->>>> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
->>>> index 2236c6f..dd30f99 100644
->>>> --- a/drivers/block/xen-blkfront.c
->>>> +++ b/drivers/block/xen-blkfront.c
->>>> @@ -1125,6 +1125,17 @@ static void blkif_completion(struct blk_shadow *s, struct blkfront_info *info,
->>>>  			}
->>>>  		}
->>>>  	}
->>>> +
->>>> +	/*
->>>> +	 * Request queue would be stopped if failed to alloc enough grants and
->>>> +	 * won't be restarted until gnttab_free_count >= info->callback->count.
->>>> +	 *
->>>> +	 * But there is another case, once we have enough persistent grants we
->>>> +	 * can try to restart the request queue instead of continue to wait for
->>>> +	 * 'gnttab_free_count'.
->>>> +	 */
->>>> +	if (info->persistent_gnts_c >= info->callback.count)
->>>> +		schedule_work(&info->work);
->>>
->>> I guess I'm missing something here, but blkif_completion is called by
->>> blkif_interrupt, which in turn calls kick_pending_request_queues when
->>> finished, which IMHO should be enough to restart the processing of requests.
->>>
->>
->> You are right, sorry for the mistake.
->>
->> The problem we met was a xenblock I/O hang.
->> Dumped data showed at that time info->persistent_gnt_c = 8, max_gref = 8
->> but block request queue was still stopped.
->> It's very hard to reproduce this issue, we only see it once.
->>
->> I think there might be a race condition:
->>
->> request A                          request B:
->>
->>                                    info->persistent_gnts_c < max_grefs
->>                                    and fail to alloc enough grants
->>
->>
->> ^^^^
->> interrupt happen, blkif_complte():
->> info->persistent_gnts_c++
->> kick_pending_request_queues()
->>
->>                                     stop block request queue
->>                                     added to callback list
->>
->> If the system don't have enough grants(but have enough persistent_gnts),
->> request queue would still hang.
-> 
-> Not sure how can this happen, blkif_queue_request explicitly checks that
-> persistent_gnts_c < max_grefs before adding the callback and stopping
-> the request queue, so in your case the queue should not be blocked. Can
-> you dump the state of info->connected?
+On Mon, Jan 12, 2015 at 03:59:56PM +0300, Vladimir Davydov wrote:
+> I haven't dug deep into the cgroup core, but may be we could detach the
+> old root in cgroup_kill_sb() and leave it dangling until the last
+> reference to it has gone?
 
-I think Bob has correctly identified a race.
+The root isn't the problem here.  Individual controllers are as
+there's only one copy of each and we most likely don't want to carry
+over child csses from one hierarchy to the next as the controller may
+operate under a different set of rules.
 
-After calling blk_stop_queue(), check info->persistent_gnts again and
-restart the queue if there free grefs.
+> BTW, IIRC the problem always existed for kmem-active memory cgroups,
+> because we never had kmem reparenting. May be, we could therefore just
+> document somewhere that kmem accounting is highly discouraged to be used
+> in the legacy hierarchy and merge these two patches as is to handle page
+> cache and swap charges? We won't break anything, because it was always
+> broken :-)
 
-David
+If we're going that route, I think it'd be better to declare hierarchy
+lifetime rules as essentially opaque to userland and destroy
+hierarchies only when all its children, dead or alive, are gone.
+
+Thanks.
+
+-- 
+tejun
