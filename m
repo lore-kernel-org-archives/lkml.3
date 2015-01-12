@@ -1,105 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424AbbALR53 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 12:57:29 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:34875 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750782AbbALR51 (ORCPT
+	id S1752051AbbALR7e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 12:59:34 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:60777 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751054AbbALR7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 12:57:27 -0500
-Date: Mon, 12 Jan 2015 17:57:06 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>,
-        Andrew Jackson <Andrew.Jackson@arm.com>, Jyri Sarha <jsarha@ti.com>,
-        Mark Brown <broonie@kernel.org>, Dave Airlie <airlied@gmail.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v9 1/4] drm/i2c: tda998x: Add DT support for audio
-Message-ID: <20150112175705.GN12302@n2100.arm.linux.org.uk>
-References: <20150109130725.GN12302@n2100.arm.linux.org.uk>
- <54AFDE8D.3000504@arm.com>
- <20150109145741.GP12302@n2100.arm.linux.org.uk>
- <20150109183857.53d701a4@armhf>
- <20150109200127.GD12302@n2100.arm.linux.org.uk>
- <1421054728.3081.28.camel@pengutronix.de>
- <20150112122527.GF12302@n2100.arm.linux.org.uk>
- <1421071197.3081.44.camel@pengutronix.de>
- <20150112140456.GI12302@n2100.arm.linux.org.uk>
- <20150112181341.4a53ea24@armhf>
+	Mon, 12 Jan 2015 12:59:33 -0500
+Date: Mon, 12 Jan 2015 09:59:20 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>
+Subject: Re: linux-next: Tree for Jan 12 (build failures: m68k, ppc)
+Message-ID: <20150112175920.GC19868@roeck-us.net>
+References: <20150112180322.003b44f2@canb.auug.org.au>
+ <20150112162438.GA18723@roeck-us.net>
+ <CAMuHMdUYEe=L=H75AOYVjinRSW=okRJNrNJVy-bY1gshdVrO7Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150112181341.4a53ea24@armhf>
+In-Reply-To: <CAMuHMdUYEe=L=H75AOYVjinRSW=okRJNrNJVy-bY1gshdVrO7Q@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020204.54B40B84.01C4,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 4
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 06:13:41PM +0100, Jean-Francois Moine wrote:
-> On Mon, 12 Jan 2015 14:04:56 +0000
-> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> > On Mon, Jan 12, 2015 at 02:59:57PM +0100, Philipp Zabel wrote:
-> > > Note that of_graph_parse_endpoint interprets the port node's reg
-> > > property as port id. And the unit address part of the node name should
-> > > match the first address in the reg property.
+On Mon, Jan 12, 2015 at 05:27:08PM +0100, Geert Uytterhoeven wrote:
+> On Mon, Jan 12, 2015 at 5:24 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> > On Mon, Jan 12, 2015 at 06:03:22PM +1100, Stephen Rothwell wrote:
+> >> Hi all,
+> >>
+> >> Changes since 20150109:
+> >>
+> >> The usb-gadget-fixes tree gained a conflict against the usb.current tree.
+> >>
+> >> The net-next tree gained a build failure for which I reverted a commit.
+> >>
+> >> The pinctrl tree gained a build failure so I used the version from
+> >> next-20150109.
+> >>
+> >> The akpm tree lost a few patches that turned up elsewhere.
+> >>
+> >> Non-merge commits (relative to Linus' tree): 2202
+> >>  2272 files changed, 69868 insertions(+), 38441 deletions(-)
+> >>
+> >
+> > Build failures, seen since next-20150109:
+> >         m68k:allmodconfig
+> >         powerpc:ppc6xx_defconfig
+> >
+> > Due to:
+> >         ERROR: "__get_user_bad" [drivers/gpu/drm/drm.ko] undefined!
+> >         make[1]: *** [__modpost] Error 1
+> >
+> > Caused by commit d34f20d6e2f (drm: Atomic modeset ioctl).
 > 
-> This is not the case in vexpress-v2p-ca15_a7.dts.
-
-Hmm... as the DT binding doc doesn't specify this restriction, and we
-have a DT file which violates what Philipp has said, I think we ought
-to document that reg vs unit node name does not need to match each
-other, thereby making that official.
-
-> > So that's not going to work very well... because the AP register is a
-> > bitmask.
-> > 
-> > I guess we could specify a node unit and reg, which the code otherwise
-> > ignores, and specify a philipps,ap-mask = property for the audio ports
-> > instead.
+> Yeah, it needs a get_user() that supports 64-bit data.
 > 
-> Also, the video and audio ports must be distinguished. They could be
-> defined in different port groups.
-> 
-> Example from the Cubox:
-> 
-> 	video-ports: ports@0 {
-> 		port {
-> 			tda998x_video: endpoint {
-> 				remote-endpoint = <&lcd0_0>;
-> 				nxp,video-port = <0x230145>;
-> 			};
-> 		};
-> 	};
-> 	audio-ports: ports@1 {
-> 		port@0 {			/* AP1 = I2S */
-> 			tda998x_i2s: endpoint@0 {
-> 				remote-endpoint = <&audio1_i2s>;
-> 				nxp,audio-port = <0x03>;
-> 			};
-> 		};
-> 		port@1 {			 /* AP2 = S/PDIF */
-> 			tda998x_spdif: endpoint@1 {
-> 				remote-endpoint = <&audio1_spdif1>;
-> 				nxp,audio-port = <0x04>;
-> 			};
-> 		};
-> 	};
-> 
-> The port type is identified by the bit AP0.
+Hi Geert,
 
-I don't particularly like that - that makes the assumption that AP0
-always means I2S.  What if a future chip decides to allow SPDIF on
-AP0?  Why should we need to re-invent the binding?
+I assume you mean m68k, where 64 bit support for get_user has been disabled.
 
-IMHO, it would be much better to make this explicit.
+The problem on powerpc is different though: __get_user_nocheck()
+and __get_user_check() use
+	unsigned long __gu_val;
+followed by
+	__get_user_size(__gu_val, __gu_addr, (size), __gu_err);
 
-Note that the "video-ports" and "audio-ports" are just labels in the
-DT file; they aren't carried through to the resulting DT binary file,
-so they don't have any meaning to the kernel.
+__get_user_size() fails in
+	if (size > sizeof(x))
+		 (x) = __get_user_bad();
 
--- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
+Presumably "unsigned long" is 32 bit on 32 bit powerpc, not 64 bit.
+
+Overall, the explicit 64-bit use of get_user() seems to be quite unusual.
+
+Thanks,
+Guenter
