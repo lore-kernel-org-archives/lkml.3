@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572AbbALIBY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 03:01:24 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:57192 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991AbbALIBX (ORCPT
+	id S1751695AbbALIBy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 03:01:54 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:26837 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964AbbALIBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 03:01:23 -0500
-Date: Mon, 12 Jan 2015 11:01:14 +0300
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Tejun Heo <tj@kernel.org>, "Suzuki K. Poulose" <Suzuki.Poulose@arm.com>,
-        <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH cgroup/for-3.19-fixes] cgroup: implement
- cgroup_subsys->unbind() callback
-Message-ID: <20150112080114.GE2110@esperanza>
-References: <54B01335.4060901@arm.com>
- <20150110085525.GD2110@esperanza>
- <20150110214316.GF25319@htj.dyndns.org>
- <20150111205543.GA5480@phnom.home.cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20150111205543.GA5480@phnom.home.cmpxchg.org>
+	Mon, 12 Jan 2015 03:01:53 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-c1-54b37f70d126
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH] regulator: Update documentation after renaming function
+ argument
+Date: Mon, 12 Jan 2015 09:01:39 +0100
+Message-id: <1421049699-5851-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJJMWRmVeSWpSXmKPExsVy+t/xK7oF9ZtDDOZN47CY+vAJm8XrF4YW
+	3650MFlc3jWHzYHFY+esu+wem1Z1snn0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxuxNc9gL
+	PrJVNB9Zx9LA+Iy1i5GTQ0LAROLog+3MELaYxIV769m6GLk4hASWMkp87H/ECOH0MUnMfniO
+	CaSKTcBYYvPyJWwgtohAhsTmeVPBJjELGEr8fPeHHcQWFgiWOPnlE5jNIqAqsevIf7BeXgE3
+	idlbVjBCbJOTOHlsMusERu4FjAyrGEVTS5MLipPSc430ihNzi0vz0vWS83M3MUK8/3UH49Jj
+	VocYBTgYlXh4LaU2hwixJpYVV+YeYpTgYFYS4XUtAwrxpiRWVqUW5ccXleakFh9iZOLglGpg
+	bGlgb676ud7ccqHZVNHihBn/pKe1TH602Pnu7Cf2Rsbnvl9+8y84ZNffBwYq//58XVLxVKv4
+	dejDDOdFbEHRBqn3zec18J/LbMu9Fr7ukXaakkdptvCTfycXrN53e9GeLaEOla8u7UnwMm+r
+	+Prs0ieBLxyHfD9vntpyX3LB3ebZT7dOS67q+6nEUpyRaKjFXFScCABFqfW/3AEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 11, 2015 at 03:55:43PM -0500, Johannes Weiner wrote:
-> On Sat, Jan 10, 2015 at 04:43:16PM -0500, Tejun Heo wrote:
-> > > May be, we should kill the ref counter to the memory controller root in
-> > > cgroup_kill_sb only if there is no children at all, neither online nor
-> > > offline.
-> > 
-> > Ah, thanks for the analysis, but I really wanna avoid making hierarchy
-> > destruction conditions opaque to userland.  This is userland visible
-> > behavior.  It shouldn't be determined by kernel internals invisible
-> > outside.  This patch adds ss->unbind() which memcg can hook into to
-> > kick off draining of residual refs.  If this would work, I'll add this
-> > patch to cgroup/for-3.19-fixes, possibly with stable cc'd.
-> 
-> How about this ->unbind() for memcg?
-> 
-> From d527ba1dbfdb58e1f7c7c4ee12b32ef2e5461990 Mon Sep 17 00:00:00 2001
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Date: Sun, 11 Jan 2015 10:29:05 -0500
-> Subject: [patch] mm: memcontrol: zap outstanding cache/swap references during
->  unbind
-> 
-> Cgroup core assumes that any outstanding css references after
-> offlining are temporary in nature, and e.g. mount waits for them to
-> disappear and release the root cgroup.  But leftover page cache and
-> swapout records in an offlined memcg are only dropped when the pages
-> get reclaimed under pressure or the swapped out pages get faulted in
-> from other cgroups, and so those cgroup operations can hang forever.
-> 
-> Implement the ->unbind() callback to actively get rid of outstanding
-> references when cgroup core wants them gone.  Swap out records are
-> deleted, such that the swap-in path will charge those pages to the
-> faulting task.  Page cache pages are moved to the root memory cgroup.
+Update documentation for regulator_register() function after renaming
+its argument.
 
-... and kmem pages are ignored. I reckon we could reparent them (I
-submitted the patch set some time ago), but that's going to be tricky
-and will complicate regular kmem charge/uncharge paths, as well as
-list_lru_add/del. I don't think we can put up with it, provided we only
-want reparenting on unmount, do we not?
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+---
+ drivers/regulator/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Come to think of it, I wonder how many users actually want to mount
-different controllers subset after unmount. Because we could allow
-mounting the same subset perfectly well, even if it includes memcg. BTW,
-AFAIU in the unified hierarchy we won't have this problem at all,
-because by definition it mounts all controllers IIRC, so do we need to
-bother fixing this in such a complicated manner at all for the setup
-that's going to be deprecated anyway?
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 5fae8cabd254..c5201b1530ee 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -3573,7 +3573,7 @@ static void rdev_init_debugfs(struct regulator_dev *rdev)
+ /**
+  * regulator_register - register regulator
+  * @regulator_desc: regulator to register
+- * @config: runtime configuration for regulator
++ * @cfg: runtime configuration for regulator
+  *
+  * Called by regulator drivers to register a regulator.
+  * Returns a valid pointer to struct regulator_dev on success
+-- 
+1.9.1
 
-Thanks,
-Vladimir
