@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230AbbALSPr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:15:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57690 "EHLO
+	id S1753982AbbALSOZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:14:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57718 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753742AbbALSGb (ORCPT
+	with ESMTP id S1753789AbbALSGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:06:31 -0500
+	Mon, 12 Jan 2015 13:06:35 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: James Hogan <james.hogan@imgtec.com>, Sifan Naeem <sifan.naeem@imgtec.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
+Cc: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 085/216] [media] img-ir/hw: Fix potential deadlock stopping timer
-Date: Mon, 12 Jan 2015 18:03:22 +0000
-Message-Id: <1421085933-32536-86-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 086/216] powerpc/book3s: Fix partial invalidation of TLBs in MCE code.
+Date: Mon, 12 Jan 2015 18:03:23 +0000
+Message-Id: <1421085933-32536-87-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -28,155 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Hogan <james.hogan@imgtec.com>
+From: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
 
-commit ac03086067a5524ae9e020ba5712a208c67b2736 upstream.
+commit 682e77c861c4c60f79ffbeae5e1938ffed24a575 upstream.
 
-The end timer is used for switching back from repeat code timings when
-no repeat codes have been received for a certain amount of time. When
-the protocol is changed, the end timer is deleted synchronously with
-del_timer_sync(), however this takes place while holding the main spin
-lock, and the timer handler also needs to acquire the spin lock.
+The existing MCE code calls flush_tlb hook with IS=0 (single page) resulting
+in partial invalidation of TLBs which is not right. This patch fixes
+that by passing IS=0xc00 to invalidate whole TLB for successful recovery
+from TLB and ERAT errors.
 
-This opens the possibility of a deadlock on an SMP system if the
-protocol is changed just as the repeat timer is expiring. One CPU could
-end up in img_ir_set_decoder() holding the lock and waiting for the end
-timer to complete, while the other CPU is stuck in the timer handler
-spinning on the lock held by the first CPU.
-
-Lockdep also spots a possible lock inversion in the same code, since
-img_ir_set_decoder() acquires the img-ir lock before the timer lock, but
-the timer handler will try and acquire them the other way around:
-
-=========================================================
-[ INFO: possible irq lock inversion dependency detected ]
-3.18.0-rc5+ #957 Not tainted
----------------------------------------------------------
-swapper/0/0 just changed the state of lock:
- (((&hw->end_timer))){+.-...}, at: [<4006ae5c>] _call_timer_fn+0x0/0xfc
-but this lock was taken by another, HARDIRQ-safe lock in the past:
- (&(&priv->lock)->rlock#2){-.....}
-
-and interrupts could create inverse lock ordering between them.
-
-other info that might help us debug this:
- Possible interrupt unsafe locking scenario:
-
-       CPU0                    CPU1
-       ----                    ----
-  lock(((&hw->end_timer)));
-                               local_irq_disable();
-                               lock(&(&priv->lock)->rlock#2);
-                               lock(((&hw->end_timer)));
-  <Interrupt>
-    lock(&(&priv->lock)->rlock#2);
-
- *** DEADLOCK ***
-
-This is fixed by releasing the main spin lock while performing the
-del_timer_sync() call. The timer is prevented from restarting before the
-lock is reacquired by a new "stopping" flag which img_ir_handle_data()
-checks before updating the timer.
-
----------------------------------------------------------
-swapper/0/0 just changed the state of lock:
- (((&hw->end_timer))){+.-...}, at: [<4006ae5c>] _call_timer_fn+0x0/0xfc
-but this lock was taken by another, HARDIRQ-safe lock in the past:
- (&(&priv->lock)->rlock#2){-.....}
-and interrupts could create inverse lock ordering between them.
-other info that might help us debug this:
- Possible interrupt unsafe locking scenario:
-       CPU0                    CPU1
-       ----                    ----
-  lock(((&hw->end_timer)));
-                               local_irq_disable();
-                               lock(&(&priv->lock)->rlock#2);
-                               lock(((&hw->end_timer)));
-  <Interrupt>
-    lock(&(&priv->lock)->rlock#2);
- *** DEADLOCK ***
-This is fixed by releasing the main spin lock while performing the
-del_timer_sync() call. The timer is prevented from restarting before the
-lock is reacquired by a new "stopping" flag which img_ir_handle_data()
-checks before updating the timer.
-
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Sifan Naeem <sifan.naeem@imgtec.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/media/rc/img-ir/img-ir-hw.c | 22 +++++++++++++++++++---
- drivers/media/rc/img-ir/img-ir-hw.h |  3 +++
- 2 files changed, 22 insertions(+), 3 deletions(-)
+ arch/powerpc/kernel/mce_power.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/media/rc/img-ir/img-ir-hw.c b/drivers/media/rc/img-ir/img-ir-hw.c
-index 5dfd0e9c2d5a..cd1b7ac021b2 100644
---- a/drivers/media/rc/img-ir/img-ir-hw.c
-+++ b/drivers/media/rc/img-ir/img-ir-hw.c
-@@ -531,6 +531,22 @@ static void img_ir_set_decoder(struct img_ir_priv *priv,
- 	u32 ir_status, irq_en;
- 	spin_lock_irq(&priv->lock);
- 
-+	/*
-+	 * First record that the protocol is being stopped so that the end timer
-+	 * isn't restarted while we're trying to stop it.
-+	 */
-+	hw->stopping = true;
-+
-+	/*
-+	 * Release the lock to stop the end timer, since the end timer handler
-+	 * acquires the lock and we don't want to deadlock waiting for it.
-+	 */
-+	spin_unlock_irq(&priv->lock);
-+	del_timer_sync(&hw->end_timer);
-+	spin_lock_irq(&priv->lock);
-+
-+	hw->stopping = false;
-+
- 	/* switch off and disable interrupts */
- 	img_ir_write(priv, IMG_IR_CONTROL, 0);
- 	irq_en = img_ir_read(priv, IMG_IR_IRQ_ENABLE);
-@@ -548,8 +564,7 @@ static void img_ir_set_decoder(struct img_ir_priv *priv,
- 	img_ir_read(priv, IMG_IR_DATA_LW);
- 	img_ir_read(priv, IMG_IR_DATA_UP);
- 
--	/* stop the end timer and switch back to normal mode */
--	del_timer_sync(&hw->end_timer);
-+	/* switch back to normal mode */
- 	hw->mode = IMG_IR_M_NORMAL;
- 
- 	/* clear the wakeup scancode filter */
-@@ -818,7 +833,8 @@ static void img_ir_handle_data(struct img_ir_priv *priv, u32 len, u64 raw)
+diff --git a/arch/powerpc/kernel/mce_power.c b/arch/powerpc/kernel/mce_power.c
+index aa9aff3d6ad3..b6f123ab90ed 100644
+--- a/arch/powerpc/kernel/mce_power.c
++++ b/arch/powerpc/kernel/mce_power.c
+@@ -79,7 +79,7 @@ static long mce_handle_derror(uint64_t dsisr, uint64_t slb_error_bits)
  	}
- 
- 
--	if (dec->repeat) {
-+	/* we mustn't update the end timer while trying to stop it */
-+	if (dec->repeat && !hw->stopping) {
- 		unsigned long interval;
- 
- 		img_ir_begin_repeat(priv);
-diff --git a/drivers/media/rc/img-ir/img-ir-hw.h b/drivers/media/rc/img-ir/img-ir-hw.h
-index 6c9a94a81190..837843921344 100644
---- a/drivers/media/rc/img-ir/img-ir-hw.h
-+++ b/drivers/media/rc/img-ir/img-ir-hw.h
-@@ -202,6 +202,8 @@ enum img_ir_mode {
-  * @flags:		IMG_IR_F_*.
-  * @filters:		HW filters (derived from scancode filters).
-  * @mode:		Current decode mode.
-+ * @stopping:		Indicates that decoder is being taken down and timers
-+ *			should not be restarted.
-  * @suspend_irqen:	Saved IRQ enable mask over suspend.
-  */
- struct img_ir_priv_hw {
-@@ -217,6 +219,7 @@ struct img_ir_priv_hw {
- 	struct img_ir_filter		filters[RC_FILTER_MAX];
- 
- 	enum img_ir_mode		mode;
-+	bool				stopping;
- 	u32				suspend_irqen;
- };
- 
+ 	if (dsisr & P7_DSISR_MC_TLB_MULTIHIT_MFTLB) {
+ 		if (cur_cpu_spec && cur_cpu_spec->flush_tlb)
+-			cur_cpu_spec->flush_tlb(TLBIEL_INVAL_PAGE);
++			cur_cpu_spec->flush_tlb(TLBIEL_INVAL_SET);
+ 		/* reset error bits */
+ 		dsisr &= ~P7_DSISR_MC_TLB_MULTIHIT_MFTLB;
+ 	}
+@@ -110,7 +110,7 @@ static long mce_handle_common_ierror(uint64_t srr1)
+ 		break;
+ 	case P7_SRR1_MC_IFETCH_TLB_MULTIHIT:
+ 		if (cur_cpu_spec && cur_cpu_spec->flush_tlb) {
+-			cur_cpu_spec->flush_tlb(TLBIEL_INVAL_PAGE);
++			cur_cpu_spec->flush_tlb(TLBIEL_INVAL_SET);
+ 			handled = 1;
+ 		}
+ 		break;
 -- 
 2.1.4
 
