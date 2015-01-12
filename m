@@ -1,197 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753029AbbALKJE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 05:09:04 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:33506 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752989AbbALKI7 (ORCPT
+	id S1753076AbbALKJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 05:09:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54839 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753048AbbALKJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 05:08:59 -0500
-X-Originating-IP: 50.43.58.154
-Date: Mon, 12 Jan 2015 02:08:37 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Fam Zheng <famz@redhat.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Miklos Szeredi <mszeredi@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Juri Lelli <juri.lelli@gmail.com>, Zach Brown <zab@zabbo.net>,
-        David Drysdale <drysdale@google.com>,
-        Kees Cook <keescook@chromium.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Dario Faggioli <raistlin@linux.it>, "Theodore Ts'o" <tytso@mit.edu>,
-        Peter Zijlstra <peterz@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Fabian Frederick <fabf@skynet.be>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Subject: Re: [PATCH 0/3] epoll: Add epoll_pwait1 syscall
-Message-ID: <20150112100836.GA13150@thin>
-References: <1420705550-24245-1-git-send-email-famz@redhat.com>
- <1420708372.18399.15.camel@suse.cz>
- <CALCETrVyPij1Zxwmw7p06UrZjoyYDXqEjmxyQ-KJ8Y7dx7mL3g@mail.gmail.com>
- <20150109011608.GA2924@fam-t430.nay.redhat.com>
- <CALCETrWHGwPw2cH3RruaCFKj2ND8PdEbdWjTi4OJ8m2eF9fpLw@mail.gmail.com>
- <20150109015248.GA5034@fam-t430.nay.redhat.com>
- <CALCETrU+MKWCh1FBqvuf3MGo3dTcmdktcM4aVZZGGUAmDNoWtg@mail.gmail.com>
- <20150109044908.GA10966@fam-t430.nay.redhat.com>
- <20150109052129.GA6831@thin>
- <20150112082400.GA21123@fam-t430.nay.redhat.com>
+	Mon, 12 Jan 2015 05:09:24 -0500
+Date: Mon, 12 Jan 2015 10:09:43 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, Robert Jarzmik <robert.jarzmik@free.fr>
+Subject: Re: [PATCH 3.16.y-ckt 053/168] ARM: pxa: fix hang on startup with
+ DEBUG_LL
+Message-ID: <20150112100943.GA2455@charon>
+References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
+ <1418653622-21105-54-git-send-email-luis.henriques@canonical.com>
+ <1421015948.19708.34.camel@decadent.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20150112082400.GA21123@fam-t430.nay.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1421015948.19708.34.camel@decadent.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 04:24:00PM +0800, Fam Zheng wrote:
-> On Thu, 01/08 21:21, Josh Triplett wrote:
-> > On Fri, Jan 09, 2015 at 12:49:08PM +0800, Fam Zheng wrote:
-> > > On Thu, 01/08 18:24, Andy Lutomirski wrote:
-> > > > On Thu, Jan 8, 2015 at 5:52 PM, Fam Zheng <famz@redhat.com> wrote:
-> > > > > On Thu, 01/08 17:28, Andy Lutomirski wrote:
-> > > > >> On Thu, Jan 8, 2015 at 5:25 PM, Fam Zheng <famz@redhat.com> wrote:
-> > > > >> > On Thu, 01/08 09:57, Andy Lutomirski wrote:
-> > > > >> >> I'd like to see a more ambitious change, since the timer isn't the
-> > > > >> >> only problem like this.  Specifically, I'd like a syscall that does a
-> > > > >> >> list of epoll-related things and then waits.  The list of things could
-> > > > >> >> include, at least:
-> > > > >> >>
-> > > > >> >>  - EPOLL_CTL_MOD actions: level-triggered epoll users are likely to
-> > > > >> >> want to turn on and off their requests for events on a somewhat
-> > > > >> >> regular basis.
-> > > > >> >
-> > > > >> > This sounds good to me.
-> > > > >> >
-> > > > >> >>
-> > > > >> >>  - timerfd_settime actions: this allows a single syscall to wait and
-> > > > >> >> adjust *both* monotonic and real-time wakeups.
-> > > > >> >
-> > > > >> > I'm not sure, doesn't this break orthogonality between epoll and timerfd?
-> > > > >>
-> > > > >> Yes.  It's not very elegant, and more elegant ideas are welcome.
-> > > > >
-> > > > > What is the purpose of embedding timerfd operation here? Modifying timerfd
-> > > > > for each poll doesn't sound a common pattern to me.
-> > > > 
-> > > > Setting a timeout is definitely a common pattern, hence this thread.
-> > > > But the current timeout interface sucks, and people should really use
-> > > > absolute time.  (My epoll software uses absolute time.)  But then
-> > > > users need to decide whether to have their timeout based on the
-> > > > monotonic clock or the realtime clock (or something else entirely).
-> > > > Some bigger programs may want both -- they may have internal events
-> > > > queued for certain times and for certain timeouts, and those should
-> > > > use realtime and monotonic respectively.  Heck, users may also want
-> > > > separate slack values on those.
-> > > > 
-> > > > Timerfd is the only thing we have right now that is anywhere near
-> > > > flexible enough.  Obviously if epoll became fancy enough, then we
-> > > > could do away with the timerfd entirely here.
-> > > > 
-> > > > >
-> > > > >>
-> > > > >> >
-> > > > >> >>
-> > > > >> >> Would this make sense?  It could look like:
-> > > > >> >>
-> > > > >> >> int epoll_mod_and_pwait(int epfd,
-> > > > >> >>   struct epoll_event *events, int maxevents,
-> > > > >> >>   struct epoll_command *commands, int ncommands,
-> > > > >> >>   const sigset_t *sigmask);
-> > > > >> >
-> > > > >> > What about flags?
-> > > > >> >
-> > > > >>
-> > > > >> No room.  Maybe it should just be a struct for everything instead of
-> > > > >> separate args.
-> > > > >
-> > > > > Also no room for timeout. A single struct sounds the only way to go.
-> > > > 
-> > > > That's what timerfd is for.  I think it would be a bit weird to
-> > > > support "timeout" and detailed timerfd control.
-> > > 
-> > > I see what you mean. Thanks.
-> > > 
-> > > I still don't like hooking timerfd in the interface. Besides the unclean
-> > > interface, it also feels cubersome and overkill to let users setup and add a
-> > > dedicated timerfd to implement timeout.
-> > > 
-> > > How about this:
-> > > 
-> > > int epoll_mod_wait(int epfd, struct epoll_mod_wait_data *data);
-> > > 
-> > > struct epoll_mod_wait_data {
-> > > 	struct epoll_event *events;
-> > > 	int maxevents;
-> > > 	struct epoll_mod_cmd {
-> > > 		int op,
-> > > 		int fd;
-> > > 		void *data;
-> > > 	} *cmds;
-> > > 	int ncmds;
-> > > 	int flags;
-> > > 	sigset_t *sigmask;
-> > > };
-> > > 
-> > > Commands ops are:
-> > > 
-> > > 	EPOLL_CTL_ADD
-> > > 		@fd is the fd to modify; @data is epoll_event.
-> > > 	EPOLL_CTL_MOD
-> > > 		@fd is the fd to modify; @data is epoll_event.
-> > > 	EPOLL_CTL_DEL
-> > > 		@fd is the fd to modify; @data is epoll_event.
-> > > 
-> > > 	EPOLL_CTL_SET_TIMEOUT
-> > > 		@fd is ignored, @data is timespec.
-> > > 		Clock type and relative/absolute are selected by flags as below.
-> > > 
-> > > Flags are given to override timeout defaults:
-> > > 	EPOLL_FL_MONOTONIC_CLOCK
-> > > 		If set, don't use realtime clock, use monotonic clock.
-> > > 	EPOLL_FL_ABSOLUTE_TIMEOUT
-> > > 		If set, don't use relative timeout, use absolute timeout.
+On Sun, Jan 11, 2015 at 10:39:08PM +0000, Ben Hutchings wrote:
+> On Mon, 2014-12-15 at 14:25 +0000, Luis Henriques wrote:
+> > 3.16.7-ckt3 -stable review patch.  If anyone has any objections, please let me know.
 > > 
-> > I'd suggest using an "int clockid" field instead, like timerfd_settime;
-> > even if it only accepts CLOCK_REALTIME and CLOCK_MONOTONIC, if it needs
-> > extending in the future, it'd be painful to have to remap new CLOCK_*
-> > constants into the EPOLL_FL_* namespace.  (I do think dropping timeouts
-> > in favor of timerfds makes things more nicely orthogonal, but epoll_wait
-> > already has a timeout parameter, so *shrug*.)
+> > ------------------
 > > 
-> > Also, I think that structure has too many levels of indirection; it'd
-> > produce many unnecessary cache misses; considering you're trying to
-> > eliminate the overhead of one or two extra syscalls, you don't want to
-> > introduce a pile of unnecessary cache misses in the processes.  I'd
-> > suggest inlining cmds as an array at the end of the structure, and
-> > turning "void *data" into an inline epoll_event.  (Or, you could use
-> > "events" as an in/out parameter.)
+> > From: Robert Jarzmik <robert.jarzmik@free.fr>
 > > 
-> > You could drop EPOLL_CTL_SET_TIMEOUT, and just include a clockid and
-> > timespec directly in the top-level structure.
+> > commit cde7fc879969f933614b1256df2625d6ff637bab upstream.
 > > 
-> > And I'd suggest either making flags a top-level parameter or putting it
-> > at the start of the structure, to make future extension easier.
+> > The commit 2111667b4677 ("ARM: pxa: call debug_ll_io_init for
+> > earlyprintk") triggers in the current kernel the attached backtrace on
+> > PXA/tosa early in the boot time when DEBUG_LL is enabled.
 > 
-> Makes sense to me, thanks.
+> That was in 3.17-rc1, so I don't think this fix was needed for 3.16.  I
+> don't know whether it causes any harm to apply it here.
 > 
-> Also the number of cmds are undecided until we do a copy_from_user for the
-> header fields before another one for specified number of cmds. So I think it's
-> better to move ncmds and cmds to top level parameter.
 
-That seems like an even better idea, yeah.
+Thanks Ben.
 
-- Josh Triplett
+Robert, do you think this is a problem?  I can revert this patch as
+it has already been released in 3.16.7-ckt3.
+
+Cheers,
+--
+Luís
+
+> Ben.
+> 
+> > It is due to overlap between uart virtual memory defined in
+> > DEBUG_UART_VIRT and mapped by debug_ll_io_init() and peripheral bus
+> > mapped by pxa_map_io at the same address, 0xf2100000.
+> > 
+> > As hinted by Arnd, map early virtual memory for low level debug on
+> > address 0xf6200000, even if that means 2 virtual mappings will give
+> > access to the pxa internal UARTs (FFUART, BTUART, STUART, ...).
+> > 
+> > ------------[ cut here ]------------
+> > kernel BUG at /home/lumag/linux/mm/vmalloc.c:1143!
+> > Internal error: Oops - BUG: 0 [#1] PREEMPT ARM
+> > Modules linked in:
+> > CPU: 0 PID: 0 Comm: swapper Not tainted 3.17.0-00032-g8e0d202-dirty #23
+> > task: c062a5a8 ti: c0620000 task.ti: c0620000
+> > PC is at vm_area_add_early+0x54/0x84
+> > LR is at add_static_vm_early+0xc/0x60
+> > pc : [<c03e1100>]    lr : [<c03d9ef4>]    psr: 800001d3
+> > sp : c0621f04  ip : c03efa74  fp : c03edf84
+> > r10: c0637e98  r9 : 40000001  r8 : c03da57c
+> > r7 : c3ffcfb0  r6 : 00000000  r5 : c3ffcfb0  r4 : 02000000
+> > r3 : c3ffcfd8  r2 : f2100000  r1 : f4000000  r0 : c3ffcfb0
+> > Flags: Nzcv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
+> > Control: 00007977  Table: a0004000  DAC: 00000017
+> > Process swapper (pid: 0, stack limit = 0xc06201c8)
+> > Stack: (0xc0621f04 to 0xc0622000)
+> > 1f00:          c3ffcfd8 40000001 c3ffcfd8 c03ee08c c03da570 c03db90c c0637d24
+> > 1f20: 00000000 c03ec7cc c066e654 a0700000 000a0700 c03db914 c03db90c c03daf84
+> > 1f40: 00000000 000a0000 c0000000 c03ec7cc 000a0700 c0700000 ffff1000 000a3fff
+> > 1f60: 00001000 00000007 00000000 c03ec7cc c0008000 c03ed748 c0621fd4 c03d5d18
+> > 1f80: 69052d00 a03ec48c 00000000 c03d8ad0 0000006c 00007977 c036c6e8 00000001
+> > 1fa0: c0621fd4 c03ed744 c0628000 a0004000 69052d00 a03ec48c 00000000 c03d68d4
+> > 1fc0: 00000000 00000000 00000000 00000000 00000000 c03ed748 c0649894 c062801c
+> > 1fe0: c03ed744 c062b2f0 a0004000 69052d00 a03ec48c a0008040 00000000 00000000
+> > [<c03e1100>] (vm_area_add_early) from [<c03d9ef4>] (add_static_vm_early+0xc/0x60)
+> > [<c03d9ef4>] (add_static_vm_early) from [<c03da570>] (iotable_init.part.6+0xa8/0xb4)
+> > [<c03da570>] (iotable_init.part.6) from [<c03db914>] (pxa25x_map_io+0x8/0x24)
+> > [<c03db914>] (pxa25x_map_io) from [<c03daf84>] (paging_init+0x744/0x8d8)
+> > [<c03daf84>] (paging_init) from [<c03d8ad0>] (setup_arch+0x354/0x608)
+> > [<c03d8ad0>] (setup_arch) from [<c03d68d4>] (start_kernel+0xa8/0x3dc)
+> > [<c03d68d4>] (start_kernel) from [<a0008040>] (0xa0008040)
+> > Code: e5904008 e0811004 e1520001 2a000005 (e7f001f2)
+> > ---[ end trace f24b6c88ae00fa9a ]---
+> > Kernel panic - not syncing: Attempted to kill the idle task!
+> > ---[ end Kernel panic - not syncing: Attempted to kill the idle task!
+> > 
+> > Reported-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+> > Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
+> > Acked-by: Arnd Bergmann <arnd@arndb.de>
+> > [ luis: backported to 3.16: adjusted context ]
+> > Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+> > ---
+> >  arch/arm/Kconfig.debug                    | 2 +-
+> >  arch/arm/mach-pxa/include/mach/addr-map.h | 5 +++++
+> >  2 files changed, 6 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+> > index 8f90595069a1..1fdb08427db7 100644
+> > --- a/arch/arm/Kconfig.debug
+> > +++ b/arch/arm/Kconfig.debug
+> > @@ -1118,7 +1118,7 @@ config DEBUG_UART_VIRT
+> >  	default 0xf1600000 if ARCH_INTEGRATOR
+> >  	default 0xf1c28000 if DEBUG_SUNXI_UART0
+> >  	default 0xf1c28400 if DEBUG_SUNXI_UART1
+> > -	default 0xf2100000 if DEBUG_PXA_UART1
+> > +	default 0xf6200000 if DEBUG_PXA_UART1
+> >  	default 0xf4090000 if ARCH_LPC32XX
+> >  	default 0xf4200000 if ARCH_GEMINI
+> >  	default 0xf7000000 if DEBUG_S3C24XX_UART && (DEBUG_S3C_UART0 || \
+> > diff --git a/arch/arm/mach-pxa/include/mach/addr-map.h b/arch/arm/mach-pxa/include/mach/addr-map.h
+> > index bbf9df37ad4b..d28fe291233a 100644
+> > --- a/arch/arm/mach-pxa/include/mach/addr-map.h
+> > +++ b/arch/arm/mach-pxa/include/mach/addr-map.h
+> > @@ -39,6 +39,11 @@
+> >  #define DMEMC_SIZE		0x00100000
+> >  
+> >  /*
+> > + * Reserved space for low level debug virtual addresses within
+> > + * 0xf6200000..0xf6201000
+> > + */
+> > +
+> > +/*
+> >   * Internal Memory Controller (PXA27x and later)
+> >   */
+> >  #define IMEMC_PHYS		0x58000000
+> 
+> -- 
+> Ben Hutchings
+> One of the nice things about standards is that there are so many of them.
