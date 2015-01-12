@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849AbbALKGA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 05:06:00 -0500
-Received: from www.linutronix.de ([62.245.132.108]:36495 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186AbbALKF6 (ORCPT
+	id S1752629AbbALKHm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 05:07:42 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:35388 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186AbbALKHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 05:05:58 -0500
-Date: Mon, 12 Jan 2015 11:05:29 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Dave Jones <davej@codemonkey.org.uk>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?ISO-8859-15?Q?D=E2niel_Fraga?= <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Anvin <hpa@linux.intel.com>
-Subject: Re: frequent lockups in 3.18rc4
-In-Reply-To: <CA+55aFygv+PRcYScwCjGVQ7-0PA1mHOGYaKGKS4LBhxPm0YBJA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.11.1501121103460.17382@nanos>
-References: <20141219145528.GC13404@redhat.com> <CA+55aFychipT9e0DenUumsGJ-=9BUTOX-OmAmQ3azMCspUrUtw@mail.gmail.com> <alpine.DEB.2.11.1412192201520.17382@nanos> <CA+55aFx4zjAVHN5DrSCh1_MJjqf4fxoAVT3RmC+1QGP6bq7b0Q@mail.gmail.com> <alpine.DEB.2.11.1412200100130.17382@nanos>
- <CA+55aFxY5hCuGaK0JvTwHFsQKFGeh3_82ukKrU9ss4x4uHMY3Q@mail.gmail.com> <CA+55aFzj_2tYJ1b=_7eKSz7UMuUL+qZX39r0xq5vOZkB4JmHMA@mail.gmail.com> <CA+55aFyQzpQgT91sqpEhXho8KoVRkA1MeRjk+fXO7w2dJkY_Gg@mail.gmail.com> <CA+55aFy8DCMmkPRz0kqNC80pn4VkeQr2Wz2fTRm=32oH2dhfRQ@mail.gmail.com>
- <CA+55aFwA7uOFgb-Y4dHS099HuoV+oQvxXf+cfZYh9T7H_c0PHA@mail.gmail.com> <20141221223204.GA9618@codemonkey.org.uk> <CA+55aFygv+PRcYScwCjGVQ7-0PA1mHOGYaKGKS4LBhxPm0YBJA@mail.gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Mon, 12 Jan 2015 05:07:40 -0500
+Date: Mon, 12 Jan 2015 11:07:37 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Rob Herring <robh@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-pci@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH 14/16] pci/host: tegra: convert to use generic config
+ accesses
+Message-ID: <20150112100736.GC27700@ulmo>
+References: <1420857290-8373-1-git-send-email-robh@kernel.org>
+ <1420857290-8373-15-git-send-email-robh@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kfjH4zxOES6UT95V"
+Content-Disposition: inline
+In-Reply-To: <1420857290-8373-15-git-send-email-robh@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 21 Dec 2014, Linus Torvalds wrote:
-> On Sun, Dec 21, 2014 at 2:32 PM, Dave Jones <davej@codemonkey.org.uk> wrote:
-> > On Sun, Dec 21, 2014 at 02:19:03PM -0800, Linus Torvalds wrote:
-> > >
-> >  > And finally, and stupidly, is there any chance that you have anything
-> >  > accessing /dev/hpet?
-> >
-> > Not knowingly at least, but who the hell knows what systemd has its
-> > fingers in these days.
-> 
-> Actually, it looks like /dev/hpet doesn't allow write access.
-> 
-> I can do the mmap(/dev/mem) thing and access the HPET by hand, and
-> when I write zero to it I immediately get something like this:
-> 
->   Clocksource tsc unstable (delta = -284317725450 ns)
->   Switched to clocksource hpet
-> 
-> just to confirm that yes, a jump in the HPET counter would indeed give
-> those kinds of symptoms:blaming the TSC with a negative delta in the
-> 0-300s range, even though it's the HPET that is broken.
-> 
-> And if the HPET then occasionally jumps around afterwards, it would
-> show up as ktime_get() occasionally going backwards, which in turn
-> would - as far as I can tell - result in exactly that pseudo-infirnite
-> loop with timers.
-> 
-> Anyway, any wild kernel pointer access *could* happen to just hit the
-> HPET and write to the main counter value, although I'd personally be
-> more inclined to blame BIOS/SMM kind of code playing tricks with
-> time.. We do have a few places where we explicitly write the value on
-> purpose, but they are in the HPET init code, and in the clocksource
-> resume code, so they should not be involved.
 
-Right.
- 
-> Thomas - have you had reports of HPET breakage in RT circles, the same
-> way BIOSes have been tinkering with TSC?
+--kfjH4zxOES6UT95V
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Not that I'm aware of.
- 
-> Also, would it perhaps be a good idea to make "ktime_get()" save the
-> last time in a percpu variable, and warn if time ever goes backwards
-> on a particular CPU?  A percpu thing should be pretty cheap, even if
-> we write to it every time somebody asks for time..
+On Fri, Jan 09, 2015 at 08:34:48PM -0600, Rob Herring wrote:
+> Convert the tegra host PCI driver to use the generic config access
 
-That should be simple enough to implement.
+Nit: s/tegra/Tegra/
 
-Thanks,
+Other than than looks like great cleanup:
 
-	tglx
+Tested-by: Thierry Reding <treding@nvidia.com>
+Acked-by: Thierry Reding <treding@nvidia.com>
+
+--kfjH4zxOES6UT95V
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUs5zoAAoJEN0jrNd/PrOhr/EP/RfVHHkmufGskRLDlXyvRQlE
+ni4KIF1JuZdSg+9ZvHXmT+bEFZAiheAtamIR31jMHMADXmI/R8Jupr0sCjzYzCVa
+1CNJ9NfeGrCpskbyaXl8YoJmKUJD5X+A6PhLZ65yIZzIAhiwaIrFTBpH3kuk6Mma
+ecfxEy37EXFyPhB0qL89I36zePn/tqAFH4b33DtCNF+DWcSRm+SmWeY7/5FU62Dn
+kEHbhmT7RuXtC1U9Ie77gFUUr0Bc5C+iU1b5yLqYccDn6yvjo4dDM0sXxcxmLxHK
+TE0FJCxvsr1aDn8E6ZGN1VR2Y4lXfC5jyZaUNSlx73y9P2scGt69PHBOgFn7z6S6
+FmNlhDSHRGT/FpELFaM5ki8atvShCIwUmMstcu4OKPHQJbUaIz6VDDNNYnzvUX+9
+riXQTQdxTrZwltat1fjpQAxQ4MzbSXlLWuzabw7iKLDy21LnSdFiXC7I7hvwfcjV
+abrtZcdgJOF9afydq/OrV3cV18ad+ZgGkZg8Iedo/GZNKj24zMbK8B9H5kQxGxWc
+cYC4WB4Ehrh7Su2xMpe7naJp46+K3miOZIqy15RgX/d9yAKnmWVn2lIBHuxoS43l
+6HMX6aXm/kiwp072Bpwc6NTBlRQEuNxACNVpU21QcndPkfnUAWtWZ7LBPu0uGkXh
+3OqPPOL0AT4MI6bQSbdq
+=ivJr
+-----END PGP SIGNATURE-----
+
+--kfjH4zxOES6UT95V--
