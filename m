@@ -1,39 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756598AbbALTEE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 14:04:04 -0500
-Received: from www.sr71.net ([198.145.64.142]:60107 "EHLO blackbird.sr71.net"
+	id S1755318AbbALTGH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 14:06:07 -0500
+Received: from mga01.intel.com ([192.55.52.88]:18023 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754328AbbALTEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 14:04:01 -0500
-Message-ID: <54B41A9E.4030705@sr71.net>
-Date: Mon, 12 Jan 2015 11:03:58 -0800
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1754009AbbALTGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 14:06:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,745,1413270000"; 
+   d="scan'208";a="649958700"
+Date: Mon, 12 Jan 2015 14:06:00 -0500
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Vaishali Thakkar <vthakkar1994@gmail.com>
+Cc: matthew.r.wilcox@intel.com, axboe@fb.com, linux-kernel@vger.kernel.org,
+        linux-nvme@lists.infradead.org
+Subject: Re: [PATCH v2] NVMe: Use put_unaligned_be64
+Message-ID: <20150112190600.GF5661@wil.cx>
+References: <20150110085259.GA3120@vaishali-Ideapad-Z570>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Laszlo Ersek <lersek@redhat.com>, Mark Langsdorf <mlangsdo@redhat.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Steve Capper <steve.capper@linaro.org>,
-        "vishnu.ps@samsung.com" <vishnu.ps@samsung.com>,
-        main kernel list <linux-kernel@vger.kernel.org>,
-        arm kernel list <linux-arm-kernel@lists.infradead.org>,
-        Kyle McMartin <kmcmarti@redhat.com>
-Subject: Re: Linux 3.19-rc3
-References: <20150109121348.GD12942@leverpostej> <CAPvkgC23LHhs7Tw4rdAPFooimonji8R7kEAbWYRKPJwouwUzBA@mail.gmail.com> <54AFE53A.4020004@redhat.com> <20150109175702.GA27787@leverpostej> <54B01FF0.3020900@arm.com> <20150109194333.GA23028@arm.com> <54B09CA3.1060501@redhat.com> <CA+55aFw3aGeiWOiKxQaC23VVX_Q9B0cDeZc37vVfK+SJVjGwFw@mail.gmail.com> <20150110133742.GA6999@arm.com> <CA+55aFxBA6F4Kr89iZwPPeBnkiRO4GnrbUSd0CqVG-LD6ZQyiw@mail.gmail.com> <20150112124256.GB13360@arm.com>
-In-Reply-To: <20150112124256.GB13360@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150110085259.GA3120@vaishali-Ideapad-Z570>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2015 04:42 AM, Will Deacon wrote:
-> Since this effectively reverts f045bbb9fa1b, I've added Dave to Cc. It
-> should fix the leak without reintroducing the performance regression.
+On Sat, Jan 10, 2015 at 02:22:59PM +0530, Vaishali Thakkar wrote:
+> This patch introduces the use of function put_unaligned_be64.
+> 
+> This is done using Coccinelle and semantic patch used is as follows:
 
-I ran this on the big system that showed the earlier issue.  Everything
-seems OK, at least with the test that showed the issue earlier (the brk1
-test from will-it-scale).
+I appreciate you're using an automated tool to find the problem ...
+
+> diff --git a/drivers/block/nvme-scsi.c b/drivers/block/nvme-scsi.c
+> index 5e78568..12893ef 100644
+> --- a/drivers/block/nvme-scsi.c
+> +++ b/drivers/block/nvme-scsi.c
+> @@ -1417,7 +1418,6 @@ static void nvme_trans_fill_read_cap(u8 *response, struct nvme_id_ns *id_ns,
+>  	u64 rlba;
+>  	u8 prot_en;
+>  	u8 p_type_lut[4] = {0, 0, 1, 2};
+> -	__be64 tmp_rlba;
+>  	__be32 tmp_rlba_32;
+>  	__be32 tmp_len;
+>  
+> @@ -1434,9 +1434,8 @@ static void nvme_trans_fill_read_cap(u8 *response, struct nvme_id_ns *id_ns,
+>  		memcpy(response, &tmp_rlba_32, sizeof(u32));
+>  		memcpy(&response[4], &tmp_len, sizeof(u32));
+>  	} else {
+> -		tmp_rlba = cpu_to_be64(rlba);
+>  		tmp_len = cpu_to_be32(lba_length);
+> -		memcpy(response, &tmp_rlba, sizeof(u64));
+> +		put_unaligned_be64(rlba, response);
+>  		memcpy(&response[8], &tmp_len, sizeof(u32));
+>  		response[12] = (p_type_lut[id_ns->dps & 0x3] << 1) | prot_en;
+>  		/* P_I_Exponent = 0x0 | LBPPBE = 0x0 */
+
+... but can't you look at the code you're modifying and notice that
+maybe there's an opportunity to do better?  The two things I notice when
+looking at this code:
+
+ - There are also 32-bit variables being used in the same way, so a
+   complete patch would also eliminate them.
+ - The 'response' buffer is allocated from kmalloc, so it's aligned, and
+   these fields are aligned relative to the start of the buffer,
+   so we know they're aligned.  So we should be using something in
+   the cpu_to_be64p family to store the value to the fields, not
+   put_unaligned_be64().
