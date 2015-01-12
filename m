@@ -1,156 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126AbbALRWV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 12:22:21 -0500
-Received: from exprod5og113.obsmtp.com ([64.18.0.26]:41670 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751132AbbALRWS (ORCPT
+	id S1751579AbbALRTy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 12:19:54 -0500
+Received: from mars.intermailgate.com ([80.242.145.70]:52945 "EHLO
+	mars.intermailgate.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751120AbbALRTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 12:22:18 -0500
+	Mon, 12 Jan 2015 12:19:52 -0500
+X-Antivirus-MYDOMAIN-Mail-From: netdev@bof.de via mars
+X-Antivirus-MYDOMAIN: 1.25-st-qms (Clear:RC:0(192.109.53.146):SA:0(1.3/10.0):. Processed in 0.462407 secs Process 7089)
+From: Patrick Schaaf <netdev@bof.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Richard Weinberger <richard@nod.at>, davem@davemloft.net,
+        coreteam@netfilter.org, netfilter-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        bhutchings@solarflare.com, john.fastabend@gmail.com,
+        herbert@gondor.apana.org.au, vyasevic@redhat.com, jiri@resnulli.us,
+        vfalico@gmail.com, therbert@google.com, edumazet@google.com,
+        yoshfuji@linux-ipv6.org, jmorris@namei.org, kuznet@ms2.inr.ac.ru,
+        kadlec@blackhole.kfki.hu, kaber@trash.net, pablo@netfilter.org,
+        kay@vrfy.org, stephen@networkplumber.org
+Subject: Re: [PATCH 2/3] x_tables: Use also dev->ifalias for interface matching
+Date: Mon, 12 Jan 2015 18:19:49 +0100
+Message-ID: <2868544.UBk2Y85taW@rofl>
+User-Agent: KMail/4.14.3 (Linux/3.18.2-1.ga393f37-desktop; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <1421081514.4099.14.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1421009571-5279-1-git-send-email-richard@nod.at> <1425960.ovH4s7sjue@rofl> <1421081514.4099.14.camel@edumazet-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <CAOHikRDTgVWL7_WUS3Yvce01GyP5TcyRm8ojfAyTHLTZ7xiR7A@mail.gmail.com>
-References: <3352987.ugV1Ipy7Z5@xps13>
-	<CAOHikRDTgVWL7_WUS3Yvce01GyP5TcyRm8ojfAyTHLTZ7xiR7A@mail.gmail.com>
-Date: Mon, 12 Jan 2015 22:46:02 +0530
-Message-ID: <CAOHikRCjf7OzRd9gzRtQDTR=NSmQhiPSD7mWuAW2-S7hQANQNQ@mail.gmail.com>
-Subject: Re: SATA link power management issues
-From: Suman Tripathi <stripathi@apm.com>
-To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can you dump the ata_id parameters(LPM section) from the drive and we
-can check the related LPM parameters of the drive ?
+On Monday 12 January 2015 08:51:54 Eric Dumazet wrote:
+> On Mon, 2015-01-12 at 17:39 +0100, Patrick Schaaf wrote:
+> > 
+> > Not to comment on the ifalias thing, which I think is unneccessary,
+> > too, but matching on interface names instead of only ifindex, is
+> > definitely needed, so that one can establish a full ruleset before
+> > interfaces even exist. That's good practise at boottime, but also
+> > needed for dynamic interface creation during runtime.
+> 
+> Please do not send html messages : Your reply did not reach the lists.
 
-On Mon, Jan 12, 2015 at 10:42 PM, Suman Tripathi <stripathi@apm.com> wrote:
-> Hi,
->
-> I'm having some problems with the link_power_management_policy on my
-> Dell XPS13 9333.
-> Changing policy from min_power or medium_power to max_performance
-> causes the following errors:
->
-> [ 3955.667086] ahci 0000:00:1f.2: port does not support device sleep
-> [ 3958.257106] ata3.00: exception Emask 0x10 SAct 0x40 SErr 0x50000 action
-> 0xe frozen
-> [ 3958.257110] ata3.00: irq_stat 0x00400000, PHY RDY changed
-> [ 3958.257113] ata3: SError: { PHYRdyChg CommWake }
-> [ 3958.257116] ata3.00: failed command: READ FPDMA QUEUED
-> [ 3958.257120] ata3.00: cmd 60/00:30:c8:60:10/01:00:1d:00:00/40 tag 6 ncq
-> 131072 in
->          res 40/00:34:c8:60:10/00:00:1d:00:00/40 Emask 0x10 (ATA bus error)
-> [ 3958.257122] ata3.00: status: { DRDY }
-> [ 3958.257126] ata3: hard resetting link
-> [ 3958.981727] ata3: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
-> [ 3958.984994] ata3.00: configured for UDMA/133
-> [ 3958.997686] ahci 0000:00:1f.2: port does not support device sleep
-> [ 3958.997698] ata3: EH complete
->
-> Sometimes I get "failed command: WRITE FPDMA QUEUED" multiple times.
->
-> As far as I know, this had always happened and it was confirmed
-> by another user. I've also come across some logs of the same system
-> and saw the same errors here and there, so it shouldn't be a problem
-> of my laptop in particular.
->
-> What I find interesting is that transitions from min_power to
-> medium_power and vice versa do not cause these errors. There are only
-> problem switching from min_power and medium_power to max_performance.
-> Doing the opposite, i.e. from max_performance to min_power or
-> medium_power, seems to work fine.
->
-> As a consequence of these continuous errors, the speed is reduced
-> from 6.0 Gbps to 1.5 Gbps.
->
-> I'd prefer not to disable LPM as it saves a considerable amount of
-> power when I'm using the battery. For this reason I'm currently using
-> medium_power and min_power only to prevent errors.
->
-> Is it normal that these errors appears only when I switch to
-> max_performance? Was something similar observed on other systems?
-> Can you dump the ata_id parameters(LPM section) from the drive and we can
-> check the related LPM parameters of the drive ?
->
-> Thanks,
-> Gabriele
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ide" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-> On Fri, Jan 9, 2015 at 1:07 AM, Gabriele Mazzotta <gabriele.mzt@gmail.com>
-> wrote:
->>
->> Hi,
->>
->> I'm having some problems with the link_power_management_policy on my
->> Dell XPS13 9333.
->> Changing policy from min_power or medium_power to max_performance
->> causes the following errors:
->>
->> [ 3955.667086] ahci 0000:00:1f.2: port does not support device sleep
->> [ 3958.257106] ata3.00: exception Emask 0x10 SAct 0x40 SErr 0x50000 action
->> 0xe frozen
->> [ 3958.257110] ata3.00: irq_stat 0x00400000, PHY RDY changed
->> [ 3958.257113] ata3: SError: { PHYRdyChg CommWake }
->> [ 3958.257116] ata3.00: failed command: READ FPDMA QUEUED
->> [ 3958.257120] ata3.00: cmd 60/00:30:c8:60:10/01:00:1d:00:00/40 tag 6 ncq
->> 131072 in
->>          res 40/00:34:c8:60:10/00:00:1d:00:00/40 Emask 0x10 (ATA bus
->> error)
->> [ 3958.257122] ata3.00: status: { DRDY }
->> [ 3958.257126] ata3: hard resetting link
->> [ 3958.981727] ata3: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
->> [ 3958.984994] ata3.00: configured for UDMA/133
->> [ 3958.997686] ahci 0000:00:1f.2: port does not support device sleep
->> [ 3958.997698] ata3: EH complete
->>
->> Sometimes I get "failed command: WRITE FPDMA QUEUED" multiple times.
->>
->> As far as I know, this had always happened and it was confirmed
->> by another user. I've also come across some logs of the same system
->> and saw the same errors here and there, so it shouldn't be a problem
->> of my laptop in particular.
->>
->> What I find interesting is that transitions from min_power to
->> medium_power and vice versa do not cause these errors. There are only
->> problem switching from min_power and medium_power to max_performance.
->> Doing the opposite, i.e. from max_performance to min_power or
->> medium_power, seems to work fine.
->>
->> As a consequence of these continuous errors, the speed is reduced
->> from 6.0 Gbps to 1.5 Gbps.
->>
->> I'd prefer not to disable LPM as it saves a considerable amount of
->> power when I'm using the battery. For this reason I'm currently using
->> medium_power and min_power only to prevent errors.
->>
->> Is it normal that these errors appears only when I switch to
->> max_performance? Was something similar observed on other systems?
->>
->> Thanks,
->> Gabriele
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-ide" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
->
->
-> --
-> Thanks,
-> with regards,
-> Suman Tripathi
+Sigh. Sorry...
 
+> Then, all you mention could have been solved by proper userspace
+> support.
+> 
+> Every time you add an interface or change device name, you could change
+> firewalls rules if needed. Nothing shocking here.
 
+That is totally impractical, IMO.
 
--- 
-Thanks,
-with regards,
-Suman Tripathi
+Interfaces come and go through many different actions. There's the admin 
+downing and upping stuff like bridges or bonds. There's stuff like libvirt / 
+KVM / qemu creating and destroying interfaces. In all these cases, in my 
+practise, I give the interfaces useful names to that I can prefix-match them 
+in iptables rules.
+
+Dynamically modifying the ruleset for each such creation and destruction, 
+would be a huge burden. The base ruleset would need suitable "hooks" where 
+these rules were inserted (ordering matters!). The addition would hardly be 
+atomic (with traditional iptables, unless done by generating a whole new 
+ruleset and restoring). The programs (e.g. libvirt) would need to be able to 
+call out to these specially crafted rule generator scripts. The admin would 
+need to add them as pre/post actions to their static (manual) interface 
+configuration. Loading and looking at the ruleset before bringing up the 
+interface would be impossible.
+
+Note that I do fully agree that it's sad that iptables rules waste all that 
+memory for each and every rule! I remember musing about improving that in 
+talks with Harald Welte back in the 90ies. A simple match would be perfectly 
+fine for me. Only having ifindex support, isn't.
+
+best regards
+  Patrick
