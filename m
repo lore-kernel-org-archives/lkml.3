@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849AbbALFFt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 00:05:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60448 "EHLO mx1.redhat.com"
+	id S1751360AbbALFFV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 00:05:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40240 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751759AbbALFFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 00:05:46 -0500
-Message-ID: <54B355FA.60702@redhat.com>
-Date: Mon, 12 Jan 2015 10:34:58 +0530
-From: Pratyush Anand <panand@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: tixy@linaro.org, linux@arm.linux.org.uk, ananth@in.ibm.com,
-        sandeepa.prabhu@linaro.org, catalin.marinas@arm.com,
-        will.deacon@arm.com, linux-kernel@vger.kernel.org,
-        anil.s.keshavamurthy@intel.com, masami.hiramatsu.pt@hitachi.com,
-        wcohen@redhat.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 8/8] ARM64: Add uprobe support
-References: <cover.1420038188.git.panand@redhat.com> <0694af6935f9c6873ef8d25ad51630a40a74a116.1420038188.git.panand@redhat.com> <20150109175936.GB13161@redhat.com>
-In-Reply-To: <20150109175936.GB13161@redhat.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1750971AbbALFFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 00:05:17 -0500
+From: Juergen Gross <jgross@suse.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        konrad.wilk@oracle.com, david.vrabel@citrix.com,
+        boris.ostrovsky@oracle.com, jbeulich@suse.com
+Cc: Juergen Gross <jgross@suse.com>
+Subject: [Patch V2 0/4] xen: correct several bugs in new p2m list setup
+Date: Mon, 12 Jan 2015 06:05:06 +0100
+Message-Id: <1421039110-11207-1-git-send-email-jgross@suse.com>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In the setup code of the linear mapped p2m list several bugs have
+been found, especially for 32 bit dom0. These patches correct the
+errors and make 32 bit dom0 bootable again.
 
+Changes since V1:
+- split up patch 3 as requested by David Vrabel
+- use phys_addr_t instead of u64 as requested by Jan Beulich
+- compare pfns instead physical addresses as suggested by Jan Beulich
 
-On Friday 09 January 2015 11:29 PM, Oleg Nesterov wrote:
-> On 12/31, Pratyush Anand wrote:
->>
->> +int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
->> +		unsigned long addr)
->> +{
->> +	probe_opcode_t insn;
->> +
->> +	insn = *(probe_opcode_t *)(&auprobe->insn[0]);
->> +
->> +	switch (arm_probe_decode_insn(insn, &auprobe->ainsn)) {
->> +	case INSN_REJECTED:
->> +		return -EINVAL;
->> +
->> +	case INSN_GOOD_NO_SLOT:
->> +		auprobe->simulate = true;
->> +		if (auprobe->ainsn.prepare)
->> +			auprobe->ainsn.prepare(insn, &auprobe->ainsn);
->> +		break;
->> +
->> +	case INSN_GOOD:
->> +	default:
->> +		break;
->> +	}
->> +
->> +	return 0;
->> +}
->
-> forgot to mention... shouldn't it also check IS_ALIGNED(addr, AARCH64_INSN_SIZE) ?
->
-> I do not know if unaligned insn address is valid on arm64 or not, but please
+Juergen Gross (4):
+  xen: correct error for building p2m list on 32 bits
+  xen: correct race in alloc_p2m_pmd()
+  xen: use correct type for physical addresses
+  xen: check for zero sized area when invalidating memory
 
-AARCH64 instructions are always of fixed lenght ie 4 bytes. I do not see 
-possibility of addr being unaligned. Please let me know, if I am missing 
-something.
+ arch/x86/xen/p2m.c   | 11 ++++-------
+ arch/x86/xen/setup.c |  6 ++++--
+ 2 files changed, 8 insertions(+), 9 deletions(-)
 
-> note that at least it should not cross the page boundary, set_swbp() needs to
-> write AARCH64_INSN_SIZE == UPROBE_SWBP_INSN bytes and it assumes that this
-> should fit the single page.
+-- 
+2.1.2
 
-So, again I do not see the possibility of crossing of page boundary for 
-any instruction address.
-
-~Pratyush
