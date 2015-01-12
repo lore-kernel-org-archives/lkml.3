@@ -1,102 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753377AbbALOEE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 09:04:04 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:22412 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753137AbbALOEB (ORCPT
+	id S1753137AbbALOFQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 09:05:16 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:34426 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751879AbbALOFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 09:04:01 -0500
-Message-ID: <54B3D450.7050405@atmel.com>
-Date: Mon, 12 Jan 2015 15:04:00 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 12 Jan 2015 09:05:13 -0500
+Date: Mon, 12 Jan 2015 14:04:56 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Jean-Francois Moine <moinejf@free.fr>,
+        Andrew Jackson <Andrew.Jackson@arm.com>, Jyri Sarha <jsarha@ti.com>,
+        Mark Brown <broonie@kernel.org>, Dave Airlie <airlied@gmail.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v9 1/4] drm/i2c: tda998x: Add DT support for audio
+Message-ID: <20150112140456.GI12302@n2100.arm.linux.org.uk>
+References: <20150109114529.GH12302@n2100.arm.linux.org.uk>
+ <20150109135401.5b270d46@armhf>
+ <20150109130725.GN12302@n2100.arm.linux.org.uk>
+ <54AFDE8D.3000504@arm.com>
+ <20150109145741.GP12302@n2100.arm.linux.org.uk>
+ <20150109183857.53d701a4@armhf>
+ <20150109200127.GD12302@n2100.arm.linux.org.uk>
+ <1421054728.3081.28.camel@pengutronix.de>
+ <20150112122527.GF12302@n2100.arm.linux.org.uk>
+ <1421071197.3081.44.camel@pengutronix.de>
 MIME-Version: 1.0
-To: <daniel.lezcano@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        <sylvain.rochet@finsecur.com>
-Subject: Re: [PATCH] clocksource: timer-atmel-pit: don't suspend/resume if
- unused
-References: <1418911523-28492-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1418911523-28492-1-git-send-email-nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421071197.3081.44.camel@pengutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 18/12/2014 15:05, Nicolas Ferre a écrit :
-> From: Sylvain Rochet <sylvain.rochet@finsecur.com>
+On Mon, Jan 12, 2015 at 02:59:57PM +0100, Philipp Zabel wrote:
+> Am Montag, den 12.01.2015, 12:25 +0000 schrieb Russell King - ARM Linux:
+> > It's not quite that simple, because the SPDIF AP pins are multiplexed
+> > with the I2S pins - and there is variation between chip models and
+> > packages.
+> >
+> > So, it's probably best if port@0 is the video port, and then port@1..n
+> > can describe the audio inputs, including a property which specifies
+> > whether they are I2S or SPDIF, and the value to be programmed into
+> > the AP enable register (which is a bit field of the AP pins which
+> > should be unmasked.)  I guess we can re-use the reg= property for that
+> > value, since video will always be zero.
 > 
-> Waiting for PIT to stop counting takes a long time:
->   1/(Master clock/prescaler/PIVR)
-> = 1/(133 MHz     /16       /2^20)
-> = 126 ms
-> 
-> Up to 126 ms if master clock is set to 133 MHz, skipping suspend/resume
-> of the unused PIT device reduce (suspend time + resume time) from ~140 ms
-> to ~17 ms.
-> 
-> Signed-off-by: Sylvain Rochet <sylvain.rochet@finsecur.com>
-> [nicolas.ferre@atmel.com: move to newer clocksource driver]
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> ---
-> Hi Sylvain,
-> 
-> I re-worked (and "Acked") your patch so it can be applied on the newer Mainline
-> kernels. Beware, I changed the "subject line" as well. The PIT driver moved
-> recently (3.18).
-> 
-> Daniel,
-> Can you take this patch in your tree?
+> Note that of_graph_parse_endpoint interprets the port node's reg
+> property as port id. And the unit address part of the node name should
+> match the first address in the reg property.
 
-Hi Daniel,
+So that's not going to work very well... because the AP register is a
+bitmask.
 
-Anything prevents this patch from being merged (aka ping ;-))?
-
-Bye,
-
-
-> Thanks, bye.
->   Nicolas.
-> 
->  drivers/clocksource/timer-atmel-pit.c | 8 ++++++++
->  1 file changed, 8 insertions(+)
-> 
-> diff --git a/drivers/clocksource/timer-atmel-pit.c b/drivers/clocksource/timer-atmel-pit.c
-> index b5b4d4585c9a..5408bc7c68d8 100644
-> --- a/drivers/clocksource/timer-atmel-pit.c
-> +++ b/drivers/clocksource/timer-atmel-pit.c
-> @@ -123,6 +123,10 @@ static void at91sam926x_pit_suspend(struct clock_event_device *cedev)
->  {
->  	struct pit_data *data = clkevt_to_pit_data(cedev);
->  
-> +	/* Don't suspend PIT if unused */
-> +	if (cedev->mode == CLOCK_EVT_MODE_UNUSED)
-> +		return;
-> +
->  	/* Disable timer */
->  	pit_write(data->base, AT91_PIT_MR, 0);
->  }
-> @@ -145,6 +149,10 @@ static void at91sam926x_pit_resume(struct clock_event_device *cedev)
->  {
->  	struct pit_data *data = clkevt_to_pit_data(cedev);
->  
-> +	/* Don't resume PIT if unused */
-> +	if (cedev->mode == CLOCK_EVT_MODE_UNUSED)
-> +		return;
-> +
->  	at91sam926x_pit_reset(data);
->  }
->  
-> 
-
+I guess we could specify a node unit and reg, which the code otherwise
+ignores, and specify a philipps,ap-mask = property for the audio ports
+instead.
 
 -- 
-Nicolas Ferre
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
