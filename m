@@ -1,511 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880AbbALLrD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 06:47:03 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:52340 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364AbbALLoi (ORCPT
+	id S1753259AbbALLvU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 06:51:20 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:55546 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131AbbALLvQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 06:44:38 -0500
+	Mon, 12 Jan 2015 06:51:16 -0500
 From: Dongsu Park <dongsu.park@profitbricks.com>
 To: linux-kernel@vger.kernel.org
 Cc: Christoph Hellwig <hch@infradead.org>, Kent Overstreet <kmo@daterainc.com>,
-        Jens Axboe <axboe@kernel.dk>, Doug Gilbert <dgilbert@interlog.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Dongsu Park <dongsu.park@profitbricks.com>
-Subject: [PATCH v2 1/7] block: replace sg_iovec with iov_iter
-Date: Mon, 12 Jan 2015 12:43:58 +0100
-Message-Id: <19cceed4e701430bfb307301a38cdf8d40fbfcac.1421052656.git.dongsu.park@profitbricks.com>
+        Jens Axboe <axboe@kernel.dk>,
+        Dongsu Park <dongsu.park@profitbricks.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH v2 2/7] block: rewrite __bio_copy_iov()
+Date: Mon, 12 Jan 2015 12:43:59 +0100
+Message-Id: <0bdbbd2ef9d449be2d00e01ca7dc7f101b6cfb88.1421052656.git.dongsu.park@profitbricks.com>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <cover.1421052656.git.dongsu.park@profitbricks.com>
+In-Reply-To: <19cceed4e701430bfb307301a38cdf8d40fbfcac.1421052656.git.dongsu.park@profitbricks.com>
 References: <cover.1421052656.git.dongsu.park@profitbricks.com>
+ <19cceed4e701430bfb307301a38cdf8d40fbfcac.1421052656.git.dongsu.park@profitbricks.com>
 In-Reply-To: <cover.1421052656.git.dongsu.park@profitbricks.com>
 References: <cover.1421052656.git.dongsu.park@profitbricks.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kent Overstreet <kmo@daterainc.com>
-
-Make use of a new interface provided by iov_iter, backed by
-scatter-gather list of iovec, instead of the old interface based on
-sg_iovec. Also use iov_iter_advance() instead of manual iteration.
+Rewrite __bio_copy_iov() so that it can call either _read() or _write()
+variant, which is determined by direction to_iov, given as either READ
+or WRITE. Moreover, make __bio_copy_iov() take its parameter iov_iter
+by value, to avoid awkward situations like ref-/dereferencing pointer
+and value repeatedly.
 
 This commit should contain only literal replacements, without
 functional changes.
 
-Cc: Christoph Hellwig <hch@infradead.org>
+Suggested-by: Christoph Hellwig <hch@infradead.org>
+Cc: Kent Overstreet <kmo@daterainc.com>
 Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Doug Gilbert <dgilbert@interlog.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-[dpark: add more description in commit message]
+Cc: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Dongsu Park <dongsu.park@profitbricks.com>
 ---
- block/bio.c            | 114 +++++++++++++++++++++++++------------------------
- block/blk-map.c        |  27 ++++++------
- block/scsi_ioctl.c     |  19 +++------
- drivers/scsi/sg.c      |  15 +++----
- include/linux/bio.h    |   8 ++--
- include/linux/blkdev.h |   4 +-
- 6 files changed, 90 insertions(+), 97 deletions(-)
+ block/bio.c | 113 ++++++++++++++++++++++++++++++++++++++++--------------------
+ 1 file changed, 75 insertions(+), 38 deletions(-)
 
 diff --git a/block/bio.c b/block/bio.c
-index 471d738..8267676 100644
+index 8267676..7b1aed3 100644
 --- a/block/bio.c
 +++ b/block/bio.c
-@@ -1022,18 +1022,17 @@ void bio_copy_data(struct bio *dst, struct bio *src)
- EXPORT_SYMBOL(bio_copy_data);
- 
- struct bio_map_data {
--	int nr_sgvecs;
- 	int is_our_pages;
--	struct sg_iovec sgvecs[];
-+	struct iov_iter iter;
-+	struct iovec sgvecs[];
- };
- 
- static void bio_set_map_data(struct bio_map_data *bmd, struct bio *bio,
--			     const struct sg_iovec *iov, int iov_count,
--			     int is_our_pages)
-+			     const struct iov_iter *iter, int is_our_pages)
- {
--	memcpy(bmd->sgvecs, iov, sizeof(struct sg_iovec) * iov_count);
--	bmd->nr_sgvecs = iov_count;
- 	bmd->is_our_pages = is_our_pages;
-+	bmd->iter = *iter;
-+	memcpy(bmd->sgvecs, iter->iov, sizeof(struct iovec) * iter->nr_segs);
- 	bio->bi_private = bmd;
- }
- 
-@@ -1047,33 +1046,30 @@ static struct bio_map_data *bio_alloc_map_data(unsigned int iov_count,
+@@ -1046,46 +1046,84 @@ static struct bio_map_data *bio_alloc_map_data(unsigned int iov_count,
  		       sizeof(struct sg_iovec) * iov_count, gfp_mask);
  }
  
--static int __bio_copy_iov(struct bio *bio, const struct sg_iovec *iov, int iov_count,
-+static int __bio_copy_iov(struct bio *bio, const struct iov_iter *iter,
- 			  int to_user, int from_user, int do_free_page)
+-static int __bio_copy_iov(struct bio *bio, const struct iov_iter *iter,
+-			  int to_user, int from_user, int do_free_page)
++/**
++ * __bio_copy_iov_read - copy all pages from iov_iter to bio
++ * @bio: The &struct bio which describes the I/O as destination
++ * @iter: iov_iter as source
++ *
++ * Copy all pages from iov_iter to bio.
++ * Returns 0 on success, or error on failure.
++ */
++static int __bio_copy_iov_read(struct bio *bio, struct iov_iter iter)
  {
- 	int ret = 0, i;
+-	int ret = 0, i;
++	int i;
  	struct bio_vec *bvec;
--	int iov_idx = 0;
--	unsigned int iov_off = 0;
-+	struct iov_iter iov_iter = *iter;
+-	struct iov_iter iov_iter = *iter;
  
  	bio_for_each_segment_all(bvec, bio, i) {
- 		char *bv_addr = page_address(bvec->bv_page);
- 		unsigned int bv_len = bvec->bv_len;
- 
--		while (bv_len && iov_idx < iov_count) {
--			unsigned int bytes;
--			char __user *iov_addr;
+-		char *bv_addr = page_address(bvec->bv_page);
+-		unsigned int bv_len = bvec->bv_len;
 -
--			bytes = min_t(unsigned int,
--				      iov[iov_idx].iov_len - iov_off, bv_len);
--			iov_addr = iov[iov_idx].iov_base + iov_off;
-+		while (bv_len && iov_iter.count) {
-+			struct iovec iov = iov_iter_iovec(&iov_iter);
-+			unsigned int bytes = min_t(unsigned int, bv_len,
-+						   iov.iov_len);
- 
- 			if (!ret) {
- 				if (to_user)
--					ret = copy_to_user(iov_addr, bv_addr,
--							   bytes);
-+					ret = copy_to_user(iov.iov_base,
-+							   bv_addr, bytes);
- 
- 				if (from_user)
--					ret = copy_from_user(bv_addr, iov_addr,
-+					ret = copy_from_user(bv_addr,
-+							     iov.iov_base,
- 							     bytes);
- 
- 				if (ret)
-@@ -1082,13 +1078,7 @@ static int __bio_copy_iov(struct bio *bio, const struct sg_iovec *iov, int iov_c
- 
- 			bv_len -= bytes;
- 			bv_addr += bytes;
--			iov_addr += bytes;
--			iov_off += bytes;
+-		while (bv_len && iov_iter.count) {
+-			struct iovec iov = iov_iter_iovec(&iov_iter);
+-			unsigned int bytes = min_t(unsigned int, bv_len,
+-						   iov.iov_len);
 -
--			if (iov[iov_idx].iov_len == iov_off) {
--				iov_idx++;
--				iov_off = 0;
+-			if (!ret) {
+-				if (to_user)
+-					ret = copy_to_user(iov.iov_base,
+-							   bv_addr, bytes);
+-
+-				if (from_user)
+-					ret = copy_from_user(bv_addr,
+-							     iov.iov_base,
+-							     bytes);
+-
+-				if (ret)
+-					ret = -EFAULT;
 -			}
-+			iov_iter_advance(&iov_iter, bytes);
- 		}
++		ssize_t ret;
  
- 		if (do_free_page)
-@@ -1117,7 +1107,7 @@ int bio_uncopy_user(struct bio *bio)
+-			bv_len -= bytes;
+-			bv_addr += bytes;
+-			iov_iter_advance(&iov_iter, bytes);
+-		}
++		ret = copy_page_from_iter(bvec->bv_page,
++					  bvec->bv_offset,
++					  bvec->bv_len,
++					  &iter);
+ 
+-		if (do_free_page)
+-			__free_page(bvec->bv_page);
++		if (!iov_iter_count(&iter))
++			break;
++
++		if (ret < bvec->bv_len)
++			return -EFAULT;
+ 	}
+ 
+-	return ret;
++	return 0;
++}
++
++/**
++ * __bio_copy_iov_write - copy all pages from bio to iov_iter
++ * @bio: The &struct bio which describes the I/O as source
++ * @iter: iov_iter as destination
++ *
++ * Copy all pages from bio to iov_iter.
++ * Returns 0 on success, or error on failure.
++ */
++static int __bio_copy_iov_write(struct bio *bio, struct iov_iter iter)
++{
++	int i;
++	struct bio_vec *bvec;
++
++	bio_for_each_segment_all(bvec, bio, i) {
++		ssize_t ret;
++
++		ret = copy_page_to_iter(bvec->bv_page,
++					bvec->bv_offset,
++					bvec->bv_len,
++					&iter);
++
++		if (!iov_iter_count(&iter))
++			break;
++
++		if (ret < bvec->bv_len)
++			return -EFAULT;
++	}
++
++	return 0;
++}
++
++/**
++ * __bio_copy_iov - copy all pages between bio and iov_iter
++ * @bio: The &struct bio which describes the I/O
++ * @iter: iov_iter either as source or destination
++ * @to_iov: whether to %READ (0) or %WRITE (1)
++ *
++ * Simple wrapper around __bio_copy_iov_{write,read}().
++ * Returns 0 on success, or the error returned as-is on failure.
++ */
++static inline int __bio_copy_iov(struct bio *bio, struct iov_iter iter,
++				 int to_iov)
++{
++	if (to_iov == WRITE)
++		return __bio_copy_iov_write(bio, iter);
++	else
++		return __bio_copy_iov_read(bio, iter);
+ }
+ 
+ /**
+@@ -1106,11 +1144,10 @@ int bio_uncopy_user(struct bio *bio)
+ 		 * if we're in a workqueue, the request is orphaned, so
  		 * don't copy into a random user address space, just free.
  		 */
- 		if (current->mm)
--			ret = __bio_copy_iov(bio, bmd->sgvecs, bmd->nr_sgvecs,
-+			ret = __bio_copy_iov(bio, &bmd->iter,
- 					     bio_data_dir(bio) == READ,
- 					     0, bmd->is_our_pages);
- 		else if (bmd->is_our_pages)
-@@ -1145,7 +1135,7 @@ EXPORT_SYMBOL(bio_uncopy_user);
-  */
- struct bio *bio_copy_user_iov(struct request_queue *q,
- 			      struct rq_map_data *map_data,
--			      const struct sg_iovec *iov, int iov_count,
-+			      const struct iov_iter *iter,
- 			      int write_to_vm, gfp_t gfp_mask)
- {
- 	struct bio_map_data *bmd;
-@@ -1154,16 +1144,17 @@ struct bio *bio_copy_user_iov(struct request_queue *q,
- 	struct bio *bio;
- 	int i, ret;
- 	int nr_pages = 0;
--	unsigned int len = 0;
-+	unsigned int len;
- 	unsigned int offset = map_data ? map_data->offset & ~PAGE_MASK : 0;
- 
--	for (i = 0; i < iov_count; i++) {
-+	for (i = 0; i < iter->nr_segs; i++) {
- 		unsigned long uaddr;
- 		unsigned long end;
- 		unsigned long start;
- 
--		uaddr = (unsigned long)iov[i].iov_base;
--		end = (uaddr + iov[i].iov_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+		uaddr = (unsigned long) iter->iov[i].iov_base;
-+		end = (uaddr + iter->iov[i].iov_len + PAGE_SIZE - 1)
-+			>> PAGE_SHIFT;
- 		start = uaddr >> PAGE_SHIFT;
- 
- 		/*
-@@ -1173,13 +1164,12 @@ struct bio *bio_copy_user_iov(struct request_queue *q,
- 			return ERR_PTR(-EINVAL);
- 
- 		nr_pages += end - start;
--		len += iov[i].iov_len;
- 	}
- 
- 	if (offset)
- 		nr_pages++;
- 
--	bmd = bio_alloc_map_data(iov_count, gfp_mask);
-+	bmd = bio_alloc_map_data(iter->nr_segs, gfp_mask);
- 	if (!bmd)
- 		return ERR_PTR(-ENOMEM);
- 
-@@ -1196,7 +1186,12 @@ struct bio *bio_copy_user_iov(struct request_queue *q,
- 	if (map_data) {
- 		nr_pages = 1 << map_data->page_order;
- 		i = map_data->offset / PAGE_SIZE;
-+	} else {
-+		i = 0;
- 	}
+-		if (current->mm)
+-			ret = __bio_copy_iov(bio, &bmd->iter,
+-					     bio_data_dir(bio) == READ,
+-					     0, bmd->is_our_pages);
+-		else if (bmd->is_our_pages)
++		if (current->mm && bio_data_dir(bio) == READ)
++			ret = __bio_copy_iov(bio, bmd->iter, WRITE);
 +
-+	len = iter->count;
-+
- 	while (len) {
- 		unsigned int bytes = PAGE_SIZE;
- 
-@@ -1238,12 +1233,12 @@ struct bio *bio_copy_user_iov(struct request_queue *q,
++		if (bmd->is_our_pages)
+ 			bio_for_each_segment_all(bvec, bio, i)
+ 				__free_page(bvec->bv_page);
+ 	}
+@@ -1233,7 +1270,7 @@ struct bio *bio_copy_user_iov(struct request_queue *q,
  	 */
  	if ((!write_to_vm && (!map_data || !map_data->null_mapped)) ||
  	    (map_data && map_data->from_user)) {
--		ret = __bio_copy_iov(bio, iov, iov_count, 0, 1, 0);
-+		ret = __bio_copy_iov(bio, iter, 0, 1, 0);
+-		ret = __bio_copy_iov(bio, iter, 0, 1, 0);
++		ret = __bio_copy_iov(bio, *iter, READ);
  		if (ret)
  			goto cleanup;
  	}
- 
--	bio_set_map_data(bmd, bio, iov, iov_count, map_data ? 0 : 1);
-+	bio_set_map_data(bmd, bio, iter, map_data ? 0 : 1);
- 	return bio;
- cleanup:
- 	if (!map_data)
-@@ -1273,30 +1268,35 @@ struct bio *bio_copy_user(struct request_queue *q, struct rq_map_data *map_data,
- 			  unsigned long uaddr, unsigned int len,
- 			  int write_to_vm, gfp_t gfp_mask)
- {
--	struct sg_iovec iov;
-+	struct iovec iov;
-+	struct iov_iter i;
- 
--	iov.iov_base = (void __user *)uaddr;
-+	iov.iov_base = (void __user *) uaddr;
- 	iov.iov_len = len;
- 
--	return bio_copy_user_iov(q, map_data, &iov, 1, write_to_vm, gfp_mask);
-+	iov_iter_init(&i, write_to_vm ? WRITE : READ, &iov, 1, len);
-+
-+	return bio_copy_user_iov(q, map_data, &i, write_to_vm, gfp_mask);
- }
- EXPORT_SYMBOL(bio_copy_user);
- 
- static struct bio *__bio_map_user_iov(struct request_queue *q,
- 				      struct block_device *bdev,
--				      const struct sg_iovec *iov, int iov_count,
-+				      const struct iov_iter *iter,
- 				      int write_to_vm, gfp_t gfp_mask)
- {
--	int i, j;
-+	int j;
- 	int nr_pages = 0;
- 	struct page **pages;
- 	struct bio *bio;
- 	int cur_page = 0;
- 	int ret, offset;
-+	struct iov_iter i;
-+	struct iovec iov;
- 
--	for (i = 0; i < iov_count; i++) {
--		unsigned long uaddr = (unsigned long)iov[i].iov_base;
--		unsigned long len = iov[i].iov_len;
-+	iov_for_each(iov, i, *iter) {
-+		unsigned long uaddr = (unsigned long) iov.iov_base;
-+		unsigned long len = iov.iov_len;
- 		unsigned long end = (uaddr + len + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 		unsigned long start = uaddr >> PAGE_SHIFT;
- 
-@@ -1326,9 +1326,9 @@ static struct bio *__bio_map_user_iov(struct request_queue *q,
- 	if (!pages)
- 		goto out;
- 
--	for (i = 0; i < iov_count; i++) {
--		unsigned long uaddr = (unsigned long)iov[i].iov_base;
--		unsigned long len = iov[i].iov_len;
-+	iov_for_each(iov, i, *iter) {
-+		unsigned long uaddr = (unsigned long) iov.iov_base;
-+		unsigned long len = iov.iov_len;
- 		unsigned long end = (uaddr + len + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 		unsigned long start = uaddr >> PAGE_SHIFT;
- 		const int local_nr_pages = end - start;
-@@ -1383,10 +1383,10 @@ static struct bio *__bio_map_user_iov(struct request_queue *q,
- 	return bio;
- 
-  out_unmap:
--	for (i = 0; i < nr_pages; i++) {
--		if(!pages[i])
-+	for (j = 0; j < nr_pages; j++) {
-+		if (!pages[j])
- 			break;
--		page_cache_release(pages[i]);
-+		page_cache_release(pages[j]);
- 	}
-  out:
- 	kfree(pages);
-@@ -1410,12 +1410,15 @@ struct bio *bio_map_user(struct request_queue *q, struct block_device *bdev,
- 			 unsigned long uaddr, unsigned int len, int write_to_vm,
- 			 gfp_t gfp_mask)
- {
--	struct sg_iovec iov;
-+	struct iovec iov;
-+	struct iov_iter i;
- 
--	iov.iov_base = (void __user *)uaddr;
-+	iov.iov_base = (void __user *) uaddr;
- 	iov.iov_len = len;
- 
--	return bio_map_user_iov(q, bdev, &iov, 1, write_to_vm, gfp_mask);
-+	iov_iter_init(&i, write_to_vm ? WRITE : READ, &iov, 1, len);
-+
-+	return bio_map_user_iov(q, bdev, &i, write_to_vm, gfp_mask);
- }
- EXPORT_SYMBOL(bio_map_user);
- 
-@@ -1432,13 +1435,12 @@ EXPORT_SYMBOL(bio_map_user);
-  *	device. Returns an error pointer in case of error.
-  */
- struct bio *bio_map_user_iov(struct request_queue *q, struct block_device *bdev,
--			     const struct sg_iovec *iov, int iov_count,
-+			     const struct iov_iter *iter,
- 			     int write_to_vm, gfp_t gfp_mask)
- {
- 	struct bio *bio;
- 
--	bio = __bio_map_user_iov(q, bdev, iov, iov_count, write_to_vm,
--				 gfp_mask);
-+	bio = __bio_map_user_iov(q, bdev, iter, write_to_vm, gfp_mask);
- 	if (IS_ERR(bio))
- 		return bio;
- 
-diff --git a/block/blk-map.c b/block/blk-map.c
-index f890d43..496af28 100644
---- a/block/blk-map.c
-+++ b/block/blk-map.c
-@@ -5,7 +5,7 @@
- #include <linux/module.h>
- #include <linux/bio.h>
- #include <linux/blkdev.h>
--#include <scsi/sg.h>		/* for struct sg_iovec */
-+#include <linux/uio.h>
- 
- #include "blk.h"
- 
-@@ -187,20 +187,22 @@ EXPORT_SYMBOL(blk_rq_map_user);
-  *    unmapping.
-  */
- int blk_rq_map_user_iov(struct request_queue *q, struct request *rq,
--			struct rq_map_data *map_data, const struct sg_iovec *iov,
--			int iov_count, unsigned int len, gfp_t gfp_mask)
-+			struct rq_map_data *map_data,
-+			const struct iov_iter *iter, gfp_t gfp_mask)
- {
- 	struct bio *bio;
--	int i, read = rq_data_dir(rq) == READ;
-+	int read = rq_data_dir(rq) == READ;
- 	int unaligned = 0;
-+	struct iov_iter i;
-+	struct iovec iov;
- 
--	if (!iov || iov_count <= 0)
-+	if (!iter || !iter->count)
- 		return -EINVAL;
- 
--	for (i = 0; i < iov_count; i++) {
--		unsigned long uaddr = (unsigned long)iov[i].iov_base;
-+	iov_for_each(iov, i, *iter) {
-+		unsigned long uaddr = (unsigned long) iov.iov_base;
- 
--		if (!iov[i].iov_len)
-+		if (!iov.iov_len)
- 			return -EINVAL;
- 
- 		/*
-@@ -210,16 +212,15 @@ int blk_rq_map_user_iov(struct request_queue *q, struct request *rq,
- 			unaligned = 1;
- 	}
- 
--	if (unaligned || (q->dma_pad_mask & len) || map_data)
--		bio = bio_copy_user_iov(q, map_data, iov, iov_count, read,
--					gfp_mask);
-+	if (unaligned || (q->dma_pad_mask & iter->count) || map_data)
-+		bio = bio_copy_user_iov(q, map_data, iter, read, gfp_mask);
- 	else
--		bio = bio_map_user_iov(q, NULL, iov, iov_count, read, gfp_mask);
-+		bio = bio_map_user_iov(q, NULL, iter, read, gfp_mask);
- 
- 	if (IS_ERR(bio))
- 		return PTR_ERR(bio);
- 
--	if (bio->bi_iter.bi_size != len) {
-+	if (bio->bi_iter.bi_size != iter->count) {
- 		/*
- 		 * Grab an extra reference to this bio, as bio_unmap_user()
- 		 * expects to be able to drop it twice as it happens on the
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index 28163fa..8c6652b 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -332,7 +332,7 @@ static int sg_io(struct request_queue *q, struct gendisk *bd_disk,
- 
- 	ret = 0;
- 	if (hdr->iovec_count) {
--		size_t iov_data_len;
-+		struct iov_iter i;
- 		struct iovec *iov = NULL;
- 
- 		ret = rw_copy_check_uvector(-1, hdr->dxferp, hdr->iovec_count,
-@@ -342,20 +342,13 @@ static int sg_io(struct request_queue *q, struct gendisk *bd_disk,
- 			goto out_free_cdb;
- 		}
- 
--		iov_data_len = ret;
--		ret = 0;
--
- 		/* SG_IO howto says that the shorter of the two wins */
--		if (hdr->dxfer_len < iov_data_len) {
--			hdr->iovec_count = iov_shorten(iov,
--						       hdr->iovec_count,
--						       hdr->dxfer_len);
--			iov_data_len = hdr->dxfer_len;
--		}
-+		iov_iter_init(&i,
-+			      rq_data_dir(rq) == READ ? WRITE : READ,
-+			      iov, hdr->iovec_count,
-+			      min_t(unsigned, ret, hdr->dxfer_len));
- 
--		ret = blk_rq_map_user_iov(q, rq, NULL, (struct sg_iovec *) iov,
--					  hdr->iovec_count,
--					  iov_data_len, GFP_KERNEL);
-+		ret = blk_rq_map_user_iov(q, rq, NULL, &i, GFP_KERNEL);
- 		kfree(iov);
- 	} else if (hdr->dxfer_len)
- 		ret = blk_rq_map_user(q, rq, NULL, hdr->dxferp, hdr->dxfer_len,
-diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
-index b14f64c..3ce5cad 100644
---- a/drivers/scsi/sg.c
-+++ b/drivers/scsi/sg.c
-@@ -1734,22 +1734,19 @@ sg_start_req(Sg_request *srp, unsigned char *cmd)
- 	}
- 
- 	if (iov_count) {
--		int len, size = sizeof(struct sg_iovec) * iov_count;
-+		int size = sizeof(struct sg_iovec) * iov_count;
- 		struct iovec *iov;
-+		struct iov_iter i;
- 
- 		iov = memdup_user(hp->dxferp, size);
- 		if (IS_ERR(iov))
- 			return PTR_ERR(iov);
- 
--		len = iov_length(iov, iov_count);
--		if (hp->dxfer_len < len) {
--			iov_count = iov_shorten(iov, iov_count, hp->dxfer_len);
--			len = hp->dxfer_len;
--		}
-+		iov_iter_init(&i, rw, iov, iov_count,
-+			      min_t(size_t, hp->dxfer_len,
-+				    iov_length(iov, iov_count)));
- 
--		res = blk_rq_map_user_iov(q, rq, md, (struct sg_iovec *)iov,
--					  iov_count,
--					  len, GFP_ATOMIC);
-+		res = blk_rq_map_user_iov(q, rq, md, &i, GFP_ATOMIC);
- 		kfree(iov);
- 	} else
- 		res = blk_rq_map_user(q, rq, md, hp->dxferp,
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index efead0b..a69f7b1 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -430,11 +430,11 @@ extern int bio_add_pc_page(struct request_queue *, struct bio *, struct page *,
- extern int bio_get_nr_vecs(struct block_device *);
- extern struct bio *bio_map_user(struct request_queue *, struct block_device *,
- 				unsigned long, unsigned int, int, gfp_t);
--struct sg_iovec;
-+struct iov_iter;
- struct rq_map_data;
- extern struct bio *bio_map_user_iov(struct request_queue *,
- 				    struct block_device *,
--				    const struct sg_iovec *, int, int, gfp_t);
-+				    const struct iov_iter *, int, gfp_t);
- extern void bio_unmap_user(struct bio *);
- extern struct bio *bio_map_kern(struct request_queue *, void *, unsigned int,
- 				gfp_t);
-@@ -466,8 +466,8 @@ extern struct bio *bio_copy_user(struct request_queue *, struct rq_map_data *,
- 				 unsigned long, unsigned int, int, gfp_t);
- extern struct bio *bio_copy_user_iov(struct request_queue *,
- 				     struct rq_map_data *,
--				     const struct sg_iovec *,
--				     int, int, gfp_t);
-+				     const struct iov_iter *,
-+				     int, gfp_t);
- extern int bio_uncopy_user(struct bio *);
- void zero_fill_bio(struct bio *bio);
- extern struct bio_vec *bvec_alloc(gfp_t, int, unsigned long *, mempool_t *);
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 92f4b4b..9621b73 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -850,8 +850,8 @@ extern int blk_rq_map_user(struct request_queue *, struct request *,
- extern int blk_rq_unmap_user(struct bio *);
- extern int blk_rq_map_kern(struct request_queue *, struct request *, void *, unsigned int, gfp_t);
- extern int blk_rq_map_user_iov(struct request_queue *, struct request *,
--			       struct rq_map_data *, const struct sg_iovec *,
--			       int, unsigned int, gfp_t);
-+			       struct rq_map_data *, const struct iov_iter *,
-+			       gfp_t);
- extern int blk_execute_rq(struct request_queue *, struct gendisk *,
- 			  struct request *, int);
- extern void blk_execute_rq_nowait(struct request_queue *, struct gendisk *,
 -- 
 2.1.0
 
