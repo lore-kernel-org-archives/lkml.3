@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751332AbbALAXV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jan 2015 19:23:21 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60454 "EHLO
+	id S1751623AbbALA0w (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jan 2015 19:26:52 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60475 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750783AbbALAXR (ORCPT
+	by vger.kernel.org with ESMTP id S1750783AbbALA0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jan 2015 19:23:17 -0500
-Message-ID: <1421022180.19708.37.camel@decadent.org.uk>
-Subject: [stable] ARM: 8108/1: mm: Introduce {pte,pmd}_isset and
- {pte,pmd}_isclear
+	Sun, 11 Jan 2015 19:26:49 -0500
+Message-ID: <1421022401.19708.40.camel@decadent.org.uk>
+Subject: Re: [PATCH 3.16.y-ckt 072/168] ARM: 8109/1: mm: Modify pte_write
+ and pmd_write logic for LPAE
 From: Ben Hutchings <ben@decadent.org.uk>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Zefan Li <lizefan@huawei.com>, Jiri Slaby <jslaby@suse.cz>
@@ -18,12 +18,12 @@ Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         Russell King <rmk+kernel@arm.linux.org.uk>,
         Hou Pengyang <houpengyang@huawei.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Date: Mon, 12 Jan 2015 00:23:00 +0000
-In-Reply-To: <1418653622-21105-72-git-send-email-luis.henriques@canonical.com>
+Date: Mon, 12 Jan 2015 00:26:41 +0000
+In-Reply-To: <1418653622-21105-73-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
-	 <1418653622-21105-72-git-send-email-luis.henriques@canonical.com>
+	 <1418653622-21105-73-git-send-email-luis.henriques@canonical.com>
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-Q/bkr3aZ086FFlWBfieW"
+	protocol="application/pgp-signature"; boundary="=-SrnQ/zKgVOeGcQkYhJTn"
 X-Mailer: Evolution 3.12.9-1+b1 
 Mime-Version: 1.0
 X-SA-Exim-Connect-IP: 192.168.4.249
@@ -34,7 +34,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-Q/bkr3aZ086FFlWBfieW
+--=-SrnQ/zKgVOeGcQkYhJTn
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
@@ -46,24 +46,32 @@ et me know.
 >=20
 > From: Steven Capper <steve.capper@linaro.org>
 >=20
-> commit f2950706871c4b6e8c0f0d7c3f62d35930b8de63 upstream.
+> commit ded9477984690d026e46dd75e8157392cea3f13f upstream.
 >=20
-> Long descriptors on ARM are 64 bits, and some pte functions such as
-> pte_dirty return a bitwise-and of a flag with the pte value. If the
-> flag to be tested resides in the upper 32 bits of the pte, then we run
-> into the danger of the result being dropped if downcast.
+> For LPAE, we have the following means for encoding writable or dirty
+> ptes:
+>                               L_PTE_DIRTY       L_PTE_RDONLY
+>     !pte_dirty && !pte_write        0               1
+>     !pte_dirty && pte_write         0               1
+>     pte_dirty && !pte_write         1               1
+>     pte_dirty && pte_write          1               0
 >=20
-> For example:
-> 	gather_stats(page, md, pte_dirty(*pte), 1);
-> where pte_dirty(*pte) is downcast to an int.
+> So we can't distinguish between writeable clean ptes and read only
+> ptes. This can cause problems with ptes being incorrectly flagged as
+> read only when they are writeable but not dirty.
 >=20
-> This patch introduces a new macro pte_isset which performs the bitwise
-> and, then performs a double logical invert (where needed) to ensure
-> predictable downcasting. The logical inverse pte_isclear is also
-> introduced.
+> This patch renumbers L_PTE_RDONLY from AP[2] to a software bit #58,
+> and adds additional logic to set AP[2] whenever the pte is read only
+> or not dirty. That way we can distinguish between clean writeable ptes
+> and read only ptes.
 >=20
-> Equivalent pmd functions for Transparent HugePages have also been
-> added.
+> HugeTLB pages will use this new logic automatically.
+>=20
+> We need to add some logic to Transparent HugePages to ensure that they
+> correctly interpret the revised pgprot permissions (L_PTE_RDONLY has
+> moved and no longer matches PMD_SECT_AP2). In the process of revising
+> THP, the names of the PMD software bits have been prefixed with L_ to
+> make them easier to distinguish from their hardware bit counterparts.
 >=20
 > Signed-off-by: Steve Capper <steve.capper@linaro.org>
 > Reviewed-by: Will Deacon <will.deacon@arm.com>
@@ -72,8 +80,8 @@ et me know.
 > Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 [...]
 
-This has only been applied to 3.16 so far, but it appears to be suitable
-for every branch from 3.4 onwards as ARM LPAE was introduced in 3.3.
+This one also looks suitable for 3.4 onwards, except that THP was not
+supported before 3.11.
 
 Ben.
 
@@ -81,26 +89,26 @@ Ben.
 Ben Hutchings
 The world is coming to an end.	Please log off.
 
---=-Q/bkr3aZ086FFlWBfieW
+--=-SrnQ/zKgVOeGcQkYhJTn
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIVAwUAVLMT6ee/yOyVhhEJAQqTHxAAl/Ao7eCChY5K6Yim85fwZ7V9eHN0KEU7
-OxTGzhVssLTXbJLrJzA9Q1HwV7LK7+RYmOXAY/oq8Xkei3+ZLvIC4CNPmkLlDJLf
-Tnh9UpKRIug0rjetdtl/7sgNf9jW4oogvBLmZGDXqekNxcvyC0RYWZ6y5vx47h7f
-TPH3iqaORSZPfEJElC88ZEc67w6fEgJoAmyAPrxpH6JUj7KyFvsHNQRUeo58JtNH
-4vt4JGECLh3VJQ6/8ZO3Z6J90SoXMRfYTwQ0VYD9pjl0NgeOpw7ajpRkObUFEgjS
-biODIG8kunSRto/sSPbkrSiCv4LVmrTX+VavFad1HvNNmZ/gMEiaMZ4IlyF/eDIU
-ehAQqmdi40WqsjjQye9aeV6e2/PEQF8Zi5wCwoaI5gAkW4U1BDapIsvTZmDLkcrh
-bMVzc+cYaTp2f1j81dF73Ogue8GDJt2Jyf0MvV47GJWNLZGgVR8PnleZzlyNFmvC
-MkaPmOldnYIpzwH+Pm7vbHGQ51G+gKGS743UstAmobQUt203A9pXL1ezaM9TZfxF
-EczOvUTaNMnp5WQ2iBLzU6Zy5YH2XB+7FNDPIu87lN6zOSgDk4EDPmTBFCIbWQS8
-wK1t70g6j06f+JymL4HkyJZoetRvkkewPy3FlTDGm8f8D1rP5osRvW9HN9Vg93qE
-IFszCcqtaaY=
-=er4t
+iQIVAwUAVLMUwee/yOyVhhEJAQrpHg//aI5Neo2T5cT0DcbCEdgYTcn+QxFsbz0N
+rLxbnpt8opkiSJYZwAkTPu3LXaA2cQzzwBxowmq/JXFyVpX+vDScCdSz8XnqS23T
+5fu44gq/jNvKGQgpmZO4jcGjL4SN2uNmkpo6XcifRZFCLsadxRNlR/3EjKLAwxuM
+AtT+t4gCGw4HnOu0Zn4zREGj6ccNQ7baAroAJgV+bykSTW28sWsaoURrIH45oUgd
+cLjvIZc0MZQcPllueiLYpCRyxnYsJoKOdsL0fdjps4syb7qLNcEIVgbi4Lh1D3IU
+oRSOexVdLv8WsAAlUZnMu0qvYizuVdG3Y6TGeIbSaHRYT45znKnz3yxrIIdprcaU
+qoS6oTIxsoK0bYHrkpIJBFE90bGHw2Knl1AQTQZE/lVUhQsoHjBfH1MpBKaviPda
+kGMTddPEEYZDHCAl2NlS7tLacYF3sqTRYm1bUMB5A4MG0dLD6xqhsnA9+Gbt9O4X
+vjqW2FWhByNrOXaS3udUUHqmO99PMMDzNk5d/ljkg+PN2KM2o4q/1LvBioXFtK7u
+e7whVDJgHOs2y+kcu/bZuGlclN2GQRfQKOqcGaAz2qH3wHp/qgdS5bGb5iqFlxwV
+1NXt2ZfslntEFNOvBQAJ7XdahPoQauMQqULZv091ARh3WTxLpcduFx7IBX0hLZx0
+C7d/O6MjXzI=
+=sKJF
 -----END PGP SIGNATURE-----
 
---=-Q/bkr3aZ086FFlWBfieW--
+--=-SrnQ/zKgVOeGcQkYhJTn--
