@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094AbbALSjW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 13:39:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58387 "EHLO
+	id S1755535AbbALSi4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 13:38:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58394 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755116AbbALSar (ORCPT
+	with ESMTP id S1755241AbbALSas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 13:30:47 -0500
+	Mon, 12 Jan 2015 13:30:48 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Richard Guy Briggs <rgb@redhat.com>, Paul Moore <pmoore@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 190/216] audit: don't attempt to lookup PIDs when changing PID filtering audit rules
-Date: Mon, 12 Jan 2015 18:29:28 +0000
-Message-Id: <1421087394-2712-78-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 191/216] audit: use supplied gfp_mask from audit_buffer in kauditd_send_multicast_skb
+Date: Mon, 12 Jan 2015 18:29:29 +0000
+Message-Id: <1421087394-2712-79-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
 References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
@@ -27,59 +27,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Moore <pmoore@redhat.com>
+From: Richard Guy Briggs <rgb@redhat.com>
 
-commit 3640dcfa4fd00cd91d88bb86250bdb496f7070c0 upstream.
+commit 54dc77d974a50147d6639dac6f59cb2c29207161 upstream.
 
-Commit f1dc4867 ("audit: anchor all pid references in the initial pid
-namespace") introduced a find_vpid() call when adding/removing audit
-rules with PID/PPID filters; unfortunately this is problematic as
-find_vpid() only works if there is a task with the associated PID
-alive on the system.  The following commands demonstrate a simple
-reproducer.
+Eric Paris explains: Since kauditd_send_multicast_skb() gets called in
+audit_log_end(), which can come from any context (aka even a sleeping context)
+GFP_KERNEL can't be used.  Since the audit_buffer knows what context it should
+use, pass that down and use that.
 
-	# auditctl -D
-	# auditctl -l
-	# autrace /bin/true
-	# auditctl -l
+See: https://lkml.org/lkml/2014/12/16/542
 
-This patch resolves the problem by simply using the PID provided by
-the user without any additional validation, e.g. no calls to check to
-see if the task/PID exists.
+BUG: sleeping function called from invalid context at mm/slab.c:2849
+in_atomic(): 1, irqs_disabled(): 0, pid: 885, name: sulogin
+2 locks held by sulogin/885:
+  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff91152e30>] prepare_bprm_creds+0x28/0x8b
+  #1:  (tty_files_lock){+.+.+.}, at: [<ffffffff9123e787>] selinux_bprm_committing_creds+0x55/0x22b
+CPU: 1 PID: 885 Comm: sulogin Not tainted 3.18.0-next-20141216 #30
+Hardware name: Dell Inc. Latitude E6530/07Y85M, BIOS A15 06/20/2014
+  ffff880223744f10 ffff88022410f9b8 ffffffff916ba529 0000000000000375
+  ffff880223744f10 ffff88022410f9e8 ffffffff91063185 0000000000000006
+  0000000000000000 0000000000000000 0000000000000000 ffff88022410fa38
+Call Trace:
+  [<ffffffff916ba529>] dump_stack+0x50/0xa8
+  [<ffffffff91063185>] ___might_sleep+0x1b6/0x1be
+  [<ffffffff910632a6>] __might_sleep+0x119/0x128
+  [<ffffffff91140720>] cache_alloc_debugcheck_before.isra.45+0x1d/0x1f
+  [<ffffffff91141d81>] kmem_cache_alloc+0x43/0x1c9
+  [<ffffffff914e148d>] __alloc_skb+0x42/0x1a3
+  [<ffffffff914e2b62>] skb_copy+0x3e/0xa3
+  [<ffffffff910c263e>] audit_log_end+0x83/0x100
+  [<ffffffff9123b8d3>] ? avc_audit_pre_callback+0x103/0x103
+  [<ffffffff91252a73>] common_lsm_audit+0x441/0x450
+  [<ffffffff9123c163>] slow_avc_audit+0x63/0x67
+  [<ffffffff9123c42c>] avc_has_perm+0xca/0xe3
+  [<ffffffff9123dc2d>] inode_has_perm+0x5a/0x65
+  [<ffffffff9123e7ca>] selinux_bprm_committing_creds+0x98/0x22b
+  [<ffffffff91239e64>] security_bprm_committing_creds+0xe/0x10
+  [<ffffffff911515e6>] install_exec_creds+0xe/0x79
+  [<ffffffff911974cf>] load_elf_binary+0xe36/0x10d7
+  [<ffffffff9115198e>] search_binary_handler+0x81/0x18c
+  [<ffffffff91153376>] do_execveat_common.isra.31+0x4e3/0x7b7
+  [<ffffffff91153669>] do_execve+0x1f/0x21
+  [<ffffffff91153967>] SyS_execve+0x25/0x29
+  [<ffffffff916c61a9>] stub_execve+0x69/0xa0
 
-Cc: Richard Guy Briggs <rgb@redhat.com>
+Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Tested-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
 Signed-off-by: Paul Moore <pmoore@redhat.com>
-Acked-by: Eric Paris <eparis@redhat.com>
-Reviewed-by: Richard Guy Briggs <rgb@redhat.com>
+[ luis: backported to 3.16: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/auditfilter.c | 13 -------------
- 1 file changed, 13 deletions(-)
+ kernel/audit.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-index 8e9bc9c3dbb7..b2e63ba5f815 100644
---- a/kernel/auditfilter.c
-+++ b/kernel/auditfilter.c
-@@ -433,19 +433,6 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
- 			f->val = 0;
- 		}
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 6726aa6f82be..a0918e23d647 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -429,7 +429,7 @@ static void kauditd_send_skb(struct sk_buff *skb)
+  * This function doesn't consume an skb as might be expected since it has to
+  * copy it anyways.
+  */
+-static void kauditd_send_multicast_skb(struct sk_buff *skb)
++static void kauditd_send_multicast_skb(struct sk_buff *skb, gfp_t gfp_mask)
+ {
+ 	struct sk_buff		*copy;
+ 	struct audit_net	*aunet = net_generic(&init_net, audit_net_id);
+@@ -448,11 +448,11 @@ static void kauditd_send_multicast_skb(struct sk_buff *skb)
+ 	 * no reason for new multicast clients to continue with this
+ 	 * non-compliance.
+ 	 */
+-	copy = skb_copy(skb, GFP_KERNEL);
++	copy = skb_copy(skb, gfp_mask);
+ 	if (!copy)
+ 		return;
  
--		if ((f->type == AUDIT_PID) || (f->type == AUDIT_PPID)) {
--			struct pid *pid;
--			rcu_read_lock();
--			pid = find_vpid(f->val);
--			if (!pid) {
--				rcu_read_unlock();
--				err = -ESRCH;
--				goto exit_free;
--			}
--			f->val = pid_nr(pid);
--			rcu_read_unlock();
--		}
--
- 		err = audit_field_valid(entry, f);
- 		if (err)
- 			goto exit_free;
+-	nlmsg_multicast(sock, copy, 0, AUDIT_NLGRP_READLOG, GFP_KERNEL);
++	nlmsg_multicast(sock, copy, 0, AUDIT_NLGRP_READLOG, gfp_mask);
+ }
+ 
+ /*
+@@ -1959,7 +1959,7 @@ void audit_log_end(struct audit_buffer *ab)
+ 	} else {
+ 		struct nlmsghdr *nlh = nlmsg_hdr(ab->skb);
+ 
+-		kauditd_send_multicast_skb(ab->skb);
++		kauditd_send_multicast_skb(ab->skb, ab->gfp_mask);
+ 
+ 		/*
+ 		 * The original kaudit unicast socket sends up messages with
 -- 
 2.1.4
 
