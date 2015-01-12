@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394AbbALUfM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 15:35:12 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:53494 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438AbbALUfK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 15:35:10 -0500
-Date: Mon, 12 Jan 2015 15:32:11 -0500 (EST)
-Message-Id: <20150112.153211.1568185988607410812.davem@davemloft.net>
-To: me@mortis.eu
-Cc: linux-kernel@vger.kernel.org, dsterba@suse.cz, mac@melware.de,
-        isdn@linux-pingi.de, netdev@vger.kernel.org
-Subject: Re: [PATCH RESEND] isdn: fix NUL (\0 or \x00) specification in
- string
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1420657812-19445-1-git-send-email-me@mortis.eu>
-References: <1420394722-20197-1-git-send-email-me@mortis.eu>
-	<1420657812-19445-1-git-send-email-me@mortis.eu>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 12 Jan 2015 12:35:08 -0800 (PST)
+	id S1752891AbbALUcX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 15:32:23 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:56427 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751149AbbALUcW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 15:32:22 -0500
+Date: Mon, 12 Jan 2015 21:32:16 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH] x86: introduce push/pop macros which generate
+ CFI_REL_OFFSET and CFI_RESTORE
+Message-ID: <20150112203216.GA27374@pd.tnic>
+References: <1421017655-25561-1-git-send-email-dvlasenk@redhat.com>
+ <20150112192314.GF3904@pd.tnic>
+ <CALCETrXzEPKPFKBeKF3UMduNe1ViQTC6vULEySo_0XTJcK7Qkw@mail.gmail.com>
+ <20150112193704.GG3904@pd.tnic>
+ <CALCETrUVXGnqqtgw1eZRK5g0B+5vwGuvSV6dwnm5witA-fJWLQ@mail.gmail.com>
+ <20150112201145.GH3904@pd.tnic>
+ <CALCETrVto_uxTz30M8a4XyLk-UXTQXc3CsYxEKJkhmqH=FdvNA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CALCETrVto_uxTz30M8a4XyLk-UXTQXc3CsYxEKJkhmqH=FdvNA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Giel van Schijndel <me@mortis.eu>
-Date: Wed,  7 Jan 2015 20:10:12 +0100
+On Mon, Jan 12, 2015 at 12:14:32PM -0800, Andy Lutomirski wrote:
+> This stuff is at least useful (in theory) for debugging with gdb.  And
 
-> In C one can either use '\0' or '\x00' (or '\000') to add a NUL byte to
-> a string. '\0x00' isn't part of these and will in fact result in a
-> single NUL followed by "x00". This fixes that.
-> 
-> Signed-off-by: Giel van Schijndel <me@mortis.eu>
-> Reported-at: http://www.viva64.com/en/b/0299/
+Bah, debugging the kernel with gdb, who does that?!
 
-Applied, thank you.
+Real men stare at oopses and rebuild stack with pen and paper!
+
+:-P
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
