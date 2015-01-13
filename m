@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633AbbAMLfo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 06:35:44 -0500
-Received: from sauhun.de ([89.238.76.85]:35122 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751193AbbAMLfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 06:35:42 -0500
-Date: Tue, 13 Jan 2015 12:35:38 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Harini Katakam <harinik@xilinx.com>
-Cc: mark.rutland@arm.com, michal.simek@xilinx.com, soren.brinkmann@xilinx.com,
-        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, harinikatakamlinux@gmail.com,
-        Vishnu Motghare <vishnum@xilinx.com>
-Subject: Re: [PATCH v5 2/2] i2c: cadence: Check for errata condition
- involving master receive
-Message-ID: <20150113113538.GB7660@katana>
-References: <1418357907-4215-1-git-send-email-harinik@xilinx.com>
- <1418357907-4215-3-git-send-email-harinik@xilinx.com>
+	id S1752669AbbAMLgU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 06:36:20 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:55915 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093AbbAMLgT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 06:36:19 -0500
+Message-ID: <54B5030C.2050504@ti.com>
+Date: Tue, 13 Jan 2015 13:35:40 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
+To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
+        Tony Prisk <linux@prisktech.co.nz>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-fbdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Subject: Re: [PATCH v2] video: vt8500lcdfb: remove unneeded continue
+References: <1420608948-4550-1-git-send-email-sudipm.mukherjee@gmail.com>
+In-Reply-To: <1420608948-4550-1-git-send-email-sudipm.mukherjee@gmail.com>
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CUfgB8w4ZwR/yMy5"
-Content-Disposition: inline
-In-Reply-To: <1418357907-4215-3-git-send-email-harinik@xilinx.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	protocol="application/pgp-signature";
+	boundary="SJ2gVVdCvXC72FwcKNG9bv3x6cMmiaf6U"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--SJ2gVVdCvXC72FwcKNG9bv3x6cMmiaf6U
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
---CUfgB8w4ZwR/yMy5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 07/01/15 07:35, Sudip Mukherjee wrote:
+> continue is not needed at the end of a for loop, also removed the
+> braces which were no longer required.
+>=20
 
-> @@ -541,6 +541,18 @@ static int cdns_i2c_master_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
->  	 * processed with a repeated start.
->  	 */
->  	if (num > 1) {
-> +		/*
-> +		 * This controller does not give completion interrupt after a
-> +		 * master receive transfer if HOLD bit is set (repeated start),
-> +		 * resulting in SW timeout. Hence, if a receive transfer is
-> +		 * followed by any other transfer, an error is returned
-> +		 * indicating that this sequence is not supported.
-> +		 */
-> +		for (count = 0; count < num-1; count++) {
-> +			if (msgs[count].flags & I2C_M_RD)
-> +				dev_warn(adap->dev.parent, "No support for repeated start when receive is followed by a transfer\n");
-> +				return -EOPNOTSUPP;
-> +		}
->  		id->bus_hold_flag = 1;
->  		reg = cdns_i2c_readreg(CDNS_I2C_CR_OFFSET);
->  		reg |= CDNS_I2C_CR_HOLD;
+Thanks, queued for 3.20.
 
-Have you ever tested this code? There is a huge bug in it :(
-
-Also, in the comment, use "message" instead of "transfer". One transfer
-consists of multiple messages.
-
-Maybe the warning can be simplified, too: "can't do repeated start after
-read messages".
+ Tomi
 
 
---CUfgB8w4ZwR/yMy5
+
+
+--SJ2gVVdCvXC72FwcKNG9bv3x6cMmiaf6U
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJUtQMJAAoJEBQN5MwUoCm2GbkQAJ1ou19WCsD54vaH/GhCL3Pq
-+ICDCBX413n3hW7+0rBH+iglu8gOitCjzig0rITukINHpKjuUmGQwqtyuUQCpiQM
-3ba5WCF9i4EyS5STwuL9vrWuBug9o5ZK2nHFpDT2z/g3RzeY+8Fd0D7FCObIFA84
-rud55GY/GUsn7g/MqAOe59C65/ZAGvBxzgwotSrMrUwP2q8AVRcExXHn5jZqKbrr
-zXNxu3XZmx7zuc61o1jldQRHXP62bbdEy/+tH3UuLAsvOQc5pxXEClb5TTDsrqWl
-YGfnKZ43Nr4DMzUhtnhMQJoh9mdsRUtry6xRUwK5dkdDWSbaiDyd3rYuWHUcK6rn
-EgG8DrESnVTThPAOUgov5LMv3GUWtGqJTJciWrwudaX4lgOcDGlVWS/07ndEPRhX
-UCP+WvNNhThQjZHdtil0G07Hbobu+OFNnYy5euL6fNgVUZbYtKh+irZMR0G9wSAe
-ZDWuuq4ekT7JMXD6gTS9QxXa2whjxQ7D0l5brqvt2WYt4Y8l+fqIg5G6c+7EiSll
-fFnEQWKVVyz4m6vlwC2KUo0qNO33nYRXR6PclbuD9eVMmNDQPBJPfh3TD/mxraMW
-lXo3BPRfFIGgbQ8uHESqmxPs+f9AseIJeT+lHbyQWi20vs3jycyrP5/YQakW/w5t
-Pl0GYHcj6MMCOdOGATxe
-=7H8d
+iQIcBAEBAgAGBQJUtQMMAAoJEPo9qoy8lh71d3kP/1Xv3+6U7kr1ujMWdVnRfjk9
+FVpgY1qtdUO2wmGzefGELuqGWPzuJCcOenXHCiFpLEM3kyCPK8lm1O82ekGbqCd1
+3X0DsB+X6rnSf1S9TLshciREsG/rtEhoVBZPBxvTY9U2VgEXQohGcX63BqgIW5x3
+Rd21q5So/CiSWXtk7cBYiqByBnTSwklSQu6FXw0FIGb1QaLoNLoYxBarVPS5IgeV
+QGCFoN9fwU3BiP9q4Zxm4ygsvgzi9CdbVAVMGpQ0mC4aN5c8DykmYTIAlqOdJgn7
+dAat9bOK/CQwR3CsdjxHwxsADWVKEZC2eahXkAew6BOdGSUaKdPs6KKAk5L4a19Z
++GWBkByGprHQftFibSuYHu1icqh+oWTTGPuiYiRull3uSu1gCcMeYd9H/Arh9sAP
+TSHpUtgTEJcy0OblfHlePJyHeszJuIvY5WegrieLfe7aWCJtNXpf/XUfujChlUz4
+in5HQOIh9Wyo1IZy+smss0CBffA+QxkV0nPv0dVEyrArAjUo2jNoBDLO4ThHHJ1/
++NLbr5sLyTmueWx4XDkJ2JkYb5EC5ZXL5Byy7NXgch+e5I7dHVzn64zdsTL41W+C
+l9O3NX2wgjC3BexuE/HE7vJ3iIX0LNHiIHkekyiwIOMzAyupGqytOMnetYq/nl9t
+qxX2Kw4AqRQaeIoC+SBc
+=mNjK
 -----END PGP SIGNATURE-----
 
---CUfgB8w4ZwR/yMy5--
+--SJ2gVVdCvXC72FwcKNG9bv3x6cMmiaf6U--
