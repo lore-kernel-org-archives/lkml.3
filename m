@@ -1,73 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752034AbbAMOhA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 09:37:00 -0500
-Received: from sauhun.de ([89.238.76.85]:35582 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751640AbbAMOg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 09:36:58 -0500
-Date: Tue, 13 Jan 2015 15:36:54 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Jisheng Zhang <jszhang@marvell.com>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] i2c: designware: use {readl|writel}_relaxed instead of
- readl/writel
-Message-ID: <20150113143654.GG7660@katana>
-References: <1418279201-3886-1-git-send-email-jszhang@marvell.com>
+	id S1752297AbbAMOhY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 09:37:24 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:63748 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054AbbAMOhW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 09:37:22 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: gregkh@linuxfoundation.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Baruch Siach <baruch@tkos.co.il>
+Subject: [PATCH] serial: digicolor: fix sysrq handling
+Date: Tue, 13 Jan 2015 15:37:11 +0100
+Message-ID: <1730002.vWGOEymGdz@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MiFvc8Vo6wRSORdP"
-Content-Disposition: inline
-In-Reply-To: <1418279201-3886-1-git-send-email-jszhang@marvell.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:2NjfEuyqt9z2j3Ryoa2y6kGmEDwkhrho3JgkhE/of5rVUdprOOz
+ d4d4ADhnOFW+nAmfpNJgtTbN3ByUwF9tYt4pd1hZ9qjumEy05DlLdcPhoKev6HH1mprVWmH
+ m1YBnn/nRgQuZ1wBHXXdi1aChMrInOyzPIINoV4ZpXXM88yZuNRmdhSFr+aPQBwJT7E38tp
+ NSceRZtf8sJ71T8nGvHQQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Trying to build the digicolor-usart driver when sysrq is disabled
+results in a compile error:
 
---MiFvc8Vo6wRSORdP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+drivers/tty/serial/digicolor-usart.c: In function 'digicolor_uart_console_write':
+drivers/tty/serial/digicolor-usart.c:407:33: error: 'struct uart_port' has no member named 'sysrq'
 
+Like a lot of other drivers, this one requires an #ifdef to avoid
+accessing the sysrq field here. While looking into this, I noticed
+that the case where sysrq support is enabled is also broken, because
+the driver fails to set the SUPPORT_SYSRQ macro.
 
-On Thu, Dec 11, 2014 at 02:26:41PM +0800, Jisheng Zhang wrote:
-> readl/writel is too expensive especially on Cortex A9 w/ outer L2 cache.
-> This introduces i2c read/write errors on Marvell BG2/BG2Q SoCs when there
-> are heavy L2 cache maintenance operations at the same time.
+This patch hopefully fixes both, but I do not hardware to test if sysrq
+is actually working now.
 
-Reading this again, I got a question:
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-Really read/write errors? I would think that there is a performance
-penalty because of the memory barriers. But errors?
+diff --git a/drivers/tty/serial/digicolor-usart.c b/drivers/tty/serial/digicolor-usart.c
+index 09ce0b3764e2..1e4bdd895804 100644
+--- a/drivers/tty/serial/digicolor-usart.c
++++ b/drivers/tty/serial/digicolor-usart.c
+@@ -23,6 +23,10 @@
+ #include <linux/platform_device.h>
+ #include <linux/workqueue.h>
+ 
++#if defined(CONFIG_SERIAL_CONEXANT_DIGICOLOR_CONSOLE) && defined(CONFIG_MAGIC_SYSRQ)
++#define SUPPORT_SYSRQ
++#endif
++
+ #define UA_ENABLE			0x00
+ #define UA_ENABLE_ENABLE		BIT(0)
+ 
+@@ -403,10 +407,11 @@ static void digicolor_uart_console_write(struct console *co, const char *c,
+ 	u8 status;
+ 	unsigned long flags;
+ 	int locked = 1;
+-
++#ifdef SUPPORT_SYSRQ
+ 	if (port->sysrq || oops_in_progress)
+ 		locked = spin_trylock_irqsave(&port->lock, flags);
+ 	else
++#endif
+ 		spin_lock_irqsave(&port->lock, flags);
+ 
+ 	uart_console_write(port, c, n, digicolor_uart_console_putchar);
 
-> The driver does not perform DMA, so it's safe to use the relaxed version.
-> From another side, the relaxed io accessor macros are available on all
-> architectures now, so we can use the relaxed versions instead.
-
-Can the designware core make use of DMA in theory?
-
-
---MiFvc8Vo6wRSORdP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUtS2GAAoJEBQN5MwUoCm2svAQAIpRt3q0aHH0xGwK8rt2P91x
-ZJVUcF2YrP1KPo14LaP6N0lPAjzathtXBHOPr5udB7+zoMJBPGdHXrPRP9x7WmAY
-89avemgEFOdrhuDcBkr2BXhn6hsRs5HJlu9x0/z/HfLK4Cwmoh9BhB4CTOYT4VnL
-PlH60kJBSfAxh2llM/k024o70p8uNnN0ODe4kIDiBcbqnWTOBjTT4ecjT0qehrl/
-T7ghYQOFzl4vwzgvMNFrxMNb4n1eksktxn5qua/HGrloU8l1iJ1rRBSBkw1xfHJp
-/2DZv+inHvuyLPvyNLEld8i/4Q0QgA/D8zL7lNhLuA7pmwUmv496NJpkX++xD+da
-SJOZuzKGT30lUUQLMLUEkeG89kLqMkqbbsdrC4RDw6LP077h/p53rmFuVGr9Yc3B
-3Nk5TfeOK34mq4eTLvNerAwg+y6e6T7GekVGvRjR6gGcSQPsD8SD3sEpVSgbFzhY
-8xM3yDBROS6/kepaHGAXSF3nyxYg2ask8Cdrirg9pRwHm6OHCTBl8S5q6hYAzINu
-ysJTSor0O64aiwxhH/dVzEEqHbf8X/0/rHLrxomoVPS0l4lmgqH538to59vYQ1+C
-HR80GYPgkBL8EnwNo06VuYvoEpOO8c1/IDlSFpbkaWO0RV9Wid16ImvI59EkR28s
-bxtE2Bu78n1pC4fbYQzG
-=lfnX
------END PGP SIGNATURE-----
-
---MiFvc8Vo6wRSORdP--
