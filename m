@@ -1,83 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188AbbAMLJh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 06:09:37 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:40127 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751736AbbAMLJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 06:09:36 -0500
-Message-ID: <54B4FC9C.2050207@ti.com>
-Date: Tue, 13 Jan 2015 13:08:12 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752054AbbAMLI6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 06:08:58 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56359 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751592AbbAMLI5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 06:08:57 -0500
+Message-ID: <54B4FCB5.6040904@pengutronix.de>
+Date: Tue, 13 Jan 2015 12:08:37 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-To: Philipp Zabel <p.zabel@pengutronix.de>,
-        Grant Likely <grant.likely@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <dri-devel@lists.freedesktop.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        David Airlie <airlied@linux.ie>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrzej Hajda <a.hajda@samsung.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <kernel@pengutronix.de>
-Subject: Re: [PATCH v7 1/3] of: Decrement refcount of previous endpoint in
- of_graph_get_next_endpoint
-References: <1419340158-20567-1-git-send-email-p.zabel@pengutronix.de> <1419340158-20567-2-git-send-email-p.zabel@pengutronix.de>
-In-Reply-To: <1419340158-20567-2-git-send-email-p.zabel@pengutronix.de>
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>,
+        Kedareswara rao Appana <appana.durga.rao@xilinx.com>
+CC: wg@grandegger.com, michal.simek@xilinx.com, grant.likely@linaro.org,
+        robh+dt@kernel.org, linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Kedareswara rao Appana <appanad@xilinx.com>
+Subject: Re: [PATCH v5] can: Convert to runtime_pm
+References: <baf987c11c0242c2bf87b81f9396b09d@BN1BFFO11FD018.protection.gbl> <3a3437c5c8ff48d9a45fee7e81fa8dca@BY2FFO11FD058.protection.gbl>
+In-Reply-To: <3a3437c5c8ff48d9a45fee7e81fa8dca@BY2FFO11FD058.protection.gbl>
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="wnR2XfbTETJWxvR7a7bCjC4m1HjK6iUKh"
+ protocol="application/pgp-signature";
+ boundary="tKF0c7NqosXqDUeHMTQh4uD42V9tvVtFR"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---wnR2XfbTETJWxvR7a7bCjC4m1HjK6iUKh
-Content-Type: text/plain; charset=windows-1252
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--tKF0c7NqosXqDUeHMTQh4uD42V9tvVtFR
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 
-On 23/12/14 15:09, Philipp Zabel wrote:
-> Decrementing the reference count of the previous endpoint node allows t=
-o
-> use the of_graph_get_next_endpoint function in a for_each_... style mac=
-ro.
-> All current users of this function that pass a non-NULL prev parameter
-> (coresight, rcar-du, imx-drm, soc_camera, and omap2-dss) are changed to=
-
-> not decrement the passed prev argument's refcount themselves.
+On 01/12/2015 07:45 PM, S=C3=B6ren Brinkmann wrote:
+> On Mon, 2015-01-12 at 08:34PM +0530, Kedareswara rao Appana wrote:
+>> Instead of enabling/disabling clocks at several locations in the drive=
+r,
+>> Use the runtime_pm framework. This consolidates the actions for runtim=
+e PM
+>> In the appropriate callbacks and makes the driver more readable and ma=
+ntainable.
+>>
+>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+>> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
+>> ---
+>> Changes for v5:
+>>  - Updated with the review comments.
+>>    Updated the remove fuction to use runtime_pm.
+>> Chnages for v4:
+>>  - Updated with the review comments.
+>> Changes for v3:
+>>   - Converted the driver to use runtime_pm.
+>> Changes for v2:
+>>   - Removed the struct platform_device* from suspend/resume
+>>     as suggest by Lothar.
+>>
+>>  drivers/net/can/xilinx_can.c |  157 ++++++++++++++++++++++++++++-----=
+--------
+>>  1 files changed, 107 insertions(+), 50 deletions(-)
+> [..]
+>> +static int __maybe_unused xcan_runtime_resume(struct device *dev)
+>>  {
+>> -	struct platform_device *pdev =3D dev_get_drvdata(dev);
+>> -	struct net_device *ndev =3D platform_get_drvdata(pdev);
+>> +	struct net_device *ndev =3D dev_get_drvdata(dev);
+>>  	struct xcan_priv *priv =3D netdev_priv(ndev);
+>>  	int ret;
+>> +	u32 isr, status;
+>> =20
+>>  	ret =3D clk_enable(priv->bus_clk);
+>>  	if (ret) {
+>> @@ -1014,15 +1030,28 @@ static int __maybe_unused xcan_resume(struct d=
+evice *dev)
+>>  	ret =3D clk_enable(priv->can_clk);
+>>  	if (ret) {
+>>  		dev_err(dev, "Cannot enable clock.\n");
+>> -		clk_disable_unprepare(priv->bus_clk);
+>> +		clk_disable(priv->bus_clk);
+> [...]
+>> @@ -1173,12 +1219,23 @@ static int xcan_remove(struct platform_device =
+*pdev)
+>>  {
+>>  	struct net_device *ndev =3D platform_get_drvdata(pdev);
+>>  	struct xcan_priv *priv =3D netdev_priv(ndev);
+>> +	int ret;
+>> +
+>> +	ret =3D pm_runtime_get_sync(&pdev->dev);
+>> +	if (ret < 0) {
+>> +		netdev_err(ndev, "%s: pm_runtime_get failed(%d)\n",
+>> +				__func__, ret);
+>> +		return ret;
+>> +	}
+>> =20
+>>  	if (set_reset_mode(ndev) < 0)
+>>  		netdev_err(ndev, "mode resetting failed!\n");
+>> =20
+>>  	unregister_candev(ndev);
+>> +	pm_runtime_disable(&pdev->dev);
+>>  	netif_napi_del(&priv->napi);
+>> +	clk_disable_unprepare(priv->bus_clk);
+>> +	clk_disable_unprepare(priv->can_clk);
 >=20
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> Acked-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-> Acked-by: Mathieu Poirier <mathieu.poirier@linaro.org>
-> ---
-> Changes since v6:
->  - Added omap2-dss.
->  - Added Mathieu's ack.
-> ---
->  drivers/coresight/of_coresight.c                  | 13 ++-----------
->  drivers/gpu/drm/imx/imx-drm-core.c                | 13 ++-----------
->  drivers/gpu/drm/rcar-du/rcar_du_kms.c             | 15 ++++-----------=
+> Shouldn't pretty much all these occurrences of clk_disable/enable
+> disappear? This should all be handled by the runtime_pm framework now.
 
->  drivers/media/platform/soc_camera/soc_camera.c    |  3 ++-
->  drivers/of/base.c                                 |  9 +--------
->  drivers/video/fbdev/omap2/dss/omapdss-boot-init.c |  7 +------
->  6 files changed, 12 insertions(+), 48 deletions(-)
->=20
+We have:
+- clk_prepare_enable() in probe
+- clk_disable_unprepare() in remove
+- clk_enable() in runtime_resume
+- clk_disable() in runtime_suspend
 
-For omapdss:
+Which is, as far as I understand the right way to do it. Maybe
+Kedareswara can post the clock debug output again with this patch
+iteration. Have I missed something?
 
-Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-
- Tomi
+regards,
+Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
-
---wnR2XfbTETJWxvR7a7bCjC4m1HjK6iUKh
+--tKF0c7NqosXqDUeHMTQh4uD42V9tvVtFR
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: OpenPGP digital signature
 Content-Disposition: attachment; filename="signature.asc"
@@ -85,19 +137,19 @@ Content-Disposition: attachment; filename="signature.asc"
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJUtPycAAoJEPo9qoy8lh71exQQAKqNGfJfjw4sIvbukVuTUPFd
-pCQXUm9CR90RlszlrkdD3VVUGYaxEbbRMHprEDfzxe+hxZbkP63gABo0kGVQhN3F
-TAITYLsCGqU5kNivacUBIGuNLAHwjbkjFySf2NuhCPJ82FttqWB9WDBj42EUlbL9
-+pGAKyIm7MweTWHo6IhyEdZbBvmrfwD/j6NENo7dIP1uunrPR+3L/g8VzTzvlf6V
-geHqFbbTKBD2A23BjPgykqLkuEblLaxkS5qRHnX9MIfSDCWK1cO29UyiOnvqwXnN
-nTm9lvsq+RtR0xTmYPVw3P9R1coXPe1fRNgTErb5apI5DB9kdPyWVzSy7D6H5YYr
-QOUohxV2P4EMi29rsj5IKMtSQFR+TVquz13qrPstYbpW2XpcujAGmbOS5bgI+ruh
-9Mfw+8KRym/xP8LTVjdFwiKlnmGaZdzzIQsqm8oINE+Q4SW4o4eaEjj9URa5UQle
-o1JvK9QQTuMwQR/aV8to11GLXyNhx4cNbUW0JyyHG4z/4S8xNUYrVgKfGSLHkrEm
-Nnl64TQRKnk3a84qGLbcEMR1pZ4zSzEjSSDSz6lfLR8lxFmRTRAkpPQ6z80Xzdnj
-pJbxqfDQZRv9bloFjZtLLMnYErEWGX623787tmotD0yeswUk57K8kccBk9ULyrC6
-qXQFulsuc9dX6Ao/rbY8
-=cGFR
+iQIcBAEBAgAGBQJUtPy1AAoJECte4hHFiupUOZwP+wcPUxYKUa1142511vue+Mhp
+zWCTdzlvCzAfEAjHD0lMJtD2WQ3nTivLsJtGffa6rzjHqV2qUJ/n/HNTKEGziZjQ
+01LaV+yH0m0IoIH+79naXb57YUhATjMt0ho9PuLo4riTrKUsjwTAbbT753QCvRxA
+SF9lx21zDeHrA84y3V2qF1fo7JIBo69O5WqUAIZq7re7SolIlqRRa+2IB2SCM/jb
+a/f+WGyENHFwqefgZOe17lVwxAyyuxYrW8fZyRv3AvuJqod0AGxe4yL9siFiS4Vw
+4CplQugbEbIEKjm/kU5zaKn92+vuz0bYZ9j7+hSqpmFMh+aV67N5RnjR7cXP19Ei
+YgMa31imPj8yO+06VVO7iVvdo+bbDLePcIcjby7z0X1kzZAY4oSSIOObTtqCn6Wr
+5ycc4SPerI76iJvqsFTxLoZ7XSTdtzVhWLsfNPBO8CECql+PtH/k8iIcqpJq9d+T
+n0XaOPGq9DpALKRK0k32TM6eFL7LI+tU/97/iULROOUnCD306WpQwbeTxCqDjwxh
+0e9fcvAYzpCRRR38uN3o7GJ9Rde9+dYpacDvT2hiEnNt6sWeyH4UImZy8SHJS70V
+up9r75iIs/M/Q1Ap7hKjTGOkD52lats1QmLO//VipM9PxTkbXlI3p0Oq0hkwQe2R
+4JT/xCOdxx5TTMpw2Owd
+=T8PD
 -----END PGP SIGNATURE-----
 
---wnR2XfbTETJWxvR7a7bCjC4m1HjK6iUKh--
+--tKF0c7NqosXqDUeHMTQh4uD42V9tvVtFR--
