@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506AbbAMS2V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 13:28:21 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:56252 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752793AbbAMS2U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 13:28:20 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
+	id S1753288AbbAMSeS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 13:34:18 -0500
+Received: from mga02.intel.com ([134.134.136.20]:38926 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751352AbbAMSeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 13:34:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,750,1413270000"; 
+   d="scan'208";a="650546166"
+Date: Wed, 14 Jan 2015 00:01:44 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: Paul Walmsley <pwalmsley@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        dmaengine@vger.kernel.org, linux-tegra@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] kernel: events: core: Remove some unused functions
-Date: Tue, 13 Jan 2015 19:31:26 +0100
-Message-Id: <1421173886-4545-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+Subject: Re: [PATCH] dmaengine: tegra: add slave capabilities reporting
+Message-ID: <20150113183144.GJ15411@intel.com>
+References: <alpine.DEB.2.02.1501060640220.28771@utopia.booyaka.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1501060640220.28771@utopia.booyaka.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere:
-perf_cpu_hrtimer_cancel() perf_cgroup_event_cgrp_time()
+On Tue, Jan 06, 2015 at 06:44:56AM +0000, Paul Walmsley wrote:
+> 
+> After commit ecc19d17868be9c9f8f00ed928791533c420f3e0 ("dmaengine: Add
+> a warning for drivers not using the generic slave caps retrieval"),
+> the Tegra APB DMA driver causes this warning during boot:
+> 
+> WARNING: CPU: 0 PID: 1 at drivers/dma/dmaengine.c:830 dma_async_device_register+0x294/0x538()
+> this driver doesn't support generic slave capabilities reporting
+> 
+> Fix by setting the appropriate reporting structure fields that are
+> passed to dma_async_device_register().
+> 
+Applied, thanks
 
-This was partially found by using a static code analysis program called cppcheck.
-
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- kernel/events/core.c |   33 ---------------------------------
- 1 file changed, 33 deletions(-)
-
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 2b02c9f..6287095 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -695,11 +695,6 @@ static inline int is_cgroup_event(struct perf_event *event)
- 	return 0;
- }
- 
--static inline u64 perf_cgroup_event_cgrp_time(struct perf_event *event)
--{
--	return 0;
--}
--
- static inline void update_cgrp_time_from_event(struct perf_event *event)
- {
- }
-@@ -789,34 +784,6 @@ static enum hrtimer_restart perf_cpu_hrtimer_handler(struct hrtimer *hr)
- 	return ret;
- }
- 
--/* CPU is going down */
--void perf_cpu_hrtimer_cancel(int cpu)
--{
--	struct perf_cpu_context *cpuctx;
--	struct pmu *pmu;
--	unsigned long flags;
--
--	if (WARN_ON(cpu != smp_processor_id()))
--		return;
--
--	local_irq_save(flags);
--
--	rcu_read_lock();
--
--	list_for_each_entry_rcu(pmu, &pmus, entry) {
--		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
--
--		if (pmu->task_ctx_nr == perf_sw_context)
--			continue;
--
--		hrtimer_cancel(&cpuctx->hrtimer);
--	}
--
--	rcu_read_unlock();
--
--	local_irq_restore(flags);
--}
--
- static void __perf_cpu_hrtimer_init(struct perf_cpu_context *cpuctx, int cpu)
- {
- 	struct hrtimer *hr = &cpuctx->hrtimer;
 -- 
-1.7.10.4
+~Vinod
 
