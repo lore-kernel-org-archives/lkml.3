@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191AbbAMOnM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 09:43:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51577 "EHLO mx1.redhat.com"
+	id S1752546AbbAMOnd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 09:43:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51661 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752001AbbAMOnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 09:43:11 -0500
-Date: Tue, 13 Jan 2015 16:43:07 +0200
+	id S1752446AbbAMOna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 09:43:30 -0500
+Date: Tue, 13 Jan 2015 16:43:10 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 0/6] virtio: graceful failure with get == NULL
-Message-ID: <1421160167-18498-1-git-send-email-mst@redhat.com>
+Cc: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
+        Latchesar Ionkov <lucho@ionkov.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        v9fs-developer@lists.sourceforge.net, netdev@vger.kernel.org
+Subject: [PATCH 1/6] virtio/9p: verify device has config space
+Message-ID: <1421160167-18498-2-git-send-email-mst@redhat.com>
+References: <1421160167-18498-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1421160167-18498-1-git-send-email-mst@redhat.com>
 X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-virtio 1.0 says device configuration is optional, but most drivers treat it as
-mandatory.  Even if presented by device, guest bios might disable the BAR
-holding that configuration, so we can't assume it's there, but we also don't
-want to fail if not in case drivers can cope with it's absence - such as caif
-or rng.
+Some devices might not implement config space access
+(e.g. remoteproc used not to - before 3.9).
+virtio/9p needs config space access so make it
+fail gracefully if not there.
 
-Add code to drivers to check presence of get callback and fail gracefully.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ net/9p/trans_virtio.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-Michael S. Tsirkin (6):
-  virtio/9p: verify device has config space
-  virtio/blk: verify device has config space
-  virtio/console: verify device has config space
-  virtio/net: verify device has config space
-  virtio/scsi: verify device has config space
-  virtio/balloon: verify device has config space
-
- drivers/block/virtio_blk.c      | 6 ++++++
- drivers/char/virtio_console.c   | 6 ++++++
- drivers/net/virtio_net.c        | 6 ++++++
- drivers/scsi/virtio_scsi.c      | 6 ++++++
- drivers/virtio/virtio_balloon.c | 6 ++++++
- net/9p/trans_virtio.c           | 6 ++++++
- 6 files changed, 36 insertions(+)
-
+diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
+index daa749c..d8e376a 100644
+--- a/net/9p/trans_virtio.c
++++ b/net/9p/trans_virtio.c
+@@ -524,6 +524,12 @@ static int p9_virtio_probe(struct virtio_device *vdev)
+ 	int err;
+ 	struct virtio_chan *chan;
+ 
++	if (!vdev->config->get) {
++		dev_err(&vdev->dev, "%s failure: config access disabled\n",
++			__func__);
++		return -EINVAL;
++	}
++
+ 	chan = kmalloc(sizeof(struct virtio_chan), GFP_KERNEL);
+ 	if (!chan) {
+ 		pr_err("Failed to allocate virtio 9P channel\n");
 -- 
 MST
 
