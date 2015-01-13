@@ -1,86 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547AbbAMEGa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 23:06:30 -0500
-Received: from ozlabs.org ([103.22.144.67]:39067 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750957AbbAMEG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 23:06:28 -0500
-Date: Tue, 13 Jan 2015 15:06:21 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Felipe Balbi <balbi@ti.com>, Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: linux-next: manual merge of the usb-gadget tree with the
- usb.current tree
-Message-ID: <20150113150621.67d395ce@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751602AbbAMEXf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 23:23:35 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:46474 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750981AbbAMEXd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 23:23:33 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/JuHi1Gn_ADuhPYK4l/pWOrN"; protocol="application/pgp-signature"
+In-Reply-To: <20150112115111.GA3506@salvia>
+References: <CAFB3abwKpR1VqZXUrsexqveAZrA2LTSmTe8a=-H7z2HjAptjwA@mail.gmail.com>
+	<1420627396.26870.36.camel@stressinduktion.org>
+	<20150108205328.GA3361@salvia>
+	<1420756756.1755002.211556745.0418D128@webmail.messagingengine.com>
+	<20150109000546.GA3488@salvia>
+	<CAFB3abwrjp61LLOk3RWwXYEq1g4QZUC8OTKuO2cAr+GbV3n4rw@mail.gmail.com>
+	<1420803255.1978819.211762005.707EFFB9@webmail.messagingengine.com>
+	<20150109114506.GA4857@salvia>
+	<1420818636.31075.15.camel@stressinduktion.org>
+	<CAFB3abwetkNa4753g9d-z8xU0fMThyApuESQNkbxGa8Yz2YRfQ@mail.gmail.com>
+	<20150112115111.GA3506@salvia>
+Date: Tue, 13 Jan 2015 09:53:31 +0530
+Message-ID: <CAFB3abxcg4gdEh4CJHd_Vx8mZKFmO3kMG=pDjkQYS5awTzFbSQ@mail.gmail.com>
+Subject: Re: [PATCH net] ipv6: Prevent ipv6_find_hdr() from returning ENOENT
+ for valid non-first fragments
+From: Rahul Sharma <rsharma@arista.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/JuHi1Gn_ADuhPYK4l/pWOrN
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi
 
-Hi Felipe,
+On Mon, Jan 12, 2015 at 5:21 PM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+> On Mon, Jan 12, 2015 at 04:38:16PM +0530, Rahul Sharma wrote:
+>> Hi Pablo, Hannes
+>>
+>> On Fri, Jan 9, 2015 at 9:20 PM, Hannes Frederic Sowa
+>> <hannes@stressinduktion.org> wrote:
+>> > On Fr, 2015-01-09 at 12:45 +0100, Pablo Neira Ayuso wrote:
+>> >> Hi Hannes,
+>> >>
+>> >> On Fri, Jan 09, 2015 at 12:34:15PM +0100, Hannes Frederic Sowa wrote:
+>> >> > On Fri, Jan 9, 2015, at 08:18, Rahul Sharma wrote:
+>> >> > > Hi Pablo,
+>> >> > >
+>> >> > > On Fri, Jan 9, 2015 at 5:35 AM, Pablo Neira Ayuso <pablo@netfilter.org>
+>> >> > > wrote:
+>> >> > > > On Thu, Jan 08, 2015 at 11:39:16PM +0100, Hannes Frederic Sowa wrote:
+>> >> > > >> Hi Pablo,
+>> >> > > >>
+>> >> > > >> On Thu, Jan 8, 2015, at 21:53, Pablo Neira Ayuso wrote:
+>> >> > > >> > I'm afraid we cannot just get rid of that !ipv6_ext_hdr() check. The
+>> >> > > >> > ipv6_find_hdr() function is designed to return the transport protocol.
+>> >> > > >> > After the proposed change, it will return extension header numbers.
+>> >> > > >> > This will break existing ip6tables rulesets since the `-p' option
+>> >> > > >> > relies on this function to match the transport protocol.
+>> >> > > >> >
+>> >> > > >> > Note that the AH header is skipped (see code a bit below this
+>> >> > > >> > problematic fragmentation handling) so the follow up header after the
+>> >> > > >> > AH header is returned as the transport header.
+>> >> > > >> >
+>> >> > > >> > We can probably return the AH protocol number for non-1st fragments.
+>> >> > > >> > However, that would be something new to ip6tables since nobody has
+>> >> > > >> > ever seen packet matching `-p ah' rules. Thus, we restore control to
+>> >> > > >> > the user to allow this, but we would accept all kind of fragmented AH
+>> >> > > >> > traffic through the firewall since we cannot know what transport
+>> >> > > >> > protocol contains from non-1st fragments (unless I'm missing anything,
+>> >> > > >> > I need to have a closer look at this again tomorrow with fresher
+>> >> > > >> > mind).
+>> >> > > >>
+>> >> > > >> The code in question is guarded by (_frag_off != 0), so we are
+>> >> > > >> definitely processing a non-1st fragment currently. The -p match would
+>> >> > > >> happen at the time when the packet is reassembled and thus ipv6_find_hdr
+>> >> > > >> will find the real transport (final) header at this point (I hope I
+>> >> > > >> followed the code correctly here).
+>> >> > > >
+>> >> > > > Then, Rahul should get things working by modprobing nf_defrag_ipv6.
+>> >> > >
+>> >> > > I already had nf_defrag_ipv6 installed when the issue occured. But I
+>> >> > > see ip6table_raw_hook returning NF_DROP for the second fragment.
+>> >> >
+>> >> > That's what I expected. I think the change only affects hooks before
+>> >> > reassembly.
+>> >>
+>> >> reassembly happens at NF_IP6_PRI_CONNTRACK_DEFRAG (-400), so that
+>> >> happens before NF_IP6_PRI_RAW (-300) in IPv6 which is where the raw
+>> >> table is placed.
+>> >
+>> > I tried to reproduce it, but couldn't get non-1st fragments getting
+>> > dropped during traversal of the raw table. They get dropped earlier at
+>> > during reassembly or pass.
+>> >
+>> > I agree with Pablo, I also would like to see more data.
+>> >
+>> > Thanks,
+>> > Hannes
+>> >
+>> >
+>>
+>> I enabled pr_debug() and there was no error in nf_ct_frag6_gather().
+>> It seems to have defragmented the packet correctly. As expected,
+>> ipv6_defrag() returns NF_STOLEN for the first packet after queuing it.
+>> For the next fragment, ipv6_defrag() calls nf_ct_frag6_output() after
+>> after reassembling it.
+>
+> nf_ct_frag6_output() doesn't exist anymore. You're using an old
+> kernel, you should have started by telling so in your report.
+>
+> See 6aafeef ("netfilter: push reasm skb through instead of original
+> frag skbs").
 
-Today's linux-next merge of the usb-gadget tree got a conflict in
-drivers/usb/gadget/udc/bdc/bdc_ep.c between commit f26d29e34e20 ("usb:
-gadget: udc: avoid dereference before NULL check in ep_queue") from the
-usb.current tree and commit d71b0d7764a7 ("usb: gadget: udc: remove
-bogus NULL check") from the usb-gadget tree.
+ I apologize for not mentioning the kernel version in my first mail. I
+had suspected problem in ipv6_find_hdr, the code for which was same.
+Anyway, thanks for the help. I ll try to figure out how to make this
+work in my kernel.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/usb/gadget/udc/bdc/bdc_ep.c
-index d4fe8d769bd6,fdc0e9fc39d0..000000000000
---- a/drivers/usb/gadget/udc/bdc/bdc_ep.c
-+++ b/drivers/usb/gadget/udc/bdc/bdc_ep.c
-@@@ -718,11 -718,10 +718,11 @@@ static int ep_queue(struct bdc_ep *ep,=20
-  	struct bdc *bdc;
-  	int ret =3D 0;
- =20
-- 	if (!req || !ep || !ep->usb_ep.desc)
- -	bdc =3D ep->bdc;
-+ 	if (!req || !ep->usb_ep.desc)
-  		return -EINVAL;
- =20
- +	bdc =3D ep->bdc;
- +
-  	req->usb_req.actual =3D 0;
-  	req->usb_req.status =3D -EINPROGRESS;
-  	req->epnum =3D ep->ep_num;
-
---Sig_/JuHi1Gn_ADuhPYK4l/pWOrN
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUtJnBAAoJEMDTa8Ir7ZwVNB0P/i/nYQEPR3Ap6aVCh0loaI3t
-HfuwOhNaQz07nBNcq29d95Tw+ydJ334apNQznLLCPomtG0p0gOQSRf/jdTGIvs3q
-cSCIRkneiYPYeBF+K25yj7ixMCM+g+Q7KfD3YDw0ZVGQc5vggzkK7qYVV5Zl3x1p
-ER9PKqSOdV/gauYCnrDZiz7H3Hyqg5Qn0ceoOfb/VXerYEYehEE3CVAo6tRhu02z
-MyUwYNxOG8eNtLVJB4oaVHtbZTxXFvd2oCloVB/wBnbnxE6WkgAHGzlGc6W/IqHX
-T5s+PZLelMSWMA0WZoRztCaCJx8DeA+AZy7bgaS/hC0geQSB8hc3+Gk9rv+HgC5w
-1vRmPrtPu3rVi6thEZTwhTnJu1IGg7n/SPEO3AyRfVqHFLga+TvqmlKJOWLOvGUM
-TtALD/0xlnZUsuHshpviTQYZXaiBoctbVGJ02IRiu9b8gOci1qieUwqLy06jqitj
-sgqwQpx+dwVCE+TDYIaH66p1zCXXeWmpptrj/G1/3JtWpSvzET8Z1hmyzfPttZdC
-IbLB949W1rbrilrLd9xOKsCN5/yXbYTPlmFNDVZuL6mDdonHPN/g1Nt/K1IG6INg
-0rUJEkpKu7vphzrK5aRHShWAeCYrZesTJsp0NtL+7hO1tynztai8V2P+/nkGn9x1
-ZjjhQvBZEhO2CKuYu4zL
-=jihR
------END PGP SIGNATURE-----
-
---Sig_/JuHi1Gn_ADuhPYK4l/pWOrN--
+Thanks,
+Rahul
