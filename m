@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905AbbAMF7S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 00:59:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39987 "EHLO
+	id S1752631AbbAMF7Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 00:59:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39993 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751240AbbAMF7O (ORCPT
+	with ESMTP id S1751041AbbAMF7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 00:59:14 -0500
-Date: Mon, 12 Jan 2015 19:36:40 -0800
+	Tue, 13 Jan 2015 00:59:15 -0500
+Date: Mon, 12 Jan 2015 19:37:36 -0800
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: sunwxg <sun.wxg@gmail.com>
-Cc: Forest Bond <forest@alittletooquiet.net>,
-        Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>,
-        Silvio Fricke <silvio.fricke@gmail.com>, devel@driverdev.osuosl.org,
+To: Krzysztof Adamski <k@japko.eu>
+Cc: Malcolm Priestley <tvboxspy@gmail.com>,
+        Forest Bond <forest@alittletooquiet.net>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging:vt6655 Add extern variable in head file
-Message-ID: <20150113033640.GB31093@kroah.com>
-References: <1418715590-10074-2-git-send-email-sun.wxg@gmail.com>
+Subject: Re: [PATCH] staging: vt6656: Use ether_addr_copy() in
+ vnt_fill_ieee80211_rts.
+Message-ID: <20150113033736.GC31093@kroah.com>
+References: <20141216083021.GA14666@box2.japko.eu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1418715590-10074-2-git-send-email-sun.wxg@gmail.com>
+In-Reply-To: <20141216083021.GA14666@box2.japko.eu>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 03:39:50PM +0800, sunwxg wrote:
-> From: Sun Wang <sun.wxg@gmail.com>
+On Tue, Dec 16, 2014 at 09:30:21AM +0100, Krzysztof Adamski wrote:
+> Both struct ieee80211_rts and struct ieee80211_hdr defined in
+> linux/ieee80211.h are declared as __aligned(2) so it is safe to use
+> ether_addr_copy() instead of memcpy().
 > 
-> Subject: [PATCH] staging:vt6655 Add extern variable in head file
-
-Why is this in the middle of the patch?  I would have to hand edit it
-out :(
-
+> Signed-off-by: Krzysztof Adamski <k@japko.eu>
+> ---
+>   drivers/staging/vt6656/rxtx.c | 5 +++--
+>   1 file changed, 3 insertions(+), 2 deletions(-)
 > 
-> Extern variable must be declared in head file. Compiler can catch the inconsistency when variable changes. 
+> diff --git a/drivers/staging/vt6656/rxtx.c b/drivers/staging/vt6656/rxtx.c
+> index ea5140a..280c923 100644
+> --- a/drivers/staging/vt6656/rxtx.c
+> +++ b/drivers/staging/vt6656/rxtx.c
+> @@ -36,6 +36,7 @@
+>    *
+>    */
+>   
+> +#include <linux/etherdevice.h>
+>   #include "device.h"
+>   #include "rxtx.h"
+>   #include "card.h"
 
-Always wrap your changelog at 72 columns.
+Something corrupted this patch :(
 
-Please fix up and resend.
-
-thanks,
-
-greg k-h
