@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063AbbAMW3o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 17:29:44 -0500
-Received: from mail.kernel.org ([198.145.29.136]:49556 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751388AbbAMW3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 17:29:41 -0500
-Date: Wed, 14 Jan 2015 00:29:35 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Chris Metcalf <cmetcalf@ezchip.com>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 2/2] tile: enable sparse checks for get/put_user
-Message-ID: <20150113222935.GB23641@redhat.com>
-References: <201501131950.t0DJognR027020@lab-37.internal.tilera.com>
- <201501131951.t0DJpIKt027023@lab-37.internal.tilera.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201501131951.t0DJpIKt027023@lab-37.internal.tilera.com>
+	id S1752032AbbAMWc1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 17:32:27 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:50097 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453AbbAMWc0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 17:32:26 -0500
+From: Mark Salyzyn <salyzyn@android.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Salyzyn <salyzyn@android.com>, Anton Vorontsov <anton@enomsg.org>,
+        Colin Cross <ccross@android.com>, Kees Cook <keescook@chromium.org>,
+        Tony Luck <tony.luck@intel.com>
+Subject: [PATCH v4 1/5] pstore: use scnprintf
+Date: Tue, 13 Jan 2015 14:32:06 -0800
+Message-Id: <1421188333-1437-1-git-send-email-salyzyn@android.com>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 02:41:20PM -0500, Chris Metcalf wrote:
-> Add an extra intermediate variable to __get_user and __put_user
-> to give sparse an opportunity to detect mismatches.
-> 
-> Signed-off-by: Chris Metcalf <cmetcalf@ezchip.com>
+No guarantees that the names will not exceed the
+name buffer with future adjustments.
 
-Reviewed-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Mark Salyzyn <salyzyn@android.com>
+Acked-by: Joe Perches <joe@perches.com>
+---
+v2: switch from snprintf to scnprintf
+v3: remove embedded space
+v4: renumber pmsg series dependencies
 
-> ---
->  arch/tile/include/asm/uaccess.h | 19 +++++++++++--------
->  1 file changed, 11 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/tile/include/asm/uaccess.h b/arch/tile/include/asm/uaccess.h
-> index b81b24a8489b..f41cb53cf645 100644
-> --- a/arch/tile/include/asm/uaccess.h
-> +++ b/arch/tile/include/asm/uaccess.h
-> @@ -210,14 +210,16 @@ extern int __get_user_bad(void)
->  #define __get_user(x, ptr)						\
->  	({								\
->  		int __ret;						\
-> +		typeof(x) _x;						\
->  		__chk_user_ptr(ptr);					\
->  		switch (sizeof(*(ptr))) {				\
-> -		case 1: __get_user_1(x, ptr, __ret); break;		\
-> -		case 2: __get_user_2(x, ptr, __ret); break;		\
-> -		case 4: __get_user_4(x, ptr, __ret); break;		\
-> -		case 8: __get_user_8(x, ptr, __ret); break;		\
-> +		case 1: __get_user_1(_x, ptr, __ret); break;		\
-> +		case 2: __get_user_2(_x, ptr, __ret); break;		\
-> +		case 4: __get_user_4(_x, ptr, __ret); break;		\
-> +		case 8: __get_user_8(_x, ptr, __ret); break;		\
->  		default: __ret = __get_user_bad(); break;		\
->  		}							\
-> +		(x) = (typeof(*(ptr))) _x;				\
->  		__ret;							\
->  	})
->  
-> @@ -289,12 +291,13 @@ extern int __put_user_bad(void)
->  #define __put_user(x, ptr)						\
->  ({									\
->  	int __ret;							\
-> +	typeof(*(ptr)) _x = (x);					\
->  	__chk_user_ptr(ptr);						\
->  	switch (sizeof(*(ptr))) {					\
-> -	case 1: __put_user_1(x, ptr, __ret); break;			\
-> -	case 2: __put_user_2(x, ptr, __ret); break;			\
-> -	case 4: __put_user_4(x, ptr, __ret); break;			\
-> -	case 8: __put_user_8(x, ptr, __ret); break;			\
-> +	case 1: __put_user_1(_x, ptr, __ret); break;			\
-> +	case 2: __put_user_2(_x, ptr, __ret); break;			\
-> +	case 4: __put_user_4(_x, ptr, __ret); break;			\
-> +	case 8: __put_user_8(_x, ptr, __ret); break;			\
->  	default: __ret = __put_user_bad(); break;			\
->  	}								\
->  	__ret;								\
-> -- 
-> 2.1.2
+ fs/pstore/inode.c | 23 +++++++++++++----------
+ 1 file changed, 13 insertions(+), 10 deletions(-)
+
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index 5041660..d69586f 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -338,32 +338,35 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
+ 
+ 	switch (type) {
+ 	case PSTORE_TYPE_DMESG:
+-		sprintf(name, "dmesg-%s-%lld%s", psname, id,
+-						compressed ? ".enc.z" : "");
++		scnprintf(name, sizeof(name), "dmesg-%s-%lld%s",
++			  psname, id, compressed ? ".enc.z" : "");
+ 		break;
+ 	case PSTORE_TYPE_CONSOLE:
+-		sprintf(name, "console-%s-%lld", psname, id);
++		scnprintf(name, sizeof(name), "console-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_FTRACE:
+-		sprintf(name, "ftrace-%s-%lld", psname, id);
++		scnprintf(name, sizeof(name), "ftrace-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_MCE:
+-		sprintf(name, "mce-%s-%lld", psname, id);
++		scnprintf(name, sizeof(name), "mce-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_PPC_RTAS:
+-		sprintf(name, "rtas-%s-%lld", psname, id);
++		scnprintf(name, sizeof(name), "rtas-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_PPC_OF:
+-		sprintf(name, "powerpc-ofw-%s-%lld", psname, id);
++		scnprintf(name, sizeof(name), "powerpc-ofw-%s-%lld",
++			  psname, id);
+ 		break;
+ 	case PSTORE_TYPE_PPC_COMMON:
+-		sprintf(name, "powerpc-common-%s-%lld", psname, id);
++		scnprintf(name, sizeof(name), "powerpc-common-%s-%lld",
++			  psname, id);
+ 		break;
+ 	case PSTORE_TYPE_UNKNOWN:
+-		sprintf(name, "unknown-%s-%lld", psname, id);
++		scnprintf(name, sizeof(name), "unknown-%s-%lld", psname, id);
+ 		break;
+ 	default:
+-		sprintf(name, "type%d-%s-%lld", type, psname, id);
++		scnprintf(name, sizeof(name), "type%d-%s-%lld",
++			  type, psname, id);
+ 		break;
+ 	}
+ 
+-- 
+2.2.0.rc0.207.ga3a616c
+
