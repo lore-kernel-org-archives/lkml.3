@@ -1,127 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757AbbAMIUK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 03:20:10 -0500
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:59725 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995AbbAMIUI (ORCPT
+	id S1751788AbbAMIVc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 03:21:32 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:59882 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751054AbbAMIVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 03:20:08 -0500
+	Tue, 13 Jan 2015 03:21:31 -0500
+Date: Tue, 13 Jan 2015 09:21:29 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Bo Shen <voice.shen@atmel.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 4/6] ARM: at91/dt: add SRAM nodes
+Message-ID: <20150113082129.GA4104@piout.net>
+References: <1421089317-12607-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1421089317-12607-5-git-send-email-alexandre.belloni@free-electrons.com>
+ <54B476EC.3090207@atmel.com>
 MIME-Version: 1.0
-In-Reply-To: <54B01D44.5080601@broadcom.com>
-References: <rjui@broadcom.com>
-	<1417131990-17954-1-git-send-email-rjui@broadcom.com>
-	<1417131990-17954-2-git-send-email-rjui@broadcom.com>
-	<CACRpkdb5pNMbXmWGjrGpAYNLLwv6pWWOJQy0C6BLetNcStFM6A@mail.gmail.com>
-	<54B01D44.5080601@broadcom.com>
-Date: Tue, 13 Jan 2015 09:20:02 +0100
-Message-ID: <CACRpkdbW5P=w0CPYYf_gfBuD7W0WOdAYCKpTXM5MsK9mdYDc5w@mail.gmail.com>
-Subject: Re: [PATCH 1/4] pinctrl: Broadcom Cygnus pinctrl device tree binding
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Ray Jui <rjui@broadcom.com>
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Scott Branden <sbranden@broadcom.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54B476EC.3090207@atmel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 9, 2015 at 7:26 PM, Ray Jui <rjui@broadcom.com> wrote:
-> On 1/9/2015 2:12 AM, Linus Walleij wrote:
+On 13/01/2015 at 09:37:48 +0800, Bo Shen wrote :
+> Hi Alexandre,
+> 
+> On 01/13/2015 03:01 AM, Alexandre Belloni wrote:
+> >
+> >+	sram0: sram@002ff000 {
+> 
+> Why here is 002ff000, while not 00200000?
+> 
+> >+		compatible = "mmio-sram";
+> >+		reg = <0x00200000 0x2000>;
+> >+	};
+> >+
 
->> Just use "groups" and "function" and refer to
->> Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
->>
->> Then "alt1", "alt2" etc are non-functional names of functions.
->> Use the real function names, like "spi0" or so. This
->> alt-business seems to be just a shortcut to make it
->> simple, don't do that.
->>
->> Then you use e.g. "spi0" as a group name. I prefer you
->> call that "spi0_grp" or something to say it is a group of
->> pins associated with spi0, as spi0 is actually the
->> function.
->>
-> Hmmm, I did this by following brcm,bcm11351-pinctrl.txt:
-> - function: String. Specifies the pin mux selection. Values must be one
-> of: "alt1", "alt2", "alt3", "alt4"
->
-> But you are right, in the pinctrl binding document it describes the
-> generic pin multiplexing nodes use "function" and "group".
+I'll correct that one. I followed what was done before. The sam9260 has
+two banks, one at 0x00200000, and the other one at 0x00300000. Thanks to
+address mirroring on the range, we can declare that as one contiguous
+range of sram, starting at 0x002ff000.
 
-Note "function" and "groups". Note groups is pluralis. You can
-select multiple groups for a single function.
 
-> For example, the group "lcd" covers 30 pins. When I configure "lcd" to
-> alternate function 1, all 30 pins are muxed to LCD function. When
-> configured to function 2, all pins are muxed to SRAM function. Now, here
-> comes the issue, when configured to function 3, pins 1-15 and 20-30
-> become GPIO function, but pins 16-19 becomes SPI5 function. When it's
-> configured to function 4, all 30 pins become GPIO.
+> >  	ahb {
+> >  		compatible = "simple-bus";
+> >  		#address-cells = <1>;
+> >diff --git a/arch/arm/boot/dts/at91sam9261.dtsi b/arch/arm/boot/dts/at91sam9261.dtsi
+> >index cdb9ed612109..e247b0b5fdab 100644
+> >--- a/arch/arm/boot/dts/at91sam9261.dtsi
+> >+++ b/arch/arm/boot/dts/at91sam9261.dtsi
+> >@@ -60,6 +60,11 @@
+> >  		};
+> >  	};
+> >
+> >+	sram: sram@00300000 {
+> >+		compatible = "mmio-sram";
+> >+		reg = <0x00300000 0x28000>;
+> >+	};
+> >+
+> >  	ahb {
+> >  		compatible = "simple-bus";
+> >  		#address-cells = <1>;
+> >diff --git a/arch/arm/boot/dts/at91sam9263.dtsi b/arch/arm/boot/dts/at91sam9263.dtsi
+> >index ef8a70c27439..8a210d5033b1 100644
+> >--- a/arch/arm/boot/dts/at91sam9263.dtsi
+> >+++ b/arch/arm/boot/dts/at91sam9263.dtsi
+> >@@ -62,6 +62,16 @@
+> >  		};
+> >  	};
+> >
+> >+	sram0: sram@00300000 {
+> >+		compatible = "mmio-sram";
+> >+		reg = <0x00300000 0x14000>;
+> >+	};
+> >+
+> >+	sram1: sram@00500000 {
+> >+		compatible = "mmio-sram";
+> >+		reg = <0x00300000 0x4000>;
+> >+	};
+> >+
+> >  	ahb {
+> >  		compatible = "simple-bus";
+> >  		#address-cells = <1>;
+> >diff --git a/arch/arm/boot/dts/at91sam9g20.dtsi b/arch/arm/boot/dts/at91sam9g20.dtsi
+> >index a50ee587a7af..9012fe9d7758 100644
+> >--- a/arch/arm/boot/dts/at91sam9g20.dtsi
+> >+++ b/arch/arm/boot/dts/at91sam9g20.dtsi
+> >@@ -16,6 +16,15 @@
+> >  		reg = <0x20000000 0x08000000>;
+> >  	};
+> >
+> >+	sram0: sram@002ff000 {
+> 
+> Why here is 002ff000, while not 00200000?
+> 
+> >+		status = "disabled";
+> 
+> Btw, why it needs set to disabled.
+> 
+> >+	};
+> >+
+> >+	sram1: sram@002fc000 {
+> 
+> Why here is 002fc000, while not 00300000? And length is on 0x4000.
+> 
 
-I would split the use case in two groups for LCD and SRAM,
-and three groups for GPIO:
-"lcd_grp", "sram_grp", "gpio-1-15_grp",
-"gpio-16-19_grp", "gpio-20-30_grp", "spi5_grp"
+The same here, because we use mirroring, we have to disable the one that
+is coming from at91sam9260.dtsi and then declare another one. I'll
+correct the addresses in the reg properties. I was first declaring two
+banks but we chose to switch back to only one range.
 
-Valid combinations become
+> >+		compatible = "mmio-sram";
+> >+		reg = <0x00200000 0x8000>;
+> >+	};
+> >+
 
-function = "lcd"
-groups = "lcd_grp";
+Thanks for the review.
 
-function = "sram"
-groups = "sram_grp"
-
-For all GPIO only this:
-
-function = "gpio"
-groups = "gpio-1-16_grp", "gpio-16-19_grp", "gpio-20-30_grp"
-
-For a combined GPIO+SPI:
-
-function = "gpio"
-groups = "gpio-1-16_grp", "gpio-20-30_grp"
-
-function = "spi5"
-groups = "spi5_grp"
-
-The pinctrl runtile will protest if you try to combine spi5_grp
-with gpio-16-19_grp.
-
-> In some other cases, when I configure a group to other functions, there
-> could be spare pins which become unused (not brought out to the pad).
-> Or, the spare pins may also become a separate function.
-
-That's cool.
-
-> Based on the LCD example, I'd assume I would do the following for the
-> default LCD function:
->
-> lcd_node {
->         group = "lcd_grp";
->         function = "lcd";
-> };
->
-> And in the case of function 3, I would call the function "spi5" and
-> assume the rest of pins become either GPIO (or unused)?
->
-> spi5_node {
->         group = "lcd_grp";
->         function = "spi5";
-> };
-
-Looks cool per above.
-
-You need some clever code in the driver to handle double-configuration
-of registers and so on, but I think it can be done.
-
-Using pin control as a GPIO backend can be a bit tricky and will need
-some testing and elaboration, but the subsystem will block collisions.
-
-Yours,
-Linus Walleij
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
