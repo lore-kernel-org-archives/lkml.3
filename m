@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751676AbbAMGuC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 01:50:02 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:22591 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396AbbAMGt7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 01:49:59 -0500
-X-IronPort-AV: E=Sophos;i="5.07,748,1413270000"; 
-   d="scan'208";a="54673081"
-Subject: Re: [3.19-rc3] tg3: BUG: sleeping function called from invalid
- context
-From: Michael Chan <mchan@broadcom.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Prashant Sreedharan <prashant@broadcom.com>, <netdev@vger.kernel.org>,
-        Linux kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <54B46DD5.9050802@hurleysoftware.com>
-References: <54B46DD5.9050802@hurleysoftware.com>
-Content-Type: text/plain; charset="cp1252"
-Date: Mon, 12 Jan 2015 22:49:22 -0800
-Message-ID: <1421131762.7208.31.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	id S1751481AbbAMGvo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 01:51:44 -0500
+Received: from mail-by2on0101.outbound.protection.outlook.com ([207.46.100.101]:8448
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750968AbbAMGvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 01:51:42 -0500
+From: Peter Chen <Peter.Chen@freescale.com>
+To: Huang Rui <ray.huang@amd.com>, Felipe Balbi <balbi@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/4] usb: gadget: u_uac1: fix build issue
+Thread-Topic: [PATCH 1/4] usb: gadget: u_uac1: fix build issue
+Thread-Index: AQHQLvltK2p2hX9CMUOt7jMPvV3bB5y9m7+A
+Date: Tue, 13 Jan 2015 06:51:40 +0000
+Message-ID: <BN3PR0301MB08491E88100625CCAE38DAE781400@BN3PR0301MB0849.namprd03.prod.outlook.com>
+References: <1421130034-1891-1-git-send-email-ray.huang@amd.com>
+In-Reply-To: <1421130034-1891-1-git-send-email-ray.huang@amd.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.88.158.211]
+authentication-results: spf=none (sender IP is )
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+x-dmarcaction-test: None
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BN3PR0301MB0849;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB0849;
+x-forefront-prvs: 045584D28C
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(51704005)(199003)(54606007)(76576001)(97736003)(62966003)(77156002)(68736005)(99286002)(54356999)(86362001)(50986999)(76176999)(46102003)(33656002)(2950100001)(102836002)(106356001)(2900100001)(92566002)(105586002)(106116001)(66066001)(74316001)(101416001)(40100003)(19580405001)(19580395003)(122556002)(64706001)(2656002)(2171001)(87936001)(54206007)(7059030);DIR:OUT;SFP:1102;SCL:1;SRVR:BN3PR0301MB0849;H:BN3PR0301MB0849.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-originalarrivaltime: 13 Jan 2015 06:51:40.7852
+ (UTC)
+X-MS-Exchange-CrossTenant-fromentityheader: Hosted
+X-MS-Exchange-CrossTenant-id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN3PR0301MB0849
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0D6ppro025905
 
-On Mon, 2015-01-12 at 19:59 -0500, Peter Hurley wrote: 
-> [   17.203009] BUG: sleeping function called from invalid context at /home/peter/src/kernels/mainline/kernel/irq/manage.c:104
-> [   17.203067] in_atomic(): 1, irqs_disabled(): 0, pid: 1106, name: ip
-> [   17.203092] 2 locks held by ip/1106:
-> [   17.205255]  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff816adf1f>] rtnetlink_rcv+0x1f/0x40
-> [   17.207445]  #1:  (&(&tp->lock)->rlock){+.....}, at: [<ffffffffa01073e6>] tg3_start+0xc06/0x11f0 [tg3]
-> [   17.209725] CPU: 2 PID: 1106 Comm: ip Not tainted 3.19.0-rc3+wip-xeon+lockdep #rc3+wip
-> [   17.211900] Hardware name: Dell Inc. Precision WorkStation T5400  /0RW203, BIOS A11 04/30/2012
-> [   17.214086]  0000000000000068 ffff8802ac823498 ffffffff817af7e8 0000000000000005
-> [   17.216265]  ffffffff81a9be78 ffff8802ac8234a8 ffffffff810998a5 ffff8802ac8234d8
-> [   17.218446]  ffffffff8109991a ffff8802ac8234c8 ffff8802af0aae00 ffffffffa00ed000
-> [   17.220636] Call Trace:
-> [   17.222743]  [<ffffffff817af7e8>] dump_stack+0x4f/0x7b
-> [   17.224808]  [<ffffffff810998a5>] ___might_sleep+0x105/0x140
-> [   17.226842]  [<ffffffff8109991a>] __might_sleep+0x3a/0xa0
-> [   17.228869]  [<ffffffffa00ed000>] ? 0xffffffffa00ed000
-> [   17.230939]  [<ffffffff810d7d78>] synchronize_irq+0x38/0xa0
-> [   17.232967]  [<ffffffffa00ed000>] ? 0xffffffffa00ed000
-> [   17.234991]  [<ffffffffa010105f>] tg3_chip_reset+0x13f/0x9c0 [tg3]
-> [   17.236988]  [<ffffffffa01020ae>] tg3_reset_hw+0x7e/0x2d20 [tg3] 
+ 
+> See below error message:
+>   CC [M]  drivers/gpu/drm/nouveau/core/subdev/vm/nv50.o
+>   CC [M]  drivers/staging/lustre/lnet/selftest/module.o
+> drivers/usb/gadget/function/f_uac1.c: In function â€˜f_audio_free_instâ€™:
+> drivers/usb/gadget/function/f_uac1.c:904:21: error: â€˜struct f_uac1_optsâ€™ has
+> no member named â€˜cardâ€™
+>   gaudio_cleanup(opts->card);
+>                      ^
+> make[4]: *** [drivers/usb/gadget/function/f_uac1.o] Error 1
+> make[3]: *** [drivers/usb/gadget/function] Error 2
+> make[2]: *** [drivers/usb/gadget] Error 2
+> make[2]: *** Waiting for unfinished jobs....
+>   CC [M]  drivers/staging/lustre/lnet/selftest/ping_test.o
+> 
+> Signed-off-by: Huang Rui <ray.huang@amd.com>
+> Cc: Peter Chen <peter.chen@freescale.com>
+> ---
+> 
 
-tp->lock is held in this code path.  If synchronize_irq() sleeps in
-wait_event(desc->wait_for_threads, ...), we'll get the warning.
+Oh, my three patches have dependencies, it needs to rebase Felipe's fixes tree to fix this problem.
 
-The synchronize_irq() call is to wait for any tg3 irq handler to finish
-so that it is guaranteed that next time it will see the CHIP_RESETTING
-flag and do nothing.
+commit 4fde6204df052bb89ba3d915ed6ed9f306f3cfa1
+Author: Peter Chen <peter.chen@freescale.com>
+Date:   Mon Dec 1 16:09:27 2014 +0800
 
-Not sure if we can drop the tp->lock before we call synchronize_irq()
-and then take it again after synchronize_irq().
+    usb: gadget: f_uac1: access freed memory at f_audio_free_inst
 
+
+
+Peter
+
+ 
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
