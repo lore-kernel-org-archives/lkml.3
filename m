@@ -1,87 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752274AbbAMBHl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 20:07:41 -0500
-Received: from vps0.lunn.ch ([178.209.37.122]:50917 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751275AbbAMBHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 20:07:39 -0500
-Date: Tue, 13 Jan 2015 02:05:38 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jason Cooper <jason@lakedaemon.net>, gregory.clement@free-electrons.com,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Evgeni Dobrev <evgeni@studio-punkt.com>,
-        Peter Robinson <pbrobinson@gmail.com>
-Subject: Re: linux-next: manual merge of the mvebu tree with the arm-soc tree
-Message-ID: <20150113010538.GA2434@lunn.ch>
-References: <20150113112016.2db3f982@canb.auug.org.au>
+	id S1751972AbbAMBRx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 20:17:53 -0500
+Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:44353 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751485AbbAMBRw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 20:17:52 -0500
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "balbi@ti.com" <balbi@ti.com>, John Youn <John.Youn@synopsys.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "r.baldyga@samsung.com" <r.baldyga@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
+        "Mian Yousaf Kaukab" <yousaf.kaukab@intel.com>,
+        Yunzhi Li <lyz@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        Nick Hudson <skrll@netbsd.org>
+Subject: RE: New maintainer for dwc2
+Thread-Topic: New maintainer for dwc2
+Thread-Index: AdAuvY537K3q4zEZTxGErlRM6KDSNwAUhZaAABBB44A=
+Date: Tue, 13 Jan 2015 01:17:48 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E030484506F64@US01WEMBX2.internal.synopsys.com>
+References: <A2CA0424C0A6F04399FB9E1CD98E030484506EFD@US01WEMBX2.internal.synopsys.com>
+ <20150113010223.GA25043@kroah.com>
+In-Reply-To: <20150113010223.GA25043@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.13.184.19]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150113112016.2db3f982@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 11:20:16AM +1100, Stephen Rothwell wrote:
-> Hi all,
+> From: gregkh@linuxfoundation.org [mailto:gregkh@linuxfoundation.org]
+> Sent: Monday, January 12, 2015 5:02 PM
 > 
-> Today's linux-next merge of the mvebu tree got a conflict in
-> arch/arm/boot/dts/Makefile between commit 6f1650f15bc4 ("ARM: dts: Only
-> build dtb if associated Arch and/or SoC is enabled") from the arm-soc
-> tree and commit dd7d2be1d2b8 ("Kirkwood: add support for Seagate
-> BlackArmor NAS220") from the mvebu tree.
+> On Mon, Jan 12, 2015 at 11:14:54PM +0000, Paul Zimmerman wrote:
+> > Hi everyone,
+> >
+> > I will be leaving Synopsys on Friday, Jan 16th, so the dwc2 driver
+> > will need a new maintainer.
+> >
+> > I am recommending John Youn <johnyoun@synopsys.com> as the new
+> > maintainer.
+> >
+> > On the plus side, John has quite a bit of experience with the dwc2
+> > controller, and has previous experience submitting kernel patches (for
+> > the xhci and dwc3 drivers). And being a Synopsys employee, he will have
+> > access to internal resources for support.
+> >
+> > On the minus side, John has not worked directly with the in-kernel dwc2
+> > driver until very recently, and has not done maintainer work before.
+> >
+> > If no one has any objections, I will submit a patch to MAINTAINERS in a
+> > couple of days making John the new dwc2 maintainer.
 > 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc arch/arm/boot/dts/Makefile
-> index abb810f1fe29,17ee1d6a0ac0..000000000000
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@@ -112,24 -101,18 +112,25 @@@ dtb-$(CONFIG_ARCH_EXYNOS5) += 
->   	exynos5440-sd5v1.dtb \
->   	exynos5440-ssdk5440.dtb \
->   	exynos5800-peach-pi.dtb
->  -dtb-$(CONFIG_ARCH_HI3xxx) += hi3620-hi4511.dtb
->  -dtb-$(CONFIG_ARCH_HIX5HD2) += hisi-x5hd2-dkb.dtb
->  -dtb-$(CONFIG_ARCH_HIGHBANK) += highbank.dtb \
->  +dtb-$(CONFIG_ARCH_HI3xxx) += \
->  +	hi3620-hi4511.dtb
->  +dtb-$(CONFIG_ARCH_HIX5HD2) += \
->  +	hisi-x5hd2-dkb.dtb
->  +dtb-$(CONFIG_ARCH_HIGHBANK) += \
->  +	highbank.dtb \
->   	ecx-2000.dtb
->  -dtb-$(CONFIG_ARCH_HIP04) += hip04-d01.dtb
->  -dtb-$(CONFIG_ARCH_INTEGRATOR) += integratorap.dtb \
->  +dtb-$(CONFIG_ARCH_HIP04) += \
->  +	hip04-d01.dtb
->  +dtb-$(CONFIG_ARCH_INTEGRATOR) += \
->  +	integratorap.dtb \
->   	integratorcp.dtb
->  -dtb-$(CONFIG_ARCH_KEYSTONE) += k2hk-evm.dtb \
->  +dtb-$(CONFIG_ARCH_KEYSTONE) += \
->  +	k2hk-evm.dtb \
->   	k2l-evm.dtb \
->   	k2e-evm.dtb
->  -dtb-$(CONFIG_MACH_KIRKWOOD) += kirkwood-b3.dtb \
->  +dtb-$(CONFIG_MACH_KIRKWOOD) += \
->  +	kirkwood-b3.dtb \
-> + 	kirkwood-blackarmor-nas220.dtb \
->   	kirkwood-cloudbox.dtb \
->   	kirkwood-d2net.dtb \
->   	kirkwood-db-88f6281.dtb \
+> I don't have any objections.  John will still be sending patches to
+> Felipe through email, and not directly to me, right?
 
-Hi Stephen
+Yes, that is correct.
 
-Thanks for the fixup.
+-- 
+Paul
 
-       Andrew
