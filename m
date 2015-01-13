@@ -1,157 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838AbbAMWAd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 17:00:33 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:33502 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752453AbbAMWAb (ORCPT
+	id S1753640AbbAMWBd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 17:01:33 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:53347 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040AbbAMWBb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 17:00:31 -0500
+	Tue, 13 Jan 2015 17:01:31 -0500
 MIME-Version: 1.0
-In-Reply-To: <54B58D5D.5070508@ti.com>
-References: <1420651854-17768-1-git-send-email-s-anna@ti.com>
- <1420651854-17768-2-git-send-email-s-anna@ti.com> <CAL_Jsq+79cnCiww6g8ejki0yT59-N8eucHC3QGMbsXG4DksWuQ@mail.gmail.com>
- <54B58D5D.5070508@ti.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Tue, 13 Jan 2015 16:00:08 -0600
-Message-ID: <CAL_JsqLW9PRktHntLquohH3x_bPgJrrn2Y2_8RYA_HnKhpTDHg@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/3] of/device: manage resources similar to platform_device_add
-To: Suman Anna <s-anna@ti.com>
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Felipe Balbi <balbi@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+In-Reply-To: <20150108181657.GE20632@pd.tnic>
+References: <1420734315-30943-1-git-send-email-dvlasenk@redhat.com>
+ <1420734315-30943-2-git-send-email-dvlasenk@redhat.com> <20150108181657.GE20632@pd.tnic>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 13 Jan 2015 14:01:09 -0800
+Message-ID: <CALCETrXU8p+ttD1n0UoocLN0NucVvLWYBKujmQFA86n1Dzxe=Q@mail.gmail.com>
+Subject: Re: [PATCH 1/4] x86: entry_64.S: delete unused code
+To: Borislav Petkov <bp@alien8.de>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-omap <linux-omap@vger.kernel.org>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 3:25 PM, Suman Anna <s-anna@ti.com> wrote:
-> Hi Rob,
->
-> On 01/13/2015 02:38 PM, Rob Herring wrote:
->> On Wed, Jan 7, 2015 at 11:30 AM, Suman Anna <s-anna@ti.com> wrote:
->>> Drivers can use of_platform_populate() to create platform devices
->>> for children of the device main node, and a complementary API
->>> of_platform_depopulate() is provided to delete these child platform
->>> devices. The of_platform_depopulate() leverages the platform API
->>> for performing the cleanup of these devices.
->>>
->>> The platform device resources are managed differently between
->>> of_device_add and platform_device_add, and this asymmetry causes
->>> a kernel oops in platform_device_del during removal of the resources.
->>> Manage the platform device resources similar to platform_device_add
->>> to fix this kernel oops.
+On Thu, Jan 8, 2015 at 10:16 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Thu, Jan 08, 2015 at 05:25:12PM +0100, Denys Vlasenko wrote:
+>> A define, two macros and an unreferenced bit of assembly are gone.
 >>
->> This is a known issue and has been attempted to be fixed before (I
->> believe there is a revert in mainline). The problem is there are known
->> devicetrees which have overlapping resources and they will break with
->> your change.
->
-> Are you referring to 02bbde7849e6 (Revert "of: use
-> platform_device_add")?
-
-I believe that's the one.
-
-> That one seems to be in registration path, and
-> this crash is in the unregistration path. If so, to fix the crash,
-> should we be skipping the release_resource() for now in
-> platform_device_del for DT nodes, or replace platform_device_unregister
-> with of_device_unregister in of_platform_device_destroy()?
-
-IIRC, the problem is inserting a resource twice on add from 2
-different nodes, not the removal path. Perhaps we could make a
-collision non-fatal for in the DT case. Grant may have some ideas on
-what's needed here.
-
-> This is a common crash and we cannot use of_platform_depopulate() today
-> in drivers to complement of_platform_populate().
-
-Yes, I know.
-
-> Also, the platform_data crash is independent of this, I could reproduce
-> that one even with using of_device_unregister in a loop in driver remove.
-
-Missed this one. I'll reply to that patch.
-
-Rob
-
->
-> regards
-> Suman
->
+>> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+>> CC: Linus Torvalds <torvalds@linux-foundation.org>
+>> CC: Oleg Nesterov <oleg@redhat.com>
+>> CC: "H. Peter Anvin" <hpa@zytor.com>
+>> CC: Andy Lutomirski <luto@amacapital.net>
+>> CC: Frederic Weisbecker <fweisbec@gmail.com>
+>> CC: X86 ML <x86@kernel.org>
+>> CC: Alexei Starovoitov <ast@plumgrid.com>
+>> CC: Will Drewry <wad@chromium.org>
+>> CC: Kees Cook <keescook@chromium.org>
+>> CC: linux-kernel@vger.kernel.org
 >>
->> Rob
->>
->>>
->>> Signed-off-by: Suman Anna <s-anna@ti.com>
->>> ---
->>>  drivers/of/device.c | 38 +++++++++++++++++++++++++++++++++++++-
->>>  1 file changed, 37 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/of/device.c b/drivers/of/device.c
->>> index 46d6c75c1404..fa27c1c71f29 100644
->>> --- a/drivers/of/device.c
->>> +++ b/drivers/of/device.c
->>> @@ -50,6 +50,8 @@ EXPORT_SYMBOL(of_dev_put);
->>>
->>>  int of_device_add(struct platform_device *ofdev)
->>>  {
->>> +       int i, ret;
->>> +
->>>         BUG_ON(ofdev->dev.of_node == NULL);
->>>
->>>         /* name and id have to be set so that the platform bus doesn't get
->>> @@ -63,7 +65,41 @@ int of_device_add(struct platform_device *ofdev)
->>>         if (!ofdev->dev.parent)
->>>                 set_dev_node(&ofdev->dev, of_node_to_nid(ofdev->dev.of_node));
->>>
->>> -       return device_add(&ofdev->dev);
->>> +       for (i = 0; i < ofdev->num_resources; i++) {
->>> +               struct resource *p, *r = &ofdev->resource[i];
->>> +
->>> +               if (!r->name)
->>> +                       r->name = dev_name(&ofdev->dev);
->>> +
->>> +               p = r->parent;
->>> +               if (!p) {
->>> +                       if (resource_type(r) == IORESOURCE_MEM)
->>> +                               p = &iomem_resource;
->>> +                       else if (resource_type(r) == IORESOURCE_IO)
->>> +                               p = &ioport_resource;
->>> +               }
->>> +
->>> +               if (p && insert_resource(p, r)) {
->>> +                       dev_err(&ofdev->dev, "failed to claim resource %d\n",
->>> +                               i);
->>> +                       ret = -EBUSY;
->>> +                       goto failed;
->>> +               }
->>> +       }
->>> +
->>> +       ret = device_add(&ofdev->dev);
->>> +       if (ret == 0)
->>> +               return ret;
->>> +
->>> +failed:
->>> +       while (--i >= 0) {
->>> +               struct resource *r = &ofdev->resource[i];
->>> +               unsigned long type = resource_type(r);
->>> +
->>> +               if (type == IORESOURCE_MEM || type == IORESOURCE_IO)
->>> +                       release_resource(r);
->>> +       }
->>> +       return ret;
->>>  }
->>>
->>>  int of_device_register(struct platform_device *pdev)
->>> --
->>> 2.2.1
->>>
+>> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
 >
+> Acked-by: Borislav Petkov <bp@suse.de>
+>
+
+Applied to luto/x86/entry.  We'll see how this "maintenance" thing goes. :)
+
+--Andy
+
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
