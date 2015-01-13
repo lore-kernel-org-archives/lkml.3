@@ -1,70 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751212AbbAMIGS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 03:06:18 -0500
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:44617 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046AbbAMIGQ (ORCPT
+	id S1751369AbbAMIKU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 03:10:20 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:34531 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086AbbAMIKT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 03:06:16 -0500
+	Tue, 13 Jan 2015 03:10:19 -0500
+Message-ID: <54B4D2DF.9010308@arm.com>
+Date: Tue, 13 Jan 2015 08:10:07 +0000
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <20141217104428.GV11285@n2100.arm.linux.org.uk>
-References: <1418342706-14755-2-git-send-email-rjui@broadcom.com>
-	<1918116.UxUgDPTmcq@wuerfel>
-	<CAAVeFuL2MKRA7YLm_wsyftNy-sxgEYPrmqBm8XTRZQb66YF-qw@mail.gmail.com>
-	<1628217.66frkAqHMc@wuerfel>
-	<CAAVeFuJhiten-eVLCa2sMG-nsRwjPMiZap8UJM1kNCuRyK-b1w@mail.gmail.com>
-	<20141217104428.GV11285@n2100.arm.linux.org.uk>
-Date: Tue, 13 Jan 2015 09:06:15 +0100
-Message-ID: <CACRpkdZbGjNecrggrFr_18zjobXMBpkrSjBMAUfyfs2ZCebB0w@mail.gmail.com>
-Subject: Re: [PATCH v5 1/3] gpio: Cygnus: define Broadcom Cygnus GPIO binding
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Alexandre Courbot <gnurou@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Ray Jui <rjui@broadcom.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>, Joe Perches <joe@perches.com>,
-        Scott Branden <sbranden@broadcom.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+To: tkhai@yandex.ru, Luca Abeni <luca.abeni@unitn.it>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        juri.lelli@gmail.com
+Subject: Re: Another SCHED_DEADLINE bug (with bisection and possible fix)
+References: <20141230002738.6c12db31@utopia>	 <2629881420411885@web9m.yandex.ru> <54AAABFB.3060109@unitn.it>	 <1420499241.3361.14.camel@yandex.ru> <20150107080155.1d42d123@luca-1225C> <1420633741.12772.10.camel@yandex.ru>
+In-Reply-To: <1420633741.12772.10.camel@yandex.ru>
+X-OriginalArrivalTime: 13 Jan 2015 08:10:14.0713 (UTC) FILETIME=[5C378290:01D02F08]
+X-MC-Unique: 115011308101700201
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 11:44 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Dec 17, 2014 at 11:45:01AM +0900, Alexandre Courbot wrote:
->> Actually we are not that far from being able to do completely without
->> any GPIO number, and maybe that's what we should aim for. I think the
->> only remaining offender is the sysfs interface.
->
-> And that is a user API, and there's lots of users of it (eg, on Raspberry
-> Pi platforms.)  So changing it isn't going to be easy - I'd say that it's
-> impractical.
->
-> What you're suggesting would be like re-numbering Linux syscalls.
+Hi all,
 
-The problem is that right now if we set the .base of a gpio_chip
-to -1 for dynamic allocation of GPIO numbers and we have more
-than one GPIO chip in the system, the numbers basically depend
-on probe order, and may theoretically even differ between two boots.
+really sorry for the huge delay in replying to this! :(
 
-So in these cases preserving the ABI means preserving the
-unpredictability of these assigned numbers or something.
+On 07/01/2015 12:29, Kirill Tkhai wrote:
+> On Ср, 2015-01-07 at 08:01 +0100, Luca Abeni wrote:
+>> Hi Kirill,
+>>
+>> On Tue, 06 Jan 2015 02:07:21 +0300
+>> Kirill Tkhai <tkhai@yandex.ru> wrote:
+>>
+>>> On Пн, 2015-01-05 at 16:21 +0100, Luca Abeni wrote:
+>> [...]
+>>>> For reference, I attach the patch I am using locally (based on what
+>>>> I suggested in my previous mail) and seems to work fine here.
+>>>>
+>>>> Based on your comments, I suspect my patch can be further
+>>>> simplified by moving the call to init_dl_task_timer() in
+>>>> __sched_fork().
+>>>
+>>> It seems this way has problems. The first one is that task may become
+>>> throttled again, and we will start dl_timer again.
+>> Well, in my understanding if I change the parameters of a
+>> SCHED_DEADLINE task when it is throttled, it stays throttled... So, the
+>> task might not become throttled again before the dl timer fires.
+>> So, I hoped this problem does not exist. But I might be wrong.
+> 
+> You keep zeroing of dl_se->dl_throttled, and further enqueue_task()
+> places it on the dl_rq. So, further update_curr_dl() may make it throttled
+> again, and it will try to start dl_timer (which is already set).
+> 
+>>> The second is that
+>>> it's better to minimize number of combination of situations we have.
+>>> Let's keep only one combination: timer is set <-> task is throttled.
+>> Yes, this was my goal too... So, if I change the parameters of a task
+>> when it is throttled, I leave dl_throttled set to 1 and I leave the
+>> timer active.
+> 
+> As I see,
+> 
+> dl_se->dl_throttled = 0;
+> 
+> is still in __setparam_dl() after your patch, so you do not leave
+> it set to 1.
+> 
+>>
+>> [...]
+>>>>> @@ -3250,16 +3251,19 @@ static void
+>>>>>   __setparam_dl(struct task_struct *p, const struct sched_attr
+>>>>> *attr) {
+>>>>>   	struct sched_dl_entity *dl_se = &p->dl;
+>>>>> +        struct hrtimer *timer = &dl_se->dl_timer;
+>>>>> +
+>>>>> +	if (!hrtimer_active(timer) ||
+>>>>> hrtimer_try_to_cancel(timer) != -1) {
+>>>> Just for the sake of curiosity, why trying to cancel the timer
+>>>> ("|| hrtimer_try_to_cancel(timer)") here? If it is active, cannot
+>>>> we leave it active (without touching dl_throttled, dl_new and
+>>>> dl_yielded)?
+>>>>
+>>>> I mean: if I try to change the parameters of a task when it is
+>>>> throttled, I'd like it to stay throttled until the end of the
+>>>> reservation period... Or am I missing something?
+>>>
+>>> I think that when people change task's parameters, they want the
+>>> kernel reacts on this immediately. For example, you want to kill
+>>> throttled deadline task. You change parameters, but nothing happens.
+>>> I think all developers had this use case when they were debugging
+>>> deadline class.
+>> I see... Different people have different requirements :)
+>> My goal was to do something like adaptive scheduling (or scheduling
+>> tasks with mode changes), so I did not want that changing the
+>> scheduling parameters of a task affected the scheduling of the other
+>> tasks... But if a task exits the throttled state when I change its
+>> parameters, it might consume much more than the reserved CPU time.
+>> Also, I suspect this kind of approach can be exploited by malicious
+>> users: if I create a task with runtime 30ms and period 100ms, and I
+>> change its scheduling parameters (to runtime=29ms and back) frequently
+>> enough, I can consume much more than 30% of the CPU time...
+>>
 
-For the old usecases with a single GPIO controller and a fixed
-base offset of e.g. 0 (which I suspect was implicit in the initial
-design of the subsystem) things work fine as always, it's these new
-dynamic use cases that destabilize the ABI.
+Well, I'm inclined to agree to Luca's viewpoint. We should not change
+parameters of a throttled task or we may affect other tasks.
 
-Yours,
-Linus Walleij
+>> Anyway, I am fine with every patch that fixes the bug :)
+> 
+> Deadline class requires root privileges. So, I do not see a problem
+> here. Please, see __sched_setscheduler().
+> 
+> If in the future we allow non-privileged users to increase deadline,
+> we will reflect that in __setparam_dl() too.
+> 
+
+I'd say it is better to implement the right behavior even for root, so
+that we will find it right when we'll grant access to non root users
+too. Also, even if root can do everything, we always try not to break
+guarantees that come with admission control (root or non root that is).
+
+Thanks a lot,
+
+- Juri
+
