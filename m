@@ -1,102 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683AbbAMPm4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 10:42:56 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:50624 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752544AbbAMPmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 10:42:55 -0500
-Date: Tue, 13 Jan 2015 09:42:05 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Peter Chen <Peter.Chen@freescale.com>
-CC: Huang Rui <ray.huang@amd.com>, Felipe Balbi <balbi@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] usb: gadget: u_uac1: fix build issue
-Message-ID: <20150113154205.GC16533@saruman>
-Reply-To: <balbi@ti.com>
-References: <1421130034-1891-1-git-send-email-ray.huang@amd.com>
- <BN3PR0301MB08491E88100625CCAE38DAE781400@BN3PR0301MB0849.namprd03.prod.outlook.com>
+	id S1752342AbbAMPmo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 10:42:44 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:20132 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568AbbAMPmn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 10:42:43 -0500
+Message-ID: <54B53CDD.7070400@oracle.com>
+Date: Tue, 13 Jan 2015 10:42:21 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5G06lTa6Jq83wMTw"
-Content-Disposition: inline
-In-Reply-To: <BN3PR0301MB08491E88100625CCAE38DAE781400@BN3PR0301MB0849.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: David Vrabel <david.vrabel@citrix.com>, Imre Palik <imrep.amz@gmail.com>,
+        xen-devel@lists.xenproject.org
+CC: "Palik, Imre" <imrep@amazon.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Anthony Liguori <aliguori@amazon.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Xen-devel] [PATCH] xen-time: decreasing the rating of the xen
+ clocksource below that of the tsc clocksource for dom0's
+References: <1421136862-15083-1-git-send-email-imrep.amz@gmail.com> <54B4EAC7.2080105@citrix.com>
+In-Reply-To: <54B4EAC7.2080105@citrix.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---5G06lTa6Jq83wMTw
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 01/13/2015 04:52 AM, David Vrabel wrote:
+> On 13/01/15 08:14, Imre Palik wrote:
+>> From: "Palik, Imre" <imrep@amazon.de>
+>>
+>> In Dom0's the use of the TSC clocksource (whenever it is stable enough to
+>> be used) instead of the Xen clocksource should not cause any issues, as
+>> Dom0 VMs never live-migrated.  The TSC clocksource is somewhat more
+>> efficient than the Xen paravirtualised clocksource, thus it should have
+>> higher rating.
+>>
+>> This patch decreases the rating of the Xen clocksource in Dom0s to 275.
+>> Which is half-way between the rating of the TSC clocksource (300) and the
+>> hpet clocksource (250).
+> I'm happy with this but would like to see acks from those who objected
+> to v1.
+>
+> David
+>
+>> --- a/arch/x86/xen/time.c
+>> +++ b/arch/x86/xen/time.c
+>> @@ -487,6 +487,10 @@ static void __init xen_time_init(void)
+>>   	int cpu = smp_processor_id();
+>>   	struct timespec tp;
+>>   
+>> +	/* As Dom0 is never moved, no penalty on using TSC there */
 
-Hi,
+Again, why not any PV guest with TSC_MODE_NEVER_EMULATE?
 
-On Tue, Jan 13, 2015 at 06:51:40AM +0000, Peter Chen wrote:
-> =20
-> > See below error message:
-> >   CC [M]  drivers/gpu/drm/nouveau/core/subdev/vm/nv50.o
-> >   CC [M]  drivers/staging/lustre/lnet/selftest/module.o
-> > drivers/usb/gadget/function/f_uac1.c: In function =E2=80=98f_audio_free=
-_inst=E2=80=99:
-> > drivers/usb/gadget/function/f_uac1.c:904:21: error: =E2=80=98struct f_u=
-ac1_opts=E2=80=99 has
-> > no member named =E2=80=98card=E2=80=99
-> >   gaudio_cleanup(opts->card);
-> >                      ^
-> > make[4]: *** [drivers/usb/gadget/function/f_uac1.o] Error 1
-> > make[3]: *** [drivers/usb/gadget/function] Error 2
-> > make[2]: *** [drivers/usb/gadget] Error 2
-> > make[2]: *** Waiting for unfinished jobs....
-> >   CC [M]  drivers/staging/lustre/lnet/selftest/ping_test.o
-> >=20
-> > Signed-off-by: Huang Rui <ray.huang@amd.com>
-> > Cc: Peter Chen <peter.chen@freescale.com>
-> > ---
-> >=20
->=20
-> Oh, my three patches have dependencies, it needs to rebase Felipe's
-> fixes tree to fix this problem.
->=20
-> commit 4fde6204df052bb89ba3d915ed6ed9f306f3cfa1
-> Author: Peter Chen <peter.chen@freescale.com>
-> Date:   Mon Dec 1 16:09:27 2014 +0800
->=20
->     usb: gadget: f_uac1: access freed memory at f_audio_free_inst
+And I am not sure I understood the argument about unsynchronized TSCs. 
+You mentioned you can't find a platform to test on. I think you may be 
+able to unsynchronize TSCs by writing something to MSR 0x10 early during 
+Xen boot and then migrate dom0's vcpu to that pcpu later (making sure 
+this vcpu was not running there while dom0 was booting)
 
-Yeah, once that gets merged by Linus, I'll merge v3.19-rc5 on my next
-branch, that should sort it all out.
+-boris
 
-This is one great example of why you should never make new features
-depend on fixes. We will always sort out the merge conflicts later.
+>> +	if (xen_initial_domain())
+>> +		xen_clocksource.rating = 275;
+>> +
+>>   	clocksource_register_hz(&xen_clocksource, NSEC_PER_SEC);
+>>   
+>>   	if (HYPERVISOR_vcpu_op(VCPUOP_stop_periodic_timer, cpu, NULL) == 0) {
+>>
 
---=20
-balbi
-
---5G06lTa6Jq83wMTw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUtTzNAAoJEIaOsuA1yqREs90P/1uV6zw4ujCcsc/RuzfdlC8Y
-Yk5UZykIHZaLgMa1icTSx3VlfVfg543d/jOztNxMj4CIkhkHq0IIw5gvzYCwAo9E
-HRjNEAvxGwm2Rjd8xMHj2dUtrPUyRO0cOVNQe6OsfTtnSydw3VfLKPfblOrLev4T
-TAdKxeU59a6sjeR4aCcc9kGz7p5PBehwFojm+BGW1LiF6j0tCjjL0KNn7vlZT+c7
-aOokNMzLdGC6BEWbnh1KAG5id9fG8OynDBJ5IBT8kZJHXuQwSocQscH5qxcXm/NA
-Euc4bKIK1X+4UkVWNupno6arqfm1SBYtIdGvGT85hY8l5C23ubCVTM2VhiaFN3iF
-NbB0LMog3H+7/6IJZGi8MwO+5Qo1kz9iMUKPM+RRcTpkQk5tFpH1T8NcFoPea22K
-JnStCaDyGdDOD4u9Y+eYHabd0hns4IJi8JocRbTt+6HOxZM4ZAWa30GKVooYJn7Y
-LPLiS1Jt/RM3VSQuQTF5CSDAq9fPnCU3+64MEoydWVcJY0N+sPFAnx2AA7SW0Xmy
-ezssmEb5Btwefj0u/JXhasTxRGU1yXqz5T4SLb2MJmwlrbmbjVGTtfjoMaE6Op1J
-FIoPcRzrhjdtGXxJD/Im+2AL/1865JOsZEy8NO+DgZpCISWUnHILVNZKIfItkRv5
-SllXMU3t9/UuI7nPknWL
-=IXLN
------END PGP SIGNATURE-----
-
---5G06lTa6Jq83wMTw--
