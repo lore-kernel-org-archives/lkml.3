@@ -1,172 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882AbbAMSsj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 13:48:39 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:62054 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753861AbbAMSsf (ORCPT
+	id S1753228AbbAMSpm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 13:45:42 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:56090 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122AbbAMSpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 13:48:35 -0500
-Message-ID: <54B56881.30403@landley.net>
-Date: Tue, 13 Jan 2015 12:48:33 -0600
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-CC: Josh Boyer <jwboyer@fedoraproject.org>,
-        initramfs <initramfs@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-ima-devel@lists.sourceforge.net,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Fionnuala Gunter <fin@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH 6/9] gen_initramfs_list.sh: include xattrs
-References: <1420663980-20842-1-git-send-email-zohar@linux.vnet.ibm.com>	 <1420663980-20842-7-git-send-email-zohar@linux.vnet.ibm.com>	 <CA+5PVA77x2W9LyHMq1jSW3HKqNgFPz-gPVOH0QtEmmMBwzOx_Q@mail.gmail.com>	 <1420729994.6338.52.camel@dhcp-9-2-203-236.watson.ibm.com>	 <54AECA32.6000304@landley.net> <1420754931.6338.95.camel@dhcp-9-2-203-236.watson.ibm.com>
-In-Reply-To: <1420754931.6338.95.camel@dhcp-9-2-203-236.watson.ibm.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Jan 2015 13:45:40 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Robert Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        devel@acpica.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ACPICA: tbinstal: Remove unused function
+Date: Tue, 13 Jan 2015 19:48:45 +0100
+Message-Id: <1421174925-5796-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2015 04:08 PM, Mimi Zohar wrote:
-> On Thu, 2015-01-08 at 12:19 -0600, Rob Landley wrote:
->>
->> But I am curious about how you propose to encode xattrs into the cpio
->> format. (Which Al Viro chose because it's _simple_. There isn't really
->> a
->> controlling spec since Posix decided to deprecated it in 2001 and
->> yank
->> it from SUSv3 onwards. LSB extended several header fields to 8 hex
->> digits instead of 6, but they still have 32 bit timestamps which seems
->> a
->> bit short-sighted. If you're going to define a new rev with a new
->> magic
->> number, there are a couple other things you might wanna fix...)
-> 
-> Sounds like a good opportunity to make the other changes as well.  We
-> can include the other changes in this patch set.  Is this (initramfs)
-> the right mailing list for this discussion?
+Remove the function acpi_tb_store_table() that is not used anywhere.
 
-I'd forgotten there was such a list until the email came in. :)
+This was partially found by using a static code analysis program called cppcheck.
 
-> Do other people need to be included?
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/acpi/acpica/actables.h |    5 -----
+ drivers/acpi/acpica/tbinstal.c |   37 -------------------------------------
+ 2 files changed, 42 deletions(-)
 
-In theory including the Austin Group (the posix committee mailing list)
-might be useful, but in practice they hear about stuff well after the
-fact, and they washed their hands of cpio over a decade ago (shortly
-after Linux started heavily using it in rpm, and a bit before initramfs).
+diff --git a/drivers/acpi/acpica/actables.h b/drivers/acpi/acpica/actables.h
+index 1afe46e..7d65cac 100644
+--- a/drivers/acpi/acpica/actables.h
++++ b/drivers/acpi/acpica/actables.h
+@@ -119,11 +119,6 @@ acpi_tb_install_standard_table(acpi_physical_address address,
+ 			       u8 flags,
+ 			       u8 reload, u8 override, u32 *table_index);
+ 
+-acpi_status
+-acpi_tb_store_table(acpi_physical_address address,
+-		    struct acpi_table_header *table,
+-		    u32 length, u8 flags, u32 *table_index);
+-
+ void acpi_tb_uninstall_table(struct acpi_table_desc *table_desc);
+ 
+ void acpi_tb_terminate(void);
+diff --git a/drivers/acpi/acpica/tbinstal.c b/drivers/acpi/acpica/tbinstal.c
+index 755b90c..a998e8c 100644
+--- a/drivers/acpi/acpica/tbinstal.c
++++ b/drivers/acpi/acpica/tbinstal.c
+@@ -455,43 +455,6 @@ finish_override:
+ 
+ /*******************************************************************************
+  *
+- * FUNCTION:    acpi_tb_store_table
+- *
+- * PARAMETERS:  address             - Table address
+- *              table               - Table header
+- *              length              - Table length
+- *              flags               - Install flags
+- *              table_index         - Where the table index is returned
+- *
+- * RETURN:      Status and table index.
+- *
+- * DESCRIPTION: Add an ACPI table to the global table list
+- *
+- ******************************************************************************/
+-
+-acpi_status
+-acpi_tb_store_table(acpi_physical_address address,
+-		    struct acpi_table_header * table,
+-		    u32 length, u8 flags, u32 *table_index)
+-{
+-	acpi_status status;
+-	struct acpi_table_desc *table_desc;
+-
+-	status = acpi_tb_get_next_root_index(table_index);
+-	if (ACPI_FAILURE(status)) {
+-		return (status);
+-	}
+-
+-	/* Initialize added table */
+-
+-	table_desc = &acpi_gbl_root_table_list.tables[*table_index];
+-	acpi_tb_init_table_descriptor(table_desc, address, flags, table);
+-	table_desc->pointer = table;
+-	return (AE_OK);
+-}
+-
+-/*******************************************************************************
+- *
+  * FUNCTION:    acpi_tb_uninstall_table
+  *
+  * PARAMETERS:  table_desc          - Table descriptor
+-- 
+1.7.10.4
 
-I note that there are two data formats of interest here:
-
-1) the cpio file layout.
-
-2) the list of files generated by gen_initramfs_list.sh and consumed by
-gen_init_cpio.
-
-The fact you're modifying gen_initramfs_list.sh seems to imply that
-you're changing the _second_ format as well as the first...? The second
-was never actually specified, but it does get used a lot by various
-build systems and breaking it would inconvenience people. (Plus I'd need
-to update the documentation, but I need to do that anyway.)
-
-Ss long as you're extending the format could you add a second 32 bits of
-time data that gets glued to the top half of a uint64_t, and then store
-the actual time value in microseconds (so time*1000000)? (I'd say
-"nanoseconds" but 63 bits of nanoseconds is 292 years, which is just
-short enough I'm uncomfortable with it. I'm just optimistic enough to
-think that might inconvenience somebody.)
-
-The other "huh" is the filesize, but 4 gigs per file seems unlikely to
-be more than initramfs needs any time soon? (It's possible that RPM
-might care in 15 years or so...)
-
->> I ask because I maintain a new from-scratch cpio implementation
->> (http://landley.net/hg/toybox/file/1571/toys/posix/cpio.c), so I'd
->> presumably have to add your format extensions to this. Is there any
->> sort
->> of documentation on them?
->>
->> The toybox config Android is using has this cpio implementation
->> enabled
->> (see
->> https://android.googlesource.com/platform/external/toybox/+/9250c95a8c47/Android.mk)
->> so I'd rather like to get this sort of detail right...
-> 
-> The xattr section, which follows the file name, is of the format:
-> <number of xattrs> { <xattr name> <xattr data size> <xattr data> } for
-> each xattr, terminated with a NULL byte and padded to a 4 byte boundary.
-
-where <value> is...  8 bytes of ascii hex digits like the header values?
-(Every cpio string is padded to a boundary. Sigh, lemme go read your
-patch...)
-
-Ok, 2/9, actual file format parsing. New magic string at the start
-"070703" for the new version. (Good, that was my first question: easy
-way to distinguish this from the previous format).
-
--	for (i = 0, s += 6; i < 12; i++, s += 8) {
-+	for (i = 0; i < (!newcx ? 12 : 13); i++, s += 8) {
-
-You've tested this and the missing s+= 6 didn't cause problems? (Or did
-it move somewhere else...? Is that what the 1/9 did grabbing just the
-magic instead of the rest of the header data...?)
-
-> The header contains an additional field, before the checksum, containing
-> the xattr section length, including the NULL byte, but without the
-> padding.
-
-Ah, the old "4 bytes of padding to align to 4 bytes" silliness. (Even
-though you can't trust the null to _be_ there and have to set it
-yourself after the read.) I'm starting to remember this...
-
-Ok, different header magic, one new 8 hex digit field at the end of the
-header (before crc) containing "xattr_bufflen". The start of this buffer
-is an 8 digit hex "num_xattrs", which you iterate through and call
-strlen() on despite never having assured that the data you read in
-actually _does_ contain a null at the end (of the entire buffer). Then
-past that supposed null is another 8 digit hex "xattr_value_size", and
-that many bytes following you then send to sys_setxattr().
-
-Except for the part about you trusting your input data waaaaay too much,
-seems reasonable? I have no idea what sys_setxattr() accepts, but
-presumably there's a man page for the system call...
-
-  http://man7.org/linux/man-pages/man2/setxattr.2.html
-
-Ok, that's probably enough data to implement it. (Not sure why that man
-page isn't in my ubuntu 14.04 install which has manpages-dev installed?
-
-  $ man setxattr
-  No manual entry for setxattr
-
-> Note that gen_init_cpio does not include "security.evm" as it is file
-> system dependent.
-
-I have no idea what that is. Should I not include it in the command line
-cpio? (Or have a flag?)
-
-The last time I used extended attributes was on OS/2; my only
-non-academic interaction with selinux has been looking up how to switch
-it off.
-
-I still boggle that Fortune 500 bureaucracies include "must have a
-security system designed by the NSA based on the idea of complicating
-the system until there are no obvious holes, because after the Snowden
-leaks that's clearly a good idea" as part of their certification
-processes for reducing the risk of being unable to delegate blame.
-
-I'm also kind of impressed by the longevity of a hack the original Apple
-Lisa developers invented in 1981 because their OS didn't have an
-equivalent of the unix "file" command, and undoes the central unix
-"everything's a flat file" idea to bring us back to the structure
-records with magic meanings of the mainframe days.
-
-http://www.folklore.org/StoryView.py?project=Macintosh&story=The_Grand_Unified_Model_The_Finder.txt&sortOrder=Sort+by+Title
-
-Still, dictating what users can and can't do is policy. It exists,
-people use it... sigh. I'll try to take a stab at it some evening this week.
-
-> Mimi
-
-Rob
