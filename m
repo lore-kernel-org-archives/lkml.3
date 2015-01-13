@@ -1,160 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096AbbAMKME (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 05:12:04 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:57768 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752036AbbAMKL6 (ORCPT
+	id S1751583AbbAMKP5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 05:15:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34232 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127AbbAMKPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 05:11:58 -0500
+	Tue, 13 Jan 2015 05:15:55 -0500
+Date: Tue, 13 Jan 2015 10:16:14 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Kees Cook <keescook@chromium.org>, Yinghai Lu <yinghai@kernel.org>,
+        x86@kernel.org, stable <stable@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [3.2-stable] Suspend regression after "x86, 64bit, mm: Mark
+ data/bss/brk to nx"
+Message-ID: <20150113101614.GC2304@charon>
+References: <1420935783.2327.28.camel@decadent.org.uk>
+ <1421010983.19708.20.camel@decadent.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1418772873-19747-3-git-send-email-hongzhou.yang@mediatek.com>
-References: <1418772873-19747-1-git-send-email-hongzhou.yang@mediatek.com>
-	<1418772873-19747-3-git-send-email-hongzhou.yang@mediatek.com>
-Date: Tue, 13 Jan 2015 11:11:57 +0100
-Message-ID: <CACRpkdamBePQMR_b5g=t=9DvtuV3gE75=TjP7eURzD1NgHWqpQ@mail.gmail.com>
-Subject: Re: [PATCH v4 2/5] dt-bindings: Add pinctrl bindings for mt65xx/mt81xx.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Hongzhou Yang <hongzhou.yang@mediatek.com>,
-        Sascha Hauer <kernel@pengutronix.de>
-Cc: Rob Herring <robh+dt@kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>, srv_heupstream@mediatek.com,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Joe.C" <yingjoe.chen@mediatek.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Vladimir Murzin <vladimir.murzin@arm.com>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        dandan.he@mediatek.com, alan.cheng@mediatek.com, toby.liu@mediatek.com,
-        maoguang.meng@mediatek.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1421010983.19708.20.camel@decadent.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 12:34 AM, Hongzhou Yang
-<hongzhou.yang@mediatek.com> wrote:
+On Sun, Jan 11, 2015 at 09:16:23PM +0000, Ben Hutchings wrote:
+> On Sun, 2015-01-11 at 00:23 +0000, Ben Hutchings wrote:
+> > Commit 45e2a9d4701d8c624d4a4bcdd1084eae31e92f58 ("x86, mm: Set NX across
+> > entire PMD at boot") has been backported to many stable branches:
+> > 
+> > v3.10.62: 0b15c16c4f4a x86, mm: Set NX across entire PMD at boot
+> > v3.12.35: 868b19cb0314 x86, mm: Set NX across entire PMD at boot
+> > v3.14.26: 1a829c59816e x86, mm: Set NX across entire PMD at boot
+> > v3.17.5: 6231385167e0 x86, mm: Set NX across entire PMD at boot
+> > v3.2.65: a5c187d92d2c x86, mm: Set NX across entire PMD at boot
+> > v3.13.11-ckt12: 3657489f7009 x86, mm: Set NX across entire PMD at boot
+> > v3.16.7-ckt3: de32229b546e x86, mm: Set NX across entire PMD at boot
+> 
+> Sorry, I think I booted the wrong version at the last step of bisection.
+> It was actually the previous commit on the 3.2.y branch, which was
+> commit 72212675d1c96f5db8ec6fb35701879911193158 upstream ("x86, 64bit,
+> mm: Mark data/bss/brk to nx") that introduced the regression.  I intend
+> to revert both of these.
+> 
+> Ben.
+> 
 
-> From: Hongzhou Yang <hongzhou.yang@mediatek.com>
->
-> Add devicetree bindings for Mediatek SoC pinctrl driver.
->
-> Signed-off-by: Hongzhou Yang <hongzhou.yang@mediatek.com>
+This is an old (3.8) commit that seems to have been backported to 3.2
+as a dependency of 45e2a9d4701d8c624d4a4bcdd1084eae31e92f58 and all
+the other stable kernels already included it.  Since I am not aware of
+any new regression, I believe this is could be a 3.2 specific issue.
 
-So following from the discussion with Sascha...
+Anyway, thanks a lot for sharing this, as we have an Ubuntu kernel
+that is based on 3.2, to which we regularly apply 3.2 releases.
 
-(...)
-> diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-mt65xx.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-mt65xx.txt
-> new file mode 100644
-> index 0000000..3bf34f9
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-mt65xx.txt
-> @@ -0,0 +1,142 @@
-> +* Mediatek MT65XX Pin Controller
-> +
-> +The Mediatek's Pin controller is used to control SoC pins.
-> +
-> +Required properties:
-> +- compatible: value should be either of the following.
-> +    (a) "mediatek,mt8135-pinctrl", compatible with mt8135 pinctrl.
-> +- mediatek,pctl-regmap: Should be a phandle of the syscfg node.
-> +- gpio-controller : Marks the device node as a gpio controller.
-> +- #gpio-cells: number of cells in GPIO specifier. Since the generic GPIO
-> +  binding is used, the amount of cells must be specified as 2. See the below
-> +  mentioned gpio binding representation for description of particular cells.
-> +
-> +       Eg: <&pio 6 0>
-> +       <[phandle of the gpio controller node]
-> +       [pin number within the gpio controller]
+Cheers,
+--
+Luís
 
-Call this "line number", not "pin number" as GPIO != pin
+> > Unfortunately, in 3.2.65 suspend/resume stopped working on at least some
+> > systems - specifically, the system would reboot when woken:
+> > 
+> > https://bugs.debian.org/774436 - Lenovo ThinkPad T530
+> > https://bugs.debian.org/774461 - Lenovo ThinkPad X230
+> > https://bugs.debian.org/774526 - ECS P4M900T-M2
+> > https://bugs.debian.org/775059 - ASUS X201EP
+> > 
+> > I could reproduce this on my own ASUS P8Z68-V LX and was able to bisect
+> > to the backport of this commit.
+> > 
+> > Assuming that this regression has not occurred on mainline or the other
+> > branches, I will revert this patch for 3.2.y unless someone can point
+> > out a missing dependency that I should apply.
+> > 
+> > Ben.
+> > 
+> 
+> -- 
+> Ben Hutchings
+> One of the nice things about standards is that there are so many of them.
 
-> +       [flags]>
-> +
-> +       Values for gpio specifier:
-> +       - Pin number: is a value between 0 to 202.
-
-Line number.
-
-> +       - Flags:  bit field of flags, as defined in <dt-bindings/gpio/gpio.h>.
-> +            Only the following flags are supported:
-> +            0 - GPIO_ACTIVE_HIGH
-> +            1 - GPIO_ACTIVE_LOW
-> +- reg: physicall address base for EINT registers
-> +- interrupt-controller: Marks the device node as an interrupt controller
-> +- #interrupt-cells: Should be two.
-> +- interrupts : The interrupt outputs from the controller.
-> +
-> +Please refer to pinctrl-bindings.txt in this directory for details of the
-> +common pinctrl bindings used by client devices.
-> +
-> +A pinctrl node should contain at least one subnodes representing the
-> +pinctrl groups available on the machine. Each subnode will list the
-> +pins it needs, and how they should be configured, with regard to muxer
-> +configuration, pullups, drive strngth, input enable/disable and input schmitt.
-> +
-> +Required subnode-properties:
-> +
-> +- pins: 2 integers array, represents gpio pinmux number and config
-> +  setting. The format as following
-> +
-> +    node {
-> +     pins = <PIN_NUMBER_PINMUX>;
-> +                     GENERIC_PINCONFIG;
-> +    };
-
-As discussed with sascha, pins = ... is for pins specified with a string.
-
-Either
-
-- Specify your pins with a string
-
-- Come up wiyj some new unique way to name pins identfied by
-  numbers, maybe just "pinno = <...>" Sascha suggested "pinmux"
-  but that is strange if the number is used for pin config.
-
-(Check with Sascha!)
-
-> +    The PIN_NUMBER_PINMUX is combination of GPIO number and pinmux, it can
-> +    use macros which already defind in boot/dts/mt8135-pinfunc.h directly.
-
-So is that prop to be named pinmux, pinno, pinid or something..
-
-> +    The GENERIC_PINCONFIG is the generic pinconfig options to use, bias-disable,
-> +    bias-pull-down, bias-pull-up, input-enable, input-disable, output-low, output-high,
-> +    input-schmitt-enable, input-schmitt-disable and drive-strength are valid.
-
-Nice!
-
-> +       pinctrl@01c20800 {
-> +               compatible = "mediatek,mt8135-pinctrl";
-> +               reg = <0 0x1000B000 0 0x1000>;
-> +               mediatek,pctl-regmap = <&syscfg_pctl_a &syscfg_pctl_b>;
-> +               gpio-controller;
-> +               #gpio-cells = <2>;
-> +               interrupt-controller;
-> +               #interrupt-cells = <2>;
-> +               interrupts = <GIC_SPI 116 IRQ_TYPE_LEVEL_HIGH>,
-> +                               <GIC_SPI 117 IRQ_TYPE_LEVEL_HIGH>,
-> +                               <GIC_SPI 118 IRQ_TYPE_LEVEL_HIGH>;
-> +
-> +               i2c0_pins_a: i2c0@0 {
-> +                       pins1 {
-> +                               pins = <MT8135_PIN_100_SDA0__FUNC_SDA0>,
-> +                                               <MT8135_PIN_101_SCL0__FUNC_SCL0>;
-
-So this prop need to be renamed.
-
-> +                               bias-disable;
-> +                       };
-> +               };
-
-Yours,
-Linus Walleij
