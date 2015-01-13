@@ -1,44 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893AbbAMWRV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 17:17:21 -0500
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:37800 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753329AbbAMWRU (ORCPT
+	id S1751818AbbAMWSc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 17:18:32 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:44234 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066AbbAMWSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 17:17:20 -0500
-MIME-Version: 1.0
-From: Bryan Wu <cooloney@gmail.com>
-Date: Tue, 13 Jan 2015 14:16:59 -0800
-Message-ID: <CAK5ve-Kq_x7O-D6--7LBL+GTx5=N15S+y4Ascb5T3-eq1d3CZQ@mail.gmail.com>
-Subject: [GIT PULL] LED fix for 3.19
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 13 Jan 2015 17:18:31 -0500
+From: Stephane Viau <sviau@codeaurora.org>
+To: dri-devel@lists.freedesktop.org
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        robdclark@gmail.com, gbeeresh@codeaurora.org,
+        Stephane Viau <sviau@codeaurora.org>
+Subject: [PATCH 0/2] drm/msm/mdp5: hardware cursor support
+Date: Tue, 13 Jan 2015 17:18:02 -0500
+Message-Id: <1421187484-13875-1-git-send-email-sviau@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+This patch set contains the hardware cursor changes. Split into two, as usual,
+in order to separate header file generation from the rest of the code.
 
-Please consider the following changes since commit
-eaa27f34e91a14cdceed26ed6c6793ec1d186115:
+Beeresh Gopal (1):
+  drm/msm/mdp5: Add hardware cursor support
 
-  linux 3.19-rc4 (2015-01-11 12:44:53 -0800)
+Stephane Viau (1):
+  drm/msm/mdp5: add register description for HW Cursor support
 
-are available in the git repository at:
+ drivers/gpu/drm/msm/mdp/mdp5/mdp5.xml.h  |  79 +++++++++++++++
+ drivers/gpu/drm/msm/mdp/mdp5/mdp5_crtc.c | 164 +++++++++++++++++++++++++++++++
+ 2 files changed, 243 insertions(+)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git
-leds-fixes-for-3.19
+-- 
+Qualcomm Innovation Center, Inc.
 
-for you to fetch changes up to 0c86ac2c50647451d6a70dc900f8bb0ee3d485d9:
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, a Linux Foundation Collaborative Project
 
-  leds: netxbig: fix oops at probe time (2015-01-13 13:49:01 -0800)
-
-----------------------------------------------------------------
-Simon Guinot (1):
-      leds: netxbig: fix oops at probe time
-
- drivers/leds/leds-netxbig.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
