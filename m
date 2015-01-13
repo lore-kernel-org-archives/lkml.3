@@ -1,69 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542AbbAMS66 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 13:58:58 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:42262 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753369AbbAMS65 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 13:58:57 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Alex Deucher <alexander.deucher@amd.com>,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+	id S1753700AbbAMTCv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 14:02:51 -0500
+Received: from gum.cmpxchg.org ([85.214.110.215]:57332 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752386AbbAMTCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 14:02:49 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Vladimir Davydov <vdavydov@parallels.com>,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] drm/radeon/radeon_fb: Remove unused function
-Date: Tue, 13 Jan 2015 20:02:03 +0100
-Message-Id: <1421175723-6893-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+Subject: [patch] mm: memcontrol: default hierarchy interface for memory fix
+Date: Tue, 13 Jan 2015 14:02:39 -0500
+Message-Id: <1421175759-14350-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 2.2.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function radeon_fbdev_total_size() that is not used anywhere.
+Document and rationalize where the default hierarchy interface differs
+from the traditional memory cgroups interface.
 
-This was partially found by using a static code analysis program called cppcheck.
-
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- drivers/gpu/drm/radeon/radeon_fb.c   |   10 ----------
- drivers/gpu/drm/radeon/radeon_mode.h |    1 -
- 2 files changed, 11 deletions(-)
+ Documentation/cgroups/unified-hierarchy.txt | 80 +++++++++++++++++++++++++++++
+ 1 file changed, 80 insertions(+)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_fb.c b/drivers/gpu/drm/radeon/radeon_fb.c
-index 0ea1db8..76adbdb 100644
---- a/drivers/gpu/drm/radeon/radeon_fb.c
-+++ b/drivers/gpu/drm/radeon/radeon_fb.c
-@@ -389,16 +389,6 @@ void radeon_fbdev_set_suspend(struct radeon_device *rdev, int state)
- 	fb_set_suspend(rdev->mode_info.rfbdev->helper.fbdev, state);
- }
+diff --git a/Documentation/cgroups/unified-hierarchy.txt b/Documentation/cgroups/unified-hierarchy.txt
+index 4f4563277864..643af9bb9a07 100644
+--- a/Documentation/cgroups/unified-hierarchy.txt
++++ b/Documentation/cgroups/unified-hierarchy.txt
+@@ -327,6 +327,86 @@ supported and the interface files "release_agent" and
+ - use_hierarchy is on by default and the cgroup file for the flag is
+   not created.
  
--int radeon_fbdev_total_size(struct radeon_device *rdev)
--{
--	struct radeon_bo *robj;
--	int size = 0;
--
--	robj = gem_to_radeon_bo(rdev->mode_info.rfbdev->rfb.obj);
--	size += radeon_bo_size(robj);
--	return size;
--}
--
- bool radeon_fbdev_robj_is_fb(struct radeon_device *rdev, struct radeon_bo *robj)
- {
- 	if (robj == gem_to_radeon_bo(rdev->mode_info.rfbdev->rfb.obj))
-diff --git a/drivers/gpu/drm/radeon/radeon_mode.h b/drivers/gpu/drm/radeon/radeon_mode.h
-index 04db2fd..ec2014a 100644
---- a/drivers/gpu/drm/radeon/radeon_mode.h
-+++ b/drivers/gpu/drm/radeon/radeon_mode.h
-@@ -915,7 +915,6 @@ void dce8_program_fmt(struct drm_encoder *encoder);
- int radeon_fbdev_init(struct radeon_device *rdev);
- void radeon_fbdev_fini(struct radeon_device *rdev);
- void radeon_fbdev_set_suspend(struct radeon_device *rdev, int state);
--int radeon_fbdev_total_size(struct radeon_device *rdev);
- bool radeon_fbdev_robj_is_fb(struct radeon_device *rdev, struct radeon_bo *robj);
++- The original lower boundary, the soft limit, is defined as a limit
++  that is per default unset.  As a result, the set of cgroups that
++  global reclaim prefers is opt-in, rather than opt-out.  The costs
++  for optimizing these mostly negative lookups are so high that the
++  implementation, despite its enormous size, does not even provide the
++  basic desirable behavior.  First off, the soft limit has no
++  hierarchical meaning.  All configured groups are organized in a
++  global rbtree and treated like equal peers, regardless where they
++  are located in the hierarchy.  This makes subtree delegation
++  impossible.  Second, the soft limit reclaim pass is so aggressive
++  that it not just introduces high allocation latencies into the
++  system, but also impacts system performance due to overreclaim, to
++  the point where the feature becomes self-defeating.
++
++  The memory.low boundary on the other hand is a top-down allocated
++  reserve.  A cgroup enjoys reclaim protection when it and all its
++  ancestors are below their low boundaries, which makes delegation of
++  subtrees possible.  Secondly, new cgroups have no reserve per
++  default and in the common case most cgroups are eligible for the
++  preferred reclaim pass.  This allows the new low boundary to be
++  efficiently implemented with just a minor addition to the generic
++  reclaim code, without the need for out-of-band data structures and
++  reclaim passes.  Because the generic reclaim code considers all
++  cgroups except for the ones running low in the preferred first
++  reclaim pass, overreclaim of individual groups is eliminated as
++  well, resulting in much better overall workload performance.
++
++- The original high boundary, the hard limit, is defined as a strict
++  limit that can not budge, even if the OOM killer has to be called.
++  But this generally goes against the goal of making the most out of
++  the available memory.  The memory consumption of workloads varies
++  during runtime, and that requires users to overcommit.  But doing
++  that with a strict upper limit requires either a fairly accurate
++  prediction of the working set size or adding slack to the limit.
++  Since working set size estimation is hard and error prone, and
++  getting it wrong results in OOM kills, most users tend to err on the
++  side of a looser limit and end up wasting precious resources.
++
++  The memory.high boundary on the other hand can be set much more
++  conservatively.  When hit, it throttles allocations by forcing them
++  into direct reclaim to work off the excess, but it never invokes the
++  OOM killer.  As a result, a high boundary that is chosen too
++  aggressively will not terminate the processes, but instead it will
++  lead to gradual performance degradation.  The user can monitor this
++  and make corrections until the minimal memory footprint that still
++  gives acceptable performance is found.
++
++  In extreme cases, with many concurrent allocations and a complete
++  breakdown of reclaim progress within the group, the high boundary
++  can be exceeded.  But even then it's mostly better to satisfy the
++  allocation from the slack available in other groups or the rest of
++  the system than killing the group.  Otherwise, memory.max is there
++  to limit this type of spillover and ultimately contain buggy or even
++  malicious applications.
++
++- The original control file names are unwieldy and inconsistent in
++  many different ways.  For example, the upper boundary hit count is
++  exported in the memory.failcnt file, but an OOM event count has to
++  be manually counted by listening to memory.oom_control events, and
++  lower boundary / soft limit events have to be counted by first
++  setting a threshold for that value and then counting those events.
++  Also, usage and limit files encode their units in the filename.
++  That makes the filenames very long, even though this is not
++  information that a user needs to be reminded of every time they type
++  out those names.
++
++  To address these naming issues, as well as to signal clearly that
++  the new interface carries a new configuration model, the naming
++  conventions in it necessarily differ from the old interface.
++
++- The original limit files indicate the state of an unset limit with a
++  Very High Number, and a configured limit can be unset by echoing -1
++  into those files.  But that very high number is implementation and
++  architecture dependent and not very descriptive.  And while -1 can
++  be understood as an underflow into the highest possible value, -2 or
++  -10M etc. do not work, so it's not consistent.
++
++  memory.low and memory.high will indicate "none" if the boundary is
++  not configured, and a configured boundary can be unset by writing
++  "none" into these files as well.
  
- void radeon_fb_output_poll_changed(struct radeon_device *rdev);
+ 5. Planned Changes
+ 
 -- 
-1.7.10.4
+2.2.0
 
