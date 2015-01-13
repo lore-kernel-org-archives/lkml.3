@@ -1,170 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751547AbbAMLIW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 06:08:22 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:46097 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969AbbAMLIU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 06:08:20 -0500
-From: Vinayak Menon <vinmenon@codeaurora.org>
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, hannes@cmpxchg.org, vdavydov@parallels.com,
-        mhocko@suse.cz, mgorman@suse.de, minchan@kernel.org,
-        Vinayak Menon <vinmenon@codeaurora.org>
-Subject: [PATCH] mm: vmscan: fix the page state calculation in too_many_isolated
-Date: Tue, 13 Jan 2015 16:37:27 +0530
-Message-Id: <1421147247-10870-1-git-send-email-vinmenon@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	id S1752188AbbAMLJh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 06:09:37 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:40127 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751736AbbAMLJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 06:09:36 -0500
+Message-ID: <54B4FC9C.2050207@ti.com>
+Date: Tue, 13 Jan 2015 13:08:12 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Philipp Zabel <p.zabel@pengutronix.de>,
+        Grant Likely <grant.likely@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>,
+        <dri-devel@lists.freedesktop.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        David Airlie <airlied@linux.ie>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrzej Hajda <a.hajda@samsung.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <kernel@pengutronix.de>
+Subject: Re: [PATCH v7 1/3] of: Decrement refcount of previous endpoint in
+ of_graph_get_next_endpoint
+References: <1419340158-20567-1-git-send-email-p.zabel@pengutronix.de> <1419340158-20567-2-git-send-email-p.zabel@pengutronix.de>
+In-Reply-To: <1419340158-20567-2-git-send-email-p.zabel@pengutronix.de>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="wnR2XfbTETJWxvR7a7bCjC4m1HjK6iUKh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is observed that sometimes multiple tasks get blocked for long
-in the congestion_wait loop below, in shrink_inactive_list. This
-is because of vm_stat values not being synced.
+--wnR2XfbTETJWxvR7a7bCjC4m1HjK6iUKh
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-(__schedule) from [<c0a03328>]
-(schedule_timeout) from [<c0a04940>]
-(io_schedule_timeout) from [<c01d585c>]
-(congestion_wait) from [<c01cc9d8>]
-(shrink_inactive_list) from [<c01cd034>]
-(shrink_zone) from [<c01cdd08>]
-(try_to_free_pages) from [<c01c442c>]
-(__alloc_pages_nodemask) from [<c01f1884>]
-(new_slab) from [<c09fcf60>]
-(__slab_alloc) from [<c01f1a6c>]
+On 23/12/14 15:09, Philipp Zabel wrote:
+> Decrementing the reference count of the previous endpoint node allows t=
+o
+> use the of_graph_get_next_endpoint function in a for_each_... style mac=
+ro.
+> All current users of this function that pass a non-NULL prev parameter
+> (coresight, rcar-du, imx-drm, soc_camera, and omap2-dss) are changed to=
 
-In one such instance, zone_page_state(zone, NR_ISOLATED_FILE)
-had returned 14, zone_page_state(zone, NR_INACTIVE_FILE)
-returned 92, and GFP_IOFS was set, and this resulted
-in too_many_isolated returning true. But one of the CPU's
-pageset vm_stat_diff had NR_ISOLATED_FILE as "-14". So the
-actual isolated count was zero. As there weren't any more
-updates to NR_ISOLATED_FILE and vmstat_update deffered work
-had not been scheduled yet, 7 tasks were spinning in the
-congestion wait loop for around 4 seconds, in the direct
-reclaim path.
+> not decrement the passed prev argument's refcount themselves.
+>=20
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> Acked-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+> Acked-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+> ---
+> Changes since v6:
+>  - Added omap2-dss.
+>  - Added Mathieu's ack.
+> ---
+>  drivers/coresight/of_coresight.c                  | 13 ++-----------
+>  drivers/gpu/drm/imx/imx-drm-core.c                | 13 ++-----------
+>  drivers/gpu/drm/rcar-du/rcar_du_kms.c             | 15 ++++-----------=
 
-This patch uses zone_page_state_snapshot instead, but restricts
-its usage to avoid performance penalty.
+>  drivers/media/platform/soc_camera/soc_camera.c    |  3 ++-
+>  drivers/of/base.c                                 |  9 +--------
+>  drivers/video/fbdev/omap2/dss/omapdss-boot-init.c |  7 +------
+>  6 files changed, 12 insertions(+), 48 deletions(-)
+>=20
 
-Signed-off-by: Vinayak Menon <vinmenon@codeaurora.org>
----
- mm/vmscan.c | 68 ++++++++++++++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 49 insertions(+), 19 deletions(-)
+For omapdss:
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 5e8772b..5e9667c 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1392,6 +1392,44 @@ int isolate_lru_page(struct page *page)
- 	return ret;
- }
- 
-+static int __too_many_isolated(struct zone *zone, int file,
-+	struct scan_control *sc, int safe)
-+{
-+	unsigned long inactive, isolated;
-+
-+	if (file) {
-+		if (safe) {
-+			inactive = zone_page_state_snapshot(zone,
-+					NR_INACTIVE_FILE);
-+			isolated = zone_page_state_snapshot(zone,
-+					NR_ISOLATED_FILE);
-+		} else {
-+			inactive = zone_page_state(zone, NR_INACTIVE_FILE);
-+			isolated = zone_page_state(zone, NR_ISOLATED_FILE);
-+		}
-+	} else {
-+		if (safe) {
-+			inactive = zone_page_state_snapshot(zone,
-+					NR_INACTIVE_ANON);
-+			isolated = zone_page_state_snapshot(zone,
-+					NR_ISOLATED_ANON);
-+		} else {
-+			inactive = zone_page_state(zone, NR_INACTIVE_ANON);
-+			isolated = zone_page_state(zone, NR_ISOLATED_ANON);
-+		}
-+	}
-+
-+	/*
-+	 * GFP_NOIO/GFP_NOFS callers are allowed to isolate more pages, so they
-+	 * won't get blocked by normal direct-reclaimers, forming a circular
-+	 * deadlock.
-+	 */
-+	if ((sc->gfp_mask & GFP_IOFS) == GFP_IOFS)
-+		inactive >>= 3;
-+
-+	return isolated > inactive;
-+}
-+
- /*
-  * A direct reclaimer may isolate SWAP_CLUSTER_MAX pages from the LRU list and
-  * then get resheduled. When there are massive number of tasks doing page
-@@ -1400,33 +1438,22 @@ int isolate_lru_page(struct page *page)
-  * unnecessary swapping, thrashing and OOM.
-  */
- static int too_many_isolated(struct zone *zone, int file,
--		struct scan_control *sc)
-+		struct scan_control *sc, int safe)
- {
--	unsigned long inactive, isolated;
--
- 	if (current_is_kswapd())
- 		return 0;
- 
- 	if (!global_reclaim(sc))
- 		return 0;
- 
--	if (file) {
--		inactive = zone_page_state(zone, NR_INACTIVE_FILE);
--		isolated = zone_page_state(zone, NR_ISOLATED_FILE);
--	} else {
--		inactive = zone_page_state(zone, NR_INACTIVE_ANON);
--		isolated = zone_page_state(zone, NR_ISOLATED_ANON);
-+	if (unlikely(__too_many_isolated(zone, file, sc, 0))) {
-+		if (safe)
-+			return __too_many_isolated(zone, file, sc, safe);
-+		else
-+			return 1;
- 	}
- 
--	/*
--	 * GFP_NOIO/GFP_NOFS callers are allowed to isolate more pages, so they
--	 * won't get blocked by normal direct-reclaimers, forming a circular
--	 * deadlock.
--	 */
--	if ((sc->gfp_mask & GFP_IOFS) == GFP_IOFS)
--		inactive >>= 3;
--
--	return isolated > inactive;
-+	return 0;
- }
- 
- static noinline_for_stack void
-@@ -1516,15 +1543,18 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 	unsigned long nr_immediate = 0;
- 	isolate_mode_t isolate_mode = 0;
- 	int file = is_file_lru(lru);
-+	int safe = 0;
- 	struct zone *zone = lruvec_zone(lruvec);
- 	struct zone_reclaim_stat *reclaim_stat = &lruvec->reclaim_stat;
- 
--	while (unlikely(too_many_isolated(zone, file, sc))) {
-+	while (unlikely(too_many_isolated(zone, file, sc, safe))) {
- 		congestion_wait(BLK_RW_ASYNC, HZ/10);
- 
- 		/* We are about to die and free our memory. Return now. */
- 		if (fatal_signal_pending(current))
- 			return SWAP_CLUSTER_MAX;
-+
-+		safe = 1;
- 	}
- 
- 	lru_add_drain();
--- 
-QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
-member of the Code Aurora Forum, hosted by The Linux Foundation
+Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 
+ Tomi
+
+
+
+--wnR2XfbTETJWxvR7a7bCjC4m1HjK6iUKh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUtPycAAoJEPo9qoy8lh71exQQAKqNGfJfjw4sIvbukVuTUPFd
+pCQXUm9CR90RlszlrkdD3VVUGYaxEbbRMHprEDfzxe+hxZbkP63gABo0kGVQhN3F
+TAITYLsCGqU5kNivacUBIGuNLAHwjbkjFySf2NuhCPJ82FttqWB9WDBj42EUlbL9
++pGAKyIm7MweTWHo6IhyEdZbBvmrfwD/j6NENo7dIP1uunrPR+3L/g8VzTzvlf6V
+geHqFbbTKBD2A23BjPgykqLkuEblLaxkS5qRHnX9MIfSDCWK1cO29UyiOnvqwXnN
+nTm9lvsq+RtR0xTmYPVw3P9R1coXPe1fRNgTErb5apI5DB9kdPyWVzSy7D6H5YYr
+QOUohxV2P4EMi29rsj5IKMtSQFR+TVquz13qrPstYbpW2XpcujAGmbOS5bgI+ruh
+9Mfw+8KRym/xP8LTVjdFwiKlnmGaZdzzIQsqm8oINE+Q4SW4o4eaEjj9URa5UQle
+o1JvK9QQTuMwQR/aV8to11GLXyNhx4cNbUW0JyyHG4z/4S8xNUYrVgKfGSLHkrEm
+Nnl64TQRKnk3a84qGLbcEMR1pZ4zSzEjSSDSz6lfLR8lxFmRTRAkpPQ6z80Xzdnj
+pJbxqfDQZRv9bloFjZtLLMnYErEWGX623787tmotD0yeswUk57K8kccBk9ULyrC6
+qXQFulsuc9dX6Ao/rbY8
+=cGFR
+-----END PGP SIGNATURE-----
+
+--wnR2XfbTETJWxvR7a7bCjC4m1HjK6iUKh--
