@@ -1,120 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836AbbAMSrx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 13:47:53 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:42250 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753746AbbAMSru (ORCPT
+	id S1753561AbbAMSq1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 13:46:27 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:37030 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752614AbbAMSqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 13:47:50 -0500
-From: Tina Johnson <tinajohnson.1234@gmail.com>
-To: nagalakshmi.nandigama@avagotech.com
-Cc: praveen.krishnamoorthy@avagotech.com, sreekanth.reddy@avagotech.com,
-        abhijit.mahajan@avagotech.com, linux-scsi@vger.kernel.org,
-        MPT-FusionLinux.pdl@avagotech.com, linux-kernel@vger.kernel.org,
-        julia.lawall@lip6.fr, Tina Johnson <tinajohnson.1234@gmail.com>
-Subject: [PATCH] drivers: message: Clean up error handling for calls to pci_map_single
-Date: Wed, 14 Jan 2015 00:16:02 +0530
-Message-Id: <1421174763-8802-1-git-send-email-tinajohnson.1234@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 13 Jan 2015 13:46:25 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 0/5] ARM: at91: fix irq_pm_install_action WARNING
+Date: Tue, 13 Jan 2015 19:46:16 +0100
+Message-Id: <1421174781-4340-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaced null tests on the value return by pci_map_single by calls to
-pci_dma_mapping_error.
+Commit cab303be91dc47942bc25de33dc1140123540800 [1] introduced a WARN_ON
+test which triggers a WARNING backtrace on at91 platforms.
+While this WARN_ON is absolutely necessary to warn users that they should
+not mix request with and without IRQF_NO_SUSPEND flags on shared IRQs,
+there is no easy way to solve this issue on at91 platforms.
 
-Added initialization of the ret variable, to return an error code on
-failure.
+The main reason is that the init timer is often using a shared irq line
+and thus request this irq with IRQF_NO_SUSPEND flag set, while other
+peripherals request the same irq line without this flag.
 
-Reorganized error handling code to remove the need for tests on
-dma_addr_out, dma_addr_in, and mf.
+As suggested by Thomas, the first 2 patches of this series add a dumb
+demultiplexer irqchip implementation.
+This demuxer takes register to a source interrupt and then forwards
+all received interrupts to its children (it they are enabled).
 
-Added new error labels for freeing dma_addr_out (unmap_out) and
-dma_addr_in (unmap_in).
+Patches 3 to 5 are here for testing purpose, and should be generalized
+to all impacted SoCs if the approach is accepted.
 
-Coccinelle was used to find unchecked dma handles, as follows:
+Best Regards,
 
-@rule1@
-expression e1;
-identifier x;
-@@
+Boris
 
-*x = pci_map_single(...);
- ... when != pci_dma_mapping_error(e1,x)
+Boris Brezillon (5):
+  irqchip: add dumb demultiplexer implementation
+  irqchip: Add DT binding doc for dumb demuxer chips
+  ARM: at91/dt: select DUMB_IRQ_DEMUX for all at91 SoCs
+  ARM: at91/dt: add AIC irq1 muxed peripheral id definitions
+  ARM: at91/dt: define a dumb irq demultiplexer chip connected on irq1
 
-Signed-off-by: Tina Johnson <tinajohnson.1234@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- drivers/message/fusion/mptsas.c |   30 ++++++++++++++++--------------
- 1 file changed, 16 insertions(+), 14 deletions(-)
+ .../bindings/interrupt-controller/dumb-demux.txt   |  34 +++++
+ arch/arm/boot/dts/at91sam9260.dtsi                 |  26 +++-
+ arch/arm/mach-at91/Kconfig                         |   2 +
+ drivers/irqchip/Kconfig                            |   4 +
+ drivers/irqchip/Makefile                           |   1 +
+ drivers/irqchip/irq-dumb-demux.c                   |  70 +++++++++++
+ .../dt-bindings/interrupt-controller/atmel-aic.h   |  22 ++++
+ include/linux/irq.h                                |  49 ++++++++
+ include/linux/irqdomain.h                          |   1 +
+ kernel/irq/Kconfig                                 |   5 +
+ kernel/irq/Makefile                                |   1 +
+ kernel/irq/chip.c                                  |  41 ++++++
+ kernel/irq/dumb-demux-chip.c                       | 140 +++++++++++++++++++++
+ kernel/irq/handle.c                                |  31 ++++-
+ kernel/irq/internals.h                             |   3 +
+ 15 files changed, 422 insertions(+), 8 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/interrupt-controller/dumb-demux.txt
+ create mode 100644 drivers/irqchip/irq-dumb-demux.c
+ create mode 100644 include/dt-bindings/interrupt-controller/atmel-aic.h
+ create mode 100644 kernel/irq/dumb-demux-chip.c
 
-diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
-index 5bdaae1..bac6bec 100644
---- a/drivers/message/fusion/mptsas.c
-+++ b/drivers/message/fusion/mptsas.c
-@@ -2282,8 +2282,10 @@ static int mptsas_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 
- 	dma_addr_out = pci_map_single(ioc->pcidev, bio_data(req->bio),
- 				      blk_rq_bytes(req), PCI_DMA_BIDIRECTIONAL);
--	if (!dma_addr_out)
-+	if (pci_dma_mapping_error(ioc->pcidev, dma_addr_out)) {
-+		ret = -ENOMEM;
- 		goto put_mf;
-+	}
- 	ioc->add_sge(psge, flagsLength, dma_addr_out);
- 	psge += ioc->SGE_size;
- 
-@@ -2297,8 +2299,10 @@ static int mptsas_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 	flagsLength |= blk_rq_bytes(rsp) + 4;
- 	dma_addr_in =  pci_map_single(ioc->pcidev, bio_data(rsp->bio),
- 				      blk_rq_bytes(rsp), PCI_DMA_BIDIRECTIONAL);
--	if (!dma_addr_in)
--		goto unmap;
-+	if (pci_dma_mapping_error(ioc->pcidev, dma_addr_in)) {
-+		ret = -ENOMEM;
-+		goto unmap_out;
-+	}
- 	ioc->add_sge(psge, flagsLength, dma_addr_in);
- 
- 	INITIALIZE_MGMT_STATUS(ioc->sas_mgmt.status)
-@@ -2310,10 +2314,10 @@ static int mptsas_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 		mpt_free_msg_frame(ioc, mf);
- 		mf = NULL;
- 		if (ioc->sas_mgmt.status & MPT_MGMT_STATUS_DID_IOCRESET)
--			goto unmap;
-+			goto unmap_in;
- 		if (!timeleft)
- 			mpt_Soft_Hard_ResetHandler(ioc, CAN_SLEEP);
--		goto unmap;
-+		goto unmap_in;
- 	}
- 	mf = NULL;
- 
-@@ -2331,16 +2335,14 @@ static int mptsas_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 		    ioc->name, __func__);
- 		ret = -ENXIO;
- 	}
--unmap:
--	if (dma_addr_out)
--		pci_unmap_single(ioc->pcidev, dma_addr_out, blk_rq_bytes(req),
--				 PCI_DMA_BIDIRECTIONAL);
--	if (dma_addr_in)
--		pci_unmap_single(ioc->pcidev, dma_addr_in, blk_rq_bytes(rsp),
--				 PCI_DMA_BIDIRECTIONAL);
-+unmap_in:
-+	pci_unmap_single(ioc->pcidev, dma_addr_in, blk_rq_bytes(rsp),
-+			 PCI_DMA_BIDIRECTIONAL);
-+unmap_out:
-+	pci_unmap_single(ioc->pcidev, dma_addr_out, blk_rq_bytes(req),
-+			 PCI_DMA_BIDIRECTIONAL);
- put_mf:
--	if (mf)
--		mpt_free_msg_frame(ioc, mf);
-+	mpt_free_msg_frame(ioc, mf);
- out_unlock:
- 	CLEAR_MGMT_STATUS(ioc->sas_mgmt.status)
- 	mutex_unlock(&ioc->sas_mgmt.mutex);
 -- 
-1.7.10.4
+1.9.1
 
