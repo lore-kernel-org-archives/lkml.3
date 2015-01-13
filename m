@@ -1,105 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574AbbAMQHN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 11:07:13 -0500
-Received: from mout.gmx.net ([212.227.15.15]:59329 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752722AbbAMQHK convert rfc822-to-8bit (ORCPT
+	id S1752396AbbAMQIT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 11:08:19 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:55531 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190AbbAMQIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 11:07:10 -0500
+	Tue, 13 Jan 2015 11:08:16 -0500
+X-IronPort-AV: E=Sophos;i="5.07,750,1413244800"; 
+   d="scan'208";a="216132185"
+Message-ID: <54B542C0.4070701@citrix.com>
+Date: Tue, 13 Jan 2015 16:07:28 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Message-ID: <trinity-2ff5fec6-196c-4ecc-9ec2-f1b223f0ea25-1421165228466@3capp-gmx-bs70>
-From: "Michael Doswald" <michael.doswald@gmx.net>
-To: linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] 3.19-rc4: Fix race condition in i.MX serial port driver
-Content-Type: text/plain; charset=UTF-8
-Date: Tue, 13 Jan 2015 17:07:08 +0100
-Importance: normal
-Sensitivity: Normal
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3
-X-Provags-ID: V03:K0:waNxa/Hm6cDXJWUniJDtgay3G0D20qC8qY0vwON47YK
- l/iOk2NbSMTKCmC+CqOfDWGI11Wu+Yaq1NgMMZAigBI2Aaa6uS
- fNgYXupiVs5vQvqx1+vl8fZd6AaOftR7yaqT0wZ2z0ML+EdJ/T
- eioqt+SlmA1x1n5NVUfXzy4QgqTYmptiPmp2Fc33yE6qs2QuzV
- nyyvDPX0jFrIMl/C2vnneTwPIVR3bgpKryMFfeIQAvLa2iwu8o
- JPAcnDwGYpWHgsp7sco7aolelbWmH86EX/+FxfY0GXWnlFOw0z yLf4q4=
-X-UI-Out-Filterresults: notjunk:1;
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Imre Palik <imrep.amz@gmail.com>, <xen-devel@lists.xenproject.org>
+CC: "Palik, Imre" <imrep@amazon.de>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Anthony Liguori <aliguori@amazon.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Xen-devel] [PATCH] xen-time: decreasing the rating of the xen
+ clocksource below that of the tsc clocksource for dom0's
+References: <1421136862-15083-1-git-send-email-imrep.amz@gmail.com> <54B4EAC7.2080105@citrix.com> <54B53CDD.7070400@oracle.com>
+In-Reply-To: <54B53CDD.7070400@oracle.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Under pressure, the imx.c device driver may transfer the same data multiple
-times. 
+On 13/01/15 15:42, Boris Ostrovsky wrote:
+> On 01/13/2015 04:52 AM, David Vrabel wrote:
+>> On 13/01/15 08:14, Imre Palik wrote:
+>>> From: "Palik, Imre" <imrep@amazon.de>
+>>>
+>>> In Dom0's the use of the TSC clocksource (whenever it is stable
+>>> enough to
+>>> be used) instead of the Xen clocksource should not cause any issues, as
+>>> Dom0 VMs never live-migrated.  The TSC clocksource is somewhat more
+>>> efficient than the Xen paravirtualised clocksource, thus it should have
+>>> higher rating.
+>>>
+>>> This patch decreases the rating of the Xen clocksource in Dom0s to 275.
+>>> Which is half-way between the rating of the TSC clocksource (300) and
+>>> the
+>>> hpet clocksource (250).
+>> I'm happy with this but would like to see acks from those who objected
+>> to v1.
+>>
+>> David
+>>
+>>> --- a/arch/x86/xen/time.c
+>>> +++ b/arch/x86/xen/time.c
+>>> @@ -487,6 +487,10 @@ static void __init xen_time_init(void)
+>>>       int cpu = smp_processor_id();
+>>>       struct timespec tp;
+>>>   +    /* As Dom0 is never moved, no penalty on using TSC there */
+> 
+> Again, why not any PV guest with TSC_MODE_NEVER_EMULATE?
 
-Reason: 
-Function imx_dma_tx checks for an active DMA transfer by calling
-dmaengine_tx_status. The return value may indicate that no transfer is 
-running while the dma_tx_callback function is still being executed. In 
-this case the xmit->tail pointer may not be updated to the correct value 
-when imx_dma_tx initiates a new DMA transfer, which will result in a DMA
-transfer with the same base address as the previous one.
+Surely if TSC_MODE_NEVER_EMULATE is set then the TSC is /not/ stable
+across a guest save/restore thus the PV clocksource must be used?
 
-Patch:
-Use existing dma_is_txing variable to guard DMA transfer initiation instead
-of dmaengine_tx_status. Clear dma_is_txing at the end of the DMA callback
-function therefore extending the critical section where the port lock is
-held. Critical section extension is in line with the callback function 
-of other drivers, e.g. serial-tegra.c (tegra_uart_tx_dma_complete).
- 
- 
-Signed-off-by: Michael Doswald <michael.doswald@gmx.net>
----
- drivers/tty/serial/imx.c | 11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+I don't think we want to assume that TSC_MODE_NEVER_EMULATE => never
+migrate.
 
-diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
-index 4c5e909..29e31b1 100644
---- a/drivers/tty/serial/imx.c
-+++ b/drivers/tty/serial/imx.c
-@@ -503,13 +503,10 @@ static void dma_tx_callback(void *data)
- 
- 	dma_unmap_sg(sport->port.dev, sgl, sport->dma_tx_nents, DMA_TO_DEVICE);
- 
--	sport->dma_is_txing = 0;
--
- 	/* update the stat */
- 	spin_lock_irqsave(&sport->port.lock, flags);
- 	xmit->tail = (xmit->tail + sport->tx_bytes) & (UART_XMIT_SIZE - 1);
- 	sport->port.icount.tx += sport->tx_bytes;
--	spin_unlock_irqrestore(&sport->port.lock, flags);
- 
- 	dev_dbg(sport->port.dev, "we finish the TX DMA.\n");
- 
-@@ -518,8 +515,10 @@ static void dma_tx_callback(void *data)
- 	if (waitqueue_active(&sport->dma_wait)) {
- 		wake_up(&sport->dma_wait);
- 		dev_dbg(sport->port.dev, "exit in %s.\n", __func__);
--		return;
- 	}
-+
-+	sport->dma_is_txing = 0;
-+	spin_unlock_irqrestore(&sport->port.lock, flags);
- }
- 
- static void imx_dma_tx(struct imx_port *sport)
-@@ -529,11 +528,9 @@ static void imx_dma_tx(struct imx_port *sport)
- 	struct dma_async_tx_descriptor *desc;
- 	struct dma_chan	*chan = sport->dma_chan_tx;
- 	struct device *dev = sport->port.dev;
--	enum dma_status status;
- 	int ret;
- 
--	status = dmaengine_tx_status(chan, (dma_cookie_t)0, NULL);
--	if (DMA_IN_PROGRESS == status)
-+	if (sport->dma_is_txing)
- 		return;
- 
- 	sport->tx_bytes = uart_circ_chars_pending(xmit);
--- 
-1.9.1
-
-
- 
- 
+David
