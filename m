@@ -1,58 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873AbbAMNa5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 08:30:57 -0500
-Received: from mail-db3on0092.outbound.protection.outlook.com ([157.55.234.92]:49010
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751093AbbAMNa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 08:30:56 -0500
-Message-ID: <54B51E01.20509@ezchip.com>
-Date: Tue, 13 Jan 2015 08:30:41 -0500
-From: Chris Metcalf <cmetcalf@ezchip.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751785AbbAMNkH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 08:40:07 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:33992 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751093AbbAMNkF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 08:40:05 -0500
+Date: Tue, 13 Jan 2015 14:39:03 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        LFBDEV <linux-fbdev@vger.kernel.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] fbdev: ssd1307fb: check return value while setting
+ offset
+Message-ID: <20150113133903.GV4891@lukather>
+References: <1420705079-3741-1-git-send-email-prabhakar.csengg@gmail.com>
+ <1420705079-3741-3-git-send-email-prabhakar.csengg@gmail.com>
+ <54B504EF.4000809@ti.com>
+ <CA+V-a8u0RARw84FYa661VZCYpXkZYkXmtc03jCXU=t0aoGvg9Q@mail.gmail.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH v2 22/40] tile: fix put_user sparse errors
-References: <1420558883-10131-1-git-send-email-mst@redhat.com> <1420558883-10131-23-git-send-email-mst@redhat.com> <54B44326.6010501@ezchip.com> <20150113093535.GA4434@redhat.com>
-In-Reply-To: <20150113093535.GA4434@redhat.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [173.76.21.154]
-X-ClientProxiedBy: BLUPR11CA0055.namprd11.prod.outlook.com (10.141.30.23) To
- DB4PR02MB0542.eurprd02.prod.outlook.com (10.141.45.15)
-Authentication-Results: spf=none (sender IP is )
- smtp.mailfrom=cmetcalf@ezchip.com; 
-X-DmarcAction-Test: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:DB4PR02MB0542;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DB4PR02MB0542;
-X-Forefront-PRVS: 045584D28C
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(6049001)(479174004)(377454003)(189002)(199003)(52314003)(24454002)(47776003)(65806001)(65956001)(33656002)(64706001)(86362001)(87976001)(19580395003)(66066001)(83506001)(92566002)(15975445007)(40100003)(77096005)(110136001)(68736005)(2950100001)(101416001)(122386002)(93886004)(105586002)(117156001)(106356001)(97736003)(23746002)(50466002)(42186005)(65816999)(50986999)(54356999)(76176999)(46102003)(62966003)(77156002)(36756003)(18886065003);DIR:OUT;SFP:1101;SCL:1;SRVR:DB4PR02MB0542;H:[192.168.1.160];FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DB4PR02MB0542;
-X-OriginatorOrg: ezchip.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 13 Jan 2015 13:30:52.4118 (UTC)
-X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: DB4PR02MB0542
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="nT6ukc3bqTvTgwkF"
+Content-Disposition: inline
+In-Reply-To: <CA+V-a8u0RARw84FYa661VZCYpXkZYkXmtc03jCXU=t0aoGvg9Q@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/13/2015 4:35 AM, Michael S. Tsirkin wrote:
-> I wonder why didn't
-> kbuild notify me about new warnings. Doesn't it build tile?
 
-Kbuild builds tilegx, which is an LP64 kernel.  These issues are with the
-older platform, tilepro, which is an ILP32 kernel.
+--nT6ukc3bqTvTgwkF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-There's certainly no reason we couldn't be building that with kbuild
-as well, but for whatever reason it just never started up, and I'm
-primarily concerned with tilegx anyway, so I haven't pushed.
+On Tue, Jan 13, 2015 at 11:53:01AM +0000, Prabhakar Lad wrote:
+> On Tue, Jan 13, 2015 at 11:43 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> =
+wrote:
+> > On 08/01/15 10:17, Lad, Prabhakar wrote:
+> >> this patch checks the return value of write command while
+> >> setting the display offset.
+> >>
+> >> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> >> ---
+> >>  drivers/video/fbdev/ssd1307fb.c | 2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>
+> >> diff --git a/drivers/video/fbdev/ssd1307fb.c b/drivers/video/fbdev/ssd=
+1307fb.c
+> >> index 70e3ce8..a7ecaa6 100644
+> >> --- a/drivers/video/fbdev/ssd1307fb.c
+> >> +++ b/drivers/video/fbdev/ssd1307fb.c
+> >> @@ -342,7 +342,7 @@ static int ssd1307fb_ssd1306_init(struct ssd1307fb=
+_par *par)
+> >>
+> >>       /* set display offset value */
+> >>       ret =3D ssd1307fb_write_cmd(par->client, SSD1307FB_SET_DISPLAY_O=
+FFSET);
+> >> -     ret =3D ssd1307fb_write_cmd(par->client, 0x20);
+> >> +     ret =3D ret & ssd1307fb_write_cmd(par->client, 0x20);
+> >>       if (ret < 0)
+> >>               return ret;
+> >
+> > Hrm, what's that supposed to do? If both calls to ssd1307fb_write_cmd()
+> > return an error, they are anded, resulting in a garbage error code...
+> >
+> Agreed I have just aligned this to rest of the code in this function.
+>=20
+> Maxime if you are OK I'll post a patch returning error then and there ?
 
--- 
-Chris Metcalf, EZChip Semiconductor
-http://www.ezchip.com
+I'm not sure what the question is, but Tomi is right, having two
+returns seems the right thing to do.
 
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--nT6ukc3bqTvTgwkF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUtR/3AAoJEBx+YmzsjxAgzCMP/jGTdXsCaTRLsyxQIDEAe87/
+ZYayGnfwZDuYax/iKSc+VZvQUTFtqnCyaI7J66Yz53EW9thld5aOFvXO5J6kXGXh
+xbU4x912yXqEuTI5Ulgg8kdBv/KRbUsPeHQCqMwhzfrWneZ3IbVt8KTURvTmh0LG
+TJ3+mmPERZNLbhdhgkPJyDhNruo/cBED5obwOzXsp2VXoWiQLw0GZerZN5S/lKXg
+hrwZoOe1X+g6dYM+378Z+iBWnbsK84EZv3rY6fQpNxMnMdyLbMoTRmk/gLMbLdFu
+Ksn8EPjgb3W6puorWcngCJLISDuuy2DeUeWWEqHnSSH6SJrP+cdpqkRcz57mdB81
+XQWtO37ikazI0DQpp3Xhwjk1aWAmpCwWHa9d4G7FSgwzf4HFajYdOYPKEvYdG8wh
+LrKyFy2nCjA4xGZ3WnK8Cc4yZWCeT1nz88VHvKqI2gsaSiXydHC1jzdTmNEjCmx8
+J0bY60Ot5GHMgFaOJOLwT5VVCLwziKWSBw6RzaRC2HtH/1L+GgjBfmO1PerjDmBY
+2MMXb2PzybepeIHfeXFtGrKZs++uq5KENay+DRCuGTf9MSzumJ/qVSOLbl1xtpUX
+lkvxp40niWCoRyAwfC7fNoFcD6HsLLO5Si/fHXbMCIXmPxqsCCuor1AyGMpTOw3M
+NrQnAMJT/o6wTC8mLEyG
+=ZgGi
+-----END PGP SIGNATURE-----
+
+--nT6ukc3bqTvTgwkF--
