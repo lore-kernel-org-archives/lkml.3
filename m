@@ -1,54 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378AbbAMSMx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 13:12:53 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:36655 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752976AbbAMSMn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 13:12:43 -0500
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Bo Shen <voice.shen@atmel.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Martin Reimann <martin.reimann@egnite.de>,
-        Tim Schendekehl <tim.schendekehl@egnite.de>
-Subject: [PATCH v3 6/6] ARM: at91/dt: ethernut5: use at91sam9xe.dtsi
-Date: Tue, 13 Jan 2015 19:12:26 +0100
-Message-Id: <1421172746-18727-7-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1421172746-18727-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1421172746-18727-1-git-send-email-alexandre.belloni@free-electrons.com>
+	id S1753449AbbAMSNy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 13:13:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49333 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751865AbbAMSNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 13:13:52 -0500
+Message-ID: <54B5604E.1070403@redhat.com>
+Date: Tue, 13 Jan 2015 13:13:34 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@intel.com>, Borislav Petkov <bp@suse.de>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH 04/11] x86,fpu: defer FPU restore until return to
+ userspace
+References: <1421012793-30106-1-git-send-email-riel@redhat.com> <1421012793-30106-5-git-send-email-riel@redhat.com> <20150113171134.GA27519@redhat.com> <CALCETrWuOeYYpwbfX3x56KZSV_1nC+r7GHRiYH=pt_xOuOVM2g@mail.gmail.com> <54B5598F.4070202@redhat.com> <CALCETrXRs7AgTEgDV93RA=5_Of--W9Q4H+oVVbZPrDeWRs8Y_g@mail.gmail.com>
+In-Reply-To: <CALCETrXRs7AgTEgDV93RA=5_Of--W9Q4H+oVVbZPrDeWRs8Y_g@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ethernut5 is actually based on an at91sam9xe, use the correct dts include.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Cc: Martin Reimann <martin.reimann@egnite.de>
-Cc: Tim Schendekehl <tim.schendekehl@egnite.de>
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
----
- arch/arm/boot/dts/ethernut5.dts | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On 01/13/2015 12:57 PM, Andy Lutomirski wrote:
+> On Tue, Jan 13, 2015 at 9:44 AM, Rik van Riel <riel@redhat.com>
+> wrote: On 01/13/2015 12:18 PM, Andy Lutomirski wrote:
 
-diff --git a/arch/arm/boot/dts/ethernut5.dts b/arch/arm/boot/dts/ethernut5.dts
-index 8f941c2db7c6..243044343ee8 100644
---- a/arch/arm/boot/dts/ethernut5.dts
-+++ b/arch/arm/boot/dts/ethernut5.dts
-@@ -6,7 +6,7 @@
-  * Licensed under GPLv2.
-  */
- /dts-v1/;
--#include "at91sam9260.dtsi"
-+#include "at91sam9xe.dtsi"
- 
- / {
- 	model = "Ethernut 5";
--- 
-2.1.0
+>>>> - Task is not current and FPU is in memory. - Task is not
+>>>> current and FPU is loaded into some cpu.
+> 
+>> Same for this one. When the task is not current, the FPU state 
+>> will have been saved to memory. If we try running the task 
+>> somewhere else, it devolves to "FPU is in memory".
+> 
+> 
+> Isn't there a case where the FPU is in memory *and* in the cpu
+> regs? Isn't that how you can skip reloading the FPU after going
+> idle and returning?  Is this what fpu_lazy_restore is for?
+> Confused.
 
+Indeed, if we end up running the task on the same CPU again, and the
+FPU still has the state loaded, we may skip restoring the FPU state.
+
+>>>> Am I missing anything?  (In lazy mode, there are a few more 
+>>>> involving CR0.TS.)
+>>>> 
+>>>> That's five states, plus an optional cpu number.  But we have
+>>>> tons of state variable that can express all kinds of nonsense
+>>>> things.
+>>>> 
+>>>> If we asserted that we were in a sensible state and fixed
+>>>> the things that exited the sensible states, maybe this would
+>>>> be easier to understand and debug.
+> 
+> Lets see what things we could test, at different points.
+> 
+> 1) At context switch time, we need to make sure that the previous
+> task will no longer have __thread_has_fpu()
+> 
+> 2) When loading the FPU state, we need to make sure that the
+> current task does not have __thread_has_fpu()
+> 
+>> Examples, any of which may be wrong:
+> 
+>> If !current, then !TIF_LOAD_FPU
+
+We set TIF_LOAD_CPU on the next task at context switch time,
+which is different from the current task. I suspect we can
+deal with that exception, though :)
+
+What we can test is that "new" does not already have TIF_LOAD_CPU
+set...
+
+>> If switching out a task with TIF_LOAD_FPU set, then !has_fpu
+
+... and that old does not have both TIF_LOAD_FPU and has_fpu.
+
+>> If last_cpu == smp_processor_id(), then fpu_owner == fpu.
+
+Not necessarily, since the task may not have entered userspace in
+a very long time, so it may not have loaded its FPU context.
+
+>> If has_fpu, then the task must be current somewhere and last_cpu
+>> must be the cpu on which it's current.
+
+Indeed, if has_fpu, then last_cpu must match the current cpu.
+
+
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJUtWBOAAoJEM553pKExN6DNwIH/2wzfLqqM1V/Asd29nidDUrw
+zD7HN//LyWTLjNMfAS4M/rOk3LsbphFBOo2L5BE7CYoNAGEWwKcQi7ld3dDAXeZL
++AkRtzMNEU1NqzrtnpGhABBrn3wBXwr9ldKSlaVQhYUop3q5Hhg8lyo2v+wWKf7y
+ULi/RLiERS72tUomFXTE4RT021N2h+tl42jSREEyT0+VqEc7vqTlb5fctsF3VAhS
+g48fX/VOYit3rXFU9hPz9m9vnodsEGCapdRxsXaE4xA7lg8dZ5WsaAos2TUwPQYt
+EyCbS9z2Yzy1UpySwZudo6OGbQIaugOtgrcCS/cvdvlRb8K4mLe+807MPGmBOGA=
+=7wEX
+-----END PGP SIGNATURE-----
