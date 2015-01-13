@@ -1,33 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740AbbAMRo6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 12:44:58 -0500
-Received: from exchgate3.district112.org ([216.167.220.155]:62187 "EHLO
-	exchgate3.district112.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569AbbAMRo5 convert rfc822-to-8bit (ORCPT
+	id S1752845AbbAMRmu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 12:42:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36370 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264AbbAMRms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 12:44:57 -0500
-X-Greylist: delayed 478 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Jan 2015 12:44:57 EST
-From: "Schmillen, Pam" <SchmillenP@District112.org>
-Subject: Notification!
-Thread-Topic: Notification!
-Thread-Index: AdAvV4UvGWxCLJOYR3q8n5ROuBvNiw==
-Date: Tue, 13 Jan 2015 17:36:53 +0000
-Message-ID: <0D3363AFBAE795449046787DC12F6F9601D121AE40@EXCH10MBS4.District112.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [41.71.202.147]
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
-To: Undisclosed recipients:;
+	Tue, 13 Jan 2015 12:42:48 -0500
+From: Colin King <colin.king@canonical.com>
+To: Johan Hovold <johan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/usb/serial/mos7840.c: remove unused code
+Date: Tue, 13 Jan 2015 17:41:45 +0000
+Message-Id: <1421170905-13233-1-git-send-email-colin.king@canonical.com>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message is from your Admin Server Portal. We currently undergoing a regular mailbox maintenance. We want to update all email account scheduled for today. If your Mailbox is not updated today, Your account will be inactive and cannot send or receive emails. CLICK HERE:<http://www.eventletnany.cz//wp-admin/1/> to get your mailbox account updated.
+From: Colin Ian King <colin.king@canonical.com>
 
-Thank you!
-Admin Server Portal.
+There is old, unused code that is #defined out by the
+use of NOTMOS7840 - this is not defined anywhere.  If
+NOTMOS7840 is defined then the code will break on null
+pointer dereferences on mos7840_port.  So the code is
+currently unused, and broken anyway, so why not just
+remove it.
+
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+---
+ drivers/usb/serial/mos7840.c | 29 -----------------------------
+ 1 file changed, 29 deletions(-)
+
+diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
+index 220b4be..ba718ea 100644
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -1309,35 +1309,6 @@ static int mos7840_write(struct tty_struct *tty, struct usb_serial_port *port,
+ 	const unsigned char *current_position = data;
+ 	unsigned char *data1;
+ 
+-#ifdef NOTMOS7840
+-	Data = 0x00;
+-	status = mos7840_get_uart_reg(port, LINE_CONTROL_REGISTER, &Data);
+-	mos7840_port->shadowLCR = Data;
+-	dev_dbg(&port->dev, "%s: LINE_CONTROL_REGISTER is %x\n", __func__, Data);
+-	dev_dbg(&port->dev, "%s: mos7840_port->shadowLCR is %x\n", __func__, mos7840_port->shadowLCR);
+-
+-	/* Data = 0x03; */
+-	/* status = mos7840_set_uart_reg(port,LINE_CONTROL_REGISTER,Data); */
+-	/* mos7840_port->shadowLCR=Data;//Need to add later */
+-
+-	Data |= SERIAL_LCR_DLAB;	/* data latch enable in LCR 0x80 */
+-	status = mos7840_set_uart_reg(port, LINE_CONTROL_REGISTER, Data);
+-
+-	/* Data = 0x0c; */
+-	/* status = mos7840_set_uart_reg(port,DIVISOR_LATCH_LSB,Data); */
+-	Data = 0x00;
+-	status = mos7840_get_uart_reg(port, DIVISOR_LATCH_LSB, &Data);
+-	dev_dbg(&port->dev, "%s: DLL value is %x\n", __func__, Data);
+-
+-	Data = 0x0;
+-	status = mos7840_get_uart_reg(port, DIVISOR_LATCH_MSB, &Data);
+-	dev_dbg(&port->dev, "%s: DLM value is %x\n", __func__, Data);
+-
+-	Data = Data & ~SERIAL_LCR_DLAB;
+-	dev_dbg(&port->dev, "%s: mos7840_port->shadowLCR is %x\n", __func__, mos7840_port->shadowLCR);
+-	status = mos7840_set_uart_reg(port, LINE_CONTROL_REGISTER, Data);
+-#endif
+-
+ 	if (mos7840_port_paranoia_check(port, __func__))
+ 		return -1;
+ 
+-- 
+2.1.4
+
