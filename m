@@ -1,109 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462AbbAMQbm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 11:31:42 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:43034 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752920AbbAMQbk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 11:31:40 -0500
-Date: Tue, 13 Jan 2015 16:28:47 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Pavel Machek <pavel@denx.de>, atull <atull@opensource.altera.com>,
-        gregkh@linuxfoundation.org, hpa@zytor.com, monstr@monstr.eu,
-        michal.simek@xilinx.com, rdunlap@infradead.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        pantelis.antoniou@konsulko.com, robh+dt@kernel.org,
-        grant.likely@linaro.org, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, broonie@kernel.org, philip@balister.org,
-        rubini@gnudd.com, s.trumtrar@pengutronix.de, jason@lakedaemon.net,
-        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
-        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
-        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
-        linus.walleij@linaro.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        devel@driverdev.osuosl.org, delicious.quinoa@gmail.com,
-        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
-Message-ID: <20150113162847.2778b5a5@lxorguk.ukuu.org.uk>
-In-Reply-To: <20150112214314.GA18610@obsidianresearch.com>
-References: <1420575219-27061-1-git-send-email-atull@opensource.altera.com>
-	<1420575219-27061-3-git-send-email-atull@opensource.altera.com>
-	<20150107084819.GA1887@amd>
-	<alpine.DEB.2.02.1501091302370.30067@linuxheads99>
-	<20150109205643.GA5761@amd>
-	<20150112210134.687176ed@lxorguk.ukuu.org.uk>
-	<20150112214314.GA18610@obsidianresearch.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
+	id S1752683AbbAMQdY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 11:33:24 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:53209 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751004AbbAMQdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 11:33:22 -0500
+Date: Tue, 13 Jan 2015 10:32:16 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Robert Baldyga <r.baldyga@samsung.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <mina86@mina86.com>,
+        <m.szyprowski@samsung.com>, <k.opasiak@samsung.com>,
+        <stern@rowland.harvard.edu>
+Subject: Re: [PATCH v5] usb: gadget: f_fs: add "no_disconnect" mode
+Message-ID: <20150113163216.GH16533@saruman>
+Reply-To: <balbi@ti.com>
+References: <1418892910-23890-1-git-send-email-r.baldyga@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NzX0AQGjRQPusK/O"
+Content-Disposition: inline
+In-Reply-To: <1418892910-23890-1-git-send-email-r.baldyga@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Jan 2015 14:43:14 -0700
-Jason Gunthorpe <jgunthorpe@obsidianresearch.com> wrote:
+--NzX0AQGjRQPusK/O
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Mon, Jan 12, 2015 at 09:01:34PM +0000, One Thousand Gnomes wrote:
-> > There are plenty of people today who treat the FPGA as an entirely
-> > dynamic resource. It's not like flashing a controller, its near
-> > immediate.
-> 
-> But this is a completely different use case. Remember, there are
-> *megabytes* of internal state in a FPGA, and it isn't really feasible
-> to dump/restore that state.
+Hi,
 
-People already do it with cases where it makes sense
+On Thu, Dec 18, 2014 at 09:55:10AM +0100, Robert Baldyga wrote:
+> Since we can compose gadgets from many functions, there is the problem
+> related to gadget breakage while FunctionFS daemon being closed. FFS
+> function is userspace code so there is no way to know when it will close
+> files (it doesn't matter what is the reason of this situation, it can
+> be daemon logic, program breakage, process kill or any other). So when
+> we have another function in gadget which, for example, sends some amount
+> of data, does some software update or implements some real-time functiona=
+lity,
+> we may want to keep the gadget connected despite FFS function is no longer
+> functional.
+>=20
+> We can't just remove one of functions from gadget since it has been
+> enumerated, so the only way to keep entire gadget working is to make
+> broken FFS function deactivated but still visible to host. For this
+> purpose this patch introduces "no_disconnect" mode. It can be enabled
+> by setting mount option "no_disconnect=3D1", and results with defering
+> function disconnect to the moment of reopen ep0 file or filesystem
+> unmount. After closing all endpoint files, FunctionFS is set to state
+> FFS_DEACTIVATED.
+>=20
+> When ffs->state =3D=3D FFS_DEACTIVATED:
+> - function is still bound and visible to host,
+> - setup requests are automatically stalled,
+> - transfers on other endpoints are refused,
+> - epfiles, except ep0, are deleted from the filesystem,
+> - opening ep0 causes the function to be closed, and then FunctionFS
+>   is ready for descriptors and string write,
+> - altsetting change causes the function to be closed - we want to keep
+>   function alive until another functions are potentialy used, altsetting
+>   change means that another configuration is being selected or USB cable
+>   was unplugged, which indicates that we don't need to stay longer in
+>   FFS_DEACTIVATED state
+> - unmounting of the FunctionFS instance causes the function to be closed.
+>=20
+> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+>=20
+> Changelog:
+>=20
+> v5:
+> - close function on altsetting change
+>=20
+> v4: https://lkml.org/lkml/2014/10/9/224
+> - use ffs_data_reset() instead of ffs_data_clear() to reset ffs data
+>   properly after ffs->ref refcount reach 0 (or under in no_disconnect
+>   mode) in ffs_data_put() function
+>=20
+> v3: https://lkml.org/lkml/2014/10/9/170
+> - change option name to more descriptive and less scary,
+> - fix cleaning up on unmount (call ffs_data_closed() in ffs_fs_kill_sb(),
+>   and ffs_data_clear() in ffs_data_closed() if ffs->opened is negative).
+>=20
+> v2: https://lkml.org/lkml/2014/10/7/109
+> - delete epfiles, excepting ep0, when FFS is in "zombie" mode,
+> - add description of FFS_ZOMBIE state,
+> - minor cleanups.
+>=20
+> v1: https://lkml.org/lkml/2014/10/6/128
 
-> It is one thing to context switch a maths algorithm that is built to
-> be stateless, it is quite another to context switch between, say an
-> ethernet core with an operating Linux Net driver doing DMA and a maths
-> algorithm.
+This changelog should be after the tearline, I've manually editted it
+and also applied the small modification sugested by Michal. It should
+show up on my testing/next soonish.
 
-And people already do it with thins like maths algorithms.
- 
-> A DT overlay approach where the overlay has to be unloaded to 'free'
-> the FPGA makes alot of sense to me for the stateful kernel driver
-> environment, and open/close/etc makes alot of sense for the stateless
-> switchable userspace environment - other than sharing configuration
-> code, is there any overlap between these use cases????
+--=20
+balbi
 
-There is a lot of code overlap in things like loading the bitstreams,
-there is also some overlap because you want to be able to assign FPGA
-resources. For example if you have four FPGAs and you want to use one for
-OS stuff (say video) you want the other three to be open/close
-accessible, but if you've not got a video driver loaded and are running
-the same board headless you'd like all four to be handed out as normal
-resources.
+--NzX0AQGjRQPusK/O
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-So IMHO it's no different to say kmalloc. We don't pre-empt kernel memory
-and give it to users but we don't reserve memory for kernel and not use
-it.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-> > Its completely dynamic and it will get more so as we switch from the
-> > painful world of VHDL and friends to high level parallel aware language
-> > compilers for FPGAs and everyone will be knocking up quick FPGA hacks.
-> 
-> Only for some users. In my world FPGAs are filled with bus interface
-> logic, ethernet controllers, memory controllers, packet processing
-> engines, etc. This is all incredibly stateful - both in the FPGA
-> itself, and in the Linux side w/ drviers. It certainly will not ever
-> work in the model you are talking about.
+iQIcBAEBAgAGBQJUtUiQAAoJEIaOsuA1yqREqzgP/1/jTRFPvjn5CHYxNEF/Tp9Z
+SsKR0DS31lROQvB5vz5UE1J2HAI6l7Dfz4jbN/WbTJMMK116FQsiNAFDtOxnCa0A
+BCRyyPJMux62VczN8NRNsIh+d8RI2CQAsNX1KdatEwABUYUq6QDWMldFkWLaJzED
+gEQZrdFXF8osXMNusKLHYsWjqpTKzOUTkGRk3cixrq1sRhIg0ZPl81MljMrerzir
+3iTBVyzS+vHzDUMHTsZszuKQ62+o0O3D/+UpsC/qPPlr+qKhsXVS51L7x3CUgeDu
+mFls27Dh6+xADhCm7fOTbahfdm4LjlKQFc2Shhe6aEhho0sww0FCYazPltitjZT8
+eVVqxRRdDaLlYj6umALVgX18Vi8iSxHTd+eKf7tzOGwv2/mRTeT/PM8f6hWjvqDs
+NdZP1OtcL4kICZfnPnpxM/ciBjb1Dty6h7zcMLroAqQCpaiwdQ+OrrOxdYSCmsa/
+xYUQ/rWqE6Hwc5iR4P6NktFKYpHQM96gRCpwM68IAREl7eps+ARNlqv9b3w8PWDr
+faB/EwSav+iEYzqUNUxXS55M4Tx85QdV4ny7U9sBOpSCBKhq4CKvu5Q+/LQAvtUX
+1VxjtMw3uAqBqBGt/cp9pXaVRtAP1+lRsDdKx40aHVHph0hAgWezRh2bB/GP51P/
+T8y4mEGV3jmm/Fiwoezd
+=e6gC
+-----END PGP SIGNATURE-----
 
-For those cases I mostly agree (the state in the FPGA isn't always a
-problem as you can program an FPGA to DMA its state out).
-
-> Even if the digital state could somehow be frozen, dumped and
-> restored, all the FPGA external interface logic has *ANALOG* state
-> that cannot ever be dump/restored. It just isn't feasible for that
-> class of application.
-
-Yes, however as we are starting to get things like OpenCL for FPGA they
-become extremely attractive for a wide range of purposes that don't
-involve glueing them to electronica in quite the same way. All the 'GPU
-as CPU' type uses and more begin to apply.
-
-Alan
+--NzX0AQGjRQPusK/O--
