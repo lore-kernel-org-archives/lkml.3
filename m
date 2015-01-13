@@ -1,99 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751945AbbAMKsJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 05:48:09 -0500
-Received: from www.linutronix.de ([62.245.132.108]:43969 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567AbbAMKsH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 05:48:07 -0500
-Date: Tue, 13 Jan 2015 11:47:48 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-cc: Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        sylvain.rochet@finsecur.com
-Subject: Re: [PATCH] clocksource: timer-atmel-pit: don't suspend/resume if
- unused
-In-Reply-To: <54B3D88C.80702@linaro.org>
-Message-ID: <alpine.DEB.2.11.1501131143250.17382@nanos>
-References: <1418911523-28492-1-git-send-email-nicolas.ferre@atmel.com> <54B3D450.7050405@atmel.com> <54B3D88C.80702@linaro.org>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S1751997AbbAMKtx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 05:49:53 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59934 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750989AbbAMKtv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 05:49:51 -0500
+Message-ID: <54B4F82D.6040905@ti.com>
+Date: Tue, 13 Jan 2015 12:49:17 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-703863616-1421146069=:17382"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+To: Qiang Chen <qiang2.chen@sonymobile.com>,
+        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Qiang Chen <qcwj.lk@gmail.com>
+Subject: Re: [PATCH] video: ocfb: Fix data type warning
+References: <1417767510-31462-1-git-send-email-qiang2.chen@sonymobile.com>
+In-Reply-To: <1417767510-31462-1-git-send-email-qiang2.chen@sonymobile.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="PR2USXRS78Fcnb85D4bHB6PaCi78qGcTq"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+--PR2USXRS78Fcnb85D4bHB6PaCi78qGcTq
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
---8323329-703863616-1421146069=:17382
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+On 05/12/14 10:18, Qiang Chen wrote:
+> When allocate framebuffer memory using dma_alloc_coherent(),
+> we'd better use dma_addr_t instead of phys_addr_t. Because the
+> address we got in fact is DMA or bus address for the platform.
+>=20
+> This patch also fixes below build warning:
+> drivers/video/fbdev/ocfb.c:335:2:
+> 	warning: passing argument 3 of =E2=80=98dma_alloc_attrs=E2=80=99
+> 	from incompatible pointer type [enabled by default]
+>=20
+> Signed-off-by: Qiang Chen <qiang2.chen@sonymobile.com>
+> ---
+>  drivers/video/fbdev/ocfb.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/video/fbdev/ocfb.c b/drivers/video/fbdev/ocfb.c
+> index 7f9dc9b..de98196 100644
+> --- a/drivers/video/fbdev/ocfb.c
+> +++ b/drivers/video/fbdev/ocfb.c
+> @@ -61,7 +61,7 @@ struct ocfb_dev {
+>  	/* flag indicating whether the regs are little endian accessed */
+>  	int little_endian;
+>  	/* Physical and virtual addresses of framebuffer */
+> -	phys_addr_t fb_phys;
+> +	dma_addr_t fb_phys;
+>  	void __iomem *fb_virt;
+>  	u32 pseudo_palette[PALETTE_SIZE];
+>  };
+>=20
 
-On Mon, 12 Jan 2015, Daniel Lezcano wrote:
+Thanks, queued for 3.20.
 
-> On 01/12/2015 03:04 PM, Nicolas Ferre wrote:
-> > Le 18/12/2014 15:05, Nicolas Ferre a écrit :
-> > > From: Sylvain Rochet <sylvain.rochet@finsecur.com>
-> > > 
-> > > Waiting for PIT to stop counting takes a long time:
-> > >    1/(Master clock/prescaler/PIVR)
-> > > = 1/(133 MHz     /16       /2^20)
-> > > = 126 ms
-> > > 
-> > > Up to 126 ms if master clock is set to 133 MHz, skipping suspend/resume
-> > > of the unused PIT device reduce (suspend time + resume time) from ~140 ms
-> > > to ~17 ms.
-> > > 
-> > > Signed-off-by: Sylvain Rochet <sylvain.rochet@finsecur.com>
-> > > [nicolas.ferre@atmel.com: move to newer clocksource driver]
-> > > Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> > > Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> > > ---
-> > > Hi Sylvain,
-> > > 
-> > > I re-worked (and "Acked") your patch so it can be applied on the newer
-> > > Mainline
-> > > kernels. Beware, I changed the "subject line" as well. The PIT driver
-> > > moved
-> > > recently (3.18).
-> > > 
-> > > Daniel,
-> > > Can you take this patch in your tree?
-> > 
-> > Hi Daniel,
-> > 
-> > Anything prevents this patch from being merged (aka ping ;-))?
-> 
-> [Cc'ed tglx].
-> 
-> Hi Nico,
-> 
-> thanks for the head up.
-> 
-> Nothing prevents it but I am wondering if this change shouldn't be in the
-> generic framework (kernel/time/clocksource.c and kernel/time/clockevents.c),
-> so all drivers will benefit this change ?
-
-Indeed. There is no point in calling suspend/resume for unused
-clockevents. They should be stopped and disabled already.
-
-Now with clocksources this might be different. We have no explicit
-state for this, but its trivial to add one at least for those
-clocksources which have enable/disable callbacks. For the other ones
-not so much.
-
-Thanks,
-
-	tglx
+ Tomi
 
 
---8323329-703863616-1421146069=:17382--
+
+--PR2USXRS78Fcnb85D4bHB6PaCi78qGcTq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUtPg1AAoJEPo9qoy8lh71FnQP/0MYvke7PTHgwySdJGMyXfv3
+CRY7/RfEmOEGZqinWvTfrT1S8G8vUPrf8OzGIRy/btYBHlq/A95odLMkKeWBIQkj
+tw+7LwQEbQqUjK+qgXTTnR6gHpvfKXVTizvKuxPthv6biCPXba91J5/m32nE67Q2
+6ngNj8evZAm2WhRY15ytMpzCB3L+EMb4HGscDVqG+DoSUyIsf5+VLVTYsDHF6udF
+1JiQmZOie+89W9Kd+hMjVKh1W3aUJsmOMgHdboEdzUnaI1YE+ltKFkEbncQpaq9X
+WqYCdIeZObjgtSIQI3LyJT/ZJhD0665pSizjuU+0bFuUTEGiK/vCQwCa01cZsXpx
+tBn9ycNSTLrATebyGoiPrzGiwosPh8flk2E6CICR4h1UThETYC7tQ+ClJYWZjCr4
+nbj3augG5qFxPEGIIiIgZQlB/t3iBZClA/s9yaISWJZuOD2deuKdSPo0Xwa6Yuxg
+bPFDSB8T3mv8jHbb2ynVLrPr3Qga//jgrtT75RCx5zrfh/jHnPKCAjtM1XZF6SAh
+4lEIoxj8EjZF5hbZXRPN6Z1lmnCqLCiBcr2CT3hBqeo9TQrGNz384GBpVyRDWCpX
+QMeJYTC2EZHq2WeHAeBnE0qxadM6x7jpVyrheyKs64FvhrKn3AFgBwnCjLf86Q/g
++QVjN0WdE8T9i0XquB9i
+=Z/EI
+-----END PGP SIGNATURE-----
+
+--PR2USXRS78Fcnb85D4bHB6PaCi78qGcTq--
