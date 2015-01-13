@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751259AbbAMINn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 03:13:43 -0500
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:37527 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031AbbAMINl (ORCPT
+	id S1751485AbbAMIOp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 03:14:45 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:51944 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065AbbAMIOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 03:13:41 -0500
-Message-ID: <54B4D36D.8030204@hp.com>
-Date: Tue, 13 Jan 2015 16:12:29 +0800
-From: "Li, ZhenHua" <zhen-hual@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: dwmw2@infradead.org, indou.takao@jp.fujitsu.com, bhe@redhat.com,
-        vgoyal@redhat.com, dyoung@redhat.com, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        kexec@lists.infradead.org, alex.williamson@redhat.com,
-        ddutile@redhat.com, ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com,
-        doug.hatch@hp.com, jerry.hoemann@hp.com, tom.vaden@hp.com,
-        li.zhang6@hp.com, lisa.mitchell@hp.com, billsumnerlinux@gmail.com,
-        rwright@hp.com, "Li, ZhenHua" <zhen-hual@hp.com>
-Subject: Re: [PATCH v8 02/10] iommu/vt-d: Items required for kdump
-References: <1421046388-27925-1-git-send-email-zhen-hual@hp.com> <1421046388-27925-3-git-send-email-zhen-hual@hp.com> <20150112152207.GC6343@8bytes.org>
-In-Reply-To: <20150112152207.GC6343@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Jan 2015 03:14:44 -0500
+From: Imre Palik <imrep.amz@gmail.com>
+To: xen-devel@lists.xenproject.org, David Vrabel <david.vrabel@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, "Palik, Imre" <imrep@amazon.de>,
+        Anthony Liguori <aliguori@amazon.com>
+Subject: [PATCH] xen-time: decreasing the rating of the xen clocksource below that of the tsc clocksource for dom0's
+Date: Tue, 13 Jan 2015 09:14:22 +0100
+Message-Id: <1421136862-15083-1-git-send-email-imrep.amz@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2015 11:22 PM, Joerg Roedel wrote:
-> On Mon, Jan 12, 2015 at 03:06:20PM +0800, Li, Zhen-Hua wrote:
->> +
->> +#ifdef CONFIG_CRASH_DUMP
->> +
->> +/*
->> + * Fix Crashdump failure caused by leftover DMA through a hardware IOMMU
->> + *
->> + * Fixes the crashdump kernel to deal with an active iommu and legacy
->> + * DMA from the (old) panicked kernel in a manner similar to how legacy
->> + * DMA is handled when no hardware iommu was in use by the old kernel --
->> + * allow the legacy DMA to continue into its current buffers.
->> + *
->> + * In the crashdump kernel, this code:
->> + * 1. skips disabling the IOMMU's translating of IO Virtual Addresses (IOVA).
->> + * 2. Do not re-enable IOMMU's translating.
->> + * 3. In kdump kernel, use the old root entry table.
->> + * 4. Leaves the current translations in-place so that legacy DMA will
->> + *    continue to use its current buffers.
->> + * 5. Allocates to the device drivers in the crashdump kernel
->> + *    portions of the iova address ranges that are different
->> + *    from the iova address ranges that were being used by the old kernel
->> + *    at the time of the panic.
->> + *
->> + */
->
-> It looks like you are still copying the io-page-tables from the old
-> kernel into the kdump kernel, is that right? With the approach that was
-> proposed you only need to copy over the context entries 1-1. They are
-> still pointing to the page-tables in the old kernels memory (which is
-> just fine).
->
-> The root-entry of the old kernel is also re-used, and when the kdump
-> kernel starts to use a device, its context entry is updated to point to
-> a newly allocated page-table.
->
+From: "Palik, Imre" <imrep@amazon.de>
 
-Current status:
-1. Use old root entry table,
-2. Copy old context entry tables.
-3. Copy old page tables.
-4. Allocate new page table when device driver is loading.
+In Dom0's the use of the TSC clocksource (whenever it is stable enough to
+be used) instead of the Xen clocksource should not cause any issues, as
+Dom0 VMs never live-migrated.  The TSC clocksource is somewhat more
+efficient than the Xen paravirtualised clocksource, thus it should have
+higher rating.
 
-I remember the progress we discussed was this. Checking the old mails,
-founding we did not clearly discuss about the old page tables, only
-agrred with allocating new page tables when device driver is loading.
+This patch decreases the rating of the Xen clocksource in Dom0s to 275.
+Which is half-way between the rating of the TSC clocksource (300) and the
+hpet clocksource (250).
 
-To me, both of these two options are fine, copying old page tables, or
-re-use the old ones. My debugging shows both of them works fine.
+Cc: Anthony Liguori <aliguori@amazon.com>
+Signed-off-by: Imre Palik <imrep@amazon.de>
+---
+ arch/x86/xen/time.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-If we use the old page tables, the patchset will use less code.
-Functions copy_page_addr, copy_page_table are no longer needed, and
-functions copy_context_entry and copy_context_entry_table will be
-reduced to several lines. The patchset will be much simpler.
-
-Zhenhua
-
+diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+index f473d26..c768726 100644
+--- a/arch/x86/xen/time.c
++++ b/arch/x86/xen/time.c
+@@ -487,6 +487,10 @@ static void __init xen_time_init(void)
+ 	int cpu = smp_processor_id();
+ 	struct timespec tp;
+ 
++	/* As Dom0 is never moved, no penalty on using TSC there */
++	if (xen_initial_domain())
++		xen_clocksource.rating = 275;
++
+ 	clocksource_register_hz(&xen_clocksource, NSEC_PER_SEC);
+ 
+ 	if (HYPERVISOR_vcpu_op(VCPUOP_stop_periodic_timer, cpu, NULL) == 0) {
+-- 
+1.7.9.5
 
