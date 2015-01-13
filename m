@@ -1,220 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224AbbAMMsb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 07:48:31 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:29286 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000AbbAMMs3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 07:48:29 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-85-54b5141a35c1
-Message-id: <54B51419.4020604@samsung.com>
-Date: Tue, 13 Jan 2015 13:48:25 +0100
-From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101
- Thunderbird/31.3.0
-MIME-version: 1.0
-To: kbuild test robot <fengguang.wu@intel.com>
-Cc: kbuild-all@01.org, Felipe Balbi <balbi@ti.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH next] usb: gadget: uvc: to_uvcg_control_header() can be
- static
-References: <201501131627.qyQasDGL%fengguang.wu@intel.com>
- <20150113085538.GA9785@lkp-sb04>
-In-reply-to: <20150113085538.GA9785@lkp-sb04>
-Content-type: text/plain; charset=windows-1252; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrELMWRmVeSWpSXmKPExsVy+t/xy7pSIltDDHrXq1scvF9v8f75emaL
-	5sXr2SyOXZ/IbNE5cQm7xeVdc9gsFi1rZXZg97i/l91jdsdMVo/Fe14yeeyfu4bd4/iN7Uwe
-	nzfJBbBFcdmkpOZklqUW6dslcGW8Ov6cpWCtQ8WhT0dZGxj7zLoYOTkkBEwkZi7/wgxhi0lc
-	uLeerYuRi0NIYCmjxPsn71khnM+MEldazzCBVPEKaEnMudTOCmKzCKhKLFjayw5iswkYS+w9
-	2MEIYosKhElMvPmYFaJeUOLH5HssILaIgJ7EioVtjCBDmQVuMEo0n14D1iwsECJxa9EksAVC
-	ArESG+fvBWvgFNCVeH/9NxuIzSxgK7Hg/ToWCFteYvOat8wTGAVmIdkxC0nZLCRlCxiZVzGK
-	ppYmFxQnpeca6hUn5haX5qXrJefnbmKEhPuXHYyLj1kdYhTgYFTi4d2RvSVEiDWxrLgy9xCj
-	BAezkgjvf4GtIUK8KYmVValF+fFFpTmpxYcYmTg4pRoYZ8yTj5adIZgc+qdMZe93E9XrenIi
-	JgKrBB5Pnz5nZki2ld0HfrMnrBM42PtmXVrPJlY359nuhf6/smKrN9vuf/V8BmcH87PFK9q9
-	WL5eMmncXu5xjn9pOF/P/RVvLi0qyOvycEx7f7G4auGkSsnJp/6siDrZvlbG+gbbPukfekph
-	K56sn6SxR4mlOCPRUIu5qDgRAIhGSpRVAgAA
+	id S1752246AbbAMMvz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 07:51:55 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:54938 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750981AbbAMMvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 07:51:53 -0500
+Message-ID: <54B514D8.9020507@ti.com>
+Date: Tue, 13 Jan 2015 14:51:36 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+CC: <linux-m68k@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>
+Subject: Re: [PATCH 3/5] video: atafb: Remove obsolete IRQ_TYPE_PRIO
+References: <1421052021-12560-1-git-send-email-geert@linux-m68k.org> <1421052021-12560-4-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1421052021-12560-4-git-send-email-geert@linux-m68k.org>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="IeH71uidaU8LdDdSd7R3B3XBCvMlaoBnI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 13.01.2015 o 09:55, kbuild test robot pisze:
-> drivers/usb/gadget/function/uvc_configfs.c:46:28: sparse: symbol 'to_uvcg_control_header' was not declared. Should it be static?
-> drivers/usb/gadget/function/uvc_configfs.c:138:25: sparse: symbol 'uvcg_control_header_type' was not declared. Should it be static?
-> drivers/usb/gadget/function/uvc_configfs.c:164:6: sparse: symbol 'uvcg_control_header_drop' was not declared. Should it be static?
-> drivers/usb/gadget/function/uvc_configfs.c:721:20: sparse: symbol 'to_uvcg_format' was not declared. Should it be static?
-> drivers/usb/gadget/function/uvc_configfs.c:798:30: sparse: symbol 'to_uvcg_streaming_header' was not declared. Should it be static?
-> drivers/usb/gadget/function/uvc_configfs.c:950:25: sparse: symbol 'uvcg_streaming_header_type' was not declared. Should it be static?
-> drivers/usb/gadget/function/uvc_configfs.c:976:6: sparse: symbol 'uvcg_streaming_header_drop' was not declared. Should it be static?
-> drivers/usb/gadget/function/uvc_configfs.c:1020:19: sparse: symbol 'to_uvcg_frame' was not declared. Should it be static?
-> drivers/usb/gadget/function/uvc_configfs.c:1265:25: sparse: symbol 'uvcg_frame_type' was not declared. Should it be static?
-> drivers/usb/gadget/function/uvc_configfs.c:1315:6: sparse: symbol 'uvcg_frame_drop' was not declared. Should it be static?
-> drivers/usb/gadget/function/uvc_configfs.c:1338:26: sparse: symbol 'to_uvcg_uncompressed' was not declared. Should it be static?
-> drivers/usb/gadget/function/uvc_configfs.c:1548:25: sparse: symbol 'uvcg_uncompressed_type' was not declared. Should it be static?
-> drivers/usb/gadget/function/uvc_configfs.c:1586:6: sparse: symbol 'uvcg_uncompressed_drop' was not declared. Should it be static?
-> drivers/usb/gadget/function/uvc_configfs.c:1610:19: sparse: symbol 'to_uvcg_mjpeg' was not declared. Should it be static?
-> drivers/usb/gadget/function/uvc_configfs.c:1761:25: sparse: symbol 'uvcg_mjpeg_type' was not declared. Should it be static?
-> drivers/usb/gadget/function/uvc_configfs.c:1793:6: sparse: symbol 'uvcg_mjpeg_drop' was not declared. Should it be static?
->
-> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+--IeH71uidaU8LdDdSd7R3B3XBCvMlaoBnI
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-Reviewed-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+On 12/01/15 10:40, Geert Uytterhoeven wrote:
+> IRQ_TYPE_PRIO is no longer used by the Atari platform interrupt code
+> since commit 734085651c9b80aa ("[PATCH] m68k: convert atari irq code")
+> in v2.6.18-rc1, so drop it.
+>=20
+> Note that its value has been reused for a different purpose
+> (IRQ_TYPE_EDGE_FALLING) since commit 6a6de9ef5850d063 ("[PATCH] genirq:=
 
-
+> core") in v2.6.18-rc1.
+>=20
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: linux-fbdev@vger.kernel.org
 > ---
->   uvc_configfs.c |   32 ++++++++++++++++----------------
->   1 file changed, 16 insertions(+), 16 deletions(-)
->
-> diff --git a/drivers/usb/gadget/function/uvc_configfs.c b/drivers/usb/gadget/function/uvc_configfs.c
-> index 33d92ab..f69f47a 100644
-> --- a/drivers/usb/gadget/function/uvc_configfs.c
-> +++ b/drivers/usb/gadget/function/uvc_configfs.c
-> @@ -43,7 +43,7 @@ struct uvcg_control_header {
->   	unsigned			linked;
->   };
->
-> -struct uvcg_control_header *to_uvcg_control_header(struct config_item *item)
-> +static struct uvcg_control_header *to_uvcg_control_header(struct config_item *item)
->   {
->   	return container_of(item, struct uvcg_control_header, item);
->   }
-> @@ -135,7 +135,7 @@ static struct configfs_attribute *uvcg_control_header_attrs[] = {
->   	NULL,
->   };
->
-> -struct config_item_type uvcg_control_header_type = {
-> +static struct config_item_type uvcg_control_header_type = {
->   	.ct_item_ops	= &uvcg_control_header_item_ops,
->   	.ct_attrs	= uvcg_control_header_attrs,
->   	.ct_owner	= THIS_MODULE,
-> @@ -161,7 +161,7 @@ static struct config_item *uvcg_control_header_make(struct config_group *group,
->   	return &h->item;
->   }
->
-> -void uvcg_control_header_drop(struct config_group *group,
-> +static void uvcg_control_header_drop(struct config_group *group,
->   			      struct config_item *item)
->   {
->   	struct uvcg_control_header *h = to_uvcg_control_header(item);
-> @@ -718,7 +718,7 @@ struct uvcg_format {
->   	__u8			bmaControls[UVCG_STREAMING_CONTROL_SIZE];
->   };
->
-> -struct uvcg_format *to_uvcg_format(struct config_item *item)
-> +static struct uvcg_format *to_uvcg_format(struct config_item *item)
->   {
->   	return container_of(to_config_group(item), struct uvcg_format, group);
->   }
-> @@ -795,7 +795,7 @@ struct uvcg_streaming_header {
->   	unsigned					num_fmt;
->   };
->
-> -struct uvcg_streaming_header *to_uvcg_streaming_header(struct config_item *item)
-> +static struct uvcg_streaming_header *to_uvcg_streaming_header(struct config_item *item)
->   {
->   	return container_of(item, struct uvcg_streaming_header, item);
->   }
-> @@ -947,7 +947,7 @@ static struct configfs_attribute *uvcg_streaming_header_attrs[] = {
->   	NULL,
->   };
->
-> -struct config_item_type uvcg_streaming_header_type = {
-> +static struct config_item_type uvcg_streaming_header_type = {
->   	.ct_item_ops	= &uvcg_streaming_header_item_ops,
->   	.ct_attrs	= uvcg_streaming_header_attrs,
->   	.ct_owner	= THIS_MODULE,
-> @@ -973,7 +973,7 @@ static struct config_item
->   	return &h->item;
->   }
->
-> -void uvcg_streaming_header_drop(struct config_group *group,
-> +static void uvcg_streaming_header_drop(struct config_group *group,
->   			      struct config_item *item)
->   {
->   	struct uvcg_streaming_header *h = to_uvcg_streaming_header(item);
-> @@ -1017,7 +1017,7 @@ struct uvcg_frame {
->   	struct config_item	item;
->   };
->
-> -struct uvcg_frame *to_uvcg_frame(struct config_item *item)
-> +static struct uvcg_frame *to_uvcg_frame(struct config_item *item)
->   {
->   	return container_of(item, struct uvcg_frame, item);
->   }
-> @@ -1262,7 +1262,7 @@ static struct configfs_attribute *uvcg_frame_attrs[] = {
->   	NULL,
->   };
->
-> -struct config_item_type uvcg_frame_type = {
-> +static struct config_item_type uvcg_frame_type = {
->   	.ct_item_ops	= &uvcg_frame_item_ops,
->   	.ct_attrs	= uvcg_frame_attrs,
->   	.ct_owner	= THIS_MODULE,
-> @@ -1312,7 +1312,7 @@ static struct config_item *uvcg_frame_make(struct config_group *group,
->   	return &h->item;
->   }
->
-> -void uvcg_frame_drop(struct config_group *group, struct config_item *item)
-> +static void uvcg_frame_drop(struct config_group *group, struct config_item *item)
->   {
->   	struct uvcg_frame *h = to_uvcg_frame(item);
->   	struct uvcg_format *fmt;
-> @@ -1335,7 +1335,7 @@ struct uvcg_uncompressed {
->   	struct uvc_format_uncompressed	desc;
->   };
->
-> -struct uvcg_uncompressed *to_uvcg_uncompressed(struct config_item *item)
-> +static struct uvcg_uncompressed *to_uvcg_uncompressed(struct config_item *item)
->   {
->   	return container_of(
->   		container_of(to_config_group(item), struct uvcg_format, group),
-> @@ -1545,7 +1545,7 @@ static struct configfs_attribute *uvcg_uncompressed_attrs[] = {
->   	NULL,
->   };
->
-> -struct config_item_type uvcg_uncompressed_type = {
-> +static struct config_item_type uvcg_uncompressed_type = {
->   	.ct_item_ops	= &uvcg_uncompressed_item_ops,
->   	.ct_group_ops	= &uvcg_uncompressed_group_ops,
->   	.ct_attrs	= uvcg_uncompressed_attrs,
-> @@ -1583,7 +1583,7 @@ static struct config_group *uvcg_uncompressed_make(struct config_group *group,
->   	return &h->fmt.group;
->   }
->
-> -void uvcg_uncompressed_drop(struct config_group *group,
-> +static void uvcg_uncompressed_drop(struct config_group *group,
->   			    struct config_item *item)
->   {
->   	struct uvcg_uncompressed *h = to_uvcg_uncompressed(item);
-> @@ -1607,7 +1607,7 @@ struct uvcg_mjpeg {
->   	struct uvc_format_mjpeg		desc;
->   };
->
-> -struct uvcg_mjpeg *to_uvcg_mjpeg(struct config_item *item)
-> +static struct uvcg_mjpeg *to_uvcg_mjpeg(struct config_item *item)
->   {
->   	return container_of(
->   		container_of(to_config_group(item), struct uvcg_format, group),
-> @@ -1758,7 +1758,7 @@ static struct configfs_attribute *uvcg_mjpeg_attrs[] = {
->   	NULL,
->   };
->
-> -struct config_item_type uvcg_mjpeg_type = {
-> +static struct config_item_type uvcg_mjpeg_type = {
->   	.ct_item_ops	= &uvcg_mjpeg_item_ops,
->   	.ct_group_ops	= &uvcg_mjpeg_group_ops,
->   	.ct_attrs	= uvcg_mjpeg_attrs,
-> @@ -1790,7 +1790,7 @@ static struct config_group *uvcg_mjpeg_make(struct config_group *group,
->   	return &h->fmt.group;
->   }
->
-> -void uvcg_mjpeg_drop(struct config_group *group,
-> +static void uvcg_mjpeg_drop(struct config_group *group,
->   			    struct config_item *item)
->   {
->   	struct uvcg_mjpeg *h = to_uvcg_mjpeg(item);
->
+>  drivers/video/fbdev/atafb.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/video/fbdev/atafb.c b/drivers/video/fbdev/atafb.c
+> index b2d38097a95718ce..7b231771a4b668b0 100644
+> --- a/drivers/video/fbdev/atafb.c
+> +++ b/drivers/video/fbdev/atafb.c
+> @@ -3121,8 +3121,7 @@ int __init atafb_init(void)
+>  			printk("atafb_init: initializing Falcon hw\n");
+>  			fbhw =3D &falcon_switch;
+>  			atafb_ops.fb_setcolreg =3D &falcon_setcolreg;
+> -			error =3D request_irq(IRQ_AUTO_4, falcon_vbl_switcher,
+> -					    IRQ_TYPE_PRIO,
+> +			error =3D request_irq(IRQ_AUTO_4, falcon_vbl_switcher, 0,
+>  					    "framebuffer:modeswitch",
+>  					    falcon_vbl_switcher);
+>  			if (error)
+>=20
 
+Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+
+ Tomi
+
+
+
+--IeH71uidaU8LdDdSd7R3B3XBCvMlaoBnI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUtRTYAAoJEPo9qoy8lh71QGEQAJCHbpZqmfy4dDqM4CpxCQNb
+5oXUXmEeQgrJaUmHYNPyjoQpGyccz/p7gQo14b7MPP3obD1yitNedgz/EhoeC6rQ
+GGxR00Z/WcJ+hhkKgH9EwaQvhozeUQhqSxT2rZGHJud+fFVop69MgirvKADBqrCk
+ub4h9Px7r+rEtUlkFbehpcHtF03IWRjRXk7rH7ulJxBN11b0F9rJnWLi7ZzTmnF7
+RhhegHuxTaxKrVtPDYSPVeeFukF4JozGXah4f6j+FaDUlVUtp8grVt6gJRzc8uDj
+43YdU14dYAZ+qOtp46x9w97QiA4WohLodQJVVj7QiySnkzdUumYkItjuKMwri96t
+j7FKWnag5HkYO+WhqQyzhSMSbLBewz/PHhiNR+ueKfG5RlpEs41199XozyuWJSm8
+tiU2Dxr0XLhxMhN7QpLTwCrfYYdQJypGptXjifQc0kUB3PZMYp2N/RXLpBnGeEcy
+8zBEvq7kSPB+/t7pps8YsQYK3WLQgijQSFh/TlOIXYwZk51pdlEBvBlmmMW8Og7Z
+DqZ9qsxYK2/KOxP9OvMXZSn/6c6bCKwGWEDQ7gnVSQNDj6lxpOnvOn9CRrlz70vO
+Etp6rnHD9Aqb0KYUdnidoV/FQ3b7eeTFJAirH7ZtKfyqtO6IVM8kxNHCDNJiOxf6
+HiaQ+1csV3vj0cT+qpLQ
+=5XS9
+-----END PGP SIGNATURE-----
+
+--IeH71uidaU8LdDdSd7R3B3XBCvMlaoBnI--
