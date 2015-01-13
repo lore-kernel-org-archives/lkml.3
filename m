@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbbAMNmF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 08:42:05 -0500
-Received: from exprod5og119.obsmtp.com ([64.18.0.189]:33582 "EHLO
-	exprod5og119.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071AbbAMNmD (ORCPT
+	id S1752903AbbAMNro (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 08:47:44 -0500
+Received: from exprod5og106.obsmtp.com ([64.18.0.182]:40243 "EHLO
+	exprod5og106.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752611AbbAMNrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 08:42:03 -0500
+	Tue, 13 Jan 2015 08:47:43 -0500
+X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Jan 2015 08:47:42 EST
 From: Semen Protsenko <semen.protsenko@globallogic.com>
 To: Linus Walleij <linus.walleij@linaro.org>,
         Alexandre Courbot <gnurou@gmail.com>
@@ -16,9 +17,9 @@ Cc: Grant Likely <grant.likely@linaro.org>,
         Marc Zyngier <maz@misterjones.org>,
         Grygorii Strashko <grygorii.strashko@globallogic.com>,
         Illia Smyrnov <illia.smyrnov@globallogic.com>
-Subject: [PATCH 3/4] gpio: max732x: Fix possible deadlock
-Date: Tue, 13 Jan 2015 15:41:44 +0200
-Message-Id: <1421156505-16600-4-git-send-email-semen.protsenko@globallogic.com>
+Subject: [PATCH 4/4] gpio: max732x: Add DT binding documentation
+Date: Tue, 13 Jan 2015 15:41:45 +0200
+Message-Id: <1421156505-16600-5-git-send-email-semen.protsenko@globallogic.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1421156505-16600-1-git-send-email-semen.protsenko@globallogic.com>
 References: <1421156505-16600-1-git-send-email-semen.protsenko@globallogic.com>
@@ -26,75 +27,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch was derived from next one:
-"gpio: fix pca953x set_type 'scheduling while atomic' bug".
-
-After adding entry that consumes max732x GPIO as interrupt line to dts
-file, deadlock appears somewhere in max732x probe function.
-
-Deadlock caught by lockdep (from kernel log):
-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< cut here >>>>>>>>>>>>>>>>>>>>>>>>>>>
-[    0.473419] ======================================================
-[    0.473419] [ INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock order detected ]
-[    0.473449] 3.x.xx-xxxxx-xxxxxxxx-dirty #2 Tainted: G        W
-[    0.473449] ------------------------------------------------------
-[    0.473449] swapper/0/1 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
-[    0.473449]  (&lock->wait_lock){+.+...}, at: [<c072e350>] rt_mutex_trylock+0xc/0x74
-[    0.473480]
-[    0.473480] and this task is already holding:
-[    0.473510]  (&chip->lock){......}, at: [<c0314514>] max732x_gpio_set_value+0x2c/0xa4
-[    0.473541] which would create a new lock dependency:
-[    0.473541]  (&chip->lock){......} -> (&lock->wait_lock){+.+...}
-
-...
-
-[    0.474273]  *** DEADLOCK ***
-[    0.474273]
-[    0.474273] 5 locks held by swapper/0/1:
-[    0.474273]  #0:  (&__lockdep_no_validate__){......}, at: [<c03b2328>] __driver_attach+0x48/0x98
-[    0.474304]  #1:  (&__lockdep_no_validate__){......}, at: [<c03b2338>] __driver_attach+0x58/0x98
-[    0.474334]  #2:  (&chip->irq_lock){+.+...}, at: [<c0313e3c>] max732x_irq_bus_lock+0x14/0x20
-[    0.474365]  #3:  (&irq_desc_lock_class){-.....}, at: [<c00a65a4>] __irq_get_desc_lock+0x48/0x88
-[    0.474365]  #4:  (&chip->lock){......}, at: [<c0314514>] max732x_gpio
-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< cut here >>>>>>>>>>>>>>>>>>>>>>>>>>>
+Add a devicetree binding documentation for the max732x driver.
 
 Signed-off-by: Semen Protsenko <semen.protsenko@globallogic.com>
 ---
- drivers/gpio/gpio-max732x.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ .../devicetree/bindings/gpio/gpio-max732x.txt      |   59 ++++++++++++++++++++
+ 1 file changed, 59 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-max732x.txt
 
-diff --git a/drivers/gpio/gpio-max732x.c b/drivers/gpio/gpio-max732x.c
-index f8f3e80..5fbab13 100644
---- a/drivers/gpio/gpio-max732x.c
-+++ b/drivers/gpio/gpio-max732x.c
-@@ -377,8 +377,18 @@ static void max732x_irq_bus_lock(struct irq_data *d)
- static void max732x_irq_bus_sync_unlock(struct irq_data *d)
- {
- 	struct max732x_chip *chip = irq_data_get_irq_chip_data(d);
-+	uint16_t new_irqs;
-+	uint16_t level;
- 
- 	max732x_irq_update_mask(chip);
+diff --git a/Documentation/devicetree/bindings/gpio/gpio-max732x.txt b/Documentation/devicetree/bindings/gpio/gpio-max732x.txt
+new file mode 100644
+index 0000000..5fdc843
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/gpio-max732x.txt
+@@ -0,0 +1,59 @@
++* MAX732x-compatible I/O expanders
 +
-+	new_irqs = chip->irq_trig_fall | chip->irq_trig_raise;
-+	while (new_irqs) {
-+		level = __ffs(new_irqs);
-+		max732x_gpio_direction_input(&chip->gpio_chip, level);
-+		new_irqs &= ~(1 << level);
-+	}
++Required properties:
++  - compatible: Should be one of the following:
++    - "maxim,max7319": For the Maxim MAX7319
++    - "maxim,max7320": For the Maxim MAX7320
++    - "maxim,max7321": For the Maxim MAX7321
++    - "maxim,max7322": For the Maxim MAX7322
++    - "maxim,max7323": For the Maxim MAX7323
++    - "maxim,max7324": For the Maxim MAX7324
++    - "maxim,max7325": For the Maxim MAX7325
++    - "maxim,max7326": For the Maxim MAX7326
++    - "maxim,max7327": For the Maxim MAX7327
++  - reg: I2C slave address for this device.
++  - gpio-controller: Marks the device node as a GPIO controller.
++  - #gpio-cells: Should be 2.
++    - first cell is the GPIO number
++    - second cell specifies GPIO flags, as defined in <dt-bindings/gpio/gpio.h>.
++      Only the GPIO_ACTIVE_HIGH and GPIO_ACTIVE_LOW flags are supported.
 +
- 	mutex_unlock(&chip->irq_lock);
- }
- 
-@@ -410,7 +420,7 @@ static int max732x_irq_set_type(struct irq_data *d, unsigned int type)
- 	else
- 		chip->irq_trig_raise &= ~mask;
- 
--	return max732x_gpio_direction_input(&chip->gpio_chip, off);
-+	return 0;
- }
- 
- static struct irq_chip max732x_irq_chip = {
++Optional properties:
++
++  The I/O expander can detect input state changes, and thus optionally act as
++  an interrupt controller. When the expander interrupt line is connected all the
++  following properties must be set. For more information please see the
++  interrupt controller device tree bindings documentation available at
++  Documentation/devicetree/bindings/interrupt-controller/interrupts.txt.
++
++  - interrupt-controller: Identifies the node as an interrupt controller.
++  - #interrupt-cells: Number of cells to encode an interrupt source, shall be 2.
++    - first cell is the pin number
++    - second cell is used to specify flags
++  - interrupt-parent: phandle of the parent interrupt controller.
++  - interrupts: Interrupt specifier for the controllers interrupt.
++
++Please refer to gpio.txt in this directory for details of the common GPIO
++bindings used by client devices.
++
++Example 1. MAX7325 with interrupt support enabled (CONFIG_GPIO_MAX732X_IRQ=y):
++
++	expander: max7325@6d {
++		compatible = "maxim,max7325";
++		reg = <0x6d>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		interrupt-controller;
++		#interrupt-cells = <2>;
++		interrupt-parent = <&gpio4>;
++		interrupts = <29 IRQ_TYPE_EDGE_FALLING>;
++	};
++
++Example 2. MAX7325 with interrupt support disabled (CONFIG_GPIO_MAX732X_IRQ=n):
++
++	expander: max7325@6d {
++		compatible = "maxim,max7325";
++		reg = <0x6d>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
 -- 
 1.7.9.5
 
