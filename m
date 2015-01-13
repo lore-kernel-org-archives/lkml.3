@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751629AbbAMFMa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 00:12:30 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:49112 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078AbbAMFM2 (ORCPT
+	id S1751961AbbAMFO7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 00:14:59 -0500
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:53300 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031AbbAMFO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 00:12:28 -0500
-From: Guenter Roeck <linux@roeck-us.net>
-To: David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Rob Clark <robdclark@gmail.com>
-Subject: [PATCH] next: drm/atomic: Use copy_from_user to copy 64 bit data from user space
-Date: Mon, 12 Jan 2015 21:12:17 -0800
-Message-Id: <1421125937-27394-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 2.1.0
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.54B4A93C.005A,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 3
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Tue, 13 Jan 2015 00:14:57 -0500
+Date: Mon, 12 Jan 2015 21:14:52 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org, kernel@stlinux.com,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH v3 00/13] mtd: st_spi_fsm: Align with ST's internal
+ development
+Message-ID: <20150113051452.GR9759@ld-irv-0074>
+References: <1418644760-18773-1-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418644760-18773-1-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Copying 64 bit data from user space using get_user is not supported
-on all architectures, and may result in the following build error.
+On Mon, Dec 15, 2014 at 11:59:07AM +0000, Lee Jones wrote:
+> Hi Brian, all,
+>  
+>  [x] Bulid test
+>  [x] Bisectable
+>  [x] Smatch
+>  [x] Sparse
 
-ERROR: "__get_user_bad" [drivers/gpu/drm/drm.ko] undefined!
+Picked patches 1, 2, and 5 to l2-mtd.git. I requested changes to patch 3
+and possibly 4. The rest look OK, but I don't want to futz with patch
+conflicts on the remaining. Please rebase to l2-mtd.git if/when you
+resend.
 
-Avoid the problem by using copy_from_user.
+> v3:
+>   Further aligned with upstream changes as suggested by Peter Griffin.
+>   The clk_ignore_unused kernel command line parameter is due to be turned
+>   off on STiH4* platforms, so we no longer give the driver the chance to
+>   opt-out of fetching the EMI clock.  We also now provide syscfg offsets
+>   inside the driver, as it's simpler and reduces the cost of having lots
+>   of extra DT properties.
 
-Fixes: d34f20d6e2f2 ("drm: Atomic modeset ioctl")
-Cc: Rob Clark <robdclark@gmail.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-Compile tested only.
+Typically "simpler" and "reducing the cost of having lots of extra DT
+properties" aren't good enough reasons for immediately breaking an
+existing DT binding. We usually expect to support both for some period
+of time.
 
- drivers/gpu/drm/drm_atomic.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+> v2:
+>   These are the last remaining patches in the set, all rebased and
+>   with the DT documentation requested after the last submission.
+>  
+> v1:
+>   This patch-set updates ST's FSM SPI-NOR driver with all the internal
+>   goodness which has happened since the initial (now upstreamed) snapshot
+>   was taken. It covers just over 6 months worth of internal development
+>   and bug-fixes. A final whitespace clean-up is also appended to the set
+>   - to make it look pretty and stuff. :)
+> 
+> Angus Clark (3):
+>   mtd: st_spi_fsm: Add support for N25Q512 and N25Q00A devices
+>   mtd: st_spi_fsm: Update Spansion device entries
+>   mtd: st_spi_fsm: Improve busy wait handling
+> 
+> Lee Jones (9):
+>   mtd: st_spi_fsm: Extend fsm_clear_fifo to handle unwanted bytes
+>   mtd: st_spi_fsm: Obtain and use EMI clock
+>   mtd: st_spi_fsm: dt-bindings: Deprecate generic compatible string
+>   mtd: st_spi_fsm: Fetch boot device locations from DT match tables
+>   mtd: st_spi_fsm: Fix [-Wsign-compare] build warning
+>   mtd: st_spi_fsm: Update the JEDEC probe to handle extended READIDs
+>   mtd: st_spi_fsm: General tidy-up
+>   ARM: STi: stih416: Use new platform specific compatible string
+>   ARM: STi: stih416: Supply EMI clock reference to FSM SPI NOR
+> 
+> Nunzio Raciti (1):
+>   mtd: st_spi_fsm: Add support for Micron N25Q512A
+> 
+>  Documentation/devicetree/bindings/mtd/st-fsm.txt |  20 +-
+>  arch/arm/boot/dts/stih416.dtsi                   |   6 +-
+>  drivers/mtd/devices/st_spi_fsm.c                 | 747 +++++++++++++++--------
+>  include/dt-bindings/clock/stih416-clks.h         |   1 +
+>  4 files changed, 519 insertions(+), 255 deletions(-)
+> 
 
-diff --git a/drivers/gpu/drm/drm_atomic.c b/drivers/gpu/drm/drm_atomic.c
-index 1e38dfc..af3f3df 100644
---- a/drivers/gpu/drm/drm_atomic.c
-+++ b/drivers/gpu/drm/drm_atomic.c
-@@ -1259,7 +1259,9 @@ retry:
- 				goto fail;
- 			}
- 
--			if (get_user(prop_value, prop_values_ptr + copied_props)) {
-+			if (copy_from_user(&prop_value,
-+					   prop_values_ptr + copied_props,
-+					   sizeof(prop_value))) {
- 				ret = -EFAULT;
- 				goto fail;
- 			}
--- 
-2.1.0
-
+Brian
