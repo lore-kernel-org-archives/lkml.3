@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242AbbAMQfy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 11:35:54 -0500
-Received: from mail-we0-f180.google.com ([74.125.82.180]:41292 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034AbbAMQfw (ORCPT
+	id S1753525AbbAMQgA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 11:36:00 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:55035 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753415AbbAMQf5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 11:35:52 -0500
+	Tue, 13 Jan 2015 11:35:57 -0500
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
         Russell King <linux@arm.linux.org.uk>
@@ -18,64 +18,81 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
         Daniel Drake <drake@endlessm.com>,
         Dmitry Pervushin <dpervushin@gmail.com>,
         Tim Sander <tim@krieglstein.org>, Stephen Boyd <sboyd@codeaurora.org>
-Subject: [RFC PATCH 0/5] irq: Allow irqs to be routed to NMI/FIQ
-Date: Tue, 13 Jan 2015 16:35:26 +0000
-Message-Id: <1421166931-14134-1-git-send-email-daniel.thompson@linaro.org>
+Subject: [RFC PATCH 1/5] arm: irq: Add a __nmi_count stat
+Date: Tue, 13 Jan 2015 16:35:27 +0000
+Message-Id: <1421166931-14134-2-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1421166931-14134-1-git-send-email-daniel.thompson@linaro.org>
+References: <1421166931-14134-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas, Hi Russell:
-    This RFC is particularly for your attention since it results
-    directly from feedback I've received from both of you, albeit
-    quite a few months ago now.
+Extends the irq statistics for ARM, making it possible to quickly
+observe how many times the default FIQ handler has executed.
 
-This patchset demonstrates using FIQ to improve the quality of the
-PMU trace on ARM systems. To do so it introduces generic changes
-that allow irqs to be routed to NMI.
+In /proc/interrupts we use the NMI terminology (rather than FIQ) because
+the statistic is only likely to be updated when we run the default FIQ
+handler (handle_fiq_as_nmi).
 
-This patchset applies on top of my own patchset:
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+---
+ arch/arm/include/asm/hardirq.h | 1 +
+ arch/arm/kernel/irq.c          | 7 ++++++-
+ arch/arm/kernel/traps.c        | 2 ++
+ 3 files changed, 9 insertions(+), 1 deletion(-)
 
-    arm: Implement arch_trigger_all_cpu_backtrace
-    http://thread.gmane.org/gmane.linux.kernel/1864829
-
-I think the important points of this set are clear without reference to
-the previous patchset but the patches will not run (nor apply cleanly)
-without the previous patchset.
-
-Currently these patches strictly honour a request from Russell to avoid
-indirection (notifiers, etc) in the ARM default FIQ handler. I have
-therefore separated the request that an irq be routed to NMI from the
-installation of a handler for it.
-
-Avoiding indirection does raise some problems though, because it means
-we arrive in the PMU code without a context pointer. At present I have
-just added a global variables into the ARM PMU code in order to hold
-information about irq allocations in a form I can safely read from NMI.
-
-
-Daniel Thompson (5):
-  arm: irq: Add a __nmi_count stat
-  irq: Allow interrupts to routed to NMI (or similar)
-  irq: gic: Add support for NMI routing
-  arm: perf: Make v7 support FIQ-safe
-  arm: perf: Use FIQ to handle PMU events.
-
- arch/arm/include/asm/hardirq.h   |  1 +
- arch/arm/include/asm/pmu.h       |  4 +++
- arch/arm/kernel/irq.c            |  7 +++-
- arch/arm/kernel/perf_event.c     |  2 +-
- arch/arm/kernel/perf_event_cpu.c | 35 +++++++++++++++++--
- arch/arm/kernel/perf_event_v7.c  | 11 ++----
- arch/arm/kernel/traps.c          | 15 +++++---
- drivers/irqchip/irq-gic.c        | 75 ++++++++++++++++++++++++++++++----------
- include/linux/interrupt.h        | 20 +++++++++++
- include/linux/irq.h              |  2 ++
- include/linux/irqchip/arm-gic.h  |  8 ++++-
- kernel/irq/manage.c              | 29 ++++++++++++++--
- 12 files changed, 169 insertions(+), 40 deletions(-)
-
---
+diff --git a/arch/arm/include/asm/hardirq.h b/arch/arm/include/asm/hardirq.h
+index 5df33e30ae1b..27ab43b5d7e2 100644
+--- a/arch/arm/include/asm/hardirq.h
++++ b/arch/arm/include/asm/hardirq.h
+@@ -9,6 +9,7 @@
+ 
+ typedef struct {
+ 	unsigned int __softirq_pending;
++	unsigned int __nmi_count;
+ #ifdef CONFIG_SMP
+ 	unsigned int ipi_irqs[NR_IPI];
+ #endif
+diff --git a/arch/arm/kernel/irq.c b/arch/arm/kernel/irq.c
+index ad857bada96c..6dd1619e0700 100644
+--- a/arch/arm/kernel/irq.c
++++ b/arch/arm/kernel/irq.c
+@@ -48,13 +48,18 @@ unsigned long irq_err_count;
+ 
+ int arch_show_interrupts(struct seq_file *p, int prec)
+ {
++	int i;
++
+ #ifdef CONFIG_FIQ
+ 	show_fiq_list(p, prec);
+ #endif
+ #ifdef CONFIG_SMP
+ 	show_ipi_list(p, prec);
+ #endif
+-	seq_printf(p, "%*s: %10lu\n", prec, "Err", irq_err_count);
++	seq_printf(p, "%*s: ", prec, "NMI");
++	for_each_online_cpu(i)
++		seq_printf(p, "%10u ", __get_irq_stat(i, __nmi_count));
++	seq_printf(p, "\n%*s: %10lu\n", prec, "Err", irq_err_count);
+ 	return 0;
+ }
+ 
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index 1836415b8a5c..5645f81ac4cc 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -476,8 +476,10 @@ die_sig:
+  */
+ asmlinkage void __exception_irq_entry handle_fiq_as_nmi(struct pt_regs *regs)
+ {
++	unsigned int cpu = smp_processor_id();
+ 	struct pt_regs *old_regs = set_irq_regs(regs);
+ 
++	__inc_irq_stat(cpu, __nmi_count);
+ 	nmi_enter();
+ 
+ #ifdef CONFIG_ARM_GIC
+-- 
 1.9.3
 
