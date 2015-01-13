@@ -1,101 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788AbbAMVRI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 16:17:08 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:38230 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751140AbbAMVRG (ORCPT
+	id S1752663AbbAMVRU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 16:17:20 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:64998 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751904AbbAMVRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 16:17:06 -0500
-Date: Tue, 13 Jan 2015 13:16:18 -0800
-From: Calvin Owens <calvinowens@fb.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, Peter Zijlstra <peterz@infradead.org>,
-        <linux-kernel@vger.kernel.org>, <kernel-team@fb.com>,
-        <calvinowens@fb.com>
-Subject: [PATCH] ksoftirqd: Enable IRQs and call cond_resched() before poking
- RCU
-Message-ID: <20150113211618.GA21498@mail.thefacebook.com>
-References: <1420594659-16996-1-git-send-email-calvinowens@fb.com>
- <20150107014906.GA27996@mail.thefacebook.com>
- <20150107021926.GT5280@linux.vnet.ibm.com>
- <20150107165223.GA21555@linux.vnet.ibm.com>
- <20150108043329.GB27996@mail.thefacebook.com>
- <20150108045306.GJ5280@linux.vnet.ibm.com>
- <20150108214644.GC27996@mail.thefacebook.com>
- <alpine.DEB.2.11.1501131215380.5526@nanos>
- <20150113184301.GO9719@linux.vnet.ibm.com>
+	Tue, 13 Jan 2015 16:17:15 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: dmaengine@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH] dma: coh901318: fix function return types build warnings
+Date: Tue, 13 Jan 2015 22:17:03 +0100
+Message-ID: <2760189.hGZZQd3ELS@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <20150113184301.GO9719@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-13_07:2015-01-13,2015-01-13,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=3.45033029023803
- compositescore=0.928708196901072 urlsuspect_oldscore=0.928708196901072
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.928708196901072 spamscore=0
- recipient_to_sender_domain_totalscore=12 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1501130207
-X-FB-Internal: deliver
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:YppGP+6cd0MhASdVmv8JPeg/nTabw4Cy/jp4N0dKvpAR5fMCgxB
+ hazcL8pdqUjagKRyynJoGst2DGaaD9sN64OxF+EAZ2TdtBlG5JpLVVHEEVRz5Qz4J1PTgEw
+ sCTX2a1/iQAASCELGUTZA3uQvPzu+41qDLefZGPkg6fjSWE6NuR2oHjWxxvOXFvqRY+KaJH
+ iTrUifmQLUcz+dFka99Mw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While debugging an issue with excessive softirq usage, I encountered the
-following note in commit 3e339b5dae24a706 ("softirq: Use hotplug thread
-infrastructure"):
+A recent patch that removed coh901318_control() replaced it
+with a number of pointers to existing functions, but those
+unfortunately have the wrong return  type and need to be
+changed to return an 'int' with an error value rather than
+a 'void' to avoid these build warnings:
 
-    [ paulmck: Call rcu_note_context_switch() with interrupts enabled. ]
+drivers/dma/coh901318.c:2697:32: warning: assignment from incompatible pointer type
+  base->dma_slave.device_config = coh901318_dma_set_runtimeconfig;
+                                ^
+drivers/dma/coh901318.c:2698:31: warning: assignment from incompatible pointer type
+  base->dma_slave.device_pause = coh901318_pause;
+                               ^
+drivers/dma/coh901318.c:2699:32: warning: assignment from incompatible pointer type
+  base->dma_slave.device_resume = coh901318_resume
 
-...but despite this note, the patch still calls RCU with IRQs disabled.
+The coh901318_base_init function has the correct return type
+already, but needs to be marked 'static' to avoid a sparse
+warning about a missing declaration.
 
-This seemingly innocuous change caused a significant regression in softirq
-CPU usage on the sending side of a large TCP transfer (~1 GB/s): when
-introducing 0.01% packet loss, the softirq usage would jump to around 25%,
-spiking as high as 50%. Before the change, the usage would never exceed 5%.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Fixes: 6782af118b6c ("dmaengine: coh901318: Split device_control")
 
-Moving the call to rcu_note_context_switch() after the cond_sched() call,
-as it was originally before the hotplug patch, completely eliminated this
-problem.
-
-Signed-off-by: Calvin Owens <calvinowens@fb.com>
-Cc: stable@vger.kernel.org
----
-This version includes the "cpu" argument to rcu_note_context_switch() in
-order to apply cleanly to stable kernels. It will need to be removed to
-apply to 3.18+ and 3.19 (upstream commit 38200cf2 removed the argument).
-
- kernel/softirq.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 501baa9..9e787d8 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -656,9 +656,13 @@ static void run_ksoftirqd(unsigned int cpu)
- 		 * in the task stack here.
- 		 */
- 		__do_softirq();
--		rcu_note_context_switch(cpu);
- 		local_irq_enable();
- 		cond_resched();
-+
-+		preempt_disable();
-+		rcu_note_context_switch(cpu);
-+		preempt_enable();
-+
- 		return;
+diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
+index 418e4e4fb7ba..fd22dd36985f 100644
+--- a/drivers/dma/coh901318.c
++++ b/drivers/dma/coh901318.c
+@@ -1690,7 +1690,7 @@ static u32 coh901318_get_bytes_left(struct dma_chan *chan)
+  * Pauses a transfer without losing data. Enables power save.
+  * Use this function in conjunction with coh901318_resume.
+  */
+-static void coh901318_pause(struct dma_chan *chan)
++static int coh901318_pause(struct dma_chan *chan)
+ {
+ 	u32 val;
+ 	unsigned long flags;
+@@ -1730,12 +1730,13 @@ static void coh901318_pause(struct dma_chan *chan)
+ 	enable_powersave(cohc);
+ 
+ 	spin_unlock_irqrestore(&cohc->lock, flags);
++	return 0;
+ }
+ 
+ /* Resumes a transfer that has been stopped via 300_dma_stop(..).
+    Power save is handled.
+ */
+-static void coh901318_resume(struct dma_chan *chan)
++static int coh901318_resume(struct dma_chan *chan)
+ {
+ 	u32 val;
+ 	unsigned long flags;
+@@ -1760,6 +1761,7 @@ static void coh901318_resume(struct dma_chan *chan)
  	}
- 	local_irq_enable();
--- 
-2.1.1
+ 
+ 	spin_unlock_irqrestore(&cohc->lock, flags);
++	return 0;
+ }
+ 
+ bool coh901318_filter_id(struct dma_chan *chan, void *chan_id)
+@@ -2512,8 +2514,8 @@ static const struct burst_table burst_sizes[] = {
+ 	},
+ };
+ 
+-static void coh901318_dma_set_runtimeconfig(struct dma_chan *chan,
+-			struct dma_slave_config *config)
++static int coh901318_dma_set_runtimeconfig(struct dma_chan *chan,
++					   struct dma_slave_config *config)
+ {
+ 	struct coh901318_chan *cohc = to_coh901318_chan(chan);
+ 	dma_addr_t addr;
+@@ -2533,7 +2535,7 @@ static void coh901318_dma_set_runtimeconfig(struct dma_chan *chan,
+ 		maxburst = config->dst_maxburst;
+ 	} else {
+ 		dev_err(COHC_2_DEV(cohc), "illegal channel mode\n");
+-		return;
++		return -EINVAL;
+ 	}
+ 
+ 	dev_dbg(COHC_2_DEV(cohc), "configure channel for %d byte transfers\n",
+@@ -2579,7 +2581,7 @@ static void coh901318_dma_set_runtimeconfig(struct dma_chan *chan,
+ 	default:
+ 		dev_err(COHC_2_DEV(cohc),
+ 			"bad runtimeconfig: alien address width\n");
+-		return;
++		return -EINVAL;
+ 	}
+ 
+ 	ctrl |= burst_sizes[i].reg;
+@@ -2589,10 +2591,12 @@ static void coh901318_dma_set_runtimeconfig(struct dma_chan *chan,
+ 
+ 	cohc->addr = addr;
+ 	cohc->ctrl = ctrl;
++
++	return 0;
+ }
+ 
+-void coh901318_base_init(struct dma_device *dma, const int *pick_chans,
+-			 struct coh901318_base *base)
++static void coh901318_base_init(struct dma_device *dma, const int *pick_chans,
++				struct coh901318_base *base)
+ {
+ 	int chans_i;
+ 	int i = 0;
 
