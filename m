@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780AbbAMWQP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 17:16:15 -0500
-Received: from mail.sigma-star.at ([95.130.255.111]:14385 "EHLO
-	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233AbbAMWQO (ORCPT
+	id S1753893AbbAMWRV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 17:17:21 -0500
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:37800 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753329AbbAMWRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 17:16:14 -0500
-From: Richard Weinberger <richard@nod.at>
-To: user-mode-linux-devel@lists.sourceforge.net
-Cc: dxld@darkboxed.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        stable@vger.kernel.org
-Subject: [PATCH] hostfs: Use noop_fsync for directories
-Date: Tue, 13 Jan 2015 23:15:58 +0100
-Message-Id: <1421187358-32600-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.4.5
+	Tue, 13 Jan 2015 17:17:20 -0500
 MIME-Version: 1.0
+From: Bryan Wu <cooloney@gmail.com>
+Date: Tue, 13 Jan 2015 14:16:59 -0800
+Message-ID: <CAK5ve-Kq_x7O-D6--7LBL+GTx5=N15S+y4Ascb5T3-eq1d3CZQ@mail.gmail.com>
+Subject: [GIT PULL] LED fix for 3.19
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel reported that dpkg(1) dies if the root filesystem is a hostfs
-because it does not expect fsync(2) to fail with EINVAL on directories.
-While fsync(2) is allowed to fail with EINVAL if the filesystem does not
-support it we can do better and use noop_fsync() to not confuse userspace
-further.
+Hi Linus,
 
-Cc: stable@vger.kernel.org
-Reported-and-tested-by: Daniel Gröber <dxld@darkboxed.org>
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- fs/hostfs/hostfs_kern.c | 1 +
- 1 file changed, 1 insertion(+)
+Please consider the following changes since commit
+eaa27f34e91a14cdceed26ed6c6793ec1d186115:
 
-diff --git a/fs/hostfs/hostfs_kern.c b/fs/hostfs/hostfs_kern.c
-index fd62cae..a7ac856 100644
---- a/fs/hostfs/hostfs_kern.c
-+++ b/fs/hostfs/hostfs_kern.c
-@@ -393,6 +393,7 @@ static const struct file_operations hostfs_dir_fops = {
- 	.llseek		= generic_file_llseek,
- 	.iterate	= hostfs_readdir,
- 	.read		= generic_read_dir,
-+	.fsync		= noop_fsync,
- };
- 
- static int hostfs_writepage(struct page *page, struct writeback_control *wbc)
--- 
-1.8.4.5
+  linux 3.19-rc4 (2015-01-11 12:44:53 -0800)
 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git
+leds-fixes-for-3.19
+
+for you to fetch changes up to 0c86ac2c50647451d6a70dc900f8bb0ee3d485d9:
+
+  leds: netxbig: fix oops at probe time (2015-01-13 13:49:01 -0800)
+
+----------------------------------------------------------------
+Simon Guinot (1):
+      leds: netxbig: fix oops at probe time
+
+ drivers/leds/leds-netxbig.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
