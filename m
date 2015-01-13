@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444AbbAMQXO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 11:23:14 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:38214 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752614AbbAMQXN (ORCPT
+	id S1753575AbbAMQXf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 11:23:35 -0500
+Received: from zabrina.hetzner-de.towertech.it ([178.63.16.19]:59762 "EHLO
+	zabrina.hetzner-de.towertech.it" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753404AbbAMQXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 11:23:13 -0500
-Date: Tue, 13 Jan 2015 08:23:07 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, Zach Brown <zab@zabbo.net>,
-        Christoph Hellwig <hch@infradead.org>,
-        Maxim Patlasov <mpatlasov@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>
-Subject: Re: [PATCH v2 0/4] block & aio: improve loop with kernel aio
-Message-ID: <20150113162307.GA21338@infradead.org>
-References: <1421163888-21452-1-git-send-email-ming.lei@canonical.com>
+	Tue, 13 Jan 2015 11:23:34 -0500
+Date: Tue, 13 Jan 2015 17:23:32 +0100
+From: Alessandro Zummo <a.zummo@towertech.it>
+To: Xunlei Pang <xlpang@126.com>
+Cc: linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>, rtc-linux@googlegroups.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Xunlei Pang <pang.xunlei@linaro.org>
+Subject: Re: [RFC PATCH v2 6/9] rtc/mxc: Modify rtc_update_alarm() not to
+ touch the alarm time
+Message-ID: <20150113172332.1851a210@linux.lan.towertech.it>
+In-Reply-To: <1421163897-8020-7-git-send-email-xlpang@126.com>
+References: <1421163897-8020-1-git-send-email-xlpang@126.com>
+	<1421163897-8020-7-git-send-email-xlpang@126.com>
+Organization: Tower Technologies
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421163888-21452-1-git-send-email-ming.lei@canonical.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 11:44:44PM +0800, Ming Lei wrote:
-> Follows benefits from using kernel aio in loop:
-> 	- avoid double cache, and memory usage decreased a lot
-> 	- system load gets much decreased
+On Tue, 13 Jan 2015 23:44:54 +0800
+Xunlei Pang <xlpang@126.com> wrote:
 
-This seems to conflate two changes:
+> rtc_class_ops's set_alarm() shouldn't deal with the alarm date,
+> as this is handled in the rtc core.
 
- 1) use direct I/O
- 2) use aio (require 1)
+ Please CC the author and ask him. The same applies for the other drivers.
+-- 
 
-what numbers do you get when just using direct I/O?
+ Best regards,
+
+ Alessandro Zummo,
+  Tower Technologies - Torino, Italy
+
+  http://www.towertech.it
+
