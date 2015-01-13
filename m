@@ -1,119 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001AbbAMRyH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 12:54:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42737 "EHLO mx1.redhat.com"
+	id S1753195AbbAMRzI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 12:55:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43315 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752157AbbAMRyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 12:54:05 -0500
-Message-ID: <54B55B95.1070402@redhat.com>
-Date: Tue, 13 Jan 2015 23:23:25 +0530
-From: Pratyush Anand <panand@redhat.com>
+	id S1751929AbbAMRzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 12:55:06 -0500
+Message-ID: <54B55BE7.1020107@redhat.com>
+Date: Tue, 13 Jan 2015 12:54:47 -0500
+From: Rik van Riel <riel@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>
-CC: Steve Capper <steve.capper@linaro.org>, Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Long <dave.long@linaro.org>, William Cohen <wcohen@redhat.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Query: ARM64: Behavior of el1_dbg exception while executing el0_dbg
-References: <54AE830E.1090000@redhat.com> <20150108162312.GO11583@arm.com> <54AEBE45.9080203@redhat.com> <20150109154635.GG11258@arm.com> <54B00C39.1070809@redhat.com> <20150112173005.GK13360@arm.com> <54B4BF4C.2030009@redhat.com> <20150113155221.GG16524@e104818-lin.cambridge.arm.com>
-In-Reply-To: <20150113155221.GG16524@e104818-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
+        tglx@linutronix.de, luto@amacapital.net
+Subject: Re: [RFC PATCH 04/11] x86,fpu: defer FPU restore until return to
+ userspace
+References: <1421012793-30106-1-git-send-email-riel@redhat.com> <1421012793-30106-5-git-send-email-riel@redhat.com> <20150113171134.GA27519@redhat.com>
+In-Reply-To: <20150113171134.GA27519@redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
+On 01/13/2015 12:11 PM, Oleg Nesterov wrote:
+> On 01/11, riel@redhat.com wrote:
+>> 
+>> Defer restoring the FPU state, if so desired, until the task
+>> returns to userspace.
+> 
+> And I have another concern.
+> 
+> Afaocs with this patch the idle threads will run with TIF_LOAD_FPU
+> set but without fpu.has_fpu.
+> 
+> This is fine by itself, but this (performance-wise) breaks
+> kernel_fpu_begin() if use_eager_fpu() == T. Please see the
+> changelog in 5187b28ff08249ab8a162e8 and note that this patch cc's
+> @stable.
+> 
+> Yes, yes, even if I am right we should blame kernel_fpu_begin() and
+> other eager_fpu oddities. I tried to start the cleanups/fixes in
+> this area some time ago, but they were ignored.
 
-On Tuesday 13 January 2015 09:22 PM, Catalin Marinas wrote:
-> On Tue, Jan 13, 2015 at 06:46:36AM +0000, Pratyush Anand wrote:
->> On Monday 12 January 2015 11:00 PM, Will Deacon wrote:
->>> On Fri, Jan 09, 2015 at 05:13:29PM +0000, Pratyush Anand wrote:
->>>> On Friday 09 January 2015 09:16 PM, Will Deacon wrote:
->>>>> On Thu, Jan 08, 2015 at 05:28:37PM +0000, Pratyush Anand wrote:
->>>>>> On Thursday 08 January 2015 09:53 PM, Will Deacon wrote:
->>>>>>> On Thu, Jan 08, 2015 at 01:15:58PM +0000, Pratyush Anand wrote:
->>>>>>>> I am trying to test following scenario, which seems valid to me. But I
->>>>>>>> am very new to ARM64 as well as to debugging tools, so seeking expert's
->>>>>>>> comment here.
->>>>>>>>
->>>>>>>> -- I have inserted a kprobe to the function uprobe_breakpoint_handler
->>>>>>>> which is called from elo_dbg
->>>>>>>> (el0_dbg->do_debug_exception->brk_handler->call_break_hook->uprobe_breakpoint_handler)
->>>>>>>>
->>>>>>>> -- kprobe is enabled.
->>>>>>>>
->>>>>>>> -- an uprobe is inserted into a test application and enabled.
->>>>>>>>
->>>>>>>> So, when uprobe is enabled and test code execution reaches to probe
->>>>>>>> instruction, it executes uprobe breakpoint instruction and el0_dbg
->>>>>>>> exception is raised.
->>>>>>>>
->>>>>>>> When control reaches to start of uprobe_breakpoint_handler and it
->>>>>>>> executes first instruction (which has been replaced with a kprobe
->>>>>>>> breakpoint instruction), el1_dbg exception is raised.
->>>>>>>
->>>>>>> Hmm, debug exceptions should be masked at this point so I don't see why
->>>>>>> you're taking the second debug exception.
->>>>>>
->>>>>> So, you mean to say that when an exception which has been taken from
->>>>>> lower exception level (EL0) is being executed, then we keep masked also
->>>>>> the exception from current exception level (EL1)...
->>>>>
->>>>> Yeah, if you look at entry.S then you'll see that neither el0_dbg or el1_dbg
->>>>> re-enable debug exceptions (masked automatically by the CPU after taking the
->>>>> exception) until *after* the handling has completed. This is to prevent
->>>>> recursive debug exceptions, which I don't see how we can reasonable handle.
->>>>
->>>> May be I am missing something, but my observation on silicon is
->>>> different. Please have a look at git log of HEAD of following branch,
->>>> which says that el1_dbg exception has been raised while el0_dbg was
->>>> executing. Do not know what I am missing..
-> [...]
->>> Regardless, I think you need to debug further and found out if PSTATE.D is
->>> getting cleared and, if so, who is responsible for that. Somebody could be
->>> enabling IRQs, for example, which will then unmask debug exceptions in
->>> el1_irq.
->>
->> This is what I see for pstate, When el0_dbg exception is raised (ie an
->> exception raised with ESR = ESR_EL1_EC_BRK64 after executing instruction
->> BRK64_OPCODE_UPROBES = 0xD4200100 in EL0, user mode), spsr_el1 value is
->> 0x80000000. Which means, all exceptions are unmasked. Is it expected?
->
-> spsr_el1 is the EL0 pstate saved when entering EL1. So it is expected
-> that user space always has interrupts enabled.
->
+I suppose we could make kernel_fpu_begin() explicitly point
+the cpu's fpu pointer at a special value to indicate that
+we are in the middle of a kernel_fpu_begin() / kernel_fpu_end()
+session, and should not use the FPU from interrupt context
+right now.
 
-Yes, I was wrong :(
-By the way, is there a way to read cpsr or current PSTATE.D?
+Does that seem a reasonable fix?
 
-That would help me to know if PSTATE.D was unmasked just before 
-executing BRK64_OPCODE_UPROBES. Actually, print in enable_dbg macro give 
-me other issues and does not allow system to boot.
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-I will still try to find some way to capture enable_dbg macro 
-path.However, if I just examine the code flow then I do not see a 
-situation where enable_dbg could have been called after receiving 
-el0_dbg.(or other than enable_dbg is there some other path too which can 
-re-enable debug exception??)
-
--- Application executes  BRK64_OPCODE_UPROBES.
--- el0_sync is raised.
--- el0_sync
-	-> kernel_entry 0
-	-> el0_dbg
-		-> do_debug_exception
-			->brk_handler
-				->call_break_hook
-					->uprobe_breakpoint_handler
-
-None of the above path seems calling enable_dbg, then how do we receive 
-el1_sync when first instruction of uprobe_breakpoint_handler (which has 
-been replaced with BRK64_OPCODE_KPROBES) is executed?
-
-~Pratyush
-
+iQEcBAEBAgAGBQJUtVvmAAoJEM553pKExN6DmWsH/0V3+3LQBLbOvLVM3h4abS0y
+1aI1OqCVzhK4PUChbFwRWsk8IryvGt81n9n9CvnRBOPAg/ZII/NWsWweAVlD4NyL
+sqaQf8h/mdaUnjoOUzfUmZmhLGtnktMW2beBKfPRbp5ynlLhr0u+kmQ15W2yUio3
+Bu/FIhS7THcv/vNBtUfiz6cAaZZGDVrDXGIzxmNSIDTm7tibboZL2VfFI1AjQ+Mw
+K0iH1tvG1E7n95krapnXHv8GlnzIFgd4yVe8jrLoV4i/045UZKWZbrY/az9VEi++
+TFYzMbfJGtFc+MR4AUCed/g1zu2r1lIBNqpjf1GYu/qgJAzF9G07akZnUcITONA=
+=Vg2Z
+-----END PGP SIGNATURE-----
