@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110AbbAMVtP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 16:49:15 -0500
-Received: from mga03.intel.com ([134.134.136.65]:39922 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751566AbbAMVtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 16:49:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,751,1413270000"; 
-   d="scan'208";a="669349482"
-Message-ID: <54B592D6.4090406@linux.intel.com>
-Date: Tue, 13 Jan 2015 13:49:10 -0800
-From: Dave Hansen <dave.hansen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, Pavel Emelyanov <xemul@openvz.org>,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 1/2] mm: rename mm->nr_ptes to mm->nr_pgtables
-References: <1421176456-21796-1-git-send-email-kirill.shutemov@linux.intel.com> <1421176456-21796-2-git-send-email-kirill.shutemov@linux.intel.com> <20150113214355.GC2253@moon>
-In-Reply-To: <20150113214355.GC2253@moon>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1753467AbbAMVt2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 16:49:28 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:63900 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669AbbAMVt0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 16:49:26 -0500
+From: Andy Lutomirski <luto@amacapital.net>
+To: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 3.19 v4 0/2] x86, mpx: Instruction decoder fixes and hardening
+Date: Tue, 13 Jan 2015 13:49:18 -0800
+Message-Id: <cover.1421183147.git.luto@amacapital.net>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2015 01:43 PM, Cyrill Gorcunov wrote:
-> On Tue, Jan 13, 2015 at 09:14:15PM +0200, Kirill A. Shutemov wrote:
->> We're going to account pmd page tables too. Let's rename mm->nr_pgtables
->> to something more generic.
->>
->> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
->> --- a/fs/proc/task_mmu.c
->> +++ b/fs/proc/task_mmu.c
->> @@ -64,7 +64,7 @@ void task_mem(struct seq_file *m, struct mm_struct *mm)
->>  		data << (PAGE_SHIFT-10),
->>  		mm->stack_vm << (PAGE_SHIFT-10), text, lib,
->>  		(PTRS_PER_PTE * sizeof(pte_t) *
->> -		 atomic_long_read(&mm->nr_ptes)) >> 10,
->> +		 atomic_long_read(&mm->nr_pgtables)) >> 10,
-> 
-> This implies that (PTRS_PER_PTE * sizeof(pte_t)) = (PTRS_PER_PMD * sizeof(pmd_t))
-> which might be true for all archs, right?
+Hi all-
 
-I wonder if powerpc is OK on this front today.  This diagram:
+Ingo and Thomas, I think this is in decent shape for x86/urgent now
+if you think it's appropriate to apply at this point in the cycle.
 
-	http://linux-mm.org/PageTableStructure
+Changes from v3:
+ - Replaced MAX_INSN_SIZE with 15 in the decoder change.  (Masami)
+   I'll send the patch for 3.20 to fix MAX_INSN_SIZE separately.
 
-says that they use a 128-byte "pte" table when mapping 16M pages.  I
-wonder if they bump mm->nr_ptes for these.
+Changes from v2:
+ - Dropped patch 1 (fixed in tip separately)
+ - Fixed comment typoes in patch 2 (noticed by Dave)
+
+Changes from v1:
+ - Dropped the TIF_IA32 change -- let's defer that until at least 3.20.
+ - Fixed the MPX decode short-circuit.  v1 was buggy.
+ - Patch 3 is new.  It fixes a minor regression from the MPX work.
+
+Andy Lutomirski (2):
+  x86, mpx: Short-circuit the instruction decoder for unexpected opcodes
+  x86: Enforce maximum instruction size in the instruction decoder
+
+ arch/x86/lib/insn.c |  7 +++++++
+ arch/x86/mm/mpx.c   | 25 ++++++++++++++++---------
+ 2 files changed, 23 insertions(+), 9 deletions(-)
+
+-- 
+2.1.0
+
