@@ -1,176 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751639AbbAMXFe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 18:05:34 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57339 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751052AbbAMXFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 18:05:33 -0500
-Message-ID: <54B5A499.7060106@ti.com>
-Date: Tue, 13 Jan 2015 17:04:57 -0600
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752121AbbAMXId (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 18:08:33 -0500
+Received: from mail-oi0-f42.google.com ([209.85.218.42]:62335 "EHLO
+	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751160AbbAMXIb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 18:08:31 -0500
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Felipe Balbi <balbi@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-omap <linux-omap@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/3] of/device: manage resources similar to platform_device_add
-References: <1420651854-17768-1-git-send-email-s-anna@ti.com> <1420651854-17768-2-git-send-email-s-anna@ti.com> <CAL_Jsq+79cnCiww6g8ejki0yT59-N8eucHC3QGMbsXG4DksWuQ@mail.gmail.com> <54B58D5D.5070508@ti.com> <CAL_JsqLW9PRktHntLquohH3x_bPgJrrn2Y2_8RYA_HnKhpTDHg@mail.gmail.com>
-In-Reply-To: <CAL_JsqLW9PRktHntLquohH3x_bPgJrrn2Y2_8RYA_HnKhpTDHg@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1421188372-1783-1-git-send-email-salyzyn@android.com>
+References: <1421188372-1783-1-git-send-email-salyzyn@android.com>
+Date: Tue, 13 Jan 2015 15:08:31 -0800
+X-Google-Sender-Auth: bJg7EW9Oimzk0iFDdBSaFcdrxbU
+Message-ID: <CAGXu5jKeTzBepFogZvi0JbXnU8MuEi2tcQ45pQLdFMymmugvgw@mail.gmail.com>
+Subject: Re: [PATCH 3/5] pstore: handle zero-sized prz in series
+From: Kees Cook <keescook@chromium.org>
+To: Mark Salyzyn <salyzyn@android.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Anton Vorontsov <anton@enomsg.org>,
+        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2015 04:00 PM, Rob Herring wrote:
-> On Tue, Jan 13, 2015 at 3:25 PM, Suman Anna <s-anna@ti.com> wrote:
->> Hi Rob,
->>
->> On 01/13/2015 02:38 PM, Rob Herring wrote:
->>> On Wed, Jan 7, 2015 at 11:30 AM, Suman Anna <s-anna@ti.com> wrote:
->>>> Drivers can use of_platform_populate() to create platform devices
->>>> for children of the device main node, and a complementary API
->>>> of_platform_depopulate() is provided to delete these child platform
->>>> devices. The of_platform_depopulate() leverages the platform API
->>>> for performing the cleanup of these devices.
->>>>
->>>> The platform device resources are managed differently between
->>>> of_device_add and platform_device_add, and this asymmetry causes
->>>> a kernel oops in platform_device_del during removal of the resources.
->>>> Manage the platform device resources similar to platform_device_add
->>>> to fix this kernel oops.
->>>
->>> This is a known issue and has been attempted to be fixed before (I
->>> believe there is a revert in mainline). The problem is there are known
->>> devicetrees which have overlapping resources and they will break with
->>> your change.
->>
->> Are you referring to 02bbde7849e6 (Revert "of: use
->> platform_device_add")?
-> 
-> I believe that's the one.
-> 
->> That one seems to be in registration path, and
->> this crash is in the unregistration path. If so, to fix the crash,
->> should we be skipping the release_resource() for now in
->> platform_device_del for DT nodes, or replace platform_device_unregister
->> with of_device_unregister in of_platform_device_destroy()?
-> 
-> IIRC, the problem is inserting a resource twice on add from 2
-> different nodes, not the removal path. Perhaps we could make a
-> collision non-fatal for in the DT case.
+On Tue, Jan 13, 2015 at 2:32 PM, Mark Salyzyn <salyzyn@android.com> wrote:
+> ramoops_pstore_read fails to return the next in a prz
+> series after first zero-sized entry, not venturing to
+> the next non-zero entry.
+>
+> Signed-off-by: Mark Salyzyn <salyzyn@android.com>
 
-We may be talking two different things here, I understand that this
-patch would create an issue with inserting a resource twice in the
-devicetrees with overlapping resources (just like the commit that was
-reverted above), but the crash is on devices with resources whose
-parent, child, sibling pointers have never been initialized (the
-of_device_add path does not touch these at all), and get dereferenced in
-platform_device_del()->release_resource(). See the following that has a
-better explanation [1].
+This seems fine. Out of curiosity, when was the bad behavior this encountered?
 
-regards
-Suman
+Acked-by: Kees Cook <keescook@chromium.org>
 
-[1]
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/274412.html
+Thanks!
+
+-Kees
+
+> ---
+>  fs/pstore/ram.c | 12 +++++++++---
+>  1 file changed, 9 insertions(+), 3 deletions(-)
+>
+> diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+> index 34ed8f8..6150e54 100644
+> --- a/fs/pstore/ram.c
+> +++ b/fs/pstore/ram.c
+> @@ -164,6 +164,12 @@ static int ramoops_read_kmsg_hdr(char *buffer, struct timespec *time,
+>         return header_length;
+>  }
+>
+> +static bool prz_ok(struct persistent_ram_zone *prz)
+> +{
+> +       return !!prz && !!(persistent_ram_old_size(prz) +
+> +                          persistent_ram_ecc_string(prz, NULL, 0));
+> +}
+> +
+>  static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+>                                    int *count, struct timespec *time,
+>                                    char **buf, bool *compressed,
+> @@ -178,13 +184,13 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+>         prz = ramoops_get_next_prz(cxt->przs, &cxt->dump_read_cnt,
+>                                    cxt->max_dump_cnt, id, type,
+>                                    PSTORE_TYPE_DMESG, 1);
+> -       if (!prz)
+> +       if (!prz_ok(prz))
+>                 prz = ramoops_get_next_prz(&cxt->cprz, &cxt->console_read_cnt,
+>                                            1, id, type, PSTORE_TYPE_CONSOLE, 0);
+> -       if (!prz)
+> +       if (!prz_ok(prz))
+>                 prz = ramoops_get_next_prz(&cxt->fprz, &cxt->ftrace_read_cnt,
+>                                            1, id, type, PSTORE_TYPE_FTRACE, 0);
+> -       if (!prz)
+> +       if (!prz_ok(prz))
+>                 return 0;
+>
+>         if (!persistent_ram_old(prz))
+> --
+> 2.2.0.rc0.207.ga3a616c
+>
 
 
-> Grant may have some ideas on
-> what's needed here.
-> 
->> This is a common crash and we cannot use of_platform_depopulate() today
->> in drivers to complement of_platform_populate().
-> 
-> Yes, I know.
-> 
->> Also, the platform_data crash is independent of this, I could reproduce
->> that one even with using of_device_unregister in a loop in driver remove.
-> 
-> Missed this one. I'll reply to that patch.
-> 
-> Rob
-> 
->>
->> regards
->> Suman
->>
->>>
->>> Rob
->>>
->>>>
->>>> Signed-off-by: Suman Anna <s-anna@ti.com>
->>>> ---
->>>>  drivers/of/device.c | 38 +++++++++++++++++++++++++++++++++++++-
->>>>  1 file changed, 37 insertions(+), 1 deletion(-)
->>>>
->>>> diff --git a/drivers/of/device.c b/drivers/of/device.c
->>>> index 46d6c75c1404..fa27c1c71f29 100644
->>>> --- a/drivers/of/device.c
->>>> +++ b/drivers/of/device.c
->>>> @@ -50,6 +50,8 @@ EXPORT_SYMBOL(of_dev_put);
->>>>
->>>>  int of_device_add(struct platform_device *ofdev)
->>>>  {
->>>> +       int i, ret;
->>>> +
->>>>         BUG_ON(ofdev->dev.of_node == NULL);
->>>>
->>>>         /* name and id have to be set so that the platform bus doesn't get
->>>> @@ -63,7 +65,41 @@ int of_device_add(struct platform_device *ofdev)
->>>>         if (!ofdev->dev.parent)
->>>>                 set_dev_node(&ofdev->dev, of_node_to_nid(ofdev->dev.of_node));
->>>>
->>>> -       return device_add(&ofdev->dev);
->>>> +       for (i = 0; i < ofdev->num_resources; i++) {
->>>> +               struct resource *p, *r = &ofdev->resource[i];
->>>> +
->>>> +               if (!r->name)
->>>> +                       r->name = dev_name(&ofdev->dev);
->>>> +
->>>> +               p = r->parent;
->>>> +               if (!p) {
->>>> +                       if (resource_type(r) == IORESOURCE_MEM)
->>>> +                               p = &iomem_resource;
->>>> +                       else if (resource_type(r) == IORESOURCE_IO)
->>>> +                               p = &ioport_resource;
->>>> +               }
->>>> +
->>>> +               if (p && insert_resource(p, r)) {
->>>> +                       dev_err(&ofdev->dev, "failed to claim resource %d\n",
->>>> +                               i);
->>>> +                       ret = -EBUSY;
->>>> +                       goto failed;
->>>> +               }
->>>> +       }
->>>> +
->>>> +       ret = device_add(&ofdev->dev);
->>>> +       if (ret == 0)
->>>> +               return ret;
->>>> +
->>>> +failed:
->>>> +       while (--i >= 0) {
->>>> +               struct resource *r = &ofdev->resource[i];
->>>> +               unsigned long type = resource_type(r);
->>>> +
->>>> +               if (type == IORESOURCE_MEM || type == IORESOURCE_IO)
->>>> +                       release_resource(r);
->>>> +       }
->>>> +       return ret;
->>>>  }
->>>>
->>>>  int of_device_register(struct platform_device *pdev)
->>>> --
->>>> 2.2.1
->>>>
->>
 
+-- 
+Kees Cook
+Chrome OS Security
