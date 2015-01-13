@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992AbbAMJUb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 04:20:31 -0500
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:62927 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751451AbbAMJU2 (ORCPT
+	id S1751387AbbAMJYf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 04:24:35 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:36061 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921AbbAMJYd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 04:20:28 -0500
-Message-ID: <1421140825.22660.85.camel@x220>
-Subject: Re: [PATCH v5 3/7] gpio/xilinx: Add support for X86 Arch
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        =?ISO-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 13 Jan 2015 10:20:25 +0100
-In-Reply-To: <CAPybu_1DRCuJFGsw6p2pqZLDXjp=fAD_i-Yj6+7GX-Vr++fpOA@mail.gmail.com>
-References: <1418831474-24428-1-git-send-email-ricardo.ribalda@gmail.com>
-	 <1418831474-24428-4-git-send-email-ricardo.ribalda@gmail.com>
-	 <1421139747.22660.76.camel@x220>
-	 <CAPybu_1DRCuJFGsw6p2pqZLDXjp=fAD_i-Yj6+7GX-Vr++fpOA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Jan 2015 09:20:25.0916 (UTC) FILETIME=[2A4A17C0:01D02F12]
-X-RcptDomain: vger.kernel.org
+	Tue, 13 Jan 2015 04:24:33 -0500
+Date: Tue, 13 Jan 2015 12:24:24 +0300
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>
+CC: Andrew Morton <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [RFC] A question about memcg/kmem
+Message-ID: <20150113092424.GJ2110@esperanza>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ricardo,
+Hi,
 
-On Tue, 2015-01-13 at 10:04 +0100, Ricardo Ribalda Delgado wrote:
-> Thanks for noticing
-> 
-> Shall I send the patch or you want to do it yourself?
+There's one thing about kmemcg implementation that's bothering me. It's
+about arrays holding per-memcg data (e.g. kmem_cache->memcg_params->
+memcg_caches). On kmalloc or list_lru_{add,del} we want to quickly
+lookup the copy of kmem_cache or list_lru corresponding to the current
+cgroup. Currently, we hold all per-memcg caches/lists in an array
+indexed by mem_cgroup->kmemcg_id. This allows us to lookup quickly, and
+that's nice, but the arrays can grow indefinitely, because we reserve
+slots for all cgroups, including offlined, and this is disastrous and
+must be fixed.
 
-I rather prefer you do it, even if it looks trivial.
+I see several ways how to sort this out, but none of them looks perfect
+to me, so I can't decide which one to choose. I would appreciate if you
+could share your thoughts on them. Here they are:
 
-Changing that line to
-    [...] || X86)
+1. When we are about to grow arrays (new kmem-active memcg is created
+   and there's no slot for it), try to reclaim memory from all offline
+   kmem-active cgroups in the hope one of them will pass away and
+   release its slot.
 
-will apparently enable a bit of code for the first time on x86. Code
-that I know nothing about. I don't even know how to build or test it.
-See, I've submitted such obviously correct and trivial changes before,
-only to receive fan mail from the kbuild test robot the very next day. I
-hope to not repeat that experience.
+   This is not very reliable obviously, because we can fail to reclaim
+   and have to grow arrays anyway.
 
+2. On css offline, empty all list_lru's corresponding to the dying
+   cgroup by moving items to the parent. Then, we could free kmemcg_id
+   immediately on offline, and the arrays would store entries for online
+   cgroups only, which is fine. This looks as a kind of reparenting, but
+   it doesn't move charges, only list_lru elements, which is much easier
+   to do.
 
-Paul Bolle
+   This does not conform to how we treat other charges though.
 
+3. Use some reclaimable data structure instead of a raw array. E.g.
+   radix tree, or idr. The structure would grow then, but it would also
+   shrink when css's are reclaimed on memory pressure.
+
+   This will probably affect performance, because we do lookups on each
+   kmalloc, so it must be as fast as possible. It could be probably
+   optimized by caching the result of the last lookup (hint), but hints
+   must be per cpu then, which will make list_lru bulky.
+
+Currently, I incline to #1 or (most preferably) #2. I implemented
+per-memcg list_lru with this in mind, and I have patches bringing in
+list_lru "reparenting". #3 popped up in my mind just a few days ago. If
+we decide to give it a try, I'll have to drop the previous per-memcg
+list_lru implementation, and do a heavy rework of per-memcg kmem_cache
+handling as well, but I'm fine with it.
+
+I would be happy if we could opt out some of those design decisions
+above. E.g. "I really hate #X, it's a no-go, because..." :-) Otherwise,
+I'll most probably go with #2, which may become a nasty surprise to some
+of you.
+
+Thanks,
+Vladimir
