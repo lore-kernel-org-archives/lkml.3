@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541AbbAMLXc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 06:23:32 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:27800 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751283AbbAMLXa (ORCPT
+	id S1752033AbbAMLZN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 06:25:13 -0500
+Received: from casper.infradead.org ([85.118.1.10]:51265 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212AbbAMLZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 06:23:30 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-d1-54b50030b3f0
-Message-id: <54B5002F.9030004@samsung.com>
-Date: Tue, 13 Jan 2015 12:23:27 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101
- Thunderbird/31.3.0
-MIME-version: 1.0
-To: Rob Herring <robherring2@gmail.com>,
-        "George G. Davis" <ggdavisiv@gmail.com>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Tue, 13 Jan 2015 06:25:11 -0500
+Date: Tue, 13 Jan 2015 11:25:07 +0000
+From: "'Thomas Graf'" <tgraf@suug.ch>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: "davem@davemloft.net" <davem@davemloft.net>,
+        Fengguang Wu <fengguang.wu@intel.com>, LKP <lkp@01.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "George G. Davis" <george_davis@mentor.com>
-Subject: Re: [PATCH] drivers: of: Export of_reserved_mem_device_{init,release}
-References: <1420813745-130341-1-git-send-email-george_davis@mentor.com>
- <CAL_JsqJaT-Y7DHQS5ZZ0TP6r0iPDbUZwU-Kec5MSE7DOPgZxCg@mail.gmail.com>
-In-reply-to: <CAL_JsqJaT-Y7DHQS5ZZ0TP6r0iPDbUZwU-Kec5MSE7DOPgZxCg@mail.gmail.com>
-Content-type: text/plain; charset=utf-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPLMWRmVeSWpSXmKPExsVy+t/xy7oGDFtDDP6sNbWYf+Qcq8WT/99Z
-	LVbve8dmceDPDkaLy7vmsFm07j3CbvH92zc2B3aPnbPusntsWtXJ5nHn2h42j91fmxg9Pm+S
-	C2CN4rJJSc3JLEst0rdL4Mr4NX8OU8F5tor1zxUaGFeydjFyckgImEisOzObGcIWk7hwbz1b
-	FyMXh5DAUkaJrzcbWCGcT4wSN3oesIFU8QpoSVy+dpkdxGYRUJV41PAXbBKbgKFE19susBpR
-	gRiJxQtXM0PUC0r8mHyPBcQWEQiQOPX4B9hQZoGfjBKX16wFaxYW8JOY1rCSEWJbP6PEqps3
-	wTZwCgRLHDp3BWwSs4CZxJeXh1khbHmJzWveMk9gFJiFZMksJGWzkJQtYGRexSiaWppcUJyU
-	nmuoV5yYW1yal66XnJ+7iRES6F92MC4+ZnWIUYCDUYmHd0f2lhAh1sSy4srcQ4wSHMxKIrzp
-	34FCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGAUf3nr1fMcWkZ3veaPnxBwv5Fn+i1NNs0b4xht9
-	wTCdpXuvzvf6q9el7Pgj+L/htrBrHKxzEgzePZ0slvigv1fw1Yq/wTsENu1sa4ntaTc7zHbu
-	8dX/v17sn3SsROTfFp2CtSpbo/ausVefeehEVVjTJMFaz5ve2n9mHr93NnyHIGeBiVVMQ5US
-	S3FGoqEWc1FxIgA/BlFLUgIAAA==
+        "netfilter-devel@vger.kernel.org" <netfilter-devel@vger.kernel.org>,
+        "coreteam@netfilter.org" <coreteam@netfilter.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH net-next] rhashtable: Lower/upper bucket may map to same
+ lock while shrinking
+Message-ID: <20150113112507.GH20387@casper.infradead.org>
+References: <20150112232217.GA5277@wfg-t540p.sh.intel.com>
+ <20150112235821.GB16617@casper.infradead.org>
+ <063D6719AE5E284EB5DD2968C1650D6D1CAC6593@AcuExch.aculab.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1CAC6593@AcuExch.aculab.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 01/13/15 at 09:49am, David Laight wrote:
+> From: Thomas Graf
+> > Each per bucket lock covers a configurable number of buckets. While
+> > shrinking, two buckets in the old table contain entries for a single
+> > bucket in the new table. We need to lock down both while linking.
+> > Check if they are protected by different locks to avoid a recursive
+> > lock.
+> 
+> Thought, could the shrunk table use the same locks as the lower half
+> of the old table?
 
-On 2015-01-09 18:53, Rob Herring wrote:
-> On Fri, Jan 9, 2015 at 8:29 AM, George G. Davis <ggdavisiv@gmail.com> wrote:
->> Export of_reserved_mem_device_{init,release} so that modules
->> can initialize and release their assigned per-device cma_area.
-> I believe the original intent was for the core bus code to call these
-> functions. While the commit adding them says "automated assignment"
-> that part did not go in. As it stands, there are no in tree users of
-> these functions.
->
-> Marek, comments?
+No. A new bucket table and thus a new set of locks is allocated when the
+table is shrunk or grown. We only have check for overlapping locks
+when holding multiple locks for the same table at the same time.
 
-Yes, my idea was to call it directly from platform bus code, but Grant
-opposed, so right now the drivers need to do it on their own. Assuming
-that those functions need to be called from drivers, then EXPORT_SYMPOL_GPL
-is the correct approach.
+> I also wonder whether shrinking hash tables is ever actually worth
+> the effort. Most likely they'll need to grow again very quickly.
 
-Best regards
--- 
-Marek Szyprowski, PhD
-Samsung R&D Institute Poland
+Specifying a .shrink_decision function is optional so every rhashtable
+user can decide whether it wants shrinking or not. Need for it was
+expressed in the past threads.
 
+Also, the case of multiple buckets mapping to the same lock is also
+present in the expanding logic so removing the shrinking logic would
+not remove the need for these types of checks.
+
+> >  		spin_lock_bh(old_bucket_lock1);
+> > -		spin_lock_bh_nested(old_bucket_lock2, RHT_LOCK_NESTED);
+> > -		spin_lock_bh_nested(new_bucket_lock, RHT_LOCK_NESTED2);
+> > +
+> > +		/* Depending on the lock per buckets mapping, the bucket in
+> > +		 * the lower and upper region may map to the same lock.
+> > +		 */
+> > +		if (old_bucket_lock1 != old_bucket_lock2) {
+> > +			spin_lock_bh_nested(old_bucket_lock2, RHT_LOCK_NESTED);
+> > +			spin_lock_bh_nested(new_bucket_lock, RHT_LOCK_NESTED2);
+> > +		} else {
+> > +			spin_lock_bh_nested(new_bucket_lock, RHT_LOCK_NESTED);
+> > +		}
+> 
+> Acquiring 3 locks of much the same type looks like a locking hierarchy
+> violation just waiting to happen.
+
+I'm not claiming it's extremely pretty, lockless lookup with deferred
+resizing doesn't come for free ;-) If you have a suggestion on how to
+implement this differently I'm all ears. That said, it's well isolated
+and the user of rhashtable does not have to deal with it. All code paths
+which take multiple locks are mutually exclusive to each other (ht->mutex).
