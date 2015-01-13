@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131AbbAMOuO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 09:50:14 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:42681 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622AbbAMOuM (ORCPT
+	id S1752554AbbAMOu6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 09:50:58 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:40018 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378AbbAMOu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 09:50:12 -0500
-Message-ID: <54B53095.5090903@roeck-us.net>
-Date: Tue, 13 Jan 2015 06:49:57 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 13 Jan 2015 09:50:57 -0500
+Date: Tue, 13 Jan 2015 15:50:53 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/3] mm: memcontrol: remove unnecessary soft limit tree
+ node test
+Message-ID: <20150113145053.GG25318@dhcp22.suse.cz>
+References: <1420856041-27647-1-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-To: David Paris <david.paris@st.com>, Lee Jones <lee.jones@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        wim@iguana.be, linux-watchdog@vger.kernel.org, kernel@stlinux.com
-Subject: Re: [4/4] watchdog: st_wdt: Add new driver for ST's LPC Watchdog
-References: <1414077524-6469-5-git-send-email-lee.jones@linaro.org> <20150113142341.GA15707@roeck-us.net> <54B52C6D.20006@st.com>
-In-Reply-To: <54B52C6D.20006@st.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.54B530A3.033A,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 5
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420856041-27647-1-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2015 06:32 AM, David Paris wrote:
-> Hi Guenter,
->
->      Please forget this implementation of ST LPC Watchdog, Lee has provided a new patchset. Search for "[STLinux Kernel] [PATCH 0/8] mfd: watchdog: rtc: New driver for ST's LPC IP"
->
+On Fri 09-01-15 21:13:59, Johannes Weiner wrote:
+> kzalloc_node() automatically falls back to nodes with suitable memory.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-And I even looked it and provided feedback. Oh well ...
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-Guenter
+> ---
+>  mm/memcontrol.c | 7 ++-----
+>  1 file changed, 2 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index fd9e542fc26f..aad254b30708 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4520,13 +4520,10 @@ static void __init mem_cgroup_soft_limit_tree_init(void)
+>  {
+>  	struct mem_cgroup_tree_per_node *rtpn;
+>  	struct mem_cgroup_tree_per_zone *rtpz;
+> -	int tmp, node, zone;
+> +	int node, zone;
+>  
+>  	for_each_node(node) {
+> -		tmp = node;
+> -		if (!node_state(node, N_NORMAL_MEMORY))
+> -			tmp = -1;
+> -		rtpn = kzalloc_node(sizeof(*rtpn), GFP_KERNEL, tmp);
+> +		rtpn = kzalloc_node(sizeof(*rtpn), GFP_KERNEL, node);
+>  		BUG_ON(!rtpn);
+>  
+>  		soft_limit_tree.rb_tree_per_node[node] = rtpn;
+> -- 
+> 2.2.0
+> 
 
-
+-- 
+Michal Hocko
+SUSE Labs
