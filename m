@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911AbbAMW1U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 17:27:20 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54037 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609AbbAMW1R (ORCPT
+	id S1754018AbbAMW2O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 17:28:14 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:52974 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122AbbAMW2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 17:27:17 -0500
+	Tue, 13 Jan 2015 17:28:10 -0500
 MIME-Version: 1.0
-In-Reply-To: <1420927210-19738-5-git-send-email-dvlasenk@redhat.com>
-References: <1420927210-19738-1-git-send-email-dvlasenk@redhat.com> <1420927210-19738-5-git-send-email-dvlasenk@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 13 Jan 2015 14:26:56 -0800
-Message-ID: <CALCETrUikAhmSAER3363==khCHuNx6V4E9sCisPbbuO87wmYbQ@mail.gmail.com>
-Subject: Re: [PATCH 4/4] x86: entry_64.S: fold SAVE_ARGS_IRQ macro into its
- sole user
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
+In-Reply-To: <1420651854-17768-3-git-send-email-s-anna@ti.com>
+References: <1420651854-17768-1-git-send-email-s-anna@ti.com> <1420651854-17768-3-git-send-email-s-anna@ti.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Tue, 13 Jan 2015 16:27:48 -0600
+Message-ID: <CAL_JsqK8ZAUZwd1zjjZ57MQZ+KD-_qiCyMXnhQ-zZ38wxUtf-g@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/3] core: platform: fix an invalid kfree during of_platform_depopulate
+To: Suman Anna <s-anna@ti.com>
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Felipe Balbi <balbi@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-omap <linux-omap@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 2:00 PM, Denys Vlasenko <dvlasenk@redhat.com> wrote:
-> No code changes.
+On Wed, Jan 7, 2015 at 11:30 AM, Suman Anna <s-anna@ti.com> wrote:
+> Drivers can use of_platform_populate() to create platform devices
+> for children of the device main node, and a complementary API
+> of_platform_depopulate() is provided to delete these child devices.
+> Any platform_data supplied for the OF devices through auxdata lookup
+> data is populated directly in the device's platform_data field, unlike
+> those created using platform API. The of_platform_depopulate()
+> leverages the platform code for cleanup, and this will result in a
+> kernel oops due to an invalid kfree on this direct populated
+> platform_data.
 >
-> This is a preparatory patch for change in "struct pt_regs" handling.
+> Fix this by resetting the platform data for OF devices during
+> platform device cleanup.
+
+We should probably copy the platform_data like is done for non-OF
+platform devices. I'm sure there was some reason for it. It looks
+strange doing this in release.
+
+However, I'm inclined to not fix this and force users to move off of
+auxdata. That's intended to be a temporary migration path and there
+are only 54 instances of it that have platform_data. What device do
+you care about?
+
+Rob
+
 >
-> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-> CC: Linus Torvalds <torvalds@linux-foundation.org>
-> CC: Oleg Nesterov <oleg@redhat.com>
-> CC: "H. Peter Anvin" <hpa@zytor.com>
-> CC: Borislav Petkov <bp@alien8.de>
-> CC: Andy Lutomirski <luto@amacapital.net>
-> CC: Frederic Weisbecker <fweisbec@gmail.com>
-> CC: X86 ML <x86@kernel.org>
-> CC: Alexei Starovoitov <ast@plumgrid.com>
-> CC: Will Drewry <wad@chromium.org>
-> CC: Kees Cook <keescook@chromium.org>
-> CC: linux-kernel@vger.kernel.org
-
-Applied.
-
-I have *not* applied patch 3 or the new restore patch, since I got
-lost in the patch attachments and long discussion.  Can you post
-incremental patches on top of:
-
-https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/log/?h=x86/entry
-
-Thanks,
-Andy
+> Signed-off-by: Suman Anna <s-anna@ti.com>
+> ---
+>  drivers/base/platform.c | 2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> index 9421fed40905..129e69c8c894 100644
+> --- a/drivers/base/platform.c
+> +++ b/drivers/base/platform.c
+> @@ -200,6 +200,8 @@ static void platform_device_release(struct device *dev)
+>         struct platform_object *pa = container_of(dev, struct platform_object,
+>                                                   pdev.dev);
+>
+> +       if (pa->pdev.dev.of_node)
+> +               pa->pdev.dev.platform_data = NULL;
+>         of_device_node_put(&pa->pdev.dev);
+>         kfree(pa->pdev.dev.platform_data);
+>         kfree(pa->pdev.mfd_cell);
+> --
+> 2.2.1
+>
