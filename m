@@ -1,77 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152AbbAMXak (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 18:30:40 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:17246 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751145AbbAMXai (ORCPT
+	id S1752590AbbAMXc7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 18:32:59 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:46907 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167AbbAMXc5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 18:30:38 -0500
-Message-ID: <54B5AA84.9010306@fb.com>
-Date: Tue, 13 Jan 2015 16:30:12 -0700
-From: Jens Axboe <axboe@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 13 Jan 2015 18:32:57 -0500
+From: Jeff Layton <jeff.layton@primarydata.com>
+X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
+Date: Tue, 13 Jan 2015 18:32:54 -0500
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Jeff Layton <jeff.layton@primarydata.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: fs: locks: WARNING: CPU: 16 PID: 4296 at fs/locks.c:236
+ locks_free_lock_context+0x10d/0x240()
+Message-ID: <20150113183254.58469edf@tlielax.poochiereds.net>
+In-Reply-To: <54B5A145.6060108@oracle.com>
+References: <54B4A909.9060206@oracle.com>
+	<20150113164441.5b210f48@tlielax.poochiereds.net>
+	<54B5A145.6060108@oracle.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, Christoph Hellwig <hch@infradead.org>
-CC: <dedekind1@gmail.com>, <dwmw2@infradead.org>,
-        <computersforpeace@gmail.com>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <tom.leiming@gmail.com>
-Subject: Re: [PATCH 2/2 v2] UBI: Block: Add blk-mq support
-References: <1420926734-16417-1-git-send-email-richard@nod.at> <1420926734-16417-2-git-send-email-richard@nod.at> <20150113162553.GA24351@infradead.org> <54B5A188.2000001@nod.at> <54B5A213.1090502@fb.com> <54B5A77C.9040405@nod.at>
-In-Reply-To: <54B5A77C.9040405@nod.at>
-Content-Type: text/plain; charset="windows-1252"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-13_07:2015-01-13,2015-01-13,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
- suspectscore=0 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
- adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1501130230
-X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2015 04:17 PM, Richard Weinberger wrote:
-> Am 13.01.2015 um 23:54 schrieb Jens Axboe:
->>>> blk_rq_map_sg returns the number of entries actually mapped, which
->>>> might be smaller than the number passed in due to merging.
->>>
->>> Yep, but the ubi_sql has a fixed number of scatterlist entries, UBI_MAX_SG_COUNT.
->>> And I limit it also to that using: blk_queue_max_segments(dev->rq, UBI_MAX_SG_COUNT);
->>>
->>> Is there another reason why I should use the return value of blk_rq_map_sg()?
->>> Please also note that the UBI block driver is read-only.
->>
->> It can return less than what you asked for, if segments are coalesced.
->> Read/write, doesn't matter. You should always use the returned value as
->> the indication of how many segments to access in pdu->usgl.sg for data
->> transfer.
+On Tue, 13 Jan 2015 17:50:45 -0500
+Sasha Levin <sasha.levin@oracle.com> wrote:
+
+> On 01/13/2015 04:44 PM, Jeff Layton wrote:
+> > On Tue, 13 Jan 2015 00:11:37 -0500
+> > Sasha Levin <sasha.levin@oracle.com> wrote:
+> > 
+> >> Hey Jeff,
+> >>
+> >> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> >> kernel, I've stumbled on the following spew:
+> >>
+> >> [  887.078606] WARNING: CPU: 16 PID: 4296 at fs/locks.c:236 locks_free_lock_context+0x10d/0x240()
+> >> [  887.079703] Modules linked in:
+> >> [  887.080288] CPU: 16 PID: 4296 Comm: trinity-c273 Not tainted 3.19.0-rc4-next-20150112-sasha-00053-g23c147e02e-dirty #1710
+> >> [  887.082229]  0000000000000000 0000000000000000 0000000000000000 ffff8804c9f4f8e8
+> >> [  887.083773]  ffffffff9154e0a6 0000000000000000 ffff8804cad98000 ffff8804c9f4f938
+> >> [  887.085280]  ffffffff8140a4d0 0000000000000001 ffffffff81bf0d2d ffff8804c9f4f988
+> >> [  887.086792] Call Trace:
+> >> [  887.087320] dump_stack (lib/dump_stack.c:52)
+> >> [  887.088247] warn_slowpath_common (kernel/panic.c:447)
+> >> [  887.089342] ? locks_free_lock_context (fs/locks.c:236 (discriminator 3))
+> >> [  887.090514] warn_slowpath_null (kernel/panic.c:481)
+> >> [  887.091629] locks_free_lock_context (fs/locks.c:236 (discriminator 3))
+> >> [  887.092782] __destroy_inode (fs/inode.c:243)
+> >> [  887.093817] destroy_inode (fs/inode.c:268)
+> >> [  887.094833] evict (fs/inode.c:574)
+> >> [  887.095808] iput (fs/inode.c:1503)
+> >> [  887.096687] __dentry_kill (fs/dcache.c:323 fs/dcache.c:508)
+> >> [  887.097683] ? _raw_spin_trylock (kernel/locking/spinlock.c:136)
+> >> [  887.098733] ? dput (fs/dcache.c:545 fs/dcache.c:648)
+> >> [  887.099672] dput (fs/dcache.c:649)
+> >> [  887.100552] __fput (fs/file_table.c:227)
+> > 
+> > So, looking at this a bit more...
+> > 
+> > It's clear that we're at the dput in __fput at this point. Much earlier
+> > in __fput, we call locks_remove_file to remove all of the locks that
+> > are associated with the file description.
+> > 
+> > Evidently though, something didn't go right there. The two most likely
+> > scenarios to my mind are:
+> > 
+> > A) a lock raced onto the list somehow after that point. That seems
+> > unlikely since presumably the fcheck should have failed at that point.
+> > 
+> > ...or...
+> > 
+> > B) the CPU that called locks_remove_file mistakenly thought that
+> > inode->i_flctx was NULL when it really wasn't (stale cache, perhaps?).
+> > That would make it skip trying to remove any flock locks.
+> > 
+> > B seems more likely to me, and if it's the case then that would seem to
+> > imply that we need some memory barriers (or maybe some ACCESS_ONCE
+> > calls) in these codepaths. I'll have to sit down and work through it to
+> > see what makes the most sense.
+> > 
+> > If your debugging seems to jive with this, then one thing that might be
+> > interesting would be to comment out these two lines in
+> > locks_remove_flock:
+> > 
+> >         if (!file_inode(filp)->i_flctx)
+> >                 return;
+> > 
+> > ...and see if it's still reproducible. That's obviously not a real fix
+> > for this problem, but it might help prove whether the above suspicion
+> > is correct.
 > 
-> Sorry, I don't fully understand.
+> Removing those two lines makes the issue go away.
 > 
-> Currently the driver does:
-> to_read = blk_rq_bytes(req);
-> Then it fills pdu->usgl.sg up to to_read bytes
-> and calls blk_mq_end_request().
+
+Wow, that was quick! Thanks!
+
+I'll need to ponder how best to fix this. I wonder if we need something
+like an ACCESS_ONCE there, or maybe a smp_rmb() prior to that might be
+sufficient? The pointer is assigned with cmpxchg(), so that should have
+an implicit mb already.
+
+Guess I need to set up a trinity test rig of my own and see if I can
+reproduce this myself.
+
+> I'm guessing that figuring out which filesystem we were abusing isn't
+> interesting anymore...
 > 
-> If I understand you correctly it can happen that blk_rq_bytes() returns
-> more bytes than blk_rq_map_sg() allocated, right?
 
-No, the number of bytes will be the same, no magic is involved :-)
+Yeah, probably not. If you've already figured it out, then please do
+share, but there's no need to put forth further effort if not. I'll let
+you know once I've got something that I think will work.
 
-But lets say the initial request has 4 bios, with each 2 pages, for a
-total of 8 segments. Lets further assume that the pages in each bio are
-contiguous, so that blk_rq_map_sg() will map this to 4 sg elements, each
-2xpages long.
-
-Now, this may already be handled just fine, and you don't need to
-update/store the actual sg count. I just looked at the source, and I'm
-assuming it'll do the right thing (ubi_read_sg() will bump the active sg
-element, when that size has been consumed), but I don't have
-ubi_read_sg() in my tree to verify.
-
+Thanks for the help so far!
 -- 
-Jens Axboe
-
+Jeff Layton <jlayton@primarydata.com>
