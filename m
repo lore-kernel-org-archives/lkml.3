@@ -1,81 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751194AbbAMHqr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 02:46:47 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:39463 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047AbbAMHqq (ORCPT
+	id S1751336AbbAMHuy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 02:50:54 -0500
+Received: from mail.windriver.com ([147.11.1.11]:42209 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119AbbAMHux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 02:46:46 -0500
-Date: Tue, 13 Jan 2015 10:46:33 +0300
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm 1/2] mm: vmscan: account slab pages on memcg reclaim
-Message-ID: <20150113074633.GG2110@esperanza>
-References: <880700a513472a8b86fd3100aef674322c66c68e.1421054931.git.vdavydov@parallels.com>
- <20150112221839.GB25609@phnom.home.cmpxchg.org>
+	Tue, 13 Jan 2015 02:50:53 -0500
+Message-ID: <54B4CE3E.8020009@windriver.com>
+Date: Tue, 13 Jan 2015 15:50:22 +0800
+From: Ying Xue <ying.xue@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20150112221839.GB25609@phnom.home.cmpxchg.org>
+To: Thomas Graf <tgraf@suug.ch>
+CC: <linux-kernel@vger.kernel.org>, <lkp@01.org>,
+        Netdev <netdev@vger.kernel.org>
+Subject: Re: Fwd: [rhashtable] WARNING: CPU: 0 PID: 10 at kernel/locking/mutex.c:570
+ mutex_lock_nested()
+References: <20150110194803.GA9033@wfg-t540p.sh.intel.com> <54B3259B.7080601@windriver.com> <20150112124216.GA26570@casper.infradead.org>
+In-Reply-To: <20150112124216.GA26570@casper.infradead.org>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.163.180]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 05:18:39PM -0500, Johannes Weiner wrote:
-> On Mon, Jan 12, 2015 at 12:30:37PM +0300, Vladimir Davydov wrote:
-> > Since try_to_free_mem_cgroup_pages() can now call slab shrinkers, we
-> > should initialize reclaim_state and account reclaimed slab pages in
-> > scan_control->nr_reclaimed.
-> > 
-> > Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> > ---
-> >  mm/vmscan.c |   33 ++++++++++++++++++++++-----------
-> >  1 file changed, 22 insertions(+), 11 deletions(-)
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index 16f3e45742d6..b2c041139a51 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -367,13 +367,16 @@ static unsigned long do_shrink_slab(struct shrink_control *shrinkctl,
-> >   * the ->seeks setting of the shrink function, which indicates the
-> >   * cost to recreate an object relative to that of an LRU page.
-> >   *
-> > - * Returns the number of reclaimed slab objects.
-> > + * Returns the number of reclaimed slab objects. The number of reclaimed
-> > + * pages is added to *@ret_nr_reclaimed.
-> >
-> >  static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
-> >  				 struct mem_cgroup *memcg,
-> >  				 unsigned long nr_scanned,
-> > -				 unsigned long nr_eligible)
-> > +				 unsigned long nr_eligible,
-> > +				 unsigned long *ret_nr_reclaimed)
+On 01/12/2015 08:42 PM, Thomas Graf wrote:
+> On 01/12/15 at 09:38am, Ying Xue wrote:
+>> Hi Thomas,
+>>
+>> I am really unable to see where is wrong leading to below warning
+>> complaints. Can you please help me check it?
 > 
-> Can't we just return the number of pages directly from this function?
-
-Hmm, we can. That would look better, of course. However, reclaimed_slab
-can be 0 even if we reclaimed tons of dentries/inodes, simply because
-they are freed by rcu. In this case, we can abort drop_slab beforehand.
-Do you think it's OK?
-
-Thanks,
-Vladimir
-
+> Not sure yet. It's not your patch that introduced the issue though.
+> It merely exposed the affected code path.
+>
+> Just wondering, did you test with CONFIG_DEBUG_MUTEXES enabled?
 > 
-> > @@ -426,7 +434,7 @@ void drop_slab_node(int nid)
-> >  		freed = 0;
-> >  		do {
-> >  			freed += shrink_slab(GFP_KERNEL, nid, memcg,
-> > -					     1000, 1000);
-> > +					     1000, 1000, &nr_reclaimed);
-> >  		} while ((memcg = mem_cgroup_iter(NULL, memcg, NULL)) != NULL);
-> >  	} while (freed > 10);
 > 
-> This is the only caller that cares about the return value, and it's a
-> magic number that could probably be changed to comparing with a magic
-> number of pages instead.
+
+After I enable above option, I don't find similar complaints during my
+testing.
+
+Regards,
+Ying
+
