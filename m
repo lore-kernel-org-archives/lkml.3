@@ -1,89 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751416AbbAMHLV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 02:11:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50721 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750985AbbAMHLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 02:11:20 -0500
-Date: Tue, 13 Jan 2015 08:10:59 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Wang Nan <wangnan0@huawei.com>
-Cc: jolsa@kernel.org, namhyung@kernel.org, a.p.zijlstra@chello.nl,
-        paulus@samba.org, mingo@redhat.com, acme@kernel.org,
-        masami.hiramatsu.pt@hitachi.com, jean.pihet@linaro.org,
-        linux-kernel@vger.kernel.org, lizefan@huawei.com
-Subject: Re: [PATCH] perf: fix dwarf unwind using libunwind.
-Message-ID: <20150113071059.GA32634@krava.brq.redhat.com>
-References: <1421117677-51536-1-git-send-email-wangnan0@huawei.com>
+	id S1751336AbbAMHPk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 02:15:40 -0500
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:48035 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052AbbAMHPj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 02:15:39 -0500
+X-Original-SENDERIP: 10.177.222.153
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Tue, 13 Jan 2015 16:16:05 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/5] mm/compaction: more trace to understand when/why
+ compaction start/finish
+Message-ID: <20150113071605.GA29898@js1304-P5Q-DELUXE>
+References: <1421050875-26332-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1421050875-26332-4-git-send-email-iamjoonsoo.kim@lge.com>
+ <54B3EE11.3040303@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1421117677-51536-1-git-send-email-wangnan0@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54B3EE11.3040303@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 10:54:37AM +0800, Wang Nan wrote:
-
-SNIP
-
->  
-> +static int elf_is_exec(int fd, const char *name)
-> +{
-> +	Elf *elf;
-> +	GElf_Ehdr ehdr;
-> +	int retval = 0;
-> +
-> +	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
-> +	if (elf == NULL)
-> +		return 0;
-> +	if (gelf_getehdr(elf, &ehdr) == NULL)
-> +		goto out;
-> +
-> +	retval = (ehdr.e_type == ET_EXEC);
-> +
-> +out:
-> +	elf_end(elf);
-> +	pr_debug("unwind: elf_is_exec(%s): %d\n", name, retval);
-> +	return retval;
-> +
-> +}
-
-yuou need to add stub for 'NO_LIBUNWIND_DEBUG_FRAME=1', otherwise:
-
-  CC       util/dwarf-aux.o
-  CC       util/unwind-libunwind.o
-util/unwind-libunwind.c:188:12: error: ‘elf_is_exec’ defined but not used [-Werror=unused-function]
- static int elf_is_exec(int fd, const char *name)
-            ^
-cc1: all warnings being treated as errors
-make[1]: *** [util/unwind-libunwind.o] Error 1
-make[1]: *** Waiting for unfinished jobs....
-make: *** [all] Error 2
-
-jirka
-
-> +
->  struct table_entry {
->  	u32 start_ip_offset;
->  	u32 fde_offset;
-> @@ -322,8 +343,12 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pi,
->  #ifndef NO_LIBUNWIND_DEBUG_FRAME
->  	/* Check the .debug_frame section for unwinding info */
->  	if (!read_unwind_spec_debug_frame(map->dso, ui->machine, &segbase)) {
-> +		int fd = dso__data_fd(map->dso, ui->machine);
-> +		int is_exec = elf_is_exec(fd, map->dso->name);
-> +		unw_word_t base = is_exec ? 0 : map->start;
-> +
->  		memset(&di, 0, sizeof(di));
-> -		if (dwarf_find_debug_frame(0, &di, ip, 0, map->dso->name,
-> +		if (dwarf_find_debug_frame(0, &di, ip, base, map->dso->name,
->  					   map->start, map->end))
->  			return dwarf_search_unwind_table(as, ip, &di, pi,
->  							 need_unwind_info, arg);
-> -- 
-> 1.8.4
+On Mon, Jan 12, 2015 at 04:53:53PM +0100, Vlastimil Babka wrote:
+> On 01/12/2015 09:21 AM, Joonsoo Kim wrote:
+> > It is not well analyzed that when/why compaction start/finish or not. With
+> > these new tracepoints, we can know much more about start/finish reason of
+> > compaction. I can find following bug with these tracepoint.
+> > 
+> > http://www.spinics.net/lists/linux-mm/msg81582.html
+> > 
+> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> > ---
+> >  include/linux/compaction.h        |    3 ++
+> >  include/trace/events/compaction.h |   94 +++++++++++++++++++++++++++++++++++++
+> >  mm/compaction.c                   |   41 ++++++++++++++--
+> >  3 files changed, 134 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+> > index a9547b6..d82181a 100644
+> > --- a/include/linux/compaction.h
+> > +++ b/include/linux/compaction.h
+> > @@ -12,6 +12,9 @@
+> >  #define COMPACT_PARTIAL		3
+> >  /* The full zone was compacted */
+> >  #define COMPACT_COMPLETE	4
+> > +/* For more detailed tracepoint output */
+> > +#define COMPACT_NO_SUITABLE_PAGE	5
+> > +#define COMPACT_NOT_SUITABLE_ZONE	6
+> >  /* When adding new state, please change compaction_status_string, too */
+> >  
+> >  /* Used to signal whether compaction detected need_sched() or lock contention */
+> > diff --git a/include/trace/events/compaction.h b/include/trace/events/compaction.h
+> > index 139020b..839dd4f 100644
+> > --- a/include/trace/events/compaction.h
+> > +++ b/include/trace/events/compaction.h
+> > @@ -164,6 +164,100 @@ TRACE_EVENT(mm_compaction_end,
+> >  		compaction_status_string[__entry->status])
+> >  );
+> >  
+> > +TRACE_EVENT(mm_compaction_try_to_compact_pages,
+> > +
+> > +	TP_PROTO(
+> > +		int order,
+> > +		gfp_t gfp_mask,
+> > +		enum migrate_mode mode,
+> > +		int alloc_flags,
+> > +		int classzone_idx),
 > 
+> I wonder if alloc_flags and classzone_idx is particularly useful. It affects the
+> watermark checks, but those are a bit of blackbox anyway.
+
+Yes, I think so. How about printing gfp_flag rather than these? It would
+tell us migratetype and other information so would be useful.
+
+Thanks.
