@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189AbbAMMXQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 07:23:16 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:39342 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378AbbAMMXP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 07:23:15 -0500
-Message-ID: <54B50E2B.2020007@hitachi.com>
-Date: Tue, 13 Jan 2015 21:23:07 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1752277AbbAMMXb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 07:23:31 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:42541 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752202AbbAMMX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 07:23:29 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <kishon@ti.com>, <tony@atomide.com>
+CC: <nm@ti.com>, <balbi@ti.com>, <george.cherian@ti.com>, <nsekhar@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
+Subject: [PATCH v3 0/4] phy: ti-pipe3: fixes for 3.19-rc
+Date: Tue, 13 Jan 2015 14:23:18 +0200
+Message-ID: <1421151802-7396-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 2.1.0
 MIME-Version: 1.0
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        linux-kernel@vger.kernel.org, Wang Nan <wangnan0@huawei.com>
-Subject: Re: What's the correct tree to route kprobes patches through?
-References: <1421086886.18443.23.camel@linaro.org>
-In-Reply-To: <1421086886.18443.23.camel@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2015/01/13 3:21), Jon Medhurst (Tixy) wrote:
-> Hi All
-> 
-> I'm wondering what the correct route is for getting kprobes patches into
-> mainline Linux. In particular I'm interested in a patch from Masami
-> Hiramatsu [1] which is a dependency for some ARM kprobes work we want to
-> merge. If acceptable, we could submit that one though the ARM
-> maintainer's tree with our other work.
+Hi,
 
-I'm OK to merge that patch via ARM's tree. Fortunately, that patch is
-just a minor change. So I think it works.
+During system suspend L3INIT_960M_GFCLK and L3INIT_480M_GFCLK clocks remain
+active on the DRA7 platform. This is because the pipe3 driver doesn't shut
+them off as part of .suspend(). Patch 1 addresses this issue.
 
-Usually only generic or x86-dependent kprobes patches are upstreamed via
-tip tree, and arch-dependent part of kprobes patches should go through arch
-specific tree.
-Of course I can also provide a new git repo for kprobes on kernel.org. :)
-(But still which repo I should send a pull request is a question...)
+SATA on both OMAP5 and DRA7 breaks when SATA drive is plugged in after a
+system suspend/resume or if AHCI_PLATFORM driver is used as module.
+Patches 2,3,4 fix it.
 
-Thank you,
+Hope to get these patches in through the 3.19-rc cycle.
 
-> 
-> [1] http://marc.info/?l=linux-kernel&m=142045769001242&w=2
->     (kprobes: Pass the original kprobe for preparing optimized kprobe)
+Tony,
 
+Do you wish to take the DTS patches or let them go in through PHY tree?
 
+cheers,
+-roger
 
+---
+Changelog
+- v3 : Commit message updated. dts changes moved to separate patch.
+- v2 : Don't break SATA with old DTB.
+
+Roger Quadros (4):
+  phy: ti-pipe3: Disable clocks on system suspend
+  phy: ti-pipe3: Fix SATA across suspend/resume
+  ARM: dts: DRA7: Fix SATA PHY node
+  ARM: dts: OMAP5: Fix SATA PHY node
+
+ arch/arm/boot/dts/dra7.dtsi  |   4 +-
+ arch/arm/boot/dts/omap5.dtsi |   4 +-
+ drivers/phy/phy-ti-pipe3.c   | 142 +++++++++++++++++++++++++++++++++----------
+ 3 files changed, 115 insertions(+), 35 deletions(-)
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+2.1.0
 
