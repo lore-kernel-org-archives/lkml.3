@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571AbbAMVn1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 16:43:27 -0500
-Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:54193 "EHLO
-	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751202AbbAMVnZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 16:43:25 -0500
-From: "Banerjee, Debabrata" <dbanerje@akamai.com>
-To: Yuchung Cheng <ycheng@google.com>
-CC: David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 13 Jan 2015 16:42:50 -0500
-Subject: Re: [PATCH] tcp: Fix RFC reference in comment
-Thread-Topic: [PATCH] tcp: Fix RFC reference in comment
-Thread-Index: AdAveeGTX4ARWf9eSeKkDSy9gAhU6Q==
-Message-ID: <D0DAFA79.4435F%dbanerje@akamai.com>
-References: <1421183431-29915-1-git-send-email-dbanerje@akamai.com>
- <CAK6E8=d6NMZjyH1JFoJX_ioAdQNYCAvH-G3ja9fScwW9u2=NFQ@mail.gmail.com>
-In-Reply-To: <CAK6E8=d6NMZjyH1JFoJX_ioAdQNYCAvH-G3ja9fScwW9u2=NFQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.4.7.141117
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753264AbbAMVoA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 16:44:00 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:52698 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752729AbbAMVn6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 16:43:58 -0500
+Date: Wed, 14 Jan 2015 00:43:55 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, Dave Hansen <dave.hansen@linux.intel.com>,
+        Pavel Emelyanov <xemul@openvz.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mm: rename mm->nr_ptes to mm->nr_pgtables
+Message-ID: <20150113214355.GC2253@moon>
+References: <1421176456-21796-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1421176456-21796-2-git-send-email-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421176456-21796-2-git-send-email-kirill.shutemov@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/13/15, 4:36 PM, "Yuchung Cheng" <ycheng@google.com> wrote:
+On Tue, Jan 13, 2015 at 09:14:15PM +0200, Kirill A. Shutemov wrote:
+> We're going to account pmd page tables too. Let's rename mm->nr_pgtables
+> to something more generic.
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> --- a/fs/proc/task_mmu.c
+> +++ b/fs/proc/task_mmu.c
+> @@ -64,7 +64,7 @@ void task_mem(struct seq_file *m, struct mm_struct *mm)
+>  		data << (PAGE_SHIFT-10),
+>  		mm->stack_vm << (PAGE_SHIFT-10), text, lib,
+>  		(PTRS_PER_PTE * sizeof(pte_t) *
+> -		 atomic_long_read(&mm->nr_ptes)) >> 10,
+> +		 atomic_long_read(&mm->nr_pgtables)) >> 10,
 
->On Tue, Jan 13, 2015 at 1:10 PM, Debabrata Banerjee <dbanerje@akamai.com>
->wrote:
->>
->> -/* RFC2861. Reset CWND after idle period longer RTO to "restart
->>window".
->> +/* RFC2581 4.1. Reset CWND after idle period longer RTO to "restart
->>window".
->>   * This is the first part of cwnd validation mechanism. */
->>  static void tcp_cwnd_restart(struct sock *sk, const struct dst_entry
->>*dst)
->>  {
->
->RFC2861 resets the cwnd like in RFC2581, but the rest of the code
->implements RFC2861. So I think the current comment is fine.
+This implies that (PTRS_PER_PTE * sizeof(pte_t)) = (PTRS_PER_PMD * sizeof(pmd_t))
+which might be true for all archs, right?
 
-
-No RFC2861 is an experimental RFC that's implemented in
-tcp_cwnd_application_limited(). RFC2861 Recommends reducing the cwnd by
-averaging the current cwnd and the used cwnd as the new cwnd.
-
-
-RFC2581 4.1 Says to set cwnd to initial cwnd if more than one rto has
-passed since the last send. This is what is implemented in the function
-above.
-
-
--Debabrata
-
+Other looks good to me.
