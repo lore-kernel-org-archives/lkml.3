@@ -1,80 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414AbbAMNXX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 08:23:23 -0500
-Received: from mout.kundenserver.de ([212.227.126.130]:62123 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004AbbAMNXW (ORCPT
+	id S1752488AbbAMNYn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 08:24:43 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:62793 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271AbbAMNYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 08:23:22 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: kernel-build-reports@lists.linaro.org
-Cc: Mark Brown <broonie@kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Vinod Koul <vinod.koul@intel.com>, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] dmaengine: k3: fix duplicate function definition
-Date: Tue, 13 Jan 2015 14:23:13 +0100
-Message-ID: <1869934.MKKaD1UAQn@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20150113120751.GQ4160@sirena.org.uk>
-References: <E1YAwSG-0000zm-Cs@debutante> <20150113120751.GQ4160@sirena.org.uk>
+	Tue, 13 Jan 2015 08:24:41 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:YHFDLXFU+JWS25PLRizIw7J5PcaJBjCNTafPE1BYu8vYCOMxsca
- 56ifFg8lneikXuz2kqIu8uSBbNkJZ+9B9d7k9cE+DyRReLJ8uA8I7MhuqN3ZmH/VLAxFx6m
- sLYy0/l4Nn7eweRwnGJzM35AX8Uo93dYpX4WXLCO6UuU5OZiZwZjVasQQf0agY6b/1mwL47
- hGHcPzX3OxD68riW4c9nw==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <1420535817.17567.10.camel@mtksdaap41>
+References: <1418772873-19747-1-git-send-email-hongzhou.yang@mediatek.com>
+	<1418772873-19747-5-git-send-email-hongzhou.yang@mediatek.com>
+	<1418807365.6443.17.camel@mtksdaap41>
+	<1420535817.17567.10.camel@mtksdaap41>
+Date: Tue, 13 Jan 2015 14:24:40 +0100
+Message-ID: <CACRpkdb2KJbjzFgTmDvHSw7jNAExxVtU3y4_fgyn6J8hcW5OrQ@mail.gmail.com>
+Subject: Re: [PATCH v4 4/5] ARM: mediatek: Add EINT support to MTK pinctrl driver.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Yingjoe Chen <yingjoe.chen@mediatek.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, maoguang.meng@mediatek.com,
+        Catalin Marinas <catalin.marinas@arm.com>, alan.cheng@mediatek.com,
+        Russell King <linux@arm.linux.org.uk>,
+        Hongzhou Yang <hongzhou.yang@mediatek.com>, toby.liu@mediatek.com,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>, dandan.he@mediatek.com,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        srv_heupstream@mediatek.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Kumar Gala <galak@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit db08425ebd51f ("dmaengine: k3: Split device_control") introduced
-two new helper functions, which unfortunately have the same names
-as the existing suspend/resume functions, resulting in a build error
-when CONFIG_PM_SLEEP is enabled:
+On Tue, Jan 6, 2015 at 10:16 AM, Yingjoe Chen <yingjoe.chen@mediatek.com> wrote:
+> On Wed, 2014-12-17 at 17:09 +0800, Yingjoe Chen wrote:
+>> On Wed, 2014-12-17 at 07:34 +0800, Hongzhou Yang wrote:
+>> > From: Maoguang Meng <maoguang.meng@mediatek.com>
+>> >
+>> > MTK SoC support external interrupt(EINT) from most SoC pins.
+>> > Add EINT support to pinctrl driver.
+>> >
+>> > Signed-off-by: Maoguang Meng <maoguang.meng@mediatek.com>
+>> > Signed-off-by: Hongzhou Yang <hongzhou.yang@mediatek.com>
+>>
+>> Hi Linus,
+>>
+>> This patch add EINT support to the pinctrl driver. We've surveyed
+>> GPIOLIB_IRQCHIP, but we didn't use it because:
+>>
+>> - Not every GPIO pin support interrupt.
+>> - EINT use a different numbering to GPIO. eg, from the mt8135 table,
+>> GPIO29 is EINT158. It is more nature & efficient to use EINT number as
+>> hwirq.
+>>
+>> +               MTK_EINT_FUNCTION(2, 158),
+>> +               MTK_FUNCTION(0, "GPIO29"),
+>
+> After further looking into this, we could use GPIOLIB_IRQCHIP if we add
+> an extension gpiochip_irqchip_add() to accept interrupt numbers and
+> custom .to_irq function for our SoC. We could still reuse other code
+> GPIOLIB_IRQCHIP provide.
 
-drivers/dma/k3dma.c:823:12: error: conflicting types for 'k3_dma_resume'
- static int k3_dma_resume(struct device *dev)
-            ^
-drivers/dma/k3dma.c:625:12: note: previous definition of 'k3_dma_resume' was here
- static int k3_dma_resume(struct dma_chan *chan)
-            ^
+I see, and I still want to see all possibilities to centralize code
+surveyed.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Fixes: db08425ebd51f ("dmaengine: k3: Split device_control")
+If I understand correctly what you actually need is a linear
+irqdomain with "holes" (invalid offsets) in it.
+So this is what we should design for.
 
-diff --git a/drivers/dma/k3dma.c b/drivers/dma/k3dma.c
-index 49be7f687c4c..8cc61ae42f42 100644
---- a/drivers/dma/k3dma.c
-+++ b/drivers/dma/k3dma.c
-@@ -804,7 +804,7 @@ static int k3_dma_remove(struct platform_device *op)
- }
- 
- #ifdef CONFIG_PM_SLEEP
--static int k3_dma_suspend(struct device *dev)
-+static int k3_dma_suspend_dev(struct device *dev)
- {
- 	struct k3_dma_dev *d = dev_get_drvdata(dev);
- 	u32 stat = 0;
-@@ -820,7 +820,7 @@ static int k3_dma_suspend(struct device *dev)
- 	return 0;
- }
- 
--static int k3_dma_resume(struct device *dev)
-+static int k3_dma_resume_dev(struct device *dev)
- {
- 	struct k3_dma_dev *d = dev_get_drvdata(dev);
- 	int ret = 0;
-@@ -835,7 +835,7 @@ static int k3_dma_resume(struct device *dev)
- }
- #endif
- 
--static SIMPLE_DEV_PM_OPS(k3_dma_pmops, k3_dma_suspend, k3_dma_resume);
-+static SIMPLE_DEV_PM_OPS(k3_dma_pmops, k3_dma_suspend_dev, k3_dma_resume_dev);
- 
- static struct platform_driver k3_pdma_driver = {
- 	.driver		= {
+The .to_irq() function should not really perform anything but a
+simple lookup in the domain.
 
+What you do here:
+
++static int mtk_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
++{
++       const struct mtk_desc_pin *pin;
++       struct mtk_pinctrl *pctl = dev_get_drvdata(chip->dev);
++       int irq;
++
++       pin = pctl->devdata->pins + offset;
++       if (pin->eint.eintnum == NO_EINT_SUPPORT)
++               return -EINVAL;
++
++       irq = irq_find_mapping(pctl->domain, pin->eint.eintnum);
++       if (!irq)
++               return -EINVAL;
++
++       return irq;
++}
+
+Is *avoiding* to translate some IRQs from a certain offset using
+the domain, I think that is the wrong way to go.
+
+Instead, we would need to handle these "holes" in
+drivers/pinctrl/nomadik/pinctrl-abx500.c also need the same
+thing.
+
+Maybe we can add a gpiochip_irqchip_add_sparse() in
+gpiolib that will take an array of bools in, indicating of
+a certain line is elegible for IRQ or not, e.g.:
+
+bool valid = { false, true, false, true };
+
+foo = gpiochip_irqchip_add_sparse(&chip,
+                         &irqchip,
+                         0,
+                         handler,
+                         IRQ_TYPE_NONE,
+                         &valid);
+
+So the loop inside the lib will avoid calling
+irq_create_mapping() on the invalid lines, and any calls
+to irq_find_mapping() will fail if you try to use one of
+them for IRQs.
+
+If you're up to do this and test on your driver I'm all in for it.
+
+Yours,
+Linus Walleij
