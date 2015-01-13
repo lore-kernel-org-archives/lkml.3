@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753080AbbAMPyk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 10:54:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752989AbbAMPyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 10:54:38 -0500
-Date: Tue, 13 Jan 2015 16:53:35 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: riel@redhat.com
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
-        tglx@linutronix.de, luto@amacapital.net
-Subject: Re: [RFC PATCH 04/11] x86,fpu: defer FPU restore until return to
-	userspace
-Message-ID: <20150113155335.GA24518@redhat.com>
-References: <1421012793-30106-1-git-send-email-riel@redhat.com> <1421012793-30106-5-git-send-email-riel@redhat.com>
+	id S1752899AbbAMP56 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 10:57:58 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:37464 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751960AbbAMP54 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 10:57:56 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19KylAQ8XSaixJGjjZUfqEG
+Date: Tue, 13 Jan 2015 07:54:09 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: kishon@ti.com, nm@ti.com, balbi@ti.com, george.cherian@ti.com,
+        nsekhar@ti.com, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v3 0/4] phy: ti-pipe3: fixes for 3.19-rc
+Message-ID: <20150113155409.GA2419@atomide.com>
+References: <1421151802-7396-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421012793-30106-5-git-send-email-riel@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1421151802-7396-1-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11, riel@redhat.com wrote:
->
-> @@ -382,6 +382,7 @@ static inline void drop_init_fpu(struct task_struct *tsk)
->  		else
->  			fxrstor_checking(&init_xstate_buf->i387);
->  	}
-> +	clear_thread_flag(TIF_LOAD_FPU);
+* Roger Quadros <rogerq@ti.com> [150113 04:26]:
+> Hi,
+> 
+> During system suspend L3INIT_960M_GFCLK and L3INIT_480M_GFCLK clocks remain
+> active on the DRA7 platform. This is because the pipe3 driver doesn't shut
+> them off as part of .suspend(). Patch 1 addresses this issue.
+> 
+> SATA on both OMAP5 and DRA7 breaks when SATA drive is plugged in after a
+> system suspend/resume or if AHCI_PLATFORM driver is used as module.
+> Patches 2,3,4 fix it.
+> 
+> Hope to get these patches in through the 3.19-rc cycle.
+> 
+> Tony,
+> 
+> Do you wish to take the DTS patches or let them go in through PHY tree?
 
-OK, in this case tsk should be current. Still I think clear_tsk_thread_flag()
-will look more consistent.
+Those look ok to me to merge along with the fixes, will ack those two.
 
-> @@ -435,24 +436,32 @@ static inline void switch_fpu_prepare(struct task_struct *old, struct task_struc
->  				prefetch(new->thread.fpu.state);
+Regards,
 
-I am wondering if these prefetch()es in switch_fpu_prepare() make
-sense after this patch.
+Tony
 
-> +		} else
-> +			/*
-> +			 * The new task does not want an FPU state restore,
-> +			 * and may not even have an FPU state. However, the
-> +			 * old task may have left TIF_LOAD_FPU set.
-> +			 * Clear it to avoid trouble.
-> +			 *
-> +			 * CR0.TS is still set from a previous FPU switch
-> +			 */
-> +			clear_thread_flag(TIF_LOAD_FPU);
-
-I got lost ;) Simply can't understand what this change tries to do.
-
-And it looks "obviously wrong"... OK, suppose that a TIF_LOAD_FPU task
-schedules before it returns to user mode (and calls switch_fpu_finish).
-Why should we clear its flag if the new task doesn't want FPU ?
-
-"CR0.TS is still set" is not true if use_eager_fpu()... OTOH, .TS can
-be also set even if preload == T above, when we set TIF_LOAD_FPU.
-
-> -static inline void switch_fpu_finish(struct task_struct *new)
-> +static inline void switch_fpu_finish(void)
->  {
-> -	if (test_and_clear_thread_flag(TIF_LOAD_FPU)) {
-> -		__thread_fpu_begin(new);
-> -		if (unlikely(restore_fpu_checking(new)))
-> -			drop_init_fpu(new);
-> -	}
-> +	struct task_struct *tsk = current;
-> +
-> +	__thread_fpu_begin(tsk);
-> +
-> +	if (unlikely(restore_fpu_checking(tsk)))
-> +		drop_init_fpu(tsk);
->  }
-
-Again, I am totally confused. After this patch the usage of set_thread_flag()
-in switch_fpu_prepare() becomes wrong (see my reply to 2/11), but it is quite
-possible I misunderstood these patches.
-
-Oleg.
-
+> Changelog
+> - v3 : Commit message updated. dts changes moved to separate patch.
+> - v2 : Don't break SATA with old DTB.
+> 
+> Roger Quadros (4):
+>   phy: ti-pipe3: Disable clocks on system suspend
+>   phy: ti-pipe3: Fix SATA across suspend/resume
+>   ARM: dts: DRA7: Fix SATA PHY node
+>   ARM: dts: OMAP5: Fix SATA PHY node
+> 
+>  arch/arm/boot/dts/dra7.dtsi  |   4 +-
+>  arch/arm/boot/dts/omap5.dtsi |   4 +-
+>  drivers/phy/phy-ti-pipe3.c   | 142 +++++++++++++++++++++++++++++++++----------
+>  3 files changed, 115 insertions(+), 35 deletions(-)
+> 
+> -- 
+> 2.1.0
+> 
