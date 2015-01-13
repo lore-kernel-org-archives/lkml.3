@@ -1,68 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325AbbAMSXl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 13:23:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58139 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751352AbbAMSXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 13:23:40 -0500
-Date: Tue, 13 Jan 2015 19:22:39 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
-        tglx@linutronix.de, luto@amacapital.net
-Subject: Re: [RFC PATCH 04/11] x86,fpu: defer FPU restore until return to
-	userspace
-Message-ID: <20150113182239.GA30475@redhat.com>
-References: <1421012793-30106-1-git-send-email-riel@redhat.com> <1421012793-30106-5-git-send-email-riel@redhat.com> <20150113171134.GA27519@redhat.com> <54B55BE7.1020107@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54B55BE7.1020107@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752999AbbAMSVx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 13:21:53 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:61875 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264AbbAMSVv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 13:21:51 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Jon Maloy <jon.maloy@ericsson.com>,
+        Allan Stephens <allan.stephens@windriver.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        tipc-discussion@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH] tipc: link: Remove unused function
+Date: Tue, 13 Jan 2015 19:24:58 +0100
+Message-Id: <1421173498-4012-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13, Rik van Riel wrote:
->
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
->
-> On 01/13/2015 12:11 PM, Oleg Nesterov wrote:
-> > On 01/11, riel@redhat.com wrote:
-> >>
-> >> Defer restoring the FPU state, if so desired, until the task
-> >> returns to userspace.
-> >
-> > And I have another concern.
-> >
-> > Afaocs with this patch the idle threads will run with TIF_LOAD_FPU
-> > set but without fpu.has_fpu.
-> >
-> > This is fine by itself, but this (performance-wise) breaks
-> > kernel_fpu_begin() if use_eager_fpu() == T. Please see the
-> > changelog in 5187b28ff08249ab8a162e8 and note that this patch cc's
-> > @stable.
-> >
-> > Yes, yes, even if I am right we should blame kernel_fpu_begin() and
-> > other eager_fpu oddities. I tried to start the cleanups/fixes in
-> > this area some time ago, but they were ignored.
->
-> I suppose we could make kernel_fpu_begin() explicitly point
-> the cpu's fpu pointer at a special value to indicate that
-> we are in the middle of a kernel_fpu_begin() / kernel_fpu_end()
-> session, and should not use the FPU from interrupt context
-> right now.
+Remove the function tipc_link_get_max_pkt() that is not used anywhere.
 
-Not sure I understand...
+This was partially found by using a static code analysis program called cppcheck.
 
-But yes, I think we need the per-cpu "in_kernel_fpu" and irq_fpu_usable()
-must die. Please look at http://marc.info/?l=linux-kernel&m=14096628660929
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ net/tipc/link.c |   27 ---------------------------
+ net/tipc/link.h |    1 -
+ 2 files changed, 28 deletions(-)
 
-Until then imo this series should try to ensure that kernel_fpu_begin/end
-will work if interrupted thread is idle task.
-
-Oleg.
+diff --git a/net/tipc/link.c b/net/tipc/link.c
+index 1db162a..a18f5ce 100644
+--- a/net/tipc/link.c
++++ b/net/tipc/link.c
+@@ -2327,33 +2327,6 @@ struct sk_buff *tipc_link_cmd_show_stats(const void *req_tlv_area, int req_tlv_s
+ 	return buf;
+ }
+ 
+-/**
+- * tipc_link_get_max_pkt - get maximum packet size to use when sending to destination
+- * @dest: network address of destination node
+- * @selector: used to select from set of active links
+- *
+- * If no active link can be found, uses default maximum packet size.
+- */
+-u32 tipc_link_get_max_pkt(u32 dest, u32 selector)
+-{
+-	struct tipc_node *n_ptr;
+-	struct tipc_link *l_ptr;
+-	u32 res = MAX_PKT_DEFAULT;
+-
+-	if (dest == tipc_own_addr)
+-		return MAX_MSG_SIZE;
+-
+-	n_ptr = tipc_node_find(dest);
+-	if (n_ptr) {
+-		tipc_node_lock(n_ptr);
+-		l_ptr = n_ptr->active_links[selector & 1];
+-		if (l_ptr)
+-			res = l_ptr->max_pkt;
+-		tipc_node_unlock(n_ptr);
+-	}
+-	return res;
+-}
+-
+ static void link_print(struct tipc_link *l_ptr, const char *str)
+ {
+ 	struct tipc_bearer *b_ptr;
+diff --git a/net/tipc/link.h b/net/tipc/link.h
+index b567a34..9b91eb6 100644
+--- a/net/tipc/link.h
++++ b/net/tipc/link.h
+@@ -228,7 +228,6 @@ void tipc_link_reset(struct tipc_link *l_ptr);
+ void tipc_link_reset_list(unsigned int bearer_id);
+ int tipc_link_xmit(struct sk_buff *buf, u32 dest, u32 selector);
+ int __tipc_link_xmit(struct tipc_link *link, struct sk_buff *buf);
+-u32 tipc_link_get_max_pkt(u32 dest, u32 selector);
+ void tipc_link_bundle_rcv(struct sk_buff *buf);
+ void tipc_link_proto_xmit(struct tipc_link *l_ptr, u32 msg_typ, int prob,
+ 			  u32 gap, u32 tolerance, u32 priority, u32 acked_mtu);
+-- 
+1.7.10.4
 
