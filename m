@@ -1,134 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207AbbAMS0t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 13:26:49 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:55474 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752352AbbAMS0s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 13:26:48 -0500
+	id S1753495AbbAMS06 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 13:26:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54899 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752220AbbAMS04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 13:26:56 -0500
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH] PCI: quirks: DMA alias quirk for Adaptec 3405
+To: linux-pci@vger.kernel.org
+Cc: aacraid@adaptec.com, linux-kernel@vger.kernel.org, bhelgaas@google.com
+Date: Tue, 13 Jan 2015 11:26:50 -0700
+Message-ID: <20150113182605.15479.9020.stgit@gimli.home>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <54B5604E.1070403@redhat.com>
-References: <1421012793-30106-1-git-send-email-riel@redhat.com>
- <1421012793-30106-5-git-send-email-riel@redhat.com> <20150113171134.GA27519@redhat.com>
- <CALCETrWuOeYYpwbfX3x56KZSV_1nC+r7GHRiYH=pt_xOuOVM2g@mail.gmail.com>
- <54B5598F.4070202@redhat.com> <CALCETrXRs7AgTEgDV93RA=5_Of--W9Q4H+oVVbZPrDeWRs8Y_g@mail.gmail.com>
- <54B5604E.1070403@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 13 Jan 2015 10:26:25 -0800
-Message-ID: <CALCETrWcX5s30bMq+ivYoRiUngq-rXGqX=QDz7uq3j43wQzDZA@mail.gmail.com>
-Subject: Re: [RFC PATCH 04/11] x86,fpu: defer FPU restore until return to userspace
-To: Rik van Riel <riel@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>, Borislav Petkov <bp@suse.de>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 10:13 AM, Rik van Riel <riel@redhat.com> wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
->
-> On 01/13/2015 12:57 PM, Andy Lutomirski wrote:
->> On Tue, Jan 13, 2015 at 9:44 AM, Rik van Riel <riel@redhat.com>
->> wrote: On 01/13/2015 12:18 PM, Andy Lutomirski wrote:
->
->>>>> - Task is not current and FPU is in memory. - Task is not
->>>>> current and FPU is loaded into some cpu.
->>
->>> Same for this one. When the task is not current, the FPU state
->>> will have been saved to memory. If we try running the task
->>> somewhere else, it devolves to "FPU is in memory".
->>
->>
->> Isn't there a case where the FPU is in memory *and* in the cpu
->> regs? Isn't that how you can skip reloading the FPU after going
->> idle and returning?  Is this what fpu_lazy_restore is for?
->> Confused.
->
-> Indeed, if we end up running the task on the same CPU again, and the
-> FPU still has the state loaded, we may skip restoring the FPU state.
->
->>>>> Am I missing anything?  (In lazy mode, there are a few more
->>>>> involving CR0.TS.)
->>>>>
->>>>> That's five states, plus an optional cpu number.  But we have
->>>>> tons of state variable that can express all kinds of nonsense
->>>>> things.
->>>>>
->>>>> If we asserted that we were in a sensible state and fixed
->>>>> the things that exited the sensible states, maybe this would
->>>>> be easier to understand and debug.
->>
->> Lets see what things we could test, at different points.
->>
->> 1) At context switch time, we need to make sure that the previous
->> task will no longer have __thread_has_fpu()
->>
->> 2) When loading the FPU state, we need to make sure that the
->> current task does not have __thread_has_fpu()
->>
->>> Examples, any of which may be wrong:
->>
->>> If !current, then !TIF_LOAD_FPU
->
-> We set TIF_LOAD_CPU on the next task at context switch time,
-> which is different from the current task. I suspect we can
-> deal with that exception, though :)
->
-> What we can test is that "new" does not already have TIF_LOAD_CPU
-> set...
->
->>> If switching out a task with TIF_LOAD_FPU set, then !has_fpu
->
-> ... and that old does not have both TIF_LOAD_FPU and has_fpu.
->
->>> If last_cpu == smp_processor_id(), then fpu_owner == fpu.
->
-> Not necessarily, since the task may not have entered userspace in
-> a very long time, so it may not have loaded its FPU context.
->
+As noted in the added comment, this device is actually an Intel 80333
+I/O processor where the exposed device at 0e.0 is actually the address
+translation unit of the I/O processor and a hidden, private device at
+01.0 masters the DMA for the device.  In order to enable the IOMMU, we
+therefore need to create a fixed alias between the exposed and hidden
+devfn.
 
-Is the idea that it's possible for fpu_owner == fpu if the task is
-brand new (i.e. fpu_owner really refers to some now-dead task whose
-memory is reused) but that, if this is the case, then last_cpu won't
-match that cpu?
+Scenarios like this are potentially likely for any device incorporating
+this I/O processor, so this little bit of abstraction with the fixed
+alias table should make future additions trivial.
 
-If so, then I think that I'm finally starting to understand that part of it.
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Cc: Adaptec OEM Raid Solutions <aacraid@adaptec.com>
+---
 
->>> If has_fpu, then the task must be current somewhere and last_cpu
->>> must be the cpu on which it's current.
->
-> Indeed, if has_fpu, then last_cpu must match the current cpu.
+ drivers/pci/quirks.c |   37 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
 
-Phew.
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index ed6f89b..19bdb17 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -3528,6 +3528,43 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_JMICRON,
+ 			 quirk_dma_func1_alias);
+ 
+ /*
++ * Some devices DMA with the wrong devfn, not just the wrong function.
++ * quirk_fixed_dma_alias() uses this table to create fixed aliass, where
++ * the alias is "fixed" and independent of the device devfn.
++ *
++ * For example, the Adaptec 3405 is a PCIe card making use of an Intel 80333
++ * I/O processor.  To software, this appears as a straightforward PCIe-to-PCI/X
++ * bridge with a single device on the subordinate bus.  In reality, the exposed
++ * device at 0e.0 is the Address Translation Unit (ATU) of the controller that
++ * provides a bridge to the internal bus of the I/O processor.  The controller
++ * supports private devices, which can be hidden from PCI config space.  In the
++ * case of the Adaptec 3405, a private device at 01.0 appears to be the DMA
++ * engine, which therefore needs to become a DMA alias for the device.
++ */
++static const struct pci_device_id fixed_dma_alias_tbl[] = {
++	{ PCI_DEVICE_SUB(PCI_VENDOR_ID_ADAPTEC2, 0x0285,
++			 PCI_VENDOR_ID_ADAPTEC2, 0x02bb), /* Adaptec 3405 */
++	  .driver_data = PCI_DEVFN(1, 0) },
++	{ 0 }
++};
++
++static void quirk_fixed_dma_alias(struct pci_dev *dev)
++{
++	const struct pci_device_id *id;
++
++	id = pci_match_id(fixed_dma_alias_tbl, dev);
++	if (id) {
++		dev->dma_alias_devfn = id->driver_data;
++		dev->dev_flags |= PCI_DEV_FLAGS_DMA_ALIAS_DEVFN;
++		dev_info(&dev->dev, "Enabling fixed DMA alias to %02x.%d\n",
++			 PCI_SLOT(dev->dma_alias_devfn),
++			 PCI_FUNC(dev->dma_alias_devfn));
++	}
++}
++
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ADAPTEC2, 0x0285, quirk_fixed_dma_alias);
++
++/*
+  * A few PCIe-to-PCI bridges fail to expose a PCIe capability, resulting in
+  * using the wrong DMA alias for the device.  Some of these devices can be
+  * used as either forward or reverse bridges, so we need to test whether the
 
-Thanks,
-Andy
-
->
->
-> - --
-> All rights reversed
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v1
->
-> iQEcBAEBAgAGBQJUtWBOAAoJEM553pKExN6DNwIH/2wzfLqqM1V/Asd29nidDUrw
-> zD7HN//LyWTLjNMfAS4M/rOk3LsbphFBOo2L5BE7CYoNAGEWwKcQi7ld3dDAXeZL
-> +AkRtzMNEU1NqzrtnpGhABBrn3wBXwr9ldKSlaVQhYUop3q5Hhg8lyo2v+wWKf7y
-> ULi/RLiERS72tUomFXTE4RT021N2h+tl42jSREEyT0+VqEc7vqTlb5fctsF3VAhS
-> g48fX/VOYit3rXFU9hPz9m9vnodsEGCapdRxsXaE4xA7lg8dZ5WsaAos2TUwPQYt
-> EyCbS9z2Yzy1UpySwZudo6OGbQIaugOtgrcCS/cvdvlRb8K4mLe+807MPGmBOGA=
-> =7wEX
-> -----END PGP SIGNATURE-----
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
