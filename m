@@ -1,94 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592AbbAMNwo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 08:52:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45882 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751448AbbAMNwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 08:52:43 -0500
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: Dexuan Cui <decui@microsoft.com>, kys@microsoft.com
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org, olaf@aepfle.de,
-        apw@canonical.com, jasowang@redhat.com, haiyangz@microsoft.com
-Subject: Re: [PATCH v3] hv: hv_fcopy: drop the obsolete message on transfer failure
-References: <1417093747-21073-1-git-send-email-decui@microsoft.com>
-Date: Tue, 13 Jan 2015 14:52:26 +0100
-In-Reply-To: <1417093747-21073-1-git-send-email-decui@microsoft.com> (Dexuan
-	Cui's message of "Thu, 27 Nov 2014 05:09:07 -0800")
-Message-ID: <8761caeqjp.fsf@vitty.brq.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752495AbbAMN5O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 08:57:14 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:24062 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220AbbAMN5M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 08:57:12 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-84-54b52436d6b0
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: balbi@ti.com
+Cc: mina86@mina86.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        m.szyprowski@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH] tools: ffs-aio-example: use endpoint addresses from descriptors
+Date: Tue, 13 Jan 2015 14:56:28 +0100
+Message-id: <1421157388-18683-1-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEJMWRmVeSWpSXmKPExsVy+t9jAV0zla0hBp8f8FgcvF9vcXnXHDaL
+	RctamS3WHrnLbrHgeAurxYPDO9kd2DzW/XnF5NG3ZRWjx/Eb25k8Pm+SC2CJ4rJJSc3JLEst
+	0rdL4Mpo+T+LraBbomJp00HmBsbZIl2MnBwSAiYSm96dZoKwxSQu3FvP1sXIxSEksIhRYtGP
+	96wQTjuTxMQ7L1lBqtgEdCS2fJ/ACGKLCAhIrH9xiR2kiFlgEqPEtfYDzCAJYYEAiXszjrOA
+	2CwCqhIrv3WDxXkFXCV+f/sPtU5O4uSxyawTGLkXMDKsYhRNLUguKE5KzzXSK07MLS7NS9dL
+	zs/dxAgOiWfSOxhXNVgcYhTgYFTi4RXI2xIixJpYVlyZe4hRgoNZSYT3v8DWECHelMTKqtSi
+	/Pii0pzU4kOM0hwsSuK8SvZtIUIC6YklqdmpqQWpRTBZJg5OqQZG5bXpivlVD5cxn1sXX8Qy
+	d88s909BJyxFlv/2uuFkFaVbveFGXPAa3197V50t2fmaUeGryIeOGVM+CQTbOebnNn0WimB2
+	+TEpsO+/1Sfx0AnWezdObOxce/70GnnjtifVk412x0go/hDl2D57hry0yjVX82mbNoQZSXnc
+	0pq+hc8lK1Kd+2yIEktxRqKhFnNRcSIAZmsohQUCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dexuan Cui <decui@microsoft.com> writes:
+This makes examples more platform independent and more compatible with
+USB standard, as endpoint addresses in given interface may differ
+between hardware platforms or even between configurations in single
+USB device.
 
-> In the case the user-space daemon crashes, hangs or is killed, we
-> need to down the semaphore, otherwise, after the daemon starts next
-> time, the obsolete data in fcopy_transaction.message or
-> fcopy_transaction.fcopy_msg will be used immediately.
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+---
+ tools/usb/ffs-aio-example/multibuff/host_app/test.c | 14 ++++++++------
+ tools/usb/ffs-aio-example/simple/host_app/test.c    | 17 ++++++++++-------
+ 2 files changed, 18 insertions(+), 13 deletions(-)
 
-It seems this patch got lost and I don't see it in recent 'resend'
-series. K.Y., Dexuan, can you please take a look?
-
->
-> Cc: Jason Wang <jasowang@redhat.com>
-> Cc: Vitaly Kuznetsov <vkuznets@redhat.com>
-> Cc: K. Y. Srinivasan <kys@microsoft.com>
-> Signed-off-by: Dexuan Cui <decui@microsoft.com>
-> ---
->
-> v2: I removed the "FCP" prefix as Greg asked.
->
->     I also updated the output message a little:
->     "FCP: failed to acquire the semaphore" --> 
->     "can not acquire the semaphore: it is benign"
->
-> v3: I added the code in fcopy_release() as Jason Wang suggested.
->     I removed the pr_debug (it isn't so meaningful)and added a comment instead.
->
->  drivers/hv/hv_fcopy.c | 19 +++++++++++++++++++
->  1 file changed, 19 insertions(+)
->
-> diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c
-> index 23b2ce2..faa6ba6 100644
-> --- a/drivers/hv/hv_fcopy.c
-> +++ b/drivers/hv/hv_fcopy.c
-> @@ -86,6 +86,18 @@ static void fcopy_work_func(struct work_struct *dummy)
->  	 * process the pending transaction.
->  	 */
->  	fcopy_respond_to_host(HV_E_FAIL);
-> +
-> +	/* In the case the user-space daemon crashes, hangs or is killed, we
-> +	 * need to down the semaphore, otherwise, after the daemon starts next
-> +	 * time, the obsolete data in fcopy_transaction.message or
-> +	 * fcopy_transaction.fcopy_msg will be used immediately.
-> +	 *
-> +	 * NOTE: fcopy_read() happens to get the semaphore (very rare)? We're
-> +	 * still OK, because we've reported the failure to the host.
-> +	 */
-> +	if (down_trylock(&fcopy_transaction.read_sema))
-> +		;
-> +
->  }
->
->  static int fcopy_handle_handshake(u32 version)
-> @@ -351,6 +363,13 @@ static int fcopy_release(struct inode *inode, struct file *f)
->  	 */
->  	in_hand_shake = true;
->  	opened = false;
-> +
-> +	if (cancel_delayed_work_sync(&fcopy_work)) {
-> +		/* We haven't up()-ed the semaphore(very rare)? */
-> +		if (down_trylock(&fcopy_transaction.read_sema))
-> +			;
-> +		fcopy_respond_to_host(HV_E_FAIL);
-> +	}
->  	return 0;
->  }
-
+diff --git a/tools/usb/ffs-aio-example/multibuff/host_app/test.c b/tools/usb/ffs-aio-example/multibuff/host_app/test.c
+index daa3abe..2cbcce6 100644
+--- a/tools/usb/ffs-aio-example/multibuff/host_app/test.c
++++ b/tools/usb/ffs-aio-example/multibuff/host_app/test.c
+@@ -33,11 +33,6 @@
+ #define VENDOR	0x1d6b
+ #define PRODUCT	0x0105
+ 
+-/* endpoints indexes */
+-
+-#define EP_BULK_IN	(1 | LIBUSB_ENDPOINT_IN)
+-#define EP_BULK_OUT	(2 | LIBUSB_ENDPOINT_OUT)
+-
+ #define BUF_LEN		8192
+ 
+ /*
+@@ -159,14 +154,21 @@ void test_exit(struct test_state *state)
+ int main(void)
+ {
+ 	struct test_state state;
++	struct libusb_config_descriptor *conf;
++	struct libusb_interface_descriptor const *iface;
++	unsigned char addr;
+ 
+ 	if (test_init(&state))
+ 		return 1;
+ 
++	libusb_get_config_descriptor(state.found, 0, &conf);
++	iface = &conf->interface[0].altsetting[0];
++	addr = iface->endpoint[0].bEndpointAddress;
++
+ 	while (1) {
+ 		static unsigned char buffer[BUF_LEN];
+ 		int bytes;
+-		libusb_bulk_transfer(state.handle, EP_BULK_IN, buffer, BUF_LEN,
++		libusb_bulk_transfer(state.handle, addr, buffer, BUF_LEN,
+ 				     &bytes, 500);
+ 	}
+ 	test_exit(&state);
+diff --git a/tools/usb/ffs-aio-example/simple/host_app/test.c b/tools/usb/ffs-aio-example/simple/host_app/test.c
+index acd6332..aed86ff 100644
+--- a/tools/usb/ffs-aio-example/simple/host_app/test.c
++++ b/tools/usb/ffs-aio-example/simple/host_app/test.c
+@@ -33,11 +33,6 @@
+ #define VENDOR	0x1d6b
+ #define PRODUCT	0x0105
+ 
+-/* endpoints indexes */
+-
+-#define EP_BULK_IN	(1 | LIBUSB_ENDPOINT_IN)
+-#define EP_BULK_OUT	(2 | LIBUSB_ENDPOINT_OUT)
+-
+ #define BUF_LEN		8192
+ 
+ /*
+@@ -159,16 +154,24 @@ void test_exit(struct test_state *state)
+ int main(void)
+ {
+ 	struct test_state state;
++	struct libusb_config_descriptor *conf;
++	struct libusb_interface_descriptor const *iface;
++	unsigned char in_addr, out_addr;
+ 
+ 	if (test_init(&state))
+ 		return 1;
+ 
++	libusb_get_config_descriptor(state.found, 0, &conf);
++	iface = &conf->interface[0].altsetting[0];
++	in_addr = iface->endpoint[0].bEndpointAddress;
++	out_addr = iface->endpoint[1].bEndpointAddress;
++
+ 	while (1) {
+ 		static unsigned char buffer[BUF_LEN];
+ 		int bytes;
+-		libusb_bulk_transfer(state.handle, EP_BULK_IN, buffer, BUF_LEN,
++		libusb_bulk_transfer(state.handle, in_addr, buffer, BUF_LEN,
+ 				     &bytes, 500);
+-		libusb_bulk_transfer(state.handle, EP_BULK_OUT, buffer, BUF_LEN,
++		libusb_bulk_transfer(state.handle, out_addr, buffer, BUF_LEN,
+ 				     &bytes, 500);
+ 	}
+ 	test_exit(&state);
 -- 
-  Vitaly
+1.9.1
+
