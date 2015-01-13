@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523AbbAMQ72 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 11:59:28 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:47047 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757AbbAMQ70 (ORCPT
+	id S1752610AbbAMQ7b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 11:59:31 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:65391 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752526AbbAMQ73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 11:59:26 -0500
+	Tue, 13 Jan 2015 11:59:29 -0500
 From: Victor Kamensky <victor.kamensky@linaro.org>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>
@@ -18,60 +18,91 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Anton Blanchard <anton@samba.org>, David Ahern <dsahern@gmail.com>,
         Will Deacon <will.deacon@arm.com>, Dave Martin <Dave.Martin@arm.com>,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Victor Kamensky <victor.kamensky@linaro.org>
-Subject: [PATCH 1/2] perf symbols: Ignore mapping symbols on aarch64
-Date: Tue, 13 Jan 2015 08:59:03 -0800
-Message-Id: <1421168344-5363-1-git-send-email-victor.kamensky@linaro.org>
+        Victor Kamensky <victor.kamensky@linaro.org>,
+        Jiri Olsa <jolsa@kernel.org>, Waiman Long <Waiman.Long@hp.com>
+Subject: [PATCH 2/2] perf symbols: debuglink should take symfs option into account
+Date: Tue, 13 Jan 2015 08:59:04 -0800
+Message-Id: <1421168344-5363-2-git-send-email-victor.kamensky@linaro.org>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1421168344-5363-1-git-send-email-victor.kamensky@linaro.org>
+References: <1421168344-5363-1-git-send-email-victor.kamensky@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Aarch64 ELF files use mapping symbols with special names $x, $d
-to identify regions of Aarch64 code (see Aarch64 ELF ABI - "ARM
-IHI 0056B", section "4.5.4 Mapping symbols").
+Currently code that tries to read corresponding debug symbol
+file from .gnu_debuglink section (DSO_BINARY_TYPE__DEBUGLINK)
+does not take in account symfs option, so filename__read_debuglink
+function cannot open ELF file, if symfs option is used.
 
-The patch filters out these symbols at load time, similar to
-"696b97a perf symbols: Ignore mapping symbols on ARM" changes
-done for ARM before V8.
+Fix is to add proper handling of symfs as it is done in other
+places: use __symbol__join_symfs function to get real file name
+of target ELF file.
+
+Created malloced copy of target filename in symfs before passing
+it to __symbol__join_symfs function because filename will be
+modified by it if corresponding debuglink is found.
 
 Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Jiri Olsa <jolsa@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Avi Kivity <avi@cloudius-systems.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Anton Blanchard <anton@samba.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Waiman Long <Waiman.Long@hp.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Dave Martin <Dave.Martin@arm.com>
 ---
- tools/perf/util/symbol-elf.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ tools/perf/util/dso.c | 33 ++++++++++++++++++++++-----------
+ 1 file changed, 22 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 06fcd1b..1e188dd 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -862,6 +862,14 @@ int dso__load_sym(struct dso *dso, struct map *map,
- 			    !strcmp(elf_name, "$t"))
- 				continue;
- 		}
-+		/* Reject Aarch64 ELF "mapping symbols": these aren't unique and
-+		 * don't identify functions, so will confuse the profile
-+		 * output: */
-+		if (ehdr.e_machine == EM_AARCH64) {
-+			if (!strcmp(elf_name, "$x") ||
-+			    !strcmp(elf_name, "$d"))
-+				continue;
-+		}
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index 45be944..6a2f663 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -42,19 +42,30 @@ int dso__read_binary_type_filename(const struct dso *dso,
+ 	size_t len;
  
- 		if (runtime_ss->opdsec && sym.st_shndx == runtime_ss->opdidx) {
- 			u32 offset = sym.st_value - syms_ss->opdshdr.sh_addr;
+ 	switch (type) {
+-	case DSO_BINARY_TYPE__DEBUGLINK: {
++	case DSO_BINARY_TYPE__DEBUGLINK:
++	{
+ 		char *debuglink;
+-
+-		strncpy(filename, dso->long_name, size);
+-		debuglink = filename + dso->long_name_len;
+-		while (debuglink != filename && *debuglink != '/')
+-			debuglink--;
+-		if (*debuglink == '/')
+-			debuglink++;
+-		ret = filename__read_debuglink(dso->long_name, debuglink,
+-					       size - (debuglink - filename));
+-		}
++		char *filename_copy;
++
++		filename_copy = malloc(PATH_MAX);
++		if (filename_copy) {
++			len = __symbol__join_symfs(filename, size,
++						   dso->long_name);
++			strncpy(filename_copy, filename, PATH_MAX);
++			debuglink = filename + len;
++			while (debuglink != filename && *debuglink != '/')
++				debuglink--;
++			if (*debuglink == '/')
++				debuglink++;
++			ret = filename__read_debuglink(filename_copy, debuglink,
++						       size - (debuglink -
++							       filename));
++			free(filename_copy);
++		} else
++			ret = -1;
+ 		break;
++	}
++
+ 	case DSO_BINARY_TYPE__BUILD_ID_CACHE:
+ 		/* skip the locally configured cache if a symfs is given */
+ 		if (symbol_conf.symfs[0] ||
 -- 
 1.9.3
 
