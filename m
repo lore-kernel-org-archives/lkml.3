@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823AbbAMF2F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 00:28:05 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44741 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971AbbAMF2D (ORCPT
+	id S1753085AbbAMF3J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 00:29:09 -0500
+Received: from relay1.mentorg.com ([192.94.38.131]:61612 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971AbbAMF3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 00:28:03 -0500
-Date: Tue, 13 Jan 2015 05:28:01 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: namespace: Simplify function commit_tree()
-Message-ID: <20150113052801.GH22149@ZenIV.linux.org.uk>
-References: <1421125686-23765-1-git-send-email-jiang.liu@linux.intel.com>
+	Tue, 13 Jan 2015 00:29:08 -0500
+From: Sanjeev Sharma <sanjeev_sharma@mentor.com>
+To: <davem@davemloft.net>
+CC: <claudiu.manoil@freescale.com>, <peter.senna@gmail.com>,
+        <shemminger@linux-foundation.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
+        Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+Subject: [PATCH v2] gianfar: correct the bad expression while writing bit-pattern
+Date: Tue, 13 Jan 2015 10:58:58 +0530
+Message-ID: <1421126938-16268-1-git-send-email-sanjeev_sharma@mentor.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <54B3D63B.1010608@cogentembedded.com>
+References: <54B3D63B.1010608@cogentembedded.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421125686-23765-1-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 01:08:06PM +0800, Jiang Liu wrote:
-> Simplify function commit_tree() in fs/namespace.c, it also improves code
-> readability.
+This patch correct the bad expression while writing the
+bit-pattern from software's buffer to hardware registers.
 
-Huh?
+Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+---
+Changes in v2:
+  - incorporated review comment as per Sergei. 
 
->  static void commit_tree(struct mount *mnt, struct mount *shadows)
->  {
->  	struct mount *parent = mnt->mnt_parent;
-> -	struct mount *m;
-> -	LIST_HEAD(head);
->  	struct mnt_namespace *n = parent->mnt_ns;
->  
->  	BUG_ON(parent == mnt);
-> -
-> -	list_add_tail(&head, &mnt->mnt_list);
-> -	list_for_each_entry(m, &head, mnt_list)
-> -		m->mnt_ns = n;
-> -
-> -	list_splice(&head, n->list.prev);
-> -
-> +	mnt->mnt_ns = n;
-> +	list_add_tail(&mnt->mnt_list, &n->list);
+ drivers/net/ethernet/freescale/gianfar_ethtool.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-And who will set ->mnt_ns on other mounts reachable via ->mnt_list from mnt?
-Not to mention putting them on n->list...
+diff --git a/drivers/net/ethernet/freescale/gianfar_ethtool.c b/drivers/net/ethernet/freescale/gianfar_ethtool.c
+index 3e1a9c1..347d5ee 100644
+--- a/drivers/net/ethernet/freescale/gianfar_ethtool.c
++++ b/drivers/net/ethernet/freescale/gianfar_ethtool.c
+@@ -1586,7 +1586,7 @@ static int gfar_write_filer_table(struct gfar_private *priv,
+ 		return -EBUSY;
+ 
+ 	/* Fill regular entries */
+-	for (; i < MAX_FILER_IDX - 1 && (tab->fe[i].ctrl | tab->fe[i].ctrl);
++	for (; i < MAX_FILER_IDX - 1 && i < tab->fe[i].ctrl);
+ 	     i++)
+ 		gfar_write_filer(priv, i, tab->fe[i].ctrl, tab->fe[i].prop);
+ 	/* Fill the rest with fall-troughs */
+-- 
+1.7.11.7
 
-What you seem to have missed is that list_add_tail(&head, &mnt->mnt_list)
-is not the same thing as list_add_tail(&mnt->mnt_list, &head).  We are
-not ripping mnt->mnt_list from whatever list it was on and insert it into
-a previously empty one in head.  We take an unanchored cyclic list (all
-elements being some_mnt->mnt_list) and anchor it at head, then go through
-all elements of the original list and move them all at once into the
-end of n->list.
