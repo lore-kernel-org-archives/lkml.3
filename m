@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552AbbAMSfT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 13:35:19 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:39156 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752330AbbAMSfQ (ORCPT
+	id S1753586AbbAMSfX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 13:35:23 -0500
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:37236 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752330AbbAMSfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 13:35:16 -0500
-From: Harini Katakam <harinik@xilinx.com>
-To: wsa@the-dreams.de, mark.rutland@arm.com
-Cc: michal.simek@xilinx.com, soren.brinkmann@xilinx.com,
-        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, harinikatakamlinux@gmail.com,
-        harinik@xilinx.com
-Subject: [PATCH v6] i2c: cadence: Check for errata condition involving master receive
-Date: Wed, 14 Jan 2015 00:04:59 +0530
-Message-Id: <1421174099-19839-1-git-send-email-harinik@xilinx.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 13 Jan 2015 13:35:20 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: An8RAPxjtVRbtBuH/2dsb2JhbABbgwaBKrM+BQEBAQEBAQUBd5c3BAKBG0QBAQEBAX2EOi8jgRo3iDABwXiOO4YFiXQdhBMFjiGJLol/h30igUUBgik9MYJDAQEB
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1 linux-next] fs/affs/super.c: destroy sbi mutex in affs_kill_sb()
+Date: Tue, 13 Jan 2015 19:35:10 +0100
+Message-Id: <1421174110-14397-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cadence I2C controller has the following bugs:
-- completion indication is not given to the driver at the end of
-a read/receive transfer with HOLD bit set.
-- Invalid read transaction are generated on the bus when HW timeout
-condition occurs with HOLD bit set.
+Call mutex_destroy() on superblock mutex in affs_kill_sb()
+otherwise mutex debugging code isn't able to detect that mutex
+is used after being freed. (thanks to Jan Kara for complete definition).
 
-As a result of the above, if a set of messages to be transferred with
-repeated start includes any message following a read message,
-completion is never indicated and timeout occurs.
-Hence a check is implemented to return -EOPNOTSUPP for such sequences.
-
-Signed-off-by: Harini Katakam <harinik@xilinx.com>
-Signed-off-by: Vishnu Motghare <vishnum@xilinx.com>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
+ fs/affs/super.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-v6:
-- Correct if condition - add braces to include both statements.
-- Modify comments and warning message.
-
-v5:
-Make warning grepable in driver.
-
-v4:
-Use single dev_warn and make message grep-able.
-
-v3:
-Add warning in case of unsupported transfer.
-
-v2:
-Dont defeteature repeated start. Just check for unsupported conditions in the
-driver and return error.
-
----
- drivers/i2c/busses/i2c-cadence.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
-
-diff --git a/drivers/i2c/busses/i2c-cadence.c b/drivers/i2c/busses/i2c-cadence.c
-index 5f5d4fa..c7be4fb 100644
---- a/drivers/i2c/busses/i2c-cadence.c
-+++ b/drivers/i2c/busses/i2c-cadence.c
-@@ -541,6 +541,19 @@ static int cdns_i2c_master_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
- 	 * processed with a repeated start.
- 	 */
- 	if (num > 1) {
-+		/*
-+		 * This controller does not give completion interrupt after a
-+		 * master receive message if HOLD bit is set (repeated start),
-+		 * resulting in SW timeout. Hence, if a receive message is
-+		 * followed by any other message, an error is returned
-+		 * indicating that this sequence is not supported.
-+		 */
-+		for (count = 0; count < num-1; count++) {
-+			if (msgs[count].flags & I2C_M_RD) {
-+				dev_warn(adap->dev.parent, "Can't do repeated start after a receive message\n");
-+				return -EOPNOTSUPP;
-+			}
-+		}
- 		id->bus_hold_flag = 1;
- 		reg = cdns_i2c_readreg(CDNS_I2C_CR_OFFSET);
- 		reg |= CDNS_I2C_CR_HOLD;
+diff --git a/fs/affs/super.c b/fs/affs/super.c
+index f754ab6..ee8eca7 100644
+--- a/fs/affs/super.c
++++ b/fs/affs/super.c
+@@ -602,6 +602,7 @@ static void affs_kill_sb(struct super_block *sb)
+ 		affs_free_bitmap(sb);
+ 		affs_brelse(sbi->s_root_bh);
+ 		kfree(sbi->s_prefix);
++		mutex_destroy(&sbi->s_bmlock);
+ 		kfree(sbi);
+ 	}
+ }
 -- 
-1.7.9.5
+2.1.0
 
