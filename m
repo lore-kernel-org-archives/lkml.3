@@ -1,123 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753072AbbAMPZO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 10:25:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37047 "EHLO mx1.redhat.com"
+	id S1752885AbbAMPYR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 10:24:17 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:49542 "EHLO lists.s-osg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753044AbbAMPZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 10:25:10 -0500
-Date: Tue, 13 Jan 2015 16:24:09 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: riel@redhat.com
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
-        tglx@linutronix.de, luto@amacapital.net
-Subject: Re: [RFC PATCH 02/11] x86,fpu: replace fpu_switch_t with a thread
-	flag
-Message-ID: <20150113152409.GA23134@redhat.com>
-References: <1421012793-30106-1-git-send-email-riel@redhat.com> <1421012793-30106-3-git-send-email-riel@redhat.com>
+	id S1751749AbbAMPYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 10:24:15 -0500
+Message-ID: <54B5389E.4060409@osg.samsung.com>
+Date: Tue, 13 Jan 2015 08:24:14 -0700
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421012793-30106-3-git-send-email-riel@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+CC: mpe@ellerman.id.au, benh@kernel.crashing.org, anton@samba.org,
+        mikey@neuling.org
+Subject: Re: [PATCH V2 10/12] selftests, powerpc: Add test for DSCR inheritence
+ across fork & exec
+References: <1421144560-15901-1-git-send-email-khandual@linux.vnet.ibm.com> <1421144560-15901-11-git-send-email-khandual@linux.vnet.ibm.com>
+In-Reply-To: <1421144560-15901-11-git-send-email-khandual@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rik,
+On 01/13/2015 03:22 AM, Anshuman Khandual wrote:
+> This patch adds a test case to verify that the changed DSCR value
+> inside any process would be inherited to it's child across the fork
+> and exec system call.
+> 
+> Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+> ---
+>  tools/testing/selftests/powerpc/dscr/Makefile      |   2 +-
+>  .../powerpc/dscr/dscr_inherit_exec_test.c          | 118 +++++++++++++++++++++
+>  2 files changed, 119 insertions(+), 1 deletion(-)
+>  create mode 100644 tools/testing/selftests/powerpc/dscr/dscr_inherit_exec_test.c
+> 
+> diff --git a/tools/testing/selftests/powerpc/dscr/Makefile b/tools/testing/selftests/powerpc/dscr/Makefile
+> index 81239e2..4e84309 100644
+> --- a/tools/testing/selftests/powerpc/dscr/Makefile
+> +++ b/tools/testing/selftests/powerpc/dscr/Makefile
+> @@ -1,5 +1,5 @@
+>  PROGS := dscr_default_test dscr_explicit_test dscr_user_test	\
+> -	 dscr_inherit_test
+> +	 dscr_inherit_test dscr_inherit_exec_test
+>  
+>  CFLAGS := $(CFLAGS) -lpthread
+>  
+> diff --git a/tools/testing/selftests/powerpc/dscr/dscr_inherit_exec_test.c b/tools/testing/selftests/powerpc/dscr/dscr_inherit_exec_test.c
+> new file mode 100644
+> index 0000000..5ff3849
+> --- /dev/null
+> +++ b/tools/testing/selftests/powerpc/dscr/dscr_inherit_exec_test.c
+> @@ -0,0 +1,118 @@
+> +/*
+> + * POWER Data Stream Control Register (DSCR) fork exec test
+> + *
+> + * This testcase modifies the DSCR using mtspr, forks & execs and
+> + * verifies that the child is using the changed DSCR using mfspr.
+> + *
+> + * When using the privilege state SPR, the instructions such as
+> + * mfspr or mtspr are priviledged and the kernel emulates them
+> + * for us. Instructions using problem state SPR can be exuecuted
+> + * directly without any emulation if the HW supports them. Else
+> + * they also get emulated by the kernel.
+> + *
+> + * Copyright (C) 2012 Anton Blanchard <anton@au.ibm.com>, IBM
+> + * Copyright (C) 2015 Anshuman Khandual <khandual@linux.vnet.ibm.com>, IBM
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; either version
+> + * 2 of the License, or (at your option) any later version.
+> + */
+> +#include "dscr.h"
+> +
+> +static char prog[LEN_MAX];
+> +
+> +static void do_exec(unsigned long parent_dscr)
+> +{
+> +	unsigned long cur_dscr, cur_dscr_usr;
+> +
+> +	cur_dscr = get_dscr();
+> +	cur_dscr_usr = get_dscr_usr();
+> +
+> +	if (cur_dscr != parent_dscr) {
+> +		fprintf(stderr, "Parent DSCR %ld was not inherited "
+> +				"over exec (kernel value)\n", parent_dscr);
+> +		exit(1);
+> +	}
+> +
+> +	if (cur_dscr_usr != parent_dscr) {
+> +		fprintf(stderr, "Parent DSCR %ld was not inherited "
+> +				"over exec (user value)\n", parent_dscr);
+> +		exit(1);
+> +	}
+> +	exit(0);
+> +}
+> +
+> +int test_body(void)
+> +{
+> +	unsigned long i, dscr = 0;
+> +	pid_t pid;
+> +
+> +	for (i = 0; i < COUNT; i++) {
+> +		dscr++;
+> +		if (dscr > DSCR_MAX)
+> +			dscr = 0;
+> +
+> +		if (dscr == get_default_dscr())
+> +			continue;
+> +
+> +		if (i % 2 == 0)
+> +			set_dscr_usr(dscr);
+> +		else
+> +			set_dscr(dscr);
+> +
+> +		/*
+> +		 * XXX: Force a context switch out so that DSCR
+> +		 * current value is copied into the thread struct
+> +		 * which is required for the child to inherit the
+> +		 * changed value.
+> +		 */
+> +		sleep(1);
+> +
+> +		pid = fork();
+> +		if (pid == -1) {
+> +			perror("fork() failed\n");
+> +			exit(1);
+> +		} else if (pid) {
+> +			int status;
+> +
+> +			if (waitpid(pid, &status, 0) == -1) {
+> +				perror("waitpid() failed\n");
+> +				exit(1);
+> +			}
+> +
+> +			if (!WIFEXITED(status)) {
+> +				fprintf(stderr, "Child didn't exit cleanly\n");
+> +				exit(1);
+> +			}
+> +
+> +			if (WEXITSTATUS(status) != 0) {
+> +				fprintf(stderr, "Child didn't exit cleanly\n");
+> +				return 1;
+> +			}
+> +		} else {
+> +			char dscr_str[16];
+> +
+> +			sprintf(dscr_str, "%ld", dscr);
+> +			execlp(prog, prog, "exec", dscr_str, NULL);
+> +			exit(1);
+> +		}
+> +	}
+> +	return 0;
+> +}
+> +
+> +int main(int argc, char *argv[])
+> +{
+> +	if (argc == 3 && !strcmp(argv[1], "exec")) {
+> +		unsigned long parent_dscr;
+> +
+> +		parent_dscr = atoi(argv[2]);
+> +		do_exec(parent_dscr);
+> +	} else if (argc != 1) {
+> +		fprintf(stderr, "Usage: %s\n", argv[0]);
+> +		exit(1);
+> +	}
+> +
+> +	strncpy(prog, argv[0], strlen(argv[0]));
+> +	return test_harness(test_body, "dscr_inherit_exec_test");
+> +}
+> 
 
-I can't review this series, I forgot almost everything I learned about
-this code. The only thing I can recall is that it needs cleanups and
-fixes ;) Just a couple of random questions.
+Could you please add a .gitignore for powerpc targets as we
+discussed earlier. It can be separate patch.
 
-On 01/11, riel@redhat.com wrote:
->
-> +static inline void switch_fpu_prepare(struct task_struct *old, struct task_struct *new, int cpu)
->  {
-> -	fpu_switch_t fpu;
-> -
->  	/*
->  	 * If the task has used the math, pre-load the FPU on xsave processors
->  	 * or if the past 5 consecutive context-switches used math.
->  	 */
-> -	fpu.preload = tsk_used_math(new) && (use_eager_fpu() ||
-> +	bool preload = tsk_used_math(new) && (use_eager_fpu() ||
->  					     new->thread.fpu_counter > 5);
->  	if (__thread_has_fpu(old)) {
->  		if (!__save_init_fpu(old))
-> @@ -433,8 +417,9 @@ static inline fpu_switch_t switch_fpu_prepare(struct task_struct *old, struct ta
->  		old->thread.fpu.has_fpu = 0;	/* But leave fpu_owner_task! */
->
->  		/* Don't change CR0.TS if we just switch! */
-> -		if (fpu.preload) {
-> +		if (preload) {
->  			new->thread.fpu_counter++;
-> +			set_thread_flag(TIF_LOAD_FPU);
->  			__thread_set_has_fpu(new);
->  			prefetch(new->thread.fpu.state);
->  		} else if (!use_eager_fpu())
-> @@ -442,16 +427,19 @@ static inline fpu_switch_t switch_fpu_prepare(struct task_struct *old, struct ta
->  	} else {
->  		old->thread.fpu_counter = 0;
->  		old->thread.fpu.last_cpu = ~0;
-> -		if (fpu.preload) {
-> +		if (preload) {
->  			new->thread.fpu_counter++;
->  			if (!use_eager_fpu() && fpu_lazy_restore(new, cpu))
-> -				fpu.preload = 0;
-> -			else
-> +				/* XXX: is this safe against ptrace??? */
+Also, I would like to see the test results reports using
+kselftest.h - it can be separate patch in the interest of
+getting tests in.
 
-Could you explain your concerns?
+Acked-by: Shuah Khan <shuahkh@osg.samsung.com>
 
-> +				__thread_fpu_begin(new);
+Please take this through powerpc maintainer git.
 
-this looks strange/unnecessary, there is another unconditonal
-__thread_fpu_begin(new) below.
+thanks,
+-- Shuah
 
-OK, the next patch moves it to switch_fpu_finish(), so perhaps this change
-should go into 3/11.
-
-And I am not sure I understand set_thread_flag(TIF_LOAD_FPU). This is called
-before __switch_to() updates kernel_stack, so it seems that the old thread
-gets this flag set, not new?
-
-Even if this is correct, perhaps set_tsk_thread_flag(new) will look better?
-
-The same for switch_fpu_finish(). I guess this should actually work after
-this patch, because switch_fpu_finish() is called before
-this_cpu_write(kernel_stack) too and thus both prepare/finish will use the
-same thread_info, but this looks confusing at least.
-
-> --- a/arch/x86/include/asm/thread_info.h
-> +++ b/arch/x86/include/asm/thread_info.h
-> @@ -91,6 +91,7 @@ struct thread_info {
->  #define TIF_SYSCALL_TRACEPOINT	28	/* syscall tracepoint instrumentation */
->  #define TIF_ADDR32		29	/* 32-bit address space on 64 bits */
->  #define TIF_X32			30	/* 32-bit native x86-64 binary */
-> +#define TIF_LOAD_FPU		31	/* load FPU on return to userspace */
-
-Well, the comment is wrong after this patch, but I see 4/11...
-
->  #define _TIF_SYSCALL_TRACE	(1 << TIF_SYSCALL_TRACE)
->  #define _TIF_NOTIFY_RESUME	(1 << TIF_NOTIFY_RESUME)
-> @@ -115,6 +116,7 @@ struct thread_info {
->  #define _TIF_SYSCALL_TRACEPOINT	(1 << TIF_SYSCALL_TRACEPOINT)
->  #define _TIF_ADDR32		(1 << TIF_ADDR32)
->  #define _TIF_X32		(1 << TIF_X32)
-> +#define _TIF_LOAD_FPU		(1 << TIF_LOAD_FPU)
->
->  /* work to do in syscall_trace_enter() */
->  #define _TIF_WORK_SYSCALL_ENTRY	\
-> @@ -141,7 +143,7 @@ struct thread_info {
->  /* Only used for 64 bit */
->  #define _TIF_DO_NOTIFY_MASK						\
->  	(_TIF_SIGPENDING | _TIF_MCE_NOTIFY | _TIF_NOTIFY_RESUME |	\
-> -	 _TIF_USER_RETURN_NOTIFY | _TIF_UPROBE)
-> +	 _TIF_USER_RETURN_NOTIFY | _TIF_UPROBE | _TIF_LOAD_FPU)
-
-This too. I mean, this change has no effect until 4/11.
-
-Oleg.
-
+-- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Open Source Innovation Group
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
