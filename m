@@ -1,300 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318AbbAMLOv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 06:14:51 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:55482 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751844AbbAMLOr (ORCPT
+	id S1751949AbbAMLRj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 06:17:39 -0500
+Received: from www.linutronix.de ([62.245.132.108]:44067 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000AbbAMLRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 06:14:47 -0500
-From: Kiran Raparthy <kiran.kumar@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Mike Chan <mike@android.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>,
-        Kiran Raparthy <kiran.kumar@linaro.org>
-Subject: [RFC 2/2] net: activity_stats: Add statistics for network transmission activity
-Date: Tue, 13 Jan 2015 16:44:02 +0530
-Message-Id: <1421147642-28360-2-git-send-email-kiran.kumar@linaro.org>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1421147642-28360-1-git-send-email-kiran.kumar@linaro.org>
-References: <1421147642-28360-1-git-send-email-kiran.kumar@linaro.org>
+	Tue, 13 Jan 2015 06:17:38 -0500
+Date: Tue, 13 Jan 2015 12:17:17 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Calvin Owens <calvinowens@fb.com>
+cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, kernel-team@fb.com
+Subject: Re: [PATCH v2] ksoftirqd: Enable IRQs and call cond_resched() before
+ poking RCU
+In-Reply-To: <20150108214644.GC27996@mail.thefacebook.com>
+Message-ID: <alpine.DEB.2.11.1501131215380.5526@nanos>
+References: <1420594659-16996-1-git-send-email-calvinowens@fb.com> <20150107014906.GA27996@mail.thefacebook.com> <20150107021926.GT5280@linux.vnet.ibm.com> <20150107165223.GA21555@linux.vnet.ibm.com> <20150108043329.GB27996@mail.thefacebook.com>
+ <20150108045306.GJ5280@linux.vnet.ibm.com> <20150108214644.GC27996@mail.thefacebook.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Chan <mike@android.com>
+On Thu, 8 Jan 2015, Calvin Owens wrote:
+> On Wednesday 01/07 at 20:53 -0800, Paul E. McKenney wrote:
+> > > Should this go to stable as well? It is technically a regression, albeit
+> > > a rather long-standing one.
+> > 
+> > Your original patch could go into stable, but my updated version depends
+> > on functionality not present before 3.20.
+> 
+> Right. I'll wait until 3.20-rc1, and then I'll send the original to
+> stable with a reference to the commit.
 
-net: activity_stats: Add statistics for network transmission activity
+We better do that in two steps:
 
-When enabled, tracks the frequency of network transmissions
-(inbound and outbound) and buckets them accordingly.
-Buckets are determined by time between network activity.
+   1) The original patch tagged for stable
+   2) Pauls version as a delta patch
 
-Each bucket represents the number of network transmisions that were
-N sec or longer apart. Where N is defined as 1 << bucket index.
+Can one of you please provide such a series?
 
-This network pattern tracking is particularly useful for wireless
-networks (ie: 3G) where batching network activity closely together
-is more power efficient than far apart.
+Thanks,
 
-New file: /proc/net/stat/activity
-
-output:
-
-Min Bucket(sec) Count
-              1 7
-              2 0
-              4 1
-              8 0
-             16 0
-             32 2
-             64 1
-            128 0
-
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Cc: Android Kernel Team <kernel-team@android.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Sumit Semwal <sumit.semwal@linaro.org>
-Cc: Arve Hjønnevåg <arve@android.com>
-Signed-off-by: Mike Chan <mike@android.com>
-[Kiran: Added context to commit message.
-included build fix from Arve,continued to use uid_t
-but used covnersion from kuid_t where ever necessary]
-Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
----
- drivers/misc/uid_stat.c      |   3 ++
- include/net/activity_stats.h |  25 ++++++++++
- net/Kconfig                  |   8 +++
- net/Makefile                 |   1 +
- net/activity_stats.c         | 116 +++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 153 insertions(+)
- create mode 100644 include/net/activity_stats.h
- create mode 100644 net/activity_stats.c
-
-diff --git a/drivers/misc/uid_stat.c b/drivers/misc/uid_stat.c
-index aaaa406..63065e2 100644
---- a/drivers/misc/uid_stat.c
-+++ b/drivers/misc/uid_stat.c
-@@ -24,6 +24,7 @@
- #include <linux/spinlock.h>
- #include <linux/stat.h>
- #include <linux/uid_stat.h>
-+#include <net/activity_stats.h>
- 
- static DEFINE_SPINLOCK(uid_lock);
- static LIST_HEAD(uid_list);
-@@ -126,6 +127,7 @@ int uid_stat_tcp_snd(kuid_t uid, int size)
- {
- 	struct uid_stat *entry;
- 
-+	activity_stats_update();
- 	entry = find_or_create_uid_stat(uid);
- 	if (!entry)
- 		return -1;
-@@ -137,6 +139,7 @@ int uid_stat_tcp_rcv(kuid_t uid, int size)
- {
- 	struct uid_stat *entry;
- 
-+	activity_stats_update();
- 	entry = find_or_create_uid_stat(uid);
- 	if (!entry)
- 		return -1;
-diff --git a/include/net/activity_stats.h b/include/net/activity_stats.h
-new file mode 100644
-index 0000000..10e4c15
---- /dev/null
-+++ b/include/net/activity_stats.h
-@@ -0,0 +1,25 @@
-+/*
-+ * Copyright (C) 2010 Google, Inc.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * Author: Mike Chan (mike@android.com)
-+ */
-+
-+#ifndef __activity_stats_h
-+#define __activity_stats_h
-+
-+#ifdef CONFIG_NET_ACTIVITY_STATS
-+void activity_stats_update(void);
-+#else
-+#define activity_stats_update(void) {}
-+#endif
-+
-+#endif /* _NET_ACTIVITY_STATS_H */
-diff --git a/net/Kconfig b/net/Kconfig
-index ff9ffc1..3159361 100644
---- a/net/Kconfig
-+++ b/net/Kconfig
-@@ -83,6 +83,14 @@ source "net/netlabel/Kconfig"
- 
- endif # if INET
- 
-+config NET_ACTIVITY_STATS
-+	bool "Network activity statistics tracking"
-+	default y
-+	help
-+	 Network activity statistics are useful for tracking wireless
-+	 modem activity on 2G, 3G, 4G wireless networks. Counts number of
-+	 transmissions and groups them in specified time buckets.
-+
- config NETWORK_SECMARK
- 	bool "Security Marking"
- 	help
-diff --git a/net/Makefile b/net/Makefile
-index 95fc694..d81a969 100644
---- a/net/Makefile
-+++ b/net/Makefile
-@@ -73,6 +73,7 @@ obj-$(CONFIG_OPENVSWITCH)	+= openvswitch/
- obj-$(CONFIG_VSOCKETS)	+= vmw_vsock/
- obj-$(CONFIG_NET_MPLS_GSO)	+= mpls/
- obj-$(CONFIG_HSR)		+= hsr/
-+obj-$(CONFIG_NET_ACTIVITY_STATS)		+= activity_stats.o
- ifneq ($(CONFIG_NET_SWITCHDEV),)
- obj-y				+= switchdev/
- endif
-diff --git a/net/activity_stats.c b/net/activity_stats.c
-new file mode 100644
-index 0000000..cf0a09d
---- /dev/null
-+++ b/net/activity_stats.c
-@@ -0,0 +1,116 @@
-+/* net/activity_stats.c
-+ *
-+ * Copyright (C) 2010 Google, Inc.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * Author: Mike Chan (mike@android.com)
-+ */
-+
-+#include <linux/proc_fs.h>
-+#include <linux/seq_file.h>
-+#include <linux/suspend.h>
-+#include <net/net_namespace.h>
-+
-+/* Track transmission rates in buckets (power of 2).
-+ * 1,2,4,8...512 seconds.
-+ *
-+ * Buckets represent the count of network transmissions at least
-+ * N seconds apart, where N is 1 << bucket index.
-+ */
-+#define BUCKET_MAX 10
-+
-+/* Track network activity frequency */
-+static unsigned long activity_stats[BUCKET_MAX];
-+static ktime_t last_transmit;
-+static ktime_t suspend_time;
-+static DEFINE_SPINLOCK(activity_lock);
-+
-+void activity_stats_update(void)
-+{
-+	int i;
-+	unsigned long flags;
-+	ktime_t now;
-+	s64 delta;
-+
-+	spin_lock_irqsave(&activity_lock, flags);
-+	now = ktime_get();
-+	delta = ktime_to_ns(ktime_sub(now, last_transmit));
-+
-+	for (i = BUCKET_MAX - 1; i >= 0; i--) {
-+		/* Check if the time delta between network activity is within
-+		 * the minimum bucket range.
-+		 */
-+		if (delta < (1000000000ULL << i))
-+			continue;
-+
-+		activity_stats[i]++;
-+		last_transmit = now;
-+		break;
-+	}
-+	spin_unlock_irqrestore(&activity_lock, flags);
-+}
-+
-+static int activity_stats_show(struct seq_file *m, void *v)
-+{
-+	int i;
-+	int ret;
-+
-+	seq_printf(m, "Min Bucket(sec) Count\n");
-+
-+	for (i = 0; i < BUCKET_MAX; i++) {
-+		ret = seq_printf(m, "%15d %lu\n", 1 << i, activity_stats[i]);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int activity_stats_notifier(struct notifier_block *nb,
-+				   unsigned long event, void *dummy)
-+{
-+	switch (event) {
-+	case PM_SUSPEND_PREPARE:
-+		suspend_time = ktime_get_real();
-+		break;
-+
-+	case PM_POST_SUSPEND:
-+		suspend_time = ktime_sub(ktime_get_real(), suspend_time);
-+		last_transmit = ktime_sub(last_transmit, suspend_time);
-+	}
-+
-+	return 0;
-+}
-+
-+static int activity_stats_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, activity_stats_show, PDE_DATA(inode));
-+}
-+
-+static const struct file_operations activity_stats_fops = {
-+	.open		= activity_stats_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= seq_release,
-+};
-+
-+static struct notifier_block activity_stats_notifier_block = {
-+	.notifier_call = activity_stats_notifier,
-+};
-+
-+static int  __init activity_stats_init(void)
-+{
-+	proc_create("activity", S_IRUGO,
-+		    init_net.proc_net_stat, &activity_stats_fops);
-+	return register_pm_notifier(&activity_stats_notifier_block);
-+}
-+
-+subsys_initcall(activity_stats_init);
--- 
-1.8.2.1
-
+	tglx
