@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751346AbbAMFXY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 00:23:24 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:52422 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbbAMFXX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 00:23:23 -0500
-Date: Tue, 13 Jan 2015 10:53:12 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Emrys Bayliss <emrys@paradise.net.nz>
-Cc: forest@alittletooquiet.net, gregkh@linuxfoundation.org, tvboxspy@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Staging: vt6656: Checkpatch fix: else after break or
- return
-Message-ID: <20150113052312.GA3497@sudip-PC>
-References: <1421081496-15772-1-git-send-email-emrys@paradise.net.nz>
+	id S1752088AbbAMFY0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 00:24:26 -0500
+Received: from smtp.mei.co.jp ([133.183.100.20]:56432 "EHLO smtp.mei.co.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751065AbbAMFYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 00:24:25 -0500
+Date: Tue, 13 Jan 2015 14:24:04 +0900
+From: Masahiro Yamada <yamada.m@jp.panasonic.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH] kbuild: fix scripts/headers.sh to see the correct Kbuild path
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>
+In-Reply-To: <1417589535-15867-1-git-send-email-yamada.m@jp.panasonic.com>
+References: <1417589535-15867-1-git-send-email-yamada.m@jp.panasonic.com>
+X-BkSecure-Plugin: BkSecure.dll Ver 1, 2, 7, 0
+Message-Id: <20150113142404.CACA.AA925319@jp.panasonic.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421081496-15772-1-git-send-email-emrys@paradise.net.nz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.64.06 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 03:51:36AM +1100, Emrys Bayliss wrote:
-> This patch fixes the following checkpatch.pl error:
-> rxtx.c:588: WARNING: else is not generally useful after a break or return
+Hi Sam,
 
-was the checkpatch error solved with this change? have you checked?
+IIRC, you mentioned scripts/headers.sh is pointless
+and should be removed from the code base.
 
-and the checkpatch is giving error at line 558 and not at 588.
+If so, this patch of mine has no point.
+Could you consider removing scripts/headers.sh ?
 
+
+Best Regards
+Masahiro Yamada
+
+
+
+On Wed,  3 Dec 2014 15:52:15 +0900
+Masahiro Yamada <yamada.m@jp.panasonic.com> wrote:
+
+> The exported headers were moved to "uapi" directories.
+> We should check the existence of arch/*/include/uapi/asm/Kbuild.
 > 
-> Signed-off-by: Emrys Bayliss <emrys@paradise.net.nz>
+> Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
 > ---
->  drivers/staging/vt6656/rxtx.c | 2 --
->  1 file changed, 2 deletions(-)
 > 
-> diff --git a/drivers/staging/vt6656/rxtx.c b/drivers/staging/vt6656/rxtx.c
-> index ea5140a..0cce140 100644
-> --- a/drivers/staging/vt6656/rxtx.c
-> +++ b/drivers/staging/vt6656/rxtx.c
-> @@ -574,8 +574,6 @@ static u16 vnt_fill_cts_head(struct vnt_usb_send_context *tx_context,
+>  scripts/headers.sh | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/scripts/headers.sh b/scripts/headers.sh
+> index 95ece06..b164336 100755
+> --- a/scripts/headers.sh
+> +++ b/scripts/headers.sh
+> @@ -6,7 +6,7 @@ set -e
 >  
->  		return vnt_rxtx_datahead_g(tx_context, &buf->data_head);
->  	}
-> -
-> -	return 0;
-
-any reason why this return was removed ?
-
-sudip
-
->  }
->  
->  static u16 vnt_rxtx_rts(struct vnt_usb_send_context *tx_context,
+>  do_command()
+>  {
+> -	if [ -f ${srctree}/arch/$2/include/asm/Kbuild ]; then
+> +	if [ -f ${srctree}/arch/$2/include/uapi/asm/Kbuild ]; then
+>  		make ARCH=$2 KBUILD_HEADERS=$1 headers_$1
+>  	else
+>  		printf "Ignoring arch: %s\n" ${arch}
 > -- 
-> 2.2.1
+> 1.9.1
 > 
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+
