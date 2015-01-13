@@ -1,80 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688AbbAMPeX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 10:34:23 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:52249 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190AbbAMPeV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 10:34:21 -0500
-Message-ID: <54B53AF5.2010303@hitachi.com>
-Date: Wed, 14 Jan 2015 00:34:13 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1752659AbbAMPgX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 10:36:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46061 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751569AbbAMPgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 10:36:21 -0500
+Date: Tue, 13 Jan 2015 10:36:09 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Calvin Owens <calvinowens@fb.com>
+Cc: Eric Paris <eparis@redhat.com>, ebiederm@xmission.com, paul@paul-moore.com,
+        linux-kernel@vger.kernel.org, kernel-team@fb.com,
+        stable@vger.kernel.org, linux-audit@redhat.com
+Subject: Re: [PATCH][RESEND 2] Revert "AUDIT: Allow login in non-init
+ namespaces"
+Message-ID: <20150113153443.GH512@madcap2.tricolour.ca>
+References: <1415148371-11742-1-git-send-email-calvinowens@fb.com>
+ <20141118203221.GA1687992@mail.thefacebook.com>
+ <20150109014448.GF27996@mail.thefacebook.com>
 MIME-Version: 1.0
-To: Wang Nan <wangnan0@huawei.com>
-Cc: linux@arm.linux.org.uk, mingo@redhat.com, x86@kernel.org,
-        anil.s.keshavamurthy@intel.com, davem@davemloft.net, ananth@in.ibm.com,
-        dave.long@linaro.org, tixy@linaro.org, lizefan@huawei.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 01/11] ARM: kprobes: directly modify code if kprobe
- is not initialized.
-References: <1420616086-42692-1-git-send-email-wangnan0@huawei.com> <1420616124-42765-1-git-send-email-wangnan0@huawei.com>
-In-Reply-To: <1420616124-42765-1-git-send-email-wangnan0@huawei.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150109014448.GF27996@mail.thefacebook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2015/01/07 16:35), Wang Nan wrote:
-> If kprobe is optimized before kprobe is initialized, there should
-> be only one core, the probed instruction is not armed with breakpoint,
-> so simply patch text is okay.
-
-This patch looks very hacky. If kprobes is not initialized, why anyone
-can optimize kprobes? I think you must introduce early kprobes init
-routine and set init flag at that point.
-
-Thank you,
-
+On 15/01/08, Calvin Owens wrote:
+> This reverts 543bc6a1a987 "AUDIT: Allow login in non-init namespaces".
 > 
-> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+> This commit incorrectly assumes that libpam treats -ECONNREFUSED as
+> an indicator that audit is disabled, and -EPERM or any other error
+> as a fatal error that prevents the login from continuing.
+
+Which netlink audit message type is actually failing?
+Is it AUDIT_TTY_{G,S}ET or is it an AUDIT_USER_* message?  The former
+requires CAP_AUDIT_CONTROL and both PID and user init namespace (for
+now) and the latter requires CAP_AUDIT_WRITE and only user init
+namespace.
+
+> The opposite is in fact true: -EPERM allows the login to continue,
+> and -ECONNREFUSED causes it to refuse the login. This behavior has
+> been unchanged in upstream linux-pam since at least 2008.
+
+So this sounds to me like standard PAM usage is inverted from PAM usage
+in containers.
+
+> Reverting this change allows libpam to again work as expected in
+> non-init user namespaces.
+
+However, that will break other things...
+
+Do you have test cases to show this?
+
+Currently:
+If audit is not available, return ECONNREFUSED. (netlink_unicast_kernel)
+
+If not in init user namespace, return ECONNREFUSED. (audit_netlink_ok)
+
+If control message and not init PID ns, return EPERM (audit_netlink_ok)
+
+If control message and not CAP_AUDIT_CONTROL, return EPERM (audit_netlink_ok)
+
+If user log message and not CAP_AUDIT_WRITE, return EPERM (audit_netlink_ok)
+
+If unrecognized message, return EINVAL (audit_netlink_ok)
+
+
+Listening in non-init net namespaces caused EPERM to be returned by
+audit instead of ECONNREFUSED by netlink due to lack of perms when the
+sending process didn't have CAP_AUDIT_WRITE.  Fixed in docker bz1119849
+	http://blog.oddbit.com/2014/07/21/tracking-down-a-kernel-bug-wit/
+
+
+> Signed-off-by: Calvin Owens <calvinowens@fb.com>
+> Cc: stable@vger.kernel.org
 > ---
->  arch/arm/probes/kprobes/opt-arm.c | 11 ++++++++++-
->  1 file changed, 10 insertions(+), 1 deletion(-)
+> Relevant code in linux-pam:
+> https://git.fedorahosted.org/cgit/linux-pam.git/tree/libpam/pam_audit.c#n56
+
+This code only checks for an error return of -EPERM when the userid is
+non-root.  Is login running as root, or has it already forked and is
+running as an unprivileged user at that point?  Audit doesn't care about
+the UID even though many equate root (superuser) with full capabilities.
+Audit only looks at capabilities and namespaces.  Is this relevant to PAM?
+
+>  kernel/audit.c | 12 +-----------
+>  1 file changed, 1 insertion(+), 11 deletions(-)
 > 
-> diff --git a/arch/arm/probes/kprobes/opt-arm.c b/arch/arm/probes/kprobes/opt-arm.c
-> index 15b37c0..a021474 100644
-> --- a/arch/arm/probes/kprobes/opt-arm.c
-> +++ b/arch/arm/probes/kprobes/opt-arm.c
-> @@ -325,8 +325,17 @@ void __kprobes arch_optimize_kprobes(struct list_head *oplist)
->  		 * Similar to __arch_disarm_kprobe, operations which
->  		 * removing breakpoints must be wrapped by stop_machine
->  		 * to avoid racing.
-> +		 *
-> +		 * If this function is called before kprobes initialized,
-> +		 * the kprobe should be an early kprobe, the instruction
-> +		 * is not armed with breakpoint. There should be only
-> +		 * one core now, so directly __patch_text is enough.
->  		 */
-> -		kprobes_remove_breakpoint(op->kp.addr, insn);
-> +		if (unlikely(!kprobes_initialized)) {
-> +			BUG_ON(!(op->kp.flags & KPROBE_FLAG_EARLY));
-> +			__patch_text(op->kp.addr, insn);
-> +		} else
-> +			kprobes_remove_breakpoint(op->kp.addr, insn);
+> diff --git a/kernel/audit.c b/kernel/audit.c
+> index 80983df..656e8ce 100644
+> --- a/kernel/audit.c
+> +++ b/kernel/audit.c
+> @@ -640,18 +640,8 @@ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
+>  	int err = 0;
 >  
->  		list_del_init(&op->list);
->  	}
-> 
+>  	/* Only support initial user namespace for now. */
+> -	/*
+> -	 * We return ECONNREFUSED because it tricks userspace into thinking
+> -	 * that audit was not configured into the kernel.  Lots of users
+> -	 * configure their PAM stack (because that's what the distro does)
+> -	 * to reject login if unable to send messages to audit.  If we return
+> -	 * ECONNREFUSED the PAM stack thinks the kernel does not have audit
+> -	 * configured in and will let login proceed.  If we return EPERM
+> -	 * userspace will reject all logins.  This should be removed when we
+> -	 * support non init namespaces!!
+> -	 */
+>  	if (current_user_ns() != &init_user_ns)
+> -		return -ECONNREFUSED;
+> +		return -EPERM;
+>  
+>  	switch (msg_type) {
+>  	case AUDIT_LIST:
 
+- RGB
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
