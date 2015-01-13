@@ -1,83 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524AbbAMRcT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 12:32:19 -0500
-Received: from www.linutronix.de ([62.245.132.108]:46285 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976AbbAMRcS (ORCPT
+	id S1752469AbbAMRfn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 12:35:43 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:43126 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318AbbAMRfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 12:32:18 -0500
-Date: Tue, 13 Jan 2015 18:31:56 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [RFC PATCH] irqchip: add dumb demultiplexer implementation
-In-Reply-To: <20150113180017.66efeda7@bbrezillon>
-Message-ID: <alpine.DEB.2.11.1501131831270.5526@nanos>
-References: <alpine.DEB.2.11.1412162125000.17382@nanos> <1420725159-20720-1-git-send-email-boris.brezillon@free-electrons.com> <alpine.DEB.2.11.1501131117120.17382@nanos> <20150113180017.66efeda7@bbrezillon>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+	Tue, 13 Jan 2015 12:35:41 -0500
+From: Eric Auger <eric.auger@linaro.org>
+To: eric.auger@st.com, eric.auger@linaro.org, christoffer.dall@linaro.org,
+        marc.zyngier@arm.com, andre.przywara@arm.com,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, alex.williamson@redhat.com, agraf@suse.de,
+        joel.schopp@amd.com, kim.phillips@freescale.com, paulus@samba.org,
+        gleb@kernel.org, pbonzini@redhat.com, borntraeger@de.ibm.com,
+        cornelia.huck@de.ibm.com
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
+        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        john.liuli@huawei.com, ming.lei@canonical.com, feng.wu@intel.com,
+        b.reynal@virtualopensystems.com
+Subject: [PATCH v6 0/4] irqfd support for arm/arm64
+Date: Tue, 13 Jan 2015 18:33:36 +0100
+Message-Id: <1421170420-30617-1-git-send-email-eric.auger@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jan 2015, Boris Brezillon wrote:
-> On Tue, 13 Jan 2015 11:38:14 +0100 (CET)
-> Thomas Gleixner <tglx@linutronix.de> wrote:
-> > 
-> > > +/**
-> > > + *	handle_dumb_demux_irq - Dumb demuxer irq handle function.
-> > > + *	@irq:	the interrupt number
-> > > + *	@desc:	the interrupt description structure for this irq
-> > > + *
-> > > + *	Dumb demux interrupts are sent from a demultiplexing interrupt handler
-> > > + *	which is not able to decide which child interrupt interrupt handler
-> > > + *	should be called.
-> > > + *
-> > > + *	Note: The caller is expected to handle the ack, clear, mask and
-> > > + *	unmask issues if necessary.
-> > > + */
-> > > +irqreturn_t
-> > > +handle_dumb_demux_irq(unsigned int irq, struct irq_desc *desc)
-> > > +{
-> > > +	irqreturn_t retval = IRQ_NONE;
-> > > +
-> > > +	raw_spin_lock(&desc->lock);
-> > > +
-> > > +	if (!irq_may_run(desc))
-> > > +		goto out_unlock;
-> > > +
-> > > +	desc->istate &= ~(IRQS_REPLAY | IRQS_WAITING);
-> > > +	kstat_incr_irqs_this_cpu(irq, desc);
-> > > +
-> > > +	if (unlikely(!desc->action || irqd_irq_disabled(&desc->irq_data))) {
-> > > +		desc->istate |= IRQS_PENDING;
-> > > +		goto out_unlock;
-> > > +	}
-> > > +
-> > > +	retval = handle_irq_event_no_spurious_check(desc);
-> > > +
-> > > +out_unlock:
-> > > +	raw_spin_unlock(&desc->lock);
-> > > +
-> > > +	return retval;
-> > > +}
-> > > +EXPORT_SYMBOL_GPL(handle_dumb_demux_irq);
-> > 
-> > This should go into the new file as well, so it gets compiled out when
-> > not enabled.
-> 
-> Actually, I can't move that function out of kernel/irq/chip.c because
-> it calls irq_may_run which is statically defined in this file.
-> Should I export this function or just enclose it in a
-> #ifdef DUMB_IRQ_DEMUX section ?
+This patch series enables irqfd on arm and arm64.
 
-Missed that. Make it conditional then.
+Irqfd framework enables to inject a virtual IRQ into a guest upon an
+eventfd trigger. User-side uses KVM_IRQFD VM ioctl to provide KVM with
+a kvm_irqfd struct that associates a VM, an eventfd, a virtual IRQ number
+(aka. the gsi). When an actor signals the eventfd (typically a VFIO
+platform driver), the kvm irqfd subsystem injects the gsi into the VM.
+
+Resamplefd also is supported for level sensitive interrupts, ie. the
+user can provide another eventfd that is triggered when the completion
+of the virtual IRQ (gsi) is detected by the GIC.
+
+The gsi must correspond to a shared peripheral interrupt (SPI), ie the
+GIC interrupt ID is gsi + 32.
+
+The rationale behind not supporting PPI irqfd injection is that
+any device using a PPI would be a private-to-the-CPU device (timer for
+instance), so its state would have to be context-switched along with the
+VCPU and would require in-kernel wiring anyhow. It is not a relevant use
+case for irqfds.
+
+This patch enables CONFIG_HAVE_KVM_EVENTFD and CONFIG_HAVE_KVM_IRQFD.
+
+No IRQ routing table is used, enabling to remove CONFIG_HAVE_KVM_IRQCHIP
+
+The ARM virtual interrupt controller, the VGIC, is dynamically
+instantiated. The user-space may attempt to assign an irqfd before
+the virtual interrupt controller is ready. For that reason a
+check is added in the generic irqfd code to test whether the virtual
+interrupt controller is ready.
+
+This work was tested with Calxeda Midway xgmac main interrupt with
+qemu-system-arm and QEMU VFIO platform device. Also irqfd was proven
+functional on several vhost-net prototypes.
+
+Available on ssh://git.linaro.org/people/eric.auger/linux.git
+branch irqfd_v6_integrated_official_release
+
+v5 -> v6:
+- take into account Christoffer's comments:
+  - rename macro and function enabling to check the state of virtual
+    interrupt controller (kvm_arch_intc_initialized)
+  - kvm_arch_intc_initialized is declared in kvm_host.h whatever the
+    archi support.
+  - squash v5 patch files 3 & 4
+  - KVM_CAP_IRQFD support depends on vgic_present
+  - add Christoffer's Reviewed-by on last patch file
+
+v4 -> v5:
+- add the capability to check whether vgic is initialized when
+  assigning an irqfd.  objective is to avoid injecting IRQ before
+  this vgic is ready: this corresponds to new patch files 2, 3, 4.
+- do not specifically handle early virtual IRQ injections in
+  kvm_set_irq.  In case of injection when vgic is not yet ready,
+  simply return an error.  User-space now has means to force vgic
+  init and get notified if irqfd assign takes place too early.
+- squash [PATCH v4 2/3] KVM: arm: add irqfd support and
+         [PATCH v4 3/3] KVM: arm64: add irqfd support
+- add Acked-by's in KVM: arm/arm64: unset CONFIG_HAVE_KVM_IRQCHIP
+- some comment rewording in vgic
+
+v3 -> v4:
+- rebase on 3.18rc5
+- vgic dynamic instantiation brought new challenges:
+  handling of irqfd injection when vgic is not ready
+- unset of CONFIG_HAVE_KVM_IRQCHIP in a separate patch
+- add arm64 enable
+- vgic.c style modifications according to Christoffer comments
+
+v2 -> v3:
+- removal of irq.h from eventfd.c put in a separate patch to increase
+  visibility
+- properly expose KVM_CAP_IRQFD capability in arm.c
+- remove CONFIG_HAVE_KVM_IRQCHIP meaningfull only if irq_comm.c is used
+
+v1 -> v2:
+- rebase on 3.17rc1
+- move of the dist unlock in process_maintenance
+- remove of dist lock in __kvm_vgic_sync_hwstate
+- rewording of the commit message (add resamplefd reference)
+- remove irq.h
+
+
+Eric Auger (4):
+  KVM: arm/arm64: unset CONFIG_HAVE_KVM_IRQCHIP
+  KVM: introduce kvm_arch_intc_initialized
+  KVM: arm/arm64: implement kvm_arch_intc_initialized and use it in
+    irqfd
+  KVM: arm/arm64: add irqfd support
+
+ Documentation/virtual/kvm/api.txt |  6 +++-
+ arch/arm/include/asm/kvm_host.h   |  2 ++
+ arch/arm/include/uapi/asm/kvm.h   |  3 ++
+ arch/arm/kvm/Kconfig              |  4 +--
+ arch/arm/kvm/Makefile             |  2 +-
+ arch/arm/kvm/arm.c                | 10 +++++++
+ arch/arm64/include/asm/kvm_host.h |  2 ++
+ arch/arm64/include/uapi/asm/kvm.h |  3 ++
+ arch/arm64/kvm/Kconfig            |  3 +-
+ arch/arm64/kvm/Makefile           |  2 +-
+ include/linux/kvm_host.h          | 14 +++++++++
+ virt/kvm/arm/vgic.c               | 63 ++++++++++++++++++++++++++++++++++++---
+ virt/kvm/eventfd.c                |  3 ++
+ 13 files changed, 107 insertions(+), 10 deletions(-)
+
+-- 
+1.9.1
+
