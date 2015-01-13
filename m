@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593AbbAMQXl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 11:23:41 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:58192 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752665AbbAMQXj (ORCPT
+	id S1753444AbbAMQXO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 11:23:14 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:38214 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752614AbbAMQXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 11:23:39 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Barry Song <21cnbao@gmail.com>, Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Yanchang Li <yl22@csr.com>, LKML <linux-kernel@vger.kernel.org>,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
-        Barry Song <Baohua.Song@csr.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] clocksource: sirf: remove unused variable
-Date: Tue, 13 Jan 2015 17:22:55 +0100
-Message-ID: <8635006.m811OQopQd@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAGsJ_4xgF5y9GQ2roh1MYSrvm+_n+fyxsUiVCp4gm+igTbdWdQ@mail.gmail.com>
-References: <1599190.ZYSE4SrQSK@wuerfel> <54B52B39.1000607@linaro.org> <CAGsJ_4xgF5y9GQ2roh1MYSrvm+_n+fyxsUiVCp4gm+igTbdWdQ@mail.gmail.com>
+	Tue, 13 Jan 2015 11:23:13 -0500
+Date: Tue, 13 Jan 2015 08:23:07 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>, Zach Brown <zab@zabbo.net>,
+        Christoph Hellwig <hch@infradead.org>,
+        Maxim Patlasov <mpatlasov@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: Re: [PATCH v2 0/4] block & aio: improve loop with kernel aio
+Message-ID: <20150113162307.GA21338@infradead.org>
+References: <1421163888-21452-1-git-send-email-ming.lei@canonical.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:Y+J9MT2aUPSXmGyyr+Xe4KQo7l3UQn3Tp0jcwLHWwmyZRCmfxko
- FLVFiccV5Im9Begp8cPkY863+GMUHBUks6cdLzf9EZEK5tC+Ql2+YRARyZ2AN7XH3WhFZSD
- IVdB28g1BRRRHUHW5QV4PRUL3sTfMigsPUCYQ9hoV8MRsrLpkixWNEN7F1pjjX65879nXM6
- 8Vypiv+0RA7QdOfvqQxxw==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421163888-21452-1-git-send-email-ming.lei@canonical.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 13 January 2015 23:24:24 Barry Song wrote:
-> 
-> yes, arnd. i also asked Daniel to apply "clocksource: marco: Rename
-> marco to atlas7" rebased on this fix here:
-> https://git.linaro.org/people/daniel.lezcano/linux.git/commit/81428bbe1d8a073bb3741678ef1d3c1016119c77
+On Tue, Jan 13, 2015 at 11:44:44PM +0800, Ming Lei wrote:
+> Follows benefits from using kernel aio in loop:
+> 	- avoid double cache, and memory usage decreased a lot
+> 	- system load gets much decreased
 
-Ok
- 
-> so this one is excluded from my pull request for atlas7. a
-> pull-request from arm-soc might cause merge conflicts?
+This seems to conflate two changes:
 
-I was just doing build-tests on linux-next today and submitted patches
-for each new warning or error I saw. Nothing to worry about as it's already
-fixed and I'm dropping my version as soon as the other fix makes it into
-next.
+ 1) use direct I/O
+ 2) use aio (require 1)
 
-	Arnd
+what numbers do you get when just using direct I/O?
