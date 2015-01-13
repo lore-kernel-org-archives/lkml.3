@@ -1,146 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203AbbAMPva (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 10:51:30 -0500
-Received: from m15-111.126.com ([220.181.15.111]:38549 "EHLO m15-111.126.com"
+	id S1752928AbbAMPqm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 10:46:42 -0500
+Received: from m15-111.126.com ([220.181.15.111]:37347 "EHLO m15-111.126.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752501AbbAMPv3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 10:51:29 -0500
+	id S1752208AbbAMPqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 10:46:37 -0500
 From: Xunlei Pang <xlpang@126.com>
 To: linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
         Arnd Bergmann <arnd.bergmann@linaro.org>
 Cc: rtc-linux@googlegroups.com, Thomas Gleixner <tglx@linutronix.de>,
         Alessandro Zummo <a.zummo@towertech.it>,
         Xunlei Pang <pang.xunlei@linaro.org>
-Subject: [RFC PATCH v2 5/9] rtc/mc13xxx: Update driver to address y2038/y2106 issues
-Date: Tue, 13 Jan 2015 23:44:53 +0800
-Message-Id: <1421163897-8020-6-git-send-email-xlpang@126.com>
+Subject: [RFC PATCH v2 6/9] rtc/mxc: Modify rtc_update_alarm() not to touch the alarm time
+Date: Tue, 13 Jan 2015 23:44:54 +0800
+Message-Id: <1421163897-8020-7-git-send-email-xlpang@126.com>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1421163897-8020-1-git-send-email-xlpang@126.com>
 References: <1421163897-8020-1-git-send-email-xlpang@126.com>
-X-CM-TRANSID: C8mowEAZEUVxPbVUBIRpDg--.692S8
-X-Coremail-Antispam: 1Uf129KBjvJXoWxAF15Ary3JF47GF4DCF1rWFg_yoW5KrWUpF
-	4Syas8Jr40qF9xWw1kKFyDCFyFy3yktFW8Gan7K34v9w13Ja4DKF18ur1jga4rKa95Gr4x
-	ua1UXF15u3WUCa7anT9S1TB71UUUUUUqnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
+X-CM-TRANSID: C8mowEAZEUVxPbVUBIRpDg--.692S9
+X-Coremail-Antispam: 1Uf129KBjvJXoW7tw4UKw1fCFyxZw1Uury8Krg_yoW8tw15pF
+	W3Cayktr4ktFySgw1DGFsruF45Jw18J39Fq3WfJ34S9rn5Aa4kJF95Cry8KrW5tFZ5u3Zr
+	J3W3ZF15urWUZF7anT9S1TB71UUUUUUqnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
 	9KBjDUYxBIdaVFxhVjvjDU0xZFpf9x07jd_-9UUUUU=
 X-Originating-IP: [182.149.91.53]
-X-CM-SenderInfo: p0ost0bj6rjloofrz/1tbiXB2Av1R0UfuaHAAAsy
+X-CM-SenderInfo: p0ost0bj6rjloofrz/1tbimRqAv00vL4USVAAAsy
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Xunlei Pang <pang.xunlei@linaro.org>
 
-This driver has a number of y2038/y2106 issues.
+rtc_class_ops's set_alarm() shouldn't deal with the alarm date,
+as this is handled in the rtc core.
 
-This patch resolves them by:
-- Replace rtc_time_to_tm() with rtc_time64_to_tm()
-- Change mc13xxx_rtc_set_mmss() to use rtc_class_ops's set_mmss64()
-
-After this patch, the driver should not have any remaining
-y2038/y2106 issues.
+See rtc_dev_ioctl()'s RTC_ALM_SET and RTC_WKALM_SET cases.
 
 Signed-off-by: Xunlei Pang <pang.xunlei@linaro.org>
 ---
- drivers/rtc/rtc-mc13xxx.c | 32 ++++++++++++++------------------
- 1 file changed, 14 insertions(+), 18 deletions(-)
+ drivers/rtc/rtc-mxc.c | 22 ++++------------------
+ 1 file changed, 4 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/rtc/rtc-mc13xxx.c b/drivers/rtc/rtc-mc13xxx.c
-index 5bce904b..32df1d8 100644
---- a/drivers/rtc/rtc-mc13xxx.c
-+++ b/drivers/rtc/rtc-mc13xxx.c
-@@ -83,20 +83,19 @@ static int mc13xxx_rtc_read_time(struct device *dev, struct rtc_time *tm)
- 			return ret;
- 	} while (days1 != days2);
+diff --git a/drivers/rtc/rtc-mxc.c b/drivers/rtc/rtc-mxc.c
+index 3c3f8d1..a7b218f 100644
+--- a/drivers/rtc/rtc-mxc.c
++++ b/drivers/rtc/rtc-mxc.c
+@@ -173,29 +173,18 @@ static void set_alarm_or_time(struct device *dev, int time_alarm, u32 time)
+  * This function updates the RTC alarm registers and then clears all the
+  * interrupt status bits.
+  */
+-static int rtc_update_alarm(struct device *dev, struct rtc_time *alrm)
++static void rtc_update_alarm(struct device *dev, struct rtc_time *alrm)
+ {
+-	struct rtc_time alarm_tm, now_tm;
+-	unsigned long now, time;
++	unsigned long time;
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct rtc_plat_data *pdata = platform_get_drvdata(pdev);
+ 	void __iomem *ioaddr = pdata->ioaddr;
  
--	rtc_time_to_tm(days1 * SEC_PER_DAY + seconds, tm);
-+	rtc_time64_to_tm((time64_t)days1 * SEC_PER_DAY + seconds, tm);
+-	now = get_alarm_or_time(dev, MXC_RTC_TIME);
+-	rtc_time_to_tm(now, &now_tm);
+-	alarm_tm.tm_year = now_tm.tm_year;
+-	alarm_tm.tm_mon = now_tm.tm_mon;
+-	alarm_tm.tm_mday = now_tm.tm_mday;
+-	alarm_tm.tm_hour = alrm->tm_hour;
+-	alarm_tm.tm_min = alrm->tm_min;
+-	alarm_tm.tm_sec = alrm->tm_sec;
+-	rtc_tm_to_time(&alarm_tm, &time);
++	rtc_tm_to_time(alrm, &time);
  
- 	return rtc_valid_tm(tm);
+ 	/* clear all the interrupt status bits */
+ 	writew(readw(ioaddr + RTC_RTCISR), ioaddr + RTC_RTCISR);
+ 	set_alarm_or_time(dev, MXC_RTC_ALARM, time);
+-
+-	return 0;
  }
  
--static int mc13xxx_rtc_set_mmss(struct device *dev, unsigned long secs)
-+static int mc13xxx_rtc_set_mmss(struct device *dev, time64_t secs)
+ static void mxc_rtc_irq_enable(struct device *dev, unsigned int bit,
+@@ -346,11 +335,8 @@ static int mxc_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
  {
- 	struct mc13xxx_rtc *priv = dev_get_drvdata(dev);
- 	unsigned int seconds, days;
- 	unsigned int alarmseconds;
- 	int ret;
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct rtc_plat_data *pdata = platform_get_drvdata(pdev);
+-	int ret;
  
--	seconds = secs % SEC_PER_DAY;
--	days = secs / SEC_PER_DAY;
-+	days = div_s64_rem(secs, SEC_PER_DAY, &seconds);
+-	ret = rtc_update_alarm(dev, &alrm->time);
+-	if (ret)
+-		return ret;
++	rtc_update_alarm(dev, &alrm->time);
  
- 	mc13xxx_lock(priv->mc13xxx);
- 
-@@ -159,7 +158,7 @@ static int mc13xxx_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
- {
- 	struct mc13xxx_rtc *priv = dev_get_drvdata(dev);
- 	unsigned seconds, days;
--	unsigned long s1970;
-+	time64_t s1970;
- 	int enabled, pending;
- 	int ret;
- 
-@@ -189,10 +188,10 @@ out:
- 	alarm->enabled = enabled;
- 	alarm->pending = pending;
- 
--	s1970 = days * SEC_PER_DAY + seconds;
-+	s1970 = (time64_t)days * SEC_PER_DAY + seconds;
- 
--	rtc_time_to_tm(s1970, &alarm->time);
--	dev_dbg(dev, "%s: %lu\n", __func__, s1970);
-+	rtc_time64_to_tm(s1970, &alarm->time);
-+	dev_dbg(dev, "%s: %lld\n", __func__, (long long)s1970);
- 
- 	return 0;
- }
-@@ -200,8 +199,8 @@ out:
- static int mc13xxx_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
- {
- 	struct mc13xxx_rtc *priv = dev_get_drvdata(dev);
--	unsigned long s1970;
--	unsigned seconds, days;
-+	time64_t s1970;
-+	u32 seconds, days;
- 	int ret;
- 
- 	mc13xxx_lock(priv->mc13xxx);
-@@ -215,20 +214,17 @@ static int mc13xxx_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
- 	if (unlikely(ret))
- 		goto out;
- 
--	ret = rtc_tm_to_time(&alarm->time, &s1970);
--	if (unlikely(ret))
--		goto out;
-+	s1970 = rtc_tm_to_time64(&alarm->time);
- 
--	dev_dbg(dev, "%s: o%2.s %lu\n", __func__, alarm->enabled ? "n" : "ff",
--			s1970);
-+	dev_dbg(dev, "%s: o%2.s %lld\n", __func__, alarm->enabled ? "n" : "ff",
-+			(long long)s1970);
- 
- 	ret = mc13xxx_rtc_irq_enable_unlocked(dev, alarm->enabled,
- 			MC13XXX_IRQ_TODA);
- 	if (unlikely(ret))
- 		goto out;
- 
--	seconds = s1970 % SEC_PER_DAY;
--	days = s1970 / SEC_PER_DAY;
-+	days = div_s64_rem(s1970, SEC_PER_DAY, &seconds);
- 
- 	ret = mc13xxx_reg_write(priv->mc13xxx, MC13XXX_RTCDAYA, days);
- 	if (unlikely(ret))
-@@ -268,7 +264,7 @@ static irqreturn_t mc13xxx_rtc_update_handler(int irq, void *dev)
- 
- static const struct rtc_class_ops mc13xxx_rtc_ops = {
- 	.read_time = mc13xxx_rtc_read_time,
--	.set_mmss = mc13xxx_rtc_set_mmss,
-+	.set_mmss64 = mc13xxx_rtc_set_mmss,
- 	.read_alarm = mc13xxx_rtc_read_alarm,
- 	.set_alarm = mc13xxx_rtc_set_alarm,
- 	.alarm_irq_enable = mc13xxx_rtc_alarm_irq_enable,
+ 	memcpy(&pdata->g_rtc_alarm, &alrm->time, sizeof(struct rtc_time));
+ 	mxc_rtc_irq_enable(dev, RTC_ALM_BIT, alrm->enabled);
 -- 
 1.9.1
 
