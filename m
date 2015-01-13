@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082AbbAMRSq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 12:18:46 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:50247 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462AbbAMRSo (ORCPT
+	id S1753517AbbAMRTP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 12:19:15 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:46104 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971AbbAMRTN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 12:18:44 -0500
+	Tue, 13 Jan 2015 12:19:13 -0500
 MIME-Version: 1.0
-In-Reply-To: <20150113171134.GA27519@redhat.com>
-References: <1421012793-30106-1-git-send-email-riel@redhat.com>
- <1421012793-30106-5-git-send-email-riel@redhat.com> <20150113171134.GA27519@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 13 Jan 2015 09:18:22 -0800
-Message-ID: <CALCETrWuOeYYpwbfX3x56KZSV_1nC+r7GHRiYH=pt_xOuOVM2g@mail.gmail.com>
-Subject: Re: [RFC PATCH 04/11] x86,fpu: defer FPU restore until return to userspace
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>, Borislav Petkov <bp@suse.de>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20150113163832.24625.95960.stgit@warthog.procyon.org.uk>
+References: <20150113163832.24625.95960.stgit@warthog.procyon.org.uk>
+Date: Tue, 13 Jan 2015 13:19:13 -0400
+Message-ID: <CAB9dFdvPM-qbhPOZ=4KLs2OB5PYSzaog6byzCvV8N-72uxJ5cQ@mail.gmail.com>
+Subject: Re: [PATCH] VFS: Convert file->f_dentry->d_inode to file_inode()
+From: Marc Dionne <marc.c.dionne@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: jesper.nilsson@axis.com, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-cris-kernel@axis.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 9:11 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 01/11, riel@redhat.com wrote:
->>
->> Defer restoring the FPU state, if so desired, until the task returns to
->> userspace.
+On Tue, Jan 13, 2015 at 12:38 PM, David Howells <dhowells@redhat.com> wrote:
+> Convert file->f_dentry->d_inode to file_inode() so as to get layered
+> filesystems right.
 >
-> And I have another concern.
+> Found with: git grep '[.>]f_dentry'
 >
-> Afaocs with this patch the idle threads will run with TIF_LOAD_FPU set but
-> without fpu.has_fpu.
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> ---
+>
+>  arch/cris/arch-v32/drivers/sync_serial.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/cris/arch-v32/drivers/sync_serial.c b/arch/cris/arch-v32/drivers/sync_serial.c
+> index 08a313fc2241..e9b6de2b46a0 100644
+> --- a/arch/cris/arch-v32/drivers/sync_serial.c
+> +++ b/arch/cris/arch-v32/drivers/sync_serial.c
+> @@ -604,7 +604,7 @@ static ssize_t __sync_serial_read(struct file *file,
+>                                   struct timespec *ts)
+>  {
+>         unsigned long flags;
+> -       int dev = MINOR(file->f_dentry->d_inode->i_rdev);
+> +       int dev = MINOR(file_inode(file_inode)->i_rdev);
 
-Yuck.  IMO there are still too many possible states.
+Shouldn't that be file_inode(file) ?
 
-AFAICS the sensible states for a task are:
+>         int avail;
+>         struct sync_port *port;
+>         unsigned char *start;
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
- - Task is current on some cpu and FPU is loaded into that cpu.
- - Task is current on some cpu and FPU is in memory.
- - Task is current on some cpu and FPU is loaded into a different cpu.
- - Task is not current and FPU is in memory.
- - Task is not current and FPU is loaded into some cpu.
-
-Am I missing anything?  (In lazy mode, there are a few more involving CR0.TS.)
-
-That's five states, plus an optional cpu number.  But we have tons of
-state variable that can express all kinds of nonsense things.
-
-If we asserted that we were in a sensible state and fixed the things
-that exited the sensible states, maybe this would be easier to
-understand and debug.
-
---Andy
+Marc
