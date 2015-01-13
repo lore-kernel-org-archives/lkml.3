@@ -1,148 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885AbbAMQjE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 11:39:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55637 "EHLO mx1.redhat.com"
+	id S1753536AbbAMQiI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 11:38:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39595 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753672AbbAMQiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 11:38:54 -0500
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Michel Lespinasse <walken@google.com>,
-        Andrew Jones <drjones@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andres Lagar-Cavilla <andreslc@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "\\\"Dr. David Alan Gilbert\\\"" <dgilbert@redhat.com>,
-        Peter Feiner <pfeiner@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        David Miller <davem@davemloft.net>,
-        Steve Capper <steve.capper@linaro.org>,
-        Johannes Weiner <jweiner@redhat.com>
-Subject: [PATCH 4/5] mm: gup: use get_user_pages_unlocked
-Date: Tue, 13 Jan 2015 17:37:53 +0100
-Message-Id: <1421167074-9789-5-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1421167074-9789-1-git-send-email-aarcange@redhat.com>
-References: <1421167074-9789-1-git-send-email-aarcange@redhat.com>
+	id S1752272AbbAMQiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 11:38:06 -0500
+Message-ID: <54B549E2.3040303@redhat.com>
+Date: Tue, 13 Jan 2015 11:37:54 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
+        tglx@linutronix.de, luto@amacapital.net
+Subject: Re: [RFC PATCH 03/11] x86,fpu: move __thread_fpu_begin to when the
+ task has the fpu
+References: <1421012793-30106-1-git-send-email-riel@redhat.com> <1421012793-30106-4-git-send-email-riel@redhat.com> <20150113152430.GB23134@redhat.com>
+In-Reply-To: <20150113152430.GB23134@redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows those get_user_pages calls to pass FAULT_FLAG_ALLOW_RETRY
-to the page fault in order to release the mmap_sem during the I/O.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
- drivers/media/pci/ivtv/ivtv-udma.c | 6 ++----
- drivers/scsi/st.c                  | 7 ++-----
- drivers/video/fbdev/pvr2fb.c       | 6 ++----
- mm/process_vm_access.c             | 7 ++-----
- net/ceph/pagevec.c                 | 6 ++----
- 5 files changed, 10 insertions(+), 22 deletions(-)
+On 01/13/2015 10:24 AM, Oleg Nesterov wrote:
+> On 01/11, riel@redhat.com wrote:
+>> 
+>> --- a/arch/x86/include/asm/fpu-internal.h +++
+>> b/arch/x86/include/asm/fpu-internal.h @@ -420,7 +420,6 @@ static
+>> inline void switch_fpu_prepare(struct task_struct *old, struct
+>> task_struc if (preload) { new->thread.fpu_counter++; 
+>> set_thread_flag(TIF_LOAD_FPU); -			__thread_set_has_fpu(new); 
+>> prefetch(new->thread.fpu.state); } else if (!use_eager_fpu()) 
+>> stts(); @@ -436,7 +435,6 @@ static inline void
+>> switch_fpu_prepare(struct task_struct *old, struct task_struc 
+>> prefetch(new->thread.fpu.state); set_thread_flag(TIF_LOAD_FPU); 
+>> } -			__thread_fpu_begin(new); } /* else: CR0.TS is still set
+>> from a previous FPU switch */ } @@ -451,6 +449,7 @@ static inline
+>> void switch_fpu_prepare(struct task_struct *old, struct
+>> task_struc static inline void switch_fpu_finish(struct
+>> task_struct *new) { if (test_and_clear_thread_flag(TIF_LOAD_FPU))
+>> { +		__thread_fpu_begin(new); if
+>> (unlikely(restore_fpu_checking(new))) drop_init_fpu(new); }
+> 
+> Then perhaps it makes sense to move fpu_lazy_restore() to
+> fpu_finish() too ?
 
-diff --git a/drivers/media/pci/ivtv/ivtv-udma.c b/drivers/media/pci/ivtv/ivtv-udma.c
-index bee2329..24152ac 100644
---- a/drivers/media/pci/ivtv/ivtv-udma.c
-+++ b/drivers/media/pci/ivtv/ivtv-udma.c
-@@ -124,10 +124,8 @@ int ivtv_udma_setup(struct ivtv *itv, unsigned long ivtv_dest_addr,
- 	}
- 
- 	/* Get user pages for DMA Xfer */
--	down_read(&current->mm->mmap_sem);
--	err = get_user_pages(current, current->mm,
--			user_dma.uaddr, user_dma.page_count, 0, 1, dma->map, NULL);
--	up_read(&current->mm->mmap_sem);
-+	err = get_user_pages_unlocked(current, current->mm,
-+			user_dma.uaddr, user_dma.page_count, 0, 1, dma->map);
- 
- 	if (user_dma.page_count != err) {
- 		IVTV_DEBUG_WARN("failed to map user pages, returned %d instead of %d\n",
-diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
-index 128d3b5..9a1c342 100644
---- a/drivers/scsi/st.c
-+++ b/drivers/scsi/st.c
-@@ -4551,18 +4551,15 @@ static int sgl_map_user_pages(struct st_buffer *STbp,
- 		return -ENOMEM;
- 
-         /* Try to fault in all of the necessary pages */
--	down_read(&current->mm->mmap_sem);
-         /* rw==READ means read from drive, write into memory area */
--	res = get_user_pages(
-+	res = get_user_pages_unlocked(
- 		current,
- 		current->mm,
- 		uaddr,
- 		nr_pages,
- 		rw == READ,
- 		0, /* don't force */
--		pages,
--		NULL);
--	up_read(&current->mm->mmap_sem);
-+		pages);
- 
- 	/* Errors and no page mapped should return here */
- 	if (res < nr_pages)
-diff --git a/drivers/video/fbdev/pvr2fb.c b/drivers/video/fbdev/pvr2fb.c
-index 7c74f58..0e24eb9 100644
---- a/drivers/video/fbdev/pvr2fb.c
-+++ b/drivers/video/fbdev/pvr2fb.c
-@@ -686,10 +686,8 @@ static ssize_t pvr2fb_write(struct fb_info *info, const char *buf,
- 	if (!pages)
- 		return -ENOMEM;
- 
--	down_read(&current->mm->mmap_sem);
--	ret = get_user_pages(current, current->mm, (unsigned long)buf,
--			     nr_pages, WRITE, 0, pages, NULL);
--	up_read(&current->mm->mmap_sem);
-+	ret = get_user_pages_unlocked(current, current->mm, (unsigned long)buf,
-+				      nr_pages, WRITE, 0, pages);
- 
- 	if (ret < nr_pages) {
- 		nr_pages = ret;
-diff --git a/mm/process_vm_access.c b/mm/process_vm_access.c
-index 5077afc..b159769 100644
---- a/mm/process_vm_access.c
-+++ b/mm/process_vm_access.c
-@@ -99,11 +99,8 @@ static int process_vm_rw_single_vec(unsigned long addr,
- 		size_t bytes;
- 
- 		/* Get the pages we're interested in */
--		down_read(&mm->mmap_sem);
--		pages = get_user_pages(task, mm, pa, pages,
--				      vm_write, 0, process_pages, NULL);
--		up_read(&mm->mmap_sem);
--
-+		pages = get_user_pages_unlocked(task, mm, pa, pages,
-+						vm_write, 0, process_pages);
- 		if (pages <= 0)
- 			return -EFAULT;
- 
-diff --git a/net/ceph/pagevec.c b/net/ceph/pagevec.c
-index 5550130..096d914 100644
---- a/net/ceph/pagevec.c
-+++ b/net/ceph/pagevec.c
-@@ -23,17 +23,15 @@ struct page **ceph_get_direct_page_vector(const void __user *data,
- 	if (!pages)
- 		return ERR_PTR(-ENOMEM);
- 
--	down_read(&current->mm->mmap_sem);
- 	while (got < num_pages) {
--		rc = get_user_pages(current, current->mm,
-+		rc = get_user_pages_unlocked(current, current->mm,
- 		    (unsigned long)data + ((unsigned long)got * PAGE_SIZE),
--		    num_pages - got, write_page, 0, pages + got, NULL);
-+		    num_pages - got, write_page, 0, pages + got);
- 		if (rc < 0)
- 			break;
- 		BUG_ON(rc == 0);
- 		got += rc;
- 	}
--	up_read(&current->mm->mmap_sem);
- 	if (rc < 0)
- 		goto fail;
- 	return pages;
+I do that later in the series.  I would like to keep that in a
+separate changeset, for bisecting reasons.
+
+> Either way, afaics we do not need use_eager_fpu() before
+> fpu_lazy_restore(), and this reminds me that every use_eager_fpu()
+> check in switch_fpu_prepare() looks confusing.
+
+Agreed. The patch that moves fpu_lazy_restore() into
+switch_fpu_finish() also removes the use_eager_fpu()
+condition for that.
+
+Another reason for it to be by itself in its own
+changeset :)
+
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJUtUniAAoJEM553pKExN6D1KkH/0jJaxlbXBWdx3XRx3KczPiH
+DJzWhUanmEZzFdCuyK/V8zDI0OjDorOntTTrA3rg1StBYGYgAm3hPMiVB5YvDJ8e
+8YeJ9R+5FhMxqgBSKLHIGOazOjYCCAbl/9F+uTDnkOlsyRvJiNAVuURFdeXeWPx9
+2tr2PoTVyPZlfIzVHDZKke1aeN1nS5m8Dlww3Wi1NTNJaDiKcguIMvfFtMc8j6BG
+NRezcbEr+4UfQbV/k6JbMdS79Svq3xg9gWNx5BRZtv6eh4ycC8BMIICSUFYh5LAm
+HfCRvWZYN+mvykaGfxYnmONrdT2TXyivy0YOeyIbCOi0hx0q52XoNKA6JwBePeA=
+=wEv+
+-----END PGP SIGNATURE-----
