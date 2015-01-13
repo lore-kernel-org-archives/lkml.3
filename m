@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911AbbAMSdJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 13:33:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36609 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582AbbAMSdH (ORCPT
+	id S1753422AbbAMSeo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 13:34:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49666 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752769AbbAMSen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 13:33:07 -0500
-Message-ID: <1421173974.6540.4.camel@fourier>
-Subject: Re: [RESEND PATCH] usb: gadget: at91_udc: move prepare clk into
- process context
-From: Kamal Mostafa <kamal@canonical.com>
-To: Luis Henriques <luis.henriques@canonical.com>
-Cc: Felipe Balbi <balbi@ti.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        linux-usb@vger.kernel.org, ronald.wahl@raritan.com,
-        stable@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>
-Date: Tue, 13 Jan 2015 10:32:54 -0800
-In-Reply-To: <20141219135123.GA2620@charon>
-References: <1416411447-31112-1-git-send-email-nicolas.ferre@atmel.com>
-	 <20141120195049.GF23217@saruman> <20141219135123.GA2620@charon>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Jan 2015 13:34:43 -0500
+Date: Tue, 13 Jan 2015 10:34:41 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Kiran Raparthy <kiran.kumar@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Mike Chan <mike@android.com>,
+        Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>, JP Abgrall <jpa@google.com>,
+        Arve =?utf-8?B?SGrvv71ubmV277+9Zw==?= <arve@android.com>
+Subject: Re: [RFC 1/2] misc: uidstat: Add uid stat driver to collect network
+ statistics.
+Message-ID: <20150113183441.GA24908@kroah.com>
+References: <1421147642-28360-1-git-send-email-kiran.kumar@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421147642-28360-1-git-send-email-kiran.kumar@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-12-19 at 13:51 +0000, Luis Henriques wrote:
-> Hi Felipe,
+On Tue, Jan 13, 2015 at 04:44:01PM +0530, Kiran Raparthy wrote:
+> From: Mike Chan <mike@android.com>
 > 
-> On Thu, Nov 20, 2014 at 01:50:49PM -0600, Felipe Balbi wrote:
-> > On Wed, Nov 19, 2014 at 04:37:27PM +0100, Nicolas Ferre wrote:
-> > > From: Ronald Wahl <ronald.wahl@raritan.com>
-> > > 
-> > > Commit 7628083227b6bc4a7e33d7c381d7a4e558424b6b (usb: gadget: at91_udc:
-> > > prepare clk before calling enable) added clock preparation in interrupt
-> > > context. This is not allowed as it might sleep. Also setting the clock
-> > > rate is unsafe to call from there for the same reason. Move clock
-> > > preparation and setting clock rate into process context (at91udc_probe).
-> > > 
-> > > Signed-off-by: Ronald Wahl <ronald.wahl@raritan.com>
-> > > Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> > > Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> > > Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> > > Cc: Felipe Balbi <balbi@ti.com>
-> > > Cc: <stable@vger.kernel.org> # v3.17+
-> > > ---
-> > > Hi Felipe,
-> > > 
-> > > I forgot to answer you on this patch. So I resend it now with the proper
-> > > "stable" tag. You can also queue it during this -rc phase if you feel it is
-> > > still possible.
-> > 
-> > I think it's late for v3.18, so it'll go on v3.19 and get backported to
-> > 3.17 and 3.18. Sorry :-s
-> >
+> misc: uidstat: Add uid stat driver to collect network statistics.
 > 
-> Although this commit (b2ba27a5c56f "usb: gadget: at91_udc: move
-> prepare clk into process context") is tagged for stable v3.17+, it
-> seems like it could be applied to earlier kernels.
+> To analyze application's network statistics, we need a mechanism to export
+> the UID based statistics to userspace so that userspace tools can use the
+> exported numbers and generate the report against the UID.
 > 
-> 3.16, 3.13 and 3.12 seem to be affected by the same issue (and they
-> all include commit 7628083227b6 "usb: gadget: at91_udc: prepare clk
-> before calling enable").  Is there any reason for not applying it in
-> these trees?
+> This patch allows the user to explore the UID based network statistics
+> exported to /proc/uid_stat.
 
-I'll queue it up for 3.13-stable.  Thanks all!
+This is a joke, right?  It's not April 1 yet people, why send this in
+January?
 
- -Kamal
+confused,
 
-
+greg k-h
