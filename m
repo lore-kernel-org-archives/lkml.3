@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752272AbbAMRFs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 12:05:48 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:44238 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751893AbbAMRFq (ORCPT
+	id S1752505AbbAMRHb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 12:07:31 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:45367 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751175AbbAMRHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 12:05:46 -0500
+	Tue, 13 Jan 2015 12:07:30 -0500
 X-IronPort-AV: E=Sophos;i="5.07,750,1413270000"; 
-   d="scan'208";a="54709384"
-Message-ID: <54B55068.8050500@broadcom.com>
-Date: Tue, 13 Jan 2015 09:05:44 -0800
+   d="scan'208";a="54575387"
+Message-ID: <54B550CF.7050001@broadcom.com>
+Date: Tue, 13 Jan 2015 09:07:27 -0800
 From: Ray Jui <rjui@broadcom.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
@@ -24,17 +24,17 @@ CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         "Christian Daudt" <bcm@fixthebug.org>,
         Matt Porter <mporter@linaro.org>,
         Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
-        Arnd Bergmann <arnd@arndb.de>, Scott Branden <sbranden@broadcom.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Scott Branden <sbranden@broadcom.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
         bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v6 2/3] gpio: Cygnus: add GPIO driver
-References: <rjui@broadcom.com>	<1418696307-19392-1-git-send-email-rjui@broadcom.com>	<1418696307-19392-3-git-send-email-rjui@broadcom.com> <CACRpkdYGksEseGaO49=1rUi5WBdOxwAd-F1gpgZn+BFatRCdDg@mail.gmail.com>
-In-Reply-To: <CACRpkdYGksEseGaO49=1rUi5WBdOxwAd-F1gpgZn+BFatRCdDg@mail.gmail.com>
+Subject: Re: [PATCH 1/5] gpio: Cygnus: define Broadcom Cygnus GPIO binding
+References: <rjui@broadcom.com>	<1417826408-1600-1-git-send-email-rjui@broadcom.com>	<1417826408-1600-2-git-send-email-rjui@broadcom.com> <CACRpkdaTU_efMOpKoEdBA0rDHyn6wcn7VamUZRiX-K2MYZygBQ@mail.gmail.com>
+In-Reply-To: <CACRpkdaTU_efMOpKoEdBA0rDHyn6wcn7VamUZRiX-K2MYZygBQ@mail.gmail.com>
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -43,433 +43,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On 1/13/2015 12:53 AM, Linus Walleij wrote:
-> On Tue, Dec 16, 2014 at 3:18 AM, Ray Jui <rjui@broadcom.com> wrote:
+On 1/12/2015 11:57 PM, Linus Walleij wrote:
+> On Sat, Dec 6, 2014 at 1:40 AM, Ray Jui <rjui@broadcom.com> wrote:
 > 
->> This GPIO driver supports all 3 GPIO controllers in the Broadcom Cygnus
->> SoC. The 3 GPIO controllers are 1) the ASIU GPIO controller, 2) the
->> chipCommonG GPIO controller, and 3) the ALWAYS-ON GPIO controller
+>> Document the GPIO device tree binding for Broadcom Cygnus SoC
 >>
 >> Signed-off-by: Ray Jui <rjui@broadcom.com>
 >> Reviewed-by: Scott Branden <sbranden@broadcom.com>
-> 
-> (Big thanks to Alexandre for doing the major part of the review,
-> good work with following up so far!)
-> 
 > (...)
-Yes, reviews from Alex and others are very helpful!
+>> +- #gpio-cells:
+>> +    Must be two. The first cell is the GPIO pin number (within the
+>> +controller's domain) and the second cell is used for the following:
+>> +    bit[0]: polarity (0 for normal and 1 for inverted)
+>> +    bit[18:16]: internal pull up/down: 0 - pull up/down disabled
+>> +                                       1 - pull up enabled
+>> +                                       2 - pull down enabled
+>> +    bit[22:20]: drive strength: 0 - 2 mA
+>> +                                1 - 4 mA
+>> +                                2 - 6 mA
+>> +                                3 - 8 mA
+>> +                                4 - 10 mA
+>> +                                5 - 12 mA
+>> +                                6 - 14 mA
+>> +                                7 - 16 mA
+> 
+> No. This pull up/down and drive strength is pin controller
+> business, use a pin control backend behind the GPIO driver
+> see Documentation/pinctrl.txt.
+> 
+> Initial states for these configurations can be set up using
+> pin control hogs since pin control and GPIO is orthogonal.
+> 
+Yes, I got it! See my reply in the GPIO driver review. Thanks.
 
->> +config GPIO_BCM_CYGNUS
->> +       bool "Broadcom Cygnus GPIO support"
->> +       depends on ARCH_BCM_CYGNUS && OF_GPIO
-> 
-> select GPIOLIB_IRQCHIP
-> 
-> See more about this below.
-> 
->> +++ b/drivers/gpio/gpio-bcm-cygnus.c
->> @@ -0,0 +1,607 @@
->> +/*
->> + * Copyright (C) 2014 Broadcom Corporation
->> + *
->> + * This program is free software; you can redistribute it and/or
->> + * modify it under the terms of the GNU General Public License as
->> + * published by the Free Software Foundation version 2.
->> + *
->> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
->> + * kind, whether express or implied; without even the implied warranty
->> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
->> +
->> +#include <linux/kernel.h>
->> +#include <linux/slab.h>
->> +#include <linux/module.h>
->> +#include <linux/irq.h>
->> +#include <linux/interrupt.h>
->> +#include <linux/io.h>
->> +#include <linux/gpio.h>
->> +#include <linux/ioport.h>
->> +#include <linux/of_device.h>
->> +#include <linux/of_irq.h>
->> +#include <linux/irqchip/chained_irq.h>
-> 
-> Skip <linux/irq.h> and <linux/irqchip/chained_irq.h>
-> as these move to the core with GPIOLIB_IRQCHIP
-> 
-Will do.
-
->> +#define CYGNUS_GPIO_DATA_IN_OFFSET   0x00
->> +#define CYGNUS_GPIO_DATA_OUT_OFFSET  0x04
->> +#define CYGNUS_GPIO_OUT_EN_OFFSET    0x08
->> +#define CYGNUS_GPIO_IN_TYPE_OFFSET   0x0c
->> +#define CYGNUS_GPIO_INT_DE_OFFSET    0x10
->> +#define CYGNUS_GPIO_INT_EDGE_OFFSET  0x14
->> +#define CYGNUS_GPIO_INT_MSK_OFFSET   0x18
->> +#define CYGNUS_GPIO_INT_STAT_OFFSET  0x1c
->> +#define CYGNUS_GPIO_INT_MSTAT_OFFSET 0x20
->> +#define CYGNUS_GPIO_INT_CLR_OFFSET   0x24
->> +#define CYGNUS_GPIO_PAD_RES_OFFSET   0x34
->> +#define CYGNUS_GPIO_RES_EN_OFFSET    0x38
->> +
->> +/* drive strength control for ASIU GPIO */
->> +#define CYGNUS_GPIO_ASIU_DRV0_CTRL_OFFSET 0x58
->> +
->> +/* drive strength control for CCM GPIO */
->> +#define CYGNUS_GPIO_CCM_DRV0_CTRL_OFFSET  0x00
-> 
-> This stuff (drive strength) is pin control, pin config.
-> It does not belong in a pure GPIO driver. If you're
-> making a combined pin control + GPIO driver, it
-> shall be put in drivers/pinctrl/*
-> 
-Okay, I have some questions here. Are you suggesting me to register this
-driver to both the pinctrl subsystem and gpiolib and move it to under
-drivers/pinctrl/*? And obviously I should handle all pinctrl related
-functions (drive strength, pull up/down, and etc.) using the standard
-pinctrl bindings.
-
-Or Are you suggesting me to combine this driver with the other Cygnus
-pinctrl driver (which only supports pinmux)?
-
-Note in Cygnus, all pinmux logic is done in the pinmux block. And there
-are 3 GPIO controllers, that handle GPIO, drive strength of the GPIO
-pins, internal pull up/down of the GPIO pins, which are handled in this
-driver. So this driver is generic to all 3 GPIO controllers, as you can
-see from the device tree bindings, there are 3 nodes.
-
-Therefore, I think it makes sense to have one pinmux driver that handles
-the pinmux block, and one generic pinctrl + gpio driver that handles
-functions supported by all 3 GPIO controllers. Does this make sense to you?
-
->> +#define GPIO_BANK_SIZE 0x200
->> +#define NGPIOS_PER_BANK 32
->> +#define GPIO_BANK(pin) ((pin) / NGPIOS_PER_BANK)
->> +
->> +#define CYGNUS_GPIO_REG(pin, reg) (GPIO_BANK(pin) * GPIO_BANK_SIZE + (reg))
->> +#define CYGNUS_GPIO_SHIFT(pin) ((pin) % NGPIOS_PER_BANK)
->> +
->> +#define GPIO_FLAG_BIT_MASK           0xffff
->> +#define GPIO_PULL_BIT_SHIFT          16
->> +#define GPIO_PULL_BIT_MASK           0x3
->> +
->> +#define GPIO_DRV_STRENGTH_BIT_SHIFT  20
->> +#define GPIO_DRV_STRENGTH_BITS       3
->> +#define GPIO_DRV_STRENGTH_BIT_MASK   ((1 << GPIO_DRV_STRENGTH_BITS) - 1)
->> +
->> +/*
->> + * For GPIO internal pull up/down registers
->> + */
->> +enum gpio_pull {
->> +       GPIO_PULL_NONE = 0,
->> +       GPIO_PULL_UP,
->> +       GPIO_PULL_DOWN,
->> +       GPIO_PULL_INVALID,
->> +};
->> +
->> +/*
->> + * GPIO drive strength
->> + */
->> +enum gpio_drv_strength {
->> +       GPIO_DRV_STRENGTH_2MA = 0,
->> +       GPIO_DRV_STRENGTH_4MA,
->> +       GPIO_DRV_STRENGTH_6MA,
->> +       GPIO_DRV_STRENGTH_8MA,
->> +       GPIO_DRV_STRENGTH_10MA,
->> +       GPIO_DRV_STRENGTH_12MA,
->> +       GPIO_DRV_STRENGTH_14MA,
->> +       GPIO_DRV_STRENGTH_16MA,
->> +       GPIO_DRV_STRENGTH_INVALID,
->> +};
-> 
-> 
-> All this pull up/down and drive strength is pin config for
-> the pin control subsystem.
-> 
-Yes.
-
->> +struct cygnus_gpio {
->> +       struct device *dev;
->> +       void __iomem *base;
->> +       void __iomem *io_ctrl;
->> +       spinlock_t lock;
->> +       struct gpio_chip gc;
->> +       unsigned num_banks;
->> +       int irq;
->> +       struct irq_domain *irq_domain;
-> 
-> Skip irq and irqdomain and use GPIOLIB_IRQCHIP
-> 
-Will switch to GPIOLIB_IRQCHIP.
-
->> +static u32 cygnus_readl(struct cygnus_gpio *cygnus_gpio, unsigned int offset)
->> +{
->> +       return readl(cygnus_gpio->base + offset);
->> +}
->> +
->> +static void cygnus_writel(struct cygnus_gpio *cygnus_gpio,
->> +                         unsigned int offset, u32 val)
->> +{
->> +       writel(val, cygnus_gpio->base + offset);
->> +}
-> 
-> I don't see the value of using these accessors over just inlining
-> your readl/writel stuff.
-> 
-> (...)
-Hmmm....I can change this back to simply readl/writel
-
->> +static int cygnus_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
->> +{
->> +       struct cygnus_gpio *cygnus_gpio = to_cygnus_gpio(gc);
->> +
->> +       return irq_find_mapping(cygnus_gpio->irq_domain, offset);
->> +}
-> 
-> This goes away to the core with GPIOLIB_IRQCHIP
-> 
-Okay, thanks!
-
->> +static void cygnus_gpio_irq_handler(unsigned int irq, struct irq_desc *desc)
->> +{
->> +       struct cygnus_gpio *cygnus_gpio;
->> +       struct irq_chip *chip = irq_desc_get_chip(desc);
->> +       int i, bit;
->> +
->> +       chained_irq_enter(chip, desc);
->> +
->> +       cygnus_gpio = irq_get_handler_data(irq);
->> +
->> +       /* go through the entire GPIO banks and handle all interrupts */
->> +       for (i = 0; i < cygnus_gpio->num_banks; i++) {
->> +               unsigned long val = cygnus_readl(cygnus_gpio,
->> +                               (i * GPIO_BANK_SIZE) +
->> +                               CYGNUS_GPIO_INT_MSTAT_OFFSET);
->> +
->> +               for_each_set_bit(bit, &val, NGPIOS_PER_BANK) {
->> +                       unsigned pin = NGPIOS_PER_BANK * i + bit;
->> +                       int child_irq =
->> +                               cygnus_gpio_to_irq(&cygnus_gpio->gc, pin);
->> +
->> +                       /*
->> +                        * Clear the interrupt before invoking the
->> +                        * handler, so we do not leave any window
->> +                        */
->> +                       cygnus_writel(cygnus_gpio, (i * GPIO_BANK_SIZE) +
->> +                               CYGNUS_GPIO_INT_CLR_OFFSET, BIT(bit));
->> +
->> +                       generic_handle_irq(child_irq);
->> +               }
->> +       }
->> +
->> +       chained_irq_exit(chip, desc);
->> +}
-> 
-> Looks good, but you will need to have the struct gpio_chip * as
-> handler data to use GPIOLIB_IRQCHIP, so get from there to
-> the struct cygnus_gpio something like:
-> 
-> struct gpio_chip *gc = irq_desc_get_handler_data(desc);
-> struct cygnus_gpio *cyg = to_cygnus_gpio(gc);
-> 
-Okay thanks!
-
->> +static int cygnus_gpio_get(struct gpio_chip *gc, unsigned gpio)
->> +{
->> +       struct cygnus_gpio *cygnus_gpio = to_cygnus_gpio(gc);
->> +       unsigned int offset = CYGNUS_GPIO_REG(gpio,
->> +                       CYGNUS_GPIO_DATA_IN_OFFSET);
->> +       unsigned int shift = CYGNUS_GPIO_SHIFT(gpio);
->> +       u32 val;
->> +
->> +       val = cygnus_readl(cygnus_gpio, offset);
->> +       val = (val >> shift) & 1;
-> 
-> No, do this:
-> 
-> return !!(cygnus_readl(cygnus_gpio, offset) & BIT(shift));
-> 
-> Maybe rename the "shift" variable to "bit" or just use the macro
-> directly in the readl().
-> 
-Will do!
-
->> +static int cygnus_gpio_irq_map(struct irq_domain *d, unsigned int irq,
->> +                              irq_hw_number_t hwirq)
->> +{
->> +       int ret;
->> +
->> +       ret = irq_set_chip_data(irq, d->host_data);
->> +       if (ret < 0)
->> +               return ret;
->> +       irq_set_lockdep_class(irq, &gpio_lock_class);
->> +       irq_set_chip_and_handler(irq, &cygnus_gpio_irq_chip,
->> +                       handle_simple_irq);
->> +       set_irq_flags(irq, IRQF_VALID);
->> +
->> +       return 0;
->> +}
->> +
->> +static void cygnus_gpio_irq_unmap(struct irq_domain *d, unsigned int irq)
->> +{
->> +       irq_set_chip_and_handler(irq, NULL, NULL);
->> +       irq_set_chip_data(irq, NULL);
->> +}
->> +
->> +static struct irq_domain_ops cygnus_irq_ops = {
->> +       .map = cygnus_gpio_irq_map,
->> +       .unmap = cygnus_gpio_irq_unmap,
->> +       .xlate = irq_domain_xlate_twocell,
->> +};
-> 
-> All this goes away with GPIOLIB_IRQCHIP (that is what is good about it).
-> 
-Great!
-
->> +#ifdef CONFIG_OF_GPIO
-> 
-> What, that should be defined all the time, you depend on it in
-> Kconfig!
-> 
-Yes. Will get rid of this
-
->> +static void cygnus_gpio_set_pull(struct cygnus_gpio *cygnus_gpio,
->> +                                unsigned gpio, enum gpio_pull pull)
-> (...)
->> +static void cygnus_gpio_set_strength(struct cygnus_gpio *cygnus_gpio,
->> +               unsigned gpio, enum gpio_drv_strength strength)
-> (...)
->> +static int cygnus_gpio_of_xlate(struct gpio_chip *gc,
->> +               const struct of_phandle_args *gpiospec, u32 *flags)
-> 
-> NAK. This is pin control, put this in the pin control driver.
-> 
-> I guess the same that is part of this patch series.
-> 
-> (...)
-Agreed.
-
->> +static int cygnus_gpio_probe(struct platform_device *pdev)
->> +{
->> +       struct device *dev = &pdev->dev;
->> +       struct resource *res;
->> +       struct cygnus_gpio *cygnus_gpio;
->> +       struct gpio_chip *gc;
->> +       u32 i, ngpios;
->> +       int ret;
->> +
->> +       cygnus_gpio = devm_kzalloc(dev, sizeof(*cygnus_gpio), GFP_KERNEL);
->> +       if (!cygnus_gpio)
->> +               return -ENOMEM;
->> +
->> +       cygnus_gpio->dev = dev;
->> +       platform_set_drvdata(pdev, cygnus_gpio);
->> +
->> +       if (of_property_read_u32(dev->of_node, "ngpios", &ngpios)) {
->> +               dev_err(&pdev->dev, "missing ngpios DT property\n");
->> +               return -ENODEV;
->> +       }
->> +       cygnus_gpio->num_banks = (ngpios + NGPIOS_PER_BANK - 1) /
->> +               NGPIOS_PER_BANK;
->> +
->> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> +       cygnus_gpio->base = devm_ioremap_resource(dev, res);
->> +       if (IS_ERR(cygnus_gpio->base)) {
->> +               dev_err(&pdev->dev, "unable to map I/O memory\n");
->> +               return PTR_ERR(cygnus_gpio->base);
->> +       }
->> +
->> +       /*
->> +        * Only certain types of Cygnus GPIO interfaces have I/O control
->> +        * registers
->> +        */
->> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
->> +       if (res) {
->> +               cygnus_gpio->io_ctrl = devm_ioremap_resource(dev, res);
->> +               if (IS_ERR(cygnus_gpio->io_ctrl)) {
->> +                       dev_err(&pdev->dev, "unable to map I/O memory\n");
->> +                       return PTR_ERR(cygnus_gpio->io_ctrl);
->> +               }
->> +       }
-> 
-> This is a good indication that it's a separate piece of HW and should
-> be a separate pin control driver.
-> 
-Okay.
-
->> +
->> +       spin_lock_init(&cygnus_gpio->lock);
->> +
->> +       gc = &cygnus_gpio->gc;
->> +       gc->base = -1;
->> +       gc->ngpio = ngpios;
->> +       gc->label = dev_name(dev);
->> +       gc->dev = dev;
->> +#ifdef CONFIG_OF_GPIO
-> 
-> You depend on this symbol.
-> 
-Will get rid of it.
-
->> +       gc->of_node = dev->of_node;
->> +       gc->of_gpio_n_cells = 2;
->> +       gc->of_xlate = cygnus_gpio_of_xlate;
->> +#endif
->> +       gc->direction_input = cygnus_gpio_direction_input;
->> +       gc->direction_output = cygnus_gpio_direction_output;
->> +       gc->set = cygnus_gpio_set;
->> +       gc->get = cygnus_gpio_get;
->> +       gc->to_irq = cygnus_gpio_to_irq;
->> +
->> +       ret = gpiochip_add(gc);
->> +       if (ret < 0) {
->> +               dev_err(&pdev->dev, "unable to add GPIO chip\n");
->> +               return ret;
->> +       }
->> +
->> +       /*
->> +        * Some of the GPIO interfaces do not have interrupt wired to the main
->> +        * processor
->> +        */
->> +       cygnus_gpio->irq = platform_get_irq(pdev, 0);
->> +       if (cygnus_gpio->irq < 0) {
->> +               ret = cygnus_gpio->irq;
->> +               if (ret == -EPROBE_DEFER)
->> +                       goto err_rm_gpiochip;
->> +
->> +               dev_info(&pdev->dev, "no interrupt hook\n");
->> +       }
-> 
-> From here:
-> 
->> +       cygnus_gpio->irq_domain = irq_domain_add_linear(dev->of_node,
->> +                       gc->ngpio, &cygnus_irq_ops, cygnus_gpio);
->> +       if (!cygnus_gpio->irq_domain) {
->> +               dev_err(&pdev->dev, "unable to allocate IRQ domain\n");
->> +               ret = -ENXIO;
->> +               goto err_rm_gpiochip;
->> +       }
->> +
->> +       for (i = 0; i < gc->ngpio; i++) {
->> +               int irq = irq_create_mapping(cygnus_gpio->irq_domain, i);
->> +
->> +               irq_set_lockdep_class(irq, &gpio_lock_class);
->> +               irq_set_chip_data(irq, cygnus_gpio);
->> +               irq_set_chip_and_handler(irq, &cygnus_gpio_irq_chip,
->> +                               handle_simple_irq);
->> +               set_irq_flags(irq, IRQF_VALID);
->> +       }
->> +
->> +       irq_set_chained_handler(cygnus_gpio->irq, cygnus_gpio_irq_handler);
->> +       irq_set_handler_data(cygnus_gpio->irq, cygnus_gpio);
-> 
-> To here, replace with a single call to
-> gpiochip_set_chained_irqchip(chip *, irq_chip *, irq, handler)...
-This is excellent! Thanks!
-
-> 
-> Look at other drivers using GPIOLIB_IRQCHIP for inspiration.
-> 
 > Yours,
 > Linus Walleij
 > 
