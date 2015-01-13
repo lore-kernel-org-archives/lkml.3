@@ -1,109 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751452AbbAMIhw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 03:37:52 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:27518 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981AbbAMIhv (ORCPT
+	id S1751969AbbAMIqN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 03:46:13 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:65327 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093AbbAMIqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 03:37:51 -0500
-Message-ID: <54B4D925.3020906@huawei.com>
-Date: Tue, 13 Jan 2015 16:36:53 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Tue, 13 Jan 2015 03:46:11 -0500
+Date: Tue, 13 Jan 2015 09:41:01 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, "\\\"Rafael J. Wysocki\\\"" <rjw@rjwysocki.net>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Oleg Nesterov <oleg@redhat.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH -v3 0/5] OOM vs PM freezer fixes
+Message-ID: <20150113084101.GB25318@dhcp22.suse.cz>
+References: <1420801555-22659-1-git-send-email-mhocko@suse.cz>
+ <20150112155935.21b13bc41417ceedde9d640f@linux-foundation.org>
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: <jolsa@kernel.org>, <namhyung@kernel.org>, <a.p.zijlstra@chello.nl>,
-        <paulus@samba.org>, <mingo@redhat.com>, <acme@kernel.org>,
-        <masami.hiramatsu.pt@hitachi.com>, <jean.pihet@linaro.org>,
-        <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>
-Subject: Re: [PATCH] perf: fix dwarf unwind using libunwind.
-References: <1421117677-51536-1-git-send-email-wangnan0@huawei.com> <20150113071059.GA32634@krava.brq.redhat.com>
-In-Reply-To: <20150113071059.GA32634@krava.brq.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.111.69.90]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020206.54B4D942.00C7,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 6f15500137421ca8af6131aff662dd31
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150112155935.21b13bc41417ceedde9d640f@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/1/13 15:10, Jiri Olsa wrote:
-> On Tue, Jan 13, 2015 at 10:54:37AM +0800, Wang Nan wrote:
+On Mon 12-01-15 15:59:35, Andrew Morton wrote:
+> On Fri,  9 Jan 2015 12:05:50 +0100 Michal Hocko <mhocko@suse.cz> wrote:
 > 
-> SNIP
+> > Hi,
 > 
->>  
->> +static int elf_is_exec(int fd, const char *name)
->> +{
->> +	Elf *elf;
->> +	GElf_Ehdr ehdr;
->> +	int retval = 0;
->> +
->> +	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
->> +	if (elf == NULL)
->> +		return 0;
->> +	if (gelf_getehdr(elf, &ehdr) == NULL)
->> +		goto out;
->> +
->> +	retval = (ehdr.e_type == ET_EXEC);
->> +
->> +out:
->> +	elf_end(elf);
->> +	pr_debug("unwind: elf_is_exec(%s): %d\n", name, retval);
->> +	return retval;
->> +
->> +}
+> I've been cheerily ignoring this discussion, sorry.  I trust everyone's
+> all happy and ready to go with this?
 > 
-> yuou need to add stub for 'NO_LIBUNWIND_DEBUG_FRAME=1', otherwise:
+> > [what changed since the last patchset]
+> >
+> > ...
+> >
+> > [testing results]
+> >
+> > ...
+> >
+> > [overview of the 5 patches]
+> >
+> > ...
+> > 
 > 
->   CC       util/dwarf-aux.o
->   CC       util/unwind-libunwind.o
-> util/unwind-libunwind.c:188:12: error: ‘elf_is_exec’ defined but not used [-Werror=unused-function]
->  static int elf_is_exec(int fd, const char *name)
->             ^
-> cc1: all warnings being treated as errors
-> make[1]: *** [util/unwind-libunwind.o] Error 1
-> make[1]: *** Waiting for unfinished jobs....
-> make: *** [all] Error 2
-> 
-> jirka
-> 
+> That's nice, but it doesn't really tell us what the patchset does.  The
+> first paragraph of the [5/5] changelog provides hints, but doesn't
+> explain why we even need to fix a race which is "quite small and really
+> unlikely".
 
-Thanks. I haven't test NO_LIBUNWIND_DEBUG_FRAME=1 case.
+The primary reason for ruling out OOM killer from PM freezing is
+described in the changelog of the original "fix" 5695be142e20 (OOM,
+PM: OOM killed task shouldn't escape PM suspend) for which this is a
+follow up:
+"
+    PM freezer relies on having all tasks frozen by the time devices are
+    getting frozen so that no task will touch them while they are getting
+    frozen. But OOM killer is allowed to kill an already frozen task in
+    order to handle OOM situtation. In order to protect from late wake ups
+    OOM killer is disabled after all tasks are frozen. This, however, still
+    keeps a window open when a killed task didn't manage to die by the time
+    freeze_processes finishes.
+"
 
-I found that it is possible to utilize map->dso->adjust_symbols for this propose so
-we don't need to introduce another function to check ehdr.e_type. However
-map->dso->adjust_symbols checks not only ET_EXEC but also ET_REL. What do you think?
+The original patch hasn't closed the race window completely because
+that would require a more complex solution as it can be seen by this
+patchset.
+ 
+> So...  could we please have a few words describing the overall intent
+> and effect of this patchset?
 
-I'd like to check it and post another patch.
+The primary motivation was to close the race condition between OOM
+killer and PM freezer _completely_. As Tejun pointed out, even though
+the race condition is unlikely the harder it would be to debug weird
+bugs deep in the PM freezer when the debugging options are reduced
+considerably.  I can only speculate what might happen when a task is
+still runnable unexpectedly. I can imagine deadlocks or memory
+corruptions but I am, by no means, an expert in this area.
 
->> +
->>  struct table_entry {
->>  	u32 start_ip_offset;
->>  	u32 fde_offset;
->> @@ -322,8 +343,12 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pi,
->>  #ifndef NO_LIBUNWIND_DEBUG_FRAME
->>  	/* Check the .debug_frame section for unwinding info */
->>  	if (!read_unwind_spec_debug_frame(map->dso, ui->machine, &segbase)) {
->> +		int fd = dso__data_fd(map->dso, ui->machine);
->> +		int is_exec = elf_is_exec(fd, map->dso->name);
->> +		unw_word_t base = is_exec ? 0 : map->start;
->> +
->>  		memset(&di, 0, sizeof(di));
->> -		if (dwarf_find_debug_frame(0, &di, ip, 0, map->dso->name,
->> +		if (dwarf_find_debug_frame(0, &di, ip, base, map->dso->name,
->>  					   map->start, map->end))
->>  			return dwarf_search_unwind_table(as, ip, &di, pi,
->>  							 need_unwind_info, arg);
->> -- 
->> 1.8.4
->>
+On a plus side and as a side effect the oom enable/disable has a better
+(full barrier) semantic without polluting hot paths.
 
-
+Hope that clarifies the things a bit.
+-- 
+Michal Hocko
+SUSE Labs
