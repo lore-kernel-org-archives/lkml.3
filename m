@@ -1,93 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751961AbbAMFO7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 00:14:59 -0500
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:53300 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031AbbAMFO5 (ORCPT
+	id S1751127AbbAMFTH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 00:19:07 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:29192 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971AbbAMFTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 00:14:57 -0500
-Date: Mon, 12 Jan 2015 21:14:52 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org, kernel@stlinux.com,
-        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH v3 00/13] mtd: st_spi_fsm: Align with ST's internal
- development
-Message-ID: <20150113051452.GR9759@ld-irv-0074>
-References: <1418644760-18773-1-git-send-email-lee.jones@linaro.org>
+	Tue, 13 Jan 2015 00:19:06 -0500
+Message-ID: <54B4AAAE.2040907@oracle.com>
+Date: Tue, 13 Jan 2015 00:18:38 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418644760-18773-1-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com
+Subject: Re: [RFC 1/4] lockdep: additional lock specific information when
+ dumping locks
+References: <1421074631-18831-1-git-send-email-sasha.levin@oracle.com> <20150112150633.GD25256@twins.programming.kicks-ass.net> <54B3E466.2030006@oracle.com> <20150112153747.GE25256@twins.programming.kicks-ass.net> <54B3F0F9.9040202@oracle.com> <20150112162339.GF25256@twins.programming.kicks-ass.net>
+In-Reply-To: <20150112162339.GF25256@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 11:59:07AM +0000, Lee Jones wrote:
-> Hi Brian, all,
->  
->  [x] Bulid test
->  [x] Bisectable
->  [x] Smatch
->  [x] Sparse
-
-Picked patches 1, 2, and 5 to l2-mtd.git. I requested changes to patch 3
-and possibly 4. The rest look OK, but I don't want to futz with patch
-conflicts on the remaining. Please rebase to l2-mtd.git if/when you
-resend.
-
-> v3:
->   Further aligned with upstream changes as suggested by Peter Griffin.
->   The clk_ignore_unused kernel command line parameter is due to be turned
->   off on STiH4* platforms, so we no longer give the driver the chance to
->   opt-out of fetching the EMI clock.  We also now provide syscfg offsets
->   inside the driver, as it's simpler and reduces the cost of having lots
->   of extra DT properties.
-
-Typically "simpler" and "reducing the cost of having lots of extra DT
-properties" aren't good enough reasons for immediately breaking an
-existing DT binding. We usually expect to support both for some period
-of time.
-
-> v2:
->   These are the last remaining patches in the set, all rebased and
->   with the DT documentation requested after the last submission.
->  
-> v1:
->   This patch-set updates ST's FSM SPI-NOR driver with all the internal
->   goodness which has happened since the initial (now upstreamed) snapshot
->   was taken. It covers just over 6 months worth of internal development
->   and bug-fixes. A final whitespace clean-up is also appended to the set
->   - to make it look pretty and stuff. :)
+On 01/12/2015 11:23 AM, Peter Zijlstra wrote:
+>>> > > Alternatively, make better/more use of lock_acquired() and track the
+>>> > > acquire vs acquired information in the held_lock (1 bit) and look at it
+>>> > > when printing.
+>> > 
+>> > We could do that, but then we'd lose the ability to get information out of
+>> > locks, what's the benefit of doing that?
+> That's mission creep; you never stated that as a goal.
 > 
-> Angus Clark (3):
->   mtd: st_spi_fsm: Add support for N25Q512 and N25Q00A devices
->   mtd: st_spi_fsm: Update Spansion device entries
->   mtd: st_spi_fsm: Improve busy wait handling
-> 
-> Lee Jones (9):
->   mtd: st_spi_fsm: Extend fsm_clear_fifo to handle unwanted bytes
->   mtd: st_spi_fsm: Obtain and use EMI clock
->   mtd: st_spi_fsm: dt-bindings: Deprecate generic compatible string
->   mtd: st_spi_fsm: Fetch boot device locations from DT match tables
->   mtd: st_spi_fsm: Fix [-Wsign-compare] build warning
->   mtd: st_spi_fsm: Update the JEDEC probe to handle extended READIDs
->   mtd: st_spi_fsm: General tidy-up
->   ARM: STi: stih416: Use new platform specific compatible string
->   ARM: STi: stih416: Supply EMI clock reference to FSM SPI NOR
-> 
-> Nunzio Raciti (1):
->   mtd: st_spi_fsm: Add support for Micron N25Q512A
-> 
->  Documentation/devicetree/bindings/mtd/st-fsm.txt |  20 +-
->  arch/arm/boot/dts/stih416.dtsi                   |   6 +-
->  drivers/mtd/devices/st_spi_fsm.c                 | 747 +++++++++++++++--------
->  include/dt-bindings/clock/stih416-clks.h         |   1 +
->  4 files changed, 519 insertions(+), 255 deletions(-)
-> 
+> One of the reasons i'm not particularly keen on it is because it creates
+> a circular dependency between lock implementations and lockdep. It also
+> creates asymmetry between lock types/capabilty.
 
-Brian
+Fair enough.
+
+__lock_acquired() which looks up held_lock doesn't happen unless
+CONFIG_LOCK_STAT is set, which means that if we want to use this method we'd
+need to look up held_lock just for that, which would make that path heavier.
+
+Before I go ahead and implement it, do you find it acceptable?
+
+
+Thanks,
+Sasha
