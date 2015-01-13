@@ -1,120 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036AbbAMJfv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 04:35:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49546 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751075AbbAMJft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 04:35:49 -0500
-Date: Tue, 13 Jan 2015 11:35:35 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Chris Metcalf <cmetcalf@ezchip.com>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH v2 22/40] tile: fix put_user sparse errors
-Message-ID: <20150113093535.GA4434@redhat.com>
-References: <1420558883-10131-1-git-send-email-mst@redhat.com>
- <1420558883-10131-23-git-send-email-mst@redhat.com>
- <54B44326.6010501@ezchip.com>
+	id S1752136AbbAMJgN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 04:36:13 -0500
+Received: from smtp04.smtpout.orange.fr ([80.12.242.126]:52316 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752079AbbAMJgI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 04:36:08 -0500
+X-ME-Helo: beldin
+X-ME-Date: Tue, 13 Jan 2015 10:36:06 +0100
+X-ME-IP: 109.214.23.205
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>, Felipe Balbi <balbi@ti.com>
+Cc: Yunzhi Li <lyz@rock-chips.com>,
+        "Dinh Nguyen \(dinguyen\@opensource.altera.com\)" 
+	<dinguyen@opensource.altera.com>,
+        "gregkh\@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb\@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "heiko\@sntech.de" <heiko@sntech.de>,
+        "jwerner\@chromium.org" <jwerner@chromium.org>,
+        "dianders\@chromium.org" <dianders@chromium.org>,
+        "olof\@lixom.net" <olof@lixom.net>,
+        "huangtao\@rock-chips.com" <huangtao@rock-chips.com>,
+        "zyw\@rock-chips.com" <zyw@rock-chips.com>,
+        "cf\@rock-chips.com" <cf@rock-chips.com>,
+        "linux-rockchip\@lists.infradead.org" 
+	<linux-rockchip@lists.infradead.org>,
+        "linus.walleij\@linaro.org" <linus.walleij@linaro.org>
+Subject: Re: [PATCH v7 3/5] usb: dwc2: add generic PHY framework support for dwc2 usb controler platform driver.
+References: <1418396413-27937-1-git-send-email-lyz@rock-chips.com>
+	<1418396972-32686-1-git-send-email-lyz@rock-chips.com>
+	<A2CA0424C0A6F04399FB9E1CD98E03048450635E@US01WEMBX2.internal.synopsys.com>
+	<54B14E0E.4070504@rock-chips.com>
+	<A2CA0424C0A6F04399FB9E1CD98E030484506F3B@US01WEMBX2.internal.synopsys.com>
+X-URL: http://belgarath.falguerolles.org/
+Date: Tue, 13 Jan 2015 10:35:52 +0100
+In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E030484506F3B@US01WEMBX2.internal.synopsys.com>
+	(Paul Zimmerman's message of "Tue, 13 Jan 2015 00:54:45 +0000")
+Message-ID: <87ppajxbt3.fsf@free.fr>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.92 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54B44326.6010501@ezchip.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 04:56:54PM -0500, Chris Metcalf wrote:
-> Nack for this patch as-is.
-> 
-> On 1/6/2015 10:44 AM, Michael S. Tsirkin wrote:
-> >virtio wants to write bitwise types to userspace using put_user.
-> >At the moment this triggers sparse errors, since the value is passed
-> >through an integer.
-> >
-> >For example:
-> >
-> >	__le32 __user *p;
-> >	__le32 x;
-> >	put_user(x, p);
-> >
-> >is safe, but currently triggers a sparse warning on tile.
-> >
-> >The reason has to do with this code:
-> >	__typeof((x)-(x))
-> >which seems to be a way to force check for an integer type.
-> 
-> No, it's purely a way to avoid
-> 
->   warning: cast from pointer to integer of different size
-> 
-> at every place we invoke put_user() with a pointer - which is
-> in fact pretty frequent throughout the kernel.
+Paul Zimmerman <Paul.Zimmerman@synopsys.com> writes:
+> The patch below fixes it. And it seems like the right thing to me,
+> since GPIOs should be optional for a generic phy, I would think. But
+> my device tree foo is very weak, so I'm not sure.
 >
->  The idiom of
-> casting to the difference of the type converts it to a type
-> of the same size as the input (whether integral or pointer),
-> but guaranteed to be an integral type.  Then from there it's safe
-> to cast it on to a u64 without generating a warning.
+> CCing Robert, who touched the generic phy code last. Robert, what do
+> you think?
+I think your patch in [1] is correct, because
+"Documentation/devicetree/bindings/usb/usb-nop-xceiv.txt" states that
+reset-gpios is optional, and because Felipe told me gpios for phy_generic are
+optional.
 
-Thanks for the comments.  OK, I see, though I wonder why didn't
-kbuild notify me about new warnings. Doesn't it build tile?
+Now the original code was written by Felipe, so better ask him first. The
+original code was :
+af9f51c55 phy-generic.c nop->gpio_reset = of_get_named_gpio_flags(node, "reset-gpios",
+af9f51c55 phy-generic.c                                                 0, &flags);
+af9f51c55 phy-generic.c if (nop->gpio_reset == -EPROBE_DEFER)
+af9f51c55 phy-generic.c         return -EPROBE_DEFER;
 
-So if you want to merge your patch, please let me know.
+Cheers.
 
-But I think the fix can be much simpler: unsigned long has the same property
-without any of the complexity, or problems with sparse.  So how about this:
+--
+Robert
 
---->
-
-tile: fix put_user sparse errors
-
-virtio wants to write bitwise types to userspace using put_user.
-At the moment this triggers sparse errors, since the value is passed
-through an integer.
-
-For example:
-
-__le32 __user *p;
-__le32 x;
-put_user(x, p);
-
-is safe, but currently triggers a sparse warning on tile.
-
-The reason has to do with this code:
-__typeof((x)-(x))
-which is a way to avoid cast from pointer to integer of different size
-warnings.
-
-Fix that up using __force unsigned long cast instead:
-this is similar to what many other architectures do.
-
-Note: this does not suppress any useful sparse checks since
-the original merely casted x to typeof(x-x).
-
-Tile currently does not trigger sparse warnings when get_user
-causes an illegal assignment across bitwise types.
-This patch does not attempt to fix this.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
----->
-
-diff --git a/arch/tile/include/asm/uaccess.h b/arch/tile/include/asm/uaccess.h
-index b6cde32..9fcbe6f 100644
---- a/arch/tile/include/asm/uaccess.h
-+++ b/arch/tile/include/asm/uaccess.h
-@@ -246,7 +246,7 @@ extern int __get_user_bad(void)
- #define __put_user_4(x, ptr, ret) __put_user_asm(sw, x, ptr, ret)
- #define __put_user_8(x, ptr, ret)					\
- 	({								\
--		u64 __x = (__typeof((x)-(x)))(x);			\
-+		u64 __x = (u64)(__force unsigned long)(x);		\
- 		int __lo = (int) __x, __hi = (int) (__x >> 32);		\
- 		asm volatile("1: { sw %1, %2; addi %0, %1, 4 }\n"	\
- 			     "2: { sw %0, %3; movei %0, 0 }\n"		\
-
-
-
-
-
+[1]
+> diff --git a/drivers/usb/phy/phy-generic.c b/drivers/usb/phy/phy-generic.c
+> index dd05254..9a826ff 100644
+> --- a/drivers/usb/phy/phy-generic.c
+> +++ b/drivers/usb/phy/phy-generic.c
+> @@ -218,10 +218,10 @@ int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_generic *nop,
+>  			clk_rate = 0;
+>  
+>  		needs_vcc = of_property_read_bool(node, "vcc-supply");
+> -		nop->gpiod_reset = devm_gpiod_get(dev, "reset-gpios");
+> +		nop->gpiod_reset = devm_gpiod_get_optional(dev, "reset-gpios");
+>  		err = PTR_ERR(nop->gpiod_reset);
+>  		if (!err) {
+> -			nop->gpiod_vbus = devm_gpiod_get(dev,
+> +			nop->gpiod_vbus = devm_gpiod_get_optional(dev,
+>  							 "vbus-detect-gpio");
+>  			err = PTR_ERR(nop->gpiod_vbus);
+>  		}
