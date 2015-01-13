@@ -1,118 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890AbbAMTeF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 14:34:05 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:32996 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167AbbAMTeC (ORCPT
+	id S1753647AbbAMTdo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 14:33:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36935 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753185AbbAMTdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 14:34:02 -0500
-From: Stephane Viau <sviau@codeaurora.org>
-To: dri-devel@lists.freedesktop.org
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        robdclark@gmail.com, Stephane Viau <sviau@codeaurora.org>
-Subject: [PATCH RESEND] drm/msm/hdmi: use dynamic allocation for hdmi resources
-Date: Tue, 13 Jan 2015 14:33:40 -0500
-Message-Id: <1421177620-25643-1-git-send-email-sviau@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1420666047-3690-2-git-send-email-sviau@codeaurora.org>
-References: <1420666047-3690-2-git-send-email-sviau@codeaurora.org>
+	Tue, 13 Jan 2015 14:33:41 -0500
+Date: Tue, 13 Jan 2015 19:33:57 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@intel.com>, Thomas Voegtle <tv@lio96.de>
+Subject: Re: [PATCH 3.16.y-ckt 075/216] drm/i915: Disallow pin ioctl
+ completely for kms drivers
+Message-ID: <20150113193357.GB24809@charon>
+References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
+ <1421085933-32536-76-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1421085933-32536-76-git-send-email-luis.henriques@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of reporting BUG_ON when resources arrays are not
-dimensioned correctly, this patch does a dynamic allocation of
-these arrays. This is needed for the following patches that add a
-regulator for a new target.
+On Mon, Jan 12, 2015 at 06:03:12PM +0000, Luis Henriques wrote:
+> 3.16.7-ckt4 -stable review patch.  If anyone has any objections, please let me know.
+>
 
-Signed-off-by: Stephane Viau <sviau@codeaurora.org>
----
- drivers/gpu/drm/msm/hdmi/hdmi.c | 28 ++++++++++++++++++++++++----
- drivers/gpu/drm/msm/hdmi/hdmi.h |  8 ++++----
- 2 files changed, 28 insertions(+), 8 deletions(-)
+Hi Daniel and Chris,
 
-diff --git a/drivers/gpu/drm/msm/hdmi/hdmi.c b/drivers/gpu/drm/msm/hdmi/hdmi.c
-index 062c687..180041d 100644
---- a/drivers/gpu/drm/msm/hdmi/hdmi.c
-+++ b/drivers/gpu/drm/msm/hdmi/hdmi.c
-@@ -106,7 +106,12 @@ static struct hdmi *hdmi_init(struct platform_device *pdev)
- 		goto fail;
- 	}
- 
--	BUG_ON(config->hpd_reg_cnt > ARRAY_SIZE(hdmi->hpd_regs));
-+	hdmi->hpd_regs = devm_kzalloc(&pdev->dev, sizeof(hdmi->hpd_regs[0]) *
-+			config->hpd_reg_cnt, GFP_KERNEL);
-+	if (!hdmi->hpd_regs) {
-+		ret = -ENOMEM;
-+		goto fail;
-+	}
- 	for (i = 0; i < config->hpd_reg_cnt; i++) {
- 		struct regulator *reg;
- 
-@@ -122,7 +127,12 @@ static struct hdmi *hdmi_init(struct platform_device *pdev)
- 		hdmi->hpd_regs[i] = reg;
- 	}
- 
--	BUG_ON(config->pwr_reg_cnt > ARRAY_SIZE(hdmi->pwr_regs));
-+	hdmi->pwr_regs = devm_kzalloc(&pdev->dev, sizeof(hdmi->pwr_regs[0]) *
-+			config->pwr_reg_cnt, GFP_KERNEL);
-+	if (!hdmi->pwr_regs) {
-+		ret = -ENOMEM;
-+		goto fail;
-+	}
- 	for (i = 0; i < config->pwr_reg_cnt; i++) {
- 		struct regulator *reg;
- 
-@@ -138,7 +148,12 @@ static struct hdmi *hdmi_init(struct platform_device *pdev)
- 		hdmi->pwr_regs[i] = reg;
- 	}
- 
--	BUG_ON(config->hpd_clk_cnt > ARRAY_SIZE(hdmi->hpd_clks));
-+	hdmi->hpd_clks = devm_kzalloc(&pdev->dev, sizeof(hdmi->hpd_clks[0]) *
-+			config->hpd_clk_cnt, GFP_KERNEL);
-+	if (!hdmi->hpd_clks) {
-+		ret = -ENOMEM;
-+		goto fail;
-+	}
- 	for (i = 0; i < config->hpd_clk_cnt; i++) {
- 		struct clk *clk;
- 
-@@ -153,7 +168,12 @@ static struct hdmi *hdmi_init(struct platform_device *pdev)
- 		hdmi->hpd_clks[i] = clk;
- 	}
- 
--	BUG_ON(config->pwr_clk_cnt > ARRAY_SIZE(hdmi->pwr_clks));
-+	hdmi->pwr_clks = devm_kzalloc(&pdev->dev, sizeof(hdmi->pwr_clks[0]) *
-+			config->pwr_clk_cnt, GFP_KERNEL);
-+	if (!hdmi->pwr_clks) {
-+		ret = -ENOMEM;
-+		goto fail;
-+	}
- 	for (i = 0; i < config->pwr_clk_cnt; i++) {
- 		struct clk *clk;
- 
-diff --git a/drivers/gpu/drm/msm/hdmi/hdmi.h b/drivers/gpu/drm/msm/hdmi/hdmi.h
-index 43e654f..9973e03 100644
---- a/drivers/gpu/drm/msm/hdmi/hdmi.h
-+++ b/drivers/gpu/drm/msm/hdmi/hdmi.h
-@@ -52,10 +52,10 @@ struct hdmi {
- 
- 	void __iomem *mmio;
- 
--	struct regulator *hpd_regs[2];
--	struct regulator *pwr_regs[2];
--	struct clk *hpd_clks[3];
--	struct clk *pwr_clks[2];
-+	struct regulator **hpd_regs;
-+	struct regulator **pwr_regs;
-+	struct clk **hpd_clks;
-+	struct clk **pwr_clks;
- 
- 	struct hdmi_phy *phy;
- 	struct i2c_adapter *i2c;
--- 
-Qualcomm Innovation Center, Inc.
+Thomas Voegtle (on Cc:) reported a regression in 3.16.7-ckt4, and he
+traced the issue to this commit.  You can see the whole thread in the
+3.16.7-ckt4 stable review email, or here:
 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, a Linux Foundation Collaborative Project
+ http://thread.gmane.org/gmane.linux.kernel.stable/119818/focus=120043
 
+Any suggestions/ideas before I drop this patch?  It seems odd to me
+that this patch causes a memory leak, but I don't really know the
+code.
+
+Cheers,
+--
+Luís
+
+> ------------------
+> 
+> From: Daniel Vetter <daniel.vetter@ffwll.ch>
+> 
+> commit d472fcc8379c062bd56a3876fc6ef22258f14a91 upstream.
+> 
+> The problem here is that SNA pins batchbuffers to etch out a bit more
+> performance. Iirc it started out as a w/a for i830M (which we've
+> implemented in the kernel since a long time already). The problem is
+> that the pin ioctl wasn't added in
+> 
+> commit d23db88c3ab233daed18709e3a24d6c95344117f
+> Author: Chris Wilson <chris@chris-wilson.co.uk>
+> Date:   Fri May 23 08:48:08 2014 +0200
+> 
+>     drm/i915: Prevent negative relocation deltas from wrapping
+> 
+> Fix this by simply disallowing pinning from userspace so that the
+> kernel is in full control of batch placement again. Especially since
+> distros are moving towards running X as non-root, so most users won't
+> even be able to see any benefits.
+> 
+> UMS support is dead now, but we need this minimal patch for
+> backporting. Follow-up patch will remove the pin ioctl code
+> completely.
+> 
+> Note to backporters: You must have both
+> 
+> commit b45305fce5bb1abec263fcff9d81ebecd6306ede
+> Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Date:   Mon Dec 17 16:21:27 2012 +0100
+> 
+>     drm/i915: Implement workaround for broken CS tlb on i830/845
+> 
+> which laned in 3.8 and
+> 
+> commit c4d69da167fa967749aeb70bc0e94a457e5d00c1
+> Author: Chris Wilson <chris@chris-wilson.co.uk>
+> Date:   Mon Sep 8 14:25:41 2014 +0100
+> 
+>     drm/i915: Evict CS TLBs between batches
+> 
+> which is also marked cc: stable. Otherwise this could introduce a
+> regression by disabling the userspace w/a without the kernel w/a being
+> fully functional on i830/45.
+> 
+> References: https://bugs.freedesktop.org/show_bug.cgi?id=76554#c116
+> Cc: Chris Wilson <chris@chris-wilson.co.uk>
+> Signed-off-by: Daniel Vetter <daniel.vetter@intel.com>
+> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+> ---
+>  drivers/gpu/drm/i915/i915_gem.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+> index ef3b4798da02..05cf35a972e5 100644
+> --- a/drivers/gpu/drm/i915/i915_gem.c
+> +++ b/drivers/gpu/drm/i915/i915_gem.c
+> @@ -4129,7 +4129,7 @@ i915_gem_pin_ioctl(struct drm_device *dev, void *data,
+>  	struct drm_i915_gem_object *obj;
+>  	int ret;
+>  
+> -	if (INTEL_INFO(dev)->gen >= 6)
+> +	if (drm_core_check_feature(dev, DRIVER_MODESET))
+>  		return -ENODEV;
+>  
+>  	ret = i915_mutex_lock_interruptible(dev);
+> @@ -4222,6 +4222,9 @@ i915_gem_busy_ioctl(struct drm_device *dev, void *data,
+>  	struct drm_i915_gem_object *obj;
+>  	int ret;
+>  
+> +	if (drm_core_check_feature(dev, DRIVER_MODESET))
+> +		return -ENODEV;
+> +
+>  	ret = i915_mutex_lock_interruptible(dev);
+>  	if (ret)
+>  		return ret;
+> -- 
+> 2.1.4
+> 
