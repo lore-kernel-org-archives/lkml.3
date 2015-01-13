@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535AbbAMRTb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 12:19:31 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:50198 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983AbbAMRTa (ORCPT
+	id S1753580AbbAMRTn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 12:19:43 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:59085 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971AbbAMRTl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 12:19:30 -0500
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Paul Clements <Paul.Clements@steeleye.com>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
-        nbd-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCH] nbd: fix possible memory leak
-Date: Tue, 13 Jan 2015 22:49:17 +0530
-Message-Id: <1421169557-18549-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Tue, 13 Jan 2015 12:19:41 -0500
+Message-ID: <54B553AA.50505@lwfinger.net>
+Date: Tue, 13 Jan 2015 11:19:38 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Colin King <colin.king@canonical.com>, Kalle Valo <kvalo@codeaurora.org>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rtlwifi/rtl8192de: remove redundant else if check
+References: <1421158054-22566-1-git-send-email-colin.king@canonical.com>
+In-Reply-To: <1421158054-22566-1-git-send-email-colin.king@canonical.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-we have already allocated memory for nbd_dev, but we were not
-releasing that memory and just returning the error value.
+On 01/13/2015 08:07 AM, Colin King wrote:
+> From: Colin Ian King <colin.king@canonical.com>
+>
+> The else if check condition checks for the opposite of the
+> if check, hence the else if check is redundant and can be
+> replaced with a simple else:
+>
+> if (rtlpriv->rtlhal.macphymode == SINGLEMAC_SINGLEPHY) {
+> 	..
+> } else if (rtlpriv->rtlhal.macphymode != SINGLEMAC_SINGLEPHY) {
+> 	..
+> }
+>
+> replaced with:
+>
+> if (rtlpriv->rtlhal.macphymode == SINGLEMAC_SINGLEPHY) {
+> 	..
+> } else {
+> 	..
+> }
+>
+> Signed-off-by: Colin Ian King <colin.king@canonical.com>
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
----
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
 
-Hi Paul,
-after seeing your mail about maintainers, just started to see the code.
-this patch is one way, another way can be to bring the kcalloc part below these checks. 
+Thanks,
 
- drivers/block/nbd.c | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+Larry
 
-diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-index 4bc2a5c..13ea239 100644
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -822,11 +822,15 @@ static int __init nbd_init(void)
- 		max_part = (1UL << part_shift) - 1;
- 	}
- 
--	if ((1UL << part_shift) > DISK_MAX_PARTS)
--		return -EINVAL;
-+	if ((1UL << part_shift) > DISK_MAX_PARTS) {
-+		err = -EINVAL;
-+		goto out_free;
-+	}
- 
--	if (nbds_max > 1UL << (MINORBITS - part_shift))
--		return -EINVAL;
-+	if (nbds_max > 1UL << (MINORBITS - part_shift)) {
-+		err = -EINVAL;
-+		goto out_free;
-+	}
- 
- 	for (i = 0; i < nbds_max; i++) {
- 		struct gendisk *disk = alloc_disk(1 << part_shift);
-@@ -889,6 +893,7 @@ out:
- 		blk_cleanup_queue(nbd_dev[i].disk->queue);
- 		put_disk(nbd_dev[i].disk);
- 	}
-+out_free:
- 	kfree(nbd_dev);
- 	return err;
- }
--- 
-1.8.1.2
+> ---
+>   drivers/net/wireless/rtlwifi/rtl8192de/hw.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/hw.c b/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
+> index 280c3da..01bcc2d 100644
+> --- a/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
+> +++ b/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
+> @@ -546,7 +546,7 @@ static bool _rtl92de_llt_table_init(struct ieee80211_hw *hw)
+>   		txpktbuf_bndy = 246;
+>   		value8 = 0;
+>   		value32 = 0x80bf0d29;
+> -	} else if (rtlpriv->rtlhal.macphymode != SINGLEMAC_SINGLEPHY) {
+> +	} else {
+>   		maxPage = 127;
+>   		txpktbuf_bndy = 123;
+>   		value8 = 0;
+>
 
