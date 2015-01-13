@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766AbbAMT2v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 14:28:51 -0500
-Received: from casper.infradead.org ([85.118.1.10]:54216 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413AbbAMT2u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 14:28:50 -0500
-Date: Tue, 13 Jan 2015 19:28:47 +0000
-From: Thomas Graf <tgraf@suug.ch>
-To: Cong Wang <cwang@twopensource.com>
-Cc: Ying Xue <ying.xue@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lkp@01.org, Netdev <netdev@vger.kernel.org>
-Subject: Re: Fwd: [rhashtable] WARNING: CPU: 0 PID: 10 at
- kernel/locking/mutex.c:570 mutex_lock_nested()
-Message-ID: <20150113192847.GP20387@casper.infradead.org>
-References: <20150110194803.GA9033@wfg-t540p.sh.intel.com>
- <54B3259B.7080601@windriver.com>
- <20150112124216.GA26570@casper.infradead.org>
- <54B4CE3E.8020009@windriver.com>
- <20150113084126.GE20387@casper.infradead.org>
- <CAHA+R7M1ZSCF+FwKVtZUbsJ05zesNg-WVTqH13=oFe5gM--3gw@mail.gmail.com>
+	id S1752522AbbAMTct (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 14:32:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57035 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751576AbbAMTcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 14:32:48 -0500
+Message-ID: <54B572CA.9060607@redhat.com>
+Date: Tue, 13 Jan 2015 14:32:26 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHA+R7M1ZSCF+FwKVtZUbsJ05zesNg-WVTqH13=oFe5gM--3gw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
+        tglx@linutronix.de, luto@amacapital.net
+Subject: Re: [RFC PATCH 04/11] x86,fpu: defer FPU restore until return to
+ userspace
+References: <1421012793-30106-1-git-send-email-riel@redhat.com> <1421012793-30106-5-git-send-email-riel@redhat.com> <20150113175804.GA29851@redhat.com>
+In-Reply-To: <20150113175804.GA29851@redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/15 at 11:14am, Cong Wang wrote:
-> On Tue, Jan 13, 2015 at 12:41 AM, Thomas Graf <tgraf@suug.ch> wrote:
-> > I can't reproduce it in my KVM box either so far. It looks like a
-> > mutex_lock() on an uninitialized mutex or use after free but I can't
-> > find such a code path so far.
-> 
-> Couldn't that be the delayed work is still running after rhashtable
-> is destroyed by its caller? I mean, cancel_delayed_work_sync()
-> should be called in rhashtable_destroy()?
-> 
-> Of course, it may be caller's responsibility to ensure that, I haven't
-> looked into it that much.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Yes, we came to the very same conclusion in a different email thread
-and found the offending race condition.
+On 01/13/2015 12:58 PM, Oleg Nesterov wrote:
+> On 01/11, riel@redhat.com wrote:
+>> 
+>> Defer restoring the FPU state, if so desired, until the task
+>> returns to userspace.
+> 
+> And yet another concern ;) Although I feel that I am totally
+> confused and probably wrong.
+> 
+>> --- a/arch/x86/include/asm/fpu-internal.h +++
+>> b/arch/x86/include/asm/fpu-internal.h @@ -382,6 +382,7 @@ static
+>> inline void drop_init_fpu(struct task_struct *tsk) else 
+>> fxrstor_checking(&init_xstate_buf->i387); } +
+>> clear_thread_flag(TIF_LOAD_FPU); }
+> 
+> OK, but shouldn't (say) restore_user_xstate() clear TIF_LOAD_FPU
+> too? Otherwise, can't switch_fpu_finish() restore the wrong context
+> later?
+
+I address restore_user_xstate and save_user_xstate later in the
+patch series. Once I have all the code working, I should refactor
+that, in order to get a cleanly bisectable series.
+
+> Or. Perhaps switch_fpu_finish() should do nothing if fpu.has_fpu ==
+> T, I dunno.
+
+One of the later patches in the series implements that.
+
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJUtXLKAAoJEM553pKExN6DCksH/iSAOJ4rqvDsBBY+VG5ZtQEK
+7fo5bK1HQb0X8yeJPoR8rSg3PzqHjV1v+eU4d/OWEJHV7U9zxWedn+BRv8DrVZvo
+1f1QqHY9ORZD0/NVZRJxlNBBqvUijUE1POTFixZVhU/t0MuWFG0+4a7BgY5B6RIa
+/hZ4XcZ9fnTpN3cOSIEIOHCT90xZuUMwopRX/7ad8QRhqLaoH0MXqspAEMi8321b
+4xwQUw1wD6OtCqWk1fG5dfF69F8ZrSGgNilUudwMeBEg4NODbVis6jw6iOZnjM+3
+juZZXZ49LdYTlw5erjPVoZJ3kXZbdT1cIa81+LPDot/uKyAx5j6IKmM4ENQusw0=
+=OHgf
+-----END PGP SIGNATURE-----
