@@ -1,65 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865AbbAMMRh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 07:17:37 -0500
-Received: from mail-we0-f179.google.com ([74.125.82.179]:41008 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967AbbAMMRf (ORCPT
+	id S1752054AbbAMMUY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 07:20:24 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:39166 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299AbbAMMUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 07:17:35 -0500
-Message-ID: <54B50CDA.3090307@gmail.com>
-Date: Tue, 13 Jan 2015 13:17:30 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-To: Mike Turquette <mturquette@linaro.org>,
-        Jisheng Zhang <jszhang@marvell.com>
-CC: "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "antoine.tenart@free-electrons.com" 
-	<antoine.tenart@free-electrons.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH 3/3] clk: berlin: bg2q: remove non-exist "smemc" gate
- clock
-References: <1420016272-6789-1-git-send-email-jszhang@marvell.com> <1420016272-6789-4-git-send-email-jszhang@marvell.com> <54AD3EAE.6090009@gmail.com> <20150107222209.64ed24a0@xhacker> <54AD431F.6060403@gmail.com> <20150109201306.4d1a296b@xhacker> <54B12446.4030703@gmail.com> <20150113002817.20842.98432@quantum>
-In-Reply-To: <20150113002817.20842.98432@quantum>
-Content-Type: text/plain; charset=utf-8; format=flowed
+	Tue, 13 Jan 2015 07:20:23 -0500
+Message-ID: <54B50D7F.2050604@hitachi.com>
+Date: Tue, 13 Jan 2015 21:20:15 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Dave Hansen <dave.hansen@linux.intel.com>
+Subject: Re: [PATCH 3.19 v2 3/3] x86: Enforce MAX_INSN_SIZE in the instruction
+ decoder
+References: <cover.1421103159.git.luto@amacapital.net> <71a49f266444c8f918b895ecd70c91a6e59b011f.1421103159.git.luto@amacapital.net>
+In-Reply-To: <71a49f266444c8f918b895ecd70c91a6e59b011f.1421103159.git.luto@amacapital.net>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2015 01:28 AM, Mike Turquette wrote:
-> Quoting Sebastian Hesselbarth (2015-01-10 05:08:22)
->> This is clk subsystem, so either Mike takes it through his fixes branch
->> including my
->>
->> Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->>
->> or decides to agree that I take it instead with his Ack. I am fine
->> with both.
->
-> Acked-by: Michael Turquette <mturquette@linaro.org>
->
-> Now the three fixes can stay together and live happily ever after.
+(2015/01/13 8:04), Andy Lutomirski wrote:
+> The instruction decoder used to assume that the input buffer was
+> exactly MAX_INSN_SIZE bytes long.  Now that the input buffer has
+> variable length, even if the input buffer is longer than
+> MAX_INSN_SIZE, we should still reject instructions longer than
+> MAX_INSN_SIZE, since a real CPU will reject them even if they're
+> otherwise valid.
+> 
+> Other than potentially confusing some of the decoder sanity checks,
+> I'm not aware of any actual problems that omitting this check would
+> cause.
+> 
+> It's worth noting that MAX_INSN_SIZE is incorrectly set to 16.  This
+> patch doesn't change that.  I'll submit a fix for that later.
 
-Mike,
+Hm, this patch logic is OK, but the comment is a bit odd.
+As you said, if the current code incorrectly set MAX_INSN_SIZE to 16,
+the comment should not say "15" without changing MAX_INSN_SIZE itself.
 
-I already had the two others pulled by Olof some days ago.
-If you plan for a fixes branch for v3.19, please take this in too.
+Others are OK for me.
 
-If you have no other fixes, I can take it and do a 2nd round of
-fixes for Berlin.
+> 
+> Fixes: 6ba48ff46f76 x86: Remove arbitrary instruction size limit in instruction decoder
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> ---
+> 
+> Arguably, the limit could be hard-coded as 15 instead of relying on the
+> macro.
+> 
+> arch/x86/lib/insn.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/arch/x86/lib/insn.c b/arch/x86/lib/insn.c
+> index 1313ae6b478b..c5912d7a4a15 100644
+> --- a/arch/x86/lib/insn.c
+> +++ b/arch/x86/lib/insn.c
+> @@ -52,6 +52,13 @@
+>   */
+>  void insn_init(struct insn *insn, const void *kaddr, int buf_len, int x86_64)
+>  {
+> +	/*
+> +	 * Instructions longer than 15 bytes are invalid even if the
 
-Sebastian
+I meant you'd better use MAX_INSN_SIZE instead of "15 bytes" here.
+
+Thank you,
+
+> +	 * input buffer is long enough to hold them.
+> +	 */
+> +	if (buf_len > MAX_INSN_SIZE)
+> +		buf_len = MAX_INSN_SIZE;
+> +
+>  	memset(insn, 0, sizeof(*insn));
+>  	insn->kaddr = kaddr;
+>  	insn->end_kaddr = kaddr + buf_len;
+> 
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
