@@ -1,53 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422AbbAMSeo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 13:34:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49666 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752769AbbAMSen (ORCPT
+	id S1753552AbbAMSfT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 13:35:19 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:39156 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752330AbbAMSfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 13:34:43 -0500
-Date: Tue, 13 Jan 2015 10:34:41 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Kiran Raparthy <kiran.kumar@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Mike Chan <mike@android.com>,
-        Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>, JP Abgrall <jpa@google.com>,
-        Arve =?utf-8?B?SGrvv71ubmV277+9Zw==?= <arve@android.com>
-Subject: Re: [RFC 1/2] misc: uidstat: Add uid stat driver to collect network
- statistics.
-Message-ID: <20150113183441.GA24908@kroah.com>
-References: <1421147642-28360-1-git-send-email-kiran.kumar@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421147642-28360-1-git-send-email-kiran.kumar@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 13 Jan 2015 13:35:16 -0500
+From: Harini Katakam <harinik@xilinx.com>
+To: wsa@the-dreams.de, mark.rutland@arm.com
+Cc: michal.simek@xilinx.com, soren.brinkmann@xilinx.com,
+        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, harinikatakamlinux@gmail.com,
+        harinik@xilinx.com
+Subject: [PATCH v6] i2c: cadence: Check for errata condition involving master receive
+Date: Wed, 14 Jan 2015 00:04:59 +0530
+Message-Id: <1421174099-19839-1-git-send-email-harinik@xilinx.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 04:44:01PM +0530, Kiran Raparthy wrote:
-> From: Mike Chan <mike@android.com>
-> 
-> misc: uidstat: Add uid stat driver to collect network statistics.
-> 
-> To analyze application's network statistics, we need a mechanism to export
-> the UID based statistics to userspace so that userspace tools can use the
-> exported numbers and generate the report against the UID.
-> 
-> This patch allows the user to explore the UID based network statistics
-> exported to /proc/uid_stat.
+Cadence I2C controller has the following bugs:
+- completion indication is not given to the driver at the end of
+a read/receive transfer with HOLD bit set.
+- Invalid read transaction are generated on the bus when HW timeout
+condition occurs with HOLD bit set.
 
-This is a joke, right?  It's not April 1 yet people, why send this in
-January?
+As a result of the above, if a set of messages to be transferred with
+repeated start includes any message following a read message,
+completion is never indicated and timeout occurs.
+Hence a check is implemented to return -EOPNOTSUPP for such sequences.
 
-confused,
+Signed-off-by: Harini Katakam <harinik@xilinx.com>
+Signed-off-by: Vishnu Motghare <vishnum@xilinx.com>
+---
 
-greg k-h
+v6:
+- Correct if condition - add braces to include both statements.
+- Modify comments and warning message.
+
+v5:
+Make warning grepable in driver.
+
+v4:
+Use single dev_warn and make message grep-able.
+
+v3:
+Add warning in case of unsupported transfer.
+
+v2:
+Dont defeteature repeated start. Just check for unsupported conditions in the
+driver and return error.
+
+---
+ drivers/i2c/busses/i2c-cadence.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/drivers/i2c/busses/i2c-cadence.c b/drivers/i2c/busses/i2c-cadence.c
+index 5f5d4fa..c7be4fb 100644
+--- a/drivers/i2c/busses/i2c-cadence.c
++++ b/drivers/i2c/busses/i2c-cadence.c
+@@ -541,6 +541,19 @@ static int cdns_i2c_master_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
+ 	 * processed with a repeated start.
+ 	 */
+ 	if (num > 1) {
++		/*
++		 * This controller does not give completion interrupt after a
++		 * master receive message if HOLD bit is set (repeated start),
++		 * resulting in SW timeout. Hence, if a receive message is
++		 * followed by any other message, an error is returned
++		 * indicating that this sequence is not supported.
++		 */
++		for (count = 0; count < num-1; count++) {
++			if (msgs[count].flags & I2C_M_RD) {
++				dev_warn(adap->dev.parent, "Can't do repeated start after a receive message\n");
++				return -EOPNOTSUPP;
++			}
++		}
+ 		id->bus_hold_flag = 1;
+ 		reg = cdns_i2c_readreg(CDNS_I2C_CR_OFFSET);
+ 		reg |= CDNS_I2C_CR_HOLD;
+-- 
+1.7.9.5
+
