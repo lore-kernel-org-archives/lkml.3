@@ -1,65 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389AbbAMRRY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 12:17:24 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:48081 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752665AbbAMRRW (ORCPT
+	id S1753447AbbAMRRm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 12:17:42 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48529 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752744AbbAMRRk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 12:17:22 -0500
+	Tue, 13 Jan 2015 12:17:40 -0500
+Message-ID: <54B55326.1060606@pengutronix.de>
+Date: Tue, 13 Jan 2015 18:17:26 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20150113112854.GA7660@katana>
-References: <1418357907-4215-1-git-send-email-harinik@xilinx.com>
-	<1418357907-4215-2-git-send-email-harinik@xilinx.com>
-	<20150113112854.GA7660@katana>
-Date: Tue, 13 Jan 2015 22:47:20 +0530
-Message-ID: <CAFcVECK5PmvmHpGmtVdyc=rrv7bj97bjR5LuZQoehVhgn3Xbxw@mail.gmail.com>
-Subject: Re: [PATCH v5 1/2] i2c: cadence: Handle > 252 byte transfers
-From: Harini Katakam <harinikatakamlinux@gmail.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: Kedareswara rao Appana <appana.durga.rao@xilinx.com>, wg@grandegger.com,
+        michal.simek@xilinx.com, grant.likely@linaro.org, robh+dt@kernel.org,
+        linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Kedareswara rao Appana <appanad@xilinx.com>
+Subject: Re: [PATCH v5] can: Convert to runtime_pm
+References: <baf987c11c0242c2bf87b81f9396b09d@BN1BFFO11FD018.protection.gbl> <3a3437c5c8ff48d9a45fee7e81fa8dca@BY2FFO11FD058.protection.gbl> <54B4FCB5.6040904@pengutronix.de> <6ea3c0ea0f5c4deb9a6e4738a8d94a36@BN1AFFO11FD047.protection.gbl>
+In-Reply-To: <6ea3c0ea0f5c4deb9a6e4738a8d94a36@BN1AFFO11FD047.protection.gbl>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="3LFpOdiEOMoKdlBnKJNpDewrCqmI1cmja"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--3LFpOdiEOMoKdlBnKJNpDewrCqmI1cmja
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jan 13, 2015 at 4:58 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
-> On Fri, Dec 12, 2014 at 09:48:26AM +0530, Harini Katakam wrote:
->> The I2C controller sends a NACK to the slave when transfer size register
->> reaches zero, irrespective of the hold bit. So, in order to handle transfers
->> greater than 252 bytes, the transfer size register has to be maintained at a
->> value >= 1. This patch implements the same.
->> The interrupt status is cleared at the beginning of the isr instead of
->> the end, to avoid missing any interrupts.
+On 01/13/2015 06:08 PM, S=C3=B6ren Brinkmann wrote:
+> On Tue, 2015-01-13 at 12:08PM +0100, Marc Kleine-Budde wrote:
+>> On 01/12/2015 07:45 PM, S=C3=B6ren Brinkmann wrote:
+>>> On Mon, 2015-01-12 at 08:34PM +0530, Kedareswara rao Appana wrote:
+>>>> Instead of enabling/disabling clocks at several locations in the dri=
+ver,
+>>>> Use the runtime_pm framework. This consolidates the actions for runt=
+ime PM
+>>>> In the appropriate callbacks and makes the driver more readable and =
+mantainable.
+>>>>
+>>>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+>>>> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
+>>>> ---
+>>>> Changes for v5:
+>>>>  - Updated with the review comments.
+>>>>    Updated the remove fuction to use runtime_pm.
+>>>> Chnages for v4:
+>>>>  - Updated with the review comments.
+>>>> Changes for v3:
+>>>>   - Converted the driver to use runtime_pm.
+>>>> Changes for v2:
+>>>>   - Removed the struct platform_device* from suspend/resume
+>>>>     as suggest by Lothar.
+>>>>
+>>>>  drivers/net/can/xilinx_can.c |  157 ++++++++++++++++++++++++++++---=
+----------
+>>>>  1 files changed, 107 insertions(+), 50 deletions(-)
+>>> [..]
+>>>> +static int __maybe_unused xcan_runtime_resume(struct device *dev)
+>>>>  {
+>>>> -	struct platform_device *pdev =3D dev_get_drvdata(dev);
+>>>> -	struct net_device *ndev =3D platform_get_drvdata(pdev);
+>>>> +	struct net_device *ndev =3D dev_get_drvdata(dev);
+>>>>  	struct xcan_priv *priv =3D netdev_priv(ndev);
+>>>>  	int ret;
+>>>> +	u32 isr, status;
+>>>> =20
+>>>>  	ret =3D clk_enable(priv->bus_clk);
+>>>>  	if (ret) {
+>>>> @@ -1014,15 +1030,28 @@ static int __maybe_unused xcan_resume(struct=
+ device *dev)
+>>>>  	ret =3D clk_enable(priv->can_clk);
+>>>>  	if (ret) {
+>>>>  		dev_err(dev, "Cannot enable clock.\n");
+>>>> -		clk_disable_unprepare(priv->bus_clk);
+>>>> +		clk_disable(priv->bus_clk);
+>>> [...]
+>>>> @@ -1173,12 +1219,23 @@ static int xcan_remove(struct platform_devic=
+e *pdev)
+>>>>  {
+>>>>  	struct net_device *ndev =3D platform_get_drvdata(pdev);
+>>>>  	struct xcan_priv *priv =3D netdev_priv(ndev);
+>>>> +	int ret;
+>>>> +
+>>>> +	ret =3D pm_runtime_get_sync(&pdev->dev);
+>>>> +	if (ret < 0) {
+>>>> +		netdev_err(ndev, "%s: pm_runtime_get failed(%d)\n",
+>>>> +				__func__, ret);
+>>>> +		return ret;
+>>>> +	}
+>>>> =20
+>>>>  	if (set_reset_mode(ndev) < 0)
+>>>>  		netdev_err(ndev, "mode resetting failed!\n");
+>>>> =20
+>>>>  	unregister_candev(ndev);
+>>>> +	pm_runtime_disable(&pdev->dev);
+>>>>  	netif_napi_del(&priv->napi);
+>>>> +	clk_disable_unprepare(priv->bus_clk);
+>>>> +	clk_disable_unprepare(priv->can_clk);
+>>>
+>>> Shouldn't pretty much all these occurrences of clk_disable/enable
+>>> disappear? This should all be handled by the runtime_pm framework now=
+=2E
 >>
->> Signed-off-by: Harini Katakam <harinik@xilinx.com>
->
-> Applied to for-next, thanks!
->
->> @@ -333,10 +359,11 @@ static void cdns_i2c_mrecv(struct cdns_i2c *id)
->>        * receive if it is less than transfer size and transfer size if
->>        * it is more. Enable the interrupts.
->>        */
->> -     if (id->recv_count > CDNS_I2C_TRANSFER_SIZE)
->> +     if (id->recv_count > CDNS_I2C_TRANSFER_SIZE) {
->>               cdns_i2c_writereg(CDNS_I2C_TRANSFER_SIZE,
->>                                 CDNS_I2C_XFER_SIZE_OFFSET);
->> -     else
->> +             id->curr_recv_count = CDNS_I2C_TRANSFER_SIZE;
->> +     } else
->>               cdns_i2c_writereg(id->recv_count, CDNS_I2C_XFER_SIZE_OFFSET);
->
-> else branch must have braces, too! I fixed that.
+>> We have:
+>> - clk_prepare_enable() in probe
+>=20
+> This should become something like pm_runtime_get_sync(), shouldn't it?
+>=20
+>> - clk_disable_unprepare() in remove
+>=20
+> pm_runtime_put()
+>=20
+>> - clk_enable() in runtime_resume
+>> - clk_disable() in runtime_suspend
+>=20
+> These are the ones needed.
+>=20
+> The above makes me suspect that the clocks are always on, regardless of=
 
-Thanks!
 
-Regards,
-Harini
+Define "on" :)
+The clocks are prepared after probe() exists, but not enabled. The first
+pm_runtime_get_sync() will enable the clocks.
+
+> the runtime suspend state since they are enabled in probe and disabled
+> in remove, is that right? Ideally, the usage in probe and remove should=
+
+> be migrated to runtime_pm and clocks should really only be running when=
+
+> needed and not throughout the whole lifetime of the driver.
+
+The clocks are not en/disabled via pm_runtime, because
+pm_runtime_get_sync() is called from atomic contect. We can have another
+look into the driver and try to change this.
+
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--3LFpOdiEOMoKdlBnKJNpDewrCqmI1cmja
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUtVMmAAoJECte4hHFiupUkzUP/2K7csJCswiGIVK8kd6zBHTC
+o10h6Pzg+5w9zh6LyVcmC3aGBR8MztaNSt8ywwo7h0ekoOKhDMstnW3E1t9NxYpy
+ozRbdlqncaDxPbAhr0DNhMGiv7q1RpY9FjQxFCRxeDl6VbWo5e7iJ6QTnZ1GzIT3
+Q5fUv7V6N0kWCyb5gOuWUMzi8FKPZl0mKTMPXrTK6SgAOy01LQMgAQCK6qppsjPS
+QzOb1VApp/JdT8ow1hYuL3gam1whaCMOWEDp84ZOO5FpwO0wpfxI9VWoQm8C7U2M
+QorB1MxEZeMU3egiH2Hu1re2iTJCA09HXO8JXD9k9hCuwO2/w4u9DTFvq5GjPjhh
+Gu8aNyn+jHMDkE0N+w0D/LEdw6Y0HXUf3upEF0jrtpkb+KTQ0wGGTJ9HPGhCR1Rc
+ai+KakGP7nIrOsZeOJ+v7Pj/HjiraAFRbsqY29u2v7fiMovHE5tBQcbE3y+2vqM7
+Tnd90D+lDwnYw/VToPdu0yMogSgBvBybPnddbj3KpEj/qLUPd9nwxaF7+G+bfuNi
+FSg1eMfTSqo9Jq1I4afhT/9Yig/Zpu/QJ5RrKX/MThLtp5CnyaI6kCZh8rokxyxp
+UFFTsHMndUDt7chghNJkQMkw3EuNkyv100Fs/J01ljIJgUykm0AyYJMyiRD4whW7
+5fRM7xTlshl3SWSj+kKO
+=mjFD
+-----END PGP SIGNATURE-----
+
+--3LFpOdiEOMoKdlBnKJNpDewrCqmI1cmja--
