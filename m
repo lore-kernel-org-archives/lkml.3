@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752342AbbAMPmo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 10:42:44 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:20132 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568AbbAMPmn (ORCPT
+	id S1752197AbbAMPpc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 10:45:32 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:43518 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145AbbAMPpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 10:42:43 -0500
-Message-ID: <54B53CDD.7070400@oracle.com>
-Date: Tue, 13 Jan 2015 10:42:21 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>, Imre Palik <imrep.amz@gmail.com>,
-        xen-devel@lists.xenproject.org
-CC: "Palik, Imre" <imrep@amazon.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Anthony Liguori <aliguori@amazon.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Xen-devel] [PATCH] xen-time: decreasing the rating of the xen
- clocksource below that of the tsc clocksource for dom0's
-References: <1421136862-15083-1-git-send-email-imrep.amz@gmail.com> <54B4EAC7.2080105@citrix.com>
-In-Reply-To: <54B4EAC7.2080105@citrix.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Tue, 13 Jan 2015 10:45:31 -0500
+From: Ming Lei <ming.lei@canonical.com>
+To: linux-kernel@vger.kernel.org, Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Zach Brown <zab@zabbo.net>,
+        Christoph Hellwig <hch@infradead.org>,
+        Maxim Patlasov <mpatlasov@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: [PATCH v2 0/4] block & aio: improve loop with kernel aio
+Date: Tue, 13 Jan 2015 23:44:44 +0800
+Message-Id: <1421163888-21452-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2015 04:52 AM, David Vrabel wrote:
-> On 13/01/15 08:14, Imre Palik wrote:
->> From: "Palik, Imre" <imrep@amazon.de>
->>
->> In Dom0's the use of the TSC clocksource (whenever it is stable enough to
->> be used) instead of the Xen clocksource should not cause any issues, as
->> Dom0 VMs never live-migrated.  The TSC clocksource is somewhat more
->> efficient than the Xen paravirtualised clocksource, thus it should have
->> higher rating.
->>
->> This patch decreases the rating of the Xen clocksource in Dom0s to 275.
->> Which is half-way between the rating of the TSC clocksource (300) and the
->> hpet clocksource (250).
-> I'm happy with this but would like to see acks from those who objected
-> to v1.
->
-> David
->
->> --- a/arch/x86/xen/time.c
->> +++ b/arch/x86/xen/time.c
->> @@ -487,6 +487,10 @@ static void __init xen_time_init(void)
->>   	int cpu = smp_processor_id();
->>   	struct timespec tp;
->>   
->> +	/* As Dom0 is never moved, no penalty on using TSC there */
+Hi Guys,
 
-Again, why not any PV guest with TSC_MODE_NEVER_EMULATE?
+The 1st two patches introduce kernel AIO support, most of
+is borrowed from previous Dave's work, and thanks to ITER_BVEC,
+it is much simper to implement kernel AIO now.
 
-And I am not sure I understood the argument about unsynchronized TSCs. 
-You mentioned you can't find a platform to test on. I think you may be 
-able to unsynchronize TSCs by writing something to MSR 0x10 early during 
-Xen boot and then migrate dom0's vcpu to that pcpu later (making sure 
-this vcpu was not running there while dom0 was booting)
+The last two patches applies kernel aio to loop-mq.
 
--boris
+Follows benefits from using kernel aio in loop:
+	- avoid double cache, and memory usage decreased a lot
+	- system load gets much decreased
 
->> +	if (xen_initial_domain())
->> +		xen_clocksource.rating = 275;
->> +
->>   	clocksource_register_hz(&xen_clocksource, NSEC_PER_SEC);
->>   
->>   	if (HYPERVISOR_vcpu_op(VCPUOP_stop_periodic_timer, cpu, NULL) == 0) {
->>
+In the commit log of patch 4, detailed performance data
+and system resource monitor information is provided about
+using kernel aio for loop block.
+
+V2:
+	- remove 'extra' parameter to aio_kernel_alloc()
+	- try to avoid memory allcation inside queue req callback
+	- introduce 'use_mq' sysfs file for enabling kernel aio or disabling it
+V1:
+	- link:
+		http://marc.info/?t=140803157700004&r=1&w=2
+	- improve failure path in aio_kernel_submit()
+
+ drivers/block/loop.c |  173 ++++++++++++++++++++++++++++++++++++++++++++++++--
+ drivers/block/loop.h |   11 ++++
+ fs/aio.c             |  121 +++++++++++++++++++++++++++++++++++
+ fs/direct-io.c       |    9 ++-
+ include/linux/aio.h  |   17 ++++-
+ 5 files changed, 323 insertions(+), 8 deletions(-)
+
+
+Thanks,
+Ming Lei
 
