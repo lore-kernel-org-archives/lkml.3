@@ -1,87 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056AbbAMPrc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 10:47:32 -0500
-Received: from mga03.intel.com ([134.134.136.65]:25151 "EHLO mga03.intel.com"
+	id S1752775AbbAMPuw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 10:50:52 -0500
+Received: from gum.cmpxchg.org ([85.214.110.215]:57293 "EHLO gum.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752228AbbAMPqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 10:46:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,750,1413270000"; 
-   d="scan'208";a="650463771"
-Date: Tue, 13 Jan 2015 21:15:32 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Dan Williams <dan.j.williams@intel.com>, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: Re: [PATCH] dmaengine: k3: Fix duplicated function name and
- allmodconfig build
-Message-ID: <20150113154532.GG3085@intel.com>
-References: <1419858090-7682-1-git-send-email-k.kozlowski@samsung.com>
+	id S1751347AbbAMPut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 10:50:49 -0500
+Date: Tue, 13 Jan 2015 10:50:40 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Vladimir Davydov <vdavydov@parallels.com>,
+        Greg Thelen <gthelen@google.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] mm: memcontrol: default hierarchy interface for
+ memory
+Message-ID: <20150113155040.GC8180@phnom.home.cmpxchg.org>
+References: <1420776904-8559-1-git-send-email-hannes@cmpxchg.org>
+ <1420776904-8559-2-git-send-email-hannes@cmpxchg.org>
+ <20150112153716.d54e90c634b70d49e8bb8688@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1419858090-7682-1-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20150112153716.d54e90c634b70d49e8bb8688@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 29, 2014 at 02:01:30PM +0100, Krzysztof Kozlowski wrote:
-> While splitting device control in db08425ebd51 ("dmaengine: k3:
-> Split device_control") new function with the same 'k3_dma_resume' name
-> was added, leading to build error:
+On Mon, Jan 12, 2015 at 03:37:16PM -0800, Andrew Morton wrote:
+> On Thu,  8 Jan 2015 23:15:04 -0500 Johannes Weiner <hannes@cmpxchg.org> wrote:
 > 
-> drivers/dma/k3dma.c:823:12: error: conflicting types for ‘k3_dma_resume’
-> drivers/dma/k3dma.c:625:12: note: previous definition of ‘k3_dma_resume’ was here
+> > Introduce the basic control files to account, partition, and limit
+> > memory using cgroups in default hierarchy mode.
+> > 
+> > This interface versioning allows us to address fundamental design
+> > issues in the existing memory cgroup interface, further explained
+> > below.  The old interface will be maintained indefinitely, but a
+> > clearer model and improved workload performance should encourage
+> > existing users to switch over to the new one eventually.
+> > 
+> > The control files are thus:
+> > 
+> >   - memory.current shows the current consumption of the cgroup and its
+> >     descendants, in bytes.
+> > 
+> >   - memory.low configures the lower end of the cgroup's expected
+> >     memory consumption range.  The kernel considers memory below that
+> >     boundary to be a reserve - the minimum that the workload needs in
+> >     order to make forward progress - and generally avoids reclaiming
+> >     it, unless there is an imminent risk of entering an OOM situation.
 > 
-Applied, thanks
+> The code appears to be ascribing a special meaning to low==0: you can
+> write "none" to set this.  But I'm not seeing any description of this?
 
--- 
-~Vinod
+Ah, yes.
 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  drivers/dma/k3dma.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/dma/k3dma.c b/drivers/dma/k3dma.c
-> index 49be7f687c4c..a4ff7e9e68be 100644
-> --- a/drivers/dma/k3dma.c
-> +++ b/drivers/dma/k3dma.c
-> @@ -601,7 +601,7 @@ static int k3_dma_terminate_all(struct dma_chan *chan)
->  	return 0;
->  }
->  
-> -static int k3_dma_pause(struct dma_chan *chan)
-> +static int k3_dma_transfer_pause(struct dma_chan *chan)
->  {
->  	struct k3_dma_chan *c = to_k3_chan(chan);
->  	struct k3_dma_dev *d = to_k3_dma(chan->device);
-> @@ -622,7 +622,7 @@ static int k3_dma_pause(struct dma_chan *chan)
->  	return 0;
->  }
->  
-> -static int k3_dma_resume(struct dma_chan *chan)
-> +static int k3_dma_transfer_resume(struct dma_chan *chan)
->  {
->  	struct k3_dma_chan *c = to_k3_chan(chan);
->  	struct k3_dma_dev *d = to_k3_dma(chan->device);
-> @@ -735,8 +735,8 @@ static int k3_dma_probe(struct platform_device *op)
->  	d->slave.device_prep_slave_sg = k3_dma_prep_slave_sg;
->  	d->slave.device_issue_pending = k3_dma_issue_pending;
->  	d->slave.device_config = k3_dma_config;
-> -	d->slave.device_pause = k3_dma_pause;
-> -	d->slave.device_resume = k3_dma_resume;
-> +	d->slave.device_pause = k3_dma_transfer_pause;
-> +	d->slave.device_resume = k3_dma_transfer_resume;
->  	d->slave.device_terminate_all = k3_dma_terminate_all;
->  	d->slave.copy_align = DMA_ALIGN;
->  
-> -- 
-> 1.9.1
-> 
+The memory.limit_in_bytes and memory.soft_limit_in_bytes currently
+show 18446744073709551615 per default, which is a silly way of saying
+"this limit is inactive".  And echoing -1 into the control file is an
+even sillier way of setting this state.  So the new interface just
+calls this state "none".  Internally, 0 and Very High Number represent
+this unconfigured state for memory.low and memory.high, respectively.
 
--- 
+I added a bullet point at the end of the changelog below.
+
+> >   - memory.high configures the upper end of the cgroup's expected
+> >     memory consumption range.  A cgroup whose consumption grows beyond
+> >     this threshold is forced into direct reclaim, to work off the
+> >     excess and to throttle new allocations heavily, but is generally
+> >     allowed to continue and the OOM killer is not invoked.
+> > 
+> >   - memory.max configures the hard maximum amount of memory that the
+> >     cgroup is allowed to consume before the OOM killer is invoked.
+> > 
+> >   - memory.events shows event counters that indicate how often the
+> >     cgroup was reclaimed while below memory.low, how often it was
+> >     forced to reclaim excess beyond memory.high, how often it hit
+> >     memory.max, and how often it entered OOM due to memory.max.  This
+> >     allows users to identify configuration problems when observing a
+> >     degradation in workload performance.  An overcommitted system will
+> >     have an increased rate of low boundary breaches, whereas increased
+> >     rates of high limit breaches, maximum hits, or even OOM situations
+> >     will indicate internally overcommitted cgroups.
+> > 
+> > For existing users of memory cgroups, the following deviations from
+> > the current interface are worth pointing out and explaining:
+> > 
+> >   - The original lower boundary, the soft limit, is defined as a limit
+> >     that is per default unset.  As a result, the set of cgroups that
+> >     global reclaim prefers is opt-in, rather than opt-out.  The costs
+> >     for optimizing these mostly negative lookups are so high that the
+> >     implementation, despite its enormous size, does not even provide
+> >     the basic desirable behavior.  First off, the soft limit has no
+> >     hierarchical meaning.  All configured groups are organized in a
+> >     global rbtree and treated like equal peers, regardless where they
+> >     are located in the hierarchy.  This makes subtree delegation
+> >     impossible.  Second, the soft limit reclaim pass is so aggressive
+> >     that it not just introduces high allocation latencies into the
+> >     system, but also impacts system performance due to overreclaim, to
+> >     the point where the feature becomes self-defeating.
+> > 
+> >     The memory.low boundary on the other hand is a top-down allocated
+> >     reserve.  A cgroup enjoys reclaim protection when it and all its
+> >     ancestors are below their low boundaries, which makes delegation
+> >     of subtrees possible.  Secondly, new cgroups have no reserve per
+> >     default and in the common case most cgroups are eligible for the
+> >     preferred reclaim pass.  This allows the new low boundary to be
+> >     efficiently implemented with just a minor addition to the generic
+> >     reclaim code, without the need for out-of-band data structures and
+> >     reclaim passes.  Because the generic reclaim code considers all
+> >     cgroups except for the ones running low in the preferred first
+> >     reclaim pass, overreclaim of individual groups is eliminated as
+> >     well, resulting in much better overall workload performance.
+> > 
+> >   - The original high boundary, the hard limit, is defined as a strict
+> >     limit that can not budge, even if the OOM killer has to be called.
+> >     But this generally goes against the goal of making the most out of
+> >     the available memory.  The memory consumption of workloads varies
+> >     during runtime, and that requires users to overcommit.  But doing
+> >     that with a strict upper limit requires either a fairly accurate
+> >     prediction of the working set size or adding slack to the limit.
+> >     Since working set size estimation is hard and error prone, and
+> >     getting it wrong results in OOM kills, most users tend to err on
+> >     the side of a looser limit and end up wasting precious resources.
+> > 
+> >     The memory.high boundary on the other hand can be set much more
+> >     conservatively.  When hit, it throttles allocations by forcing
+> >     them into direct reclaim to work off the excess, but it never
+> >     invokes the OOM killer.  As a result, a high boundary that is
+> >     chosen too aggressively will not terminate the processes, but
+> >     instead it will lead to gradual performance degradation.  The user
+> >     can monitor this and make corrections until the minimal memory
+> >     footprint that still gives acceptable performance is found.
+> > 
+> >     In extreme cases, with many concurrent allocations and a complete
+> >     breakdown of reclaim progress within the group, the high boundary
+> >     can be exceeded.  But even then it's mostly better to satisfy the
+> >     allocation from the slack available in other groups or the rest of
+> >     the system than killing the group.  Otherwise, memory.max is there
+> >     to limit this type of spillover and ultimately contain buggy or
+> >     even malicious applications.
+> > 
+> >   - The existing control file names are unwieldy and inconsistent in
+> >     many different ways.  For example, the upper boundary hit count is
+> >     exported in the memory.failcnt file, but an OOM event count has to
+> >     be manually counted by listening to memory.oom_control events, and
+> >     lower boundary / soft limit events have to be counted by first
+> >     setting a threshold for that value and then counting those events.
+> >     Also, usage and limit files encode their units in the filename.
+> >     That makes the filenames very long, even though this is not
+> >     information that a user needs to be reminded of every time they
+> >     type out those names.
+> > 
+> >     To address these naming issues, as well as to signal clearly that
+> >     the new interface carries a new configuration model, the naming
+> >     conventions in it necessarily differ from the old interface.
+
+  - The existing limit files indicate the state of an unset limit with
+    a very high number, and a configured limit can be unset by echoing
+    -1 into those files.  But that very high number is implementation
+    and architecture dependent and not very descriptive.  And while -1
+    can be understood as an underflow into the highest possible value,
+    -2 or -10M etc. do not work, so it's quite inconsistent.
+
+    memory.low and memory.high will indicate "none" if the boundary is
+    not configured, and a configured boundary can be unset by writing
+    "none" into these files as well.
+
+Does that sound good?
+
+> This all sounds pretty major.  How much trouble is this change likely to
+> cause existing memcg users?
+
+That is actually entirely up to the user in question.
+
+1. The old cgroup interface remains in place as long as there are
+users, so, technically, nothing has to change unless they want to.
+
+2. While default settings and behavior of memory.low slightly differ
+from memory.soft_limit_in_bytes, the new interface is compatible with
+most existing usecases.  Anybody who currently only hard limits can
+set memory.max to the same value as memory.limit_in_bytes and be done.
+A configuration that uses soft limits should be easy to translate to
+memory.low, AFAIK it's already only used for the reserve semantics.
+
+3. That being said, even though they are not forced to, of course we
+want users to rethink their approach to machine partitioning because
+that is likely going to improve their workload performance and their
+memory utilization.  If they go down this route, they have to figure
+out the workloads' minimal amount of memory to run acceptably and set
+memory.low.  Then they need to figure out the amount of slack they
+want to afford each workload during idle times - this trades the
+available cache window in the group against startup/allocation latency
+in other groups - and set the memory.high accordingly.  The job
+launcher/admin can then parcel off the system's memory by considering
+some value between the low and high boundary as the average target
+size of each group, depending on the desired level of overcommit.
+
+> > include/linux/memcontrol.h |  32 ++++++
+> > mm/memcontrol.c            | 247 +++++++++++++++++++++++++++++++++++++++++++--
+> > mm/vmscan.c                |  22 +++-
+> 
+> No Documentation/cgroups/memory.txt?
+
+That file has a bit of an identity crisis, where interface description
+is entangled with irrelevant (and out-of-date) implementation details.
+
+It would be a lot better to have a single cgroup interface document
+that covers the generic interface and all available controllers with
+consistent language and level of detail.  Better for users, probably
+also better for developers to cross check if new interfaces integrate
+nicely into the existing model.  I'll kick something off.
+
+Thanks!
