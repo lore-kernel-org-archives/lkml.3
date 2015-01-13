@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361AbbAMRPf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 12:15:35 -0500
-Received: from mail-oi0-f47.google.com ([209.85.218.47]:55912 "EHLO
-	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752008AbbAMRPe (ORCPT
+	id S1753477AbbAMRRq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 12:17:46 -0500
+Received: from mail9.tpgi.com.au ([203.12.160.104]:36171 "EHLO
+	mail9.tpgi.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752352AbbAMRRo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 12:15:34 -0500
+	Tue, 13 Jan 2015 12:17:44 -0500
+X-TPG-Antivirus: Passed
+X-TPG-Abuse: host=14-201-201-57.static.tpgi.com.au; ip=14.201.201.57; date=Wed, 14 Jan 2015 04:17:26 +1100; auth=qn3nQWOo9XiOgLX3+3LzYIb4Pj8GBfUecjOflfKdwAc=
+Message-ID: <54B552CD.6070409@paradise.net.nz>
+Date: Wed, 14 Jan 2015 04:15:57 +1100
+From: Emrys Bayliss <emrys@paradise.net.nz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <87mw5v4iug.fsf@rustcorp.com.au>
-References: <1419246673-7222-1-git-send-email-oded.gabbay@amd.com>
-	<CADnq5_MY3+4BdWzUYffTnRWF3J4Z7nb6zyrGZK4RNwVU3axvuw@mail.gmail.com>
-	<20141222184940.GB17192@tassilo.jf.intel.com>
-	<20141222190041.GC17192@tassilo.jf.intel.com>
-	<54986EA2.106@amd.com>
-	<874msmt1hi.fsf@rustcorp.com.au>
-	<549A85DE.1040006@amd.com>
-	<87r3v96ebd.fsf@rustcorp.com.au>
-	<CAGXu5jJ71tM99uaRoq74AkcB5KhxsfBS3NyDuJ2rJncKmfCWwg@mail.gmail.com>
-	<87mw5v4iug.fsf@rustcorp.com.au>
-Date: Tue, 13 Jan 2015 09:15:33 -0800
-X-Google-Sender-Auth: UqLAubscm1iM8hhB_P1_0izGih4
-Message-ID: <CAGXu5jKuzGZKX3osNi7yLAe9Xc-Oj8TXMvXk6jPGmTNzN77JKA@mail.gmail.com>
-Subject: Re: [LKP] [PATCH] drm/radeon: Try to init amdkfd only if 64 bit kernel
-From: Kees Cook <keescook@chromium.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Oded Gabbay <oded.gabbay@amd.com>, Andi Kleen <ak@linux.intel.com>,
-        Alex Deucher <alexdeucher@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Dana Elifaz <Dana.Elifaz@amd.com>, LKML <linux-kernel@vger.kernel.org>,
-        Maling list - DRI developers 
-	<dri-devel@lists.freedesktop.org>,
-        Alexander Deucher <Alexander.Deucher@amd.com>, LKP ML <lkp@01.org>
-Content-Type: text/plain; charset=UTF-8
+To: forest@alittletooquiet.net, gregkh@linuxfoundation.org, tvboxspy@gmail.com
+CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: vt6656: Checkpatch fix: else after break or
+ return
+References: <1421168604-29857-1-git-send-email-emrys@paradise.net.nz>
+In-Reply-To: <1421168604-29857-1-git-send-email-emrys@paradise.net.nz>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 6, 2015 at 2:58 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> Kees Cook <keescook@chromium.org> writes:
->> On Sun, Jan 4, 2015 at 8:28 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->>> Kees, as far as I can tell you need another 0-terminated vmlinux.relocs
->>> section for weak symbols.  These should not be relocated if already 0.
->>
->> A few questions:
->>
->> Why doesn't this break on 32-bit without kASLR? 32-bit does relocation
->> by default, even without CONFIG_RANDOMIZE_BASE.
->
-> Well, the offset was 0 until I removed CONFIG_HIBERNATE.
->
->> Are there any symbols that are NULL that aren't weak? I'd expect all
->> strong symbols to have non-zero offsets, but I must be
->> misunderstanding something here.
->
-> I don't think there would be.  Anyway, you might be able to filter them
-> out in x86/tools/relocs itself.
+This was supposed to be a v3 patch. Resent.
 
-I've been travelling last week and this, so I haven't had time to take
-a close look yet. Hopefully I can work on this next week or later this
-week.
+On 01/14/2015 04:03 AM, Emrys Bayliss wrote:
+> This patch fixes the following checkpatch.pl error:
+> rxtx.c:558: WARNING: else is not generally useful after a break or return
+>
+> Signed-off-by: Emrys Bayliss <emrys@paradise.net.nz>
+> ---
+> The else statement was replaced with a block to avoid the following
+> compiler error:
+> "warning: ISO C90 forbids mixed declarations and code"
+> due to this declaration:
+> struct vnt_cts *buf = &head->cts_g; (line 559)
+>
+> Is there a better way such as using head (a union) directly instead?
+>
+> The last patch I sent removed the return 0. Since this isn't related to
+> the error in the title I left it for a separate patch.
+>
+>  drivers/staging/vt6656/rxtx.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/staging/vt6656/rxtx.c b/drivers/staging/vt6656/rxtx.c
+> index ea5140a..831a051 100644
+> --- a/drivers/staging/vt6656/rxtx.c
+> +++ b/drivers/staging/vt6656/rxtx.c
+> @@ -555,7 +555,9 @@ static u16 vnt_fill_cts_head(struct vnt_usb_send_context *tx_context,
+>  		memcpy(buf->data.ra, priv->current_net_addr, ETH_ALEN);
+>  
+>  		return vnt_rxtx_datahead_g_fb(tx_context, &buf->data_head);
+> -	} else {
+> +	}
+> +
+> +	{
+>  		struct vnt_cts *buf = &head->cts_g;
+>  		/* Get SignalField,ServiceField,Length */
+>  		vnt_get_phy_field(priv, cts_frame_len,
 
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
