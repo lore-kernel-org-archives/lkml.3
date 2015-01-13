@@ -1,118 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501AbbAMHkb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 02:40:31 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:40353 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245AbbAMHk1 convert rfc822-to-8bit (ORCPT
+	id S1751132AbbAMHjN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 02:39:13 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:9680 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750808AbbAMHjM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 02:40:27 -0500
-Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Content-Type: text/plain; charset=utf-8
-From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-In-Reply-To: <20150113072857.GA11760@amd>
-Date: Tue, 13 Jan 2015 09:40:18 +0200
-Cc: Michal Simek <michal.simek@xilinx.com>,
-        atull <atull@opensource.altera.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        jgunthorpe@obsidianresearch.com, hpa@zytor.com,
-        Michal Simek <monstr@monstr.eu>, rdunlap@infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, robh+dt@kernel.org,
-        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        philip@balister.org, rubini@gnudd.com,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>, jason@lakedaemon.net,
-        kyle.teske@ni.com, nico@linaro.org, Felipe Balbi <balbi@ti.com>,
-        m.chehab@samsung.com, davidb@codeaurora.org,
-        Rob Landley <rob@landley.net>, davem@davemloft.net, cesarb@cesarb.net,
-        sameo@linux.intel.com, akpm@linux-foundation.org,
-        Linus Walleij <linus.walleij@linaro.org>, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, devel@driverdev.osuosl.org,
-        Alan Tull <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com,
-        yvanderv@opensource.altera.com
+	Tue, 13 Jan 2015 02:39:12 -0500
+Date: Tue, 13 Jan 2015 08:41:44 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Jyri Sarha <jsarha@ti.com>
+Cc: Mark Brown <broonie@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Dave Airlie <airlied@gmail.com>,
+        Andrew Jackson <Andrew.Jackson@arm.com>, <alsa-devel@alsa-project.org>,
+        <devicetree@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v9 3/4] ASoC: tda998x: add a codec to the HDMI
+ transmitter
+Message-ID: <20150113084144.7c62c18d@armhf>
+In-Reply-To: <54B2E512.7000904@ti.com>
+References: <cover.1420628786.git.moinejf@free.fr>
+	<23b36acc1f769418a06f3e929eba288b5911da12.1420628786.git.moinejf@free.fr>
+	<54B2E512.7000904@ti.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; arm-unknown-linux-gnueabihf)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Message-Id: <D62286C4-2800-47B6-9D69-6F92E27347AF@konsulko.com>
-References: <1420575219-27061-1-git-send-email-atull@opensource.altera.com> <1420575219-27061-3-git-send-email-atull@opensource.altera.com> <20150107084819.GA1887@amd> <alpine.DEB.2.02.1501091302370.30067@linuxheads99> <20150109205643.GA5761@amd> <4D4EA2D5-68DD-49F7-9E2D-3A0A8F6AF9CA@konsulko.com> <20150110151118.GA16036@amd> <alpine.DEB.2.10.1501111009180.2556@shineypoop> <20150112084530.GA28681@amd> <bed1d7ce1b984c79acc75a47495cb959@BL2FFO11FD043.protection.gbl> <20150113072857.GA11760@amd>
-To: Pavel Machek <pavel@denx.de>
-X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
+On Sun, 11 Jan 2015 23:03:14 +0200
+Jyri Sarha <jsarha@ti.com> wrote:
 
-> On Jan 13, 2015, at 09:28 , Pavel Machek <pavel@denx.de> wrote:
+> Some more comments based on my - finally successful - attempt to use 
+> this code with BBB HDMI audio.
 > 
-> Hi!
+> On 01/07/2015 12:51 PM, Jean-Francois Moine wrote:
+> > This patch adds a CODEC to the NXP TDA998x HDMI transmitter.
+	[snip]
+> > @@ -47,6 +52,10 @@ struct tda998x_priv {
+> >   	struct drm_encoder *encoder;
+> >
+> >   	u8 audio_ports[2];
+> > +#ifdef WITH_CODEC
+> > +	u8 sad[3];			/* Short Audio Descriptor */
+> > +	struct snd_pcm_hw_constraint_list rate_constraints;
+> > +#endif
 > 
->>>>>>>>>> +What:		/sys/class/fpga_manager/<fpga>/firmware
->>>>>>>>>> +Date:		October 2014
->>>>>>>>>> +KernelVersion:	3.18
->>>>>>>>>> +Contact:	Alan Tull <atull@opensource.altera.com>
->>>>>>>>>> +Description:	Name of the FPGA image file to load using firmware
->>>>>>>>>> class.
->>>>>>>>> 
->>>>>>>>> This one is ugly: it unneccessarily passes firmware name through the
->>>>>>>>> kernel. Just make interface and code simpler by always passing
->>>>>>>>> "socfpga-fpga-image" or something like that.
-> ...
-> 
->>> What is cumbersome about symlink? Why is "fake" symlink in sysfs better?
->>> 
->>>> Previous uses of the firmware layer has been to use it to load once after
->>>> bootup; this is different since some use cases will want to switch out
->>>> the FPGA image.  If someone wants there to be only one FPGA image on
->>>> the FGPA forever, they will probably not be using this framework; their
->>>> FPGA will probably be loaded before Linux boots up.
->>> 
->>> Why? I have just one image on the fpga, and would prefer to load it
->>> from Linux.
->> 
->> Pavel: These patches target staging and sysfs interface doesn't need to be stable
->> at this time. I would prefer to add these patches to staging for 3.20
->> and feel free to send the patch which fix this.
-> 
-> Interesting way to address patch review. "We'll merge it, and you can
-> fix it up later".
-> 
->> With your code will be exactly clear how you want to use it and we can
->> talk about it.
-> 
-> I'm pretty sure Alan knows what I want at this point, he just does not
-> want to do it.
-> 
-> For the record, I want to drop "firmware" file, use fixed firmware
-> name, and deal with multiple firmwares in userspace (using symlink or
-> udev magic).
-> 
+> It feels a bit backwards to me to store these audio side variables here 
+> in DRM side driver - especially the rate_constraint - and provide a 
+> function (tda998x_get_audio_var()) for getting their individual 
+> addresses to ASoC side. Wouldn't it be more straight forward to provide 
+> functions for setting and getting the audio side data from a void 
+> pointer in DRM side device drvdata?
 
-That’s completely bogus. Using a fixed firmware file does not respond to
-real world usage, and there are no words to describe the hacks using
-symlinks and udev in an embedded product.
+Good idea. The rate_constraints would be allocated by the codec and set by a transmitter function.
 
-> I believe this is simplest solution, should be adequate, and is
-> certainly less ugly than implementing fake symlink in
-> /sys/.../firmware. And I have yet to hear what is wrong with that
-> suggestion.
+	[snip]
+> > diff --git a/include/sound/tda998x.h b/include/sound/tda998x.h
+> > new file mode 100644
+> > index 0000000..97cff30
+> > --- /dev/null
+> > +++ b/include/sound/tda998x.h
+> > @@ -0,0 +1,23 @@
+> > +#ifndef SND_TDA998X_H
+> > +#define SND_TDA998X_H
+> > +
+> > +#include <sound/pcm.h>
+> > +
+> > +/* port indexes */
+> > +#define PORT_NONE (-1)
+> > +#define PORT_SPDIF 0
+> > +#define PORT_I2S 1
+> > +
+> > +typedef int (*get_audio_var_t)(struct device *dev,
+> > +				u8 **sad,
+> > +			struct snd_pcm_hw_constraint_list **rate_constraints);
+> > +typedef int (*set_audio_input_t)(struct device *dev,
+> > +				int port_index,
+> > +				unsigned sample_rate,
+> > +				int sample_format);
+> > +
 > 
+> Why don't you simply declare tda998x_get_audio_var() and 
+> tda998x_set_audio_input() here and export them in DRM side driver? This 
+> is a tda998x specific codec after all. I see no point to this this 
+> function pointer typedef game, when the pointers are anyway stored to 
+> global variables in ASoC the side module.
 
-Everything.
+There cannot be both ways of function call with modules:
+the transmitter may call exported functions of the codec,
+but the codec cannot call exported functions of the transmitter.
 
-> Thanks,									
+	[snip]
+> > +	snd_pcm_hw_constraint_minmax(runtime,
+> > +				SNDRV_PCM_HW_PARAM_CHANNELS,
+> > +				1, sad[SAD_MX_CHAN_I]);
+> 
+> SAD byte 1 bits 2-0 provides the maximum channel count _minus_one_. You 
+> should _add_one_ to sad[SAD_MX_CHAN_I] when setting the constraint.
 
-Regards
+Right. Thanks.
 
-— Pantelis
+	[snip]
+> > +static struct snd_soc_dai_driver tda998x_dais[] = {
+> > +	{
+> > +		.name = "spdif-hifi",
+> > +		.id = PORT_SPDIF,
+> > +		.playback = {
+> > +			.stream_name	= "HDMI SPDIF Playback",
+> > +			.channels_min	= 1,
+> > +			.channels_max	= 2,
+> > +			.rates		= SNDRV_PCM_RATE_CONTINUOUS,
+> > +			.rate_min	= 22050,
+> > +			.rate_max	= 192000,
+> > +			.formats	= TDA998X_FORMATS,
+> > +		},
+> > +		.ops = &tda998x_codec_ops,
+> > +	},
+> > +	{
+> > +		.name = "i2s-hifi",
+> > +		.id = PORT_I2S,
+> > +		.playback = {
+> > +			.stream_name	= "HDMI I2S Playback",
+> > +			.channels_min	= 1,
+> > +			.channels_max	= 8,
+> > +			.rates		= SNDRV_PCM_RATE_CONTINUOUS,
+> > +			.rate_min	= 5512,
+> > +			.rate_max	= 192000,
+> > +			.formats	= TDA998X_FORMATS,
+> > +		},
+> > +		.ops = &tda998x_codec_ops,
+> > +	},
+> > +};
+> 
+> Why do you use SNDRV_PCM_RATE_CONTINUOUS, when HDMI standard only 
+> supports 32000, 44100, 48000, 88200, 96000, 176400, and 192000 Hz-rates?
 
-> 									Pavel
-> -- 
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Before I treated the EDID, I directly used these definitions,
+and my TV display accepted many more rates as 22050 with S/PDIF input
+or 7875 with I2S input.
 
+> > +
+> > +static const struct snd_soc_dapm_widget tda998x_widgets[] = {
+> > +	SND_SOC_DAPM_OUTPUT("hdmi-out"),
+> > +};
+> > +static const struct snd_soc_dapm_route tda998x_routes[] = {
+> > +	{ "hdmi-out", NULL, "HDMI I2S Playback" },
+> > +	{ "hdmi-out", NULL, "HDMI SPDIF Playback" },
+> > +};
+> > +
+> > +static struct snd_soc_codec_driver tda998x_codec_drv = {
+> > +	.dapm_widgets = tda998x_widgets,
+> > +	.num_dapm_widgets = ARRAY_SIZE(tda998x_widgets),
+> > +	.dapm_routes = tda998x_routes,
+> > +	.num_dapm_routes = ARRAY_SIZE(tda998x_routes),
+> > +	.ignore_pmdown_time = true,
+> > +};
+> > +
+> > +int tda9998x_codec_register(struct device *dev,
+> > +			get_audio_var_t get_audio_var_i,
+> > +			set_audio_input_t set_audio_input_i)
+> > +{
+> > +	get_audio_var = get_audio_var_i;
+> > +	set_audio_input = set_audio_input_i;
+> > +	return snd_soc_register_codec(dev,
+> > +				&tda998x_codec_drv,
+> > +				tda998x_dais, ARRAY_SIZE(tda998x_dais));
+> 
+> So this always registers a two DAI codec whether or not both the i2s and 
+> spdif is used. The DT binding document could state that the DAI index 0 
+> is always the spdif DAI and index 1 is the i2s DAI, or even better you 
+> could #define them under include/dt-bindings/.
+> 
+> While you are at it, you could also mention the DAPM output name 
+> "hdmi-out" for the codec in the DT-binding document.
+	[snip]
+
+This will be changed when using the graph of ports: the DAIs will be
+dynamically created from the DT.
+
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
