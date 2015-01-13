@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325AbbAMMLs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 07:11:48 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:44656 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645AbbAMMLq (ORCPT
+	id S1751865AbbAMMRh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 07:17:37 -0500
+Received: from mail-we0-f179.google.com ([74.125.82.179]:41008 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967AbbAMMRf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 07:11:46 -0500
-Date: Tue, 13 Jan 2015 04:11:40 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-kernel@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [22/28] watchdog: drop owner assignment from platform_drivers
-Message-ID: <20150113121140.GA26815@roeck-us.net>
-References: <1419196495-9626-23-git-send-email-wsa@the-dreams.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419196495-9626-23-git-send-email-wsa@the-dreams.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020206.54B50B82.004D,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 29
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Tue, 13 Jan 2015 07:17:35 -0500
+Message-ID: <54B50CDA.3090307@gmail.com>
+Date: Tue, 13 Jan 2015 13:17:30 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+To: Mike Turquette <mturquette@linaro.org>,
+        Jisheng Zhang <jszhang@marvell.com>
+CC: "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "antoine.tenart@free-electrons.com" 
+	<antoine.tenart@free-electrons.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH 3/3] clk: berlin: bg2q: remove non-exist "smemc" gate
+ clock
+References: <1420016272-6789-1-git-send-email-jszhang@marvell.com> <1420016272-6789-4-git-send-email-jszhang@marvell.com> <54AD3EAE.6090009@gmail.com> <20150107222209.64ed24a0@xhacker> <54AD431F.6060403@gmail.com> <20150109201306.4d1a296b@xhacker> <54B12446.4030703@gmail.com> <20150113002817.20842.98432@quantum>
+In-Reply-To: <20150113002817.20842.98432@quantum>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 21, 2014 at 10:14:43PM +0100, Wolfram Sang wrote:
-> This platform_driver does not need to set an owner, it will be populated by the
-> driver core.
-> 
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+On 01/13/2015 01:28 AM, Mike Turquette wrote:
+> Quoting Sebastian Hesselbarth (2015-01-10 05:08:22)
+>> This is clk subsystem, so either Mike takes it through his fixes branch
+>> including my
+>>
+>> Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>>
+>> or decides to agree that I take it instead with his Ack. I am fine
+>> with both.
+>
+> Acked-by: Michael Turquette <mturquette@linaro.org>
+>
+> Now the three fixes can stay together and live happily ever after.
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Mike,
+
+I already had the two others pulled by Olof some days ago.
+If you plan for a fixes branch for v3.19, please take this in too.
+
+If you have no other fixes, I can take it and do a 2nd round of
+fixes for Berlin.
+
+Sebastian
+
