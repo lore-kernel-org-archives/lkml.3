@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951AbbAMXpM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 18:45:12 -0500
-Received: from utopia.booyaka.com ([74.50.51.50]:49143 "EHLO
+	id S1752027AbbAMXq6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 18:46:58 -0500
+Received: from utopia.booyaka.com ([74.50.51.50]:49167 "EHLO
 	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752295AbbAMXpK (ORCPT
+	with ESMTP id S1751272AbbAMXq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 18:45:10 -0500
-Date: Tue, 13 Jan 2015 23:45:09 +0000 (UTC)
+	Tue, 13 Jan 2015 18:46:56 -0500
+Date: Tue, 13 Jan 2015 23:46:55 +0000 (UTC)
 From: Paul Walmsley <paul@pwsan.com>
-To: Suman Anna <s-anna@ti.com>
-cc: Lokesh Vutla <lokeshvutla@ti.com>, Roger Quadros <rogerq@ti.com>,
-        tony@atomide.com, santosh.shilimkar@oracle.com, t-kristo@ti.com,
-        nm@ti.com, nsekhar@ti.com, bcousson@baylibre.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
+To: Roger Quadros <rogerq@ti.com>
+cc: Lokesh Vutla <lokeshvutla@ti.com>, tony@atomide.com,
+        santosh.shilimkar@oracle.com, t-kristo@ti.com, nm@ti.com,
+        nsekhar@ti.com, bcousson@baylibre.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        s-anna@ti.com
 Subject: Re: [PATCH] ARM: OMAP2+: hwmod: Fix _wait_target_ready() for hwmods
  without sysc
-In-Reply-To: <54AC1AFB.4070504@ti.com>
-Message-ID: <alpine.DEB.2.02.1501132330460.28034@utopia.booyaka.com>
-References: <1418917790-1791-1-git-send-email-rogerq@ti.com> <5492F84E.7020706@ti.com> <alpine.DEB.2.02.1501020654050.27058@utopia.booyaka.com> <54AA4CD4.40105@ti.com> <alpine.DEB.2.02.1501060202540.28771@utopia.booyaka.com> <54AB9983.1040703@ti.com>
- <54AC1800.1020406@ti.com> <54AC1AFB.4070504@ti.com>
+In-Reply-To: <54AD166C.9060507@ti.com>
+Message-ID: <alpine.DEB.2.02.1501132345220.28034@utopia.booyaka.com>
+References: <1418917790-1791-1-git-send-email-rogerq@ti.com> <5492F84E.7020706@ti.com> <alpine.DEB.2.02.1501020654050.27058@utopia.booyaka.com> <54AA4CD4.40105@ti.com> <alpine.DEB.2.02.1501060202540.28771@utopia.booyaka.com> <54AD166C.9060507@ti.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -28,30 +27,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Suman
+On Wed, 7 Jan 2015, Roger Quadros wrote:
 
-On Tue, 6 Jan 2015, Suman Anna wrote:
-
-> Looking at your rc3 log @
-> http://www.pwsan.com/omap/testlogs/test_v3.19-rc3/20150105224749/boot/4460varsomom/,
-> I do see a missing reg entry for mailbox, and that's the reason for your
-> hang because of the missing bail out in your new patch.
+> > From: Paul Walmsley <paul@pwsan.com>
+> > Date: Mon, 5 Jan 2015 15:49:57 -0700
+> > Subject: [PATCH] Only skip ioremap() if IP block does not have OCP header
+> >  registers. Experimental.
+> > 
+> > ---
+> >  arch/arm/mach-omap2/omap_hwmod.c | 33 +++++++++++++++++++++------------
+> >  1 file changed, 21 insertions(+), 12 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
+> > index cbb908dc5cf0..03df8833d399 100644
+> > --- a/arch/arm/mach-omap2/omap_hwmod.c
+> > +++ b/arch/arm/mach-omap2/omap_hwmod.c
+> > @@ -1938,6 +1938,8 @@ static int _reset(struct omap_hwmod *oh)
+> >  	pr_debug("omap_hwmod: %s: resetting\n", oh->name);
+> >  
+> >  	if (oh->class->reset) {
+> > +		WARN(!oh->_mpu_rt_va, "Attempt to call custom reset with no MPU register target ioremapped: %s",
+> > +		     oh->name);
 > 
-> [    0.261932] ------------[ cut here ]------------
-> [    0.261962] WARNING: CPU: 0 PID: 1 at
-> arch/arm/mach-omap2/omap_hwmod.c:2458 _init+0x3a0/0x3f0()
-> [    0.261962] omap_hwmod: mailbox: doesn't have mpu register target base
-> ...
-> ...
-> [    0.262329] ---[ end trace a1be72591db4662e ]---
-> 
-> Now that said, this is weird, since the reg property for mailbox is
-> defined in the base omap4.dtsi and should be inherited by the 4460
-> VAR-SOM-OM, unless you are booting with an old dtb.
+> Not part of $subject.
 
-Yeah, it doesn't make sense.  I'm pretty sure I'm using the right DTB 
-here, since that board is booting with a concatenated uImage + DTB.  
-Well, at least there's a good test platform here.
+Hmm, how do you mean?  If we skip the ioremap(), wouldn't you like to know 
+before some custom reset code gets called that pretty much always depends 
+on the ioremap() succeeding? :-)
+
+> >  		r = oh->class->reset(oh);
+> >  	} else {
+> >  		if (oh->rst_lines_cnt > 0) {
+> > @@ -2358,15 +2360,19 @@ static int of_dev_hwmod_lookup(struct device_node *np,
+> >  }
+> >  
+> >  /**
+> > - * _init_mpu_rt_base - populate the virtual address for a hwmod
+> > + * _init_mpu_rt_base - populate the MPU port and virtual address
+> >   * @oh: struct omap_hwmod * to locate the virtual address
+> >   * @data: (unused, caller should pass NULL)
+> >   * @index: index of the reg entry iospace in device tree
+> >   * @np: struct device_node * of the IP block's device node in the DT data
+> >   *
+> > - * Cache the virtual address used by the MPU to access this IP block's
+> > - * registers.  This address is needed early so the OCP registers that
+> > - * are part of the device's address space can be ioremapped properly.
+> > + * Cache the interconnect target port and the virtual address used by
+> > + * the MPU to access this IP block's registers.  The address is needed
+> > + * early so the OCP registers that are part of the device's address
+> > + * space can be ioremapped properly.  The presence or absence of the
+> > + * interconnect target port also indicates whether the hwmod code
+> > + * should wait for the IP block to indicate readiness after it is
+> > + * enabled.
+> >   *
+> >   * Returns 0 on success, -EINVAL if an invalid hwmod is passed, and
+> >   * -ENXIO on absent or invalid register target address space.
+> > @@ -2385,6 +2391,13 @@ static int __init _init_mpu_rt_base(struct omap_hwmod *oh, void *data,
+> >  	if (oh->_int_flags & _HWMOD_NO_MPU_PORT)
+> >  		return -ENXIO;
+> >  
+> > +	/*
+> > +	 * If there's no need for the hwmod code to read or write to
+> > +	 * the IP block registers, bail out early before the ioremap()
+> > +	 */
+> > +	if (!oh->class->sysc)
+> > +		return 0;
+> > +
+> >  	mem = _find_mpu_rt_addr_space(oh);
+> >  	if (!mem) {
+> >  		pr_debug("omap_hwmod: %s: no MPU register target found\n",
+> > @@ -2451,14 +2464,10 @@ static int __init _init(struct omap_hwmod *oh, void *data)
+> >  				oh->name, np->name);
+> >  	}
+> >  
+> > -	if (oh->class->sysc) {
+> > -		r = _init_mpu_rt_base(oh, NULL, index, np);
+> > -		if (r < 0) {
+> > -			WARN(1, "omap_hwmod: %s: doesn't have mpu register target base\n",
+> > -			     oh->name);
+> > -			return 0;
+> > -		}
+> > -	}
+> > +	r = _init_mpu_rt_base(oh, NULL, index, np);
+> > +	if (r < 0)
+> > +		pr_debug("omap_hwmod: %s: doesn't have mpu register target base\n",
+> > +			 oh->name);
+> 
+> This is the real piece that fixes the issue.
+> 
+> >  
+> >  	r = _init_clocks(oh, NULL);
+> >  	if (r < 0) {
+> > 
+> 
+> I've tested this patch on am43x-gp-evm, and it seems to fix the issue 
+> although with some unpleasant warning messages.
+
+Could you paste those in?
 
 
 - Paul
