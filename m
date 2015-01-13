@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226AbbAMQSF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 11:18:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54642 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752363AbbAMQSC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 11:18:02 -0500
-Date: Tue, 13 Jan 2015 17:17:16 +0100
-From: Radim =?utf-8?B?S3I/bcOhPw==?= <rkrcmar@redhat.com>
-To: "Wu, Feng" <feng.wu@intel.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>, "gleb@kernel.org" <gleb@kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>,
-        "eric.auger@linaro.org" <eric.auger@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [v3 13/26] KVM: Define a new interface kvm_find_dest_vcpu() for
- VT-d PI
-Message-ID: <20150113161716.GA12941@potion.brq.redhat.com>
-References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
- <1418397300-10870-14-git-send-email-feng.wu@intel.com>
- <20150109145435.GA22469@potion.brq.redhat.com>
- <54AFEC00.80507@redhat.com>
- <E959C4978C3B6342920538CF579893F002341102@SHSMSX104.ccr.corp.intel.com>
+	id S1753026AbbAMQRq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 11:17:46 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:47582 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452AbbAMQRp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 11:17:45 -0500
+Message-ID: <54B54513.8060604@oracle.com>
+Date: Tue, 13 Jan 2015 11:17:23 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <E959C4978C3B6342920538CF579893F002341102@SHSMSX104.ccr.corp.intel.com>
+To: David Vrabel <david.vrabel@citrix.com>, Imre Palik <imrep.amz@gmail.com>,
+        xen-devel@lists.xenproject.org
+CC: "Palik, Imre" <imrep@amazon.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Anthony Liguori <aliguori@amazon.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Xen-devel] [PATCH] xen-time: decreasing the rating of the xen
+ clocksource below that of the tsc clocksource for dom0's
+References: <1421136862-15083-1-git-send-email-imrep.amz@gmail.com> <54B4EAC7.2080105@citrix.com> <54B53CDD.7070400@oracle.com> <54B542C0.4070701@citrix.com>
+In-Reply-To: <54B542C0.4070701@citrix.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-13 00:27+0000, Wu, Feng:
-> > On 09/01/2015 15:54, Radim Krčmář wrote:
-> > > There are two points relevant to this patch in new KVM's implementation,
-> > > ("KVM: x86: amend APIC lowest priority arbitration",
-> > >  https://lkml.org/lkml/2015/1/9/362)
-> > >
-> > > 1) lowest priority depends on TPR
-> > > 2) there is no need for balancing
-> > >
-> > > (1) has to be considered with PI as well.
-> > 
-> > The chipset doesn't support it. :(
-> > 
-> > > I kept (2) to avoid whining from people building on that behaviour, but
-> > > lowest priority backed by PI could be transparent without it.
-> > >
-> > > Patch below removes the balancing, but I am not sure this is a price we
-> > > allowed ourselves to pay ... what are your opinions?
-> > 
-> > I wouldn't mind, but it requires a lot of benchmarking.
-> 
-> In fact, the real hardware may do lowest priority in round robin way,
+On 01/13/2015 11:07 AM, David Vrabel wrote:
+> On 13/01/15 15:42, Boris Ostrovsky wrote:
+>> On 01/13/2015 04:52 AM, David Vrabel wrote:
+>>> On 13/01/15 08:14, Imre Palik wrote:
+>>>> From: "Palik, Imre" <imrep@amazon.de>
+>>>>
+>>>> In Dom0's the use of the TSC clocksource (whenever it is stable
+>>>> enough to
+>>>> be used) instead of the Xen clocksource should not cause any issues, as
+>>>> Dom0 VMs never live-migrated.  The TSC clocksource is somewhat more
+>>>> efficient than the Xen paravirtualised clocksource, thus it should have
+>>>> higher rating.
+>>>>
+>>>> This patch decreases the rating of the Xen clocksource in Dom0s to 275.
+>>>> Which is half-way between the rating of the TSC clocksource (300) and
+>>>> the
+>>>> hpet clocksource (250).
+>>> I'm happy with this but would like to see acks from those who objected
+>>> to v1.
+>>>
+>>> David
+>>>
+>>>> --- a/arch/x86/xen/time.c
+>>>> +++ b/arch/x86/xen/time.c
+>>>> @@ -487,6 +487,10 @@ static void __init xen_time_init(void)
+>>>>        int cpu = smp_processor_id();
+>>>>        struct timespec tp;
+>>>>    +    /* As Dom0 is never moved, no penalty on using TSC there */
+>> Again, why not any PV guest with TSC_MODE_NEVER_EMULATE?
+> Surely if TSC_MODE_NEVER_EMULATE is set then the TSC is /not/ stable
+> across a guest save/restore thus the PV clocksource must be used?
 
-Yes, but we won't emulate round robin with PI and I think it is wrong to
-have backends with significantly different guest-visible behaviors.
+TSC is declared stable when !d->disable_migrate && !d->arch.vtsc, with 
+vtsc being 0 with TSC_MODE_NEVER_EMULATE (per domain_cpuid()).
 
->                                                                       the new
-> hardware even doesn't consider the TPR for lowest priority interrupts delivery.
+And if TSC is not stable as seen by CPUID (which would be the case if 
+disable_migrate is not set) then kernel won't use TSC as clocksource 
+anyway, regardless of rating value, won't it?
 
-A bold move ... what hardware was the first to do so?
+-boris
 
-> As discussed with Paolo before, I will submit a patch to support lowest priority for PI
-> after this series is merged.
+>
+> I don't think we want to assume that TSC_MODE_NEVER_EMULATE => never
+> migrate.
+>
+> David
 
-Sure, I see only two good solutions though
- 1) don't optimize lowest priority with PI
- 2) don't balance lowest priority
