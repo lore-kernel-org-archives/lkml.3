@@ -1,73 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751659AbbAMMqm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 07:46:42 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:48703 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981AbbAMMqk (ORCPT
+	id S1752138AbbAMMrx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 07:47:53 -0500
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:61067 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676AbbAMMrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 07:46:40 -0500
-Message-ID: <54B513A9.8070004@hitachi.com>
-Date: Tue, 13 Jan 2015 21:46:33 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 13 Jan 2015 07:47:51 -0500
+Message-ID: <54B513F4.5020403@hurleysoftware.com>
+Date: Tue, 13 Jan 2015 07:47:48 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, vvs@sw.ru
-Subject: Re: Bug with jprobes and function graph tracer
-References: <20150108122016.0241f713@gandalf.local.home> <54B503F5.4020509@hitachi.com> <20150113072232.451c599b@gandalf.local.home>
-In-Reply-To: <20150113072232.451c599b@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Michael Chan <mchan@broadcom.com>
+CC: Prashant Sreedharan <prashant@broadcom.com>, netdev@vger.kernel.org,
+        Linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [3.19-rc3] tg3: BUG: sleeping function called from invalid context
+References: <54B46DD5.9050802@hurleysoftware.com> <1421131762.7208.31.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+In-Reply-To: <1421131762.7208.31.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2015/01/13 21:22), Steven Rostedt wrote:
-> On Tue, 13 Jan 2015 20:39:33 +0900
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+On 01/13/2015 01:49 AM, Michael Chan wrote:
+> On Mon, 2015-01-12 at 19:59 -0500, Peter Hurley wrote: 
+>> [   17.203009] BUG: sleeping function called from invalid context at /home/peter/src/kernels/mainline/kernel/irq/manage.c:104
+>> [   17.203067] in_atomic(): 1, irqs_disabled(): 0, pid: 1106, name: ip
+>> [   17.203092] 2 locks held by ip/1106:
+>> [   17.205255]  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff816adf1f>] rtnetlink_rcv+0x1f/0x40
+>> [   17.207445]  #1:  (&(&tp->lock)->rlock){+.....}, at: [<ffffffffa01073e6>] tg3_start+0xc06/0x11f0 [tg3]
+>> [   17.209725] CPU: 2 PID: 1106 Comm: ip Not tainted 3.19.0-rc3+wip-xeon+lockdep #rc3+wip
+>> [   17.211900] Hardware name: Dell Inc. Precision WorkStation T5400  /0RW203, BIOS A11 04/30/2012
+>> [   17.214086]  0000000000000068 ffff8802ac823498 ffffffff817af7e8 0000000000000005
+>> [   17.216265]  ffffffff81a9be78 ffff8802ac8234a8 ffffffff810998a5 ffff8802ac8234d8
+>> [   17.218446]  ffffffff8109991a ffff8802ac8234c8 ffff8802af0aae00 ffffffffa00ed000
+>> [   17.220636] Call Trace:
+>> [   17.222743]  [<ffffffff817af7e8>] dump_stack+0x4f/0x7b
+>> [   17.224808]  [<ffffffff810998a5>] ___might_sleep+0x105/0x140
+>> [   17.226842]  [<ffffffff8109991a>] __might_sleep+0x3a/0xa0
+>> [   17.228869]  [<ffffffffa00ed000>] ? 0xffffffffa00ed000
+>> [   17.230939]  [<ffffffff810d7d78>] synchronize_irq+0x38/0xa0
+>> [   17.232967]  [<ffffffffa00ed000>] ? 0xffffffffa00ed000
+>> [   17.234991]  [<ffffffffa010105f>] tg3_chip_reset+0x13f/0x9c0 [tg3]
+>> [   17.236988]  [<ffffffffa01020ae>] tg3_reset_hw+0x7e/0x2d20 [tg3] 
 > 
->>
->> Yeah we should try to fix this, but not so high priority since jprobe
->> is not used so frequently. I guess one easy solution is adding notrace
->> to all jprobe handlers for hiding it from function-graph tracer.
->> If there is a way to check a function is notrace or not, I can use that
->> in register_jprobe and reject it if the handler is not "notrace"ed. :)
+> tp->lock is held in this code path.  If synchronize_irq() sleeps in
+> wait_event(desc->wait_for_threads, ...), we'll get the warning.
 > 
-> Adding notrace should be the last resort. Every notrace in the kernel
-> makes function tracing a little more useless. It bothers me even more
-> when notrace is added because of function graph tracing but the
-> function still works for function tracing.
-
-I see.
-
+> The synchronize_irq() call is to wait for any tg3 irq handler to finish
+> so that it is guaranteed that next time it will see the CHIP_RESETTING
+> flag and do nothing.
 > 
-> I worked on this for the last few days and have a patch that fixes the
-> problem. I'll be posting it later today. It also uncovered another
-> unrelated bug that I worked on yesterday, otherwise I would have posted
-> these fixes already.
+> Not sure if we can drop the tp->lock before we call synchronize_irq()
+> and then take it again after synchronize_irq().
 
-Great! I look forward that! :)
+Well, this device [1] is using MSI (INTx disabled) so if the synchronize_irq()
+is _only_ for the CHIP_RESETTING logic then it would seem ok to skip it (the
+synchronize_irq()).
 
-> 
-> I have a fix for the other bug now but it needs to be cleaned up
-> (remove all the debugging prints from it). When that's complete I'll
-> post the patches and get them ready for mainline and stable.
-
-Thank you,
-
-> 
-> Thanks,
-> 
-> -- Steve
-> 
+Regards,
+Peter Hurley
 
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+[1] lspci -vv
 
+08:00.0 Ethernet controller: Broadcom Corporation NetXtreme BCM5754 Gigabit Ethernet PCI Express (rev 02)
+	Subsystem: Dell Precision T5400
+	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
+	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+	Latency: 0, Cache Line Size: 64 bytes
+	Interrupt: pin A routed to IRQ 31
+	Region 0: Memory at d3ff0000 (64-bit, non-prefetchable) [size=64K]
+	Expansion ROM at <ignored> [disabled]
+	Capabilities: [48] Power Management version 3
+		Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot+,D3cold+)
+		Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=1 PME-
+	Capabilities: [50] Vital Product Data
+		Product Name: Broadcom NetLink Gigabit Ethernet Controller
+		Read-only fields:
+			[PN] Part number: BCM95754
+			[EC] Engineering changes: 106679-15
+			[SN] Serial number: 0123456789
+			[MN] Manufacture ID: 31 34 65 34
+			[RV] Reserved: checksum good, 30 byte(s) reserved
+		Read/write fields:
+			[YA] Asset tag: XYZ01234567
+			[RW] Read-write area: 107 byte(s) free
+		End
+	Capabilities: [58] Vendor Specific Information: Len=78 <?>
+	Capabilities: [e8] MSI: Enable+ Count=1/1 Maskable- 64bit+
+		Address: 00000000fee0400c  Data: 41a2
+	Capabilities: [d0] Express (v1) Endpoint, MSI 00
+		DevCap:	MaxPayload 128 bytes, PhantFunc 0, Latency L0s <4us, L1 unlimited
+			ExtTag+ AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+		DevCtl:	Report errors: Correctable- Non-Fatal+ Fatal+ Unsupported-
+			RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
+			MaxPayload 128 bytes, MaxReadReq 512 bytes
+		DevSta:	CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
+		LnkCap:	Port #0, Speed 2.5GT/s, Width x1, ASPM L0s, Exit Latency L0s <4us, L1 <64us
+			ClockPM- Surprise- LLActRep- BwNot-
+		LnkCtl:	ASPM Disabled; RCB 64 bytes Disabled- CommClk+
+			ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+		LnkSta:	Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
+	Capabilities: [100 v1] Advanced Error Reporting
+		UESta:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+		UEMsk:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+		UESvrt:	DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
+		CESta:	RxErr+ BadTLP- BadDLLP+ Rollover- Timeout- NonFatalErr-
+		CEMsk:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+		AERCap:	First Error Pointer: 00, GenCap+ CGenEn- ChkCap+ ChkEn-
+	Capabilities: [13c v1] Virtual Channel
+		Caps:	LPEVC=0 RefClk=100ns PATEntryBits=1
+		Arb:	Fixed- WRR32- WRR64- WRR128-
+		Ctrl:	ArbSelect=Fixed
+		Status:	InProgress-
+		VC0:	Caps:	PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
+			Arb:	Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
+			Ctrl:	Enable+ ID=0 ArbSelect=Fixed TC/VC=ff
+			Status:	NegoPending- InProgress-
+	Capabilities: [160 v1] Device Serial Number xx-xx-xx-xx-xx-xx-xx-xx
+	Capabilities: [16c v1] Power Budgeting <?>
+	Kernel driver in use: tg3
 
