@@ -1,55 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643AbbAMOnh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 09:43:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35098 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752442AbbAMOnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 09:43:35 -0500
-Date: Tue, 13 Jan 2015 16:43:27 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH 6/6] virtio/balloon: verify device has config space
-Message-ID: <1421160167-18498-7-git-send-email-mst@redhat.com>
-References: <1421160167-18498-1-git-send-email-mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421160167-18498-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+	id S1752711AbbAMOoO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 09:44:14 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:34632 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751190AbbAMOoL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 09:44:11 -0500
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Mike Turquette <mturquette@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Bo Shen <voice.shen@atmel.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        stable@vger.kernel.org
+Subject: [PATCH v2] clk: at91: keep slow clk enabled to prevent system hang
+Date: Tue, 13 Jan 2015 15:44:06 +0100
+Message-Id: <1421160246-29712-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some devices might not implement config space access
-(e.g. remoteproc used not to - before 3.9).
-virtio/balloon needs config space access so make it
-fail gracefully if not there.
+All slow clk users are not properly claiming it (get + prepare + enable)
+before using it.
+If all users properly claiming this clock release it, the clock is
+disabled, but faulty users still depends on it, and the system hangs.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+This fix prevents the slow clock from being disabled, and should solve the
+hanging issue, but offending drivers should be patched to properly claim
+this clock.
+
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Reported-by: Bo Shen <voice.shen@atmel.com>
+Cc: stable@vger.kernel.org
 ---
- drivers/virtio/virtio_balloon.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/clk/at91/clk-slow.c | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
 
-diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-index 50c5f42..3176ea4 100644
---- a/drivers/virtio/virtio_balloon.c
-+++ b/drivers/virtio/virtio_balloon.c
-@@ -466,6 +466,12 @@ static int virtballoon_probe(struct virtio_device *vdev)
- 	struct virtio_balloon *vb;
- 	int err;
+diff --git a/drivers/clk/at91/clk-slow.c b/drivers/clk/at91/clk-slow.c
+index 32f7c1b..2f13bd5 100644
+--- a/drivers/clk/at91/clk-slow.c
++++ b/drivers/clk/at91/clk-slow.c
+@@ -70,6 +70,7 @@ struct clk_sam9x5_slow {
  
-+	if (!vdev->config->get) {
-+		dev_err(&vdev->dev, "%s failure: config access disabled\n",
-+			__func__);
-+		return -EINVAL;
-+	}
+ #define to_clk_sam9x5_slow(hw) container_of(hw, struct clk_sam9x5_slow, hw)
+ 
++static struct clk *slow_clk;
+ 
+ static int clk_slow_osc_prepare(struct clk_hw *hw)
+ {
+@@ -357,6 +358,8 @@ at91_clk_register_sam9x5_slow(void __iomem *sckcr,
+ 	clk = clk_register(NULL, &slowck->hw);
+ 	if (IS_ERR(clk))
+ 		kfree(slowck);
++	else
++		slow_clk = clk;
+ 
+ 	return clk;
+ }
+@@ -433,6 +436,8 @@ at91_clk_register_sam9260_slow(struct at91_pmc *pmc,
+ 	clk = clk_register(NULL, &slowck->hw);
+ 	if (IS_ERR(clk))
+ 		kfree(slowck);
++	else
++		slow_clk = clk;
+ 
+ 	return clk;
+ }
+@@ -465,3 +470,25 @@ void __init of_at91sam9260_clk_slow_setup(struct device_node *np,
+ 
+ 	of_clk_add_provider(np, of_clk_src_simple_get, clk);
+ }
 +
- 	vdev->priv = vb = kmalloc(sizeof(*vb), GFP_KERNEL);
- 	if (!vb) {
- 		err = -ENOMEM;
++/*
++ * FIXME: All slow clk users are not properly claiming it (get + prepare +
++ * enable) before using it.
++ * If all users properly claiming this clock decide that they don't need it
++ * anymore (or are removed), it is disabled while faulty users are still
++ * requiring it, and the system hangs.
++ * Prevent this clock from being disabled until all users are properly
++ * requesting it.
++ * Once this is done we should remove this function and the slow_clk variable.
++ */
++static int __init of_at91_clk_slow_retain(void)
++{
++	if (!slow_clk)
++		return 0;
++
++	__clk_get(slow_clk);
++	clk_prepare_enable(slow_clk);
++
++	return 0;
++}
++arch_initcall(of_at91_clk_slow_retain);
 -- 
-MST
+1.9.1
 
