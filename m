@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815AbbAMO0x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 09:26:53 -0500
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:53053 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143AbbAMO0u (ORCPT
+	id S1752838AbbAMO1J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 09:27:09 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:41591 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143AbbAMO1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 09:26:50 -0500
+	Tue, 13 Jan 2015 09:27:07 -0500
+Message-ID: <54B52B39.1000607@linaro.org>
+Date: Tue, 13 Jan 2015 15:27:05 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <1418218575-17694-1-git-send-email-geert+renesas@glider.be>
-References: <1418218575-17694-1-git-send-email-geert+renesas@glider.be>
-Date: Tue, 13 Jan 2015 15:26:49 +0100
-Message-ID: <CACRpkdbcdMYXOvFSENZ1f7-4JV9Op+xSqz24UDApetK_LDrY0g@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpio: pcf857x: Propagate wake-up setting to parent
- irq controller
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Alexandre Courbot <gnurou@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Yanchang Li <yl22@csr.com>, Barry Song <Baohua.Song@csr.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] clocksource: sirf: remove unused variable
+References: <1599190.ZYSE4SrQSK@wuerfel>
+In-Reply-To: <1599190.ZYSE4SrQSK@wuerfel>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 10, 2014 at 2:36 PM, Geert Uytterhoeven
-<geert+renesas@glider.be> wrote:
+On 01/13/2015 03:22 PM, Arnd Bergmann wrote:
+> A recent rework of the driver left an obviously unused variable
+> around, and now the compiler complains:
+>
+> clocksource/timer-marco.c: In function 'sirfsoc_marco_timer_init':
+> clocksource/timer-marco.c:260:6: warning: unused variable 'timer_div' [-Wunused-variable]
+>
+> Remove it.
 
-> The pcf857x GPIO and interrupt controller uses dummy_irq_chip, which
-> does not implement irq_chip.irq_set_wake() and does not set
-> IRQCHIP_SKIP_SET_WAKE.
->
-> This causes two s2ram issues if wake-up is enabled for the pcf857x GPIO
-> pins:
->   1. During resume from s2ram, the following warning is printed:
->
->      WARNING: CPU: 0 PID: 1046 at kernel/irq/manage.c:537 irq_set_irq_wake+0x9c/0xf8()
->      Unbalanced IRQ 113 wake disable
->
->   2. Wake-up through the pcf857x GPIO pins may fail, as the parent
->      interrupt controller may be suspended.
->
-> Migrate the pcf857x GPIO and interrupt controller from dummy_irq_chip to
-> its own irq_chip. This irq chip implements irq_chip.irq_set_wake() to
-> propagate its wake-up setting to the parent interrupt controller.
->
-> This fixes wake-up through gpio-keys on sh73a0/kzm9g, where the pcf857x
-> interrupt is cascaded to irq-renesas-intc-irqpin, and the latter must
-> not be suspended when wake-up is enabled.
->
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-(...)
-> +static struct irq_chip pcf857x_irq_chip = {
-> +       .name           = "pcf857x",
-> +       .irq_startup    = noop_ret,
-> +       .irq_shutdown   = noop,
-> +       .irq_enable     = noop,
-> +       .irq_disable    = noop,
-> +       .irq_ack        = noop,
-> +       .irq_mask       = noop,
-> +       .irq_unmask     = noop,
-> +       .irq_set_wake   = pcf857x_irq_set_wake,
-> +};
+Hi Arnd,
 
-Argh this is so simplistic ... any GPIO irqchip worthy of it's name
-shoult at least call gpiochip_lock_as_irq() in .irq_request_resources() and vice
-versa mutatis mutandis in .irq_release_resources().
+thanks for the fix. But this has been already fixed and merged in my 
+tree [1].
 
-Isn't it possible to also migrate this to GPIOLIB_IRQCHIP when
-you're at it can also cut out a big chunk of rusty code?
+   -- Daniel
 
-Yours,
-Linus Walleij
+[1] 
+https://git.linaro.org/people/daniel.lezcano/linux.git/commitdiff/2a016d694f36fc31f7f9fede902346c5895702bb?hp=89de77a8c557f14d2713a1f43fbc33980e639b98
+
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Fixes: ef89af1f4380b92 ("clocksource: sirf: Remove hard-coded clock rate")
+>
+> diff --git a/drivers/clocksource/timer-marco.c b/drivers/clocksource/timer-marco.c
+> index 361a789d4bee..3ddb81f7ee66 100644
+> --- a/drivers/clocksource/timer-marco.c
+> +++ b/drivers/clocksource/timer-marco.c
+> @@ -257,7 +257,6 @@ static void __init sirfsoc_clockevent_init(void)
+>   /* initialize the kernel jiffy timer source */
+>   static void __init sirfsoc_marco_timer_init(struct device_node *np)
+>   {
+> -	u32 timer_div;
+>   	struct clk *clk;
+>
+>   	clk = of_clk_get(np, 0);
+>
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
