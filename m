@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105AbbAMJHg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 04:07:36 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:15544 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071AbbAMJH3 (ORCPT
+	id S1752063AbbAMJOd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 04:14:33 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:59478 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751886AbbAMJOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 04:07:29 -0500
-X-AuditID: cbfee68f-f791c6d000004834-f9-54b4e04976e5
-Date: Tue, 13 Jan 2015 09:07:21 +0000 (GMT)
+	Tue, 13 Jan 2015 04:14:08 -0500
+X-AuditID: cbfee691-f79b86d000004a5a-51-54b4e1de27b5
+Date: Tue, 13 Jan 2015 09:14:06 +0000 (GMT)
 From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: Re: [PATCHv3 1/8] devfreq: exynos: Add generic exynos memory bus
- frequency driver
-To: =?utf-8?Q?=EC=B5=9C=EC=B0=AC=EC=9A=B0?= <cw00.choi@samsung.com>
-Cc: "kgene@kernel.org" <kgene@kernel.org>,
-        =?utf-8?Q?=EB=B0=95=EA=B2=BD=EB=AF=BC?= <kyungmin.park@samsung.com>,
+Subject: Re: [PATCHv3 3/8] ARM: dts: Add memory bus node for Exynos3250
+To: =?utf-8?Q?=EC=B5=9C=EC=B0=AC=EC=9A=B0?= <cw00.choi@samsung.com>,
+        "kgene@kernel.org" <kgene@kernel.org>
+Cc: =?utf-8?Q?=EB=B0=95=EA=B2=BD=EB=AF=BC?= <kyungmin.park@samsung.com>,
         "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
         "mark.rutland@arm.com" <mark.rutland@arm.com>,
         ABHILASH KESAVAN <a.kesavan@samsung.com>,
@@ -31,8 +30,8 @@ Cc: "kgene@kernel.org" <kgene@kernel.org>,
 	<linux-samsung-soc@vger.kernel.org>
 Reply-to: myungjoo.ham@samsung.com
 MIME-version: 1.0
-X-MTR: 20150113090441450@myungjoo.ham
-Msgkey: 20150113090441450@myungjoo.ham
+X-MTR: 20150113091350575@myungjoo.ham
+Msgkey: 20150113091350575@myungjoo.ham
 X-EPLocale: ko_KR.utf-8
 X-Priority: 3
 X-EPWebmail-Msg-Type: personal
@@ -40,119 +39,78 @@ X-EPWebmail-Reply-Demand: 0
 X-EPApproval-Locale: 
 X-EPHeader: ML
 X-MLAttribute: 
-X-RootMTR: 20150113090441450@myungjoo.ham
+X-RootMTR: 20150113091350575@myungjoo.ham
 X-ParentMTR: 
 X-ArchiveUser: 
 X-CPGSPASS: N
 X-ConfirmMail: N,general
 Content-type: text/plain; charset=utf-8
 MIME-version: 1.0
-Message-id: <2009992739.970611421140038667.JavaMail.weblogic@epmlwas05d>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsWyRsSkRNfzwZYQg8W7LCwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGxfUN7AWPZCv+//zH3MD4R6aLkZNDSEBdYtGSk2wgtoSAicTW
-	nfehbDGJC/fWA9lcQDVLGSXebn3MDFP0/PAxJojEHEaJl7/XgiVYBFQl3h+7CtTBwcEmoCcx
-	83MyiCksECfx+pIQSIWIgKvEyrWLWEBamQW2skkc+rKZDeIIJYk1+16xgNi8AoISJ2c+YYHY
-	pSpx/9MVRoi4msTdnwegjhOXuDD3EjuEzSsxo/0pVL2cxLSva6DulJY4P2sDI8wzi7/D3M8v
-	cez2DiYIW0Bi6pmDUDVaEn9n74WaySexZuFbFpj6XaeWM8Psur9lLlSvhMTWliesIDazgKLE
-	lO6H7CD/MgtoSqzfpY/uFV4BD4nmlk5wsEkITOWQ6P36g2kCo9IsJHWzkIyahTAKWckCRpZV
-	jKKpBckFxUnpRcZ6xYm5xaV56XrJ+bmbGIFp4fS/Z/07GO8esD7EKMDBqMTDuyN7S4gQa2JZ
-	cWXuIUZTYCRNZJYSTc4HJp+8knhDYzMjC1MTU2Mjc0szJXHehVI/g4UE0hNLUrNTUwtSi+KL
-	SnNSiw8xMnFwSjUwLjb6/8dWaF6mckjjD68rwtNb307858PvkH8n8uT5/m0qS/6H1KvzZEmJ
-	LCqb+yaivvL4euer3rphNQXJtyZlNC026RCcmye4tlnyj37oDzGWHKkdq1MUeq6Irpkw0/ye
-	XsC+De1TmeomNc6umv7XIPVXwt1Lapuyjl2+uNZCyLxwqkg7k3KfEktxRqKhFnNRcSIASBYB
-	jwYDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCKsWRmVeSWpSXmKPExsVy+t/tXl3PB1tCDL7+M7C4vGsOmwOjx+dN
-	cgGMUWk2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBD
-	lRTKEnNKgUIBicXFSvp2NkX5pSWpChn5xSW2StGG5kZ6RgZ6pkZ6hsaxVoYGBkamQDUJaRkX
-	1zewFzySrfj/8x9zA+MfmS5GTg4hAXWJRUtOsoHYEgImEs8PH2OCsMUkLtxbDxTnAqqZwyjx
-	8vdaZpAEi4CqxPtjV4ESHBxsAnoSMz8ng5jCAnESry8JgVSICLhKrFy7iAWklVlgK5vEoS+b
-	2SB2KUms2feKBcTmFRCUODnzCQvELlWJ+5+uMELE1STu/jwAdY+4xIW5l9ghbF6JGe1Poerl
-	JKZ9XcMMYUtLnJ+1gRHm5sXfH0PF+SWO3d4B9YuAxNQzB6FqtCT+zt4LNZNPYs3Ctyww9btO
-	LWeG2XV/y1yoXgmJrS1PWEFsZgFFiSndD9lB/mUW0JRYv0sf3Su8Ah4SzS2dTBMYZWchSc1C
-	0j0LoRtZyQJGllWMoqkFyQXFSekVhnrFibnFpXnpesn5uZsYwSno2cIdjF/OWx9iFOBgVOLh
-	3ZG9JUSINbGsuDL3EKMEB7OSCO/820Ah3pTEyqrUovz4otKc1OJDjKbAKJvILCWanA9Mj3kl
-	8YbGxiZmJqaWJhYGpuZK4rz/z+WGCAmkJ5akZqemFqQWwfQxcXBKNTBunq75z+74/ov/BPZw
-	r7gk0sSz2dV+4rzCtW0WS3PYan3mxkmlPbnrWrzE9pRoSfx65Zb3C3LMP362uXEj+M1b7ZnJ
-	yft5w/4l3uJft639fmSQtv1qZbMasx3s1TOeTlS5sd7RXDx6wdsF8lO6znx03bbrlVbWsuBu
-	50sic+edqBTcf6rj3KEkJZbijERDLeai4kQAT6/QUlcDAAA=
+Message-id: <823139081.971381421140443531.JavaMail.weblogic@epmlwas05d>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrIIsWRmVeSWpSXmKPExsWyRsSkUPfewy0hBn8261tc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MIy+WsRWs4q54ubqJpYGxgbuLkZNDSEBdYtGSk2wgtoSAicSD
+	90+ZIGwxiQv31gPFuYBqljJKTNxwnbmLkQOs6OJEe4j4HEaJrUs3sYM0sAioSlw9/ZURpIZN
+	QE9i5udkEFNYwF1i8lsLkAoRgTyJK3dnMIK0Mgv0sEl0XP3ODHGDksSafa9YQGxeAUGJkzOf
+	sECsUpVYu6oIIqwmsel8AwvEaeISF+ZeYoeweSVmtD+FistJTPu6hhnClpY4P2sDI8wri78/
+	horzSxy7vQPqRQGJqWcOQtVoSWx/uhpqJp/EmoVvWWDqd51azgyz6/6WuVC9EhJbW56wgtjM
+	AooSU7ofsoOczCygKbF+lz6qT0Bsd4lDzy+ygLwuITCTQ2Jx7zW2CYxKs5DUzUIyahbCKGQl
+	CxhZVjGKphYkFxQnpReZ6hUn5haX5qXrJefnbmIEpoTT/55N3MF4/4D1IUYBDkYlHt4d2VtC
+	hFgTy4orcw8xmgLjaCKzlGhyPjDx5JXEGxqbGVmYmpgaG5lbmimJ8+pI/wwWEkhPLEnNTk0t
+	SC2KLyrNSS0+xMjEwSnVwFgZInJ2m1/wzaZjs56bZCdo7nQon5pfGjqXfX1S/u9Ey4+zeecw
+	qop5/Xgb/fHBpB01i0szt0g2Tc6IU20I/6W3teVd7ZYkSf/JOdKlZbs+/p7564z9dL0ji298
+	F3UqdC1hMGr6fO+JoHn0wV8/G/Q3N863Lfesl4u/ybFyYdSXpK4XJyxWFymxFGckGmoxFxUn
+	AgDZWuJBBAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrEKsWRmVeSWpSXmKPExsVy+t/tXt17D7eEGPz7r2lxedccNgdGj8+b
+	5AIYo9JsMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4CG
+	KimUJeaUAoUCEouLlfTtbIryS0tSFTLyi0tslaINzY30jAz0TI30DI1jrQwNDIxMgWoS0jKO
+	vFjGVrCKu+Ll6iaWBsYG7i5GTg4hAXWJRUtOsnUxcnBICJhIXJxoDxKWEBCTuHBvPVCYC6hk
+	DqPE1qWb2EESLAKqEldPf2UEqWcT0JOY+TkZxBQWcJeY/NYCpEJEIE/iyt0ZjCCtzAI9bBId
+	V78zQ6xSkliz7xULiM0rIChxcuYTFoi1qhJrVxVBhNUkNp1vYIE4QVziwtxL7BA2r8SM9qdQ
+	cTmJaV/XMEPY0hLnZ21ghDl58ffHUHF+iWO3dzBB2AISU88chKrRktj+dDXUTD6JNQvfssDU
+	7zq1nBlm1/0tc6F6JSS2tjxhBbGZBRQlpnQ/ZAc5mVlAU2L9Ln1Un4DY7hKHnl9kmcAoOwtJ
+	ahaS7lkI3chKFjCyrGIUTS1ILihOSq8w0itOzC0uzUvXS87P3cQITj/PFu1g/Hfe+hCjAAej
+	Eg/vjuwtIUKsiWXFlbmHGCU4mJVEeOffBgrxpiRWVqUW5ccXleakFh9iNAXG2ERmKdHkfGBq
+	zCuJNzQ2NjEzMbU0sTAwNVcS5/1/LjdESCA9sSQ1OzW1ILUIpo+Jg1OqgZGfOVnkcZXg9eZp
+	rZtC5n31XqP7Qeri7j37pgbl/fse+GiDwvJip9c6x1/+2eN14L+lWN0r9U3Tz+ocObBq3/ty
+	yb1axaalgrzH6i2UxaMO+z9jepT0sjBYXnjuNCODN93ss03XX31xYJb2tTU1rIa6Zv3NOpzH
+	XHQ9T764KPt7Wsban2GXvrIqsRRnJBpqMRcVJwIANEWBUFUDAAA=
 DLP-Filter: Pass
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0D97gVD026394
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0D9Ee6L026423
 
->  
-> Dear Myungjoo,
->
->On 01/13/2015 05:42 PM, MyungJoo Ham wrote:
->>>   
->>>  This patch adds the generic exynos bus frequency driver for memory bus
->>> with DEVFREQ framework. The Samsung Exynos SoCs have the common architecture
->>> for memory bus between DRAM memory and MMC/sub IP in SoC. This driver can
->>> support the memory bus frequency driver for Exynos SoCs.
->>>
->>> Each memory bus block has a clock for memory bus speed and frequency
->>> table which is changed according to the utilization of memory bus on runtime.
->>> And then each memory bus group has the one more memory bus blocks and
->>> OPP table (including frequency and voltage), regulator, devfreq-event
->>> devices.
->>>
->>> There are a little difference about the number of memory bus because each Exynos
->>> SoC have the different sub-IP and different memory bus speed. In spite of this
->>> difference among Exynos SoCs, we can support almost Exynos SoC by adding
->>> unique data of memory bus to devicetree file.
->>>
->>> Cc: Myungjoo Ham <myungjoo.ham@samsung.com>
->>> Cc: Kyungmin Park <kyungmin.park@samsung.com>
->>> Cc: Kukjin Kim <kgene@kernel.org>
->>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->>> ---
->>>  drivers/devfreq/Kconfig          |  15 +
->>>  drivers/devfreq/Makefile         |   1 +
->>>  drivers/devfreq/exynos-busfreq.c | 589 +++++++++++++++++++++++++++++++++++++++
->>>  3 files changed, 605 insertions(+)
->>>  create mode 100644 drivers/devfreq/exynos-busfreq.c
->> 
->> Exynos drivers are located at drivers/devfreq/exynos/
->> Please relocate/rename exynos-busfreq.c
->
->OK. I'll move it at drivers/devfreq/exynos directory.
->Do you prefer 'exynos-bus.c' instead of 'exynos-busfreq.c'?
->If you reply, I'll change it.
+>   
+>  This patch adds the memory bus node for Exynos3250 SoC. Exynos3250 has
+> following memory buses to translate data between DRAM and eMMC/sub-IPs.
+> 
+> Following list specifies the detailed relation between memory bus clock and DMC
+> IP in MIF (Memory Interface) block:
+> - DMC clock : DMC (Dynamic Memory Controller)
+> 
+> Following list specifies the detailed relation between memory bus clock and
+> sub-IPs in INT (Internal) block:
+> - ACLK100 clock : PERIL
+> - ACLK160 clock : LCD0
+> - ACLK200 clock : FSYS
+> - ACLK266 clock : ISP
+> - GDL/GDR clock : leftbus/rightbus
+> - SCLK_MFC clock : MFC
+> 
+> Cc: Kukjin Kim <kgene@kernel.org>
+> Cc: Myungjoo Ham <myungjoo.ham@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-exynos-bus looks more pretty :)
+Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
->
->> 
->> []
->> 
->>> diff --git a/drivers/devfreq/exynos-busfreq.c b/drivers/devfreq/exynos-busfreq.c
->>> new file mode 100644
->>> index 0000000..b180f43
->>> --- /dev/null
->>> +++ b/drivers/devfreq/exynos-busfreq.c
->> 
->> []
->> 
->>> +
->>> +#define BUS_SATURATION_RATIO	40
->> 
->> In order to be a common driver, this should be tunable.
->> 
->> Because .dts is supposed to have hardware configuration only,
->> you may keep a table of { chip-name, saturation ratio} in this
->> driver and look up the saturation ratio based on the chip-name.
->
->OK, I'll add new property for saturation_ratio.
->
->I'll implement to use default saturation_ratio value ,
->if dt node don't include saturation_ratio property.
 
-Yes. I didn't talk with DT maintainers and I do not have much
-experience with DT; however, it appears that such values are not
-recommended to be in DTS files and this value is determined by
-the SoC model number without complications in the driver file.
 
+> ---
+>  arch/arm/boot/dts/exynos3250.dtsi | 125 ++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 125 insertions(+)
+> 
 ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
