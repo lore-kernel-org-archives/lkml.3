@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481AbbAMGvo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 01:51:44 -0500
-Received: from mail-by2on0101.outbound.protection.outlook.com ([207.46.100.101]:8448
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750968AbbAMGvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 01:51:42 -0500
-From: Peter Chen <Peter.Chen@freescale.com>
-To: Huang Rui <ray.huang@amd.com>, Felipe Balbi <balbi@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/4] usb: gadget: u_uac1: fix build issue
-Thread-Topic: [PATCH 1/4] usb: gadget: u_uac1: fix build issue
-Thread-Index: AQHQLvltK2p2hX9CMUOt7jMPvV3bB5y9m7+A
-Date: Tue, 13 Jan 2015 06:51:40 +0000
-Message-ID: <BN3PR0301MB08491E88100625CCAE38DAE781400@BN3PR0301MB0849.namprd03.prod.outlook.com>
-References: <1421130034-1891-1-git-send-email-ray.huang@amd.com>
-In-Reply-To: <1421130034-1891-1-git-send-email-ray.huang@amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.158.211]
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=Peter.Chen@freescale.com; 
-x-dmarcaction-test: None
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BN3PR0301MB0849;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB0849;
-x-forefront-prvs: 045584D28C
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(51704005)(199003)(54606007)(76576001)(97736003)(62966003)(77156002)(68736005)(99286002)(54356999)(86362001)(50986999)(76176999)(46102003)(33656002)(2950100001)(102836002)(106356001)(2900100001)(92566002)(105586002)(106116001)(66066001)(74316001)(101416001)(40100003)(19580405001)(19580395003)(122556002)(64706001)(2656002)(2171001)(87936001)(54206007)(7059030);DIR:OUT;SFP:1102;SCL:1;SRVR:BN3PR0301MB0849;H:BN3PR0301MB0849.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+	id S1751352AbbAMGxo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 01:53:44 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:51169 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118AbbAMGxn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 01:53:43 -0500
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-originalarrivaltime: 13 Jan 2015 06:51:40.7852
- (UTC)
-X-MS-Exchange-CrossTenant-fromentityheader: Hosted
-X-MS-Exchange-CrossTenant-id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN3PR0301MB0849
+In-Reply-To: <20150112122138.f173c6279af0b49565e956d3@linux-foundation.org>
+References: <20150111135406.13266.42007.stgit@zurg>
+	<20150112122138.f173c6279af0b49565e956d3@linux-foundation.org>
+Date: Tue, 13 Jan 2015 10:53:42 +0400
+Message-ID: <CALYGNiNtMgiHD9qQnczeWZy25wQ10LfQhoEGkW8KTbVfp9mBoA@mail.gmail.com>
+Subject: Re: [PATCH] mm: fix corner case in anon_vma endless growing prevention
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, "Elifaz, Dana" <Dana.Elifaz@amd.com>,
+        "Bridgman, John" <John.Bridgman@amd.com>,
+        Daniel Forrest <dan.forrest@ssec.wisc.edu>,
+        Chris Clayton <chris2553@googlemail.com>,
+        Oded Gabbay <oded.gabbay@amd.com>, Michal Hocko <mhocko@suse.cz>,
+        Greg KH <gregkh@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0D6ppro025905
 
- 
-> See below error message:
->   CC [M]  drivers/gpu/drm/nouveau/core/subdev/vm/nv50.o
->   CC [M]  drivers/staging/lustre/lnet/selftest/module.o
-> drivers/usb/gadget/function/f_uac1.c: In function â€˜f_audio_free_instâ€™:
-> drivers/usb/gadget/function/f_uac1.c:904:21: error: â€˜struct f_uac1_optsâ€™ has
-> no member named â€˜cardâ€™
->   gaudio_cleanup(opts->card);
->                      ^
-> make[4]: *** [drivers/usb/gadget/function/f_uac1.o] Error 1
-> make[3]: *** [drivers/usb/gadget/function] Error 2
-> make[2]: *** [drivers/usb/gadget] Error 2
-> make[2]: *** Waiting for unfinished jobs....
->   CC [M]  drivers/staging/lustre/lnet/selftest/ping_test.o
-> 
-> Signed-off-by: Huang Rui <ray.huang@amd.com>
-> Cc: Peter Chen <peter.chen@freescale.com>
-> ---
-> 
+On Mon, Jan 12, 2015 at 11:21 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Sun, 11 Jan 2015 16:54:06 +0300 Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+>
+>> Fix for BUG_ON(anon_vma->degree) splashes in unlink_anon_vmas()
+>> ("kernel BUG at mm/rmap.c:399!").
+>>
+>> Anon_vma_clone() is usually called for a copy of source vma in destination
+>> argument. If source vma has anon_vma it should be already in dst->anon_vma.
+>> NULL in dst->anon_vma is used as a sign that it's called from anon_vma_fork().
+>> In this case anon_vma_clone() finds anon_vma for reusing.
+>>
+>> Vma_adjust() calls it differently and this breaks anon_vma reusing logic:
+>> anon_vma_clone() links vma to old anon_vma and updates degree counters but
+>> vma_adjust() overrides vma->anon_vma right after that. As a result final
+>> unlink_anon_vmas() decrements degree for wrong anon_vma.
+>>
+>> This patch assigns ->anon_vma before calling anon_vma_clone().
+>>
+>> Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+>> Fixes: 7a3ef208e662 ("mm: prevent endless growth of anon_vma hierarchy")
+>
+> I've asked Greg not to take 7a3ef208e662 into -stable because of this
+> problem.  So if you still think we should fix this in -stable, could
+> you please prepare an updated patch and send it to Greg?
 
-Oh, my three patches have dependencies, it needs to rebase Felipe's fixes tree to fix this problem.
+Will do. But let's wait for some just to be sure that is the last bug here.
 
-commit 4fde6204df052bb89ba3d915ed6ed9f306f3cfa1
-Author: Peter Chen <peter.chen@freescale.com>
-Date:   Mon Dec 1 16:09:27 2014 +0800
-
-    usb: gadget: f_uac1: access freed memory at f_audio_free_inst
-
-
-
-Peter
-
- 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>
+>> Tested-by: Chris Clayton <chris2553@googlemail.com>
+>> Tested-by: Oded Gabbay <oded.gabbay@amd.com>
+>> Cc: Daniel Forrest <dan.forrest@ssec.wisc.edu>
+>> Cc: Michal Hocko <mhocko@suse.cz>
+>> Cc: Rik van Riel <riel@redhat.com>
