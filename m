@@ -1,107 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785AbbAMNkH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 08:40:07 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:33992 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751093AbbAMNkF (ORCPT
+	id S1752061AbbAMNkv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 08:40:51 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:50941 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751877AbbAMNkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 08:40:05 -0500
-Date: Tue, 13 Jan 2015 14:39:03 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        LFBDEV <linux-fbdev@vger.kernel.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] fbdev: ssd1307fb: check return value while setting
- offset
-Message-ID: <20150113133903.GV4891@lukather>
-References: <1420705079-3741-1-git-send-email-prabhakar.csengg@gmail.com>
- <1420705079-3741-3-git-send-email-prabhakar.csengg@gmail.com>
- <54B504EF.4000809@ti.com>
- <CA+V-a8u0RARw84FYa661VZCYpXkZYkXmtc03jCXU=t0aoGvg9Q@mail.gmail.com>
+	Tue, 13 Jan 2015 08:40:49 -0500
+Message-ID: <54B5205C.3000803@atmel.com>
+Date: Tue, 13 Jan 2015 14:40:44 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nT6ukc3bqTvTgwkF"
-Content-Disposition: inline
-In-Reply-To: <CA+V-a8u0RARw84FYa661VZCYpXkZYkXmtc03jCXU=t0aoGvg9Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <khilman@kernel.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Patrice Vilchez <patrice.vilchez@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Cyrille Pitchen <cyrille.pitchen@atmel.com>,
+        ARM Maintainers <arm@kernel.org>
+Subject: Re: [PATCH] ARM: at91/Documentation: add a README for Atmel SoCs
+References: <1420809631-26923-1-git-send-email-nicolas.ferre@atmel.com> <54B500CC.6020205@atmel.com> <20150113113657.GB3843@piout.net>
+In-Reply-To: <20150113113657.GB3843@piout.net>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le 13/01/2015 12:36, Alexandre Belloni a écrit :
+> On 13/01/2015 at 12:26:04 +0100, Nicolas Ferre wrote :
+>> Le 09/01/2015 14:20, Nicolas Ferre a écrit :
+>>> Add a README file to describe Atmel SoCs (aka AT91) support in Mainline Linux:
+>>> - SoC list + datasheet web links
+>>> - Basic but useful information
+>>> - Device Tree conventions and Work In Progress statement.
+>>>
+>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>>> Cc: ARM Maintainers <arm@kernel.org>
+>>> ---
+>>>  Documentation/arm/Atmel/README | 120 +++++++++++++++++++++++++++++++++++++++++
+>>>  1 file changed, 120 insertions(+)
+>>>  create mode 100644 Documentation/arm/Atmel/README
+>>>
+>>> diff --git a/Documentation/arm/Atmel/README b/Documentation/arm/Atmel/README
+>>> new file mode 100644
+>>> index 000000000000..538f8a556277
+>>> --- /dev/null
+>>> +++ b/Documentation/arm/Atmel/README
+>>> @@ -0,0 +1,120 @@
+>>> +ARM Atmel SoCs (aka AT91)
+>>> +=========================
+>>> +
+>>> +
+>>> +Introduction
+>>> +------------
+>>> +This document gives useful information about the ARM Atmel SoCs that are
+>>> +currently supported in Linux Mainline (you know, the one on kernel.org).
+>>> +
+>>> +It is important to note that the Atmel | SMART ARM-based MPU product line is
+>>> +historically named "AT91" or "at91" throughout the Linux kernel development
+>>> +process even if this product prefix has completely disappeared from the
+>>> +official Atmel product name. Anyway, files, directories, git trees,
+>>> +git branches/tags and email subject always contain this "at91" sub-string.
+>>> +
+>>> +
+>>> +AT91 SoCs
+>>> +---------
+>>> +Documentation and detailled datasheet for each product are available on
+>>> +the Atmel website: http://www.atmel.com.
+>>> +
+>>> +  Flavors:
+>>> +    * ARM 920 based SoC
+>>> +      - at91rm9200
+>>> +        + Datasheet
+>>> +          http://www.atmel.com/Images/doc1768.pdf
+>>> +
+>>> +    * ARM 926 based SoCs
+>>> +      - at91sam9260
+>>> +        + Datasheet
+>>> +          http://www.atmel.com/Images/doc6221.pdf
+>>> +
+> 
+> at91sam9xe is still supported, the datasheet is there:
+> http://www.atmel.com/Images/Atmel-6254-32-bit-ARM926EJ-S-Embedded-Microprocessor-SAM9XE_Datasheet.pdf
 
---nT6ukc3bqTvTgwkF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ok, I add it. Thanks.
 
-On Tue, Jan 13, 2015 at 11:53:01AM +0000, Prabhakar Lad wrote:
-> On Tue, Jan 13, 2015 at 11:43 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> =
-wrote:
-> > On 08/01/15 10:17, Lad, Prabhakar wrote:
-> >> this patch checks the return value of write command while
-> >> setting the display offset.
-> >>
-> >> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> >> ---
-> >>  drivers/video/fbdev/ssd1307fb.c | 2 +-
-> >>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >>
-> >> diff --git a/drivers/video/fbdev/ssd1307fb.c b/drivers/video/fbdev/ssd=
-1307fb.c
-> >> index 70e3ce8..a7ecaa6 100644
-> >> --- a/drivers/video/fbdev/ssd1307fb.c
-> >> +++ b/drivers/video/fbdev/ssd1307fb.c
-> >> @@ -342,7 +342,7 @@ static int ssd1307fb_ssd1306_init(struct ssd1307fb=
-_par *par)
-> >>
-> >>       /* set display offset value */
-> >>       ret =3D ssd1307fb_write_cmd(par->client, SSD1307FB_SET_DISPLAY_O=
-FFSET);
-> >> -     ret =3D ssd1307fb_write_cmd(par->client, 0x20);
-> >> +     ret =3D ret & ssd1307fb_write_cmd(par->client, 0x20);
-> >>       if (ret < 0)
-> >>               return ret;
-> >
-> > Hrm, what's that supposed to do? If both calls to ssd1307fb_write_cmd()
-> > return an error, they are anded, resulting in a garbage error code...
-> >
-> Agreed I have just aligned this to rest of the code in this function.
->=20
-> Maxime if you are OK I'll post a patch returning error then and there ?
 
-I'm not sure what the question is, but Tomi is right, having two
-returns seems the right thing to do.
+>>> +      - at91sam9261
+>>> +        + Datasheet
+>>> +          http://www.atmel.com/Images/doc6062.pdf
+>>> +
+>>> +      - at91sam9263
+>>> +        + Datasheet
+>>> +          http://www.atmel.com/Images/Atmel_6249_32-bit-ARM926EJ-S-Microcontroller_SAM9263_Datasheet.pdf
+>>> +
+>>> +      - at91sam9rl
+>>> +        + Datasheet
+>>> +          http://www.atmel.com/Images/doc6289.pdf
+>>> +
+>>> +      - at91sam9g20
+>>> +        + Datasheet
+>>> +          http://www.atmel.com/Images/doc6384.pdf
+>>> +
+>>> +      - at91sam9g45 family
+>>> +        - at91sam9g45
+>>> +        - at91sam9g46
+>>> +        - at91sam9m10
+>>> +        - at91sam9m11 (device superset)
+>>> +        + Datasheet
+>>> +          http://www.atmel.com/Images/Atmel-6437-32-bit-ARM926-Embedded-Microprocessor-SAM9M11_Datasheet.pdf
+>>> +
+>>> +      - at91sam9x5 family (aka "The 5 series")
+>>> +        - at91sam9g15
+>>> +        - at91sam9g25
+>>> +        - at91sam9g35
+>>> +        - at91sam9x25
+>>> +        - at91sam9x35
+>>> +        + Datasheet (can be considered as covering the whole family)
+>>> +          http://www.atmel.com/Images/Atmel_11055_32-bit-ARM926EJ-S-Microcontroller_SAM9X35_Datasheet.pdf
+>>> +
+>>> +      - at91sam9n12
+>>> +        + Datasheet
+>>> +          http://www.atmel.com/Images/Atmel_11063_32-bit-ARM926EJ-S-Microcontroller_SAM9N12CN11CN12_Datasheet.pdf
+>>> +
+>>> +    * ARM Cortex-A5 based SoCs
+>>> +      - sama5d3 family
+>>> +        - sama5d31
+>>> +        - sama5d33
+>>> +        - sama5d34
+>>> +        - sama5d35
+>>> +        - sama5d36 (device superset)
+>>> +        + Datasheet
+>>> +          http://www.atmel.com/Images/Atmel-11121-32-bit-Cortex-A5-Microcontroller-SAMA5D3_Datasheet.pdf
+>>> +
+>>> +    * ARM Cortex-A5 + NEON based SoCs
+>>> +      - sama5d4 family
+>>> +        - sama5d41
+>>> +        - sama5d42
+>>> +        - sama5d43
+>>> +        - sama5d44 (device superset)
+>>> +        + Datasheet
+>>> +          http://www.atmel.com/Images/Atmel-11238-32-bit-Cortex-A5-Microcontroller-SAMA5D4_Datasheet.pdf
+>>> +
+>>> +
+>>> +Linux kernel information
+>>> +------------------------
+>>> +Linux kernel mach directory: arch/arm/mach-at91
+>>> +MAINTAINERS entry is: "ARM/ATMEL AT91RM9200 AND AT91SAM ARM ARCHITECTURES"
+>>> +
+>>> +
+>>> +Device Tree for AT91 SoCs and boards
+>>> +------------------------------------
+>>> +All AT91 SoCs are converted to Device Tree. Since Linux 3.19, these products
+>>> +must use this method to boot the Linux kernel.
+>>> +
+>>> +Work In Progress statement:
+>>> +Device Tree files and Device Tree bindings that apply to AT91 SoCs and boards are
+>>> +considered as "Unstable". To be completely clear, any at91 binding can change at
+>>> +any time. So, be sure to use a Device Tree Binary and a Kernel Image generated from
+>>> +the same source tree.
+>>> +Please refer to the Documentation/devicetree/bindings/ABI.txt file for a
+>>> +definition of a "Stable" binding/ABI.
+>>> +This statement will be removed by AT91 MAINTAINERS when appropriated.
+>>> +
+>>> +Naming conventions and best practice:
+>>> +- SoCs Device Tree Source Include files are named after the official name of
+>>> +  the product (at91sam9g20.dtsi or sama5d33.dtsi for instance).
+>>> +- Device Tree Source Include files (.dtsi) are used to collect common nodes that can be
+>>> +  shared across SoCs or boards (sama5d3.dtsi or at91sam9x5cm.dtsi for instance).
+>>> +  When collecting nodes for a particular peripheral or topic, the identifier have to
+>>> +  be placed at the end of the file name, separated with a "_" (at91sam9x5_can.dtsi
+>>> +  or sama5d3_gmac.dtsi for example).
+>>> +- board Device Tree Source files (.dts) are prefixed by the string "at91-" so
+>>> +  that they can be identified easily. Note that the sama5d3[13456]ek.dts files
+>>> +  are an historical exception to this rule.
+>>
+>> In fact, this set of boards are not the only exception. I will rephrase
+>> the sentence as:
+>> "Note that some files are historical exceptions to this rule
+>> (sama5d3[13456]ek.dts, usb_a9g20.dts or animeo_ip.dts for example)."
+>>
+>> Bye,
+>> -- 
+>> Nicolas Ferre
+> 
 
-Maxime
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---nT6ukc3bqTvTgwkF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUtR/3AAoJEBx+YmzsjxAgzCMP/jGTdXsCaTRLsyxQIDEAe87/
-ZYayGnfwZDuYax/iKSc+VZvQUTFtqnCyaI7J66Yz53EW9thld5aOFvXO5J6kXGXh
-xbU4x912yXqEuTI5Ulgg8kdBv/KRbUsPeHQCqMwhzfrWneZ3IbVt8KTURvTmh0LG
-TJ3+mmPERZNLbhdhgkPJyDhNruo/cBED5obwOzXsp2VXoWiQLw0GZerZN5S/lKXg
-hrwZoOe1X+g6dYM+378Z+iBWnbsK84EZv3rY6fQpNxMnMdyLbMoTRmk/gLMbLdFu
-Ksn8EPjgb3W6puorWcngCJLISDuuy2DeUeWWEqHnSSH6SJrP+cdpqkRcz57mdB81
-XQWtO37ikazI0DQpp3Xhwjk1aWAmpCwWHa9d4G7FSgwzf4HFajYdOYPKEvYdG8wh
-LrKyFy2nCjA4xGZ3WnK8Cc4yZWCeT1nz88VHvKqI2gsaSiXydHC1jzdTmNEjCmx8
-J0bY60Ot5GHMgFaOJOLwT5VVCLwziKWSBw6RzaRC2HtH/1L+GgjBfmO1PerjDmBY
-2MMXb2PzybepeIHfeXFtGrKZs++uq5KENay+DRCuGTf9MSzumJ/qVSOLbl1xtpUX
-lkvxp40niWCoRyAwfC7fNoFcD6HsLLO5Si/fHXbMCIXmPxqsCCuor1AyGMpTOw3M
-NrQnAMJT/o6wTC8mLEyG
-=ZgGi
------END PGP SIGNATURE-----
-
---nT6ukc3bqTvTgwkF--
+-- 
+Nicolas Ferre
