@@ -1,113 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563AbbAMTHH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 14:07:07 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:56191 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085AbbAMTHE convert rfc822-to-8bit (ORCPT
+	id S1753308AbbAMTGW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 14:06:22 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:61611 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052AbbAMTGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 14:07:04 -0500
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        "Nicolas Ferre" <nicolas.ferre@atmel.com>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        "Alexandre Belloni" <alexandre.belloni@free-electrons.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1421160246-29712-1-git-send-email-boris.brezillon@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "Bo Shen" <voice.shen@atmel.com>,
-        "Boris Brezillon" <boris.brezillon@free-electrons.com>,
-        stable@vger.kernel.org
-References: <1421160246-29712-1-git-send-email-boris.brezillon@free-electrons.com>
-Message-ID: <20150113190657.20842.90692@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v2] clk: at91: keep slow clk enabled to prevent system hang
-Date: Tue, 13 Jan 2015 11:06:57 -0800
+	Tue, 13 Jan 2015 14:06:21 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Alex Deucher <alexander.deucher@amd.com>,
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drm/radeon/radeon_i2c: Remove unused function
+Date: Tue, 13 Jan 2015 20:09:27 +0100
+Message-Id: <1421176167-7180-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Boris Brezillon (2015-01-13 06:44:06)
-> All slow clk users are not properly claiming it (get + prepare + enable)
-> before using it.
-> If all users properly claiming this clock release it, the clock is
-> disabled, but faulty users still depends on it, and the system hangs.
-> 
-> This fix prevents the slow clock from being disabled, and should solve the
-> hanging issue, but offending drivers should be patched to properly claim
-> this clock.
-> 
-> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> Reported-by: Bo Shen <voice.shen@atmel.com>
-> Cc: stable@vger.kernel.org
+Remove the function radeon_best_encoder() that is not used anywhere.
 
-Applied to clk-fixes towards the next -rc.
+This was partially found by using a static code analysis program called cppcheck.
 
-Thanks,
-Mike
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/gpu/drm/radeon/radeon_i2c.c  |    5 -----
+ drivers/gpu/drm/radeon/radeon_mode.h |    2 --
+ 2 files changed, 7 deletions(-)
 
-> ---
->  drivers/clk/at91/clk-slow.c | 27 +++++++++++++++++++++++++++
->  1 file changed, 27 insertions(+)
-> 
-> diff --git a/drivers/clk/at91/clk-slow.c b/drivers/clk/at91/clk-slow.c
-> index 32f7c1b..2f13bd5 100644
-> --- a/drivers/clk/at91/clk-slow.c
-> +++ b/drivers/clk/at91/clk-slow.c
-> @@ -70,6 +70,7 @@ struct clk_sam9x5_slow {
->  
->  #define to_clk_sam9x5_slow(hw) container_of(hw, struct clk_sam9x5_slow, hw)
->  
-> +static struct clk *slow_clk;
->  
->  static int clk_slow_osc_prepare(struct clk_hw *hw)
->  {
-> @@ -357,6 +358,8 @@ at91_clk_register_sam9x5_slow(void __iomem *sckcr,
->         clk = clk_register(NULL, &slowck->hw);
->         if (IS_ERR(clk))
->                 kfree(slowck);
-> +       else
-> +               slow_clk = clk;
->  
->         return clk;
->  }
-> @@ -433,6 +436,8 @@ at91_clk_register_sam9260_slow(struct at91_pmc *pmc,
->         clk = clk_register(NULL, &slowck->hw);
->         if (IS_ERR(clk))
->                 kfree(slowck);
-> +       else
-> +               slow_clk = clk;
->  
->         return clk;
->  }
-> @@ -465,3 +470,25 @@ void __init of_at91sam9260_clk_slow_setup(struct device_node *np,
->  
->         of_clk_add_provider(np, of_clk_src_simple_get, clk);
->  }
-> +
-> +/*
-> + * FIXME: All slow clk users are not properly claiming it (get + prepare +
-> + * enable) before using it.
-> + * If all users properly claiming this clock decide that they don't need it
-> + * anymore (or are removed), it is disabled while faulty users are still
-> + * requiring it, and the system hangs.
-> + * Prevent this clock from being disabled until all users are properly
-> + * requesting it.
-> + * Once this is done we should remove this function and the slow_clk variable.
-> + */
-> +static int __init of_at91_clk_slow_retain(void)
-> +{
-> +       if (!slow_clk)
-> +               return 0;
-> +
-> +       __clk_get(slow_clk);
-> +       clk_prepare_enable(slow_clk);
-> +
-> +       return 0;
-> +}
-> +arch_initcall(of_at91_clk_slow_retain);
-> -- 
-> 1.9.1
-> 
+diff --git a/drivers/gpu/drm/radeon/radeon_i2c.c b/drivers/gpu/drm/radeon/radeon_i2c.c
+index add6220..9590bcd 100644
+--- a/drivers/gpu/drm/radeon/radeon_i2c.c
++++ b/drivers/gpu/drm/radeon/radeon_i2c.c
+@@ -1048,11 +1048,6 @@ struct radeon_i2c_chan *radeon_i2c_lookup(struct radeon_device *rdev,
+ 	return NULL;
+ }
+ 
+-struct drm_encoder *radeon_best_encoder(struct drm_connector *connector)
+-{
+-	return NULL;
+-}
+-
+ void radeon_i2c_get_byte(struct radeon_i2c_chan *i2c_bus,
+ 			 u8 slave_addr,
+ 			 u8 addr,
+diff --git a/drivers/gpu/drm/radeon/radeon_mode.h b/drivers/gpu/drm/radeon/radeon_mode.h
+index 04db2fd..66c17e3 100644
+--- a/drivers/gpu/drm/radeon/radeon_mode.h
++++ b/drivers/gpu/drm/radeon/radeon_mode.h
+@@ -740,8 +740,6 @@ extern void radeon_router_select_ddc_port(struct radeon_connector *radeon_connec
+ extern void radeon_router_select_cd_port(struct radeon_connector *radeon_connector);
+ extern bool radeon_ddc_probe(struct radeon_connector *radeon_connector, bool use_aux);
+ 
+-extern struct drm_encoder *radeon_best_encoder(struct drm_connector *connector);
+-
+ extern bool radeon_atombios_get_ppll_ss_info(struct radeon_device *rdev,
+ 					     struct radeon_atom_ss *ss,
+ 					     int id);
+-- 
+1.7.10.4
+
