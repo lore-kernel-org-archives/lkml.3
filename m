@@ -1,82 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563AbbAMK1l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 05:27:41 -0500
-Received: from mail-we0-f179.google.com ([74.125.82.179]:44813 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483AbbAMK1i (ORCPT
+	id S1752609AbbAMK3H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 05:29:07 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:32782 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752231AbbAMK3C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 05:27:38 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>,
-        Tim Sander <tim@krieglstein.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.19-rc2 v14 7/7] ARM: Fix on-demand backtrace triggered by IRQ
-Date: Tue, 13 Jan 2015 10:26:58 +0000
-Message-Id: <1421144818-14036-8-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1421144818-14036-1-git-send-email-daniel.thompson@linaro.org>
-References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
- <1421144818-14036-1-git-send-email-daniel.thompson@linaro.org>
+	Tue, 13 Jan 2015 05:29:02 -0500
+Date: Tue, 13 Jan 2015 10:28:51 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: David Lang <david@lang.hm>, Linus Torvalds <torvalds@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Mark Langsdorf <mlangsdo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Linux 3.19-rc3
+Message-ID: <20150113102850.GA16524@e104818-lin.cambridge.arm.com>
+References: <20150108134520.GC14200@e104818-lin.cambridge.arm.com>
+ <54AEBE84.6090307@redhat.com>
+ <20150108173408.GF17290@e104818-lin.cambridge.arm.com>
+ <54AED10C.7090305@redhat.com>
+ <CA+55aFwpwkjRnTzBe2K0y+2DOH1F=5SpJkYe=P5z8ps5_1PQHQ@mail.gmail.com>
+ <20150109232707.GA6325@e104818-lin.cambridge.arm.com>
+ <20150110003540.GA32037@node.dhcp.inet.fi>
+ <CA+55aFz74hjhCcdz5J4r-xK4KW7oqNDA3i=jXHW0prGMMwgMvw@mail.gmail.com>
+ <alpine.DEB.2.02.1501091849250.3078@nftneq.ynat.uz>
+ <54B491F8.1070909@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54B491F8.1070909@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently if arch_trigger_all_cpu_backtrace() is called with interrupts
-disabled and on a platform the delivers IPI_CPU_BACKTRACE using regular
-IRQ requests the system will wedge for ten seconds waiting for the
-current CPU to react to a masked interrupt.
+On Tue, Jan 13, 2015 at 03:33:12AM +0000, Rik van Riel wrote:
+> On 01/09/2015 09:51 PM, David Lang wrote:
+> > On Fri, 9 Jan 2015, Linus Torvalds wrote:
+> > 
+> >> Big pages are a bad bad bad idea. They work fine for databases,
+> >> and that's pretty much just about it. I'm sure there are some
+> >> other loads, but they are few and far between.
+> > 
+> > what about a dedicated virtualization host (where your workload is
+> > a handful of virtual machines), would the file cache issue still
+> > be overwelming, even though it's the virtual machines accessing
+> > things?
+> 
+> You would still have page cache inside the guest.
+> 
+> Using large pages in the host, and small pages in the guest
+> would not give you the TLB benefits, and that is assuming
+> that different page sizes in host and guest even work...
 
-This patch resolves this issue by calling directly into the backtrace
-dump code instead of generating an IPI.
+This works on ARM. The TLB caching the full VA->PA translation would
+indeed stick to the guest page size as that's the input. But, depending
+on the TLB implementation, it may also cache the guest PA -> real PA
+translation (a TLB with the guest/Intermediate PA as input; ARMv8 also
+introduces TLB invalidation ops that take such IPA as input). A miss in
+the stage 1 (guest) TLB would be cheaper if it hits in the stage 2 TLB,
+especially when it needs to look up the stage 2 for each level in the
+stage 1 table.
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
----
- arch/arm/kernel/smp.c | 15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+But when it doesn't hit in any of the stages, it's still beneficial to
+have smaller number of levels at stage 2 (host) and that's what 64KB
+pages bring on ARM. If you use the maximum 4 levels in both host and
+guest, a TLB miss in the guest requires 24 memory accesses to populate
+it (each guest page table level entry needs a stage 2 look-up). In
+practice, you may get some locality but I think the guest page table
+access pattern can get quite sparse. In addition, stage 2 entries are
+not as volatile as they are per VM rather than per process as the stage
+1 entries.
 
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index afb094a1e6d4..cf3b738568b8 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -742,6 +742,16 @@ void arch_trigger_all_cpu_backtrace(bool include_self)
- 		cpumask_clear_cpu(this_cpu, to_cpumask(backtrace_mask));
- 	cpumask_copy(&printtrace_mask, to_cpumask(backtrace_mask));
- 
-+	/*
-+	 * If irqs are disabled on the current processor then, if
-+	 * IPI_CPU_BACKTRACE is delivered using IRQ, we will won't be able to
-+	 * react to IPI_CPU_BACKTRACE until we leave this function. We avoid
-+	 * the potential timeout (not to mention the failure to print useful
-+	 * information) by calling the backtrace directly.
-+	 */
-+	if (include_self && irqs_disabled())
-+		ipi_cpu_backtrace(in_interrupt() ? get_irq_regs() : NULL);
-+
- 	if (!cpumask_empty(to_cpumask(backtrace_mask))) {
- 		pr_info("Sending FIQ to %s CPUs:\n",
- 			(include_self ? "all" : "other"));
-@@ -770,7 +780,10 @@ void ipi_cpu_backtrace(struct pt_regs *regs)
- 	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
- 		orig = this_cpu_begin_nmi_printk();
- 		pr_warn("FIQ backtrace for cpu %d\n", cpu);
--		show_regs(regs);
-+		if (regs != NULL)
-+			show_regs(regs);
-+		else
-+			dump_stack();
- 		this_cpu_end_nmi_printk(orig);
- 
- 		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
+> Using large pages in the guests gets you back to the wasted
+> memory, except you are now wasting memory in a situation where
+> you have less memory available in each guest. Density is a real
+> consideration for virtualization.
+
+I agree. I think guests should stick to 4KB pages (well, unless all they
+need to do is mmap large database files).
+
 -- 
-1.9.3
-
+Catalin
