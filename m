@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169AbbAMO5O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 09:57:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39103 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750976AbbAMO5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 09:57:13 -0500
-Date: Tue, 13 Jan 2015 15:57:10 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: David Howells <dhowells@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
+	id S1752001AbbAMPGx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 10:06:53 -0500
+Received: from mail.bmw-carit.de ([62.245.222.98]:53298 "EHLO
+	linuxmail.bmw-carit.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751190AbbAMPGw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 10:06:52 -0500
+X-Greylist: delayed 429 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Jan 2015 10:06:52 EST
+From: Daniel Wagner <daniel.wagner@bmw-carit.de>
+To: linux-kernel@vger.kernel.org
+Cc: Daniel Wagner <daniel.wagner@bmw-carit.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
         Jonathan Corbet <corbet@lwn.net>
-cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: [PATCH] MODSIGN: /proc/keys is not unconditionally available
-Message-ID: <alpine.LNX.2.00.1501131555510.4162@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Subject: [PATCH v0] lockstat: Add documentation on contention and contenting points
+Date: Tue, 13 Jan 2015 15:59:30 +0100
+Message-Id: <1421161170-13045-1-git-send-email-daniel.wagner@bmw-carit.de>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Documentation/module-signing.txt file is referring to /proc/keys file in 
-order to view all keys contained in the kernel's keyring. That file is not 
-universally avialble when CONFIG_KEYS is enabled, which is confusing. The 
-fact that the option needed for this procfs interface to exist contains 
-"_DEBUG_" in its name makes it even more confusing. Document this fact.
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jonathan Corbet <corbet@lwn.net>
 ---
- Documentation/module-signing.txt | 3 +++
- 1 file changed, 3 insertions(+)
 
-diff --git a/Documentation/module-signing.txt b/Documentation/module-signing.txt
-index 09c2382..09be78d 100644
---- a/Documentation/module-signing.txt
-+++ b/Documentation/module-signing.txt
-@@ -152,6 +152,9 @@ in a keyring called ".system_keyring" that can be seen by:
- 	302d2d52 I------     1 perm 1f010000     0     0 asymmetri Fedora kernel signing key: d69a84e6bce3d216b979e9505b3e3ef9a7118079: X509.RSA a7118079 []
- 	...
+I spent some time to figure out what I saw in /proc/lock_stat. Maybe
+someone else has the same question.
+---
+ Documentation/locking/lockstat.txt | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/Documentation/locking/lockstat.txt b/Documentation/locking/lockstat.txt
+index 7428773..568bbba 100644
+--- a/Documentation/locking/lockstat.txt
++++ b/Documentation/locking/lockstat.txt
+@@ -121,6 +121,11 @@ show the header with column descriptions. Lines 05-18 and 20-31 show the actual
+ statistics. These statistics come in two parts; the actual stats separated by a
+ short separator (line 08, 13) from the contention points.
  
-+CONFIG_KEYS_DEBUG_PROC_KEYS needs to be enabled for the above procfs interface
-+to be available.
++Lines 09-12 show the first 4 recorded contention points (the code
++which tries to get the lock) and lines 14-17 show the first 4 recorded
++contended points (the lock holder). It is possible that the max
++con-bounces point is missing in the statistics.
 +
- Beyond the public key generated specifically for module signing, any file
- placed in the kernel source root directory or the kernel build root directory
- whose name is suffixed with ".x509" will be assumed to be an X.509 public key
-
+ The first lock (05-18) is a read/write lock, and shows two lines above the
+ short separator. The contention points don't match the column descriptors,
+ they have two: contentions and [<IP>] symbol. The second set of contention
 -- 
-Jiri Kosina
-SUSE Labs
+2.1.0
+
