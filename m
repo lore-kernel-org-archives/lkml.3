@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335AbbAMQTK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 11:19:10 -0500
-Received: from zabrina.hetzner-de.towertech.it ([178.63.16.19]:59711 "EHLO
-	zabrina.hetzner-de.towertech.it" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753310AbbAMQTG (ORCPT
+	id S1753371AbbAMQTZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 11:19:25 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:62631 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752624AbbAMQTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 11:19:06 -0500
-Date: Tue, 13 Jan 2015 17:19:04 +0100
-From: Alessandro Zummo <a.zummo@towertech.it>
-To: Xunlei Pang <xlpang@126.com>
-Cc: linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>, rtc-linux@googlegroups.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Xunlei Pang <pang.xunlei@linaro.org>
-Subject: Re: [RFC PATCH v2 3/9] rtc/test: Update driver to address
- y2038/y2106 issues
-Message-ID: <20150113171904.6b2327d5@linux.lan.towertech.it>
-In-Reply-To: <1421163897-8020-4-git-send-email-xlpang@126.com>
-References: <1421163897-8020-1-git-send-email-xlpang@126.com>
-	<1421163897-8020-4-git-send-email-xlpang@126.com>
-Organization: Tower Technologies
+	Tue, 13 Jan 2015 11:19:23 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Subject: [PATCH] headers_check: don't warn about kexec.h
+Date: Tue, 13 Jan 2015 17:19:19 +0100
+Message-ID: <12825174.7oxZXDxNhV@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:InKWYu6W2U7oXeD/QtDbOwaj7psDprTriHNtKKQpEpVaGv/LudX
+ vZlkQbw/B1OSPr6LHFrYjKv+MLUQW563lgR0YWimJbUM3I8ASlgXPd9nCzs4btBdZo5aTv6
+ D2aHzRyj2FjoncTaXwDH38Bwm2LEjylMDq7EbshScCy1HOItUs28UQiVsNurUNa4iDcKNuc
+ gFhgqFTnszC60sp5zhUFQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jan 2015 23:44:51 +0800
-Xunlei Pang <xlpang@126.com> wrote:
+We've been getting this warning for ages:
 
-> This patch resolves them by:
-> - Repalce get_seconds() with get_seconds64()
-> - Replace rtc_time_to_tm() with rtc_time64_to_tm()
-> - Change test_rtc_set_mmss() to use rtc_class_ops's set_mmss64()
+./usr/include/linux/kexec.h:61: userspace cannot reference function or variable defined in the kernel
 
- so we no more have a non time64 test driver?
+There is no proper fix for this file, as the declaration is meant for
+user space, not for the kernel, so we should work around it the
+same way that we treat the seqbuf_dump() definition.
 
--- 
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
- Best regards,
-
- Alessandro Zummo,
-  Tower Technologies - Torino, Italy
-
-  http://www.towertech.it
+diff --git a/scripts/headers_check.pl b/scripts/headers_check.pl
+index 62320f93e903..fb051848667c 100755
+--- a/scripts/headers_check.pl
++++ b/scripts/headers_check.pl
+@@ -69,6 +69,10 @@ sub check_declarations
+ 	if ($line =~ m/^void seqbuf_dump\(void\);/) {
+ 		return;
+ 	}
++	# user-only declaration from kexec.h
++	if ($line =~ m/^extern int kexec_load/) {
++		return;
++	}
+ 	if ($line =~ m/^(\s*extern|unsigned|char|short|int|long|void)\b/) {
+ 		printf STDERR "$filename:$lineno: " .
+ 			      "userspace cannot reference function or " .
 
