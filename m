@@ -1,123 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751602AbbAMEXf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 23:23:35 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:46474 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981AbbAMEXd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 23:23:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <20150112115111.GA3506@salvia>
-References: <CAFB3abwKpR1VqZXUrsexqveAZrA2LTSmTe8a=-H7z2HjAptjwA@mail.gmail.com>
-	<1420627396.26870.36.camel@stressinduktion.org>
-	<20150108205328.GA3361@salvia>
-	<1420756756.1755002.211556745.0418D128@webmail.messagingengine.com>
-	<20150109000546.GA3488@salvia>
-	<CAFB3abwrjp61LLOk3RWwXYEq1g4QZUC8OTKuO2cAr+GbV3n4rw@mail.gmail.com>
-	<1420803255.1978819.211762005.707EFFB9@webmail.messagingengine.com>
-	<20150109114506.GA4857@salvia>
-	<1420818636.31075.15.camel@stressinduktion.org>
-	<CAFB3abwetkNa4753g9d-z8xU0fMThyApuESQNkbxGa8Yz2YRfQ@mail.gmail.com>
-	<20150112115111.GA3506@salvia>
-Date: Tue, 13 Jan 2015 09:53:31 +0530
-Message-ID: <CAFB3abxcg4gdEh4CJHd_Vx8mZKFmO3kMG=pDjkQYS5awTzFbSQ@mail.gmail.com>
-Subject: Re: [PATCH net] ipv6: Prevent ipv6_find_hdr() from returning ENOENT
- for valid non-first fragments
-From: Rahul Sharma <rsharma@arista.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1751569AbbAMEaV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 23:30:21 -0500
+Received: from smtp.mei.co.jp ([133.183.100.20]:65249 "EHLO smtp.mei.co.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750860AbbAMEaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 23:30:20 -0500
+From: Masahiro Yamada <yamada.m@jp.panasonic.com>
+To: linux-mtd@lists.infradead.org
+Cc: Masahiro Yamada <yamada.m@jp.panasonic.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "grmoore@altera.com" <grmoore@altera.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] mtd: denali: remove unnecessary stubs
+Date: Tue, 13 Jan 2015 13:29:17 +0900
+Message-Id: <1421123357-27561-1-git-send-email-yamada.m@jp.panasonic.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+This driver uses NAND_ECC_HW_SYNDROME mode.  The nand_scan_tail()
+function would not complain about missing ecc->calculate,
+ecc->correct, ecc->hwctl handlers.
 
-On Mon, Jan 12, 2015 at 5:21 PM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
-> On Mon, Jan 12, 2015 at 04:38:16PM +0530, Rahul Sharma wrote:
->> Hi Pablo, Hannes
->>
->> On Fri, Jan 9, 2015 at 9:20 PM, Hannes Frederic Sowa
->> <hannes@stressinduktion.org> wrote:
->> > On Fr, 2015-01-09 at 12:45 +0100, Pablo Neira Ayuso wrote:
->> >> Hi Hannes,
->> >>
->> >> On Fri, Jan 09, 2015 at 12:34:15PM +0100, Hannes Frederic Sowa wrote:
->> >> > On Fri, Jan 9, 2015, at 08:18, Rahul Sharma wrote:
->> >> > > Hi Pablo,
->> >> > >
->> >> > > On Fri, Jan 9, 2015 at 5:35 AM, Pablo Neira Ayuso <pablo@netfilter.org>
->> >> > > wrote:
->> >> > > > On Thu, Jan 08, 2015 at 11:39:16PM +0100, Hannes Frederic Sowa wrote:
->> >> > > >> Hi Pablo,
->> >> > > >>
->> >> > > >> On Thu, Jan 8, 2015, at 21:53, Pablo Neira Ayuso wrote:
->> >> > > >> > I'm afraid we cannot just get rid of that !ipv6_ext_hdr() check. The
->> >> > > >> > ipv6_find_hdr() function is designed to return the transport protocol.
->> >> > > >> > After the proposed change, it will return extension header numbers.
->> >> > > >> > This will break existing ip6tables rulesets since the `-p' option
->> >> > > >> > relies on this function to match the transport protocol.
->> >> > > >> >
->> >> > > >> > Note that the AH header is skipped (see code a bit below this
->> >> > > >> > problematic fragmentation handling) so the follow up header after the
->> >> > > >> > AH header is returned as the transport header.
->> >> > > >> >
->> >> > > >> > We can probably return the AH protocol number for non-1st fragments.
->> >> > > >> > However, that would be something new to ip6tables since nobody has
->> >> > > >> > ever seen packet matching `-p ah' rules. Thus, we restore control to
->> >> > > >> > the user to allow this, but we would accept all kind of fragmented AH
->> >> > > >> > traffic through the firewall since we cannot know what transport
->> >> > > >> > protocol contains from non-1st fragments (unless I'm missing anything,
->> >> > > >> > I need to have a closer look at this again tomorrow with fresher
->> >> > > >> > mind).
->> >> > > >>
->> >> > > >> The code in question is guarded by (_frag_off != 0), so we are
->> >> > > >> definitely processing a non-1st fragment currently. The -p match would
->> >> > > >> happen at the time when the packet is reassembled and thus ipv6_find_hdr
->> >> > > >> will find the real transport (final) header at this point (I hope I
->> >> > > >> followed the code correctly here).
->> >> > > >
->> >> > > > Then, Rahul should get things working by modprobing nf_defrag_ipv6.
->> >> > >
->> >> > > I already had nf_defrag_ipv6 installed when the issue occured. But I
->> >> > > see ip6table_raw_hook returning NF_DROP for the second fragment.
->> >> >
->> >> > That's what I expected. I think the change only affects hooks before
->> >> > reassembly.
->> >>
->> >> reassembly happens at NF_IP6_PRI_CONNTRACK_DEFRAG (-400), so that
->> >> happens before NF_IP6_PRI_RAW (-300) in IPv6 which is where the raw
->> >> table is placed.
->> >
->> > I tried to reproduce it, but couldn't get non-1st fragments getting
->> > dropped during traversal of the raw table. They get dropped earlier at
->> > during reassembly or pass.
->> >
->> > I agree with Pablo, I also would like to see more data.
->> >
->> > Thanks,
->> > Hannes
->> >
->> >
->>
->> I enabled pr_debug() and there was no error in nf_ct_frag6_gather().
->> It seems to have defragmented the packet correctly. As expected,
->> ipv6_defrag() returns NF_STOLEN for the first packet after queuing it.
->> For the next fragment, ipv6_defrag() calls nf_ct_frag6_output() after
->> after reassembling it.
->
-> nf_ct_frag6_output() doesn't exist anymore. You're using an old
-> kernel, you should have started by telling so in your report.
->
-> See 6aafeef ("netfilter: push reasm skb through instead of original
-> frag skbs").
+Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
+---
 
- I apologize for not mentioning the kernel version in my first mail. I
-had suspected problem in ipv6_find_hdr, the code for which was same.
-Anyway, thanks for the help. I ll try to figure out how to make this
-work in my kernel.
+ drivers/mtd/nand/denali.c | 38 --------------------------------------
+ 1 file changed, 38 deletions(-)
 
-Thanks,
-Rahul
+diff --git a/drivers/mtd/nand/denali.c b/drivers/mtd/nand/denali.c
+index b3b7ca1..9c0d7fc 100644
+--- a/drivers/mtd/nand/denali.c
++++ b/drivers/mtd/nand/denali.c
+@@ -1328,35 +1328,6 @@ static void denali_cmdfunc(struct mtd_info *mtd, unsigned int cmd, int col,
+ 		break;
+ 	}
+ }
+-
+-/* stubs for ECC functions not used by the NAND core */
+-static int denali_ecc_calculate(struct mtd_info *mtd, const uint8_t *data,
+-				uint8_t *ecc_code)
+-{
+-	struct denali_nand_info *denali = mtd_to_denali(mtd);
+-
+-	dev_err(denali->dev, "denali_ecc_calculate called unexpectedly\n");
+-	BUG();
+-	return -EIO;
+-}
+-
+-static int denali_ecc_correct(struct mtd_info *mtd, uint8_t *data,
+-				uint8_t *read_ecc, uint8_t *calc_ecc)
+-{
+-	struct denali_nand_info *denali = mtd_to_denali(mtd);
+-
+-	dev_err(denali->dev, "denali_ecc_correct called unexpectedly\n");
+-	BUG();
+-	return -EIO;
+-}
+-
+-static void denali_ecc_hwctl(struct mtd_info *mtd, int mode)
+-{
+-	struct denali_nand_info *denali = mtd_to_denali(mtd);
+-
+-	dev_err(denali->dev, "denali_ecc_hwctl called unexpectedly\n");
+-	BUG();
+-}
+ /* end NAND core entry points */
+ 
+ /* Initialization code to bring the device up to a known good state */
+@@ -1609,15 +1580,6 @@ int denali_init(struct denali_nand_info *denali)
+ 	denali->totalblks = denali->mtd.size >> denali->nand.phys_erase_shift;
+ 	denali->blksperchip = denali->totalblks / denali->nand.numchips;
+ 
+-	/*
+-	 * These functions are required by the NAND core framework, otherwise,
+-	 * the NAND core will assert. However, we don't need them, so we'll stub
+-	 * them out.
+-	 */
+-	denali->nand.ecc.calculate = denali_ecc_calculate;
+-	denali->nand.ecc.correct = denali_ecc_correct;
+-	denali->nand.ecc.hwctl = denali_ecc_hwctl;
+-
+ 	/* override the default read operations */
+ 	denali->nand.ecc.size = ECC_SECTOR_SIZE * denali->devnum;
+ 	denali->nand.ecc.read_page = denali_read_page;
+-- 
+1.9.1
+
