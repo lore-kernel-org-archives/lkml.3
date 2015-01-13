@@ -1,88 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438AbbAMTNr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 14:13:47 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:45875 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753040AbbAMTNq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 14:13:46 -0500
-Message-ID: <54B56E4B.6040405@linaro.org>
-Date: Tue, 13 Jan 2015 19:13:15 +0000
-From: Julien Grall <julien.grall@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
-MIME-Version: 1.0
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-CC: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, hpa@zytor.com,
-        josh@joshtriplett.org, sam@ravnborg.org, Michal Marek <mmarek@suse.cz>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org, mtosatti@redhat.com,
-        Pekka Enberg <penberg@kernel.org>, fengguang.wu@intel.com,
-        levinsasha928@gmail.com, David Rientjes <rientjes@google.com>,
-        xen-devel@lists.xenproject.org, Borislav Petkov <bp@suse.de>,
-        David Vrabel <david.vrabel@citrix.com>, bpoirier@suse.de
-Subject: Re: [Xen-devel] [PATCH v2 2/2] x86, arm, platform, xen, kconfig:
- add xen defconfig helper
-References: <1418168138-6425-1-git-send-email-mcgrof@do-not-panic.com> <1418168138-6425-3-git-send-email-mcgrof@do-not-panic.com> <548ECCEA.5040500@linaro.org> <20150113190346.GB27566@wotan.suse.de>
-In-Reply-To: <20150113190346.GB27566@wotan.suse.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1753503AbbAMTOd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 14:14:33 -0500
+Received: from mga11.intel.com ([192.55.52.93]:19418 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752592AbbAMTOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 14:14:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,750,1413270000"; 
+   d="scan'208";a="650565848"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>
+Cc: linux-mm@kvack.org, Dave Hansen <dave.hansen@linux.intel.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@openvz.org>, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH 0/2] Account PMD page tables to the process
+Date: Tue, 13 Jan 2015 21:14:14 +0200
+Message-Id: <1421176456-21796-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Luis,
+Currently we don't account PMD page tables to the process. It can lead to
+local DoS: unprivileged user can allocate >500 MiB on x86_64 per process
+without being noticed by oom-killer or memory cgroup.
 
-On 13/01/15 19:03, Luis R. Rodriguez wrote:
->>> diff --git a/kernel/configs/xen.config b/kernel/configs/xen.config
->>> new file mode 100644
->>> index 0000000..d2ec010
->>> --- /dev/null
->>> +++ b/kernel/configs/xen.config
->>> @@ -0,0 +1,30 @@
->>> +# generic config
->>> +CONFIG_XEN=y
->>> +CONFIG_XEN_DOM0=y
->>> +CONFIG_PCI_XEN=y
->>> +CONFIG_XEN_PCIDEV_FRONTEND=m
->>> +CONFIG_XEN_BLKDEV_FRONTEND=m
->>> +CONFIG_XEN_BLKDEV_BACKEND=m
->>> +CONFIG_XEN_NETDEV_FRONTEND=m
->>> +CONFIG_XEN_NETDEV_BACKEND=m
->>> +CONFIG_INPUT_XEN_KBDDEV_FRONTEND=y
->>> +CONFIG_HVC_XEN=y
->>> +CONFIG_HVC_XEN_FRONTEND=y
->>> +CONFIG_TCG_XEN=m
->>> +CONFIG_XEN_WDT=m
->>> +CONFIG_XEN_FBDEV_FRONTEND=y
->>> +CONFIG_XEN_BALLOON=y
->>> +CONFIG_XEN_BALLOON_MEMORY_HOTPLUG=y
->>> +CONFIG_XEN_SCRUB_PAGES=y
->>> +CONFIG_XEN_DEV_EVTCHN=m
->>> +CONFIG_XEN_BACKEND=y
->>> +CONFIG_XENFS=m
->>> +CONFIG_XEN_COMPAT_XENFS=y
->>> +CONFIG_XEN_SYS_HYPERVISOR=y
->>> +CONFIG_XEN_XENBUS_FRONTEND=y
->>> +CONFIG_XEN_GNTDEV=m
->>> +CONFIG_XEN_GRANT_DEV_ALLOC=m
->>> +CONFIG_SWIOTLB_XEN=y
->>> +CONFIG_XEN_PCIDEV_BACKEND=m
->>> +CONFIG_XEN_PRIVCMD=m
->>> +CONFIG_XEN_ACPI_PROCESSOR=m
->>
->> The common fragment config looks good for both ARM32 and ARM64:
->>
->> Acked-by: Julien Grall <julien.grall@linaro.org>
-> 
-> Can someone apply this? Who should this go through?
+Proposed fix adds accounting for PMD table the same way we account for PTE
+tables.
 
-Stefano had some comments on this patch. See:
+There're few corner case in the accounting (see patch 2/2) which have not
+well tested yet. If anybody know any other cases we should handle, please
+let me know.
 
-http://lists.xenproject.org/archives/html/xen-devel/2014-12/msg01531.html
+Kirill A. Shutemov (2):
+  mm: rename mm->nr_ptes to mm->nr_pgtables
+  mm: account pmd page tables to the process
 
-Regards,
+ Documentation/sysctl/vm.txt |  2 +-
+ arch/x86/mm/pgtable.c       | 13 ++++++++-----
+ fs/proc/task_mmu.c          |  2 +-
+ include/linux/mm_types.h    |  2 +-
+ kernel/fork.c               |  2 +-
+ mm/debug.c                  |  4 ++--
+ mm/huge_memory.c            | 10 +++++-----
+ mm/hugetlb.c                |  8 ++++++--
+ mm/memory.c                 |  6 ++++--
+ mm/mmap.c                   |  9 +++++++--
+ mm/oom_kill.c               |  8 ++++----
+ 11 files changed, 40 insertions(+), 26 deletions(-)
 
 -- 
-Julien Grall
+2.1.4
+
