@@ -1,85 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033AbbAMJrM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 04:47:12 -0500
-Received: from smtp-out-212.synserver.de ([212.40.185.212]:1056 "EHLO
-	smtp-out-210.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751257AbbAMJrK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 04:47:10 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 5625
-Message-ID: <54B4E996.80403@metafoo.de>
-Date: Tue, 13 Jan 2015 10:47:02 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	id S1752046AbbAMJs4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 04:48:56 -0500
+Received: from sauhun.de ([89.238.76.85]:34788 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751015AbbAMJsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 04:48:54 -0500
+Date: Tue, 13 Jan 2015 10:48:33 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: "David E. Box" <david.e.box@linux.intel.com>
+Cc: Jarkko Nikula <jarkko.nikula@linux.intel.com>, jdelvare@suse.de,
+        arnd@arndb.de, maxime.ripard@free-electrons.com, dianders@chromium.org,
+        u.kleine-koenig@pengutronix.de,
+        laurent.pinchart+renesas@ideasonboard.com,
+        boris.brezillon@free-electrons.com, andrew@lunn.ch, sjg@chromium.org,
+        markus.mayer@linaro.org, jacob.jun.pan@linux.intel.com,
+        max.schwarz@online.de, mika.westerberg@linux.intel.com,
+        skuribay@pobox.com, Romain.Baeriswyl@abilis.com, wenkai.du@intel.com,
+        chiau.ee.chew@intel.com, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH V3 1/2] i2c-designware: Add i2c bus locking support
+Message-ID: <20150113094833.GB1059@katana>
+References: <1411497626-7984-1-git-send-email-david.e.box@linux.intel.com>
+ <1417478973-25522-1-git-send-email-david.e.box@linux.intel.com>
+ <1417478973-25522-2-git-send-email-david.e.box@linux.intel.com>
+ <5480144F.2040506@linux.intel.com>
+ <20141204184210.GA1530@pathfinder>
 MIME-Version: 1.0
-To: Bo Shen <voice.shen@atmel.com>, Mark Brown <broonie@kernel.org>
-CC: ckeepax@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
-        linux-sound@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] ASoC: wm8904: fix runtime warning
-References: <1421141643-30105-1-git-send-email-voice.shen@atmel.com>
-In-Reply-To: <1421141643-30105-1-git-send-email-voice.shen@atmel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dkEUBIird37B8yKS"
+Content-Disposition: inline
+In-Reply-To: <20141204184210.GA1530@pathfinder>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2015 10:34 AM, Bo Shen wrote:
-[...]
->
-> -	{ "AIFOUTL", "Left",  "ADCL" },
-> -	{ "AIFOUTL", "Right", "ADCR" },
-> -	{ "AIFOUTR", "Left",  "ADCL" },
-> -	{ "AIFOUTR", "Right", "ADCR" },
-> +	{ "AIFOUTL Mux", "Left", "ADCL" },
-> +	{ "AIFOUTL Mux", "Right", "ADCR" },
-> +	{ "AIFOUTR Mux", "Left", "ADCL" },
-> +	{ "AIFOUTR Mux", "Right", "ADCR" },
-> +
-> +	{ "AIFOUTL", NULL, "AIFOUTL Mux" },
-> +	{ "AIFOUTR", NULL, "AIFOUTR Mux" },
->
 
-This looks ok.
+--dkEUBIird37B8yKS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->   	{ "ADCL", NULL, "CLK_DSP" },
->   	{ "ADCL", NULL, "Left Capture PGA" },
-> @@ -1089,14 +1092,20 @@ static const struct snd_soc_dapm_route adc_intercon[] = {
->   };
->
->   static const struct snd_soc_dapm_route dac_intercon[] = {
-> -	{ "DACL", "Right", "AIFINR" },
-> -	{ "DACL", "Left",  "AIFINL" },
-> +	{ "DACL", NULL, "AIFINL" },
-> +	{ "DACL", NULL, "AIFINR" },
->   	{ "DACL", NULL, "CLK_DSP" },
->
-> -	{ "DACR", "Right", "AIFINR" },
-> -	{ "DACR", "Left",  "AIFINL" },
-> +	{ "DACR", NULL, "AIFINL" },
-> +	{ "DACR", NULL, "AIFINR" },
->   	{ "DACR", NULL, "CLK_DSP" },
->
-> +	{ "DACL Mux", "Left", "DACL" },
-> +	{ "DACL Mux", "Right", "DACR" },
-> +
-> +	{ "DACR Mux", "Left", "DACL" },
-> +	{ "DACR Mux", "Right", "DACR" },
-> +
+Hi Dave,
 
-But this should probably be
+> Timely reply. Around i2c_dw_init(), yes. I just discovered this as the source
+> of a recent hang that's occuring in the loop in __i2c_dw_enable().
+> The hange occurs very infrequently and only, so far, when not built in. A
+> block around i2c_dw_disable_int() would make sense as well as a precaution.
 
- > +	{ "DACL Mux", "Left", "AIFINL" },
- > +	{ "DACL Mux", "Right", "AIFINR" },
- > +
- > +	{ "DACR Mux", "Left", "AIFINL" },
- > +	{ "DACR Mux", "Right", "AIFINR" },
- > +
- > +	{ "DACL", NULL, "DACL Mux" },
- > +	{ "DACR", NULL, "DACR Mux" },
+Any news on this or on a V4 of this series?
+
+Thanks,
+
+   Wolfram
 
 
+--dkEUBIird37B8yKS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUtOnxAAoJEBQN5MwUoCm2FvEQAJdwWfyiLhh6NOlOoFcdIjZ+
+/ihzfEPjwYAiczC5et9PsSWxc41KglB0qHjNxX5IAsyu/nMw/DHZnmpm9rKrlZsI
+jJtBOSO/sdxBuybKfVp2pyTGBO2WAZsSPi5iswporHzF8mDRKJClXu+F1lin1HAt
+ISWHu40eEwC4Dh435S21JxY298GeA61AlvjY5+CRXUZJPR6Blea8Dwh4EgR0wUkE
+X78Bo3MZhGwP72rfCKYjGl1CP2UBph9ec/gQeadbXm6I6iJRlZOKDMZqKLCt0Lsy
+c/OJu9pxWtRRru4wCXJqoUhWlEQIr4Ivd7tjW9LT/zCEe/vYZjLLob6dFAdRtIDP
+aVeYgg3MY+ZzaxOOa089yHdrRbmobyf8RrnlkRTA0/I4OkH6H0P3r02S9RN88sWG
+zueMo8KipK18dIdGrndsJeiNU0GRSCEHv264KrcwdXe21fAcZehvhKSzKycMkChb
+c6qs3vtoDOLcp0j7eWGDhRA0ruYV6Xr1LjhvwIl6m+3FxuuBThCxa6p2cacQ371e
+nLCL0THpgdVjojOnyQFFBqAkjTr+8Y+rwmqwGWrFkManwckt0WahojnRA6OL1iO3
+8gGdr/S0Gb7bv3WjLuTuQAA93mx6WMapsBEcZW1MsB/a9S4nLDK+Y0NSOdSttitg
+h9U/j1kEq0bYKNPoy7Z+
+=ForJ
+-----END PGP SIGNATURE-----
+
+--dkEUBIird37B8yKS--
