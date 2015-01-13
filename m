@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949AbbAMVFQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 16:05:16 -0500
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:54779 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751098AbbAMVFO (ORCPT
+	id S1752425AbbAMVHm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 16:07:42 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:45860 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751327AbbAMVHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 16:05:14 -0500
-Message-ID: <1421183111.15397.34.camel@x220>
-Subject: Re: [PATCH] headers_check: don't warn about kexec.h
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Maximilian Attems <max@stro.at>, Geoff Levand <geoff@infradead.org>,
-        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, linux-kbuild@vger.kernel.org
-Date: Tue, 13 Jan 2015 22:05:11 +0100
-In-Reply-To: <2363197.VbAKlSiQLX@wuerfel>
-References: <12825174.7oxZXDxNhV@wuerfel> <1421169212.15397.22.camel@x220>
-	 <2363197.VbAKlSiQLX@wuerfel>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Jan 2015 21:05:11.0608 (UTC) FILETIME=[9E86A380:01D02F74]
-X-RcptDomain: vger.kernel.org
+	Tue, 13 Jan 2015 16:07:40 -0500
+Date: Tue, 13 Jan 2015 13:06:23 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Mike Looijmans <mike.looijmans@topic.nl>
+Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [v3] gpio_wdt: Add "always_running" feature to GPIO watchdog
+Message-ID: <20150113210623.GA25920@roeck-us.net>
+References: <1416562828-3978-1-git-send-email-mike.looijmans@topic.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416562828-3978-1-git-send-email-mike.looijmans@topic.nl>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A010202.54B5891C.0109,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 4
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Dragging Andrew, Linus, and Maximilian into this thread.]
-
-On Tue, 2015-01-13 at 21:27 +0100, Arnd Bergmann wrote:
-> On Tuesday 13 January 2015 18:13:32 Paul Bolle wrote:
-> > The last time that Geoff has been trying to get that patch applied
-> > should be
-> > http://lkml.kernel.org/r/b0702fc4186db21820d686e89afd6480560823db.1415837218.git.geoff@infradead.org> 
-> > I'd rather see that go in.
+On Fri, Nov 21, 2014 at 10:40:28AM +0100, Mike Looijmans wrote:
+> On some chips, like the TPS386000, the trigger cannot be disabled
+> and the CPU must keep toggling the line at all times. Add a switch
+> "always_running" to keep toggling the GPIO line regardless of the
+> state of the soft part of the watchdog. The "armed" member keeps
+> track of whether a timeout must also cause a reset.
 > 
-> Fine with me as well. As long as we can find someone to take one of 
-> the patches, I'm happy.
+> Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
 
-Since Geoff's patch (and my preceding, identical patch) basically is a
-partial revert of commit 29a5c67e7a78 ("kexec: export kexec.h to user
-space") that should probably be done by either Andrew or Linus. 
-
-(This short thread starts at
-http://lkml.kernel.org/r/12825174.7oxZXDxNhV@wuerfel .)
-
-
-Paul Bolle
-
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
