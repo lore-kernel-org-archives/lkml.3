@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463AbbAMVov (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 16:44:51 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:39297 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318AbbAMVot (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 16:44:49 -0500
-From: Jeff Layton <jeff.layton@primarydata.com>
-X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
-Date: Tue, 13 Jan 2015 16:44:41 -0500
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Jeff Layton <jeff.layton@primarydata.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: fs: locks: WARNING: CPU: 16 PID: 4296 at fs/locks.c:236
- locks_free_lock_context+0x10d/0x240()
-Message-ID: <20150113164441.5b210f48@tlielax.poochiereds.net>
-In-Reply-To: <54B4A909.9060206@oracle.com>
-References: <54B4A909.9060206@oracle.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
+	id S1753708AbbAMVpF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 16:45:05 -0500
+Received: from gum.cmpxchg.org ([85.214.110.215]:57347 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751570AbbAMVpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 16:45:03 -0500
+Date: Tue, 13 Jan 2015 16:44:54 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Vladimir Davydov <vdavydov@parallels.com>,
+        Greg Thelen <gthelen@google.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] mm: memcontrol: default hierarchy interface for
+ memory
+Message-ID: <20150113214454.GA21950@phnom.home.cmpxchg.org>
+References: <1420776904-8559-1-git-send-email-hannes@cmpxchg.org>
+ <1420776904-8559-2-git-send-email-hannes@cmpxchg.org>
+ <20150112153716.d54e90c634b70d49e8bb8688@linux-foundation.org>
+ <20150113155040.GC8180@phnom.home.cmpxchg.org>
+ <20150113125258.0d7d3da2920234fc9461ef69@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150113125258.0d7d3da2920234fc9461ef69@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jan 2015 00:11:37 -0500
-Sasha Levin <sasha.levin@oracle.com> wrote:
-
-> Hey Jeff,
+On Tue, Jan 13, 2015 at 12:52:58PM -0800, Andrew Morton wrote:
+> On Tue, 13 Jan 2015 10:50:40 -0500 Johannes Weiner <hannes@cmpxchg.org> wrote:
 > 
-> While fuzzing with trinity inside a KVM tools guest running the latest -next
-> kernel, I've stumbled on the following spew:
+> > On Mon, Jan 12, 2015 at 03:37:16PM -0800, Andrew Morton wrote:
+> > > This all sounds pretty major.  How much trouble is this change likely to
+> > > cause existing memcg users?
+> > 
+> > That is actually entirely up to the user in question.
+> > 
+> > 1. The old cgroup interface remains in place as long as there are
+> > users, so, technically, nothing has to change unless they want to.
 > 
-> [  887.078606] WARNING: CPU: 16 PID: 4296 at fs/locks.c:236 locks_free_lock_context+0x10d/0x240()
-> [  887.079703] Modules linked in:
-> [  887.080288] CPU: 16 PID: 4296 Comm: trinity-c273 Not tainted 3.19.0-rc4-next-20150112-sasha-00053-g23c147e02e-dirty #1710
-> [  887.082229]  0000000000000000 0000000000000000 0000000000000000 ffff8804c9f4f8e8
-> [  887.083773]  ffffffff9154e0a6 0000000000000000 ffff8804cad98000 ffff8804c9f4f938
-> [  887.085280]  ffffffff8140a4d0 0000000000000001 ffffffff81bf0d2d ffff8804c9f4f988
-> [  887.086792] Call Trace:
-> [  887.087320] dump_stack (lib/dump_stack.c:52)
-> [  887.088247] warn_slowpath_common (kernel/panic.c:447)
-> [  887.089342] ? locks_free_lock_context (fs/locks.c:236 (discriminator 3))
-> [  887.090514] warn_slowpath_null (kernel/panic.c:481)
-> [  887.091629] locks_free_lock_context (fs/locks.c:236 (discriminator 3))
-> [  887.092782] __destroy_inode (fs/inode.c:243)
-> [  887.093817] destroy_inode (fs/inode.c:268)
-> [  887.094833] evict (fs/inode.c:574)
-> [  887.095808] iput (fs/inode.c:1503)
-> [  887.096687] __dentry_kill (fs/dcache.c:323 fs/dcache.c:508)
-> [  887.097683] ? _raw_spin_trylock (kernel/locking/spinlock.c:136)
-> [  887.098733] ? dput (fs/dcache.c:545 fs/dcache.c:648)
-> [  887.099672] dput (fs/dcache.c:649)
-> [  887.100552] __fput (fs/file_table.c:227)
+> It would be good to zap the old interface one day.  Maybe we won't ever
+> be able to, but we should try.  Once this has all settled down and is
+> documented, how about we add a couple of printk_once's to poke people
+> in the new direction?
 
-So, looking at this a bit more...
+Yup, sounds good to me.
 
-It's clear that we're at the dput in __fput at this point. Much earlier
-in __fput, we call locks_remove_file to remove all of the locks that
-are associated with the file description.
+There are a few missing pieces until the development flag can be
+lifted from the new cgroup interface.  I'm currently working on making
+swap control available, and I expect Tejun to want to push buffered IO
+control into the tree before that as well.
 
-Evidently though, something didn't go right there. The two most likely
-scenarios to my mind are:
-
-A) a lock raced onto the list somehow after that point. That seems
-unlikely since presumably the fcheck should have failed at that point.
-
-...or...
-
-B) the CPU that called locks_remove_file mistakenly thought that
-inode->i_flctx was NULL when it really wasn't (stale cache, perhaps?).
-That would make it skip trying to remove any flock locks.
-
-B seems more likely to me, and if it's the case then that would seem to
-imply that we need some memory barriers (or maybe some ACCESS_ONCE
-calls) in these codepaths. I'll have to sit down and work through it to
-see what makes the most sense.
-
-If your debugging seems to jive with this, then one thing that might be
-interesting would be to comment out these two lines in
-locks_remove_flock:
-
-        if (!file_inode(filp)->i_flctx)
-                return;
-
-...and see if it's still reproducible. That's obviously not a real fix
-for this problem, but it might help prove whether the above suspicion
-is correct.
-
-Thanks,
--- 
-Jeff Layton <jlayton@primarydata.com>
+But once we have these things in place and are reasonably sure that
+the existing use cases can be fully supported by the new interface,
+I'm all for nudging people in its direction.  Yes, we should at some
+point try to drop the old one, which is going to reduce the code size
+significantly, but even before then we can work toward separating out
+the old-only parts of the implementation as much as possible to reduce
+development overhead from the new/main code.
