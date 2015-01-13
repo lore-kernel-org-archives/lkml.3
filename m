@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435AbbAMQeF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 11:34:05 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:33132 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163AbbAMQeA (ORCPT
+	id S1753454AbbAMQfQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 11:35:16 -0500
+Received: from vserver.eikelenboom.it ([84.200.39.61]:44952 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378AbbAMQfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 11:34:00 -0500
-Date: Tue, 13 Jan 2015 16:33:54 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: paulmck@linux.vnet.ibm.com, peterz@infradead.org
-Cc: torvalds@linux-foundation.org, oleg@redhat.com, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Behaviour of smp_mb__{before,after}_spin* and acquire/release
-Message-ID: <20150113163353.GE31784@arm.com>
+	Tue, 13 Jan 2015 11:35:14 -0500
+Date: Tue, 13 Jan 2015 17:35:10 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <618666178.20150113173510@eikelenboom.it>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>
+CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: if power button pressed 1x it creates the same ACPI event twice
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+Hi Rafael / Len,
 
-I started dusting off a series I've been working to implement a relaxed
-atomic API in Linux (i.e. things like atomic_read(v, ACQUIRE)) but I'm
-having trouble making sense of the ordering semantics we have in mainline
-today:
+When i press the power-button on my intel NUC, i get twp ACPI power-events shortly 
+after one another (within a second), instead of just one. 
 
-  1. Does smp_mb__before_spinlock actually have to order prior loads
-     against later loads and stores? Documentation/memory-barriers.txt
-     says it does, but that doesn't match the comment (or implementation)
-     in include/linux/spinlock.h
+It doesn't matter if i have the old /proc/acpi interface enabled or disabled in the kernel config.
 
-  2. Does smp_mb__after_unlock_lock order smp_store_release against
-     smp_load_acquire? Again, Documentation/memory-barriers.txt puts
-     these operations into the RELEASE and ACQUIRE classes respectively,
-     but since smp_mb__after_unlock_lock is a NOP everywhere other than
-     PowerPC, I don't think this is enforced by the current code. Most
-     architectures follow the pattern used by asm-generic/barrier.h:
+I have tested a few older kernels lingering around on the box and 3.14 already 
+has this problem. 3.2 (from the debian repo) doesn't have the problem, it only 
+fires one event.
 
-       release: smp_mb(); STORE
-       acquire: LOAD; smp_mb();
+I did find another report:
+    Re: lenovo ultrabay docking station: if power button pressed 1x it creates 2x the same ACPI event
+    http://www.spinics.net/lists/linux-acpi/msg54723.html
+But that hasn't come to a conclusion ...
 
-     which doesn't provide any release -> acquire ordering afaict.
 
-My plan for the atomics was to add acquire, release, acquire + release
-and unordered variants, where the acquire/release semantics would
-actually be sequentially consistent. That allows us to implement the
-existing atomics easily in terms of the new API, but it's different
-to what we're doing for the smp_load_acquire and smp_store_release
-functions above.
+Unfortunately 3.2 - 3.19-rc4 is a bit of a largish bisect window, so that's 
+unfeasible :-)
 
-Cheers,
+I compiled in apci debug support and tried:
+ echo "0x00080000" > /sys/module/acpi/parameters/debug_layer
+ echo "0xffffffff" > /sys/module/acpi/parameters/debug_level
 
-Will
+But i don't get any extra output in dmesg ?
+
+Do you have any ideas for a debug patch or better values to figure out what is going on ?
+
+--
+Sander
+
