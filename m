@@ -1,334 +1,361 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462AbbAMPBR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 10:01:17 -0500
-Received: from smarthost01d.mail.zen.net.uk ([212.23.1.7]:36721 "EHLO
-	smarthost01d.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752272AbbAMPBP (ORCPT
+	id S1752578AbbAMPBj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 10:01:39 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:52344 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752505AbbAMPBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 10:01:15 -0500
-Message-ID: <1421161268.4215.56.camel@linaro.org>
-Subject: Re: [PATCH v19 10/11] ARM: kprobes: check register usage for probed
- instruction.
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Wang Nan <wangnan0@huawei.com>
-Cc: masami.hiramatsu.pt@hitachi.com, linux@arm.linux.org.uk,
-        lizefan@huawei.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Tue, 13 Jan 2015 15:01:08 +0000
-In-Reply-To: <1420457384-77449-1-git-send-email-wangnan0@huawei.com>
-References: <1420457284-76923-1-git-send-email-wangnan0@huawei.com>
-	 <1420457384-77449-1-git-send-email-wangnan0@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01d-IP: [82.69.122.217]
+	Tue, 13 Jan 2015 10:01:37 -0500
+Date: Tue, 13 Jan 2015 16:01:33 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/3] mm: memcontrol: consolidate swap controller code
+Message-ID: <20150113150133.GI25318@dhcp22.suse.cz>
+References: <1420856041-27647-1-git-send-email-hannes@cmpxchg.org>
+ <1420856041-27647-3-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420856041-27647-3-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2015-01-05 at 19:29 +0800, Wang Nan wrote:
-> This patch utilizes previous introduced checker to check register usage
-> for probed ARM instruction and saves it in a mask. Futher patch will
-> use such information to avoid simuation or emulation.
+On Fri 09-01-15 21:14:01, Johannes Weiner wrote:
+> The swap controller code is scattered all over the file.  Gather all
+> the code that isn't directly needed by the memory controller at the
+> end of the file in its own CONFIG_MEMCG_SWAP section.
 
-There's a couple of spelling mistakes above and minor grammar nitpicks,
-my suggestion to improve those would be to add the bits in [] in the
-following...
+Well, the idea was to stick with corresponding infrastructure I guess.
+memsw_cgroup_files where together with mem_cgroup_files, swap accounting
+with the charge routines. Putting everything together is certainly
+an option as well. I do not feel strongly about either way. I tend
+to dislike code churn but if it makes further changes easier then
+definitely no objections from me.
 
-  This patch utilizes [the] previous[ly] introduced checker to check
-  register usage for probed ARM instruction and saves it in a mask. [A]
-  fu[r]ther patch will use such information to avoid simu[l]ation or
-  emulation.
-
-My comments on the code below are mostly suggestions on how to simplify
-things, though the code is already quite re is one bug.
-
-> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 > ---
->  arch/arm/include/asm/probes.h          |  10 +++
->  arch/arm/probes/decode.c               |   7 ++
->  arch/arm/probes/kprobes/actions-arm.c  |   2 +-
->  arch/arm/probes/kprobes/checkers-arm.c | 124 +++++++++++++++++++++++++++++++++
->  arch/arm/probes/kprobes/checkers.h     |   1 +
->  5 files changed, 143 insertions(+), 1 deletion(-)
+>  mm/memcontrol.c | 264 +++++++++++++++++++++++++++-----------------------------
+>  1 file changed, 125 insertions(+), 139 deletions(-)
 > 
-> diff --git a/arch/arm/include/asm/probes.h b/arch/arm/include/asm/probes.h
-> index f0a1ee8..27b65b7 100644
-> --- a/arch/arm/include/asm/probes.h
-> +++ b/arch/arm/include/asm/probes.h
-> @@ -41,6 +41,16 @@ struct arch_probes_insn {
->  	probes_insn_singlestep_t	*insn_singlestep;
->  	probes_insn_fn_t		*insn_fn;
->  	int stack_space;
-> +
-> +	/* Use 1 bit for a register. */
-> +#define REG_NO_USE	(0)
-> +#define REG_USE		(1)
-
-No need for () around the 0 and 1
-
-> +#define __register_usage_flag(n, f)	((f) << (n))
-> +#define __clean_register_flag(m, n)	((m) & (~(1 << (n))))
-> +#define __set_register_flag(m, n, f)	(__clean_register_flag(m, n) | __register_usage_flag(n, f))
-> +#define set_register_nouse(m, n)	do {(m) = __set_register_flag(m, n, REG_NO_USE);} while(0)
-> +#define set_register_use(m, n)		do {(m) = __set_register_flag(m, n, REG_USE);} while(0)
-
-All these macros seem a bit convoluted to me, and I don't think it makes
-things any clearer than open coding a bit set operation like
-
-	|= 1 << reg
-
-especially as I don't thing those macros will end up getting much use.
-
-> +	unsigned long register_usage_flag;
-
-To nit-pick, as this isn't a single flag I would add an 's' to make the
-name plural, i.e. 'register_usage_flags'
-
->  };
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index f66bb8f83ac9..5a5769e8b12c 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -72,22 +72,13 @@ EXPORT_SYMBOL(memory_cgrp_subsys);
+>  #define MEM_CGROUP_RECLAIM_RETRIES	5
+>  static struct mem_cgroup *root_mem_cgroup __read_mostly;
 >  
->  #endif /* __ASSEMBLY__ */
-> diff --git a/arch/arm/probes/decode.c b/arch/arm/probes/decode.c
-> index f9d7c42..40f9402 100644
-> --- a/arch/arm/probes/decode.c
-> +++ b/arch/arm/probes/decode.c
-> @@ -435,6 +435,13 @@ probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
->  	 */
->  	asi->stack_space = 0;
->  
-> +	/*
-> +	 * Similay to stack_space, register_usage_flag is filled by
-
-Typo, s/Similay/Similarly/
-
-> +	 * checkers. Its default value is set to ~0, which is 'all
-> +	 * registers are used', to prevent any potential optimization.
-> +	 */
-> +	asi->register_usage_flag = ~(0UL);
-
-No need for () around 0UL
-
-> +
->  	if (emulate)
->  		insn = prepare_emulated_insn(insn, asi, thumb);
->  
-> diff --git a/arch/arm/probes/kprobes/actions-arm.c b/arch/arm/probes/kprobes/actions-arm.c
-> index 4fedd4c..26e435b 100644
-> --- a/arch/arm/probes/kprobes/actions-arm.c
-> +++ b/arch/arm/probes/kprobes/actions-arm.c
-> @@ -340,4 +340,4 @@ const union decode_action kprobes_arm_actions[NUM_PROBES_ARM_ACTIONS] = {
->  	[PROBES_LDMSTM] = {.decoder = kprobe_decode_ldmstm}
->  };
->  
-> -const struct decode_checker *kprobes_arm_checkers[] = {arm_stack_checker, NULL};
-> +const struct decode_checker *kprobes_arm_checkers[] = {arm_stack_checker, arm_regs_checker, NULL};
-> diff --git a/arch/arm/probes/kprobes/checkers-arm.c b/arch/arm/probes/kprobes/checkers-arm.c
-> index f817663..1929225 100644
-> --- a/arch/arm/probes/kprobes/checkers-arm.c
-> +++ b/arch/arm/probes/kprobes/checkers-arm.c
-> @@ -97,3 +97,127 @@ const struct decode_checker arm_stack_checker[NUM_PROBES_ARM_ACTIONS] = {
->  	[PROBES_STORE] = {.checker = arm_check_stack},
->  	[PROBES_LDMSTM] = {.checker = arm_check_stack},
->  };
-> +
-> +static enum probes_insn __kprobes arm_check_regs_nouse(probes_opcode_t insn,
-> +		struct arch_probes_insn *asi,
-> +		const struct decode_header *h)
-> +{
-> +	asi->register_usage_flag = 0;
-> +	return INSN_GOOD;
-> +}
-> +
-> +static void __arm_check_regs(probes_opcode_t insn,
-> +		const struct decode_header *h,
-> +		int *quintuple)
-> +{
-> +	int i;
-> +	u32 regs = h->type_regs.bits >> DECODE_TYPE_BITS;
-> +	probes_opcode_t mask, shifted;
-> +
-> +	memset(quintuple, 0xff, sizeof(int) * 5);
-
-Not sure that filling with 0xff is a C standard compliant way of
-initialising int's to a negative value. Anyway, memset isn't really
-needed, see next comment.
-
-> +	for (i = 0, shifted = insn, mask = 0xf; regs != 0;
-> +			regs >>= 4, mask <<= 4, shifted >>= 4, i++)
-> +		if (regs & 0xf)
-> +			quintuple[i] = shifted & 0xf;
-
-Looks a bit complicated, the last 6 lines could be more simply expressed
-as:
-	for (i = 0; i < 5; regs >>= 4, insn >>= 4, i++)
-		quintuple[i] = regs & 0xf ? insn & 0xf : -1;
-
-Though I think that this function may be a bit overkill anyway, it is
-only really needed in one place, so may as well be inlined there, that
-is the function below... 
-
-> +}
-> +
-> +static enum probes_insn arm_check_regs_normal(probes_opcode_t insn,
-> +		struct arch_probes_insn *asi,
-> +		const struct decode_header *h)
-> +{
-> +	int quintuple[5], i;
-> +	asi->register_usage_flag = 0;
-> +	__arm_check_regs(insn, h, quintuple);
-> +	for (i = 0; i < 5; i++) {
-> +		int r = quintuple[i];
-> +		if (r < 0)
-> +			continue;
-> +		set_register_use(asi->register_usage_flag, r);
-> +	}
-> +
-
-The above can be as simply written without using _arm_check_regs like...
-
-	u32 regs = h->type_regs.bits >> DECODE_TYPE_BITS;
-	int i;
-
-	asi->register_usage_flag = 0;
-	for (i = 0; i < 5; regs >>= 4, insn >>= 4, i++)
-		if (regs & 0xf)
-			asi->register_usage_flag |= 1 << (insn & 0xf);
-
-
-> +	return INSN_GOOD;
-> +}
-> +
-> +static enum probes_insn arm_check_regs_ldmstm(probes_opcode_t insn,
-> +		struct arch_probes_insn *asi,
-> +		const struct decode_header *h)
-> +{
-> +	unsigned int reglist = insn & 0xffff;
-> +	unsigned int rn = (insn >> 16) & 0xf;
-> +	int i;
-> +
-
-Think you forgot to clear asi->register_usage_flag here, it will still
-contain 0xffffffff set by from probes_decode_insn(). However, we don't
-need this if we follow my next suggestion.
-
-> +	set_register_use(asi->register_usage_flag, rn);
-> +	for (i = 0; reglist > 0; i++, reglist >>= 1)
-> +		if (reglist & 1)
-> +			set_register_use(asi->register_usage_flag, i);
-
-The preceding 5 lines are equivalent to
-
-	asi->register_usage_flag = reglist | (1 << rn);
-
-so how about we just use that?
-
-> +	return INSN_GOOD;
-> +}
-> +
-> +static enum probes_insn arm_check_regs_mov_ip_sp(probes_opcode_t insn,
-> +		struct arch_probes_insn *asi,
-> +		const struct decode_header *h)
-> +{
-> +	/* should be 'mov ip, sp' */
-> +	set_register_use(asi->register_usage_flag, 12);
-> +	set_register_use(asi->register_usage_flag, 13);
-
-register_usage_flag needs setting to zero before setting the flags. Or
-we could just write this function as
-
-	/* Instruction is 'mov ip, sp' i.e. 'mov r12, r13' */
-	asi->register_usage_flag = (1 << 12) | (1<< 13);
-
-> +	return INSN_GOOD;
-> +}
-> +
-> +/*
-> + *                                    | Rn |Rt/d|         | Rm |
-> + * LDRD (register)      cccc 000x x0x0 xxxx xxxx xxxx 1101 xxxx
-> + * STRD (register)      cccc 000x x0x0 xxxx xxxx xxxx 1111 xxxx
-> + *                                    | Rn |Rt/d|         |imm4L|
-> + * LDRD (immediate)     cccc 000x x1x0 xxxx xxxx xxxx 1101 xxxx
-> + * STRD (immediate)     cccc 000x x1x0 xxxx xxxx xxxx 1111 xxxx
-> + *
-> + * Such instructions access Rt/d and its next register, so different
-> + * from others, a specific checker is required for Rt/d and Rt2/d2.
-> + */
-> +static enum probes_insn arm_check_regs_ldrdstrd(probes_opcode_t insn,
-> +		struct arch_probes_insn *asi,
-> +		const struct decode_header *h)
-> +{
-> +	int quintuple[5], rn, rdt, rm;
-> +	asi->register_usage_flag = 0;
-> +	__arm_check_regs(insn, h, quintuple);
-> +
-> +	rn = quintuple[4];
-> +	rdt = quintuple[3];
-> +	rm = quintuple[0];
-> +        set_register_use(asi->register_usage_flag, rn);
-> +        set_register_use(asi->register_usage_flag, rdt);
-> +        set_register_use(asi->register_usage_flag, rdt + 1);
-> +	if (rm >= 0)
-> +		set_register_use(asi->register_usage_flag, rm);
-> +
-
-We can avoid most of this code if we reuse arm_check_regs_normal and
-then add in the use of rdt+1, i.e. this function can be simply...
-
-	int rdt = (insn >> 12) & 0xf;
-	arm_check_regs_normal(insn, asi, h);
-	asi->register_usage_flag |= 1 << (rdt + 1);
-
-
-> +	return INSN_GOOD;
-> +}
-> +
-> +
-> +const struct decode_checker arm_regs_checker[NUM_PROBES_ARM_ACTIONS] = {
-> +	[PROBES_EMULATE_NONE] = {.checker = arm_check_regs_nouse},
-> +	[PROBES_SIMULATE_NOP] = {.checker = arm_check_regs_nouse},
-> +	[PROBES_MRS] = {.checker = arm_check_regs_normal},
-> +	[PROBES_SATURATING_ARITHMETIC] = {.checker = arm_check_regs_normal},
-> +	[PROBES_MUL1] = {.checker = arm_check_regs_normal},
-> +	[PROBES_MUL2] = {.checker = arm_check_regs_normal},
-> +	[PROBES_MUL_ADD_LONG] = {.checker = arm_check_regs_normal},
-> +	[PROBES_MUL_ADD] = {.checker = arm_check_regs_normal},
-> +	[PROBES_LOAD] = {.checker = arm_check_regs_normal},
-> +	[PROBES_LOAD_EXTRA] = {.checker = arm_check_regs_normal},
-> +	[PROBES_STORE] = {.checker = arm_check_regs_normal},
-> +	[PROBES_STORE_EXTRA] = {.checker = arm_check_regs_normal},
-> +	[PROBES_DATA_PROCESSING_REG] = {.checker = arm_check_regs_normal},
-> +	[PROBES_DATA_PROCESSING_IMM] = {.checker = arm_check_regs_normal},
-> +	[PROBES_SATURATE] = {.checker = arm_check_regs_normal},
-> +	[PROBES_REV] = {.checker = arm_check_regs_normal},
-> +	[PROBES_MMI] = {.checker = arm_check_regs_normal},
-> +	[PROBES_PACK] = {.checker = arm_check_regs_normal},
-> +	[PROBES_EXTEND] = {.checker = arm_check_regs_normal},
-> +	[PROBES_EXTEND_ADD] = {.checker = arm_check_regs_normal},
-> +	[PROBES_BITFIELD] = {.checker = arm_check_regs_normal},
-> +	[PROBES_LDMSTM] = {.checker = arm_check_regs_ldmstm},
-> +	[PROBES_MOV_IP_SP] = {.checker = arm_check_regs_mov_ip_sp},
-> +	[PROBES_LDRSTRD] = {.checker = arm_check_regs_ldrdstrd},
-> +};
-> diff --git a/arch/arm/probes/kprobes/checkers.h b/arch/arm/probes/kprobes/checkers.h
-> index bddfa0e..cf6c9e7 100644
-> --- a/arch/arm/probes/kprobes/checkers.h
-> +++ b/arch/arm/probes/kprobes/checkers.h
-> @@ -47,6 +47,7 @@ extern const union decode_action stack_check_actions[];
->  
->  #ifndef CONFIG_THUMB2_KERNEL
->  extern const struct decode_checker arm_stack_checker[];
-> +extern const struct decode_checker arm_regs_checker[];
+> +/* Whether the swap controller is active */
+>  #ifdef CONFIG_MEMCG_SWAP
+> -/* Turned on only when memory cgroup is enabled && really_do_swap_account = 1 */
+>  int do_swap_account __read_mostly;
+> -
+> -/* for remember boot option*/
+> -#ifdef CONFIG_MEMCG_SWAP_ENABLED
+> -static int really_do_swap_account __initdata = 1;
+> -#else
+> -static int really_do_swap_account __initdata;
+> -#endif
+> -
 >  #else
+>  #define do_swap_account		0
 >  #endif
->  extern const struct decode_checker t32_stack_checker[];
-
-I've made a lot, of suggestions for code changes, so I think it's best
-if I follow up to this email with a new version of this patch which
-applies them all so we can see what the bigger picture is...
+>  
+> -
+>  static const char * const mem_cgroup_stat_names[] = {
+>  	"cache",
+>  	"rss",
+> @@ -4382,34 +4373,6 @@ static struct cftype mem_cgroup_legacy_files[] = {
+>  	{ },	/* terminate */
+>  };
+>  
+> -#ifdef CONFIG_MEMCG_SWAP
+> -static struct cftype memsw_cgroup_files[] = {
+> -	{
+> -		.name = "memsw.usage_in_bytes",
+> -		.private = MEMFILE_PRIVATE(_MEMSWAP, RES_USAGE),
+> -		.read_u64 = mem_cgroup_read_u64,
+> -	},
+> -	{
+> -		.name = "memsw.max_usage_in_bytes",
+> -		.private = MEMFILE_PRIVATE(_MEMSWAP, RES_MAX_USAGE),
+> -		.write = mem_cgroup_reset,
+> -		.read_u64 = mem_cgroup_read_u64,
+> -	},
+> -	{
+> -		.name = "memsw.limit_in_bytes",
+> -		.private = MEMFILE_PRIVATE(_MEMSWAP, RES_LIMIT),
+> -		.write = mem_cgroup_write,
+> -		.read_u64 = mem_cgroup_read_u64,
+> -	},
+> -	{
+> -		.name = "memsw.failcnt",
+> -		.private = MEMFILE_PRIVATE(_MEMSWAP, RES_FAILCNT),
+> -		.write = mem_cgroup_reset,
+> -		.read_u64 = mem_cgroup_read_u64,
+> -	},
+> -	{ },	/* terminate */
+> -};
+> -#endif
+>  static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
+>  {
+>  	struct mem_cgroup_per_node *pn;
+> @@ -5415,37 +5378,6 @@ struct cgroup_subsys memory_cgrp_subsys = {
+>  	.early_init = 0,
+>  };
+>  
+> -#ifdef CONFIG_MEMCG_SWAP
+> -static int __init enable_swap_account(char *s)
+> -{
+> -	if (!strcmp(s, "1"))
+> -		really_do_swap_account = 1;
+> -	else if (!strcmp(s, "0"))
+> -		really_do_swap_account = 0;
+> -	return 1;
+> -}
+> -__setup("swapaccount=", enable_swap_account);
+> -
+> -static void __init memsw_file_init(void)
+> -{
+> -	WARN_ON(cgroup_add_legacy_cftypes(&memory_cgrp_subsys,
+> -					  memsw_cgroup_files));
+> -}
+> -
+> -static void __init enable_swap_cgroup(void)
+> -{
+> -	if (!mem_cgroup_disabled() && really_do_swap_account) {
+> -		do_swap_account = 1;
+> -		memsw_file_init();
+> -	}
+> -}
+> -
+> -#else
+> -static void __init enable_swap_cgroup(void)
+> -{
+> -}
+> -#endif
+> -
+>  /**
+>   * mem_cgroup_events - count memory events against a cgroup
+>   * @memcg: the memory cgroup
+> @@ -5496,74 +5428,6 @@ bool mem_cgroup_low(struct mem_cgroup *root, struct mem_cgroup *memcg)
+>  	return true;
+>  }
+>  
+> -#ifdef CONFIG_MEMCG_SWAP
+> -/**
+> - * mem_cgroup_swapout - transfer a memsw charge to swap
+> - * @page: page whose memsw charge to transfer
+> - * @entry: swap entry to move the charge to
+> - *
+> - * Transfer the memsw charge of @page to @entry.
+> - */
+> -void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
+> -{
+> -	struct mem_cgroup *memcg;
+> -	unsigned short oldid;
+> -
+> -	VM_BUG_ON_PAGE(PageLRU(page), page);
+> -	VM_BUG_ON_PAGE(page_count(page), page);
+> -
+> -	if (!do_swap_account)
+> -		return;
+> -
+> -	memcg = page->mem_cgroup;
+> -
+> -	/* Readahead page, never charged */
+> -	if (!memcg)
+> -		return;
+> -
+> -	oldid = swap_cgroup_record(entry, mem_cgroup_id(memcg));
+> -	VM_BUG_ON_PAGE(oldid, page);
+> -	mem_cgroup_swap_statistics(memcg, true);
+> -
+> -	page->mem_cgroup = NULL;
+> -
+> -	if (!mem_cgroup_is_root(memcg))
+> -		page_counter_uncharge(&memcg->memory, 1);
+> -
+> -	/* XXX: caller holds IRQ-safe mapping->tree_lock */
+> -	VM_BUG_ON(!irqs_disabled());
+> -
+> -	mem_cgroup_charge_statistics(memcg, page, -1);
+> -	memcg_check_events(memcg, page);
+> -}
+> -
+> -/**
+> - * mem_cgroup_uncharge_swap - uncharge a swap entry
+> - * @entry: swap entry to uncharge
+> - *
+> - * Drop the memsw charge associated with @entry.
+> - */
+> -void mem_cgroup_uncharge_swap(swp_entry_t entry)
+> -{
+> -	struct mem_cgroup *memcg;
+> -	unsigned short id;
+> -
+> -	if (!do_swap_account)
+> -		return;
+> -
+> -	id = swap_cgroup_record(entry, 0);
+> -	rcu_read_lock();
+> -	memcg = mem_cgroup_lookup(id);
+> -	if (memcg) {
+> -		if (!mem_cgroup_is_root(memcg))
+> -			page_counter_uncharge(&memcg->memsw, 1);
+> -		mem_cgroup_swap_statistics(memcg, false);
+> -		css_put(&memcg->css);
+> -	}
+> -	rcu_read_unlock();
+> -}
+> -#endif
+> -
+>  /**
+>   * mem_cgroup_try_charge - try charging a page
+>   * @page: page to charge
+> @@ -5920,8 +5784,130 @@ static int __init mem_cgroup_init(void)
+>  		soft_limit_tree.rb_tree_per_node[nid] = rtpn;
+>  	}
+>  
+> -	enable_swap_cgroup();
+> -
+>  	return 0;
+>  }
+>  subsys_initcall(mem_cgroup_init);
+> +
+> +#ifdef CONFIG_MEMCG_SWAP
+> +/**
+> + * mem_cgroup_swapout - transfer a memsw charge to swap
+> + * @page: page whose memsw charge to transfer
+> + * @entry: swap entry to move the charge to
+> + *
+> + * Transfer the memsw charge of @page to @entry.
+> + */
+> +void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
+> +{
+> +	struct mem_cgroup *memcg;
+> +	unsigned short oldid;
+> +
+> +	VM_BUG_ON_PAGE(PageLRU(page), page);
+> +	VM_BUG_ON_PAGE(page_count(page), page);
+> +
+> +	if (!do_swap_account)
+> +		return;
+> +
+> +	memcg = page->mem_cgroup;
+> +
+> +	/* Readahead page, never charged */
+> +	if (!memcg)
+> +		return;
+> +
+> +	oldid = swap_cgroup_record(entry, mem_cgroup_id(memcg));
+> +	VM_BUG_ON_PAGE(oldid, page);
+> +	mem_cgroup_swap_statistics(memcg, true);
+> +
+> +	page->mem_cgroup = NULL;
+> +
+> +	if (!mem_cgroup_is_root(memcg))
+> +		page_counter_uncharge(&memcg->memory, 1);
+> +
+> +	/* XXX: caller holds IRQ-safe mapping->tree_lock */
+> +	VM_BUG_ON(!irqs_disabled());
+> +
+> +	mem_cgroup_charge_statistics(memcg, page, -1);
+> +	memcg_check_events(memcg, page);
+> +}
+> +
+> +/**
+> + * mem_cgroup_uncharge_swap - uncharge a swap entry
+> + * @entry: swap entry to uncharge
+> + *
+> + * Drop the memsw charge associated with @entry.
+> + */
+> +void mem_cgroup_uncharge_swap(swp_entry_t entry)
+> +{
+> +	struct mem_cgroup *memcg;
+> +	unsigned short id;
+> +
+> +	if (!do_swap_account)
+> +		return;
+> +
+> +	id = swap_cgroup_record(entry, 0);
+> +	rcu_read_lock();
+> +	memcg = mem_cgroup_lookup(id);
+> +	if (memcg) {
+> +		if (!mem_cgroup_is_root(memcg))
+> +			page_counter_uncharge(&memcg->memsw, 1);
+> +		mem_cgroup_swap_statistics(memcg, false);
+> +		css_put(&memcg->css);
+> +	}
+> +	rcu_read_unlock();
+> +}
+> +
+> +/* for remember boot option*/
+> +#ifdef CONFIG_MEMCG_SWAP_ENABLED
+> +static int really_do_swap_account __initdata = 1;
+> +#else
+> +static int really_do_swap_account __initdata;
+> +#endif
+> +
+> +static int __init enable_swap_account(char *s)
+> +{
+> +	if (!strcmp(s, "1"))
+> +		really_do_swap_account = 1;
+> +	else if (!strcmp(s, "0"))
+> +		really_do_swap_account = 0;
+> +	return 1;
+> +}
+> +__setup("swapaccount=", enable_swap_account);
+> +
+> +static struct cftype memsw_cgroup_files[] = {
+> +	{
+> +		.name = "memsw.usage_in_bytes",
+> +		.private = MEMFILE_PRIVATE(_MEMSWAP, RES_USAGE),
+> +		.read_u64 = mem_cgroup_read_u64,
+> +	},
+> +	{
+> +		.name = "memsw.max_usage_in_bytes",
+> +		.private = MEMFILE_PRIVATE(_MEMSWAP, RES_MAX_USAGE),
+> +		.write = mem_cgroup_reset,
+> +		.read_u64 = mem_cgroup_read_u64,
+> +	},
+> +	{
+> +		.name = "memsw.limit_in_bytes",
+> +		.private = MEMFILE_PRIVATE(_MEMSWAP, RES_LIMIT),
+> +		.write = mem_cgroup_write,
+> +		.read_u64 = mem_cgroup_read_u64,
+> +	},
+> +	{
+> +		.name = "memsw.failcnt",
+> +		.private = MEMFILE_PRIVATE(_MEMSWAP, RES_FAILCNT),
+> +		.write = mem_cgroup_reset,
+> +		.read_u64 = mem_cgroup_read_u64,
+> +	},
+> +	{ },	/* terminate */
+> +};
+> +
+> +static int __init mem_cgroup_swap_init(void)
+> +{
+> +	if (!mem_cgroup_disabled() && really_do_swap_account) {
+> +		do_swap_account = 1;
+> +		WARN_ON(cgroup_add_legacy_cftypes(&memory_cgrp_subsys,
+> +						  memsw_cgroup_files));
+> +	}
+> +	return 0;
+> +}
+> +subsys_initcall(mem_cgroup_swap_init);
+> +
+> +#endif /* CONFIG_MEMCG_SWAP */
+> -- 
+> 2.2.0
+> 
 
 -- 
-Tixy
-
-
+Michal Hocko
+SUSE Labs
