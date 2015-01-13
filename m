@@ -1,175 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688AbbAMNob (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 08:44:31 -0500
-Received: from smtprelay2.synopsys.com ([198.182.60.111]:52363 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071AbbAMNo1 (ORCPT
+	id S1752718AbbAMNpF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 08:45:05 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:34018 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751726AbbAMNpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 08:44:27 -0500
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: <acme@redhat.com>, <namhyung@kernel.org>, <jolsa@kernel.org>
-CC: <peterz@infradead.org>, <mingo@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-perf-users@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        <Alexey.Brodkin@synopsys.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v3 5/5] perf tools: [uclibc] provide stub for pthread_attr_setaffinity_np
-Date: Tue, 13 Jan 2015 19:13:24 +0530
-Message-ID: <1421156604-30603-6-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1421156604-30603-1-git-send-email-vgupta@synopsys.com>
-References: <1421156604-30603-1-git-send-email-vgupta@synopsys.com>
+	Tue, 13 Jan 2015 08:45:03 -0500
+Date: Tue, 13 Jan 2015 14:43:31 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Cc: LFBDEV <linux-fbdev@vger.kernel.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fbdev: ssd1307fb: drop unused function
+ ssd1307fb_write_data()
+Message-ID: <20150113134331.GW4891@lukather>
+References: <1421090474-4243-1-git-send-email-prabhakar.csengg@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.196.223]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XQSDX3NWE02rtiZq"
+Content-Disposition: inline
+In-Reply-To: <1421090474-4243-1-git-send-email-prabhakar.csengg@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-uClibc Linuxthreads.old doesnt support pthread_attr_setaffinity_np()
-call
 
-   ----------------->8-----------------------
-  CC       bench/futex-hash.o
-  CC       bench/futex-wake.o
-bench/futex-hash.c: In function 'bench_futex_hash':
-bench/futex-hash.c:161:3: error: implicit declaration of function
-'pthread_attr_setaffinity_np' [-Werror=implicit-function-declaration]
-   ret = pthread_attr_setaffinity_np(&thread_attr, sizeof(cpu_set_t),
-&cpu);
-   ^
-bench/futex-hash.c:161:3: error: nested extern declaration of
-'pthread_attr_setaffinity_np' [-Werror=nested-externs]
-   ----------------->8-----------------------
+--XQSDX3NWE02rtiZq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
----
- tools/perf/bench/futex.h                                   | 13 +++++++++++++
- tools/perf/config/Makefile                                 |  6 ++++++
- tools/perf/config/feature-checks/Makefile                  |  4 ++++
- tools/perf/config/feature-checks/test-all.c                |  5 +++++
- .../feature-checks/test-pthread-attr-setaffinity-np.c      | 14 ++++++++++++++
- 5 files changed, 42 insertions(+)
- create mode 100644 tools/perf/config/feature-checks/test-pthread-attr-setaffinity-np.c
+On Mon, Jan 12, 2015 at 07:21:14PM +0000, Lad, Prabhakar wrote:
+> this patch drops the unused function ssd1307fb_write_data().
+>=20
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-diff --git a/tools/perf/bench/futex.h b/tools/perf/bench/futex.h
-index 71f2844cf97f..7ed22ff1e1ac 100644
---- a/tools/perf/bench/futex.h
-+++ b/tools/perf/bench/futex.h
-@@ -68,4 +68,17 @@ futex_cmp_requeue(u_int32_t *uaddr, u_int32_t val, u_int32_t *uaddr2, int nr_wak
- 		 val, opflags);
- }
- 
-+#ifndef HAVE_PTHREAD_ATTR_SETAFFINITY_NP
-+#include <pthread.h>
-+static inline int pthread_attr_setaffinity_np(pthread_attr_t *attr,
-+					      size_t cpusetsize,
-+					      cpu_set_t *cpuset)
-+{
-+	attr = attr;
-+	cpusetsize = cpusetsize;
-+	cpuset = cpuset;
-+	return 0;
-+}
-+#endif
-+
- #endif /* _FUTEX_H */
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 5d4b039fe1ed..6b59662136fa 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -198,6 +198,7 @@ CORE_FEATURE_TESTS =			\
- 	libpython-version		\
- 	libslang			\
- 	libunwind			\
-+	pthread-attr-setaffinity-np	\
- 	stackprotector-all		\
- 	timerfd				\
- 	libdw-dwarf-unwind		\
-@@ -226,6 +227,7 @@ VF_FEATURE_TESTS =			\
- 	libelf-getphdrnum		\
- 	libelf-mmap			\
- 	libpython-version		\
-+	pthread-attr-setaffinity-np	\
- 	stackprotector-all		\
- 	timerfd				\
- 	libunwind-debug-frame		\
-@@ -301,6 +303,10 @@ ifeq ($(feature-sync-compare-and-swap), 1)
-   CFLAGS += -DHAVE_SYNC_COMPARE_AND_SWAP_SUPPORT
- endif
- 
-+ifeq ($(feature-pthread-attr-setaffinity-np), 1)
-+  CFLAGS += -DHAVE_PTHREAD_ATTR_SETAFFINITY_NP
-+endif
-+
- ifndef NO_BIONIC
-   $(call feature_check,bionic)
-   ifeq ($(feature-bionic), 1)
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 53f19b5dbc37..42ac05aaf8ac 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -25,6 +25,7 @@ FILES=					\
- 	test-libslang.bin		\
- 	test-libunwind.bin		\
- 	test-libunwind-debug-frame.bin	\
-+	test-pthread-attr-setaffinity-np.bin	\
- 	test-stackprotector-all.bin	\
- 	test-timerfd.bin		\
- 	test-libdw-dwarf-unwind.bin	\
-@@ -47,6 +48,9 @@ test-all.bin:
- test-hello.bin:
- 	$(BUILD)
- 
-+test-pthread-attr-setaffinity-np.bin:
-+	$(BUILD) -Werror -lpthread
-+
- test-stackprotector-all.bin:
- 	$(BUILD) -Werror -fstack-protector-all
- 
-diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
-index 652e0098eba6..6d4d09323922 100644
---- a/tools/perf/config/feature-checks/test-all.c
-+++ b/tools/perf/config/feature-checks/test-all.c
-@@ -97,6 +97,10 @@
- # include "test-zlib.c"
- #undef main
- 
-+#define main main_test_pthread_attr_setaffinity_np
-+# include "test-pthread_attr_setaffinity_np.c"
-+#undef main
-+
- int main(int argc, char *argv[])
- {
- 	main_test_libpython();
-@@ -121,6 +125,7 @@ int main(int argc, char *argv[])
- 	main_test_libdw_dwarf_unwind();
- 	main_test_sync_compare_and_swap(argc, argv);
- 	main_test_zlib();
-+	main_test_pthread_attr_setaffinity_np();
- 
- 	return 0;
- }
-diff --git a/tools/perf/config/feature-checks/test-pthread-attr-setaffinity-np.c b/tools/perf/config/feature-checks/test-pthread-attr-setaffinity-np.c
-new file mode 100644
-index 000000000000..0a0d3ecb4e8a
---- /dev/null
-+++ b/tools/perf/config/feature-checks/test-pthread-attr-setaffinity-np.c
-@@ -0,0 +1,14 @@
-+#include <stdint.h>
-+#include <pthread.h>
-+
-+int main(void)
-+{
-+	int ret = 0;
-+	pthread_attr_t thread_attr;
-+
-+	pthread_attr_init(&thread_attr);
-+	/* don't care abt exact args, just the API itself in libpthread */
-+	ret = pthread_attr_setaffinity_np(&thread_attr, 0, NULL);
-+
-+	return ret;
-+}
--- 
-1.9.1
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--XQSDX3NWE02rtiZq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUtSEDAAoJEBx+YmzsjxAgYKwP/2E5rkyDySlyJUufvDAg/U+L
+wb8xJ0lnA7J3QI/yYjH3TWNYKMXM1uFJyVcLpH2FLG1jyYc+fAE18SYmZx/CoiD/
+HNp+pgjVRLBLLOMPDnyS/oQ4MSA9mBwaDKsdvRP9kKasDaXU/lZBRrWRaHyrpPPl
+cLo12a1hibpdirD48u7/4KcIWyo1ko52GsvNyizSjvNUPlp1v8PgbiX9QHU0S0ZK
+XAKy/qPXaMe7qucqCXhlHgVT6qJhgNzRfKdMUBA5EwmHxO6hkuQsyiXEtOdDDUEj
+KdhNu+JRg2uCIyoysh7rXrNp8QCERAXIPqT6CZeYHyMMl8rZ7qvPbfGzsY0okJpl
+7Xo0P4/QPxNbfhWG5VwKdqt2DyiEItAFEqSO6ijVv1Juu6yW43KMZ/q75Byepm1w
+CyLd8l5ghF1a1JVbQvcriuiZjgnTS8ltpQ6XU74IHBbk0WF9QbIwkMZSQ5+bmt2N
+a1jHqa4gNY5n+4BAPTReUM0tb2Np3ngMsKm8QRKiY84sMuEr9h9ED+tdgi0t0crg
+G25+7yb7oAQhQfJ10qaV2HXRmm3Bcm7a2SNbr+ZPAxxp+KIiJJviqcfFYdyZ6nvq
+Ajj6sBJC+Xosdo+Gnzg2TdfnD86VOe14q0Nkqe3VqjmfVSxhUjihS6We7oIIWm9n
+jvN2sSM36LBLas5ejVj/
+=kxiP
+-----END PGP SIGNATURE-----
+
+--XQSDX3NWE02rtiZq--
