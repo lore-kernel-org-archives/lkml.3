@@ -1,196 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690AbbAMOX5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 09:23:57 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:34303 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751423AbbAMOXa (ORCPT
+	id S1752714AbbAMOYO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 09:24:14 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:38356 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396AbbAMOYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 09:23:30 -0500
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: Tejun Heo <tj@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org
-Subject: [PATCH v3 4/4] ARM: mvebu: Armada 385 GP: Add regulators to the SATA port
-Date: Tue, 13 Jan 2015 15:22:33 +0100
-Message-Id: <1421158953-2957-5-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1421158953-2957-1-git-send-email-gregory.clement@free-electrons.com>
-References: <1421158953-2957-1-git-send-email-gregory.clement@free-electrons.com>
+	Tue, 13 Jan 2015 09:24:10 -0500
+Date: Tue, 13 Jan 2015 06:23:41 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        wim@iguana.be, linux-watchdog@vger.kernel.org, kernel@stlinux.com,
+        David Paris <david.paris@st.com>
+Subject: Re: [4/4] watchdog: st_wdt: Add new driver for ST's LPC Watchdog
+Message-ID: <20150113142341.GA15707@roeck-us.net>
+References: <1414077524-6469-5-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414077524-6469-5-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020201.54B52A89.02FA,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 3
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the regulators to each SATA port.
+On Thu, Oct 23, 2014 at 04:18:44PM +0100, Lee Jones wrote:
+> Signed-off-by: David Paris <david.paris@st.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
----
- arch/arm/boot/dts/armada-388-gp.dts | 126 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 126 insertions(+)
+Digging myself out of my hole. Sorry for the laaaate reply.
 
-diff --git a/arch/arm/boot/dts/armada-388-gp.dts b/arch/arm/boot/dts/armada-388-gp.dts
-index 4df22bf91683..590b383db323 100644
---- a/arch/arm/boot/dts/armada-388-gp.dts
-+++ b/arch/arm/boot/dts/armada-388-gp.dts
-@@ -173,6 +173,16 @@
- 				status = "okay";
- 				#address-cells = <1>;
- 				#size-cells = <0>;
-+
-+				sata0: sata-port@0 {
-+					reg = <0>;
-+					target-supply = <&reg_5v_sata0>;
-+				};
-+
-+				sata1: sata-port@1 {
-+					reg = <1>;
-+					target-supply = <&reg_5v_sata1>;
-+				};
- 			};
- 
- 			sata@e0000 {
-@@ -181,6 +191,16 @@
- 				status = "okay";
- 				#address-cells = <1>;
- 				#size-cells = <0>;
-+
-+				sata2: sata-port@0 {
-+					reg = <0>;
-+					target-supply = <&reg_5v_sata2>;
-+				};
-+
-+				sata3: sata-port@1 {
-+					reg = <1>;
-+					target-supply = <&reg_5v_sata3>;
-+				};
- 			};
- 
- 			sdhci@d8000 {
-@@ -278,6 +298,112 @@
- 		regulator-always-on;
- 		gpio = <&expander0 4 GPIO_ACTIVE_HIGH>;
- 	};
-+
-+	reg_sata0: pwr-sata0 {
-+		compatible = "regulator-fixed";
-+		regulator-name = "pwr_en_sata0";
-+		enable-active-high;
-+		regulator-always-on;
-+
-+	};
-+
-+	reg_5v_sata0: v5-sata0 {
-+		compatible = "regulator-fixed";
-+		regulator-name = "v5.0-sata0";
-+		regulator-min-microvolt = <5000000>;
-+		regulator-max-microvolt = <5000000>;
-+		regulator-always-on;
-+		vin-supply = <&reg_sata0>;
-+	};
-+
-+	reg_12v_sata0: v12-sata0 {
-+		compatible = "regulator-fixed";
-+		regulator-name = "v12.0-sata0";
-+		regulator-min-microvolt = <12000000>;
-+		regulator-max-microvolt = <12000000>;
-+		regulator-always-on;
-+		vin-supply = <&reg_sata0>;
-+	};
-+
-+	reg_sata1: pwr-sata1 {
-+		regulator-name = "pwr_en_sata1";
-+		compatible = "regulator-fixed";
-+		regulator-min-microvolt = <12000000>;
-+		regulator-max-microvolt = <12000000>;
-+		enable-active-high;
-+		regulator-always-on;
-+		gpio = <&expander0 3 GPIO_ACTIVE_HIGH>;
-+	};
-+
-+	reg_5v_sata1: v5-sata1 {
-+		compatible = "regulator-fixed";
-+		regulator-name = "v5.0-sata1";
-+		regulator-min-microvolt = <5000000>;
-+		regulator-max-microvolt = <5000000>;
-+		regulator-always-on;
-+		vin-supply = <&reg_sata1>;
-+	};
-+
-+	reg_12v_sata1: v12-sata1 {
-+		compatible = "regulator-fixed";
-+		regulator-name = "v12.0-sata1";
-+		regulator-min-microvolt = <12000000>;
-+		regulator-max-microvolt = <12000000>;
-+		regulator-always-on;
-+		vin-supply = <&reg_sata1>;
-+	};
-+
-+	reg_sata2: pwr-sata2 {
-+		compatible = "regulator-fixed";
-+		regulator-name = "pwr_en_sata2";
-+		enable-active-high;
-+		regulator-always-on;
-+		gpio = <&expander0 11 GPIO_ACTIVE_HIGH>;
-+	};
-+
-+	reg_5v_sata2: v5-sata2 {
-+		compatible = "regulator-fixed";
-+		regulator-name = "v5.0-sata2";
-+		regulator-min-microvolt = <5000000>;
-+		regulator-max-microvolt = <5000000>;
-+		regulator-always-on;
-+		vin-supply = <&reg_sata2>;
-+	};
-+
-+	reg_12v_sata2: v12-sata2 {
-+		compatible = "regulator-fixed";
-+		regulator-name = "v12.0-sata2";
-+		regulator-min-microvolt = <12000000>;
-+		regulator-max-microvolt = <12000000>;
-+		regulator-always-on;
-+		vin-supply = <&reg_sata2>;
-+	};
-+
-+	reg_sata3: pwr-sata3 {
-+		compatible = "regulator-fixed";
-+		regulator-name = "pwr_en_sata3";
-+		enable-active-high;
-+		regulator-always-on;
-+		gpio = <&expander0 12 GPIO_ACTIVE_HIGH>;
-+	};
-+
-+	reg_5v_sata3: v5-sata3 {
-+		compatible = "regulator-fixed";
-+		regulator-name = "v5.0-sata3";
-+		regulator-min-microvolt = <5000000>;
-+		regulator-max-microvolt = <5000000>;
-+		regulator-always-on;
-+		vin-supply = <&reg_sata3>;
-+	};
-+
-+	reg_12v_sata3: v12-sata3 {
-+		compatible = "regulator-fixed";
-+		regulator-name = "v12.0-sata3";
-+		regulator-min-microvolt = <12000000>;
-+		regulator-max-microvolt = <12000000>;
-+		regulator-always-on;
-+		vin-supply = <&reg_sata3>;
-+	};
- };
- 
- &pinctrl {
--- 
-1.9.1
+> ---
+>  drivers/watchdog/Kconfig  |  16 +++
+>  drivers/watchdog/Makefile |   1 +
+>  drivers/watchdog/st_wdt.c | 317 ++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 334 insertions(+)
+>  create mode 100644 drivers/watchdog/st_wdt.c
+> 
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index f57312f..c8abf57 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -432,6 +432,22 @@ config SIRFSOC_WATCHDOG
+>  	  Support for CSR SiRFprimaII and SiRFatlasVI watchdog. When
+>  	  the watchdog triggers the system will be reset.
+>  
+> +config ST_WATCHDOG
+> +       tristate "STMicroelectronics LPC Watchdog"
+> +       depends on ARCH_STI && OF
+> +       depends on !RTC_DRV_ST_LPC
 
+RTC_DRV_ST_LPC is not in mainline nor in -next. Is this still current ?
+
+> +       select WATCHDOG_CORE
+> +       help
+> +	 Say Y here to include Watchdog timer support for the watchdog
+> +	 existing in the LPC of STMicroelectronics SOCs.
+> +	 !!! BE CARREFUL !!!
+> +	 This driver shares hardware resources with RTC Alarm part of the
+> +	 LPC. Both LPC Watchdog driver and LPC RTC driver cannot be
+> +	 used together.
+> +
+
+Arnd has asked if/how this is enforced by the code. Was this ever resolved ?
+
+> +	 To compile this driver as a module, choose M here: the
+> +	 module will be called st-wdt.
+> +
+
+[ ... ]
+
+> +	watchdog_set_drvdata(&st_wdog_dev, st_wdog);
+> +	watchdog_set_nowayout(&st_wdog_dev, WATCHDOG_NOWAYOUT);
+> +
+> +	/* Init Watchdog timeout with value in DT */
+> +	ret = watchdog_init_timeout(&st_wdog_dev, 0, &pdev->dev);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Unable to initialise watchdog timeout\n");
+
+Missing clk_disable_unprepare().
+
+> +		return ret;
+> +	}
+> +
+> +	ret = watchdog_register_device(&st_wdog_dev);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Unable to register watchdog\n");
+> +		clk_disable_unprepare(clk);
+> +		return ret;
+> +	}
+> +
+> +	st_wdog_setup(st_wdog, true);
+> +
+> +	dev_info(&pdev->dev, "LPC Watchdog driver registered, reset type is %s",
+> +		 st_wdog->warm_reset ? "warm" : "cold");
+
+Missing newline.
+
+Guenter
