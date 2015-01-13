@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522AbbAMOQx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 09:16:53 -0500
-Received: from sabertooth02.qualcomm.com ([65.197.215.38]:50211 "EHLO
-	sabertooth02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271AbbAMOQv (ORCPT
+	id S1752557AbbAMORA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 09:17:00 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:37755 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271AbbAMOQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 09:16:51 -0500
-X-IronPort-AV: E=McAfee;i="5600,1067,7679"; a="82214467"
-X-IronPort-AV: E=Sophos;i="5.07,750,1413270000"; 
-   d="scan'208";a="32123504"
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: <linux-wireless@vger.kernel.org>, <kernel-janitors@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <ath10k@lists.infradead.org>,
-        <netdev@vger.kernel.org>
-Subject: Re: [PATCH 8/8] ath10k: fix error return code
-References: <1419872683-32709-1-git-send-email-Julia.Lawall@lip6.fr>
-	<1419872683-32709-9-git-send-email-Julia.Lawall@lip6.fr>
-Date: Tue, 13 Jan 2015 16:16:40 +0200
-In-Reply-To: <1419872683-32709-9-git-send-email-Julia.Lawall@lip6.fr> (Julia
-	Lawall's message of "Mon, 29 Dec 2014 18:04:43 +0100")
-Message-ID: <87ppai6a0n.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 13 Jan 2015 09:16:58 -0500
+Date: Tue, 13 Jan 2015 15:16:52 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lib: proportions.c:  Remove some unused functions
+Message-ID: <20150113141652.GJ25256@twins.programming.kicks-ass.net>
+References: <1419087113-4087-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <20141222132626.2697567529c7708804c4061a@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-X-Originating-IP: [10.80.80.8]
-X-ClientProxiedBy: NASANEXM01C.na.qualcomm.com (10.85.0.83) To
- NALASEXR01G.na.qualcomm.com (10.49.56.53)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141222132626.2697567529c7708804c4061a@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Julia Lawall <Julia.Lawall@lip6.fr> writes:
+On Mon, Dec 22, 2014 at 01:26:26PM -0800, Andrew Morton wrote:
+> On Sat, 20 Dec 2014 15:51:53 +0100 Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> wrote:
+> 
+> > Removes some functions that are not used anywhere:
+> > prop_change_shift() prop_descriptor_init() prop_fraction_percpu() prop_fraction_single() __prop_inc_percpu_max() prop_local_destroy_percpu() prop_local_destroy_single() prop_local_init_percpu() prop_local_init_single()
+> > 
+> > This was partially found by using a static code analysis program called cppcheck.
+> > 
+> > ---
+> >  include/linux/proportions.h |   14 ----
+> >  lib/proportions.c           |  177 -------------------------------------------
+> >  2 files changed, 191 deletions(-)
+> 
+> Gee, that's a heck of a lot of dead code.
+> 
+> Peter, what was the thinking here?  Was this code once used, or added
+> for API completeness or what?
 
-> Return a negative error code on failure.
->
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
->
-> // <smpl>
-> @@
-> identifier ret; expression e1,e2;
-> @@
-> (
-> if (\(ret < 0\|ret != 0\))
->  { ... return ret; }
-> |
-> ret = 0
-> )
-> ... when != ret = e1
->     when != &ret
-> *if(...)
-> {
->   ... when != ret = e2
->       when forall
->  return ret;
-> }
-> // </smpl>
->
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Some of it was used once, we changed the BDI code over to the flexible
+proportion code from Honza, that removed 
 
-Thanks, applied to ath.git.
+> Perhaps we should just ifdef it out, so the code is still sitting there if
+> someone wishes to resurrect it.
 
--- 
-Kalle Valo
+If there are still users of the !flex proportion code I would argue to
+just leave it sit there for API completeness. It doesn't actually harm
+anyone. Linkers are very good at removing dead code.
+
+If there are in fact no users left of the !flex proportion code, then we
+should just kill the entire thing.
