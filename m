@@ -1,92 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752112AbbAMNTX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 08:19:23 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:55757 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751766AbbAMNTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 08:19:21 -0500
-Message-ID: <54B51B4A.1080007@ti.com>
-Date: Tue, 13 Jan 2015 15:19:06 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752284AbbAMNUH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 08:20:07 -0500
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:55110 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416AbbAMNUF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 08:20:05 -0500
+From: Jeff Layton <jeff.layton@primarydata.com>
+X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
+Date: Tue, 13 Jan 2015 08:20:01 -0500
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Jeff Layton <jeff.layton@primarydata.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: fs: locks: WARNING: CPU: 16 PID: 4296 at fs/locks.c:236
+ locks_free_lock_context+0x10d/0x240()
+Message-ID: <20150113082001.0fa0d723@tlielax.poochiereds.net>
+In-Reply-To: <54B4A909.9060206@oracle.com>
+References: <54B4A909.9060206@oracle.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-CC: David Airlie <airlied@linux.ie>, <dri-devel@lists.freedesktop.org>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/2] video: Drop superfluous "select VT_HW_CONSOLE_BINDING"
-References: <1421093413-26336-1-git-send-email-geert@linux-m68k.org> <1421093413-26336-2-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1421093413-26336-2-git-send-email-geert@linux-m68k.org>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="POWMPf7D1hriFuMoMTek3grbd0ltS2h7O"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---POWMPf7D1hriFuMoMTek3grbd0ltS2h7O
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On Tue, 13 Jan 2015 00:11:37 -0500
+Sasha Levin <sasha.levin@oracle.com> wrote:
 
-On 12/01/15 22:10, Geert Uytterhoeven wrote:
-> commit 765d5b9c2b72f5b99722cdfcf4bf8f88c556cf92 ("fbdev: fbcon: select
-> VT_HW_CONSOLE_BINDING") made FRAMEBUFFER_CONSOLE always select
-> VT_HW_CONSOLE_BINDING, but forgot to remove
->=20
-> 	select VT_HW_CONSOLE_BINDING if FRAMEBUFFER_CONSOLE
->=20
-> from the individual drivers' sections that already did this before.
->=20
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
-> v2:
->   - Split in two (drm and video) patches.
-> ---
->  drivers/video/fbdev/Kconfig | 1 -
->  1 file changed, 1 deletion(-)
->=20
-> diff --git a/drivers/video/fbdev/Kconfig b/drivers/video/fbdev/Kconfig
-> index 4916c97216f880fc..f2c3fb7d03992ad1 100644
-> --- a/drivers/video/fbdev/Kconfig
-> +++ b/drivers/video/fbdev/Kconfig
-> @@ -2151,7 +2151,6 @@ config FB_PS3
->  	select FB_SYS_COPYAREA
->  	select FB_SYS_IMAGEBLIT
->  	select FB_SYS_FOPS
-> -	select VT_HW_CONSOLE_BINDING if FRAMEBUFFER_CONSOLE
->  	---help---
->  	  Include support for the virtual frame buffer in the PS3 platform.
-> =20
->=20
+> Hey Jeff,
+> 
+> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> kernel, I've stumbled on the following spew:
+> 
+> [  887.078606] WARNING: CPU: 16 PID: 4296 at fs/locks.c:236 locks_free_lock_context+0x10d/0x240()
+> [  887.079703] Modules linked in:
+> [  887.080288] CPU: 16 PID: 4296 Comm: trinity-c273 Not tainted 3.19.0-rc4-next-20150112-sasha-00053-g23c147e02e-dirty #1710
+> [  887.082229]  0000000000000000 0000000000000000 0000000000000000 ffff8804c9f4f8e8
+> [  887.083773]  ffffffff9154e0a6 0000000000000000 ffff8804cad98000 ffff8804c9f4f938
+> [  887.085280]  ffffffff8140a4d0 0000000000000001 ffffffff81bf0d2d ffff8804c9f4f988
+> [  887.086792] Call Trace:
+> [  887.087320] dump_stack (lib/dump_stack.c:52)
+> [  887.088247] warn_slowpath_common (kernel/panic.c:447)
+> [  887.089342] ? locks_free_lock_context (fs/locks.c:236 (discriminator 3))
+> [  887.090514] warn_slowpath_null (kernel/panic.c:481)
+> [  887.091629] locks_free_lock_context (fs/locks.c:236 (discriminator 3))
+> [  887.092782] __destroy_inode (fs/inode.c:243)
+> [  887.093817] destroy_inode (fs/inode.c:268)
+> [  887.094833] evict (fs/inode.c:574)
+> [  887.095808] iput (fs/inode.c:1503)
+> [  887.096687] __dentry_kill (fs/dcache.c:323 fs/dcache.c:508)
+> [  887.097683] ? _raw_spin_trylock (kernel/locking/spinlock.c:136)
+> [  887.098733] ? dput (fs/dcache.c:545 fs/dcache.c:648)
+> [  887.099672] dput (fs/dcache.c:649)
+> [  887.100552] __fput (fs/file_table.c:227)
+> [  887.101437] ____fput (fs/file_table.c:245)
+> [  887.102317] task_work_run (kernel/task_work.c:125 (discriminator 1))
+> [  887.103356] ? _raw_spin_unlock (./arch/x86/include/asm/preempt.h:95 include/linux/spinlock_api_smp.h:154 kernel/locking/spinlock.c:183)
+> [  887.104390] do_exit (kernel/exit.c:746)
+> [  887.105338] ? task_numa_work (kernel/sched/fair.c:2218)
+> [  887.106384] ? get_signal (kernel/signal.c:2207)
+> [  887.107492] ? _raw_spin_unlock_irq (./arch/x86/include/asm/paravirt.h:819 include/linux/spinlock_api_smp.h:170 kernel/locking/spinlock.c:199)
+> [  887.108610] do_group_exit (include/linux/sched.h:775 kernel/exit.c:858)
+> [  887.109613] get_signal (kernel/signal.c:2358)
+> [  887.110578] ? trace_hardirqs_off (kernel/locking/lockdep.c:2671)
+> [  887.111672] do_signal (arch/x86/kernel/signal.c:703)
+> [  887.112604] ? acct_account_cputime (kernel/tsacct.c:168)
+> [  887.113722] ? context_tracking_user_exit (./arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/context_tracking.c:144 (discriminator 2))
+> [  887.114937] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2578 kernel/locking/lockdep.c:2625)
+> [  887.116128] ? trace_hardirqs_on (kernel/locking/lockdep.c:2633)
+> [  887.117160] do_notify_resume (arch/x86/kernel/signal.c:750)
+> [  887.118167] int_signal (arch/x86/kernel/entry_64.S:587)
+> 
+> 
 
-Thanks, queued for 3.20.
+Huh...
 
- Tomi
+Looks like the flc_flock list wasn't empty when we went to go free the
+inode. I don't see how that would happen right offhand, but I'll keep
+looking at it.
 
+Just to be clear -- were there any "exotic" filesystems involved here?
+In particular any that define a ->flock inode operation (e.g. NFS) ?
 
-
---POWMPf7D1hriFuMoMTek3grbd0ltS2h7O
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUtRtKAAoJEPo9qoy8lh71IPcP/jf6a3gUtaLlBoPltU2JJtFB
-U+9EFtx6kAL37B1C2byrjouk/XBBRL2WvfHWuA3gNQwrS7OajWdYFJar3eEVzSUs
-vrCRQUvQXQyl1oSKVPkcMUOcYgFY6vgv0XbxQL5jdO5LgtTq97XU77HOJe/pqj0p
-5SwACR0r9zIfWgmpTzju6D/0F6CyRoxqJ8NX4M3nJRJQ8tsyCiuwnDdxSwPbO8h2
-xyO3qUmDj09hFAu4aTfOw48RFPWipFhiWdnzI2DHXXBdmlz1BkK3OZ+d7evsJ5Fi
-OSM+17RKV8vRINdL1nmsiO8vLO5Fmdodo2g2Ahwp59JEOgq9PkxtX4l/pM6Ey5lt
-JMR/+P3xCR2sS2aSt9bBYxl0i7pUJ4Vg3agxiz52sQ+KTwELOC+Cs4BhR9aRTfvS
-WfPbWFUHcKxTnq5SPViSkT3eU/Pbc53cP6JEzNEhMsRqU81jNVyQss5rNtQZowj/
-SqWDnX4bSj4QFm1GGsv4ZgFXa8+7UqLkeXkPppcXQ220uy90jievvVItOezP1QDl
-+nAPkjNQaGSqC8AIrFmjuGwaKZpwXt2SoYxHB/gys+R8tv4yTEisAJovdIv+lZ7P
-kxju1yqHlnjVlDUCEw65E62az7wm20my6aWpWKkl1N4gikQYrF7CtPSi99SfSe5j
-t+tHeDMmsk1YZVV3nrJg
-=lf6e
------END PGP SIGNATURE-----
-
---POWMPf7D1hriFuMoMTek3grbd0ltS2h7O--
+Thanks for the report...
+-- 
+Jeff Layton <jlayton@primarydata.com>
