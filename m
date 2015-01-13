@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751640AbbAMLw4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 06:52:56 -0500
-Received: from 8bytes.org ([81.169.241.247]:52671 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751046AbbAMLwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 06:52:54 -0500
-Date: Tue, 13 Jan 2015 12:52:53 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: "Li, ZhenHua" <zhen-hual@hp.com>
-Cc: dwmw2@infradead.org, indou.takao@jp.fujitsu.com, bhe@redhat.com,
-        vgoyal@redhat.com, dyoung@redhat.com, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        kexec@lists.infradead.org, alex.williamson@redhat.com,
-        ddutile@redhat.com, ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com,
-        doug.hatch@hp.com, jerry.hoemann@hp.com, tom.vaden@hp.com,
-        li.zhang6@hp.com, lisa.mitchell@hp.com, billsumnerlinux@gmail.com,
-        rwright@hp.com
-Subject: Re: [PATCH v8 02/10] iommu/vt-d: Items required for kdump
-Message-ID: <20150113115252.GH6343@8bytes.org>
-References: <1421046388-27925-1-git-send-email-zhen-hual@hp.com>
- <1421046388-27925-3-git-send-email-zhen-hual@hp.com>
- <20150112152207.GC6343@8bytes.org>
- <54B4D36D.8030204@hp.com>
+	id S1751991AbbAMLxf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 06:53:35 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:35320 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796AbbAMLxe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 06:53:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54B4D36D.8030204@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <54B504EF.4000809@ti.com>
+References: <1420705079-3741-1-git-send-email-prabhakar.csengg@gmail.com>
+ <1420705079-3741-3-git-send-email-prabhakar.csengg@gmail.com> <54B504EF.4000809@ti.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Tue, 13 Jan 2015 11:53:01 +0000
+Message-ID: <CA+V-a8u0RARw84FYa661VZCYpXkZYkXmtc03jCXU=t0aoGvg9Q@mail.gmail.com>
+Subject: Re: [PATCH 2/2] fbdev: ssd1307fb: check return value while setting offset
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: LFBDEV <linux-fbdev@vger.kernel.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 04:12:29PM +0800, Li, ZhenHua wrote:
+On Tue, Jan 13, 2015 at 11:43 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+> On 08/01/15 10:17, Lad, Prabhakar wrote:
+>> this patch checks the return value of write command while
+>> setting the display offset.
+>>
+>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>> ---
+>>  drivers/video/fbdev/ssd1307fb.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/video/fbdev/ssd1307fb.c b/drivers/video/fbdev/ssd1307fb.c
+>> index 70e3ce8..a7ecaa6 100644
+>> --- a/drivers/video/fbdev/ssd1307fb.c
+>> +++ b/drivers/video/fbdev/ssd1307fb.c
+>> @@ -342,7 +342,7 @@ static int ssd1307fb_ssd1306_init(struct ssd1307fb_par *par)
+>>
+>>       /* set display offset value */
+>>       ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_DISPLAY_OFFSET);
+>> -     ret = ssd1307fb_write_cmd(par->client, 0x20);
+>> +     ret = ret & ssd1307fb_write_cmd(par->client, 0x20);
+>>       if (ret < 0)
+>>               return ret;
+>
+> Hrm, what's that supposed to do? If both calls to ssd1307fb_write_cmd()
+> return an error, they are anded, resulting in a garbage error code...
+>
+Agreed I have just aligned this to rest of the code in this function.
 
-> Current status:
-> 1. Use old root entry table,
-> 2. Copy old context entry tables.
-> 3. Copy old page tables.
-> 4. Allocate new page table when device driver is loading.
-> 
-> I remember the progress we discussed was this. Checking the old mails,
-> founding we did not clearly discuss about the old page tables, only
-> agrred with allocating new page tables when device driver is loading.
-> 
-> To me, both of these two options are fine, copying old page tables, or
-> re-use the old ones. My debugging shows both of them works fine.
-> 
-> If we use the old page tables, the patchset will use less code.
-> Functions copy_page_addr, copy_page_table are no longer needed, and
-> functions copy_context_entry and copy_context_entry_table will be
-> reduced to several lines. The patchset will be much simpler.
+Maxime if you are OK I'll post a patch returning error then and there ?
 
-Yes, please do it this way. There is no point in copying the old
-page-tables. We never make changes to them, so they can stay where they
-are.
-
-The problem with the backup region still exists, but it is not
-specific to IOMMUs. This problem and should be addressed seperatly.
-
-
-	Joerg
-
+Thanks,
+--Prabhakar Lad
