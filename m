@@ -1,96 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597AbbAMPVD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 10:21:03 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:55911 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162AbbAMPVA (ORCPT
+	id S1752471AbbAMPW3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 10:22:29 -0500
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:39423 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806AbbAMPW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 10:21:00 -0500
-Message-ID: <54B537DA.7030707@atmel.com>
-Date: Tue, 13 Jan 2015 16:20:58 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 13 Jan 2015 10:22:27 -0500
+Date: Tue, 13 Jan 2015 10:22:24 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?utf-8?B?IklzaGltYXRzdSwgWWFzdWFraS/nn7Pmnb4g6Z2W56ugIg==?= 
+	<isimatu.yasuaki@jp.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>
+Subject: Re: [PATCH 1/2] workqueue: update numa affinity info at node hotplug
+Message-ID: <20150113152224.GA2976@htj.dyndns.org>
+References: <54905F87.2030302@jp.fujitsu.com>
+ <549061BD.3040802@jp.fujitsu.com>
+ <5490DE23.9000602@cn.fujitsu.com>
+ <5490F70E.4010703@jp.fujitsu.com>
+ <54910CFD.4070203@jp.fujitsu.com>
+ <20141225201156.GA22951@htj.dyndns.org>
+ <54B4C6ED.9060501@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Bo Shen <voice.shen@atmel.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <alsa-devel@alsa-project.org>, <linux-sound@vger.kernel.org>,
-        "Alexander Morozov" <linux@meltdown.ru>
-Subject: Re: [PATCH v2 1/3] ASoC: codecs: wm8904: add dt ids table
-References: <1418614273-2303-1-git-send-email-voice.shen@atmel.com>
-In-Reply-To: <1418614273-2303-1-git-send-email-voice.shen@atmel.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54B4C6ED.9060501@cn.fujitsu.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 15/12/2014 04:31, Bo Shen a écrit :
-> From: Alexander Morozov <linux@meltdown.ru>
+Hello,
+
+On Tue, Jan 13, 2015 at 03:19:09PM +0800, Lai Jiangshan wrote:
+> The Mapping of the *online* cpus to nodes is already maintained by numa code.
 > 
-> Signed-off-by: Alexander Morozov <linux@meltdown.ru>
-> [Add driver data to distinguish device type]
-> Signed-off-by: Bo Shen <voice.shen@atmel.com>
-> ---
+> What the workqueue needs is a special Mapping:
+> 	The Mapping of the *possible* cpus to nodes
 > 
-> Changes in v2:
-> - Add driver data for distinguish the device capability.
+> But this mapping (if the numa code maintain it) is a trouble:
+> 	"possible" implies the mapping is stable/constant/immutable, it is hard to
+> 	ensure it in the numa code.
 > 
->  sound/soc/codecs/wm8904.c | 22 ++++++++++++++++++++++
+> if mutability of this mapping is acceptable, we just move 20~40 LOC
+> of code from workqueue to numa code, all the other complexities
+> about it are still in workqueue.c.
 
-Mark,
+Make numa code maintain the mapping to the best of its knowledge and
+invoke notification callbacks when it changes.  Even if that involves
+slightly more code, that's the right thing to do at this point.  This
+puts the logic which is complicated by the fact that the mapping may
+change where it's caused not some random unrelated place.  It'd be
+awesome if somebody more familiar with the numa side can chime in and
+explain why this mapping change can't be avoided.
 
-Do you want us to re-send this patch or can you take it?
-
-On my side, I'm planning to take the 2 last ones of this series: is it
-okay for you?
-
-Thanks, bye.
-
->  1 file changed, 22 insertions(+)
-> 
-> diff --git a/sound/soc/codecs/wm8904.c b/sound/soc/codecs/wm8904.c
-> index 4d2d2b1..6e3f175 100644
-> --- a/sound/soc/codecs/wm8904.c
-> +++ b/sound/soc/codecs/wm8904.c
-> @@ -2255,10 +2255,32 @@ static const struct i2c_device_id wm8904_i2c_id[] = {
->  };
->  MODULE_DEVICE_TABLE(i2c, wm8904_i2c_id);
->  
-> +#ifdef CONFIG_OF
-> +static enum wm8904_type wm8904_data = WM8904;
-> +static enum wm8904_type wm8912_data = WM8912;
-> +
-> +static const struct of_device_id wm8904_of_match[] = {
-> +	{
-> +		.compatible = "wlf,wm8904",
-> +		.data = &wm8904_data,
-> +	}, {
-> +		.compatible = "wlf,wm8912",
-> +		.data = &wm8912_data,
-> +	}, {
-> +		.compatible = "wlf,wm8918",
-> +		.data = &wm8904_data,
-> +	}, {
-> +		/* sentinel */
-> +	}
-> +};
-> +MODULE_DEVICE_TABLE(of, wm8904_of_match);
-> +#endif
-> +
->  static struct i2c_driver wm8904_i2c_driver = {
->  	.driver = {
->  		.name = "wm8904",
->  		.owner = THIS_MODULE,
-> +		.of_match_table = of_match_ptr(wm8904_of_match),
->  	},
->  	.probe =    wm8904_i2c_probe,
->  	.remove =   wm8904_i2c_remove,
-> 
-
+Thanks.
 
 -- 
-Nicolas Ferre
+tejun
