@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308AbbAMTGW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 14:06:22 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:61611 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052AbbAMTGV (ORCPT
+	id S1752542AbbAMTKp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 14:10:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49827 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085AbbAMTKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 14:06:21 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Alex Deucher <alexander.deucher@amd.com>,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drm/radeon/radeon_i2c: Remove unused function
-Date: Tue, 13 Jan 2015 20:09:27 +0100
-Message-Id: <1421176167-7180-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 13 Jan 2015 14:10:44 -0500
+Date: Tue, 13 Jan 2015 11:10:43 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Krzysztof Adamski <k@japko.eu>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: vt6656: Use ether_addr_copy() on vnt_private
+ members.
+Message-ID: <20150113191043.GA26821@kroah.com>
+References: <20141222161541.GA11764@box2.japko.eu>
+ <20150113034212.GA16174@kroah.com>
+ <20150113184227.GK30114@box2.japko.eu>
+ <20150113185200.GA25686@kroah.com>
+ <20150113185918.GL30114@box2.japko.eu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150113185918.GL30114@box2.japko.eu>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function radeon_best_encoder() that is not used anywhere.
+On Tue, Jan 13, 2015 at 07:59:18PM +0100, Krzysztof Adamski wrote:
+> On Tue, Jan 13, 2015 at 10:52:00AM -0800, Greg Kroah-Hartman wrote:
+> >On Tue, Jan 13, 2015 at 07:42:28PM +0100, Krzysztof Adamski wrote:
+> >>On Mon, Jan 12, 2015 at 07:42:12PM -0800, Greg Kroah-Hartman wrote:
+> >>>On Mon, Dec 22, 2014 at 05:15:41PM +0100, Krzysztof Adamski wrote:
+> >>>>This patch fixes checkpatch.pl warning:
+> >>>>WARNING: Prefer ether_addr_copy() over memcpy() if the Ethernet
+> >>>>addresses are __aligned(2)
+> >>>>
+> >>>>current_net_addr and permanent_net_addr members of vnt_private alignment
+> >>>>is changed to at last 16 bits so that ether_addr_copy can be safely used
+> >>>>on them.
+> >>>>
+> >>>>buf->data is of type ieee80211_cts which is already properly aligned.
+> >>>>
+> >>>>Signed-off-by: Krzysztof Adamski <k@japko.eu>
+> >>>>---
+> >>>>drivers/staging/vt6656/device.h   |    4 ++--
+> >>>>drivers/staging/vt6656/main_usb.c |    3 ++-
+> >>>>drivers/staging/vt6656/rxtx.c     |    4 ++--
+> >>>>3 files changed, 6 insertions(+), 5 deletions(-)
+> >>>
+> >>>Doesn't apply to my tree :(
+> >>
+> >>Strange, I was trying to apply this on your tree to fix any conflicts but
+> >>apparently you already has this patch in your staging-testing branch. And as
+> >>far as I can tell I only sent it once to you.
+> >
+> >I think you sent it lots of times, if it's there already, don't worry
+> >about it :)
+> 
+> I've send two other patches for this driver twise but this one only once.
+> But that's not imporant. While we're at this, if I ever feel like I should
+> resend the patch because it was lost (I promise I will wait much longer:)),
+> what would be the best way to mark it as resent? Should it be v2 even though
+> it wasn't really changed? Or write it in comment after "---", or maybe some
+> other way? That's the only thing not explained in your "Write and Submit
+> your first Linux kernel Patch" talk.
 
-This was partially found by using a static code analysis program called cppcheck.
+Add a "resend" where you would have put "v2" in the subject line.  It's
+pretty rare to need to do this, be more patient for me to apply stuff
+during the merge window and the holidays please. :)
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/gpu/drm/radeon/radeon_i2c.c  |    5 -----
- drivers/gpu/drm/radeon/radeon_mode.h |    2 --
- 2 files changed, 7 deletions(-)
+thanks,
 
-diff --git a/drivers/gpu/drm/radeon/radeon_i2c.c b/drivers/gpu/drm/radeon/radeon_i2c.c
-index add6220..9590bcd 100644
---- a/drivers/gpu/drm/radeon/radeon_i2c.c
-+++ b/drivers/gpu/drm/radeon/radeon_i2c.c
-@@ -1048,11 +1048,6 @@ struct radeon_i2c_chan *radeon_i2c_lookup(struct radeon_device *rdev,
- 	return NULL;
- }
- 
--struct drm_encoder *radeon_best_encoder(struct drm_connector *connector)
--{
--	return NULL;
--}
--
- void radeon_i2c_get_byte(struct radeon_i2c_chan *i2c_bus,
- 			 u8 slave_addr,
- 			 u8 addr,
-diff --git a/drivers/gpu/drm/radeon/radeon_mode.h b/drivers/gpu/drm/radeon/radeon_mode.h
-index 04db2fd..66c17e3 100644
---- a/drivers/gpu/drm/radeon/radeon_mode.h
-+++ b/drivers/gpu/drm/radeon/radeon_mode.h
-@@ -740,8 +740,6 @@ extern void radeon_router_select_ddc_port(struct radeon_connector *radeon_connec
- extern void radeon_router_select_cd_port(struct radeon_connector *radeon_connector);
- extern bool radeon_ddc_probe(struct radeon_connector *radeon_connector, bool use_aux);
- 
--extern struct drm_encoder *radeon_best_encoder(struct drm_connector *connector);
--
- extern bool radeon_atombios_get_ppll_ss_info(struct radeon_device *rdev,
- 					     struct radeon_atom_ss *ss,
- 					     int id);
--- 
-1.7.10.4
-
+greg k-h
