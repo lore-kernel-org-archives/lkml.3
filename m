@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420AbbAMWBb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 17:01:31 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:35840 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751959AbbAMWBa (ORCPT
+	id S1752584AbbAMWIw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 17:08:52 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:36667 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811AbbAMWIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 17:01:30 -0500
-MIME-Version: 1.0
-In-Reply-To: <D0DAFA79.4435F%dbanerje@akamai.com>
-References: <1421183431-29915-1-git-send-email-dbanerje@akamai.com>
-	<CAK6E8=d6NMZjyH1JFoJX_ioAdQNYCAvH-G3ja9fScwW9u2=NFQ@mail.gmail.com>
-	<D0DAFA79.4435F%dbanerje@akamai.com>
-Date: Tue, 13 Jan 2015 17:01:28 -0500
-Message-ID: <CABrhC0m=aPO=OcfK_gTusHz7CU9OUeXAHoqUDaVTGLDiQnL56Q@mail.gmail.com>
-Subject: Re: [PATCH] tcp: Fix RFC reference in comment
-From: John Heffner <johnwheffner@gmail.com>
-To: "Banerjee, Debabrata" <dbanerje@akamai.com>
-Cc: Yuchung Cheng <ycheng@google.com>, David Miller <davem@davemloft.net>,
-        netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 13 Jan 2015 17:08:50 -0500
+Date: Tue, 13 Jan 2015 17:08:47 -0500 (EST)
+Message-Id: <20150113.170847.166125234153799669.davem@davemloft.net>
+To: arnd@arndb.de
+Cc: isdn4linux@listserv.isdn4linux.de, netdev@vger.kernel.org,
+        isdn@linux-pingi.de, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mISDN: avoid arch specific __builtin_return_address
+ call
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1816278.9Bv8N8K5IB@wuerfel>
+References: <1816278.9Bv8N8K5IB@wuerfel>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 13 Jan 2015 14:08:49 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 4:42 PM, Banerjee, Debabrata
-<dbanerje@akamai.com> wrote:
-> On 1/13/15, 4:36 PM, "Yuchung Cheng" <ycheng@google.com> wrote:
->
->>On Tue, Jan 13, 2015 at 1:10 PM, Debabrata Banerjee <dbanerje@akamai.com>
->>wrote:
->>>
->>> -/* RFC2861. Reset CWND after idle period longer RTO to "restart
->>>window".
->>> +/* RFC2581 4.1. Reset CWND after idle period longer RTO to "restart
->>>window".
->>>   * This is the first part of cwnd validation mechanism. */
->>>  static void tcp_cwnd_restart(struct sock *sk, const struct dst_entry
->>>*dst)
->>>  {
->>
->>RFC2861 resets the cwnd like in RFC2581, but the rest of the code
->>implements RFC2861. So I think the current comment is fine.
->
->
-> No RFC2861 is an experimental RFC that's implemented in
-> tcp_cwnd_application_limited(). RFC2861 Recommends reducing the cwnd by
-> averaging the current cwnd and the used cwnd as the new cwnd.
->
->
-> RFC2581 4.1 Says to set cwnd to initial cwnd if more than one rto has
-> passed since the last send. This is what is implemented in the function
-> above.
+From: Arnd Bergmann <arnd@arndb.de>
+Date: Tue, 13 Jan 2015 17:10:58 +0100
 
-Look at the code a little closer -- it's decaying cwnd based on number
-of timeouts as described in 2861, not resetting to IW as recommended
-in 2581.
+> Not all architectures are able to call __builtin_return_address().
+> On ARM, the mISDN code produces this warning:
+> 
+> hardware/mISDN/w6692.c: In function 'w6692_dctrl':
+> hardware/mISDN/w6692.c:1181:75: warning: unsupported argument to '__builtin_return_address'
+>   pr_debug("%s: %s dev(%d) open from %p\n", card->name, __func__,
+>                                                                            ^
+> hardware/mISDN/mISDNipac.c: In function 'open_dchannel':
+> hardware/mISDN/mISDNipac.c:759:75: warning: unsupported argument to '__builtin_return_address'
+>   pr_debug("%s: %s dev(%d) open from %p\n", isac->name, __func__,
+>                                                                            ^
+> 
+> In a lot of cases, this is relatively easy to work around by
+> passing the value of __builtin_return_address(0) from the
+> callers into the functions that want it. One exception is
+> the indirect 'open' function call in struct isac_hw. While it
+> would be possible to fix this as well, this patch only addresses
+> the other callers properly and lets this one return the direct
+> parent function, which should be good enough.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-  -John
+Applied.
