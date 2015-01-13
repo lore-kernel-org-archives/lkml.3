@@ -1,132 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057AbbAMMWO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 07:22:14 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54978 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967AbbAMMWN (ORCPT
+	id S1752133AbbAMMWg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 07:22:36 -0500
+Received: from smtprelay0063.hostedemail.com ([216.40.44.63]:43501 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751637AbbAMMWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 07:22:13 -0500
-Message-ID: <1421151718.4519.24.camel@pengutronix.de>
-Subject: Re: [PATCH v9 1/4] drm/i2c: tda998x: Add DT support for audio
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Jean-Francois Moine <moinejf@free.fr>,
-        Andrew Jackson <Andrew.Jackson@arm.com>, Jyri Sarha <jsarha@ti.com>,
-        Mark Brown <broonie@kernel.org>, Dave Airlie <airlied@gmail.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 13 Jan 2015 13:21:58 +0100
-In-Reply-To: <20150112175705.GN12302@n2100.arm.linux.org.uk>
-References: <20150109130725.GN12302@n2100.arm.linux.org.uk>
-	 <54AFDE8D.3000504@arm.com> <20150109145741.GP12302@n2100.arm.linux.org.uk>
-	 <20150109183857.53d701a4@armhf>
-	 <20150109200127.GD12302@n2100.arm.linux.org.uk>
-	 <1421054728.3081.28.camel@pengutronix.de>
-	 <20150112122527.GF12302@n2100.arm.linux.org.uk>
-	 <1421071197.3081.44.camel@pengutronix.de>
-	 <20150112140456.GI12302@n2100.arm.linux.org.uk>
-	 <20150112181341.4a53ea24@armhf>
-	 <20150112175705.GN12302@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1 
-Mime-Version: 1.0
+	Tue, 13 Jan 2015 07:22:35 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::,RULES_HIT:41:355:379:541:599:800:960:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3874:4362:4470:5007:6119:6261:7875:7903:8531:10004:10400:10848:10967:11232:11658:11914:12043:12050:12296:12517:12519:12740:13069:13161:13229:13311:13357:13972:14096:14097:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: fly99_6daee5a452424
+X-Filterd-Recvd-Size: 2005
+Date: Tue, 13 Jan 2015 07:22:32 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, vvs@sw.ru
+Subject: Re: Bug with jprobes and function graph tracer
+Message-ID: <20150113072232.451c599b@gandalf.local.home>
+In-Reply-To: <54B503F5.4020509@hitachi.com>
+References: <20150108122016.0241f713@gandalf.local.home>
+	<54B503F5.4020509@hitachi.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, den 12.01.2015, 17:57 +0000 schrieb Russell King - ARM Linux:
-> On Mon, Jan 12, 2015 at 06:13:41PM +0100, Jean-Francois Moine wrote:
-> > On Mon, 12 Jan 2015 14:04:56 +0000
-> > Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> > > On Mon, Jan 12, 2015 at 02:59:57PM +0100, Philipp Zabel wrote:
-> > > > Note that of_graph_parse_endpoint interprets the port node's reg
-> > > > property as port id. And the unit address part of the node name should
-> > > > match the first address in the reg property.
-> > 
-> > This is not the case in vexpress-v2p-ca15_a7.dts.
+On Tue, 13 Jan 2015 20:39:33 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+
 > 
-> Hmm... as the DT binding doc doesn't specify this restriction, and we
-> have a DT file which violates what Philipp has said, I think we ought
-> to document that reg vs unit node name does not need to match each
-> other, thereby making that official.
+> Yeah we should try to fix this, but not so high priority since jprobe
+> is not used so frequently. I guess one easy solution is adding notrace
+> to all jprobe handlers for hiding it from function-graph tracer.
+> If there is a way to check a function is notrace or not, I can use that
+> in register_jprobe and reject it if the handler is not "notrace"ed. :)
 
-The (unit address part == first reg property value) is from the ePAPR
-and still documented in http://www.devicetree.org/Device_Tree_Usage. It
-isn't explicitly stated as a hard requirement, but it is worded in such
-a way that I'd expect it to hold true most of the time :/
+Adding notrace should be the last resort. Every notrace in the kernel
+makes function tracing a little more useless. It bothers me even more
+when notrace is added because of function graph tracing but the
+function still works for function tracing.
 
-> > > So that's not going to work very well... because the AP register is a
-> > > bitmask.
-> > > 
-> > > I guess we could specify a node unit and reg, which the code otherwise
-> > > ignores, and specify a philipps,ap-mask = property for the audio ports
-> > > instead.
-> > 
-> > Also, the video and audio ports must be distinguished. They could be
-> > defined in different port groups.
-> > 
-> > Example from the Cubox:
-> > 
-> > 	video-ports: ports@0 {
-> > 		port {
-> > 			tda998x_video: endpoint {
-> > 				remote-endpoint = <&lcd0_0>;
-> > 				nxp,video-port = <0x230145>;
-> > 			};
-> > 		};
-> > 	};
-> > 	audio-ports: ports@1 {
-> > 		port@0 {			/* AP1 = I2S */
-> > 			tda998x_i2s: endpoint@0 {
-> > 				remote-endpoint = <&audio1_i2s>;
-> > 				nxp,audio-port = <0x03>;
-> > 			};
-> > 		};
-> > 		port@1 {			 /* AP2 = S/PDIF */
-> > 			tda998x_spdif: endpoint@1 {
-> > 				remote-endpoint = <&audio1_spdif1>;
-> > 				nxp,audio-port = <0x04>;
-> > 			};
-> > 		};
-> > 	};
+I worked on this for the last few days and have a patch that fixes the
+problem. I'll be posting it later today. It also uncovered another
+unrelated bug that I worked on yesterday, otherwise I would have posted
+these fixes already.
 
-Please don't add the complexity of multiple 'ports' nodes to the OF
-graph bindings. I'd rather have the driver determine the type of the
-port. Ideally it could know that port 0 always is video and all other
-ports are audio, otherwise checking the existence of a custom property
-in the 'port' node should work, for example 'nxp,audio-port' or
-'nxp,video-port'.
-Why are those located in the 'endpoint' nodes in your example? Are you
-expecting to dynamically reconfigure the port type of a given AP from
-i2s to spdif depending on the activated endpoint?
+I have a fix for the other bug now but it needs to be cleaned up
+(remove all the debugging prints from it). When that's complete I'll
+post the patches and get them ready for mainline and stable.
 
-> > The port type is identified by the bit AP0.
-> 
-> I don't particularly like that - that makes the assumption that AP0
-> always means I2S.  What if a future chip decides to allow SPDIF on
-> AP0?  Why should we need to re-invent the binding?
->
-> IMHO, it would be much better to make this explicit.
+Thanks,
 
-I wonder if it wouldn't be nicer to have the AP# and type in the device
-tree and then calculate the register value from that in the driver.
-
-	port@1 {
-		reg = <1>; /* AP1 */
-		nxp,audio-port = "i2s";
-		tda998x_i2s: endpoint {
-			remote-endpoint = <&audio1_i2s>;
-		};
-	};
-
-regards
-Philipp
-
+-- Steve
