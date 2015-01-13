@@ -1,42 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220AbbAMKam (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 05:30:42 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:43745 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752012AbbAMKal (ORCPT
+	id S1752296AbbAMKcY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 05:32:24 -0500
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:63654 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047AbbAMKcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 05:30:41 -0500
-Date: Tue, 13 Jan 2015 13:30:07 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Chris Rorvick <chris@rorvick.com>
-Cc: Oleg Drokin <oleg.drokin@intel.com>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, HPDD-discuss@ml01.01.org,
-        Greg Donald <gdonald@gmail.com>, James Simmons <uja.ornl@gmail.com>,
-        Andriy Skulysh <Andriy_Skulysh@xyratex.com>,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux-kernel@vger.kernel.org, Fabian Frederick <fabf@skynet.be>,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        "John L. Hammond" <john.hammond@intel.com>
-Subject: Re: [PATCH v4 0/2] lprocfs_write_frac_u64_helper cleanup
-Message-ID: <20150113103007.GA5571@mwanda>
-References: <1421019749-25110-1-git-send-email-chris@rorvick.com>
+	Tue, 13 Jan 2015 05:32:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421019749-25110-1-git-send-email-chris@rorvick.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <CA+RfmHZRqMwiSAZ7kpn+0_8a+25O+hRKxGJuK6im6fX0dzB8Nw@mail.gmail.com>
+References: <1416849900-29959-1-git-send-email-kiran.kumar@linaro.org>
+	<1416849900-29959-3-git-send-email-kiran.kumar@linaro.org>
+	<15cad5ef7627483cbba96e05fe180813@BN1PR0301MB0772.namprd03.prod.outlook.com>
+	<20141125144544.GC6360@saruman>
+	<CA+RfmHZRqMwiSAZ7kpn+0_8a+25O+hRKxGJuK6im6fX0dzB8Nw@mail.gmail.com>
+Date: Tue, 13 Jan 2015 16:02:20 +0530
+Message-ID: <CA+RfmHb9OQ1Y_c-93jgpWWfNpTNLE84+Z70bOMtNrbJhQSWQAA@mail.gmail.com>
+Subject: Re: [PATCH v3 3/3] usb: phy: hold wakeupsource when USB is enumerated
+ in peripheral mode
+From: Kiran Raparthy <kiran.kumar@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Peter Chen <Peter.Chen@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+        Benoit Goby <benoit@android.com>, Todd Poynor <toddpoynor@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since no one had any responses to the original thread, Greg is going to
-see that first and apply it and this one will not apply.  It's not worth
-resending patches for trivial stuff like this anyway...
+Hi Felipe,
 
-regards,
-dan carpenter
+On 1 December 2014 at 11:09, Kiran Raparthy <kiran.kumar@linaro.org> wrote:
+> Hi Felipe,
+>
+> On 25 November 2014 at 20:15, Felipe Balbi <balbi@ti.com> wrote:
+>> On Tue, Nov 25, 2014 at 07:06:18AM +0000, Peter Chen wrote:
+>>>
+>>> >
+>>> > usb: phy: hold wakeupsource when USB is enumerated in peripheral mode
+>>> >
+>>> > Some systems require a mechanism to prevent system to enter into suspend
+>>> > state when USB is connected and enumerated in peripheral mode.
+>>> >
+>>> > This patch provides an interface to hold a wakeupsource to prevent suspend.
+>>> > PHY drivers can use this interface when USB is connected and enumerated in
+>>> > peripheral mode.
+>>> >
+>>> > A timed wakeupsource is temporarily held on USB disconnect events, to allow
+>>> > the rest of the system to react to the USB disconnection (dropping host
+>>> > sessions, updating charger status, etc.) prior to re-allowing suspend.
+>>> >
+>>>
+>>> Hi Kiran & Felipe,
+>>>
+>>> Just two questions for this series
+>>>
+>>> - Will it be the default behavior for all peripheral drivers?
+>>> - If the peripheral driver's PHY driver does not vbus event, how to
+>>> support it?
+>>> For example, chipidea udc driver has its vbus interface at its
+>>> controller register.
+>>
+>> hmm, good point. Since it's so late, I'll just go ahead and drop
+>> $subject from v3.20. Let's delay only $subject to v3.20 merge window so
+>> we have some more time to discuss these details.
+>
+> I am just curious to know/understand why this feature needs to be
+> default behavior for all peripheral drivers?
+> If this needs to be default behavior, could you please suggest any
+> alternate plan/design for this feature so that i can incorporate them
+> in new patch.
+> Regards,
+> Kiran
 
+Just a gentle reminder to consider the patch.
+
+>
+>>
+>> cheers
+>>
+>> --
+>> balbi
+
+Regards,
+Kiran
