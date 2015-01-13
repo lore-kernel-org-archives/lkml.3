@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807AbbAMT1U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 14:27:20 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:45555 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753767AbbAMT1P convert rfc822-to-8bit (ORCPT
+	id S1753766AbbAMT2v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 14:28:51 -0500
+Received: from casper.infradead.org ([85.118.1.10]:54216 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413AbbAMT2u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 14:27:15 -0500
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        "Jisheng Zhang" <jszhang@marvell.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <54B50CDA.3090307@gmail.com>
-Cc: "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "antoine.tenart@free-electrons.com" 
-	<antoine.tenart@free-electrons.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Tue, 13 Jan 2015 14:28:50 -0500
+Date: Tue, 13 Jan 2015 19:28:47 +0000
+From: Thomas Graf <tgraf@suug.ch>
+To: Cong Wang <cwang@twopensource.com>
+Cc: Ying Xue <ying.xue@windriver.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-References: <1420016272-6789-1-git-send-email-jszhang@marvell.com>
- <1420016272-6789-4-git-send-email-jszhang@marvell.com>
- <54AD3EAE.6090009@gmail.com> <20150107222209.64ed24a0@xhacker>
- <54AD431F.6060403@gmail.com> <20150109201306.4d1a296b@xhacker>
- <54B12446.4030703@gmail.com> <20150113002817.20842.98432@quantum>
- <54B50CDA.3090307@gmail.com>
-Message-ID: <20150113192707.20842.42495@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH 3/3] clk: berlin: bg2q: remove non-exist "smemc" gate clock
-Date: Tue, 13 Jan 2015 11:27:07 -0800
+        lkp@01.org, Netdev <netdev@vger.kernel.org>
+Subject: Re: Fwd: [rhashtable] WARNING: CPU: 0 PID: 10 at
+ kernel/locking/mutex.c:570 mutex_lock_nested()
+Message-ID: <20150113192847.GP20387@casper.infradead.org>
+References: <20150110194803.GA9033@wfg-t540p.sh.intel.com>
+ <54B3259B.7080601@windriver.com>
+ <20150112124216.GA26570@casper.infradead.org>
+ <54B4CE3E.8020009@windriver.com>
+ <20150113084126.GE20387@casper.infradead.org>
+ <CAHA+R7M1ZSCF+FwKVtZUbsJ05zesNg-WVTqH13=oFe5gM--3gw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHA+R7M1ZSCF+FwKVtZUbsJ05zesNg-WVTqH13=oFe5gM--3gw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Sebastian Hesselbarth (2015-01-13 04:17:30)
-> On 01/13/2015 01:28 AM, Mike Turquette wrote:
-> > Quoting Sebastian Hesselbarth (2015-01-10 05:08:22)
-> >> This is clk subsystem, so either Mike takes it through his fixes branch
-> >> including my
-> >>
-> >> Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> >>
-> >> or decides to agree that I take it instead with his Ack. I am fine
-> >> with both.
-> >
-> > Acked-by: Michael Turquette <mturquette@linaro.org>
-> >
-> > Now the three fixes can stay together and live happily ever after.
+On 01/13/15 at 11:14am, Cong Wang wrote:
+> On Tue, Jan 13, 2015 at 12:41 AM, Thomas Graf <tgraf@suug.ch> wrote:
+> > I can't reproduce it in my KVM box either so far. It looks like a
+> > mutex_lock() on an uninitialized mutex or use after free but I can't
+> > find such a code path so far.
 > 
-> Mike,
+> Couldn't that be the delayed work is still running after rhashtable
+> is destroyed by its caller? I mean, cancel_delayed_work_sync()
+> should be called in rhashtable_destroy()?
 > 
-> I already had the two others pulled by Olof some days ago.
-> If you plan for a fixes branch for v3.19, please take this in too.
-> 
-> If you have no other fixes, I can take it and do a 2nd round of
-> fixes for Berlin.
+> Of course, it may be caller's responsibility to ensure that, I haven't
+> looked into it that much.
 
-The fixes family has been broken up. How sad.
-
-Applied to clk-fixes for the next -rc.
-
-Regards,
-Mike
-
-> 
-> Sebastian
-> 
+Yes, we came to the very same conclusion in a different email thread
+and found the offending race condition.
