@@ -1,123 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753700AbbAMTCv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 14:02:51 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:57332 "EHLO gum.cmpxchg.org"
+	id S1753832AbbAMTDM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 14:03:12 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:5987 "EHLO smtp6-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752386AbbAMTCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 14:02:49 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Vladimir Davydov <vdavydov@parallels.com>,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch] mm: memcontrol: default hierarchy interface for memory fix
-Date: Tue, 13 Jan 2015 14:02:39 -0500
-Message-Id: <1421175759-14350-1-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 2.2.0
+	id S1752266AbbAMTDK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 14:03:10 -0500
+Date: Tue, 13 Jan 2015 20:02:52 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Philipp Zabel <p.zabel@pengutronix.de>,
+        Andrew Jackson <Andrew.Jackson@arm.com>, Jyri Sarha <jsarha@ti.com>,
+        Mark Brown <broonie@kernel.org>, Dave Airlie <airlied@gmail.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v9 1/4] drm/i2c: tda998x: Add DT support for audio
+Message-ID: <20150113200252.3dbfab14@armhf>
+In-Reply-To: <20150113160313.GR12302@n2100.arm.linux.org.uk>
+References: <20150109200127.GD12302@n2100.arm.linux.org.uk>
+	<1421054728.3081.28.camel@pengutronix.de>
+	<20150112122527.GF12302@n2100.arm.linux.org.uk>
+	<1421071197.3081.44.camel@pengutronix.de>
+	<20150112140456.GI12302@n2100.arm.linux.org.uk>
+	<20150112181341.4a53ea24@armhf>
+	<20150112175705.GN12302@n2100.arm.linux.org.uk>
+	<1421151718.4519.24.camel@pengutronix.de>
+	<20150113122715.GP12302@n2100.arm.linux.org.uk>
+	<20150113165411.5469930d@armhf>
+	<20150113160313.GR12302@n2100.arm.linux.org.uk>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; arm-unknown-linux-gnueabihf)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document and rationalize where the default hierarchy interface differs
-from the traditional memory cgroups interface.
+On Tue, 13 Jan 2015 16:03:13 +0000
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- Documentation/cgroups/unified-hierarchy.txt | 80 +++++++++++++++++++++++++++++
- 1 file changed, 80 insertions(+)
+> On Tue, Jan 13, 2015 at 04:54:11PM +0100, Jean-Francois Moine wrote:
+> > 4 streams on 4 different APs (sources) should work, but 4 streams from
+> > a same source should be detailed.
+> 
+> I'd like to know how you intend to wire up four different I2S sources
+> to the TDA998x.
+> 
+> Remember, an I2S source produces the I2S data and the word clock - that's
+> two outputs.  You can't electronically wire the word clocks together.
 
-diff --git a/Documentation/cgroups/unified-hierarchy.txt b/Documentation/cgroups/unified-hierarchy.txt
-index 4f4563277864..643af9bb9a07 100644
---- a/Documentation/cgroups/unified-hierarchy.txt
-+++ b/Documentation/cgroups/unified-hierarchy.txt
-@@ -327,6 +327,86 @@ supported and the interface files "release_agent" and
- - use_hierarchy is on by default and the cgroup file for the flag is
-   not created.
- 
-+- The original lower boundary, the soft limit, is defined as a limit
-+  that is per default unset.  As a result, the set of cgroups that
-+  global reclaim prefers is opt-in, rather than opt-out.  The costs
-+  for optimizing these mostly negative lookups are so high that the
-+  implementation, despite its enormous size, does not even provide the
-+  basic desirable behavior.  First off, the soft limit has no
-+  hierarchical meaning.  All configured groups are organized in a
-+  global rbtree and treated like equal peers, regardless where they
-+  are located in the hierarchy.  This makes subtree delegation
-+  impossible.  Second, the soft limit reclaim pass is so aggressive
-+  that it not just introduces high allocation latencies into the
-+  system, but also impacts system performance due to overreclaim, to
-+  the point where the feature becomes self-defeating.
-+
-+  The memory.low boundary on the other hand is a top-down allocated
-+  reserve.  A cgroup enjoys reclaim protection when it and all its
-+  ancestors are below their low boundaries, which makes delegation of
-+  subtrees possible.  Secondly, new cgroups have no reserve per
-+  default and in the common case most cgroups are eligible for the
-+  preferred reclaim pass.  This allows the new low boundary to be
-+  efficiently implemented with just a minor addition to the generic
-+  reclaim code, without the need for out-of-band data structures and
-+  reclaim passes.  Because the generic reclaim code considers all
-+  cgroups except for the ones running low in the preferred first
-+  reclaim pass, overreclaim of individual groups is eliminated as
-+  well, resulting in much better overall workload performance.
-+
-+- The original high boundary, the hard limit, is defined as a strict
-+  limit that can not budge, even if the OOM killer has to be called.
-+  But this generally goes against the goal of making the most out of
-+  the available memory.  The memory consumption of workloads varies
-+  during runtime, and that requires users to overcommit.  But doing
-+  that with a strict upper limit requires either a fairly accurate
-+  prediction of the working set size or adding slack to the limit.
-+  Since working set size estimation is hard and error prone, and
-+  getting it wrong results in OOM kills, most users tend to err on the
-+  side of a looser limit and end up wasting precious resources.
-+
-+  The memory.high boundary on the other hand can be set much more
-+  conservatively.  When hit, it throttles allocations by forcing them
-+  into direct reclaim to work off the excess, but it never invokes the
-+  OOM killer.  As a result, a high boundary that is chosen too
-+  aggressively will not terminate the processes, but instead it will
-+  lead to gradual performance degradation.  The user can monitor this
-+  and make corrections until the minimal memory footprint that still
-+  gives acceptable performance is found.
-+
-+  In extreme cases, with many concurrent allocations and a complete
-+  breakdown of reclaim progress within the group, the high boundary
-+  can be exceeded.  But even then it's mostly better to satisfy the
-+  allocation from the slack available in other groups or the rest of
-+  the system than killing the group.  Otherwise, memory.max is there
-+  to limit this type of spillover and ultimately contain buggy or even
-+  malicious applications.
-+
-+- The original control file names are unwieldy and inconsistent in
-+  many different ways.  For example, the upper boundary hit count is
-+  exported in the memory.failcnt file, but an OOM event count has to
-+  be manually counted by listening to memory.oom_control events, and
-+  lower boundary / soft limit events have to be counted by first
-+  setting a threshold for that value and then counting those events.
-+  Also, usage and limit files encode their units in the filename.
-+  That makes the filenames very long, even though this is not
-+  information that a user needs to be reminded of every time they type
-+  out those names.
-+
-+  To address these naming issues, as well as to signal clearly that
-+  the new interface carries a new configuration model, the naming
-+  conventions in it necessarily differ from the old interface.
-+
-+- The original limit files indicate the state of an unset limit with a
-+  Very High Number, and a configured limit can be unset by echoing -1
-+  into those files.  But that very high number is implementation and
-+  architecture dependent and not very descriptive.  And while -1 can
-+  be understood as an underflow into the highest possible value, -2 or
-+  -10M etc. do not work, so it's not consistent.
-+
-+  memory.low and memory.high will indicate "none" if the boundary is
-+  not configured, and a configured boundary can be unset by writing
-+  "none" into these files as well.
- 
- 5. Planned Changes
- 
+>From the spec, the tda998x gets independently the serial clock and the
+serial word select from each I2S (stereo) input channel (= audio pin),
+so, you may have 4 audio chips giving 4 independent audio streams.
+I don't know what can be the result in HDMI if these streams are actived
+at the same time!
+
+In the other configuration, an audio chip may have 4 synchronized stereo
+channels (software PCMs). These ones may be considered as one link (one
+port out from the audio chip to one port in to the tda998x), the AP
+configuration being 0x1f.
+
 -- 
-2.2.0
-
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
