@@ -1,129 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723AbbAMKLd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 05:11:33 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:45539 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751355AbbAMKL3 (ORCPT
+	id S1752096AbbAMKME (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 05:12:04 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:57768 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752036AbbAMKL6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 05:11:29 -0500
-X-Sasl-enc: hLa3ruWXhhirfA4vf82eT5J30SCHDkRUm4Hj9iaGN/TC 1421143886
-Message-ID: <1421143884.13626.1.camel@stressinduktion.org>
-Subject: Re: [PATCH net] ipv6: Prevent ipv6_find_hdr() from returning ENOENT
- for valid non-first fragments
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Rahul Sharma <rsharma@arista.com>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
-Date: Tue, 13 Jan 2015 11:11:24 +0100
-In-Reply-To: <CAFB3abxcg4gdEh4CJHd_Vx8mZKFmO3kMG=pDjkQYS5awTzFbSQ@mail.gmail.com>
-References: <CAFB3abwKpR1VqZXUrsexqveAZrA2LTSmTe8a=-H7z2HjAptjwA@mail.gmail.com>
-	 <1420627396.26870.36.camel@stressinduktion.org>
-	 <20150108205328.GA3361@salvia>
-	 <1420756756.1755002.211556745.0418D128@webmail.messagingengine.com>
-	 <20150109000546.GA3488@salvia>
-	 <CAFB3abwrjp61LLOk3RWwXYEq1g4QZUC8OTKuO2cAr+GbV3n4rw@mail.gmail.com>
-	 <1420803255.1978819.211762005.707EFFB9@webmail.messagingengine.com>
-	 <20150109114506.GA4857@salvia>
-	 <1420818636.31075.15.camel@stressinduktion.org>
-	 <CAFB3abwetkNa4753g9d-z8xU0fMThyApuESQNkbxGa8Yz2YRfQ@mail.gmail.com>
-	 <20150112115111.GA3506@salvia>
-	 <CAFB3abxcg4gdEh4CJHd_Vx8mZKFmO3kMG=pDjkQYS5awTzFbSQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9 (3.12.9-1.fc21) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Jan 2015 05:11:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <1418772873-19747-3-git-send-email-hongzhou.yang@mediatek.com>
+References: <1418772873-19747-1-git-send-email-hongzhou.yang@mediatek.com>
+	<1418772873-19747-3-git-send-email-hongzhou.yang@mediatek.com>
+Date: Tue, 13 Jan 2015 11:11:57 +0100
+Message-ID: <CACRpkdamBePQMR_b5g=t=9DvtuV3gE75=TjP7eURzD1NgHWqpQ@mail.gmail.com>
+Subject: Re: [PATCH v4 2/5] dt-bindings: Add pinctrl bindings for mt65xx/mt81xx.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Hongzhou Yang <hongzhou.yang@mediatek.com>,
+        Sascha Hauer <kernel@pengutronix.de>
+Cc: Rob Herring <robh+dt@kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>, srv_heupstream@mediatek.com,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        dandan.he@mediatek.com, alan.cheng@mediatek.com, toby.liu@mediatek.com,
+        maoguang.meng@mediatek.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Di, 2015-01-13 at 09:53 +0530, Rahul Sharma wrote:
-> On Mon, Jan 12, 2015 at 5:21 PM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
-> > On Mon, Jan 12, 2015 at 04:38:16PM +0530, Rahul Sharma wrote:
-> >> Hi Pablo, Hannes
-> >>
-> >> On Fri, Jan 9, 2015 at 9:20 PM, Hannes Frederic Sowa
-> >> <hannes@stressinduktion.org> wrote:
-> >> > On Fr, 2015-01-09 at 12:45 +0100, Pablo Neira Ayuso wrote:
-> >> >> Hi Hannes,
-> >> >>
-> >> >> On Fri, Jan 09, 2015 at 12:34:15PM +0100, Hannes Frederic Sowa wrote:
-> >> >> > On Fri, Jan 9, 2015, at 08:18, Rahul Sharma wrote:
-> >> >> > > Hi Pablo,
-> >> >> > >
-> >> >> > > On Fri, Jan 9, 2015 at 5:35 AM, Pablo Neira Ayuso <pablo@netfilter.org>
-> >> >> > > wrote:
-> >> >> > > > On Thu, Jan 08, 2015 at 11:39:16PM +0100, Hannes Frederic Sowa wrote:
-> >> >> > > >> Hi Pablo,
-> >> >> > > >>
-> >> >> > > >> On Thu, Jan 8, 2015, at 21:53, Pablo Neira Ayuso wrote:
-> >> >> > > >> > I'm afraid we cannot just get rid of that !ipv6_ext_hdr() check. The
-> >> >> > > >> > ipv6_find_hdr() function is designed to return the transport protocol.
-> >> >> > > >> > After the proposed change, it will return extension header numbers.
-> >> >> > > >> > This will break existing ip6tables rulesets since the `-p' option
-> >> >> > > >> > relies on this function to match the transport protocol.
-> >> >> > > >> >
-> >> >> > > >> > Note that the AH header is skipped (see code a bit below this
-> >> >> > > >> > problematic fragmentation handling) so the follow up header after the
-> >> >> > > >> > AH header is returned as the transport header.
-> >> >> > > >> >
-> >> >> > > >> > We can probably return the AH protocol number for non-1st fragments.
-> >> >> > > >> > However, that would be something new to ip6tables since nobody has
-> >> >> > > >> > ever seen packet matching `-p ah' rules. Thus, we restore control to
-> >> >> > > >> > the user to allow this, but we would accept all kind of fragmented AH
-> >> >> > > >> > traffic through the firewall since we cannot know what transport
-> >> >> > > >> > protocol contains from non-1st fragments (unless I'm missing anything,
-> >> >> > > >> > I need to have a closer look at this again tomorrow with fresher
-> >> >> > > >> > mind).
-> >> >> > > >>
-> >> >> > > >> The code in question is guarded by (_frag_off != 0), so we are
-> >> >> > > >> definitely processing a non-1st fragment currently. The -p match would
-> >> >> > > >> happen at the time when the packet is reassembled and thus ipv6_find_hdr
-> >> >> > > >> will find the real transport (final) header at this point (I hope I
-> >> >> > > >> followed the code correctly here).
-> >> >> > > >
-> >> >> > > > Then, Rahul should get things working by modprobing nf_defrag_ipv6.
-> >> >> > >
-> >> >> > > I already had nf_defrag_ipv6 installed when the issue occured. But I
-> >> >> > > see ip6table_raw_hook returning NF_DROP for the second fragment.
-> >> >> >
-> >> >> > That's what I expected. I think the change only affects hooks before
-> >> >> > reassembly.
-> >> >>
-> >> >> reassembly happens at NF_IP6_PRI_CONNTRACK_DEFRAG (-400), so that
-> >> >> happens before NF_IP6_PRI_RAW (-300) in IPv6 which is where the raw
-> >> >> table is placed.
-> >> >
-> >> > I tried to reproduce it, but couldn't get non-1st fragments getting
-> >> > dropped during traversal of the raw table. They get dropped earlier at
-> >> > during reassembly or pass.
-> >> >
-> >> > I agree with Pablo, I also would like to see more data.
-> >> >
-> >> > Thanks,
-> >> > Hannes
-> >> >
-> >> >
-> >>
-> >> I enabled pr_debug() and there was no error in nf_ct_frag6_gather().
-> >> It seems to have defragmented the packet correctly. As expected,
-> >> ipv6_defrag() returns NF_STOLEN for the first packet after queuing it.
-> >> For the next fragment, ipv6_defrag() calls nf_ct_frag6_output() after
-> >> after reassembling it.
-> >
-> > nf_ct_frag6_output() doesn't exist anymore. You're using an old
-> > kernel, you should have started by telling so in your report.
-> >
-> > See 6aafeef ("netfilter: push reasm skb through instead of original
-> > frag skbs").
-> 
->  I apologize for not mentioning the kernel version in my first mail. I
-> had suspected problem in ipv6_find_hdr, the code for which was same.
-> Anyway, thanks for the help. I ll try to figure out how to make this
-> work in my kernel.
+On Wed, Dec 17, 2014 at 12:34 AM, Hongzhou Yang
+<hongzhou.yang@mediatek.com> wrote:
 
-If you have time could you quickly test a recent net-next kernel?
+> From: Hongzhou Yang <hongzhou.yang@mediatek.com>
+>
+> Add devicetree bindings for Mediatek SoC pinctrl driver.
+>
+> Signed-off-by: Hongzhou Yang <hongzhou.yang@mediatek.com>
 
-Thanks,
-Hannes
+So following from the discussion with Sascha...
 
+(...)
+> diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-mt65xx.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-mt65xx.txt
+> new file mode 100644
+> index 0000000..3bf34f9
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-mt65xx.txt
+> @@ -0,0 +1,142 @@
+> +* Mediatek MT65XX Pin Controller
+> +
+> +The Mediatek's Pin controller is used to control SoC pins.
+> +
+> +Required properties:
+> +- compatible: value should be either of the following.
+> +    (a) "mediatek,mt8135-pinctrl", compatible with mt8135 pinctrl.
+> +- mediatek,pctl-regmap: Should be a phandle of the syscfg node.
+> +- gpio-controller : Marks the device node as a gpio controller.
+> +- #gpio-cells: number of cells in GPIO specifier. Since the generic GPIO
+> +  binding is used, the amount of cells must be specified as 2. See the below
+> +  mentioned gpio binding representation for description of particular cells.
+> +
+> +       Eg: <&pio 6 0>
+> +       <[phandle of the gpio controller node]
+> +       [pin number within the gpio controller]
+
+Call this "line number", not "pin number" as GPIO != pin
+
+> +       [flags]>
+> +
+> +       Values for gpio specifier:
+> +       - Pin number: is a value between 0 to 202.
+
+Line number.
+
+> +       - Flags:  bit field of flags, as defined in <dt-bindings/gpio/gpio.h>.
+> +            Only the following flags are supported:
+> +            0 - GPIO_ACTIVE_HIGH
+> +            1 - GPIO_ACTIVE_LOW
+> +- reg: physicall address base for EINT registers
+> +- interrupt-controller: Marks the device node as an interrupt controller
+> +- #interrupt-cells: Should be two.
+> +- interrupts : The interrupt outputs from the controller.
+> +
+> +Please refer to pinctrl-bindings.txt in this directory for details of the
+> +common pinctrl bindings used by client devices.
+> +
+> +A pinctrl node should contain at least one subnodes representing the
+> +pinctrl groups available on the machine. Each subnode will list the
+> +pins it needs, and how they should be configured, with regard to muxer
+> +configuration, pullups, drive strngth, input enable/disable and input schmitt.
+> +
+> +Required subnode-properties:
+> +
+> +- pins: 2 integers array, represents gpio pinmux number and config
+> +  setting. The format as following
+> +
+> +    node {
+> +     pins = <PIN_NUMBER_PINMUX>;
+> +                     GENERIC_PINCONFIG;
+> +    };
+
+As discussed with sascha, pins = ... is for pins specified with a string.
+
+Either
+
+- Specify your pins with a string
+
+- Come up wiyj some new unique way to name pins identfied by
+  numbers, maybe just "pinno = <...>" Sascha suggested "pinmux"
+  but that is strange if the number is used for pin config.
+
+(Check with Sascha!)
+
+> +    The PIN_NUMBER_PINMUX is combination of GPIO number and pinmux, it can
+> +    use macros which already defind in boot/dts/mt8135-pinfunc.h directly.
+
+So is that prop to be named pinmux, pinno, pinid or something..
+
+> +    The GENERIC_PINCONFIG is the generic pinconfig options to use, bias-disable,
+> +    bias-pull-down, bias-pull-up, input-enable, input-disable, output-low, output-high,
+> +    input-schmitt-enable, input-schmitt-disable and drive-strength are valid.
+
+Nice!
+
+> +       pinctrl@01c20800 {
+> +               compatible = "mediatek,mt8135-pinctrl";
+> +               reg = <0 0x1000B000 0 0x1000>;
+> +               mediatek,pctl-regmap = <&syscfg_pctl_a &syscfg_pctl_b>;
+> +               gpio-controller;
+> +               #gpio-cells = <2>;
+> +               interrupt-controller;
+> +               #interrupt-cells = <2>;
+> +               interrupts = <GIC_SPI 116 IRQ_TYPE_LEVEL_HIGH>,
+> +                               <GIC_SPI 117 IRQ_TYPE_LEVEL_HIGH>,
+> +                               <GIC_SPI 118 IRQ_TYPE_LEVEL_HIGH>;
+> +
+> +               i2c0_pins_a: i2c0@0 {
+> +                       pins1 {
+> +                               pins = <MT8135_PIN_100_SDA0__FUNC_SDA0>,
+> +                                               <MT8135_PIN_101_SCL0__FUNC_SCL0>;
+
+So this prop need to be renamed.
+
+> +                               bias-disable;
+> +                       };
+> +               };
+
+Yours,
+Linus Walleij
