@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542AbbAMTKp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 14:10:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49827 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085AbbAMTKo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 14:10:44 -0500
-Date: Tue, 13 Jan 2015 11:10:43 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Krzysztof Adamski <k@japko.eu>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: vt6656: Use ether_addr_copy() on vnt_private
- members.
-Message-ID: <20150113191043.GA26821@kroah.com>
-References: <20141222161541.GA11764@box2.japko.eu>
- <20150113034212.GA16174@kroah.com>
- <20150113184227.GK30114@box2.japko.eu>
- <20150113185200.GA25686@kroah.com>
- <20150113185918.GL30114@box2.japko.eu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150113185918.GL30114@box2.japko.eu>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752783AbbAMTMW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 14:12:22 -0500
+Received: from smtp2.provo.novell.com ([137.65.250.81]:54175 "EHLO
+	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751446AbbAMTMV (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Tue, 13 Jan 2015 14:12:21 -0500
+Message-ID: <1421176326.2258.8.camel@stgolabs.net>
+Subject: Re: [PATCH tip/core/rcu 01/14] rcu: Protect rcu_boost() lockless
+ accesses with ACCESS_ONCE()
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: paulmck@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, Pranith Kumar <bobby.prani@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 13 Jan 2015 11:12:06 -0800
+In-Reply-To: <54B4D4E7.2030703@de.ibm.com>
+References: <20150107173215.GA897@linux.vnet.ibm.com>
+	 <1420651953-2651-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <20150108094102.GD29390@twins.programming.kicks-ass.net>
+	 <20150108152230.GL5280@linux.vnet.ibm.com>
+	 <1420785714.25454.1.camel@stgolabs.net>
+	 <20150109134954.GO5280@linux.vnet.ibm.com>
+	 <20150109135614.GI29390@twins.programming.kicks-ass.net>
+	 <54B04F1A.1060401@de.ibm.com>
+	 <20150112085957.GA25256@twins.programming.kicks-ass.net>
+	 <20150112221232.GG9719@linux.vnet.ibm.com> <54B4D4E7.2030703@de.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 07:59:18PM +0100, Krzysztof Adamski wrote:
-> On Tue, Jan 13, 2015 at 10:52:00AM -0800, Greg Kroah-Hartman wrote:
-> >On Tue, Jan 13, 2015 at 07:42:28PM +0100, Krzysztof Adamski wrote:
-> >>On Mon, Jan 12, 2015 at 07:42:12PM -0800, Greg Kroah-Hartman wrote:
-> >>>On Mon, Dec 22, 2014 at 05:15:41PM +0100, Krzysztof Adamski wrote:
-> >>>>This patch fixes checkpatch.pl warning:
-> >>>>WARNING: Prefer ether_addr_copy() over memcpy() if the Ethernet
-> >>>>addresses are __aligned(2)
-> >>>>
-> >>>>current_net_addr and permanent_net_addr members of vnt_private alignment
-> >>>>is changed to at last 16 bits so that ether_addr_copy can be safely used
-> >>>>on them.
-> >>>>
-> >>>>buf->data is of type ieee80211_cts which is already properly aligned.
-> >>>>
-> >>>>Signed-off-by: Krzysztof Adamski <k@japko.eu>
-> >>>>---
-> >>>>drivers/staging/vt6656/device.h   |    4 ++--
-> >>>>drivers/staging/vt6656/main_usb.c |    3 ++-
-> >>>>drivers/staging/vt6656/rxtx.c     |    4 ++--
-> >>>>3 files changed, 6 insertions(+), 5 deletions(-)
-> >>>
-> >>>Doesn't apply to my tree :(
-> >>
-> >>Strange, I was trying to apply this on your tree to fix any conflicts but
-> >>apparently you already has this patch in your staging-testing branch. And as
-> >>far as I can tell I only sent it once to you.
-> >
-> >I think you sent it lots of times, if it's there already, don't worry
-> >about it :)
+On Tue, 2015-01-13 at 09:18 +0100, Christian Borntraeger wrote:
+> Subject: Change ASSIGN_ONCE(val, x) to WRITE_ONCE(x, val)
 > 
-> I've send two other patches for this driver twise but this one only once.
-> But that's not imporant. While we're at this, if I ever feel like I should
-> resend the patch because it was lost (I promise I will wait much longer:)),
-> what would be the best way to mark it as resent? Should it be v2 even though
-> it wasn't really changed? Or write it in comment after "---", or maybe some
-> other way? That's the only thing not explained in your "Write and Submit
-> your first Linux kernel Patch" talk.
+> Feedback has shown that WRITE_ONCE(x, val) is easier to use than ASSIGN_ONCE(val,x).
+> There are no in-tree users yet, so lets change it.
+> 
+> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
 
-Add a "resend" where you would have put "v2" in the subject line.  It's
-pretty rare to need to do this, be more patient for me to apply stuff
-during the merge window and the holidays please. :)
+Acked-by: Davidlohr Bueso <dave@stgolabs.net>
 
-thanks,
-
-greg k-h
