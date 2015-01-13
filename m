@@ -1,89 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495AbbAMS06 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 13:26:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54899 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752220AbbAMS04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 13:26:56 -0500
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH] PCI: quirks: DMA alias quirk for Adaptec 3405
-To: linux-pci@vger.kernel.org
-Cc: aacraid@adaptec.com, linux-kernel@vger.kernel.org, bhelgaas@google.com
-Date: Tue, 13 Jan 2015 11:26:50 -0700
-Message-ID: <20150113182605.15479.9020.stgit@gimli.home>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1752970AbbAMS2K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 13:28:10 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:36796 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751190AbbAMS2I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 13:28:08 -0500
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: linux-pcmcia@lists.infradead.org
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH] pcmcia: at91_cf: depend on !ARCH_MULTIPLATFORM
+Date: Tue, 13 Jan 2015 19:28:05 +0100
+Message-Id: <1421173685-21559-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As noted in the added comment, this device is actually an Intel 80333
-I/O processor where the exposed device at 0e.0 is actually the address
-translation unit of the I/O processor and a hidden, private device at
-01.0 masters the DMA for the device.  In order to enable the IOMMU, we
-therefore need to create a fixed alias between the exposed and hidden
-devfn.
+Until the driver is corrected to stop including mach/at91_ramc.h and using
+mach/io.h, it won't compile in a ARCH_MULTIPLATFORM configuration.
 
-Scenarios like this are potentially likely for any device incorporating
-this I/O processor, so this little bit of abstraction with the fixed
-alias table should make future additions trivial.
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: Adaptec OEM Raid Solutions <aacraid@adaptec.com>
+Suggested-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
+ drivers/pcmcia/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
- drivers/pci/quirks.c |   37 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 37 insertions(+)
-
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index ed6f89b..19bdb17 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -3528,6 +3528,43 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_JMICRON,
- 			 quirk_dma_func1_alias);
- 
- /*
-+ * Some devices DMA with the wrong devfn, not just the wrong function.
-+ * quirk_fixed_dma_alias() uses this table to create fixed aliass, where
-+ * the alias is "fixed" and independent of the device devfn.
-+ *
-+ * For example, the Adaptec 3405 is a PCIe card making use of an Intel 80333
-+ * I/O processor.  To software, this appears as a straightforward PCIe-to-PCI/X
-+ * bridge with a single device on the subordinate bus.  In reality, the exposed
-+ * device at 0e.0 is the Address Translation Unit (ATU) of the controller that
-+ * provides a bridge to the internal bus of the I/O processor.  The controller
-+ * supports private devices, which can be hidden from PCI config space.  In the
-+ * case of the Adaptec 3405, a private device at 01.0 appears to be the DMA
-+ * engine, which therefore needs to become a DMA alias for the device.
-+ */
-+static const struct pci_device_id fixed_dma_alias_tbl[] = {
-+	{ PCI_DEVICE_SUB(PCI_VENDOR_ID_ADAPTEC2, 0x0285,
-+			 PCI_VENDOR_ID_ADAPTEC2, 0x02bb), /* Adaptec 3405 */
-+	  .driver_data = PCI_DEVFN(1, 0) },
-+	{ 0 }
-+};
-+
-+static void quirk_fixed_dma_alias(struct pci_dev *dev)
-+{
-+	const struct pci_device_id *id;
-+
-+	id = pci_match_id(fixed_dma_alias_tbl, dev);
-+	if (id) {
-+		dev->dma_alias_devfn = id->driver_data;
-+		dev->dev_flags |= PCI_DEV_FLAGS_DMA_ALIAS_DEVFN;
-+		dev_info(&dev->dev, "Enabling fixed DMA alias to %02x.%d\n",
-+			 PCI_SLOT(dev->dma_alias_devfn),
-+			 PCI_FUNC(dev->dma_alias_devfn));
-+	}
-+}
-+
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ADAPTEC2, 0x0285, quirk_fixed_dma_alias);
-+
-+/*
-  * A few PCIe-to-PCI bridges fail to expose a PCIe capability, resulting in
-  * using the wrong DMA alias for the device.  Some of these devices can be
-  * used as either forward or reverse bridges, so we need to test whether the
+diff --git a/drivers/pcmcia/Kconfig b/drivers/pcmcia/Kconfig
+index 910e90bf16c6..45f67c63d385 100644
+--- a/drivers/pcmcia/Kconfig
++++ b/drivers/pcmcia/Kconfig
+@@ -276,6 +276,7 @@ config BFIN_CFPCMCIA
+ config AT91_CF
+ 	tristate "AT91 CompactFlash Controller"
+ 	depends on PCMCIA && ARCH_AT91
++	depends on !ARCH_MULTIPLATFORM
+ 	help
+ 	  Say Y here to support the CompactFlash controller on AT91 chips.
+ 	  Or choose M to compile the driver as a module named "at91_cf".
+-- 
+2.1.0
 
