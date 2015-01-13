@@ -1,102 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013AbbAMWyN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 17:54:13 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56924 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750841AbbAMWyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 17:54:11 -0500
-Message-ID: <54B5A1F2.8010207@ti.com>
-Date: Tue, 13 Jan 2015 16:53:38 -0600
-From: Suman Anna <s-anna@ti.com>
+	id S1754038AbbAMWyf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 17:54:35 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:18229 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751253AbbAMWye (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 17:54:34 -0500
+Message-ID: <54B5A213.1090502@fb.com>
+Date: Tue, 13 Jan 2015 15:54:11 -0700
+From: Jens Axboe <axboe@fb.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Felipe Balbi <balbi@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-omap <linux-omap@vger.kernel.org>
-Subject: Re: [RFC PATCH 2/3] core: platform: fix an invalid kfree during of_platform_depopulate
-References: <1420651854-17768-1-git-send-email-s-anna@ti.com> <1420651854-17768-3-git-send-email-s-anna@ti.com> <CAL_JsqK8ZAUZwd1zjjZ57MQZ+KD-_qiCyMXnhQ-zZ38wxUtf-g@mail.gmail.com>
-In-Reply-To: <CAL_JsqK8ZAUZwd1zjjZ57MQZ+KD-_qiCyMXnhQ-zZ38wxUtf-g@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"
+To: Richard Weinberger <richard@nod.at>, Christoph Hellwig <hch@infradead.org>
+CC: <dedekind1@gmail.com>, <dwmw2@infradead.org>,
+        <computersforpeace@gmail.com>, <linux-mtd@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <tom.leiming@gmail.com>
+Subject: Re: [PATCH 2/2 v2] UBI: Block: Add blk-mq support
+References: <1420926734-16417-1-git-send-email-richard@nod.at> <1420926734-16417-2-git-send-email-richard@nod.at> <20150113162553.GA24351@infradead.org> <54B5A188.2000001@nod.at>
+In-Reply-To: <54B5A188.2000001@nod.at>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-13_07:2015-01-13,2015-01-13,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.160988131301636 urlsuspect_oldscore=0.160988131301636
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=1996008
+ rbsscore=0.160988131301636 spamscore=0
+ recipient_to_sender_domain_totalscore=4 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1501130226
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
-
-On 01/13/2015 04:27 PM, Rob Herring wrote:
-> On Wed, Jan 7, 2015 at 11:30 AM, Suman Anna <s-anna@ti.com> wrote:
->> Drivers can use of_platform_populate() to create platform devices
->> for children of the device main node, and a complementary API
->> of_platform_depopulate() is provided to delete these child devices.
->> Any platform_data supplied for the OF devices through auxdata lookup
->> data is populated directly in the device's platform_data field, unlike
->> those created using platform API. The of_platform_depopulate()
->> leverages the platform code for cleanup, and this will result in a
->> kernel oops due to an invalid kfree on this direct populated
->> platform_data.
+On 01/13/2015 03:51 PM, Richard Weinberger wrote:
+> Am 13.01.2015 um 17:25 schrieb Christoph Hellwig:
+>>> +	struct ubi_sgl usgl;
 >>
->> Fix this by resetting the platform data for OF devices during
->> platform device cleanup.
+>> Btw, what's in struct ubi_sgl?  Can't find that in my tree.
 > 
-> We should probably copy the platform_data like is done for non-OF
-> platform devices. I'm sure there was some reason for it. 
-
-Yeah, that was my first thought too, but went with adding a checking
-here as I am not aware of the original reason for not copying it, and it
-seemed like unnecessary copying of static data without any real gain.
-
-> It looks strange doing this in release.
+> "[PATCH 1/2] UBI: Add initial support for scatter gather" adds it.
 > 
-> However, I'm inclined to not fix this and force users to move off of
-> auxdata. That's intended to be a temporary migration path and there
-> are only 54 instances of it that have platform_data. What device do
-> you care about?
-
-I use this mainly for the remoteproc devices (mainly differentiating
-multiple instances of the same compatible type on the same SoC), but
-fair enough, I can rework my driver to use some lookup based match data
-instead. So far, none of the drivers who use of_platform_populate() did
-supply platform data, so this particular crash is not seen/common.
-platform_data does get used in the OMAP pdata-quirks, though
-of_platform_depopulate() won't be called on those, as this is called in
-init_machine.
-
-regards
-Suman
-
+> /**
+>  * struct ubi_sgl - UBI scatter gather list data structure.
+>  * @list_pos: current position in @sg[]
+>  * @page_pos: current position in @sg[@list_pos]
+>  * @sg: the scatter gather list itself
+>  *
+>  * ubi_sgl is a wrapper around a scatter list which keeps track of the
+>  * current position in the list and the current list item such that
+>  * it can be used across multiple ubi_leb_read_sg() calls.
+>  */
+> struct ubi_sgl {
+>         int list_pos;
+>         int page_pos;
+>         struct scatterlist sg[UBI_MAX_SG_COUNT];
+> };
 > 
-> Rob
+>>> +static void ubiblock_do_work(struct work_struct *work)
+>>> +{
+>>> +	int ret;
+>>> +	struct ubiblock_pdu *pdu = container_of(work, struct ubiblock_pdu, work);
+>>> +	struct request *req = blk_mq_rq_from_pdu(pdu);
+>>> +
+>>> +	blk_mq_start_request(req);
+>>> +	blk_rq_map_sg(req->q, req, pdu->usgl.sg);
+>>
+>> blk_rq_map_sg returns the number of entries actually mapped, which
+>> might be smaller than the number passed in due to merging.
 > 
->>
->> Signed-off-by: Suman Anna <s-anna@ti.com>
->> ---
->>  drivers/base/platform.c | 2 ++
->>  1 file changed, 2 insertions(+)
->>
->> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
->> index 9421fed40905..129e69c8c894 100644
->> --- a/drivers/base/platform.c
->> +++ b/drivers/base/platform.c
->> @@ -200,6 +200,8 @@ static void platform_device_release(struct device *dev)
->>         struct platform_object *pa = container_of(dev, struct platform_object,
->>                                                   pdev.dev);
->>
->> +       if (pa->pdev.dev.of_node)
->> +               pa->pdev.dev.platform_data = NULL;
->>         of_device_node_put(&pa->pdev.dev);
->>         kfree(pa->pdev.dev.platform_data);
->>         kfree(pa->pdev.mfd_cell);
->> --
->> 2.2.1
->>
+> Yep, but the ubi_sql has a fixed number of scatterlist entries, UBI_MAX_SG_COUNT.
+> And I limit it also to that using: blk_queue_max_segments(dev->rq, UBI_MAX_SG_COUNT);
+> 
+> Is there another reason why I should use the return value of blk_rq_map_sg()?
+> Please also note that the UBI block driver is read-only.
+
+It can return less than what you asked for, if segments are coalesced.
+Read/write, doesn't matter. You should always use the returned value as
+the indication of how many segments to access in pdu->usgl.sg for data
+transfer.
+
+-- 
+Jens Axboe
 
