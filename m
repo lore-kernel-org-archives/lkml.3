@@ -1,71 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838AbbAMO1J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 09:27:09 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:41591 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143AbbAMO1H (ORCPT
+	id S1752215AbbAMO0p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 09:26:45 -0500
+Received: from galahad.ideasonboard.com ([185.26.127.97]:49024 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190AbbAMO0n convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 09:27:07 -0500
-Message-ID: <54B52B39.1000607@linaro.org>
-Date: Tue, 13 Jan 2015 15:27:05 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 13 Jan 2015 09:26:43 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Niklas =?ISO-8859-1?Q?S=F6derlund?= <niso@kth.se>
+Cc: linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
+        devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
+        magnus.damm@gmail.com
+Subject: Re: [PATCH 2/4] sh-pfc: Add emev2 pinmux support
+Date: Tue, 13 Jan 2015 16:27:06 +0200
+Message-ID: <4306343.ZxG2x6FY5Y@avalon>
+User-Agent: KMail/4.14.3 (Linux/3.17.7-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <1418414497-23741-3-git-send-email-niso@kth.se>
+References: <1418414497-23741-1-git-send-email-niso@kth.se> <1418414497-23741-3-git-send-email-niso@kth.se>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Yanchang Li <yl22@csr.com>, Barry Song <Baohua.Song@csr.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] clocksource: sirf: remove unused variable
-References: <1599190.ZYSE4SrQSK@wuerfel>
-In-Reply-To: <1599190.ZYSE4SrQSK@wuerfel>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2015 03:22 PM, Arnd Bergmann wrote:
-> A recent rework of the driver left an obviously unused variable
-> around, and now the compiler complains:
->
-> clocksource/timer-marco.c: In function 'sirfsoc_marco_timer_init':
-> clocksource/timer-marco.c:260:6: warning: unused variable 'timer_div' [-Wunused-variable]
->
-> Remove it.
+Hi Niklas,
 
-Hi Arnd,
+Thank you for the patch.
 
-thanks for the fix. But this has been already fixed and merged in my 
-tree [1].
+On Friday 12 December 2014 21:01:35 Niklas Söderlund wrote:
+> Add PFC support for the EMMA Mobile EV2 SoC including pin groups for
+> on-chip devices.
+> 
+> Signed-off-by: Niklas Söderlund <niso@kth.se>
+> ---
+>  .../bindings/pinctrl/renesas,pfc-pinctrl.txt       |    1 +
+>  drivers/pinctrl/sh-pfc/Kconfig                     |    5 +
+>  drivers/pinctrl/sh-pfc/Makefile                    |    1 +
+>  drivers/pinctrl/sh-pfc/core.c                      |    9 +
+>  drivers/pinctrl/sh-pfc/core.h                      |    1 +
+>  drivers/pinctrl/sh-pfc/pfc-emev2.c                 | 1915 +++++++++++++++++
+>  6 files changed, 1932 insertions(+)
+>  create mode 100644 drivers/pinctrl/sh-pfc/pfc-emev2.c
 
-   -- Daniel
+[snip]
 
-[1] 
-https://git.linaro.org/people/daniel.lezcano/linux.git/commitdiff/2a016d694f36fc31f7f9fede902346c5895702bb?hp=89de77a8c557f14d2713a1f43fbc33980e639b98
+> diff --git a/drivers/pinctrl/sh-pfc/pfc-emev2.c
+> b/drivers/pinctrl/sh-pfc/pfc-emev2.c new file mode 100644
+> index 0000000..22c9e15
+> --- /dev/null
+> +++ b/drivers/pinctrl/sh-pfc/pfc-emev2.c
 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Fixes: ef89af1f4380b92 ("clocksource: sirf: Remove hard-coded clock rate")
->
-> diff --git a/drivers/clocksource/timer-marco.c b/drivers/clocksource/timer-marco.c
-> index 361a789d4bee..3ddb81f7ee66 100644
-> --- a/drivers/clocksource/timer-marco.c
-> +++ b/drivers/clocksource/timer-marco.c
-> @@ -257,7 +257,6 @@ static void __init sirfsoc_clockevent_init(void)
->   /* initialize the kernel jiffy timer source */
->   static void __init sirfsoc_marco_timer_init(struct device_node *np)
->   {
-> -	u32 timer_div;
->   	struct clk *clk;
->
->   	clk = of_clk_get(np, 0);
->
+[snip]
 
+> +#define CPU_ALL_PORT(fn, sfx)						\
+> +	PORT_GP_32(0, fn, sfx),						\
+> +	PORT_GP_32(1, fn, sfx),						\
+> +	PORT_GP_32(2, fn, sfx),						\
+> +	PORT_GP_32(3, fn, sfx),						\
+> +	PORT_GP_32(4, fn, sfx)
+
+GPIOs are numbered linearly in the datasheet, not using a bank number. 
+Shouldn't that be reflected here ? Additionally the chip has 159 GPIOs, and 
+you define 160 of them.
+
+[snip]
+
+I'm afraid I can't review all the data tables, I'll trust you on that :-)
+
+> +/* Pin numbers for pins without a corresponding GPIO port number are
+> computed
+> + * from the row and column numbers with a 1000 offset to avoid collisions
+> with
+> + * GPIO port numbers. */
+> +#define PIN_NUMBER(row, col)            (1000+((row)-1)*25+(col)-1)
+
+The chip is an 23x23 BGA, shouldn't you multiply by 23 instead of 25 ?
+
+[snip]
+
+> +#define EMEV_MUX_PIN(name, pin, mark) \
+> +	static const unsigned int name##_pins[] = { pin }; \
+> +	static const unsigned int name##_mux[] = { mark##_MARK }
+
+[snip]
+
+> +/* = [ IIC ] ============== */
+> +EMEV_MUX_PIN(iic0_scl, 44, IIC0_SCL);
+> +EMEV_MUX_PIN(iic0_sda, 45, IIC0_SDA);
+
+[snip]
+
+> +static const struct sh_pfc_pin_group pinmux_groups[] = {
+
+[snip]
+
+> +	SH_PFC_PIN_GROUP(iic0_scl),
+> +	SH_PFC_PIN_GROUP(iic0_sda),
+
+[snip]
+
+> +};
+
+[snip]
+
+> +static const char * const iic0_groups[] = {
+> +	"iic0_scl",
+> +	"iic0_sda",
+> +};
+
+(Taking IIC0 as an example)
+
+You're defining one pin group per pin. While this isn't an invalid decision, 
+the sh-pfc driver tried so far to group related pins in the same group. For 
+instance, with IIC0, SCL and SDA can't be used independently, so you always 
+need to request both. They could thus be grouped together. Is there a reason 
+not to follow the same design for EMEV2 ?
+
+[snip]
+
+> +static const struct sh_pfc_function pinmux_functions[] = {
+> +	SH_PFC_FUNCTION(jtag),
+> +	SH_PFC_FUNCTION(lcd),
+> +	SH_PFC_FUNCTION(yuv),
+> +	SH_PFC_FUNCTION(tp33),
+> +	SH_PFC_FUNCTION(iic0),
+> +	SH_PFC_FUNCTION(iic1),
+> +	SH_PFC_FUNCTION(uart1),
+> +	SH_PFC_FUNCTION(uart2),
+> +	SH_PFC_FUNCTION(uart3),
+> +	SH_PFC_FUNCTION(sd),
+> +	SH_PFC_FUNCTION(sdi0),
+> +	SH_PFC_FUNCTION(sdi1),
+> +	SH_PFC_FUNCTION(sdi2),
+> +	SH_PFC_FUNCTION(ab),
+> +	SH_PFC_FUNCTION(dtv),
+> +	SH_PFC_FUNCTION(cf),
+> +	SH_PFC_FUNCTION(usi0),
+> +	SH_PFC_FUNCTION(usi1),
+> +	SH_PFC_FUNCTION(usi2),
+> +	SH_PFC_FUNCTION(usi3),
+> +	SH_PFC_FUNCTION(usi4),
+> +	SH_PFC_FUNCTION(usi5),
+> +	SH_PFC_FUNCTION(ntsc),
+> +	SH_PFC_FUNCTION(cam),
+> +	SH_PFC_FUNCTION(hsi),
+> +};
+
+Could you please order the functions alphabetically, here and above ?
+
+[snip]
 
 -- 
-  <http://www.linaro.org/> Linaro.org â”‚ Open source software for ARM SoCs
+Regards,
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Laurent Pinchart
 
