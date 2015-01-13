@@ -1,45 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826AbbAMVzJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 16:55:09 -0500
-Received: from mga01.intel.com ([192.55.52.88]:20184 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751385AbbAMVzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 16:55:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,751,1413270000"; 
-   d="scan'208";a="661352545"
-Date: Tue, 13 Jan 2015 16:55:05 -0500
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        willy@linux.intel.com
-Subject: Re: [PATCH v12 09/20] dax,ext2: Replace xip_truncate_page with
- dax_truncate_page
-Message-ID: <20150113215505.GL5661@wil.cx>
-References: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
- <1414185652-28663-10-git-send-email-matthew.r.wilcox@intel.com>
- <20150112150958.2e6bd85dc3e25b953d28c6cb@linux-foundation.org>
+	id S1752291AbbAMWAT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 17:00:19 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:53127 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751608AbbAMWAR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 17:00:17 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: gregkh@linuxfoundation.org
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH] tty/isicom: fix big-endian compile warning
+Date: Tue, 13 Jan 2015 22:59:47 +0100
+Message-ID: <2188320.G0IBCG4UeO@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150112150958.2e6bd85dc3e25b953d28c6cb@linux-foundation.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:mVujfDbwWWWRS7ne4lsHaAeFhPBlR3THUeZ/7qoXa6h0I3jryIl
+ PFcPX+uCaVFm+NCxOwTnL053Awqrqo14J2tYSZhOTbyw74w8lvUOeMF6tnWZxgFyrdipZPZ
+ KhbLDaDoCFFQTYMyZiie0PiUaZod2xR7noaUiBruit4Zvi556sPVF8B1qheLRvjkWGcTJQn
+ YzrHu5NmVdlIIs0Zg1faA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 03:09:58PM -0800, Andrew Morton wrote:
-> > + * Similar to block_truncate_page(), this function can be called by a
-> > + * filesystem when it is truncating an DAX file to handle the partial page.
-> > + *
-> > + * We work in terms of PAGE_CACHE_SIZE here for commonality with
-> > + * block_truncate_page(), but we could go down to PAGE_SIZE if the filesystem
-> > + * took care of disposing of the unnecessary blocks.
-> 
-> But PAGE_SIZE==PAGE_CACHE_SIZE.  Unclear what you're saying here.
+Building an arm allmodconfig kernel triggers a lengthy but harmless
+warning in the isicom driver:
 
-The last I heard, some people were trying to resurrect the PAGE_CACHE_SIZE
-> PAGE_SIZE patches.  I'd be grateful if the distinction between PAGE_SIZE
-and PAGE_CACHE_SIZE went away, tbh.
+drvers/tty/isicom.c: In function 'isicom_send_break':
+uapi/linux/swab.h:13:15: warning: integer overflow in expression [-Woverflow]
+  (((__u16)(x) & (__u16)0x00ffU) << 8) |   \
+               ^
+uapi/linux/swab.h:107:2: note: in expansion of macro '___constant_swab16'
+  ___constant_swab16(x) :   \
+  ^
+uapi/linux/byteorder/big_endian.h:34:43: note: in expansion of macro '__swab16'
+ #define __cpu_to_le16(x) ((__force __le16)__swab16((x)))
+                                           ^
+linux/byteorder/generic.h:89:21: note: in expansion of macro '__cpu_to_le16'
+ #define cpu_to_le16 __cpu_to_le16
+                     ^
+include/asm/io.h:270:6: note: in expansion of macro 'cpu_to_le16'
+      cpu_to_le16(v),__io(p)); })
+      ^
+drivers/tty/isicom.c:1058:2: note: in expansion of macro 'outw'
+  outw((length & 0xff00), base);
+  ^
+
+Apparently, the problem is related to the fact that the value 0xff00,
+when used as a 16-bit number, is negative and passed into bitwise
+operands of the generic byte swapping code.
+
+Marking the input argument as unsigned in both technically correct
+and avoids the warning.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+
+diff --git a/drivers/tty/isicom.c b/drivers/tty/isicom.c
+index 59ed783c4bcd..2054427992e0 100644
+--- a/drivers/tty/isicom.c
++++ b/drivers/tty/isicom.c
+@@ -1055,7 +1055,7 @@ static int isicom_send_break(struct tty_struct *tty, int length)
+ 
+ 	outw(0x8000 | ((port->channel) << (card->shift_count)) | 0x3, base);
+ 	outw((length & 0xff) << 8 | 0x00, base);
+-	outw((length & 0xff00), base);
++	outw((length & 0xff00u), base);
+ 	InterruptTheCard(base);
+ 
+ 	unlock_card(card);
+
