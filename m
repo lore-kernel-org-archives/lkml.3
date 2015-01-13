@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939AbbAMUEs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 15:04:48 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:34255 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766AbbAMUEq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 15:04:46 -0500
+	id S1751410AbbAMUGX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 15:06:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33573 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750841AbbAMUGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 15:06:22 -0500
+Message-ID: <54B57AAC.6020903@redhat.com>
+Date: Tue, 13 Jan 2015 15:06:04 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <1420452136-76466-1-git-send-email-xiakaixu@huawei.com>
-References: <1420452136-76466-1-git-send-email-xiakaixu@huawei.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Tue, 13 Jan 2015 14:04:15 -0600
-Message-ID: <CAL_JsqLNw_n5dpsx7AsuToH1BEDkE-WsC+NDwg2bA4BNUH_FJw@mail.gmail.com>
-Subject: Re: [PATCH] Documentation: of: fix typo in graph bindings
-To: Kaixu Xia <xiakaixu@huawei.com>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        kaixu.xia@linaro.org
-Content-Type: text/plain; charset=UTF-8
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
+        tglx@linutronix.de, luto@amacapital.net
+Subject: Re: [RFC PATCH 04/11] x86,fpu: defer FPU restore until return to
+ userspace
+References: <1421012793-30106-1-git-send-email-riel@redhat.com> <1421012793-30106-5-git-send-email-riel@redhat.com> <20150113171134.GA27519@redhat.com> <54B55BE7.1020107@redhat.com> <20150113182239.GA30475@redhat.com> <20150113183003.GB30475@redhat.com>
+In-Reply-To: <20150113183003.GB30475@redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 5, 2015 at 4:02 AM, Kaixu Xia <xiakaixu@huawei.com> wrote:
-> Just fix a minor typo about the example path.
->
-> Signed-off-by: Kaixu Xia <xiakaixu@huawei.com>
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Applied for 3.20. Thanks.
+On 01/13/2015 01:30 PM, Oleg Nesterov wrote:
+> On 01/13, Oleg Nesterov wrote:
+>> 
+>> But yes, I think we need the per-cpu "in_kernel_fpu" and
+>> irq_fpu_usable() must die. Please look at
+>> http://marc.info/?l=linux-kernel&m=14096628660929
 
-> ---
->  Documentation/devicetree/bindings/graph.txt | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/Documentation/devicetree/bindings/graph.txt b/Documentation/devicetree/bindings/graph.txt
-> index 1a69c07..fcb1c6a 100644
-> --- a/Documentation/devicetree/bindings/graph.txt
-> +++ b/Documentation/devicetree/bindings/graph.txt
-> @@ -19,7 +19,7 @@ type of the connections, they just map their existence. Specific properties
->  may be described by specialized bindings depending on the type of connection.
->
->  To see how this binding applies to video pipelines, for example, see
-> -Documentation/device-tree/bindings/media/video-interfaces.txt.
-> +Documentation/devicetree/bindings/media/video-interfaces.txt.
->  Here the ports describe data interfaces, and the links between them are
->  the connecting data buses. A single port with multiple connections can
->  correspond to multiple devices being connected to the same physical bus.
-> --
-> 1.8.5.5
->
+This link does not work for me. I wonder if that email is not
+on the marc.info node I managed to send my http request to...
+
+> Plus I think we need this to fix the race with
+> math_state_restore()... Please see
+> http://marc.info/?l=linux-kernel&m=140992479607206
+> 
+> Unfortunately I forgot other problems I found in this area... And I
+> completely forgot the plan I had in mind ;)
+
+That I can certainly merge into my series.
+
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJUtXqsAAoJEM553pKExN6DESsH/iVrj6VEpV1gqyxB7T0cC0wr
+UWjPP5OyV2JRkOronbl1iA9YMhN5WUfhvdWph4nauL0nR+IOip2qRqCmQN6NG4yj
+A9u3NTDzKpXCBaBf+Ub5yPBv/QESvGomxUQmEYYdgxW6OfZtp0apouSPIhCAwWMq
+XPKVXyjl0AH30+tV9oMnhhnXuwdG+ojNDFK8xeMG15gBPP8LncVYkmlgTeD4Kzca
+VPw83KxFqNekEA7TPboBkjqDEfckT8tTsutlOMWmBnyI51duuMX3qc4xoJfCdmNB
++f8TYL0Y/7RKF2RS9qDXZRk1fakQHbzCaswpRIs7522zj49tkrGi4AFmUaOZ+0k=
+=7eRE
+-----END PGP SIGNATURE-----
