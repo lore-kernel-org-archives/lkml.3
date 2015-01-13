@@ -1,139 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544AbbAMQVk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 11:21:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47611 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753215AbbAMQVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 11:21:38 -0500
-Date: Tue, 13 Jan 2015 11:21:30 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Calvin Owens <calvinowens@fb.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        linux-audit@redhat.com, ebiederm@xmission.com, kernel-team@fb.com
-Subject: Re: [PATCH][RESEND 2] Revert "AUDIT: Allow login in non-init
- namespaces"
-Message-ID: <20150113162130.GK29998@madcap2.tricolour.ca>
-References: <1415148371-11742-1-git-send-email-calvinowens@fb.com>
- <20141118203221.GA1687992@mail.thefacebook.com>
- <20150109014448.GF27996@mail.thefacebook.com>
- <20150113153443.GH512@madcap2.tricolour.ca>
+	id S1753058AbbAMQZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 11:25:29 -0500
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:42987 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514AbbAMQZ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 11:25:26 -0500
+Date: Tue, 13 Jan 2015 16:21:33 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: atull <atull@opensource.altera.com>, Pavel Machek <pavel@denx.de>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, hpa@zytor.com,
+        Michal Simek <monstr@monstr.eu>,
+        Michal Simek <michal.simek@xilinx.com>, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org, robh+dt@kernel.org,
+        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
+        linux-doc@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        philip@balister.org, rubini@gnudd.com,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>, jason@lakedaemon.net,
+        kyle.teske@ni.com, nico@linaro.org, Felipe Balbi <balbi@ti.com>,
+        m.chehab@samsung.com, davidb@codeaurora.org,
+        Rob Landley <rob@landley.net>, davem@davemloft.net, cesarb@cesarb.net,
+        sameo@linux.intel.com, akpm@linux-foundation.org,
+        Linus Walleij <linus.walleij@linaro.org>, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devel@driverdev.osuosl.org,
+        Alan Tull <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
+Message-ID: <20150113162133.2a4d1116@lxorguk.ukuu.org.uk>
+In-Reply-To: <20150112180608.GA11295@obsidianresearch.com>
+References: <1420575219-27061-1-git-send-email-atull@opensource.altera.com>
+	<1420575219-27061-3-git-send-email-atull@opensource.altera.com>
+	<20150107084819.GA1887@amd>
+	<alpine.DEB.2.02.1501091302370.30067@linuxheads99>
+	<20150109205643.GA5761@amd>
+	<4D4EA2D5-68DD-49F7-9E2D-3A0A8F6AF9CA@konsulko.com>
+	<20150110151118.GA16036@amd>
+	<alpine.DEB.2.10.1501111009180.2556@shineypoop>
+	<20150112180608.GA11295@obsidianresearch.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150113153443.GH512@madcap2.tricolour.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/01/13, Richard Guy Briggs wrote:
-> On 15/01/08, Calvin Owens wrote:
-> > This reverts 543bc6a1a987 "AUDIT: Allow login in non-init namespaces".
-> > 
-> > This commit incorrectly assumes that libpam treats -ECONNREFUSED as
-> > an indicator that audit is disabled, and -EPERM or any other error
-> > as a fatal error that prevents the login from continuing.
-> 
-> Which netlink audit message type is actually failing?
-> Is it AUDIT_TTY_{G,S}ET or is it an AUDIT_USER_* message?  The former
-> requires CAP_AUDIT_CONTROL and both PID and user init namespace (for
-> now) and the latter requires CAP_AUDIT_WRITE and only user init
-> namespace.
-> 
-> > The opposite is in fact true: -EPERM allows the login to continue,
-> > and -ECONNREFUSED causes it to refuse the login. This behavior has
-> > been unchanged in upstream linux-pam since at least 2008.
-> 
-> So this sounds to me like standard PAM usage is inverted from PAM usage
-> in containers.
-> 
-> > Reverting this change allows libpam to again work as expected in
-> > non-init user namespaces.
-> 
-> However, that will break other things...
-> 
-> Do you have test cases to show this?
-> 
-> Currently:
-> If audit is not available, return ECONNREFUSED. (netlink_unicast_kernel)
+On Mon, 12 Jan 2015 11:06:08 -0700
+Jason Gunthorpe <jgunthorpe@obsidianresearch.com> wrote:
 
-In fact, the socket() call should fail before that with EPROTONOSUPPORT. (in netlink_create)
+> On Sun, Jan 11, 2015 at 10:29:00AM -0600, atull wrote:
+> > the FPGA image.  If someone wants there to be only one FPGA image on
+> > the FGPA forever, they will probably not be using this framework; their
+> > FPGA will probably be loaded before Linux boots up.
+> 
+> Nonsense, loading the FPGA through Linux is much better
 
-> If not in init user namespace, return ECONNREFUSED. (audit_netlink_ok)
-> 
-> If control message and not init PID ns, return EPERM (audit_netlink_ok)
-> 
-> If control message and not CAP_AUDIT_CONTROL, return EPERM (audit_netlink_ok)
-> 
-> If user log message and not CAP_AUDIT_WRITE, return EPERM (audit_netlink_ok)
-> 
-> If unrecognized message, return EINVAL (audit_netlink_ok)
-> 
-> 
-> Listening in non-init net namespaces caused EPERM to be returned by
-> audit instead of ECONNREFUSED by netlink due to lack of perms when the
-> sending process didn't have CAP_AUDIT_WRITE.  Fixed in docker bz1119849
-> 	http://blog.oddbit.com/2014/07/21/tracking-down-a-kernel-bug-wit/
-> 
-> 
-> > Signed-off-by: Calvin Owens <calvinowens@fb.com>
-> > Cc: stable@vger.kernel.org
-> > ---
-> > Relevant code in linux-pam:
-> > https://git.fedorahosted.org/cgit/linux-pam.git/tree/libpam/pam_audit.c#n56
-> 
-> This code only checks for an error return of -EPERM when the userid is
-> non-root.  Is login running as root, or has it already forked and is
-> running as an unprivileged user at that point?  Audit doesn't care about
-> the UID even though many equate root (superuser) with full capabilities.
-> Audit only looks at capabilities and namespaces.  Is this relevant to PAM?
-> 
-> >  kernel/audit.c | 12 +-----------
-> >  1 file changed, 1 insertion(+), 11 deletions(-)
-> > 
-> > diff --git a/kernel/audit.c b/kernel/audit.c
-> > index 80983df..656e8ce 100644
-> > --- a/kernel/audit.c
-> > +++ b/kernel/audit.c
-> > @@ -640,18 +640,8 @@ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
-> >  	int err = 0;
-> >  
-> >  	/* Only support initial user namespace for now. */
-> > -	/*
-> > -	 * We return ECONNREFUSED because it tricks userspace into thinking
-> > -	 * that audit was not configured into the kernel.  Lots of users
-> > -	 * configure their PAM stack (because that's what the distro does)
-> > -	 * to reject login if unable to send messages to audit.  If we return
-> > -	 * ECONNREFUSED the PAM stack thinks the kernel does not have audit
-> > -	 * configured in and will let login proceed.  If we return EPERM
-> > -	 * userspace will reject all logins.  This should be removed when we
-> > -	 * support non init namespaces!!
-> > -	 */
-> >  	if (current_user_ns() != &init_user_ns)
-> > -		return -ECONNREFUSED;
-> > +		return -EPERM;
-> >  
-> >  	switch (msg_type) {
-> >  	case AUDIT_LIST:
-> 
-> - RGB
-> 
-> --
-> Richard Guy Briggs <rbriggs@redhat.com>
-> Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-> Remote, Ottawa, Canada
-> Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
-> 
-> --
-> Linux-audit mailing list
-> Linux-audit@redhat.com
-> https://www.redhat.com/mailman/listinfo/linux-audit
+You need both. There are platforms where the FPGA must be loaded to even
+boot the OS (for example Linux running an FPGA soft 486 can't run until
+the FPGA has the CPU loaded into it.
 
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
