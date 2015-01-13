@@ -1,66 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686AbbAMUoE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 15:44:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53941 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752736AbbAMUoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 15:44:02 -0500
-Message-ID: <54B58382.9030908@redhat.com>
-Date: Tue, 13 Jan 2015 15:43:46 -0500
-From: Rik van Riel <riel@redhat.com>
+	id S1753770AbbAMUoT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 15:44:19 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:23951 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753724AbbAMUoR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 15:44:17 -0500
+X-IronPort-AV: E=Sophos;i="5.07,751,1413270000"; 
+   d="scan'208";a="54595873"
+Message-ID: <54B5839D.90901@broadcom.com>
+Date: Tue, 13 Jan 2015 12:44:13 -0800
+From: Scott Branden <sbranden@broadcom.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>, Borislav Petkov <bp@suse.de>,
-        Oleg Nesterov <oleg@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 06/11] x86,fpu: lazily skip fpu restore with eager
- fpu mode, too
-References: <1421012793-30106-1-git-send-email-riel@redhat.com> <1421012793-30106-7-git-send-email-riel@redhat.com> <CALCETrWWLzdPrmGdw7+g68Sy2m9Fs6U5nO3dWAOHt8XAxXSb3g@mail.gmail.com>
-In-Reply-To: <CALCETrWWLzdPrmGdw7+g68Sy2m9Fs6U5nO3dWAOHt8XAxXSb3g@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
+To: Tim Kryger <tim.kryger@gmail.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Arun Ramamurthy <arun.ramamurthy@broadcom.com>,
+        Jonathan Richardson <jonathar@broadcom.com>
+CC: Ray Jui <rjui@broadcom.com>, Linux PWM <linux-pwm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>
+Subject: Re: [PATCH 1/2] drivers: pwm: core: Add pwmchip_add_inversed
+References: <1420420376-13087-1-git-send-email-tim.kryger@gmail.com> <1420420376-13087-2-git-send-email-tim.kryger@gmail.com>
+In-Reply-To: <1420420376-13087-2-git-send-email-tim.kryger@gmail.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Patchset looks good.
 
-On 01/13/2015 12:11 PM, Andy Lutomirski wrote:
-> On Sun, Jan 11, 2015 at 1:46 PM,  <riel@redhat.com> wrote:
+On 15-01-04 05:12 PM, Tim Kryger wrote:
+> Add a new function to register a PWM chip with channels that have their
+> initial polarity as inversed.  This benefits drivers of controllers that
+> by default operate with inversed polarity by removing the need to modify
+> the polarity during initialization.
+>
+> Signed-off-by: Tim Kryger <tim.kryger@gmail.com>
+Acked-by: Scott Branden <sbranden@broadcom.com>
 
->> diff --git a/arch/x86/include/asm/fpu-internal.h
->> b/arch/x86/include/asm/fpu-internal.h index 4db8781..a5a40c7
->> 100644 --- a/arch/x86/include/asm/fpu-internal.h +++
->> b/arch/x86/include/asm/fpu-internal.h @@ -435,13 +435,9 @@ static
->> inline void switch_fpu_prepare(struct task_struct *old, struct
->> task_struc old->thread.fpu.last_cpu = ~0; if (preload) { 
->> new->thread.fpu_counter++; -                       if
->> (!use_eager_fpu() && fpu_lazy_restore(new, cpu)) -
->> /* XXX: is this safe against ptrace??? */ -
->> __thread_fpu_begin(new); -                       else { +
->> set_thread_flag(TIF_LOAD_FPU); +                       if
->> (!fpu_lazy_restore(new, cpu)) prefetch(new->thread.fpu.state);
-> 
-> Is this prefetch still worth keeping?  Wouldn't prefetching the
-> fpu effectively require grabbing more than one cacheline anyway?
+> ---
+>   drivers/pwm/core.c  | 36 ++++++++++++++++++++++++++++--------
+>   include/linux/pwm.h |  6 ++++++
+>   2 files changed, 34 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
+> index 966497d..f28c4ce 100644
+> --- a/drivers/pwm/core.c
+> +++ b/drivers/pwm/core.c
+> @@ -222,14 +222,8 @@ void *pwm_get_chip_data(struct pwm_device *pwm)
+>   }
+>   EXPORT_SYMBOL_GPL(pwm_get_chip_data);
+>
+> -/**
+> - * pwmchip_add() - register a new PWM chip
+> - * @chip: the PWM chip to add
+> - *
+> - * Register a new PWM chip. If chip->base < 0 then a dynamically assigned base
+> - * will be used.
+> - */
+> -int pwmchip_add(struct pwm_chip *chip)
+> +static int pwmchip_add_with_polarity(struct pwm_chip *chip,
+> +				     enum pwm_polarity polarity)
+>   {
+>   	struct pwm_device *pwm;
+>   	unsigned int i;
+> @@ -259,6 +253,7 @@ int pwmchip_add(struct pwm_chip *chip)
+>   		pwm->chip = chip;
+>   		pwm->pwm = chip->base + i;
+>   		pwm->hwpwm = i;
+> +		pwm->polarity = polarity;
+>
+>   		radix_tree_insert(&pwm_tree, pwm->pwm, pwm);
+>   	}
+> @@ -279,9 +274,34 @@ out:
+>   	mutex_unlock(&pwm_lock);
+>   	return ret;
+>   }
+> +
+> +/**
+> + * pwmchip_add() - register a new PWM chip
+> + * @chip: the PWM chip to add
+> + *
+> + * Register a new PWM chip. If chip->base < 0 then a dynamically assigned base
+> + * will be used.  The initial polarity for all channels is normal.
+> + */
+> +int pwmchip_add(struct pwm_chip *chip)
+> +{
+> +	return pwmchip_add_with_polarity(chip, PWM_POLARITY_NORMAL);
+> +}
+>   EXPORT_SYMBOL_GPL(pwmchip_add);
+>
+>   /**
+> + * pwmchip_add_inversed() - register a new PWM chip
+> + * @chip: the PWM chip to add
+> + *
+> + * Register a new PWM chip. If chip->base < 0 then a dynamically assigned base
+> + * will be used.  The initial polarity for all channels is inversed.
+> + */
+> +int pwmchip_add_inversed(struct pwm_chip *chip)
+> +{
+> +	return pwmchip_add_with_polarity(chip, PWM_POLARITY_INVERSED);
+> +}
+> +EXPORT_SYMBOL_GPL(pwmchip_add_inversed);
+> +
+> +/**
+>    * pwmchip_remove() - remove a PWM chip
+>    * @chip: the PWM chip to remove
+>    *
+> diff --git a/include/linux/pwm.h b/include/linux/pwm.h
+> index e90628c..358547f 100644
+> --- a/include/linux/pwm.h
+> +++ b/include/linux/pwm.h
+> @@ -183,6 +183,7 @@ int pwm_set_chip_data(struct pwm_device *pwm, void *data);
+>   void *pwm_get_chip_data(struct pwm_device *pwm);
+>
+>   int pwmchip_add(struct pwm_chip *chip);
+> +int pwmchip_add_inversed(struct pwm_chip *chip);
+>   int pwmchip_remove(struct pwm_chip *chip);
+>   struct pwm_device *pwm_request_from_chip(struct pwm_chip *chip,
+>   					 unsigned int index,
+> @@ -217,6 +218,11 @@ static inline int pwmchip_add(struct pwm_chip *chip)
+>   	return -EINVAL;
+>   }
+>
+> +static inline int pwmchip_add_inversed(struct pwm_chip *chip)
+> +{
+> +	return -EINVAL;
+> +}
+> +
+>   static inline int pwmchip_remove(struct pwm_chip *chip)
+>   {
+>   	return -EINVAL;
+>
 
-Probably not. I'll drop it, for more code simplification.
-
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQEcBAEBAgAGBQJUtYOCAAoJEM553pKExN6DDYMIAL3m7Nmlz8qiYrDEIhimHupj
-JeIp92cdm+AcgeYydC9Tzz3cQrDExjJ3juI25OmjYF1rTHoRyFC/trWCjUajeKxa
-rdxyHYmcNCvsmvEN9Ls3IfrRt4SF7iDKP9P9Qa49rakCprR82P2UUQ25zDuad8wR
-n7G+nev1GNpsc8w8++ebczyEgVq579s2QA3x/mpO9FWA2DNrSndT1P7OxY6BBbEO
-jcp/9V17rfZOvh7W9yCSRs9M5B3OzjACTktSTRWWuPHS7qBJa1/oeA7Z45Vgb9Bk
-xxH1zS4IPcHu5WEB4FTDPYHoR7NOPWaXNDViU3NnV6jMzaCff1Vd6XgN5PHQhZc=
-=y0qh
------END PGP SIGNATURE-----
