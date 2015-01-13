@@ -1,136 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319AbbAMROp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 12:14:45 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:30989 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752477AbbAMROn (ORCPT
+	id S1753361AbbAMRPf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 12:15:35 -0500
+Received: from mail-oi0-f47.google.com ([209.85.218.47]:55912 "EHLO
+	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752008AbbAMRPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 12:14:43 -0500
-X-IronPort-AV: E=Sophos;i="5.07,750,1413270000"; 
-   d="scan'208";a="54878824"
-Message-ID: <54B55281.2050004@broadcom.com>
-Date: Tue, 13 Jan 2015 09:14:41 -0800
-From: Ray Jui <rjui@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 13 Jan 2015 12:15:34 -0500
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Scott Branden <sbranden@broadcom.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 1/4] pinctrl: Broadcom Cygnus pinctrl device tree binding
-References: <rjui@broadcom.com>	<1417131990-17954-1-git-send-email-rjui@broadcom.com>	<1417131990-17954-2-git-send-email-rjui@broadcom.com>	<CACRpkdb5pNMbXmWGjrGpAYNLLwv6pWWOJQy0C6BLetNcStFM6A@mail.gmail.com>	<54B01D44.5080601@broadcom.com> <CACRpkdbW5P=w0CPYYf_gfBuD7W0WOdAYCKpTXM5MsK9mdYDc5w@mail.gmail.com>
-In-Reply-To: <CACRpkdbW5P=w0CPYYf_gfBuD7W0WOdAYCKpTXM5MsK9mdYDc5w@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <87mw5v4iug.fsf@rustcorp.com.au>
+References: <1419246673-7222-1-git-send-email-oded.gabbay@amd.com>
+	<CADnq5_MY3+4BdWzUYffTnRWF3J4Z7nb6zyrGZK4RNwVU3axvuw@mail.gmail.com>
+	<20141222184940.GB17192@tassilo.jf.intel.com>
+	<20141222190041.GC17192@tassilo.jf.intel.com>
+	<54986EA2.106@amd.com>
+	<874msmt1hi.fsf@rustcorp.com.au>
+	<549A85DE.1040006@amd.com>
+	<87r3v96ebd.fsf@rustcorp.com.au>
+	<CAGXu5jJ71tM99uaRoq74AkcB5KhxsfBS3NyDuJ2rJncKmfCWwg@mail.gmail.com>
+	<87mw5v4iug.fsf@rustcorp.com.au>
+Date: Tue, 13 Jan 2015 09:15:33 -0800
+X-Google-Sender-Auth: UqLAubscm1iM8hhB_P1_0izGih4
+Message-ID: <CAGXu5jKuzGZKX3osNi7yLAe9Xc-Oj8TXMvXk6jPGmTNzN77JKA@mail.gmail.com>
+Subject: Re: [LKP] [PATCH] drm/radeon: Try to init amdkfd only if 64 bit kernel
+From: Kees Cook <keescook@chromium.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Oded Gabbay <oded.gabbay@amd.com>, Andi Kleen <ak@linux.intel.com>,
+        Alex Deucher <alexdeucher@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Dana Elifaz <Dana.Elifaz@amd.com>, LKML <linux-kernel@vger.kernel.org>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>,
+        Alexander Deucher <Alexander.Deucher@amd.com>, LKP ML <lkp@01.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 1/13/2015 12:20 AM, Linus Walleij wrote:
-> On Fri, Jan 9, 2015 at 7:26 PM, Ray Jui <rjui@broadcom.com> wrote:
->> On 1/9/2015 2:12 AM, Linus Walleij wrote:
-> 
->>> Just use "groups" and "function" and refer to
->>> Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
->>>
->>> Then "alt1", "alt2" etc are non-functional names of functions.
->>> Use the real function names, like "spi0" or so. This
->>> alt-business seems to be just a shortcut to make it
->>> simple, don't do that.
->>>
->>> Then you use e.g. "spi0" as a group name. I prefer you
->>> call that "spi0_grp" or something to say it is a group of
->>> pins associated with spi0, as spi0 is actually the
->>> function.
->>>
->> Hmmm, I did this by following brcm,bcm11351-pinctrl.txt:
->> - function: String. Specifies the pin mux selection. Values must be one
->> of: "alt1", "alt2", "alt3", "alt4"
+On Tue, Jan 6, 2015 at 2:58 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> Kees Cook <keescook@chromium.org> writes:
+>> On Sun, Jan 4, 2015 at 8:28 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>>> Kees, as far as I can tell you need another 0-terminated vmlinux.relocs
+>>> section for weak symbols.  These should not be relocated if already 0.
 >>
->> But you are right, in the pinctrl binding document it describes the
->> generic pin multiplexing nodes use "function" and "group".
-> 
-> Note "function" and "groups". Note groups is pluralis. You can
-> select multiple groups for a single function.
-> 
->> For example, the group "lcd" covers 30 pins. When I configure "lcd" to
->> alternate function 1, all 30 pins are muxed to LCD function. When
->> configured to function 2, all pins are muxed to SRAM function. Now, here
->> comes the issue, when configured to function 3, pins 1-15 and 20-30
->> become GPIO function, but pins 16-19 becomes SPI5 function. When it's
->> configured to function 4, all 30 pins become GPIO.
-> 
-> I would split the use case in two groups for LCD and SRAM,
-> and three groups for GPIO:
-> "lcd_grp", "sram_grp", "gpio-1-15_grp",
-> "gpio-16-19_grp", "gpio-20-30_grp", "spi5_grp"
-> 
-
-> Valid combinations become
-> 
-> function = "lcd"
-> groups = "lcd_grp";
-> 
-> function = "sram"
-> groups = "sram_grp"
-> 
-> For all GPIO only this:
-> 
-> function = "gpio"
-> groups = "gpio-1-16_grp", "gpio-16-19_grp", "gpio-20-30_grp"
-> 
-> For a combined GPIO+SPI:
-> 
-> function = "gpio"
-> groups = "gpio-1-16_grp", "gpio-20-30_grp"
-> 
-> function = "spi5"
-> groups = "spi5_grp"
-> 
-> The pinctrl runtile will protest if you try to combine spi5_grp
-> with gpio-16-19_grp.
-> 
-Okay this makes sense. Thanks.
-
->> In some other cases, when I configure a group to other functions, there
->> could be spare pins which become unused (not brought out to the pad).
->> Or, the spare pins may also become a separate function.
-> 
-> That's cool.
-> 
->> Based on the LCD example, I'd assume I would do the following for the
->> default LCD function:
+>> A few questions:
 >>
->> lcd_node {
->>         group = "lcd_grp";
->>         function = "lcd";
->> };
->>
->> And in the case of function 3, I would call the function "spi5" and
->> assume the rest of pins become either GPIO (or unused)?
->>
->> spi5_node {
->>         group = "lcd_grp";
->>         function = "spi5";
->> };
-> 
-> Looks cool per above.
-> 
-> You need some clever code in the driver to handle double-configuration
-> of registers and so on, but I think it can be done.
-Let me see what I can come up with.
+>> Why doesn't this break on 32-bit without kASLR? 32-bit does relocation
+>> by default, even without CONFIG_RANDOMIZE_BASE.
+>
+> Well, the offset was 0 until I removed CONFIG_HIBERNATE.
+>
+>> Are there any symbols that are NULL that aren't weak? I'd expect all
+>> strong symbols to have non-zero offsets, but I must be
+>> misunderstanding something here.
+>
+> I don't think there would be.  Anyway, you might be able to filter them
+> out in x86/tools/relocs itself.
 
-> 
-> Using pin control as a GPIO backend can be a bit tricky and will need
-> some testing and elaboration, but the subsystem will block collisions.
-> 
-> Yours,
-> Linus Walleij
-> 
+I've been travelling last week and this, so I haven't had time to take
+a close look yet. Hopefully I can work on this next week or later this
+week.
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
