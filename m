@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629AbbAMPKE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 10:10:04 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:50255 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568AbbAMPKB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 10:10:01 -0500
-From: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
-To: linus.walleij@linaro.org, gnurou@gmail.com, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
-Subject: [PATCH] gpio: gpio-dln2: Added a Blank line after declaration
-Date: Tue, 13 Jan 2015 20:39:38 +0530
-Message-Id: <1421161778-5671-1-git-send-email-md.jamalmohiuddin@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752652AbbAMPLG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 10:11:06 -0500
+Received: from mga14.intel.com ([192.55.52.115]:53431 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751132AbbAMPLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 10:11:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,750,1413270000"; 
+   d="scan'208";a="636642165"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com,
+        markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
+        acme@infradead.org
+Subject: Re: [PATCH v8 12/14] x86: perf: intel_pt: Intel PT PMU driver
+In-Reply-To: <20150109124824.GL3337@twins.programming.kicks-ass.net>
+References: <1415972627-37514-1-git-send-email-alexander.shishkin@linux.intel.com> <1415972627-37514-13-git-send-email-alexander.shishkin@linux.intel.com> <20150109124824.GL3337@twins.programming.kicks-ass.net>
+User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.4.1 (x86_64-pc-linux-gnu)
+Date: Tue, 13 Jan 2015 17:09:58 +0200
+Message-ID: <87sifen2d5.fsf@ashishki-desk.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the coding style issue by adding a blank line after declaration
+Peter Zijlstra <peterz@infradead.org> writes:
 
-Signed-off-by: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
----
- drivers/gpio/gpio-dln2.c |    1 +
- 1 file changed, 1 insertion(+)
+> On Fri, Nov 14, 2014 at 03:43:45PM +0200, Alexander Shishkin wrote:
+>> +static void pt_event_stop(struct perf_event *event, int mode)
+>> +{
+>> +	struct pt *pt = this_cpu_ptr(&pt_ctx);
+>> +
+>> +	ACCESS_ONCE(pt->handle_nmi) = 0;
+>
+> Why is this needed? Will the hardware still generate interrupts if you
+> stop the PT thing?
 
-diff --git a/drivers/gpio/gpio-dln2.c b/drivers/gpio/gpio-dln2.c
-index ce3c155..dbdb4de 100644
---- a/drivers/gpio/gpio-dln2.c
-+++ b/drivers/gpio/gpio-dln2.c
-@@ -396,6 +396,7 @@ static void dln2_gpio_event(struct platform_device *pdev, u16 echo,
- 			    const void *data, int len)
- {
- 	int pin, irq;
-+
- 	const struct {
- 		__le16 count;
- 		__u8 type;
--- 
-1.7.9.5
+Actually, it turns out that the interrupt condition can race with the
+wrmsr that disables tracing and the PT bit remains set in the global
+status register, causing the next PMI to go into the PT PMI handler,
+which then may decide to re-enable the counter that should be disabled.
 
+Regards,
+--
+Alex
