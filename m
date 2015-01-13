@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325AbbAMOUu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 09:20:50 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:59302 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052AbbAMOUs (ORCPT
+	id S1752495AbbAMOWS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 09:22:18 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:56297 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788AbbAMOWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 09:20:48 -0500
-X-IronPort-AV: E=McAfee;i="5600,1067,7679"; a="97968961"
-Cc: Chun-Yeow Yeoh <yeohchunyeow@gmail.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        <netdev@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <ath10k@lists.infradead.org>,
-        Michal Kazior <michal.kazior@tieto.com>,
-        Yanbo Li <yanbol@qca.qualcomm.com>,
-        Ben Greear <greearb@candelatech.com>
-X-IronPort-AV: E=Sophos;i="5.07,750,1413270000"; 
-   d="scan'208";a="31472865"
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-To: Nicholas Mc Guire <der.herr@hofr.at>
-Subject: Re: [PATCH v3] ath10k: fixup wait_for_completion_timeout return handling
-References: <1420720054-27870-1-git-send-email-der.herr@hofr.at>
-Date: Tue, 13 Jan 2015 16:20:27 +0200
-In-Reply-To: <1420720054-27870-1-git-send-email-der.herr@hofr.at> (Nicholas Mc
-	Guire's message of "Thu, 8 Jan 2015 13:27:34 +0100")
-Message-ID: <87d26i69uc.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 13 Jan 2015 09:22:17 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Yanchang Li <yl22@csr.com>, Barry Song <Baohua.Song@csr.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH] clocksource: sirf: remove unused variable
+Date: Tue, 13 Jan 2015 15:22:06 +0100
+Message-ID: <1599190.ZYSE4SrQSK@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-X-Originating-IP: [10.80.80.8]
-X-ClientProxiedBy: NASANEXM01F.na.qualcomm.com (10.85.0.32) To
- NALASEXR01G.na.qualcomm.com (10.49.56.53)
+X-Provags-ID: V03:K0:4VrRT42fYeoJ3q6GJOyi4vuShi6rAlmOe2UTPO5hwehqQAmNayP
+ tzjidv1jZ6S5PjHKVXt9aL7CDXGsGeyH0TNadylzvQh+lCk0va3+MWmlg1zquHa4XucFNUP
+ ULUNDEIaVHtK8Ismcx47UlY8lVsLnp3s1kzU684thQSP1+cIvIZnNmz2RihMmvZWaauneJD
+ Is2fQe2En+iPIg36zdp7w==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicholas Mc Guire <der.herr@hofr.at> writes:
+A recent rework of the driver left an obviously unused variable
+around, and now the compiler complains:
 
-> wait_for_completion_timeout does not return negative values so the tests
-> for <= 0 are not needed and the case differentiation in the error handling
-> path unnecessary.
->
-> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+clocksource/timer-marco.c: In function 'sirfsoc_marco_timer_init':
+clocksource/timer-marco.c:260:6: warning: unused variable 'timer_div' [-Wunused-variable]
 
-Thanks, applied to ath.git.
+Remove it.
 
--- 
-Kalle Valo
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Fixes: ef89af1f4380b92 ("clocksource: sirf: Remove hard-coded clock rate")
+
+diff --git a/drivers/clocksource/timer-marco.c b/drivers/clocksource/timer-marco.c
+index 361a789d4bee..3ddb81f7ee66 100644
+--- a/drivers/clocksource/timer-marco.c
++++ b/drivers/clocksource/timer-marco.c
+@@ -257,7 +257,6 @@ static void __init sirfsoc_clockevent_init(void)
+ /* initialize the kernel jiffy timer source */
+ static void __init sirfsoc_marco_timer_init(struct device_node *np)
+ {
+-	u32 timer_div;
+ 	struct clk *clk;
+ 
+ 	clk = of_clk_get(np, 0);
+
