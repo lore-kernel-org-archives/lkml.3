@@ -1,122 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136AbbAMMeN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 07:34:13 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:18114 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000AbbAMMeL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 07:34:11 -0500
-Message-ID: <54B510BA.7030202@huawei.com>
-Date: Tue, 13 Jan 2015 20:34:02 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1752172AbbAMMjk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 07:39:40 -0500
+Received: from mga02.intel.com ([134.134.136.20]:33884 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750967AbbAMMji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 07:39:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,750,1413270000"; 
+   d="scan'208";a="636578517"
+Message-ID: <54B51206.4020209@linux.intel.com>
+Date: Tue, 13 Jan 2015 20:39:34 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-Subject: Re: [PATCH v2 2/8] PCI/MSI: Add hooks to populate the msi_domain
- field
-References: <1420736772-11088-1-git-send-email-marc.zyngier@arm.com> <1420736772-11088-3-git-send-email-marc.zyngier@arm.com>
-In-Reply-To: <1420736772-11088-3-git-send-email-marc.zyngier@arm.com>
-Content-Type: text/plain; charset="UTF-8"
+To: David Vrabel <david.vrabel@citrix.com>,
+        Sander Eikelenboom <linux@eikelenboom.it>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Yinghai Lu <yinghai@kernel.org>
+CC: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH v2] [Bugfix] x86/apic: Fix xen IRQ allocation
+ failure caused by commit b81975eade8c
+References: <1767175032.20150110201202@eikelenboom.it>	<1421069966-19729-1-git-send-email-jiang.liu@linux.intel.com>	<54B3E1AC.6080902@citrix.com> <54B48190.9000906@linux.intel.com> <54B4EEC5.1090107@citrix.com>
+In-Reply-To: <54B4EEC5.1090107@citrix.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020204.54B510C1.0189,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 25661d8ab10e9569214d3c0452a8aef7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
->  					   struct pci_dev *bridge, int busnr)
->  {
-> @@ -713,6 +727,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
->  	bridge->subordinate = child;
->  
->  add_dev:
-> +	pci_set_bus_msi_domain(child);
->  	ret = device_register(&child->dev);
->  	WARN_ON(ret < 0);
->  
-> @@ -1507,6 +1522,17 @@ static void pci_init_capabilities(struct pci_dev *dev)
->  	pci_enable_acs(dev);
->  }
->  
-> +static void pci_set_msi_domain(struct pci_dev *dev)
-> +{
-> +	/*
-> +	 * If no domain has been set through the pcibios callback,
-> +	 * inherit the default from the bus device.
-> +	 */
-> +	if (!dev_get_msi_domain(&dev->dev))
-> +		dev_set_msi_domain(&dev->dev,
-> +				   dev_get_msi_domain(&dev->bus->dev));
-> +}
-
-Hi Marc, now we have two ways to associate the pci_dev and msi_domain, right ?
-
-1. associate pci_dev and msi_domain in pcibios_add_device() like x86.
-
-2. Inherit msi_domain from pci_dev->bus.
-
-My question is if all pci devices inherit msi_domain from the pci_bus,
-so all pci devices under same pci host bridge have the same msi_domain assigned by
-weak pcibios_set_phb_msi_domain(). So why not save the pci host bridge specific
-msi_domain in pci_host_bridge. Then pci devices could inherit the msi_domain from
-its pci host bridge directly, no need to involve pci bus in the assignment.
-
-If I misunderstood, please let me know, :)
-
-Thanks!
-Yijing.
-
-> +
->  void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
->  {
->  	int ret;
-> @@ -1547,6 +1573,9 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
->  	ret = pcibios_add_device(dev);
->  	WARN_ON(ret < 0);
->  
-> +	/* Setup MSI irq domain */
-> +	pci_set_msi_domain(dev);
-> +
->  	/* Notifier could use PCI capabilities */
->  	dev->match_driver = false;
->  	ret = device_add(&dev->dev);
-> @@ -1937,6 +1966,7 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
->  	b->bridge = get_device(&bridge->dev);
->  	device_enable_async_suspend(b->bridge);
->  	pci_set_bus_of_node(b);
-> +	pci_set_bus_msi_domain(b);
->  
->  	if (!parent)
->  		set_dev_node(b->bridge, pcibus_to_node(b));
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 360a966..13c65ab 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -1640,6 +1640,7 @@ int pcibios_set_pcie_reset_state(struct pci_dev *dev,
->  int pcibios_add_device(struct pci_dev *dev);
->  void pcibios_release_device(struct pci_dev *dev);
->  void pcibios_penalize_isa_irq(int irq, int active);
-> +void pcibios_set_phb_msi_domain(struct pci_bus *bus);
->  
->  #ifdef CONFIG_HIBERNATE_CALLBACKS
->  extern struct dev_pm_ops pcibios_pm_ops;
+On 2015/1/13 18:09, David Vrabel wrote:
+> On 13/01/15 02:23, Jiang Liu wrote:
+>> On 2015/1/12 23:01, David Vrabel wrote:
+>>> On 12/01/15 13:39, Jiang Liu wrote:
+>>>> Commit b81975eade8c ("x86, irq: Clean up irqdomain transition code")
+>>>> breaks xen IRQ allocation because xen_smp_prepare_cpus() doesn't invoke
+>>>> setup_IO_APIC(), so no irqdomains created for IOAPICs and
+>>>> mp_map_pin_to_irq() fails at the very beginning.
+>>>>
+>>>> Enhance xen_smp_prepare_cpus() to call setup_IO_APIC() to initialize
+>>>> irqdomain for IOAPICs.
+>>>
+>>> Having Xen call setup_IO_APIC() to initialize the irq domains then having to
+>>> add special cases to it is just wrong.
+>>>
+>>> The bits of init deferred by mp_register_apic() are also deferred to
+>>> two different places which looks odd.
+>>>
+>>> What about something like the following (untested) patch?
+>> Hi David,
+>> 	Really appreciate your suggestions about Xen IOAPIC:)
+>> Your patch solves the issue, but it will break a coming patch
+>> set to enable hierarchy irqdomain on x86.
 > 
+> For 3.19 I would recommend this patch.  Since it's been tested and it's
+> pretty small.  Can you spin a version of this with a proper changelog.
+> please?
+Hi David,
+	Good suggestion, I will send out the patch tomorrow.
+Regards!
+Gerry
 
-
--- 
-Thanks!
-Yijing
-
+> 
+>> 	To enable hierarchy irqdomain on x86, need to build
+>> irqdomains in following order:
+>> 1) create irqdomain for CPU vector domain
+>> 2) create irqdomains for interrupt remapping unit if interrupt
+>>    remapping is enabled.
+>> 3) create irqdomains for IOAPIC/MSI/HPET etc.
+>>
+>> Function arch_early_ioapic_init() is called before initializing
+>> interrupt remapping subsystem. So creating IOAPIC irqdomains in
+>> arch_early_ioapic_init() will break hierarchy irqdomain with
+>> interrupt remapping enabled. I will post the x86 hierarchy
+>> irqdomain patch soon.
+>>
+>> So could you please help to advice on:
+> 
+> I don't know enough about this area to comment on these authoritatively
+> and I don't have time to look into this in more detail right now, but to
+> the best of my understanding.
+> 
+>> 1) Is IOAPIC irqdomain needed for PV?
+> 
+> PV dom0 only requires a mechanism to obtain properties of the IOAPIC
+> interrupt lines.  The actual physical interrupts are delivered to the
+> hypervisor.  It doesn't require any of the irq setup.
+> 
+>> 2) Is IOAPIC irqdomain needed for HVM?
+> 
+> Yes.
+> 
+>> 3) Is IOAPIC irqdomain needed for Dom0?
+> 
+> 
+> See (1) above.
+> 
+>> 4) What's the proper hook point to create IOAPIC irqdomain for Xen
+>>    UP systems?
+> 
+> Don't know.
+> 
+> David
+> 
