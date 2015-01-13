@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751166AbbAMFEZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 00:04:25 -0500
-Received: from mail-oi0-f52.google.com ([209.85.218.52]:39597 "EHLO
-	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750728AbbAMFEX (ORCPT
+	id S1751405AbbAMFHV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 00:07:21 -0500
+Received: from mail-yh0-f48.google.com ([209.85.213.48]:49897 "EHLO
+	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002AbbAMFHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 00:04:23 -0500
-Message-ID: <54B4A754.9060405@landley.net>
-Date: Mon, 12 Jan 2015 23:04:20 -0600
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 13 Jan 2015 00:07:20 -0500
+Date: Mon, 12 Jan 2015 21:07:15 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org, kernel@stlinux.com,
+        Angus Clark <angus.clark@st.com>,
+        Carmelo Amoroso <carmelo.amoroso@st.com>
+Subject: Re: [PATCH v3 08/13] mtd: st_spi_fsm: Update the JEDEC probe to
+ handle extended READIDs
+Message-ID: <20150113050715.GQ9759@ld-irv-0074>
+References: <1418644760-18773-1-git-send-email-lee.jones@linaro.org>
+ <1418644760-18773-9-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Josh Triplett <josh@joshtriplett.org>,
-        Anca Emanuel <anca.emanuel@gmail.com>,
-        Junjie Mao <eternal.n08@gmail.com>
-Subject: Re: [PATCH] x86, build: replace Perl script with Shell script
-References: <20150113021750.GA24160@www.outflux.net>
-In-Reply-To: <20150113021750.GA24160@www.outflux.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418644760-18773-9-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2015 08:17 PM, Kees Cook wrote:
-> Commit e6023367d779 ("x86, kaslr: Prevent .bss from overlaping initrd")
-> added Perl to the required build environment. This reimplements in shell
-> the Perl script used to find the size of the kernel with bss and brk added.
+On Mon, Dec 15, 2014 at 11:59:15AM +0000, Lee Jones wrote:
+> The previous code was based on 3-byte JEDEC IDs, with a possible 2-byte
+> extension.  However, devices are now emerging that return 6 or more bytes of
+> READID data and the additional bytes are required to differentiate between
+> variants or generations of similar devices.
 > 
-> Reported-by: Rob Landley <rob@landley.net>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Cc: stable@vger.kernel.org
+> This patch refactors the device table and JEDEC probe code to handle arbitrary
+> length READIDs, with the standard JEDEC definition now becoming a special case.
+> Functionally, there should be no change in behaviour.  A subsequent patch will
+> update the table with extended READIDs where applicable.
 
-I just noticed earlier today that my version doesn't notice if objdump
-isn't in the $PATH. (Happens if you're cross compiling and not all
-binaries prefixed.)
+BTW, how's that promise going, where you work on adapting this driver to
+the spi-nor framework? We've already done some of this same work there.
 
-Other than that:
+> +#define RDID(...) __VA_ARGS__  /* Dummy macro to protect array argument. */
 
-Acked-by: Rob Landley <rob@landley.net>
+What? What needs "protected"?
 
-(I don't have a setup with gold to test...)
+...
 
-Rob
+Brian
