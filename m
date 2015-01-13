@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723AbbAMJBy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 04:01:54 -0500
-Received: from www.linutronix.de ([62.245.132.108]:43333 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132AbbAMJBx (ORCPT
+	id S1752054AbbAMJCg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 04:02:36 -0500
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:50821 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751893AbbAMJCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 04:01:53 -0500
-Date: Tue, 13 Jan 2015 10:01:20 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sander Eikelenboom <linux@eikelenboom.it>
-cc: David Vrabel <david.vrabel@citrix.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Yinghai Lu <yinghai@kernel.org>, xen-devel@lists.xenproject.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH v2] [Bugfix] x86/apic: Fix xen IRQ allocation
- failure caused by commit b81975eade8c
-In-Reply-To: <1686507423.20150113001814@eikelenboom.it>
-Message-ID: <alpine.DEB.2.11.1501131000410.17382@nanos>
-References: <1767175032.20150110201202@eikelenboom.it> <1421069966-19729-1-git-send-email-jiang.liu@linux.intel.com> <54B3E1AC.6080902@citrix.com> <1686507423.20150113001814@eikelenboom.it>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 13 Jan 2015 04:02:30 -0500
+Message-ID: <1421139747.22660.76.camel@x220>
+Subject: Re: [PATCH v5 3/7] gpio/xilinx: Add support for X86 Arch
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        =?ISO-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 13 Jan 2015 10:02:27 +0100
+In-Reply-To: <1418831474-24428-4-git-send-email-ricardo.ribalda@gmail.com>
+References: <1418831474-24428-1-git-send-email-ricardo.ribalda@gmail.com>
+	 <1418831474-24428-4-git-send-email-ricardo.ribalda@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 Jan 2015 09:02:28.0020 (UTC) FILETIME=[A7D03740:01D02F0F]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jan 2015, Sander Eikelenboom wrote:
+On Wed, 2014-12-17 at 16:51 +0100, Ricardo Ribalda Delgado wrote:
+> Core can be accessed via PCIe on X86 platform.
+> This patch also allows the driver to be used as module.
+> 
+> Acked-by: Michal Simek <michal.simek@xilinx.com>
+> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+> ---
+>  drivers/gpio/Kconfig       | 4 ++--
+>  drivers/gpio/gpio-xilinx.c | 2 +-
+>  2 files changed, 3 insertions(+), 3 deletions(-)
 
-> 
-> Monday, January 12, 2015, 4:01:00 PM, you wrote:
-> 
-> > On 12/01/15 13:39, Jiang Liu wrote:
-> >> Commit b81975eade8c ("x86, irq: Clean up irqdomain transition code")
-> >> breaks xen IRQ allocation because xen_smp_prepare_cpus() doesn't invoke
-> >> setup_IO_APIC(), so no irqdomains created for IOAPICs and
-> >> mp_map_pin_to_irq() fails at the very beginning.
-> >> 
-> >> Enhance xen_smp_prepare_cpus() to call setup_IO_APIC() to initialize
-> >> irqdomain for IOAPICs.
-> 
-> > Having Xen call setup_IO_APIC() to initialize the irq domains then having to
-> > add special cases to it is just wrong.
-> 
-> > The bits of init deferred by mp_register_apic() are also deferred to
-> > two different places which looks odd.
-> 
-> > What about something like the following (untested) patch?
-> 
-> Hi David / Gerry,
-> 
-> David's patch (after fixing a few compile issues) fixes the problem.
-> 
-> The power button now works for me on:
-> - intel baremetal
-> - intel xen
-> - amd baremetal (no issues with the override anymore)
-> - amd xen       (no freeze issues anymore)
+This patch became c586b3075d5b ("gpio/xilinx: Add support for X86 Arch")
+in today's linux-next (next-20150113). I noticed because a script I use
+to check linux-next spotted a problem in it.
 
-Can someone please send a proper patch with changelog?
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index 414d055..b17d226 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -366,8 +366,8 @@ config GPIO_XGENE
+>  	  here to enable the GFC GPIO functionality.
+>  
+>  config GPIO_XILINX
+> -	bool "Xilinx GPIO support"
+> -	depends on PPC_OF || MICROBLAZE || ARCH_ZYNQ
+> +	tristate "Xilinx GPIO support"
+> +	depends on OF_GPIO && (PPC_OF || MICROBLAZE || ARCH_ZYNQ || ARCH_X86)
 
-Thanks,
+There's no Kconfig symbol "ARCH_X86". Did you actually mean "X86"?
 
-	tglx
+>  	help
+>  	  Say yes here to support the Xilinx FPGA GPIO device
+>  
+> diff --git a/drivers/gpio/gpio-xilinx.c b/drivers/gpio/gpio-xilinx.c
+> index c7ed92b..554060a 100644
+> --- a/drivers/gpio/gpio-xilinx.c
+> +++ b/drivers/gpio/gpio-xilinx.c
+> @@ -30,7 +30,7 @@
+>  #define XGPIO_CHANNEL_OFFSET	0x8
+>  
+>  /* Read/Write access to the GPIO registers */
+> -#ifdef CONFIG_ARCH_ZYNQ
+> +#if defined(CONFIG_ARCH_ZYNQ) || defined(CONFIG_X86)
+
+Yes, you probably did want just "X86".
+
+>  # define xgpio_readreg(offset)		readl(offset)
+>  # define xgpio_writereg(offset, val)	writel(val, offset)
+>  #else
+
+
+Paul Bolle
+
