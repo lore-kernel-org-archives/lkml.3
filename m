@@ -1,137 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166AbbAMCXR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 21:23:17 -0500
-Received: from mga09.intel.com ([134.134.136.24]:29667 "EHLO mga09.intel.com"
+	id S1753051AbbAMCrd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 21:47:33 -0500
+Received: from mga01.intel.com ([192.55.52.88]:46332 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751260AbbAMCXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 21:23:15 -0500
+	id S1750856AbbAMCrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 21:47:32 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="511283313"
-Message-ID: <54B48190.9000906@linux.intel.com>
-Date: Tue, 13 Jan 2015 10:23:12 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+   d="scan'208";a="511297860"
+Date: Tue, 13 Jan 2015 10:27:43 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Juri Lelli <juri.lelli@arm.com>, Peter Zijlstra <peterz@infradead.org>,
+        juri.lelli@gmail.com
+Cc: Ingo Molnar <mingo@redhat.com>, Kirill Tkhai <ktkhai@parallels.com>,
+        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: Re: [PATCH v7 0/7] sched: support dl task migration during cpu
+ hotplug and other fixes
+Message-ID: <20150113022742.GA13774@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1420338714-15624-1-git-send-email-wanpeng.li@linux.intel.com>
+ <20150105232011.GA13200@kernel>
+ <20150112020452.GA2343@kernel>
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Yinghai Lu <yinghai@kernel.org>
-CC: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH v2] [Bugfix] x86/apic: Fix xen IRQ allocation
- failure caused by commit b81975eade8c
-References: <1767175032.20150110201202@eikelenboom.it> <1421069966-19729-1-git-send-email-jiang.liu@linux.intel.com> <54B3E1AC.6080902@citrix.com>
-In-Reply-To: <54B3E1AC.6080902@citrix.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150112020452.GA2343@kernel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/1/12 23:01, David Vrabel wrote:
-> On 12/01/15 13:39, Jiang Liu wrote:
->> Commit b81975eade8c ("x86, irq: Clean up irqdomain transition code")
->> breaks xen IRQ allocation because xen_smp_prepare_cpus() doesn't invoke
->> setup_IO_APIC(), so no irqdomains created for IOAPICs and
->> mp_map_pin_to_irq() fails at the very beginning.
->>
->> Enhance xen_smp_prepare_cpus() to call setup_IO_APIC() to initialize
->> irqdomain for IOAPICs.
-> 
-> Having Xen call setup_IO_APIC() to initialize the irq domains then having to
-> add special cases to it is just wrong.
-> 
-> The bits of init deferred by mp_register_apic() are also deferred to
-> two different places which looks odd.
-> 
-> What about something like the following (untested) patch?
-Hi David,
-	Really appreciate your suggestions about Xen IOAPIC:)
-Your patch solves the issue, but it will break a coming patch
-set to enable hierarchy irqdomain on x86.
-	To enable hierarchy irqdomain on x86, need to build
-irqdomains in following order:
-1) create irqdomain for CPU vector domain
-2) create irqdomains for interrupt remapping unit if interrupt
-   remapping is enabled.
-3) create irqdomains for IOAPIC/MSI/HPET etc.
-
-Function arch_early_ioapic_init() is called before initializing
-interrupt remapping subsystem. So creating IOAPIC irqdomains in
-arch_early_ioapic_init() will break hierarchy irqdomain with
-interrupt remapping enabled. I will post the x86 hierarchy
-irqdomain patch soon.
-
-So could you please help to advice on:
-1) Is IOAPIC irqdomain needed for PV?
-2) Is IOAPIC irqdomain needed for HVM?
-3) Is IOAPIC irqdomain needed for Dom0?
-4) What's the proper hook point to create IOAPIC irqdomain for Xen
-   UP systems?
-I really need to get more understanding of Xen interrupt subsystem:)
-Thanks!
-Gerry
-
-> 
-> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> index 3f5f604..e180680 100644
-> --- a/arch/x86/kernel/apic/io_apic.c
-> +++ b/arch/x86/kernel/apic/io_apic.c
-> @@ -253,8 +253,10 @@ int __init arch_early_ioapic_init(void)
->  	if (!nr_legacy_irqs())
->  		io_apic_irqs = ~0UL;
->  
-> -	for_each_ioapic(i)
-> +	for_each_ioapic(i) {
-> +		BUG_ON(mp_irqdomain_create(ioapic));
->  		alloc_ioapic_saved_registers(i);
-> +	}
->  
->  	/*
->  	 * For legacy IRQ's, start with assigning irq0 to irq15 to
-> @@ -2379,8 +2381,6 @@ void __init setup_IO_APIC(void)
->  	io_apic_irqs = nr_legacy_irqs() ? ~PIC_IRQS : ~0UL;
->  
->  	apic_printk(APIC_VERBOSE, "ENABLING IO-APIC IRQs\n");
-> -	for_each_ioapic(ioapic)
-> -		BUG_ON(mp_irqdomain_create(ioapic));
->  
->  	/*
->           * Set up IO-APIC IRQ routing.
-> @@ -2929,7 +2929,8 @@ int mp_register_ioapic(int id, u32 address, u32 gsi_base,
->  	/*
->  	 * If mp_register_ioapic() is called during early boot stage when
->  	 * walking ACPI/SFI/DT tables, it's too early to create irqdomain,
-> -	 * we are still using bootmem allocator. So delay it to setup_IO_APIC().
-> +	 * we are still using bootmem allocator. So delay it to
-> +	 * arch_early_ioapic_init().
->  	 */
->  	if (hotplug) {
->  		if (mp_irqdomain_create(idx)) {
-> 
->> --- a/arch/x86/kernel/apic/io_apic.c
->> +++ b/arch/x86/kernel/apic/io_apic.c
->> @@ -2369,6 +2381,15 @@ static void ioapic_destroy_irqdomain(int idx)
->>  	ioapics[idx].pin_info = NULL;
->>  }
->>  
->> +static void setup_IO_APIC_IDs(void)
->> +{
->> +	if (xen_domain())
->> +		return;
-> 
-> This would have to xen_pv_domain().
-> 
-> David
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Cc Juri's gmail
+On Mon, Jan 12, 2015 at 10:04:52AM +0800, Wanpeng Li wrote:
+>Ping,
+>On Tue, Jan 06, 2015 at 07:20:11AM +0800, Wanpeng Li wrote:
+>>Ping Juri, Peter, 1/7~6/7 can be reviewed/applied separately since patch 7/7 
+>>is still need more work.
+>>On Sun, Jan 04, 2015 at 10:31:47AM +0800, Wanpeng Li wrote:
+>>>v6 -> v7:
+>>> * rebase 
+>>>
+>>>I collect recent send out patches to one patchset in order to get review easily.
+>>>
+>>>For 7/7 I will remove rd->span related modification if Pang's effort merged.
+>>>https://lkml.org/lkml/2014/11/17/443
+>>>
+>>>Wanpeng Li (7):
+>>>  sched/deadline: fix start high-res preemption tick for a non-leftmost task
+>>>  sched/deadline: fix rt runtime corrupt when dl refuse a smaller bandwidth
+>>>  sched/deadline: fix dl entity is still mark yield after replenishing
+>>>  sched/deadline: reduce overhead if there are no scheduling parameters changed
+>>>  sched/fair: fix idle balance when remaining tasks are all non-CFS tasks
+>>>  sched: fix start hrtick for short schedule slices on UP
+>>>  sched/deadline: support dl task migration during cpu hotplug
+>>>
+>>> kernel/sched/core.c     | 27 +++++++++++++++++----
+>>> kernel/sched/deadline.c | 62 +++++++++++++++++++++++++++++++++++++++++++++----
+>>> kernel/sched/fair.c     |  2 +-
+>>> kernel/sched/sched.h    |  3 ++-
+>>> 4 files changed, 84 insertions(+), 10 deletions(-)
+>>>
+>>>-- 
+>>>1.9.1
