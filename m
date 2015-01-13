@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584AbbAMWIw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 17:08:52 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:36667 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811AbbAMWIu (ORCPT
+	id S1753302AbbAMWLd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 17:11:33 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:49367 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566AbbAMWLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 17:08:50 -0500
-Date: Tue, 13 Jan 2015 17:08:47 -0500 (EST)
-Message-Id: <20150113.170847.166125234153799669.davem@davemloft.net>
-To: arnd@arndb.de
-Cc: isdn4linux@listserv.isdn4linux.de, netdev@vger.kernel.org,
-        isdn@linux-pingi.de, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mISDN: avoid arch specific __builtin_return_address
- call
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1816278.9Bv8N8K5IB@wuerfel>
-References: <1816278.9Bv8N8K5IB@wuerfel>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 13 Jan 2015 14:08:49 -0800 (PST)
+	Tue, 13 Jan 2015 17:11:32 -0500
+MIME-Version: 1.0
+In-Reply-To: <1420927210-19738-3-git-send-email-dvlasenk@redhat.com>
+References: <1420927210-19738-1-git-send-email-dvlasenk@redhat.com> <1420927210-19738-3-git-send-email-dvlasenk@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 13 Jan 2015 14:11:10 -0800
+Message-ID: <CALCETrV0R+QqDXNYsJk0QeMCpCwNVmQL=H_jbRpMUApaosTkDg@mail.gmail.com>
+Subject: Re: [PATCH 2/4] x86: ia32entry.S: fix wrong symbolic constant usage: R11->ARGOFFSET
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
-Date: Tue, 13 Jan 2015 17:10:58 +0100
-
-> Not all architectures are able to call __builtin_return_address().
-> On ARM, the mISDN code produces this warning:
-> 
-> hardware/mISDN/w6692.c: In function 'w6692_dctrl':
-> hardware/mISDN/w6692.c:1181:75: warning: unsupported argument to '__builtin_return_address'
->   pr_debug("%s: %s dev(%d) open from %p\n", card->name, __func__,
->                                                                            ^
-> hardware/mISDN/mISDNipac.c: In function 'open_dchannel':
-> hardware/mISDN/mISDNipac.c:759:75: warning: unsupported argument to '__builtin_return_address'
->   pr_debug("%s: %s dev(%d) open from %p\n", isac->name, __func__,
->                                                                            ^
-> 
-> In a lot of cases, this is relatively easy to work around by
-> passing the value of __builtin_return_address(0) from the
-> callers into the functions that want it. One exception is
-> the indirect 'open' function call in struct isac_hw. While it
-> would be possible to fix this as well, this patch only addresses
-> the other callers properly and lets this one return the direct
-> parent function, which should be good enough.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+On Sat, Jan 10, 2015 at 2:00 PM, Denys Vlasenko <dvlasenk@redhat.com> wrote:
+> The values of these two constants are the same, the meaning is different.
+>
+> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+> Acked-by: Borislav Petkov <bp@suse.de>
+> CC: Linus Torvalds <torvalds@linux-foundation.org>
+> CC: Oleg Nesterov <oleg@redhat.com>
+> CC: "H. Peter Anvin" <hpa@zytor.com>
+> CC: Borislav Petkov <bp@alien8.de>
+> CC: Andy Lutomirski <luto@amacapital.net>
+> CC: Frederic Weisbecker <fweisbec@gmail.com>
+> CC: X86 ML <x86@kernel.org>
+> CC: Alexei Starovoitov <ast@plumgrid.com>
+> CC: Will Drewry <wad@chromium.org>
+> CC: Kees Cook <keescook@chromium.org>
+> CC: linux-kernel@vger.kernel.org
+> ---
+>  arch/x86/ia32/ia32entry.S | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+> index 82e8a1d..156ebca 100644
+> --- a/arch/x86/ia32/ia32entry.S
+> +++ b/arch/x86/ia32/ia32entry.S
+> @@ -179,8 +179,8 @@ sysenter_dispatch:
+>  sysexit_from_sys_call:
+>         andl    $~TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+>         /* clear IF, that popfq doesn't enable interrupts early */
+> -       andl  $~0x200,EFLAGS-R11(%rsp)
+> -       movl    RIP-R11(%rsp),%edx              /* User %eip */
+> +       andl    $~0x200,EFLAGS-ARGOFFSET(%rsp)
+> +       movl    RIP-ARGOFFSET(%rsp),%edx                /* User %eip */
+>         CFI_REGISTER rip,rdx
+>         RESTORE_ARGS 0,24,0,0,0,0
+>         xorq    %r8,%r8
+> --
+> 1.8.1.4
+>
 
 Applied.
