@@ -1,100 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730AbbAMA7G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 19:59:06 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:50474 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299AbbAMA7E (ORCPT
+	id S1752920AbbAMBBP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 20:01:15 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:36634 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751952AbbAMBBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 19:59:04 -0500
-Message-ID: <54B46DD5.9050802@hurleysoftware.com>
-Date: Mon, 12 Jan 2015 19:59:01 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 12 Jan 2015 20:01:12 -0500
 MIME-Version: 1.0
-To: Prashant Sreedharan <prashant@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>
-CC: netdev@vger.kernel.org, Linux kernel <linux-kernel@vger.kernel.org>
-Subject: [3.19-rc3] tg3: BUG: sleeping function called from invalid context
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <54B3FC53.7080702@landley.net>
+References: <54AC72AF.5090609@landley.net>
+	<20150106155024.5efa209d575fff4868758482@linux-foundation.org>
+	<54B3FC53.7080702@landley.net>
+Date: Mon, 12 Jan 2015 17:01:10 -0800
+X-Google-Sender-Auth: -Y_E1LAc5GKs-A5thCiZ0q3nl8s
+Message-ID: <CAGXu5j+z4NUq4YHeZW5ZN9Wi5ss2RJE_HzC0k-8nDnZxtnavgg@mail.gmail.com>
+Subject: Re: [PATCHv2] remove recently added perl build requirement
+From: Kees Cook <keescook@chromium.org>
+To: Rob Landley <rob@landley.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Junjie Mao <eternal.n08@gmail.com>, "# 3.4.x" <stable@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3.19-rc3, I'm seeing this might_sleep() warning [1] from the tg3_open()
-call stack. Let me know if I need to bisect this.
+On Mon, Jan 12, 2015 at 8:54 AM, Rob Landley <rob@landley.net> wrote:
+> From: Rob Landley <rob@landley.net>
+>
+> Commit e6023367d779 ("x86, kaslr: Prevent .bss from overlaping initrd")
+> added perl back to the kernel build dependencies in -rc6.
 
-Regards,
-Peter Hurley
+Ah, yeah, good call on Perl as a build dep.
 
-[1]
+> Replace those 39 lines of perl with 4 lines of shell script.
+>
+> Signed-off-by: Rob Landley <rob@landley.net>
+> Acked-by: Anca Emanuel <anca.emanuel@gmail.com>
+> ---
+>
+>  arch/x86/boot/compressed/Makefile |    6 ++--
+>  arch/x86/tools/calc_run_size.pl   |   39 ----------------------------
+>  2 files changed, 4 insertions(+), 41 deletions(-)
+>
+> Note: checkpatch.pl isn't a build dependency, it's a development dependency
+> (like bloat-o-meter being written in python or "make xconfig" needing QT).
+> Those aren't things you need to add to your cross compile environment
+> to produce a binary. Different category of dependency.
+>
+> For more history on the issue, see https://lkml.org/lkml/2013/2/27/18
+>
+> --- linux/arch/x86/boot/compressed/Makefile
+> +++ linux/arch/x86/boot/compressed/Makefile
+> @@ -89,8 +76,10 @@
+>  suffix-$(CONFIG_KERNEL_LZO)    := lzo
+>  suffix-$(CONFIG_KERNEL_LZ4)    := lz4
+>
+> -RUN_SIZE = $(shell $(OBJDUMP) -h vmlinux | \
+> -            perl $(srctree)/arch/x86/tools/calc_run_size.pl)
+> +RUN_SIZE = $(shell NUM='\([0-9a-fA-F]*[ \t]*\)'; $(OBJDUMP) -h vmlinux | \
+> +sed -n 's/^[ \t0-9]*.b[sr][sk][ \t]*'"$$NUM$$NUM$$NUM$$NUM"'.*/\1\4/p' | \
+> +xargs | while read a b c d; do [ "$$b" != "$$d" ] && exit 1; \
+> +expr $$(printf "%d + %d + %d" 0x$$a 0x$$b 0x$$c); done)
+>  quiet_cmd_mkpiggy = MKPIGGY $@
+>        cmd_mkpiggy = $(obj)/mkpiggy $< $(RUN_SIZE) > $@ || ( rm -f $@ ; false )
 
-[   17.203009] BUG: sleeping function called from invalid context at /home/peter/src/kernels/mainline/kernel/irq/manage.c:104
-[   17.203067] in_atomic(): 1, irqs_disabled(): 0, pid: 1106, name: ip
-[   17.203092] 2 locks held by ip/1106:
-[   17.205255]  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff816adf1f>] rtnetlink_rcv+0x1f/0x40
-[   17.207445]  #1:  (&(&tp->lock)->rlock){+.....}, at: [<ffffffffa01073e6>] tg3_start+0xc06/0x11f0 [tg3]
-[   17.209725] CPU: 2 PID: 1106 Comm: ip Not tainted 3.19.0-rc3+wip-xeon+lockdep #rc3+wip
-[   17.211900] Hardware name: Dell Inc. Precision WorkStation T5400  /0RW203, BIOS A11 04/30/2012
-[   17.214086]  0000000000000068 ffff8802ac823498 ffffffff817af7e8 0000000000000005
-[   17.216265]  ffffffff81a9be78 ffff8802ac8234a8 ffffffff810998a5 ffff8802ac8234d8
-[   17.218446]  ffffffff8109991a ffff8802ac8234c8 ffff8802af0aae00 ffffffffa00ed000
-[   17.220636] Call Trace:
-[   17.222743]  [<ffffffff817af7e8>] dump_stack+0x4f/0x7b
-[   17.224808]  [<ffffffff810998a5>] ___might_sleep+0x105/0x140
-[   17.226842]  [<ffffffff8109991a>] __might_sleep+0x3a/0xa0
-[   17.228869]  [<ffffffffa00ed000>] ? 0xffffffffa00ed000
-[   17.230939]  [<ffffffff810d7d78>] synchronize_irq+0x38/0xa0
-[   17.232967]  [<ffffffffa00ed000>] ? 0xffffffffa00ed000
-[   17.234991]  [<ffffffffa010105f>] tg3_chip_reset+0x13f/0x9c0 [tg3]
-[   17.236988]  [<ffffffffa01020ae>] tg3_reset_hw+0x7e/0x2d20 [tg3]
-[   17.238996]  [<ffffffff813bfaff>] ? __udelay+0x2f/0x40
-[   17.241007]  [<ffffffffa00ef2f7>] ? _tw32_flush+0x47/0x80 [tg3]
-[   17.243066]  [<ffffffffa0104dac>] tg3_init_hw+0x5c/0x70 [tg3]
-[   17.245438]  [<ffffffffa010740b>] tg3_start+0xc2b/0x11f0 [tg3]
-[   17.247444]  [<ffffffffa0107ad7>] ? tg3_open+0x107/0x2e0 [tg3]
-[   17.249556]  [<ffffffff810c338d>] ? trace_hardirqs_on+0xd/0x10
-[   17.251581]  [<ffffffff8107806f>] ? __local_bh_enable_ip+0x6f/0x100
-[   17.253710]  [<ffffffffa0107af8>] tg3_open+0x128/0x2e0 [tg3]
-[   17.255758]  [<ffffffff816ba3f5>] ? netpoll_poll_disable+0x5/0xa0
-[   17.257932]  [<ffffffff816a14af>] __dev_open+0xbf/0x140
-[   17.260091]  [<ffffffff816a17c1>] __dev_change_flags+0xa1/0x160
-[   17.262222]  [<ffffffff816a18a9>] dev_change_flags+0x29/0x60
-[   17.264360]  [<ffffffff816b0e02>] do_setlink+0x2f2/0xa30
-[   17.266431]  [<ffffffff816b1b7f>] rtnl_newlink+0x51f/0x750
-[   17.268485]  [<ffffffff816b1749>] ? rtnl_newlink+0xe9/0x750
-[   17.270483]  [<ffffffff811869c2>] ? free_pages_prepare+0x1d2/0x270
-[   17.272507]  [<ffffffff810c32bd>] ? trace_hardirqs_on_caller+0x11d/0x1e0
-[   17.274531]  [<ffffffff813dd1b2>] ? nla_parse+0x32/0x120
-[   17.276531]  [<ffffffff81021ab5>] ? native_sched_clock+0x35/0xa0
-[   17.278514]  [<ffffffff816adfd5>] rtnetlink_rcv_msg+0x95/0x250
-[   17.280485]  [<ffffffff8109f699>] ? preempt_count_sub+0x49/0x50
-[   17.282448]  [<ffffffff817b4a02>] ? mutex_lock_nested+0x382/0x530
-[   17.284402]  [<ffffffff816adf1f>] ? rtnetlink_rcv+0x1f/0x40
-[   17.286290]  [<ffffffff816adf1f>] ? rtnetlink_rcv+0x1f/0x40
-[   17.288142]  [<ffffffff816adf40>] ? rtnetlink_rcv+0x40/0x40
-[   17.290031]  [<ffffffff816cedc1>] netlink_rcv_skb+0xc1/0xe0
-[   17.291836]  [<ffffffff816adf2e>] rtnetlink_rcv+0x2e/0x40
-[   17.293615]  [<ffffffff816ce473>] netlink_unicast+0xf3/0x1d0
-[   17.295420]  [<ffffffff816ce863>] netlink_sendmsg+0x313/0x690
-[   17.297132]  [<ffffffff811ada4f>] ? might_fault+0x5f/0xb0
-[   17.298799]  [<ffffffff8168253c>] do_sock_sendmsg+0x8c/0x100
-[   17.300493]  [<ffffffff81681e3e>] ? copy_msghdr_from_user+0x15e/0x1f0
-[   17.302173]  [<ffffffff81682aeb>] ___sys_sendmsg+0x30b/0x320
-[   17.303798]  [<ffffffff81021ab5>] ? native_sched_clock+0x35/0xa0
-[   17.305431]  [<ffffffff810bdee0>] ? cpuacct_account_field+0x80/0xb0
-[   17.307085]  [<ffffffff81021ab5>] ? native_sched_clock+0x35/0xa0
-[   17.308744]  [<ffffffff810a4f35>] ? sched_clock_local+0x25/0x90
-[   17.310375]  [<ffffffff810a5dc1>] ? vtime_account_user+0x91/0xa0
-[   17.311948]  [<ffffffff810a5198>] ? sched_clock_cpu+0xb8/0xe0
-[   17.313509]  [<ffffffff810bf8be>] ? put_lock_stats.isra.26+0xe/0x30
-[   17.315069]  [<ffffffff810c007e>] ? lock_release_holdtime.part.27+0x12e/0x1b0
-[   17.316618]  [<ffffffff810a5dc1>] ? vtime_account_user+0x91/0xa0
-[   17.318162]  [<ffffffff8109f5d1>] ? get_parent_ip+0x11/0x50
-[   17.319703]  [<ffffffff8109f699>] ? preempt_count_sub+0x49/0x50
-[   17.321235]  [<ffffffff811807e5>] ? context_tracking_user_exit+0x55/0x130
-[   17.322732]  [<ffffffff811807e5>] ? context_tracking_user_exit+0x55/0x130
-[   17.324197]  [<ffffffff816834f2>] __sys_sendmsg+0x42/0x80
-[   17.325634]  [<ffffffff81683542>] SyS_sendmsg+0x12/0x20
-[   17.327048]  [<ffffffff817ba12d>] system_call_fastpath+0x16/0x1b
+I'd much prefer a full shell script as this is hard to read. It loses
+all the comments and variable names, etc. Also, this reverts commit
+70b61e362187 ("x86, kaslr: Handle Gold linker for finding bss/brk").
+
+-Kees
+
+>
+> --- linux/arch/x86/tools/calc_run_size.pl
+> +++ /dev/null
+> @@ -1,39 +0,0 @@
+> -#!/usr/bin/perl
+> -#
+> -# Calculate the amount of space needed to run the kernel, including room for
+> -# the .bss and .brk sections.
+> -#
+> -# Usage:
+> -# objdump -h a.out | perl calc_run_size.pl
+> -use strict;
+> -
+> -my $mem_size = 0;
+> -my $file_offset = 0;
+> -
+> -my $sections=" *[0-9]+ \.(?:bss|brk) +";
+> -while (<>) {
+> -       if (/^$sections([0-9a-f]+) +(?:[0-9a-f]+ +){2}([0-9a-f]+)/) {
+> -               my $size = hex($1);
+> -               my $offset = hex($2);
+> -               $mem_size += $size;
+> -               if ($file_offset == 0) {
+> -                       $file_offset = $offset;
+> -               } elsif ($file_offset != $offset) {
+> -                       # BFD linker shows the same file offset in ELF.
+> -                       # Gold linker shows them as consecutive.
+> -                       next if ($file_offset + $mem_size == $offset + $size);
+> -
+> -                       printf STDERR "file_offset: 0x%lx\n", $file_offset;
+> -                       printf STDERR "mem_size: 0x%lx\n", $mem_size;
+> -                       printf STDERR "offset: 0x%lx\n", $offset;
+> -                       printf STDERR "size: 0x%lx\n", $size;
+> -
+> -                       die ".bss and .brk are non-contiguous\n";
+> -               }
+> -       }
+> -}
+> -
+> -if ($file_offset == 0) {
+> -       die "Never found .bss or .brk file offset\n";
+> -}
+> -printf("%d\n", $mem_size + $file_offset);
+
+
+
+-- 
+Kees Cook
+Chrome OS Security
