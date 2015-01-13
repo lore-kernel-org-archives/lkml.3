@@ -1,114 +1,356 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751568AbbAMJeT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 04:34:19 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.246]:61390 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750921AbbAMJeR (ORCPT
+	id S1751991AbbAMJOJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 04:14:09 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:58957 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751748AbbAMJOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 04:34:17 -0500
-From: Bo Shen <voice.shen@atmel.com>
-To: Mark Brown <broonie@kernel.org>
-CC: <ckeepax@opensource.wolfsonmicro.com>, <lars@metafoo.de>,
-        <alsa-devel@alsa-project.org>, <linux-sound@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Bo Shen <voice.shen@atmel.com>
-Subject: [PATCH v2] ASoC: wm8904: fix runtime warning
-Date: Tue, 13 Jan 2015 17:34:02 +0800
-Message-ID: <1421141643-30105-1-git-send-email-voice.shen@atmel.com>
-X-Mailer: git-send-email 2.1.0.24.g4109c28
+	Tue, 13 Jan 2015 04:14:06 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH] driver core: property: support for generic property
+Date: Tue, 13 Jan 2015 10:35:09 +0100
+Message-ID: <3315410.c1hB71JUOk@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1421061344-195095-1-git-send-email-heikki.krogerus@linux.intel.com>
+References: <1421061344-195095-1-git-send-email-heikki.krogerus@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct the path name for mux to get rid of the following warning:
+On Monday, January 12, 2015 01:15:44 PM Heikki Krogerus wrote:
+> This extends the Unified Property Interface by adding
+> "Generic Property" to it for cases where device tree or ACPI
+> are not being used.
+> 
+> That makes the Unified Property Interface cover most of the
+> cases where information is extracted from custom
+> platform_data in the drivers, i.e. removing also the need
+> for them to handle custom platform data separately.
 
---->8---
-wm8904 1-001a: Control not supported for path ADCL -> [Left] -> AIFOUTL
-wm8904 1-001a: ASoC: no dapm match for ADCL --> Left --> AIFOUTL
-wm8904 1-001a: ASoC: Failed to add route ADCL -> Left -> AIFOUTL
-wm8904 1-001a: Control not supported for path ADCR -> [Right] -> AIFOUTL
-wm8904 1-001a: ASoC: no dapm match for ADCR --> Right --> AIFOUTL
-wm8904 1-001a: ASoC: Failed to add route ADCR -> Right -> AIFOUTL
-wm8904 1-001a: Control not supported for path ADCL -> [Left] -> AIFOUTR
-wm8904 1-001a: ASoC: no dapm match for ADCL --> Left --> AIFOUTR
-wm8904 1-001a: ASoC: Failed to add route ADCL -> Left -> AIFOUTR
-wm8904 1-001a: Control not supported for path ADCR -> [Right] -> AIFOUTR
-wm8904 1-001a: ASoC: no dapm match for ADCR --> Right --> AIFOUTR
-wm8904 1-001a: ASoC: Failed to add route ADCR -> Right -> AIFOUTR
-wm8904 1-001a: Control not supported for path AIFINR -> [Right] -> DACL
-wm8904 1-001a: ASoC: no dapm match for AIFINR --> Right --> DACL
-wm8904 1-001a: ASoC: Failed to add route AIFINR -> Right -> DACL
-wm8904 1-001a: Control not supported for path AIFINL -> [Left] -> DACL
-wm8904 1-001a: ASoC: no dapm match for AIFINL --> Left --> DACL
-wm8904 1-001a: ASoC: Failed to add route AIFINL -> Left -> DACL
-wm8904 1-001a: Control not supported for path AIFINR -> [Right] -> DACR
-wm8904 1-001a: ASoC: no dapm match for AIFINR --> Right --> DACR
-wm8904 1-001a: ASoC: Failed to add route AIFINR -> Right -> DACR
-wm8904 1-001a: Control not supported for path AIFINL -> [Left] -> DACR
-wm8904 1-001a: ASoC: no dapm match for AIFINL --> Left --> DACR
-wm8904 1-001a: ASoC: Failed to add route AIFINL -> Left -> DACR
----8<---
+I'm not sure I understand that correctly.  Do you mean that it is possible to
+reduce code duplication between drivers this way?
 
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
----
+> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> ---
+>  drivers/base/property.c  | 188 +++++++++++++++++++++++++++++++++++++++++------
+>  include/linux/device.h   |   2 +
+>  include/linux/property.h |  13 ++++
+>  3 files changed, 182 insertions(+), 21 deletions(-)
+> 
+> diff --git a/drivers/base/property.c b/drivers/base/property.c
+> index c458458..99990e2 100644
+> --- a/drivers/base/property.c
+> +++ b/drivers/base/property.c
+> @@ -15,6 +15,129 @@
+>  #include <linux/acpi.h>
+>  #include <linux/of.h>
+>  
+> +static struct dev_gen_prop *dev_prop_get(struct device *dev, const char *name)
+> +{
+> +	struct dev_gen_prop *prop;
+> +
+> +	if (!dev->gen_prop)
+> +		return NULL;
+> +
+> +	for (prop = dev->gen_prop; prop->name; prop++)
+> +		if (!strcmp(name, prop->name))
+> +			return prop;
+> +	return NULL;
+> +}
+> +
+> +static int dev_prop_copy_array_u8(const char **src, u8 *val, size_t nval)
+> +{
+> +	int ret;
+> +	int i;
+> +
+> +	for (i = 0; i < nval; i++) {
+> +		if (!src[i])
+> +			return -EOVERFLOW;
+> +		ret = kstrtou8(src[i], 0, &val[i]);
+> +		if (ret)
+> +			return ret;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int dev_prop_copy_array_u16(const char **src, u16 *val, size_t nval)
+> +{
+> +	int ret;
+> +	int i;
+> +
+> +	for (i = 0; i < nval; i++) {
+> +		if (!src[i])
+> +			return -EOVERFLOW;
+> +		ret = kstrtou16(src[i], 0, &val[i]);
+> +		if (ret)
+> +			return ret;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int dev_prop_copy_array_u32(const char **src, u32 *val, size_t nval)
+> +{
+> +	int ret;
+> +	int i;
+> +
+> +	for (i = 0; i < nval; i++) {
+> +		if (!src[i])
+> +			return -EOVERFLOW;
+> +		ret = kstrtou32(src[i], 0, &val[i]);
+> +		if (ret)
+> +			return ret;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int dev_prop_copy_array_u64(const char **src, u64 *val, size_t nval)
+> +{
+> +	int ret;
+> +	int i;
+> +
+> +	for (i = 0; i < nval; i++) {
+> +		if (!src[i])
+> +			return -EOVERFLOW;
+> +		ret = kstrtou64(src[i], 0, &val[i]);
+> +		if (ret)
+> +			return ret;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int dev_prop_copy_array_string(const char **src, const char **val,
+> +				      size_t nval)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < nval; i++) {
+> +		if (!src[i])
+> +			return -EOVERFLOW;
+> +		val[i] = src[i];
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int dev_prop_read_array(struct device *dev, const char *name,
+> +			       enum dev_prop_type type, void *val, size_t nval)
+> +{
+> +	struct dev_gen_prop *prop;
+> +	int ret = 0;
+> +
+> +	prop = dev_prop_get(dev, name);
+> +	if (!prop)
+> +		return -ENODATA;
+> +
+> +	if (prop->type != type)
+> +		return -EPROTO;
+> +
+> +	switch (prop->type) {
+> +	case DEV_PROP_U8:
+> +		ret = dev_prop_copy_array_u8(prop->val, (u8 *)val, nval);
+> +		break;
+> +	case DEV_PROP_U16:
+> +		ret = dev_prop_copy_array_u16(prop->val, (u16 *)val, nval);
+> +		break;
+> +	case DEV_PROP_U32:
+> +		ret = dev_prop_copy_array_u32(prop->val, (u32 *)val, nval);
+> +		break;
+> +	case DEV_PROP_U64:
+> +		ret = dev_prop_copy_array_u64(prop->val, (u64 *)val, nval);
+> +		break;
+> +	case DEV_PROP_STRING:
+> +		ret = dev_prop_copy_array_string(prop->val, (const char **)val,
+> +						 nval);
+> +		break;
+> +	default:
+> +		ret = -EINVAL;
+> +		break;
+> +	}
+> +	return ret;
+> +}
+> +
+>  /**
+>   * device_property_present - check if a property of a device is present
+>   * @dev: Device whose property is being checked
+> @@ -26,8 +149,9 @@ bool device_property_present(struct device *dev, const char *propname)
+>  {
+>  	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
+>  		return of_property_read_bool(dev->of_node, propname);
+> -
+> -	return !acpi_dev_prop_get(ACPI_COMPANION(dev), propname, NULL);
+> +	if (ACPI_HANDLE(dev))
+> +		return !acpi_dev_prop_get(ACPI_COMPANION(dev), propname, NULL);
+> +	return !!dev_prop_get(dev, propname);
+>  }
+>  EXPORT_SYMBOL_GPL(device_property_present);
+>  
+> @@ -51,13 +175,6 @@ EXPORT_SYMBOL_GPL(fwnode_property_present);
+>  	(val) ? of_property_read_##type##_array((node), (propname), (val), (nval)) \
+>  	      : of_property_count_elems_of_size((node), (propname), sizeof(type))
+>  
+> -#define DEV_PROP_READ_ARRAY(_dev_, _propname_, _type_, _proptype_, _val_, _nval_) \
+> -	IS_ENABLED(CONFIG_OF) && _dev_->of_node ? \
+> -		(OF_DEV_PROP_READ_ARRAY(_dev_->of_node, _propname_, _type_, \
+> -					_val_, _nval_)) : \
+> -		acpi_dev_prop_read(ACPI_COMPANION(_dev_), _propname_, \
+> -				   _proptype_, _val_, _nval_)
+> -
 
-Changes in v2:
-- Correct the mux path name.
-- Route the mux to the pins.
+The macro was used here for a reason.  Can't you replace it with an extended
+macro instead?
 
- sound/soc/codecs/wm8904.c | 25 +++++++++++++++++--------
- 1 file changed, 17 insertions(+), 8 deletions(-)
+>  /**
+>   * device_property_read_u8_array - return a u8 array property of a device
+>   * @dev: Device to get the property of
+> @@ -77,7 +194,13 @@ EXPORT_SYMBOL_GPL(fwnode_property_present);
+>  int device_property_read_u8_array(struct device *dev, const char *propname,
+>  				  u8 *val, size_t nval)
+>  {
+> -	return DEV_PROP_READ_ARRAY(dev, propname, u8, DEV_PROP_U8, val, nval);
+> +	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
+> +		return OF_DEV_PROP_READ_ARRAY(dev->of_node, propname, u8,
+> +					      val, nval);
+> +	if (ACPI_HANDLE(dev))
+> +		return acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
+> +					  DEV_PROP_U8, val, nval);
+> +	return dev_prop_read_array(dev, propname, DEV_PROP_U8, val, nval);
+>  }
+>  EXPORT_SYMBOL_GPL(device_property_read_u8_array);
+>  
+> @@ -100,7 +223,13 @@ EXPORT_SYMBOL_GPL(device_property_read_u8_array);
+>  int device_property_read_u16_array(struct device *dev, const char *propname,
+>  				   u16 *val, size_t nval)
+>  {
+> -	return DEV_PROP_READ_ARRAY(dev, propname, u16, DEV_PROP_U16, val, nval);
+> +	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
+> +		return OF_DEV_PROP_READ_ARRAY(dev->of_node, propname, u16, val,
+> +					      nval);
+> +	if (ACPI_HANDLE(dev))
+> +		return acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
+> +					  DEV_PROP_U16, val, nval);
+> +	return dev_prop_read_array(dev, propname, DEV_PROP_U16, val, nval);
+>  }
+>  EXPORT_SYMBOL_GPL(device_property_read_u16_array);
+>  
+> @@ -123,7 +252,13 @@ EXPORT_SYMBOL_GPL(device_property_read_u16_array);
+>  int device_property_read_u32_array(struct device *dev, const char *propname,
+>  				   u32 *val, size_t nval)
+>  {
+> -	return DEV_PROP_READ_ARRAY(dev, propname, u32, DEV_PROP_U32, val, nval);
+> +	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
+> +		return OF_DEV_PROP_READ_ARRAY(dev->of_node, propname, u32, val,
+> +					      nval);
+> +	if (ACPI_HANDLE(dev))
+> +		return acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
+> +					  DEV_PROP_U32, val, nval);
+> +	return dev_prop_read_array(dev, propname, DEV_PROP_U32, val, nval);
+>  }
+>  EXPORT_SYMBOL_GPL(device_property_read_u32_array);
+>  
+> @@ -146,7 +281,13 @@ EXPORT_SYMBOL_GPL(device_property_read_u32_array);
+>  int device_property_read_u64_array(struct device *dev, const char *propname,
+>  				   u64 *val, size_t nval)
+>  {
+> -	return DEV_PROP_READ_ARRAY(dev, propname, u64, DEV_PROP_U64, val, nval);
+> +	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
+> +		return OF_DEV_PROP_READ_ARRAY(dev->of_node, propname, u64, val,
+> +					      nval);
+> +	if (ACPI_HANDLE(dev))
+> +		return acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
+> +					  DEV_PROP_U64, val, nval);
+> +	return dev_prop_read_array(dev, propname, DEV_PROP_U64, val, nval);
+>  }
+>  EXPORT_SYMBOL_GPL(device_property_read_u64_array);
+>  
+> @@ -169,10 +310,13 @@ EXPORT_SYMBOL_GPL(device_property_read_u64_array);
+>  int device_property_read_string_array(struct device *dev, const char *propname,
+>  				      const char **val, size_t nval)
+>  {
+> -	return IS_ENABLED(CONFIG_OF) && dev->of_node ?
+> -		of_property_read_string_array(dev->of_node, propname, val, nval) :
+> -		acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
+> -				   DEV_PROP_STRING, val, nval);
+> +	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
+> +		return of_property_read_string_array(dev->of_node, propname,
+> +						     val, nval);
+> +	if (ACPI_HANDLE(dev))
+> +		return acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
+> +					  DEV_PROP_STRING, val, nval);
+> +	return dev_prop_read_array(dev, propname, DEV_PROP_STRING, val, nval);
+>  }
+>  EXPORT_SYMBOL_GPL(device_property_read_string_array);
+>  
+> @@ -193,10 +337,12 @@ EXPORT_SYMBOL_GPL(device_property_read_string_array);
+>  int device_property_read_string(struct device *dev, const char *propname,
+>  				const char **val)
+>  {
+> -	return IS_ENABLED(CONFIG_OF) && dev->of_node ?
+> -		of_property_read_string(dev->of_node, propname, val) :
+> -		acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
+> -				   DEV_PROP_STRING, val, 1);
+> +	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
+> +		return of_property_read_string(dev->of_node, propname, val);
+> +	if (ACPI_HANDLE(dev))
+> +		return acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
+> +					  DEV_PROP_STRING, val, 1);
+> +	return dev_prop_read_array(dev, propname, DEV_PROP_STRING, val, 1);
+>  }
+>  EXPORT_SYMBOL_GPL(device_property_read_string);
+>  
+> diff --git a/include/linux/device.h b/include/linux/device.h
+> index fb50673..bd1e292 100644
+> --- a/include/linux/device.h
+> +++ b/include/linux/device.h
+> @@ -27,6 +27,7 @@
+>  #include <linux/ratelimit.h>
+>  #include <linux/uidgid.h>
+>  #include <linux/gfp.h>
+> +#include <linux/property.h>
+>  #include <asm/device.h>
+>  
+>  struct device;
+> @@ -780,6 +781,7 @@ struct device {
+>  
+>  	struct device_node	*of_node; /* associated device tree node */
+>  	struct acpi_dev_node	acpi_node; /* associated ACPI device node */
+> +	struct dev_gen_prop	*gen_prop;
+>  
+>  	dev_t			devt;	/* dev_t, creates the sysfs "dev" */
+>  	u32			id;	/* device instance */
+> diff --git a/include/linux/property.h b/include/linux/property.h
+> index a6a3d98..6ac8e508 100644
+> --- a/include/linux/property.h
+> +++ b/include/linux/property.h
+> @@ -26,6 +26,19 @@ enum dev_prop_type {
+>  	DEV_PROP_MAX,
+>  };
+>  
+> +/**
+> + * struct dev_gen_prop - Generic Device Property
+> + * @name: property name
+> + * @val: value array
+> + *
+> + * Used when of_node and acpi_node are missing.
+> + */
+> +struct dev_gen_prop {
+> +	enum dev_prop_type type;
+> +	const char *name;
+> +	const char **val;
+> +};
+> +
+>  bool device_property_present(struct device *dev, const char *propname);
+>  int device_property_read_u8_array(struct device *dev, const char *propname,
+>  				  u8 *val, size_t nval);
+> 
 
-diff --git a/sound/soc/codecs/wm8904.c b/sound/soc/codecs/wm8904.c
-index 4d2d2b1..110d0e6 100644
---- a/sound/soc/codecs/wm8904.c
-+++ b/sound/soc/codecs/wm8904.c
-@@ -1076,10 +1076,13 @@ static const struct snd_soc_dapm_route adc_intercon[] = {
- 	{ "Right Capture PGA", NULL, "Right Capture Mux" },
- 	{ "Right Capture PGA", NULL, "Right Capture Inverting Mux" },
- 
--	{ "AIFOUTL", "Left",  "ADCL" },
--	{ "AIFOUTL", "Right", "ADCR" },
--	{ "AIFOUTR", "Left",  "ADCL" },
--	{ "AIFOUTR", "Right", "ADCR" },
-+	{ "AIFOUTL Mux", "Left", "ADCL" },
-+	{ "AIFOUTL Mux", "Right", "ADCR" },
-+	{ "AIFOUTR Mux", "Left", "ADCL" },
-+	{ "AIFOUTR Mux", "Right", "ADCR" },
-+
-+	{ "AIFOUTL", NULL, "AIFOUTL Mux" },
-+	{ "AIFOUTR", NULL, "AIFOUTR Mux" },
- 
- 	{ "ADCL", NULL, "CLK_DSP" },
- 	{ "ADCL", NULL, "Left Capture PGA" },
-@@ -1089,14 +1092,20 @@ static const struct snd_soc_dapm_route adc_intercon[] = {
- };
- 
- static const struct snd_soc_dapm_route dac_intercon[] = {
--	{ "DACL", "Right", "AIFINR" },
--	{ "DACL", "Left",  "AIFINL" },
-+	{ "DACL", NULL, "AIFINL" },
-+	{ "DACL", NULL, "AIFINR" },
- 	{ "DACL", NULL, "CLK_DSP" },
- 
--	{ "DACR", "Right", "AIFINR" },
--	{ "DACR", "Left",  "AIFINL" },
-+	{ "DACR", NULL, "AIFINL" },
-+	{ "DACR", NULL, "AIFINR" },
- 	{ "DACR", NULL, "CLK_DSP" },
- 
-+	{ "DACL Mux", "Left", "DACL" },
-+	{ "DACL Mux", "Right", "DACR" },
-+
-+	{ "DACR Mux", "Left", "DACL" },
-+	{ "DACR Mux", "Right", "DACR" },
-+
- 	{ "Charge pump", NULL, "SYSCLK" },
- 
- 	{ "Headphone Output", NULL, "HPL PGA" },
 -- 
-2.1.0.24.g4109c28
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
