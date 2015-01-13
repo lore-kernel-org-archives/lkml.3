@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667AbbAMXgx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 18:36:53 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751113AbbAMXgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 18:36:52 -0500
-Message-ID: <54B5AC10.6070102@nod.at>
-Date: Wed, 14 Jan 2015 00:36:48 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Jens Axboe <axboe@fb.com>, Christoph Hellwig <hch@infradead.org>
-CC: dedekind1@gmail.com, dwmw2@infradead.org, computersforpeace@gmail.com,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tom.leiming@gmail.com
-Subject: Re: [PATCH 2/2 v2] UBI: Block: Add blk-mq support
-References: <1420926734-16417-1-git-send-email-richard@nod.at> <1420926734-16417-2-git-send-email-richard@nod.at> <20150113162553.GA24351@infradead.org> <54B5A188.2000001@nod.at> <54B5A213.1090502@fb.com> <54B5A77C.9040405@nod.at> <54B5AA84.9010306@fb.com>
-In-Reply-To: <54B5AA84.9010306@fb.com>
-Content-Type: text/plain; charset=windows-1252
+	id S1752506AbbAMXhe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 18:37:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53330 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751966AbbAMXhc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 18:37:32 -0500
+Date: Tue, 13 Jan 2015 15:37:31 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andrzej Hajda <a.hajda@samsung.com>
+Cc: linux-mm@kvack.org, Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, andi@firstfloor.org, andi@lisas.de,
+        Mike Turquette <mturquette@linaro.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 0/5] kstrdup optimization
+Message-Id: <20150113153731.43eefac721964d165396e5af@linux-foundation.org>
+In-Reply-To: <1421054323-14430-1-git-send-email-a.hajda@samsung.com>
+References: <1421054323-14430-1-git-send-email-a.hajda@samsung.com>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 12 Jan 2015 10:18:38 +0100 Andrzej Hajda <a.hajda@samsung.com> wrote:
 
-
-Am 14.01.2015 um 00:30 schrieb Jens Axboe:
->> If I understand you correctly it can happen that blk_rq_bytes() returns
->> more bytes than blk_rq_map_sg() allocated, right?
+> Hi,
 > 
-> No, the number of bytes will be the same, no magic is involved :-)
-
-Good to know. :)
-
-> But lets say the initial request has 4 bios, with each 2 pages, for a
-> total of 8 segments. Lets further assume that the pages in each bio are
-> contiguous, so that blk_rq_map_sg() will map this to 4 sg elements, each
-> 2xpages long.
+> kstrdup if often used to duplicate strings where neither source neither
+> destination will be ever modified. In such case we can just reuse the source
+> instead of duplicating it. The problem is that we must be sure that
+> the source is non-modifiable and its life-time is long enough.
 > 
-> Now, this may already be handled just fine, and you don't need to
-> update/store the actual sg count. I just looked at the source, and I'm
-> assuming it'll do the right thing (ubi_read_sg() will bump the active sg
-> element, when that size has been consumed), but I don't have
-> ubi_read_sg() in my tree to verify.
+> I suspect the good candidates for such strings are strings located in kernel
+> .rodata section, they cannot be modifed because the section is read-only and
+> their life-time is equal to kernel life-time.
+> 
+> This small patchset proposes alternative version of kstrdup - kstrdup_const,
+> which returns source string if it is located in .rodata otherwise it fallbacks
+> to kstrdup.
+> To verify if the source is in .rodata function checks if the address is between
+> sentinels __start_rodata, __end_rodata. I guess it should work with all
+> architectures.
+> 
+> The main patch is accompanied by four patches constifying kstrdup for cases
+> where situtation described above happens frequently.
+> 
+> As I have tested the patchset on mobile platform (exynos4210-trats) it saves
+> 3272 string allocations. Since minimal allocation is 32 or 64 bytes depending
+> on Kconfig options the patchset saves respectively about 100KB or 200KB of memory.
 
-Currently the sg count is hard coded to UBI_MAX_SG_COUNT.
+That's a lot of memory.  I wonder where it's all going to.  sysfs,
+probably?
 
-I'm sorry, I forgot to CC you and hch to this patch:
-https://lkml.org/lkml/2015/1/10/204
+What the heck does (the cheerily undocumented) KERNFS_STATIC_NAME do
+and can we remove it if this patchset is in place?
 
-Thanks,
-//richard
 
