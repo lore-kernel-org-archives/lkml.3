@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753757AbbAMQgu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 11:36:50 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:41455 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753535AbbAMQgC (ORCPT
+	id S1753684AbbAMQgH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 11:36:07 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:62194 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753604AbbAMQgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 11:36:02 -0500
+	Tue, 13 Jan 2015 11:36:04 -0500
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
         Russell King <linux@arm.linux.org.uk>
@@ -18,9 +18,9 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
         Daniel Drake <drake@endlessm.com>,
         Dmitry Pervushin <dpervushin@gmail.com>,
         Tim Sander <tim@krieglstein.org>, Stephen Boyd <sboyd@codeaurora.org>
-Subject: [RFC PATCH 4/5] arm: perf: Make v7 support FIQ-safe
-Date: Tue, 13 Jan 2015 16:35:30 +0000
-Message-Id: <1421166931-14134-5-git-send-email-daniel.thompson@linaro.org>
+Subject: [RFC PATCH 5/5] arm: perf: Use FIQ to handle PMU events.
+Date: Tue, 13 Jan 2015 16:35:31 +0000
+Message-Id: <1421166931-14134-6-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1421166931-14134-1-git-send-email-daniel.thompson@linaro.org>
 References: <1421166931-14134-1-git-send-email-daniel.thompson@linaro.org>
@@ -28,65 +28,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-armv7pmu_disable_event() is called during irq handler. If irq handling
-switches over to fiq then the spin locks in this function risks deadlock.
-Both armv7_pmnc_disable_counter() and armv7_pmnc_disable_intens() are
-unconditional co-processor writes. I haven't yet come up with an
-schedule where other users of pmu_lock would break if interleaved with
-these calls so I have simply removed them.
-
-The other changed required it so avoid calling irq_work_run() when run
-from a FIQ handler. The pended work will either be dispatched by the
-irq work IPI or by a timer handler.
+Using FIQ (if it is available) gives perf a better insight into the
+system by allowing code run with interrupts disabled to be profiled.
 
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 ---
- arch/arm/kernel/perf_event_v7.c | 11 ++---------
- 1 file changed, 2 insertions(+), 9 deletions(-)
+ arch/arm/include/asm/pmu.h       |  4 ++++
+ arch/arm/kernel/perf_event.c     |  2 +-
+ arch/arm/kernel/perf_event_cpu.c | 35 ++++++++++++++++++++++++++++++++---
+ arch/arm/kernel/traps.c          |  3 ++-
+ 4 files changed, 39 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/kernel/perf_event_v7.c b/arch/arm/kernel/perf_event_v7.c
-index 8993770c47de..08f426486d3e 100644
---- a/arch/arm/kernel/perf_event_v7.c
-+++ b/arch/arm/kernel/perf_event_v7.c
-@@ -744,7 +744,6 @@ static void armv7pmu_enable_event(struct perf_event *event)
+diff --git a/arch/arm/include/asm/pmu.h b/arch/arm/include/asm/pmu.h
+index b1596bd59129..2a7ea97a4a14 100644
+--- a/arch/arm/include/asm/pmu.h
++++ b/arch/arm/include/asm/pmu.h
+@@ -123,6 +123,8 @@ struct arm_pmu {
  
- static void armv7pmu_disable_event(struct perf_event *event)
+ extern const struct dev_pm_ops armpmu_dev_pm_ops;
+ 
++irqreturn_t armpmu_dispatch_irq(int irq, void *dev);
++
+ int armpmu_register(struct arm_pmu *armpmu, int type);
+ 
+ u64 armpmu_event_update(struct perf_event *event);
+@@ -136,6 +138,8 @@ int armpmu_map_event(struct perf_event *event,
+ 						[PERF_COUNT_HW_CACHE_RESULT_MAX],
+ 		     u32 raw_event_mask);
+ 
++void cpu_pmu_handle_fiq(int irq);
++
+ struct pmu_probe_info {
+ 	unsigned int cpuid;
+ 	unsigned int mask;
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index f7c65adaa428..5ae9adf7f18e 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -296,7 +296,7 @@ validate_group(struct perf_event *event)
+ 	return 0;
+ }
+ 
+-static irqreturn_t armpmu_dispatch_irq(int irq, void *dev)
++irqreturn_t armpmu_dispatch_irq(int irq, void *dev)
  {
--	unsigned long flags;
- 	struct hw_perf_event *hwc = &event->hw;
- 	struct arm_pmu *cpu_pmu = to_arm_pmu(event->pmu);
- 	struct pmu_hw_events *events = this_cpu_ptr(cpu_pmu->hw_events);
-@@ -757,11 +756,6 @@ static void armv7pmu_disable_event(struct perf_event *event)
+ 	struct arm_pmu *armpmu;
+ 	struct platform_device *plat_device;
+diff --git a/arch/arm/kernel/perf_event_cpu.c b/arch/arm/kernel/perf_event_cpu.c
+index a80309087a7b..5c4e9ce23389 100644
+--- a/arch/arm/kernel/perf_event_cpu.c
++++ b/arch/arm/kernel/perf_event_cpu.c
+@@ -36,6 +36,9 @@
+ /* Set at runtime when we know what CPU type we are. */
+ static struct arm_pmu *cpu_pmu;
+ 
++/* Allows us to find out if an IRQ is for us (mostly used from NMI context) */
++static DEFINE_PER_CPU(int, cpu_pmu_irqs);
++
+ /*
+  * Despite the names, these two functions are CPU-specific and are used
+  * by the OProfile/perf code.
+@@ -127,6 +130,24 @@ static void cpu_pmu_free_irq(struct arm_pmu *cpu_pmu)
+ 	}
+ }
+ 
++/*
++ * This handler is called *unconditionally* from the default NMI/FIQ
++ * handler. The irq may not be anything to do with us so the main
++ * job of this function is to figure out if the irq passed in is ours
++ * or not.
++ */
++void cpu_pmu_handle_fiq(int irq)
++{
++	int cpu = smp_processor_id();
++
++	if (irq != get_cpu_var(cpu_pmu_irqs))
++		return;
++
++	(void)armpmu_dispatch_irq(irq,
++				  get_cpu_ptr(&cpu_pmu->hw_events->percpu_pmu));
++}
++
++
+ static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu, irq_handler_t handler)
+ {
+ 	int i, err, irq, irqs;
+@@ -170,9 +191,16 @@ static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu, irq_handler_t handler)
+ 				continue;
+ 			}
+ 
+-			err = request_irq(irq, handler,
+-					  IRQF_NOBALANCING | IRQF_NO_THREAD, "arm-pmu",
+-					  per_cpu_ptr(&hw_events->percpu_pmu, i));
++			err = request_nmi_irq(
++			    irq, IRQF_NOBALANCING, "arm-pmu",
++			    per_cpu_ptr(&hw_events->percpu_pmu, i));
++			if (err) {
++				err = request_irq(
++				    irq, handler,
++				    IRQF_NOBALANCING | IRQF_NO_THREAD,
++				    "arm-pmu",
++				    per_cpu_ptr(&hw_events->percpu_pmu, i));
++			}
+ 			if (err) {
+ 				pr_err("unable to request IRQ%d for ARM PMU counters\n",
+ 					irq);
+@@ -180,6 +208,7 @@ static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu, irq_handler_t handler)
+ 			}
+ 
+ 			cpumask_set_cpu(i, &cpu_pmu->active_irqs);
++			per_cpu(cpu_pmu_irqs, i) = irq;
+ 		}
  	}
  
- 	/*
--	 * Disable counter and interrupt
--	 */
--	raw_spin_lock_irqsave(&events->pmu_lock, flags);
--
--	/*
- 	 * Disable counter
- 	 */
- 	armv7_pmnc_disable_counter(idx);
-@@ -770,8 +764,6 @@ static void armv7pmu_disable_event(struct perf_event *event)
- 	 * Disable interrupt for this counter
- 	 */
- 	armv7_pmnc_disable_intens(idx);
--
--	raw_spin_unlock_irqrestore(&events->pmu_lock, flags);
- }
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index 74c752b9db68..c581e07517ff 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -38,6 +38,7 @@
+ #include <asm/tls.h>
+ #include <asm/system_misc.h>
+ #include <asm/opcodes.h>
++#include <asm/pmu.h>
  
- static irqreturn_t armv7pmu_handle_irq(int irq_num, void *dev)
-@@ -831,7 +823,8 @@ static irqreturn_t armv7pmu_handle_irq(int irq_num, void *dev)
- 	 * platforms that can have the PMU interrupts raised as an NMI, this
- 	 * will not work.
- 	 */
--	irq_work_run();
-+	if (!in_nmi())
-+		irq_work_run();
  
- 	return IRQ_HANDLED;
- }
+ static const char *handler[]= {
+@@ -485,7 +486,7 @@ asmlinkage void __exception_irq_entry handle_fiq_as_nmi(struct pt_regs *regs)
+ 	irq = gic_ack_fiq();
+ 
+ 	if (irq) {
+-		/* empty - no SPI handlers (yet) */
++		cpu_pmu_handle_fiq(irq);
+ 	} else {
+ #ifdef CONFIG_SMP
+ 		ipi_cpu_backtrace(regs);
 -- 
 1.9.3
 
