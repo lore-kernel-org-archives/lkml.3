@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278AbbAMXJq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 18:09:46 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52116 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113AbbAMXJp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 18:09:45 -0500
-Date: Tue, 13 Jan 2015 15:09:56 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, ARM Maintainers <arm@kernel.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: dts: re-fromat AT91 part to match other entries
-Message-ID: <20150113230956.GA15087@quad.lixom.net>
-References: <20150112224203.GL22090@quad.lixom.net>
- <1421160180-23452-1-git-send-email-nicolas.ferre@atmel.com>
+	id S1751590AbbAMXRW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 18:17:22 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751052AbbAMXRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 18:17:21 -0500
+Message-ID: <54B5A77C.9040405@nod.at>
+Date: Wed, 14 Jan 2015 00:17:16 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421160180-23452-1-git-send-email-nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jens Axboe <axboe@fb.com>, Christoph Hellwig <hch@infradead.org>
+CC: dedekind1@gmail.com, dwmw2@infradead.org, computersforpeace@gmail.com,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tom.leiming@gmail.com
+Subject: Re: [PATCH 2/2 v2] UBI: Block: Add blk-mq support
+References: <1420926734-16417-1-git-send-email-richard@nod.at> <1420926734-16417-2-git-send-email-richard@nod.at> <20150113162553.GA24351@infradead.org> <54B5A188.2000001@nod.at> <54B5A213.1090502@fb.com>
+In-Reply-To: <54B5A213.1090502@fb.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 03:43:00PM +0100, Nicolas Ferre wrote:
-> The entries are separated as ARM V4/V5 and ARM V7 as some other per-SoC config
-> options may be removed in the near future.
+Am 13.01.2015 um 23:54 schrieb Jens Axboe:
+>>> blk_rq_map_sg returns the number of entries actually mapped, which
+>>> might be smaller than the number passed in due to merging.
+>>
+>> Yep, but the ubi_sql has a fixed number of scatterlist entries, UBI_MAX_SG_COUNT.
+>> And I limit it also to that using: blk_queue_max_segments(dev->rq, UBI_MAX_SG_COUNT);
+>>
+>> Is there another reason why I should use the return value of blk_rq_map_sg()?
+>> Please also note that the UBI block driver is read-only.
 > 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
-> Hi Olof,
-> 
-> This is an attempt to match other ARM SoC families format.
-> If you feel that the patch can be good, do not hesitate to take it yourself. I
-> don't plan to integrate it in any of my pull-request so it can appear quickly in
-> arm-soc and can be used by everyone.
+> It can return less than what you asked for, if segments are coalesced.
+> Read/write, doesn't matter. You should always use the returned value as
+> the indication of how many segments to access in pdu->usgl.sg for data
+> transfer.
 
-Hi,
+Sorry, I don't fully understand.
 
-If you see what Peter did, he split up the rules per-SoC based on how
-things were selectable in Kconfig. Since you seem to have the Kconfig
-entries already, how about doing the same? That way the same information
-w.r.t. SoC family that you have as comments isn't lost either.
+Currently the driver does:
+to_read = blk_rq_bytes(req);
+Then it fills pdu->usgl.sg up to to_read bytes
+and calls blk_mq_end_request().
 
+If I understand you correctly it can happen that blk_rq_bytes() returns
+more bytes than blk_rq_map_sg() allocated, right?
 
--Olof
+Thanks,
+//richard
