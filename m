@@ -1,146 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418AbbAMRRj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 12:17:39 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:39904 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752744AbbAMRRg (ORCPT
+	id S1753501AbbAMRSH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 12:18:07 -0500
+Received: from smtprelay0086.hostedemail.com ([216.40.44.86]:39923 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752253AbbAMRSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 12:17:36 -0500
-X-IronPort-AV: E=Sophos;i="5.07,750,1413270000"; 
-   d="scan'208";a="54710500"
-Message-ID: <54B5532F.7050107@broadcom.com>
-Date: Tue, 13 Jan 2015 09:17:35 -0800
-From: Ray Jui <rjui@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Sherman Yin <syin@broadcom.com>, Simon Arlott <simon@fire.lp0.eu>,
-        "Chris Boot" <bootc@bootc.net>, Stephen Warren <swarren@wwwdotorg.org>,
-        =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "Scott Branden" <sbranden@broadcom.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH 2/4] pinctrl: cygnus: add initial pinctrl support
-References: <rjui@broadcom.com>	<1417131990-17954-1-git-send-email-rjui@broadcom.com>	<1417131990-17954-3-git-send-email-rjui@broadcom.com>	<CACRpkdbZx1hcvd-q9AL3FPQRqU+wJjeSV8AdSno5PVr+fqhpRQ@mail.gmail.com>	<54B0201E.3000307@broadcom.com> <CACRpkdZUaB-tt2N0dbaV5RkVS5PuFi63TqgOg15Jb2ACH52Yug@mail.gmail.com>
-In-Reply-To: <CACRpkdZUaB-tt2N0dbaV5RkVS5PuFi63TqgOg15Jb2ACH52Yug@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+	Tue, 13 Jan 2015 12:18:04 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1561:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3867:3870:3874:4321:4384:5007:6261:8660:10004:10400:10848:11026:11232:11658:11914:12043:12114:12438:12517:12519:12740:13069:13148:13230:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: apple00_4604b7327ae59
+X-Filterd-Recvd-Size: 1328
+Message-ID: <1421169479.9233.25.camel@perches.com>
+Subject: Re: [PATCH] mISDN: avoid arch specific __builtin_return_address call
+From: Joe Perches <joe@perches.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: isdn4linux@listserv.isdn4linux.de, netdev@vger.kernel.org,
+        Karsten Keil <isdn@linux-pingi.de>, davem@davemloft.net,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Tue, 13 Jan 2015 09:17:59 -0800
+In-Reply-To: <1816278.9Bv8N8K5IB@wuerfel>
+References: <1816278.9Bv8N8K5IB@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2015-01-13 at 17:10 +0100, Arnd Bergmann wrote:
+> Not all architectures are able to call __builtin_return_address().
+> On ARM, the mISDN code produces this warning:
+> 
+> hardware/mISDN/w6692.c: In function 'w6692_dctrl':
+> hardware/mISDN/w6692.c:1181:75: warning: unsupported argument to '__builtin_return_address'
+>   pr_debug("%s: %s dev(%d) open from %p\n", card->name, __func__,
+
+I didn't know that tidbit. Thanks.
 
 
-On 1/13/2015 12:25 AM, Linus Walleij wrote:
-> On Fri, Jan 9, 2015 at 7:38 PM, Ray Jui <rjui@broadcom.com> wrote:
->> On 1/9/2015 3:03 AM, Linus Walleij wrote:
->>> On Fri, Nov 28, 2014 at 12:46 AM, Ray Jui <rjui@broadcom.com> wrote:
-> 
->>> I don't know if the hardware has any similarity though, so invite
->>> the authors of the previous drivers to review this code.
->>>
->> They are completely different. The only similarity between Cygnus and
->> bcm281xx pinctrl is that they use the same concept of alternation
->> functions (1, 2, 3, 4) for mux configuration.
-> 
-> Then you can probably look at that driver for inspiration on how to handle
-> the situation you described earlier with collissions.
-> 
->>>> +/*
->>>> + * List of groups of pins
->>>> + */
->>>> +static const unsigned gpio0_pins[] = { 12 };
->>>> +static const unsigned gpio1_pins[] = { 13 };
->>>> +static const unsigned gpio2_pins[] = { 14 };
->>>> +static const unsigned gpio3_pins[] = { 15 };
->>>> +static const unsigned gpio4_pins[] = { 16 };
->>>> +static const unsigned gpio5_pins[] = { 17 };
->>>> +static const unsigned gpio6_pins[] = { 18 };
->>>> +static const unsigned gpio7_pins[] = { 19 };
->>>> +static const unsigned gpio8_pins[] = { 20 };
->>>> +static const unsigned gpio9_pins[] = { 21 };
->>>> +static const unsigned gpio10_pins[] = { 22 };
->>>> +static const unsigned gpio11_pins[] = { 23 };
->>>> +static const unsigned gpio12_pins[] = { 24 };
->>>> +static const unsigned gpio13_pins[] = { 25 };
->>>> +static const unsigned gpio14_pins[] = { 26 };
->>>> +static const unsigned gpio15_pins[] = { 27 };
->>>> +static const unsigned gpio16_pins[] = { 28 };
->>>> +static const unsigned gpio17_pins[] = { 29 };
->>>> +static const unsigned gpio18_pins[] = { 30 };
->>>> +static const unsigned gpio19_pins[] = { 31 };
->>>> +static const unsigned gpio20_pins[] = { 32 };
->>>> +static const unsigned gpio21_pins[] = { 33 };
->>>> +static const unsigned gpio22_pins[] = { 34 };
->>>> +static const unsigned gpio23_pins[] = { 35 };
->>>
->>> Have you considered implementing .gpio_request_enable()
->>> and .gpio_disable_free() to get around having to have one
->>> group for each GPIO line?
->>>
->> Okay the Cygnus pin controller is really a mess. GPIO 0 ~ GPIO23 are
->> really 23 distinct groups, each with one pin. Then the rest of GPIOs go
->> under other groups. In general, when we set a group to alternate
->> function 4, all pins become GPIO.
-> 
-> It will require some complicated code no matter how you
-> handle it I'm afraid. Rely on the pin control subsystem
-> to handle collisions though.
-> 
->>>> +static const unsigned qspi_gpio_pins[] = { 108, 109 };
->>>> +static const unsigned smart_card0_fcb_pins[] = { 45 };
->>>> +static const unsigned smart_card1_fcb_pins[] = { 51 };
->>>> +static const unsigned gpio0_3p3_pins[] = { 176 };
->>>> +static const unsigned gpio1_3p3_pins[] = { 177 };
->>>> +static const unsigned gpio2_3p3_pins[] = { 178 };
->>>
->>> Looks good...
->>>
->> Note these pins are definitions in the driver that help to describe the
->> pad layout. We can't really configure any individual pins in Cygnus.
-> 
-> Yeah it's a groupwise controller then, that's similar to
-> e.g. the coh901 driver.
-> 
-> We should be able to accomodate this...
-> 
-Okay will check the coh901 driver.
-
->>>> +static int cygnus_dt_node_to_map(struct pinctrl_dev *pctrl_dev,
->>>> +               struct device_node *np, struct pinctrl_map **map,
->>>> +               unsigned *num_maps)
->>>> +{
->>>
->>> After Sören Brinkmanns patches youy should be able to use core
->>> functions for this and avoid this code altogether.
->>
->> Will that help to take care our case, based on the way we will use
->> "function" and "group"?
-> 
-> groupS but yes it will work with your controller, though I think
-> .set_mux and the controller state will need some elaborate code
-> to handle what the framework requests.
-> 
-Thanks.
-
->>>> +       num_groups = of_property_count_strings(np, "brcm,groups");
->>>
->>> As mentioned, just "groups".
->>>
->> I guess I will use "group"?
-> 
-> No groups, as with the standard attribute "gpios", this may be
-> a single group too, it's just a standard binding.
-> 
-Okay.
-
-> Yours,
-> Linus Walleij
-> 
