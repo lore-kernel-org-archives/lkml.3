@@ -1,68 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582AbbAMEo0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 23:44:26 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:33577 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341AbbAMEoY (ORCPT
+	id S1751905AbbAMEtx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 23:49:53 -0500
+Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:46361 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971AbbAMEtu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 23:44:24 -0500
+	Mon, 12 Jan 2015 23:49:50 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>, Jiri Olsa <jolsa@redhat.com>
+CC: "namhyung@kernel.org" <namhyung@kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "jolsa@kernel.org" <jolsa@kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-perf-users@vger.kernel.org" <linux-perf-users@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "Alexey.Brodkin@synopsys.com" <Alexey.Brodkin@synopsys.com>,
+        Borislav Petkov <bp@suse.de>, Cody P Schafer <dev@codyps.com>
+Subject: Re: [PATCH v2 1/5] perf tools: [uclibc] fix statfs.f_type data type
+ mismatch build error
+Thread-Topic: [PATCH v2 1/5] perf tools: [uclibc] fix statfs.f_type data
+ type mismatch build error
+Thread-Index: AQHQLtMB+l91Mlgr4km5caF+7jcgbQ==
+Date: Tue, 13 Jan 2015 04:49:42 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA2307565BCBBD6@IN01WEMBXA.internal.synopsys.com>
+References: <1420888254-17504-1-git-send-email-vgupta@synopsys.com>
+ <1420888254-17504-2-git-send-email-vgupta@synopsys.com>
+ <20150112110522.GC26229@krava.redhat.com> <20150113014757.GG29743@kernel.org>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.196.223]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <515f84cc1e6e33f647610f1bda154127944e6b52.1421115389.git.shuahkh@osg.samsung.com>
-References: <cover.1421115389.git.shuahkh@osg.samsung.com>
-	<515f84cc1e6e33f647610f1bda154127944e6b52.1421115389.git.shuahkh@osg.samsung.com>
-Date: Mon, 12 Jan 2015 23:44:23 -0500
-Message-ID: <CAGoCfixdyOJoyUQfMWzM2KHjMGJE5pRS8C0+rR1nDCir7jTpwQ@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] media: au0828 remove video and vbi buffer timeout work-around
-From: Devin Heitmueller <dheitmueller@kernellabs.com>
-To: Shuah Khan <shuahkh@osg.samsung.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        "sakari.ailus@linux.intel.com" <sakari.ailus@linux.intel.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Tim Mester <ttmesterr@gmail.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Shuah,
+On Tuesday 13 January 2015 07:18 AM, Arnaldo Carvalho de Melo wrote:
 
-On Mon, Jan 12, 2015 at 9:56 PM, Shuah Khan <shuahkh@osg.samsung.com> wrote:
-> au0828 does video and vbi buffer timeout handling to prevent
-> applications such as tvtime from hanging by ensuring that the
-> video frames continue to be delivered even when the ITU-656
-> input isn't receiving any data. This work-around is complex
-> as it introduces set and clear timer code paths in start/stop
-> streaming, and close interfaces. However, tvtime will hang
-> without the following tvtime change:
+Em Mon, Jan 12, 2015 at 12:05:22PM +0100, Jiri Olsa escreveu:
 
-I'm confused.  When we last debated whether this patch would be
-accepted, the last message from Mauro said the following:
 
-> That means that we'll need to keep holding such timeout code for
-> years, until all distros update to a new tvtime, of course assuming
-> that this is the only one application with such issue.
+> On Sat, Jan 10, 2015 at 04:40:50PM +0530, Vineet Gupta wrote:
 
-In other words, the timeout code has to stay in there since otherwise
-it will cause ABI breakage.  It's great that Hans has submitted a
-patch to improve tvtime, and over the next couple of years that patch
-might actually start to appear in distributions.  That unfortunately
-doesn't change the fact that everybody who updates their kernel (or
-has it updated for them as part of their distribution) will go from
-"works fine" to "completely broken".
 
-The driver was working before the VB2 conversion, so if there is now
-instability then it's likely that some bug was introduced during the
-conversion to VB2.  Simply ripping out the timeout code seems like the
-wrong approach to addressing a regression likely caused by your own
-VB2 conversion patch.
+> > From: Alexey Brodkin <abrodkin@synopsys.com><mailto:abrodkin@synopsys.com>
+> >
+> > ARC Linux uses the no legacy syscalls abi and corresponding uClibc headers
+> > statfs defines f_type to be U32 which causes perf build breakage
+> >
+> > http://git.uclibc.org/uClibc/tree/libc/sysdeps/linux/common-generic/bits/statfs.h
+> >
+> > ----------->8---------------
+> >   CC       fs/fs.o
+> > fs/fs.c: In function 'fs__valid_mount':
+> > fs/fs.c:82:24: error: comparison between signed and unsigned integer
+> > expressions [-Werror=sign-compare]
+> >   else if (st_fs.f_type != magic)
+> >                         ^
+> > cc1: all warnings being treated as errors
+> > ----------->8---------------
+> >
+> > Cc: Borislav Petkov <bp@suse.de><mailto:bp@suse.de>
+> > Cc: Jiri Olsa <jolsa@kernel.org><mailto:jolsa@kernel.org>
+> > Cc: Cody P Schafer <dev@codyps.com><mailto:dev@codyps.com>
+> > Cc: Arnaldo Carvalho de Melo <acme@redhat.com><mailto:acme@redhat.com>
+> > Cc: linux-perf-users@vger.kernel.org<mailto:linux-perf-users@vger.kernel.org>
+> > Cc: linux-kernel@vger.kernel.org<mailto:linux-kernel@vger.kernel.org>
+> > Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com><mailto:abrodkin@synopsys.com>
 
-Devin
 
--- 
-Devin J. Heitmueller - Kernel Labs
-http://www.kernellabs.com
+>
+> Acked-by: Jiri Olsa <jolsa@kernel.org><mailto:jolsa@kernel.org>
+
+
+Thanks, applied, but please do not start lines in the changelog comment
+with ---, that breaks some patch applying scripts. I fixed it up this
+time.
+
+Thx. I've udpated the changelogs so scissor lines start at column 3 with leading whitespace, is that OK or do you want me to remove those lines altogether. Also do u want me to drop this patch from v3 of series as I have some fixups for other patches.
+
+Thx,
+-Vineet
+
+
+
+- Arnaldo
+
+
+
