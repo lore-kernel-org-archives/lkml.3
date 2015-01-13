@@ -1,107 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328AbbAMVhU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 16:37:20 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:57229 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260AbbAMVhS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 16:37:18 -0500
-From: Bilel DRIRA <bilel.dr@gmail.com>
-To: marek.belisko@gmail.com, gregkh@linuxfoundation.org, joe@perches.com,
-        tapaswenipathak@gmail.com, gdonald@gmail.com, aybuke.147@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Cc: Bilel DRIRA <bilel.dr@gmail.com>
-Subject: [PATCH v2 ] staging: ft1000: fix else style error
-Date: Tue, 13 Jan 2015 22:34:00 +0100
-Message-Id: <1421184840-24108-1-git-send-email-bilel.dr@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752446AbbAMVfZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 16:35:25 -0500
+Received: from mga01.intel.com ([192.55.52.88]:45061 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751400AbbAMVfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 16:35:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="511774541"
+Message-ID: <54B58F9B.4050100@linux.intel.com>
+Date: Tue, 13 Jan 2015 13:35:23 -0800
+From: Dave Hansen <dave.hansen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@openvz.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mm: rename mm->nr_ptes to mm->nr_pgtables
+References: <1421176456-21796-1-git-send-email-kirill.shutemov@linux.intel.com> <1421176456-21796-2-git-send-email-kirill.shutemov@linux.intel.com> <54B581C7.50206@linux.intel.com> <20150113204144.GA1865@node.dhcp.inet.fi>
+In-Reply-To: <20150113204144.GA1865@node.dhcp.inet.fi>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix the checkpatch.pl error:
+On 01/13/2015 12:41 PM, Kirill A. Shutemov wrote:
+> On Tue, Jan 13, 2015 at 12:36:23PM -0800, Dave Hansen wrote:
+>> On 01/13/2015 11:14 AM, Kirill A. Shutemov wrote:
+>>>  	pgd_t * pgd;
+>>>  	atomic_t mm_users;			/* How many users with user space? */
+>>>  	atomic_t mm_count;			/* How many references to "struct mm_struct" (users count as 1) */
+>>> -	atomic_long_t nr_ptes;			/* Page table pages */
+>>> +	atomic_long_t nr_pgtables;		/* Page table pages */
+>>>  	int map_count;				/* number of VMAs */
+>>
+>> One more crazy idea...
+>>
+>> There are 2^9 possible pud pages, 2^18 pmd pages and 2^27 pte pages.
+>> That's only 54 bits (technically minus one bit each because the upper
+>> half of the address space is for the kernel).
+> 
+> Does this math make sense for all architecures? IA64? Power?
 
-	ERROR: else should follow close brace '}'
+No, the sizes will be different on the other architectures.  But, 4k
+pages with 64-bit ptes is as bad as it gets, I think.  Larger page sizes
+mean fewer page tables on powerpc.  So the values should at least _fit_
+in a long.
 
-Signed-off-by: Bilel DRIRA <bilel.dr@gmail.com>
----
-v2: remove braces instead of just putting else after close brace. (suggested by Joe Perches).
-
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c |   29 ++++++++--------------
- 1 file changed, 10 insertions(+), 19 deletions(-)
-
-diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-index e9a37ee..4b830ac 100644
---- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-+++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-@@ -570,12 +570,10 @@ static void ft1000_hbchk(u_long data)
- 		pr_debug("hi_ho value = 0x%x\n", tempword);
- 		/* Let's perform another check if ho is not detected */
- 		if (tempword != ho) {
--			if (info->AsicID == ELECTRABUZZ_ID) {
-+			if (info->AsicID == ELECTRABUZZ_ID)
- 				tempword = ft1000_read_dpram(dev, FT1000_HI_HO);
--			}
--			else {
-+			else
- 				tempword = ntohs(ft1000_read_dpram_mag_16(dev, FT1000_MAG_HI_HO, FT1000_MAG_HI_HO_INDX));
--			}
- 		}
- 		if (tempword != ho) {
- 			pr_info("heartbeat failed - no ho detected\n");
-@@ -686,20 +684,15 @@ static void ft1000_hbchk(u_long data)
- 		}
- 		/* Let's write hi again if fail */
- 		if (tempword != hi) {
--			if (info->AsicID == ELECTRABUZZ_ID) {
-+			if (info->AsicID == ELECTRABUZZ_ID)
- 				ft1000_write_dpram(dev, FT1000_HI_HO, hi);
--			}
--			else {
-+			else
- 				ft1000_write_dpram_mag_16(dev, FT1000_MAG_HI_HO, hi_mag, FT1000_MAG_HI_HO_INDX);
--			}
- 
--			if (info->AsicID == ELECTRABUZZ_ID) {
-+			if (info->AsicID == ELECTRABUZZ_ID)
- 				tempword = ft1000_read_dpram(dev, FT1000_HI_HO);
--			}
--			else {
-+			else
- 				tempword = ntohs(ft1000_read_dpram_mag_16(dev, FT1000_MAG_HI_HO, FT1000_MAG_HI_HO_INDX));
--			}
--
- 		}
- 
- 		if (tempword != hi) {
-@@ -957,12 +950,11 @@ static void ft1000_proc_drvmsg(struct net_device *dev)
- 		u16 wrd;
- 	} convert;
- 
--	if (info->AsicID == ELECTRABUZZ_ID) {
-+	if (info->AsicID == ELECTRABUZZ_ID)
- 		tempword = FT1000_DPRAM_RX_BASE+2;
--	}
--	else {
-+	else
- 		tempword = FT1000_DPRAM_MAG_RX_BASE;
--	}
-+
- 	if (ft1000_receive_cmd(dev, &cmdbuffer[0], MAX_CMD_SQSIZE, &tempword)) {
- 
- 		/* Get the message type which is total_len + PSEUDO header + msgtype + message body */
-@@ -1039,8 +1031,7 @@ static void ft1000_proc_drvmsg(struct net_device *dev)
- 						info->ConTm = 0;
- 					}
- 				}
--			}
--			else {
-+			} else {
- 				pr_debug("Media is down\n");
- 				if (info->mediastate == 1) {
- 					info->mediastate = 0;
--- 
-1.7.9.5
+Maybe it's not even worth the trouble.
 
