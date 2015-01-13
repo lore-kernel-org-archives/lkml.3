@@ -1,143 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582AbbAMVxj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 16:53:39 -0500
-Received: from mga11.intel.com ([192.55.52.93]:3061 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752142AbbAMVxh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 16:53:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,751,1413270000"; 
-   d="scan'208";a="650636699"
-Date: Tue, 13 Jan 2015 16:53:34 -0500
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        willy@linux.intel.com
-Subject: Re: [PATCH v12 08/20] dax,ext2: Replace the XIP page fault handler
- with the DAX page fault handler
-Message-ID: <20150113215334.GK5661@wil.cx>
-References: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
- <1414185652-28663-9-git-send-email-matthew.r.wilcox@intel.com>
- <20150112150952.b44ee750a6292284e7a909ff@linux-foundation.org>
+	id S1753671AbbAMVyc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 16:54:32 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55419 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750848AbbAMVyb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 16:54:31 -0500
+Date: Tue, 13 Jan 2015 21:54:12 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: "Wang, Jiada (ESD)" <Jiada_Wang@mentor.com>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "perex@perex.cz" <perex@perex.cz>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Frkuska, Joshua" <Joshua_Frkuska@mentor.com>
+Message-ID: <20150113215412.GS4160@sirena.org.uk>
+References: <857E9EDCA6C0904DB3357321AA9123EB0108B66919@NA-MBX-01.mgc.mentorg.com>
+ <s5h1tmyiof7.wl-tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="h1wVxq8aeHrvhZJz"
 Content-Disposition: inline
-In-Reply-To: <20150112150952.b44ee750a6292284e7a909ff@linux-foundation.org>
+In-Reply-To: <s5h1tmyiof7.wl-tiwai@suse.de>
+X-Cookie: Keep out of reach of children.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [alsa-devel] unload Audio drivers while playback stream is
+ active case kernel crash
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 03:09:52PM -0800, Andrew Morton wrote:
-> On Fri, 24 Oct 2014 17:20:40 -0400 Matthew Wilcox <matthew.r.wilcox@intel.com> wrote:
-> 
-> > Instead of calling aops->get_xip_mem from the fault handler, the
-> > filesystem passes a get_block_t that is used to find the appropriate
-> > blocks.
-> > 
-> > ...
-> >
-> > +static int copy_user_bh(struct page *to, struct buffer_head *bh,
-> > +			unsigned blkbits, unsigned long vaddr)
-> > +{
-> > +	void *vfrom, *vto;
-> > +	if (dax_get_addr(bh, &vfrom, blkbits) < 0)
-> > +		return -EIO;
-> > +	vto = kmap_atomic(to);
-> > +	copy_user_page(vto, vfrom, vaddr, to);
-> > +	kunmap_atomic(vto);
-> 
-> Again, please check the cache-flush aspects.  copy_user_page() appears
-> to be reponsible for handling coherency issues on the destination
-> vaddr, but what about *vto?
 
-vto is a new kernel address ... if there's any dirty data for that
-address, it should have been flushed by the prior kunmap_atomic(), right?
+--h1wVxq8aeHrvhZJz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > +	mutex_lock(&mapping->i_mmap_mutex);
-> > +
-> > +	/*
-> > +	 * Check truncate didn't happen while we were allocating a block.
-> > +	 * If it did, this block may or may not be still allocated to the
-> > +	 * file.  We can't tell the filesystem to free it because we can't
-> > +	 * take i_mutex here.
-> 
-> (what's preventing us from taking i_mutex?)
+On Tue, Jan 13, 2015 at 06:24:44PM +0100, Takashi Iwai wrote:
+> Wang, Jiada (ESD) wrote:
 
-We're in a page fault handler, and we may already be holding i_mutex.
-We're definitely holding mmap_sem, and to quote from mm/rmap.c:
+> > I am using i.MX6Q sabreSD board, which have imx_wm892 machine driver, wm8962 codec and SSI CPU DAI,
 
-/*
- * Lock ordering in mm:
- *
- * inode->i_mutex       (while writing or truncating, not reading or faulting)
- *   mm->mmap_sem
+> > I got Kernel crash when unloading audio drivers (playback stream is active)
+> > modprobe -r snd_soc_imx_wm8962
+> > modprobe -r snd_soc_fsl_ssi
+> > modprobe -r snd_soc_wm8962
 
-> >  	   In the worst case, the file still has blocks
-> > +	 * allocated past the end of the file.
-> > +	 */
-> > +	size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
-> > +	if (unlikely(vmf->pgoff >= size)) {
-> > +		error = -EIO;
-> > +		goto out;
-> > +	}
-> 
-> How does this play with holepunching?  Checking i_size won't work there?
+> The root problem is that you can unload the module while playing.
+> The corresponding module refcounts should have been increased during
+> used.
 
-It doesn't.  But the same problem exists with non-DAX files too, and
-when I pointed it out, it was met with a shrug from the crowd.  I saw a
-patch series just recently that fixes it for XFS, but as far as I know,
-btrfs and ext4 still don't play well with pagefault vs hole-punch races.
+> Do we miss [try_]module_get() somewhere in ASoC?
 
-> > +	memset(&bh, 0, sizeof(bh));
-> > +	block = (sector_t)vmf->pgoff << (PAGE_SHIFT - blkbits);
-> > +	bh.b_size = PAGE_SIZE;
-> 
-> ah, there.
-> 
-> PAGE_SIZE varies a lot between architectures.  What are the
-> implications of this>?
+That doesn't help, users can still forcibly unbind the driver at runtime
+without loading the module - and there's always the potential for
+actually hotpluggable hardware.  The teardown paths should be able to
+cope somewhat gracefully.
 
-At the moment, you can only do DAX for blocksizes that are equal to
-PAGE_SIZE.  That's a restriction that existed for the previous XIP code,
-and I haven't fixed it all for DAX yet.  I'd like to, but it's not high on
-my list of things to fix.  Since these are in-mmeory filesystems, there's
-not likely to be high demand to move the filesystem between machines.
+--h1wVxq8aeHrvhZJz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> > + repeat:
-> > +	page = find_get_page(mapping, vmf->pgoff);
-> > +	if (page) {
-> > +		if (!lock_page_or_retry(page, vma->vm_mm, vmf->flags)) {
-> > +			page_cache_release(page);
-> > +			return VM_FAULT_RETRY;
-> > +		}
-> > +		if (unlikely(page->mapping != mapping)) {
-> > +			unlock_page(page);
-> > +			page_cache_release(page);
-> > +			goto repeat;
-> > +		}
-> > +		size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
-> > +		if (unlikely(vmf->pgoff >= size)) {
-> > +			error = -EIO;
-> 
-> What happened when this happens?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-This case is where we have a struct page covering a hole in the file from
-a read fault and we've raced with a truncate.  It's basically the same code
-that's in filemap_fault().
+iQEcBAEBCAAGBQJUtZQDAAoJECTWi3JdVIfQVyEH/jBw/OD99r5/pJZMvDz4EdNF
+TX1y+8BXS79WX1p/wjKiIprDjoTxENquiv6/VmdEkFp6sFLbVfret6RF15s1HtZ2
+5t0NKwSvHmzgKlSkb+1mALN/ZrUyAeCwRwy1JEOof4MBAk17lhxwMJvtbgpJewzS
+0bqmAry3HCKoVtFCKNIcVUQDY9PL9Hp5xwPIM1yaXC8DRcEql0vVsSWLSYPEpUws
+kjV4yRs4+rTOdnh9B6PUC/XIbUPOIQXJNBVHTfc1DmSTmZKkHthtI8xCCfltWDAC
+jRMntMmD7TY9p4LvPqgVHa3w8btKVAGV7v5vK2wYyZmeno5KTZ0O49b7GurSIrc=
+=+jkT
+-----END PGP SIGNATURE-----
 
-> > +			goto unlock_page;
-> > +		}
-> > +	}
-> > +
-> > +	error = get_block(inode, block, &bh, 0);
-> > +	if (!error && (bh.b_size < PAGE_SIZE))
-> > +		error = -EIO;
-> 
-> How could this happen?
-
-The only way I can think of is if the filesystem was corrupted.  But it's
-worth programming defensively, no?
-
+--h1wVxq8aeHrvhZJz--
