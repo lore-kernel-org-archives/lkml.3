@@ -1,63 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752422AbbAMBaH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 20:30:07 -0500
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:58418 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751789AbbAMBaG (ORCPT
+	id S1752132AbbAMBjI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 20:39:08 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:33526 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850AbbAMBjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 20:30:06 -0500
-Message-ID: <54B474D5.8090500@hp.com>
-Date: Tue, 13 Jan 2015 09:28:53 +0800
-From: "Li, ZhenHua" <zhen-hual@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 12 Jan 2015 20:39:06 -0500
+Message-ID: <54B476EC.3090207@atmel.com>
+Date: Tue, 13 Jan 2015 09:37:48 +0800
+From: Bo Shen <voice.shen@atmel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: dwmw2@infradead.org, indou.takao@jp.fujitsu.com, bhe@redhat.com,
-        vgoyal@redhat.com, dyoung@redhat.com, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        kexec@lists.infradead.org, alex.williamson@redhat.com,
-        ddutile@redhat.com, ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com,
-        doug.hatch@hp.com, jerry.hoemann@hp.com, tom.vaden@hp.com,
-        li.zhang6@hp.com, lisa.mitchell@hp.com, billsumnerlinux@gmail.com,
-        rwright@hp.com, "Li, ZhenHua" <zhen-hual@hp.com>
-Subject: Re: [PATCH v8 01/10] iommu/vt-d: Update iommu_attach_domain() and
- its callers
-References: <1421046388-27925-1-git-send-email-zhen-hual@hp.com> <1421046388-27925-2-git-send-email-zhen-hual@hp.com> <20150112151855.GB6343@8bytes.org>
-In-Reply-To: <20150112151855.GB6343@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 4/6] ARM: at91/dt: add SRAM nodes
+References: <1421089317-12607-1-git-send-email-alexandre.belloni@free-electrons.com> <1421089317-12607-5-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1421089317-12607-5-git-send-email-alexandre.belloni@free-electrons.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2015 11:18 PM, Joerg Roedel wrote:
-> On Mon, Jan 12, 2015 at 03:06:19PM +0800, Li, Zhen-Hua wrote:
->> Allow specification of the domain-id for the new domain.
->> This patch only adds the 'did' parameter to iommu_attach_domain()
->> and modifies all of its callers to specify the default value of -1
->> which says "no did specified, allocate a new one".
+Hi Alexandre,
+
+On 01/13/2015 03:01 AM, Alexandre Belloni wrote:
+> Add nodes for the SRAM available on atmel SoCs
 >
-> I think its better to keep the old iommu_attach_domain() interface in
-> place and introduce a new function (like iommu_attach_domain_with_id()
-> or something) which has the additional parameter. Then you can rewrite
-> iommu_attach_domain():
+> Remove leftover TODOs in the sam9g45 file
 >
-> 	iommu_attach_domai(...)
-> 	{
-> 		return iommu_attach_domain_with_id(..., -1);
-> 	}
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+>   arch/arm/boot/dts/at91rm9200.dtsi  |  5 +++++
+>   arch/arm/boot/dts/at91sam9260.dtsi |  5 +++++
+>   arch/arm/boot/dts/at91sam9261.dtsi |  5 +++++
+>   arch/arm/boot/dts/at91sam9263.dtsi | 10 ++++++++++
+>   arch/arm/boot/dts/at91sam9g20.dtsi |  9 +++++++++
+>   arch/arm/boot/dts/at91sam9g45.dtsi |  7 +++++--
+>   arch/arm/boot/dts/at91sam9n12.dtsi |  5 +++++
+>   arch/arm/boot/dts/at91sam9rl.dtsi  |  5 +++++
+>   arch/arm/boot/dts/at91sam9x5.dtsi  |  5 +++++
+>   arch/arm/boot/dts/sama5d3.dtsi     |  5 +++++
+>   arch/arm/boot/dts/sama5d4.dtsi     |  5 +++++
+>   11 files changed, 64 insertions(+), 2 deletions(-)
 >
-> This way you don't have to update all the callers of
-> iommu_attach_domain() and the interface is more readable.
+> diff --git a/arch/arm/boot/dts/at91rm9200.dtsi b/arch/arm/boot/dts/at91rm9200.dtsi
+> index f449a864b81e..21c2b504f977 100644
+> --- a/arch/arm/boot/dts/at91rm9200.dtsi
+> +++ b/arch/arm/boot/dts/at91rm9200.dtsi
+> @@ -66,6 +66,11 @@
+>   		};
+>   	};
 >
+> +	sram: sram@00200000 {
+> +		compatible = "mmio-sram";
+> +		reg = <0x00200000 0x4000>;
+> +	};
+> +
+>   	ahb {
+>   		compatible = "simple-bus";
+>   		#address-cells = <1>;
+> diff --git a/arch/arm/boot/dts/at91sam9260.dtsi b/arch/arm/boot/dts/at91sam9260.dtsi
+> index dd1313cbc314..6f52cb2eacd8 100644
+> --- a/arch/arm/boot/dts/at91sam9260.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9260.dtsi
+> @@ -69,6 +69,11 @@
+>   		};
+>   	};
 >
-> 	Joerg
+> +	sram0: sram@002ff000 {
+
+Why here is 002ff000, while not 00200000?
+
+> +		compatible = "mmio-sram";
+> +		reg = <0x00200000 0x2000>;
+> +	};
+> +
+>   	ahb {
+>   		compatible = "simple-bus";
+>   		#address-cells = <1>;
+> diff --git a/arch/arm/boot/dts/at91sam9261.dtsi b/arch/arm/boot/dts/at91sam9261.dtsi
+> index cdb9ed612109..e247b0b5fdab 100644
+> --- a/arch/arm/boot/dts/at91sam9261.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9261.dtsi
+> @@ -60,6 +60,11 @@
+>   		};
+>   	};
+>
+> +	sram: sram@00300000 {
+> +		compatible = "mmio-sram";
+> +		reg = <0x00300000 0x28000>;
+> +	};
+> +
+>   	ahb {
+>   		compatible = "simple-bus";
+>   		#address-cells = <1>;
+> diff --git a/arch/arm/boot/dts/at91sam9263.dtsi b/arch/arm/boot/dts/at91sam9263.dtsi
+> index ef8a70c27439..8a210d5033b1 100644
+> --- a/arch/arm/boot/dts/at91sam9263.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9263.dtsi
+> @@ -62,6 +62,16 @@
+>   		};
+>   	};
+>
+> +	sram0: sram@00300000 {
+> +		compatible = "mmio-sram";
+> +		reg = <0x00300000 0x14000>;
+> +	};
+> +
+> +	sram1: sram@00500000 {
+> +		compatible = "mmio-sram";
+> +		reg = <0x00300000 0x4000>;
+> +	};
+> +
+>   	ahb {
+>   		compatible = "simple-bus";
+>   		#address-cells = <1>;
+> diff --git a/arch/arm/boot/dts/at91sam9g20.dtsi b/arch/arm/boot/dts/at91sam9g20.dtsi
+> index a50ee587a7af..9012fe9d7758 100644
+> --- a/arch/arm/boot/dts/at91sam9g20.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9g20.dtsi
+> @@ -16,6 +16,15 @@
+>   		reg = <0x20000000 0x08000000>;
+>   	};
+>
+> +	sram0: sram@002ff000 {
+
+Why here is 002ff000, while not 00200000?
+
+> +		status = "disabled";
+
+Btw, why it needs set to disabled.
+
+> +	};
+> +
+> +	sram1: sram@002fc000 {
+
+Why here is 002fc000, while not 00300000? And length is on 0x4000.
+
+> +		compatible = "mmio-sram";
+> +		reg = <0x00200000 0x8000>;
+> +	};
+> +
+>   	ahb {
+>   		apb {
+>   			i2c0: i2c@fffac000 {
+> diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
+> index 2a8da8a884b4..ee80aa9c0759 100644
+> --- a/arch/arm/boot/dts/at91sam9g45.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9g45.dtsi
+> @@ -74,6 +74,11 @@
+>   		};
+>   	};
+>
+> +	sram: sram@00300000 {
+> +		compatible = "mmio-sram";
+> +		reg = <0x00300000 0x10000>;
+> +	};
+> +
+>   	ahb {
+>   		compatible = "simple-bus";
+>   		#address-cells = <1>;
+> @@ -1287,7 +1292,6 @@
+>   			compatible = "atmel,at91rm9200-ohci", "usb-ohci";
+>   			reg = <0x00700000 0x100000>;
+>   			interrupts = <22 IRQ_TYPE_LEVEL_HIGH 2>;
+> -			//TODO
+>   			clocks = <&usb>, <&uhphs_clk>, <&uhphs_clk>, <&uhpck>;
+>   			clock-names = "usb_clk", "ohci_clk", "hclk", "uhpck";
+>   			status = "disabled";
+> @@ -1297,7 +1301,6 @@
+>   			compatible = "atmel,at91sam9g45-ehci", "usb-ehci";
+>   			reg = <0x00800000 0x100000>;
+>   			interrupts = <22 IRQ_TYPE_LEVEL_HIGH 2>;
+> -			//TODO
+>   			clocks = <&usb>, <&uhphs_clk>, <&uhphs_clk>, <&uhpck>;
+>   			clock-names = "usb_clk", "ehci_clk", "hclk", "uhpck";
+>   			status = "disabled";
+> diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi b/arch/arm/boot/dts/at91sam9n12.dtsi
+> index a7218bcc6a25..6ea7ee3b8ff8 100644
+> --- a/arch/arm/boot/dts/at91sam9n12.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9n12.dtsi
+> @@ -64,6 +64,11 @@
+>   		};
+>   	};
+>
+> +	sram: sram@00300000 {
+> +		compatible = "mmio-sram";
+> +		reg = <0x00300000 0x8000>;
+> +	};
+> +
+>   	ahb {
+>   		compatible = "simple-bus";
+>   		#address-cells = <1>;
+> diff --git a/arch/arm/boot/dts/at91sam9rl.dtsi b/arch/arm/boot/dts/at91sam9rl.dtsi
+> index 72424371413e..c055da2f151f 100644
+> --- a/arch/arm/boot/dts/at91sam9rl.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9rl.dtsi
+> @@ -70,6 +70,11 @@
+>   		};
+>   	};
+>
+> +	sram: sram@00300000 {
+> +		compatible = "mmio-sram";
+> +		reg = <0x00300000 0x4000>;
+> +	};
+> +
+>   	ahb {
+>   		compatible = "simple-bus";
+>   		#address-cells = <1>;
+> diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
+> index bbb3ba65165f..818dabdd8c0e 100644
+> --- a/arch/arm/boot/dts/at91sam9x5.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9x5.dtsi
+> @@ -72,6 +72,11 @@
+>   		};
+>   	};
+>
+> +	sram: sram@00300000 {
+> +		compatible = "mmio-sram";
+> +		reg = <0x00300000 0x8000>;
+> +	};
+> +
+>   	ahb {
+>   		compatible = "simple-bus";
+>   		#address-cells = <1>;
+> diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
+> index d701ddda0e00..e17614fe58a9 100644
+> --- a/arch/arm/boot/dts/sama5d3.dtsi
+> +++ b/arch/arm/boot/dts/sama5d3.dtsi
+> @@ -78,6 +78,11 @@
+>   		};
+>   	};
+>
+> +	sram: sram@00300000 {
+> +		compatible = "mmio-sram";
+> +		reg = <0x00300000 0x20000>;
+> +	};
+> +
+>   	ahb {
+>   		compatible = "simple-bus";
+>   		#address-cells = <1>;
+> diff --git a/arch/arm/boot/dts/sama5d4.dtsi b/arch/arm/boot/dts/sama5d4.dtsi
+> index 0a2477fe5525..1b4fe4e19721 100644
+> --- a/arch/arm/boot/dts/sama5d4.dtsi
+> +++ b/arch/arm/boot/dts/sama5d4.dtsi
+> @@ -103,6 +103,11 @@
+>   		};
+>   	};
+>
+> +	ns_sram: sram@00210000 {
+> +		compatible = "mmio-sram";
+> +		reg = <0x00210000 0x10000>;
+> +	};
+> +
+>   	ahb {
+>   		compatible = "simple-bus";
+>   		#address-cells = <1>;
 >
 
-That's a good way. I will do this in next version.
-
-Thanks
-Zhenhua
-
+Best Regards,
+Bo Shen
 
