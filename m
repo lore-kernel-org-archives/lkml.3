@@ -1,124 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751877AbbAMIub (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 03:50:31 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:60058 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751103AbbAMIu3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 03:50:29 -0500
-Date: Tue, 13 Jan 2015 09:50:27 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Samuel Ortiz <sameo@linux.intel.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: Re: [PATCH v5 00/11] memory: add Atmel EBI (External Bus Interface)
- driver
-Message-ID: <20150113085027.GA3843@piout.net>
-References: <1417639455-17410-1-git-send-email-boris.brezillon@free-electrons.com>
+	id S1751965AbbAMIy3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 03:54:29 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:47845 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751318AbbAMIy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 03:54:27 -0500
+From: Keerthy <j-keerthy@ti.com>
+To: <tony@atomide.com>
+CC: <t-kristo@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux@arm.linux.org.uk>,
+        Keerthy <j-keerthy@ti.com>
+Subject: [PATCH] ARM: OMAP: DRA7: hwmod: Make gpmc software supervised as the smart idle is broken
+Date: Tue, 13 Jan 2015 14:21:25 +0530
+Message-ID: <1421139085-27183-1-git-send-email-j-keerthy@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417639455-17410-1-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+This patch fixes: 'omap_hwmod: gpmc: _wait_target_disable failed'
+error during suspend.
 
-There has not been any comment on that series since a while and we have
-other series on hold, waiting for the first 4 patches to be taken.
+This is because smart idle is broken.
+Tested in dra7-evm D1 board.
 
-Could you have a look at those 4 patches and take them if you don't have
-any comment ?
+Signed-off-by: Keerthy <j-keerthy@ti.com>
+---
+ arch/arm/mach-omap2/omap_hwmod_7xx_data.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Thanks.
-
-On 03/12/2014 at 21:44:04 +0100, Boris Brezillon wrote :
-> The EBI (External Bus Interface) is used to access external peripherals
-> (NOR, SRAM, NAND, and other specific devices like ethernet controllers).
-> Each device is assigned a CS line and an address range and can have its
-> own configuration (timings, access mode, bus width, ...).
-> This driver provides a generic DT binding to configure a device according
-> to its requirements.
-> For specific device controllers (like the NAND one) the SMC timings
-> should be configured by the controller driver through the matrix and
-> smc syscon regmaps.
-> 
-> The first 4 patches introduce 2 syscon devices needed to configure the
-> EBI bus, patch 5 and 6 adds support for the EBI bus, and the remaining
-> patches declares the EBI related nodes in sama5d3 dts[i] files.
-> 
-> Changes since v4:
-> - fix inconsistencies in SMC and MATRIX registers definition
-> - add missing compatible strings for at91sam9rl SoC
-> - fix DT bindings documentation
-> - replace "atmel,generic-dev" property by "atmel,specialized-logic"
-> 
-> Changes since v3:
-> - added AT91_MATRIX_USBPUCR_PUON definition
-> - removed useless macros (those directly returning SoC specific register
->   offsets)
-> - use syscon_regmap_lookup_by_phandle instead of of_parse_phandle +
->   syscon_node_to_regmap
-> - drop AT91_EBICSA_REGFIELD and AT91_MULTI_EBICSA_REGFIELD macros
-> 
-> Changes since v2:
-> - minor fixes int DT bindings doc
-> - fix SMC macros
-> - make use of SMC macros defined in include/linux/mfd/syscon/atmel-smc.h
-> 
-> Changes since v1:
-> - almost everything :-)
-> 
-> Boris Brezillon (11):
->   mfd: syscon: Add atmel-matrix registers definition
->   mfd: syscon: Add Atmel Matrix bus DT binding documentation
->   mfd: syscon: Add atmel-smc registers definition
->   mfd: syscon: Add Atmel SMC binding doc
->   memory: add Atmel EBI (External Bus Interface) driver
->   memory: atmel-ebi: add DT bindings documentation
->   ARM: at91: select ATMEL_EBI when compiling a kernel for at91sam9 or
->     sama5d3
->   ARM: at91/dt: add HSMC (Static Memory Controller) node in sama5d3 dtsi
->   ARM: at91/dt: add matrix node in sama5d3 dtsi
->   ARM: at91/dt: add EBI (External Bus Interface) node in sama5d3 dtsi
->   ARM: at91/dt: add NOR definition in sama5d3xcm dtsi
-> 
->  .../bindings/memory-controllers/atmel-ebi.txt      | 155 ++++++
->  .../devicetree/bindings/mfd/atmel-matrix.txt       |  24 +
->  .../devicetree/bindings/mfd/atmel-smc.txt          |  19 +
->  arch/arm/boot/dts/sama5d3.dtsi                     |  93 ++++
->  arch/arm/boot/dts/sama5d3xcm.dtsi                  |  33 ++
->  arch/arm/mach-at91/Kconfig                         |   2 +
->  drivers/memory/Kconfig                             |  11 +
->  drivers/memory/Makefile                            |   1 +
->  drivers/memory/atmel-ebi.c                         | 579 +++++++++++++++++++++
->  include/linux/mfd/syscon/atmel-matrix.h            | 117 +++++
->  include/linux/mfd/syscon/atmel-smc.h               | 173 ++++++
->  11 files changed, 1207 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/memory-controllers/atmel-ebi.txt
->  create mode 100644 Documentation/devicetree/bindings/mfd/atmel-matrix.txt
->  create mode 100644 Documentation/devicetree/bindings/mfd/atmel-smc.txt
->  create mode 100644 drivers/memory/atmel-ebi.c
->  create mode 100644 include/linux/mfd/syscon/atmel-matrix.h
->  create mode 100644 include/linux/mfd/syscon/atmel-smc.h
-> 
-> -- 
-> 1.9.1
-> 
-
+diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+index 9cdd8b8..29e55fe 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+@@ -826,7 +826,8 @@ static struct omap_hwmod dra7xx_gpmc_hwmod = {
+ 	.name		= "gpmc",
+ 	.class		= &dra7xx_gpmc_hwmod_class,
+ 	.clkdm_name	= "l3main1_clkdm",
+-	.flags		= HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET,
++	.flags		= (HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET |
++			   HWMOD_SWSUP_SIDLE),
+ 	.main_clk	= "l3_iclk_div",
+ 	.prcm = {
+ 		.omap4 = {
 -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+1.7.9.5
+
