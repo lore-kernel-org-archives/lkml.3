@@ -1,40 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333AbbAMSbF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 13:31:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33115 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751811AbbAMSbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 13:31:03 -0500
-Date: Tue, 13 Jan 2015 19:30:03 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
-        tglx@linutronix.de, luto@amacapital.net
-Subject: Re: [RFC PATCH 04/11] x86,fpu: defer FPU restore until return to
-	userspace
-Message-ID: <20150113183003.GB30475@redhat.com>
-References: <1421012793-30106-1-git-send-email-riel@redhat.com> <1421012793-30106-5-git-send-email-riel@redhat.com> <20150113171134.GA27519@redhat.com> <54B55BE7.1020107@redhat.com> <20150113182239.GA30475@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150113182239.GA30475@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753506AbbAMS2V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 13:28:21 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:56252 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752793AbbAMS2U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 13:28:20 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] kernel: events: core: Remove some unused functions
+Date: Tue, 13 Jan 2015 19:31:26 +0100
+Message-Id: <1421173886-4545-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13, Oleg Nesterov wrote:
->
-> But yes, I think we need the per-cpu "in_kernel_fpu" and irq_fpu_usable()
-> must die. Please look at http://marc.info/?l=linux-kernel&m=14096628660929
+Removes some functions that are not used anywhere:
+perf_cpu_hrtimer_cancel() perf_cgroup_event_cgrp_time()
 
-Plus I think we need this to fix the race with math_state_restore()...
-Please see http://marc.info/?l=linux-kernel&m=140992479607206
+This was partially found by using a static code analysis program called cppcheck.
 
-Unfortunately I forgot other problems I found in this area... And
-I completely forgot the plan I had in mind ;)
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ kernel/events/core.c |   33 ---------------------------------
+ 1 file changed, 33 deletions(-)
 
-Oleg.
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 2b02c9f..6287095 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -695,11 +695,6 @@ static inline int is_cgroup_event(struct perf_event *event)
+ 	return 0;
+ }
+ 
+-static inline u64 perf_cgroup_event_cgrp_time(struct perf_event *event)
+-{
+-	return 0;
+-}
+-
+ static inline void update_cgrp_time_from_event(struct perf_event *event)
+ {
+ }
+@@ -789,34 +784,6 @@ static enum hrtimer_restart perf_cpu_hrtimer_handler(struct hrtimer *hr)
+ 	return ret;
+ }
+ 
+-/* CPU is going down */
+-void perf_cpu_hrtimer_cancel(int cpu)
+-{
+-	struct perf_cpu_context *cpuctx;
+-	struct pmu *pmu;
+-	unsigned long flags;
+-
+-	if (WARN_ON(cpu != smp_processor_id()))
+-		return;
+-
+-	local_irq_save(flags);
+-
+-	rcu_read_lock();
+-
+-	list_for_each_entry_rcu(pmu, &pmus, entry) {
+-		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
+-
+-		if (pmu->task_ctx_nr == perf_sw_context)
+-			continue;
+-
+-		hrtimer_cancel(&cpuctx->hrtimer);
+-	}
+-
+-	rcu_read_unlock();
+-
+-	local_irq_restore(flags);
+-}
+-
+ static void __perf_cpu_hrtimer_init(struct perf_cpu_context *cpuctx, int cpu)
+ {
+ 	struct hrtimer *hr = &cpuctx->hrtimer;
+-- 
+1.7.10.4
 
