@@ -1,47 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769AbbAMMab (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 07:30:31 -0500
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:56380 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752007AbbAMMa2 (ORCPT
+	id S1752350AbbAMMeR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 07:34:17 -0500
+Received: from www.linutronix.de ([62.245.132.108]:44752 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000AbbAMMeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 07:30:28 -0500
+	Tue, 13 Jan 2015 07:34:14 -0500
+Date: Tue, 13 Jan 2015 13:33:56 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: Re: [PATCH v2 01/40] x86/uaccess: fix sparse errors
+In-Reply-To: <1420558883-10131-2-git-send-email-mst@redhat.com>
+Message-ID: <alpine.DEB.2.11.1501131333410.5526@nanos>
+References: <1420558883-10131-1-git-send-email-mst@redhat.com> <1420558883-10131-2-git-send-email-mst@redhat.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <1420384548-7816-1-git-send-email-jszhang@marvell.com>
-References: <1420384548-7816-1-git-send-email-jszhang@marvell.com>
-Date: Tue, 13 Jan 2015 13:30:27 +0100
-Message-ID: <CAPDyKFpE-rgBB66R3iS_rQssa8z8LsTz=e6asi+8_EdUMfTBfA@mail.gmail.com>
-Subject: Re: [PATCH next 0/2] mmc: sdhci-pxav3: fix unbalanced pm and clock issues
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Jisheng Zhang <jszhang@marvell.com>
-Cc: Chris Ball <chris@printf.net>, Peter Griffin <peter.griffin@linaro.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 January 2015 at 16:15, Jisheng Zhang <jszhang@marvell.com> wrote:
-> These two patches fix unbalanced pm and clock issues. The clock unbalance
-> issue would cause power consumption regression because the clock will never
-> be gated at runtime PM suspend.
->
-> Jisheng Zhang (2):
->   mmc: sdhci-pxav3: fix unbalanced clock issues during probe
->   mmc: sdhci-pxav3: fix pm unbalanced issue in -> remove()
->
->  drivers/mmc/host/sdhci-pxav3.c | 11 +++++++----
->  1 file changed, 7 insertions(+), 4 deletions(-)
->
-> --
-> 2.1.4
->
+On Tue, 6 Jan 2015, Michael S. Tsirkin wrote:
 
-Thanks! Applied for next.
+> virtio wants to read bitwise types from userspace using get_user.  At the
+> moment this triggers sparse errors, since the value is passed through an
+> integer.
+> 
+> Fix that up using __force.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-Kind regards
-Uffe
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
