@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174AbbANU0U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 15:26:20 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:37734 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848AbbANU0S (ORCPT
+	id S1752718AbbAMReR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 12:34:17 -0500
+Received: from mail-oi0-f50.google.com ([209.85.218.50]:45002 "EHLO
+	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752542AbbAMReQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 15:26:18 -0500
-Message-ID: <54B55700.4010101@kernel.org>
-Date: Tue, 13 Jan 2015 17:33:52 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 13 Jan 2015 12:34:16 -0500
 MIME-Version: 1.0
-To: Karol Wrona <k.wrona@samsung.com>, linux-iio@vger.kernel.org,
-        Hartmut Knaack <knaack.h@gmx.de>, linux-kernel@vger.kernel.org
-CC: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Karol Wrona <wrona.vy@gmail.com>
-Subject: Re: [PATCH v3 3/5] iio: common: ssp_sensors: Add sensorhub iio commons
-References: <1417809290-9662-1-git-send-email-k.wrona@samsung.com> <1417809290-9662-4-git-send-email-k.wrona@samsung.com> <54831539.1020705@kernel.org> <54B541DF.9000507@samsung.com>
-In-Reply-To: <54B541DF.9000507@samsung.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1420564543-24589-1-git-send-email-salyzyn@android.com>
+References: <1420564543-24589-1-git-send-email-salyzyn@android.com>
+Date: Tue, 13 Jan 2015 09:34:15 -0800
+X-Google-Sender-Auth: 0kHtxXF1dCgN1GtZHn08B2IU5A4
+Message-ID: <CAGXu5jLT=cT=zGRqYRoKM3bXfFaDp-MYEwP=PP-7jB-FpUwU3A@mail.gmail.com>
+Subject: Re: [PATCH 2/3] pstore: remove superfluous memory size check
+From: Kees Cook <keescook@chromium.org>
+To: Mark Salyzyn <salyzyn@android.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Anton Vorontsov <anton@enomsg.org>,
+        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/01/15 16:03, Karol Wrona wrote:
-> [...]
->>> +EXPORT_SYMBOL(ssp_common_setup_buffer);
->>> diff --git a/drivers/iio/common/ssp_sensors/ssp_iio_sensor.h b/drivers/iio/common/ssp_sensors/ssp_iio_sensor.h
->>> new file mode 100644
->>> index 0000000..4b79be0
->>> --- /dev/null
->>> +++ b/drivers/iio/common/ssp_sensors/ssp_iio_sensor.h
->>> @@ -0,0 +1,56 @@
->>> +#ifndef __SSP_IIO_SENSOR_H__
->>> +#define __SSP_IIO_SENSOR_H__
->>> +
->>> +#define SSP_CHANNEL_AG(_type, _mod, _index) \
->>> +{ \
->>> +		.type = _type,\
->>> +		.modified = 1,\
->>> +		.channel2 = _mod,\
->>> +		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SAMP_FREQ),\
->>> +		.scan_index = _index,\
->>> +		.scan_type = {\
->>> +			.sign = 's',\
->>> +			.realbits = 16,\
->> Seems a little unlikely unless the device is padding appropriately. Even
->> then it is generally a bad idea to claim more accuracy than is real. Very
->> few accelerometers etc are 16 bit.  Please confirm.
->>> +			.storagebits = 16,\
-> Physically it is mpu6500:
-> http://www.invensense.com/mems/gyro/documents/PS-MPU-6500A-01.pdf.
-> It has 16-bit ADC.  Other thing linux device does not get these data directly
-> but after some processing by sensorhub and in this case it always will be 16-bit
-> sample.
-Fair enough, it'll be somewhat noisy but there might be some value in those low
-bits ;)
-> 
-> 
-> 
->>> +			.shift = 0,\
->>> +			.endianness = IIO_LE,\
->>> +		},\
->>> +}
->>> +
->>> +#define SSP_DIVISOR	1000000ULL
->>> +#define SSP_MS_PER_S	1000
-> [...]
-> 
+On Tue, Jan 6, 2015 at 9:15 AM, Mark Salyzyn <salyzyn@android.com> wrote:
+> All previous checks will fail with error if memory size
+> is not sufficient to register a zone, so this legacy
+> check has become redundant.
+>
+> Signed-off-by: Mark Salyzyn <salyzyn@android.com>
+> ---
+>  fs/pstore/ram.c | 9 ---------
+>  1 file changed, 9 deletions(-)
+>
+> diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+> index 8613e5b..34ed8f8 100644
+> --- a/fs/pstore/ram.c
+> +++ b/fs/pstore/ram.c
+> @@ -474,14 +474,6 @@ static int ramoops_probe(struct platform_device *pdev)
+>         if (err)
+>                 goto fail_init_fprz;
+>
+> -       if (!cxt->przs && !cxt->cprz && !cxt->fprz) {
+> -               pr_err("memory size too small, minimum is %zu\n",
+> -                       cxt->console_size + cxt->record_size +
+> -                       cxt->ftrace_size);
+> -               err = -EINVAL;
+> -               goto fail_cnt;
+> -       }
+> -
 
+Yup, good call. ramoops_init_przs and ramoops_init_prz do all the
+checks already.
+
+Acked-by: Kees Cook <keescook@chromium.org>
+
+-Kees
+
+>         cxt->pstore.data = cxt;
+>         /*
+>          * Console can handle any buffer size, so prefer LOG_LINE_MAX. If we
+> @@ -525,7 +517,6 @@ fail_buf:
+>         kfree(cxt->pstore.buf);
+>  fail_clear:
+>         cxt->pstore.bufsize = 0;
+> -fail_cnt:
+>         kfree(cxt->fprz);
+>  fail_init_fprz:
+>         kfree(cxt->cprz);
+> --
+> 2.2.0.rc0.207.ga3a616c
+>
+
+
+
+-- 
+Kees Cook
+Chrome OS Security
