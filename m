@@ -1,126 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138AbbAMMrx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 07:47:53 -0500
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:61067 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676AbbAMMrv (ORCPT
+	id S1752224AbbAMMsb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 07:48:31 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:29286 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000AbbAMMs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 07:47:51 -0500
-Message-ID: <54B513F4.5020403@hurleysoftware.com>
-Date: Tue, 13 Jan 2015 07:47:48 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Michael Chan <mchan@broadcom.com>
-CC: Prashant Sreedharan <prashant@broadcom.com>, netdev@vger.kernel.org,
-        Linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [3.19-rc3] tg3: BUG: sleeping function called from invalid context
-References: <54B46DD5.9050802@hurleysoftware.com> <1421131762.7208.31.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-In-Reply-To: <1421131762.7208.31.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Jan 2015 07:48:29 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-85-54b5141a35c1
+Message-id: <54B51419.4020604@samsung.com>
+Date: Tue, 13 Jan 2015 13:48:25 +0100
+From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101
+ Thunderbird/31.3.0
+MIME-version: 1.0
+To: kbuild test robot <fengguang.wu@intel.com>
+Cc: kbuild-all@01.org, Felipe Balbi <balbi@ti.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH next] usb: gadget: uvc: to_uvcg_control_header() can be
+ static
+References: <201501131627.qyQasDGL%fengguang.wu@intel.com>
+ <20150113085538.GA9785@lkp-sb04>
+In-reply-to: <20150113085538.GA9785@lkp-sb04>
+Content-type: text/plain; charset=windows-1252; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrELMWRmVeSWpSXmKPExsVy+t/xy7pSIltDDHrXq1scvF9v8f75emaL
+	5sXr2SyOXZ/IbNE5cQm7xeVdc9gsFi1rZXZg97i/l91jdsdMVo/Fe14yeeyfu4bd4/iN7Uwe
+	nzfJBbBFcdmkpOZklqUW6dslcGW8Ov6cpWCtQ8WhT0dZGxj7zLoYOTkkBEwkZi7/wgxhi0lc
+	uLeerYuRi0NIYCmjxPsn71khnM+MEldazzCBVPEKaEnMudTOCmKzCKhKLFjayw5iswkYS+w9
+	2MEIYosKhElMvPmYFaJeUOLH5HssILaIgJ7EioVtjCBDmQVuMEo0n14D1iwsECJxa9EksAVC
+	ArESG+fvBWvgFNCVeH/9NxuIzSxgK7Hg/ToWCFteYvOat8wTGAVmIdkxC0nZLCRlCxiZVzGK
+	ppYmFxQnpeca6hUn5haX5qXrJefnbmKEhPuXHYyLj1kdYhTgYFTi4d2RvSVEiDWxrLgy9xCj
+	BAezkgjvf4GtIUK8KYmVValF+fFFpTmpxYcYmTg4pRoYZ8yTj5adIZgc+qdMZe93E9XrenIi
+	JgKrBB5Pnz5nZki2ld0HfrMnrBM42PtmXVrPJlY359nuhf6/smKrN9vuf/V8BmcH87PFK9q9
+	WL5eMmncXu5xjn9pOF/P/RVvLi0qyOvycEx7f7G4auGkSsnJp/6siDrZvlbG+gbbPukfekph
+	K56sn6SxR4mlOCPRUIu5qDgRAIhGSpRVAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2015 01:49 AM, Michael Chan wrote:
-> On Mon, 2015-01-12 at 19:59 -0500, Peter Hurley wrote: 
->> [   17.203009] BUG: sleeping function called from invalid context at /home/peter/src/kernels/mainline/kernel/irq/manage.c:104
->> [   17.203067] in_atomic(): 1, irqs_disabled(): 0, pid: 1106, name: ip
->> [   17.203092] 2 locks held by ip/1106:
->> [   17.205255]  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff816adf1f>] rtnetlink_rcv+0x1f/0x40
->> [   17.207445]  #1:  (&(&tp->lock)->rlock){+.....}, at: [<ffffffffa01073e6>] tg3_start+0xc06/0x11f0 [tg3]
->> [   17.209725] CPU: 2 PID: 1106 Comm: ip Not tainted 3.19.0-rc3+wip-xeon+lockdep #rc3+wip
->> [   17.211900] Hardware name: Dell Inc. Precision WorkStation T5400  /0RW203, BIOS A11 04/30/2012
->> [   17.214086]  0000000000000068 ffff8802ac823498 ffffffff817af7e8 0000000000000005
->> [   17.216265]  ffffffff81a9be78 ffff8802ac8234a8 ffffffff810998a5 ffff8802ac8234d8
->> [   17.218446]  ffffffff8109991a ffff8802ac8234c8 ffff8802af0aae00 ffffffffa00ed000
->> [   17.220636] Call Trace:
->> [   17.222743]  [<ffffffff817af7e8>] dump_stack+0x4f/0x7b
->> [   17.224808]  [<ffffffff810998a5>] ___might_sleep+0x105/0x140
->> [   17.226842]  [<ffffffff8109991a>] __might_sleep+0x3a/0xa0
->> [   17.228869]  [<ffffffffa00ed000>] ? 0xffffffffa00ed000
->> [   17.230939]  [<ffffffff810d7d78>] synchronize_irq+0x38/0xa0
->> [   17.232967]  [<ffffffffa00ed000>] ? 0xffffffffa00ed000
->> [   17.234991]  [<ffffffffa010105f>] tg3_chip_reset+0x13f/0x9c0 [tg3]
->> [   17.236988]  [<ffffffffa01020ae>] tg3_reset_hw+0x7e/0x2d20 [tg3] 
-> 
-> tp->lock is held in this code path.  If synchronize_irq() sleeps in
-> wait_event(desc->wait_for_threads, ...), we'll get the warning.
-> 
-> The synchronize_irq() call is to wait for any tg3 irq handler to finish
-> so that it is guaranteed that next time it will see the CHIP_RESETTING
-> flag and do nothing.
-> 
-> Not sure if we can drop the tp->lock before we call synchronize_irq()
-> and then take it again after synchronize_irq().
+W dniu 13.01.2015 o 09:55, kbuild test robot pisze:
+> drivers/usb/gadget/function/uvc_configfs.c:46:28: sparse: symbol 'to_uvcg_control_header' was not declared. Should it be static?
+> drivers/usb/gadget/function/uvc_configfs.c:138:25: sparse: symbol 'uvcg_control_header_type' was not declared. Should it be static?
+> drivers/usb/gadget/function/uvc_configfs.c:164:6: sparse: symbol 'uvcg_control_header_drop' was not declared. Should it be static?
+> drivers/usb/gadget/function/uvc_configfs.c:721:20: sparse: symbol 'to_uvcg_format' was not declared. Should it be static?
+> drivers/usb/gadget/function/uvc_configfs.c:798:30: sparse: symbol 'to_uvcg_streaming_header' was not declared. Should it be static?
+> drivers/usb/gadget/function/uvc_configfs.c:950:25: sparse: symbol 'uvcg_streaming_header_type' was not declared. Should it be static?
+> drivers/usb/gadget/function/uvc_configfs.c:976:6: sparse: symbol 'uvcg_streaming_header_drop' was not declared. Should it be static?
+> drivers/usb/gadget/function/uvc_configfs.c:1020:19: sparse: symbol 'to_uvcg_frame' was not declared. Should it be static?
+> drivers/usb/gadget/function/uvc_configfs.c:1265:25: sparse: symbol 'uvcg_frame_type' was not declared. Should it be static?
+> drivers/usb/gadget/function/uvc_configfs.c:1315:6: sparse: symbol 'uvcg_frame_drop' was not declared. Should it be static?
+> drivers/usb/gadget/function/uvc_configfs.c:1338:26: sparse: symbol 'to_uvcg_uncompressed' was not declared. Should it be static?
+> drivers/usb/gadget/function/uvc_configfs.c:1548:25: sparse: symbol 'uvcg_uncompressed_type' was not declared. Should it be static?
+> drivers/usb/gadget/function/uvc_configfs.c:1586:6: sparse: symbol 'uvcg_uncompressed_drop' was not declared. Should it be static?
+> drivers/usb/gadget/function/uvc_configfs.c:1610:19: sparse: symbol 'to_uvcg_mjpeg' was not declared. Should it be static?
+> drivers/usb/gadget/function/uvc_configfs.c:1761:25: sparse: symbol 'uvcg_mjpeg_type' was not declared. Should it be static?
+> drivers/usb/gadget/function/uvc_configfs.c:1793:6: sparse: symbol 'uvcg_mjpeg_drop' was not declared. Should it be static?
+>
+> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 
-Well, this device [1] is using MSI (INTx disabled) so if the synchronize_irq()
-is _only_ for the CHIP_RESETTING logic then it would seem ok to skip it (the
-synchronize_irq()).
-
-Regards,
-Peter Hurley
+Reviewed-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
 
 
-[1] lspci -vv
-
-08:00.0 Ethernet controller: Broadcom Corporation NetXtreme BCM5754 Gigabit Ethernet PCI Express (rev 02)
-	Subsystem: Dell Precision T5400
-	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Interrupt: pin A routed to IRQ 31
-	Region 0: Memory at d3ff0000 (64-bit, non-prefetchable) [size=64K]
-	Expansion ROM at <ignored> [disabled]
-	Capabilities: [48] Power Management version 3
-		Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot+,D3cold+)
-		Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=1 PME-
-	Capabilities: [50] Vital Product Data
-		Product Name: Broadcom NetLink Gigabit Ethernet Controller
-		Read-only fields:
-			[PN] Part number: BCM95754
-			[EC] Engineering changes: 106679-15
-			[SN] Serial number: 0123456789
-			[MN] Manufacture ID: 31 34 65 34
-			[RV] Reserved: checksum good, 30 byte(s) reserved
-		Read/write fields:
-			[YA] Asset tag: XYZ01234567
-			[RW] Read-write area: 107 byte(s) free
-		End
-	Capabilities: [58] Vendor Specific Information: Len=78 <?>
-	Capabilities: [e8] MSI: Enable+ Count=1/1 Maskable- 64bit+
-		Address: 00000000fee0400c  Data: 41a2
-	Capabilities: [d0] Express (v1) Endpoint, MSI 00
-		DevCap:	MaxPayload 128 bytes, PhantFunc 0, Latency L0s <4us, L1 unlimited
-			ExtTag+ AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
-		DevCtl:	Report errors: Correctable- Non-Fatal+ Fatal+ Unsupported-
-			RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
-			MaxPayload 128 bytes, MaxReadReq 512 bytes
-		DevSta:	CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
-		LnkCap:	Port #0, Speed 2.5GT/s, Width x1, ASPM L0s, Exit Latency L0s <4us, L1 <64us
-			ClockPM- Surprise- LLActRep- BwNot-
-		LnkCtl:	ASPM Disabled; RCB 64 bytes Disabled- CommClk+
-			ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-		LnkSta:	Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
-	Capabilities: [100 v1] Advanced Error Reporting
-		UESta:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
-		UEMsk:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
-		UESvrt:	DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
-		CESta:	RxErr+ BadTLP- BadDLLP+ Rollover- Timeout- NonFatalErr-
-		CEMsk:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
-		AERCap:	First Error Pointer: 00, GenCap+ CGenEn- ChkCap+ ChkEn-
-	Capabilities: [13c v1] Virtual Channel
-		Caps:	LPEVC=0 RefClk=100ns PATEntryBits=1
-		Arb:	Fixed- WRR32- WRR64- WRR128-
-		Ctrl:	ArbSelect=Fixed
-		Status:	InProgress-
-		VC0:	Caps:	PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
-			Arb:	Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
-			Ctrl:	Enable+ ID=0 ArbSelect=Fixed TC/VC=ff
-			Status:	NegoPending- InProgress-
-	Capabilities: [160 v1] Device Serial Number xx-xx-xx-xx-xx-xx-xx-xx
-	Capabilities: [16c v1] Power Budgeting <?>
-	Kernel driver in use: tg3
+> ---
+>   uvc_configfs.c |   32 ++++++++++++++++----------------
+>   1 file changed, 16 insertions(+), 16 deletions(-)
+>
+> diff --git a/drivers/usb/gadget/function/uvc_configfs.c b/drivers/usb/gadget/function/uvc_configfs.c
+> index 33d92ab..f69f47a 100644
+> --- a/drivers/usb/gadget/function/uvc_configfs.c
+> +++ b/drivers/usb/gadget/function/uvc_configfs.c
+> @@ -43,7 +43,7 @@ struct uvcg_control_header {
+>   	unsigned			linked;
+>   };
+>
+> -struct uvcg_control_header *to_uvcg_control_header(struct config_item *item)
+> +static struct uvcg_control_header *to_uvcg_control_header(struct config_item *item)
+>   {
+>   	return container_of(item, struct uvcg_control_header, item);
+>   }
+> @@ -135,7 +135,7 @@ static struct configfs_attribute *uvcg_control_header_attrs[] = {
+>   	NULL,
+>   };
+>
+> -struct config_item_type uvcg_control_header_type = {
+> +static struct config_item_type uvcg_control_header_type = {
+>   	.ct_item_ops	= &uvcg_control_header_item_ops,
+>   	.ct_attrs	= uvcg_control_header_attrs,
+>   	.ct_owner	= THIS_MODULE,
+> @@ -161,7 +161,7 @@ static struct config_item *uvcg_control_header_make(struct config_group *group,
+>   	return &h->item;
+>   }
+>
+> -void uvcg_control_header_drop(struct config_group *group,
+> +static void uvcg_control_header_drop(struct config_group *group,
+>   			      struct config_item *item)
+>   {
+>   	struct uvcg_control_header *h = to_uvcg_control_header(item);
+> @@ -718,7 +718,7 @@ struct uvcg_format {
+>   	__u8			bmaControls[UVCG_STREAMING_CONTROL_SIZE];
+>   };
+>
+> -struct uvcg_format *to_uvcg_format(struct config_item *item)
+> +static struct uvcg_format *to_uvcg_format(struct config_item *item)
+>   {
+>   	return container_of(to_config_group(item), struct uvcg_format, group);
+>   }
+> @@ -795,7 +795,7 @@ struct uvcg_streaming_header {
+>   	unsigned					num_fmt;
+>   };
+>
+> -struct uvcg_streaming_header *to_uvcg_streaming_header(struct config_item *item)
+> +static struct uvcg_streaming_header *to_uvcg_streaming_header(struct config_item *item)
+>   {
+>   	return container_of(item, struct uvcg_streaming_header, item);
+>   }
+> @@ -947,7 +947,7 @@ static struct configfs_attribute *uvcg_streaming_header_attrs[] = {
+>   	NULL,
+>   };
+>
+> -struct config_item_type uvcg_streaming_header_type = {
+> +static struct config_item_type uvcg_streaming_header_type = {
+>   	.ct_item_ops	= &uvcg_streaming_header_item_ops,
+>   	.ct_attrs	= uvcg_streaming_header_attrs,
+>   	.ct_owner	= THIS_MODULE,
+> @@ -973,7 +973,7 @@ static struct config_item
+>   	return &h->item;
+>   }
+>
+> -void uvcg_streaming_header_drop(struct config_group *group,
+> +static void uvcg_streaming_header_drop(struct config_group *group,
+>   			      struct config_item *item)
+>   {
+>   	struct uvcg_streaming_header *h = to_uvcg_streaming_header(item);
+> @@ -1017,7 +1017,7 @@ struct uvcg_frame {
+>   	struct config_item	item;
+>   };
+>
+> -struct uvcg_frame *to_uvcg_frame(struct config_item *item)
+> +static struct uvcg_frame *to_uvcg_frame(struct config_item *item)
+>   {
+>   	return container_of(item, struct uvcg_frame, item);
+>   }
+> @@ -1262,7 +1262,7 @@ static struct configfs_attribute *uvcg_frame_attrs[] = {
+>   	NULL,
+>   };
+>
+> -struct config_item_type uvcg_frame_type = {
+> +static struct config_item_type uvcg_frame_type = {
+>   	.ct_item_ops	= &uvcg_frame_item_ops,
+>   	.ct_attrs	= uvcg_frame_attrs,
+>   	.ct_owner	= THIS_MODULE,
+> @@ -1312,7 +1312,7 @@ static struct config_item *uvcg_frame_make(struct config_group *group,
+>   	return &h->item;
+>   }
+>
+> -void uvcg_frame_drop(struct config_group *group, struct config_item *item)
+> +static void uvcg_frame_drop(struct config_group *group, struct config_item *item)
+>   {
+>   	struct uvcg_frame *h = to_uvcg_frame(item);
+>   	struct uvcg_format *fmt;
+> @@ -1335,7 +1335,7 @@ struct uvcg_uncompressed {
+>   	struct uvc_format_uncompressed	desc;
+>   };
+>
+> -struct uvcg_uncompressed *to_uvcg_uncompressed(struct config_item *item)
+> +static struct uvcg_uncompressed *to_uvcg_uncompressed(struct config_item *item)
+>   {
+>   	return container_of(
+>   		container_of(to_config_group(item), struct uvcg_format, group),
+> @@ -1545,7 +1545,7 @@ static struct configfs_attribute *uvcg_uncompressed_attrs[] = {
+>   	NULL,
+>   };
+>
+> -struct config_item_type uvcg_uncompressed_type = {
+> +static struct config_item_type uvcg_uncompressed_type = {
+>   	.ct_item_ops	= &uvcg_uncompressed_item_ops,
+>   	.ct_group_ops	= &uvcg_uncompressed_group_ops,
+>   	.ct_attrs	= uvcg_uncompressed_attrs,
+> @@ -1583,7 +1583,7 @@ static struct config_group *uvcg_uncompressed_make(struct config_group *group,
+>   	return &h->fmt.group;
+>   }
+>
+> -void uvcg_uncompressed_drop(struct config_group *group,
+> +static void uvcg_uncompressed_drop(struct config_group *group,
+>   			    struct config_item *item)
+>   {
+>   	struct uvcg_uncompressed *h = to_uvcg_uncompressed(item);
+> @@ -1607,7 +1607,7 @@ struct uvcg_mjpeg {
+>   	struct uvc_format_mjpeg		desc;
+>   };
+>
+> -struct uvcg_mjpeg *to_uvcg_mjpeg(struct config_item *item)
+> +static struct uvcg_mjpeg *to_uvcg_mjpeg(struct config_item *item)
+>   {
+>   	return container_of(
+>   		container_of(to_config_group(item), struct uvcg_format, group),
+> @@ -1758,7 +1758,7 @@ static struct configfs_attribute *uvcg_mjpeg_attrs[] = {
+>   	NULL,
+>   };
+>
+> -struct config_item_type uvcg_mjpeg_type = {
+> +static struct config_item_type uvcg_mjpeg_type = {
+>   	.ct_item_ops	= &uvcg_mjpeg_item_ops,
+>   	.ct_group_ops	= &uvcg_mjpeg_group_ops,
+>   	.ct_attrs	= uvcg_mjpeg_attrs,
+> @@ -1790,7 +1790,7 @@ static struct config_group *uvcg_mjpeg_make(struct config_group *group,
+>   	return &h->fmt.group;
+>   }
+>
+> -void uvcg_mjpeg_drop(struct config_group *group,
+> +static void uvcg_mjpeg_drop(struct config_group *group,
+>   			    struct config_item *item)
+>   {
+>   	struct uvcg_mjpeg *h = to_uvcg_mjpeg(item);
+>
 
