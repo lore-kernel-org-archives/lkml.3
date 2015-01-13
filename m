@@ -1,40 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350AbbAMMeR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 07:34:17 -0500
-Received: from www.linutronix.de ([62.245.132.108]:44752 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000AbbAMMeO (ORCPT
+	id S1752136AbbAMMeN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 07:34:13 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:18114 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000AbbAMMeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 07:34:14 -0500
-Date: Tue, 13 Jan 2015 13:33:56 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: Re: [PATCH v2 01/40] x86/uaccess: fix sparse errors
-In-Reply-To: <1420558883-10131-2-git-send-email-mst@redhat.com>
-Message-ID: <alpine.DEB.2.11.1501131333410.5526@nanos>
-References: <1420558883-10131-1-git-send-email-mst@redhat.com> <1420558883-10131-2-git-send-email-mst@redhat.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Tue, 13 Jan 2015 07:34:11 -0500
+Message-ID: <54B510BA.7030202@huawei.com>
+Date: Tue, 13 Jan 2015 20:34:02 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+To: Marc Zyngier <marc.zyngier@arm.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+Subject: Re: [PATCH v2 2/8] PCI/MSI: Add hooks to populate the msi_domain
+ field
+References: <1420736772-11088-1-git-send-email-marc.zyngier@arm.com> <1420736772-11088-3-git-send-email-marc.zyngier@arm.com>
+In-Reply-To: <1420736772-11088-3-git-send-email-marc.zyngier@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020204.54B510C1.0189,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 25661d8ab10e9569214d3c0452a8aef7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Jan 2015, Michael S. Tsirkin wrote:
+>  static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
+>  					   struct pci_dev *bridge, int busnr)
+>  {
+> @@ -713,6 +727,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
+>  	bridge->subordinate = child;
+>  
+>  add_dev:
+> +	pci_set_bus_msi_domain(child);
+>  	ret = device_register(&child->dev);
+>  	WARN_ON(ret < 0);
+>  
+> @@ -1507,6 +1522,17 @@ static void pci_init_capabilities(struct pci_dev *dev)
+>  	pci_enable_acs(dev);
+>  }
+>  
+> +static void pci_set_msi_domain(struct pci_dev *dev)
+> +{
+> +	/*
+> +	 * If no domain has been set through the pcibios callback,
+> +	 * inherit the default from the bus device.
+> +	 */
+> +	if (!dev_get_msi_domain(&dev->dev))
+> +		dev_set_msi_domain(&dev->dev,
+> +				   dev_get_msi_domain(&dev->bus->dev));
+> +}
 
-> virtio wants to read bitwise types from userspace using get_user.  At the
-> moment this triggers sparse errors, since the value is passed through an
-> integer.
-> 
-> Fix that up using __force.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Hi Marc, now we have two ways to associate the pci_dev and msi_domain, right ?
 
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
+1. associate pci_dev and msi_domain in pcibios_add_device() like x86.
+
+2. Inherit msi_domain from pci_dev->bus.
+
+My question is if all pci devices inherit msi_domain from the pci_bus,
+so all pci devices under same pci host bridge have the same msi_domain assigned by
+weak pcibios_set_phb_msi_domain(). So why not save the pci host bridge specific
+msi_domain in pci_host_bridge. Then pci devices could inherit the msi_domain from
+its pci host bridge directly, no need to involve pci bus in the assignment.
+
+If I misunderstood, please let me know, :)
+
+Thanks!
+Yijing.
+
+> +
+>  void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
+>  {
+>  	int ret;
+> @@ -1547,6 +1573,9 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
+>  	ret = pcibios_add_device(dev);
+>  	WARN_ON(ret < 0);
+>  
+> +	/* Setup MSI irq domain */
+> +	pci_set_msi_domain(dev);
+> +
+>  	/* Notifier could use PCI capabilities */
+>  	dev->match_driver = false;
+>  	ret = device_add(&dev->dev);
+> @@ -1937,6 +1966,7 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+>  	b->bridge = get_device(&bridge->dev);
+>  	device_enable_async_suspend(b->bridge);
+>  	pci_set_bus_of_node(b);
+> +	pci_set_bus_msi_domain(b);
+>  
+>  	if (!parent)
+>  		set_dev_node(b->bridge, pcibus_to_node(b));
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 360a966..13c65ab 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -1640,6 +1640,7 @@ int pcibios_set_pcie_reset_state(struct pci_dev *dev,
+>  int pcibios_add_device(struct pci_dev *dev);
+>  void pcibios_release_device(struct pci_dev *dev);
+>  void pcibios_penalize_isa_irq(int irq, int active);
+> +void pcibios_set_phb_msi_domain(struct pci_bus *bus);
+>  
+>  #ifdef CONFIG_HIBERNATE_CALLBACKS
+>  extern struct dev_pm_ops pcibios_pm_ops;
+> 
+
+
+-- 
+Thanks!
+Yijing
+
