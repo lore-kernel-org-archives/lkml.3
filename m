@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985AbbAMEEG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 23:04:06 -0500
-Received: from mail-bn1bon0146.outbound.protection.outlook.com ([157.56.111.146]:50443
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750989AbbAMEEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 23:04:05 -0500
-X-Greylist: delayed 937 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Jan 2015 23:04:04 EST
-Date: Tue, 13 Jan 2015 11:55:53 +0800
-From: Robin Gong <b38343@freescale.com>
-To: Vinod Koul <vinod.koul@intel.com>
-CC: <dan.j.williams@intel.com>, <andriy.shevchenko@linux.jf.intel.com>,
-        <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3/3] dma: imx-sdma: reorg code to make code clean
-Message-ID: <20150113035552.GB8251@Robin-OptiPlex-780>
-References: <1414030940-15516-1-git-send-email-b38343@freescale.com>
- <1414030940-15516-4-git-send-email-b38343@freescale.com>
- <20141205164144.GP3411@intel.com>
+	id S1751819AbbAMEDF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 23:03:05 -0500
+Received: from ozlabs.org ([103.22.144.67]:40646 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750957AbbAMEDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 23:03:02 -0500
+Date: Tue, 13 Jan 2015 15:02:55 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Felipe Balbi <balbi@ti.com>, Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Robert Baldyga <r.baldyga@samsung.com>
+Subject: linux-next: manual merge of the usb-gadget tree with the
+ usb.current tree
+Message-ID: <20150113150255.619953f5@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20141205164144.GP3411@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=yibin.gong@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(24454002)(51704005)(62966003)(6806004)(558084003)(33656002)(106466001)(23726002)(104016003)(105606002)(2950100001)(97756001)(77156002)(110136001)(54356999)(97736003)(76176999)(85426001)(77096005)(50466002)(64706001)(87936001)(33716001)(68736005)(47776003)(83506001)(50986999)(46406003)(46102003)(92566002)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0630;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-DmarcAction-Test: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BY2PR0301MB0630;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0630;
-X-Forefront-PRVS: 045584D28C
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0630;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 13 Jan 2015 03:48:23.4095
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0630
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/zAck5_Nve5_mh9f8+r1Nun/"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 05, 2014 at 10:11:44PM +0530, Vinod Koul wrote:
-> On Thu, Oct 23, 2014 at 10:22:20AM +0800, Robin Gong wrote:
-> > Code reorg for transfer prepare and bus width check to make code
-> > cleaner.
-> This should have been 1st patch :(
-> 
-> -- 
-> ~Vinod
->
-Got it.Thanks.
+--Sig_/zAck5_Nve5_mh9f8+r1Nun/
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
+
+Hi Felipe,
+
+Today's linux-next merge of the usb-gadget tree got a conflict in
+drivers/usb/dwc2/gadget.c between commit 62f4f0651ce8 ("usb: dwc2:
+gadget: kill requests with 'force' in s3c_hsotg_udc_stop()") from the
+usb.current tree and commit 6b448af46e2a ("drivers: usb: dwc2: remove
+'force' parameter from kill_all_requests()") from the usb-gadget tree.
+
+I fixed it up (I used the latter version) and can carry the fix as
+necessary (no action is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/zAck5_Nve5_mh9f8+r1Nun/
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUtJjzAAoJEMDTa8Ir7ZwV9ZIQAIWImXnkz2OihboLYEYSLpKV
+WBK+OZ9rWH1FSsU9c+RXVPBLZdpU+pgvHxzkIvE0t4J4sy3AVCkHu7sZ4GeETKgn
+EoHEV9ODC+146KZFzhjkhkrDx/RpJLKjVeT+XAVx0I38kjFWPJv7MA7bwzxr+R3+
+eiSGtskniFICdid7clfIErvF53LoT0Hzj4ffPRzrCfSV4hZ084zvaop/Gs+tcmbj
+AgCZ/VEeWmd16nQlL5G/AHmRMYcJsBk/EXwK3JBopP8E0X4+hfywWedqw2MN6mLu
+ngzbjIrRHfUIJAMZMocUqrY9WZQ51JLY17vemtyPdRDYnbncEQJRgsWPCTKHswUD
+VftJ4lo1seHbrfFEAaMNkht20lLarnREvTO5Bf5AQ8AsXGCcRqDv/6XBcRN1zAPL
+oRTw0GduxjLZe2Rt5RRGs/H/6SzPHQ0uVMe6A1erODT2lAoY9++VAeCxZSNrg3DF
+7pj5xqlcI3kxogphRUZdBTaMJIU445hgSNbiSNlVx9Q/39ds/t1QuEMbg0BedgjZ
+N5Th3pDDwZMK//KHFpvelsBeFInbn6Shh6ry40vEN5qskPM3f6DJtWw2lTM5Gxmi
+NxV+wMo0w1Ybu0E/5KTguV5rJxtJVKGuPLBmN+toEi2qN+boq1gr1gOW+KbIpcum
+0LLV1cCf9dSLlrNC+EQz
+=kZ5e
+-----END PGP SIGNATURE-----
+
+--Sig_/zAck5_Nve5_mh9f8+r1Nun/--
