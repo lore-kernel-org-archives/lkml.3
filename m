@@ -1,247 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556AbbAMQGt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 11:06:49 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:45714 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753354AbbAMQGp (ORCPT
+	id S1753574AbbAMQHN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 11:07:13 -0500
+Received: from mout.gmx.net ([212.227.15.15]:59329 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752722AbbAMQHK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 11:06:45 -0500
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: david@fromorbit.com, tytso@mit.edu
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, xfs@oss.sgi.com, a.sangwan@samsung.com,
-        bfoster@redhat.com, Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: [PATCH v8 11/11] xfstests: fsx: Add fallocate insert range operation
-Date: Wed, 14 Jan 2015 01:05:26 +0900
-Message-Id: <1421165126-3585-12-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1421165126-3585-1-git-send-email-linkinjeon@gmail.com>
-References: <1421165126-3585-1-git-send-email-linkinjeon@gmail.com>
+	Tue, 13 Jan 2015 11:07:10 -0500
+MIME-Version: 1.0
+Message-ID: <trinity-2ff5fec6-196c-4ecc-9ec2-f1b223f0ea25-1421165228466@3capp-gmx-bs70>
+From: "Michael Doswald" <michael.doswald@gmx.net>
+To: linux-serial@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] 3.19-rc4: Fix race condition in i.MX serial port driver
+Content-Type: text/plain; charset=UTF-8
+Date: Tue, 13 Jan 2015 17:07:08 +0100
+Importance: normal
+Sensitivity: Normal
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+X-Provags-ID: V03:K0:waNxa/Hm6cDXJWUniJDtgay3G0D20qC8qY0vwON47YK
+ l/iOk2NbSMTKCmC+CqOfDWGI11Wu+Yaq1NgMMZAigBI2Aaa6uS
+ fNgYXupiVs5vQvqx1+vl8fZd6AaOftR7yaqT0wZ2z0ML+EdJ/T
+ eioqt+SlmA1x1n5NVUfXzy4QgqTYmptiPmp2Fc33yE6qs2QuzV
+ nyyvDPX0jFrIMl/C2vnneTwPIVR3bgpKryMFfeIQAvLa2iwu8o
+ JPAcnDwGYpWHgsp7sco7aolelbWmH86EX/+FxfY0GXWnlFOw0z yLf4q4=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+Under pressure, the imx.c device driver may transfer the same data multiple
+times. 
 
-This commit adds fallocate FALLOC_FL_INSERT_RANGE support for fsx.
+Reason: 
+Function imx_dma_tx checks for an active DMA transfer by calling
+dmaengine_tx_status. The return value may indicate that no transfer is 
+running while the dma_tx_callback function is still being executed. In 
+this case the xmit->tail pointer may not be updated to the correct value 
+when imx_dma_tx initiates a new DMA transfer, which will result in a DMA
+transfer with the same base address as the previous one.
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-Cc: Brian Foster<bfoster@redhat.com>
+Patch:
+Use existing dma_is_txing variable to guard DMA transfer initiation instead
+of dmaengine_tx_status. Clear dma_is_txing at the end of the DMA callback
+function therefore extending the critical section where the port lock is
+held. Critical section extension is in line with the callback function 
+of other drivers, e.g. serial-tegra.c (tegra_uart_tx_dma_complete).
+ 
+ 
+Signed-off-by: Michael Doswald <michael.doswald@gmx.net>
 ---
-Changelog
-v8:
- - create TRIM_OFF() and TRIM_LEN() and redeine redefine TRIM_OFF_LEN().
+ drivers/tty/serial/imx.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
- ltp/fsx.c |  122 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 113 insertions(+), 9 deletions(-)
-
-diff --git a/ltp/fsx.c b/ltp/fsx.c
-index 3709419..741af34 100644
---- a/ltp/fsx.c
-+++ b/ltp/fsx.c
-@@ -95,7 +95,8 @@ int			logcount = 0;	/* total ops */
- #define OP_PUNCH_HOLE		6
- #define OP_ZERO_RANGE		7
- #define OP_COLLAPSE_RANGE	8
--#define OP_MAX_FULL		9
-+#define OP_INSERT_RANGE	9
-+#define OP_MAX_FULL		10
+diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+index 4c5e909..29e31b1 100644
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -503,13 +503,10 @@ static void dma_tx_callback(void *data)
  
- /* operation modifiers */
- #define OP_CLOSEOPEN	100
-@@ -145,6 +146,7 @@ int     fallocate_calls = 1;            /* -F flag disables */
- int     punch_hole_calls = 1;           /* -H flag disables */
- int     zero_range_calls = 1;           /* -z flag disables */
- int	collapse_range_calls = 1;	/* -C flag disables */
-+int	insert_range_calls = 1;		/* -i flag disables */
- int 	mapped_reads = 1;		/* -R flag disables it */
- int	fsxgoodfd = 0;
- int	o_direct;			/* -Z */
-@@ -339,6 +341,14 @@ logdump(void)
- 						     lp->args[0] + lp->args[1])
- 				prt("\t******CCCC");
- 			break;
-+		case OP_INSERT_RANGE:
-+			prt("INSERT 0x%x thru 0x%x\t(0x%x bytes)",
-+			    lp->args[0], lp->args[0] + lp->args[1] - 1,
-+			    lp->args[1]);
-+			if (badoff >= lp->args[0] && badoff <
-+						     lp->args[0] + lp->args[1])
-+				prt("\t******CCCC");
-+			break;
- 		case OP_SKIPPED:
- 			prt("SKIPPED (no operation)");
- 			break;
-@@ -1012,6 +1022,59 @@ do_collapse_range(unsigned offset, unsigned length)
- }
- #endif
+ 	dma_unmap_sg(sport->port.dev, sgl, sport->dma_tx_nents, DMA_TO_DEVICE);
  
-+#ifdef FALLOC_FL_INSERT_RANGE
-+void
-+do_insert_range(unsigned offset, unsigned length)
-+{
-+	unsigned end_offset;
-+	int mode = FALLOC_FL_INSERT_RANGE;
-+
-+	if (length == 0) {
-+		if (!quiet && testcalls > simulatedopcount)
-+			prt("skipping zero length insert range\n");
-+		log4(OP_SKIPPED, OP_INSERT_RANGE, offset, length);
-+		return;
-+	}
-+
-+	if ((loff_t)offset >= file_size) {
-+		if (!quiet && testcalls > simulatedopcount)
-+			prt("skipping insert range behind EOF\n");
-+		log4(OP_SKIPPED, OP_INSERT_RANGE, offset, length);
-+		return;
-+	}
-+
-+	log4(OP_INSERT_RANGE, offset, length, 0);
-+
-+	if (testcalls <= simulatedopcount)
-+		return;
-+
-+	end_offset = offset + length;
-+	if ((progressinterval && testcalls % progressinterval == 0) ||
-+	    (debug && (monitorstart == -1 || monitorend == -1 ||
-+		      end_offset <= monitorend))) {
-+		prt("%lu insert\tfrom 0x%x to 0x%x, (0x%x bytes)\n", testcalls,
-+			offset, offset+length, length);
-+	}
-+	if (fallocate(fd, mode, (loff_t)offset, (loff_t)length) == -1) {
-+		prt("insert range: %x to %x\n", offset, length);
-+		prterr("do_insert_range: fallocate");
-+		report_failure(161);
-+	}
-+
-+	memmove(good_buf + end_offset, good_buf + offset,
-+		file_size - offset);
-+	memset(good_buf + offset, '\0', length);
-+	file_size += length;
-+}
-+
-+#else
-+void
-+do_insert_range(unsigned offset, unsigned length)
-+{
-+	return;
-+}
-+#endif
-+
- #ifdef HAVE_LINUX_FALLOC_H
- /* fallocate is basically a no-op unless extending, then a lot like a truncate */
- void
-@@ -1117,14 +1180,25 @@ docloseopen(void)
+-	sport->dma_is_txing = 0;
+-
+ 	/* update the stat */
+ 	spin_lock_irqsave(&sport->port.lock, flags);
+ 	xmit->tail = (xmit->tail + sport->tx_bytes) & (UART_XMIT_SIZE - 1);
+ 	sport->port.icount.tx += sport->tx_bytes;
+-	spin_unlock_irqrestore(&sport->port.lock, flags);
+ 
+ 	dev_dbg(sport->port.dev, "we finish the TX DMA.\n");
+ 
+@@ -518,8 +515,10 @@ static void dma_tx_callback(void *data)
+ 	if (waitqueue_active(&sport->dma_wait)) {
+ 		wake_up(&sport->dma_wait);
+ 		dev_dbg(sport->port.dev, "exit in %s.\n", __func__);
+-		return;
  	}
++
++	sport->dma_is_txing = 0;
++	spin_unlock_irqrestore(&sport->port.lock, flags);
  }
  
--#define TRIM_OFF_LEN(off, len, size)	\
--do {					\
--	if (size)			\
-+
-+#define TRIM_OFF(off, size)	\
-+do {						\
-+	if (size)				\
- 		(off) %= (size);	\
--	else				\
--		(off) = 0;		\
--	if ((off) + (len) > (size))	\
--		(len) = (size) - (off);	\
-+	else					\
-+		(off) = 0;			\
-+} while (0)
-+
-+#define TRIM_LEN(off, len, size)	\
-+do {								\
-+	if ((off) + (len) > (size))		\
-+		(len) = (size) - (off);		\
-+} while (0)
-+
-+#define TRIM_OFF_LEN(off, len, size)	\
-+do {									\
-+	TRIM_OFF(off, size);				\
-+	TRIM_LEN(off, len, size);			\
- } while (0)
+ static void imx_dma_tx(struct imx_port *sport)
+@@ -529,11 +528,9 @@ static void imx_dma_tx(struct imx_port *sport)
+ 	struct dma_async_tx_descriptor *desc;
+ 	struct dma_chan	*chan = sport->dma_chan_tx;
+ 	struct device *dev = sport->port.dev;
+-	enum dma_status status;
+ 	int ret;
  
- void
-@@ -1192,6 +1266,12 @@ test(void)
- 			goto out;
- 		}
- 		break;
-+	case OP_INSERT_RANGE:
-+		if (!insert_range_calls) {
-+			log4(OP_SKIPPED, OP_INSERT_RANGE, offset, size);
-+			goto out;
-+		}
-+		break;
- 	}
+-	status = dmaengine_tx_status(chan, (dma_cookie_t)0, NULL);
+-	if (DMA_IN_PROGRESS == status)
++	if (sport->dma_is_txing)
+ 		return;
  
- 	switch (op) {
-@@ -1244,6 +1324,22 @@ test(void)
- 		}
- 		do_collapse_range(offset, size);
- 		break;
-+	case OP_INSERT_RANGE:
-+		TRIM_OFF(offset, file_size);
-+		TRIM_LEN(offset, size, maxfilelen - file_size);
-+		offset = offset & ~(block_size - 1);
-+		size = size & ~(block_size - 1);
-+		if (size == 0) {
-+			log4(OP_SKIPPED, OP_INSERT_RANGE, offset, size);
-+			goto out;
-+		}
-+		if (file_size + size > maxfilelen) {
-+			log4(OP_SKIPPED, OP_INSERT_RANGE, offset, size);
-+			goto out;
-+		}
-+
-+		do_insert_range(offset, size);
-+		break;
- 	default:
- 		prterr("test: unknown operation");
- 		report_failure(42);
-@@ -1307,6 +1403,9 @@ usage(void)
- #ifdef FALLOC_FL_COLLAPSE_RANGE
- "	-C: Do not use collapse range calls\n"
- #endif
-+#ifdef FALLOC_FL_INSERT_RANGE
-+"	-i: Do not use insert range calls\n"
-+#endif
- "	-L: fsxLite - no file creations & no file size changes\n\
- 	-N numops: total # operations to do (default infinity)\n\
- 	-O: use oplen (see -o flag) for every op (default random)\n\
-@@ -1493,7 +1592,7 @@ main(int argc, char **argv)
- 
- 	setvbuf(stdout, (char *)0, _IOLBF, 0); /* line buffered stdout */
- 
--	while ((ch = getopt(argc, argv, "b:c:dfl:m:no:p:qr:s:t:w:xyAD:FHzCLN:OP:RS:WZ"))
-+	while ((ch = getopt(argc, argv, "b:c:dfl:m:no:p:qr:s:t:w:xyAD:FHzCiLN:OP:RS:WZ"))
- 	       != EOF)
- 		switch (ch) {
- 		case 'b':
-@@ -1599,6 +1698,9 @@ main(int argc, char **argv)
- 		case 'C':
- 			collapse_range_calls = 0;
- 			break;
-+		case 'i':
-+			insert_range_calls = 0;
-+			break;
- 		case 'L':
- 		        lite = 1;
- 			break;
-@@ -1758,6 +1860,8 @@ main(int argc, char **argv)
- 		zero_range_calls = test_fallocate(FALLOC_FL_ZERO_RANGE);
- 	if (collapse_range_calls)
- 		collapse_range_calls = test_fallocate(FALLOC_FL_COLLAPSE_RANGE);
-+	if (insert_range_calls)
-+		insert_range_calls = test_fallocate(FALLOC_FL_INSERT_RANGE);
- 
- 	while (numops == -1 || numops--)
- 		test();
+ 	sport->tx_bytes = uart_circ_chars_pending(xmit);
 -- 
-1.7.9.5
+1.9.1
 
+
+ 
+ 
