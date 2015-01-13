@@ -1,86 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752999AbbAMSVx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 13:21:53 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:61875 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752264AbbAMSVv (ORCPT
+	id S1753406AbbAMSZX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 13:25:23 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:36772 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753337AbbAMSZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 13:21:51 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Jon Maloy <jon.maloy@ericsson.com>,
-        Allan Stephens <allan.stephens@windriver.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        tipc-discussion@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCH] tipc: link: Remove unused function
-Date: Tue, 13 Jan 2015 19:24:58 +0100
-Message-Id: <1421173498-4012-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 13 Jan 2015 13:25:20 -0500
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-ide@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH] ata: pata_at91: depend on !ARCH_MULTIPLATFORM
+Date: Tue, 13 Jan 2015 19:25:17 +0100
+Message-Id: <1421173517-21246-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function tipc_link_get_max_pkt() that is not used anywhere.
+Until the driver is corrected to stop using mach/at91isam9_smc.h, it won't
+compile in a ARCH_MULTIPLATFORM configuration.
 
-This was partially found by using a static code analysis program called cppcheck.
-
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Suggested-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- net/tipc/link.c |   27 ---------------------------
- net/tipc/link.h |    1 -
- 2 files changed, 28 deletions(-)
+ drivers/ata/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/tipc/link.c b/net/tipc/link.c
-index 1db162a..a18f5ce 100644
---- a/net/tipc/link.c
-+++ b/net/tipc/link.c
-@@ -2327,33 +2327,6 @@ struct sk_buff *tipc_link_cmd_show_stats(const void *req_tlv_area, int req_tlv_s
- 	return buf;
- }
+diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
+index a3a13605a9c4..5f601553b9b0 100644
+--- a/drivers/ata/Kconfig
++++ b/drivers/ata/Kconfig
+@@ -835,6 +835,7 @@ config PATA_AT32
+ config PATA_AT91
+ 	tristate "PATA support for AT91SAM9260"
+ 	depends on ARM && SOC_AT91SAM9
++	depends on !ARCH_MULTIPLATFORM
+ 	help
+ 	  This option enables support for IDE devices on the Atmel AT91SAM9260 SoC.
  
--/**
-- * tipc_link_get_max_pkt - get maximum packet size to use when sending to destination
-- * @dest: network address of destination node
-- * @selector: used to select from set of active links
-- *
-- * If no active link can be found, uses default maximum packet size.
-- */
--u32 tipc_link_get_max_pkt(u32 dest, u32 selector)
--{
--	struct tipc_node *n_ptr;
--	struct tipc_link *l_ptr;
--	u32 res = MAX_PKT_DEFAULT;
--
--	if (dest == tipc_own_addr)
--		return MAX_MSG_SIZE;
--
--	n_ptr = tipc_node_find(dest);
--	if (n_ptr) {
--		tipc_node_lock(n_ptr);
--		l_ptr = n_ptr->active_links[selector & 1];
--		if (l_ptr)
--			res = l_ptr->max_pkt;
--		tipc_node_unlock(n_ptr);
--	}
--	return res;
--}
--
- static void link_print(struct tipc_link *l_ptr, const char *str)
- {
- 	struct tipc_bearer *b_ptr;
-diff --git a/net/tipc/link.h b/net/tipc/link.h
-index b567a34..9b91eb6 100644
---- a/net/tipc/link.h
-+++ b/net/tipc/link.h
-@@ -228,7 +228,6 @@ void tipc_link_reset(struct tipc_link *l_ptr);
- void tipc_link_reset_list(unsigned int bearer_id);
- int tipc_link_xmit(struct sk_buff *buf, u32 dest, u32 selector);
- int __tipc_link_xmit(struct tipc_link *link, struct sk_buff *buf);
--u32 tipc_link_get_max_pkt(u32 dest, u32 selector);
- void tipc_link_bundle_rcv(struct sk_buff *buf);
- void tipc_link_proto_xmit(struct tipc_link *l_ptr, u32 msg_typ, int prob,
- 			  u32 gap, u32 tolerance, u32 priority, u32 acked_mtu);
 -- 
-1.7.10.4
+2.1.0
 
