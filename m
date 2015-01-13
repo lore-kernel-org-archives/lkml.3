@@ -1,85 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426AbbAMLT7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 06:19:59 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:37161 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144AbbAMLT2 (ORCPT
+	id S1752111AbbAMLTR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 06:19:17 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:24194 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212AbbAMLTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 06:19:28 -0500
-From: Qais Yousef <qais.yousef@imgtec.com>
-To: <alsa-devel@alsa-project.org>
-CC: Qais Yousef <qais.yousef@imgtec.com>, Vinod Koul <vinod.koul@intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] ALSA: ASoC: soc-compress.c: fix NULL dereference
-Date: Tue, 13 Jan 2015 11:18:53 +0000
-Message-ID: <1421147933-21802-1-git-send-email-qais.yousef@imgtec.com>
-X-Mailer: git-send-email 2.1.0
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.154.94]
+	Tue, 13 Jan 2015 06:19:15 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-e6-54b4ff312f1c
+Message-id: <54B4FF30.2030607@samsung.com>
+Date: Tue, 13 Jan 2015 12:19:12 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101
+ Thunderbird/31.3.0
+MIME-version: 1.0
+To: Robin Murphy <robin.murphy@arm.com>, will.deacon@arm.com, arnd@arndb.de,
+        bhelgaas@google.com, joro@8bytes.org, gregkh@linuxfoundation.org
+Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RESEND] dma-mapping: tidy up dma_parms default handling
+References: <ffdc5455d698d2525f2d126d0adabf9418fd76b1.1418990609.git.robin.murphy@arm.com>
+In-reply-to: <ffdc5455d698d2525f2d126d0adabf9418fd76b1.1418990609.git.robin.murphy@arm.com>
+Content-type: text/plain; charset=utf-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsVy+t/xq7qG/7eEGGx/Imzxd9IxdoslTRkW
+	zYvXs1ks2G9t0Tl7A7vFpsfXWC0u75rDZnHwwxNWi5cfT7A4cHo8OTiPyWPNvDWMHr9/TWL0
+	WLCp1GP/3DXsHpuX1HtMvrGc0ePzJrkAjigum5TUnMyy1CJ9uwSujMWTtjIVXJaomPLvFXMD
+	43vhLkZODgkBE4kjTycyQthiEhfurWfrYuTiEBJYyihxYOt0VgjnE6PEg62L2UGqeAW0JH5f
+	2cQKYrMIqErc/DmHCcRmEzCU6HrbxQZiiwrESCxeuJoZol5Q4sfkeywgg0QE+hklPj+7BTaI
+	WSBL4kTfbLAiYQFvia9X9rCA2EJAzQ/m3AazOQViJTpPLoOqN5P48vIwK4QtL7F5zVvmCYwC
+	s5DsmIWkbBaSsgWMzKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLzczcxQmLiyw7GxcesDjEKcDAq
+	8fDuyN4SIsSaWFZcmXuIUYKDWUmEN/07UIg3JbGyKrUoP76oNCe1+BAjEwenVAOj866H7N6u
+	f3d5CJf9eG0svCPyzLZ1ukJbJ0yuMqn+ffWAzP9kJXMJe+7O7qDyB1POsd3cWKL3g3f2TUut
+	bM7K7bKJjmus5A8f376/l/19LvvnS/d7tP0e1N3p0H+rnBx4O3nBgxWFAnqXjrcWp8wKjp5S
+	toFpU8ti2dca/Xwyf5+/Unrz/WyLEktxRqKhFnNRcSIAa05IjmcCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In soc_new_compress() when rtd->dai_link->daynmic is set, we create the pcm
-substreams with this call:
+Hello,
 
-   ret = snd_pcm_new_internal(rtd->card->snd_card, new_name, num,
-                                   1, 0, &be_pcm);
+On 2015-01-09 17:56, Robin Murphy wrote:
+> Many DMA controllers and other devices set max_segment_size to
+> indicate their scatter-gather capability, but have no interest in
+> segment_boundary_mask. However, the existence of a dma_parms structure
+> precludes the use of any default value, leaving them as zeros (assuming
+> a properly kzalloc'ed structure). If a well-behaved IOMMU (or SWIOTLB)
+> then tries to respect this by ensuring a mapped segment does not cross
+> a zero-byte boundary, hilarity ensues.
+>
+> Since zero is a nonsensical value for either parameter, treat it as an
+> indicator for "default", as might be expected. In the process, clean up
+> a bit by replacing the bare constants with slightly more meaningful
+> macros and removing the superfluous "else" statements.
+>
+> Signed-off-by: Robin Murphy <robin.murphy@arm.com>
 
-which passes 0 as capture_count leading to
+Acked-by: Marek Szyprowski <m.szyprowski@samsung.com>
 
-   be_pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream
+> ---
+>
+> Hi, various maintainers from Git logs ;)
+>
+> This one's a bit tricky to find a home for - I think technically it's
+> probably an IOMMU patch, but then the long-underlying problem doesn't
+> seem to have blown up anything until arm64, and my motivation is to
+> make bits of Juno work, which seems to nudge it towards arm64/arm-soc
+> territory. Could anyone suggest which tree is most appropriate?
+>
+> Thanks,
+> Robin.
+>
+>   include/linux/dma-mapping.h | 17 ++++++++++-------
+>   1 file changed, 10 insertions(+), 7 deletions(-)
+>
+> diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+> index c3007cb..99ba736 100644
+> --- a/include/linux/dma-mapping.h
+> +++ b/include/linux/dma-mapping.h
+> @@ -141,7 +141,9 @@ static inline void arch_teardown_dma_ops(struct device *dev) { }
+>   
+>   static inline unsigned int dma_get_max_seg_size(struct device *dev)
+>   {
+> -	return dev->dma_parms ? dev->dma_parms->max_segment_size : 65536;
+> +	if (dev->dma_parms && dev->dma_parms->max_segment_size)
+> +		return dev->dma_parms->max_segment_size;
+> +	return SZ_64K;
+>   }
+>   
+>   static inline unsigned int dma_set_max_seg_size(struct device *dev,
+> @@ -150,14 +152,15 @@ static inline unsigned int dma_set_max_seg_size(struct device *dev,
+>   	if (dev->dma_parms) {
+>   		dev->dma_parms->max_segment_size = size;
+>   		return 0;
+> -	} else
+> -		return -EIO;
+> +	}
+> +	return -EIO;
+>   }
+>   
+>   static inline unsigned long dma_get_seg_boundary(struct device *dev)
+>   {
+> -	return dev->dma_parms ?
+> -		dev->dma_parms->segment_boundary_mask : 0xffffffff;
+> +	if (dev->dma_parms && dev->dma_parms->segment_boundary_mask)
+> +		return dev->dma_parms->segment_boundary_mask;
+> +	return DMA_BIT_MASK(32);
+>   }
+>   
+>   static inline int dma_set_seg_boundary(struct device *dev, unsigned long mask)
+> @@ -165,8 +168,8 @@ static inline int dma_set_seg_boundary(struct device *dev, unsigned long mask)
+>   	if (dev->dma_parms) {
+>   		dev->dma_parms->segment_boundary_mask = mask;
+>   		return 0;
+> -	} else
+> -		return -EIO;
+> +	}
+> +	return -EIO;
+>   }
+>   
+>   #ifndef dma_max_pfn
 
-being NULL, hence when trying to set rtd a few lines below we get an oops.
-
-Fix by using rtd->dai_link->dpcm_playback and rtd->dai_link->dpcm_capture as
-playback_count and capture_count to snd_pcm_new_internal().
-
-Signed-off-by: Qais Yousef <qais.yousef@imgtec.com>
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>
-Cc: Mark Brown <broonie@kernel.org>
-Cc: Jaroslav Kysela <perex@perex.cz>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org
----
-v2->v1:
-   - use better way to fix it than just removing the line that caused the oops
-
- sound/soc/soc-compress.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/sound/soc/soc-compress.c b/sound/soc/soc-compress.c
-index 590a82f01d0b..27a668463ad7 100644
---- a/sound/soc/soc-compress.c
-+++ b/sound/soc/soc-compress.c
-@@ -659,7 +659,8 @@ int soc_new_compress(struct snd_soc_pcm_runtime *rtd, int num)
- 			rtd->dai_link->stream_name);
- 
- 		ret = snd_pcm_new_internal(rtd->card->snd_card, new_name, num,
--				1, 0, &be_pcm);
-+				rtd->dai_link->dpcm_playback,
-+				rtd->dai_link->dpcm_capture, &be_pcm);
- 		if (ret < 0) {
- 			dev_err(rtd->card->dev, "ASoC: can't create compressed for %s\n",
- 				rtd->dai_link->name);
-@@ -668,8 +669,10 @@ int soc_new_compress(struct snd_soc_pcm_runtime *rtd, int num)
- 
- 		rtd->pcm = be_pcm;
- 		rtd->fe_compr = 1;
--		be_pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream->private_data = rtd;
--		be_pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream->private_data = rtd;
-+		if (rtd->dai_link->dpcm_playback)
-+			be_pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream->private_data = rtd;
-+		if (rtd->dai_link->dpcm_capture)
-+			be_pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream->private_data = rtd;
- 		memcpy(compr->ops, &soc_compr_dyn_ops, sizeof(soc_compr_dyn_ops));
- 	} else
- 		memcpy(compr->ops, &soc_compr_ops, sizeof(soc_compr_ops));
+Best regards
 -- 
-2.1.0
+Marek Szyprowski, PhD
+Samsung R&D Institute Poland
 
