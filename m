@@ -1,93 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751717AbbAMJ5m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 04:57:42 -0500
-Received: from sauhun.de ([89.238.76.85]:34834 "EHLO pokefinder.org"
+	id S1751240AbbAMKEJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 05:04:09 -0500
+Received: from sauhun.de ([89.238.76.85]:34859 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750921AbbAMJ5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 04:57:39 -0500
-Date: Tue, 13 Jan 2015 10:57:26 +0100
+	id S1750921AbbAMKEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 05:04:07 -0500
+Date: Tue, 13 Jan 2015 11:04:01 +0100
 From: Wolfram Sang <wsa@the-dreams.de>
-To: Yingjoe Chen <yingjoe.chen@mediatek.com>
-Cc: Liguo Zhang <Liguo.Zhang@mediatek.com>,
-        Xudong Chen <xudong.chen@mediatek.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        srv_heupstream@mediatek.com,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        YH Chen <yh.chen@mediatek.com>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Kumar Gala <galak@codeaurora.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Nathan Chung <nathan.chung@mediatek.com>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        Jean Delvare <jdelvare@suse.de>, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v3 0/2] ARM: mediatek: Add driver for Mediatek I2C
- controller
-Message-ID: <20150113095725.GC1059@katana>
-References: <1416821928-11453-1-git-send-email-xudong.chen@mediatek.com>
- <20141124121555.GG3733@katana>
- <1417096856.12707.59.camel@mtksdaap41>
- <20141127164536.GC5667@katana>
- <1418352022.4994.44.camel@mtksdaap41>
- <20150106133753.GA3754@katana>
+To: Alexander Kochetkov <al.kochet@gmail.com>
+Cc: Kevin Hilman <khilman@kernel.org>, Tony Lindgren <tony@atomide.com>,
+        Felipe Balbi <balbi@ti.com>, linux-omap@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 0/2] i2c: omap: new fixes for driver
+Message-ID: <20150113100401.GD1059@katana>
+References: <1417294803-14729-1-git-send-email-al.kochet@gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cHMo6Wbp1wrKhbfi"
+	protocol="application/pgp-signature"; boundary="ryJZkp9/svQ58syV"
 Content-Disposition: inline
-In-Reply-To: <20150106133753.GA3754@katana>
+In-Reply-To: <1417294803-14729-1-git-send-email-al.kochet@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---cHMo6Wbp1wrKhbfi
+--ryJZkp9/svQ58syV
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jan 06, 2015 at 02:37:53PM +0100, Wolfram Sang wrote:
+On Sun, Nov 30, 2014 at 01:00:01AM +0400, Alexander Kochetkov wrote:
+> The first patch fix i2c-omap driver for omap2420, found by code review and
+> later reported by Tony Lindgren <tony@atomide.com> here[1].
+> Candidate for stable?
 >=20
-> > We've started upstream work for MT8173[1].
-> >=20
-> > We've fixed these issues for new SoC, and we believe it is fully I2C
-> > compatible now. We'll add mt8173 support to this driver, so this driver
-> > will support both fully I2C compatible SoC and the current one.
+> The second patch unhide the reson of system lockup.
 >=20
-> From what you tell, I'd rather add the MT8173 support incrementally.
-> Let's get first the limited support properly implemented, then add
-> another controller.
+> The patch is rebased on branch 'i2c/for-next' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux
+> (6e79807443cba7397cd855ed29d6faba51d4c893)
 >=20
-> I'll send out my draft for describing the quirks later today.
+> Tony, could you check, what the patches fix the problem reported[1]?
+> Kevin, could you run tests for patches on all omap boards?
+>=20
+> Regards,
+> Alexander.
 
-What do you think about my two proposals?
+Thanks for working hard on this driver. I'll mark these patches as RFC,
+since they did not get any additional tags from other people. If they
+are intended for upstream, please resend a rebased version.
+
+   Wolfram
 
 
---cHMo6Wbp1wrKhbfi
+--ryJZkp9/svQ58syV
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJUtOwFAAoJEBQN5MwUoCm2EccP/RS4dHJuEzMWgB63gBreS80V
-YO0Xtq1BxM4Q7yDuHnzKVHF4K8rCPbxRZNgpx/xQBOyynE0ZpM/rqnNShRhMty4H
-Pl+pr0aG5++hw5zOP32yoaEJtJkzP9US+FZxKphnMPO3+vpqSZvcXQNi/HVcG05c
-6WepQcC9YM/bRcQKY79tHvyH4E1qvs0MaX0GYESC9Vw07KQa9tlg38LLkqvidTC7
-BYjjrVuim98t8O4BtxN4O8tPY6ASCK5WA2h/IpKQOyWKWQQXI4R/ZqELLF2y6WtR
-vPkD4tgQVwmPe67K5rTmNzEv5EgI0GFb8yXXK7BZVdioh4+5db2oFWKYAEE0Xdsj
-KLMYgwgvM9HFG63vffqSpXvJXybNwJgTYRTcU/sEtBGHvC5VZUxsEyi2WCRlsEoJ
-ULbGZtHRJ4SwBE0nkpKLJCBYO/KnxRcNBFG/vKfnR1fh9UN1pQeLzZlTunrcO7wY
-GxclcKMU42mn1y8iGTT+fBB24xc+oxnclqXw75/8BzK4UTskshVbgXRql4WdPRrG
-PoFh8OaMcKQmO9QCDqWm9yWbwdScVdcU+S9qK/KhLKUCS6LFMy6pKML+X1+w56iN
-M51V91A/6lhBqSDx1pZkm0HpwHJJEyqNTCpvMAf68z6ZHvAswolSl4O2Cu5KgKvZ
-pmYlTBo7NbEbt9CmIROC
-=IYs2
+iQIcBAEBAgAGBQJUtO2RAAoJEBQN5MwUoCm29U0P/3maGNQk4DCqn2dN3imY6PKC
+M6MLEKEYasqIusdG4N+0j5jrB7n0IW01DmuDT5VRQTqgyXeXtSj77uYcB+jDqzTi
+kLw1SbUyMp1reguTQITMFet71EsvjY5zHMJ8Lje0DwttEJakBLl2bg7pWcZKaVbw
+ETHFe8CFcpFegPtzae2t6Y9Wwp11+RnWaZD9jfomgNTf/MhSfkDmMNIzWpIpoD00
+m9G3egX/uqFN3mxnKBf4rmRyab5kND1wlI5D/rQ6d8RNAT1RKlrSfnCXMPNwgyW8
+s2Gk4SM/SU5WPtnExCx/3HQr0oA/AsOpa3O67fQdbgmd9h7K3IKrLAyyTvTCZNLe
+n13e/dzG4BpWT/rQzjkHk3jJM/JSIoid5HWjkDERM5vPxCXAy/TZu6AoiKkXzDYR
+a+Vru17+1NmgkLUvc14vn5W6mAg6PYiI2t1/6rJPV4QbysVtPlmgUXy9cM7LsqIT
+JipBMEXl9zgIAeWO5UcLMOCMi+Wr9q4qeW6DhjMT9sPJYY9Jny142FWyOrcI4k1L
+fVOO1LKuINAhXUm98Z05KxpsIToHCHYoPsWiq/q5pl0VrO8l7Cx2DPFqgmVLjBuX
+JqQ5jBIO577wS7oFVJzXmfLVql70mIullL3nPTGT3Ic0V4nCw3idA1zmo22Ep3q9
+6yvFq+FoSNd0wkfNf/IZ
+=DJ+X
 -----END PGP SIGNATURE-----
 
---cHMo6Wbp1wrKhbfi--
+--ryJZkp9/svQ58syV--
