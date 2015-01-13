@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499AbbAMCPz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 21:15:55 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:38388 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753436AbbAMCPy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 21:15:54 -0500
-Message-ID: <54B47FB5.8080807@atmel.com>
-Date: Tue, 13 Jan 2015 10:15:17 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1753341AbbAMCRx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 21:17:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58458 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752480AbbAMCRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 21:17:51 -0500
+Date: Tue, 13 Jan 2015 15:17:43 +1300
+From: NeilBrown <neilb@suse.de>
+To: Jeff Layton <jeff.layton@primarydata.com>, "L. A. Walsh" <suse@tlinx.org>,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Cc: Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH] locks: fix NULL-deref in generic_delete_lease
+Message-ID: <20150113151743.7c260163@notabene.brown>
+X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.25; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-To: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Laight <David.Laight@ACULAB.COM>
-Subject: Re: [PATCH v3 0/5] usb: atmel_usba_udc: Rework errata handling
-References: <1421060278-27329-1-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1421060278-27329-1-git-send-email-boris.brezillon@free-electrons.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/k1Zo20/ttWbC7mPfwiJZPPh"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
+--Sig_/k1Zo20/ttWbC7mPfwiJZPPh
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On 01/12/2015 06:57 PM, Boris Brezillon wrote:
-> Hello,
->
-> Here is a set of patches porting existing at91sam9rl erratum handling to
-> DT and adding new code to handle at91sam9g45/9x5 erratum.
-> It also adds several compatible strings to differentiate those errata.
->
-> These patches should be backported to 3.17 and 3.18 stable releases but
-> they do not apply cleanly on those stable branches.
-> I'll send a backport of this series once it is merged in mainline.
->
-> Regards,
->
-> Boris
->
-> Changes since v2:
-> - remove UTF8 character in commit message of patch 2
->
-> Changes since v1:
-> - cache INT_ENB value to speedup INT_ENB read operations
 
-For the whole series, test OK on at91sam9m10g45ek board with mass 
-storage gadget, test OK on sama5d36ek with serial gadget.
 
-Tested-by: Bo Shen <voice.shen@atmel.com>
+commit 0efaa7e82f02fe69c05ad28e905f31fc86e6f08e
+  locks: generic_delete_lease doesn't need a file_lock at all
 
-> Boris Brezillon (5):
->    usb: atmel_usba_udc: Rework at91sam9rl errata handling
->    usb: atmel_usba_udc: Add at91sam9g45 and at91sam9x5 errata handling
->    ARM: at91/dt: update udc compatible strings
->    usb: atmel_usba_udc: Mask status with enabled irqs
->    usb: gadget: atmel_usba: Cache INT_ENB register value
->
->   .../devicetree/bindings/usb/atmel-usb.txt          |   5 +-
->   arch/arm/boot/dts/at91sam9g45.dtsi                 |   2 +-
->   arch/arm/boot/dts/at91sam9x5.dtsi                  |   2 +-
->   arch/arm/boot/dts/sama5d3.dtsi                     |   2 +-
->   arch/arm/boot/dts/sama5d4.dtsi                     |   2 +-
->   drivers/usb/gadget/udc/atmel_usba_udc.c            | 146 +++++++++++++--------
->   drivers/usb/gadget/udc/atmel_usba_udc.h            |   9 ++
->   7 files changed, 111 insertions(+), 57 deletions(-)
->
+moves the call to fl->fl_lmops->lm_change() to a place in the
+code where fl might be a non-lease lock.
+When that happens, fl_lmops is NULL and an Oops ensures.
 
-Best Regards,
-Bo Shen
+So add an extra test to restore correct functioning.
+
+Reported-by: Linda Walsh <suse@tlinx.org>
+Link: https://bugzilla.suse.com/show_bug.cgi?id=3D912569
+Cc: stable@vger.kernel.org (v3.18)
+Fixes: 0efaa7e82f02fe69c05ad28e905f31fc86e6f08e
+Signed-off-by: NeilBrown <neilb@suse.de>
+---
+ fs/locks.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/fs/locks.c b/fs/locks.c
+index 735b8d3fa78c..59e2f905e4ff 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -1702,7 +1702,7 @@ static int generic_delete_lease(struct file *filp)
+ 			break;
+ 	}
+ 	trace_generic_delete_lease(inode, fl);
+-	if (fl)
++	if (fl && IS_LEASE(fl))
+ 		error =3D fl->fl_lmops->lm_change(before, F_UNLCK, &dispose);
+ 	spin_unlock(&inode->i_lock);
+ 	locks_dispose_list(&dispose);
+--=20
+2.1.1
+
+
+--Sig_/k1Zo20/ttWbC7mPfwiJZPPh
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUBVLSARznsnt1WYoG5AQLhUA//Zv3VewujZyvH6XOaZhtBQhBXH4SliyDx
+iU9cXIokBw8w/Zmf0BV4PTEbb/uIEM87PV1QBIIy7L/4hfv92d+R6lERNfExxIsV
+WaZHqDbdG2TdRLyyAAM4EFaBWTkt4Gw+8n2WIoLpexkByyJ1sxrZRpnr/+vuwSXB
+VYI05EfXdABlcNW/iLKdj+NKqlYrCB2q3Qy3Zl9ypS5y8k7atd+3IZt0sMsIbWc0
+IruNNPENynWSvC93rq4bdQzsKI0g0FhdyPCXhTubHbFXFCRSx+OL4saawxvQRzJm
+2QfxWP25lRB9PZAh+ZLP64cTmJ4KuanJJzAsBi9JfDAJ6kZ0i8cWKguIM11yYZNZ
+gH6bD0qJyYOJpZb3+qrNw58LfhBUgBDl78MbQLYc+Xyq9JN4aP31PmMDm+YGlUk0
+uZa/QryukapkX5HEgjpuPDtdiKLl5WKB6firq/X7Nr1+kI9dcbxqSEQrct7Tkw3g
+llt1XV5cgKAcdU1LUlWGj693p+vGz2akb/ARglv8Q6MIeW/8q1tu6il9/yBjuxfG
+avEi5baSy3V2MAJElcPBAzYEbriz1WiQ2g/URuflb5fcMgCY7C5YiHx+E1sW1/qP
+FJoHpoQhRxYY9eDxSE2n80GjGAqIi9PyXW9eiX4XwPilCVRdsUrJDH6uavsk9vTs
+KYAt0sgTViY=
+=L+kz
+-----END PGP SIGNATURE-----
+
+--Sig_/k1Zo20/ttWbC7mPfwiJZPPh--
