@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557AbbAMORA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 09:17:00 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:37755 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271AbbAMOQ6 (ORCPT
+	id S1752163AbbAMOTx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 09:19:53 -0500
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:57367 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751637AbbAMOTv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 09:16:58 -0500
-Date: Tue, 13 Jan 2015 15:16:52 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lib: proportions.c:  Remove some unused functions
-Message-ID: <20150113141652.GJ25256@twins.programming.kicks-ass.net>
-References: <1419087113-4087-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <20141222132626.2697567529c7708804c4061a@linux-foundation.org>
+	Tue, 13 Jan 2015 09:19:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141222132626.2697567529c7708804c4061a@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <54B527E8.3080004@osg.samsung.com>
+References: <cover.1421115389.git.shuahkh@osg.samsung.com>
+	<515f84cc1e6e33f647610f1bda154127944e6b52.1421115389.git.shuahkh@osg.samsung.com>
+	<CAGoCfixdyOJoyUQfMWzM2KHjMGJE5pRS8C0+rR1nDCir7jTpwQ@mail.gmail.com>
+	<54B527E8.3080004@osg.samsung.com>
+Date: Tue, 13 Jan 2015 09:19:50 -0500
+Message-ID: <CAGoCfix=fEj5SMqBh_bwzRTfqSkM03jiKbp6-jW9u4CLf6ffSg@mail.gmail.com>
+Subject: Re: [PATCH v3 3/3] media: au0828 remove video and vbi buffer timeout work-around
+From: Devin Heitmueller <dheitmueller@kernellabs.com>
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        "sakari.ailus@linux.intel.com" <sakari.ailus@linux.intel.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Tim Mester <ttmesterr@gmail.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 22, 2014 at 01:26:26PM -0800, Andrew Morton wrote:
-> On Sat, 20 Dec 2014 15:51:53 +0100 Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> wrote:
-> 
-> > Removes some functions that are not used anywhere:
-> > prop_change_shift() prop_descriptor_init() prop_fraction_percpu() prop_fraction_single() __prop_inc_percpu_max() prop_local_destroy_percpu() prop_local_destroy_single() prop_local_init_percpu() prop_local_init_single()
-> > 
-> > This was partially found by using a static code analysis program called cppcheck.
-> > 
-> > ---
-> >  include/linux/proportions.h |   14 ----
-> >  lib/proportions.c           |  177 -------------------------------------------
-> >  2 files changed, 191 deletions(-)
-> 
-> Gee, that's a heck of a lot of dead code.
-> 
-> Peter, what was the thinking here?  Was this code once used, or added
-> for API completeness or what?
+> I couldn't reproduce what I was seeing when I did patch v2 series
+> work. What I noticed was that I was seeing a few too many green screens
+> and I had to re-tune xawtv when the timeout code is in place. My
+> thinking was that this timeout handling could be introducing blank
+> green frames when there is no need. However, I can't reproduce the
+> problem on 3.19-rc4 base which is what I am using to test the changes
+> to the patch series. Hence, I am not positive if the timeout code
+> indeed was doing anything bad.
 
-Some of it was used once, we changed the BDI code over to the flexible
-proportion code from Honza, that removed 
+IIRC, the timer was set for 40ms, so if a complete video frame doesn't
+arrive within that interval we generate a green frame.  It was never
+really intended to have perfect clocking (i.e. 29.97 FPS), but is
+really just there to prevent the tvtime user interface from blocking
+indefinitely.
 
-> Perhaps we should just ifdef it out, so the code is still sitting there if
-> someone wishes to resurrect it.
+If you weren't seeing it in the V2 series, then I guess you fixed
+whatever bug was present in V1.
 
-If there are still users of the !flex proportion code I would argue to
-just leave it sit there for API completeness. It doesn't actually harm
-anyone. Linkers are very good at removing dead code.
+> I am seeing tvtime hangs without the timeout. I am fine with this
+> patch not going. It does make the code cleaner and also reduces
+> buffer handling during streaming. However, there is a clear regression
+> to tvtime.
 
-If there are in fact no users left of the !flex proportion code, then we
-should just kill the entire thing.
+Correct.  I think everybody agrees that the timer code is ugly and it
+would be cleaner if it wasn't needed - except it clearly is needed to
+prevent regressions in tvtime.
+
+All that said, I'm quite excited to see the driver converted to VB2.  Nice job!
+
+Devin
+
+-- 
+Devin J. Heitmueller - Kernel Labs
+http://www.kernellabs.com
