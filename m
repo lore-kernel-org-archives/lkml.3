@@ -1,106 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054AbbAMWzQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 17:55:16 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:58259 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751646AbbAMWzO convert rfc822-to-8bit (ORCPT
+	id S1753398AbbAMW75 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 17:59:57 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:36357 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193AbbAMW74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 17:55:14 -0500
+	Tue, 13 Jan 2015 17:59:56 -0500
+Date: Tue, 13 Jan 2015 23:59:53 +0100
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com,
+        vincent.weaver@maine.edu, jolsa@redhat.com
+Subject: [PATCH] perf/rapl: fix sysfs_show() initialization for RAPL PMU
+Message-ID: <20150113225953.GA21525@thinkpad>
 MIME-Version: 1.0
-In-Reply-To: <54B3848A.7040002@suse.com>
-References: <1421015741-25110-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<54B3848A.7040002@suse.com>
-Date: Tue, 13 Jan 2015 23:55:11 +0100
-Message-ID: <CAKXHbyMqeVSQ2MSTdB3vztqCjgviMJ=pjmXuv3a-U2srh8Qekw@mail.gmail.com>
-Subject: Re: [Xen-devel] [PATCH] x86: xen: mmu: Remove unused function
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: =?UTF-8?B?SsO8cmdlbiBHcm/Dnw==?= <jgross@suse.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>, x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, David Vrabel <david.vrabel@citrix.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, xen-devel@lists.xenproject.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-12 9:23 GMT+01:00 Jürgen Groß <jgross@suse.com>:
-> On 01/11/2015 11:35 PM, Rickard Strandqvist wrote:
->>
->> Remove the function set_pte_mfn() that is not used anywhere.
->>
->> This was partially found by using a static code analysis program called
->> cppcheck.
->
->
-> Sorry, you seem not to have checked the newest kernel.
->
-> Used by:
->
-> xen_do_set_identity_and_remap_chunk()
-> xen_remap_memory()
->
-> So: Nak.
->
->
-> Juergen
->
->
->>
->> Signed-off-by: Rickard Strandqvist
->> <rickard_strandqvist@spectrumdigital.se>
->> ---
->>   arch/x86/xen/mmu.c |    9 ---------
->>   arch/x86/xen/mmu.h |    2 --
->>   2 files changed, 11 deletions(-)
->>
->> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
->> index a8a1a3d..6959550 100644
->> --- a/arch/x86/xen/mmu.c
->> +++ b/arch/x86/xen/mmu.c
->> @@ -281,15 +281,6 @@ static void xen_set_pmd(pmd_t *ptr, pmd_t val)
->>         xen_set_pmd_hyper(ptr, val);
->>   }
->>
->> -/*
->> - * Associate a virtual page frame with a given physical page frame
->> - * and protection flags for that frame.
->> - */
->> -void set_pte_mfn(unsigned long vaddr, unsigned long mfn, pgprot_t flags)
->> -{
->> -       set_pte_vaddr(vaddr, mfn_pte(mfn, flags));
->> -}
->> -
->>   static bool xen_batched_set_pte(pte_t *ptep, pte_t pteval)
->>   {
->>         struct mmu_update u;
->> diff --git a/arch/x86/xen/mmu.h b/arch/x86/xen/mmu.h
->> index 73809bb..f2dcf79 100644
->> --- a/arch/x86/xen/mmu.h
->> +++ b/arch/x86/xen/mmu.h
->> @@ -13,8 +13,6 @@ enum pt_level {
->>
->>   bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn);
->>
->> -void set_pte_mfn(unsigned long vaddr, unsigned long pfn, pgprot_t flags);
->> -
->>   pte_t xen_ptep_modify_prot_start(struct mm_struct *mm, unsigned long
->> addr, pte_t *ptep);
->>   void  xen_ptep_modify_prot_commit(struct mm_struct *mm, unsigned long
->> addr,
->>                                   pte_t *ptep, pte_t pte);
->>
 
+This patch fixes a problem with the initialization of the
+sysfs_show() routine for the RAPL PMU.
 
-Hi
+The current code was wrongly relying on the EVENT_ATTR_STR()
+macro which uses the events_sysfs_show() function in the x86
+PMU code. That function itself was relying on the x86_pmu data
+structure. Yet RAPL and the core PMU (x86_pmu) have nothing to
+do with each other. They should therefore not interact with
+each other.
 
-Sorry. I start this too long ago, too much has happened in some parts
-of the code :(
+The x86_pmu structure is initialized at boot time based on
+the host CPU model. When the host CPU is not supported, the
+x86_pmu remains uninitialized and some of the callbacks it
+contains are NULL.
 
+The false dependency with x86_pmu could potentially cause crashes
+in case the x86_pmu is not initialized while the RAPL PMU is. This
+may, for instance, be the case in virtualized environments.
 
-Kind regards
-Rickard Strandqvist
+This patch fixes the problem by using a private sysfs_show()
+routine for exporting the RAPL PMU events.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_rapl.c | 44 +++++++++++++++++++++--------
+ 1 file changed, 32 insertions(+), 12 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+index 673f930..6e434f8 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+@@ -103,6 +103,13 @@ static struct kobj_attribute format_attr_##_var =		\
+ 
+ #define RAPL_CNTR_WIDTH 32 /* 32-bit rapl counters */
+ 
++#define RAPL_EVENT_ATTR_STR(_name, v, str)				\
++static struct perf_pmu_events_attr event_attr_##v = {			\
++	.attr		= __ATTR(_name, 0444, rapl_sysfs_show, NULL),	\
++	.id		= 0,						\
++	.event_str	= str,						\
++};
++
+ struct rapl_pmu {
+ 	spinlock_t	 lock;
+ 	int		 hw_unit;  /* 1/2^hw_unit Joule */
+@@ -379,23 +386,36 @@ static struct attribute_group rapl_pmu_attr_group = {
+ 	.attrs = rapl_pmu_attrs,
+ };
+ 
+-EVENT_ATTR_STR(energy-cores, rapl_cores, "event=0x01");
+-EVENT_ATTR_STR(energy-pkg  ,   rapl_pkg, "event=0x02");
+-EVENT_ATTR_STR(energy-ram  ,   rapl_ram, "event=0x03");
+-EVENT_ATTR_STR(energy-gpu  ,   rapl_gpu, "event=0x04");
++static ssize_t rapl_sysfs_show(struct device *dev,
++			       struct device_attribute *attr,
++			       char *page)
++{
++	struct perf_pmu_events_attr *pmu_attr = \
++		container_of(attr, struct perf_pmu_events_attr, attr);
++
++	if (pmu_attr->event_str)
++		return sprintf(page, "%s", pmu_attr->event_str);
++
++	return 0;
++}
++
++RAPL_EVENT_ATTR_STR(energy-cores, rapl_cores, "event=0x01");
++RAPL_EVENT_ATTR_STR(energy-pkg  ,   rapl_pkg, "event=0x02");
++RAPL_EVENT_ATTR_STR(energy-ram  ,   rapl_ram, "event=0x03");
++RAPL_EVENT_ATTR_STR(energy-gpu  ,   rapl_gpu, "event=0x04");
+ 
+-EVENT_ATTR_STR(energy-cores.unit, rapl_cores_unit, "Joules");
+-EVENT_ATTR_STR(energy-pkg.unit  ,   rapl_pkg_unit, "Joules");
+-EVENT_ATTR_STR(energy-ram.unit  ,   rapl_ram_unit, "Joules");
+-EVENT_ATTR_STR(energy-gpu.unit  ,   rapl_gpu_unit, "Joules");
++RAPL_EVENT_ATTR_STR(energy-cores.unit, rapl_cores_unit, "Joules");
++RAPL_EVENT_ATTR_STR(energy-pkg.unit  ,   rapl_pkg_unit, "Joules");
++RAPL_EVENT_ATTR_STR(energy-ram.unit  ,   rapl_ram_unit, "Joules");
++RAPL_EVENT_ATTR_STR(energy-gpu.unit  ,   rapl_gpu_unit, "Joules");
+ 
+ /*
+  * we compute in 0.23 nJ increments regardless of MSR
+  */
+-EVENT_ATTR_STR(energy-cores.scale, rapl_cores_scale, "2.3283064365386962890625e-10");
+-EVENT_ATTR_STR(energy-pkg.scale,     rapl_pkg_scale, "2.3283064365386962890625e-10");
+-EVENT_ATTR_STR(energy-ram.scale,     rapl_ram_scale, "2.3283064365386962890625e-10");
+-EVENT_ATTR_STR(energy-gpu.scale,     rapl_gpu_scale, "2.3283064365386962890625e-10");
++RAPL_EVENT_ATTR_STR(energy-cores.scale, rapl_cores_scale, "2.3283064365386962890625e-10");
++RAPL_EVENT_ATTR_STR(energy-pkg.scale,     rapl_pkg_scale, "2.3283064365386962890625e-10");
++RAPL_EVENT_ATTR_STR(energy-ram.scale,     rapl_ram_scale, "2.3283064365386962890625e-10");
++RAPL_EVENT_ATTR_STR(energy-gpu.scale,     rapl_gpu_scale, "2.3283064365386962890625e-10");
+ 
+ static struct attribute *rapl_events_srv_attr[] = {
+ 	EVENT_PTR(rapl_cores),
+-- 
+1.9.1
+
