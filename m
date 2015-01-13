@@ -1,108 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752308AbbAMR4T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 12:56:19 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:59010 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140AbbAMR4R (ORCPT
+	id S1752727AbbAMR6B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 12:58:01 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:64722 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489AbbAMR57 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 12:56:17 -0500
-Date: Tue, 13 Jan 2015 09:56:09 -0800
-From: Darren Hart <dvhart@infradead.org>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] platform-drivers-x86 for 3.19
-Message-ID: <20150113175609.GB130525@vmdeb7>
-References: <20141218175126.GA78864@vmdeb7>
- <20150111225802.GA12944@node.dhcp.inet.fi>
- <20150112183831.GA99900@vmdeb7>
- <CAObL_7FCiZJuTQNUfqjoxaRscB+_2fvwpnXDt3d8E+0dFm=i6A@mail.gmail.com>
- <20150112200331.GA23277@node.dhcp.inet.fi>
- <CAObL_7FwxW=oq9L+POVx_4S9HSZW2QM3bnTNW37rDsUA=-U3FA@mail.gmail.com>
- <20150112203003.GB23277@node.dhcp.inet.fi>
- <CAObL_7HNXAxnoNx-K=yJ1C9kkffc9Rf=EmVGJ+=K+5S40m7jSQ@mail.gmail.com>
+	Tue, 13 Jan 2015 12:57:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAObL_7HNXAxnoNx-K=yJ1C9kkffc9Rf=EmVGJ+=K+5S40m7jSQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54B5598F.4070202@redhat.com>
+References: <1421012793-30106-1-git-send-email-riel@redhat.com>
+ <1421012793-30106-5-git-send-email-riel@redhat.com> <20150113171134.GA27519@redhat.com>
+ <CALCETrWuOeYYpwbfX3x56KZSV_1nC+r7GHRiYH=pt_xOuOVM2g@mail.gmail.com> <54B5598F.4070202@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 13 Jan 2015 09:57:38 -0800
+Message-ID: <CALCETrXRs7AgTEgDV93RA=5_Of--W9Q4H+oVVbZPrDeWRs8Y_g@mail.gmail.com>
+Subject: Re: [RFC PATCH 04/11] x86,fpu: defer FPU restore until return to userspace
+To: Rik van Riel <riel@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@intel.com>, Borislav Petkov <bp@suse.de>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 02:12:44PM -0800, Andrew Lutomirski wrote:
-> On Mon, Jan 12, 2015 at 12:30 PM, Kirill A. Shutemov
-> <kirill@shutemov.name> wrote:
-> > On Mon, Jan 12, 2015 at 12:05:45PM -0800, Andrew Lutomirski wrote:
-> >> On Mon, Jan 12, 2015 at 12:03 PM, Kirill A. Shutemov
-> >> <kirill@shutemov.name> wrote:
-> >> > On Mon, Jan 12, 2015 at 10:42:11AM -0800, Andrew Lutomirski wrote:
-> >> >> On Mon, Jan 12, 2015 at 10:38 AM, Darren Hart <dvhart@infradead.org> wrote:
-> >> >> > On Mon, Jan 12, 2015 at 12:58:02AM +0200, Kirill A. Shutemov wrote:
-> >> >> >> On Thu, Dec 18, 2014 at 09:51:27AM -0800, Darren Hart wrote:
-> >> >> >> > thinkpad-acpi using software mute simplifies the driver and the user experience
-> >> >> >> > significantly.
-> >> >> >>
-> >> >> >> Except when it doesn't.
-> >> >> >>
-> >> >> >> I'm probably in minority, but I don't use fancy userspace to mess with my
-> >> >> >> mixer and the mute button worked just fine for me before the change.
-> >> >> >> Wasted half an hour to find out what happened is not a pure win from user
-> >> >> >> experience point of view.
-> >> >> >>
-> >> >> >> Is it really necessary to have software_mute_requested == true by default?
-> >> >> >> Can fancy userspace ask for desired behaviour instead and change kernel to
-> >> >> >> not send hotkeys change notification until software_mute is enabled?
-> >> >> >>
-> >> >> >> --
-> >> >> >>  Kirill A. Shutemov
-> >> >> >>
-> >> >> >
-> >> >> > Thanks for the report Kirill,
-> >> >> >
-> >> >> > Andy, we're at RC4, so if we need to fix (or revert) this fix, we only have a
-> >> >> > couple weeks to do so.
-> >> >> >
-> >> >> > Kirill, to define the scope of the problem, if you specify
-> >> >> > software_mute_requested as false on the kernel command line, does your system
-> >> >> > function as expected?
-> >> >>
-> >> >> If I understood Kirill's email correctly, the only issue is that he
-> >> >> liked the old behavior.  Kirill, is that correct?
-> >> >
-> >> > Yes. For now I use thinkpad_acpi.software_mute=0 to get old behaviour.
-> >> >
-> >>
-> >> What aspect of the old behavior is better than the new default behavior?
-> >
-> > It's not necessary better. The new behavior just broke my use-case.
-> >
-> > I don't have anything in my system what would react on KEY_MUTE and I used
-> > the functionality platform provides until it suddenly stopped working.
-> >
-> > I personally can live with new thinkpad_acpi. I'll probably update my
-> > configuration to react on the software button.
-> >
-> > But who else will get frustrated after update to v3.19?
-> 
-> Can you try the equivalent of:
-> 
-> bindsym XF86AudioMute exec amixer -q set Master toggle
-> 
-> for your desktop environment?  Note that this is exactly what you'd do
-> if you were using any laptop that wasn't a thinkpad.
+On Tue, Jan 13, 2015 at 9:44 AM, Rik van Riel <riel@redhat.com> wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+>
+> On 01/13/2015 12:18 PM, Andy Lutomirski wrote:
+>> On Tue, Jan 13, 2015 at 9:11 AM, Oleg Nesterov <oleg@redhat.com>
+>> wrote:
+>>> On 01/11, riel@redhat.com wrote:
+>>>>
+>>>> Defer restoring the FPU state, if so desired, until the task
+>>>> returns to userspace.
+>>>
+>>> And I have another concern.
+>>>
+>>> Afaocs with this patch the idle threads will run with
+>>> TIF_LOAD_FPU set but without fpu.has_fpu.
+>>
+>> Yuck.  IMO there are still too many possible states.
+>>
+>> AFAICS the sensible states for a task are:
+>>
+>> - Task is current on some cpu and FPU is loaded into that cpu. -
+>> Task is current on some cpu and FPU is in memory. - Task is current
+>> on some cpu and FPU is loaded into a different cpu.
+>
+> When switching a task out, in prepare_fpu_switch() we will always save
+> the FPU state to memory. The third case can be treated identical to the
+> second case.
 
-Unless we hear back from Kirill on why this isn't workable, I'm inclined to
-leave this as is. Between the kernel module option and this keybinding,
-equivalent behavior can be easily achieved, and the general use case is
-significantly improved.
+Then what's last_cpu for?
 
-The current gap appears to be the mute LED in the button itself, which can be
-addressed moving forward.
+>
+>> - Task is not current and FPU is in memory. - Task is not current
+>> and FPU is loaded into some cpu.
+>
+> Same for this one. When the task is not current, the FPU state
+> will have been saved to memory. If we try running the task
+> somewhere else, it devolves to "FPU is in memory".
+>
+
+Isn't there a case where the FPU is in memory *and* in the cpu regs?
+Isn't that how you can skip reloading the FPU after going idle and
+returning?  Is this what fpu_lazy_restore is for?  Confused.
+
+>> Am I missing anything?  (In lazy mode, there are a few more
+>> involving CR0.TS.)
+>>
+>> That's five states, plus an optional cpu number.  But we have tons
+>> of state variable that can express all kinds of nonsense things.
+>>
+>> If we asserted that we were in a sensible state and fixed the
+>> things that exited the sensible states, maybe this would be easier
+>> to understand and debug.
+>
+> Lets see what things we could test, at different points.
+>
+> 1) At context switch time, we need to make sure that the previous task
+>    will no longer have __thread_has_fpu()
+>
+> 2) When loading the FPU state, we need to make sure that the current
+>    task does not have __thread_has_fpu()
+
+Examples, any of which may be wrong:
+
+If !current, then !TIF_LOAD_FPU
+
+If switching out a task with TIF_LOAD_FPU set, then !has_fpu
+
+If last_cpu == smp_processor_id(), then fpu_owner == fpu.
+
+If has_fpu, then the task must be current somewhere and last_cpu must
+be the cpu on which it's current.
+
+At the very least, asking these questions may help fill in holes in my
+understanding :)
+
+--Andy
+
+>
+> 3) ... what else?
+>
+> - --
+> All rights reversed
+> -----BEGIN PGP SIGNATURE-----
+> Version: GnuPG v1
+>
+> iQEcBAEBAgAGBQJUtVmPAAoJEM553pKExN6Dc0gIAI0JZE4VpNlJElnuGbFKzM8t
+> r9dSH3XLeEX5/JARsQMNuwUL7HjjBbYO9PrdpejVAEUq2XltVyq3+RuSYMBprlpV
+> aCWKrw9jn7H43++LSziXh0LP+t+zqL9+/5WUm3oVWkTXJEBu9CdNgYYP7luf87nX
+> +mxqDsp5YjmmYJRW2LncK/SuEpItTAtHI5bORjsbWNQOZ2pl31cr1ZEbdrRaZqje
+> 5wONfs0f2mor0Ms7FSzVJCNmps3TGJnfpkx37vzqRiPkisdWVcM16RwvM6jJTFZ+
+> VmM2Jj4xWMhPYvqpZ8oZWAb8xNCl+DijjZFEGW1j9Ji5gcPQ2HLvFEWNp3TpIeM=
+> =OU/0
+> -----END PGP SIGNATURE-----
+
+
 
 -- 
-Darren Hart
-Intel Open Source Technology Center
+Andy Lutomirski
+AMA Capital Management, LLC
