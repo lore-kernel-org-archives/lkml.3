@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215AbbAMRMr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 12:12:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49089 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752786AbbAMRMm (ORCPT
+	id S1753351AbbAMROy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 12:14:54 -0500
+Received: from mail9.tpgi.com.au ([203.12.160.104]:32884 "EHLO
+	mail9.tpgi.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752477AbbAMROw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 12:12:42 -0500
-Date: Tue, 13 Jan 2015 09:12:39 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: sun wang <sun.wxg@gmail.com>
-Cc: Forest@nas4free.local, Bond@nas4free.local, forest@alittletooquiet.net,
-        Greg@nas4free.local, Kroah-Hartman@nas4free.local,
-        guido@vanguardiasur.com.ar, Silvio@nas4free.local,
-        Fricke@nas4free.local, silvio.fricke@gmail.com,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH] staging:vt6655 Add extern variable in head file
-Message-ID: <20150113171239.GA12822@kroah.com>
-References: <20150113083114.GA57460@nas4free.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150113083114.GA57460@nas4free.local>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 13 Jan 2015 12:14:52 -0500
+X-TPG-Antivirus: Passed
+X-TPG-Abuse: host=14-201-201-57.static.tpgi.com.au; ip=14.201.201.57; date=Wed, 14 Jan 2015 04:14:33 +1100; auth=qn3nQWOo9XiOgLX3+3LzYIb4Pj8GBfUecjOflfKdwAc=
+From: Emrys Bayliss <emrys@paradise.net.nz>
+To: forest@alittletooquiet.net, gregkh@linuxfoundation.org, tvboxspy@gmail.com,
+        emrys@paradise.net.nz
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3] Staging: vt6656: Checkpatch fix: else after break or return
+Date: Wed, 14 Jan 2015 04:12:58 +1100
+Message-Id: <1421169178-30345-1-git-send-email-emrys@paradise.net.nz>
+X-Mailer: git-send-email 2.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 04:31:14PM +0800, sun wang wrote:
-> Extern variable must be declared in head file. Compiler can catch the inconsistency when variable changes. 
-> 
-> Signed-off-by: Sun Wang <sun.wxg@gmail.com>
-> ---
->  drivers/staging/vt6655/ioctl.c | 1 -
->  drivers/staging/vt6655/ioctl.h | 5 +++++
->  2 files changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/vt6655/ioctl.c b/drivers/staging/vt6655/ioctl.c
-> index 970e80d..716fc89 100644
-> --- a/drivers/staging/vt6655/ioctl.c
-> +++ b/drivers/staging/vt6655/ioctl.c
-> @@ -31,7 +31,6 @@
->   */
->  
->  #include "ioctl.h"
-> -#include "iocmd.h"
->  #include "mac.h"
->  #include "card.h"
->  #include "hostap.h"
-> diff --git a/drivers/staging/vt6655/ioctl.h b/drivers/staging/vt6655/ioctl.h
-> index 2dc5a57..42f6910 100644
-> --- a/drivers/staging/vt6655/ioctl.h
-> +++ b/drivers/staging/vt6655/ioctl.h
-> @@ -30,6 +30,11 @@
->  #define __IOCTL_H__
->  
->  #include "device.h"
-> +#include "iocmd.h"
-> +
-> +#ifdef WPA_SM_Transtatus
-> +extern SWPAResult wpa_Result;
-> +#endif
+This patch fixes the following checkpatch.pl error:
+rxtx.c:558: WARNING: else is not generally useful after a break or return
 
-I don't understand, what problem is this solving?  This variable isn't
-in the driver at all.
+Signed-off-by: Emrys Bayliss <emrys@paradise.net.nz>
+---
+The else statement was replaced with a block to avoid the following
+compiler error:
+"warning: ISO C90 forbids mixed declarations and code"
+due to this declaration:
+struct vnt_cts *buf = &head->cts_g; (line 559)
 
-confused,
+Is there a better way such as using head (a union) directly instead?
 
-greg k-h
+The last patch I sent removed the return 0. Since this isn't related to
+the error in the title I left it for a separate patch.
+
+ drivers/staging/vt6656/rxtx.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/staging/vt6656/rxtx.c b/drivers/staging/vt6656/rxtx.c
+index ea5140a..831a051 100644
+--- a/drivers/staging/vt6656/rxtx.c
++++ b/drivers/staging/vt6656/rxtx.c
+@@ -555,7 +555,9 @@ static u16 vnt_fill_cts_head(struct vnt_usb_send_context *tx_context,
+ 		memcpy(buf->data.ra, priv->current_net_addr, ETH_ALEN);
+ 
+ 		return vnt_rxtx_datahead_g_fb(tx_context, &buf->data_head);
+-	} else {
++	}
++
++	{
+ 		struct vnt_cts *buf = &head->cts_g;
+ 		/* Get SignalField,ServiceField,Length */
+ 		vnt_get_phy_field(priv, cts_frame_len,
+-- 
+2.2.1
+
