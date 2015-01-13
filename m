@@ -1,163 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753693AbbAMTAU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 14:00:20 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:57326 "EHLO gum.cmpxchg.org"
+	id S1753637AbbAMTAK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 14:00:10 -0500
+Received: from mga14.intel.com ([192.55.52.115]:22168 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753563AbbAMTAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 14:00:17 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Vladimir Davydov <vdavydov@parallels.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch] mm: memcontrol: fold move_anon() and move_file()
-Date: Tue, 13 Jan 2015 13:59:52 -0500
-Message-Id: <1421175592-14179-1-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 2.2.0
+	id S1751949AbbAMTAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 14:00:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,750,1413270000"; 
+   d="scan'208";a="669264087"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: x86-ml <x86@kernel.org>
+CC: linux-edac <linux-edac@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: RE: [GIT PULL] RAS update for 3.20
+Thread-Topic: [GIT PULL] RAS update for 3.20
+Thread-Index: AQHQLymR3/WNX1uMmkyjEbKKjdqV2Zy+ZlXw
+Date: Tue, 13 Jan 2015 19:00:06 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F3299AD99@ORSMSX114.amr.corp.intel.com>
+References: <20150113120713.GA5784@pd.tnic>
+In-Reply-To: <20150113120713.GA5784@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0DJ0HZS030749
 
-Turn the move type enum into flags and give the flags field a shorter
-name.  Once that is done, move_anon() and move_file() are simple
-enough to just fold them into the callsites.
+> Nothing special this time, just an error messages improvement from Andy
+> and a cleanup from me.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/memcontrol.c | 49 ++++++++++++++++++-------------------------------
- 1 file changed, 18 insertions(+), 31 deletions(-)
+Also this APEI change that hasn't seen much commentary since Tomas Nowicki pointed
+out that v1 had cluttered up the APEI code with some x86-ism after he'd spent time
+cleaning it up - so v2 addressed that by moving the x86 code out into arch/x86.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 5a5769e8b12c..692e96407627 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -360,21 +360,18 @@ static bool memcg_kmem_is_active(struct mem_cgroup *memcg)
- 
- /* Stuffs for move charges at task migration. */
- /*
-- * Types of charges to be moved. "move_charge_at_immitgrate" and
-- * "immigrate_flags" are treated as a left-shifted bitmap of these types.
-+ * Types of charges to be moved.
-  */
--enum move_type {
--	MOVE_CHARGE_TYPE_ANON,	/* private anonymous page and swap of it */
--	MOVE_CHARGE_TYPE_FILE,	/* file page(including tmpfs) and swap of it */
--	NR_MOVE_TYPE,
--};
-+#define MOVE_ANON	0x1U
-+#define MOVE_FILE	0x2U
-+#define MOVE_MASK	0x3U
- 
- /* "mc" and its members are protected by cgroup_mutex */
- static struct move_charge_struct {
- 	spinlock_t	  lock; /* for from, to */
- 	struct mem_cgroup *from;
- 	struct mem_cgroup *to;
--	unsigned long immigrate_flags;
-+	unsigned long flags;
- 	unsigned long precharge;
- 	unsigned long moved_charge;
- 	unsigned long moved_swap;
-@@ -385,16 +382,6 @@ static struct move_charge_struct {
- 	.waitq = __WAIT_QUEUE_HEAD_INITIALIZER(mc.waitq),
- };
- 
--static bool move_anon(void)
--{
--	return test_bit(MOVE_CHARGE_TYPE_ANON, &mc.immigrate_flags);
--}
--
--static bool move_file(void)
--{
--	return test_bit(MOVE_CHARGE_TYPE_FILE, &mc.immigrate_flags);
--}
--
- /*
-  * Maximum loops in mem_cgroup_hierarchical_reclaim(), used for soft
-  * limit reclaim to prevent infinite loops, if they ever occur.
-@@ -3476,7 +3463,7 @@ static int mem_cgroup_move_charge_write(struct cgroup_subsys_state *css,
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
- 
--	if (val >= (1 << NR_MOVE_TYPE))
-+	if (val & ~MOVE_MASK)
- 		return -EINVAL;
- 
- 	/*
-@@ -4698,12 +4685,12 @@ static struct page *mc_handle_present_pte(struct vm_area_struct *vma,
- 	if (!page || !page_mapped(page))
- 		return NULL;
- 	if (PageAnon(page)) {
--		/* we don't move shared anon */
--		if (!move_anon())
-+		if (!(mc.flags & MOVE_ANON))
- 			return NULL;
--	} else if (!move_file())
--		/* we ignore mapcount for file pages */
--		return NULL;
-+	} else {
-+		if (!(mc.flags & MOVE_FILE))
-+			return NULL;
-+	}
- 	if (!get_page_unless_zero(page))
- 		return NULL;
- 
-@@ -4717,7 +4704,7 @@ static struct page *mc_handle_swap_pte(struct vm_area_struct *vma,
- 	struct page *page = NULL;
- 	swp_entry_t ent = pte_to_swp_entry(ptent);
- 
--	if (!move_anon() || non_swap_entry(ent))
-+	if (!(mc.flags & MOVE_ANON) || non_swap_entry(ent))
- 		return NULL;
- 	/*
- 	 * Because lookup_swap_cache() updates some statistics counter,
-@@ -4746,7 +4733,7 @@ static struct page *mc_handle_file_pte(struct vm_area_struct *vma,
- 
- 	if (!vma->vm_file) /* anonymous vma */
- 		return NULL;
--	if (!move_file())
-+	if (!(mc.flags & MOVE_FILE))
- 		return NULL;
- 
- 	mapping = vma->vm_file->f_mapping;
-@@ -4828,7 +4815,7 @@ static enum mc_target_type get_mctgt_type_thp(struct vm_area_struct *vma,
- 
- 	page = pmd_page(pmd);
- 	VM_BUG_ON_PAGE(!page || !PageHead(page), page);
--	if (!move_anon())
-+	if (!(mc.flags & MOVE_ANON))
- 		return ret;
- 	if (page->mem_cgroup == mc.from) {
- 		ret = MC_TARGET_PAGE;
-@@ -4970,15 +4957,15 @@ static int mem_cgroup_can_attach(struct cgroup_subsys_state *css,
- 	struct task_struct *p = cgroup_taskset_first(tset);
- 	int ret = 0;
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
--	unsigned long move_charge_at_immigrate;
-+	unsigned long move_flags;
- 
- 	/*
- 	 * We are now commited to this value whatever it is. Changes in this
- 	 * tunable will only affect upcoming migrations, not the current one.
- 	 * So we need to save it, and keep it going.
- 	 */
--	move_charge_at_immigrate  = memcg->move_charge_at_immigrate;
--	if (move_charge_at_immigrate) {
-+	move_flags = ACCESS_ONCE(memcg->move_charge_at_immigrate);
-+	if (move_flags) {
- 		struct mm_struct *mm;
- 		struct mem_cgroup *from = mem_cgroup_from_task(p);
- 
-@@ -4998,7 +4985,7 @@ static int mem_cgroup_can_attach(struct cgroup_subsys_state *css,
- 			spin_lock(&mc.lock);
- 			mc.from = from;
- 			mc.to = memcg;
--			mc.immigrate_flags = move_charge_at_immigrate;
-+			mc.flags = move_flags;
- 			spin_unlock(&mc.lock);
- 			/* We set mc.moving_task later */
- 
--- 
-2.2.0
+-Tony
 
+The following changes since commit b2776bf7149bddd1f4161f14f79520f17fc1d71d:
+
+  Linux 3.18 (2014-12-07 14:21:05 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-einj-mmcfg
+
+for you to fetch changes up to d91525eb8ee6a622ce476955fe1a2530ade87c83:
+
+  ACPI, EINJ: Enhance error injection tolerance level (2014-12-15 11:36:37 -0800)
+
+----------------------------------------------------------------
+When checking addresses in APEI action entries for validity, allow
+access the mmcfg space - some error injection functions need to do
+this.
+
+----------------------------------------------------------------
+Chen, Gong (1):
+      ACPI, EINJ: Enhance error injection tolerance level
+
+ arch/x86/pci/mmconfig-shared.c | 28 ++++++++++++++++++++++++++++
+ drivers/acpi/apei/apei-base.c  | 32 ++++++++++++++++++++++++++------
+ 2 files changed, 54 insertions(+), 6 deletions(-)
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
