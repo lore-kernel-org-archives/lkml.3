@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667AbbAMIsj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 03:48:39 -0500
-Received: from mail.emea.novell.com ([130.57.118.101]:44280 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103AbbAMIsh convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:2:1>);
-	Tue, 13 Jan 2015 03:48:37 -0500
-Message-Id: <54B4E9F3020000780005427E@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.1 
-Date: Tue, 13 Jan 2015 08:48:35 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Arnaldo Carvalho de Melo" <acme@redhat.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: your recent tools/include/ adjustments
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1751983AbbAMIsz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 03:48:55 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:56405 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103AbbAMIsy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 03:48:54 -0500
+MIME-Version: 1.0
+In-Reply-To: <1409328896-8457-1-git-send-email-geert@linux-m68k.org>
+References: <1409328896-8457-1-git-send-email-geert@linux-m68k.org>
+Date: Tue, 13 Jan 2015 09:48:52 +0100
+X-Google-Sender-Auth: ZDjf374ca_bYntYmPpl1CVVwHPw
+Message-ID: <CAMuHMdX7CMfHid6=Px4+m6Urph7Vs-av+tr+12zOFbt7TqX+sQ@mail.gmail.com>
+Subject: Re: [PATCH] m68k/atari: Remove obsolete keyboard_tasklet scheduling
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Michael Schmitz <schmitzmic@gmail.com>
+Cc: linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo,
+On Fri, Aug 29, 2014 at 6:14 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> If CONFIG_VT=n:
+>
+> arch/m68k/atari/built-in.o: In function `atari_keyboard_interrupt':
+> atakeyb.c:(.text+0x1846): undefined reference to `keyboard_tasklet'
+> atakeyb.c:(.text+0x1852): undefined reference to `keyboard_tasklet'
+>
+> I think the keyboard_tasklet scheduling is no longer needed, as I
+> believe it's handled by drivers/tty/vt/keyboard.c based on events
+> received from the input subsystem. So just remove it.
+>
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-considering that tools/include/ gets used by other than just perf, in
-particular arch/x86/vdso/vdso2c.c, would you mind clarifying how
-"tools: Move bitops.h from tools/perf/util to tools/" adding an
-inclusion of asm/hweight.h to linux/bitops.h is supposed to work,
-when the only potentially relevant header to be found is
-tools/perf/util/include/asm/hweight.h?
+Applied with Michael's Tested-by, and queued for 3.20.
 
-Similarly, with "tools: Adopt fls_long and deps" adding 3 stub
-headers to tools/include/asm-generic/bitops/ using
-"#include <../../../../include/asm-generic/bitops/...>", I can't
-see how these headers are to be found when building the above
-mentioned utility - I suppose these really were meant to use
-quotes instead of angle brackets.
+Gr{oetje,eeting}s,
 
-For reference, the breakage was observed on a relatively old
-x86 system where linux/elf.h includes asm/elf.h, reaching
-linux/bitops.h via asm/system.h and asm/cpufeature.h.
+                        Geert
 
-Thanks for any insight/clarification,
-Jan
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
