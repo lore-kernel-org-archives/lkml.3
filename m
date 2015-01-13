@@ -1,44 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001AbbAMCBm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 21:01:42 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:1617 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049AbbAMCBl (ORCPT
+	id S1753187AbbAMCDQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 21:03:16 -0500
+Received: from mail-yh0-f41.google.com ([209.85.213.41]:39257 "EHLO
+	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950AbbAMCDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 21:01:41 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 12 Jan 2015 18:00:20 -0800
-Message-ID: <54B47C66.1010805@nvidia.com>
-Date: Tue, 13 Jan 2015 11:01:10 +0900
-From: Alexandre Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 12 Jan 2015 21:03:14 -0500
+Date: Mon, 12 Jan 2015 18:03:25 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, khilman@kernel.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Patrice Vilchez <patrice.vilchez@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Cyrille Pitchen <cyrille.pitchen@atmel.com>,
+        ARM Maintainers <arm@kernel.org>
+Subject: Re: [PATCH] ARM: at91/Documentation: add a README for Atmel SoCs
+Message-ID: <20150113020325.GB28758@quad.lixom.net>
+References: <1420809631-26923-1-git-send-email-nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>
-CC: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        =?windows-1252?Q?Christian_K=F6nig?= <christian.koenig@amd.com>,
-        <dri-devel@lists.freedesktop.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drm/nouveau/nouveau_bo: Remove unused function
-References: <1421015495-24744-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1421015495-24744-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-NVConfidentiality: public
-X-Originating-IP: [10.19.57.128]
-X-ClientProxiedBy: HKMAIL103.nvidia.com (10.18.16.12) To
- HKMAIL102.nvidia.com (10.18.16.11)
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420809631-26923-1-git-send-email-nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2015 07:31 AM, Rickard Strandqvist wrote:
-> Remove the function nouveau_bo_rd16() that is not used anywhere.
->
-> This was partially found by using a static code analysis program called cppcheck.
+On Fri, Jan 09, 2015 at 02:20:31PM +0100, Nicolas Ferre wrote:
+> Add a README file to describe Atmel SoCs (aka AT91) support in Mainline Linux:
+> - SoC list + datasheet web links
+> - Basic but useful information
+> - Device Tree conventions and Work In Progress statement.
+> 
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Cc: ARM Maintainers <arm@kernel.org>
 
-nouveau_bo_wr16() being presumably used (since it is not removed by this 
-patch), it sounds safe to keep its read counterpart?
+Acked-by: Olof Johansson <olof@lixom.net>
 
+With the understanding that:
+
+> +Device Tree for AT91 SoCs and boards
+> +------------------------------------
+> +All AT91 SoCs are converted to Device Tree. Since Linux 3.19, these products
+> +must use this method to boot the Linux kernel.
+> +
+> +Work In Progress statement:
+> +Device Tree files and Device Tree bindings that apply to AT91 SoCs and boards are
+> +considered as "Unstable". To be completely clear, any at91 binding can change at
+> +any time. So, be sure to use a Device Tree Binary and a Kernel Image generated from
+> +the same source tree.
+> +Please refer to the Documentation/devicetree/bindings/ABI.txt file for a
+> +definition of a "Stable" binding/ABI.
+> +This statement will be removed by AT91 MAINTAINERS when appropriated.
+
+While this statement is here, at the end of the day if you break a user
+you're responsible for fixing them. I.e. if a tree falls in the forest
+and nobody notices, then so be it.
+
+But you can't break existing users and point to this and get away with
+it. However, hopefully based on this doc users will go with practices
+that means that you can revise bindings if you have to.
+
+
+-Olof
