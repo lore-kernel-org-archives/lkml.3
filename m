@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240AbbAMXsP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 18:48:15 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:39094 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751369AbbAMXsN (ORCPT
+	id S1752384AbbAMXsw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 18:48:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53388 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192AbbAMXsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 18:48:13 -0500
-Date: Wed, 14 Jan 2015 00:47:59 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
-        ARM Maintainers <arm@kernel.org>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: dts: re-fromat AT91 part to match other entries
-Message-ID: <20150113234759.GH3843@piout.net>
-References: <20150112224203.GL22090@quad.lixom.net>
- <1421160180-23452-1-git-send-email-nicolas.ferre@atmel.com>
- <20150113230956.GA15087@quad.lixom.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150113230956.GA15087@quad.lixom.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 13 Jan 2015 18:48:51 -0500
+Date: Tue, 13 Jan 2015 15:48:49 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Andrzej Hajda <a.hajda@samsung.com>, Linux MM <linux-mm@kvack.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Andreas Mohr <andi@lisas.de>,
+        Mike Turquette <mturquette@linaro.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 0/5] kstrdup optimization
+Message-Id: <20150113154849.5bb3fdd0ff9d73a89e639f19@linux-foundation.org>
+In-Reply-To: <CAMuHMdV74n3v81xaLRDN_Mn_QGg14yUkXNn6JYaGH4MGgLRM2A@mail.gmail.com>
+References: <1421054323-14430-1-git-send-email-a.hajda@samsung.com>
+	<CAMuHMdV74n3v81xaLRDN_Mn_QGg14yUkXNn6JYaGH4MGgLRM2A@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Olof,
+On Mon, 12 Jan 2015 21:45:58 +0100 Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 
-On 13/01/2015 at 15:09:56 -0800, Olof Johansson wrote :
-> On Tue, Jan 13, 2015 at 03:43:00PM +0100, Nicolas Ferre wrote:
-> > The entries are separated as ARM V4/V5 and ARM V7 as some other per-SoC config
-> > options may be removed in the near future.
-> > 
-> > Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> > ---
-> > Hi Olof,
-> > 
-> > This is an attempt to match other ARM SoC families format.
-> > If you feel that the patch can be good, do not hesitate to take it yourself. I
-> > don't plan to integrate it in any of my pull-request so it can appear quickly in
-> > arm-soc and can be used by everyone.
+> On Mon, Jan 12, 2015 at 10:18 AM, Andrzej Hajda <a.hajda@samsung.com> wrote:
+> > kstrdup if often used to duplicate strings where neither source neither
+> > destination will be ever modified. In such case we can just reuse the source
+> > instead of duplicating it. The problem is that we must be sure that
+> > the source is non-modifiable and its life-time is long enough.
+> >
+> > I suspect the good candidates for such strings are strings located in kernel
+> > .rodata section, they cannot be modifed because the section is read-only and
+> > their life-time is equal to kernel life-time.
+> >
+> > This small patchset proposes alternative version of kstrdup - kstrdup_const,
+> > which returns source string if it is located in .rodata otherwise it fallbacks
+> > to kstrdup.
 > 
-> Hi,
+> It also introduces kfree_const(const void *x).
 > 
-> If you see what Peter did, he split up the rules per-SoC based on how
-> things were selectable in Kconfig. Since you seem to have the Kconfig
-> entries already, how about doing the same? That way the same information
-> w.r.t. SoC family that you have as comments isn't lost either.
-> 
+> As kfree_const() has the exact same signature as kfree(), the risk of
+> accidentally passing pointers returned from kstrdup_const() to kfree() seems
+> high, which may lead to memory corruption if the pointer doesn't point to
+> allocated memory.
 
-You didn't see the patch set yet because it depends on a lot of other
-series still being discussed but after the switch to multiplatform, the
-only config option left will be SOC_AT91RM9200, SOC_AT91SAM9 (both
-under SOC_SAM_V4_V5) and SOC_SAMA5, under SOC_SAM_V7.
+Yes, it's an ugly little patchset.  But 100-200k of memory is hard to
+argue with, and I'm not seeing a practical way of getting those savings
+with a cleaner approach.
 
-That's our plan, unless you feel that we should keep one config option
-per SoC.
+Hopefully a kfree(rodata-address) will promptly oops, but I haven't
+tested that and it presumably depends on which flavour of
+slab/sleb/slib/slob/slub you're using.
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
