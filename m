@@ -1,37 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870AbbAMWUJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 17:20:09 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:45372 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834AbbAMWUI (ORCPT
+	id S1753878AbbAMW1T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 17:27:19 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:10734 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752051AbbAMW1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 17:20:08 -0500
-Date: Tue, 13 Jan 2015 14:19:58 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: user-mode-linux-devel@lists.sourceforge.net, dxld@darkboxed.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] hostfs: Use noop_fsync for directories
-Message-ID: <20150113221958.GA27739@infradead.org>
-References: <1421187358-32600-1-git-send-email-richard@nod.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421187358-32600-1-git-send-email-richard@nod.at>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 13 Jan 2015 17:27:17 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19UdE4skEj9j65CmG/7871A
+From: Tony Lindgren <tony@atomide.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: [PATCH 0/2] Add support for dm81xx to omap intc, remove unused legacy support
+Date: Tue, 13 Jan 2015 14:23:24 -0800
+Message-Id: <1421187806-6804-1-git-send-email-tony@atomide.com>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 11:15:58PM +0100, Richard Weinberger wrote:
-> Daniel reported that dpkg(1) dies if the root filesystem is a hostfs
-> because it does not expect fsync(2) to fail with EINVAL on directories.
-> While fsync(2) is allowed to fail with EINVAL if the filesystem does not
-> support it we can do better and use noop_fsync() to not confuse userspace
-> further.
+Hi,
 
-Shouldn't hostfs pass the fsync through to the host filesystem?
+Here's a patch to get the ti81xx interrupt support working properly,
+and to remove some unused legacy code.
+
+Regards,
+
+Tony
+
+clone of "xxx-81xx-mainline"
+
+Tony Lindgren (2):
+  irqchip: omap-intc: Fix support for dm814 and dm816
+  irqchip: omap-intc: Remove unused legacy interface for omap2
+
+ .../interrupt-controller/ti,omap-intc-irq.txt      | 28 ++++++++++++++++++++++
+ drivers/irqchip/irq-omap-intc.c                    | 22 ++++-------------
+ include/linux/irqchip/irq-omap-intc.h              |  2 --
+ 3 files changed, 33 insertions(+), 19 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/interrupt-controller/ti,omap-intc-irq.txt
+
+-- 
+2.1.4
+
