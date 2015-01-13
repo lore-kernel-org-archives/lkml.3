@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705AbbAMRAN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 12:00:13 -0500
-Received: from mga02.intel.com ([134.134.136.20]:6278 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752624AbbAMRAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 12:00:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,750,1413270000"; 
-   d="scan'208";a="636693762"
-Date: Tue, 13 Jan 2015 19:00:07 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c / ACPI: Pick the first address if device has multiple
-Message-ID: <20150113170007.GV1386@lahna.fi.intel.com>
-References: <1419860928-195404-1-git-send-email-mika.westerberg@linux.intel.com>
- <20150113155059.GN7660@katana>
- <1421167477.4459.229.camel@spandruv-desktop.jf.intel.com>
- <20150113164829.GO7660@katana>
+	id S1752750AbbAMRAZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 12:00:25 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:35918 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752624AbbAMRAV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 12:00:21 -0500
+Date: Tue, 13 Jan 2015 18:00:17 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [RFC PATCH] irqchip: add dumb demultiplexer implementation
+Message-ID: <20150113180017.66efeda7@bbrezillon>
+In-Reply-To: <alpine.DEB.2.11.1501131117120.17382@nanos>
+References: <alpine.DEB.2.11.1412162125000.17382@nanos>
+	<1420725159-20720-1-git-send-email-boris.brezillon@free-electrons.com>
+	<alpine.DEB.2.11.1501131117120.17382@nanos>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150113164829.GO7660@katana>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 05:48:29PM +0100, Wolfram Sang wrote:
-> On Tue, Jan 13, 2015 at 08:44:37AM -0800, Srinivas Pandruvada wrote:
-> > On Tue, 2015-01-13 at 16:50 +0100, Wolfram Sang wrote: 
-> > > On Mon, Dec 29, 2014 at 03:48:48PM +0200, Mika Westerberg wrote:
-> > > > ACPI specification allows I2C devices with multiple addresses. The current
-> > > > implementation goes over all addresses and assigns the last one to the
-> > > > device. This is typically not the primary address of the device.
-> > > > 
-> > > > Instead of doing that we assign the first address to the device and then
-> > > > let the driver handle rest of the addresses as it wishes.
-> > > > 
-> > > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > > > Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-> > > 
-> > > Yes, seems better than what we do know. But maybe taking the lowest
-> > > address is a bit better heuristic than taking the first address?
-> > > Not sure, though...
-> > The problem in taking lowest is that in many cases in current devices,
-> > the lowest address may end being 0x0C, which is reserved address for
-> > SMBUS (ARA). This will require different handling. Unfortunately ACPI
-> > doesn't have a way to distinguish whether SMBUS support is desired or
-> > not. 
-> > The other option is to skip all reserved addresses for SMBUS also and
-> > then create on the lowest.
+On Tue, 13 Jan 2015 11:38:14 +0100 (CET)
+Thomas Gleixner <tglx@linutronix.de> wrote:
 > 
-> Well, this makes me think that Mika's approach is probably the sanest
-> one...
+> > +/**
+> > + *	handle_dumb_demux_irq - Dumb demuxer irq handle function.
+> > + *	@irq:	the interrupt number
+> > + *	@desc:	the interrupt description structure for this irq
+> > + *
+> > + *	Dumb demux interrupts are sent from a demultiplexing interrupt handler
+> > + *	which is not able to decide which child interrupt interrupt handler
+> > + *	should be called.
+> > + *
+> > + *	Note: The caller is expected to handle the ack, clear, mask and
+> > + *	unmask issues if necessary.
+> > + */
+> > +irqreturn_t
+> > +handle_dumb_demux_irq(unsigned int irq, struct irq_desc *desc)
+> > +{
+> > +	irqreturn_t retval = IRQ_NONE;
+> > +
+> > +	raw_spin_lock(&desc->lock);
+> > +
+> > +	if (!irq_may_run(desc))
+> > +		goto out_unlock;
+> > +
+> > +	desc->istate &= ~(IRQS_REPLAY | IRQS_WAITING);
+> > +	kstat_incr_irqs_this_cpu(irq, desc);
+> > +
+> > +	if (unlikely(!desc->action || irqd_irq_disabled(&desc->irq_data))) {
+> > +		desc->istate |= IRQS_PENDING;
+> > +		goto out_unlock;
+> > +	}
+> > +
+> > +	retval = handle_irq_event_no_spurious_check(desc);
+> > +
+> > +out_unlock:
+> > +	raw_spin_unlock(&desc->lock);
+> > +
+> > +	return retval;
+> > +}
+> > +EXPORT_SYMBOL_GPL(handle_dumb_demux_irq);
+> 
+> This should go into the new file as well, so it gets compiled out when
+> not enabled.
 
-Also I think it is more consistent that way.
+Actually, I can't move that function out of kernel/irq/chip.c because
+it calls irq_may_run which is statically defined in this file.
+Should I export this function or just enclose it in a
+#ifdef DUMB_IRQ_DEMUX section ?
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
