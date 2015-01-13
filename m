@@ -1,73 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637AbbAMTAK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 14:00:10 -0500
-Received: from mga14.intel.com ([192.55.52.115]:22168 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751949AbbAMTAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 14:00:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,750,1413270000"; 
-   d="scan'208";a="669264087"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: x86-ml <x86@kernel.org>
-CC: linux-edac <linux-edac@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: RE: [GIT PULL] RAS update for 3.20
-Thread-Topic: [GIT PULL] RAS update for 3.20
-Thread-Index: AQHQLymR3/WNX1uMmkyjEbKKjdqV2Zy+ZlXw
-Date: Tue, 13 Jan 2015 19:00:06 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F3299AD99@ORSMSX114.amr.corp.intel.com>
-References: <20150113120713.GA5784@pd.tnic>
-In-Reply-To: <20150113120713.GA5784@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S1753814AbbAMTBi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 14:01:38 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:44339 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752591AbbAMTBg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 14:01:36 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18tYi3Y+4DcOiue79/QCLfwa1JJtjPsI3U=
+X-DKIM: OpenDKIM Filter v2.0.1 titan DA95D645680
+Date: Tue, 13 Jan 2015 14:00:50 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 2/5] irqchip: Add DT binding doc for dumb demuxer
+ chips
+Message-ID: <20150113190050.GZ24989@titan.lakedaemon.net>
+References: <1421174781-4340-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1421174781-4340-3-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1421174781-4340-3-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0DJ0HZS030749
 
-> Nothing special this time, just an error messages improvement from Andy
-> and a cleanup from me.
+Boris,
 
-Also this APEI change that hasn't seen much commentary since Tomas Nowicki pointed
-out that v1 had cluttered up the APEI code with some x86-ism after he'd spent time
-cleaning it up - so v2 addressed that by moving the x86 code out into arch/x86.
+On Tue, Jan 13, 2015 at 07:46:18PM +0100, Boris Brezillon wrote:
+> Add documentation for the dumb demuxer.
+> 
+> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> ---
+>  .../bindings/interrupt-controller/dumb-demux.txt   | 34 ++++++++++++++++++++++
+>  1 file changed, 34 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/interrupt-controller/dumb-demux.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/interrupt-controller/dumb-demux.txt b/Documentation/devicetree/bindings/interrupt-controller/dumb-demux.txt
+> new file mode 100644
+> index 0000000..1c777ef
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/interrupt-controller/dumb-demux.txt
+> @@ -0,0 +1,34 @@
+> +* Generic Dumb Interrupt Demultiplexer
+> +
+> +This Dumb demultiplixer simply forward all incoming interrupts to its
+> +enabled/unmasked children.
 
--Tony
+Please forgive the potentially naïve question, but what hardware is this
+describing?
 
-The following changes since commit b2776bf7149bddd1f4161f14f79520f17fc1d71d:
+thx,
 
-  Linux 3.18 (2014-12-07 14:21:05 -0800)
+Jason.
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-einj-mmcfg
-
-for you to fetch changes up to d91525eb8ee6a622ce476955fe1a2530ade87c83:
-
-  ACPI, EINJ: Enhance error injection tolerance level (2014-12-15 11:36:37 -0800)
-
-----------------------------------------------------------------
-When checking addresses in APEI action entries for validity, allow
-access the mmcfg space - some error injection functions need to do
-this.
-
-----------------------------------------------------------------
-Chen, Gong (1):
-      ACPI, EINJ: Enhance error injection tolerance level
-
- arch/x86/pci/mmconfig-shared.c | 28 ++++++++++++++++++++++++++++
- drivers/acpi/apei/apei-base.c  | 32 ++++++++++++++++++++++++++------
- 2 files changed, 54 insertions(+), 6 deletions(-)
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> +
+> +Required properties:
+> +- compatible: Should be "irqchip-dumb-demux".
+> +- interrupt-controller: Identifies the node as an interrupt controller.
+> +- interrupts-extended or interrupt-parent and interrupts: Reference the source
+> +  interrupt connected to this dumb demuxer.
+> +- #interrupt-cells: The number of cells to define the interrupts (should be 1).
+> +  The only cell is the IRQ number.
+> +- irqs: u32 bitfield specifying the interrupts provided by the demuxer.
+> +
+> +Examples:
+> +	/*
+> +	 * Dumb demuxer controller
+> +	 */
+> +	dumb_irq1_demux: dumb-irq-demux@1 {
+> +		compatible = "irqchip-dumb-demux";
+> +		interrupt-controller;
+> +		#interrupt-cells = <1>;
+> +		interrupts-extended = <&aic 1 IRQ_TYPE_LEVEL_HIGH 7>;
+> +		irqs = <0x3f>;
+> +	};
+> +
+> +	/*
+> +	 * Device connected on this dumb demuxer
+> +	 */
+> +	dma: dma-controller@ffffec00 {
+> +		compatible = "atmel,at91sam9g45-dma";
+> +		reg = <0xffffec00 0x200>;
+> +		interrupts-extended = <&dumb_irq1_demux 0>;
+> +	};
+> -- 
+> 1.9.1
+> 
