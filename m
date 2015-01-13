@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928AbbAMWdi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 17:33:38 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:63025 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166AbbAMWdf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 17:33:35 -0500
-From: Mark Salyzyn <salyzyn@android.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Salyzyn <salyzyn@android.com>, Paul Moore <paul@paul-moore.com>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        Eric Paris <eparis@parisplace.org>,
-        James Morris <james.l.morris@oracle.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>, selinux@tycho.nsa.gov,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH 5/5] pstore: selinux: add security in-core xattr support for pstore and debugfs
-Date: Tue, 13 Jan 2015 14:33:18 -0800
-Message-Id: <1421188410-2006-1-git-send-email-salyzyn@android.com>
-X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
+	id S1753425AbbAMWfc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 17:35:32 -0500
+Received: from ozlabs.org ([103.22.144.67]:43737 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750990AbbAMWfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 17:35:31 -0500
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: rostedt@goodmis.org
+Cc: <linux-kernel@vger.kernel.org>, mingo@redhat.com,
+        paulmck@linux.vnet.ibm.com, Andrew Morton <akpm@osdl.org>,
+        tglx@linutronix.de, mathieu.desnoyers@efficios.com,
+        xiakaixu@huawei.com
+Subject: [PATCH] tracing: Allow raw_syscall tracepoints to work from boot
+Date: Wed, 14 Jan 2015 09:35:17 +1100
+Message-Id: <1421188517-18312-1-git-send-email-mpe@ellerman.id.au>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- add "pstore" and "debugfs" to list of in-core exceptions
-- change fstype checks to boolean equation
-- change from strncmp to strcmp for checking
+In commit 5f893b2639b2 "tracing: Move enabling tracepoints to just after
+rcu_init()", tracing was enabled earlier in boot.
 
-Signed-off-by: Mark Salyzyn <salyzyn@android.com>
+This broke tracing of the raw_syscall tracepoints from boot using the
+trace_event kernel parameter.
+
+When the registration function for the raw_syscall tracepoints runs, it
+iterates over all tasks setting TIF_SYSCALL_TRACEPOINT. However now that
+this happens earlier in boot, the loop has no effect because there are
+no tasks in existence other than init_task, which is skipped by the
+for_each_process_thread() macro.
+
+We can fix it by explicitly setting TIF_SYSCALL_TRACEPOINT for the
+init_task. That way when pid 1 is cloned from init_task it will inherit
+TIF_SYSCALL_TRACEPOINT.
+
+Fixes: 5f893b2639b2 ("tracing: Move enabling tracepoints to just after rcu_init()")
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 ---
- security/selinux/hooks.c | 25 ++++++++-----------------
- 1 file changed, 8 insertions(+), 17 deletions(-)
+ kernel/tracepoint.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 6da7532..789a7e1 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -401,23 +401,14 @@ static int selinux_is_sblabel_mnt(struct super_block *sb)
- {
- 	struct superblock_security_struct *sbsec = sb->s_security;
+
+It feels a bit naughty to be whacking init_task like this, but it also
+seems like the right fix?
+
+Should we also clear it in the unregfunc? I can't see how that would
+ever be needed in practice?
+
+
+diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+index 3490407dc7b7..43a03e22c16c 100644
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -496,6 +496,12 @@ void syscall_regfunc(void)
  
--	if (sbsec->behavior == SECURITY_FS_USE_XATTR ||
--	    sbsec->behavior == SECURITY_FS_USE_TRANS ||
--	    sbsec->behavior == SECURITY_FS_USE_TASK)
--		return 1;
--
--	/* Special handling for sysfs. Is genfs but also has setxattr handler*/
--	if (strncmp(sb->s_type->name, "sysfs", sizeof("sysfs")) == 0)
--		return 1;
--
--	/*
--	 * Special handling for rootfs. Is genfs but supports
--	 * setting SELinux context on in-core inodes.
--	 */
--	if (strncmp(sb->s_type->name, "rootfs", sizeof("rootfs")) == 0)
--		return 1;
--
--	return 0;
-+	return sbsec->behavior == SECURITY_FS_USE_XATTR ||
-+		sbsec->behavior == SECURITY_FS_USE_TRANS ||
-+		sbsec->behavior == SECURITY_FS_USE_TASK ||
-+		/* Special handling. Genfs but also in-core setxattr handler */
-+		!strcmp(sb->s_type->name, "sysfs") ||
-+		!strcmp(sb->s_type->name, "pstore") ||
-+		!strcmp(sb->s_type->name, "debugfs") ||
-+		!strcmp(sb->s_type->name, "rootfs");
- }
- 
- static int sb_finish_set_opts(struct super_block *sb)
+ 	if (!sys_tracepoint_refcount) {
+ 		read_lock(&tasklist_lock);
++		/*
++		 * If we run very early in boot then we need to hit init_task
++		 * directly so that pid 1 will inherit the TIF flag.
++		 */
++		set_tsk_thread_flag(&init_task, TIF_SYSCALL_TRACEPOINT);
++
+ 		for_each_process_thread(p, t) {
+ 			set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
+ 		}
 -- 
-2.2.0.rc0.207.ga3a616c
+2.1.0
 
