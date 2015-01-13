@@ -1,71 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744AbbAMVdc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 16:33:32 -0500
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:54229 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136AbbAMVda (ORCPT
+	id S1753328AbbAMVhU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 16:37:20 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:57229 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751260AbbAMVhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 16:33:30 -0500
-MIME-Version: 1.0
-In-Reply-To: <20150113111146.GL23965@worktop.programming.kicks-ass.net>
-References: <1420850068-27828-1-git-send-email-john.stultz@linaro.org>
-	<1420850068-27828-7-git-send-email-john.stultz@linaro.org>
-	<20150113111146.GL23965@worktop.programming.kicks-ass.net>
-Date: Tue, 13 Jan 2015 13:33:29 -0800
-Message-ID: <CALAqxLVFLAjCD2Vw6Zue=+RU2GSspCDTBTeRAv-EQMy3iA6oBw@mail.gmail.com>
-Subject: Re: [PATCH 06/10] time: Cap clocksource reads to the clocksource
- max_cycles value
-From: John Stultz <john.stultz@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@codemonkey.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 13 Jan 2015 16:37:18 -0500
+From: Bilel DRIRA <bilel.dr@gmail.com>
+To: marek.belisko@gmail.com, gregkh@linuxfoundation.org, joe@perches.com,
+        tapaswenipathak@gmail.com, gdonald@gmail.com, aybuke.147@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Cc: Bilel DRIRA <bilel.dr@gmail.com>
+Subject: [PATCH v2 ] staging: ft1000: fix else style error
+Date: Tue, 13 Jan 2015 22:34:00 +0100
+Message-Id: <1421184840-24108-1-git-send-email-bilel.dr@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 3:11 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, Jan 09, 2015 at 04:34:24PM -0800, John Stultz wrote:
->> When calculating the current delta since the last tick, we
->> currently have no hard protections to prevent a multiplciation
->> overflow from ocurring.
->>
->> This patch introduces such a cap that limits the read delta
->> value to the max_cycles value, which is where an overflow would
->> occur.
->
->> +++ b/kernel/time/timekeeping.c
->> @@ -202,6 +202,9 @@ static inline s64 timekeeping_get_ns(struct tk_read_base *tkr)
->>       /* calculate the delta since the last update_wall_time: */
->>       delta = clocksource_delta(cycle_now, tkr->cycle_last, tkr->mask);
->>
->> +     /* Cap delta value to the max_cycles values to avoid mult overflows */
->> +     delta = min(delta, tkr->clock->max_cycles);
->> +
->>       nsec = delta * tkr->mult + tkr->xtime_nsec;
->>       nsec >>= tkr->shift;
->>
->
-> So while I appreciate stuff can be broken, should we not at least keep
-> track of this brokenness? That is, we all agree bad things happened IF
-> we actually hit this, right? So should we then not inform people that
-> bad things did happen?
+This patch fix the checkpatch.pl error:
 
-So since this is a time reading function, this could be called
-anywhere. So I'm hesitant to try to printk anything in such a hot
-path. Though, if we catch such a large delta during the timekeeping
-update function, we will print a warning (which is done in an earlier
-patch in the series).
+	ERROR: else should follow close brace '}'
 
-Were you thinking of something else maybe? I guess we could set a flag
-and then print later (if there is a later), but we'd lose much of the
-context of what went wrong.
+Signed-off-by: Bilel DRIRA <bilel.dr@gmail.com>
+---
+v2: remove braces instead of just putting else after close brace. (suggested by Joe Perches).
 
-thanks
--john
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c |   29 ++++++++--------------
+ 1 file changed, 10 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+index e9a37ee..4b830ac 100644
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+@@ -570,12 +570,10 @@ static void ft1000_hbchk(u_long data)
+ 		pr_debug("hi_ho value = 0x%x\n", tempword);
+ 		/* Let's perform another check if ho is not detected */
+ 		if (tempword != ho) {
+-			if (info->AsicID == ELECTRABUZZ_ID) {
++			if (info->AsicID == ELECTRABUZZ_ID)
+ 				tempword = ft1000_read_dpram(dev, FT1000_HI_HO);
+-			}
+-			else {
++			else
+ 				tempword = ntohs(ft1000_read_dpram_mag_16(dev, FT1000_MAG_HI_HO, FT1000_MAG_HI_HO_INDX));
+-			}
+ 		}
+ 		if (tempword != ho) {
+ 			pr_info("heartbeat failed - no ho detected\n");
+@@ -686,20 +684,15 @@ static void ft1000_hbchk(u_long data)
+ 		}
+ 		/* Let's write hi again if fail */
+ 		if (tempword != hi) {
+-			if (info->AsicID == ELECTRABUZZ_ID) {
++			if (info->AsicID == ELECTRABUZZ_ID)
+ 				ft1000_write_dpram(dev, FT1000_HI_HO, hi);
+-			}
+-			else {
++			else
+ 				ft1000_write_dpram_mag_16(dev, FT1000_MAG_HI_HO, hi_mag, FT1000_MAG_HI_HO_INDX);
+-			}
+ 
+-			if (info->AsicID == ELECTRABUZZ_ID) {
++			if (info->AsicID == ELECTRABUZZ_ID)
+ 				tempword = ft1000_read_dpram(dev, FT1000_HI_HO);
+-			}
+-			else {
++			else
+ 				tempword = ntohs(ft1000_read_dpram_mag_16(dev, FT1000_MAG_HI_HO, FT1000_MAG_HI_HO_INDX));
+-			}
+-
+ 		}
+ 
+ 		if (tempword != hi) {
+@@ -957,12 +950,11 @@ static void ft1000_proc_drvmsg(struct net_device *dev)
+ 		u16 wrd;
+ 	} convert;
+ 
+-	if (info->AsicID == ELECTRABUZZ_ID) {
++	if (info->AsicID == ELECTRABUZZ_ID)
+ 		tempword = FT1000_DPRAM_RX_BASE+2;
+-	}
+-	else {
++	else
+ 		tempword = FT1000_DPRAM_MAG_RX_BASE;
+-	}
++
+ 	if (ft1000_receive_cmd(dev, &cmdbuffer[0], MAX_CMD_SQSIZE, &tempword)) {
+ 
+ 		/* Get the message type which is total_len + PSEUDO header + msgtype + message body */
+@@ -1039,8 +1031,7 @@ static void ft1000_proc_drvmsg(struct net_device *dev)
+ 						info->ConTm = 0;
+ 					}
+ 				}
+-			}
+-			else {
++			} else {
+ 				pr_debug("Media is down\n");
+ 				if (info->mediastate == 1) {
+ 					info->mediastate = 0;
+-- 
+1.7.9.5
+
