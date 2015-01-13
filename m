@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751912AbbAMUe2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 15:34:28 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:63669 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751098AbbAMUe1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 15:34:27 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Xunlei Pang <xlpang@126.com>, linux-kernel@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>, rtc-linux@googlegroups.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Xunlei Pang <pang.xunlei@linaro.org>
-Subject: Re: [RFC PATCH v2 2/9] time: Provide y2106 safe get_seconds() replacement
-Date: Tue, 13 Jan 2015 21:34:19 +0100
-Message-ID: <1647943.u0FuNbvWB1@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20150113171744.69254bfd@linux.lan.towertech.it>
-References: <1421163897-8020-1-git-send-email-xlpang@126.com> <1421163897-8020-3-git-send-email-xlpang@126.com> <20150113171744.69254bfd@linux.lan.towertech.it>
+	id S1752703AbbAMUgc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 15:36:32 -0500
+Received: from mga14.intel.com ([192.55.52.115]:28810 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751175AbbAMUgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 15:36:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="511748605"
+Message-ID: <54B581C7.50206@linux.intel.com>
+Date: Tue, 13 Jan 2015 12:36:23 -0800
+From: Dave Hansen <dave.hansen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:A3Hx68Z6y88B4njhRAr/xF1y61E9uy2FtPO/J5XyKvHXxjybem5
- wHTiwkzRB25abrdCeBAbX7+pYPd8bOZN+oOOxSF1tX00cBk3gF4M56ofZ6ySGyKe6q1Legw
- zwqpoPvDMmHYa5Mv+u++gSlhnUwNoURqlirDxQ8ZVK9NdCrdr+HC3zND68192p2V2++ZmJD
- NMD7iEHBegwV+9X3qRxQQ==
-X-UI-Out-Filterresults: notjunk:1;
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>
+CC: linux-mm@kvack.org, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@openvz.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mm: rename mm->nr_ptes to mm->nr_pgtables
+References: <1421176456-21796-1-git-send-email-kirill.shutemov@linux.intel.com> <1421176456-21796-2-git-send-email-kirill.shutemov@linux.intel.com>
+In-Reply-To: <1421176456-21796-2-git-send-email-kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 13 January 2015 17:17:44 Alessandro Zummo wrote:
-> On Tue, 13 Jan 2015 23:44:50 +0800
-> Xunlei Pang <xlpang@126.com> wrote:
-> 
-> > -EXPORT_SYMBOL(get_seconds);
-> > +EXPORT_SYMBOL(get_seconds64);
-> 
->  Please leave get_seconds untouched
-> 
+On 01/13/2015 11:14 AM, Kirill A. Shutemov wrote:
+>  	pgd_t * pgd;
+>  	atomic_t mm_users;			/* How many users with user space? */
+>  	atomic_t mm_count;			/* How many references to "struct mm_struct" (users count as 1) */
+> -	atomic_long_t nr_ptes;			/* Page table pages */
+> +	atomic_long_t nr_pgtables;		/* Page table pages */
+>  	int map_count;				/* number of VMAs */
 
-The patch leaves it in place. However, we already have ktime_get_seconds()
-and ktime_get_real_seconds(). Code that currently uses get_seconds can
-trivially be converted to the latter.
+One more crazy idea...
 
-	Arnd
+There are 2^9 possible pud pages, 2^18 pmd pages and 2^27 pte pages.
+That's only 54 bits (technically minus one bit each because the upper
+half of the address space is for the kernel).
+
+That's enough to actually account for pte, pmd and pud pages separately
+without increasing the size of the storage we need.  You could even
+enforce that warning you were talking about at exit time for pte pages,
+but just ignore pmd mismatches so you don't have false warnings on
+hugetlbfs shared pmd pages.  Or, even better, strictly track pmd page
+usage _unless_ hugetlbfs shared pmds are in play and track _that_ in
+another bit.
+
+On 32-bit PAE, that's 2 bits for PMD pages, and 11 for PTE pages, so it
+should fit in an atomic_long_t there too.
