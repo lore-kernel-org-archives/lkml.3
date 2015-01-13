@@ -1,119 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257AbbAMTV2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 14:21:28 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36886 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753661AbbAMTV0 (ORCPT
+	id S1753395AbbAMTUu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 14:20:50 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:42149 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271AbbAMTUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 14:21:26 -0500
-Date: Tue, 13 Jan 2015 19:21:46 +0000
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Thomas Voegtle <tv@lio96.de>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Subject: Re: [3.16.y-ckt stable] Linux 3.16.7-ckt4 stable review
-Message-ID: <20150113192146.GA24809@charon>
-References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
- <alpine.LSU.2.11.1501122121450.16281@er-systems.de>
- <20150112215941.GJ2455@charon>
- <alpine.LSU.2.11.1501130035110.20153@er-systems.de>
- <20150113092556.GA2304@charon>
- <alpine.LSU.2.11.1501131946300.3987@er-systems.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LSU.2.11.1501131946300.3987@er-systems.de>
+	Tue, 13 Jan 2015 14:20:48 -0500
+From: SeongJae Park <sj38.park@gmail.com>
+To: peterz@infradead.org, mingo@redhat.com, corbet@lwn.net
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        SeongJae Park <sj38.park@gmail.com>
+Subject: [PATCH] Documentation: locking: update code path
+Date: Wed, 14 Jan 2015 04:22:01 +0900
+Message-Id: <1421176921-27688-1-git-send-email-sj38.park@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 07:56:02PM +0100, Thomas Voegtle wrote:
-> On Tue, 13 Jan 2015, Luis Henriques wrote:
-> 
-> >On Tue, Jan 13, 2015 at 12:35:58AM +0100, Thomas Voegtle wrote:
-> >>On Mon, 12 Jan 2015, Luis Henriques wrote:
-> >>
-> >>>On Mon, Jan 12, 2015 at 09:30:45PM +0100, Thomas Voegtle wrote:
-> >>>>On Mon, 12 Jan 2015, Luis Henriques wrote:
-> >>>>
-> >>>>>This is the start of the review cycle for the Linux 3.16.7-ckt4 stable kernel.
-> >>>>>
-> >>>>>This version contains 216 new patches, summarized below.  The new patches are
-> >>>>>posted as replies to this message and also available in this git branch:
-> >>>>>
-> >>>>>http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=linux-3.16.y-review;a=shortlog
-> >>>>>
-> >>>>>git://kernel.ubuntu.com/ubuntu/linux.git  linux-3.16.y-review
-> >>>>>
-> >>>>>The review period for version 3.16.7-ckt4 will be open for the next three days.
-> >>>>>To report a problem, please reply to the relevant follow-up patch message.
-> >>>>>
-> >>>>>For more information about the Linux 3.16.y-ckt extended stable kernel version,
-> >>>>>see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable .
-> >>>>
-> >>>>
-> >>>>Something is wrong with drm/i915 (I guess). I had a terrible memleak on Xorg
-> >>>>when using mplayer using more and more RAM, and then the system is swapping
-> >>>>itself to death.
-> >>>>
-> >>>>I'm using a openSUSE 13.1 (x86_64) on a Baytrail J1900 (this is Intel HD
-> >>>>Gen7).
-> >>>>
-> >>>>
-> >>>
-> >>>Thank you for reporting, Thomas.  Can you please confirm that this is
-> >>>actually a regression in 3.16.7-ckt4 (i.e., that you can't reproduce
-> >>>it in 3.16.7-ckt3)?  If so, is it possible to bisecting it?
-> >>
-> >>
-> >>3.16.7-ckt3 was fine for me.
-> >>
-> >>I tried to revert the drm/i915 patches in the review branch, and I got lucky
-> >>with (only) reverting cb58c663d940a "drm/i915: Disallow pin ioctl completely
-> >>for kms drivers".
-> >>
-> >>No clue, why reverting these few lines helps, but then I have no memleak.
-> >>
-> >>
-> >>     Thomas
-> >>
-> >
-> >Thank a lot for narrowing this down, Thomas!  The text in that commit
-> >(upstream commit d472fcc8379c) may actually provide an hint for this
-> >issue.  It asks backporters to make sure they include both
-> >
-> >commit b45305fce5bb1abec263fcff9d81ebecd6306ede
-> >Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-> >Date:   Mon Dec 17 16:21:27 2012 +0100
-> >
-> >   drm/i915: Implement workaround for broken CS tlb on i830/845
-> >
-> >and
-> >
-> >commit c4d69da167fa967749aeb70bc0e94a457e5d00c1
-> >Author: Chris Wilson <chris@chris-wilson.co.uk>
-> >Date:   Mon Sep 8 14:25:41 2014 +0100
-> >
-> >   drm/i915: Evict CS TLBs between batches
-> >
-> >For some reason, this second commit (which was tagged for stable!)
-> >isn't in 3.16, and I completely missed that.
-> >
-> >Would you be able to verify that adding this commit (backport attached
-> >bellow) fixes the issue?
-> 
-> 
-> Mh, no, sorry, that doesn't fix it. Very fast memleak with /usr/bin/X.
-> 
-> I used linux-3.16.y-review (with no reverts) + your patch from previous
-> mail.
-> 
+lockdep code have been moved from kernel/ to kernel/locking/ by commit
+8eddac3f103736163f49255bcb109edadea167f6 ("locking: Move the lockdep
+code to kernel/locking/"). But, path to lockdep code in document was not
+updated.
 
-Thanks a lot for testing.  I'll ping the patch authors and eventually
-drop it from the queue.  (I'll keep you on CC).
+This commit updates the path.
 
-Cheers,
---
-Luís
+Signed-off-by: SeongJae Park <sj38.park@gmail.com>
+---
+ Documentation/locking/lockdep-design.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Documentation/locking/lockdep-design.txt b/Documentation/locking/lockdep-design.txt
+index 5dbc99c..5001280 100644
+--- a/Documentation/locking/lockdep-design.txt
++++ b/Documentation/locking/lockdep-design.txt
+@@ -34,7 +34,7 @@ The validator tracks lock-class usage history into 4n + 1 separate state bits:
+ - 'ever held with STATE enabled'
+ - 'ever held as readlock with STATE enabled'
+ 
+-Where STATE can be either one of (kernel/lockdep_states.h)
++Where STATE can be either one of (kernel/locking/lockdep_states.h)
+  - hardirq
+  - softirq
+  - reclaim_fs
+-- 
+1.9.1
+
