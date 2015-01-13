@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131AbbAMMIS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 07:08:18 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54820 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751485AbbAMMIR (ORCPT
+	id S1751983AbbAMMKO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 07:10:14 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:44455 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127AbbAMMKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 07:08:17 -0500
-Date: Tue, 13 Jan 2015 12:07:51 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Vinod Koul <vinod.koul@intel.com>
-Cc: kernel-build-reports@lists.linaro.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Message-ID: <20150113120751.GQ4160@sirena.org.uk>
-References: <E1YAwSG-0000zm-Cs@debutante>
+	Tue, 13 Jan 2015 07:10:12 -0500
+Message-ID: <54B50B20.9010602@roeck-us.net>
+Date: Tue, 13 Jan 2015 04:10:08 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="Bi+HF1AHjw0mn3zx"
-Content-Disposition: inline
-In-Reply-To: <E1YAwSG-0000zm-Cs@debutante>
-X-Cookie: Keep out of reach of children.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: -next build failures in k3dma.c
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] watchdog: imx2: Constify struct regmap_config and watchdog_ops
+References: <1420448957-10106-1-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <1420448957-10106-1-git-send-email-k.kozlowski@samsung.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020203.54B50B23.0293,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 23
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/05/2015 01:09 AM, Krzysztof Kozlowski wrote:
+> The regmap_config struct may be const because it is not modified by the
+> driver and regmap_init() accepts pointer to const. Make struct
+> watchdog_ops const as well.
+>
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
---Bi+HF1AHjw0mn3zx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 
-On Tue, Jan 13, 2015 at 08:04:00AM +0000, Build bot for Mark Brown wrote:
 
-> 	arm-allmodconfig
-> ../drivers/dma/k3dma.c:823:12: error: conflicting types for 'k3_dma_resume'
-
-For several days now k3dma.c has been failing to build in an ARM
-allmodconfig because the definition of k3_dma_resume() introduced in
-db08425ebd51f (dmaengine: k3: Split device_control) taking a struct
-dma_chan * conflicts with that which has been in the file since it was
-originally merged taking a struct device *.
-
---Bi+HF1AHjw0mn3zx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBCAAGBQJUtQqWAAoJECTWi3JdVIfQSoUH/1sj50hOaBrYTu8poPNwPRk3
-u/QQIMp3b4UU6i8qI7eugR2xzV8DdBYE4mQWUMznGeBpL/7Msh8ShpcYJ1SX1hab
-vWmpvtFx6YgVt11Q9J5HktbIVChKdSUhOHzSsAG8/WxbTc1yjUtZd+WO2WjQ/fmj
-/lPULbbZUBH3ZXSmM56yvlDDk5owvFydDMaVUl35v44LvFZqj+pjhUBGG1r8EpYe
-Jlb3uvMO6EXy1PwdNOldjNcGjcKc5bYmTFQs65FcbbwCEe+9HPRcDL9w2k8ay2Wb
-xIjS9Ep5w4oZiV1XHJYs+8WdS4rqr98HPCP2uYrk3E1Nuce4lktKIShKPvTerZM=
-=cCvM
------END PGP SIGNATURE-----
-
---Bi+HF1AHjw0mn3zx--
