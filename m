@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754AbbAMOos (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 09:44:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36985 "EHLO mx1.redhat.com"
+	id S1752780AbbAMOot (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 09:44:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41468 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752453AbbAMOnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 09:43:31 -0500
-Date: Tue, 13 Jan 2015 16:43:18 +0200
+	id S1751318AbbAMOn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 09:43:28 -0500
+Date: Tue, 13 Jan 2015 16:43:21 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Amit Shah <amit.shah@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH 3/6] virtio/console: verify device has config space
-Message-ID: <1421160167-18498-4-git-send-email-mst@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: [PATCH 4/6] virtio/net: verify device has config space
+Message-ID: <1421160167-18498-5-git-send-email-mst@redhat.com>
 References: <1421160167-18498-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -26,21 +25,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Some devices might not implement config space access
 (e.g. remoteproc used not to - before 3.9).
-virtio/console needs config space access so make it
+virtio/net needs config space access so make it
 fail gracefully if not there.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/char/virtio_console.c | 6 ++++++
+ drivers/net/virtio_net.c | 6 ++++++
  1 file changed, 6 insertions(+)
 
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index de03df9..26afb56 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -1986,6 +1986,12 @@ static int virtcons_probe(struct virtio_device *vdev)
- 	bool multiport;
- 	bool early = early_put_chars != NULL;
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 5ca9771..9bc1072 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1713,6 +1713,12 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 	struct virtnet_info *vi;
+ 	u16 max_queue_pairs;
  
 +	if (!vdev->config->get) {
 +		dev_err(&vdev->dev, "%s failure: config access disabled\n",
@@ -48,8 +47,8 @@ index de03df9..26afb56 100644
 +		return -EINVAL;
 +	}
 +
- 	/* Ensure to read early_put_chars now */
- 	barrier();
+ 	if (!virtnet_validate_features(vdev))
+ 		return -EINVAL;
  
 -- 
 MST
