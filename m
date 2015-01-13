@@ -1,105 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903AbbAMNro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 08:47:44 -0500
-Received: from exprod5og106.obsmtp.com ([64.18.0.182]:40243 "EHLO
-	exprod5og106.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752611AbbAMNrn (ORCPT
+	id S1752453AbbAMNnt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 08:43:49 -0500
+Received: from us01smtprelay-2.synopsys.com ([198.182.47.9]:38982 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063AbbAMNnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 08:47:43 -0500
-X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Jan 2015 08:47:42 EST
-From: Semen Protsenko <semen.protsenko@globallogic.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Marc Zyngier <maz@misterjones.org>,
-        Grygorii Strashko <grygorii.strashko@globallogic.com>,
-        Illia Smyrnov <illia.smyrnov@globallogic.com>
-Subject: [PATCH 4/4] gpio: max732x: Add DT binding documentation
-Date: Tue, 13 Jan 2015 15:41:45 +0200
-Message-Id: <1421156505-16600-5-git-send-email-semen.protsenko@globallogic.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1421156505-16600-1-git-send-email-semen.protsenko@globallogic.com>
-References: <1421156505-16600-1-git-send-email-semen.protsenko@globallogic.com>
+	Tue, 13 Jan 2015 08:43:47 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: <acme@redhat.com>, <namhyung@kernel.org>, <jolsa@kernel.org>
+CC: <peterz@infradead.org>, <mingo@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-perf-users@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        <Alexey.Brodkin@synopsys.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: [PATCH v3 0/5] Perf tool fixes for ARC + uClibc
+Date: Tue, 13 Jan 2015 19:13:19 +0530
+Message-ID: <1421156604-30603-1-git-send-email-vgupta@synopsys.com>
+X-Mailer: git-send-email 1.9.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.12.196.223]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a devicetree binding documentation for the max732x driver.
+Hi,
 
-Signed-off-by: Semen Protsenko <semen.protsenko@globallogic.com>
----
- .../devicetree/bindings/gpio/gpio-max732x.txt      |   59 ++++++++++++++++++++
- 1 file changed, 59 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-max732x.txt
+This series based off linux-next of 20150105 allows us to build/use perf
+for ARC with uClibc based userland.
 
-diff --git a/Documentation/devicetree/bindings/gpio/gpio-max732x.txt b/Documentation/devicetree/bindings/gpio/gpio-max732x.txt
-new file mode 100644
-index 0000000..5fdc843
---- /dev/null
-+++ b/Documentation/devicetree/bindings/gpio/gpio-max732x.txt
-@@ -0,0 +1,59 @@
-+* MAX732x-compatible I/O expanders
-+
-+Required properties:
-+  - compatible: Should be one of the following:
-+    - "maxim,max7319": For the Maxim MAX7319
-+    - "maxim,max7320": For the Maxim MAX7320
-+    - "maxim,max7321": For the Maxim MAX7321
-+    - "maxim,max7322": For the Maxim MAX7322
-+    - "maxim,max7323": For the Maxim MAX7323
-+    - "maxim,max7324": For the Maxim MAX7324
-+    - "maxim,max7325": For the Maxim MAX7325
-+    - "maxim,max7326": For the Maxim MAX7326
-+    - "maxim,max7327": For the Maxim MAX7327
-+  - reg: I2C slave address for this device.
-+  - gpio-controller: Marks the device node as a GPIO controller.
-+  - #gpio-cells: Should be 2.
-+    - first cell is the GPIO number
-+    - second cell specifies GPIO flags, as defined in <dt-bindings/gpio/gpio.h>.
-+      Only the GPIO_ACTIVE_HIGH and GPIO_ACTIVE_LOW flags are supported.
-+
-+Optional properties:
-+
-+  The I/O expander can detect input state changes, and thus optionally act as
-+  an interrupt controller. When the expander interrupt line is connected all the
-+  following properties must be set. For more information please see the
-+  interrupt controller device tree bindings documentation available at
-+  Documentation/devicetree/bindings/interrupt-controller/interrupts.txt.
-+
-+  - interrupt-controller: Identifies the node as an interrupt controller.
-+  - #interrupt-cells: Number of cells to encode an interrupt source, shall be 2.
-+    - first cell is the pin number
-+    - second cell is used to specify flags
-+  - interrupt-parent: phandle of the parent interrupt controller.
-+  - interrupts: Interrupt specifier for the controllers interrupt.
-+
-+Please refer to gpio.txt in this directory for details of the common GPIO
-+bindings used by client devices.
-+
-+Example 1. MAX7325 with interrupt support enabled (CONFIG_GPIO_MAX732X_IRQ=y):
-+
-+	expander: max7325@6d {
-+		compatible = "maxim,max7325";
-+		reg = <0x6d>;
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+		interrupt-parent = <&gpio4>;
-+		interrupts = <29 IRQ_TYPE_EDGE_FALLING>;
-+	};
-+
-+Example 2. MAX7325 with interrupt support disabled (CONFIG_GPIO_MAX732X_IRQ=n):
-+
-+	expander: max7325@6d {
-+		compatible = "maxim,max7325";
-+		reg = <0x6d>;
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
+v3: Changes since v2 [2]
+* 1/5	: Ack from Jiri
+* 2/5	: no changes
+* 3/5	: sys/syscall.h included	  [Jiri]
+* 4/5	: no changes
+* 5/5	: -lpthread added to link target  [Jiri]
+* {1,5} : Changelog updated so scissor lines don't start at column 1
+
+v2: Change since v1 [1]
+* [1-3]/5 : no changes
+* 4/5     : Make perf_evsel__alloc_id agnostic of zero threads [Namhyung Kim]
+* 5/5     : Add missing test file
+
+v1:
+* 1/5 is really a resend of old patch posted by Alexey a while back
+* 2/5 is uClibc build spew seen on ARM as well
+* 3/5 likewise
+* 4/5 is uClibc config specific
+* 5/5 is uClibc pthread library flavour specific
+  It adds a stub for pthread_attr_setaffinity_np
+  I can rework it to disable the futex tests altogether if people think that is
+  cleaner
+
+Please review and consider applying.
+W/o these perf doesn't build and/or work for ARC.
+
+[1] http://www.spinics.net/linux/lists/kernel/msg1897268.html
+[2] http://www.spinics.net/linux/lists/kernel/msg1900706.html
+
+Thx,
+-Vineet
+
+
+Alexey Brodkin (1):
+  perf tools: [uclibc] fix statfs.f_type data type mismatch build error
+
+Vineet Gupta (4):
+  perf tools: [uclibc] Elide strlcpy warning
+  perf tools: [uclibc] Avoid build splat for syscall numbers
+  perf tools: [uclibc] don't rely on glibc malloc working for sz 0
+  perf tools: [uclibc] provide stub for pthread_attr_setaffinity_np
+
+ tools/lib/api/fs/debugfs.c                                 |  2 +-
+ tools/lib/api/fs/fs.c                                      |  2 +-
+ tools/perf/bench/futex.h                                   | 13 +++++++++++++
+ tools/perf/bench/sched-pipe.c                              |  2 +-
+ tools/perf/builtin-top.c                                   |  1 -
+ tools/perf/config/Makefile                                 |  6 ++++++
+ tools/perf/config/feature-checks/Makefile                  |  4 ++++
+ tools/perf/config/feature-checks/test-all.c                |  5 +++++
+ .../feature-checks/test-pthread-attr-setaffinity-np.c      | 14 ++++++++++++++
+ tools/perf/perf-sys.h                                      |  1 -
+ tools/perf/util/cache.h                                    |  2 ++
+ tools/perf/util/evsel.c                                    |  3 +++
+ 12 files changed, 50 insertions(+), 5 deletions(-)
+ create mode 100644 tools/perf/config/feature-checks/test-pthread-attr-setaffinity-np.c
+
 -- 
-1.7.9.5
+1.9.1
 
