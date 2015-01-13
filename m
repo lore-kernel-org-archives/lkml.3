@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686AbbAMM1o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 07:27:44 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:36810 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752065AbbAMM1b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752541AbbAMM1b (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 13 Jan 2015 07:27:31 -0500
-Date: Tue, 13 Jan 2015 12:27:15 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Jean-Francois Moine <moinejf@free.fr>,
-        Andrew Jackson <Andrew.Jackson@arm.com>, Jyri Sarha <jsarha@ti.com>,
-        Mark Brown <broonie@kernel.org>, Dave Airlie <airlied@gmail.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v9 1/4] drm/i2c: tda998x: Add DT support for audio
-Message-ID: <20150113122715.GP12302@n2100.arm.linux.org.uk>
-References: <20150109145741.GP12302@n2100.arm.linux.org.uk>
- <20150109183857.53d701a4@armhf>
- <20150109200127.GD12302@n2100.arm.linux.org.uk>
- <1421054728.3081.28.camel@pengutronix.de>
- <20150112122527.GF12302@n2100.arm.linux.org.uk>
- <1421071197.3081.44.camel@pengutronix.de>
- <20150112140456.GI12302@n2100.arm.linux.org.uk>
- <20150112181341.4a53ea24@armhf>
- <20150112175705.GN12302@n2100.arm.linux.org.uk>
- <1421151718.4519.24.camel@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421151718.4519.24.camel@pengutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Received: from down.free-electrons.com ([37.187.137.238]:33565 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751819AbbAMM1a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 07:27:30 -0500
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Mark Brown <broonie@kernel.org>, Bo Shen <voice.shen@atmel.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH] Asoc: sam9x5_wm8731: depend on ARCH_AT91 instead of SOC_AT91SAM9X5
+Date: Tue, 13 Jan 2015 13:27:26 +0100
+Message-Id: <1421152046-20069-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 01:21:58PM +0100, Philipp Zabel wrote:
-> I wonder if it wouldn't be nicer to have the AP# and type in the device
-> tree and then calculate the register value from that in the driver.
-> 
-> 	port@1 {
-> 		reg = <1>; /* AP1 */
-> 		nxp,audio-port = "i2s";
-> 		tda998x_i2s: endpoint {
-> 			remote-endpoint = <&audio1_i2s>;
-> 		};
-> 	};
+The SOC_AT91SAM9X5 option is going to be removed, only depend on ARCH_AT91 like
+for the other drivers.
 
-What about the case where we have 4 I2S streams being supplied to the
-device on four separate AP inputs?
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ sound/soc/atmel/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/sound/soc/atmel/Kconfig b/sound/soc/atmel/Kconfig
+index fb3878312bf8..1579e994acf8 100644
+--- a/sound/soc/atmel/Kconfig
++++ b/sound/soc/atmel/Kconfig
+@@ -45,7 +45,7 @@ config SND_ATMEL_SOC_WM8904
+ 
+ config SND_AT91_SOC_SAM9X5_WM8731
+ 	tristate "SoC Audio support for WM8731-based at91sam9x5 board"
+-	depends on ATMEL_SSC && SND_ATMEL_SOC && SOC_AT91SAM9X5
++	depends on ARCH_AT91 && ATMEL_SSC && SND_ATMEL_SOC
+ 	select SND_ATMEL_SOC_SSC
+ 	select SND_ATMEL_SOC_DMA
+ 	select SND_SOC_WM8731
 -- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
+2.1.0
+
