@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243AbbAMRNh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 12:13:37 -0500
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:52801 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752291AbbAMRNf (ORCPT
+	id S1753285AbbAMRN6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 12:13:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49099 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640AbbAMRN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 12:13:35 -0500
-Message-ID: <1421169212.15397.22.camel@x220>
-Subject: Re: [PATCH] headers_check: don't warn about kexec.h
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Geoff Levand <geoff@infradead.org>, Michal Marek <mmarek@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Date: Tue, 13 Jan 2015 18:13:32 +0100
-In-Reply-To: <12825174.7oxZXDxNhV@wuerfel>
-References: <12825174.7oxZXDxNhV@wuerfel>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Jan 2015 17:13:32.0448 (UTC) FILETIME=[41FB2200:01D02F54]
-X-RcptDomain: vger.kernel.org
+	Tue, 13 Jan 2015 12:13:57 -0500
+Date: Tue, 13 Jan 2015 09:13:54 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Emrys Bayliss <emrys@paradise.net.nz>
+Cc: forest@alittletooquiet.net, tvboxspy@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: vt6656: Code cleanup: remove unreachable return
+Message-ID: <20150113171354.GB12822@kroah.com>
+References: <1421168860-30054-1-git-send-email-emrys@paradise.net.nz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421168860-30054-1-git-send-email-emrys@paradise.net.nz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
-
-On Tue, 2015-01-13 at 17:19 +0100, Arnd Bergmann wrote:
-> We've been getting this warning for ages:
+On Wed, Jan 14, 2015 at 04:07:40AM +1100, Emrys Bayliss wrote:
+> This patch removes an unnecessary return statement that cannot be reached.
 > 
-> ./usr/include/linux/kexec.h:61: userspace cannot reference function or variable defined in the kernel
+> Signed-off-by: Emrys Bayliss <emrys@paradise.net.nz>
+> ---
+>  drivers/staging/vt6656/rxtx.c | 2 --
+>  1 file changed, 2 deletions(-)
 > 
-> There is no proper fix for this file, as the declaration is meant for
-> user space, not for the kernel, so we should work around it the
-> same way that we treat the seqbuf_dump() definition.
-
-For the seqbuf_dump() stuff there are apparently users. I forgot the
-details, but the sound people wanted to keep that declaration (and some
-related ancient things) in the header involved to keep some really
-ancient stuff buildable.
-
-But the kexec_load declaration isn't very useful for userspace, see the
-patch I submitted in
-http://lkml.kernel.org/r/1389791824.17407.9.camel@x220 . And After my
-attempt the export of that declaration has also been discussed in
-http://lkml.kernel.org/r/115373b6ac68ee7a305975896e1c4971e8e51d4c.1408731991.git.geoff@infradead.org 
-
-In that last discussion no one has been able to point to an actual user
-of it. So, as far as I can tell, no one actually uses it. Which makes
-sense, because including this header by itself doesn't give one access
-to a useful definition of kexec_load. So why bother with the
-declaration?
-
-The last time that Geoff has been trying to get that patch applied
-should be
-http://lkml.kernel.org/r/b0702fc4186db21820d686e89afd6480560823db.1415837218.git.geoff@infradead.org  I'd rather see that go in.
-
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> 
-> diff --git a/scripts/headers_check.pl b/scripts/headers_check.pl
-> index 62320f93e903..fb051848667c 100755
-> --- a/scripts/headers_check.pl
-> +++ b/scripts/headers_check.pl
-> @@ -69,6 +69,10 @@ sub check_declarations
->  	if ($line =~ m/^void seqbuf_dump\(void\);/) {
->  		return;
+> diff --git a/drivers/staging/vt6656/rxtx.c b/drivers/staging/vt6656/rxtx.c
+> index ea5140a..0cce140 100644
+> --- a/drivers/staging/vt6656/rxtx.c
+> +++ b/drivers/staging/vt6656/rxtx.c
+> @@ -574,8 +574,6 @@ static u16 vnt_fill_cts_head(struct vnt_usb_send_context *tx_context,
+>  
+>  		return vnt_rxtx_datahead_g(tx_context, &buf->data_head);
 >  	}
-> +	# user-only declaration from kexec.h
-> +	if ($line =~ m/^extern int kexec_load/) {
-> +		return;
-> +	}
->  	if ($line =~ m/^(\s*extern|unsigned|char|short|int|long|void)\b/) {
->  		printf STDERR "$filename:$lineno: " .
->  			      "userspace cannot reference function or " .
+> -
+> -	return 0;
+>  }
+>  
+>  static u16 vnt_rxtx_rts(struct vnt_usb_send_context *tx_context,
+> -- 
+> 2.2.1
 
-Regards,
+You already sent this patch before and it was accepted, right?  If so,
+please always tell me, I have no short term memory for patches as I get
+1000 emails a day to deal with.  Always properly version your patches if
+you need/want it to superseed a previous patch.
 
+dropped from my queue due to confusion,
 
-Paul Bolle
-
+greg k-h
