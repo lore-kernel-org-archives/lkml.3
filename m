@@ -1,75 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752870AbbAMOrA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 09:47:00 -0500
-Received: from mga14.intel.com ([192.55.52.115]:4329 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751788AbbAMOq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 09:46:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,750,1413270000"; 
-   d="scan'208";a="636632732"
-Date: Tue, 13 Jan 2015 20:15:49 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Qais Yousef <qais.yousef@imgtec.com>, Takashi Iwai <tiwai@suse.de>
-Cc: alsa-devel@alsa-project.org, Jaroslav Kysela <perex@perex.cz>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ALSA: compress_driver.h: include sound/core.h explicitly
-Message-ID: <20150113144549.GC3085@intel.com>
-References: <1418989110-10011-1-git-send-email-qais.yousef@imgtec.com>
- <54B5048F.2070709@imgtec.com>
+	id S1752857AbbAMOpl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 09:45:41 -0500
+Received: from galahad.ideasonboard.com ([185.26.127.97]:49036 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752369AbbAMOph convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 09:45:37 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Niklas =?ISO-8859-1?Q?S=F6derlund?= <niso@kth.se>
+Cc: linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
+        devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
+        magnus.damm@gmail.com
+Subject: Re: [PATCH 3/4] ARM: shmobile: emev2: Add PFC information to emev2.dtsi
+Date: Tue, 13 Jan 2015 16:45:59 +0200
+Message-ID: <1701639.rHDfQqXMRy@avalon>
+User-Agent: KMail/4.14.3 (Linux/3.17.7-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <1418414497-23741-4-git-send-email-niso@kth.se>
+References: <1418414497-23741-1-git-send-email-niso@kth.se> <1418414497-23741-4-git-send-email-niso@kth.se>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54B5048F.2070709@imgtec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 11:42:07AM +0000, Qais Yousef wrote:
-> Ping
+Hi Niklas,
+
+Thank you for the patch.
+
+On Friday 12 December 2014 21:01:36 Niklas S�derlund wrote:
+> With this information all GPIOs can make use of the PFC functionality.
 > 
-> On 12/19/2014 11:38 AM, Qais Yousef wrote:
-> >Fixes the following compilation error:
-> >
-> >    include/sound/compress_driver.h: In function ‘snd_compr_drain_notify’:
-> >    include/sound/compress_driver.h:177:2: error: implicit declaration of function ‘snd_BUG_ON’ [-Werror=implicit-function-declaration]
-> >      if (snd_BUG_ON(!stream))
-> >
-> >snd_BUG_ON() is defined in sound/core.h but the file is not included explicitly,
-> >so include it.
-> >
-> >Signed-off-by: Qais Yousef <qais.yousef@imgtec.com>
-> >Cc: Vinod Koul <vinod.koul@intel.com>
-> >Cc: Jaroslav Kysela <perex@perex.cz>
-> >Cc: Takashi Iwai <tiwai@suse.de>
-> >Cc: linux-kernel@vger.kernel.org
-> >
-Looks okay to me
-
-Acked-by: Vinod Koul <vinod.koul@intel.com>
-
-Thanks
--- 
-~Vinod
-
-> >---
-> >  include/sound/compress_driver.h | 1 +
-> >  1 file changed, 1 insertion(+)
-> >
-> >diff --git a/include/sound/compress_driver.h b/include/sound/compress_driver.h
-> >index 396e8f73670a..1e2531058b7e 100644
-> >--- a/include/sound/compress_driver.h
-> >+++ b/include/sound/compress_driver.h
-> >@@ -27,6 +27,7 @@
-> >  #include <linux/types.h>
-> >  #include <linux/sched.h>
-> >+#include <sound/core.h>
-> >  #include <sound/compress_offload.h>
-> >  #include <sound/asound.h>
-> >  #include <sound/pcm.h>
+> Signed-off-by: Niklas S�derlund <niso@kth.se>
+> ---
+>  arch/arm/boot/dts/emev2.dtsi | 11 +++++++++++
+>  1 file changed, 11 insertions(+)
 > 
+> diff --git a/arch/arm/boot/dts/emev2.dtsi b/arch/arm/boot/dts/emev2.dtsi
+> index cc7bfe0..518b7fa 100644
+> --- a/arch/arm/boot/dts/emev2.dtsi
+> +++ b/arch/arm/boot/dts/emev2.dtsi
+> @@ -169,12 +169,19 @@
+>  		clock-names = "sclk";
+>  	};
+> 
+> +	pfc: pfc@e0140200 {
+> +		compatible = "renesas,pfc-emev2";
+> +		reg = <0xe0140200 0x14>, <0xe0140284 0xc>,
+> +			<0xe0140294 0x8>, <0xe01402a8 0x4>;
+
+I think a single reg entry set to <0xe0140200 0x100> should be enough.
+
+> +	};
+> +
+>  	gpio0: gpio@e0050000 {
+>  		compatible = "renesas,em-gio";
+>  		reg = <0xe0050000 0x2c>, <0xe0050040 0x20>;
+>  		interrupts = <0 67 IRQ_TYPE_LEVEL_HIGH>,
+>  			     <0 68 IRQ_TYPE_LEVEL_HIGH>;
+>  		gpio-controller;
+> +		gpio-ranges = <&pfc 0 0 32>;
+>  		#gpio-cells = <2>;
+>  		ngpios = <32>;
+>  		interrupt-controller;
+> @@ -186,6 +193,7 @@
+>  		interrupts = <0 69 IRQ_TYPE_LEVEL_HIGH>,
+>  			     <0 70 IRQ_TYPE_LEVEL_HIGH>;
+>  		gpio-controller;
+> +		gpio-ranges = <&pfc 0 32 32>;
+>  		#gpio-cells = <2>;
+>  		ngpios = <32>;
+>  		interrupt-controller;
+> @@ -197,6 +205,7 @@
+>  		interrupts = <0 71 IRQ_TYPE_LEVEL_HIGH>,
+>  			     <0 72 IRQ_TYPE_LEVEL_HIGH>;
+>  		gpio-controller;
+> +		gpio-ranges = <&pfc 0 64 32>;
+>  		#gpio-cells = <2>;
+>  		ngpios = <32>;
+>  		interrupt-controller;
+> @@ -208,6 +217,7 @@
+>  		interrupts = <0 73 IRQ_TYPE_LEVEL_HIGH>,
+>  			     <0 74 IRQ_TYPE_LEVEL_HIGH>;
+>  		gpio-controller;
+> +		gpio-ranges = <&pfc 0 96 32>;
+>  		#gpio-cells = <2>;
+>  		ngpios = <32>;
+>  		interrupt-controller;
+> @@ -219,6 +229,7 @@
+>  		interrupts = <0 75 IRQ_TYPE_LEVEL_HIGH>,
+>  			     <0 76 IRQ_TYPE_LEVEL_HIGH>;
+>  		gpio-controller;
+> +		gpio-ranges = <&pfc 0 128 32>;
+
+Shouldn't this be <&pfc 0 128 31>; ?
+
+>  		#gpio-cells = <2>;
+>  		ngpios = <31>;
+>  		interrupt-controller;
 
 -- 
+Regards,
+
+Laurent Pinchart
+
