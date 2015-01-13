@@ -1,58 +1,361 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233AbbAMLLv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 06:11:51 -0500
-Received: from casper.infradead.org ([85.118.1.10]:51216 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010AbbAMLLu (ORCPT
+	id S1751788AbbAMLOh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 06:14:37 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:38645 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000AbbAMLOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 06:11:50 -0500
-Date: Tue, 13 Jan 2015 12:11:46 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@codemonkey.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 06/10] time: Cap clocksource reads to the clocksource
- max_cycles value
-Message-ID: <20150113111146.GL23965@worktop.programming.kicks-ass.net>
-References: <1420850068-27828-1-git-send-email-john.stultz@linaro.org>
- <1420850068-27828-7-git-send-email-john.stultz@linaro.org>
+	Tue, 13 Jan 2015 06:14:34 -0500
+From: Kiran Raparthy <kiran.kumar@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Mike Chan <mike@android.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>, JP Abgrall <jpa@google.com>,
+        =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>,
+        Kiran Raparthy <kiran.kumar@linaro.org>
+Subject: [RFC 1/2] misc: uidstat: Add uid stat driver to collect network statistics.
+Date: Tue, 13 Jan 2015 16:44:01 +0530
+Message-Id: <1421147642-28360-1-git-send-email-kiran.kumar@linaro.org>
+X-Mailer: git-send-email 1.8.2.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420850068-27828-7-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 04:34:24PM -0800, John Stultz wrote:
-> When calculating the current delta since the last tick, we
-> currently have no hard protections to prevent a multiplciation
-> overflow from ocurring.
-> 
-> This patch introduces such a cap that limits the read delta
-> value to the max_cycles value, which is where an overflow would
-> occur.
+From: Mike Chan <mike@android.com>
 
-> +++ b/kernel/time/timekeeping.c
-> @@ -202,6 +202,9 @@ static inline s64 timekeeping_get_ns(struct tk_read_base *tkr)
->  	/* calculate the delta since the last update_wall_time: */
->  	delta = clocksource_delta(cycle_now, tkr->cycle_last, tkr->mask);
->  
-> +	/* Cap delta value to the max_cycles values to avoid mult overflows */
-> +	delta = min(delta, tkr->clock->max_cycles);
-> +
->  	nsec = delta * tkr->mult + tkr->xtime_nsec;
->  	nsec >>= tkr->shift;
->  
+misc: uidstat: Add uid stat driver to collect network statistics.
 
-So while I appreciate stuff can be broken, should we not at least keep
-track of this brokenness? That is, we all agree bad things happened IF
-we actually hit this, right? So should we then not inform people that
-bad things did happen?
+To analyze application's network statistics, we need a mechanism to export
+the UID based statistics to userspace so that userspace tools can use the
+exported numbers and generate the report against the UID.
+
+This patch allows the user to explore the UID based network statistics
+exported to /proc/uid_stat.
+
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
+cc: Mike Chan <mike@android.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Sumit Semwal <sumit.semwal@linaro.org>
+Cc: JP Abgrall <jpa@google.com>
+Cc: Arve Hjønnevåg <arve@android.com>
+Signed-off-by: Mike Chan <mike@android.com>
+[Kiran: Added context to commit message.
+included build fixes from JP Abgrall and Arve.
+Used single_release instead of seq_release.
+internally continued to use uid_t but used covnersion
+from kuid_t where ever necessary]
+Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+---
+ drivers/misc/Kconfig     |   7 +++
+ drivers/misc/Makefile    |   1 +
+ drivers/misc/uid_stat.c  | 157 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/uid_stat.h |  33 ++++++++++
+ net/ipv4/tcp.c           |  10 +++
+ 5 files changed, 208 insertions(+)
+ create mode 100644 drivers/misc/uid_stat.c
+ create mode 100644 include/linux/uid_stat.h
+
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index 006242c..1c79b94 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -402,6 +402,13 @@ config TI_DAC7512
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called ti_dac7512.
+ 
++config UID_STAT
++	bool "UID based statistics tracking"
++	default n
++	help
++	  This option allows to enable UID based network statistics tracking.
++	  statistics are exported to /proc/uid_stat.
++
+ config VMWARE_BALLOON
+ 	tristate "VMware Balloon Driver"
+ 	depends on X86 && HYPERVISOR_GUEST
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index 7d5c4cd..3754347 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -34,6 +34,7 @@ obj-$(CONFIG_ISL29020)		+= isl29020.o
+ obj-$(CONFIG_SENSORS_TSL2550)	+= tsl2550.o
+ obj-$(CONFIG_DS1682)		+= ds1682.o
+ obj-$(CONFIG_TI_DAC7512)	+= ti_dac7512.o
++obj-$(CONFIG_UID_STAT)		+= uid_stat.o
+ obj-$(CONFIG_C2PORT)		+= c2port/
+ obj-$(CONFIG_HMC6352)		+= hmc6352.o
+ obj-y				+= eeprom/
+diff --git a/drivers/misc/uid_stat.c b/drivers/misc/uid_stat.c
+new file mode 100644
+index 0000000..aaaa406
+--- /dev/null
++++ b/drivers/misc/uid_stat.c
+@@ -0,0 +1,157 @@
++/* drivers/misc/uid_stat.c
++ *
++ * Copyright (C) 2008 - 2009 Google, Inc.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/atomic.h>
++#include <linux/err.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/list.h>
++#include <linux/proc_fs.h>
++#include <linux/seq_file.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
++#include <linux/stat.h>
++#include <linux/uid_stat.h>
++
++static DEFINE_SPINLOCK(uid_lock);
++static LIST_HEAD(uid_list);
++static struct proc_dir_entry *parent;
++
++struct uid_stat {
++	struct list_head link;
++	uid_t uid;
++	atomic_t tcp_rcv;
++	atomic_t tcp_snd;
++};
++
++static struct uid_stat *find_uid_stat(uid_t uid)
++{
++	struct uid_stat *entry;
++
++	list_for_each_entry(entry, &uid_list, link) {
++		if (entry->uid == uid)
++			return entry;
++	}
++	return NULL;
++}
++
++static int uid_stat_atomic_int_show(struct seq_file *m, void *v)
++{
++	unsigned int bytes;
++	atomic_t *counter = m->private;
++
++	bytes = (unsigned int) (atomic_read(counter) + INT_MIN);
++	return seq_printf(m, "%u\n", bytes);
++}
++
++static int uid_stat_read_atomic_int_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, uid_stat_atomic_int_show, PDE_DATA(inode));
++}
++
++static const struct file_operations uid_stat_read_atomic_int_fops = {
++	.open		= uid_stat_read_atomic_int_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= single_release,
++};
++
++/* Create a new entry for tracking the specified uid. */
++static struct uid_stat *create_stat(uid_t uid)
++{
++	struct uid_stat *new_uid;
++	/* Create the uid stat struct and append it to the list. */
++	new_uid = kmalloc(sizeof(struct uid_stat), GFP_ATOMIC);
++	if (!new_uid)
++		return NULL;
++
++	new_uid->uid = uid;
++	/* Counters start at INT_MIN, so we can track 4GB of network traffic. */
++	atomic_set(&new_uid->tcp_rcv, INT_MIN);
++	atomic_set(&new_uid->tcp_snd, INT_MIN);
++
++	list_add_tail(&new_uid->link, &uid_list);
++	return new_uid;
++}
++
++static void create_stat_proc(struct uid_stat *new_uid)
++{
++	char uid_s[32];
++	struct proc_dir_entry *entry;
++
++	sprintf(uid_s, "%d", new_uid->uid);
++	entry = proc_mkdir(uid_s, parent);
++
++	/* Keep reference to uid_stat so we know what uid to read stats from. */
++	proc_create_data("tcp_snd", S_IRUGO, entry,
++			 &uid_stat_read_atomic_int_fops, &new_uid->tcp_snd);
++
++	proc_create_data("tcp_rcv", S_IRUGO, entry,
++			 &uid_stat_read_atomic_int_fops, &new_uid->tcp_rcv);
++}
++
++static struct uid_stat *find_or_create_uid_stat(kuid_t uid)
++{
++	struct uid_stat *entry;
++	unsigned long flags;
++	uid_t proc_uid;
++
++	proc_uid = from_kuid(&init_user_ns, uid);
++	spin_lock_irqsave(&uid_lock, flags);
++	entry = find_uid_stat(proc_uid);
++	if (entry) {
++		spin_unlock_irqrestore(&uid_lock, flags);
++		return entry;
++	}
++	entry = create_stat(proc_uid);
++	spin_unlock_irqrestore(&uid_lock, flags);
++	if (entry)
++		create_stat_proc(entry);
++	return entry;
++}
++
++int uid_stat_tcp_snd(kuid_t uid, int size)
++{
++	struct uid_stat *entry;
++
++	entry = find_or_create_uid_stat(uid);
++	if (!entry)
++		return -1;
++	atomic_add(size, &entry->tcp_snd);
++	return 0;
++}
++
++int uid_stat_tcp_rcv(kuid_t uid, int size)
++{
++	struct uid_stat *entry;
++
++	entry = find_or_create_uid_stat(uid);
++	if (!entry)
++		return -1;
++	atomic_add(size, &entry->tcp_rcv);
++	return 0;
++}
++
++static int __init uid_stat_init(void)
++{
++	parent = proc_mkdir("uid_stat", NULL);
++	if (!parent) {
++		pr_err("uid_stat: failed to create proc entry\n");
++		return -1;
++	}
++	return 0;
++}
++
++device_initcall(uid_stat_init);
+diff --git a/include/linux/uid_stat.h b/include/linux/uid_stat.h
+new file mode 100644
+index 0000000..68823d3
+--- /dev/null
++++ b/include/linux/uid_stat.h
+@@ -0,0 +1,33 @@
++/* include/linux/uid_stat.h
++ *
++ * Copyright (C) 2008-2009 Google, Inc.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef __uid_stat_h
++#define __uid_stat_h
++
++/* Contains definitions for resource tracking per uid. */
++
++#ifdef CONFIG_UID_STAT
++int uid_stat_tcp_snd(kuid_t uid, int size);
++int uid_stat_tcp_rcv(kuid_t uid, int size);
++#else
++static inline int uid_stat_tcp_snd(kuid_t uid, int size)
++{
++}
++static inline int uid_stat_tcp_rcv(kuid_t uid, int size)
++{
++}
++#endif
++
++#endif /* _LINUX_UID_STAT_H */
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 3075723..00eb156 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -268,6 +268,7 @@
+ #include <linux/crypto.h>
+ #include <linux/time.h>
+ #include <linux/slab.h>
++#include <linux/uid_stat.h>
+ 
+ #include <net/icmp.h>
+ #include <net/inet_common.h>
+@@ -1280,6 +1281,9 @@ out:
+ 		tcp_push(sk, flags, mss_now, tp->nonagle, size_goal);
+ out_nopush:
+ 	release_sock(sk);
++
++	if (copied + copied_syn)
++		uid_stat_tcp_snd(current_uid(), copied + copied_syn);
+ 	return copied + copied_syn;
+ 
+ do_fault:
+@@ -1551,6 +1555,7 @@ int tcp_read_sock(struct sock *sk, read_descriptor_t *desc,
+ 	if (copied > 0) {
+ 		tcp_recv_skb(sk, seq, &offset);
+ 		tcp_cleanup_rbuf(sk, copied);
++		uid_stat_tcp_rcv(current_uid(), copied);
+ 	}
+ 	return copied;
+ }
+@@ -1879,6 +1884,9 @@ skip_copy:
+ 	tcp_cleanup_rbuf(sk, copied);
+ 
+ 	release_sock(sk);
++
++	if (copied > 0)
++		uid_stat_tcp_rcv(current_uid(), copied);
+ 	return copied;
+ 
+ out:
+@@ -1887,6 +1895,8 @@ out:
+ 
+ recv_urg:
+ 	err = tcp_recv_urg(sk, msg, len, flags);
++	if (err > 0)
++		uid_stat_tcp_rcv(current_uid(), err);
+ 	goto out;
+ 
+ recv_sndq:
+-- 
+1.8.2.1
+
