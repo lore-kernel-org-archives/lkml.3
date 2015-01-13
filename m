@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388AbbAMUmE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 15:42:04 -0500
-Received: from mta-out1.inet.fi ([62.71.2.227]:38897 "EHLO jenni2.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752291AbbAMUmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 15:42:01 -0500
-Date: Tue, 13 Jan 2015 22:41:44 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@openvz.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm: rename mm->nr_ptes to mm->nr_pgtables
-Message-ID: <20150113204144.GA1865@node.dhcp.inet.fi>
-References: <1421176456-21796-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1421176456-21796-2-git-send-email-kirill.shutemov@linux.intel.com>
- <54B581C7.50206@linux.intel.com>
+	id S1753488AbbAMUmj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 15:42:39 -0500
+Received: from www.linutronix.de ([62.245.132.108]:47196 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192AbbAMUmi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 15:42:38 -0500
+Date: Tue, 13 Jan 2015 21:42:18 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Xunlei Pang <xlpang@126.com>
+cc: linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Xunlei Pang <pang.xunlei@linaro.org>
+Subject: Re: [RFC PATCH v2 2/9] time: Provide y2106 safe get_seconds()
+ replacement
+In-Reply-To: <1421163897-8020-3-git-send-email-xlpang@126.com>
+Message-ID: <alpine.DEB.2.11.1501132138440.5526@nanos>
+References: <1421163897-8020-1-git-send-email-xlpang@126.com> <1421163897-8020-3-git-send-email-xlpang@126.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54B581C7.50206@linux.intel.com>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 12:36:23PM -0800, Dave Hansen wrote:
-> On 01/13/2015 11:14 AM, Kirill A. Shutemov wrote:
-> >  	pgd_t * pgd;
-> >  	atomic_t mm_users;			/* How many users with user space? */
-> >  	atomic_t mm_count;			/* How many references to "struct mm_struct" (users count as 1) */
-> > -	atomic_long_t nr_ptes;			/* Page table pages */
-> > +	atomic_long_t nr_pgtables;		/* Page table pages */
-> >  	int map_count;				/* number of VMAs */
-> 
-> One more crazy idea...
-> 
-> There are 2^9 possible pud pages, 2^18 pmd pages and 2^27 pte pages.
-> That's only 54 bits (technically minus one bit each because the upper
-> half of the address space is for the kernel).
+On Tue, 13 Jan 2015, Xunlei Pang wrote:
 
-Does this math make sense for all architecures? IA64? Power?
+> From: Xunlei Pang <pang.xunlei@linaro.org>
+> 
+> As part of addressing "y2038 problem" for in-kernel uses, this
+> patch adds safe get_seconds64() using time64_t.
+> 
+> After this patch, get_seconds() is deprecated and all its call sites
+> will be fixed using get_seconds64(), after that it can be removed.
 
--- 
- Kirill A. Shutemov
+Why another interface?
+
+We already have ktime_get_real_seconds(). That handles 32bit
+correctly, while your new function does not.
+
+You cannot return a 64bit value unprotected against updates on 32bit,
+unless you want to implement a RNG.
+
+Thanks,
+
+	tglx
+
+
