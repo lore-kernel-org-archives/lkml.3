@@ -1,128 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752495AbbAMN5O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 08:57:14 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:24062 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220AbbAMN5M (ORCPT
+	id S1751658AbbAMOEt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 09:04:49 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:59884 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031AbbAMOEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 08:57:12 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-84-54b52436d6b0
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: balbi@ti.com
-Cc: mina86@mina86.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        m.szyprowski@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH] tools: ffs-aio-example: use endpoint addresses from descriptors
-Date: Tue, 13 Jan 2015 14:56:28 +0100
-Message-id: <1421157388-18683-1-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEJMWRmVeSWpSXmKPExsVy+t9jAV0zla0hBp8f8FgcvF9vcXnXHDaL
-	RctamS3WHrnLbrHgeAurxYPDO9kd2DzW/XnF5NG3ZRWjx/Eb25k8Pm+SC2CJ4rJJSc3JLEst
-	0rdL4Mpo+T+LraBbomJp00HmBsbZIl2MnBwSAiYSm96dZoKwxSQu3FvP1sXIxSEksIhRYtGP
-	96wQTjuTxMQ7L1lBqtgEdCS2fJ/ACGKLCAhIrH9xiR2kiFlgEqPEtfYDzCAJYYEAiXszjrOA
-	2CwCqhIrv3WDxXkFXCV+f/sPtU5O4uSxyawTGLkXMDKsYhRNLUguKE5KzzXSK07MLS7NS9dL
-	zs/dxAgOiWfSOxhXNVgcYhTgYFTi4RXI2xIixJpYVlyZe4hRgoNZSYT3v8DWECHelMTKqtSi
-	/Pii0pzU4kOM0hwsSuK8SvZtIUIC6YklqdmpqQWpRTBZJg5OqQZG5bXpivlVD5cxn1sXX8Qy
-	d88s909BJyxFlv/2uuFkFaVbveFGXPAa3197V50t2fmaUeGryIeOGVM+CQTbOebnNn0WimB2
-	+TEpsO+/1Sfx0AnWezdObOxce/70GnnjtifVk412x0go/hDl2D57hry0yjVX82mbNoQZSXnc
-	0pq+hc8lK1Kd+2yIEktxRqKhFnNRcSIAZmsohQUCAAA=
+	Tue, 13 Jan 2015 09:04:48 -0500
+Date: Tue, 13 Jan 2015 15:04:36 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: Juri Lelli <juri.lelli@arm.com>, Luca Abeni <luca.abeni@unitn.it>,
+        Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
+Subject: Re: Another SCHED_DEADLINE bug (with bisection and possible fix)
+Message-ID: <20150113140436.GI25256@twins.programming.kicks-ass.net>
+References: <20141230002738.6c12db31@utopia>
+ <2629881420411885@web9m.yandex.ru>
+ <54AAABFB.3060109@unitn.it>
+ <1420499241.3361.14.camel@yandex.ru>
+ <20150107080155.1d42d123@luca-1225C>
+ <1420633741.12772.10.camel@yandex.ru>
+ <54B4D2DF.9010308@arm.com>
+ <4500351421141200@web2m.yandex.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4500351421141200@web2m.yandex.ru>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes examples more platform independent and more compatible with
-USB standard, as endpoint addresses in given interface may differ
-between hardware platforms or even between configurations in single
-USB device.
+On Tue, Jan 12, 2015 at 12:26:40PM +0300, Kirill Tkhai wrote:
+> > Well, I'm inclined to agree to Luca's viewpoint. We should not change
+> > parameters of a throttled task or we may affect other tasks.
+> 
+> Could you explain your viewpoint more? How does this affects other tasks?
 
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
----
- tools/usb/ffs-aio-example/multibuff/host_app/test.c | 14 ++++++++------
- tools/usb/ffs-aio-example/simple/host_app/test.c    | 17 ++++++++++-------
- 2 files changed, 18 insertions(+), 13 deletions(-)
+I agree with Juri and Luca here. Luca gave an example that DoS's
+SCHED_DEADLINE.
 
-diff --git a/tools/usb/ffs-aio-example/multibuff/host_app/test.c b/tools/usb/ffs-aio-example/multibuff/host_app/test.c
-index daa3abe..2cbcce6 100644
---- a/tools/usb/ffs-aio-example/multibuff/host_app/test.c
-+++ b/tools/usb/ffs-aio-example/multibuff/host_app/test.c
-@@ -33,11 +33,6 @@
- #define VENDOR	0x1d6b
- #define PRODUCT	0x0105
- 
--/* endpoints indexes */
--
--#define EP_BULK_IN	(1 | LIBUSB_ENDPOINT_IN)
--#define EP_BULK_OUT	(2 | LIBUSB_ENDPOINT_OUT)
--
- #define BUF_LEN		8192
- 
- /*
-@@ -159,14 +154,21 @@ void test_exit(struct test_state *state)
- int main(void)
- {
- 	struct test_state state;
-+	struct libusb_config_descriptor *conf;
-+	struct libusb_interface_descriptor const *iface;
-+	unsigned char addr;
- 
- 	if (test_init(&state))
- 		return 1;
- 
-+	libusb_get_config_descriptor(state.found, 0, &conf);
-+	iface = &conf->interface[0].altsetting[0];
-+	addr = iface->endpoint[0].bEndpointAddress;
-+
- 	while (1) {
- 		static unsigned char buffer[BUF_LEN];
- 		int bytes;
--		libusb_bulk_transfer(state.handle, EP_BULK_IN, buffer, BUF_LEN,
-+		libusb_bulk_transfer(state.handle, addr, buffer, BUF_LEN,
- 				     &bytes, 500);
- 	}
- 	test_exit(&state);
-diff --git a/tools/usb/ffs-aio-example/simple/host_app/test.c b/tools/usb/ffs-aio-example/simple/host_app/test.c
-index acd6332..aed86ff 100644
---- a/tools/usb/ffs-aio-example/simple/host_app/test.c
-+++ b/tools/usb/ffs-aio-example/simple/host_app/test.c
-@@ -33,11 +33,6 @@
- #define VENDOR	0x1d6b
- #define PRODUCT	0x0105
- 
--/* endpoints indexes */
--
--#define EP_BULK_IN	(1 | LIBUSB_ENDPOINT_IN)
--#define EP_BULK_OUT	(2 | LIBUSB_ENDPOINT_OUT)
--
- #define BUF_LEN		8192
- 
- /*
-@@ -159,16 +154,24 @@ void test_exit(struct test_state *state)
- int main(void)
- {
- 	struct test_state state;
-+	struct libusb_config_descriptor *conf;
-+	struct libusb_interface_descriptor const *iface;
-+	unsigned char in_addr, out_addr;
- 
- 	if (test_init(&state))
- 		return 1;
- 
-+	libusb_get_config_descriptor(state.found, 0, &conf);
-+	iface = &conf->interface[0].altsetting[0];
-+	in_addr = iface->endpoint[0].bEndpointAddress;
-+	out_addr = iface->endpoint[1].bEndpointAddress;
-+
- 	while (1) {
- 		static unsigned char buffer[BUF_LEN];
- 		int bytes;
--		libusb_bulk_transfer(state.handle, EP_BULK_IN, buffer, BUF_LEN,
-+		libusb_bulk_transfer(state.handle, in_addr, buffer, BUF_LEN,
- 				     &bytes, 500);
--		libusb_bulk_transfer(state.handle, EP_BULK_OUT, buffer, BUF_LEN,
-+		libusb_bulk_transfer(state.handle, out_addr, buffer, BUF_LEN,
- 				     &bytes, 500);
- 	}
- 	test_exit(&state);
--- 
-1.9.1
+In Luca's example we'd constantly call sched_setattr() on a task, which
+results in it never throttling and that will affect other tasks, because
+if we're running, they cannot be.
 
+> As I understand, in __setparam_dl() we are sure that there is enough
+> dl_bw. In __sched_setscheduler() we call it after dl_overflow() check.
+
+Yes, _but_, as per the above. BW includes the sleep time, if we fail to
+sleep its all pointless.
+
+We got the runtime (before the throttle) under the promise that we'd go
+sleep. When we change our parameters while being throttled we should
+adjust the throttle time accordingly. If say we changed from 30% to 35%
+we are allowed to sleep less. Now sleeping more than strictly required
+is only detrimental to ourselves, so that is not (too) critical.
+
+However, the other way around, if we change from 35% to 30% we should
+now effectively sleep longer (for the same runtime we already consumed),
+and we must do this, because admission control will instantly assume the
+5% change in bandwidth to be available. If we sleep short, this BW is
+not in fact available and we break our guarantees.
+
+> >>>  Anyway, I am fine with every patch that fixes the bug :)
+> >>  Deadline class requires root privileges. So, I do not see a problem
+> >>  here. Please, see __sched_setscheduler().
+
+Its not a priv issue, not doing this makes it impossible to use
+SCHED_DEADLINE in the intended way, even for root.
+
+Say we have a userspace task that evaluates and changes runtime
+parameters for other tasks (basically what Luca is doing IIRC), and the
+changes keep resetting the sleep time, the whole guarantee system comes
+down, rendering the deadline system useless.
+
+> >>  If in the future we allow non-privileged users to increase deadline,
+> >>  we will reflect that in __setparam_dl() too.
+> >
+> > I'd say it is better to implement the right behavior even for root, so
+> > that we will find it right when we'll grant access to non root users
+> > too. Also, even if root can do everything, we always try not to break
+> > guarantees that come with admission control (root or non root that is).
+
+Just so.
