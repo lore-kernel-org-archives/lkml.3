@@ -1,40 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612AbbAMWZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 17:25:28 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:36795 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034AbbAMWZ0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 17:25:26 -0500
-Date: Tue, 13 Jan 2015 17:25:23 -0500 (EST)
-Message-Id: <20150113.172523.1612644763021758959.davem@davemloft.net>
-To: sasha.levin@oracle.com
-Cc: linux-kernel@vger.kernel.org, ying.xue@windriver.com, Tero.Aho@coriant.com,
-        jon.maloy@ericsson.com, allan.stephens@windriver.com,
-        netdev@vger.kernel.org, tipc-discussion@lists.sourceforge.net
-Subject: Re: [PATCH] tipc: correctly handle releasing a not fully
- initialized sock
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1421171201-25224-1-git-send-email-sasha.levin@oracle.com>
-References: <1421171201-25224-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1753687AbbAMW0o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 17:26:44 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65277 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751557AbbAMW0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 17:26:42 -0500
+Message-ID: <54B59B9E.4000806@nod.at>
+Date: Tue, 13 Jan 2015 23:26:38 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@infradead.org>
+CC: user-mode-linux-devel@lists.sourceforge.net, dxld@darkboxed.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] hostfs: Use noop_fsync for directories
+References: <1421187358-32600-1-git-send-email-richard@nod.at> <20150113221958.GA27739@infradead.org>
+In-Reply-To: <20150113221958.GA27739@infradead.org>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 13 Jan 2015 14:25:25 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sasha Levin <sasha.levin@oracle.com>
-Date: Tue, 13 Jan 2015 12:46:41 -0500
-
-> Commit "tipc: make tipc node table aware of net namespace" has added a
-> dereference of sock->sk before making sure it's not NULL, which makes
-> releasing a tipc socket NULL pointer dereference for sockets that are
-> not fully initialized.
+Am 13.01.2015 um 23:19 schrieb Christoph Hellwig:
+> On Tue, Jan 13, 2015 at 11:15:58PM +0100, Richard Weinberger wrote:
+>> Daniel reported that dpkg(1) dies if the root filesystem is a hostfs
+>> because it does not expect fsync(2) to fail with EINVAL on directories.
+>> While fsync(2) is allowed to fail with EINVAL if the filesystem does not
+>> support it we can do better and use noop_fsync() to not confuse userspace
+>> further.
 > 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> Shouldn't hostfs pass the fsync through to the host filesystem?
 
-Good catch, applied, thanks.
+hostfs tries do reduce the amount of syscall between guest and host as much
+as possible. For file operations it passes everything down to the host but
+for directory operations only ->iterate() does.
+
+It is already horrible slow, if we add an ->open() for directory too it would
+get even more slower. :-(
+
+Thanks,
+//richard
