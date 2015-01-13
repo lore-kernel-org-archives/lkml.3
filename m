@@ -1,90 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284AbbAMNUH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 08:20:07 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:55110 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416AbbAMNUF (ORCPT
+	id S1752409AbbAMNVH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 08:21:07 -0500
+Received: from mout.kundenserver.de ([212.227.17.10]:54578 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093AbbAMNVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 08:20:05 -0500
-From: Jeff Layton <jeff.layton@primarydata.com>
-X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
-Date: Tue, 13 Jan 2015 08:20:01 -0500
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Jeff Layton <jeff.layton@primarydata.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: fs: locks: WARNING: CPU: 16 PID: 4296 at fs/locks.c:236
- locks_free_lock_context+0x10d/0x240()
-Message-ID: <20150113082001.0fa0d723@tlielax.poochiereds.net>
-In-Reply-To: <54B4A909.9060206@oracle.com>
-References: <54B4A909.9060206@oracle.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
+	Tue, 13 Jan 2015 08:21:04 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: kernel-build-reports@lists.linaro.org
+Cc: Mark Brown <broonie@kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Vinod Koul <vinod.koul@intel.com>, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: -next build failures in k3dma.c
+Date: Tue, 13 Jan 2015 14:20:31 +0100
+Message-ID: <2546132.YsPQSK8ktD@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20150113120751.GQ4160@sirena.org.uk>
+References: <E1YAwSG-0000zm-Cs@debutante> <20150113120751.GQ4160@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:f3ta+3+N45Ax07bX8dxTeIFCRNnZ+lMzrjhPRPwGD9r8iffaYEe
+ ekvki/KxubrJaXdcW7nDflQ8x6pguBPsMH85g60WX1+QaNuQKjpRsyxnVx8bQWrgEb9ZSRK
+ LU+OesPfMvL9ChFBlm7rMZUdhzR8BhLXwIw2xCyxTOltSDNpprMv4p94rQb27QxDKeMDp6Q
+ bJIjAW2HrGyJS0FFjpzuw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jan 2015 00:11:37 -0500
-Sasha Levin <sasha.levin@oracle.com> wrote:
-
-> Hey Jeff,
+On Tuesday 13 January 2015 12:07:51 Mark Brown wrote:
+> On Tue, Jan 13, 2015 at 08:04:00AM +0000, Build bot for Mark Brown wrote:
 > 
-> While fuzzing with trinity inside a KVM tools guest running the latest -next
-> kernel, I've stumbled on the following spew:
+> > 	arm-allmodconfig
+> > ../drivers/dma/k3dma.c:823:12: error: conflicting types for 'k3_dma_resume'
 > 
-> [  887.078606] WARNING: CPU: 16 PID: 4296 at fs/locks.c:236 locks_free_lock_context+0x10d/0x240()
-> [  887.079703] Modules linked in:
-> [  887.080288] CPU: 16 PID: 4296 Comm: trinity-c273 Not tainted 3.19.0-rc4-next-20150112-sasha-00053-g23c147e02e-dirty #1710
-> [  887.082229]  0000000000000000 0000000000000000 0000000000000000 ffff8804c9f4f8e8
-> [  887.083773]  ffffffff9154e0a6 0000000000000000 ffff8804cad98000 ffff8804c9f4f938
-> [  887.085280]  ffffffff8140a4d0 0000000000000001 ffffffff81bf0d2d ffff8804c9f4f988
-> [  887.086792] Call Trace:
-> [  887.087320] dump_stack (lib/dump_stack.c:52)
-> [  887.088247] warn_slowpath_common (kernel/panic.c:447)
-> [  887.089342] ? locks_free_lock_context (fs/locks.c:236 (discriminator 3))
-> [  887.090514] warn_slowpath_null (kernel/panic.c:481)
-> [  887.091629] locks_free_lock_context (fs/locks.c:236 (discriminator 3))
-> [  887.092782] __destroy_inode (fs/inode.c:243)
-> [  887.093817] destroy_inode (fs/inode.c:268)
-> [  887.094833] evict (fs/inode.c:574)
-> [  887.095808] iput (fs/inode.c:1503)
-> [  887.096687] __dentry_kill (fs/dcache.c:323 fs/dcache.c:508)
-> [  887.097683] ? _raw_spin_trylock (kernel/locking/spinlock.c:136)
-> [  887.098733] ? dput (fs/dcache.c:545 fs/dcache.c:648)
-> [  887.099672] dput (fs/dcache.c:649)
-> [  887.100552] __fput (fs/file_table.c:227)
-> [  887.101437] ____fput (fs/file_table.c:245)
-> [  887.102317] task_work_run (kernel/task_work.c:125 (discriminator 1))
-> [  887.103356] ? _raw_spin_unlock (./arch/x86/include/asm/preempt.h:95 include/linux/spinlock_api_smp.h:154 kernel/locking/spinlock.c:183)
-> [  887.104390] do_exit (kernel/exit.c:746)
-> [  887.105338] ? task_numa_work (kernel/sched/fair.c:2218)
-> [  887.106384] ? get_signal (kernel/signal.c:2207)
-> [  887.107492] ? _raw_spin_unlock_irq (./arch/x86/include/asm/paravirt.h:819 include/linux/spinlock_api_smp.h:170 kernel/locking/spinlock.c:199)
-> [  887.108610] do_group_exit (include/linux/sched.h:775 kernel/exit.c:858)
-> [  887.109613] get_signal (kernel/signal.c:2358)
-> [  887.110578] ? trace_hardirqs_off (kernel/locking/lockdep.c:2671)
-> [  887.111672] do_signal (arch/x86/kernel/signal.c:703)
-> [  887.112604] ? acct_account_cputime (kernel/tsacct.c:168)
-> [  887.113722] ? context_tracking_user_exit (./arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/context_tracking.c:144 (discriminator 2))
-> [  887.114937] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2578 kernel/locking/lockdep.c:2625)
-> [  887.116128] ? trace_hardirqs_on (kernel/locking/lockdep.c:2633)
-> [  887.117160] do_notify_resume (arch/x86/kernel/signal.c:750)
-> [  887.118167] int_signal (arch/x86/kernel/entry_64.S:587)
-> 
-> 
+> For several days now k3dma.c has been failing to build in an ARM
+> allmodconfig because the definition of k3_dma_resume() introduced in
+> db08425ebd51f (dmaengine: k3: Split device_control) taking a struct
+> dma_chan * conflicts with that which has been in the file since it was
+> originally merged taking a struct device *.
 
-Huh...
+Incidentally, I've restarted by randconfig build testing today, will follow
+up with my fix.
 
-Looks like the flc_flock list wasn't empty when we went to go free the
-inode. I don't see how that would happen right offhand, but I'll keep
-looking at it.
-
-Just to be clear -- were there any "exotic" filesystems involved here?
-In particular any that define a ->flock inode operation (e.g. NFS) ?
-
-Thanks for the report...
--- 
-Jeff Layton <jlayton@primarydata.com>
+	Arnd
