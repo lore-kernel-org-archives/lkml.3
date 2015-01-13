@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751355AbbAMHIo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 02:08:44 -0500
-Received: from box2.japko.eu ([91.121.152.53]:59613 "EHLO box2.japko.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750968AbbAMHIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 02:08:43 -0500
-Date: Tue, 13 Jan 2015 08:06:48 +0100
-From: Krzysztof Adamski <k@japko.eu>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: vt6656: whitespace checkpatch warning fix.
-Message-ID: <20150113070648.GH30114@box2.japko.eu>
-References: <20141222160834.GA11241@box2.japko.eu>
- <20150113034134.GB16095@kroah.com>
+	id S1751167AbbAMHHX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 02:07:23 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:11617 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750921AbbAMHHV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 02:07:21 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="55969450"
+Message-ID: <54B4C46C.1000404@cn.fujitsu.com>
+Date: Tue, 13 Jan 2015 15:08:28 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <20150113034134.GB16095@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Tejun Heo <tj@kernel.org>
+CC: <linux-kernel@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "Gu, Zheng" <guz.fnst@cn.fujitsu.com>,
+        tangchen <tangchen@cn.fujitsu.com>,
+        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 3/5] workqueue: fixup existing pool->node
+References: <1418379595-6281-1-git-send-email-laijs@cn.fujitsu.com> <1418379595-6281-4-git-send-email-laijs@cn.fujitsu.com> <20141212172546.GC20020@htj.dyndns.org> <548E3825.9020204@cn.fujitsu.com> <20141225201406.GB22951@htj.dyndns.org>
+In-Reply-To: <20141225201406.GB22951@htj.dyndns.org>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 07:41:34PM -0800, Greg Kroah-Hartman wrote:
->On Mon, Dec 22, 2014 at 05:08:34PM +0100, Krzysztof Adamski wrote:
->> This fixes following checkpatch.pl error:
->> ERROR: space prohibited before that ',' (ctx:WxW)
->>
->> Signed-off-by: Krzysztof Adamski <k@japko.eu>
->> ---
->> drivers/staging/vt6656/rxtx.c |    2 +-
->> 1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/staging/vt6656/rxtx.c b/drivers/staging/vt6656/rxtx.c
->> index ea5140a..5a18e26 100644
->> --- a/drivers/staging/vt6656/rxtx.c
->> +++ b/drivers/staging/vt6656/rxtx.c
->> @@ -55,7 +55,7 @@ static const u16 vnt_fb_opt0[2][5] = {
->>
->> static const u16 vnt_fb_opt1[2][5] = {
->> 	{RATE_12M, RATE_18M, RATE_24M, RATE_24M, RATE_36M}, /* fallback_rate0 */
->> -	{RATE_6M , RATE_6M,  RATE_12M, RATE_12M, RATE_18M}, /* fallback_rate1 */
->> +	{RATE_6M,  RATE_6M,  RATE_12M, RATE_12M, RATE_18M}, /* fallback_rate1 */
->> };
->>
->> #define RTSDUR_BB       0
->> --
->> 1.7.10.4
->
->Again resend?
+On 12/26/2014 04:14 AM, Tejun Heo wrote:
+> On Mon, Dec 15, 2014 at 09:23:49AM +0800, Lai Jiangshan wrote:
+>> The pwqs of the old node's cpumask do be discarded. But the pools of the old
+>> node's cpumask maybe recycle. For example, a new workqueue's affinity is set to
+>> the old node's cpumask before the pool is dead. Any old pool can long live.
+> 
+> Hah?  Why can't it just be unhashed so that it can't be looked up for
+> new pwqs anymore?
+> 
 
-Sorry, it was my first attempt at getting some patch to upstream kernel.  
-I was following your advice about being persistent:
-http://www.reddit.com/r/linux/comments/2ny1lz/im_greg_kroahhartman_linux_kernel_developer_ama/cmvltqk
+unhashing doesn't reduce the complexity in my code.
 
-Next time I'll wait much longer.
+	for_each_pool(pool, pi) {
+		node = calc_pool_node(pool);
+		if (pool->node != node)
+-			pool->node = node;
++			unhash_pool(pool);
+	}
+
+And any old pool can long live due to:
+	some works queues themself back and back
+	the old pool has extremely long pending works
+
+So I prefer to fixup existing pool->node.
