@@ -1,75 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752291AbbAMWAT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 17:00:19 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:53127 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608AbbAMWAR (ORCPT
+	id S1752838AbbAMWAd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 17:00:33 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:33502 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453AbbAMWAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 17:00:17 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: gregkh@linuxfoundation.org
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH] tty/isicom: fix big-endian compile warning
-Date: Tue, 13 Jan 2015 22:59:47 +0100
-Message-ID: <2188320.G0IBCG4UeO@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+	Tue, 13 Jan 2015 17:00:31 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:mVujfDbwWWWRS7ne4lsHaAeFhPBlR3THUeZ/7qoXa6h0I3jryIl
- PFcPX+uCaVFm+NCxOwTnL053Awqrqo14J2tYSZhOTbyw74w8lvUOeMF6tnWZxgFyrdipZPZ
- KhbLDaDoCFFQTYMyZiie0PiUaZod2xR7noaUiBruit4Zvi556sPVF8B1qheLRvjkWGcTJQn
- YzrHu5NmVdlIIs0Zg1faA==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <54B58D5D.5070508@ti.com>
+References: <1420651854-17768-1-git-send-email-s-anna@ti.com>
+ <1420651854-17768-2-git-send-email-s-anna@ti.com> <CAL_Jsq+79cnCiww6g8ejki0yT59-N8eucHC3QGMbsXG4DksWuQ@mail.gmail.com>
+ <54B58D5D.5070508@ti.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Tue, 13 Jan 2015 16:00:08 -0600
+Message-ID: <CAL_JsqLW9PRktHntLquohH3x_bPgJrrn2Y2_8RYA_HnKhpTDHg@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/3] of/device: manage resources similar to platform_device_add
+To: Suman Anna <s-anna@ti.com>
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Felipe Balbi <balbi@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-omap <linux-omap@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building an arm allmodconfig kernel triggers a lengthy but harmless
-warning in the isicom driver:
+On Tue, Jan 13, 2015 at 3:25 PM, Suman Anna <s-anna@ti.com> wrote:
+> Hi Rob,
+>
+> On 01/13/2015 02:38 PM, Rob Herring wrote:
+>> On Wed, Jan 7, 2015 at 11:30 AM, Suman Anna <s-anna@ti.com> wrote:
+>>> Drivers can use of_platform_populate() to create platform devices
+>>> for children of the device main node, and a complementary API
+>>> of_platform_depopulate() is provided to delete these child platform
+>>> devices. The of_platform_depopulate() leverages the platform API
+>>> for performing the cleanup of these devices.
+>>>
+>>> The platform device resources are managed differently between
+>>> of_device_add and platform_device_add, and this asymmetry causes
+>>> a kernel oops in platform_device_del during removal of the resources.
+>>> Manage the platform device resources similar to platform_device_add
+>>> to fix this kernel oops.
+>>
+>> This is a known issue and has been attempted to be fixed before (I
+>> believe there is a revert in mainline). The problem is there are known
+>> devicetrees which have overlapping resources and they will break with
+>> your change.
+>
+> Are you referring to 02bbde7849e6 (Revert "of: use
+> platform_device_add")?
 
-drvers/tty/isicom.c: In function 'isicom_send_break':
-uapi/linux/swab.h:13:15: warning: integer overflow in expression [-Woverflow]
-  (((__u16)(x) & (__u16)0x00ffU) << 8) |   \
-               ^
-uapi/linux/swab.h:107:2: note: in expansion of macro '___constant_swab16'
-  ___constant_swab16(x) :   \
-  ^
-uapi/linux/byteorder/big_endian.h:34:43: note: in expansion of macro '__swab16'
- #define __cpu_to_le16(x) ((__force __le16)__swab16((x)))
-                                           ^
-linux/byteorder/generic.h:89:21: note: in expansion of macro '__cpu_to_le16'
- #define cpu_to_le16 __cpu_to_le16
-                     ^
-include/asm/io.h:270:6: note: in expansion of macro 'cpu_to_le16'
-      cpu_to_le16(v),__io(p)); })
-      ^
-drivers/tty/isicom.c:1058:2: note: in expansion of macro 'outw'
-  outw((length & 0xff00), base);
-  ^
+I believe that's the one.
 
-Apparently, the problem is related to the fact that the value 0xff00,
-when used as a 16-bit number, is negative and passed into bitwise
-operands of the generic byte swapping code.
+> That one seems to be in registration path, and
+> this crash is in the unregistration path. If so, to fix the crash,
+> should we be skipping the release_resource() for now in
+> platform_device_del for DT nodes, or replace platform_device_unregister
+> with of_device_unregister in of_platform_device_destroy()?
 
-Marking the input argument as unsigned in both technically correct
-and avoids the warning.
+IIRC, the problem is inserting a resource twice on add from 2
+different nodes, not the removal path. Perhaps we could make a
+collision non-fatal for in the DT case. Grant may have some ideas on
+what's needed here.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> This is a common crash and we cannot use of_platform_depopulate() today
+> in drivers to complement of_platform_populate().
 
-diff --git a/drivers/tty/isicom.c b/drivers/tty/isicom.c
-index 59ed783c4bcd..2054427992e0 100644
---- a/drivers/tty/isicom.c
-+++ b/drivers/tty/isicom.c
-@@ -1055,7 +1055,7 @@ static int isicom_send_break(struct tty_struct *tty, int length)
- 
- 	outw(0x8000 | ((port->channel) << (card->shift_count)) | 0x3, base);
- 	outw((length & 0xff) << 8 | 0x00, base);
--	outw((length & 0xff00), base);
-+	outw((length & 0xff00u), base);
- 	InterruptTheCard(base);
- 
- 	unlock_card(card);
+Yes, I know.
 
+> Also, the platform_data crash is independent of this, I could reproduce
+> that one even with using of_device_unregister in a loop in driver remove.
+
+Missed this one. I'll reply to that patch.
+
+Rob
+
+>
+> regards
+> Suman
+>
+>>
+>> Rob
+>>
+>>>
+>>> Signed-off-by: Suman Anna <s-anna@ti.com>
+>>> ---
+>>>  drivers/of/device.c | 38 +++++++++++++++++++++++++++++++++++++-
+>>>  1 file changed, 37 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/of/device.c b/drivers/of/device.c
+>>> index 46d6c75c1404..fa27c1c71f29 100644
+>>> --- a/drivers/of/device.c
+>>> +++ b/drivers/of/device.c
+>>> @@ -50,6 +50,8 @@ EXPORT_SYMBOL(of_dev_put);
+>>>
+>>>  int of_device_add(struct platform_device *ofdev)
+>>>  {
+>>> +       int i, ret;
+>>> +
+>>>         BUG_ON(ofdev->dev.of_node == NULL);
+>>>
+>>>         /* name and id have to be set so that the platform bus doesn't get
+>>> @@ -63,7 +65,41 @@ int of_device_add(struct platform_device *ofdev)
+>>>         if (!ofdev->dev.parent)
+>>>                 set_dev_node(&ofdev->dev, of_node_to_nid(ofdev->dev.of_node));
+>>>
+>>> -       return device_add(&ofdev->dev);
+>>> +       for (i = 0; i < ofdev->num_resources; i++) {
+>>> +               struct resource *p, *r = &ofdev->resource[i];
+>>> +
+>>> +               if (!r->name)
+>>> +                       r->name = dev_name(&ofdev->dev);
+>>> +
+>>> +               p = r->parent;
+>>> +               if (!p) {
+>>> +                       if (resource_type(r) == IORESOURCE_MEM)
+>>> +                               p = &iomem_resource;
+>>> +                       else if (resource_type(r) == IORESOURCE_IO)
+>>> +                               p = &ioport_resource;
+>>> +               }
+>>> +
+>>> +               if (p && insert_resource(p, r)) {
+>>> +                       dev_err(&ofdev->dev, "failed to claim resource %d\n",
+>>> +                               i);
+>>> +                       ret = -EBUSY;
+>>> +                       goto failed;
+>>> +               }
+>>> +       }
+>>> +
+>>> +       ret = device_add(&ofdev->dev);
+>>> +       if (ret == 0)
+>>> +               return ret;
+>>> +
+>>> +failed:
+>>> +       while (--i >= 0) {
+>>> +               struct resource *r = &ofdev->resource[i];
+>>> +               unsigned long type = resource_type(r);
+>>> +
+>>> +               if (type == IORESOURCE_MEM || type == IORESOURCE_IO)
+>>> +                       release_resource(r);
+>>> +       }
+>>> +       return ret;
+>>>  }
+>>>
+>>>  int of_device_register(struct platform_device *pdev)
+>>> --
+>>> 2.2.1
+>>>
+>
