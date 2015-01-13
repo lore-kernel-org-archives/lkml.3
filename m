@@ -1,85 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751583AbbAMKP5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 05:15:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34232 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127AbbAMKPz (ORCPT
+	id S1751618AbbAMKTH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 05:19:07 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:20552 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069AbbAMKTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 05:15:55 -0500
-Date: Tue, 13 Jan 2015 10:16:14 +0000
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Kees Cook <keescook@chromium.org>, Yinghai Lu <yinghai@kernel.org>,
-        x86@kernel.org, stable <stable@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [3.2-stable] Suspend regression after "x86, 64bit, mm: Mark
- data/bss/brk to nx"
-Message-ID: <20150113101614.GC2304@charon>
-References: <1420935783.2327.28.camel@decadent.org.uk>
- <1421010983.19708.20.camel@decadent.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1421010983.19708.20.camel@decadent.org.uk>
+	Tue, 13 Jan 2015 05:19:03 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-da-54b4f1160c3a
+Message-id: <54B4F113.3060200@samsung.com>
+Date: Tue, 13 Jan 2015 11:18:59 +0100
+From: Robert Baldyga <r.baldyga@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.3.0
+MIME-version: 1.0
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        "dinh.linux@gmail.com" <dinh.linux@gmail.com>
+Cc: "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: dwc2: problems with IN requests completion in linux-next
+References: <549826F4.6080709@samsung.com>
+ <A2CA0424C0A6F04399FB9E1CD98E030484506E69@US01WEMBX2.internal.synopsys.com>
+In-reply-to: <A2CA0424C0A6F04399FB9E1CD98E030484506E69@US01WEMBX2.internal.synopsys.com>
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t/xy7piH7eEGKw/pG1x8H69xcqT2hbN
+	i9ezWVzeNYfNYtGyVmaLtUfusls8eriV1YHdY+esu+we++euYffo27KK0WPL/s+MHsdvbGfy
+	+LxJLoAtissmJTUnsyy1SN8ugStj7sX5rAWrBSuubJnC3sD4g7eLkZNDQsBE4vLedUwQtpjE
+	hXvr2boYuTiEBJYySnw6+4cJwvnIKLHk+F6wKl4BLYk1Jw4wgtgsAqoSm26tZgWx2QR0JLZ8
+	nwAWFxWIkPiw6isbRL2gxI/J91hAbBGBRInDN36zgwxlFuhkknhx9RFYQljAVaJ71XR2EFtI
+	oEJia/ttZhCbUyBK4tXnFUBDOYAa1CWmTMkFCTMLyEtsXvOWeQKjwCwkK2YhVM1CUrWAkXkV
+	o2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkiof93BuPSY1SFGAQ5GJR7eHdlbQoRYE8uKK3MP
+	MUpwMCuJ8M6/DRTiTUmsrEotyo8vKs1JLT7EyMTBKdXAuGtON9vcbwsCVS1C/q+K2ye8zSFg
+	y6SSphmXZgdMOZgexiB/3enPuteBJxdy3vJvXelw8WJxU/jknk/nn856f+78QYeXeun+XJJT
+	r8wz/LLh23H34qx8rsMW+ztXrZ///ufSG5IHXz1RTWiJYn+oprPoyrfIQI++lFlbV9scnb5r
+	U+0pncNCHi+UWIozEg21mIuKEwEMB79HUwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 11, 2015 at 09:16:23PM +0000, Ben Hutchings wrote:
-> On Sun, 2015-01-11 at 00:23 +0000, Ben Hutchings wrote:
-> > Commit 45e2a9d4701d8c624d4a4bcdd1084eae31e92f58 ("x86, mm: Set NX across
-> > entire PMD at boot") has been backported to many stable branches:
-> > 
-> > v3.10.62: 0b15c16c4f4a x86, mm: Set NX across entire PMD at boot
-> > v3.12.35: 868b19cb0314 x86, mm: Set NX across entire PMD at boot
-> > v3.14.26: 1a829c59816e x86, mm: Set NX across entire PMD at boot
-> > v3.17.5: 6231385167e0 x86, mm: Set NX across entire PMD at boot
-> > v3.2.65: a5c187d92d2c x86, mm: Set NX across entire PMD at boot
-> > v3.13.11-ckt12: 3657489f7009 x86, mm: Set NX across entire PMD at boot
-> > v3.16.7-ckt3: de32229b546e x86, mm: Set NX across entire PMD at boot
+On 01/12/2015 10:35 PM, Paul Zimmerman wrote:
+>> From: Robert Baldyga [mailto:r.baldyga@samsung.com]
+>> Sent: Monday, December 22, 2014 6:13 AM
+>>
+>> I have recently noticed problem with DWC2 driver in latest linux-next. I
+>> use it in gadget only mode at Samsung platform (Odroid U3) but I believe
+>> the bug can be reproduced at another platforms.
+>>
+>> While running FFS example (tools/usb/ffs-aio-example/simple/) the
+>> communication breaks after few seconds. It's because one of IN requests
+>> enqueued in DWC2 driver do not complete. At USB analyzer I see that USB
+>> device started to transmit data from this request, but it ended incomplete.
+>>
+>> I bisected kernel tree, and I got following patches are reason of break.
+>>
+>> 941fcce usb: dwc2: Update the gadget driver to use common dwc2_hsotg
+>> structure
+>> 117777b usb: dwc2: Move gadget probe function into platform code
+>> bcc0607 usb: dwc2: convert to use dev_pm_ops API
+>> 510ffaa usb: dwc2: Initialize the USB core for peripheral mode
+>> db8178c usb: dwc2: Update common interrupt handler to call gadget
+>> interrupt handler
+>> 8d736d8 usb: dwc2: gadget: Do not fail probe if there isn't a clock node
+>>
+>> Patch 941fcce breaks DWC2 driver at my platform and it starts to work
+>> from 8d736d8 but it has described bug.
+>>
+>> I will try to localize reason of this issue.
 > 
-> Sorry, I think I booted the wrong version at the last step of bisection.
-> It was actually the previous commit on the 3.2.y branch, which was
-> commit 72212675d1c96f5db8ec6fb35701879911193158 upstream ("x86, 64bit,
-> mm: Mark data/bss/brk to nx") that introduced the regression.  I intend
-> to revert both of these.
+> Hi Robert,
 > 
-> Ben.
+> I think the most likely suspect would be db8178c, since the rest appear
+> to be init-time things. It seems to revert cleanly, can you try
+> reverting just that patch and see if it helps?
 > 
 
-This is an old (3.8) commit that seems to have been backported to 3.2
-as a dependency of 45e2a9d4701d8c624d4a4bcdd1084eae31e92f58 and all
-the other stable kernels already included it.  Since I am not aware of
-any new regression, I believe this is could be a 3.2 specific issue.
+Hi Paul,
 
-Anyway, thanks a lot for sharing this, as we have an Ubuntu kernel
-that is based on 3.2, to which we regularly apply 3.2 releases.
+Thanks. It looks like you're right, commit db8178c causes the break.
 
-Cheers,
---
-Luís
+I have found out that if we don't call dwc2_is_controller_alive() in
+interrupt handler everything works well. Conclusion is that reading from
+GSNPSID causes the problem.
 
-> > Unfortunately, in 3.2.65 suspend/resume stopped working on at least some
-> > systems - specifically, the system would reboot when woken:
-> > 
-> > https://bugs.debian.org/774436 - Lenovo ThinkPad T530
-> > https://bugs.debian.org/774461 - Lenovo ThinkPad X230
-> > https://bugs.debian.org/774526 - ECS P4M900T-M2
-> > https://bugs.debian.org/775059 - ASUS X201EP
-> > 
-> > I could reproduce this on my own ASUS P8Z68-V LX and was able to bisect
-> > to the backport of this commit.
-> > 
-> > Assuming that this regression has not occurred on mainline or the other
-> > branches, I will revert this patch for 3.2.y unless someone can point
-> > out a missing dependency that I should apply.
-> > 
-> > Ben.
-> > 
-> 
-> -- 
-> Ben Hutchings
-> One of the nice things about standards is that there are so many of them.
+BTW it's strange that this register is used for testing if controller is
+alive. Documentation says nothing about that as well as it does not say
+that reading this register can affect hardware behaviour.
 
+Avoiding to read this register in device mode seems to be the simplest
+solution. But the question is why does it behave this way?
+
+Best regards,
+Robert Baldyga
