@@ -1,110 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363AbbAMOcy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 09:32:54 -0500
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:53679 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751175AbbAMOcw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 09:32:52 -0500
-Message-ID: <54B52C6D.20006@st.com>
-Date: Tue, 13 Jan 2015 15:32:13 +0100
-From: David Paris <david.paris@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752034AbbAMOhA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 09:37:00 -0500
+Received: from sauhun.de ([89.238.76.85]:35582 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751640AbbAMOg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 09:36:58 -0500
+Date: Tue, 13 Jan 2015 15:36:54 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Jisheng Zhang <jszhang@marvell.com>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] i2c: designware: use {readl|writel}_relaxed instead of
+ readl/writel
+Message-ID: <20150113143654.GG7660@katana>
+References: <1418279201-3886-1-git-send-email-jszhang@marvell.com>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, Lee Jones <lee.jones@linaro.org>
-Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <wim@iguana.be>, <linux-watchdog@vger.kernel.org>,
-        <kernel@stlinux.com>
-Subject: Re: [4/4] watchdog: st_wdt: Add new driver for ST's LPC Watchdog
-References: <1414077524-6469-5-git-send-email-lee.jones@linaro.org> <20150113142341.GA15707@roeck-us.net>
-In-Reply-To: <20150113142341.GA15707@roeck-us.net>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.83]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-13_05:2015-01-13,2015-01-13,1970-01-01 signatures=0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MiFvc8Vo6wRSORdP"
+Content-Disposition: inline
+In-Reply-To: <1418279201-3886-1-git-send-email-jszhang@marvell.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
 
-     Please forget this implementation of ST LPC Watchdog, Lee has 
-provided a new patchset. Search for "[STLinux Kernel] [PATCH 0/8] mfd: 
-watchdog: rtc: New driver for ST's LPC IP"
+--MiFvc8Vo6wRSORdP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-     David
 
-On 01/13/2015 03:23 PM, Guenter Roeck wrote:
-> On Thu, Oct 23, 2014 at 04:18:44PM +0100, Lee Jones wrote:
->> Signed-off-by: David Paris <david.paris@st.com>
->> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> Digging myself out of my hole. Sorry for the laaaate reply.
->
->> ---
->>   drivers/watchdog/Kconfig  |  16 +++
->>   drivers/watchdog/Makefile |   1 +
->>   drivers/watchdog/st_wdt.c | 317 ++++++++++++++++++++++++++++++++++++++++++++++
->>   3 files changed, 334 insertions(+)
->>   create mode 100644 drivers/watchdog/st_wdt.c
->>
->> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
->> index f57312f..c8abf57 100644
->> --- a/drivers/watchdog/Kconfig
->> +++ b/drivers/watchdog/Kconfig
->> @@ -432,6 +432,22 @@ config SIRFSOC_WATCHDOG
->>   	  Support for CSR SiRFprimaII and SiRFatlasVI watchdog. When
->>   	  the watchdog triggers the system will be reset.
->>   
->> +config ST_WATCHDOG
->> +       tristate "STMicroelectronics LPC Watchdog"
->> +       depends on ARCH_STI && OF
->> +       depends on !RTC_DRV_ST_LPC
-> RTC_DRV_ST_LPC is not in mainline nor in -next. Is this still current ?
->
->> +       select WATCHDOG_CORE
->> +       help
->> +	 Say Y here to include Watchdog timer support for the watchdog
->> +	 existing in the LPC of STMicroelectronics SOCs.
->> +	 !!! BE CARREFUL !!!
->> +	 This driver shares hardware resources with RTC Alarm part of the
->> +	 LPC. Both LPC Watchdog driver and LPC RTC driver cannot be
->> +	 used together.
->> +
-> Arnd has asked if/how this is enforced by the code. Was this ever resolved ?
->
->> +	 To compile this driver as a module, choose M here: the
->> +	 module will be called st-wdt.
->> +
-> [ ... ]
->
->> +	watchdog_set_drvdata(&st_wdog_dev, st_wdog);
->> +	watchdog_set_nowayout(&st_wdog_dev, WATCHDOG_NOWAYOUT);
->> +
->> +	/* Init Watchdog timeout with value in DT */
->> +	ret = watchdog_init_timeout(&st_wdog_dev, 0, &pdev->dev);
->> +	if (ret) {
->> +		dev_err(&pdev->dev, "Unable to initialise watchdog timeout\n");
-> Missing clk_disable_unprepare().
->
->> +		return ret;
->> +	}
->> +
->> +	ret = watchdog_register_device(&st_wdog_dev);
->> +	if (ret) {
->> +		dev_err(&pdev->dev, "Unable to register watchdog\n");
->> +		clk_disable_unprepare(clk);
->> +		return ret;
->> +	}
->> +
->> +	st_wdog_setup(st_wdog, true);
->> +
->> +	dev_info(&pdev->dev, "LPC Watchdog driver registered, reset type is %s",
->> +		 st_wdog->warm_reset ? "warm" : "cold");
-> Missing newline.
->
-> Guenter
->
->
+On Thu, Dec 11, 2014 at 02:26:41PM +0800, Jisheng Zhang wrote:
+> readl/writel is too expensive especially on Cortex A9 w/ outer L2 cache.
+> This introduces i2c read/write errors on Marvell BG2/BG2Q SoCs when there
+> are heavy L2 cache maintenance operations at the same time.
 
+Reading this again, I got a question:
+
+Really read/write errors? I would think that there is a performance
+penalty because of the memory barriers. But errors?
+
+> The driver does not perform DMA, so it's safe to use the relaxed version.
+> From another side, the relaxed io accessor macros are available on all
+> architectures now, so we can use the relaxed versions instead.
+
+Can the designware core make use of DMA in theory?
+
+
+--MiFvc8Vo6wRSORdP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUtS2GAAoJEBQN5MwUoCm2svAQAIpRt3q0aHH0xGwK8rt2P91x
+ZJVUcF2YrP1KPo14LaP6N0lPAjzathtXBHOPr5udB7+zoMJBPGdHXrPRP9x7WmAY
+89avemgEFOdrhuDcBkr2BXhn6hsRs5HJlu9x0/z/HfLK4Cwmoh9BhB4CTOYT4VnL
+PlH60kJBSfAxh2llM/k024o70p8uNnN0ODe4kIDiBcbqnWTOBjTT4ecjT0qehrl/
+T7ghYQOFzl4vwzgvMNFrxMNb4n1eksktxn5qua/HGrloU8l1iJ1rRBSBkw1xfHJp
+/2DZv+inHvuyLPvyNLEld8i/4Q0QgA/D8zL7lNhLuA7pmwUmv496NJpkX++xD+da
+SJOZuzKGT30lUUQLMLUEkeG89kLqMkqbbsdrC4RDw6LP077h/p53rmFuVGr9Yc3B
+3Nk5TfeOK34mq4eTLvNerAwg+y6e6T7GekVGvRjR6gGcSQPsD8SD3sEpVSgbFzhY
+8xM3yDBROS6/kepaHGAXSF3nyxYg2ask8Cdrirg9pRwHm6OHCTBl8S5q6hYAzINu
+ysJTSor0O64aiwxhH/dVzEEqHbf8X/0/rHLrxomoVPS0l4lmgqH538to59vYQ1+C
+HR80GYPgkBL8EnwNo06VuYvoEpOO8c1/IDlSFpbkaWO0RV9Wid16ImvI59EkR28s
+bxtE2Bu78n1pC4fbYQzG
+=lfnX
+-----END PGP SIGNATURE-----
+
+--MiFvc8Vo6wRSORdP--
