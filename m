@@ -1,108 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766AbbAMVBV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 16:01:21 -0500
-Received: from mout.gmx.net ([212.227.17.21]:62291 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751400AbbAMVBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 16:01:19 -0500
-Message-ID: <54B5879A.9020902@gmx.de>
-Date: Tue, 13 Jan 2015 22:01:14 +0100
-From: Helge Deller <deller@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
-CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        linux-parisc@vger.kernel.org
-Subject: Re: [PATCH 08/10] PCI, parisc: clip firmware assigned resource under
- parent bridge's
-References: <1421090600-9750-1-git-send-email-yinghai@kernel.org> <1421090600-9750-9-git-send-email-yinghai@kernel.org>
-In-Reply-To: <1421090600-9750-9-git-send-email-yinghai@kernel.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	id S1751949AbbAMVFQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 16:05:16 -0500
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:54779 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751098AbbAMVFO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 16:05:14 -0500
+Message-ID: <1421183111.15397.34.camel@x220>
+Subject: Re: [PATCH] headers_check: don't warn about kexec.h
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Maximilian Attems <max@stro.at>, Geoff Levand <geoff@infradead.org>,
+        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, linux-kbuild@vger.kernel.org
+Date: Tue, 13 Jan 2015 22:05:11 +0100
+In-Reply-To: <2363197.VbAKlSiQLX@wuerfel>
+References: <12825174.7oxZXDxNhV@wuerfel> <1421169212.15397.22.camel@x220>
+	 <2363197.VbAKlSiQLX@wuerfel>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:ljL7cZupLE3ZSnCA6nTEvi3j5y9dsSEAEe+qJEcXTQc18AzgP4L
- gFUR+PG/vS3lrUuKFWdVySHj9bsqCgt4VWgPs/qNQwkpkNzmtKFkKCghDcHgVL0+zoRb++L
- k/2KHwb2VJh4S5ydJiRiHcvF7hWagbtj6eReT8RBJ8wNFi1PmkPW9Lbh9+W1B470F78UZhy
- 9kgzGrVfgeV3ikttvtDzA==
-X-UI-Out-Filterresults: notjunk:1;
+X-OriginalArrivalTime: 13 Jan 2015 21:05:11.0608 (UTC) FILETIME=[9E86A380:01D02F74]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.01.2015 20:23, Yinghai Lu wrote:
-> Some bios put range that is not fully coverred by root bus resources.
-> Try to clip them and update them in pci bridge bars.
->
-> We'd like to fix other arches instead of just x86.
->
-> Link: https://bugzilla.kernel.org/show_bug.cgi?id=85491
-> Reported-by: Marek Kordik <kordikmarek@gmail.com>
-> Fixes: 5b28541552ef ("PCI: Restrict 64-bit prefetchable bridge windows to 64-bit resources")
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-> Cc: Helge Deller <deller@gmx.de>
-> Cc: linux-parisc@vger.kernel.org
+[Dragging Andrew, Linus, and Maximilian into this thread.]
 
-I tested it on the parisc arch - everything OK.
+On Tue, 2015-01-13 at 21:27 +0100, Arnd Bergmann wrote:
+> On Tuesday 13 January 2015 18:13:32 Paul Bolle wrote:
+> > The last time that Geoff has been trying to get that patch applied
+> > should be
+> > http://lkml.kernel.org/r/b0702fc4186db21820d686e89afd6480560823db.1415837218.git.geoff@infradead.org> 
+> > I'd rather see that go in.
+> 
+> Fine with me as well. As long as we can find someone to take one of 
+> the patches, I'm happy.
 
-Acked-by: Helge Deller <deller@gmx.de>
+Since Geoff's patch (and my preceding, identical patch) basically is a
+partial revert of commit 29a5c67e7a78 ("kexec: export kexec.h to user
+space") that should probably be done by either Andrew or Linus. 
 
-Thanks!
-Helge
+(This short thread starts at
+http://lkml.kernel.org/r/12825174.7oxZXDxNhV@wuerfel .)
 
 
-> ---
->   drivers/parisc/lba_pci.c | 26 ++++++++++++++++++++++++--
->   1 file changed, 24 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/parisc/lba_pci.c b/drivers/parisc/lba_pci.c
-> index 37e71ff..e6ab352 100644
-> --- a/drivers/parisc/lba_pci.c
-> +++ b/drivers/parisc/lba_pci.c
-> @@ -692,11 +692,25 @@ lba_fixup_bus(struct pci_bus *bus)
->   	*/
->   	if (bus->parent) {
->   		int i;
-> +		bool changed = false;
-> +
-> +		dev = bus->self;
->   		/* PCI-PCI Bridge */
->   		pci_read_bridge_bases(bus);
->   		for (i = PCI_BRIDGE_RESOURCES; i < PCI_NUM_RESOURCES; i++) {
-> -			pci_claim_resource(bus->self, i);
-> +			struct resource *res = &dev->resource[i];
-> +
-> +			if (pci_claim_resource(dev, i) >= 0)
-> +				continue;
-> +
-> +			if (pci_bus_clip_resource(dev, res)) {
-> +				changed = true;
-> +				if (pci_claim_resource(dev, i) >= 0)
-> +					continue;
-> +			}
->   		}
-> +		if (changed)
-> +			pci_setup_bridge(bus);
->   	} else {
->   		/* Host-PCI Bridge */
->   		int err;
-> @@ -776,7 +790,15 @@ lba_fixup_bus(struct pci_bus *bus)
->   			** that share expansion ROMs (think quad tulip), but
->   			** isn't harmful.
->   			*/
-> -			pci_claim_resource(dev, i);
-> +			if (pci_claim_resource(dev, i) >= 0)
-> +				continue;
-> +
-> +			/* try again with clip */
-> +			if (i != PCI_ROM_RESOURCE &&
-> +			    pci_bus_clip_resource(dev, res)) {
-> +				pci_update_resource(dev, i);
-> +				pci_claim_resource(dev, i);
-> +			}
->   		}
->
->   #ifdef FBB_SUPPORT
->
+Paul Bolle
 
