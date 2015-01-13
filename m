@@ -1,59 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753610AbbAMTOi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 14:14:38 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:40500 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753518AbbAMTOe (ORCPT
+	id S1753630AbbAMTVP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 14:21:15 -0500
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:43773 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753401AbbAMTVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 14:14:34 -0500
+	Tue, 13 Jan 2015 14:21:14 -0500
 MIME-Version: 1.0
-In-Reply-To: <20150113084126.GE20387@casper.infradead.org>
-References: <20150110194803.GA9033@wfg-t540p.sh.intel.com>
-	<54B3259B.7080601@windriver.com>
-	<20150112124216.GA26570@casper.infradead.org>
-	<54B4CE3E.8020009@windriver.com>
-	<20150113084126.GE20387@casper.infradead.org>
-Date: Tue, 13 Jan 2015 11:14:33 -0800
-Message-ID: <CAHA+R7M1ZSCF+FwKVtZUbsJ05zesNg-WVTqH13=oFe5gM--3gw@mail.gmail.com>
-Subject: Re: Fwd: [rhashtable] WARNING: CPU: 0 PID: 10 at kernel/locking/mutex.c:570
- mutex_lock_nested()
-From: Cong Wang <cwang@twopensource.com>
-To: Thomas Graf <tgraf@suug.ch>
-Cc: Ying Xue <ying.xue@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lkp@01.org, Netdev <netdev@vger.kernel.org>
+In-Reply-To: <1421167074-9789-6-git-send-email-aarcange@redhat.com>
+References: <1421167074-9789-1-git-send-email-aarcange@redhat.com>
+	<1421167074-9789-6-git-send-email-aarcange@redhat.com>
+Date: Tue, 13 Jan 2015 11:21:11 -0800
+Message-ID: <CAJu=L590F-rmeR0+ny+KpH0SJBfRvOxHFwvpaPbJSGap6C64_w@mail.gmail.com>
+Subject: Re: [PATCH 5/5] mm: gup: kvm use get_user_pages_unlocked
+From: Andres Lagar-Cavilla <andreslc@google.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Michel Lespinasse <walken@google.com>,
+        Andrew Jones <drjones@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "\\Dr. David Alan Gilbert\\" <dgilbert@redhat.com>,
+        Peter Feiner <pfeiner@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        David Miller <davem@davemloft.net>,
+        Steve Capper <steve.capper@linaro.org>,
+        Johannes Weiner <jweiner@redhat.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 12:41 AM, Thomas Graf <tgraf@suug.ch> wrote:
-> On 01/13/15 at 03:50pm, Ying Xue wrote:
->> On 01/12/2015 08:42 PM, Thomas Graf wrote:
->> > On 01/12/15 at 09:38am, Ying Xue wrote:
->> >> Hi Thomas,
->> >>
->> >> I am really unable to see where is wrong leading to below warning
->> >> complaints. Can you please help me check it?
->> >
->> > Not sure yet. It's not your patch that introduced the issue though.
->> > It merely exposed the affected code path.
->> >
->> > Just wondering, did you test with CONFIG_DEBUG_MUTEXES enabled?
->> >
->> >
->>
->> After I enable above option, I don't find similar complaints during my
->> testing.
+On Tue, Jan 13, 2015 at 8:37 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> Use the more generic get_user_pages_unlocked which has the additional
+> benefit of passing FAULT_FLAG_ALLOW_RETRY at the very first page fault
+> (which allows the first page fault in an unmapped area to be always
+> able to block indefinitely by being allowed to release the mmap_sem).
 >
-> I can't reproduce it in my KVM box either so far. It looks like a
-> mutex_lock() on an uninitialized mutex or use after free but I can't
-> find such a code path so far.
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Reviewed-by: Andres Lagar-Cavilla <andreslc@google.com>
 
-Couldn't that be the delayed work is still running after rhashtable
-is destroyed by its caller? I mean, cancel_delayed_work_sync()
-should be called in rhashtable_destroy()?
+Thanks for the cleanup.
 
-Of course, it may be caller's responsibility to ensure that, I haven't
-looked into it that much.
+> ---
+>  include/linux/kvm_host.h | 11 -----------
+>  virt/kvm/async_pf.c      |  2 +-
+>  virt/kvm/kvm_main.c      | 50 ++++--------------------------------------------
+>  3 files changed, 5 insertions(+), 58 deletions(-)
+>
+> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> index 26f1060..d189ee0 100644
+> --- a/include/linux/kvm_host.h
+> +++ b/include/linux/kvm_host.h
+> @@ -200,17 +200,6 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, unsigned long hva,
+>  int kvm_async_pf_wakeup_all(struct kvm_vcpu *vcpu);
+>  #endif
+>
+> -/*
+> - * Carry out a gup that requires IO. Allow the mm to relinquish the mmap
+> - * semaphore if the filemap/swap has to wait on a page lock. pagep == NULL
+> - * controls whether we retry the gup one more time to completion in that case.
+> - * Typically this is called after a FAULT_FLAG_RETRY_NOWAIT in the main tdp
+> - * handler.
+> - */
+> -int kvm_get_user_page_io(struct task_struct *tsk, struct mm_struct *mm,
+> -                        unsigned long addr, bool write_fault,
+> -                        struct page **pagep);
+> -
+>  enum {
+>         OUTSIDE_GUEST_MODE,
+>         IN_GUEST_MODE,
+> diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
+> index 5ff7f7f..44660ae 100644
+> --- a/virt/kvm/async_pf.c
+> +++ b/virt/kvm/async_pf.c
+> @@ -80,7 +80,7 @@ static void async_pf_execute(struct work_struct *work)
+>
+>         might_sleep();
+>
+> -       kvm_get_user_page_io(NULL, mm, addr, 1, NULL);
+> +       get_user_pages_unlocked(NULL, mm, addr, 1, 1, 0, NULL);
+>         kvm_async_page_present_sync(vcpu, apf);
+>
+>         spin_lock(&vcpu->async_pf.lock);
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index 1cc6e2e..458b9b1 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -1128,43 +1128,6 @@ static int get_user_page_nowait(struct task_struct *tsk, struct mm_struct *mm,
+>         return __get_user_pages(tsk, mm, start, 1, flags, page, NULL, NULL);
+>  }
+>
+> -int kvm_get_user_page_io(struct task_struct *tsk, struct mm_struct *mm,
+> -                        unsigned long addr, bool write_fault,
+> -                        struct page **pagep)
+> -{
+> -       int npages;
+> -       int locked = 1;
+> -       int flags = FOLL_TOUCH | FOLL_HWPOISON |
+> -                   (pagep ? FOLL_GET : 0) |
+> -                   (write_fault ? FOLL_WRITE : 0);
+> -
+> -       /*
+> -        * If retrying the fault, we get here *not* having allowed the filemap
+> -        * to wait on the page lock. We should now allow waiting on the IO with
+> -        * the mmap semaphore released.
+> -        */
+> -       down_read(&mm->mmap_sem);
+> -       npages = __get_user_pages(tsk, mm, addr, 1, flags, pagep, NULL,
+> -                                 &locked);
+> -       if (!locked) {
+> -               VM_BUG_ON(npages);
+> -
+> -               if (!pagep)
+> -                       return 0;
+> -
+> -               /*
+> -                * The previous call has now waited on the IO. Now we can
+> -                * retry and complete. Pass TRIED to ensure we do not re
+> -                * schedule async IO (see e.g. filemap_fault).
+> -                */
+> -               down_read(&mm->mmap_sem);
+> -               npages = __get_user_pages(tsk, mm, addr, 1, flags | FOLL_TRIED,
+> -                                         pagep, NULL, NULL);
+> -       }
+> -       up_read(&mm->mmap_sem);
+> -       return npages;
+> -}
+> -
+>  static inline int check_user_page_hwpoison(unsigned long addr)
+>  {
+>         int rc, flags = FOLL_TOUCH | FOLL_HWPOISON | FOLL_WRITE;
+> @@ -1227,15 +1190,10 @@ static int hva_to_pfn_slow(unsigned long addr, bool *async, bool write_fault,
+>                 npages = get_user_page_nowait(current, current->mm,
+>                                               addr, write_fault, page);
+>                 up_read(&current->mm->mmap_sem);
+> -       } else {
+> -               /*
+> -                * By now we have tried gup_fast, and possibly async_pf, and we
+> -                * are certainly not atomic. Time to retry the gup, allowing
+> -                * mmap semaphore to be relinquished in the case of IO.
+> -                */
+> -               npages = kvm_get_user_page_io(current, current->mm, addr,
+> -                                             write_fault, page);
+> -       }
+> +       } else
+> +               npages = __get_user_pages_unlocked(current, current->mm, addr, 1,
+> +                                                  write_fault, 0, page,
+> +                                                  FOLL_TOUCH|FOLL_HWPOISON);
+>         if (npages != 1)
+>                 return npages;
+>
+
+
+
+-- 
+Andres Lagar-Cavilla | Google Kernel Team | andreslc@google.com
