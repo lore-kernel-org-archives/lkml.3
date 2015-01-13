@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614AbbAMANT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 19:13:19 -0500
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:48733 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751587AbbAMANS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 19:13:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <20150106225931.GA23281@gondor.apana.org.au>
-References: <1420394744-20268-1-git-send-email-me@mortis.eu>
- <1420580220-6276-1-git-send-email-me@mortis.eu> <20150106225931.GA23281@gondor.apana.org.au>
-From: Steve French <smfrench@gmail.com>
-Date: Mon, 12 Jan 2015 18:12:57 -0600
-Message-ID: <CAH2r5muudE96Za2GHW0r=opq994UrWLoymvLri8fYz_Gcy0j7Q@mail.gmail.com>
-Subject: Re: [PATCH RESEND] cifs: use memzero_explicit to clear stack buffer
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Giel van Schijndel <me@mortis.eu>, LKML <linux-kernel@vger.kernel.org>,
-        Steve French <sfrench@samba.org>,
-        "open list:COMMON INTERNET F..." <linux-cifs@vger.kernel.org>,
-        "moderated list:COMMON INTERNET F..." 
-	<samba-technical@lists.samba.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1752851AbbAMAOZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 19:14:25 -0500
+Received: from mga14.intel.com ([192.55.52.115]:53593 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751792AbbAMAOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 19:14:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,745,1413270000"; 
+   d="scan'208";a="668739552"
+From: James Ralston <james.d.ralston@intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        James Ralston <james.d.ralston@intel.com>
+Subject: [PATCH 1/1] ahci: Remove Device ID for Intel Sunrise Point PCH
+Date: Mon, 12 Jan 2015 16:13:52 -0800
+Message-Id: <1421108032-5582-1-git-send-email-james.d.ralston@intel.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-merged into cifs-2.6.git for-next
+This patch removes a duplicate AHCI-mode SATA Device ID for the Intel Sunrise Point PCH.
 
-On Tue, Jan 6, 2015 at 4:59 PM, Herbert Xu <herbert@gondor.apana.org.au> wrote:
-> On Tue, Jan 06, 2015 at 10:37:00PM +0100, Giel van Schijndel wrote:
->> When leaving a function use memzero_explicit instead of memset(0) to
->> clear stack allocated buffers. memset(0) may be optimized away.
->>
->> This particular buffer is highly likely to contain sensitive data which
->> we shouldn't leak (it's named 'passwd' after all).
->>
->> Signed-off-by: Giel van Schijndel <me@mortis.eu>
->> Reported-at: http://www.viva64.com/en/b/0299/
->> Reported-by: Andrey Karpov
->> Reported-by: Svyatoslav Razmyslov
->
-> Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
->
-> Thanks,
-> --
-> Email: Herbert Xu <herbert@gondor.apana.org.au>
-> Home Page: http://gondor.apana.org.au/~herbert/
-> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+---
+ drivers/ata/ahci.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-
-
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 49f1e68..33bb06e 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -325,7 +325,6 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_VDEVICE(INTEL, 0x9d05), board_ahci }, /* Sunrise Point-LP RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x9d07), board_ahci }, /* Sunrise Point-LP RAID */
+ 	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H AHCI */
+-	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H RAID */
+ 	{ PCI_VDEVICE(INTEL, 0xa105), board_ahci }, /* Sunrise Point-H RAID */
+ 	{ PCI_VDEVICE(INTEL, 0xa107), board_ahci }, /* Sunrise Point-H RAID */
+ 	{ PCI_VDEVICE(INTEL, 0xa10f), board_ahci }, /* Sunrise Point-H RAID */
 -- 
-Thanks,
+1.8.3.1
 
-Steve
