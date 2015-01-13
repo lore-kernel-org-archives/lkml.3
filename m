@@ -1,162 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753630AbbAMTVP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 14:21:15 -0500
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:43773 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753401AbbAMTVO (ORCPT
+	id S1753257AbbAMTV2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 14:21:28 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36886 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753661AbbAMTV0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 14:21:14 -0500
+	Tue, 13 Jan 2015 14:21:26 -0500
+Date: Tue, 13 Jan 2015 19:21:46 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Thomas Voegtle <tv@lio96.de>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Subject: Re: [3.16.y-ckt stable] Linux 3.16.7-ckt4 stable review
+Message-ID: <20150113192146.GA24809@charon>
+References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
+ <alpine.LSU.2.11.1501122121450.16281@er-systems.de>
+ <20150112215941.GJ2455@charon>
+ <alpine.LSU.2.11.1501130035110.20153@er-systems.de>
+ <20150113092556.GA2304@charon>
+ <alpine.LSU.2.11.1501131946300.3987@er-systems.de>
 MIME-Version: 1.0
-In-Reply-To: <1421167074-9789-6-git-send-email-aarcange@redhat.com>
-References: <1421167074-9789-1-git-send-email-aarcange@redhat.com>
-	<1421167074-9789-6-git-send-email-aarcange@redhat.com>
-Date: Tue, 13 Jan 2015 11:21:11 -0800
-Message-ID: <CAJu=L590F-rmeR0+ny+KpH0SJBfRvOxHFwvpaPbJSGap6C64_w@mail.gmail.com>
-Subject: Re: [PATCH 5/5] mm: gup: kvm use get_user_pages_unlocked
-From: Andres Lagar-Cavilla <andreslc@google.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Michel Lespinasse <walken@google.com>,
-        Andrew Jones <drjones@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "\\Dr. David Alan Gilbert\\" <dgilbert@redhat.com>,
-        Peter Feiner <pfeiner@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        David Miller <davem@davemloft.net>,
-        Steve Capper <steve.capper@linaro.org>,
-        Johannes Weiner <jweiner@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.LSU.2.11.1501131946300.3987@er-systems.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 8:37 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> Use the more generic get_user_pages_unlocked which has the additional
-> benefit of passing FAULT_FLAG_ALLOW_RETRY at the very first page fault
-> (which allows the first page fault in an unmapped area to be always
-> able to block indefinitely by being allowed to release the mmap_sem).
->
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Reviewed-by: Andres Lagar-Cavilla <andreslc@google.com>
+On Tue, Jan 13, 2015 at 07:56:02PM +0100, Thomas Voegtle wrote:
+> On Tue, 13 Jan 2015, Luis Henriques wrote:
+> 
+> >On Tue, Jan 13, 2015 at 12:35:58AM +0100, Thomas Voegtle wrote:
+> >>On Mon, 12 Jan 2015, Luis Henriques wrote:
+> >>
+> >>>On Mon, Jan 12, 2015 at 09:30:45PM +0100, Thomas Voegtle wrote:
+> >>>>On Mon, 12 Jan 2015, Luis Henriques wrote:
+> >>>>
+> >>>>>This is the start of the review cycle for the Linux 3.16.7-ckt4 stable kernel.
+> >>>>>
+> >>>>>This version contains 216 new patches, summarized below.  The new patches are
+> >>>>>posted as replies to this message and also available in this git branch:
+> >>>>>
+> >>>>>http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=linux-3.16.y-review;a=shortlog
+> >>>>>
+> >>>>>git://kernel.ubuntu.com/ubuntu/linux.git  linux-3.16.y-review
+> >>>>>
+> >>>>>The review period for version 3.16.7-ckt4 will be open for the next three days.
+> >>>>>To report a problem, please reply to the relevant follow-up patch message.
+> >>>>>
+> >>>>>For more information about the Linux 3.16.y-ckt extended stable kernel version,
+> >>>>>see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable .
+> >>>>
+> >>>>
+> >>>>Something is wrong with drm/i915 (I guess). I had a terrible memleak on Xorg
+> >>>>when using mplayer using more and more RAM, and then the system is swapping
+> >>>>itself to death.
+> >>>>
+> >>>>I'm using a openSUSE 13.1 (x86_64) on a Baytrail J1900 (this is Intel HD
+> >>>>Gen7).
+> >>>>
+> >>>>
+> >>>
+> >>>Thank you for reporting, Thomas.  Can you please confirm that this is
+> >>>actually a regression in 3.16.7-ckt4 (i.e., that you can't reproduce
+> >>>it in 3.16.7-ckt3)?  If so, is it possible to bisecting it?
+> >>
+> >>
+> >>3.16.7-ckt3 was fine for me.
+> >>
+> >>I tried to revert the drm/i915 patches in the review branch, and I got lucky
+> >>with (only) reverting cb58c663d940a "drm/i915: Disallow pin ioctl completely
+> >>for kms drivers".
+> >>
+> >>No clue, why reverting these few lines helps, but then I have no memleak.
+> >>
+> >>
+> >>     Thomas
+> >>
+> >
+> >Thank a lot for narrowing this down, Thomas!  The text in that commit
+> >(upstream commit d472fcc8379c) may actually provide an hint for this
+> >issue.  It asks backporters to make sure they include both
+> >
+> >commit b45305fce5bb1abec263fcff9d81ebecd6306ede
+> >Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+> >Date:   Mon Dec 17 16:21:27 2012 +0100
+> >
+> >   drm/i915: Implement workaround for broken CS tlb on i830/845
+> >
+> >and
+> >
+> >commit c4d69da167fa967749aeb70bc0e94a457e5d00c1
+> >Author: Chris Wilson <chris@chris-wilson.co.uk>
+> >Date:   Mon Sep 8 14:25:41 2014 +0100
+> >
+> >   drm/i915: Evict CS TLBs between batches
+> >
+> >For some reason, this second commit (which was tagged for stable!)
+> >isn't in 3.16, and I completely missed that.
+> >
+> >Would you be able to verify that adding this commit (backport attached
+> >bellow) fixes the issue?
+> 
+> 
+> Mh, no, sorry, that doesn't fix it. Very fast memleak with /usr/bin/X.
+> 
+> I used linux-3.16.y-review (with no reverts) + your patch from previous
+> mail.
+> 
 
-Thanks for the cleanup.
+Thanks a lot for testing.  I'll ping the patch authors and eventually
+drop it from the queue.  (I'll keep you on CC).
 
-> ---
->  include/linux/kvm_host.h | 11 -----------
->  virt/kvm/async_pf.c      |  2 +-
->  virt/kvm/kvm_main.c      | 50 ++++--------------------------------------------
->  3 files changed, 5 insertions(+), 58 deletions(-)
->
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index 26f1060..d189ee0 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -200,17 +200,6 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, unsigned long hva,
->  int kvm_async_pf_wakeup_all(struct kvm_vcpu *vcpu);
->  #endif
->
-> -/*
-> - * Carry out a gup that requires IO. Allow the mm to relinquish the mmap
-> - * semaphore if the filemap/swap has to wait on a page lock. pagep == NULL
-> - * controls whether we retry the gup one more time to completion in that case.
-> - * Typically this is called after a FAULT_FLAG_RETRY_NOWAIT in the main tdp
-> - * handler.
-> - */
-> -int kvm_get_user_page_io(struct task_struct *tsk, struct mm_struct *mm,
-> -                        unsigned long addr, bool write_fault,
-> -                        struct page **pagep);
-> -
->  enum {
->         OUTSIDE_GUEST_MODE,
->         IN_GUEST_MODE,
-> diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
-> index 5ff7f7f..44660ae 100644
-> --- a/virt/kvm/async_pf.c
-> +++ b/virt/kvm/async_pf.c
-> @@ -80,7 +80,7 @@ static void async_pf_execute(struct work_struct *work)
->
->         might_sleep();
->
-> -       kvm_get_user_page_io(NULL, mm, addr, 1, NULL);
-> +       get_user_pages_unlocked(NULL, mm, addr, 1, 1, 0, NULL);
->         kvm_async_page_present_sync(vcpu, apf);
->
->         spin_lock(&vcpu->async_pf.lock);
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index 1cc6e2e..458b9b1 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -1128,43 +1128,6 @@ static int get_user_page_nowait(struct task_struct *tsk, struct mm_struct *mm,
->         return __get_user_pages(tsk, mm, start, 1, flags, page, NULL, NULL);
->  }
->
-> -int kvm_get_user_page_io(struct task_struct *tsk, struct mm_struct *mm,
-> -                        unsigned long addr, bool write_fault,
-> -                        struct page **pagep)
-> -{
-> -       int npages;
-> -       int locked = 1;
-> -       int flags = FOLL_TOUCH | FOLL_HWPOISON |
-> -                   (pagep ? FOLL_GET : 0) |
-> -                   (write_fault ? FOLL_WRITE : 0);
-> -
-> -       /*
-> -        * If retrying the fault, we get here *not* having allowed the filemap
-> -        * to wait on the page lock. We should now allow waiting on the IO with
-> -        * the mmap semaphore released.
-> -        */
-> -       down_read(&mm->mmap_sem);
-> -       npages = __get_user_pages(tsk, mm, addr, 1, flags, pagep, NULL,
-> -                                 &locked);
-> -       if (!locked) {
-> -               VM_BUG_ON(npages);
-> -
-> -               if (!pagep)
-> -                       return 0;
-> -
-> -               /*
-> -                * The previous call has now waited on the IO. Now we can
-> -                * retry and complete. Pass TRIED to ensure we do not re
-> -                * schedule async IO (see e.g. filemap_fault).
-> -                */
-> -               down_read(&mm->mmap_sem);
-> -               npages = __get_user_pages(tsk, mm, addr, 1, flags | FOLL_TRIED,
-> -                                         pagep, NULL, NULL);
-> -       }
-> -       up_read(&mm->mmap_sem);
-> -       return npages;
-> -}
-> -
->  static inline int check_user_page_hwpoison(unsigned long addr)
->  {
->         int rc, flags = FOLL_TOUCH | FOLL_HWPOISON | FOLL_WRITE;
-> @@ -1227,15 +1190,10 @@ static int hva_to_pfn_slow(unsigned long addr, bool *async, bool write_fault,
->                 npages = get_user_page_nowait(current, current->mm,
->                                               addr, write_fault, page);
->                 up_read(&current->mm->mmap_sem);
-> -       } else {
-> -               /*
-> -                * By now we have tried gup_fast, and possibly async_pf, and we
-> -                * are certainly not atomic. Time to retry the gup, allowing
-> -                * mmap semaphore to be relinquished in the case of IO.
-> -                */
-> -               npages = kvm_get_user_page_io(current, current->mm, addr,
-> -                                             write_fault, page);
-> -       }
-> +       } else
-> +               npages = __get_user_pages_unlocked(current, current->mm, addr, 1,
-> +                                                  write_fault, 0, page,
-> +                                                  FOLL_TOUCH|FOLL_HWPOISON);
->         if (npages != 1)
->                 return npages;
->
-
-
-
--- 
-Andres Lagar-Cavilla | Google Kernel Team | andreslc@google.com
+Cheers,
+--
+Luís
