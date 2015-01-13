@@ -1,78 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126AbbAMKMG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 05:12:06 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:50596 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752045AbbAMKMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 05:12:00 -0500
-Message-ID: <54B4EF43.50300@ti.com>
-Date: Tue, 13 Jan 2015 12:11:15 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Marek Belisko <marek@goldelico.com>, <tony@atomide.com>
-CC: <plagnioj@jcrosoft.com>, <bcousson@baylibre.com>, <hns@goldelico.com>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH v4 3/3] arm: dts: omap3-gta04: Add handling for tv output
-References: <1417642402-20538-1-git-send-email-marek@goldelico.com> <1417642402-20538-4-git-send-email-marek@goldelico.com>
-In-Reply-To: <1417642402-20538-4-git-send-email-marek@goldelico.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="FsKh27OBDuG4WVkpv3ap5Q76vqlvrDUU5"
+	id S1751723AbbAMKLd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 05:11:33 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:45539 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751355AbbAMKL3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 05:11:29 -0500
+X-Sasl-enc: hLa3ruWXhhirfA4vf82eT5J30SCHDkRUm4Hj9iaGN/TC 1421143886
+Message-ID: <1421143884.13626.1.camel@stressinduktion.org>
+Subject: Re: [PATCH net] ipv6: Prevent ipv6_find_hdr() from returning ENOENT
+ for valid non-first fragments
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Rahul Sharma <rsharma@arista.com>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
+Date: Tue, 13 Jan 2015 11:11:24 +0100
+In-Reply-To: <CAFB3abxcg4gdEh4CJHd_Vx8mZKFmO3kMG=pDjkQYS5awTzFbSQ@mail.gmail.com>
+References: <CAFB3abwKpR1VqZXUrsexqveAZrA2LTSmTe8a=-H7z2HjAptjwA@mail.gmail.com>
+	 <1420627396.26870.36.camel@stressinduktion.org>
+	 <20150108205328.GA3361@salvia>
+	 <1420756756.1755002.211556745.0418D128@webmail.messagingengine.com>
+	 <20150109000546.GA3488@salvia>
+	 <CAFB3abwrjp61LLOk3RWwXYEq1g4QZUC8OTKuO2cAr+GbV3n4rw@mail.gmail.com>
+	 <1420803255.1978819.211762005.707EFFB9@webmail.messagingengine.com>
+	 <20150109114506.GA4857@salvia>
+	 <1420818636.31075.15.camel@stressinduktion.org>
+	 <CAFB3abwetkNa4753g9d-z8xU0fMThyApuESQNkbxGa8Yz2YRfQ@mail.gmail.com>
+	 <20150112115111.GA3506@salvia>
+	 <CAFB3abxcg4gdEh4CJHd_Vx8mZKFmO3kMG=pDjkQYS5awTzFbSQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.9 (3.12.9-1.fc21) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---FsKh27OBDuG4WVkpv3ap5Q76vqlvrDUU5
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On Di, 2015-01-13 at 09:53 +0530, Rahul Sharma wrote:
+> On Mon, Jan 12, 2015 at 5:21 PM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+> > On Mon, Jan 12, 2015 at 04:38:16PM +0530, Rahul Sharma wrote:
+> >> Hi Pablo, Hannes
+> >>
+> >> On Fri, Jan 9, 2015 at 9:20 PM, Hannes Frederic Sowa
+> >> <hannes@stressinduktion.org> wrote:
+> >> > On Fr, 2015-01-09 at 12:45 +0100, Pablo Neira Ayuso wrote:
+> >> >> Hi Hannes,
+> >> >>
+> >> >> On Fri, Jan 09, 2015 at 12:34:15PM +0100, Hannes Frederic Sowa wrote:
+> >> >> > On Fri, Jan 9, 2015, at 08:18, Rahul Sharma wrote:
+> >> >> > > Hi Pablo,
+> >> >> > >
+> >> >> > > On Fri, Jan 9, 2015 at 5:35 AM, Pablo Neira Ayuso <pablo@netfilter.org>
+> >> >> > > wrote:
+> >> >> > > > On Thu, Jan 08, 2015 at 11:39:16PM +0100, Hannes Frederic Sowa wrote:
+> >> >> > > >> Hi Pablo,
+> >> >> > > >>
+> >> >> > > >> On Thu, Jan 8, 2015, at 21:53, Pablo Neira Ayuso wrote:
+> >> >> > > >> > I'm afraid we cannot just get rid of that !ipv6_ext_hdr() check. The
+> >> >> > > >> > ipv6_find_hdr() function is designed to return the transport protocol.
+> >> >> > > >> > After the proposed change, it will return extension header numbers.
+> >> >> > > >> > This will break existing ip6tables rulesets since the `-p' option
+> >> >> > > >> > relies on this function to match the transport protocol.
+> >> >> > > >> >
+> >> >> > > >> > Note that the AH header is skipped (see code a bit below this
+> >> >> > > >> > problematic fragmentation handling) so the follow up header after the
+> >> >> > > >> > AH header is returned as the transport header.
+> >> >> > > >> >
+> >> >> > > >> > We can probably return the AH protocol number for non-1st fragments.
+> >> >> > > >> > However, that would be something new to ip6tables since nobody has
+> >> >> > > >> > ever seen packet matching `-p ah' rules. Thus, we restore control to
+> >> >> > > >> > the user to allow this, but we would accept all kind of fragmented AH
+> >> >> > > >> > traffic through the firewall since we cannot know what transport
+> >> >> > > >> > protocol contains from non-1st fragments (unless I'm missing anything,
+> >> >> > > >> > I need to have a closer look at this again tomorrow with fresher
+> >> >> > > >> > mind).
+> >> >> > > >>
+> >> >> > > >> The code in question is guarded by (_frag_off != 0), so we are
+> >> >> > > >> definitely processing a non-1st fragment currently. The -p match would
+> >> >> > > >> happen at the time when the packet is reassembled and thus ipv6_find_hdr
+> >> >> > > >> will find the real transport (final) header at this point (I hope I
+> >> >> > > >> followed the code correctly here).
+> >> >> > > >
+> >> >> > > > Then, Rahul should get things working by modprobing nf_defrag_ipv6.
+> >> >> > >
+> >> >> > > I already had nf_defrag_ipv6 installed when the issue occured. But I
+> >> >> > > see ip6table_raw_hook returning NF_DROP for the second fragment.
+> >> >> >
+> >> >> > That's what I expected. I think the change only affects hooks before
+> >> >> > reassembly.
+> >> >>
+> >> >> reassembly happens at NF_IP6_PRI_CONNTRACK_DEFRAG (-400), so that
+> >> >> happens before NF_IP6_PRI_RAW (-300) in IPv6 which is where the raw
+> >> >> table is placed.
+> >> >
+> >> > I tried to reproduce it, but couldn't get non-1st fragments getting
+> >> > dropped during traversal of the raw table. They get dropped earlier at
+> >> > during reassembly or pass.
+> >> >
+> >> > I agree with Pablo, I also would like to see more data.
+> >> >
+> >> > Thanks,
+> >> > Hannes
+> >> >
+> >> >
+> >>
+> >> I enabled pr_debug() and there was no error in nf_ct_frag6_gather().
+> >> It seems to have defragmented the packet correctly. As expected,
+> >> ipv6_defrag() returns NF_STOLEN for the first packet after queuing it.
+> >> For the next fragment, ipv6_defrag() calls nf_ct_frag6_output() after
+> >> after reassembling it.
+> >
+> > nf_ct_frag6_output() doesn't exist anymore. You're using an old
+> > kernel, you should have started by telling so in your report.
+> >
+> > See 6aafeef ("netfilter: push reasm skb through instead of original
+> > frag skbs").
+> 
+>  I apologize for not mentioning the kernel version in my first mail. I
+> had suspected problem in ipv6_find_hdr, the code for which was same.
+> Anyway, thanks for the help. I ll try to figure out how to make this
+> work in my kernel.
 
-On 03/12/14 23:33, Marek Belisko wrote:
-> Add handling for gta04 tv out chain:
-> venc -> opa362 -> svideo
->=20
-> Use invert-polarity in venc node because opa362
-> is doing polarity inversion also.
->=20
-> Signed-off-by: Marek Belisko <marek@goldelico.com>
-> ---
->  arch/arm/boot/dts/omap3-gta04.dtsi | 49 ++++++++++++++++++++++++++++++=
-++++++++
->  1 file changed, 49 insertions(+)
+If you have time could you quickly test a recent net-next kernel?
 
-Looks fine to me.
+Thanks,
+Hannes
 
-Tony, do you want to pick this up? I can take the first two patches via
-fbdev.
-
- Tomi
-
-
-
---FsKh27OBDuG4WVkpv3ap5Q76vqlvrDUU5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUtO9DAAoJEPo9qoy8lh71qwgP/0WaNBxbpL5Z0jyxf2NkpKHJ
-C5bKasUpileQUe4LxHe0VZzwiOrKDC4RcpdYRoo2c5+MrEmVRCuPEYWx64h2Yvvq
-kLc+aJH+vmSBfej/CNgieRvElDaPy7ESzBxSIZT1znAkWYvzeyWclp1SX98cgJgg
-GnB/bVSN3xHWuKfYDIp/+yyiwxSHLuKTsjPCQ/fEmovdXL35vZSePmeQEO6vzvol
-AltR1EC/Nvgd2Yz/fiZtStwT8rKrsDV15QufnLQf+b5maIFzO4Erd564pbLIOu2c
-xOoG3Gwc5lWlRqBiZxL7Q6wJEOGO+IBOnmw+btiJbemeWOuLmUl0Owp/npz6c4pr
-wq5jJ0SHxe5XksFq9FKmqoBK03WFmv8syRtrBZgFlI8vidJGUw/4fpPMx70c5lmB
-tLoe6prLlCTxebqamCTjwwtROWBkQg9CRljzR5yRjUPWQUoleMZkvdSjMJWedfGH
-/Nm51fnpzWE59uRMd5hnrmlVG3t7dN6YDKvlrUFDIP8Gvv9Ep6s16I0VIbf4huo/
-Yj7jyl47LMpewUCzhragJ2anvpTjJJFNcWdgLYxTT7mokgA5+YTsPge94HQ8Sfzk
-urxnggTsg+3tEQ9qOn9HPPcfs0YsPIXJyjl3so091pgLHwyneOLAwCgQ5JOeskoc
-97Z7hmnsaRcjHVnc0Pl8
-=sNxd
------END PGP SIGNATURE-----
-
---FsKh27OBDuG4WVkpv3ap5Q76vqlvrDUU5--
