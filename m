@@ -1,63 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752384AbbAMXsw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 18:48:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53388 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192AbbAMXsv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 18:48:51 -0500
-Date: Tue, 13 Jan 2015 15:48:49 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Andrzej Hajda <a.hajda@samsung.com>, Linux MM <linux-mm@kvack.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Andreas Mohr <andi@lisas.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH 0/5] kstrdup optimization
-Message-Id: <20150113154849.5bb3fdd0ff9d73a89e639f19@linux-foundation.org>
-In-Reply-To: <CAMuHMdV74n3v81xaLRDN_Mn_QGg14yUkXNn6JYaGH4MGgLRM2A@mail.gmail.com>
-References: <1421054323-14430-1-git-send-email-a.hajda@samsung.com>
-	<CAMuHMdV74n3v81xaLRDN_Mn_QGg14yUkXNn6JYaGH4MGgLRM2A@mail.gmail.com>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753788AbbAMXuR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 18:50:17 -0500
+Received: from ozlabs.org ([103.22.144.67]:36354 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751160AbbAMXuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 18:50:15 -0500
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: <linuxppc-dev@ozlabs.org>
+Cc: <linux-kernel@vger.kernel.org>, shuahkh@osg.samsung.com
+Subject: [PATCH] selftests/powerpc: Add .gitignore for powerpc selftests
+Date: Wed, 14 Jan 2015 10:49:57 +1100
+Message-Id: <1421192997-17003-1-git-send-email-mpe@ellerman.id.au>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Jan 2015 21:45:58 +0100 Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+---
+ .../testing/selftests/powerpc/copyloops/.gitignore |  4 ++++
+ tools/testing/selftests/powerpc/mm/.gitignore      |  1 +
+ tools/testing/selftests/powerpc/pmu/.gitignore     |  3 +++
+ tools/testing/selftests/powerpc/pmu/ebb/.gitignore | 22 ++++++++++++++++++++++
+ .../selftests/powerpc/primitives/.gitignore        |  1 +
+ tools/testing/selftests/powerpc/tm/.gitignore      |  1 +
+ 6 files changed, 32 insertions(+)
+ create mode 100644 tools/testing/selftests/powerpc/copyloops/.gitignore
+ create mode 100644 tools/testing/selftests/powerpc/mm/.gitignore
+ create mode 100644 tools/testing/selftests/powerpc/pmu/.gitignore
+ create mode 100644 tools/testing/selftests/powerpc/pmu/ebb/.gitignore
+ create mode 100644 tools/testing/selftests/powerpc/primitives/.gitignore
+ create mode 100644 tools/testing/selftests/powerpc/tm/.gitignore
 
-> On Mon, Jan 12, 2015 at 10:18 AM, Andrzej Hajda <a.hajda@samsung.com> wrote:
-> > kstrdup if often used to duplicate strings where neither source neither
-> > destination will be ever modified. In such case we can just reuse the source
-> > instead of duplicating it. The problem is that we must be sure that
-> > the source is non-modifiable and its life-time is long enough.
-> >
-> > I suspect the good candidates for such strings are strings located in kernel
-> > .rodata section, they cannot be modifed because the section is read-only and
-> > their life-time is equal to kernel life-time.
-> >
-> > This small patchset proposes alternative version of kstrdup - kstrdup_const,
-> > which returns source string if it is located in .rodata otherwise it fallbacks
-> > to kstrdup.
-> 
-> It also introduces kfree_const(const void *x).
-> 
-> As kfree_const() has the exact same signature as kfree(), the risk of
-> accidentally passing pointers returned from kstrdup_const() to kfree() seems
-> high, which may lead to memory corruption if the pointer doesn't point to
-> allocated memory.
-
-Yes, it's an ugly little patchset.  But 100-200k of memory is hard to
-argue with, and I'm not seeing a practical way of getting those savings
-with a cleaner approach.
-
-Hopefully a kfree(rodata-address) will promptly oops, but I haven't
-tested that and it presumably depends on which flavour of
-slab/sleb/slib/slob/slub you're using.
+diff --git a/tools/testing/selftests/powerpc/copyloops/.gitignore b/tools/testing/selftests/powerpc/copyloops/.gitignore
+new file mode 100644
+index 000000000000..25a192f62c4d
+--- /dev/null
++++ b/tools/testing/selftests/powerpc/copyloops/.gitignore
+@@ -0,0 +1,4 @@
++copyuser_64
++copyuser_power7
++memcpy_64
++memcpy_power7
+diff --git a/tools/testing/selftests/powerpc/mm/.gitignore b/tools/testing/selftests/powerpc/mm/.gitignore
+new file mode 100644
+index 000000000000..156f4e89c2f1
+--- /dev/null
++++ b/tools/testing/selftests/powerpc/mm/.gitignore
+@@ -0,0 +1 @@
++hugetlb_vs_thp_test
+diff --git a/tools/testing/selftests/powerpc/pmu/.gitignore b/tools/testing/selftests/powerpc/pmu/.gitignore
+new file mode 100644
+index 000000000000..e748f336eed3
+--- /dev/null
++++ b/tools/testing/selftests/powerpc/pmu/.gitignore
+@@ -0,0 +1,3 @@
++count_instructions
++l3_bank_test
++per_event_excludes
+diff --git a/tools/testing/selftests/powerpc/pmu/ebb/.gitignore b/tools/testing/selftests/powerpc/pmu/ebb/.gitignore
+new file mode 100644
+index 000000000000..5967ff34c167
+--- /dev/null
++++ b/tools/testing/selftests/powerpc/pmu/ebb/.gitignore
+@@ -0,0 +1,22 @@
++back_to_back_ebbs_test
++close_clears_pmcc_test
++cpu_event_pinned_vs_ebb_test
++cpu_event_vs_ebb_test
++cycles_test
++cycles_with_freeze_test
++cycles_with_mmcr2_test
++ebb_on_child_test
++ebb_on_willing_child_test
++ebb_vs_cpu_event_test
++event_attributes_test
++fork_cleanup_test
++instruction_count_test
++lost_exception_test
++multi_counter_test
++multi_ebb_procs_test
++no_handler_test
++pmae_handling_test
++pmc56_overflow_test
++reg_access_test
++task_event_pinned_vs_ebb_test
++task_event_vs_ebb_test
+diff --git a/tools/testing/selftests/powerpc/primitives/.gitignore b/tools/testing/selftests/powerpc/primitives/.gitignore
+new file mode 100644
+index 000000000000..4cc4e31bed1d
+--- /dev/null
++++ b/tools/testing/selftests/powerpc/primitives/.gitignore
+@@ -0,0 +1 @@
++load_unaligned_zeropad
+diff --git a/tools/testing/selftests/powerpc/tm/.gitignore b/tools/testing/selftests/powerpc/tm/.gitignore
+new file mode 100644
+index 000000000000..33d02cc54a3e
+--- /dev/null
++++ b/tools/testing/selftests/powerpc/tm/.gitignore
+@@ -0,0 +1 @@
++tm-resched-dscr
+-- 
+2.1.0
 
