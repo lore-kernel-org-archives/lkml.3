@@ -1,53 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995AbbAMRKd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 12:10:33 -0500
-Received: from mga09.intel.com ([134.134.136.24]:61844 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751253AbbAMRKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 12:10:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="511644709"
-Message-ID: <1421169028.6941.0.camel@linux.intel.com>
-Subject: Re: [PATCH] pcmcia: add missing include for new pci resource handler
-From: Alan Cox <alan@linux.intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Tue, 13 Jan 2015 17:10:28 +0000
-In-Reply-To: <5425521.E2szj8uYq0@wuerfel>
-References: <5425521.E2szj8uYq0@wuerfel>
-Organization: Intel Corporation
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9 (3.12.9-1.fc21) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753030AbbAMRLk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 12:11:40 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:63942 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752001AbbAMRLj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 12:11:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <1421012793-30106-7-git-send-email-riel@redhat.com>
+References: <1421012793-30106-1-git-send-email-riel@redhat.com> <1421012793-30106-7-git-send-email-riel@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 13 Jan 2015 09:11:17 -0800
+Message-ID: <CALCETrWWLzdPrmGdw7+g68Sy2m9Fs6U5nO3dWAOHt8XAxXSb3g@mail.gmail.com>
+Subject: Re: [RFC PATCH 06/11] x86,fpu: lazily skip fpu restore with eager fpu
+ mode, too
+To: Rik van Riel <riel@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@intel.com>, Borislav Petkov <bp@suse.de>,
+        Oleg Nesterov <oleg@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2015-01-13 at 15:11 +0100, Arnd Bergmann wrote:
-> The recently added rsrc_pci.c file calls pci_bus_alloc_resource without
-> including the header file that declares it, and that sometimes causes
-> a build warning on ARM:
-> 
-> drivers/pcmcia/rsrc_pci.c: In function 'find_io_region':
-> drivers/pcmcia/rsrc_pci.c:40:2: error: implicit declaration of function 'pci_bus_alloc_resource' [-Werror=implicit-function-declaration]
-> 
-> This adds the missing include statement.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Alan Cox <alan@linux.intel.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Fixes: 02b03846bb2be ("pcmcia: add a new resource manager for non ISA systems"
+On Sun, Jan 11, 2015 at 1:46 PM,  <riel@redhat.com> wrote:
+> From: Rik van Riel <riel@redhat.com>
+>
+> If the next task still has its FPU state present in the FPU registers,
+> there is no need to restore it from memory.
+>
+> This is no big deal on bare metal, where XSAVEOPT / XRSTOR are heavily
+> optimized, but those optimizations do not carry across VMENTER / VMEXIT.
+>
+> Skipping the call to fpu_restore_checking when the FPU state is already
+> loaded in the CPU could save a little bit of overhead on bare metal too,
+> so this is not just a KVM optimization.
+>
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> ---
+>  arch/x86/include/asm/fpu-internal.h | 12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
+> index 4db8781..a5a40c7 100644
+> --- a/arch/x86/include/asm/fpu-internal.h
+> +++ b/arch/x86/include/asm/fpu-internal.h
+> @@ -435,13 +435,9 @@ static inline void switch_fpu_prepare(struct task_struct *old, struct task_struc
+>                 old->thread.fpu.last_cpu = ~0;
+>                 if (preload) {
+>                         new->thread.fpu_counter++;
+> -                       if (!use_eager_fpu() && fpu_lazy_restore(new, cpu))
+> -                               /* XXX: is this safe against ptrace??? */
+> -                               __thread_fpu_begin(new);
+> -                       else {
+> +                       set_thread_flag(TIF_LOAD_FPU);
+> +                       if (!fpu_lazy_restore(new, cpu))
+>                                 prefetch(new->thread.fpu.state);
 
-Acked-by: Alan Cox <alan@linux.intel.com>
+Is this prefetch still worth keeping?  Wouldn't prefetching the fpu
+effectively require grabbing more than one cacheline anyway?
 
-I hadn't intended it to be sucked on ARM although I guess it ought to
-work there just fine.
+--Andy
 
-Alan
+> -                               set_thread_flag(TIF_LOAD_FPU);
+> -                       }
+>                 } else
+>                         /*
+>                          * The new task does not want an FPU state restore,
+> @@ -466,6 +462,10 @@ static inline void switch_fpu_finish(void)
+>
+>         __thread_fpu_begin(tsk);
+>
+> +       /* The FPU registers already have this task's FPU state. */
+> +       if (fpu_lazy_restore(tsk, raw_smp_processor_id()))
+> +               return;
+> +
+>         if (unlikely(restore_fpu_checking(tsk)))
+>                 drop_init_fpu(tsk);
+>  }
+> --
+> 1.9.3
+>
 
 
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
