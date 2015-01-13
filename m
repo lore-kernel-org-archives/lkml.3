@@ -1,218 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370AbbAMC4b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 21:56:31 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:47667 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054AbbAMC43 convert rfc822-to-8bit (ORCPT
+	id S1753627AbbAMC5m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 21:57:42 -0500
+Received: from resqmta-po-10v.sys.comcast.net ([96.114.154.169]:43666 "EHLO
+	resqmta-po-10v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753445AbbAMC5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 21:56:29 -0500
+	Mon, 12 Jan 2015 21:57:07 -0500
+From: Shuah Khan <shuahkh@osg.samsung.com>
+To: m.chehab@samsung.com, hans.verkuil@cisco.com, dheitmueller@kernellabs.com,
+        prabhakar.csengg@gmail.com, sakari.ailus@linux.intel.com,
+        laurent.pinchart@ideasonboard.com, ttmesterr@gmail.com
+Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/3] au0828 vb2 conversion
+Date: Mon, 12 Jan 2015 19:56:54 -0700
+Message-Id: <cover.1421115389.git.shuahkh@osg.samsung.com>
+X-Mailer: git-send-email 2.1.0
 MIME-Version: 1.0
-In-Reply-To: <933BEC2E04D6A5458F4B0239FB547F9A34CC3608@fmsmsx118.amr.corp.intel.com>
-References: <1420821466-5747-1-git-send-email-ethan.zhao@oracle.com>
-	<D38E8E86660E514AB505863C19C9287C741097AF@ORSMSX102.amr.corp.intel.com>
-	<933BEC2E04D6A5458F4B0239FB547F9A34CC3608@fmsmsx118.amr.corp.intel.com>
-Date: Tue, 13 Jan 2015 10:56:28 +0800
-Message-ID: <CABawtvN_afL4B=fwtRJF_YJpe7tv6yf-OHJipWkGd-AiAjtckg@mail.gmail.com>
-Subject: Re: [PATCH] i40e: don't enable and init FCOE by default when do PF reset
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: "Dev, Vasu" <vasu.dev@intel.com>
-Cc: "Ronciak, John" <john.ronciak@intel.com>,
-        Ethan Zhao <ethan.zhao@oracle.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
-        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
-        "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        "Vick, Matthew" <matthew.vick@intel.com>,
-        "Williams, Mitch A" <mitch.a.williams@intel.com>,
-        "Parikh, Neerav" <neerav.parikh@intel.com>,
-        Linux NICS <Linux-nics@isotope.jf.intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "brian.maly@oracle.com" <brian.maly@oracle.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vasu,
+This patch series includes patch v3 of the au0828 vb2 conversion,
+removing video and vbi buffer timeout handling, and a patch to
+fix compile error from au0828_boards initialization which uses a
+a define from videobuf-core.h which is no longer included with the
+vb2 conversion change.
 
-On Sat, Jan 10, 2015 at 2:18 AM, Dev, Vasu <vasu.dev@intel.com> wrote:
->> -----Original Message-----
->> From: Ronciak, John
->> Sent: Friday, January 09, 2015 8:42 AM
->> To: Ethan Zhao; Kirsher, Jeffrey T; Brandeburg, Jesse; Allan, Bruce W;
->> Wyborny, Carolyn; Skidmore, Donald C; Rose, Gregory V; Vick, Matthew;
->> Williams, Mitch A; Dev, Vasu; Parikh, Neerav
->> Cc: Linux NICS; e1000-devel@lists.sourceforge.net; netdev@vger.kernel.org;
->> linux-kernel@vger.kernel.org; ethan.kernel@gmail.com;
->> brian.maly@oracle.com
->> Subject: RE: [PATCH] i40e: don't enable and init FCOE by default when do PF
->> reset
->>
->> Adding Vasu and Neerav
->>
->> Cheers,
->> John
->>
->> > -----Original Message-----
->> > From: Ethan Zhao [mailto:ethan.zhao@oracle.com]
->> > Sent: Friday, January 9, 2015 8:38 AM
->> > To: Kirsher, Jeffrey T; Brandeburg, Jesse; Allan, Bruce W; Wyborny,
->> > Carolyn; Skidmore, Donald C; Rose, Gregory V; Vick, Matthew; Ronciak,
->> > John; Williams, Mitch A
->> > Cc: Linux NICS; e1000-devel@lists.sourceforge.net;
->> > netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
->> > ethan.kernel@gmail.com; brian.maly@oracle.com; Ethan Zhao
->> > Subject: [PATCH] i40e: don't enable and init FCOE by default when do
->> > PF reset
->> >
->> > While do PF reset with function i40e_reset_and_rebuild(), it will call
->> > i40e_init_pf_fcoe() by default if FCOE is defined, thus if the PF is
->> > resetted, FCOE will be enabled whatever it was - enabled or not.
->> >
->> > Such bug might be hit when PF resumes from suspend, run diagnostic
->> > test with ethtool, setup VLAN etc.
->> >
->> > Passed building with v3.19-rc3.
->> >
->> > Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
->> > ---
->> >  drivers/net/ethernet/intel/i40e/i40e_main.c | 9 ++++++---
->> >  1 file changed, 6 insertions(+), 3 deletions(-)
->> >
->> > diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c
->> > b/drivers/net/ethernet/intel/i40e/i40e_main.c
->> > index a5f2660..a2572cc 100644
->> > --- a/drivers/net/ethernet/intel/i40e/i40e_main.c
->> > +++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
->> > @@ -6180,9 +6180,12 @@ static void i40e_reset_and_rebuild(struct
->> > i40e_pf *pf, bool reinit)
->> >     }
->> >  #endif /* CONFIG_I40E_DCB */
->> >  #ifdef I40E_FCOE
->> > -   ret = i40e_init_pf_fcoe(pf);
->> > -   if (ret)
->> > -           dev_info(&pf->pdev->dev, "init_pf_fcoe failed: %d\n", ret);
->> > +   if (pf->flags & I40E_FLAG_FCOE_ENABLED) {
->> > +           ret = i40e_init_pf_fcoe(pf);
->
-> Calling i40e_init_pf_fcoe() here conflicts with its I40E_FLAG_FCOE_ENABLED pre-condition since I40E_FLAG_FCOE_ENABLED is set by very same i40e_init_pf_fcoe(), in turn i40e_init_pf_fcoe() will never get called.
+The following work is in progress and will be done as separate
+patches:
+- removing users and using v4l2_fh_is_singular_file() instead.
+- Changing dynamic allocation of video device structs to static
+  which will reduce the overhead to allocate at register time and
+  deallocating at unregister.
+- New v4l2-compliance tool showed warnings on try_fmt and s_fmt
+  because the driver doesn't return error in all cases.
 
-I don't think so,  here ,i40e_reset_and_rebuild()  is not the only and
-the first place that  i40e_init_pf_fcoe() is called,
-see i40e_probe(), that is the first chance.
+Changes from patch v2:
+- Dropped already acked from the v3 series
+  [PATCH v2 2/3] media: au0828 change to not zero out fmt.pix.priv
+- Split compile error fix and vb2 conversion patches
+- Made changes to vb2 conversion patch to address comments on v2
+  patch.
+- Updated commit log for remove video and vbi buffer timeout
+  work-around patch
+- Rebased and tested patches on 3.19-rc4
 
-i40e_probe()
--->i40e_sw_init()
-     -->i40e_init_pf_fcoe()
+Shuah Khan (3):
+  media: fix au0828 compile error from au0828_boards initialization
+  media: au0828 - convert to use videobuf2
+  media: au0828 remove video and vbi buffer timeout work-around
 
-And the I40E_FLAG_FCOE_ENABLED is possible be set by
-i40e_fcoe_enable() or i40e_fcoe_disable() interface before the reset
-action is to be done.
+ drivers/media/usb/au0828/Kconfig        |    2 +-
+ drivers/media/usb/au082e/au0828-cards.c |    2 +-
+ drivers/media/usb/au0828/au0828-vbi.c   |  122 ++--
+ drivers/media/usb/au0828/au0828-video.c | 1005 +++++++++++--------------------
+ drivers/media/usb/au0828/au0828.h       |   64 +-
+ 5 files changed, 414 insertions(+), 781 deletions(-)
 
-BTW, the reason I post this patch is that we hit a bug, after setup
-vlan, the PF is enabled to FCOE.
+-- 
+2.1.0
 
->
-> Jeff Kirsher should be getting out a patch queued by me which adds I40E_FCoE Kbuild option, in that FCoE is disabled by default and  user could enable FCoE only if needed, that patch would do same of skipping i40e_init_pf_fcoe() whether FCoE capability in device enabled or not in default config.
->
-
-The following patch will not fix the above issue -- configuration of
-PF will be changed via reset.
-How about the FCOE is configured and disabled by  i40e_fcoe_disable()
-, then reset happens ?
-
-> From patchwork Wed Oct  2 23:26:08 2013
-> Content-Type: text/plain; charset="utf-8"
-> MIME-Version: 1.0
-> Content-Transfer-Encoding: 7bit
-> Subject: [net] i40e: adds FCoE configure option
-> Date: Thu, 03 Oct 2013 07:26:08 -0000
-> From: Vasu Dev <vasu.dev@intel.com>
-> X-Patchwork-Id: 11797
->
-> Adds FCoE config option I40E_FCOE, so that FCoE can be enabled
-> as needed but otherwise have it disabled by default.
->
-> This also eliminate multiple FCoE config checks, instead now just
-> one config check for CONFIG_I40E_FCOE.
->
-> The I40E FCoE was added with 3.17 kernel and therefore this patch
-> shall be applied to stable 3.17 kernel also.
->
-> CC: <stable@vger.kernel.org>
-> Signed-off-by: Vasu Dev <vasu.dev@intel.com>
-> Tested-by: Jim Young <jamesx.m.young@intel.com>
->
-> ---
-> drivers/net/ethernet/intel/Kconfig           |   11 +++++++++++
->  drivers/net/ethernet/intel/i40e/Makefile     |    2 +-
->  drivers/net/ethernet/intel/i40e/i40e_osdep.h |    4 ++--
->  3 files changed, 14 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/net/ethernet/intel/Kconfig b/drivers/net/ethernet/intel/Kconfig
-> index 5b8300a..4d61ef5 100644
-> --- a/drivers/net/ethernet/intel/Kconfig
-> +++ b/drivers/net/ethernet/intel/Kconfig
-> @@ -281,6 +281,17 @@ config I40E_DCB
->
->           If unsure, say N.
->
-> +config I40E_FCOE
-> +       bool "Fibre Channel over Ethernet (FCoE)"
-> +       default n
-> +       depends on I40E && DCB && FCOE
-> +       ---help---
-> +         Say Y here if you want to use Fibre Channel over Ethernet (FCoE)
-> +         in the driver. This will create new netdev for exclusive FCoE
-> +         use with XL710 FCoE offloads enabled.
-> +
-> +         If unsure, say N.
-> +
->  config I40EVF
->         tristate "Intel(R) XL710 X710 Virtual Function Ethernet support"
->         depends on PCI_MSI
-> diff --git a/drivers/net/ethernet/intel/i40e/Makefile b/drivers/net/ethernet/intel/i40e/Makefile
-> index 4b94ddb..c405819 100644
-> --- a/drivers/net/ethernet/intel/i40e/Makefile
-> +++ b/drivers/net/ethernet/intel/i40e/Makefile
-> @@ -44,4 +44,4 @@ i40e-objs := i40e_main.o \
->         i40e_virtchnl_pf.o
->
->  i40e-$(CONFIG_I40E_DCB) += i40e_dcb.o i40e_dcb_nl.o
-> -i40e-$(CONFIG_FCOE:m=y) += i40e_fcoe.o
-> +i40e-$(CONFIG_I40E_FCOE) += i40e_fcoe.o
-> diff --git a/drivers/net/ethernet/intel/i40e/i40e_osdep.h b/drivers/net/ethernet/intel/i40e/i40e_osdep.h
-> index 045b5c4..ad802dd 100644
-> --- a/drivers/net/ethernet/intel/i40e/i40e_osdep.h
-> +++ b/drivers/net/ethernet/intel/i40e/i40e_osdep.h
-> @@ -78,7 +78,7 @@ do {                                                            \
->  } while (0)
->
->  typedef enum i40e_status_code i40e_status;
-> -#if defined(CONFIG_FCOE) || defined(CONFIG_FCOE_MODULE)
-> +#ifdef CONFIG_I40E_FCOE
->  #define I40E_FCOE
-> -#endif /* CONFIG_FCOE or CONFIG_FCOE_MODULE */
-> +#endif
->  #endif /* _I40E_OSDEP_H_ */
->
->> > +           if (ret)
->> > +                   dev_info(&pf->pdev->dev,
->> > +                            "init_pf_fcoe failed: %d\n", ret);
->> > +   }
->> >
->> >  #endif
->> >     /* do basic switch setup */
->> > --
->> > 1.8.3.1
->
-
-Thanks,
-Ethan
