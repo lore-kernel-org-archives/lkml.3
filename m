@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396AbbAMQIT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 11:08:19 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:55531 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190AbbAMQIQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 11:08:16 -0500
-X-IronPort-AV: E=Sophos;i="5.07,750,1413244800"; 
-   d="scan'208";a="216132185"
-Message-ID: <54B542C0.4070701@citrix.com>
-Date: Tue, 13 Jan 2015 16:07:28 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1752735AbbAMQJs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 11:09:48 -0500
+Received: from gum.cmpxchg.org ([85.214.110.215]:57298 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752425AbbAMQJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 11:09:46 -0500
+Date: Tue, 13 Jan 2015 11:09:40 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Vinayak Menon <vinmenon@codeaurora.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, vdavydov@parallels.com, mhocko@suse.cz,
+        mgorman@suse.de, minchan@kernel.org
+Subject: Re: [PATCH] mm: vmscan: fix the page state calculation in
+ too_many_isolated
+Message-ID: <20150113160940.GD8180@phnom.home.cmpxchg.org>
+References: <1421147247-10870-1-git-send-email-vinmenon@codeaurora.org>
 MIME-Version: 1.0
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Imre Palik <imrep.amz@gmail.com>, <xen-devel@lists.xenproject.org>
-CC: "Palik, Imre" <imrep@amazon.de>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Anthony Liguori <aliguori@amazon.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Xen-devel] [PATCH] xen-time: decreasing the rating of the xen
- clocksource below that of the tsc clocksource for dom0's
-References: <1421136862-15083-1-git-send-email-imrep.amz@gmail.com> <54B4EAC7.2080105@citrix.com> <54B53CDD.7070400@oracle.com>
-In-Reply-To: <54B53CDD.7070400@oracle.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421147247-10870-1-git-send-email-vinmenon@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/01/15 15:42, Boris Ostrovsky wrote:
-> On 01/13/2015 04:52 AM, David Vrabel wrote:
->> On 13/01/15 08:14, Imre Palik wrote:
->>> From: "Palik, Imre" <imrep@amazon.de>
->>>
->>> In Dom0's the use of the TSC clocksource (whenever it is stable
->>> enough to
->>> be used) instead of the Xen clocksource should not cause any issues, as
->>> Dom0 VMs never live-migrated.  The TSC clocksource is somewhat more
->>> efficient than the Xen paravirtualised clocksource, thus it should have
->>> higher rating.
->>>
->>> This patch decreases the rating of the Xen clocksource in Dom0s to 275.
->>> Which is half-way between the rating of the TSC clocksource (300) and
->>> the
->>> hpet clocksource (250).
->> I'm happy with this but would like to see acks from those who objected
->> to v1.
->>
->> David
->>
->>> --- a/arch/x86/xen/time.c
->>> +++ b/arch/x86/xen/time.c
->>> @@ -487,6 +487,10 @@ static void __init xen_time_init(void)
->>>       int cpu = smp_processor_id();
->>>       struct timespec tp;
->>>   +    /* As Dom0 is never moved, no penalty on using TSC there */
-> 
-> Again, why not any PV guest with TSC_MODE_NEVER_EMULATE?
+On Tue, Jan 13, 2015 at 04:37:27PM +0530, Vinayak Menon wrote:
+> @@ -1392,6 +1392,44 @@ int isolate_lru_page(struct page *page)
+>  	return ret;
+>  }
+>  
+> +static int __too_many_isolated(struct zone *zone, int file,
+> +	struct scan_control *sc, int safe)
+> +{
+> +	unsigned long inactive, isolated;
+> +
+> +	if (file) {
+> +		if (safe) {
+> +			inactive = zone_page_state_snapshot(zone,
+> +					NR_INACTIVE_FILE);
+> +			isolated = zone_page_state_snapshot(zone,
+> +					NR_ISOLATED_FILE);
+> +		} else {
+> +			inactive = zone_page_state(zone, NR_INACTIVE_FILE);
+> +			isolated = zone_page_state(zone, NR_ISOLATED_FILE);
+> +		}
+> +	} else {
+> +		if (safe) {
+> +			inactive = zone_page_state_snapshot(zone,
+> +					NR_INACTIVE_ANON);
+> +			isolated = zone_page_state_snapshot(zone,
+> +					NR_ISOLATED_ANON);
+> +		} else {
+> +			inactive = zone_page_state(zone, NR_INACTIVE_ANON);
+> +			isolated = zone_page_state(zone, NR_ISOLATED_ANON);
+> +		}
+> +	}
 
-Surely if TSC_MODE_NEVER_EMULATE is set then the TSC is /not/ stable
-across a guest save/restore thus the PV clocksource must be used?
-
-I don't think we want to assume that TSC_MODE_NEVER_EMULATE => never
-migrate.
-
-David
+	if (safe) {
+		inactive = zone_page_state_snapshot(zone, NR_INACTIVE_ANON + 2*file)
+		isolated = zone_page_state_snapshot(zone, NR_ISOLATED_ANON + file)
+	} else {
+		inactive = zone_page_state(zone, NR_INACTIVE_ANON + 2*file)
+		isolated = zone_page_state(zone, NR_ISOLATED_ANON + file)
+	}
