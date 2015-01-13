@@ -1,123 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659AbbAMPgX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 10:36:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46061 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751569AbbAMPgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 10:36:21 -0500
-Date: Tue, 13 Jan 2015 10:36:09 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Calvin Owens <calvinowens@fb.com>
-Cc: Eric Paris <eparis@redhat.com>, ebiederm@xmission.com, paul@paul-moore.com,
-        linux-kernel@vger.kernel.org, kernel-team@fb.com,
-        stable@vger.kernel.org, linux-audit@redhat.com
-Subject: Re: [PATCH][RESEND 2] Revert "AUDIT: Allow login in non-init
- namespaces"
-Message-ID: <20150113153443.GH512@madcap2.tricolour.ca>
-References: <1415148371-11742-1-git-send-email-calvinowens@fb.com>
- <20141118203221.GA1687992@mail.thefacebook.com>
- <20150109014448.GF27996@mail.thefacebook.com>
+	id S1752036AbbAMPjb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 10:39:31 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:35624 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313AbbAMPja (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 10:39:30 -0500
+Message-ID: <54B53C2F.905@linaro.org>
+Date: Tue, 13 Jan 2015 16:39:27 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150109014448.GF27996@mail.thefacebook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Yanchang Li <yl22@csr.com>, Barry Song <Baohua.Song@csr.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] clocksource: sirf: remove unused variable
+References: <1599190.ZYSE4SrQSK@wuerfel> <54B52B39.1000607@linaro.org> <22227544.6odKQXu0TN@wuerfel>
+In-Reply-To: <22227544.6odKQXu0TN@wuerfel>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/01/08, Calvin Owens wrote:
-> This reverts 543bc6a1a987 "AUDIT: Allow login in non-init namespaces".
-> 
-> This commit incorrectly assumes that libpam treats -ECONNREFUSED as
-> an indicator that audit is disabled, and -EPERM or any other error
-> as a fatal error that prevents the login from continuing.
+On 01/13/2015 04:24 PM, Arnd Bergmann wrote:
+> On Tuesday 13 January 2015 15:27:05 Daniel Lezcano wrote:
+>> On 01/13/2015 03:22 PM, Arnd Bergmann wrote:
+>>> A recent rework of the driver left an obviously unused variable
+>>> around, and now the compiler complains:
+>>>
+>>> clocksource/timer-marco.c: In function 'sirfsoc_marco_timer_init':
+>>> clocksource/timer-marco.c:260:6: warning: unused variable 'timer_div' [-Wunused-variable]
+>>>
+>>> Remove it.
+>>
+>> Hi Arnd,
+>>
+>> thanks for the fix. But this has been already fixed and merged in my
+>> tree [1].
+>
+> Ok, thanks. For some reason it has not shown up in Linux-next yet.
+> Is this branch supposed to be part of -next?
 
-Which netlink audit message type is actually failing?
-Is it AUDIT_TTY_{G,S}ET or is it an AUDIT_USER_* message?  The former
-requires CAP_AUDIT_CONTROL and both PID and user init namespace (for
-now) and the latter requires CAP_AUDIT_WRITE and only user init
-namespace.
+Yes, I will update my next branch with these changes.
 
-> The opposite is in fact true: -EPERM allows the login to continue,
-> and -ECONNREFUSED causes it to refuse the login. This behavior has
-> been unchanged in upstream linux-pam since at least 2008.
-
-So this sounds to me like standard PAM usage is inverted from PAM usage
-in containers.
-
-> Reverting this change allows libpam to again work as expected in
-> non-init user namespaces.
-
-However, that will break other things...
-
-Do you have test cases to show this?
-
-Currently:
-If audit is not available, return ECONNREFUSED. (netlink_unicast_kernel)
-
-If not in init user namespace, return ECONNREFUSED. (audit_netlink_ok)
-
-If control message and not init PID ns, return EPERM (audit_netlink_ok)
-
-If control message and not CAP_AUDIT_CONTROL, return EPERM (audit_netlink_ok)
-
-If user log message and not CAP_AUDIT_WRITE, return EPERM (audit_netlink_ok)
-
-If unrecognized message, return EINVAL (audit_netlink_ok)
+   -- Daniel
 
 
-Listening in non-init net namespaces caused EPERM to be returned by
-audit instead of ECONNREFUSED by netlink due to lack of perms when the
-sending process didn't have CAP_AUDIT_WRITE.  Fixed in docker bz1119849
-	http://blog.oddbit.com/2014/07/21/tracking-down-a-kernel-bug-wit/
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-> Signed-off-by: Calvin Owens <calvinowens@fb.com>
-> Cc: stable@vger.kernel.org
-> ---
-> Relevant code in linux-pam:
-> https://git.fedorahosted.org/cgit/linux-pam.git/tree/libpam/pam_audit.c#n56
-
-This code only checks for an error return of -EPERM when the userid is
-non-root.  Is login running as root, or has it already forked and is
-running as an unprivileged user at that point?  Audit doesn't care about
-the UID even though many equate root (superuser) with full capabilities.
-Audit only looks at capabilities and namespaces.  Is this relevant to PAM?
-
->  kernel/audit.c | 12 +-----------
->  1 file changed, 1 insertion(+), 11 deletions(-)
-> 
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index 80983df..656e8ce 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -640,18 +640,8 @@ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
->  	int err = 0;
->  
->  	/* Only support initial user namespace for now. */
-> -	/*
-> -	 * We return ECONNREFUSED because it tricks userspace into thinking
-> -	 * that audit was not configured into the kernel.  Lots of users
-> -	 * configure their PAM stack (because that's what the distro does)
-> -	 * to reject login if unable to send messages to audit.  If we return
-> -	 * ECONNREFUSED the PAM stack thinks the kernel does not have audit
-> -	 * configured in and will let login proceed.  If we return EPERM
-> -	 * userspace will reject all logins.  This should be removed when we
-> -	 * support non init namespaces!!
-> -	 */
->  	if (current_user_ns() != &init_user_ns)
-> -		return -ECONNREFUSED;
-> +		return -EPERM;
->  
->  	switch (msg_type) {
->  	case AUDIT_LIST:
-
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
