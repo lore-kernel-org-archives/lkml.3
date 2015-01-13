@@ -1,130 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730AbbAMDAT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 22:00:19 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:64369 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054AbbAMDAR (ORCPT
+	id S1753370AbbAMC4b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 21:56:31 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:47667 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751054AbbAMC43 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 22:00:17 -0500
-From: Wang Nan <wangnan0@huawei.com>
-To: <jolsa@kernel.org>, <namhyung@kernel.org>, <a.p.zijlstra@chello.nl>,
-        <paulus@samba.org>, <mingo@redhat.com>, <acme@kernel.org>,
-        <masami.hiramatsu.pt@hitachi.com>, <jean.pihet@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>
-Subject: [PATCH] perf: fix dwarf unwind using libunwind.
-Date: Tue, 13 Jan 2015 10:54:37 +0800
-Message-ID: <1421117677-51536-1-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
+	Mon, 12 Jan 2015 21:56:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+In-Reply-To: <933BEC2E04D6A5458F4B0239FB547F9A34CC3608@fmsmsx118.amr.corp.intel.com>
+References: <1420821466-5747-1-git-send-email-ethan.zhao@oracle.com>
+	<D38E8E86660E514AB505863C19C9287C741097AF@ORSMSX102.amr.corp.intel.com>
+	<933BEC2E04D6A5458F4B0239FB547F9A34CC3608@fmsmsx118.amr.corp.intel.com>
+Date: Tue, 13 Jan 2015 10:56:28 +0800
+Message-ID: <CABawtvN_afL4B=fwtRJF_YJpe7tv6yf-OHJipWkGd-AiAjtckg@mail.gmail.com>
+Subject: Re: [PATCH] i40e: don't enable and init FCOE by default when do PF reset
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: "Dev, Vasu" <vasu.dev@intel.com>
+Cc: "Ronciak, John" <john.ronciak@intel.com>,
+        Ethan Zhao <ethan.zhao@oracle.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Vick, Matthew" <matthew.vick@intel.com>,
+        "Williams, Mitch A" <mitch.a.williams@intel.com>,
+        "Parikh, Neerav" <neerav.parikh@intel.com>,
+        Linux NICS <Linux-nics@isotope.jf.intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "brian.maly@oracle.com" <brian.maly@oracle.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Original perf tool fails to unwind user stack if the event is issued in
-a shared object:
+Vasu,
 
- $ perf record -e syscalls:sys_enter_write -g --call-graph=dwarf babeltrace
- $ perf report --stdio
+On Sat, Jan 10, 2015 at 2:18 AM, Dev, Vasu <vasu.dev@intel.com> wrote:
+>> -----Original Message-----
+>> From: Ronciak, John
+>> Sent: Friday, January 09, 2015 8:42 AM
+>> To: Ethan Zhao; Kirsher, Jeffrey T; Brandeburg, Jesse; Allan, Bruce W;
+>> Wyborny, Carolyn; Skidmore, Donald C; Rose, Gregory V; Vick, Matthew;
+>> Williams, Mitch A; Dev, Vasu; Parikh, Neerav
+>> Cc: Linux NICS; e1000-devel@lists.sourceforge.net; netdev@vger.kernel.org;
+>> linux-kernel@vger.kernel.org; ethan.kernel@gmail.com;
+>> brian.maly@oracle.com
+>> Subject: RE: [PATCH] i40e: don't enable and init FCOE by default when do PF
+>> reset
+>>
+>> Adding Vasu and Neerav
+>>
+>> Cheers,
+>> John
+>>
+>> > -----Original Message-----
+>> > From: Ethan Zhao [mailto:ethan.zhao@oracle.com]
+>> > Sent: Friday, January 9, 2015 8:38 AM
+>> > To: Kirsher, Jeffrey T; Brandeburg, Jesse; Allan, Bruce W; Wyborny,
+>> > Carolyn; Skidmore, Donald C; Rose, Gregory V; Vick, Matthew; Ronciak,
+>> > John; Williams, Mitch A
+>> > Cc: Linux NICS; e1000-devel@lists.sourceforge.net;
+>> > netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
+>> > ethan.kernel@gmail.com; brian.maly@oracle.com; Ethan Zhao
+>> > Subject: [PATCH] i40e: don't enable and init FCOE by default when do
+>> > PF reset
+>> >
+>> > While do PF reset with function i40e_reset_and_rebuild(), it will call
+>> > i40e_init_pf_fcoe() by default if FCOE is defined, thus if the PF is
+>> > resetted, FCOE will be enabled whatever it was - enabled or not.
+>> >
+>> > Such bug might be hit when PF resumes from suspend, run diagnostic
+>> > test with ethtool, setup VLAN etc.
+>> >
+>> > Passed building with v3.19-rc3.
+>> >
+>> > Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+>> > ---
+>> >  drivers/net/ethernet/intel/i40e/i40e_main.c | 9 ++++++---
+>> >  1 file changed, 6 insertions(+), 3 deletions(-)
+>> >
+>> > diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c
+>> > b/drivers/net/ethernet/intel/i40e/i40e_main.c
+>> > index a5f2660..a2572cc 100644
+>> > --- a/drivers/net/ethernet/intel/i40e/i40e_main.c
+>> > +++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
+>> > @@ -6180,9 +6180,12 @@ static void i40e_reset_and_rebuild(struct
+>> > i40e_pf *pf, bool reinit)
+>> >     }
+>> >  #endif /* CONFIG_I40E_DCB */
+>> >  #ifdef I40E_FCOE
+>> > -   ret = i40e_init_pf_fcoe(pf);
+>> > -   if (ret)
+>> > -           dev_info(&pf->pdev->dev, "init_pf_fcoe failed: %d\n", ret);
+>> > +   if (pf->flags & I40E_FLAG_FCOE_ENABLED) {
+>> > +           ret = i40e_init_pf_fcoe(pf);
+>
+> Calling i40e_init_pf_fcoe() here conflicts with its I40E_FLAG_FCOE_ENABLED pre-condition since I40E_FLAG_FCOE_ENABLED is set by very same i40e_init_pf_fcoe(), in turn i40e_init_pf_fcoe() will never get called.
 
-    # To display the perf.data header info, please use --header/--header-only options.
-    #
-    # Samples: 37  of event 'syscalls:sys_enter_write'
-    # Event count (approx.): 37
-    #
-    # Children      Self  Command     Shared Object  Symbol
-    # ........  ........  ..........  .............  .....................
-    #
-       100.00%   100.00%  babeltrace  libc-2.18.so   [.] __GI___libc_write
-                |
-                ---__GI___libc_write
+I don't think so,  here ,i40e_reset_and_rebuild()  is not the only and
+the first place that  i40e_init_pf_fcoe() is called,
+see i40e_probe(), that is the first chance.
 
-By debugging libunwind I found that there is a bug in unwind-libunwind:
-it always passes 0 as segbase to libunwind, cause libunwind unable to
-locate debug_frame entry fir first level ip address (I add some more
-debugging output into libunwind to make things clear):
+i40e_probe()
+-->i40e_sw_init()
+     -->i40e_init_pf_fcoe()
 
-               >_Uarm_dwarf_find_debug_frame: start_ip = 10be98, end_ip = 10c2a4
-               >_Uarm_dwarf_find_debug_frame: found debug_frame table `/lib/libc-2.18.so': segbase=0x0, len=7, gp=0x0, table_data=0x449388
-               >_Uarm_dwarf_search_unwind_table: call lookup:ip = b6cd3bcc, segbase = 0, rel_ip = b6cd3bcc
-               >lookup: e->start_ip_offset = bcf18 (rel_ip = b6cd3bcc)
-               >lookup: e->start_ip_offset = 6d314 (rel_ip = b6cd3bcc)
-               >lookup: e->start_ip_offset = 33d0c (rel_ip = b6cd3bcc)
-               >lookup: e->start_ip_offset = 2ad6c (rel_ip = b6cd3bcc)
-               >lookup: e->start_ip_offset = 23004 (rel_ip = b6cd3bcc)
-               >lookup: e->start_ip_offset = 18f28 (rel_ip = b6cd3bcc)
-               >lookup: e->start_ip_offset = 184e8 (rel_ip = b6cd3bcc)
-               >lookup: e->start_ip_offset = 167cc (rel_ip = b6cd3bcc)
-               >lookup: e->start_ip_offset = 16294 (rel_ip = b6cd3bcc)
-               >lookup: e->start_ip_offset = 15d88 (rel_ip = b6cd3bcc)
-               >lookup: e->start_ip_offset = 15d0c (rel_ip = b6cd3bcc)
-               >lookup: e->start_ip_offset = 15c40 (rel_ip = b6cd3bcc)
- >_Uarm_dwarf_search_unwind_table: IP b6cd3bcc inside range b6c12000-b6d4c000, but no explicit unwind info found
-                >put_rs_cache: unmasking signals/interrupts and releasing lock
-               >_Uarm_dwarf_step: returning -10
- >_Uarm_step: dwarf_step()=-10
+And the I40E_FLAG_FCOE_ENABLED is possible be set by
+i40e_fcoe_enable() or i40e_fcoe_disable() interface before the reset
+action is to be done.
 
-This patch passes map->start as segbase to dwarf_find_debug_frame(), so
-di will be initialized correctly.
+BTW, the reason I post this patch is that we hit a bug, after setup
+vlan, the PF is enabled to FCOE.
 
-In addition, dso and executable are different when setting segbase. This
-patch first check whether the elf is executable, and pass segbase only
-for shared object.
+>
+> Jeff Kirsher should be getting out a patch queued by me which adds I40E_FCoE Kbuild option, in that FCoE is disabled by default and  user could enable FCoE only if needed, that patch would do same of skipping i40e_init_pf_fcoe() whether FCoE capability in device enabled or not in default config.
+>
 
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
----
- tools/perf/util/unwind-libunwind.c | 27 ++++++++++++++++++++++++++-
- 1 file changed, 26 insertions(+), 1 deletion(-)
+The following patch will not fix the above issue -- configuration of
+PF will be changed via reset.
+How about the FCOE is configured and disabled by  i40e_fcoe_disable()
+, then reset happens ?
 
-diff --git a/tools/perf/util/unwind-libunwind.c b/tools/perf/util/unwind-libunwind.c
-index 371219a..32040fa 100644
---- a/tools/perf/util/unwind-libunwind.c
-+++ b/tools/perf/util/unwind-libunwind.c
-@@ -185,6 +185,27 @@ static u64 elf_section_offset(int fd, const char *name)
- 	return offset;
- }
- 
-+static int elf_is_exec(int fd, const char *name)
-+{
-+	Elf *elf;
-+	GElf_Ehdr ehdr;
-+	int retval = 0;
-+
-+	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
-+	if (elf == NULL)
-+		return 0;
-+	if (gelf_getehdr(elf, &ehdr) == NULL)
-+		goto out;
-+
-+	retval = (ehdr.e_type == ET_EXEC);
-+
-+out:
-+	elf_end(elf);
-+	pr_debug("unwind: elf_is_exec(%s): %d\n", name, retval);
-+	return retval;
-+
-+}
-+
- struct table_entry {
- 	u32 start_ip_offset;
- 	u32 fde_offset;
-@@ -322,8 +343,12 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pi,
- #ifndef NO_LIBUNWIND_DEBUG_FRAME
- 	/* Check the .debug_frame section for unwinding info */
- 	if (!read_unwind_spec_debug_frame(map->dso, ui->machine, &segbase)) {
-+		int fd = dso__data_fd(map->dso, ui->machine);
-+		int is_exec = elf_is_exec(fd, map->dso->name);
-+		unw_word_t base = is_exec ? 0 : map->start;
-+
- 		memset(&di, 0, sizeof(di));
--		if (dwarf_find_debug_frame(0, &di, ip, 0, map->dso->name,
-+		if (dwarf_find_debug_frame(0, &di, ip, base, map->dso->name,
- 					   map->start, map->end))
- 			return dwarf_search_unwind_table(as, ip, &di, pi,
- 							 need_unwind_info, arg);
--- 
-1.8.4
+> From patchwork Wed Oct  2 23:26:08 2013
+> Content-Type: text/plain; charset="utf-8"
+> MIME-Version: 1.0
+> Content-Transfer-Encoding: 7bit
+> Subject: [net] i40e: adds FCoE configure option
+> Date: Thu, 03 Oct 2013 07:26:08 -0000
+> From: Vasu Dev <vasu.dev@intel.com>
+> X-Patchwork-Id: 11797
+>
+> Adds FCoE config option I40E_FCOE, so that FCoE can be enabled
+> as needed but otherwise have it disabled by default.
+>
+> This also eliminate multiple FCoE config checks, instead now just
+> one config check for CONFIG_I40E_FCOE.
+>
+> The I40E FCoE was added with 3.17 kernel and therefore this patch
+> shall be applied to stable 3.17 kernel also.
+>
+> CC: <stable@vger.kernel.org>
+> Signed-off-by: Vasu Dev <vasu.dev@intel.com>
+> Tested-by: Jim Young <jamesx.m.young@intel.com>
+>
+> ---
+> drivers/net/ethernet/intel/Kconfig           |   11 +++++++++++
+>  drivers/net/ethernet/intel/i40e/Makefile     |    2 +-
+>  drivers/net/ethernet/intel/i40e/i40e_osdep.h |    4 ++--
+>  3 files changed, 14 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/net/ethernet/intel/Kconfig b/drivers/net/ethernet/intel/Kconfig
+> index 5b8300a..4d61ef5 100644
+> --- a/drivers/net/ethernet/intel/Kconfig
+> +++ b/drivers/net/ethernet/intel/Kconfig
+> @@ -281,6 +281,17 @@ config I40E_DCB
+>
+>           If unsure, say N.
+>
+> +config I40E_FCOE
+> +       bool "Fibre Channel over Ethernet (FCoE)"
+> +       default n
+> +       depends on I40E && DCB && FCOE
+> +       ---help---
+> +         Say Y here if you want to use Fibre Channel over Ethernet (FCoE)
+> +         in the driver. This will create new netdev for exclusive FCoE
+> +         use with XL710 FCoE offloads enabled.
+> +
+> +         If unsure, say N.
+> +
+>  config I40EVF
+>         tristate "Intel(R) XL710 X710 Virtual Function Ethernet support"
+>         depends on PCI_MSI
+> diff --git a/drivers/net/ethernet/intel/i40e/Makefile b/drivers/net/ethernet/intel/i40e/Makefile
+> index 4b94ddb..c405819 100644
+> --- a/drivers/net/ethernet/intel/i40e/Makefile
+> +++ b/drivers/net/ethernet/intel/i40e/Makefile
+> @@ -44,4 +44,4 @@ i40e-objs := i40e_main.o \
+>         i40e_virtchnl_pf.o
+>
+>  i40e-$(CONFIG_I40E_DCB) += i40e_dcb.o i40e_dcb_nl.o
+> -i40e-$(CONFIG_FCOE:m=y) += i40e_fcoe.o
+> +i40e-$(CONFIG_I40E_FCOE) += i40e_fcoe.o
+> diff --git a/drivers/net/ethernet/intel/i40e/i40e_osdep.h b/drivers/net/ethernet/intel/i40e/i40e_osdep.h
+> index 045b5c4..ad802dd 100644
+> --- a/drivers/net/ethernet/intel/i40e/i40e_osdep.h
+> +++ b/drivers/net/ethernet/intel/i40e/i40e_osdep.h
+> @@ -78,7 +78,7 @@ do {                                                            \
+>  } while (0)
+>
+>  typedef enum i40e_status_code i40e_status;
+> -#if defined(CONFIG_FCOE) || defined(CONFIG_FCOE_MODULE)
+> +#ifdef CONFIG_I40E_FCOE
+>  #define I40E_FCOE
+> -#endif /* CONFIG_FCOE or CONFIG_FCOE_MODULE */
+> +#endif
+>  #endif /* _I40E_OSDEP_H_ */
+>
+>> > +           if (ret)
+>> > +                   dev_info(&pf->pdev->dev,
+>> > +                            "init_pf_fcoe failed: %d\n", ret);
+>> > +   }
+>> >
+>> >  #endif
+>> >     /* do basic switch setup */
+>> > --
+>> > 1.8.3.1
+>
 
+Thanks,
+Ethan
