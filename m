@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751416AbbAMHu4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 02:50:56 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:56310 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751174AbbAMHuy (ORCPT
+	id S1751421AbbAMH4I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 02:56:08 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:46217 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751022AbbAMH4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 02:50:54 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH 6/7] input: alps: Add sanity checks for non DualPoint devices
-Date: Tue, 13 Jan 2015 08:50:51 +0100
-User-Agent: KMail/1.13.7 (Linux/3.13.0-44-generic; KDE/4.14.2; x86_64; ; )
-Cc: Hans de Goede <hdegoede@redhat.com>, Vadim Klishko <vadim@cirque.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1415993906-13307-1-git-send-email-pali.rohar@gmail.com> <1415993906-13307-7-git-send-email-pali.rohar@gmail.com> <20150112003100.GC31862@dtor-ws>
-In-Reply-To: <20150112003100.GC31862@dtor-ws>
+	Tue, 13 Jan 2015 02:56:06 -0500
+Date: Tue, 13 Jan 2015 10:55:57 +0300
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -mm 2/2] mm: vmscan: init reclaim_state in
+ do_try_to_free_pages
+Message-ID: <20150113075557.GH2110@esperanza>
+References: <880700a513472a8b86fd3100aef674322c66c68e.1421054931.git.vdavydov@parallels.com>
+ <20a8ae66cc2b9412b1bf81c0a46f4e8c737aa537.1421054931.git.vdavydov@parallels.com>
+ <20150112222634.GC25609@phnom.home.cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart11022770.uSF2QhEGBV";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201501130850.51106@pali>
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20150112222634.GC25609@phnom.home.cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart11022770.uSF2QhEGBV
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jan 12, 2015 at 05:26:34PM -0500, Johannes Weiner wrote:
+> On Mon, Jan 12, 2015 at 12:30:38PM +0300, Vladimir Davydov wrote:
+> > All users of do_try_to_free_pages() want to have current->reclaim_state
+> > set in order to account reclaimed slab pages. So instead of duplicating
+> > the reclaim_state initialization code in each call site, let's do it
+> > directly in do_try_to_free_pages().
+> 
+> Couldn't this be contained in shrink_slab() directly?
 
-On Monday 12 January 2015 01:31:00 Dmitry Torokhov wrote:
-> On Fri, Nov 14, 2014 at 08:38:25PM +0100, Pali Roh=C3=A1r wrote:
-> > This patch adds sanity checks and reject trackstick packets
-> > from ALPS devices which do not have trackstick present
-> > (those without ALPS_DUALPOINT flag).
-> >=20
-> > Make sure that driver does not process some bogus packets as
-> > trackstick data when there is no trackstick packet. Patch
-> > also write warning do dmesg so possible problems with
-> > driver (e.g received invalid data) will be visible for
-> > debugging.
-> >=20
-> > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
->=20
-> Applied, thank you.
->=20
+I had considered this possibility, but finally rejected it, because
 
-Hello Dmitry, can you comment and review also other patches?
+ - some slab pages can be reclaimed from shrink_lruvec (e.g.
+   buffer_head's); there shouldn't be too many of them though
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+ - struct reclaim_state looks to me as a generic placeholder for lots of
+   reclaim-related stuff, though currently it is only used for counting
+   reclaimed slab pages, so IMO it should be initialized before starting
+   reclaim
 
---nextPart11022770.uSF2QhEGBV
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+Both arguments are not rock-solid as you can see, so if you think we can
+neglect them, I'll do.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlS0zlsACgkQi/DJPQPkQ1J/SgCgveEQL0qTwhf1bxBMIz65++vC
-5z4Anj4Kh5xkfKZbBTlfcGas4mDYgdxD
-=X+6b
------END PGP SIGNATURE-----
-
---nextPart11022770.uSF2QhEGBV--
+Thanks,
+Vladimir
