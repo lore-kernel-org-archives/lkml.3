@@ -1,134 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137AbbAMR1F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 12:27:05 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:54681 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570AbbAMR1B convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 12:27:01 -0500
-Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Content-Type: text/plain; charset=utf-8
-From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-In-Reply-To: <20150113162847.2778b5a5@lxorguk.ukuu.org.uk>
-Date: Tue, 13 Jan 2015 19:26:53 +0200
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Pavel Machek <pavel@denx.de>, atull <atull@opensource.altera.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, hpa@zytor.com,
-        Michal Simek <monstr@monstr.eu>,
-        Michal Simek <michal.simek@xilinx.com>, rdunlap@infradead.org,
+	id S1753321AbbAMR1u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 12:27:50 -0500
+Received: from mail-bl2on0097.outbound.protection.outlook.com ([65.55.169.97]:51072
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752495AbbAMR1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 12:27:48 -0500
+Date: Tue, 13 Jan 2015 11:27:05 -0600
+From: atull <atull@opensource.altera.com>
+X-X-Sender: atull@linuxheads99
+To: Pavel Machek <pavel@denx.de>
+CC: Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <jgunthorpe@obsidianresearch.com>, <hpa@zytor.com>,
+        Michal Simek <monstr@monstr.eu>, <rdunlap@infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, robh+dt@kernel.org,
-        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        philip@balister.org, rubini@gnudd.com,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>, jason@lakedaemon.net,
-        kyle.teske@ni.com, nico@linaro.org, Felipe Balbi <balbi@ti.com>,
-        m.chehab@samsung.com, davidb@codeaurora.org,
-        Rob Landley <rob@landley.net>, davem@davemloft.net, cesarb@cesarb.net,
-        sameo@linux.intel.com, akpm@linux-foundation.org,
-        Linus Walleij <linus.walleij@linaro.org>, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, devel@driverdev.osuosl.org,
-        Alan Tull <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com,
-        yvanderv@opensource.altera.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <027665D5-EB1F-47D1-B727-FE236C009FA7@konsulko.com>
-References: <1420575219-27061-1-git-send-email-atull@opensource.altera.com> <1420575219-27061-3-git-send-email-atull@opensource.altera.com> <20150107084819.GA1887@amd> <alpine.DEB.2.02.1501091302370.30067@linuxheads99> <20150109205643.GA5761@amd> <20150112210134.687176ed@lxorguk.ukuu.org.uk> <20150112214314.GA18610@obsidianresearch.com> <20150113162847.2778b5a5@lxorguk.ukuu.org.uk>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-X-Mailer: Apple Mail (2.1993)
+        <devicetree@vger.kernel.org>, <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, <iws@ovro.caltech.edu>,
+        <linux-doc@vger.kernel.org>, Mark Brown <broonie@kernel.org>,
+        <philip@balister.org>, <rubini@gnudd.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>, <jason@lakedaemon.net>,
+        <kyle.teske@ni.com>, <nico@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        <m.chehab@samsung.com>, <davidb@codeaurora.org>,
+        Rob Landley <rob@landley.net>, <davem@davemloft.net>,
+        <cesarb@cesarb.net>, <sameo@linux.intel.com>,
+        <akpm@linux-foundation.org>, Linus Walleij <linus.walleij@linaro.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <devel@driverdev.osuosl.org>, Alan Tull <delicious.quinoa@gmail.com>,
+        <dinguyen@opensource.altera.com>, <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
+In-Reply-To: <20150113075651.GB11760@amd>
+Message-ID: <alpine.DEB.2.02.1501131124320.27340@linuxheads99>
+References: <20150107084819.GA1887@amd> <alpine.DEB.2.02.1501091302370.30067@linuxheads99> <20150109205643.GA5761@amd> <4D4EA2D5-68DD-49F7-9E2D-3A0A8F6AF9CA@konsulko.com> <20150110151118.GA16036@amd> <alpine.DEB.2.10.1501111009180.2556@shineypoop>
+ <20150112084530.GA28681@amd> <bed1d7ce1b984c79acc75a47495cb959@BL2FFO11FD043.protection.gbl> <20150113072857.GA11760@amd> <D62286C4-2800-47B6-9D69-6F92E27347AF@konsulko.com> <20150113075651.GB11760@amd>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+	boundary="8323329-132828085-1421170041=:27340"
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BY2PR06CA060.namprd06.prod.outlook.com (10.141.250.178) To
+ BY1PR0301MB1240.namprd03.prod.outlook.com (25.161.203.24)
+Authentication-Results: spf=none (sender IP is )
+ smtp.mailfrom=atull@opensource.altera.com; 
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BY1PR0301MB1240;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY1PR0301MB1240;
+X-Forefront-PRVS: 045584D28C
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(52044002)(51704005)(24454002)(377424004)(199003)(50944004)(189002)(84326002)(60046008)(97736003)(83506001)(46102003)(50986999)(54356999)(76176999)(53416004)(64706001)(101416001)(77156002)(62966003)(68736005)(66066001)(122386002)(40100003)(42186005)(69596002)(15975445007)(81156004)(86152002)(2950100001)(41446005)(105586002)(33716001)(86362001)(106356001)(512874002)(19580395003)(93886004)(92566002)(110136001)(19580405001)(7059030);DIR:OUT;SFP:1101;SCL:1;SRVR:BY1PR0301MB1240;H:linuxheads99.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1240;
+X-OriginatorOrg: opensource.altera.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 13 Jan 2015 17:27:42.5608 (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY1PR0301MB1240
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+--8323329-132828085-1421170041=:27340
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
 
-> On Jan 13, 2015, at 18:28 , One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk> wrote:
-> 
-> On Mon, 12 Jan 2015 14:43:14 -0700
-> Jason Gunthorpe <jgunthorpe@obsidianresearch.com> wrote:
-> 
->> On Mon, Jan 12, 2015 at 09:01:34PM +0000, One Thousand Gnomes wrote:
->>> There are plenty of people today who treat the FPGA as an entirely
->>> dynamic resource. It's not like flashing a controller, its near
->>> immediate.
->> 
->> But this is a completely different use case. Remember, there are
->> *megabytes* of internal state in a FPGA, and it isn't really feasible
->> to dump/restore that state.
-> 
-> People already do it with cases where it makes sense
-> 
+On Tue, 13 Jan 2015, Pavel Machek wrote:
 
-Those people have failed to show up and provide input and/or code.
-
->> It is one thing to context switch a maths algorithm that is built to
->> be stateless, it is quite another to context switch between, say an
->> ethernet core with an operating Linux Net driver doing DMA and a maths
->> algorithm.
+> On Tue 2015-01-13 09:40:18, Pantelis Antoniou wrote:
+> > Hi Pavel,
+> > 
+> > > On Jan 13, 2015, at 09:28 , Pavel Machek <pavel@denx.de> wrote:
+> > > 
+> > > Hi!
+> > > 
+> > >>>>>>>>>> +What:		/sys/class/fpga_manager/<fpga>/firmware
+> > >>>>>>>>>> +Date:		October 2014
+> > >>>>>>>>>> +KernelVersion:	3.18
+> > >>>>>>>>>> +Contact:	Alan Tull <atull@opensource.altera.com>
+> > >>>>>>>>>> +Description:	Name of the FPGA image file to load using firmware
+> > >>>>>>>>>> class.
+> > >>>>>>>>> 
+> > >>>>>>>>> This one is ugly: it unneccessarily passes firmware name through the
+> > >>>>>>>>> kernel. Just make interface and code simpler by always passing
+> > >>>>>>>>> "socfpga-fpga-image" or something like that.
+> > > ...
+> > > 
+> > >>> What is cumbersome about symlink? Why is "fake" symlink in sysfs better?
+> > >>> 
+> > >>>> Previous uses of the firmware layer has been to use it to load once after
+> > >>>> bootup; this is different since some use cases will want to switch out
+> > >>>> the FPGA image.  If someone wants there to be only one FPGA image on
+> > >>>> the FGPA forever, they will probably not be using this framework; their
+> > >>>> FPGA will probably be loaded before Linux boots up.
+> > >>> 
+> > >>> Why? I have just one image on the fpga, and would prefer to load it
+> > >>> from Linux.
+> > >> 
+> > >> Pavel: These patches target staging and sysfs interface doesn't need to be stable
+> > >> at this time. I would prefer to add these patches to staging for 3.20
+> > >> and feel free to send the patch which fix this.
+> > > 
+> > > Interesting way to address patch review. "We'll merge it, and you can
+> > > fix it up later".
+> > > 
+> > >> With your code will be exactly clear how you want to use it and we can
+> > >> talk about it.
+> > > 
+> > > I'm pretty sure Alan knows what I want at this point, he just does not
+> > > want to do it.
+> > > 
+> > > For the record, I want to drop "firmware" file, use fixed firmware
+> > > name, and deal with multiple firmwares in userspace (using symlink or
+> > > udev magic).
+> > 
+> > That’s completely bogus. Using a fixed firmware file does not respond to
+> > real world usage, and there are no words to describe the hacks using
+> > symlinks and udev in an embedded product.
 > 
-> And people already do it with thins like maths algorithms.
+> > > I believe this is simplest solution, should be adequate, and is
+> > > certainly less ugly than implementing fake symlink in
+> > > /sys/.../firmware. And I have yet to hear what is wrong with that
+> > > suggestion.
+> > 
+> > Everything.
 > 
-
-Again those people have failed to show up and provide input and/or code.
-
->> A DT overlay approach where the overlay has to be unloaded to 'free'
->> the FPGA makes alot of sense to me for the stateful kernel driver
->> environment, and open/close/etc makes alot of sense for the stateless
->> switchable userspace environment - other than sharing configuration
->> code, is there any overlap between these use cases????
+> Can you be more specific? Current solution already has a fake symlink,
+> implemented badly.
 > 
-> There is a lot of code overlap in things like loading the bitstreams,
-> there is also some overlap because you want to be able to assign FPGA
-> resources. For example if you have four FPGAs and you want to use one for
-> OS stuff (say video) you want the other three to be open/close
-> accessible, but if you've not got a video driver loaded and are running
-> the same board headless you'd like all four to be handed out as normal
-> resources.
-> 
-> So IMHO it's no different to say kmalloc. We don't pre-empt kernel memory
-> and give it to users but we don't reserve memory for kernel and not use
-> it.
-> 
->>> Its completely dynamic and it will get more so as we switch from the
->>> painful world of VHDL and friends to high level parallel aware language
->>> compilers for FPGAs and everyone will be knocking up quick FPGA hacks.
->> 
->> Only for some users. In my world FPGAs are filled with bus interface
->> logic, ethernet controllers, memory controllers, packet processing
->> engines, etc. This is all incredibly stateful - both in the FPGA
->> itself, and in the Linux side w/ drviers. It certainly will not ever
->> work in the model you are talking about.
-> 
-> For those cases I mostly agree (the state in the FPGA isn't always a
-> problem as you can program an FPGA to DMA its state out).
-> 
->> Even if the digital state could somehow be frozen, dumped and
->> restored, all the FPGA external interface logic has *ANALOG* state
->> that cannot ever be dump/restored. It just isn't feasible for that
->> class of application.
-> 
-> Yes, however as we are starting to get things like OpenCL for FPGA they
-> become extremely attractive for a wide range of purposes that don't
-> involve glueing them to electronica in quite the same way. All the 'GPU
-> as CPU' type uses and more begin to apply.
+> Just remove it, and use real symlink (and then you can optionally
+> think of something better...)
 > 
 
-Your points are valid, but they are mostly academic right now.
+Hi Pavel,
 
-We have a lot of well known use cases that this patchset addresses
-satisfactorily. The possible users of the cases you point out are 
-welcome to provide input and working code to address their needs.
+I still don't get what you are saying.  It's not a symlink.  I'm not
+changing it.  
 
-At this point in time, no-one has showed up; is there a reason for
-this needed capability to be delayed in order to address something
-that no-one has expressed interest for?
+Alan
 
-> Alan
-> —
 
-Regards
-
-— Pantelis
-
+> 
+> 									Pavel
+> -- 
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> 
+--8323329-132828085-1421170041=:27340--
