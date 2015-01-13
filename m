@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751485AbbAMIOp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 03:14:45 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:51944 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbbAMIOo (ORCPT
+	id S1751573AbbAMIPl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 03:15:41 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:63874 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751160AbbAMIPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 03:14:44 -0500
-From: Imre Palik <imrep.amz@gmail.com>
-To: xen-devel@lists.xenproject.org, David Vrabel <david.vrabel@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, "Palik, Imre" <imrep@amazon.de>,
-        Anthony Liguori <aliguori@amazon.com>
-Subject: [PATCH] xen-time: decreasing the rating of the xen clocksource below that of the tsc clocksource for dom0's
-Date: Tue, 13 Jan 2015 09:14:22 +0100
-Message-Id: <1421136862-15083-1-git-send-email-imrep.amz@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 13 Jan 2015 03:15:40 -0500
+Date: Tue, 13 Jan 2015 09:15:37 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: add BUILD_BUG_ON() for string tables
+Message-ID: <20150113081537.GA25318@dhcp22.suse.cz>
+References: <1421088863-14270-1-git-send-email-gthelen@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421088863-14270-1-git-send-email-gthelen@google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Palik, Imre" <imrep@amazon.de>
+On Mon 12-01-15 10:54:23, Greg Thelen wrote:
+> Use BUILD_BUG_ON() to compile assert that memcg string tables are in
+> sync with corresponding enums.  There aren't currently any issues with
+> these tables.  This is just defensive.
+> 
+> Signed-off-by: Greg Thelen <gthelen@google.com>
 
-In Dom0's the use of the TSC clocksource (whenever it is stable enough to
-be used) instead of the Xen clocksource should not cause any issues, as
-Dom0 VMs never live-migrated.  The TSC clocksource is somewhat more
-efficient than the Xen paravirtualised clocksource, thus it should have
-higher rating.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-This patch decreases the rating of the Xen clocksource in Dom0s to 275.
-Which is half-way between the rating of the TSC clocksource (300) and the
-hpet clocksource (250).
+> ---
+>  mm/memcontrol.c | 4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index ef91e856c7e4..8d1ca6c55480 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3699,6 +3699,10 @@ static int memcg_stat_show(struct seq_file *m, void *v)
+>  	struct mem_cgroup *mi;
+>  	unsigned int i;
+>  
+> +	BUILD_BUG_ON(ARRAY_SIZE(mem_cgroup_stat_names) !=
+> +		     MEM_CGROUP_STAT_NSTATS);
+> +	BUILD_BUG_ON(ARRAY_SIZE(mem_cgroup_events_names) !=
+> +		     MEM_CGROUP_EVENTS_NSTATS);
+>  	BUILD_BUG_ON(ARRAY_SIZE(mem_cgroup_lru_names) != NR_LRU_LISTS);
+>  
+>  	for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
+> -- 
+> 2.2.0.rc0.207.ga3a616c
+> 
 
-Cc: Anthony Liguori <aliguori@amazon.com>
-Signed-off-by: Imre Palik <imrep@amazon.de>
----
- arch/x86/xen/time.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-index f473d26..c768726 100644
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -487,6 +487,10 @@ static void __init xen_time_init(void)
- 	int cpu = smp_processor_id();
- 	struct timespec tp;
- 
-+	/* As Dom0 is never moved, no penalty on using TSC there */
-+	if (xen_initial_domain())
-+		xen_clocksource.rating = 275;
-+
- 	clocksource_register_hz(&xen_clocksource, NSEC_PER_SEC);
- 
- 	if (HYPERVISOR_vcpu_op(VCPUOP_stop_periodic_timer, cpu, NULL) == 0) {
 -- 
-1.7.9.5
-
+Michal Hocko
+SUSE Labs
