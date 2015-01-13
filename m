@@ -1,173 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204AbbAMKX1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 05:23:27 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:41798 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752114AbbAMKXT (ORCPT
+	id S1752437AbbAMK0Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 05:26:24 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:34953 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752401AbbAMK0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 05:23:19 -0500
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-To: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Cc: mpe@ellerman.id.au, benh@kernel.crashing.org, anton@samba.org,
-        mikey@neuling.org, shuahkh@osg.samsung.com
-Subject: [PATCH V2 12/12] selftests, powerpc: Add thread based stress test for DSCR sysfs interfaces
-Date: Tue, 13 Jan 2015 15:52:40 +0530
-Message-Id: <1421144560-15901-13-git-send-email-khandual@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1421144560-15901-1-git-send-email-khandual@linux.vnet.ibm.com>
-References: <1421144560-15901-1-git-send-email-khandual@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15011310-0025-0000-0000-000000E8A9E6
+	Tue, 13 Jan 2015 05:26:19 -0500
+From: Kiran Raparthy <kiran.kumar@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Colin Cross <ccross@android.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Kiran Raparthy <kiran.kumar@linaro.org>
+Subject: [RFC v5] debug: prevent entering debug mode on panic/exception.
+Date: Tue, 13 Jan 2015 15:55:46 +0530
+Message-Id: <1421144746-23845-1-git-send-email-kiran.kumar@linaro.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a test to update the system wide DSCR value repeatedly
-and then verifies that any thread on any given CPU on the system must
-be able to see the same DSCR value whether its is being read through
-the problem state based SPR or the privilege state based SPR.
+From: Colin Cross <ccross@android.com>
 
-Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+debug: prevent entering debug mode on panic/exception.
+
+On non-developer devices, kgdb prevents the device from rebooting
+after a panic.
+
+Incase of panics and exceptions, to allow the device to reboot, prevent entering
+debug mode to avoid getting stuck waiting for the user to interact with debugger.
+
+To avoid entering the debugger on panic/exception without any extra configuration,
+panic_timeout is being used which can be set via /proc/sys/kernel/panic at run time
+and CONFIG_PANIC_TIMEOUT sets the default value.
+
+Setting panic_timeout indicates that the user requested machine to perform
+unattended reboot after panic. We dont want to get stuck waiting for the user
+input incase of panic.
+
+Cc: Jason Wessel <jason.wessel@windriver.com>
+Cc: kgdb-bugreport@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Sumit Semwal <sumit.semwal@linaro.org>
+Signed-off-by: Colin Cross <ccross@android.com>
+[Kiran: Added context to commit message.
+panic_timeout is used instead of break_on_panic and
+break_on_exception to honor CONFIG_PANIC_TIMEOUT
+Modified the commit as per community feedback]
+Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+Reviewed-by: Daniel Thompson <daniel.thompson@linaro.org>
 ---
- tools/testing/selftests/powerpc/dscr/Makefile      |   2 +-
- .../powerpc/dscr/dscr_sysfs_thread_test.c          | 114 +++++++++++++++++++++
- 2 files changed, 115 insertions(+), 1 deletion(-)
- create mode 100644 tools/testing/selftests/powerpc/dscr/dscr_sysfs_thread_test.c
+ kernel/debug/debug_core.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-diff --git a/tools/testing/selftests/powerpc/dscr/Makefile b/tools/testing/selftests/powerpc/dscr/Makefile
-index fada526..834ef88 100644
---- a/tools/testing/selftests/powerpc/dscr/Makefile
-+++ b/tools/testing/selftests/powerpc/dscr/Makefile
-@@ -1,6 +1,6 @@
- PROGS := dscr_default_test dscr_explicit_test dscr_user_test	\
- 	 dscr_inherit_test dscr_inherit_exec_test		\
--	 dscr_sysfs_test
-+	 dscr_sysfs_test dscr_sysfs_thread_test
+diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
+index 1adf62b..0012a1f 100644
+--- a/kernel/debug/debug_core.c
++++ b/kernel/debug/debug_core.c
+@@ -689,6 +689,14 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
  
- CFLAGS := $(CFLAGS) -lpthread
+ 	if (arch_kgdb_ops.enable_nmi)
+ 		arch_kgdb_ops.enable_nmi(0);
++	/*
++	 * Avoid entering the debugger if we were triggered due to an oops
++	 * but panic_timeout indicates the system should automatically
++	 * reboot on panic. We don't want to get stuck waiting for input
++	 * on such systems, especially if its "just" an oops.
++	 */
++	if (signo != SIGTRAP && panic_timeout)
++		return 1;
  
-diff --git a/tools/testing/selftests/powerpc/dscr/dscr_sysfs_thread_test.c b/tools/testing/selftests/powerpc/dscr/dscr_sysfs_thread_test.c
-new file mode 100644
-index 0000000..95a4304
---- /dev/null
-+++ b/tools/testing/selftests/powerpc/dscr/dscr_sysfs_thread_test.c
-@@ -0,0 +1,114 @@
-+/*
-+ * POWER Data Stream Control Register (DSCR) sysfs thread test
-+ *
-+ * This test updates the system wide DSCR default value through
-+ * sysfs interface which should then update all the CPU specific
-+ * DSCR default values which must also be then visible to threads
-+ * executing on individual CPUs on the system.
-+ *
-+ * Copyright (C) 2015 Anshuman Khandual <khandual@linux.vnet.ibm.com>, IBM
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+#define _GNU_SOURCE
-+#include "dscr.h"
+ 	memset(ks, 0, sizeof(struct kgdb_state));
+ 	ks->cpu			= raw_smp_processor_id();
+@@ -821,6 +829,15 @@ static int kgdb_panic_event(struct notifier_block *self,
+ 			    unsigned long val,
+ 			    void *data)
+ {
++	/*
++	 * Avoid entering the debugger if we were triggered due to a panic
++	 * We don't want to get stuck waiting for input from user in such case.
++	 * panic_timeout indicates the system should automatically
++	 * reboot on panic.
++	 */
++	if (panic_timeout)
++		return NOTIFY_DONE;
 +
-+static pthread_mutex_t lock;	/* Pthread lock */
-+static cpu_set_t cpuset;	/* Thread cpu set */
-+static int target;		/* Thread target cpu */
-+static unsigned long *result;	/* Thread exit status array */
-+
-+static void *test_thread_dscr(void *in)
-+{
-+	unsigned long cur_dscr, cur_dscr_usr;
-+	unsigned long val = (unsigned long)in;
-+
-+	pthread_mutex_lock(&lock);
-+	target++;
-+	if (target == sysconf(_SC_NPROCESSORS_ONLN))
-+		target =  0;
-+	CPU_ZERO(&cpuset);
-+	CPU_SET(target, &cpuset);
-+
-+	if (sched_setaffinity(0, sizeof(cpuset), &cpuset)) {
-+		perror("sched_settarget_cpu() failed\n");
-+		pthread_mutex_unlock(&lock);
-+		result[target] = 1;
-+		pthread_exit(&result[target]);
-+	}
-+	pthread_mutex_unlock(&lock);
-+
-+	cur_dscr = get_dscr();
-+	cur_dscr_usr = get_dscr_usr();
-+
-+	if (val != cur_dscr) {
-+		printf("[cpu %d] Kernel DSCR should be %ld but is %ld\n",
-+					sched_getcpu(), val, cur_dscr);
-+		result[target] = 1;
-+		pthread_exit(&result[target]);
-+	}
-+
-+	if (val != cur_dscr_usr) {
-+		printf("[cpu %d] User DSCR should be %ld but is %ld\n",
-+					sched_getcpu(), val, cur_dscr_usr);
-+		result[target] = 1;
-+		pthread_exit(&result[target]);
-+	}
-+	result[target] = 0;
-+	pthread_exit(&result[target]);
-+}
-+
-+static int check_cpu_dscr_thread(unsigned long val)
-+{
-+	pthread_t threads[sysconf(_SC_NPROCESSORS_ONLN)];
-+	unsigned long *status[sysconf(_SC_NPROCESSORS_ONLN)];
-+	unsigned long i;
-+
-+	for (i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); i++) {
-+		if (pthread_create(&threads[i], NULL,
-+				test_thread_dscr, (void *)val)) {
-+			perror("pthread_create() failed\n");
-+			return 1;
-+		}
-+	}
-+
-+	for (i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); i++) {
-+		if (pthread_join(threads[i], (void **)&(status[i]))) {
-+			perror("pthread_join() failed\n");
-+			return 1;
-+		}
-+
-+		if (*status[i]) {
-+			printf(" %ldth thread join failed with %ld\n",
-+							i, *status[i]);
-+			return 1;
-+		}
-+	}
-+	return 0;
-+}
-+
-+int test_body(void)
-+{
-+	int i, j;
-+
-+	result = malloc(sizeof(unsigned long) * sysconf(_SC_NPROCESSORS_ONLN));
-+	pthread_mutex_init(&lock, NULL);
-+	target = 0;
-+	for (i = 0; i < COUNT; i++) {
-+		for (j = 0; j < DSCR_MAX; j++) {
-+			set_default_dscr(j);
-+			if (check_cpu_dscr_thread(j))
-+				return 1;
-+		}
-+	}
-+	free(result);
-+	return 0;
-+}
-+
-+int main(int argc, char *argv[])
-+{
-+	return test_harness(test_body, "dscr_sysfs_thread_test");
-+}
+ 	if (dbg_kdb_mode)
+ 		kdb_printf("PANIC: %s\n", (char *)data);
+ 	kgdb_breakpoint();
 -- 
-1.9.3
+1.8.2.1
 
