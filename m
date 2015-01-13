@@ -1,146 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381AbbAMAyu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 19:54:50 -0500
-Received: from smtprelay.synopsys.com ([198.182.60.111]:44071 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418AbbAMAys (ORCPT
+	id S1752730AbbAMA7G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 19:59:06 -0500
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:50474 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299AbbAMA7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 19:54:48 -0500
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Yunzhi Li <lyz@rock-chips.com>,
-        "Dinh Nguyen (dinguyen@opensource.altera.com)" 
-	<dinguyen@opensource.altera.com>,
-        "robert.jarzmik@free.fr" <robert.jarzmik@free.fr>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "heiko@sntech.de" <heiko@sntech.de>,
-        "jwerner@chromium.org" <jwerner@chromium.org>,
-        "dianders@chromium.org" <dianders@chromium.org>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "huangtao@rock-chips.com" <huangtao@rock-chips.com>,
-        "zyw@rock-chips.com" <zyw@rock-chips.com>,
-        "cf@rock-chips.com" <cf@rock-chips.com>,
-        "linux-rockchip@lists.infradead.org" 
-	<linux-rockchip@lists.infradead.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
-Subject: RE: [PATCH v7 3/5] usb: dwc2: add generic PHY framework support for
- dwc2 usb controler platform driver.
-Thread-Topic: [PATCH v7 3/5] usb: dwc2: add generic PHY framework support
- for dwc2 usb controler platform driver.
-Thread-Index: AQHQFh27WKp3IndWekWc7l03cD6hbpy3NGmQgAMESwD///rIMIADM/XQ
-Date: Tue, 13 Jan 2015 00:54:45 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E030484506F3B@US01WEMBX2.internal.synopsys.com>
-References: <1418396413-27937-1-git-send-email-lyz@rock-chips.com>
- <1418396972-32686-1-git-send-email-lyz@rock-chips.com>
- <A2CA0424C0A6F04399FB9E1CD98E03048450635E@US01WEMBX2.internal.synopsys.com>
- <54B14E0E.4070504@rock-chips.com> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.13.184.19]
-Content-Type: text/plain; charset="utf-8"
+	Mon, 12 Jan 2015 19:59:04 -0500
+Message-ID: <54B46DD5.9050802@hurleysoftware.com>
+Date: Mon, 12 Jan 2015 19:59:01 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
+To: Prashant Sreedharan <prashant@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>
+CC: netdev@vger.kernel.org, Linux kernel <linux-kernel@vger.kernel.org>
+Subject: [3.19-rc3] tg3: BUG: sleeping function called from invalid context
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0D0tCbt024596
 
-> From: Paul Zimmerman
-> Sent: Saturday, January 10, 2015 3:52 PM
-> 
-> > From: Yunzhi Li [mailto:lyz@rock-chips.com]
-> > Sent: Saturday, January 10, 2015 8:07 AM
-> >
-> > Âú® 2015/1/9 10:15, Paul Zimmerman ÂÜôÈÅì:
-> > >> [...]
-> > >>   	/*
-> > >> -	 * Attempt to find a generic PHY, then look for an old style
-> > >> -	 * USB PHY, finally fall back to pdata
-> > >> +	 * If platform probe couldn't find a generic PHY or an old style
-> > >> +	 * USB PHY, fall back to pdata
-> > >>   	 */
-> > >> -	phy = devm_phy_get(dev, "usb2-phy");
-> > >> -	if (IS_ERR(phy)) {
-> > >> -		uphy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-> > >> -		if (IS_ERR(uphy)) {
-> > >> -			/* Fallback for pdata */
-> > >> -			plat = dev_get_platdata(dev);
-> > >> -			if (!plat) {
-> > >> -				dev_err(dev,
-> > >> -				"no platform data or transceiver defined\n");
-> > >> -				return -EPROBE_DEFER;
-> > >> -			}
-> > >> -			hsotg->plat = plat;
-> > >> -		} else
-> > >> -			hsotg->uphy = uphy;
-> > >> -	} else {
-> > >> -		hsotg->phy = phy;
-> > >> +	if (IS_ERR_OR_NULL(hsotg->phy) && IS_ERR_OR_NULL(hsotg->uphy)) {
-> > >> +		plat = dev_get_platdata(dev);
-> > >> +		if (!plat) {
-> > >> +			dev_err(dev,
-> > >> +			"no platform data or transceiver defined\n");
-> > >> +			return -EPROBE_DEFER;
-> > > Hi Yunzhi,
-> > >
-> > > Testing Felipe's testing/next branch on an Altera SOCFPGA platform,
-> > > the driver never loads because it always returns -EPROBE_DEFER here.
-> > > Apparently the SOCFPGA platform does not have any platform data
-> > > defined, because dev_get_platdata() always returns NULL.
-> > >
-> > > If I remove the -EPROBE_DEFER return and have it continue on, the
-> > > driver works. Reverting the patch also makes it work.
-> > 
-> > When I debug this problem, I checked socfpga.dtsi, there is a
-> > usbphy node defined for each
-> > dwc2 controller, so I think when running dwc2_driver_probe() uphy =
-> > devm_usb_get_phy()
-> > should get a valid usbphy pointer and hsotg->uphy will not be NULL or
-> > ERROR, then in dwc2_gadget_init()
-> > it will not return -EPROBE_DEFER. I have no idea about why you meet
-> > -EPROBE_DEFER, could you please tell
-> > me what's the return value of devm_usb_get_phy() on your socfpga board ?
-> 
-> I'm away from the hardware right now, but I just found this in a saved
-> boot log:
-> 
-> [    1.097268] usb_phy_generic soc:usbphy@0: Error requesting RESET GPIO
-> [    1.097285] usb_phy_generic: probe of soc:usbphy@0 failed with error -2
-> 
-> So that probably explains it. I'll dig into this some more on Monday.
+On 3.19-rc3, I'm seeing this might_sleep() warning [1] from the tg3_open()
+call stack. Let me know if I need to bisect this.
 
-The patch below fixes it. And it seems like the right thing to me,
-since GPIOs should be optional for a generic phy, I would think. But
-my device tree foo is very weak, so I'm not sure.
+Regards,
+Peter Hurley
 
-CCing Robert, who touched the generic phy code last. Robert, what do
-you think?
+[1]
 
--- 
-Paul
-
-
-diff --git a/drivers/usb/phy/phy-generic.c b/drivers/usb/phy/phy-generic.c
-index dd05254..9a826ff 100644
---- a/drivers/usb/phy/phy-generic.c
-+++ b/drivers/usb/phy/phy-generic.c
-@@ -218,10 +218,10 @@ int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_generic *nop,
- 			clk_rate = 0;
- 
- 		needs_vcc = of_property_read_bool(node, "vcc-supply");
--		nop->gpiod_reset = devm_gpiod_get(dev, "reset-gpios");
-+		nop->gpiod_reset = devm_gpiod_get_optional(dev, "reset-gpios");
- 		err = PTR_ERR(nop->gpiod_reset);
- 		if (!err) {
--			nop->gpiod_vbus = devm_gpiod_get(dev,
-+			nop->gpiod_vbus = devm_gpiod_get_optional(dev,
- 							 "vbus-detect-gpio");
- 			err = PTR_ERR(nop->gpiod_vbus);
- 		}
--- 
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+[   17.203009] BUG: sleeping function called from invalid context at /home/peter/src/kernels/mainline/kernel/irq/manage.c:104
+[   17.203067] in_atomic(): 1, irqs_disabled(): 0, pid: 1106, name: ip
+[   17.203092] 2 locks held by ip/1106:
+[   17.205255]  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff816adf1f>] rtnetlink_rcv+0x1f/0x40
+[   17.207445]  #1:  (&(&tp->lock)->rlock){+.....}, at: [<ffffffffa01073e6>] tg3_start+0xc06/0x11f0 [tg3]
+[   17.209725] CPU: 2 PID: 1106 Comm: ip Not tainted 3.19.0-rc3+wip-xeon+lockdep #rc3+wip
+[   17.211900] Hardware name: Dell Inc. Precision WorkStation T5400  /0RW203, BIOS A11 04/30/2012
+[   17.214086]  0000000000000068 ffff8802ac823498 ffffffff817af7e8 0000000000000005
+[   17.216265]  ffffffff81a9be78 ffff8802ac8234a8 ffffffff810998a5 ffff8802ac8234d8
+[   17.218446]  ffffffff8109991a ffff8802ac8234c8 ffff8802af0aae00 ffffffffa00ed000
+[   17.220636] Call Trace:
+[   17.222743]  [<ffffffff817af7e8>] dump_stack+0x4f/0x7b
+[   17.224808]  [<ffffffff810998a5>] ___might_sleep+0x105/0x140
+[   17.226842]  [<ffffffff8109991a>] __might_sleep+0x3a/0xa0
+[   17.228869]  [<ffffffffa00ed000>] ? 0xffffffffa00ed000
+[   17.230939]  [<ffffffff810d7d78>] synchronize_irq+0x38/0xa0
+[   17.232967]  [<ffffffffa00ed000>] ? 0xffffffffa00ed000
+[   17.234991]  [<ffffffffa010105f>] tg3_chip_reset+0x13f/0x9c0 [tg3]
+[   17.236988]  [<ffffffffa01020ae>] tg3_reset_hw+0x7e/0x2d20 [tg3]
+[   17.238996]  [<ffffffff813bfaff>] ? __udelay+0x2f/0x40
+[   17.241007]  [<ffffffffa00ef2f7>] ? _tw32_flush+0x47/0x80 [tg3]
+[   17.243066]  [<ffffffffa0104dac>] tg3_init_hw+0x5c/0x70 [tg3]
+[   17.245438]  [<ffffffffa010740b>] tg3_start+0xc2b/0x11f0 [tg3]
+[   17.247444]  [<ffffffffa0107ad7>] ? tg3_open+0x107/0x2e0 [tg3]
+[   17.249556]  [<ffffffff810c338d>] ? trace_hardirqs_on+0xd/0x10
+[   17.251581]  [<ffffffff8107806f>] ? __local_bh_enable_ip+0x6f/0x100
+[   17.253710]  [<ffffffffa0107af8>] tg3_open+0x128/0x2e0 [tg3]
+[   17.255758]  [<ffffffff816ba3f5>] ? netpoll_poll_disable+0x5/0xa0
+[   17.257932]  [<ffffffff816a14af>] __dev_open+0xbf/0x140
+[   17.260091]  [<ffffffff816a17c1>] __dev_change_flags+0xa1/0x160
+[   17.262222]  [<ffffffff816a18a9>] dev_change_flags+0x29/0x60
+[   17.264360]  [<ffffffff816b0e02>] do_setlink+0x2f2/0xa30
+[   17.266431]  [<ffffffff816b1b7f>] rtnl_newlink+0x51f/0x750
+[   17.268485]  [<ffffffff816b1749>] ? rtnl_newlink+0xe9/0x750
+[   17.270483]  [<ffffffff811869c2>] ? free_pages_prepare+0x1d2/0x270
+[   17.272507]  [<ffffffff810c32bd>] ? trace_hardirqs_on_caller+0x11d/0x1e0
+[   17.274531]  [<ffffffff813dd1b2>] ? nla_parse+0x32/0x120
+[   17.276531]  [<ffffffff81021ab5>] ? native_sched_clock+0x35/0xa0
+[   17.278514]  [<ffffffff816adfd5>] rtnetlink_rcv_msg+0x95/0x250
+[   17.280485]  [<ffffffff8109f699>] ? preempt_count_sub+0x49/0x50
+[   17.282448]  [<ffffffff817b4a02>] ? mutex_lock_nested+0x382/0x530
+[   17.284402]  [<ffffffff816adf1f>] ? rtnetlink_rcv+0x1f/0x40
+[   17.286290]  [<ffffffff816adf1f>] ? rtnetlink_rcv+0x1f/0x40
+[   17.288142]  [<ffffffff816adf40>] ? rtnetlink_rcv+0x40/0x40
+[   17.290031]  [<ffffffff816cedc1>] netlink_rcv_skb+0xc1/0xe0
+[   17.291836]  [<ffffffff816adf2e>] rtnetlink_rcv+0x2e/0x40
+[   17.293615]  [<ffffffff816ce473>] netlink_unicast+0xf3/0x1d0
+[   17.295420]  [<ffffffff816ce863>] netlink_sendmsg+0x313/0x690
+[   17.297132]  [<ffffffff811ada4f>] ? might_fault+0x5f/0xb0
+[   17.298799]  [<ffffffff8168253c>] do_sock_sendmsg+0x8c/0x100
+[   17.300493]  [<ffffffff81681e3e>] ? copy_msghdr_from_user+0x15e/0x1f0
+[   17.302173]  [<ffffffff81682aeb>] ___sys_sendmsg+0x30b/0x320
+[   17.303798]  [<ffffffff81021ab5>] ? native_sched_clock+0x35/0xa0
+[   17.305431]  [<ffffffff810bdee0>] ? cpuacct_account_field+0x80/0xb0
+[   17.307085]  [<ffffffff81021ab5>] ? native_sched_clock+0x35/0xa0
+[   17.308744]  [<ffffffff810a4f35>] ? sched_clock_local+0x25/0x90
+[   17.310375]  [<ffffffff810a5dc1>] ? vtime_account_user+0x91/0xa0
+[   17.311948]  [<ffffffff810a5198>] ? sched_clock_cpu+0xb8/0xe0
+[   17.313509]  [<ffffffff810bf8be>] ? put_lock_stats.isra.26+0xe/0x30
+[   17.315069]  [<ffffffff810c007e>] ? lock_release_holdtime.part.27+0x12e/0x1b0
+[   17.316618]  [<ffffffff810a5dc1>] ? vtime_account_user+0x91/0xa0
+[   17.318162]  [<ffffffff8109f5d1>] ? get_parent_ip+0x11/0x50
+[   17.319703]  [<ffffffff8109f699>] ? preempt_count_sub+0x49/0x50
+[   17.321235]  [<ffffffff811807e5>] ? context_tracking_user_exit+0x55/0x130
+[   17.322732]  [<ffffffff811807e5>] ? context_tracking_user_exit+0x55/0x130
+[   17.324197]  [<ffffffff816834f2>] __sys_sendmsg+0x42/0x80
+[   17.325634]  [<ffffffff81683542>] SyS_sendmsg+0x12/0x20
+[   17.327048]  [<ffffffff817ba12d>] system_call_fastpath+0x16/0x1b
