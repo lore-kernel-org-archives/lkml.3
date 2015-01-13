@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687AbbAMW0o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 17:26:44 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65277 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751557AbbAMW0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 17:26:42 -0500
-Message-ID: <54B59B9E.4000806@nod.at>
-Date: Tue, 13 Jan 2015 23:26:38 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1753911AbbAMW1U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 17:27:20 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:54037 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751609AbbAMW1R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 17:27:17 -0500
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: user-mode-linux-devel@lists.sourceforge.net, dxld@darkboxed.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] hostfs: Use noop_fsync for directories
-References: <1421187358-32600-1-git-send-email-richard@nod.at> <20150113221958.GA27739@infradead.org>
-In-Reply-To: <20150113221958.GA27739@infradead.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1420927210-19738-5-git-send-email-dvlasenk@redhat.com>
+References: <1420927210-19738-1-git-send-email-dvlasenk@redhat.com> <1420927210-19738-5-git-send-email-dvlasenk@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 13 Jan 2015 14:26:56 -0800
+Message-ID: <CALCETrUikAhmSAER3363==khCHuNx6V4E9sCisPbbuO87wmYbQ@mail.gmail.com>
+Subject: Re: [PATCH 4/4] x86: entry_64.S: fold SAVE_ARGS_IRQ macro into its
+ sole user
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 13.01.2015 um 23:19 schrieb Christoph Hellwig:
-> On Tue, Jan 13, 2015 at 11:15:58PM +0100, Richard Weinberger wrote:
->> Daniel reported that dpkg(1) dies if the root filesystem is a hostfs
->> because it does not expect fsync(2) to fail with EINVAL on directories.
->> While fsync(2) is allowed to fail with EINVAL if the filesystem does not
->> support it we can do better and use noop_fsync() to not confuse userspace
->> further.
-> 
-> Shouldn't hostfs pass the fsync through to the host filesystem?
+On Sat, Jan 10, 2015 at 2:00 PM, Denys Vlasenko <dvlasenk@redhat.com> wrote:
+> No code changes.
+>
+> This is a preparatory patch for change in "struct pt_regs" handling.
+>
+> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+> CC: Linus Torvalds <torvalds@linux-foundation.org>
+> CC: Oleg Nesterov <oleg@redhat.com>
+> CC: "H. Peter Anvin" <hpa@zytor.com>
+> CC: Borislav Petkov <bp@alien8.de>
+> CC: Andy Lutomirski <luto@amacapital.net>
+> CC: Frederic Weisbecker <fweisbec@gmail.com>
+> CC: X86 ML <x86@kernel.org>
+> CC: Alexei Starovoitov <ast@plumgrid.com>
+> CC: Will Drewry <wad@chromium.org>
+> CC: Kees Cook <keescook@chromium.org>
+> CC: linux-kernel@vger.kernel.org
 
-hostfs tries do reduce the amount of syscall between guest and host as much
-as possible. For file operations it passes everything down to the host but
-for directory operations only ->iterate() does.
+Applied.
 
-It is already horrible slow, if we add an ->open() for directory too it would
-get even more slower. :-(
+I have *not* applied patch 3 or the new restore patch, since I got
+lost in the patch attachments and long discussion.  Can you post
+incremental patches on top of:
+
+https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/log/?h=x86/entry
 
 Thanks,
-//richard
+Andy
