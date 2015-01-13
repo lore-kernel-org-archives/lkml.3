@@ -1,96 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805AbbAMPwd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 10:52:33 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:33089 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145AbbAMPwb (ORCPT
+	id S1752966AbbAMPwy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 10:52:54 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:39160 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752540AbbAMPwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 10:52:31 -0500
-Date: Tue, 13 Jan 2015 15:52:21 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Pratyush Anand <panand@redhat.com>
-Cc: Will Deacon <Will.Deacon@arm.com>, Steve Capper <steve.capper@linaro.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Long <dave.long@linaro.org>, William Cohen <wcohen@redhat.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Query: ARM64: Behavior of el1_dbg exception while executing
- el0_dbg
-Message-ID: <20150113155221.GG16524@e104818-lin.cambridge.arm.com>
-References: <54AE830E.1090000@redhat.com>
- <20150108162312.GO11583@arm.com>
- <54AEBE45.9080203@redhat.com>
- <20150109154635.GG11258@arm.com>
- <54B00C39.1070809@redhat.com>
- <20150112173005.GK13360@arm.com>
- <54B4BF4C.2030009@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54B4BF4C.2030009@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 13 Jan 2015 10:52:51 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-49-54b53f52b97c
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: James Morris <james.l.morris@oracle.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrey Ryabinin <a.ryabinin@samsung.com>, stable@vger.kernel.org
+Subject: [PATCH] smack: fix possible use after frees in task_security() callers
+Date: Tue, 13 Jan 2015 18:52:40 +0300
+Message-id: <1421164360-15330-1-git-send-email-a.ryabinin@samsung.com>
+X-Mailer: git-send-email 2.2.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNJMWRmVeSWpSXmKPExsVy+t/xy7pB9ltDDL4skrPY9usRm8W9bb/Y
+	LPoeB1lc3jWHzeJDD1Do/IVz7BYLNj5idGD3uLY70uPj01ssHn1bVjF6HN2/iM3j8ya5ANYo
+	LpuU1JzMstQifbsEroxna/ayFqzxrfj02LOB8YZ9FyMnh4SAicTnG12MELaYxIV769m6GLk4
+	hASWMkoc+b+HGcLpY5JYdfEQO0gVm4CexL9Z29lAbBEBHYl9e56zgxQxC9xnlDi+7RgzSEJY
+	wF/i/ddmsCIWAVWJlvuTWLsYOTh4Bdwkem5wQ2yTk9h4ZwXrBEbuBYwMqxhFU0uTC4qT0nON
+	9IoTc4tL89L1kvNzNzFCAuTrDsalx6wOMQpwMCrx8O7I3hIixJpYVlyZe4hRgoNZSYT3kfnW
+	ECHelMTKqtSi/Pii0pzU4kOMTBycUg2M8me/dLt///qqSK5p6eyKaY8mT9Ce+irtf2BGcgH7
+	1fA5Hd07OPbULMzmP/hi+6v0pz9+PLqrNaG7w1ol682WjjUrb7gFrI/91P7Ixqrgx4uv3b+S
+	vrovXWKwVDfIXy3/pOC9TmGLBmGOolk3ulfOe7fj7up/qnH8V7Ijqy2kmBK66l80CN86ocRS
+	nJFoqMVcVJwIANQ+WYfuAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 06:46:36AM +0000, Pratyush Anand wrote:
-> On Monday 12 January 2015 11:00 PM, Will Deacon wrote:
-> > On Fri, Jan 09, 2015 at 05:13:29PM +0000, Pratyush Anand wrote:
-> >> On Friday 09 January 2015 09:16 PM, Will Deacon wrote:
-> >>> On Thu, Jan 08, 2015 at 05:28:37PM +0000, Pratyush Anand wrote:
-> >>>> On Thursday 08 January 2015 09:53 PM, Will Deacon wrote:
-> >>>>> On Thu, Jan 08, 2015 at 01:15:58PM +0000, Pratyush Anand wrote:
-> >>>>>> I am trying to test following scenario, which seems valid to me. But I
-> >>>>>> am very new to ARM64 as well as to debugging tools, so seeking expert's
-> >>>>>> comment here.
-> >>>>>>
-> >>>>>> -- I have inserted a kprobe to the function uprobe_breakpoint_handler
-> >>>>>> which is called from elo_dbg
-> >>>>>> (el0_dbg->do_debug_exception->brk_handler->call_break_hook->uprobe_breakpoint_handler)
-> >>>>>>
-> >>>>>> -- kprobe is enabled.
-> >>>>>>
-> >>>>>> -- an uprobe is inserted into a test application and enabled.
-> >>>>>>
-> >>>>>> So, when uprobe is enabled and test code execution reaches to probe
-> >>>>>> instruction, it executes uprobe breakpoint instruction and el0_dbg
-> >>>>>> exception is raised.
-> >>>>>>
-> >>>>>> When control reaches to start of uprobe_breakpoint_handler and it
-> >>>>>> executes first instruction (which has been replaced with a kprobe
-> >>>>>> breakpoint instruction), el1_dbg exception is raised.
-> >>>>>
-> >>>>> Hmm, debug exceptions should be masked at this point so I don't see why
-> >>>>> you're taking the second debug exception.
-> >>>>
-> >>>> So, you mean to say that when an exception which has been taken from
-> >>>> lower exception level (EL0) is being executed, then we keep masked also
-> >>>> the exception from current exception level (EL1)...
-> >>>
-> >>> Yeah, if you look at entry.S then you'll see that neither el0_dbg or el1_dbg
-> >>> re-enable debug exceptions (masked automatically by the CPU after taking the
-> >>> exception) until *after* the handling has completed. This is to prevent
-> >>> recursive debug exceptions, which I don't see how we can reasonable handle.
-> >>
-> >> May be I am missing something, but my observation on silicon is
-> >> different. Please have a look at git log of HEAD of following branch,
-> >> which says that el1_dbg exception has been raised while el0_dbg was
-> >> executing. Do not know what I am missing..
-[...]
-> > Regardless, I think you need to debug further and found out if PSTATE.D is
-> > getting cleared and, if so, who is responsible for that. Somebody could be
-> > enabling IRQs, for example, which will then unmask debug exceptions in
-> > el1_irq.
-> 
-> This is what I see for pstate, When el0_dbg exception is raised (ie an 
-> exception raised with ESR = ESR_EL1_EC_BRK64 after executing instruction 
-> BRK64_OPCODE_UPROBES = 0xD4200100 in EL0, user mode), spsr_el1 value is 
-> 0x80000000. Which means, all exceptions are unmasked. Is it expected?
+We hit use after free on dereferncing pointer to task_smack struct in
+smk_of_task() called from smack_task_to_inode().
 
-spsr_el1 is the EL0 pstate saved when entering EL1. So it is expected
-that user space always has interrupts enabled.
+task_security() macro uses task_cred_xxx() to get pointer to the task_smack.
+task_cred_xxx() could be used only for non-pointer members of task's
+credentials. It cannot be used for pointer members since what they point
+to may disapper after dropping RCU read lock.
 
+Mainly task_security() used this way:
+	smk_of_task(task_security(p))
+
+Intead of this introduce function smk_of_task_struct() which
+takes task_struct as argument and returns pointer to smk_known struct
+and do this under RCU read lock.
+Bogus task_security() macro is not used anymore, so remove it.
+
+KASan's report for this:
+
+	AddressSanitizer: use after free in smack_task_to_inode+0x50/0x70 at addr c4635600
+	=============================================================================
+	BUG kmalloc-64 (Tainted: PO): kasan error
+	-----------------------------------------------------------------------------
+
+	Disabling lock debugging due to kernel taint
+	INFO: Allocated in new_task_smack+0x44/0xd8 age=39 cpu=0 pid=1866
+		kmem_cache_alloc_trace+0x88/0x1bc
+		new_task_smack+0x44/0xd8
+		smack_cred_prepare+0x48/0x21c
+		security_prepare_creds+0x44/0x4c
+		prepare_creds+0xdc/0x110
+		smack_setprocattr+0x104/0x150
+		security_setprocattr+0x4c/0x54
+		proc_pid_attr_write+0x12c/0x194
+		vfs_write+0x1b0/0x370
+		SyS_write+0x5c/0x94
+		ret_fast_syscall+0x0/0x48
+	INFO: Freed in smack_cred_free+0xc4/0xd0 age=27 cpu=0 pid=1564
+		kfree+0x270/0x290
+		smack_cred_free+0xc4/0xd0
+		security_cred_free+0x34/0x3c
+		put_cred_rcu+0x58/0xcc
+		rcu_process_callbacks+0x738/0x998
+		__do_softirq+0x264/0x4cc
+		do_softirq+0x94/0xf4
+		irq_exit+0xbc/0x120
+		handle_IRQ+0x104/0x134
+		gic_handle_irq+0x70/0xac
+		__irq_svc+0x44/0x78
+		_raw_spin_unlock+0x18/0x48
+		sync_inodes_sb+0x17c/0x1d8
+		sync_filesystem+0xac/0xfc
+		vdfs_file_fsync+0x90/0xc0
+		vfs_fsync_range+0x74/0x7c
+	INFO: Slab 0xd3b23f50 objects=32 used=31 fp=0xc4635600 flags=0x4080
+	INFO: Object 0xc4635600 @offset=5632 fp=0x  (null)
+
+	Bytes b4 c46355f0: 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a  ZZZZZZZZZZZZZZZZ
+	Object c4635600: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+	Object c4635610: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+	Object c4635620: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+	Object c4635630: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5  kkkkkkkkkkkkkkk.
+	Redzone c4635640: bb bb bb bb                                      ....
+	Padding c46356e8: 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a  ZZZZZZZZZZZZZZZZ
+	Padding c46356f8: 5a 5a 5a 5a 5a 5a 5a 5a                          ZZZZZZZZ
+	CPU: 5 PID: 834 Comm: launchpad_prelo Tainted: PBO 3.10.30 #1
+	Backtrace:
+	[<c00233a4>] (dump_backtrace+0x0/0x158) from [<c0023dec>] (show_stack+0x20/0x24)
+	 r7:c4634010 r6:d3b23f50 r5:c4635600 r4:d1002140
+	[<c0023dcc>] (show_stack+0x0/0x24) from [<c06d6d7c>] (dump_stack+0x20/0x28)
+	[<c06d6d5c>] (dump_stack+0x0/0x28) from [<c01c1d50>] (print_trailer+0x124/0x144)
+	[<c01c1c2c>] (print_trailer+0x0/0x144) from [<c01c1e88>] (object_err+0x3c/0x44)
+	 r7:c4635600 r6:d1002140 r5:d3b23f50 r4:c4635600
+	[<c01c1e4c>] (object_err+0x0/0x44) from [<c01cac18>] (kasan_report_error+0x2b8/0x538)
+	 r6:d1002140 r5:d3b23f50 r4:c6429cf8 r3:c09e1aa7
+	[<c01ca960>] (kasan_report_error+0x0/0x538) from [<c01c9430>] (__asan_load4+0xd4/0xf8)
+	[<c01c935c>] (__asan_load4+0x0/0xf8) from [<c031e168>] (smack_task_to_inode+0x50/0x70)
+	 r5:c4635600 r4:ca9da000
+	[<c031e118>] (smack_task_to_inode+0x0/0x70) from [<c031af64>] (security_task_to_inode+0x3c/0x44)
+	 r5:cca25e80 r4:c0ba9780
+	[<c031af28>] (security_task_to_inode+0x0/0x44) from [<c023d614>] (pid_revalidate+0x124/0x178)
+	 r6:00000000 r5:cca25e80 r4:cbabe3c0 r3:00008124
+	[<c023d4f0>] (pid_revalidate+0x0/0x178) from [<c01db98c>] (lookup_fast+0x35c/0x43y4)
+	 r9:c6429efc r8:00000101 r7:c079d940 r6:c6429e90 r5:c6429ed8 r4:c83c4148
+	[<c01db630>] (lookup_fast+0x0/0x434) from [<c01deec8>] (do_last.isra.24+0x1c0/0x1108)
+	[<c01ded08>] (do_last.isra.24+0x0/0x1108) from [<c01dff04>] (path_openat.isra.25+0xf4/0x648)
+	[<c01dfe10>] (path_openat.isra.25+0x0/0x648) from [<c01e1458>] (do_filp_open+0x3c/0x88)
+	[<c01e141c>] (do_filp_open+0x0/0x88) from [<c01ccb28>] (do_sys_open+0xf0/0x198)
+	 r7:00000001 r6:c0ea2180 r5:0000000b r4:00000000
+	[<c01cca38>] (do_sys_open+0x0/0x198) from [<c01ccc00>] (SyS_open+0x30/0x34)
+	[<c01ccbd0>] (SyS_open+0x0/0x34) from [<c001db80>] (ret_fast_syscall+0x0/0x48)
+	Read of size 4 by thread T834:
+	Memory state around the buggy address:
+	 c4635380: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+	 c4635400: 00 00 00 00 00 00 00 00 fc fc fc fc fc fc fc fc
+	 c4635480: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+	 c4635500: 00 00 00 00 00 fc fc fc fc fc fc fc fc fc fc fc
+	 c4635580: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+	>c4635600: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+	           ^
+	 c4635680: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+	 c4635700: 00 00 00 00 04 fc fc fc fc fc fc fc fc fc fc fc
+	 c4635780: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+	 c4635800: 00 00 00 00 00 00 04 fc fc fc fc fc fc fc fc fc
+	 c4635880: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+	==================================================================
+
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+Cc: <stable@vger.kernel.org>
+---
+ security/smack/smack.h     | 10 ++++++++++
+ security/smack/smack_lsm.c | 24 +++++++++++++-----------
+ 2 files changed, 23 insertions(+), 11 deletions(-)
+
+diff --git a/security/smack/smack.h b/security/smack/smack.h
+index b828a37..b48359c 100644
+--- a/security/smack/smack.h
++++ b/security/smack/smack.h
+@@ -298,6 +298,16 @@ static inline struct smack_known *smk_of_task(const struct task_smack *tsp)
+ 	return tsp->smk_task;
+ }
+ 
++static inline struct smack_known *smk_of_task_struct(const struct task_struct *t)
++{
++	struct smack_known *skp;
++
++	rcu_read_lock();
++	skp = smk_of_task(__task_cred(t)->security);
++	rcu_read_unlock();
++	return skp;
++}
++
+ /*
+  * Present a pointer to the forked smack label entry in an task blob.
+  */
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index f1b17a4..a717877 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -43,8 +43,6 @@
+ #include <linux/binfmts.h>
+ #include "smack.h"
+ 
+-#define task_security(task)	(task_cred_xxx((task), security))
+-
+ #define TRANS_TRUE	"TRUE"
+ #define TRANS_TRUE_SIZE	4
+ 
+@@ -120,7 +118,7 @@ static int smk_bu_current(char *note, struct smack_known *oskp,
+ static int smk_bu_task(struct task_struct *otp, int mode, int rc)
+ {
+ 	struct task_smack *tsp = current_security();
+-	struct task_smack *otsp = task_security(otp);
++	struct smack_known *smk_task = smk_of_task_struct(otp);
+ 	char acc[SMK_NUM_ACCESS_TYPE + 1];
+ 
+ 	if (rc <= 0)
+@@ -128,7 +126,7 @@ static int smk_bu_task(struct task_struct *otp, int mode, int rc)
+ 
+ 	smk_bu_mode(mode, acc);
+ 	pr_info("Smack Bringup: (%s %s %s) %s to %s\n",
+-		tsp->smk_task->smk_known, otsp->smk_task->smk_known, acc,
++		tsp->smk_task->smk_known, smk_task->smk_known, acc,
+ 		current->comm, otp->comm);
+ 	return 0;
+ }
+@@ -345,7 +343,8 @@ static int smk_ptrace_rule_check(struct task_struct *tracer,
+ 		saip = &ad;
+ 	}
+ 
+-	tsp = task_security(tracer);
++	rcu_read_lock();
++	tsp = __task_cred(tracer)->security;
+ 	tracer_known = smk_of_task(tsp);
+ 
+ 	if ((mode & PTRACE_MODE_ATTACH) &&
+@@ -365,11 +364,14 @@ static int smk_ptrace_rule_check(struct task_struct *tracer,
+ 				  tracee_known->smk_known,
+ 				  0, rc, saip);
+ 
++		rcu_read_unlock();
+ 		return rc;
+ 	}
+ 
+ 	/* In case of rule==SMACK_PTRACE_DEFAULT or mode==PTRACE_MODE_READ */
+ 	rc = smk_tskacc(tsp, tracee_known, smk_ptrace_mode(mode), saip);
++
++	rcu_read_unlock();
+ 	return rc;
+ }
+ 
+@@ -396,7 +398,7 @@ static int smack_ptrace_access_check(struct task_struct *ctp, unsigned int mode)
+ 	if (rc != 0)
+ 		return rc;
+ 
+-	skp = smk_of_task(task_security(ctp));
++	skp = smk_of_task_struct(ctp);
+ 
+ 	rc = smk_ptrace_rule_check(current, skp, mode, __func__);
+ 	return rc;
+@@ -1826,7 +1828,7 @@ static int smk_curacc_on_task(struct task_struct *p, int access,
+ 				const char *caller)
+ {
+ 	struct smk_audit_info ad;
+-	struct smack_known *skp = smk_of_task(task_security(p));
++	struct smack_known *skp = smk_of_task_struct(p);
+ 	int rc;
+ 
+ 	smk_ad_init(&ad, caller, LSM_AUDIT_DATA_TASK);
+@@ -1879,7 +1881,7 @@ static int smack_task_getsid(struct task_struct *p)
+  */
+ static void smack_task_getsecid(struct task_struct *p, u32 *secid)
+ {
+-	struct smack_known *skp = smk_of_task(task_security(p));
++	struct smack_known *skp = smk_of_task_struct(p);
+ 
+ 	*secid = skp->smk_secid;
+ }
+@@ -1986,7 +1988,7 @@ static int smack_task_kill(struct task_struct *p, struct siginfo *info,
+ {
+ 	struct smk_audit_info ad;
+ 	struct smack_known *skp;
+-	struct smack_known *tkp = smk_of_task(task_security(p));
++	struct smack_known *tkp = smk_of_task_struct(p);
+ 	int rc;
+ 
+ 	smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_TASK);
+@@ -2040,7 +2042,7 @@ static int smack_task_wait(struct task_struct *p)
+ static void smack_task_to_inode(struct task_struct *p, struct inode *inode)
+ {
+ 	struct inode_smack *isp = inode->i_security;
+-	struct smack_known *skp = smk_of_task(task_security(p));
++	struct smack_known *skp = smk_of_task_struct(p);
+ 
+ 	isp->smk_inode = skp;
+ }
+@@ -3200,7 +3202,7 @@ unlockandout:
+  */
+ static int smack_getprocattr(struct task_struct *p, char *name, char **value)
+ {
+-	struct smack_known *skp = smk_of_task(task_security(p));
++	struct smack_known *skp = smk_of_task_struct(p);
+ 	char *cp;
+ 	int slen;
+ 
 -- 
-Catalin
+2.2.1
+
