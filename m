@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014AbbAMNPm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 08:15:42 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:55642 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751347AbbAMNPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 08:15:40 -0500
-Message-ID: <54B51A75.1000308@ti.com>
-Date: Tue, 13 Jan 2015 15:15:33 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751658AbbAMNTA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 08:19:00 -0500
+Received: from mout.kundenserver.de ([212.227.17.10]:51416 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751004AbbAMNS6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 08:18:58 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Shawn Guo <shawn.guo@linaro.org>,
+        Olof Johansson <olof@lixom.net>, Anson Huang <b20788@freescale.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Robinson <pbrobinson@gmail.com>
+Subject: Re: linux-next: manual merge of the imx-mxs tree with the arm-soc tree
+Date: Tue, 13 Jan 2015 14:18:32 +0100
+Message-ID: <3097971.rZTsHKr4DO@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20150113111636.7bc5785c@canb.auug.org.au>
+References: <20150113111636.7bc5785c@canb.auug.org.au>
 MIME-Version: 1.0
-To: Colin King <colin.king@canonical.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-fbdev@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH][RESEND] static code analysis from cppcheck reports:
-References: <1421076472-7101-1-git-send-email-colin.king@canonical.com>
-In-Reply-To: <1421076472-7101-1-git-send-email-colin.king@canonical.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="oFQ2TwE9RKDtGAaFAKopuMvtLdjlCFsdI"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:4ivF1NAUUnI3FaHGJTjJ3kAsuyf59e08w3NFI5W+jAX5VIRr4+x
+ ftDDgi/GHWPkiaoHbLeQJTRZMTNf6u8TspGfEjn+XnXPa8RNsSizet8B5Wbq5gU+afv4Hw5
+ CS00emRV2gNZaQ5MtU0YVjQs81C+2wqPQqZCufKBqlsQB0B2fl053cS2AwPBFsY/sIyhQq3
+ ZUXAJwqf7/9F6OULrFpnA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---oFQ2TwE9RKDtGAaFAKopuMvtLdjlCFsdI
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On Tuesday 13 January 2015 11:16:36 Stephen Rothwell wrote:
+>  -      imx6q-tx6q-1110.dtb \
+>  -      imx6sl-evk.dtb \
+>  +      imx6q-tx6q-1110.dtb
+>  +dtb-$(CONFIG_SOC_IMX6SL) += \
+>  +      imx6sl-evk.dtb
+>  +dtb-$(CONFIG_SOC_IMX6SX) += \
+> +       imx6sx-sabreauto.dtb \
+>         imx6sx-sdb.dtb \
+>  +dtb-$(CONFIG_SOC_LS1021A) += \
+>         ls1021a-qds.dtb \
+>  -      ls1021a-twr.dtb \
+>  +      ls1021a-twr.dtb
+>  +dtb-$(CONFIG_SOC_VF610) += \
+> 
 
-On 12/01/15 17:27, Colin King wrote:
-> From: Colin Ian King <colin.king@canonical.com>
->=20
-> [drivers/video/fbdev/broadsheetfb.c:673]:
->   (error) Memory leak: sector_buffer
->=20
-> sector_buffer is not being kfree'd on each call to
-> broadsheet_spiflash_rewrite_sector(), so free it.
->=20
-> Signed-off-by: Colin Ian King <colin.king@canonical.com>
-> ---
->  drivers/video/fbdev/broadsheetfb.c | 8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
+There is an extraneous '\' character behind imx6sx-sdb.dtb now, which caused
+build errors for me. We should soon be able to merge the other branches into
+arm-soc to avoid the entire set of merge conflicts, until then please
+change your recorded resolution to avoid the build error.
 
-Thanks, I've queued this for 3.19 fbdev fixes.
+Thanks!
 
- Tomi
-
-
-
-
---oFQ2TwE9RKDtGAaFAKopuMvtLdjlCFsdI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUtRp1AAoJEPo9qoy8lh7167YP/i6owjTNe0G0pykrUv5euit8
-QY3Pof8rK+xGMntBix2cw4/1Qp6pbFzLacy8/DM6lpVsI77EUOn9WjOIOYDi8TO0
-R5DINFJABy4ZAQ/6VScsxLXpe45W0NWiloz8rw+vNcJAj4KWrKyalttkJqQSygHt
-qUMSL7nFKFnzFdJuX2WUbSkIp6kF25hmhRGepsNGerFm4fWkvhHB2OB6PjuZAAr4
-ehSIWU5h6vRT1Zm/KWAz74ZGMfIHgO01NTp/seVcx4QsXZBJ0QvrI0q69XTMYEy2
-gZLJbY2E+c/gvtENiYBF7uDzD3atp0SK9uxun+VmG5SwsrXChmkmV5mfPenJf+Qp
-0J92fYt9w3cpK5Xe0XCiaU72Vea5U0yzHFgT30bbyBB9TWTZ97xBDZIF8ku0k+fG
-kZ+4HF4D8GJC2PwPhw72onviXSg+iWIYPIvR999CvNT3Oza2XR5pAlIjO6y20vPb
-O/OXBEgIq/DS6hopcf1BYuIshZmTNwtm+3uNOfU/zLAE8JKg9i8NGTNIrxaabQZB
-zOqz39xiixiudwYdyBWuxUAM7KOu+74/fFjVVSFWfJ61uemvKCvCW8AhpTzDfnAf
-4Hxh4MpzEZ2sE6N89wYVH0fK2Y8Iug/1cwUstS+y0FfITWLiKIu72XPLeFAeRZA0
-Cq0AGWfdLrT8MDZNJNki
-=cBQH
------END PGP SIGNATURE-----
-
---oFQ2TwE9RKDtGAaFAKopuMvtLdjlCFsdI--
+	Arnd
