@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425AbbAMVHm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 16:07:42 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:45860 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327AbbAMVHk (ORCPT
+	id S1751721AbbAMVLK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 16:11:10 -0500
+Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:48448 "EHLO
+	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750848AbbAMVLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 16:07:40 -0500
-Date: Tue, 13 Jan 2015 13:06:23 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Mike Looijmans <mike.looijmans@topic.nl>
-Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [v3] gpio_wdt: Add "always_running" feature to GPIO watchdog
-Message-ID: <20150113210623.GA25920@roeck-us.net>
-References: <1416562828-3978-1-git-send-email-mike.looijmans@topic.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416562828-3978-1-git-send-email-mike.looijmans@topic.nl>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A010202.54B5891C.0109,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Tue, 13 Jan 2015 16:11:09 -0500
+From: Debabrata Banerjee <dbanerje@akamai.com>
+To: davem@davemloft.net, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Debabrata Banerjee <dbanerje@akamai.com>
+Subject: [PATCH] tcp: Fix RFC reference in comment
+Date: Tue, 13 Jan 2015 16:10:31 -0500
+Message-Id: <1421183431-29915-1-git-send-email-dbanerje@akamai.com>
+X-Mailer: git-send-email 2.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 10:40:28AM +0100, Mike Looijmans wrote:
-> On some chips, like the TPS386000, the trigger cannot be disabled
-> and the CPU must keep toggling the line at all times. Add a switch
-> "always_running" to keep toggling the GPIO line regardless of the
-> state of the soft part of the watchdog. The "armed" member keeps
-> track of whether a timeout must also cause a reset.
-> 
-> Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
+Comment in tcp_cwnd_restart() was referencing the wrong RFC for the algorithm
+it's implementing.
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Debabrata Banerjee <dbanerje@akamai.com>
+---
+ net/ipv4/tcp_output.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 65caf8b..0c13f88 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -139,7 +139,7 @@ static __u16 tcp_advertise_mss(struct sock *sk)
+ 	return (__u16)mss;
+ }
+ 
+-/* RFC2861. Reset CWND after idle period longer RTO to "restart window".
++/* RFC2581 4.1. Reset CWND after idle period longer RTO to "restart window".
+  * This is the first part of cwnd validation mechanism. */
+ static void tcp_cwnd_restart(struct sock *sk, const struct dst_entry *dst)
+ {
+-- 
+2.2.1
+
