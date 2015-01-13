@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526AbbAMNn6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 08:43:58 -0500
-Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:52348 "EHLO
+	id S1752573AbbAMNoK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 08:44:10 -0500
+Received: from smtprelay4.synopsys.com ([198.182.47.9]:38988 "EHLO
 	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456AbbAMNn4 (ORCPT
+	with ESMTP id S1752071AbbAMNoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 08:43:56 -0500
+	Tue, 13 Jan 2015 08:44:04 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <acme@redhat.com>, <namhyung@kernel.org>, <jolsa@kernel.org>
 CC: <peterz@infradead.org>, <mingo@kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-perf-users@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        <Alexey.Brodkin@synopsys.com>, Borislav Petkov <bp@suse.de>,
-        Cody P Schafer <dev@codyps.com>,
+        <Alexey.Brodkin@synopsys.com>,
         Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v3 1/5] perf tools: [uclibc] fix statfs.f_type data type mismatch build error
-Date: Tue, 13 Jan 2015 19:13:20 +0530
-Message-ID: <1421156604-30603-2-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v3 2/5] perf tools: [uclibc] Elide strlcpy warning
+Date: Tue, 13 Jan 2015 19:13:21 +0530
+Message-ID: <1421156604-30603-3-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1421156604-30603-1-git-send-email-vgupta@synopsys.com>
 References: <1421156604-30603-1-git-send-email-vgupta@synopsys.com>
@@ -27,77 +26,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexey Brodkin <abrodkin@synopsys.com>
-
-ARC Linux uses the no legacy syscalls abi and corresponding uClibc headers
-statfs defines f_type to be U32 which causes perf build breakage
-
-http://git.uclibc.org/uClibc/tree/libc/sysdeps/linux/common-generic/bits/statfs.h
-
-   ----------->8---------------
-  CC       fs/fs.o
-fs/fs.c: In function 'fs__valid_mount':
-fs/fs.c:82:24: error: comparison between signed and unsigned integer
-expressions [-Werror=sign-compare]
-  else if (st_fs.f_type != magic)
-                        ^
-cc1: all warnings being treated as errors
-   ----------->8---------------
-
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Cody P Schafer <dev@codyps.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-perf-users@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Acked-by: Jiri Olsa <jolsa@kernel.org>
-Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
-
----
-v4:
- * Add Ack from Jiri Olsa
-
-v3: Changes since v2 [2]
- * Made Changelog a bit more concise, no code changes [vgupta]
-
-v2: Changes since v1 [1]
- * Added type cast to DEBUGFS_MAGIC in "debugfs.c" [Arnaldo]
- * Added verbose explanation of root cause
-
-[2] https://lkml.org/lkml/2014/9/16/296
-[1] https://lkml.org/lkml/2014/8/13/529
+   ----------------->8------------------
+  CC       bench/sched-pipe.o
+In file included from builtin-annotate.c:13:0:
+util/cache.h:76:15: warning: redundant redeclaration of 'strlcpy'
+[-Wredundant-decls]
+ extern size_t strlcpy(char *dest, const char *src, size_t size);
+               ^
+In file included from util/util.h:55:0,
+                 from builtin.h:4,
+                 from builtin-annotate.c:8:
+~/vineetg/arc/gnu/INSTALL_1412-arc-2014.12-rc1/arc-snps-linux-uclibc/sysroot/usr/include/string.h:396:15:
+note: previous declaration of 'strlcpy' was here
+ extern size_t strlcpy(char *__restrict dst, const char *__restrict src,
+   ----------------->8------------------
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- tools/lib/api/fs/debugfs.c | 2 +-
- tools/lib/api/fs/fs.c      | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/util/cache.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/tools/lib/api/fs/debugfs.c b/tools/lib/api/fs/debugfs.c
-index a74fba6d7743..93aa4cd2416f 100644
---- a/tools/lib/api/fs/debugfs.c
-+++ b/tools/lib/api/fs/debugfs.c
-@@ -67,7 +67,7 @@ int debugfs_valid_mountpoint(const char *debugfs)
+diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
+index 5cf9e1b5989d..d04d770d90f6 100644
+--- a/tools/perf/util/cache.h
++++ b/tools/perf/util/cache.h
+@@ -71,7 +71,9 @@ extern char *perf_path(const char *fmt, ...) __attribute__((format (printf, 1, 2
+ extern char *perf_pathdup(const char *fmt, ...)
+ 	__attribute__((format (printf, 1, 2)));
  
- 	if (statfs(debugfs, &st_fs) < 0)
- 		return -ENOENT;
--	else if (st_fs.f_type != (long) DEBUGFS_MAGIC)
-+	else if ((long) st_fs.f_type != (long) DEBUGFS_MAGIC)
- 		return -ENOENT;
++#ifndef __UCLIBC__
+ /* Matches the libc/libbsd function attribute so we declare this unconditionally: */
+ extern size_t strlcpy(char *dest, const char *src, size_t size);
++#endif
  
- 	return 0;
-diff --git a/tools/lib/api/fs/fs.c b/tools/lib/api/fs/fs.c
-index 65d9be3f9887..15e64921ea84 100644
---- a/tools/lib/api/fs/fs.c
-+++ b/tools/lib/api/fs/fs.c
-@@ -79,7 +79,7 @@ static int fs__valid_mount(const char *fs, long magic)
- 
- 	if (statfs(fs, &st_fs) < 0)
- 		return -ENOENT;
--	else if (st_fs.f_type != magic)
-+	else if ((long) st_fs.f_type != magic)
- 		return -ENOENT;
- 
- 	return 0;
+ #endif /* __PERF_CACHE_H */
 -- 
 1.9.1
 
