@@ -1,101 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652AbbAMU7x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 15:59:53 -0500
-Received: from mga01.intel.com ([192.55.52.88]:29736 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751192AbbAMU7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 15:59:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="511757275"
-Date: Tue, 13 Jan 2015 15:59:49 -0500
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        willy@linux.intel.com
-Subject: Re: [PATCH v12 06/20] dax,ext2: Replace XIP read and write with DAX
- I/O
-Message-ID: <20150113205949.GI5661@wil.cx>
-References: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
- <1414185652-28663-7-git-send-email-matthew.r.wilcox@intel.com>
- <20150112150941.ab63f50561322415cca7eca9@linux-foundation.org>
+	id S1753127AbbAMVB3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 16:01:29 -0500
+Received: from www.linutronix.de ([62.245.132.108]:47272 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752780AbbAMVB2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 16:01:28 -0500
+Date: Tue, 13 Jan 2015 22:00:55 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+cc: Jason Cooper <jason@lakedaemon.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 1/5] irqchip: add dumb demultiplexer implementation
+In-Reply-To: <1421174781-4340-2-git-send-email-boris.brezillon@free-electrons.com>
+Message-ID: <alpine.DEB.2.11.1501132153210.5526@nanos>
+References: <1421174781-4340-1-git-send-email-boris.brezillon@free-electrons.com> <1421174781-4340-2-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150112150941.ab63f50561322415cca7eca9@linux-foundation.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 03:09:41PM -0800, Andrew Morton wrote:
-> On Fri, 24 Oct 2014 17:20:38 -0400 Matthew Wilcox <matthew.r.wilcox@intel.com> wrote:
-> > +/*
-> > + * When ext4 encounters a hole, it returns without modifying the buffer_head
-> > + * which means that we can't trust b_size.  To cope with this, we set b_state
-> > + * to 0 before calling get_block and, if any bit is set, we know we can trust
-> > + * b_size.  Unfortunate, really, since ext4 knows precisely how long a hole is
-> > + * and would save us time calling get_block repeatedly.
-> > + */
-> > +static bool buffer_size_valid(struct buffer_head *bh)
-> > +{
-> > +	return bh->b_state != 0;
-> > +}
-> 
-> Yitch.  Is there a cleaner way of doing this?
+On Tue, 13 Jan 2015, Boris Brezillon wrote:
+> +	ret = irq_set_handler_data(irq, demux);
+> +	if (ret) {
+> +		pr_err("Failed to assign handler data\n");
+> +		goto err_free_domain;
+> +	}
+> +
+> +	irq_set_chained_handler(irq, irq_dumb_demux_handler);
+> +
+> +	/*
+> +	 * Disable the src irq (automatically enabled by
+> +	 * irq_set_chained_handler) to prevent irqs from happening while
+> +	 * nobody requested any of the demuxed irqs.
+> +	 */
+> +	disable_irq(irq);
 
-I'm hoping to fix ext* and then this problem can go away ...
+We rather prevent the startup of the irq line right away.
 
-> > +static ssize_t dax_io(int rw, struct inode *inode, struct iov_iter *iter,
-> > +			loff_t start, loff_t end, get_block_t get_block,
-> > +			struct buffer_head *bh)
-> 
-> hm, some documentation would be nice.  I expected "dax_io" to do IO,
-> but this doesn't.  Is it well named?
+enum {
+     IRQ_CHAINED_NONE,
+     IRQ_CHAINED_STARTUP,
+     IRQ_CHAINED_NOSTARTUP,
+};
 
-It does do I/O!
+-__irq_set_handler(unsigned int irq, irq_flow_handler_t handle, int is_chained,
+-                  const char *name);
++__irq_set_handler(unsigned int irq, irq_flow_handler_t handle, int chained_mode,
++                  const char *name);
 
-> > +		if (rw == WRITE)
-> > +			len = copy_from_iter(addr, max - pos, iter);
-> > +		else if (!hole)
-> > +			len = copy_to_iter(addr, max - pos, iter);
-> > +		else
-> > +			len = iov_iter_zero(max - pos, iter);
+{
+....
+        if (handle != handle_bad_irq && chained_mode) {
+                irq_settings_set_noprobe(desc);
+                irq_settings_set_norequest(desc);
+                irq_settings_set_nothread(desc);
+-               irq_startup(desc, true);
++               if (chained_mode == IRQ_CHAINED_STARTUP)
++                       irq_startup(desc, true);
+	}
+....
+}
 
-> > + * This function uses the same locking scheme as do_blockdev_direct_IO:
-> > + * If @flags has DIO_LOCKING set, we assume that the i_mutex is held by the
-> > + * caller for writes.  For reads, we take and release the i_mutex ourselves.
-> > + * If DIO_LOCKING is not set, the filesystem takes care of its own locking.
-> > + * As with do_blockdev_direct_IO(), we increment i_dio_count while the I/O
-> > + * is in progress.
-> 
-> It would be helpful here to explain *why* this code uses i_dio_count:
-> what is trying to protect (against)?
+Hmm?
 
-Rather than just referencing the documentation in fs/direct_io.c?  I
-find it tends to get stale if we have documentation in multiple places.
-
-> Oh, is that how it works ;)
-> 
-> Perhaps a few BUG_ON(!mutex_is_locked(&inode->i_mutex)) would clarfiy
-> and prevent mistakes.
-
-Perhaps ... although there aren't any in blockdev_direct_IO(), and all the
-callers are of the form:
-
-	if (IS_DAX)
-		dax_do_io()
-	else
-		blockdev_direct_IO()
-
-so they've already got their flags and locking sorted out.
-
-> > + */
-> > +ssize_t dax_do_io(int rw, struct kiocb *iocb, struct inode *inode,
-> > +			struct iov_iter *iter, loff_t pos,
-> > +			get_block_t get_block, dio_iodone_t end_io, int flags)
-> >
-> > ...
-> >
+	tglx
