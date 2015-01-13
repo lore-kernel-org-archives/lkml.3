@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057AbbALXNs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 18:13:48 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:34442
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752614AbbALXNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 18:13:46 -0500
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: x86@kernel.org, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, tglx@linutronix.de, hpa@zytor.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, stable <stable@vger.kernel.org>
-Subject: [PATCH RESEND 1/1] X86: Mark the Hyper-V clocksource as being continuous
-Date: Mon, 12 Jan 2015 16:26:02 -0800
-Message-Id: <1421108762-3331-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1753349AbbAMA0o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 19:26:44 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:36959 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958AbbAMA0m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jan 2015 19:26:42 -0500
+Message-ID: <54B46640.3000804@codeaurora.org>
+Date: Mon, 12 Jan 2015 16:26:40 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+CC: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-arm-msm@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tty: serial: msm_serial: Remove console unregistration
+ from driver exit.
+References: <1421070732-24527-1-git-send-email-pramod.gurav@smartplayin.com>
+In-Reply-To: <1421070732-24527-1-git-send-email-pramod.gurav@smartplayin.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Hyper-V clocksource is continuous; mark it accordingly.
+On 01/12/2015 05:52 AM, Pramod Gurav wrote:
+> unregister_console() will be called from uart_remove_one_port() while
+> removing the platform driver. So not necessary to call it in driver
+> exit path.
+>
+> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Cc: stable <stable@vger.kernel.org>
----
- arch/x86/kernel/cpu/mshyperv.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
 
-diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-index a450373..939155f 100644
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -107,6 +107,7 @@ static struct clocksource hyperv_cs = {
- 	.rating		= 400, /* use this when running on Hyperv*/
- 	.read		= read_hv_clock,
- 	.mask		= CLOCKSOURCE_MASK(64),
-+	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
- };
- 
- static void __init ms_hyperv_init_platform(void)
 -- 
-1.7.4.1
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+a Linux Foundation Collaborative Project
 
