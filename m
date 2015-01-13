@@ -1,113 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497AbbAMCsm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jan 2015 21:48:42 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:54244 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054AbbAMCsk (ORCPT
+	id S1753389AbbAMCe5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jan 2015 21:34:57 -0500
+Received: from mga14.intel.com ([192.55.52.115]:9065 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752695AbbAMCey convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jan 2015 21:48:40 -0500
+	Mon, 12 Jan 2015 21:34:54 -0500
+X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,746,1413270000"; 
-   d="scan'208";a="54530876"
-Subject: Re: [3.19-rc3] tg3: BUG: sleeping function called from invalid
- context
-From: Prashant Sreedharan <prashant@broadcom.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Michael Chan <mchan@broadcom.com>, <netdev@vger.kernel.org>,
-        Linux kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <54B46DD5.9050802@hurleysoftware.com>
-References: <54B46DD5.9050802@hurleysoftware.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 12 Jan 2015 18:30:55 -0800
-Message-ID: <1421116255.16485.14.camel@prashant>
+   d="scan'208";a="660842936"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+CC: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@acpica.org" <devel@acpica.org>,
+        "David E. Box" <david.e.box@linux.intel.com>
+Subject: RE: [Devel] [PATCH 3/3] ACPICA: Remove use of __DATE__ macro
+Thread-Topic: [Devel] [PATCH 3/3] ACPICA: Remove use of __DATE__ macro
+Thread-Index: AQHQKNIe6YwEecfkn02ZwABJi6oKXZyyPR8AgAC7LACACmgy4A==
+Date: Tue, 13 Jan 2015 02:33:18 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E88026AC9E4@SHSMSX101.ccr.corp.intel.com>
+References: <1418381488-25123-1-git-send-email-linux@rasmusvillemoes.dk>
+ <1418381488-25123-3-git-send-email-linux@rasmusvillemoes.dk>
+ <1AE640813FDE7649BE1B193DEA596E88026AACD9@SHSMSX101.ccr.corp.intel.com>
+ <87oaqdy13n.fsf@rasmusvillemoes.dk>
+ <1AE640813FDE7649BE1B193DEA596E88026AB06A@SHSMSX101.ccr.corp.intel.com>
+ <20150106193610.GA7141@pathfinder>
+In-Reply-To: <20150106193610.GA7141@pathfinder>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2015-01-12 at 19:59 -0500, Peter Hurley wrote:
-> On 3.19-rc3, I'm seeing this might_sleep() warning [1] from the tg3_open()
-> call stack. Let me know if I need to bisect this.
-> 
-> Regards,
-> Peter Hurley
-> 
-> [1]
-> 
-> [   17.203009] BUG: sleeping function called from invalid context at /home/peter/src/kernels/mainline/kernel/irq/manage.c:104
-> [   17.203067] in_atomic(): 1, irqs_disabled(): 0, pid: 1106, name: ip
-> [   17.203092] 2 locks held by ip/1106:
-> [   17.205255]  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff816adf1f>] rtnetlink_rcv+0x1f/0x40
-> [   17.207445]  #1:  (&(&tp->lock)->rlock){+.....}, at: [<ffffffffa01073e6>] tg3_start+0xc06/0x11f0 [tg3]
-> [   17.209725] CPU: 2 PID: 1106 Comm: ip Not tainted 3.19.0-rc3+wip-xeon+lockdep #rc3+wip
-> [   17.211900] Hardware name: Dell Inc. Precision WorkStation T5400  /0RW203, BIOS A11 04/30/2012
-> [   17.214086]  0000000000000068 ffff8802ac823498 ffffffff817af7e8 0000000000000005
-> [   17.216265]  ffffffff81a9be78 ffff8802ac8234a8 ffffffff810998a5 ffff8802ac8234d8
-> [   17.218446]  ffffffff8109991a ffff8802ac8234c8 ffff8802af0aae00 ffffffffa00ed000
-> [   17.220636] Call Trace:
-> [   17.222743]  [<ffffffff817af7e8>] dump_stack+0x4f/0x7b
-> [   17.224808]  [<ffffffff810998a5>] ___might_sleep+0x105/0x140
-> [   17.226842]  [<ffffffff8109991a>] __might_sleep+0x3a/0xa0
-> [   17.228869]  [<ffffffffa00ed000>] ? 0xffffffffa00ed000
-> [   17.230939]  [<ffffffff810d7d78>] synchronize_irq+0x38/0xa0
-> [   17.232967]  [<ffffffffa00ed000>] ? 0xffffffffa00ed000
-> [   17.234991]  [<ffffffffa010105f>] tg3_chip_reset+0x13f/0x9c0 [tg3]
-> [   17.236988]  [<ffffffffa01020ae>] tg3_reset_hw+0x7e/0x2d20 [tg3]
-> [   17.238996]  [<ffffffff813bfaff>] ? __udelay+0x2f/0x40
-> [   17.241007]  [<ffffffffa00ef2f7>] ? _tw32_flush+0x47/0x80 [tg3]
-> [   17.243066]  [<ffffffffa0104dac>] tg3_init_hw+0x5c/0x70 [tg3]
-> [   17.245438]  [<ffffffffa010740b>] tg3_start+0xc2b/0x11f0 [tg3]
-> [   17.247444]  [<ffffffffa0107ad7>] ? tg3_open+0x107/0x2e0 [tg3]
-> [   17.249556]  [<ffffffff810c338d>] ? trace_hardirqs_on+0xd/0x10
-> [   17.251581]  [<ffffffff8107806f>] ? __local_bh_enable_ip+0x6f/0x100
-> [   17.253710]  [<ffffffffa0107af8>] tg3_open+0x128/0x2e0 [tg3]
-> [   17.255758]  [<ffffffff816ba3f5>] ? netpoll_poll_disable+0x5/0xa0
-> [   17.257932]  [<ffffffff816a14af>] __dev_open+0xbf/0x140
-> [   17.260091]  [<ffffffff816a17c1>] __dev_change_flags+0xa1/0x160
-> [   17.262222]  [<ffffffff816a18a9>] dev_change_flags+0x29/0x60
-> [   17.264360]  [<ffffffff816b0e02>] do_setlink+0x2f2/0xa30
-> [   17.266431]  [<ffffffff816b1b7f>] rtnl_newlink+0x51f/0x750
-> [   17.268485]  [<ffffffff816b1749>] ? rtnl_newlink+0xe9/0x750
-> [   17.270483]  [<ffffffff811869c2>] ? free_pages_prepare+0x1d2/0x270
-> [   17.272507]  [<ffffffff810c32bd>] ? trace_hardirqs_on_caller+0x11d/0x1e0
-> [   17.274531]  [<ffffffff813dd1b2>] ? nla_parse+0x32/0x120
-> [   17.276531]  [<ffffffff81021ab5>] ? native_sched_clock+0x35/0xa0
-> [   17.278514]  [<ffffffff816adfd5>] rtnetlink_rcv_msg+0x95/0x250
-> [   17.280485]  [<ffffffff8109f699>] ? preempt_count_sub+0x49/0x50
-> [   17.282448]  [<ffffffff817b4a02>] ? mutex_lock_nested+0x382/0x530
-> [   17.284402]  [<ffffffff816adf1f>] ? rtnetlink_rcv+0x1f/0x40
-> [   17.286290]  [<ffffffff816adf1f>] ? rtnetlink_rcv+0x1f/0x40
-> [   17.288142]  [<ffffffff816adf40>] ? rtnetlink_rcv+0x40/0x40
-> [   17.290031]  [<ffffffff816cedc1>] netlink_rcv_skb+0xc1/0xe0
-> [   17.291836]  [<ffffffff816adf2e>] rtnetlink_rcv+0x2e/0x40
-> [   17.293615]  [<ffffffff816ce473>] netlink_unicast+0xf3/0x1d0
-> [   17.295420]  [<ffffffff816ce863>] netlink_sendmsg+0x313/0x690
-> [   17.297132]  [<ffffffff811ada4f>] ? might_fault+0x5f/0xb0
-> [   17.298799]  [<ffffffff8168253c>] do_sock_sendmsg+0x8c/0x100
-> [   17.300493]  [<ffffffff81681e3e>] ? copy_msghdr_from_user+0x15e/0x1f0
-> [   17.302173]  [<ffffffff81682aeb>] ___sys_sendmsg+0x30b/0x320
-> [   17.303798]  [<ffffffff81021ab5>] ? native_sched_clock+0x35/0xa0
-> [   17.305431]  [<ffffffff810bdee0>] ? cpuacct_account_field+0x80/0xb0
-> [   17.307085]  [<ffffffff81021ab5>] ? native_sched_clock+0x35/0xa0
-> [   17.308744]  [<ffffffff810a4f35>] ? sched_clock_local+0x25/0x90
-> [   17.310375]  [<ffffffff810a5dc1>] ? vtime_account_user+0x91/0xa0
-> [   17.311948]  [<ffffffff810a5198>] ? sched_clock_cpu+0xb8/0xe0
-> [   17.313509]  [<ffffffff810bf8be>] ? put_lock_stats.isra.26+0xe/0x30
-> [   17.315069]  [<ffffffff810c007e>] ? lock_release_holdtime.part.27+0x12e/0x1b0
-> [   17.316618]  [<ffffffff810a5dc1>] ? vtime_account_user+0x91/0xa0
-> [   17.318162]  [<ffffffff8109f5d1>] ? get_parent_ip+0x11/0x50
-> [   17.319703]  [<ffffffff8109f699>] ? preempt_count_sub+0x49/0x50
-> [   17.321235]  [<ffffffff811807e5>] ? context_tracking_user_exit+0x55/0x130
-> [   17.322732]  [<ffffffff811807e5>] ? context_tracking_user_exit+0x55/0x130
-> [   17.324197]  [<ffffffff816834f2>] __sys_sendmsg+0x42/0x80
-> [   17.325634]  [<ffffffff81683542>] SyS_sendmsg+0x12/0x20
-> [   17.327048]  [<ffffffff817ba12d>] system_call_fastpath+0x16/0x1b
+Hi,
 
-Please bisect, there hasn't been tg3 code changes in this path that
-might cause this. It would help to know the commit changes that is
-triggering the problem. Also could you provide the device details, from
-syslog look for "Tigon3 [partno(BCMxxxxx) rev xxxxxxx]". Thanks.
+I've added this patch into the 201501 ACPICA materials for review:
+https://github.com/acpica/acpica/pull/61
+If it is merged, it will appear in Linux kernel after 201501 ACPICA release.
+Thanks for reporting.
 
+Best regards
+-Lv
 
+> From: David E. Box [mailto:david.e.box@linux.intel.com]
+> Sent: Wednesday, January 07, 2015 3:36 AM
+> 
+> On Tue, Jan 06, 2015 at 12:30:05AM +0000, Zheng, Lv wrote:
+> > Hi,
+> >
+> > > From: Rasmus Villemoes [mailto:linux@rasmusvillemoes.dk]
+> > > Sent: Monday, January 05, 2015 6:27 PM
+> > >
+> > > On Mon, Jan 05 2015, "Zheng, Lv" <lv.zheng@intel.com> wrote:
+> > >
+> > > > Hi,
+> > > >
+> > > >> From: Rasmus Villemoes [mailto:linux@rasmusvillemoes.dk]
+> > > >> Sent: Friday, December 12, 2014 6:51 PM
+> > > >> To: Zheng, Lv
+> > > >> Cc: Rasmus Villemoes; linux-acpi@vger.kernel.org; devel@acpica.org; linux-kernel@vger.kernel.org
+> > > >> Subject: [PATCH 3/3] ACPICA: Remove use of __DATE__ macro
+> > > >>
+> > > >> The macro __DATE__ and friends is not allowed in the kernel. Also,
+> > > >> including the build time in output doesn't seem to provide any value.
+> > > >>
+> > > >
+> > > > Could you confirm that it is not useful even for the user tools?
+> > > > Please perform the following commands in the kernel source tree
+> > > > 1. stay in tools folder
+> > > > 2. type "make acpi"
+> > > > 3. type "./power/acpi/acpidump -v"
+> > > >
+> > >
+> > > Yeah, it's part of the output, but for what reason? What can userspace
+> > > possibly use that information for?
+> >
+> > I also want to know.
+> 
+> I don't see a reason for userspace to know the build date.
+> 
+> >
+> > > I can see some utility in printing a
+> > > version number, since that may tell something about the features
+> > > present or absent. The compilation date, on the other hand, seems
+> > > completely useless. Different distros may ship different versions which
+> > > happened to be compiled on the same day, or older versions compiled later.
+> >
+> > If the deletion was done for this reason, IMO, it's acceptable.
+> > So let's wait to see others' feedback.
+> >
+> 
+> I'm okay with removing it (the build date) in Linux and ACPICA as well. However
+> the version, which is essentially the release date, is important for the exact
+> reasons already stated.
+> 
+> Dave
