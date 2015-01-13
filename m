@@ -1,87 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313AbbAMQsc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 11:48:32 -0500
-Received: from sauhun.de ([89.238.76.85]:35974 "EHLO pokefinder.org"
+	id S1752103AbbAMQvo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 11:51:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50887 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752531AbbAMQsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 11:48:30 -0500
-Date: Tue, 13 Jan 2015 17:48:29 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c / ACPI: Pick the first address if device has multiple
-Message-ID: <20150113164829.GO7660@katana>
-References: <1419860928-195404-1-git-send-email-mika.westerberg@linux.intel.com>
- <20150113155059.GN7660@katana>
- <1421167477.4459.229.camel@spandruv-desktop.jf.intel.com>
+	id S1750976AbbAMQvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 11:51:43 -0500
+Date: Tue, 13 Jan 2015 17:50:43 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
+        tglx@linutronix.de, luto@amacapital.net
+Subject: Re: [RFC PATCH 05/11] x86,fpu: ensure FPU state is reloaded from
+	memory if task is traced
+Message-ID: <20150113165043.GA26931@redhat.com>
+References: <1421012793-30106-1-git-send-email-riel@redhat.com> <1421012793-30106-6-git-send-email-riel@redhat.com> <20150113161938.GA24447@redhat.com> <54B548EA.7020005@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+nG9yj4eE4W6Oba0"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421167477.4459.229.camel@spandruv-desktop.jf.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54B548EA.7020005@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/13, Rik van Riel wrote:
+>
+> >> @@ -412,8 +412,14 @@ static inline void switch_fpu_prepare(struct
+> >> task_struct *old, struct task_struc bool preload =
+> >> tsk_used_math(new) && (use_eager_fpu() || new->thread.fpu_counter
+> >> > 5); if (__thread_has_fpu(old)) { -		if (!__save_init_fpu(old)) 
+> >> +		/* +		 * Make sure the FPU state is restored from memory next
+> >> time, +		 * if the task has an FPU exception pending, or the
+> >> task's in +		 * memory FPU state could be changed by a debugger. 
+> >> +		 */ +		if (!__save_init_fpu(old) ||
+> >> task_is_stopped_or_traced(old)) cpu = ~0;
+> >
+> > Well, if debugger wants to change FPU state, it should call
+> > init_fpu() which resets .last_cpu ?
+>
+> Does the ptrace (and utrace, and ... ) code actually do that?
 
---+nG9yj4eE4W6Oba0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes, see xfpregs_get/set. So I think this change is not needed (but I
+didn't look at the next patches).
 
-On Tue, Jan 13, 2015 at 08:44:37AM -0800, Srinivas Pandruvada wrote:
-> On Tue, 2015-01-13 at 16:50 +0100, Wolfram Sang wrote:=20
-> > On Mon, Dec 29, 2014 at 03:48:48PM +0200, Mika Westerberg wrote:
-> > > ACPI specification allows I2C devices with multiple addresses. The cu=
-rrent
-> > > implementation goes over all addresses and assigns the last one to the
-> > > device. This is typically not the primary address of the device.
-> > >=20
-> > > Instead of doing that we assign the first address to the device and t=
-hen
-> > > let the driver handle rest of the addresses as it wishes.
-> > >=20
-> > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > > Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-> >=20
-> > Yes, seems better than what we do know. But maybe taking the lowest
-> > address is a bit better heuristic than taking the first address?
-> > Not sure, though...
-> The problem in taking lowest is that in many cases in current devices,
-> the lowest address may end being 0x0C, which is reserved address for
-> SMBUS (ARA). This will require different handling. Unfortunately ACPI
-> doesn't have a way to distinguish whether SMBUS support is desired or
-> not.=20
-> The other option is to skip all reserved addresses for SMBUS also and
-> then create on the lowest.
+Oleg.
 
-Well, this makes me think that Mika's approach is probably the sanest
-one...
-
-
---+nG9yj4eE4W6Oba0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUtUxcAAoJEBQN5MwUoCm2h6gQAKPX2S2zYcUK/yY8tufCA2+w
-5Ev4vljd7wa7hemJd8cOV0rb5tv2kEMhoU9CUqdHuIfFkLMedA7CKvQOJTlhQGnT
-Qe1hak/3buESfhdQxmusuEsc6D5Djac0qLgE2pKYacwokNWus6vvjW3oF9zDQm0z
-GsBCFwvVeWp8OrruPDIVTeBeJP1TZx+xae5gcAPUeGfLJIAaiwRN8ct6e5GE1BSS
-rpzFxmG9Fa/zE1YcsnKj88jTHT6GHupNu9Eib0A4P7WOZrOgWlHNgyIFzmZqAwD+
-XYtMayb7dWBzLslPr5X9RueTZ36y6SHTxSMslcJbC7aIpY7JHcmHRDstxqAq6R8G
-cDNS4J7UUJgcexJDiU6qrpUTtehMeZzK7GUaKwhanqbckJxVQdV5QEh6qDkd6F9K
-QpdNhTGDtostn4zf/ZC4XwfWT+0TdX5lamyk4J2D6tX+jUu+JFqqDd6FXZLCKH3u
-sFlRXO3FGPJkSm8hlhlx46VgmpFRfHtyVyTuDzUp4iXvvCRlOFfPnCB7TaJIClnj
-MBAm56NM8aulmwEsZH7Ys2VtBegPTyShqiaG2vhg004/0B0cQpXDZCFwoSABvkso
-gkqMQLSReab1Xk8hDssRoIhwYksiLWiLlG5OThuJyBLbO6pdXycH4MIFde4yPRNB
-OrbyYrDnxirqLbweKqOf
-=WO18
------END PGP SIGNATURE-----
-
---+nG9yj4eE4W6Oba0--
