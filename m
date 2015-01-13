@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751850AbbAMKyS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 05:54:18 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:51781 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751119AbbAMKyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 05:54:16 -0500
-Message-ID: <54B4F951.5060207@ti.com>
-Date: Tue, 13 Jan 2015 12:54:09 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Asaf Vertz <asaf.vertz@tandemg.com>
-CC: <plagnioj@jcrosoft.com>, <linux-fbdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fbdev: vgastate: remove trailing whitespaces
-References: <20141211090441.GA9943@ubuntu>
-In-Reply-To: <20141211090441.GA9943@ubuntu>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="LVQgAREB4fvfi3aM7Vl4kRepS8gKuoKxI"
+	id S1751879AbbAMK6R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 05:58:17 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:40684 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856AbbAMK6P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 05:58:15 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-4f-54b4fa45610d
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: paulz@synopsys.com
+Cc: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dinguyen@opensource.altera.com,
+        yousaf.kaukab@intel.com, m.szyprowski@samsung.com,
+        Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH] usb: dwc2: call dwc2_is_controller_alive() under spinlock
+Date: Tue, 13 Jan 2015 11:57:37 +0100
+Message-id: <1421146657-18587-1-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjluLIzCtJLcpLzFFi42I5/e+xoK7rry0hBodWa1kcvF9vserTGmaL
+	5sXr2Swu75rDZrFoWSuzxdojd9kttk+ZzmTx4PBOdotNm34yO3B6LN7zkslj/9w17B791yax
+	e/RtWcXosWX/Z0aP4ze2M3l83iQXwB7FZZOSmpNZllqkb5fAlbF3Pn/BQbaKmZ8usDUwbmPt
+	YuTkkBAwkTiy5gALhC0mceHeerYuRi4OIYHpjBLXl85lhnDamSSm/tvGDFLFJqAjseX7BMYu
+	Rg4OEaCO7x84QWqYBZ4xSqx9fIQdpEZYwEvi6rGDYDaLgKrEism3wGxeAVeJOyuvskFsk5M4
+	eWwy6wRG7gWMDKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgkPpmfQOxlUNFocYBTgYlXh4
+	BfK2hAixJpYVV+YeYpTgYFYS4U3/DhTiTUmsrEotyo8vKs1JLT7EKM3BoiTOq2TfFiIkkJ5Y
+	kpqdmlqQWgSTZeLglGpg7Pjoe0f3GkdizQOhym81oVcrX+Yx1p/6PCkz6o5y+L5fJ2ZeOXvk
+	3oSXgvvXidZ0R5wMWlT+iMn51OQXDxetdjBclVVTtEkw/ptJfMLBp5vKZK33HklPFLH6Hrd6
+	g9kll3JjmSXrHpSpLnOa8aZg3iOn/Xz7H7wtDn2rbKPwbd1Ng8Ob2/P1FZVYijMSDbWYi4oT
+	ARKCpnIhAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---LVQgAREB4fvfi3aM7Vl4kRepS8gKuoKxI
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+This patch fixes bug described here:
+https://lkml.org/lkml/2014/12/22/185
 
-On 11/12/14 11:04, Asaf Vertz wrote:
-> Fixed a coding style error, trailing whitespace.
->=20
-> Signed-off-by: Asaf Vertz <asaf.vertz@tandemg.com>
-> ---
->  drivers/video/vgastate.c |   82 +++++++++++++++++++++++---------------=
---------
->  1 files changed, 41 insertions(+), 41 deletions(-)
->=20
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+---
+ drivers/usb/dwc2/core_intr.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Thanks, queued for 3.20.
+diff --git a/drivers/usb/dwc2/core_intr.c b/drivers/usb/dwc2/core_intr.c
+index ad43c5b..668c8dd 100644
+--- a/drivers/usb/dwc2/core_intr.c
++++ b/drivers/usb/dwc2/core_intr.c
+@@ -476,13 +476,13 @@ irqreturn_t dwc2_handle_common_intr(int irq, void *dev)
+ 	u32 gintsts;
+ 	irqreturn_t retval = IRQ_NONE;
+ 
++	spin_lock(&hsotg->lock);
++
+ 	if (!dwc2_is_controller_alive(hsotg)) {
+ 		dev_warn(hsotg->dev, "Controller is dead\n");
+ 		goto out;
+ 	}
+ 
+-	spin_lock(&hsotg->lock);
+-
+ 	gintsts = dwc2_read_common_intr(hsotg);
+ 	if (gintsts & ~GINTSTS_PRTINT)
+ 		retval = IRQ_HANDLED;
+-- 
+1.9.1
 
- Tomi
-
-
-
-
---LVQgAREB4fvfi3aM7Vl4kRepS8gKuoKxI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUtPlRAAoJEPo9qoy8lh71HNYP/3z72Km3gkMmAApJGn+akXWW
-Vcz4J3Mo2UAGKMpTn5BPz3rtI1eDvEfslT/iSoQrXqKMn4Z3qamXfK7uOrJubknW
-2r9N4KkJrMHxdjT2hC7+52N1vXZro0WopPI7BVcasqTK7bKndpstj7gYXY+fKdI2
-fyZ6rkH4Y+YtSzXbXGXVa0/cB9vtax6JkqCQwv1zBdJUQd1uWPOvjE10QRCZ4C/l
-nLvwb6UCx7BkAWSpFNvAjhGnJlKpBjJPTZzLcdEoD1eMe0YMQX3BswV54AqJDieU
-I2p7w2ERu5BoNbabWnVmWr4FOrzDhmHHgsitJeXcLsL6ExZ/E2DO7MmoJyelIxpi
-VqcbtNgFDcbf8oquGUurCXWUBjsw+YlEW0OryKtWUrKiQ4JN1wWCRX0WtWF4QrgT
-vP1oqsMc1iBrNjTjVwSz3Qd3pUeDvfHPqOgPX/mG1GjqCBeSBRinTMajAO0IXMP7
-u9CqvSPLKYRAGoffeCfXpXswXsd4RWjghDcy2Ih8boIC6oRLA5q31vft0QYBUIwg
-hNy5THAcuSkNT0FN0MCqAVf7XWnErPaO3tcrmzl5HC7xYKYM91yE8V2hBKiDSaIO
-gmaa6aWuYaLxGt0L6+GeKiOy50kNFWbSWUBKPgnVedXlYyhWJw7/N7RwxSGJBbvQ
-AWEr7L7AdHtG5yfRdyaX
-=7/jF
------END PGP SIGNATURE-----
-
---LVQgAREB4fvfi3aM7Vl4kRepS8gKuoKxI--
