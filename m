@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991AbbAMLxf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 06:53:35 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:35320 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796AbbAMLxe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 06:53:34 -0500
+	id S1751893AbbAML4p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 06:56:45 -0500
+Received: from mail.kernel.org ([198.145.29.136]:36522 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750964AbbAML4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 06:56:44 -0500
+Date: Tue, 13 Jan 2015 08:56:39 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: perf: PERF_FLAG_FD_OUTPUT has been broken since 2.6.35
+Message-ID: <20150113115639.GH29743@kernel.org>
+References: <alpine.DEB.2.11.1501081014460.24664@vincent-weaver-1.umelst.maine.edu>
+ <20150109160051.GK29390@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.11.1501091123040.27178@vincent-weaver-1.umelst.maine.edu>
+ <20150113093603.GK23965@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <54B504EF.4000809@ti.com>
-References: <1420705079-3741-1-git-send-email-prabhakar.csengg@gmail.com>
- <1420705079-3741-3-git-send-email-prabhakar.csengg@gmail.com> <54B504EF.4000809@ti.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Tue, 13 Jan 2015 11:53:01 +0000
-Message-ID: <CA+V-a8u0RARw84FYa661VZCYpXkZYkXmtc03jCXU=t0aoGvg9Q@mail.gmail.com>
-Subject: Re: [PATCH 2/2] fbdev: ssd1307fb: check return value while setting offset
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: LFBDEV <linux-fbdev@vger.kernel.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150113093603.GK23965@worktop.programming.kicks-ass.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 11:43 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
-> On 08/01/15 10:17, Lad, Prabhakar wrote:
->> this patch checks the return value of write command while
->> setting the display offset.
->>
->> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->> ---
->>  drivers/video/fbdev/ssd1307fb.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/video/fbdev/ssd1307fb.c b/drivers/video/fbdev/ssd1307fb.c
->> index 70e3ce8..a7ecaa6 100644
->> --- a/drivers/video/fbdev/ssd1307fb.c
->> +++ b/drivers/video/fbdev/ssd1307fb.c
->> @@ -342,7 +342,7 @@ static int ssd1307fb_ssd1306_init(struct ssd1307fb_par *par)
->>
->>       /* set display offset value */
->>       ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_DISPLAY_OFFSET);
->> -     ret = ssd1307fb_write_cmd(par->client, 0x20);
->> +     ret = ret & ssd1307fb_write_cmd(par->client, 0x20);
->>       if (ret < 0)
->>               return ret;
->
-> Hrm, what's that supposed to do? If both calls to ssd1307fb_write_cmd()
-> return an error, they are anded, resulting in a garbage error code...
->
-Agreed I have just aligned this to rest of the code in this function.
+Em Tue, Jan 13, 2015 at 10:36:03AM +0100, Peter Zijlstra escreveu:
+> On Fri, Jan 09, 2015 at 11:26:54AM -0500, Vince Weaver wrote:
+> > On Fri, 9 Jan 2015, Peter Zijlstra wrote:
+> > > > So is this worth fixing seeing as apparently no one uses this feature?
 
-Maxime if you are OK I'll post a patch returning error then and there ?
+> > > I think there's a fair argument for removing it, Ingo, Acme?
 
-Thanks,
---Prabhakar Lad
+> > could the functionality be replaced with a subsequent call to
+> > 	ioctl(PERF_EVENT_IOC_SET_OUTPUT)
+ 
+> Yes.
+ 
+> > Although I suppose there's a possibility for losing a small amount of data 
+> > or some other reason that PERF_FLAG_FD_OUTPUT was introduced in the first 
+> > place.
+ 
+> That's a natural race without solution. That is, because there is no
+> serialization between the sys_perf_event_open() and any possible acts of
+> data generation, we can't even talk about loosing data.
+
+> Even if it were all in a single syscall, there is no saying how long
+> that syscall would take to complete -- imagine its stuck on memory
+> allocation or whatnot. Similarly you could have issued the syscall a wee
+> bit later or whatnot.
+
+That is exactly my thinking, the world goes on while we set up perf to
+observe it :-)
+
+- Arnaldo
