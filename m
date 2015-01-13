@@ -1,65 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735AbbAMQJs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 11:09:48 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:57298 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752425AbbAMQJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 11:09:46 -0500
-Date: Tue, 13 Jan 2015 11:09:40 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Vinayak Menon <vinmenon@codeaurora.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, vdavydov@parallels.com, mhocko@suse.cz,
-        mgorman@suse.de, minchan@kernel.org
-Subject: Re: [PATCH] mm: vmscan: fix the page state calculation in
- too_many_isolated
-Message-ID: <20150113160940.GD8180@phnom.home.cmpxchg.org>
-References: <1421147247-10870-1-git-send-email-vinmenon@codeaurora.org>
+	id S1752849AbbAMQLI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 11:11:08 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:63639 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752712AbbAMQLF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 11:11:05 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: isdn4linux@listserv.isdn4linux.de, netdev@vger.kernel.org
+Cc: Karsten Keil <isdn@linux-pingi.de>, davem@davemloft.net,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] mISDN: avoid arch specific __builtin_return_address call
+Date: Tue, 13 Jan 2015 17:10:58 +0100
+Message-ID: <1816278.9Bv8N8K5IB@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421147247-10870-1-git-send-email-vinmenon@codeaurora.org>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:Dg+FGJ4qKCFhspc5+x2+v5AHkPnKGJWsXSbT3T9xM8cu6meqmxT
+ KZ2wMrGgERy6HUm9kBRTvpJ9A8Xkovk5ssDWYtyKqjXjhrOWyAaPObL/zDkqGYxS+oBUDwu
+ xYg/IMOuLaYUERs+9G0DP+hx5I//Ke2JdO5RzDmo89+QLL9PKIdScoNdsAY9Lc8VndILG2R
+ 177AxMMHtxgYDE9cBGENg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 04:37:27PM +0530, Vinayak Menon wrote:
-> @@ -1392,6 +1392,44 @@ int isolate_lru_page(struct page *page)
->  	return ret;
->  }
->  
-> +static int __too_many_isolated(struct zone *zone, int file,
-> +	struct scan_control *sc, int safe)
-> +{
-> +	unsigned long inactive, isolated;
-> +
-> +	if (file) {
-> +		if (safe) {
-> +			inactive = zone_page_state_snapshot(zone,
-> +					NR_INACTIVE_FILE);
-> +			isolated = zone_page_state_snapshot(zone,
-> +					NR_ISOLATED_FILE);
-> +		} else {
-> +			inactive = zone_page_state(zone, NR_INACTIVE_FILE);
-> +			isolated = zone_page_state(zone, NR_ISOLATED_FILE);
-> +		}
-> +	} else {
-> +		if (safe) {
-> +			inactive = zone_page_state_snapshot(zone,
-> +					NR_INACTIVE_ANON);
-> +			isolated = zone_page_state_snapshot(zone,
-> +					NR_ISOLATED_ANON);
-> +		} else {
-> +			inactive = zone_page_state(zone, NR_INACTIVE_ANON);
-> +			isolated = zone_page_state(zone, NR_ISOLATED_ANON);
-> +		}
-> +	}
+Not all architectures are able to call __builtin_return_address().
+On ARM, the mISDN code produces this warning:
 
-	if (safe) {
-		inactive = zone_page_state_snapshot(zone, NR_INACTIVE_ANON + 2*file)
-		isolated = zone_page_state_snapshot(zone, NR_ISOLATED_ANON + file)
-	} else {
-		inactive = zone_page_state(zone, NR_INACTIVE_ANON + 2*file)
-		isolated = zone_page_state(zone, NR_ISOLATED_ANON + file)
-	}
+hardware/mISDN/w6692.c: In function 'w6692_dctrl':
+hardware/mISDN/w6692.c:1181:75: warning: unsupported argument to '__builtin_return_address'
+  pr_debug("%s: %s dev(%d) open from %p\n", card->name, __func__,
+                                                                           ^
+hardware/mISDN/mISDNipac.c: In function 'open_dchannel':
+hardware/mISDN/mISDNipac.c:759:75: warning: unsupported argument to '__builtin_return_address'
+  pr_debug("%s: %s dev(%d) open from %p\n", isac->name, __func__,
+                                                                           ^
+
+In a lot of cases, this is relatively easy to work around by
+passing the value of __builtin_return_address(0) from the
+callers into the functions that want it. One exception is
+the indirect 'open' function call in struct isac_hw. While it
+would be possible to fix this as well, this patch only addresses
+the other callers properly and lets this one return the direct
+parent function, which should be good enough.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+
+diff --git a/drivers/isdn/hardware/mISDN/mISDNipac.c b/drivers/isdn/hardware/mISDN/mISDNipac.c
+index ccd7d851be26..a77eea594b69 100644
+--- a/drivers/isdn/hardware/mISDN/mISDNipac.c
++++ b/drivers/isdn/hardware/mISDN/mISDNipac.c
+@@ -754,10 +754,10 @@ dbusy_timer_handler(struct isac_hw *isac)
+ }
+ 
+ static int
+-open_dchannel(struct isac_hw *isac, struct channel_req *rq)
++open_dchannel_caller(struct isac_hw *isac, struct channel_req *rq, void *caller)
+ {
+ 	pr_debug("%s: %s dev(%d) open from %p\n", isac->name, __func__,
+-		 isac->dch.dev.id, __builtin_return_address(1));
++		 isac->dch.dev.id, caller);
+ 	if (rq->protocol != ISDN_P_TE_S0)
+ 		return -EINVAL;
+ 	if (rq->adr.channel == 1)
+@@ -771,6 +771,12 @@ open_dchannel(struct isac_hw *isac, struct channel_req *rq)
+ 	return 0;
+ }
+ 
++static int
++open_dchannel(struct isac_hw *isac, struct channel_req *rq)
++{
++	return open_dchannel_caller(isac, rq, __builtin_return_address(0));
++}
++
+ static const char *ISACVer[] =
+ {"2086/2186 V1.1", "2085 B1", "2085 B2",
+  "2085 V2.3"};
+@@ -1548,7 +1554,7 @@ ipac_dctrl(struct mISDNchannel *ch, u32 cmd, void *arg)
+ 	case OPEN_CHANNEL:
+ 		rq = arg;
+ 		if (rq->protocol == ISDN_P_TE_S0)
+-			err = open_dchannel(isac, rq);
++			err = open_dchannel_caller(isac, rq, __builtin_return_address(0));
+ 		else
+ 			err = open_bchannel(ipac, rq);
+ 		if (err)
+diff --git a/drivers/isdn/hardware/mISDN/w6692.c b/drivers/isdn/hardware/mISDN/w6692.c
+index de69f6828c76..741675525b53 100644
+--- a/drivers/isdn/hardware/mISDN/w6692.c
++++ b/drivers/isdn/hardware/mISDN/w6692.c
+@@ -1176,10 +1176,10 @@ w6692_l1callback(struct dchannel *dch, u32 cmd)
+ }
+ 
+ static int
+-open_dchannel(struct w6692_hw *card, struct channel_req *rq)
++open_dchannel(struct w6692_hw *card, struct channel_req *rq, void *caller)
+ {
+ 	pr_debug("%s: %s dev(%d) open from %p\n", card->name, __func__,
+-		 card->dch.dev.id, __builtin_return_address(1));
++		 card->dch.dev.id, caller);
+ 	if (rq->protocol != ISDN_P_TE_S0)
+ 		return -EINVAL;
+ 	if (rq->adr.channel == 1)
+@@ -1207,7 +1207,7 @@ w6692_dctrl(struct mISDNchannel *ch, u32 cmd, void *arg)
+ 	case OPEN_CHANNEL:
+ 		rq = arg;
+ 		if (rq->protocol == ISDN_P_TE_S0)
+-			err = open_dchannel(card, rq);
++			err = open_dchannel(card, rq, __builtin_return_address(0));
+ 		else
+ 			err = open_bchannel(card, rq);
+ 		if (err)
+
