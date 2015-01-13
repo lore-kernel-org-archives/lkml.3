@@ -1,130 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488AbbAMNYn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 08:24:43 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:62793 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271AbbAMNYl (ORCPT
+	id S1752517AbbAMNZo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 08:25:44 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:27804 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151AbbAMNZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 08:24:41 -0500
+	Tue, 13 Jan 2015 08:25:43 -0500
+Message-ID: <54B51CD2.6050104@oracle.com>
+Date: Tue, 13 Jan 2015 08:25:38 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <1420535817.17567.10.camel@mtksdaap41>
-References: <1418772873-19747-1-git-send-email-hongzhou.yang@mediatek.com>
-	<1418772873-19747-5-git-send-email-hongzhou.yang@mediatek.com>
-	<1418807365.6443.17.camel@mtksdaap41>
-	<1420535817.17567.10.camel@mtksdaap41>
-Date: Tue, 13 Jan 2015 14:24:40 +0100
-Message-ID: <CACRpkdb2KJbjzFgTmDvHSw7jNAExxVtU3y4_fgyn6J8hcW5OrQ@mail.gmail.com>
-Subject: Re: [PATCH v4 4/5] ARM: mediatek: Add EINT support to MTK pinctrl driver.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Yingjoe Chen <yingjoe.chen@mediatek.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, maoguang.meng@mediatek.com,
-        Catalin Marinas <catalin.marinas@arm.com>, alan.cheng@mediatek.com,
-        Russell King <linux@arm.linux.org.uk>,
-        Hongzhou Yang <hongzhou.yang@mediatek.com>, toby.liu@mediatek.com,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Vladimir Murzin <vladimir.murzin@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Herring <robh+dt@kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>, dandan.he@mediatek.com,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        srv_heupstream@mediatek.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Kumar Gala <galak@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+To: Jeff Layton <jeff.layton@primarydata.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: fs: locks: WARNING: CPU: 16 PID: 4296 at fs/locks.c:236 locks_free_lock_context+0x10d/0x240()
+References: <54B4A909.9060206@oracle.com> <20150113082001.0fa0d723@tlielax.poochiereds.net>
+In-Reply-To: <20150113082001.0fa0d723@tlielax.poochiereds.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 6, 2015 at 10:16 AM, Yingjoe Chen <yingjoe.chen@mediatek.com> wrote:
-> On Wed, 2014-12-17 at 17:09 +0800, Yingjoe Chen wrote:
->> On Wed, 2014-12-17 at 07:34 +0800, Hongzhou Yang wrote:
->> > From: Maoguang Meng <maoguang.meng@mediatek.com>
->> >
->> > MTK SoC support external interrupt(EINT) from most SoC pins.
->> > Add EINT support to pinctrl driver.
->> >
->> > Signed-off-by: Maoguang Meng <maoguang.meng@mediatek.com>
->> > Signed-off-by: Hongzhou Yang <hongzhou.yang@mediatek.com>
+On 01/13/2015 08:20 AM, Jeff Layton wrote:
+> On Tue, 13 Jan 2015 00:11:37 -0500
+> Sasha Levin <sasha.levin@oracle.com> wrote:
+> 
+>> Hey Jeff,
 >>
->> Hi Linus,
+>> While fuzzing with trinity inside a KVM tools guest running the latest -next
+>> kernel, I've stumbled on the following spew:
 >>
->> This patch add EINT support to the pinctrl driver. We've surveyed
->> GPIOLIB_IRQCHIP, but we didn't use it because:
+>> [  887.078606] WARNING: CPU: 16 PID: 4296 at fs/locks.c:236 locks_free_lock_context+0x10d/0x240()
+>> [  887.079703] Modules linked in:
+>> [  887.080288] CPU: 16 PID: 4296 Comm: trinity-c273 Not tainted 3.19.0-rc4-next-20150112-sasha-00053-g23c147e02e-dirty #1710
+>> [  887.082229]  0000000000000000 0000000000000000 0000000000000000 ffff8804c9f4f8e8
+>> [  887.083773]  ffffffff9154e0a6 0000000000000000 ffff8804cad98000 ffff8804c9f4f938
+>> [  887.085280]  ffffffff8140a4d0 0000000000000001 ffffffff81bf0d2d ffff8804c9f4f988
+>> [  887.086792] Call Trace:
+>> [  887.087320] dump_stack (lib/dump_stack.c:52)
+>> [  887.088247] warn_slowpath_common (kernel/panic.c:447)
+>> [  887.089342] ? locks_free_lock_context (fs/locks.c:236 (discriminator 3))
+>> [  887.090514] warn_slowpath_null (kernel/panic.c:481)
+>> [  887.091629] locks_free_lock_context (fs/locks.c:236 (discriminator 3))
+>> [  887.092782] __destroy_inode (fs/inode.c:243)
+>> [  887.093817] destroy_inode (fs/inode.c:268)
+>> [  887.094833] evict (fs/inode.c:574)
+>> [  887.095808] iput (fs/inode.c:1503)
+>> [  887.096687] __dentry_kill (fs/dcache.c:323 fs/dcache.c:508)
+>> [  887.097683] ? _raw_spin_trylock (kernel/locking/spinlock.c:136)
+>> [  887.098733] ? dput (fs/dcache.c:545 fs/dcache.c:648)
+>> [  887.099672] dput (fs/dcache.c:649)
+>> [  887.100552] __fput (fs/file_table.c:227)
+>> [  887.101437] ____fput (fs/file_table.c:245)
+>> [  887.102317] task_work_run (kernel/task_work.c:125 (discriminator 1))
+>> [  887.103356] ? _raw_spin_unlock (./arch/x86/include/asm/preempt.h:95 include/linux/spinlock_api_smp.h:154 kernel/locking/spinlock.c:183)
+>> [  887.104390] do_exit (kernel/exit.c:746)
+>> [  887.105338] ? task_numa_work (kernel/sched/fair.c:2218)
+>> [  887.106384] ? get_signal (kernel/signal.c:2207)
+>> [  887.107492] ? _raw_spin_unlock_irq (./arch/x86/include/asm/paravirt.h:819 include/linux/spinlock_api_smp.h:170 kernel/locking/spinlock.c:199)
+>> [  887.108610] do_group_exit (include/linux/sched.h:775 kernel/exit.c:858)
+>> [  887.109613] get_signal (kernel/signal.c:2358)
+>> [  887.110578] ? trace_hardirqs_off (kernel/locking/lockdep.c:2671)
+>> [  887.111672] do_signal (arch/x86/kernel/signal.c:703)
+>> [  887.112604] ? acct_account_cputime (kernel/tsacct.c:168)
+>> [  887.113722] ? context_tracking_user_exit (./arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/context_tracking.c:144 (discriminator 2))
+>> [  887.114937] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2578 kernel/locking/lockdep.c:2625)
+>> [  887.116128] ? trace_hardirqs_on (kernel/locking/lockdep.c:2633)
+>> [  887.117160] do_notify_resume (arch/x86/kernel/signal.c:750)
+>> [  887.118167] int_signal (arch/x86/kernel/entry_64.S:587)
 >>
->> - Not every GPIO pin support interrupt.
->> - EINT use a different numbering to GPIO. eg, from the mt8135 table,
->> GPIO29 is EINT158. It is more nature & efficient to use EINT number as
->> hwirq.
 >>
->> +               MTK_EINT_FUNCTION(2, 158),
->> +               MTK_FUNCTION(0, "GPIO29"),
->
-> After further looking into this, we could use GPIOLIB_IRQCHIP if we add
-> an extension gpiochip_irqchip_add() to accept interrupt numbers and
-> custom .to_irq function for our SoC. We could still reuse other code
-> GPIOLIB_IRQCHIP provide.
+> 
+> Huh...
+> 
+> Looks like the flc_flock list wasn't empty when we went to go free the
+> inode. I don't see how that would happen right offhand, but I'll keep
+> looking at it.
+> 
+> Just to be clear -- were there any "exotic" filesystems involved here?
 
-I see, and I still want to see all possibilities to centralize code
-surveyed.
+Probably. Part of the preparation for the fuzzer is to mount every single filesystem
+we can and use it as scratch space for fuzzing.
 
-If I understand correctly what you actually need is a linear
-irqdomain with "holes" (invalid offsets) in it.
-So this is what we should design for.
+> In particular any that define a ->flock inode operation (e.g. NFS) ?
 
-The .to_irq() function should not really perform anything but a
-simple lookup in the domain.
+There are a few. Since this bug is pretty reproducible I'll add in something to
+dump the lock when that happens and see if we can get anything out of it.
 
-What you do here:
 
-+static int mtk_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
-+{
-+       const struct mtk_desc_pin *pin;
-+       struct mtk_pinctrl *pctl = dev_get_drvdata(chip->dev);
-+       int irq;
-+
-+       pin = pctl->devdata->pins + offset;
-+       if (pin->eint.eintnum == NO_EINT_SUPPORT)
-+               return -EINVAL;
-+
-+       irq = irq_find_mapping(pctl->domain, pin->eint.eintnum);
-+       if (!irq)
-+               return -EINVAL;
-+
-+       return irq;
-+}
-
-Is *avoiding* to translate some IRQs from a certain offset using
-the domain, I think that is the wrong way to go.
-
-Instead, we would need to handle these "holes" in
-drivers/pinctrl/nomadik/pinctrl-abx500.c also need the same
-thing.
-
-Maybe we can add a gpiochip_irqchip_add_sparse() in
-gpiolib that will take an array of bools in, indicating of
-a certain line is elegible for IRQ or not, e.g.:
-
-bool valid = { false, true, false, true };
-
-foo = gpiochip_irqchip_add_sparse(&chip,
-                         &irqchip,
-                         0,
-                         handler,
-                         IRQ_TYPE_NONE,
-                         &valid);
-
-So the loop inside the lib will avoid calling
-irq_create_mapping() on the invalid lines, and any calls
-to irq_find_mapping() will fail if you try to use one of
-them for IRQs.
-
-If you're up to do this and test on your driver I'm all in for it.
-
-Yours,
-Linus Walleij
+Thanks,
+Sasha
