@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874AbbAMUAF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 15:00:05 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:49948 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221AbbAMUAD (ORCPT
+	id S1753405AbbAMUAV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 15:00:21 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:43760 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751272AbbAMUAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 15:00:03 -0500
+	Tue, 13 Jan 2015 15:00:19 -0500
 MIME-Version: 1.0
-In-Reply-To: <1418219670-18283-1-git-send-email-geert+renesas@glider.be>
-References: <1418219670-18283-1-git-send-email-geert+renesas@glider.be>
+In-Reply-To: <1418219670-18283-2-git-send-email-geert+renesas@glider.be>
+References: <1418219670-18283-1-git-send-email-geert+renesas@glider.be> <1418219670-18283-2-git-send-email-geert+renesas@glider.be>
 From: Rob Herring <robherring2@gmail.com>
-Date: Tue, 13 Jan 2015 13:59:40 -0600
-Message-ID: <CAL_JsqL7mWBwkHSrC5wg+ux8U7=C=LbsWv5qBC1AWLNH_LD-5A@mail.gmail.com>
-Subject: Re: [PATCH trivial 1/3] ARM: dt: GIC: Spelling s/specific/specifier/, s/flaggs/flags/
+Date: Tue, 13 Jan 2015 13:59:58 -0600
+Message-ID: <CAL_JsqLugwh+LVkLu1MoJ9buJwZ5BRsA8wBXoyBNFMJfA9KoFg@mail.gmail.com>
+Subject: Re: [PATCH trivial 2/3] dt/bindings: arm-boards: Spelling s/pointong/pointing/
 To: Geert Uytterhoeven <geert+renesas@glider.be>
 Cc: Jiri Kosina <trivial@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>, Rob Herring <robh+dt@kernel.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +27,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Wed, Dec 10, 2014 at 7:54 AM, Geert Uytterhoeven
 <geert+renesas@glider.be> wrote:
 > Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-> Cc: Stephen Warren <swarren@nvidia.com>
+> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
 > Cc: Rob Herring <robh+dt@kernel.org>
 
 Applied for 3.20. Thanks.
 
 > ---
->  include/dt-bindings/interrupt-controller/arm-gic.h | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+>  Documentation/devicetree/bindings/arm/arm-boards | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> diff --git a/include/dt-bindings/interrupt-controller/arm-gic.h b/include/dt-bindings/interrupt-controller/arm-gic.h
-> index 1ea1b702fec2c49f..d4110d5caa3efde4 100644
-> --- a/include/dt-bindings/interrupt-controller/arm-gic.h
-> +++ b/include/dt-bindings/interrupt-controller/arm-gic.h
-> @@ -7,14 +7,14 @@
+> diff --git a/Documentation/devicetree/bindings/arm/arm-boards b/Documentation/devicetree/bindings/arm/arm-boards
+> index c554ed3d44fb7c77..e4dfb93c36322c3d 100644
+> --- a/Documentation/devicetree/bindings/arm/arm-boards
+> +++ b/Documentation/devicetree/bindings/arm/arm-boards
+> @@ -23,7 +23,7 @@ Required nodes:
+>      range of 0x200 bytes.
 >
->  #include <dt-bindings/interrupt-controller/irq.h>
->
-> -/* interrupt specific cell 0 */
-> +/* interrupt specifier cell 0 */
->
->  #define GIC_SPI 0
->  #define GIC_PPI 1
->
->  /*
->   * Interrupt specifier cell 2.
-> - * The flaggs in irq.h are valid, plus those below.
-> + * The flags in irq.h are valid, plus those below.
->   */
->  #define GIC_CPU_MASK_RAW(x) ((x) << 8)
->  #define GIC_CPU_MASK_SIMPLE(num) GIC_CPU_MASK_RAW((1 << (num)) - 1)
+>  - syscon: the root node of the Integrator platforms must have a
+> -  system controller node pointong to the control registers,
+> +  system controller node pointing to the control registers,
+>    with the compatible string
+>    "arm,integrator-ap-syscon"
+>    "arm,integrator-cp-syscon"
 > --
 > 1.9.1
 >
