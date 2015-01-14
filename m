@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933318AbbANIEr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:04:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58481 "EHLO
+	id S933205AbbANIE3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:04:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58486 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932456AbbANHeR (ORCPT
+	with ESMTP id S932514AbbANHeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Jan 2015 02:34:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.14 27/77] blk-mq: use nr_cpu_ids as highest CPU ID count for hwq <-> cpu map
-Date: Tue, 13 Jan 2015 23:23:07 -0800
-Message-Id: <20150114072225.687619367@linuxfoundation.org>
+        Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>,
+        Antonio Borneo <borneo.antonio@gmail.com>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.14 28/77] HID: i2c-hid: fix race condition reading reports
+Date: Tue, 13 Jan 2015 23:23:08 -0800
+Message-Id: <20150114072225.740205285@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
 References: <20150114072224.182299947@linuxfoundation.org>
@@ -28,31 +31,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jens Axboe <axboe@fb.com>
+From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
 
-commit a33c1ba2913802b6fb23e974bb2f6a4e73c8b7ce upstream.
+commit 6296f4a8eb86f9abcc370fb7a1a116b8441c17fd upstream.
 
-We currently use num_possible_cpus(), but that breaks on sparc64 where
-the CPU ID space is discontig. Use nr_cpu_ids as the highest CPU ID
-instead, so we don't end up reading from invalid memory.
+Current driver uses a common buffer for reading reports either
+synchronously in i2c_hid_get_raw_report() and asynchronously in
+the interrupt handler.
+There is race condition if an interrupt arrives immediately after
+the report is received in i2c_hid_get_raw_report(); the common
+buffer is modified by the interrupt handler with the new report
+and then i2c_hid_get_raw_report() proceed using wrong data.
 
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Fix it by using a separate buffers for synchronous reports.
+
+Signed-off-by: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
+[Antonio Borneo: cleanup, rebase to v3.17, submit mainline]
+Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/blk-mq-cpumap.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hid/i2c-hid/i2c-hid.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/block/blk-mq-cpumap.c
-+++ b/block/blk-mq-cpumap.c
-@@ -95,7 +95,7 @@ unsigned int *blk_mq_make_queue_map(stru
- 	unsigned int *map;
+--- a/drivers/hid/i2c-hid/i2c-hid.c
++++ b/drivers/hid/i2c-hid/i2c-hid.c
+@@ -136,6 +136,7 @@ struct i2c_hid {
+ 						   * descriptor. */
+ 	unsigned int		bufsize;	/* i2c buffer size */
+ 	char			*inbuf;		/* Input buffer */
++	char			*rawbuf;	/* Raw Input buffer */
+ 	char			*cmdbuf;	/* Command buffer */
+ 	char			*argsbuf;	/* Command arguments buffer */
  
- 	/* If cpus are offline, map them to first hctx */
--	map = kzalloc_node(sizeof(*map) * num_possible_cpus(), GFP_KERNEL,
-+	map = kzalloc_node(sizeof(*map) * nr_cpu_ids, GFP_KERNEL,
- 				reg->numa_node);
- 	if (!map)
- 		return NULL;
+@@ -482,9 +483,11 @@ static void i2c_hid_find_max_report(stru
+ static void i2c_hid_free_buffers(struct i2c_hid *ihid)
+ {
+ 	kfree(ihid->inbuf);
++	kfree(ihid->rawbuf);
+ 	kfree(ihid->argsbuf);
+ 	kfree(ihid->cmdbuf);
+ 	ihid->inbuf = NULL;
++	ihid->rawbuf = NULL;
+ 	ihid->cmdbuf = NULL;
+ 	ihid->argsbuf = NULL;
+ 	ihid->bufsize = 0;
+@@ -500,10 +503,11 @@ static int i2c_hid_alloc_buffers(struct
+ 		       report_size; /* report */
+ 
+ 	ihid->inbuf = kzalloc(report_size, GFP_KERNEL);
++	ihid->rawbuf = kzalloc(report_size, GFP_KERNEL);
+ 	ihid->argsbuf = kzalloc(args_len, GFP_KERNEL);
+ 	ihid->cmdbuf = kzalloc(sizeof(union command) + args_len, GFP_KERNEL);
+ 
+-	if (!ihid->inbuf || !ihid->argsbuf || !ihid->cmdbuf) {
++	if (!ihid->inbuf || !ihid->rawbuf || !ihid->argsbuf || !ihid->cmdbuf) {
+ 		i2c_hid_free_buffers(ihid);
+ 		return -ENOMEM;
+ 	}
+@@ -530,12 +534,12 @@ static int i2c_hid_get_raw_report(struct
+ 
+ 	ret = i2c_hid_get_report(client,
+ 			report_type == HID_FEATURE_REPORT ? 0x03 : 0x01,
+-			report_number, ihid->inbuf, ask_count);
++			report_number, ihid->rawbuf, ask_count);
+ 
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	ret_count = ihid->inbuf[0] | (ihid->inbuf[1] << 8);
++	ret_count = ihid->rawbuf[0] | (ihid->rawbuf[1] << 8);
+ 
+ 	if (ret_count <= 2)
+ 		return 0;
+@@ -544,7 +548,7 @@ static int i2c_hid_get_raw_report(struct
+ 
+ 	/* The query buffer contains the size, dropping it in the reply */
+ 	count = min(count, ret_count - 2);
+-	memcpy(buf, ihid->inbuf + 2, count);
++	memcpy(buf, ihid->rawbuf + 2, count);
+ 
+ 	return count;
+ }
 
 
