@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340AbbANODe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 09:03:34 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36893 "EHLO
+	id S1753453AbbANODl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 09:03:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36898 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752477AbbANODc (ORCPT
+	with ESMTP id S1753388AbbANODg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 09:03:32 -0500
-Date: Wed, 14 Jan 2015 06:02:49 -0800
-From: tip-bot for Yao Dongdong <tipbot@zytor.com>
-Message-ID: <tip-1b537c7d1e58c761212a193085f9049b58f672e6@git.kernel.org>
-Cc: tglx@linutronix.de, yaodongdong@huawei.com, torvalds@linux-foundation.org,
-        mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org
-Reply-To: tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, hpa@zytor.com, torvalds@linux-foundation.org,
-        mingo@kernel.org, yaodongdong@huawei.com
-In-Reply-To: <1419835303-28958-1-git-send-email-yaodongdong@huawei.com>
-References: <1419835303-28958-1-git-send-email-yaodongdong@huawei.com>
+	Wed, 14 Jan 2015 09:03:36 -0500
+Date: Wed, 14 Jan 2015 06:03:07 -0800
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-cebde6d681aa45f96111cfcffc1544cf2a0454ff@git.kernel.org>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        hpa@zytor.com
+Reply-To: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        tglx@linutronix.de, peterz@infradead.org, hpa@zytor.com,
+        mingo@kernel.org
+In-Reply-To: <20150105103554.361872747@infradead.org>
+References: <20150105103554.361872747@infradead.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/core: Remove check of p->sched_class
-Git-Commit-ID: 1b537c7d1e58c761212a193085f9049b58f672e6
+Subject: [tip:sched/core] sched/core: Validate rq_clock*() serialization
+Git-Commit-ID: cebde6d681aa45f96111cfcffc1544cf2a0454ff
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,62 +33,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1b537c7d1e58c761212a193085f9049b58f672e6
-Gitweb:     http://git.kernel.org/tip/1b537c7d1e58c761212a193085f9049b58f672e6
-Author:     Yao Dongdong <yaodongdong@huawei.com>
-AuthorDate: Mon, 29 Dec 2014 14:41:43 +0800
+Commit-ID:  cebde6d681aa45f96111cfcffc1544cf2a0454ff
+Gitweb:     http://git.kernel.org/tip/cebde6d681aa45f96111cfcffc1544cf2a0454ff
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Mon, 5 Jan 2015 11:18:10 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 14 Jan 2015 13:34:17 +0100
+CommitDate: Wed, 14 Jan 2015 13:34:19 +0100
 
-sched/core: Remove check of p->sched_class
+sched/core: Validate rq_clock*() serialization
 
-Search all usage of p->sched_class in sched/core.c, no one check it
-before use, so it seems that every task must belong to one sched_class.
+rq->clock{,_task} are serialized by rq->lock, verify this.
 
-Signed-off-by: Yao Dongdong <yaodongdong@huawei.com>
-[ Moved the early class assignment to make it boot. ]
+One immediate fail is the usage in scale_rt_capability, so 'annotate'
+that for now, there's more 'funny' there. Maybe change rq->lock into a
+raw_seqlock_t?
+
+(Only 32-bit is affected)
+
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20150105103554.361872747@infradead.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1419835303-28958-1-git-send-email-yaodongdong@huawei.com
+Cc: umgwanakikbuti@gmail.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ kernel/sched/fair.c  | 2 +-
+ kernel/sched/sched.h | 7 +++++++
+ 2 files changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 95ac795..46a2345 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4744,7 +4744,7 @@ static struct rq *move_queued_task(struct task_struct *p, int new_cpu)
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 2a0b302..50ff902 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5948,8 +5948,8 @@ static unsigned long scale_rt_capacity(int cpu)
+ 	 */
+ 	age_stamp = ACCESS_ONCE(rq->age_stamp);
+ 	avg = ACCESS_ONCE(rq->rt_avg);
++	delta = __rq_clock_broken(rq) - age_stamp;
  
- void do_set_cpus_allowed(struct task_struct *p, const struct cpumask *new_mask)
- {
--	if (p->sched_class && p->sched_class->set_cpus_allowed)
-+	if (p->sched_class->set_cpus_allowed)
- 		p->sched_class->set_cpus_allowed(p, new_mask);
+-	delta = rq_clock(rq) - age_stamp;
+ 	if (unlikely(delta < 0))
+ 		delta = 0;
  
- 	cpumask_copy(&p->cpus_allowed, new_mask);
-@@ -7254,6 +7254,11 @@ void __init sched_init(void)
- 	enter_lazy_tlb(&init_mm, current);
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 9a2a45c..bd23732 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -687,13 +687,20 @@ DECLARE_PER_CPU_SHARED_ALIGNED(struct rq, runqueues);
+ #define cpu_curr(cpu)		(cpu_rq(cpu)->curr)
+ #define raw_rq()		raw_cpu_ptr(&runqueues)
  
- 	/*
-+	 * During early bootup we pretend to be a normal task:
-+	 */
-+	current->sched_class = &fair_sched_class;
++static inline u64 __rq_clock_broken(struct rq *rq)
++{
++	return ACCESS_ONCE(rq->clock);
++}
 +
-+	/*
- 	 * Make us the idle thread. Technically, schedule() should not be
- 	 * called from this thread, however somewhere below it might be,
- 	 * but because we are the idle thread, we just pick up running again
-@@ -7263,11 +7268,6 @@ void __init sched_init(void)
+ static inline u64 rq_clock(struct rq *rq)
+ {
++	lockdep_assert_held(&rq->lock);
+ 	return rq->clock;
+ }
  
- 	calc_load_update = jiffies + LOAD_FREQ;
+ static inline u64 rq_clock_task(struct rq *rq)
+ {
++	lockdep_assert_held(&rq->lock);
+ 	return rq->clock_task;
+ }
  
--	/*
--	 * During early bootup we pretend to be a normal task:
--	 */
--	current->sched_class = &fair_sched_class;
--
- #ifdef CONFIG_SMP
- 	zalloc_cpumask_var(&sched_domains_tmpmask, GFP_NOWAIT);
- 	/* May be allocated at isolcpus cmdline parse time */
