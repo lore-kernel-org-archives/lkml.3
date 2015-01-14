@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941AbbANHZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:25:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57728 "EHLO
+	id S1752416AbbANHZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:25:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57732 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752468AbbANHZx (ORCPT
+	with ESMTP id S1753294AbbANHZx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Jan 2015 02:25:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        William Unruh <unruh@physics.ubc.ca>,
-        Martin Lucina <martin@lucina.net>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Matthew Wilcox <willy@linux.intel.com>
-Subject: [PATCH 3.18 038/150] PCI: Restore detection of read-only BARs
-Date: Tue, 13 Jan 2015 23:21:49 -0800
-Message-Id: <20150114072057.582503575@linuxfoundation.org>
+        Arend Van Spriel <arend@broadcom.com>,
+        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.18 039/150] brcmfmac: Fix ifidx for rx data by msgbuf.
+Date: Tue, 13 Jan 2015 23:21:50 -0800
+Message-Id: <20150114072057.631272654@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -32,64 +31,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Myron Stowe <myron.stowe@redhat.com>
+From: Hante Meuleman <meuleman@broadcom.com>
 
-commit 36e8164882ca6d3c41cb91e6f09a3ed236841f80 upstream.
+commit 94a612086f5e78272e831c04b673778f8546ea73 upstream.
 
-Commit 6ac665c63dca ("PCI: rewrite PCI BAR reading code") masked off
-low-order bits from 'l', but not from 'sz'.  Both are passed to pci_size(),
-which compares 'base == maxbase' to check for read-only BARs.  The masking
-of 'l' means that comparison will never be 'true', so the check for
-read-only BARs no longer works.
+The ifidx provided by FW needs to be offsetted when receiving data
+packets.
 
-Resolve this by also masking off the low-order bits of 'sz' before passing
-it into pci_size() as 'maxbase'.  With this change, pci_size() will once
-again catch the problems that have been encountered to date:
-
-  - AGP aperture BAR of AMD-7xx host bridges: if the AGP window is
-    disabled, this BAR is read-only and read as 0x00000008 [1]
-
-  - BARs 0-4 of ALi IDE controllers can be non-zero and read-only [1]
-
-  - Intel Sandy Bridge - Thermal Management Controller [8086:0103];
-    BAR 0 returning 0xfed98004 [2]
-
-  - Intel Xeon E5 v3/Core i7 Power Control Unit [8086:2fc0];
-    Bar 0 returning 0x00001a [3]
-
-Link: [1] https://git.kernel.org/cgit/linux/kernel/git/tglx/history.git/commit/drivers/pci/probe.c?id=1307ef6621991f1c4bc3cec1b5a4ebd6fd3d66b9 ("PCI: probing read-only BARs" (pre-git))
-Link: [2] https://bugzilla.kernel.org/show_bug.cgi?id=43331
-Link: [3] https://bugzilla.kernel.org/show_bug.cgi?id=85991
-Reported-by: William Unruh <unruh@physics.ubc.ca>
-Reported-by: Martin Lucina <martin@lucina.net>
-Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-CC: Matthew Wilcox <willy@linux.intel.com>
+Reviewed-by: Arend Van Spriel <arend@broadcom.com>
+Reviewed-by: Pieter-Paul Giesberts <pieterpg@broadcom.com>
+Signed-off-by: Hante Meuleman <meuleman@broadcom.com>
+Signed-off-by: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/probe.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -216,14 +216,17 @@ int __pci_read_base(struct pci_dev *dev,
- 		res->flags |= IORESOURCE_SIZEALIGN;
- 		if (res->flags & IORESOURCE_IO) {
- 			l &= PCI_BASE_ADDRESS_IO_MASK;
-+			sz &= PCI_BASE_ADDRESS_IO_MASK;
- 			mask = PCI_BASE_ADDRESS_IO_MASK & (u32) IO_SPACE_LIMIT;
- 		} else {
- 			l &= PCI_BASE_ADDRESS_MEM_MASK;
-+			sz &= PCI_BASE_ADDRESS_MEM_MASK;
- 			mask = (u32)PCI_BASE_ADDRESS_MEM_MASK;
- 		}
- 	} else {
- 		res->flags |= (l & IORESOURCE_ROM_ENABLE);
- 		l &= PCI_ROM_ADDRESS_MASK;
-+		sz &= PCI_ROM_ADDRESS_MASK;
- 		mask = (u32)PCI_ROM_ADDRESS_MASK;
- 	}
+--- a/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c
+@@ -1081,8 +1081,17 @@ brcmf_msgbuf_rx_skb(struct brcmf_msgbuf
+ {
+ 	struct brcmf_if *ifp;
  
++	/* The ifidx is the idx to map to matching netdev/ifp. When receiving
++	 * events this is easy because it contains the bssidx which maps
++	 * 1-on-1 to the netdev/ifp. But for data frames the ifidx is rcvd.
++	 * bssidx 1 is used for p2p0 and no data can be received or
++	 * transmitted on it. Therefor bssidx is ifidx + 1 if ifidx > 0
++	 */
++	if (ifidx)
++		(ifidx)++;
+ 	ifp = msgbuf->drvr->iflist[ifidx];
+ 	if (!ifp || !ifp->ndev) {
++		brcmf_err("Received pkt for invalid ifidx %d\n", ifidx);
+ 		brcmu_pkt_buf_free_skb(skb);
+ 		return;
+ 	}
 
 
