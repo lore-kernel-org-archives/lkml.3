@@ -1,57 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625AbbANWZR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 17:25:17 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:34623 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753981AbbANWZN convert rfc822-to-8bit (ORCPT
+	id S1753143AbbANW26 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 17:28:58 -0500
+Received: from us01smtprelay-2.synopsys.com ([198.182.47.9]:34427 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016AbbANW24 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 17:25:13 -0500
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Wed, 14 Jan 2015 17:28:56 -0500
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: "balbi@ti.com" <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>
+CC: Robert Baldyga <r.baldyga@samsung.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
+        "yousaf.kaukab@intel.com" <yousaf.kaukab@intel.com>,
+        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>
+Subject: RE: [PATCH v2] usb: dwc2: call dwc2_is_controller_alive() under
+ spinlock
+Thread-Topic: [PATCH v2] usb: dwc2: call dwc2_is_controller_alive() under
+ spinlock
+Thread-Index: AQHQL8W5lMCdaYrjlUuC2oTfEkhvI5zAib4AgAAICYCAABL6AIAAB36AgAABTYD//4F/UA==
+Date: Wed, 14 Jan 2015 22:28:54 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E03048450771B@US01WEMBX2.internal.synopsys.com>
+References: <20150114211434.GT16533@saruman>
+ <Pine.LNX.4.44L0.1501141636590.1464-100000@iolanthe.rowland.org>
+ <20150114214603.GU16533@saruman>
+In-Reply-To: <20150114214603.GU16533@saruman>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.13.184.19]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-From: Mike Turquette <mturquette@linaro.org>
-User-Agent: alot/0.3.5
-To: Stephen Boyd <sboyd@codeaurora.org>,
-        "Krzysztof Kozlowski" <k.kozlowski@samsung.com>,
-        "Sylwester Nawrocki" <s.nawrocki@samsung.com>,
-        "Tomasz Figa" <tomasz.figa@gmail.com>, "Kukjin Kim" <kgene@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-References: <1420451561-12360-1-git-send-email-k.kozlowski@samsung.com>
- <1420451561-12360-2-git-send-email-k.kozlowski@samsung.com>
- <54AEF541.1090700@codeaurora.org>
-In-Reply-To: <54AEF541.1090700@codeaurora.org>
-Message-ID: <20150114222504.22722.49023@quantum>
-Subject: Re: [PATCH 2/2] clk: exynos-audss: Fix memory leak on driver unbind or probe
- failure
-Date: Wed, 14 Jan 2015 14:25:04 -0800
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Stephen Boyd (2015-01-08 13:23:13)
-> On 01/05/2015 01:52 AM, Krzysztof Kozlowski wrote:
-> > The memory allocated by basic clock divider/gate/mux (struct clk_gate,
-> > clk_divider and clk_mux) was leaking. During driver unbind or probe
-> > failure the driver only unregistered the clocks.
-> >
-> > Use clk_unregister_{gate,divider,mux} to release all resources.
-> >
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> >
+> From: Felipe Balbi [mailto:balbi@ti.com]
+> Sent: Wednesday, January 14, 2015 1:46 PM
 > 
-> Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-
-I've applied both patches to clk-next. Krzysztof, let me know if you
-would prefer to take the audss patch through the samsung clock branch
-instead (to include it in a later pull request).
-
-Regards,
-Mike
-
+> On Wed, Jan 14, 2015 at 04:41:23PM -0500, Alan Stern wrote:
+> > > > > This is really, really odd. Register accesses are atomic, so the lock
+> > > > > isn't really doing anything. Besides, you're calling
+> > > > > dwc2_is_controller_alive() from within the IRQ handler, so IRQs are
+> > > > > already disabled.
+> > > >
+> > > > Spinlocks sometimes do more than you think.  For instance, here the
+> > > > lock prevents the register access from happening while some other CPU
+> > > > is holding the lock.  If a silicon quirk causes the register access to
+> > > > interfere with other activities, this could be important.
+> > >
+> > > readl() (which is used by dwc2_is_controller_alive()) adds a memory
+> > > barrier to the register accesses, that should force all register
+> > > accesses the be correctly ordered.
+> >
+> > Memory barriers will order accesses that are all made on the same CPU
+> > with respect to each other.  They do not order these accesses against
+> > accesses made from another CPU -- that's why we have spinlocks.  :-)
 > 
-> -- 
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> a Linux Foundation Collaborative Project
+> a fair point :-) The register is still read-only, so that shouldn't
+> matter either :-)
 > 
+> > >  I fail to see how a silicon quirk
+> > > could cause this and if, indeed, it does, I'd be more comfortable with a
+> > > proper STARS tickect number from synopsys :-s
+> >
+> > Maybe accessing this register somehow resets something else.  I don't
+> > know.  It seems unlikely, but at least it explains how adding a
+> > spinlock could fix the problem.
+> 
+> I would really need Paul (or someone at Synopsys) to confirm this
+> somehow. Maybe it has something to do with how the register is
+> implemented, dunno.
+> 
+> Paul, do you have any idea what could cause this ? Could the HW into
+> some weird state if we read GSNPSID at random locations or when data is
+> being transferred, or anything like that ?
+
+Only thing I can think of is that there is some silicon bug in Robert's
+platform. But I am not aware of any STARs that mention accesses to the
+GSNPSID register as being problematic.
+
+Funny thing is, this code has been basically the same since at least
+November 2013. So I think some other recent change must have modified
+the timing of the register accesses, or something like that. But that's
+just handwaving, really.
+
+-- 
+Paul
+
