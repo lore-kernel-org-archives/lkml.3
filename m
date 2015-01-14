@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264AbbANM1j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 07:27:39 -0500
-Received: from mga09.intel.com ([134.134.136.24]:51243 "EHLO mga09.intel.com"
+	id S1753293AbbANM1q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 07:27:46 -0500
+Received: from mga01.intel.com ([192.55.52.88]:13599 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752188AbbANM1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 07:27:36 -0500
+	id S1752188AbbANM1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 07:27:44 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,755,1413270000"; 
-   d="scan'208";a="661683809"
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="440424844"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
@@ -20,9 +20,9 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
         Kaixu Xia <kaixu.xia@linaro.org>, acme@infradead.org,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v9 12/14] x86: perf: intel_pt: Intel PT PMU driver
-Date: Wed, 14 Jan 2015 14:18:21 +0200
-Message-Id: <1421237903-181015-13-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [PATCH v9 13/14] x86: perf: intel_bts: Add BTS PMU driver
+Date: Wed, 14 Jan 2015 14:18:22 +0200
+Message-Id: <1421237903-181015-14-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421237903-181015-1-git-send-email-alexander.shishkin@linux.intel.com>
 References: <1421237903-181015-1-git-send-email-alexander.shishkin@linux.intel.com>
@@ -30,246 +30,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for Intel Processor Trace (PT) to kernel's perf events.
-PT is an extension of Intel Architecture that collects information about
-software execuction such as control flow, execution modes and timings and
-formats it into highly compressed binary packets. Even being compressed,
-these packets are generated at hundreds of megabytes per second per core,
-which makes it impractical to decode them on the fly in the kernel.
+Add support for Branch Trace Store (BTS) via kernel perf event infrastructure.
+The difference with the existing implementation of BTS support is that this
+one is a separate PMU that exports events' trace buffers to userspace by means
+of AUX area of the perf buffer, which is zero-copy mapped into userspace.
 
-This driver exports trace data by through AUX space in the perf ring
-buffer, which is zero-copy mapped into userspace for faster data retrieval.
+The immediate benefit is that the buffer size can be much bigger, resulting in
+fewer interrupts and no kernel side copying is involved and little to no trace
+data loss. Also, kernel code can be traced with this driver.
+
+The old way of collecting BTS traces still works.
 
 Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 ---
- arch/x86/include/uapi/asm/msr-index.h     |   18 +
- arch/x86/kernel/cpu/Makefile              |    1 +
- arch/x86/kernel/cpu/intel_pt.h            |  131 ++++
- arch/x86/kernel/cpu/perf_event.h          |    2 +
- arch/x86/kernel/cpu/perf_event_intel.c    |    8 +
- arch/x86/kernel/cpu/perf_event_intel_pt.c | 1095 +++++++++++++++++++++++++++++
- 6 files changed, 1255 insertions(+)
- create mode 100644 arch/x86/kernel/cpu/intel_pt.h
- create mode 100644 arch/x86/kernel/cpu/perf_event_intel_pt.c
+ arch/x86/kernel/cpu/Makefile               |   2 +-
+ arch/x86/kernel/cpu/perf_event.h           |   7 +
+ arch/x86/kernel/cpu/perf_event_intel.c     |   6 +-
+ arch/x86/kernel/cpu/perf_event_intel_bts.c | 525 +++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/perf_event_intel_ds.c  |   3 +-
+ 5 files changed, 540 insertions(+), 3 deletions(-)
+ create mode 100644 arch/x86/kernel/cpu/perf_event_intel_bts.c
 
-diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-index 8f02f69907..3e3537d61e 100644
---- a/arch/x86/include/uapi/asm/msr-index.h
-+++ b/arch/x86/include/uapi/asm/msr-index.h
-@@ -74,6 +74,24 @@
- #define MSR_IA32_PERF_CAPABILITIES	0x00000345
- #define MSR_PEBS_LD_LAT_THRESHOLD	0x000003f6
- 
-+#define MSR_IA32_RTIT_CTL		0x00000570
-+#define RTIT_CTL_TRACEEN		BIT(0)
-+#define RTIT_CTL_OS			BIT(2)
-+#define RTIT_CTL_USR			BIT(3)
-+#define RTIT_CTL_CR3EN			BIT(7)
-+#define RTIT_CTL_TOPA			BIT(8)
-+#define RTIT_CTL_TSC_EN			BIT(10)
-+#define RTIT_CTL_DISRETC		BIT(11)
-+#define RTIT_CTL_BRANCH_EN		BIT(13)
-+#define MSR_IA32_RTIT_STATUS		0x00000571
-+#define RTIT_STATUS_CONTEXTEN		BIT(1)
-+#define RTIT_STATUS_TRIGGEREN		BIT(2)
-+#define RTIT_STATUS_ERROR		BIT(4)
-+#define RTIT_STATUS_STOPPED		BIT(5)
-+#define MSR_IA32_RTIT_CR3_MATCH		0x00000572
-+#define MSR_IA32_RTIT_OUTPUT_BASE	0x00000560
-+#define MSR_IA32_RTIT_OUTPUT_MASK	0x00000561
-+
- #define MSR_MTRRfix64K_00000		0x00000250
- #define MSR_MTRRfix16K_80000		0x00000258
- #define MSR_MTRRfix16K_A0000		0x00000259
 diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index e27b49d7c9..4bc29fa23e 100644
+index 4bc29fa23e..a595246a47 100644
 --- a/arch/x86/kernel/cpu/Makefile
 +++ b/arch/x86/kernel/cpu/Makefile
-@@ -40,6 +40,7 @@ endif
+@@ -40,7 +40,7 @@ endif
  obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_knc.o perf_event_p4.o
  obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o
  obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_rapl.o
-+obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_pt.o
+-obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_pt.o
++obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_pt.o perf_event_intel_bts.o
  
  obj-$(CONFIG_PERF_EVENTS_INTEL_UNCORE)	+= perf_event_intel_uncore.o \
  					   perf_event_intel_uncore_snb.o \
-diff --git a/arch/x86/kernel/cpu/intel_pt.h b/arch/x86/kernel/cpu/intel_pt.h
-new file mode 100644
-index 0000000000..1c338b0eba
---- /dev/null
-+++ b/arch/x86/kernel/cpu/intel_pt.h
-@@ -0,0 +1,131 @@
-+/*
-+ * Intel(R) Processor Trace PMU driver for perf
-+ * Copyright (c) 2013-2014, Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * Intel PT is specified in the Intel Architecture Instruction Set Extensions
-+ * Programming Reference:
-+ * http://software.intel.com/en-us/intel-isa-extensions
-+ */
-+
-+#ifndef __INTEL_PT_H__
-+#define __INTEL_PT_H__
-+
-+/*
-+ * Single-entry ToPA: when this close to region boundary, switch
-+ * buffers to avoid losing data.
-+ */
-+#define TOPA_PMI_MARGIN 512
-+
-+/*
-+ * Table of Physical Addresses bits
-+ */
-+enum topa_sz {
-+	TOPA_4K	= 0,
-+	TOPA_8K,
-+	TOPA_16K,
-+	TOPA_32K,
-+	TOPA_64K,
-+	TOPA_128K,
-+	TOPA_256K,
-+	TOPA_512K,
-+	TOPA_1MB,
-+	TOPA_2MB,
-+	TOPA_4MB,
-+	TOPA_8MB,
-+	TOPA_16MB,
-+	TOPA_32MB,
-+	TOPA_64MB,
-+	TOPA_128MB,
-+	TOPA_SZ_END,
-+};
-+
-+static inline unsigned int sizes(enum topa_sz tsz)
-+{
-+	return 1 << (tsz + 12);
-+};
-+
-+struct topa_entry {
-+	u64	end	: 1;
-+	u64	rsvd0	: 1;
-+	u64	intr	: 1;
-+	u64	rsvd1	: 1;
-+	u64	stop	: 1;
-+	u64	rsvd2	: 1;
-+	u64	size	: 4;
-+	u64	rsvd3	: 2;
-+	u64	base	: 36;
-+	u64	rsvd4	: 16;
-+};
-+
-+#define TOPA_SHIFT 12
-+#define PT_CPUID_LEAVES 2
-+
-+enum pt_capabilities {
-+	PT_CAP_max_subleaf = 0,
-+	PT_CAP_cr3_filtering,
-+	PT_CAP_topa_output,
-+	PT_CAP_topa_multiple_entries,
-+	PT_CAP_payloads_lip,
-+};
-+
-+struct pt_pmu {
-+	struct pmu		pmu;
-+	u32			caps[4 * PT_CPUID_LEAVES];
-+};
-+
-+/**
-+ * struct pt_buffer - buffer configuration; one buffer per task_struct or
-+ *		cpu, depending on perf event configuration
-+ * @cpu:	cpu for per-cpu allocation
-+ * @tables:	list of ToPA tables in this buffer
-+ * @first:	shorthand for first topa table
-+ * @last:	shorthand for last topa table
-+ * @cur:	current topa table
-+ * @nr_pages:	buffer size in pages
-+ * @cur_idx:	current output region's index within @cur table
-+ * @output_off:	offset within the current output region
-+ * @data_size:	running total of the amount of data in this buffer
-+ * @lost:	if data was lost/truncated
-+ * @head:	logical write offset inside the buffer
-+ * @snapshot:	if this is for a snapshot/overwrite counter
-+ * @stop_pos:	STOP topa entry in the buffer
-+ * @intr_pos:	INT topa entry in the buffer
-+ * @data_pages:	array of pages from perf
-+ * @topa_index:	table of topa entries indexed by page offset
-+ */
-+struct pt_buffer {
-+	int			cpu;
-+	struct list_head	tables;
-+	struct topa		*first, *last, *cur;
-+	unsigned int		cur_idx;
-+	size_t			output_off;
-+	unsigned long		nr_pages;
-+	local_t			data_size;
-+	local_t			lost;
-+	local64_t		head;
-+	bool			snapshot;
-+	unsigned long		stop_pos, intr_pos;
-+	void			**data_pages;
-+	struct topa_entry	*topa_index[0];
-+};
-+
-+/**
-+ * struct pt - per-cpu pt context
-+ * @handle:	perf output handle
-+ * @handle_nmi:	do handle PT PMI on this cpu, there's an active event
-+ */
-+struct pt {
-+	struct perf_output_handle handle;
-+	int			handle_nmi;
-+};
-+
-+#endif /* __INTEL_PT_H__ */
 diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index c62e3b11ec..3c758b01de 100644
+index 3c758b01de..f7438fec5c 100644
 --- a/arch/x86/kernel/cpu/perf_event.h
 +++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -787,6 +787,8 @@ void intel_pmu_lbr_init_snb(void);
+@@ -408,6 +408,7 @@ union x86_pmu_config {
  
- int intel_pmu_setup_lbr_filter(struct perf_event *event);
+ enum {
+ 	x86_lbr_exclusive_lbr,
++	x86_lbr_exclusive_bts,
+ 	x86_lbr_exclusive_pt,
+ 	x86_lbr_exclusive_max,
+ };
+@@ -789,6 +790,12 @@ int intel_pmu_setup_lbr_filter(struct perf_event *event);
  
-+void intel_pt_interrupt(void);
+ void intel_pt_interrupt(void);
+ 
++int intel_bts_interrupt(void);
++
++void intel_bts_enable_local(void);
++
++void intel_bts_disable_local(void);
 +
  int p4_pmu_init(void);
  
  int p6_pmu_init(void);
 diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index c64e97a1cb..5a29ea59d6 100644
+index 5a29ea59d6..a2fc1bf04c 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1385,6 +1385,14 @@ again:
- 	}
+@@ -1037,6 +1037,8 @@ static void intel_pmu_disable_all(void)
  
- 	/*
-+	 * Intel PT
-+	 */
-+	if (__test_and_clear_bit(55, (unsigned long *)&status)) {
-+		handled++;
-+		intel_pt_interrupt();
-+	}
-+
-+	/*
- 	 * Checkpointed counters can lead to 'spurious' PMIs because the
- 	 * rollback caused by the PMI will have cleared the overflow status
- 	 * bit. Therefore always force probe these counters.
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_pt.c b/arch/x86/kernel/cpu/perf_event_intel_pt.c
+ 	if (test_bit(INTEL_PMC_IDX_FIXED_BTS, cpuc->active_mask))
+ 		intel_pmu_disable_bts();
++	else
++		intel_bts_disable_local();
+ 
+ 	intel_pmu_pebs_disable_all();
+ 	intel_pmu_lbr_disable_all();
+@@ -1059,7 +1061,8 @@ static void intel_pmu_enable_all(int added)
+ 			return;
+ 
+ 		intel_pmu_enable_bts(event->hw.config);
+-	}
++	} else
++		intel_bts_enable_local();
+ }
+ 
+ /*
+@@ -1345,6 +1348,7 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 		apic_write(APIC_LVTPC, APIC_DM_NMI);
+ 	intel_pmu_disable_all();
+ 	handled = intel_pmu_drain_bts_buffer();
++	handled += intel_bts_interrupt();
+ 	status = intel_pmu_get_status();
+ 	if (!status)
+ 		goto done;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_bts.c b/arch/x86/kernel/cpu/perf_event_intel_bts.c
 new file mode 100644
-index 0000000000..3778b6c156
+index 0000000000..af26a88052
 --- /dev/null
-+++ b/arch/x86/kernel/cpu/perf_event_intel_pt.c
-@@ -0,0 +1,1095 @@
++++ b/arch/x86/kernel/cpu/perf_event_intel_bts.c
+@@ -0,0 +1,525 @@
 +/*
-+ * Intel(R) Processor Trace PMU driver for perf
++ * BTS PMU driver for perf
 + * Copyright (c) 2013-2014, Intel Corporation.
 + *
 + * This program is free software; you can redistribute it and/or modify it
@@ -280,1089 +138,533 @@ index 0000000000..3778b6c156
 + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 + * more details.
-+ *
-+ * Intel PT is specified in the Intel Architecture Instruction Set Extensions
-+ * Programming Reference:
-+ * http://software.intel.com/en-us/intel-isa-extensions
 + */
 +
 +#undef DEBUG
 +
 +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 +
++#include <linux/bitops.h>
 +#include <linux/types.h>
 +#include <linux/slab.h>
++#include <linux/debugfs.h>
 +#include <linux/device.h>
++#include <linux/coredump.h>
 +
++#include <asm-generic/sizes.h>
 +#include <asm/perf_event.h>
-+#include <asm/insn.h>
 +
 +#include "perf_event.h"
-+#include "intel_pt.h"
 +
-+static DEFINE_PER_CPU(struct pt, pt_ctx);
-+
-+static struct pt_pmu pt_pmu;
-+
-+enum cpuid_regs {
-+	CR_EAX = 0,
-+	CR_ECX,
-+	CR_EDX,
-+	CR_EBX
++struct bts_ctx {
++	struct perf_output_handle	handle;
++	struct debug_store		ds_back;
++	int				started;
 +};
 +
-+/*
-+ * Capabilities of Intel PT hardware, such as number of address bits or
-+ * supported output schemes, are cached and exported to userspace as "caps"
-+ * attribute group of pt pmu device
-+ * (/sys/bus/event_source/devices/intel_pt/caps/) so that userspace can store
-+ * relevant bits together with intel_pt traces.
-+ *
-+ * These are necessary for both trace decoding (payloads_lip, contains address
-+ * width encoded in IP-related packets), and event configuration (bitmasks with
-+ * permitted values for certain bit fields).
-+ */
-+#define PT_CAP(_n, _l, _r, _m)						\
-+	[PT_CAP_ ## _n] = { .name = __stringify(_n), .leaf = _l,	\
-+			    .reg = _r, .mask = _m }
++static DEFINE_PER_CPU(struct bts_ctx, bts_ctx);
 +
-+static struct pt_cap_desc {
-+	const char	*name;
-+	u32		leaf;
-+	u8		reg;
-+	u32		mask;
-+} pt_caps[] = {
-+	PT_CAP(max_subleaf,		0, CR_EAX, 0xffffffff),
-+	PT_CAP(cr3_filtering,		0, CR_EBX, BIT(0)),
-+	PT_CAP(topa_output,		0, CR_ECX, BIT(0)),
-+	PT_CAP(topa_multiple_entries,	0, CR_ECX, BIT(1)),
-+	PT_CAP(payloads_lip,		0, CR_ECX, BIT(31)),
++#define BTS_RECORD_SIZE		24
++#define BTS_SAFETY_MARGIN	4080
++
++struct bts_phys {
++	struct page	*page;
++	unsigned long	size;
++	unsigned long	offset;
++	unsigned long	displacement;
 +};
 +
-+static u32 pt_cap_get(enum pt_capabilities cap)
-+{
-+	struct pt_cap_desc *cd = &pt_caps[cap];
-+	u32 c = pt_pmu.caps[cd->leaf * 4 + cd->reg];
-+	unsigned int shift = __ffs(cd->mask);
-+
-+	return (c & cd->mask) >> shift;
-+}
-+
-+static ssize_t pt_cap_show(struct device *cdev,
-+			   struct device_attribute *attr,
-+			   char *buf)
-+{
-+	struct dev_ext_attribute *ea =
-+		container_of(attr, struct dev_ext_attribute, attr);
-+	enum pt_capabilities cap = (long)ea->var;
-+
-+	return snprintf(buf, PAGE_SIZE, "%x\n", pt_cap_get(cap));
-+}
-+
-+static struct attribute_group pt_cap_group = {
-+	.name	= "caps",
++struct bts_buffer {
++	size_t		real_size;	/* multiple of BTS_RECORD_SIZE */
++	unsigned int	nr_pages;
++	unsigned int	nr_bufs;
++	unsigned int	cur_buf;
++	bool		snapshot;
++	local_t		data_size;
++	local_t		lost;
++	local_t		head;
++	unsigned long	end;
++	void		**data_pages;
++	struct bts_phys	buf[0];
 +};
 +
-+PMU_FORMAT_ATTR(tsc,		"config:10"	);
-+PMU_FORMAT_ATTR(noretcomp,	"config:11"	);
++struct pmu bts_pmu;
 +
-+static struct attribute *pt_formats_attr[] = {
-+	&format_attr_tsc.attr,
-+	&format_attr_noretcomp.attr,
-+	NULL,
-+};
++void intel_pmu_enable_bts(u64 config);
++void intel_pmu_disable_bts(void);
 +
-+static struct attribute_group pt_format_group = {
-+	.name	= "format",
-+	.attrs	= pt_formats_attr,
-+};
-+
-+static const struct attribute_group *pt_attr_groups[] = {
-+	&pt_cap_group,
-+	&pt_format_group,
-+	NULL,
-+};
-+
-+static int __init pt_pmu_hw_init(void)
++static size_t buf_size(struct page *page)
 +{
-+	struct dev_ext_attribute *de_attrs;
-+	struct attribute **attrs;
-+	size_t size;
-+	long i;
-+
-+	if (test_cpu_cap(&boot_cpu_data, X86_FEATURE_INTEL_PT)) {
-+		for (i = 0; i < PT_CPUID_LEAVES; i++)
-+			cpuid_count(20, i,
-+				    &pt_pmu.caps[CR_EAX + i * 4],
-+				    &pt_pmu.caps[CR_EBX + i * 4],
-+				    &pt_pmu.caps[CR_ECX + i * 4],
-+				    &pt_pmu.caps[CR_EDX + i * 4]);
-+	} else {
-+		return -ENODEV;
-+	}
-+
-+	size = sizeof(struct attribute *) * (ARRAY_SIZE(pt_caps) + 1);
-+	attrs = kzalloc(size, GFP_KERNEL);
-+	if (!attrs)
-+		goto err_attrs;
-+
-+	size = sizeof(struct dev_ext_attribute) * (ARRAY_SIZE(pt_caps) + 1);
-+	de_attrs = kzalloc(size, GFP_KERNEL);
-+	if (!de_attrs)
-+		goto err_de_attrs;
-+
-+	for (i = 0; i < ARRAY_SIZE(pt_caps); i++) {
-+		de_attrs[i].attr.attr.name = pt_caps[i].name;
-+
-+		sysfs_attr_init(&de_attrs[i].attr.attr);
-+		de_attrs[i].attr.attr.mode = S_IRUGO;
-+		de_attrs[i].attr.show = pt_cap_show;
-+		de_attrs[i].var = (void *)i;
-+		attrs[i] = &de_attrs[i].attr.attr;
-+	}
-+
-+	pt_cap_group.attrs = attrs;
-+	return 0;
-+
-+err_de_attrs:
-+	kfree(de_attrs);
-+err_attrs:
-+	kfree(attrs);
-+
-+	return -ENOMEM;
++	return 1 << (PAGE_SHIFT + page_private(page));
 +}
 +
-+#define PT_CONFIG_MASK (RTIT_CTL_TSC_EN | RTIT_CTL_DISRETC)
-+
-+static bool pt_event_valid(struct perf_event *event)
-+{
-+	u64 config = event->attr.config;
-+
-+	if ((config & PT_CONFIG_MASK) != config)
-+		return false;
-+
-+	return true;
-+}
-+
-+/*
-+ * PT configuration helpers
-+ * These all are cpu affine and operate on a local PT
-+ */
-+
-+static bool pt_is_running(void)
-+{
-+	u64 ctl;
-+
-+	rdmsrl(MSR_IA32_RTIT_CTL, ctl);
-+
-+	return !!(ctl & RTIT_CTL_TRACEEN);
-+}
-+
-+static void pt_config(struct perf_event *event)
-+{
-+	u64 reg;
-+
-+	reg = RTIT_CTL_TOPA | RTIT_CTL_BRANCH_EN | RTIT_CTL_TRACEEN;
-+
-+	if (!event->attr.exclude_kernel)
-+		reg |= RTIT_CTL_OS;
-+	if (!event->attr.exclude_user)
-+		reg |= RTIT_CTL_USR;
-+
-+	reg |= (event->attr.config & PT_CONFIG_MASK);
-+
-+	wrmsrl(MSR_IA32_RTIT_CTL, reg);
-+}
-+
-+static void pt_config_start(bool start)
-+{
-+	u64 ctl;
-+
-+	rdmsrl(MSR_IA32_RTIT_CTL, ctl);
-+	if (start)
-+		ctl |= RTIT_CTL_TRACEEN;
-+	else
-+		ctl &= ~RTIT_CTL_TRACEEN;
-+	wrmsrl(MSR_IA32_RTIT_CTL, ctl);
-+
-+	/*
-+	 * A wrmsr that disables trace generation serializes other PT
-+	 * registers and causes all data packets to be written to memory,
-+	 * but a fence is required for the data to become globally visible.
-+	 *
-+	 * The below WMB, separating data store and aux_head store matches
-+	 * the consumer's RMB that separates aux_head load and data load.
-+	 */
-+	if (!start)
-+		wmb();
-+}
-+
-+static void pt_config_buffer(void *buf, unsigned int topa_idx,
-+			     unsigned int output_off)
-+{
-+	u64 reg;
-+
-+	wrmsrl(MSR_IA32_RTIT_OUTPUT_BASE, virt_to_phys(buf));
-+
-+	reg = 0x7f | ((u64)topa_idx << 7) | ((u64)output_off << 32);
-+
-+	wrmsrl(MSR_IA32_RTIT_OUTPUT_MASK, reg);
-+}
-+
-+/*
-+ * Keep ToPA table-related metadata on the same page as the actual table,
-+ * taking up a few words from the top
-+ */
-+
-+#define TENTS_PER_PAGE (((PAGE_SIZE - 40) / sizeof(struct topa_entry)) - 1)
-+
-+/**
-+ * struct topa - page-sized ToPA table with metadata at the top
-+ * @table:	actual ToPA table entries, as understood by PT hardware
-+ * @list:	linkage to struct pt_buffer's list of tables
-+ * @phys:	physical address of this page
-+ * @offset:	offset of the first entry in this table in the buffer
-+ * @size:	total size of all entries in this table
-+ * @last:	index of the last initialized entry in this table
-+ */
-+struct topa {
-+	struct topa_entry	table[TENTS_PER_PAGE];
-+	struct list_head	list;
-+	u64			phys;
-+	u64			offset;
-+	size_t			size;
-+	int			last;
-+};
-+
-+/* make -1 stand for the last table entry */
-+#define TOPA_ENTRY(t, i) ((i) == -1 ? &(t)->table[(t)->last] : &(t)->table[(i)])
-+
-+/**
-+ * topa_alloc() - allocate page-sized ToPA table
-+ * @cpu:	CPU on which to allocate.
-+ * @gfp:	Allocation flags.
-+ *
-+ * Return:	On success, return the pointer to ToPA table page.
-+ */
-+static struct topa *topa_alloc(int cpu, gfp_t gfp)
-+{
-+	int node = cpu_to_node(cpu);
-+	struct topa *topa;
-+	struct page *p;
-+
-+	p = alloc_pages_node(node, gfp | __GFP_ZERO, 0);
-+	if (!p)
-+		return NULL;
-+
-+	topa = page_address(p);
-+	topa->last = 0;
-+	topa->phys = page_to_phys(p);
-+
-+	/*
-+	 * In case of singe-entry ToPA, always put the self-referencing END
-+	 * link as the 2nd entry in the table
-+	 */
-+	if (!pt_cap_get(PT_CAP_topa_multiple_entries)) {
-+		TOPA_ENTRY(topa, 1)->base = topa->phys >> TOPA_SHIFT;
-+		TOPA_ENTRY(topa, 1)->end = 1;
-+	}
-+
-+	return topa;
-+}
-+
-+/**
-+ * topa_free() - free a page-sized ToPA table
-+ * @topa:	Table to deallocate.
-+ */
-+static void topa_free(struct topa *topa)
-+{
-+	free_page((unsigned long)topa);
-+}
-+
-+/**
-+ * topa_insert_table() - insert a ToPA table into a buffer
-+ * @buf:	 PT buffer that's being extended.
-+ * @topa:	 New topa table to be inserted.
-+ *
-+ * If it's the first table in this buffer, set up buffer's pointers
-+ * accordingly; otherwise, add a END=1 link entry to @topa to the current
-+ * "last" table and adjust the last table pointer to @topa.
-+ */
-+static void topa_insert_table(struct pt_buffer *buf, struct topa *topa)
-+{
-+	struct topa *last = buf->last;
-+
-+	list_add_tail(&topa->list, &buf->tables);
-+
-+	if (!buf->first) {
-+		buf->first = buf->last = buf->cur = topa;
-+		return;
-+	}
-+
-+	topa->offset = last->offset + last->size;
-+	buf->last = topa;
-+
-+	if (!pt_cap_get(PT_CAP_topa_multiple_entries))
-+		return;
-+
-+	BUG_ON(last->last != TENTS_PER_PAGE - 1);
-+
-+	TOPA_ENTRY(last, -1)->base = topa->phys >> TOPA_SHIFT;
-+	TOPA_ENTRY(last, -1)->end = 1;
-+}
-+
-+/**
-+ * topa_table_full() - check if a ToPA table is filled up
-+ * @topa:	ToPA table.
-+ */
-+static bool topa_table_full(struct topa *topa)
-+{
-+	/* single-entry ToPA is a special case */
-+	if (!pt_cap_get(PT_CAP_topa_multiple_entries))
-+		return !!topa->last;
-+
-+	return topa->last == TENTS_PER_PAGE - 1;
-+}
-+
-+/**
-+ * topa_insert_pages() - create a list of ToPA tables
-+ * @buf:	PT buffer being initialized.
-+ * @gfp:	Allocation flags.
-+ *
-+ * This initializes a list of ToPA tables with entries from
-+ * the data_pages provided by rb_alloc_aux().
-+ *
-+ * Return:	0 on success or error code.
-+ */
-+static int topa_insert_pages(struct pt_buffer *buf, gfp_t gfp)
-+{
-+	struct topa *topa = buf->last;
-+	int order = 0;
-+	struct page *p;
-+
-+	p = virt_to_page(buf->data_pages[buf->nr_pages]);
-+	if (PagePrivate(p))
-+		order = page_private(p);
-+
-+	if (topa_table_full(topa)) {
-+		topa = topa_alloc(buf->cpu, gfp);
-+		if (!topa)
-+			return -ENOMEM;
-+
-+		topa_insert_table(buf, topa);
-+	}
-+
-+	TOPA_ENTRY(topa, -1)->base = page_to_phys(p) >> TOPA_SHIFT;
-+	TOPA_ENTRY(topa, -1)->size = order;
-+	if (!buf->snapshot && !pt_cap_get(PT_CAP_topa_multiple_entries)) {
-+		TOPA_ENTRY(topa, -1)->intr = 1;
-+		TOPA_ENTRY(topa, -1)->stop = 1;
-+	}
-+
-+	topa->last++;
-+	topa->size += sizes(order);
-+
-+	buf->nr_pages += 1ul << order;
-+
-+	return 0;
-+}
-+
-+/**
-+ * pt_topa_dump() - print ToPA tables and their entries
-+ * @buf:	PT buffer.
-+ */
-+static void pt_topa_dump(struct pt_buffer *buf)
-+{
-+	struct topa *topa;
-+
-+	list_for_each_entry(topa, &buf->tables, list) {
-+		int i;
-+
-+		pr_debug("# table @%p (%p), off %llx size %zx\n", topa->table,
-+			 (void *)topa->phys, topa->offset, topa->size);
-+		for (i = 0; i < TENTS_PER_PAGE; i++) {
-+			pr_debug("# entry @%p (%lx sz %u %c%c%c) raw=%16llx\n",
-+				 &topa->table[i],
-+				 (unsigned long)topa->table[i].base << TOPA_SHIFT,
-+				 sizes(topa->table[i].size),
-+				 topa->table[i].end ?  'E' : ' ',
-+				 topa->table[i].intr ? 'I' : ' ',
-+				 topa->table[i].stop ? 'S' : ' ',
-+				 *(u64 *)&topa->table[i]);
-+			if ((pt_cap_get(PT_CAP_topa_multiple_entries) &&
-+			     topa->table[i].stop) ||
-+			    topa->table[i].end)
-+				break;
-+		}
-+	}
-+}
-+
-+/**
-+ * pt_buffer_advance() - advance to the next output region
-+ * @buf:	PT buffer.
-+ *
-+ * Advance the current pointers in the buffer to the next ToPA entry.
-+ */
-+static void pt_buffer_advance(struct pt_buffer *buf)
-+{
-+	buf->output_off = 0;
-+	buf->cur_idx++;
-+
-+	if (buf->cur_idx == buf->cur->last) {
-+		if (buf->cur == buf->last)
-+			buf->cur = buf->first;
-+		else
-+			buf->cur = list_entry(buf->cur->list.next, struct topa,
-+					      list);
-+		buf->cur_idx = 0;
-+	}
-+}
-+
-+/**
-+ * pt_update_head() - calculate current offsets and sizes
-+ * @pt:		Per-cpu pt context.
-+ *
-+ * Update buffer's current write pointer position and data size.
-+ */
-+static void pt_update_head(struct pt *pt)
-+{
-+	struct pt_buffer *buf = perf_get_aux(&pt->handle);
-+	u64 topa_idx, base, old;
-+
-+	/* offset of the first region in this table from the beginning of buf */
-+	base = buf->cur->offset + buf->output_off;
-+
-+	/* offset of the current output region within this table */
-+	for (topa_idx = 0; topa_idx < buf->cur_idx; topa_idx++)
-+		base += sizes(buf->cur->table[topa_idx].size);
-+
-+	if (buf->snapshot) {
-+		local_set(&buf->data_size, base);
-+	} else {
-+		old = (local64_xchg(&buf->head, base) &
-+		       ((buf->nr_pages << PAGE_SHIFT) - 1));
-+		if (base < old)
-+			base += buf->nr_pages << PAGE_SHIFT;
-+
-+		local_add(base - old, &buf->data_size);
-+	}
-+}
-+
-+/**
-+ * pt_buffer_region() - obtain current output region's address
-+ * @buf:	PT buffer.
-+ */
-+static void *pt_buffer_region(struct pt_buffer *buf)
-+{
-+	return phys_to_virt(buf->cur->table[buf->cur_idx].base << TOPA_SHIFT);
-+}
-+
-+/**
-+ * pt_buffer_region_size() - obtain current output region's size
-+ * @buf:	PT buffer.
-+ */
-+static size_t pt_buffer_region_size(struct pt_buffer *buf)
-+{
-+	return sizes(buf->cur->table[buf->cur_idx].size);
-+}
-+
-+/**
-+ * pt_handle_status() - take care of possible status conditions
-+ * @pt:		Per-cpu pt context.
-+ */
-+static void pt_handle_status(struct pt *pt)
-+{
-+	struct pt_buffer *buf = perf_get_aux(&pt->handle);
-+	int advance = 0;
-+	u64 status;
-+
-+	rdmsrl(MSR_IA32_RTIT_STATUS, status);
-+
-+	if (status & RTIT_STATUS_ERROR) {
-+		pr_err_ratelimited("ToPA ERROR encountered, trying to recover\n");
-+		pt_topa_dump(buf);
-+		status &= ~RTIT_STATUS_ERROR;
-+	}
-+
-+	if (status & RTIT_STATUS_STOPPED) {
-+		status &= ~RTIT_STATUS_STOPPED;
-+
-+		/*
-+		 * On systems that only do single-entry ToPA, hitting STOP
-+		 * means we are already losing data; need to let the decoder
-+		 * know.
-+		 */
-+		if (!pt_cap_get(PT_CAP_topa_multiple_entries) ||
-+		    buf->output_off == sizes(TOPA_ENTRY(buf->cur, buf->cur_idx)->size)) {
-+			local_inc(&buf->lost);
-+			advance++;
-+		}
-+	}
-+
-+	/*
-+	 * Also on single-entry ToPA implementations, interrupt will come
-+	 * before the output reaches its output region's boundary.
-+	 */
-+	if (!pt_cap_get(PT_CAP_topa_multiple_entries) && !buf->snapshot &&
-+	    pt_buffer_region_size(buf) - buf->output_off <= TOPA_PMI_MARGIN) {
-+		void *head = pt_buffer_region(buf);
-+
-+		/* everything within this margin needs to be zeroed out */
-+		memset(head + buf->output_off, 0,
-+		       pt_buffer_region_size(buf) -
-+		       buf->output_off);
-+		advance++;
-+	}
-+
-+	if (advance)
-+		pt_buffer_advance(buf);
-+
-+	wrmsrl(MSR_IA32_RTIT_STATUS, status);
-+}
-+
-+/**
-+ * pt_read_offset() - translate registers into buffer pointers
-+ * @buf:	PT buffer.
-+ *
-+ * Set buffer's output pointers from MSR values.
-+ */
-+static void pt_read_offset(struct pt_buffer *buf)
-+{
-+	u64 offset, base_topa;
-+
-+	rdmsrl(MSR_IA32_RTIT_OUTPUT_BASE, base_topa);
-+	buf->cur = phys_to_virt(base_topa);
-+
-+	rdmsrl(MSR_IA32_RTIT_OUTPUT_MASK, offset);
-+	/* offset within current output region */
-+	buf->output_off = offset >> 32;
-+	/* index of current output region within this table */
-+	buf->cur_idx = (offset & 0xffffff80) >> 7;
-+}
-+
-+/**
-+ * pt_topa_next_entry() - obtain index of the first page in the next ToPA entry
-+ * @buf:	PT buffer.
-+ * @pg:		Page offset in the buffer.
-+ *
-+ * When advancing to the next output region (ToPA entry), given a page offset
-+ * into the buffer, we need to find the offset of the first page in the next
-+ * region.
-+ */
-+static unsigned int pt_topa_next_entry(struct pt_buffer *buf, unsigned int pg)
-+{
-+	struct topa_entry *te = buf->topa_index[pg];
-+
-+	/* one region */
-+	if (buf->first == buf->last && buf->first->last == 1)
-+		return pg;
-+
-+	do {
-+		pg++;
-+		pg &= buf->nr_pages - 1;
-+	} while (buf->topa_index[pg] == te);
-+
-+	return pg;
-+}
-+
-+/**
-+ * pt_buffer_reset_markers() - place interrupt and stop bits in the buffer
-+ * @buf:	PT buffer.
-+ * @handle:	Current output handle.
-+ *
-+ * Place INT and STOP marks to prevent overwriting old data that the consumer
-+ * hasn't yet collected.
-+ */
-+static int pt_buffer_reset_markers(struct pt_buffer *buf,
-+				   struct perf_output_handle *handle)
-+
-+{
-+	unsigned long idx, npages, end;
-+
-+	if (buf->snapshot)
-+		return 0;
-+
-+	/* can't stop in the middle of an output region */
-+	if (buf->output_off + handle->size + 1 <
-+	    sizes(TOPA_ENTRY(buf->cur, buf->cur_idx)->size))
-+		return -EINVAL;
-+
-+
-+	/* single entry ToPA is handled by marking all regions STOP=1 INT=1 */
-+	if (!pt_cap_get(PT_CAP_topa_multiple_entries))
-+		return 0;
-+
-+	/* clear STOP and INT from current entry */
-+	buf->topa_index[buf->stop_pos]->stop = 0;
-+	buf->topa_index[buf->intr_pos]->intr = 0;
-+
-+	if (pt_cap_get(PT_CAP_topa_multiple_entries)) {
-+		npages = (handle->size + 1) >> PAGE_SHIFT;
-+		end = (local64_read(&buf->head) >> PAGE_SHIFT) + npages;
-+		/*if (end > handle->wakeup >> PAGE_SHIFT)
-+		  end = handle->wakeup >> PAGE_SHIFT;*/
-+		idx = end & (buf->nr_pages - 1);
-+		buf->stop_pos = idx;
-+		idx = (local64_read(&buf->head) >> PAGE_SHIFT) + npages - 1;
-+		idx &= buf->nr_pages - 1;
-+		buf->intr_pos = idx;
-+	}
-+
-+	buf->topa_index[buf->stop_pos]->stop = 1;
-+	buf->topa_index[buf->intr_pos]->intr = 1;
-+
-+	return 0;
-+}
-+
-+/**
-+ * pt_buffer_setup_topa_index() - build topa_index[] table of regions
-+ * @buf:	PT buffer.
-+ *
-+ * topa_index[] references output regions indexed by offset into the
-+ * buffer for purposes of quick reverse lookup.
-+ */
-+static void pt_buffer_setup_topa_index(struct pt_buffer *buf)
-+{
-+	struct topa *cur = buf->first, *prev = buf->last;
-+	struct topa_entry *te_cur = TOPA_ENTRY(cur, 0),
-+		*te_prev = TOPA_ENTRY(prev, prev->last - 1);
-+	int pg = 0, idx = 0, ntopa = 0;
-+
-+	while (pg < buf->nr_pages) {
-+		int tidx;
-+
-+		/* pages within one topa entry */
-+		for (tidx = 0; tidx < 1 << te_cur->size; tidx++, pg++)
-+			buf->topa_index[pg] = te_prev;
-+
-+		te_prev = te_cur;
-+
-+		if (idx == cur->last - 1) {
-+			/* advance to next topa table */
-+			idx = 0;
-+			cur = list_entry(cur->list.next, struct topa, list);
-+			ntopa++;
-+		} else
-+			idx++;
-+		te_cur = TOPA_ENTRY(cur, idx);
-+	}
-+
-+}
-+
-+/**
-+ * pt_buffer_reset_offsets() - adjust buffer's write pointers from aux_head
-+ * @buf:	PT buffer.
-+ * @head:	Write pointer (aux_head) from AUX buffer.
-+ *
-+ * Find the ToPA table and entry corresponding to given @head and set buffer's
-+ * "current" pointers accordingly.
-+ */
-+static void pt_buffer_reset_offsets(struct pt_buffer *buf, unsigned long head)
-+{
-+	int pg;
-+
-+	if (buf->snapshot)
-+		head &= (buf->nr_pages << PAGE_SHIFT) - 1;
-+
-+	pg = (head >> PAGE_SHIFT) & (buf->nr_pages - 1);
-+	pg = pt_topa_next_entry(buf, pg);
-+
-+	buf->cur = (struct topa *)((unsigned long)buf->topa_index[pg] & PAGE_MASK);
-+	buf->cur_idx = ((unsigned long)buf->topa_index[pg] -
-+			(unsigned long)buf->cur) / sizeof(struct topa_entry);
-+	buf->output_off = head & (sizes(buf->cur->table[buf->cur_idx].size) - 1);
-+
-+	local64_set(&buf->head, head);
-+	local_set(&buf->data_size, 0);
-+}
-+
-+/**
-+ * pt_buffer_fini_topa() - deallocate ToPA structure of a buffer
-+ * @buf:	PT buffer.
-+ */
-+static void pt_buffer_fini_topa(struct pt_buffer *buf)
-+{
-+	struct topa *topa, *iter;
-+
-+	list_for_each_entry_safe(topa, iter, &buf->tables, list) {
-+		/*
-+		 * right now, this is in free_aux() path only, so
-+		 * no need to unlink this table from the list
-+		 */
-+		topa_free(topa);
-+	}
-+}
-+
-+/**
-+ * pt_buffer_init_topa() - initialize ToPA table for pt buffer
-+ * @buf:	PT buffer.
-+ * @size:	Total size of all regions within this ToPA.
-+ * @gfp:	Allocation flags.
-+ */
-+static int pt_buffer_init_topa(struct pt_buffer *buf, unsigned long nr_pages,
-+			       gfp_t gfp)
-+{
-+	struct topa *topa;
-+	int err;
-+
-+	topa = topa_alloc(buf->cpu, gfp);
-+	if (!topa)
-+		return -ENOMEM;
-+
-+	topa_insert_table(buf, topa);
-+
-+	while (buf->nr_pages < nr_pages) {
-+		err = topa_insert_pages(buf, gfp);
-+		if (err) {
-+			pt_buffer_fini_topa(buf);
-+			return -ENOMEM;
-+		}
-+	}
-+
-+	pt_buffer_setup_topa_index(buf);
-+
-+	/* link last table to the first one, unless we're double buffering */
-+	if (pt_cap_get(PT_CAP_topa_multiple_entries)) {
-+		TOPA_ENTRY(buf->last, -1)->base = buf->first->phys >> TOPA_SHIFT;
-+		TOPA_ENTRY(buf->last, -1)->end = 1;
-+	}
-+
-+	pt_topa_dump(buf);
-+	return 0;
-+}
-+
-+/**
-+ * pt_buffer_setup_aux() - set up topa tables for a PT buffer
-+ * @cpu:	Cpu on which to allocate, -1 means current.
-+ * @pages:	Array of pointers to buffer pages passed from perf core.
-+ * @nr_pages:	Number of pages in the buffer.
-+ * @snapshot:	If this is a snapshot/overwrite counter.
-+ *
-+ * This is a pmu::setup_aux callback that sets up ToPA tables and all the
-+ * bookkeeping for an AUX buffer.
-+ *
-+ * Return:	Our private PT buffer structure.
-+ */
 +static void *
-+pt_buffer_setup_aux(int cpu, void **pages, int nr_pages, bool snapshot)
++bts_buffer_setup_aux(int cpu, void **pages, int nr_pages, bool overwrite)
 +{
-+	struct pt_buffer *buf;
-+	int node, ret;
++	struct bts_buffer *buf;
++	struct page *page;
++	int node = (cpu == -1) ? cpu : cpu_to_node(cpu);
++	unsigned long offset;
++	size_t size = nr_pages << PAGE_SHIFT;
++	int pg, nbuf, pad;
 +
-+	if (!nr_pages)
++	/* count all the high order buffers */
++	for (pg = 0, nbuf = 0; pg < nr_pages;) {
++		page = virt_to_page(pages[pg]);
++		if (WARN_ON_ONCE(!PagePrivate(page) && nr_pages > 1))
++			return NULL;
++		pg += 1 << page_private(page);
++		nbuf++;
++	}
++
++	/*
++	 * to avoid interrupts in overwrite mode, only allow one physical
++	 */
++	if (overwrite && nbuf > 1)
 +		return NULL;
 +
-+	if (cpu == -1)
-+		cpu = raw_smp_processor_id();
-+	node = cpu_to_node(cpu);
-+
-+	buf = kzalloc_node(offsetof(struct pt_buffer, topa_index[nr_pages]),
-+			   GFP_KERNEL, node);
++	buf = kzalloc_node(offsetof(struct bts_buffer, buf[nbuf]), GFP_KERNEL, node);
 +	if (!buf)
 +		return NULL;
 +
-+	buf->cpu = cpu;
-+	buf->snapshot = snapshot;
++	buf->nr_pages = nr_pages;
++	buf->nr_bufs = nbuf;
++	buf->snapshot = overwrite;
 +	buf->data_pages = pages;
++	buf->real_size = size - size % BTS_RECORD_SIZE;
 +
-+	INIT_LIST_HEAD(&buf->tables);
++	for (pg = 0, nbuf = 0, offset = 0, pad = 0; nbuf < buf->nr_bufs; nbuf++) {
++		unsigned int __nr_pages;
 +
-+	ret = pt_buffer_init_topa(buf, nr_pages, GFP_KERNEL);
-+	if (ret) {
-+		kfree(buf);
-+		return NULL;
++		page = virt_to_page(pages[pg]);
++		__nr_pages = PagePrivate(page) ? 1 << page_private(page) : 1;
++		buf->buf[nbuf].page = page;
++		buf->buf[nbuf].offset = offset;
++		buf->buf[nbuf].displacement = (pad ? BTS_RECORD_SIZE - pad : 0);
++		buf->buf[nbuf].size = buf_size(page) - buf->buf[nbuf].displacement;
++		pad = buf->buf[nbuf].size % BTS_RECORD_SIZE;
++		buf->buf[nbuf].size -= pad;
++
++		pg += __nr_pages;
++		offset += __nr_pages << PAGE_SHIFT;
 +	}
 +
 +	return buf;
 +}
 +
-+/**
-+ * pt_buffer_free_aux() - perf AUX deallocation path callback
-+ * @data:	PT buffer.
-+ */
-+static void pt_buffer_free_aux(void *data)
++static void bts_buffer_free_aux(void *data)
 +{
-+	struct pt_buffer *buf = data;
-+
-+	pt_buffer_fini_topa(buf);
-+	kfree(buf);
++	kfree(data);
 +}
 +
-+/**
-+ * pt_buffer_is_full() - check if the buffer is full
-+ * @buf:	PT buffer.
-+ * @pt:		Per-cpu pt handle.
-+ *
-+ * If the user hasn't read data from the output region that aux_head
-+ * points to, the buffer is considered full: the user needs to read at
-+ * least this region and update aux_tail to point past it.
-+ */
-+static bool pt_buffer_is_full(struct pt_buffer *buf, struct pt *pt)
++static unsigned long bts_buffer_offset(struct bts_buffer *buf, unsigned int idx)
++{
++	return buf->buf[idx].offset + buf->buf[idx].displacement;
++}
++
++static void
++bts_config_buffer(struct bts_buffer *buf)
++{
++	int cpu = raw_smp_processor_id();
++	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
++	struct bts_phys *phys = &buf->buf[buf->cur_buf];
++	unsigned long index, thresh = 0, end = phys->size;
++	struct page *page = phys->page;
++
++	index = local_read(&buf->head);
++
++	if (!buf->snapshot) {
++		if (buf->end < phys->offset + buf_size(page))
++			end = buf->end - phys->offset - phys->displacement;
++
++		index -= phys->offset + phys->displacement;
++
++		if (end - index > BTS_SAFETY_MARGIN)
++			thresh = end - BTS_SAFETY_MARGIN;
++		else if (end - index > BTS_RECORD_SIZE)
++			thresh = end - BTS_RECORD_SIZE;
++		else
++			thresh = end;
++	}
++
++	ds->bts_buffer_base = (u64)page_address(page) + phys->displacement;
++	ds->bts_index = ds->bts_buffer_base + index;
++	ds->bts_absolute_maximum = ds->bts_buffer_base + end;
++	ds->bts_interrupt_threshold = !buf->snapshot
++		? ds->bts_buffer_base + thresh
++		: ds->bts_absolute_maximum + BTS_RECORD_SIZE;
++}
++
++static void bts_buffer_pad_out(struct bts_phys *phys, unsigned long head)
++{
++	unsigned long index = head - phys->offset;
++
++	memset(page_address(phys->page) + index, 0, phys->size - index);
++}
++
++static bool bts_buffer_is_full(struct bts_buffer *buf, struct bts_ctx *bts)
 +{
 +	if (buf->snapshot)
 +		return false;
 +
-+	if (local_read(&buf->data_size) >= pt->handle.size)
++	if (local_read(&buf->data_size) >= bts->handle.size ||
++	    bts->handle.size - local_read(&buf->data_size) < BTS_RECORD_SIZE)
 +		return true;
 +
 +	return false;
 +}
 +
-+/**
-+ * intel_pt_interrupt() - PT PMI handler
-+ */
-+void intel_pt_interrupt(void)
++static void bts_update(struct bts_ctx *bts)
 +{
-+	struct pt *pt = this_cpu_ptr(&pt_ctx);
-+	struct pt_buffer *buf;
-+	struct perf_event *event = pt->handle.event;
++	int cpu = raw_smp_processor_id();
++	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
++	struct bts_buffer *buf = perf_get_aux(&bts->handle);
++	unsigned long index = ds->bts_index - ds->bts_buffer_base, old, head;
 +
-+	/*
-+	 * There may be a dangling PT bit in the interrupt status register
-+	 * after PT has been disabled by pt_event_stop(). Make sure we don't
-+	 * do anything (particularly, re-enable) for this event here.
-+	 */
-+	if (!ACCESS_ONCE(pt->handle_nmi))
-+		return;
-+
-+	pt_config_start(false);
-+
-+	if (!event)
-+		return;
-+
-+	buf = perf_get_aux(&pt->handle);
 +	if (!buf)
 +		return;
 +
-+	pt_read_offset(buf);
++	head = index + bts_buffer_offset(buf, buf->cur_buf);
++	old = local_xchg(&buf->head, head);
 +
-+	pt_handle_status(pt);
-+
-+	pt_update_head(pt);
-+
-+	perf_aux_output_end(&pt->handle, local_xchg(&buf->data_size, 0),
-+			    local_xchg(&buf->lost, 0));
-+
-+	if (!event->hw.state) {
-+		int ret;
-+
-+		buf = perf_aux_output_begin(&pt->handle, event);
-+		if (!buf) {
-+			event->hw.state = PERF_HES_STOPPED;
++	if (!buf->snapshot) {
++		if (old == head)
 +			return;
-+		}
 +
-+		pt_buffer_reset_offsets(buf, pt->handle.head);
-+		ret = pt_buffer_reset_markers(buf, &pt->handle);
-+		if (ret) {
-+			perf_aux_output_end(&pt->handle, 0, true);
-+			return;
-+		}
++		if (ds->bts_index >= ds->bts_absolute_maximum)
++			local_inc(&buf->lost);
 +
-+		pt_config_buffer(buf->cur->table, buf->cur_idx,
-+				 buf->output_off);
-+		wrmsrl(MSR_IA32_RTIT_STATUS, 0);
-+		pt_config(event);
++		/*
++		 * old and head are always in the same physical buffer, so we
++		 * can subtract them to get the data size.
++		 */
++		local_add(head - old, &buf->data_size);
++	} else {
++		local_set(&buf->data_size, head);
 +	}
 +}
 +
-+/*
-+ * PMU callbacks
-+ */
-+
-+static void pt_event_start(struct perf_event *event, int mode)
++static void __bts_event_start(struct perf_event *event)
 +{
-+	struct pt *pt = this_cpu_ptr(&pt_ctx);
-+	struct pt_buffer *buf = perf_get_aux(&pt->handle);
++	struct bts_ctx *bts = this_cpu_ptr(&bts_ctx);
++	struct bts_buffer *buf = perf_get_aux(&bts->handle);
++	u64 config = 0;
 +
-+	if (pt_is_running() || !buf || pt_buffer_is_full(buf, pt)) {
-+		event->hw.state = PERF_HES_STOPPED;
++	if (!buf || bts_buffer_is_full(buf, bts))
 +		return;
-+	}
 +
-+	ACCESS_ONCE(pt->handle_nmi) = 1;
 +	event->hw.state = 0;
 +
-+	pt_config_buffer(buf->cur->table, buf->cur_idx,
-+			 buf->output_off);
-+	wrmsrl(MSR_IA32_RTIT_STATUS, 0);
-+	pt_config(event);
-+}
++	if (!buf->snapshot)
++		config |= ARCH_PERFMON_EVENTSEL_INT;
++	if (!event->attr.exclude_kernel)
++		config |= ARCH_PERFMON_EVENTSEL_OS;
++	if (!event->attr.exclude_user)
++		config |= ARCH_PERFMON_EVENTSEL_USR;
 +
-+static void pt_event_stop(struct perf_event *event, int mode)
-+{
-+	struct pt *pt = this_cpu_ptr(&pt_ctx);
++	bts_config_buffer(buf);
 +
 +	/*
-+	 * Protect against the PMI racing with disabling wrmsr,
-+	 * see comment in intel_pt_interrupt().
++	 * local barrier to make sure that ds configuration made it
++	 * before we enable BTS
 +	 */
-+	ACCESS_ONCE(pt->handle_nmi) = 0;
-+	pt_config_start(false);
++	wmb();
 +
-+	if (event->hw.state == PERF_HES_STOPPED)
++	intel_pmu_enable_bts(config);
++}
++
++static void bts_event_start(struct perf_event *event, int flags)
++{
++	struct bts_ctx *bts = this_cpu_ptr(&bts_ctx);
++
++	__bts_event_start(event);
++
++	/* PMI handler: this counter is running and likely generating PMIs */
++	ACCESS_ONCE(bts->started) = 1;
++}
++
++static void __bts_event_stop(struct perf_event *event)
++{
++	/*
++	 * No extra synchronization is mandated by the documentation to have
++	 * BTS data stores globally visible.
++	 */
++	intel_pmu_disable_bts();
++
++	if (event->hw.state & PERF_HES_STOPPED)
 +		return;
 +
-+	event->hw.state = PERF_HES_STOPPED;
-+
-+	if (mode & PERF_EF_UPDATE) {
-+		struct pt *pt = this_cpu_ptr(&pt_ctx);
-+		struct pt_buffer *buf = perf_get_aux(&pt->handle);
-+
-+		if (!buf)
-+			return;
-+
-+		if (WARN_ON_ONCE(pt->handle.event != event))
-+			return;
-+
-+		pt_read_offset(buf);
-+
-+		pt_handle_status(pt);
-+
-+		pt_update_head(pt);
-+	}
++	ACCESS_ONCE(event->hw.state) |= PERF_HES_STOPPED;
 +}
 +
-+static void pt_event_del(struct perf_event *event, int mode)
++static void bts_event_stop(struct perf_event *event, int flags)
 +{
-+	struct pt *pt = this_cpu_ptr(&pt_ctx);
-+	struct pt_buffer *buf;
++	struct bts_ctx *bts = this_cpu_ptr(&bts_ctx);
 +
-+	pt_event_stop(event, PERF_EF_UPDATE);
++	/* PMI handler: don't restart this counter */
++	ACCESS_ONCE(bts->started) = 0;
 +
-+	buf = perf_get_aux(&pt->handle);
++	__bts_event_stop(event);
 +
-+	if (buf) {
-+		if (buf->snapshot)
-+			pt->handle.head =
-+				local_xchg(&buf->data_size,
-+					   buf->nr_pages << PAGE_SHIFT);
-+		perf_aux_output_end(&pt->handle, local_xchg(&buf->data_size, 0),
-+				    local_xchg(&buf->lost, 0));
-+	}
++	if (flags & PERF_EF_UPDATE)
++		bts_update(bts);
 +}
 +
-+static int pt_event_add(struct perf_event *event, int mode)
++void intel_bts_enable_local(void)
 +{
-+	struct pt_buffer *buf;
-+	struct pt *pt = this_cpu_ptr(&pt_ctx);
-+	struct hw_perf_event *hwc = &event->hw;
-+	int ret = -EBUSY;
++	struct bts_ctx *bts = this_cpu_ptr(&bts_ctx);
 +
-+	if (pt->handle.event)
-+		goto out;
-+
-+	buf = perf_aux_output_begin(&pt->handle, event);
-+	if (!buf) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	pt_buffer_reset_offsets(buf, pt->handle.head);
-+	if (!buf->snapshot) {
-+		ret = pt_buffer_reset_markers(buf, &pt->handle);
-+		if (ret) {
-+			perf_aux_output_end(&pt->handle, 0, true);
-+			goto out;
-+		}
-+	}
-+
-+	if (mode & PERF_EF_START) {
-+		pt_event_start(event, 0);
-+		if (hwc->state == PERF_HES_STOPPED) {
-+			pt_event_del(event, 0);
-+			ret = -EBUSY;
-+		}
-+	} else {
-+		hwc->state = PERF_HES_STOPPED;
-+	}
-+
-+	ret = 0;
-+out:
-+
-+	if (ret)
-+		hwc->state = PERF_HES_STOPPED;
-+
-+	return ret;
++	if (bts->handle.event && bts->started)
++		__bts_event_start(bts->handle.event);
 +}
 +
-+static void pt_event_read(struct perf_event *event)
++void intel_bts_disable_local(void)
 +{
++	struct bts_ctx *bts = this_cpu_ptr(&bts_ctx);
++
++	if (bts->handle.event)
++		__bts_event_stop(bts->handle.event);
 +}
 +
-+static void pt_event_destroy(struct perf_event *event)
++static int
++bts_buffer_reset(struct bts_buffer *buf, struct perf_output_handle *handle)
 +{
-+	x86_del_exclusive(x86_lbr_exclusive_pt);
-+}
++	unsigned long head, space, next_space, pad, gap, skip, wakeup;
++	unsigned int next_buf;
++	struct bts_phys *phys, *next_phys;
++	int ret;
 +
-+static int pt_event_init(struct perf_event *event)
-+{
-+	if (event->attr.type != pt_pmu.pmu.type)
-+		return -ENOENT;
++	if (buf->snapshot)
++		return 0;
 +
-+	if (!pt_event_valid(event))
++	head = handle->head & ((buf->nr_pages << PAGE_SHIFT) - 1);
++	if (WARN_ON_ONCE(head != local_read(&buf->head)))
 +		return -EINVAL;
 +
-+	if (x86_add_exclusive(x86_lbr_exclusive_pt))
-+		return -EBUSY;
++	phys = &buf->buf[buf->cur_buf];
++	space = phys->offset + phys->displacement + phys->size - head;
++	pad = space;
++	if (space > handle->size) {
++		space = handle->size;
++		space -= space % BTS_RECORD_SIZE;
++	}
++	if (space <= BTS_SAFETY_MARGIN) {
++		/* See if next phys buffer has more space */
++		next_buf = buf->cur_buf + 1;
++		if (next_buf >= buf->nr_bufs)
++			next_buf = 0;
++		next_phys = &buf->buf[next_buf];
++		gap = buf_size(phys->page) - phys->displacement - phys->size +
++		      next_phys->displacement;
++		skip = pad + gap;
++		if (handle->size >= skip) {
++			next_space = next_phys->size;
++			if (next_space + skip > handle->size) {
++				next_space = handle->size - skip;
++				next_space -= next_space % BTS_RECORD_SIZE;
++			}
++			if (next_space > space || !space) {
++				if (pad)
++					bts_buffer_pad_out(phys, head);
++				ret = perf_aux_output_skip(handle, skip);
++				if (ret)
++					return ret;
++				/* Advance to next phys buffer */
++				phys = next_phys;
++				space = next_space;
++				head = phys->offset + phys->displacement;
++				/*
++				 * After this, cur_buf and head won't match ds
++				 * anymore, so we must not be racing with
++				 * bts_update().
++				 */
++				buf->cur_buf = next_buf;
++				local_set(&buf->head, head);
++			}
++		}
++	}
 +
-+	event->destroy = pt_event_destroy;
++	/* Don't go far beyond wakeup watermark */
++	wakeup = BTS_SAFETY_MARGIN + BTS_RECORD_SIZE + handle->wakeup -
++		 handle->head;
++	if (space > wakeup) {
++		space = wakeup;
++		space -= space % BTS_RECORD_SIZE;
++	}
++
++	buf->end = head + space;
++
++	/*
++	 * If we have no space, the lost notification would have been sent when
++	 * we hit absolute_maximum - see bts_update()
++	 */
++	if (!space)
++		return -ENOSPC;
 +
 +	return 0;
 +}
 +
-+static __init int pt_init(void)
++int intel_bts_interrupt(void)
 +{
-+	int ret, cpu, prior_warn = 0;
++	struct bts_ctx *bts = this_cpu_ptr(&bts_ctx);
++	struct perf_event *event = bts->handle.event;
++	struct bts_buffer *buf;
++	s64 old_head;
++	int err;
 +
-+	BUILD_BUG_ON(sizeof(struct topa) > PAGE_SIZE);
-+	get_online_cpus();
-+	for_each_online_cpu(cpu) {
-+		u64 ctl;
++	if (!event || !bts->started)
++		return 0;
 +
-+		ret = rdmsrl_safe_on_cpu(cpu, MSR_IA32_RTIT_CTL, &ctl);
-+		if (!ret && (ctl & RTIT_CTL_TRACEEN))
-+			prior_warn++;
-+	}
-+	put_online_cpus();
++	buf = perf_get_aux(&bts->handle);
++	/*
++	 * Skip snapshot counters: they don't use the interrupt, but
++	 * there's no other way of telling, because the pointer will
++	 * keep moving
++	 */
++	if (!buf || buf->snapshot)
++		return 0;
 +
-+	if (prior_warn) {
-+		x86_add_exclusive(x86_lbr_exclusive_pt);
-+		pr_warn("PT is enabled at boot time, doing nothing\n");
++	old_head = local_read(&buf->head);
++	bts_update(bts);
 +
-+		return -EBUSY;
-+	}
++	/* no new data */
++	if (old_head == local_read(&buf->head))
++		return 0;
 +
-+	ret = pt_pmu_hw_init();
-+	if (ret)
-+		return ret;
++	perf_aux_output_end(&bts->handle, local_xchg(&buf->data_size, 0),
++			    !!local_xchg(&buf->lost, 0));
 +
-+	if (!pt_cap_get(PT_CAP_topa_output)) {
-+		pr_warn("ToPA output is not supported on this CPU\n");
-+		return -ENODEV;
-+	}
++	buf = perf_aux_output_begin(&bts->handle, event);
++	if (!buf)
++		return 1;
 +
-+	if (!pt_cap_get(PT_CAP_topa_multiple_entries))
-+		pt_pmu.pmu.capabilities =
-+			PERF_PMU_CAP_AUX_NO_SG | PERF_PMU_CAP_AUX_SW_DOUBLEBUF;
++	err = bts_buffer_reset(buf, &bts->handle);
++	if (err)
++		perf_aux_output_end(&bts->handle, 0, false);
 +
-+	pt_pmu.pmu.capabilities	|= PERF_PMU_CAP_EXCLUSIVE | PERF_PMU_CAP_ITRACE;
-+	pt_pmu.pmu.attr_groups	= pt_attr_groups;
-+	pt_pmu.pmu.task_ctx_nr	= perf_hw_context;
-+	pt_pmu.pmu.event_init	= pt_event_init;
-+	pt_pmu.pmu.add		= pt_event_add;
-+	pt_pmu.pmu.del		= pt_event_del;
-+	pt_pmu.pmu.start	= pt_event_start;
-+	pt_pmu.pmu.stop		= pt_event_stop;
-+	pt_pmu.pmu.read		= pt_event_read;
-+	pt_pmu.pmu.setup_aux	= pt_buffer_setup_aux;
-+	pt_pmu.pmu.free_aux	= pt_buffer_free_aux;
-+	ret = perf_pmu_register(&pt_pmu.pmu, "intel_pt", -1);
-+
-+	return ret;
++	return 1;
 +}
 +
-+module_init(pt_init);
++static void bts_event_del(struct perf_event *event, int mode)
++{
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct bts_ctx *bts = this_cpu_ptr(&bts_ctx);
++	struct bts_buffer *buf = perf_get_aux(&bts->handle);
++
++	bts_event_stop(event, PERF_EF_UPDATE);
++
++	if (buf) {
++		if (buf->snapshot)
++			bts->handle.head =
++				local_xchg(&buf->data_size,
++					   buf->nr_pages << PAGE_SHIFT);
++		perf_aux_output_end(&bts->handle, local_xchg(&buf->data_size, 0),
++				    !!local_xchg(&buf->lost, 0));
++	}
++
++	cpuc->ds->bts_index = bts->ds_back.bts_buffer_base;
++	cpuc->ds->bts_buffer_base = bts->ds_back.bts_buffer_base;
++	cpuc->ds->bts_absolute_maximum = bts->ds_back.bts_absolute_maximum;
++	cpuc->ds->bts_interrupt_threshold = bts->ds_back.bts_interrupt_threshold;
++}
++
++static int bts_event_add(struct perf_event *event, int mode)
++{
++	struct bts_buffer *buf;
++	struct bts_ctx *bts = this_cpu_ptr(&bts_ctx);
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct hw_perf_event *hwc = &event->hw;
++	int ret = -EBUSY;
++
++	event->hw.state = PERF_HES_STOPPED;
++
++	if (test_bit(INTEL_PMC_IDX_FIXED_BTS, cpuc->active_mask))
++		return -EBUSY;
++
++	if (bts->handle.event)
++		return -EBUSY;
++
++	buf = perf_aux_output_begin(&bts->handle, event);
++	if (!buf)
++		return -EINVAL;
++
++	ret = bts_buffer_reset(buf, &bts->handle);
++	if (ret) {
++		perf_aux_output_end(&bts->handle, 0, false);
++		return ret;
++	}
++
++	bts->ds_back.bts_buffer_base = cpuc->ds->bts_buffer_base;
++	bts->ds_back.bts_absolute_maximum = cpuc->ds->bts_absolute_maximum;
++	bts->ds_back.bts_interrupt_threshold = cpuc->ds->bts_interrupt_threshold;
++
++	if (mode & PERF_EF_START) {
++		bts_event_start(event, 0);
++		if (hwc->state & PERF_HES_STOPPED) {
++			bts_event_del(event, 0);
++			return -EBUSY;
++		}
++	}
++
++	return 0;
++}
++
++static void bts_event_destroy(struct perf_event *event)
++{
++	x86_del_exclusive(x86_lbr_exclusive_bts);
++}
++
++static int bts_event_init(struct perf_event *event)
++{
++	if (event->attr.type != bts_pmu.type)
++		return -ENOENT;
++
++	if (x86_add_exclusive(x86_lbr_exclusive_bts))
++		return -EBUSY;
++
++	event->destroy = bts_event_destroy;
++
++	return 0;
++}
++
++static void bts_event_read(struct perf_event *event)
++{
++}
++
++static __init int bts_init(void)
++{
++	if (!boot_cpu_has(X86_FEATURE_DTES64) || !x86_pmu.bts)
++		return -ENODEV;
++
++	bts_pmu.capabilities	= PERF_PMU_CAP_AUX_NO_SG | PERF_PMU_CAP_ITRACE;
++	bts_pmu.task_ctx_nr	= perf_hw_context;
++	bts_pmu.event_init	= bts_event_init;
++	bts_pmu.add		= bts_event_add;
++	bts_pmu.del		= bts_event_del;
++	bts_pmu.start		= bts_event_start;
++	bts_pmu.stop		= bts_event_stop;
++	bts_pmu.read		= bts_event_read;
++	bts_pmu.setup_aux	= bts_buffer_setup_aux;
++	bts_pmu.free_aux	= bts_buffer_free_aux;
++
++	return perf_pmu_register(&bts_pmu, "intel_bts", -1);
++}
++
++module_init(bts_init);
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 495ae97936..6abb3fa970 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -461,7 +461,8 @@ void intel_pmu_enable_bts(u64 config)
+ 
+ 	debugctlmsr |= DEBUGCTLMSR_TR;
+ 	debugctlmsr |= DEBUGCTLMSR_BTS;
+-	debugctlmsr |= DEBUGCTLMSR_BTINT;
++	if (config & ARCH_PERFMON_EVENTSEL_INT)
++		debugctlmsr |= DEBUGCTLMSR_BTINT;
+ 
+ 	if (!(config & ARCH_PERFMON_EVENTSEL_OS))
+ 		debugctlmsr |= DEBUGCTLMSR_BTS_OFF_OS;
 -- 
 2.1.4
 
