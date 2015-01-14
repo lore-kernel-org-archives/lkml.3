@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755271AbbANHts (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:49:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58792 "EHLO
+	id S1755223AbbANHfc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:35:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58586 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933019AbbANHhh (ORCPT
+	with ESMTP id S1754029AbbANHf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:37:37 -0500
+	Wed, 14 Jan 2015 02:35:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Jackson <Andrew.Jackson@arm.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.10 10/44] ASoC: dwc: Ensure FIFOs are flushed to prevent channel swap
+        Benjamin Coddington <bcodding@redhat.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.14 51/77] nfsd4: fix xdr4 inclusion of escaped char
 Date: Tue, 13 Jan 2015 23:23:31 -0800
-Message-Id: <20150114072228.054259682@linuxfoundation.org>
+Message-Id: <20150114072227.063802577@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
-References: <20150114072227.419663002@linuxfoundation.org>
+In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
+References: <20150114072224.182299947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,55 +25,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Andrew Jackson <Andrew.Jackson@arm.com>
+From: Benjamin Coddington <bcodding@redhat.com>
 
-commit 3475c3d034d7f276a474c8bd53f44b48c8bf669d upstream.
+commit 5a64e56976f1ba98743e1678c0029a98e9034c81 upstream.
 
-Flush the FIFOs when the stream is prepared for use.  This avoids
-an inadvertent swapping of the left/right channels if the FIFOs are
-not empty at startup.
+Fix a bug where nfsd4_encode_components_esc() includes the esc_end char as
+an additional string encoding.
 
-Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Signed-off-by: Benjamin Coddington <bcodding@redhat.com>
+Fixes: e7a0444aef4a "nfsd: add IPv6 addr escaping to fs_location hosts"
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/dwc/designware_i2s.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ fs/nfsd/nfs4xdr.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/sound/soc/dwc/designware_i2s.c
-+++ b/sound/soc/dwc/designware_i2s.c
-@@ -263,6 +263,19 @@ static void dw_i2s_shutdown(struct snd_p
- 	snd_soc_dai_set_dma_data(dai, substream, NULL);
- }
- 
-+static int dw_i2s_prepare(struct snd_pcm_substream *substream,
-+			  struct snd_soc_dai *dai)
-+{
-+	struct dw_i2s_dev *dev = snd_soc_dai_get_drvdata(dai);
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -1809,6 +1809,9 @@ static __be32 nfsd4_encode_components_es
+ 		}
+ 		else
+ 			end++;
++		if (found_esc)
++			end = next;
 +
-+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-+		i2s_write_reg(dev->i2s_base, TXFFR, 1);
-+	else
-+		i2s_write_reg(dev->i2s_base, RXFFR, 1);
-+
-+	return 0;
-+}
-+
- static int dw_i2s_trigger(struct snd_pcm_substream *substream,
- 		int cmd, struct snd_soc_dai *dai)
- {
-@@ -294,6 +307,7 @@ static struct snd_soc_dai_ops dw_i2s_dai
- 	.startup	= dw_i2s_startup,
- 	.shutdown	= dw_i2s_shutdown,
- 	.hw_params	= dw_i2s_hw_params,
-+	.prepare	= dw_i2s_prepare,
- 	.trigger	= dw_i2s_trigger,
- };
- 
+ 		str = end;
+ 	}
+ 	*pp = p;
 
 
