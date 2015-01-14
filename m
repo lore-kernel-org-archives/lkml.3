@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323AbbANI2V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:28:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57926 "EHLO
+	id S1753255AbbANI1z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:27:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57918 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754454AbbANH16 (ORCPT
+	with ESMTP id S1754461AbbANH16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Jan 2015 02:27:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.18 078/150] ALSA: hda - using uninitialized data
-Date: Tue, 13 Jan 2015 23:22:29 -0800
-Message-Id: <20150114072059.372324137@linuxfoundation.org>
+        Clemens Ladisch <clemens@ladisch.de>,
+        Takashi Sakamoto <o-takashi@sakamocchi.jp>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.18 079/150] ALSA: fireworks: fix an endianness bug for transaction length
+Date: Tue, 13 Jan 2015 23:22:30 -0800
+Message-Id: <20150114072059.421531162@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -28,37 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Takashi Sakamoto <o-takashi@sakamocchi.jp>
 
-commit 69eba10e606a80665f8573221fec589430d9d1cb upstream.
+commit 92cb46584e104e2f4b14a44959109ffe13524a26 upstream.
 
-In olden times the snd_hda_param_read() function always set "*start_id"
-but in 2007 we introduced a new return and it causes uninitialized data
-bugs in a couple of the callers: print_codec_info() and
-hdmi_parse_codec().
+Although the 't->length' is a big-endian value, it's used without any
+conversion. This means that the driver always uses 'length' parameter.
 
-Fixes: e8a7f136f5ed ('[ALSA] hda-intel - Improve HD-audio codec probing robustness')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Fixes: 555e8a8f7f14("ALSA: fireworks: Add command/response functionality into hwdep interface")
+Reported-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Sakamoto <o-takashi@sakamocchi.jp>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_codec.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ sound/firewire/fireworks/fireworks_transaction.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/hda_codec.c
-+++ b/sound/pci/hda/hda_codec.c
-@@ -338,8 +338,10 @@ int snd_hda_get_sub_nodes(struct hda_cod
- 	unsigned int parm;
+--- a/sound/firewire/fireworks/fireworks_transaction.c
++++ b/sound/firewire/fireworks/fireworks_transaction.c
+@@ -124,7 +124,7 @@ copy_resp_to_buf(struct snd_efw *efw, vo
+ 	spin_lock_irq(&efw->lock);
  
- 	parm = snd_hda_param_read(codec, nid, AC_PAR_NODE_COUNT);
--	if (parm == -1)
-+	if (parm == -1) {
-+		*start_id = 0;
- 		return 0;
-+	}
- 	*start_id = (parm >> 16) & 0x7fff;
- 	return (int)(parm & 0x7fff);
- }
+ 	t = (struct snd_efw_transaction *)data;
+-	length = min_t(size_t, t->length * sizeof(t->length), length);
++	length = min_t(size_t, be32_to_cpu(t->length) * sizeof(u32), length);
+ 
+ 	if (efw->push_ptr < efw->pull_ptr)
+ 		capacity = (unsigned int)(efw->pull_ptr - efw->push_ptr);
 
 
