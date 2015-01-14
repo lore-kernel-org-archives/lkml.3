@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322AbbANKoe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 05:44:34 -0500
-Received: from cluster-g.mailcontrol.com ([208.87.233.190]:50230 "EHLO
-	cluster-g.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723AbbANKoc (ORCPT
+	id S1751593AbbANJ0i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 04:26:38 -0500
+Received: from exprod5og122.obsmtp.com ([64.18.0.192]:52741 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751221AbbANJ0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 05:44:32 -0500
-X-Greylist: delayed 4941 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Jan 2015 05:44:31 EST
-X-PGP-Universal: processed;
-	by shaapppus01.asia.root.pri on Wed, 14 Jan 2015 17:21:59 +0800
-From: Barry Song <Barry.Song@csr.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Valentin Rothberg <valentinrothberg@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: clocksource: marco: CONFIG_ARCH_ATLAS7?
-Thread-Topic: clocksource: marco: CONFIG_ARCH_ATLAS7?
-Thread-Index: AQHQL9rTlQACRIMDNUSU/ZkN3cVgpZy+0NPQ
-Date: Wed, 14 Jan 2015 09:21:53 +0000
-Message-ID: <5EB3BFCD089AD643B9BB63439F5FD5E90177A62F01@SHAASIEXM01.ASIA.ROOT.PRI>
-References: <1421225516.15397.41.camel@x220>
-In-Reply-To: <1421225516.15397.41.camel@x220>
-Accept-Language: en-US, zh-CN, en-GB
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.125.5.73]
+	Wed, 14 Jan 2015 04:26:35 -0500
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
-Content-Language: en-US
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1701652.4qUlzcU1j2@wuerfel>
+References: <1420628981-22774-1-git-send-email-rsahu@apm.com>
+	<1420628981-22774-2-git-send-email-rsahu@apm.com>
+	<CAFd313xp5rZZZSSKk-DDTC4ccY9ZucGgmWrc9oG-TiK2FMBS1g@mail.gmail.com>
+	<1701652.4qUlzcU1j2@wuerfel>
+Date: Wed, 14 Jan 2015 14:56:33 +0530
+Message-ID: <CAFd313zMoW86ZcXURrk2K+E6129L+BruOp4E0A=w0PQEcMr-Yw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] dmaengine: Add support for APM X-Gene SoC DMA
+ engine driver
+From: Rameshwar Sahu <rsahu@apm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: vinod.koul@intel.com, dan.j.williams@intel.com, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, ddutile@redhat.com,
+        jcm@redhat.com, patches@apm.com, Loc Ho <lho@apm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0EAilPA005623
 
-> 
-> -----Original Message-----
-> From: Paul Bolle [mailto:pebolle@tiscali.nl] 
-> Sent: 2015å¹´1æœˆ14æ—¥ 16:52
-> To: Barry Song
-> Cc: Valentin Rothberg; Arnd Bergmann; Daniel Lezcano; Thomas Gleixner; linux-kernel@vger.kernel.org
-> Subject: clocksource: marco: CONFIG_ARCH_ATLAS7?
-> 
-> Barry,
-> 
-> Your commit 81428bbe1d8a ("clocksource: marco: Rename marco to atlas7") is included in today's linux-next (ie, next-20150114). I noticed because a script I use to check linux-next spotted a problem.
-> 
-> See, your commit renames one reference to CONFIG_ARCH_MARCO to CONFIG_ARCH_ATLAS7. But there's no Kconfig symbol ARCH_ATLAS7 in linux-next yet. I assume that one or more patches to add ARCH_ATLAS7 (or to rename ARCH_MARCO to ARCH_ATLAS7) are queued somewhere. Is that correct?
-> 
-> 
-Yes, paul.
-It is queuing in arm-soc for refining my pull-request. Related patches have been acked by Arnd.
+Hi Arnd,
 
-> Paul Bolle
+
+
+
+
+Thanks,
+with regards,
+Ram
+
+
+On Tue, Jan 13, 2015 at 12:25 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 12 January 2015 14:40:09 Rameshwar Sahu wrote:
+>> > +
+>> > +       dma_set_mask_and_coherent(&pdev->dev,
+>> > +                                 (sizeof(dma_addr_t) == sizeof(u64)) ?
+>> > +                                 DMA_BIT_MASK(64) : DMA_BIT_MASK(32));
+>> > +
+>>
 >
+> I commented on this on v1 already: always set the device specific mask here,
+> it's independent of the CPU architecture, but do check the return value.
+>
+Got it, I will set first 64 bit dma mask here  due to device support
+64 bit address dma operations, and fall down to 32 - bit in case
+failure with 64 bit.
 
--barry
 
+> Also add the correct dma-ranges property in the parent, or else this will
+> fail in the future once we add proper checks to dma_set_mask.
 
+I see arch/arm64 kernel doesn't use dma range value parsed from
+dma-range property currently, I will check it more.
+It doesn't use dma_pfn_offset value calculated by the dma-ranges in
+dma mapping API.
+dma-ranges value should test properly before adding.
+Is there any use to add this dma-ranges properly if arch code doesn't support ??
 
-Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
-More information can be found at www.csr.com. Keep up to date with CSR on our technical blog, www.csr.com/blog, CSR people blog, www.csr.com/people, YouTube, www.youtube.com/user/CSRplc, Facebook, www.facebook.com/pages/CSR/191038434253534, or follow us on Twitter at www.twitter.com/CSR_plc.
-New for 2014, you can now access the wide range of products powered by aptX at www.aptx.com.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>
+>         Arnd
