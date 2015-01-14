@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932301AbbANHkj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:40:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59020 "EHLO
+	id S1754910AbbANHcI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:32:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58325 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932173AbbANHjx (ORCPT
+	with ESMTP id S1754146AbbANHcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:39:53 -0500
+	Wed, 14 Jan 2015 02:32:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Joerg Roedel <jroedel@suse.de>
-Subject: [PATCH 3.10 16/44] iommu/vt-d: Fix an off-by-one bug in __domain_mapping()
+        Oleg Nesterov <oleg@redhat.com>, Arne Goedeke <el@laramies.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.18 146/150] exit: fix race between wait_consider_task() and wait_task_zombie()
 Date: Tue, 13 Jan 2015 23:23:37 -0800
-Message-Id: <20150114072228.421900683@linuxfoundation.org>
+Message-Id: <20150114072102.456318034@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
-References: <20150114072227.419663002@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,58 +26,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jiang Liu <jiang.liu@linux.intel.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit cc4f14aa170d895c9a43bdb56f62070c8a6da908 upstream.
+commit 3245d6acab981a2388ffb877c7ecc97e763c59d4 upstream.
 
-There's an off-by-one bug in function __domain_mapping(), which may
-trigger the BUG_ON(nr_pages < lvl_pages) when
-	(nr_pages + 1) & superpage_mask == 0
+wait_consider_task() checks EXIT_ZOMBIE after EXIT_DEAD/EXIT_TRACE and
+both checks can fail if we race with EXIT_ZOMBIE -> EXIT_DEAD/EXIT_TRACE
+change in between, gcc needs to reload p->exit_state after
+security_task_wait().  In this case ->notask_error will be wrongly
+cleared and do_wait() can hang forever if it was the last eligible
+child.
 
-The issue was introduced by commit 9051aa0268dc "intel-iommu: Combine
-domain_pfn_mapping() and domain_sg_mapping()", which sets sg_res to
-"nr_pages + 1" to avoid some of the 'sg_res==0' code paths.
+Many thanks to Arne who carefully investigated the problem.
 
-It's safe to remove extra "+1" because sg_res is only used to calculate
-page size now.
+Note: this bug is very old but it was pure theoretical until commit
+b3ab03160dfa ("wait: completely ignore the EXIT_DEAD tasks").  Before
+this commit "-O2" was probably enough to guarantee that compiler won't
+read ->exit_state twice.
 
-Reported-And-Tested-by: Sudeep Dutt <sudeep.dutt@intel.com>
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Acked-By: David Woodhouse <David.Woodhouse@intel.com>
-Signed-off-by: Joerg Roedel <jroedel@suse.de>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Arne Goedeke <el@laramies.com>
+Tested-by: Arne Goedeke <el@laramies.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/intel-iommu.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ kernel/exit.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -1796,7 +1796,7 @@ static int __domain_mapping(struct dmar_
- 	struct dma_pte *first_pte = NULL, *pte = NULL;
- 	phys_addr_t uninitialized_var(pteval);
- 	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
--	unsigned long sg_res;
-+	unsigned long sg_res = 0;
- 	unsigned int largepage_lvl = 0;
- 	unsigned long lvl_pages = 0;
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1302,9 +1302,15 @@ static int wait_task_continued(struct wa
+ static int wait_consider_task(struct wait_opts *wo, int ptrace,
+ 				struct task_struct *p)
+ {
++	/*
++	 * We can race with wait_task_zombie() from another thread.
++	 * Ensure that EXIT_ZOMBIE -> EXIT_DEAD/EXIT_TRACE transition
++	 * can't confuse the checks below.
++	 */
++	int exit_state = ACCESS_ONCE(p->exit_state);
+ 	int ret;
  
-@@ -1807,10 +1807,8 @@ static int __domain_mapping(struct dmar_
+-	if (unlikely(p->exit_state == EXIT_DEAD))
++	if (unlikely(exit_state == EXIT_DEAD))
+ 		return 0;
  
- 	prot &= DMA_PTE_READ | DMA_PTE_WRITE | DMA_PTE_SNP;
- 
--	if (sg)
--		sg_res = 0;
--	else {
--		sg_res = nr_pages + 1;
-+	if (!sg) {
-+		sg_res = nr_pages;
- 		pteval = ((phys_addr_t)phys_pfn << VTD_PAGE_SHIFT) | prot;
+ 	ret = eligible_child(wo, p);
+@@ -1325,7 +1331,7 @@ static int wait_consider_task(struct wai
+ 		return 0;
  	}
  
+-	if (unlikely(p->exit_state == EXIT_TRACE)) {
++	if (unlikely(exit_state == EXIT_TRACE)) {
+ 		/*
+ 		 * ptrace == 0 means we are the natural parent. In this case
+ 		 * we should clear notask_error, debugger will notify us.
+@@ -1352,7 +1358,7 @@ static int wait_consider_task(struct wai
+ 	}
+ 
+ 	/* slay zombie? */
+-	if (p->exit_state == EXIT_ZOMBIE) {
++	if (exit_state == EXIT_ZOMBIE) {
+ 		/* we don't reap group leaders with subthreads */
+ 		if (!delay_group_leader(p)) {
+ 			/*
 
 
