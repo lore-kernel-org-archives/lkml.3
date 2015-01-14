@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755102AbbANHcn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:32:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58382 "EHLO
+	id S1755414AbbANHun (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:50:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58789 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754239AbbANHcl (ORCPT
+	with ESMTP id S1755270AbbANHhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:32:41 -0500
+	Wed, 14 Jan 2015 02:37:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 3.18 131/150] arm64: kernel: fix __cpu_suspend mm switch on warm-boot
+        Junxiao Bi <junxiao.bi@oracle.com>,
+        Wengang Wang <wen.gang.wang@oracle.com>, Mark Fasheh <mfasheh@suse.de>,
+        Joel Becker <jlbec@evilplan.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 01/44] ocfs2: fix journal commit deadlock
 Date: Tue, 13 Jan 2015 23:23:22 -0800
-Message-Id: <20150114072101.787257246@linuxfoundation.org>
+Message-Id: <20150114072227.497329446@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
-References: <20150114072055.842408181@linuxfoundation.org>
+In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
+References: <20150114072227.419663002@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,75 +28,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
-commit f43c27188a49111b58e9611afa2f0365b0b55625 upstream.
+commit 136f49b9171074872f2a14ad0ab10486d1ba13ca upstream.
 
-On arm64 the TTBR0_EL1 register is set to either the reserved TTBR0
-page tables on boot or to the active_mm mappings belonging to user space
-processes, it must never be set to swapper_pg_dir page tables mappings.
+For buffer write, page lock will be got in write_begin and released in
+write_end, in ocfs2_write_end_nolock(), before it unlock the page in
+ocfs2_free_write_ctxt(), it calls ocfs2_run_deallocs(), this will ask
+for the read lock of journal->j_trans_barrier.  Holding page lock and
+ask for journal->j_trans_barrier breaks the locking order.
 
-When a CPU is booted its active_mm is set to init_mm even though its
-TTBR0_EL1 points at the reserved TTBR0 page mappings. This implies
-that when __cpu_suspend is triggered the active_mm can point at
-init_mm even if the current TTBR0_EL1 register contains the reserved
-TTBR0_EL1 mappings.
+This will cause a deadlock with journal commit threads, ocfs2cmt will
+get write lock of journal->j_trans_barrier first, then it wakes up
+kjournald2 to do the commit work, at last it waits until done.  To
+commit journal, kjournald2 needs flushing data first, it needs get the
+cache page lock.
 
-Therefore, the mm save and restore executed in __cpu_suspend might
-turn out to be erroneous in that, if the current->active_mm corresponds
-to init_mm, on resume from low power it ends up restoring in the
-TTBR0_EL1 the init_mm mappings that are global and can cause speculation
-of TLB entries which end up being propagated to user space.
+Since some ocfs2 cluster locks are holding by write process, this
+deadlock may hung the whole cluster.
 
-This patch fixes the issue by checking the active_mm pointer before
-restoring the TTBR0 mappings. If the current active_mm == &init_mm,
-the code sets the TTBR0_EL1 to the reserved TTBR0 mapping instead of
-switching back to the active_mm, which is the expected behaviour
-corresponding to the TTBR0_EL1 settings when __cpu_suspend was entered.
+unlock pages before ocfs2_run_deallocs() can fix the locking order, also
+put unlock before ocfs2_commit_trans() to make page lock is unlocked
+before j_trans_barrier to preserve unlocking order.
 
-Fixes: 95322526ef62 ("arm64: kernel: cpu_{suspend/resume} implementation")
-Cc: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Reviewed-by: Wengang Wang <wen.gang.wang@oracle.com>
+Reviewed-by: Mark Fasheh <mfasheh@suse.de>
+Cc: Joel Becker <jlbec@evilplan.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/kernel/suspend.c |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ fs/ocfs2/aops.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
---- a/arch/arm64/kernel/suspend.c
-+++ b/arch/arm64/kernel/suspend.c
-@@ -5,6 +5,7 @@
- #include <asm/debug-monitors.h>
- #include <asm/pgtable.h>
- #include <asm/memory.h>
-+#include <asm/mmu_context.h>
- #include <asm/smp_plat.h>
- #include <asm/suspend.h>
- #include <asm/tlbflush.h>
-@@ -98,7 +99,18 @@ int __cpu_suspend(unsigned long arg, int
- 	 */
- 	ret = __cpu_suspend_enter(arg, fn);
- 	if (ret == 0) {
--		cpu_switch_mm(mm->pgd, mm);
-+		/*
-+		 * We are resuming from reset with TTBR0_EL1 set to the
-+		 * idmap to enable the MMU; restore the active_mm mappings in
-+		 * TTBR0_EL1 unless the active_mm == &init_mm, in which case
-+		 * the thread entered __cpu_suspend with TTBR0_EL1 set to
-+		 * reserved TTBR0 page tables and should be restored as such.
-+		 */
-+		if (mm == &init_mm)
-+			cpu_set_reserved_ttbr0();
-+		else
-+			cpu_switch_mm(mm->pgd, mm);
-+
- 		flush_tlb_all();
+--- a/fs/ocfs2/aops.c
++++ b/fs/ocfs2/aops.c
+@@ -917,7 +917,7 @@ void ocfs2_unlock_and_free_pages(struct
+ 	}
+ }
  
- 		/*
+-static void ocfs2_free_write_ctxt(struct ocfs2_write_ctxt *wc)
++static void ocfs2_unlock_pages(struct ocfs2_write_ctxt *wc)
+ {
+ 	int i;
+ 
+@@ -938,7 +938,11 @@ static void ocfs2_free_write_ctxt(struct
+ 		page_cache_release(wc->w_target_page);
+ 	}
+ 	ocfs2_unlock_and_free_pages(wc->w_pages, wc->w_num_pages);
++}
+ 
++static void ocfs2_free_write_ctxt(struct ocfs2_write_ctxt *wc)
++{
++	ocfs2_unlock_pages(wc);
+ 	brelse(wc->w_di_bh);
+ 	kfree(wc);
+ }
+@@ -2060,11 +2064,19 @@ out_write_size:
+ 	di->i_mtime_nsec = di->i_ctime_nsec = cpu_to_le32(inode->i_mtime.tv_nsec);
+ 	ocfs2_journal_dirty(handle, wc->w_di_bh);
+ 
++	/* unlock pages before dealloc since it needs acquiring j_trans_barrier
++	 * lock, or it will cause a deadlock since journal commit threads holds
++	 * this lock and will ask for the page lock when flushing the data.
++	 * put it here to preserve the unlock order.
++	 */
++	ocfs2_unlock_pages(wc);
++
+ 	ocfs2_commit_trans(osb, handle);
+ 
+ 	ocfs2_run_deallocs(osb, &wc->w_dealloc);
+ 
+-	ocfs2_free_write_ctxt(wc);
++	brelse(wc->w_di_bh);
++	kfree(wc);
+ 
+ 	return copied;
+ }
 
 
