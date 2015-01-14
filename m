@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756232AbbANIuK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:50:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57652 "EHLO
+	id S1756168AbbANIuI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:50:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57655 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752387AbbANHZT (ORCPT
+	with ESMTP id S1752401AbbANHZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Jan 2015 02:25:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Binderman <dcb314@hotmail.com>, Jyri Sarha <jsarha@ti.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.18 022/150] ASoC: tlv320aic31xx: Fix off by one error in the loop stucture.
-Date: Tue, 13 Jan 2015 23:21:33 -0800
-Message-Id: <20150114072056.868795797@linuxfoundation.org>
+        Peter Rosin <peda@axentia.se>, Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.18 023/150] ASoC: pcm512x: Trigger auto-increment of register addresses on i2c
+Date: Tue, 13 Jan 2015 23:21:34 -0800
+Message-Id: <20150114072056.918341238@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -29,42 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jyri Sarha <jsarha@ti.com>
+From: Peter Rosin <peda@axentia.se>
 
-commit bbc686b34650b0f54affe9d9a637ccbe02b03760 upstream.
+commit 681a19560378213a193c424881b2180a783b81ae upstream.
 
-Fix off by one read beyond the end of a table.
+When the codec is connected using i2c, it will only auto-increment
+register addresses if msb (0x80) of the register address byte is set.
 
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Jyri Sarha <jsarha@ti.com>
+[Fixes cache sync if multiple adjacent registers are updated -- broonie]
+
+Signed-off-by: Peter Rosin <peda@axentia.se>
 Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/tlv320aic31xx.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ sound/soc/codecs/pcm512x-i2c.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/sound/soc/codecs/tlv320aic31xx.c
-+++ b/sound/soc/codecs/tlv320aic31xx.c
-@@ -911,12 +911,13 @@ static int aic31xx_set_dai_sysclk(struct
- 	}
- 	aic31xx->p_div = i;
+--- a/sound/soc/codecs/pcm512x-i2c.c
++++ b/sound/soc/codecs/pcm512x-i2c.c
+@@ -24,8 +24,13 @@ static int pcm512x_i2c_probe(struct i2c_
+ 			     const struct i2c_device_id *id)
+ {
+ 	struct regmap *regmap;
++	struct regmap_config config = pcm512x_regmap;
  
--	for (i = 0; aic31xx_divs[i].mclk_p != freq/aic31xx->p_div; i++) {
--		if (i == ARRAY_SIZE(aic31xx_divs)) {
--			dev_err(aic31xx->dev, "%s: Unsupported frequency %d\n",
--				__func__, freq);
--			return -EINVAL;
--		}
-+	for (i = 0; i < ARRAY_SIZE(aic31xx_divs) &&
-+		     aic31xx_divs[i].mclk_p != freq/aic31xx->p_div; i++)
-+		;
-+	if (i == ARRAY_SIZE(aic31xx_divs)) {
-+		dev_err(aic31xx->dev, "%s: Unsupported frequency %d\n",
-+			__func__, freq);
-+		return -EINVAL;
- 	}
+-	regmap = devm_regmap_init_i2c(i2c, &pcm512x_regmap);
++	/* msb needs to be set to enable auto-increment of addresses */
++	config.read_flag_mask = 0x80;
++	config.write_flag_mask = 0x80;
++
++	regmap = devm_regmap_init_i2c(i2c, &config);
+ 	if (IS_ERR(regmap))
+ 		return PTR_ERR(regmap);
  
- 	/* set clock on MCLK, BCLK, or GPIO1 as PLL input */
 
 
