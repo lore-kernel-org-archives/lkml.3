@@ -1,92 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966AbbANIWl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:22:41 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:41098 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752603AbbANIWj (ORCPT
+	id S1751946AbbANIY5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:24:57 -0500
+Received: from mail-we0-f171.google.com ([74.125.82.171]:43560 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060AbbANIYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 03:22:39 -0500
-Date: Wed, 14 Jan 2015 09:22:35 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
+	Wed, 14 Jan 2015 03:24:54 -0500
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+To: LFBDEV <linux-fbdev@vger.kernel.org>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 1/5] irqchip: add dumb demultiplexer implementation
-Message-ID: <20150114092235.032dc986@bbrezillon>
-In-Reply-To: <CAL_JsqJ5DSo6jmAuHPDdV6pMca8BVbg5V-GZ5=2qu96_QYXMtQ@mail.gmail.com>
-References: <1421174781-4340-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1421174781-4340-2-git-send-email-boris.brezillon@free-electrons.com>
-	<CAL_JsqJ5DSo6jmAuHPDdV6pMca8BVbg5V-GZ5=2qu96_QYXMtQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH] fbdev: ssd1307fb: return proper error code if write command fails
+Date: Wed, 14 Jan 2015 08:24:49 +0000
+Message-Id: <1421223889-9448-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
+this patch fixes ssd1307fb_ssd1306_init() function to return
+proper error codes in case of failures.
 
-On Tue, 13 Jan 2015 21:26:42 -0600
-Rob Herring <robherring2@gmail.com> wrote:
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ drivers/video/fbdev/ssd1307fb.c | 54 ++++++++++++++++++++++++++++++-----------
+ 1 file changed, 40 insertions(+), 14 deletions(-)
 
-> On Tue, Jan 13, 2015 at 12:46 PM, Boris Brezillon
-> <boris.brezillon@free-electrons.com> wrote:
-> > Some interrupt controllers are multiplexing several peripheral IRQs on
-> > a single interrupt line.
-> > While this is not a problem for most IRQs (as long as all peripherals
-> > request the interrupt with IRQF_SHARED flag set), multiplexing timers and
-> > other type of peripherals will generate a WARNING (mixing IRQF_NO_SUSPEND
-> > and !IRQF_NO_SUSPEND is prohibited).
-> >
-> > Create a dumb irq demultiplexer which simply forwards interrupts to all
-> > peripherals (exactly what's happening with IRQ_SHARED) but keep a unique
-> > irq number for each peripheral, thus preventing the IRQF_NO_SUSPEND
-> > and !IRQF_NO_SUSPEND mix on a given interrupt.
-> 
-> This really seems like a work-around for how IRQF_SHARED works. It
-> seems like what is really desired is just per handler disabling.
-
-Like what I proposed here [1] ?
-
-> It is
-> fragile in that devices can deadlock the system if the drivers don't
-> disable the interrupt source before calling disable_irq.
-
-Not exactly deadlock since spurious interrupt detection is implemented,
-but yes, things won't work as expected.
-
-> But unlike
-> IRQF_SHARED, there is nothing explicit in the driver indicating it is
-> designed to work properly with a shared interrupt line.
-> 
-> I see no reason to accept this into DT either. We already can support
-> shared lines and modeling an OR gate as an interrupt controller is
-> pointless.
-
-Okay, I guess I'll let DT and irq maintainers decide what is preferable
-here (I already spent much time than I first expected to remove this
-warning in a proper way).
-
-Best Regards,
-
-Boris
-
-[1]https://lkml.org/lkml/2014/12/15/552
-
+diff --git a/drivers/video/fbdev/ssd1307fb.c b/drivers/video/fbdev/ssd1307fb.c
+index f4daa59..528ea16 100644
+--- a/drivers/video/fbdev/ssd1307fb.c
++++ b/drivers/video/fbdev/ssd1307fb.c
+@@ -320,7 +320,9 @@ static int ssd1307fb_ssd1306_init(struct ssd1307fb_par *par)
+ 
+ 	/* Set initial contrast */
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_CONTRAST);
+-	ret = ret & ssd1307fb_write_cmd(par->client, 0x7f);
++	if (ret < 0)
++		return ret;
++	ret = ssd1307fb_write_cmd(par->client, 0x7f);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -336,63 +338,87 @@ static int ssd1307fb_ssd1306_init(struct ssd1307fb_par *par)
+ 
+ 	/* Set multiplex ratio value */
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_MULTIPLEX_RATIO);
+-	ret = ret & ssd1307fb_write_cmd(par->client, par->height - 1);
++	if (ret < 0)
++		return ret;
++	ret = ssd1307fb_write_cmd(par->client, par->height - 1);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	/* set display offset value */
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_DISPLAY_OFFSET);
++	if (ret < 0)
++		return ret;
+ 	ret = ssd1307fb_write_cmd(par->client, 0x20);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	/* Set clock frequency */
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_CLOCK_FREQ);
+-	ret = ret & ssd1307fb_write_cmd(par->client, 0xf0);
++	if (ret < 0)
++		return ret;
++	ret = ssd1307fb_write_cmd(par->client, 0xf0);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	/* Set precharge period in number of ticks from the internal clock */
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_PRECHARGE_PERIOD);
+-	ret = ret & ssd1307fb_write_cmd(par->client, 0x22);
++	if (ret < 0)
++		return ret;
++	ret = ssd1307fb_write_cmd(par->client, 0x22);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	/* Set COM pins configuration */
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_COM_PINS_CONFIG);
+-	ret = ret & ssd1307fb_write_cmd(par->client, 0x22);
++	if (ret < 0)
++		return ret;
++	ret = ssd1307fb_write_cmd(par->client, 0x22);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	/* Set VCOMH */
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_VCOMH);
+-	ret = ret & ssd1307fb_write_cmd(par->client, 0x49);
++	if (ret < 0)
++		return ret;
++	ret = ssd1307fb_write_cmd(par->client, 0x49);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	/* Turn on the DC-DC Charge Pump */
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_CHARGE_PUMP);
+-	ret = ret & ssd1307fb_write_cmd(par->client, 0x14);
++	if (ret < 0)
++		return ret;
++	ret = ssd1307fb_write_cmd(par->client, 0x14);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	/* Switch to horizontal addressing mode */
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_ADDRESS_MODE);
+-	ret = ret & ssd1307fb_write_cmd(par->client,
+-					SSD1307FB_SET_ADDRESS_MODE_HORIZONTAL);
++	if (ret < 0)
++		return ret;
++	ret = ssd1307fb_write_cmd(par->client,
++				  SSD1307FB_SET_ADDRESS_MODE_HORIZONTAL);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_COL_RANGE);
+-	ret = ret & ssd1307fb_write_cmd(par->client, 0x0);
+-	ret = ret & ssd1307fb_write_cmd(par->client, par->width - 1);
++	if (ret < 0)
++		return ret;
++	ret = ssd1307fb_write_cmd(par->client, 0x0);
++	if (ret < 0)
++		return ret;
++	ret = ssd1307fb_write_cmd(par->client, par->width - 1);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_PAGE_RANGE);
+-	ret = ret & ssd1307fb_write_cmd(par->client, 0x0);
+-	ret = ret & ssd1307fb_write_cmd(par->client,
+-					par->page_offset + (par->height / 8) - 1);
++	if (ret < 0)
++		return ret;
++	ret = ssd1307fb_write_cmd(par->client, 0x0);
++	if (ret < 0)
++		return ret;
++	ret = ssd1307fb_write_cmd(par->client,
++				  par->page_offset + (par->height / 8) - 1);
+ 	if (ret < 0)
+ 		return ret;
+ 
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+1.9.1
+
