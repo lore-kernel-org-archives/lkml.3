@@ -1,66 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164AbbANJdS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 04:33:18 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:43781 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501AbbANJdJ (ORCPT
+	id S1753346AbbANJei (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 04:34:38 -0500
+Received: from smtp-out-243.synserver.de ([212.40.185.243]:1094 "EHLO
+	smtp-out-243.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250AbbANJef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 04:33:09 -0500
-Date: Wed, 14 Jan 2015 01:33:02 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Bart Van Assche <bvanassche@acm.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Hannes Reinecke <hare@suse.de>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH for v3.19, v2] Avoid that sd_shutdown() triggers a kernel
- warning
-Message-ID: <20150114093302.GA17532@infradead.org>
-References: <20150108131508.GA31022@infradead.org>
- <Pine.LNX.4.44L0.1501121116220.1707-100000@iolanthe.rowland.org>
+	Wed, 14 Jan 2015 04:34:35 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 27499
+Message-ID: <54B63828.6030408@metafoo.de>
+Date: Wed, 14 Jan 2015 10:34:32 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1501121116220.1707-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: jiwang <jiada_wang@mentor.com>, Takashi Iwai <tiwai@suse.de>,
+        Mark Brown <broonie@kernel.org>
+CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "Frkuska, Joshua" <Joshua_Frkuska@mentor.com>
+Subject: Re: [alsa-devel] unload Audio drivers while playback stream is active
+ case kernel crash
+References: <857E9EDCA6C0904DB3357321AA9123EB0108B66919@NA-MBX-01.mgc.mentorg.com> <s5h1tmyiof7.wl-tiwai@suse.de> <20150113215412.GS4160@sirena.org.uk> <s5hr3ux24em.wl-tiwai@suse.de> <54B625A8.8090406@metafoo.de> <54B627F0.90207@mentor.com>
+In-Reply-To: <54B627F0.90207@mentor.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 11:29:15AM -0500, Alan Stern wrote:
-> This seems like a good idea and the obvious (once it has been pointed 
-> out!) approach.
-> 
-> Perhaps not directly related to the issue at hand is this question: In
-> scsi_rescan_device() we will now have:
-> 
-> 	mutex_lock(&shost->scan_mutex);
-> 	if (dev->driver && try_module_get(dev->driver->owner)) {
-> 		struct scsi_driver *drv = to_scsi_driver(dev->driver);
-> 
-> 		if (drv->rescan)
-> 			drv->rescan(dev);
-> 		module_put(dev->driver->owner);
-> 	}
-> 	mutex_unlock(&shost->scan_mutex);
-> 
-> What prevents the device from being unbound from its driver while the
-> rescan runs?  Evaluating the argument to the module_put() would then
-> dereference a NULL pointer.
-> 
-> Unbind events that happen through the normal scsi_remove_host() 
-> mechanism are fine, because scsi_remove_host() locks the scan_mutex.  
-> But what about writes to the driver's sysfs "unbind" attribute?
+On 01/14/2015 09:25 AM, jiwang wrote:
+> Hi
+>
+> On 01/14/2015 05:15 PM, Lars-Peter Clausen wrote:
+>> On 01/14/2015 08:43 AM, Takashi Iwai wrote:
+>>> At Tue, 13 Jan 2015 21:54:12 +0000,
+>>> Mark Brown wrote:
+>>>>
+>>>> On Tue, Jan 13, 2015 at 06:24:44PM +0100, Takashi Iwai wrote:
+>>>>> Wang, Jiada (ESD) wrote:
+>>>>
+>>>>>> I am using i.MX6Q sabreSD board, which have imx_wm892 machine driver,
+>>>>>> wm8962 codec and SSI CPU DAI,
+>>>>
+>>>>>> I got Kernel crash when unloading audio drivers (playback stream is
+>>>>>> active)
+>>>>>> modprobe -r snd_soc_imx_wm8962
+>>>>>> modprobe -r snd_soc_fsl_ssi
+>>>>>> modprobe -r snd_soc_wm8962
+>>>>
+>>>>> The root problem is that you can unload the module while playing.
+>>>>> The corresponding module refcounts should have been increased during
+>>>>> used.
+>>>>
+>>>>> Do we miss [try_]module_get() somewhere in ASoC?
+>>>>
+>>>> That doesn't help, users can still forcibly unbind the driver at runtime
+>>>> without loading the module - and there's always the potential for
+>>>> actually hotpluggable hardware.  The teardown paths should be able to
+>>>> cope somewhat gracefully.
+>>>
+>>> The module refcount has to be handled while being used for stopping
+>>> module unload.  That's irrelevant from the dynamic unbinding support
+>>> itself.  Of course, the module refcount doesn't save the world, but
+>>> it's the right fix for this particular scenario.
+>>
+>> Refcounting won't help in this case. The issue is caused by a delayed work
+>> item that gets launched when the PCM stream is stopped. So if you decrease
+>> the refcount when the stream is stopped you still have a window where it
+>> is possible to remove the module while the work is still being scheduled.
+>>
+>> And while we do flush the scheduled work when we remove the ASoC card this
+>> is done before snd_card_free() is called. So when snd_card_free() is
+>> called it gets re-scheduled again. I think the correct fix is to add a
+>> snd_card_disconnect() at the very top of soc_cleanup_card_resources().
+>>
+> when stream is active, snd_card_disconnect() will trigger pcm_close() be
+> executed by another thread,
+> we can't ensure the pcm_close() is executed before the rest of
+> soc_cleanup_card_resources().
 
-Looks like we should still get an unconditional reference to
-the device using get_device in scsi_rescan_device at least.
+Hm right, because that only gets called once the userspace application 
+finally closes the PCM device. Takashi approach with moving things to the 
+card_free callback might work better.
 
-But this seems like a more generic problem, and at least a quick glance at
-the pci_driver methods seems like others don't have a good
-synchroniation of ->remove against random driver methods.
+- Lars
+
