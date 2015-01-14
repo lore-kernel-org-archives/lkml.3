@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577AbbANCnn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 21:43:43 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:43148 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921AbbANCnm (ORCPT
+	id S1751991AbbANCqL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 21:46:11 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:44050 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751086AbbANCqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 21:43:42 -0500
-From: Chris Zhong <zyw@rock-chips.com>
-To: akpm@linux-foundation.org
-Cc: dianders@chromium.org, heiko@sntech.de, linux-rockchip@lists.infradead.org,
-        Chris Zhong <zyw@rock-chips.com>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] RTC: RK808: fix the rtc time reading issue
-Date: Wed, 14 Jan 2015 10:43:32 +0800
-Message-Id: <1421203412-5159-1-git-send-email-zyw@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 13 Jan 2015 21:46:10 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="56023549"
+Message-ID: <54B5D8B4.7010708@cn.fujitsu.com>
+Date: Wed, 14 Jan 2015 10:47:16 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?IklzaGltYXRzdSwgWWFzdWFraS/nn7Pmnb4g6Z2W56ugIg==?= 
+	<isimatu.yasuaki@jp.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>
+Subject: Re: [PATCH 1/2] workqueue: update numa affinity info at node hotplug
+References: <54905F87.2030302@jp.fujitsu.com> <549061BD.3040802@jp.fujitsu.com> <5490DE23.9000602@cn.fujitsu.com> <5490F70E.4010703@jp.fujitsu.com> <54910CFD.4070203@jp.fujitsu.com> <20141225201156.GA22951@htj.dyndns.org> <54B4C6ED.9060501@cn.fujitsu.com> <20150113152224.GA2976@htj.dyndns.org>
+In-Reply-To: <20150113152224.GA2976@htj.dyndns.org>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After we set the GET_TIME bit, the rtc time couldn't be read immediately,
-we should wait up to 31.25 us, about one cycle of 32khz. Otherwise reading
-RTC time will return a old time. If clear the GET_TIME bit after setting,
-the time of i2c transfer certainly more than 31.25us.
+On 01/13/2015 11:22 PM, Tejun Heo wrote:
+> Hello,
+> 
+> On Tue, Jan 13, 2015 at 03:19:09PM +0800, Lai Jiangshan wrote:
+>> The Mapping of the *online* cpus to nodes is already maintained by numa code.
+>>
+>> What the workqueue needs is a special Mapping:
+>> 	The Mapping of the *possible* cpus to nodes
+>>
+>> But this mapping (if the numa code maintain it) is a trouble:
+>> 	"possible" implies the mapping is stable/constant/immutable, it is hard to
+>> 	ensure it in the numa code.
+>>
+>> if mutability of this mapping is acceptable, we just move 20~40 LOC
+>> of code from workqueue to numa code, all the other complexities
+>> about it are still in workqueue.c.
+> 
+> Make numa code maintain the mapping to the best of its knowledge and
+> invoke notification callbacks when it changes.  
 
-Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+The best of its knowledge is the physical onlined nodes and CPUs.
+The cpu_present_mask can represent this knowledge. But it lacks of
+the per-node cpu_present_mask and the notification callbacks.
 
----
+> Even if that involves slightly more code, that's the right thing to do at this point.
 
- drivers/rtc/rtc-rk808.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+Right, but in currently, the workqueue will be the only user, and I don't known
+asking who to do it, so I may keep it in the workqueue.c.
 
-diff --git a/drivers/rtc/rtc-rk808.c b/drivers/rtc/rtc-rk808.c
-index df42257..8dae322 100644
---- a/drivers/rtc/rtc-rk808.c
-+++ b/drivers/rtc/rtc-rk808.c
-@@ -67,15 +67,20 @@ static int rk808_rtc_readtime(struct device *dev, struct rtc_time *tm)
- 	/* Force an update of the shadowed registers right now */
- 	ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
- 				 BIT_RTC_CTRL_REG_RTC_GET_TIME,
--				 0);
-+				 BIT_RTC_CTRL_REG_RTC_GET_TIME);
- 	if (ret) {
- 		dev_err(dev, "Failed to update bits rtc_ctrl: %d\n", ret);
- 		return ret;
- 	}
- 
-+	/* After we set the GET_TIME bit, the rtc time couldn't be read
-+	 * immediately, we should wait up to 31.25 us, about one cycle of
-+	 * 32khz. If we clear the GET_TIME bit here, the time of i2c transfer
-+	 * certainly more than 31.25us.
-+	 */
- 	ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
- 				 BIT_RTC_CTRL_REG_RTC_GET_TIME,
--				 BIT_RTC_CTRL_REG_RTC_GET_TIME);
-+				 0);
- 	if (ret) {
- 		dev_err(dev, "Failed to update bits rtc_ctrl: %d\n", ret);
- 		return ret;
--- 
-1.9.1
+> This puts the logic which is complicated by the fact that the mapping may
+> change where it's caused not some random unrelated place.  
+
+
+> It'd be
+> awesome if somebody more familiar with the numa side can chime in and
+> explain why this mapping change can't be avoided.
+
+I'm also looking for someone answer it.
+
+> 
+> Thanks.
+> 
 
