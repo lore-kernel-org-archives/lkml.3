@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755337AbbANHiz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:38:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58886 "EHLO
+	id S932866AbbANHgW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:36:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58674 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755041AbbANHis (ORCPT
+	with ESMTP id S1754692AbbANHgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:38:48 -0500
+	Wed, 14 Jan 2015 02:36:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Schubert <2+kernel@0x2c.org>
-Subject: [PATCH 3.10 28/44] USB: cdc-acm: check for valid interfaces
+        Chris Mason <clm@fb.com>
+Subject: [PATCH 3.14 69/77] Btrfs: dont delay inode ref updates during log replay
 Date: Tue, 13 Jan 2015 23:23:49 -0800
-Message-Id: <20150114072229.050091354@linuxfoundation.org>
+Message-Id: <20150114072228.126781053@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
-References: <20150114072227.419663002@linuxfoundation.org>
+In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
+References: <20150114072224.182299947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,42 +24,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Chris Mason <clm@fb.com>
 
-commit 403dff4e2c94f275e24fd85f40b2732ffec268a1 upstream.
+commit 6f8960541b1eb6054a642da48daae2320fddba93 upstream.
 
-We need to check that we have both a valid data and control inteface for both
-types of headers (union and not union.)
+Commit 1d52c78afbb (Btrfs: try not to ENOSPC on log replay) added a
+check to skip delayed inode updates during log replay because it
+confuses the enospc code.  But the delayed processing will end up
+ignoring delayed refs from log replay because the inode itself wasn't
+put through the delayed code.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=83551
-Reported-by: Simon Schubert <2+kernel@0x2c.org>
+This can end up triggering a warning at commit time:
+
+WARNING: CPU: 2 PID: 778 at fs/btrfs/delayed-inode.c:1410 btrfs_assert_delayed_root_empty+0x32/0x34()
+
+Which is repeated for each commit because we never process the delayed
+inode ref update.
+
+The fix used here is to change btrfs_delayed_delete_inode_ref to return
+an error if we're currently in log replay.  The caller will do the ref
+deletion immediately and everything will work properly.
+
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ fs/btrfs/delayed-inode.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1087,10 +1087,11 @@ next_desc:
- 	} else {
- 		control_interface = usb_ifnum_to_if(usb_dev, union_header->bMasterInterface0);
- 		data_interface = usb_ifnum_to_if(usb_dev, (data_interface_num = union_header->bSlaveInterface0));
--		if (!control_interface || !data_interface) {
--			dev_dbg(&intf->dev, "no interfaces\n");
--			return -ENODEV;
--		}
-+	}
-+
-+	if (!control_interface || !data_interface) {
-+		dev_dbg(&intf->dev, "no interfaces\n");
-+		return -ENODEV;
- 	}
+--- a/fs/btrfs/delayed-inode.c
++++ b/fs/btrfs/delayed-inode.c
+@@ -1854,6 +1854,14 @@ int btrfs_delayed_delete_inode_ref(struc
+ {
+ 	struct btrfs_delayed_node *delayed_node;
  
- 	if (data_interface_num != call_interface_num)
++	/*
++	 * we don't do delayed inode updates during log recovery because it
++	 * leads to enospc problems.  This means we also can't do
++	 * delayed inode refs
++	 */
++	if (BTRFS_I(inode)->root->fs_info->log_root_recovering)
++		return -EAGAIN;
++
+ 	delayed_node = btrfs_get_or_create_delayed_node(inode);
+ 	if (IS_ERR(delayed_node))
+ 		return PTR_ERR(delayed_node);
 
 
