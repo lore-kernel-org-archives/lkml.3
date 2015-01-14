@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944AbbANVz1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 16:55:27 -0500
-Received: from fieldses.org ([174.143.236.118]:39132 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752455AbbANVz0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 16:55:26 -0500
-Date: Wed, 14 Jan 2015 16:55:25 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Ian Kent <ikent@redhat.com>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Oleg Nesterov <onestero@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Benjamin Coddington <bcodding@redhat.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Jeff Layton <jeff.layton@primarydata.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [RFC PATCH 0/5] Second attempt at contained helper execution
-Message-ID: <20150114215525.GB7071@fieldses.org>
-References: <20150114092704.30252.60446.stgit@pluto.fritz.box>
+	id S1754410AbbANWEI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 17:04:08 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:35399 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752492AbbANWEG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 17:04:06 -0500
+Date: Wed, 14 Jan 2015 16:04:03 -0600
+From: Andy Gross <agross@codeaurora.org>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
+        Kevin Hilman <khilman@linaro.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org, Lina Iyer <lina.iyer@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Olav Haugan <ohaugan@codeaurora.org>, markivx@codeaurora.org
+Subject: Re: [GIT PULL] qcom SoC changes for v3.18
+Message-ID: <20150114220403.GA32295@qualcomm.com>
+References: <A246CCDC-948C-429E-9FC5-934D317EB9D4@codeaurora.org>
+ <201410011641.44037.arnd@arndb.de>
+ <4AF7ABD3-EC90-47B8-96F3-B0AC396C52CC@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150114092704.30252.60446.stgit@pluto.fritz.box>
+In-Reply-To: <4AF7ABD3-EC90-47B8-96F3-B0AC396C52CC@codeaurora.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 05:32:22PM +0800, Ian Kent wrote:
-> This series is a further attempt to find how (or even an acceptable
-> way) to execute a usermode helper in a contained environment.
+On Wed, Oct 15, 2014 at 10:18:30AM +0200, Kumar Gala wrote:
 > 
-> Being an attempt to find how to do this no testing has been done and
-> won't be until a suitable approach can be agreed on, if at all.
+> On Oct 1, 2014, at 4:41 PM, Arnd Bergmann <arnd@arndb.de> wrote:
 > 
-> >From previous discussion seperation between the caller and the
-> execution environment is required for security reasons.
+> > On Monday 22 September 2014, Kumar Gala wrote:
+> >> The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
+> >> 
+> >>  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
+> >> 
+> >> are available in the git repository at:
+> >> 
+> >>  git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-soc-for-3.18
+> >> 
+> >> for you to fetch changes up to 525fbb55947177cdae507b0d292f43c2c9a75a47:
+> >> 
+> >>  ARM: qcom: Move scm-boot files to drivers/soc and include/soc (2014-09-18 18:14:01 -0500)
+> >> 
+> >> ----------------------------------------------------------------
+> >> Qualcomm ARM Based SoC Updates for v3.18
+> >> 
+> >> * Moved scm support into drivers/soc/qcom (allows for use by drivers)
+> >> * Various bug fixes and minor feature additions to scm code
+> >> * Added big-endian support to debug MSM uart
+> > 
+> > Pulled it into next/late now. This means we're not sending it together with the
+> > other pull requests to Linus. We'll see how things go during the first week
+> > and may or may not send it in the second week of the merge window depending
+> > on that.
+> > 
+> > 	Arnd
 > 
-> It was suggested that a thread be created for each mount and be used
-> as the basis for the execution environment. There are a number of
-> problems with this, not the least of which is scaling to a large
-> numbers of mounts, and there may not be a mount corresponding the the
-> needed callback
+> Any update if you guys will end up sending this to linus for 3.18 or not?
 
-Remind me what example you're thinking of here?
+Where are we on this set of changes?  Have they been queued up again?
 
---b.
+-- 
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
 
-> which amounts to creating the process from the context
-> of the caller which we don't want to do.
-> 
-> But now, when a usermode helper is executed the root init namespace is
-> used and has proven to be adequate. So perhaps it will also be adequate
-> to use the same approach for contained execution by using the container
-> init namespace as the basis for the execution.
-> 
-> That's essentially all this series attempts to do.
-> 
-> There are other difficulties to tackle as well, such as how to decide
-> if contained helper execution is needed. For example, if a mount has
-> been propagated to a container or bound into the container tree (such
-> as with the --volume option of "docker run") the root init namespace
-> may need to be used and not the container namespace.
-> 
-> There's also the rather resource heavy method that is used here to
-> enter the target namespace which probably needs work but is out of
-> scope for this series if in fact this approach is even acceptable.
-> 
-> Comments please?
-> 
-> ---
-> 
-> Ian Kent (5):
->       nsproxy - refactor setns()
->       kmod - rename call_usermodehelper() flags parameter
->       kmod - teach call_usermodehelper() to use a namespace
->       KEYS - rename call_usermodehelper_keys() flags parameter
->       KEYS: exec request-key within the requesting task's init namespace
-> 
-> 
->  include/linux/kmod.h        |   21 ++++++-
->  include/linux/nsproxy.h     |    1 
->  kernel/kmod.c               |  135 +++++++++++++++++++++++++++++++++++++++----
->  kernel/nsproxy.c            |   21 ++++---
->  security/keys/request_key.c |   51 ++++++++++++++--
->  5 files changed, 201 insertions(+), 28 deletions(-)
-> 
-> --
-> Ian
