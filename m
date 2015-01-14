@@ -1,70 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651AbbANPmP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 10:42:15 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:60363 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753579AbbANPmN (ORCPT
+	id S1753478AbbANPp7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 10:45:59 -0500
+Received: from andre.telenet-ops.be ([195.130.132.53]:49626 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011AbbANPp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 10:42:13 -0500
-Date: Wed, 14 Jan 2015 16:42:10 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: fold move_anon() and move_file()
-Message-ID: <20150114154210.GG4706@dhcp22.suse.cz>
-References: <1421175592-14179-1-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421175592-14179-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 14 Jan 2015 10:45:57 -0500
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>
+Cc: Gaurav Minocha <gaurav.minocha.os@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH] of: Add missing of_node_put() in of_find_node_by_path()
+Date: Wed, 14 Jan 2015 16:45:56 +0100
+Message-Id: <1421250356-16690-1-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 13-01-15 13:59:52, Johannes Weiner wrote:
-> Turn the move type enum into flags and give the flags field a shorter
-> name.  Once that is done, move_anon() and move_file() are simple
-> enough to just fold them into the callsites.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+When traversing all nodes and moving to a new path component, the old
+one must be released by calling of_node_put(). Else the refcounts of the
+parent node(s) will not be decremented.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+---
+Background.
 
-one nit below
+While investigating a reference count imbalance issue with
+CONFIG_OF_DYNAMIC=y, I wrote the debug code below to validate the
+reference counts of the nodes I was interested in.
+During the first call of check_refcnts(), it gathers all reference
+counts. During a subsequent call, it verifies that they are still the
+same.
 
-> ---
->  mm/memcontrol.c | 49 ++++++++++++++++++-------------------------------
->  1 file changed, 18 insertions(+), 31 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 5a5769e8b12c..692e96407627 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -360,21 +360,18 @@ static bool memcg_kmem_is_active(struct mem_cgroup *memcg)
->  
->  /* Stuffs for move charges at task migration. */
->  /*
-> - * Types of charges to be moved. "move_charge_at_immitgrate" and
-> - * "immigrate_flags" are treated as a left-shifted bitmap of these types.
-> + * Types of charges to be moved.
->   */
-> -enum move_type {
-> -	MOVE_CHARGE_TYPE_ANON,	/* private anonymous page and swap of it */
-> -	MOVE_CHARGE_TYPE_FILE,	/* file page(including tmpfs) and swap of it */
-> -	NR_MOVE_TYPE,
-> -};
-> +#define MOVE_ANON	0x1U
-> +#define MOVE_FILE	0x2U
-> +#define MOVE_MASK	0x3U
+Surprisingly, lots of reference counts were wrong, and kept incrementing
+every time check_refcnts() was called.
 
-#define MOVE_MASK	(MOVE_ANON | MOVE_FILE)
+I was just wondering whether it would be useful to have a reference
+count test in OF_UNITTEST, but now I see the "select OF_DYNAMIC" will go
+away?
 
-would be probably better
-[...]
+Feel free to (ab)use the code below and derive a unittest from it...
+
+static struct to_check {
+	const char *path;
+	int refcnt;
+} to_check[] = {
+	{ "/" },
+	{ "/cpus/cpu@0" },
+	{ "/cpus/cpu@1" },
+	/* ... other paths I was interested in ... */
+};
+
+static void check_refcnts(void)
+{
+	static bool called;
+	unsigned int i;
+	const char *path;
+	struct device_node *np;
+	int refcnt;
+	unsigned int errors = 0;
+
+	pr_info("----- %s reference counts -----\n",
+		called ? "Checking" : "Saving");
+	for (i = 0; i < ARRAY_SIZE(to_check); i++) {
+		path = to_check[i].path;
+		np = of_find_node_by_path(path);
+		if (!np)
+			continue;
+
+		refcnt = atomic_read(&np->kobj.kref.refcount);
+		if (!called) {
+			pr_info("%s %d\n", path, refcnt);
+			to_check[i].refcnt = refcnt;
+		} else if (refcnt == to_check[i].refcnt) {
+			pr_info("%s %d (OK)\n", path, refcnt);
+		} else {
+			pr_info("%s %d (should be %d)\n", path, refcnt,
+				to_check[i].refcnt);
+			errors++;
+		}
+
+		of_node_put(np);
+	}
+
+	if (called)
+		pr_info("----- Checking done (%u errors) -----\n", errors);
+	else
+		pr_info("----- Saving done -----\n");
+
+	called = true;
+}
+---
+ drivers/of/base.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index 36536b6a8834acd2..f3e346e19c69d1f2 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -791,8 +791,10 @@ struct device_node *of_find_node_opts_by_path(const char *path, const char **opt
+ 	if (!np)
+ 		np = of_node_get(of_root);
+ 	while (np && *path == '/') {
++		struct device_node *parent = np;
+ 		path++; /* Increment past '/' delimiter */
+-		np = __of_find_node_by_path(np, path);
++		np = __of_find_node_by_path(parent, path);
++		of_node_put(parent);
+ 		path = strchrnul(path, '/');
+ 	}
+ 	raw_spin_unlock_irqrestore(&devtree_lock, flags);
 -- 
-Michal Hocko
-SUSE Labs
+1.9.1
+
