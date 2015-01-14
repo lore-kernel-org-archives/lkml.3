@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121AbbANIZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:25:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57990 "EHLO
+	id S1754931AbbANIHI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:07:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58450 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754558AbbANH2d (ORCPT
+	with ESMTP id S1754444AbbANHd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:28:33 -0500
+	Wed, 14 Jan 2015 02:33:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH 3.18 096/150] serial: samsung: wait for transfer completion before clock disable
-Date: Tue, 13 Jan 2015 23:22:47 -0800
-Message-Id: <20150114072100.222863241@linuxfoundation.org>
+        Stephane Grosjean <s.grosjean@peak-system.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.14 08/77] can: peak_usb: fix memset() usage
+Date: Tue, 13 Jan 2015 23:22:48 -0800
+Message-Id: <20150114072224.627886599@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
-References: <20150114072055.842408181@linuxfoundation.org>
+In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
+References: <20150114072224.182299947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,45 +25,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Robert Baldyga <r.baldyga@samsung.com>
+From: Stephane Grosjean <s.grosjean@peak-system.com>
 
-commit 1ff383a4c3eda8893ec61b02831826e1b1f46b41 upstream.
+commit dc50ddcd4c58a5a0226038307d6ef884bec9f8c2 upstream.
 
-This patch adds waiting until transmit buffer and shifter will be empty
-before clock disabling.
+This patchs fixes a misplaced call to memset() that fills the request
+buffer with 0. The problem was with sending PCAN_USBPRO_REQ_FCT
+requests, the content set by the caller was thus lost.
 
-Without this fix it's possible to have clock disabled while data was
-not transmited yet, which causes unproper state of TX line and problems
-in following data transfers.
+With this patch, the memory area is zeroed only when requesting info
+from the device.
 
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+Signed-off-by: Stephane Grosjean <s.grosjean@peak-system.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/samsung.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/net/can/usb/peak_usb/pcan_usb_pro.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/tty/serial/samsung.c
-+++ b/drivers/tty/serial/samsung.c
-@@ -559,11 +559,15 @@ static void s3c24xx_serial_pm(struct uar
- 			      unsigned int old)
- {
- 	struct s3c24xx_uart_port *ourport = to_ourport(port);
-+	int timeout = 10000;
+--- a/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
++++ b/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
+@@ -333,8 +333,6 @@ static int pcan_usb_pro_send_req(struct
+ 	if (!(dev->state & PCAN_USB_STATE_CONNECTED))
+ 		return 0;
  
- 	ourport->pm_level = level;
+-	memset(req_addr, '\0', req_size);
+-
+ 	req_type = USB_TYPE_VENDOR | USB_RECIP_OTHER;
  
- 	switch (level) {
- 	case 3:
-+		while (--timeout && !s3c24xx_serial_txempty_nofifo(port))
-+			udelay(100);
-+
- 		if (!IS_ERR(ourport->baudclk))
- 			clk_disable_unprepare(ourport->baudclk);
+ 	switch (req_id) {
+@@ -345,6 +343,7 @@ static int pcan_usb_pro_send_req(struct
+ 	default:
+ 		p = usb_rcvctrlpipe(dev->udev, 0);
+ 		req_type |= USB_DIR_IN;
++		memset(req_addr, '\0', req_size);
+ 		break;
+ 	}
  
 
 
