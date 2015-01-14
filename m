@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651AbbANH2n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:28:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57990 "EHLO
+	id S1752735AbbANIVd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:21:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58031 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754553AbbANH2b (ORCPT
+	with ESMTP id S1754688AbbANH3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:28:31 -0500
+	Wed, 14 Jan 2015 02:29:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ronald Wahl <ronald.wahl@raritan.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.18 086/150] usb: gadget: at91_udc: move prepare clk into process context
-Date: Tue, 13 Jan 2015 23:22:37 -0800
-Message-Id: <20150114072059.755618121@linuxfoundation.org>
+        Martin Hauke <mardnh@gmx.de>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.18 087/150] USB: qcserial: Add support for HP lt4112 LTE/HSPA+ Gobi 4G Modem
+Date: Tue, 13 Jan 2015 23:22:38 -0800
+Message-Id: <20150114072059.810226330@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -31,122 +28,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ronald Wahl <ronald.wahl@raritan.com>
+From: Martin Hauke <mardnh@gmx.de>
 
-commit b2ba27a5c56ff7204d8a8684893d64d4afe2cee5 upstream.
+commit e7181d005e84b15fe3121a8d22840adc3395d496 upstream.
 
-Commit 7628083227b6bc4a7e33d7c381d7a4e558424b6b (usb: gadget: at91_udc:
-prepare clk before calling enable) added clock preparation in interrupt
-context. This is not allowed as it might sleep. Also setting the clock
-rate is unsafe to call from there for the same reason. Move clock
-preparation and setting clock rate into process context (at91udc_probe).
+Added new device layout "DEVICE_HWI" and also added the USB VID/PID for the
+HP lt4112 LTE/HSPA+ Gobi 4G Modem (Huawei me906e)
 
-Signed-off-by: Ronald Wahl <ronald.wahl@raritan.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Martin Hauke <mardnh@gmx.de>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/udc/at91_udc.c |   44 +++++++++++++++++++++++++++-----------
- 1 file changed, 32 insertions(+), 12 deletions(-)
+ drivers/usb/serial/qcserial.c |   33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
---- a/drivers/usb/gadget/udc/at91_udc.c
-+++ b/drivers/usb/gadget/udc/at91_udc.c
-@@ -870,12 +870,10 @@ static void clk_on(struct at91_udc *udc)
- 		return;
- 	udc->clocked = 1;
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -27,12 +27,15 @@ enum qcserial_layouts {
+ 	QCSERIAL_G2K = 0,	/* Gobi 2000 */
+ 	QCSERIAL_G1K = 1,	/* Gobi 1000 */
+ 	QCSERIAL_SWI = 2,	/* Sierra Wireless */
++	QCSERIAL_HWI = 3,	/* Huawei */
+ };
  
--	if (IS_ENABLED(CONFIG_COMMON_CLK)) {
--		clk_set_rate(udc->uclk, 48000000);
--		clk_prepare_enable(udc->uclk);
--	}
--	clk_prepare_enable(udc->iclk);
--	clk_prepare_enable(udc->fclk);
-+	if (IS_ENABLED(CONFIG_COMMON_CLK))
-+		clk_enable(udc->uclk);
-+	clk_enable(udc->iclk);
-+	clk_enable(udc->fclk);
- }
+ #define DEVICE_G1K(v, p) \
+ 	USB_DEVICE(v, p), .driver_info = QCSERIAL_G1K
+ #define DEVICE_SWI(v, p) \
+ 	USB_DEVICE(v, p), .driver_info = QCSERIAL_SWI
++#define DEVICE_HWI(v, p) \
++	USB_DEVICE(v, p), .driver_info = QCSERIAL_HWI
  
- static void clk_off(struct at91_udc *udc)
-@@ -884,10 +882,10 @@ static void clk_off(struct at91_udc *udc
- 		return;
- 	udc->clocked = 0;
- 	udc->gadget.speed = USB_SPEED_UNKNOWN;
--	clk_disable_unprepare(udc->fclk);
--	clk_disable_unprepare(udc->iclk);
-+	clk_disable(udc->fclk);
-+	clk_disable(udc->iclk);
- 	if (IS_ENABLED(CONFIG_COMMON_CLK))
--		clk_disable_unprepare(udc->uclk);
-+		clk_disable(udc->uclk);
- }
+ static const struct usb_device_id id_table[] = {
+ 	/* Gobi 1000 devices */
+@@ -157,6 +160,9 @@ static const struct usb_device_id id_tab
+ 	{DEVICE_SWI(0x413c, 0x81a8)},	/* Dell Wireless 5808 Gobi(TM) 4G LTE Mobile Broadband Card */
+ 	{DEVICE_SWI(0x413c, 0x81a9)},	/* Dell Wireless 5808e Gobi(TM) 4G LTE Mobile Broadband Card */
  
- /*
-@@ -1780,14 +1778,24 @@ static int at91udc_probe(struct platform
- 	}
- 
- 	/* don't do anything until we have both gadget driver and VBUS */
-+	if (IS_ENABLED(CONFIG_COMMON_CLK)) {
-+		clk_set_rate(udc->uclk, 48000000);
-+		retval = clk_prepare(udc->uclk);
-+		if (retval)
-+			goto fail1;
-+	}
-+	retval = clk_prepare(udc->fclk);
-+	if (retval)
-+		goto fail1a;
++	/* Huawei devices */
++	{DEVICE_HWI(0x03f0, 0x581d)},	/* HP lt4112 LTE/HSPA+ Gobi 4G Modem (Huawei me906e) */
 +
- 	retval = clk_prepare_enable(udc->iclk);
- 	if (retval)
--		goto fail1;
-+		goto fail1b;
- 	at91_udp_write(udc, AT91_UDP_TXVC, AT91_UDP_TXVC_TXVDIS);
- 	at91_udp_write(udc, AT91_UDP_IDR, 0xffffffff);
- 	/* Clear all pending interrupts - UDP may be used by bootloader. */
- 	at91_udp_write(udc, AT91_UDP_ICR, 0xffffffff);
--	clk_disable_unprepare(udc->iclk);
-+	clk_disable(udc->iclk);
- 
- 	/* request UDC and maybe VBUS irqs */
- 	udc->udp_irq = platform_get_irq(pdev, 0);
-@@ -1795,7 +1803,7 @@ static int at91udc_probe(struct platform
- 			0, driver_name, udc);
- 	if (retval < 0) {
- 		DBG("request irq %d failed\n", udc->udp_irq);
--		goto fail1;
-+		goto fail1c;
- 	}
- 	if (gpio_is_valid(udc->board.vbus_pin)) {
- 		retval = gpio_request(udc->board.vbus_pin, "udc_vbus");
-@@ -1848,6 +1856,13 @@ fail3:
- 		gpio_free(udc->board.vbus_pin);
- fail2:
- 	free_irq(udc->udp_irq, udc);
-+fail1c:
-+	clk_unprepare(udc->iclk);
-+fail1b:
-+	clk_unprepare(udc->fclk);
-+fail1a:
-+	if (IS_ENABLED(CONFIG_COMMON_CLK))
-+		clk_unprepare(udc->uclk);
- fail1:
- 	if (IS_ENABLED(CONFIG_COMMON_CLK) && !IS_ERR(udc->uclk))
- 		clk_put(udc->uclk);
-@@ -1896,6 +1911,11 @@ static int __exit at91udc_remove(struct
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	release_mem_region(res->start, resource_size(res));
- 
-+	if (IS_ENABLED(CONFIG_COMMON_CLK))
-+		clk_unprepare(udc->uclk);
-+	clk_unprepare(udc->fclk);
-+	clk_unprepare(udc->iclk);
-+
- 	clk_put(udc->iclk);
- 	clk_put(udc->fclk);
- 	if (IS_ENABLED(CONFIG_COMMON_CLK))
+ 	{ }				/* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, id_table);
+@@ -283,6 +289,33 @@ static int qcprobe(struct usb_serial *se
+ 			break;
+ 		default:
+ 			/* don't claim any unsupported interface */
++			altsetting = -1;
++			break;
++		}
++		break;
++	case QCSERIAL_HWI:
++		/*
++		 * Huawei layout:
++		 * 0: AT-capable modem port
++		 * 1: DM/DIAG
++		 * 2: AT-capable modem port
++		 * 3: CCID-compatible PCSC interface
++		 * 4: QMI/net
++		 * 5: NMEA
++		 */
++		switch (ifnum) {
++		case 0:
++		case 2:
++			dev_dbg(dev, "Modem port found\n");
++			break;
++		case 1:
++			dev_dbg(dev, "DM/DIAG interface found\n");
++			break;
++		case 5:
++			dev_dbg(dev, "NMEA GPS interface found\n");
++			break;
++		default:
++			/* don't claim any unsupported interface */
+ 			altsetting = -1;
+ 			break;
+ 		}
 
 
