@@ -1,78 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926AbbANQh1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 11:37:27 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:40817 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471AbbANQh0 (ORCPT
+	id S1753928AbbANQiQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 11:38:16 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:40003 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751331AbbANQiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 11:37:26 -0500
-Date: Wed, 14 Jan 2015 08:37:21 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.14 00/77] 3.14.29-stable review
-Message-ID: <20150114163721.GA32246@roeck-us.net>
-References: <20150114072224.182299947@linuxfoundation.org>
+	Wed, 14 Jan 2015 11:38:14 -0500
+Date: Wed, 14 Jan 2015 16:38:00 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "'Ard Biesheuvel'" <ard.biesheuvel@linaro.org>,
+        "'Will Deacon'" <will.deacon@arm.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'akinobu.mita@gmail.com'" <akinobu.mita@gmail.com>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'Joe Perches'" <joe@perches.com>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC V6 2/3] arm:add bitrev.h file to support rbit instruction
+Message-ID: <20150114163800.GZ12302@n2100.arm.linux.org.uk>
+References: <35FD53F367049845BC99AC72306C23D103E010D18273@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E010D18275@CNBJMBX05.corpusers.net>
+ <20141113235322.GC4042@n2100.arm.linux.org.uk>
+ <35FD53F367049845BC99AC72306C23D103E010D1829B@CNBJMBX05.corpusers.net>
+ <20141114095812.GG4042@n2100.arm.linux.org.uk>
+ <35FD53F367049845BC99AC72306C23D103E688B313C6@CNBJMBX05.corpusers.net>
+ <20150108184059.GZ12302@n2100.arm.linux.org.uk>
+ <35FD53F367049845BC99AC72306C23D103EDAF89E195@CNBJMBX05.corpusers.net>
+ <20150109111048.GE12302@n2100.arm.linux.org.uk>
+ <35FD53F367049845BC99AC72306C23D103EDAF89E198@CNBJMBX05.corpusers.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <35FD53F367049845BC99AC72306C23D103EDAF89E198@CNBJMBX05.corpusers.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020205.54B69B45.0273,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 2
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 11:22:40PM -0800, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.14.29 release.
-> There are 77 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+On Fri, Jan 09, 2015 at 08:40:56PM +0800, Wang, Yalin wrote:
+> Oh, I see,
+> How about change like this:
+> +	select HAVE_ARCH_BITREVERSE if ((CPU_V7M || CPU_V7) && !CPU_V6 && !CPU_V6K)
+> I am not sure if I also need add some older CPU types like !CPU_ARM9TDMI &&　!CPU_ARM940T ?
 > 
-> Responses should be made by Fri Jan 16 07:22:07 UTC 2015.
-> Anything received after that time might be too late.
+> Another solution is:
+> +	select HAVE_ARCH_BITREVERSE if ((CPU_32V7M || CPU_32V7) && !CPU_32V6 && !CPU_32V5 && !CPU_32V4 && !CPU_32V4T && !CPU_32V3)
 > 
-There are several powerpc build failures.
+> By the way, I am not clear about the difference between CPU_V6 and CPU_V6K, could you tell me? :)
 
-Building powerpc:defconfig ... failed
-Building powerpc:allmodconfig ... failed
-Building powerpc:cell_defconfig ... failed
-Building powerpc:maple_defconfig ... failed
+I think
 
-arch/powerpc/kernel/head_64.o: In function `machine_check_handle_early':
-(.text+0x918c): undefined reference to `.power7_enter_nap_mode'
+	select HAVE_ARCH_BITREVERSE if (CPU_32v7M || CPU_32v7) && !CPU_32v6
 
-Just a heads-up; I don't have time to track it down right now.
-Hopefully tonight.
+is sufficient - we don't support mixing pre-v6 and v6+ CPU architectures
+into a single kernel.
 
-Guenter
+-- 
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
