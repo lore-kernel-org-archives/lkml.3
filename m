@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356AbbANAQi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 19:16:38 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:53423 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751753AbbANAQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 19:16:36 -0500
-Message-ID: <54B5B561.40406@osg.samsung.com>
-Date: Tue, 13 Jan 2015 17:16:33 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@ozlabs.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] selftests/powerpc: Add .gitignore for powerpc selftests
-References: <1421192997-17003-1-git-send-email-mpe@ellerman.id.au>
-In-Reply-To: <1421192997-17003-1-git-send-email-mpe@ellerman.id.au>
-Content-Type: text/plain; charset=windows-1252
+	id S1753894AbbANARx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 19:17:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53839 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753796AbbANARw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 19:17:52 -0500
+Date: Tue, 13 Jan 2015 16:17:51 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Craig Milo Rogers <rogers@isi.edu>
+Cc: Andrzej Hajda <a.hajda@samsung.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linux MM <linux-mm@kvack.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Andreas Mohr <andi@lisas.de>,
+        Mike Turquette <mturquette@linaro.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 0/5] kstrdup optimization
+Message-Id: <20150113161751.a33361d60cf2627ed079d4bc@linux-foundation.org>
+In-Reply-To: <20150114001057.GA30408@isi.edu>
+References: <1421054323-14430-1-git-send-email-a.hajda@samsung.com>
+	<CAMuHMdV74n3v81xaLRDN_Mn_QGg14yUkXNn6JYaGH4MGgLRM2A@mail.gmail.com>
+	<20150114001057.GA30408@isi.edu>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please add a commit log.
+On Tue, 13 Jan 2015 16:10:57 -0800 Craig Milo Rogers <rogers@isi.edu> wrote:
 
-On 01/13/2015 04:49 PM, Michael Ellerman wrote:
-> Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
-> ---
->  .../testing/selftests/powerpc/copyloops/.gitignore |  4 ++++
->  tools/testing/selftests/powerpc/mm/.gitignore      |  1 +
->  tools/testing/selftests/powerpc/pmu/.gitignore     |  3 +++
->  tools/testing/selftests/powerpc/pmu/ebb/.gitignore | 22 ++++++++++++++++++++++
->  .../selftests/powerpc/primitives/.gitignore        |  1 +
->  tools/testing/selftests/powerpc/tm/.gitignore      |  1 +
->  6 files changed, 32 insertions(+)
->  create mode 100644 tools/testing/selftests/powerpc/copyloops/.gitignore
->  create mode 100644 tools/testing/selftests/powerpc/mm/.gitignore
->  create mode 100644 tools/testing/selftests/powerpc/pmu/.gitignore
->  create mode 100644 tools/testing/selftests/powerpc/pmu/ebb/.gitignore
->  create mode 100644 tools/testing/selftests/powerpc/primitives/.gitignore
->  create mode 100644 tools/testing/selftests/powerpc/tm/.gitignore
+> > As kfree_const() has the exact same signature as kfree(), the risk of
+> > accidentally passing pointers returned from kstrdup_const() to kfree() seems
+> > high, which may lead to memory corruption if the pointer doesn't point to
+> > allocated memory.
+> ...
+> >> To verify if the source is in .rodata function checks if the address is between
+> >> sentinels __start_rodata, __end_rodata. I guess it should work with all
+> >> architectures.
+> 
+> 	kfree() could also check if the region being freed is in .rodata, and
+> ignore the call; kfree_const() would not be needed.  If making this check all
+> the time leads to a significant decrease in performance (numbers needed here),
+> another option is to keep kfree_const() but add a check to kfree(), when
+> compiled for debugging, that issues a suitable complaint if the region being
+> freed is in .rodata.
+> 
 
-Please create a single .gitignore for all targets right under
-tools/testing/selftests/powerpc instead of multiple .gitignore
-files.
+Adding overhead to kfree() would be a show-stopper - it's a real
+hotpath.
 
-thanks,
--- Shuah
+kstrdup_const() is only used in a small number of places.  Just don't
+screw it up.
 
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Open Source Innovation Group
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+
+btw, I have vague memories that gcc used to put some strings into .text
+under some circumstances.
+
