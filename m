@@ -1,48 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225AbbANShE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 13:37:04 -0500
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:43444 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754092AbbANShA (ORCPT
+	id S1754338AbbANSiE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 13:38:04 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:20952 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753306AbbANSiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 13:37:00 -0500
+	Wed, 14 Jan 2015 13:38:00 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+jLawXw37h63JxNP3uEqX+/eaY4fgPuCY=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 68AF06463DD
+Date: Wed, 14 Jan 2015 13:37:56 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: shirish gajera <gajerashirish@gmail.com>
+Cc: gregkh@linuxfoundation.org, Eric Rost <eric.rost@mybabylon.net>,
+        jake@lwn.net, Anton Saraev <antonysaraev@gmail.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] staging: skein: Remove all do{} while (0) loop from
+ single statement.
+Message-ID: <20150114183756.GA24989@titan.lakedaemon.net>
+References: <20150111234105.GA2744@shirish-ThinkPad-Edge-E430>
+ <20150112141516.GX24989@titan.lakedaemon.net>
+ <CAG77vrojhVij2154vDxCxE9vPDPfP2QuJaKFcAz4pErW_pLRVQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAPz6YkW4icehT6P9EicP1Eww_Ny0hNaeS53WXaFei+HrYbPQ3A@mail.gmail.com>
-References: <1421203412-5159-1-git-send-email-zyw@rock-chips.com>
-	<CAPz6YkW4icehT6P9EicP1Eww_Ny0hNaeS53WXaFei+HrYbPQ3A@mail.gmail.com>
-Date: Wed, 14 Jan 2015 10:36:59 -0800
-X-Google-Sender-Auth: fLAScxDKiHEbOJpq6XUHpOBMLKM
-Message-ID: <CAD=FV=UDj08jkOCDVJ1Q+EanrBHwP_-88XMXojPjY8iB3i-AQA@mail.gmail.com>
-Subject: Re: [PATCH] RTC: RK808: fix the rtc time reading issue
-From: Doug Anderson <dianders@chromium.org>
-To: Sonny Rao <sonnyrao@chromium.org>
-Cc: Chris Zhong <zyw@rock-chips.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAG77vrojhVij2154vDxCxE9vPDPfP2QuJaKFcAz4pErW_pLRVQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sonny,
+Shirish,
 
-> Chris, it looks like you swapped the set and the clear of this bit,
-> and you're relying on the fact that the i2c transaction takes a
-> certain amount of time after the RTC_GET_TIME BIT is set.   I'm not
-> sure how long it actually takes, but why not just put in a usleep()
-> for the minimum wait time?
+Please don't toppost, I've corrected it below.
 
-I think we are safe.
+On Mon, Jan 12, 2015 at 11:14:57AM -0800, shirish gajera wrote:
+> On Mon, Jan 12, 2015 at 6:15 AM, Jason Cooper <jason@lakedaemon.net> wrote:
+> > On Sun, Jan 11, 2015 at 03:41:05PM -0800, Shirish Gajera wrote:
+> > > This patch fixes the checkpatch.pl warning:
+> > >
+> > > WARNING: Single statement macros should not use a do {} while (0) loop
+> > >
+> > > I remove do while from the single statement macro.
+> > >
+> > > Signed-off-by: Shirish Gajera <gajerashirish@gmail.com>
+> > > ---
+> > >  drivers/staging/skein/skein_block.c | 31 +++++++++----------------------
+> > >  1 file changed, 9 insertions(+), 22 deletions(-)
+> >
+> > Several people have submitted patches for this checkpatch warning.
+> > Please check the mailinglist archives and deconflict with the other
+> > submitters.
+> 
+> It did't see any other submitter in script.
+> 
+> Is there any other way to check ?
 
-At 400kHz (the max speed of this part) each bit can be transferred no
-faster than 2.5us.  In order to do a valid i2c transaction we need to
-_at least_ write the address of the device and the data onto the bus,
-which is 16 bits.  16 * 2.5us = 40us.  That's above the 31.25us
+The mailing list for the linux-staging tree is rather arcane to find,
+it's not linux-staging@...  Here's the link for joining:
 
-Personally I think what Chris has is fine, with the comment.
+  http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
 
--Doug
+And here's the archives:
+
+  http://driverdev.linuxdriverproject.org/pipermail/driverdev-devel/
+
+hth,
+
+Jason.
