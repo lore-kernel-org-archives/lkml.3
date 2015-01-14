@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754388AbbANH1j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:27:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57887 "EHLO
+	id S1754404AbbANH1l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:27:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57889 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754365AbbANH1i (ORCPT
+	with ESMTP id S1754366AbbANH1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Jan 2015 02:27:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH 3.18 070/150] driver core: Fix unbalanced device reference in drivers_probe
-Date: Tue, 13 Jan 2015 23:22:21 -0800
-Message-Id: <20150114072059.011158978@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [PATCH 3.18 071/150] misc: genwqe: check for error from get_user_pages_fast()
+Date: Tue, 13 Jan 2015 23:22:22 -0800
+Message-Id: <20150114072059.052812408@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -28,80 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit bb34cb6bbd287b57e955bc5cfd42fcde6aaca279 upstream.
+commit cf35d6e0475982667b0d2d318fb27be4b8849827 upstream.
 
-bus_find_device_by_name() acquires a device reference which is never
-released.  This results in an object leak, which on older kernels
-results in failure to release all resources of PCI devices.  libvirt
-uses drivers_probe to re-attach devices to the host after assignment
-and is therefore a common trigger for this leak.
+`genwqe_user_vmap()` calls `get_user_pages_fast()` and if the return
+value is less than the number of pages requested, it frees the pages and
+returns an error (`-EFAULT`).  However, it fails to consider a negative
+error return value from `get_user_pages_fast()`.  In that case, the test
+`if (rc < m->nr_pages)` will be false (due to promotion of `rc` to a
+large `unsigned int`) and the code will continue on to call
+`genwqe_map_pages()` with an invalid list of page pointers.  Fix it by
+bailing out if `get_user_pages_fast()` returns a negative error value.
 
-Example:
-
-# cd /sys/bus/pci/
-# dmesg -C
-# echo 1 > devices/0000\:01\:00.0/sriov_numvfs
-# echo 0 > devices/0000\:01\:00.0/sriov_numvfs
-# dmesg | grep 01:10
- pci 0000:01:10.0: [8086:10ca] type 00 class 0x020000
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_add_internal: parent: '0000:00:01.0', set: 'devices'
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_cleanup, parent           (null)
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): calling ktype release
- kobject: '0000:01:10.0': free name
-
-[kobject freed as expected]
-
-# dmesg -C
-# echo 1 > devices/0000\:01\:00.0/sriov_numvfs
-# echo 0000:01:10.0 > drivers_probe
-# echo 0 > devices/0000\:01\:00.0/sriov_numvfs
-# dmesg | grep 01:10
- pci 0000:01:10.0: [8086:10ca] type 00 class 0x020000
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_add_internal: parent: '0000:00:01.0', set: 'devices'
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
-
-[no free]
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/bus.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/misc/genwqe/card_utils.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/base/bus.c
-+++ b/drivers/base/bus.c
-@@ -254,13 +254,15 @@ static ssize_t store_drivers_probe(struc
- 				   const char *buf, size_t count)
- {
- 	struct device *dev;
-+	int err = -EINVAL;
+--- a/drivers/misc/genwqe/card_utils.c
++++ b/drivers/misc/genwqe/card_utils.c
+@@ -590,6 +590,8 @@ int genwqe_user_vmap(struct genwqe_dev *
+ 				 m->nr_pages,
+ 				 1,		/* write by caller */
+ 				 m->page_list);	/* ptrs to pages */
++	if (rc < 0)
++		goto fail_get_user_pages;
  
- 	dev = bus_find_device_by_name(bus, NULL, buf);
- 	if (!dev)
- 		return -ENODEV;
--	if (bus_rescan_devices_helper(dev, NULL) != 0)
--		return -EINVAL;
--	return count;
-+	if (bus_rescan_devices_helper(dev, NULL) == 0)
-+		err = count;
-+	put_device(dev);
-+	return err;
- }
- 
- static struct device *next_device(struct klist_iter *i)
+ 	/* assumption: get_user_pages can be killed by signals. */
+ 	if (rc < m->nr_pages) {
 
 
