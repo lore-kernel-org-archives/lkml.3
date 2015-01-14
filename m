@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932929AbbANHg5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:36:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58715 "EHLO
+	id S932944AbbANHg6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:36:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58720 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932179AbbANHgt (ORCPT
+	with ESMTP id S932899AbbANHgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:36:49 -0500
+	Wed, 14 Jan 2015 02:36:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefan Roese <sr@denx.de>, Mark Brown <broonie@linaro.org>,
-        Esben Haabendal <esbenhaabendal@gmail.com>
-Subject: [PATCH 3.14 73/77] spi: fsl: Fix problem with multi message transfers
-Date: Tue, 13 Jan 2015 23:23:53 -0800
-Message-Id: <20150114072228.366282057@linuxfoundation.org>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH 3.14 74/77] mmc: sdhci: Fix sleep in atomic after inserting SD card
+Date: Tue, 13 Jan 2015 23:23:54 -0800
+Message-Id: <20150114072228.440385224@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
 References: <20150114072224.182299947@linuxfoundation.org>
@@ -29,65 +29,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Roese <sr@denx.de>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit 4302a59629f7a0bd70fd1605d2b558597517372a upstream.
+commit 2836766a9d0bd02c66073f8dd44796e6cc23848d upstream.
 
-When used via spidev with more than one messages to tranfer via
-SPI_IOC_MESSAGE the current implementation would return with
--EINVAL, since bits_per_word and speed_hz are set in all
-transfer structs. And in the 2nd loop status will stay at
--EINVAL as its not overwritten again via fsl_spi_setup_transfer().
+Sleep in atomic context happened on Trats2 board after inserting or
+removing SD card because mmc_gpio_get_cd() was called under spin lock.
 
-This patch changes this behavious by first checking if one of
-the messages uses different settings. If this is the case
-the function will return with -EINVAL. If not, the messages
-are transferred correctly.
+Fix this by moving card detection earlier, before acquiring spin lock.
+The mmc_gpio_get_cd() call does not have to be protected by spin lock
+because it does not access any sdhci internal data.
+The sdhci_do_get_cd() call access host flags (SDHCI_DEVICE_DEAD). After
+moving it out side of spin lock it could theoretically race with driver
+removal but still there is no actual protection against manual card
+eject.
 
-Signed-off-by: Stefan Roese <sr@denx.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Cc: Esben Haabendal <esbenhaabendal@gmail.com>
+Dmesg after inserting SD card:
+[   41.663414] BUG: sleeping function called from invalid context at drivers/gpio/gpiolib.c:1511
+[   41.670469] in_atomic(): 1, irqs_disabled(): 128, pid: 30, name: kworker/u8:1
+[   41.677580] INFO: lockdep is turned off.
+[   41.681486] irq event stamp: 61972
+[   41.684872] hardirqs last  enabled at (61971): [<c0490ee0>] _raw_spin_unlock_irq+0x24/0x5c
+[   41.693118] hardirqs last disabled at (61972): [<c04907ac>] _raw_spin_lock_irq+0x18/0x54
+[   41.701190] softirqs last  enabled at (61648): [<c0026fd4>] __do_softirq+0x234/0x2c8
+[   41.708914] softirqs last disabled at (61631): [<c00273a0>] irq_exit+0xd0/0x114
+[   41.716206] Preemption disabled at:[<  (null)>]   (null)
+[   41.721500]
+[   41.722985] CPU: 3 PID: 30 Comm: kworker/u8:1 Tainted: G        W      3.18.0-rc5-next-20141121 #883
+[   41.732111] Workqueue: kmmcd mmc_rescan
+[   41.735945] [<c0014d2c>] (unwind_backtrace) from [<c0011c80>] (show_stack+0x10/0x14)
+[   41.743661] [<c0011c80>] (show_stack) from [<c0489d14>] (dump_stack+0x70/0xbc)
+[   41.750867] [<c0489d14>] (dump_stack) from [<c0228b74>] (gpiod_get_raw_value_cansleep+0x18/0x30)
+[   41.759628] [<c0228b74>] (gpiod_get_raw_value_cansleep) from [<c03646e8>] (mmc_gpio_get_cd+0x38/0x58)
+[   41.768821] [<c03646e8>] (mmc_gpio_get_cd) from [<c036d378>] (sdhci_request+0x50/0x1a4)
+[   41.776808] [<c036d378>] (sdhci_request) from [<c0357934>] (mmc_start_request+0x138/0x268)
+[   41.785051] [<c0357934>] (mmc_start_request) from [<c0357cc8>] (mmc_wait_for_req+0x58/0x1a0)
+[   41.793469] [<c0357cc8>] (mmc_wait_for_req) from [<c0357e68>] (mmc_wait_for_cmd+0x58/0x78)
+[   41.801714] [<c0357e68>] (mmc_wait_for_cmd) from [<c0361c00>] (mmc_io_rw_direct_host+0x98/0x124)
+[   41.810480] [<c0361c00>] (mmc_io_rw_direct_host) from [<c03620f8>] (sdio_reset+0x2c/0x64)
+[   41.818641] [<c03620f8>] (sdio_reset) from [<c035a3d8>] (mmc_rescan+0x254/0x2e4)
+[   41.826028] [<c035a3d8>] (mmc_rescan) from [<c003a0e0>] (process_one_work+0x180/0x3f4)
+[   41.833920] [<c003a0e0>] (process_one_work) from [<c003a3bc>] (worker_thread+0x34/0x4b0)
+[   41.841991] [<c003a3bc>] (worker_thread) from [<c003fed8>] (kthread+0xe4/0x104)
+[   41.849285] [<c003fed8>] (kthread) from [<c000f268>] (ret_from_fork+0x14/0x2c)
+[   42.038276] mmc0: new high speed SDHC card at address 1234
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Fixes: 94144a465dd0 ("mmc: sdhci: add get_cd() implementation")
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-fsl-spi.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ drivers/mmc/host/sdhci.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/spi/spi-fsl-spi.c
-+++ b/drivers/spi/spi-fsl-spi.c
-@@ -362,18 +362,28 @@ static int fsl_spi_bufs(struct spi_devic
- static void fsl_spi_do_one_msg(struct spi_message *m)
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -1343,6 +1343,8 @@ static void sdhci_request(struct mmc_hos
+ 
+ 	sdhci_runtime_pm_get(host);
+ 
++	present = mmc_gpio_get_cd(host->mmc);
++
+ 	spin_lock_irqsave(&host->lock, flags);
+ 
+ 	WARN_ON(host->mrq != NULL);
+@@ -1371,7 +1373,6 @@ static void sdhci_request(struct mmc_hos
+ 	 *     zero: cd-gpio is used, and card is removed
+ 	 *     one: cd-gpio is used, and card is present
+ 	 */
+-	present = mmc_gpio_get_cd(host->mmc);
+ 	if (present < 0) {
+ 		/* If polling, assume that the card is always present. */
+ 		if (host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION)
+@@ -2082,15 +2083,18 @@ static void sdhci_card_event(struct mmc_
  {
- 	struct spi_device *spi = m->spi;
--	struct spi_transfer *t;
-+	struct spi_transfer *t, *first;
- 	unsigned int cs_change;
- 	const int nsecs = 50;
- 	int status;
+ 	struct sdhci_host *host = mmc_priv(mmc);
+ 	unsigned long flags;
++	int present;
  
--	cs_change = 1;
--	status = 0;
-+	/* Don't allow changes if CS is active */
-+	first = list_first_entry(&m->transfers, struct spi_transfer,
-+			transfer_list);
- 	list_for_each_entry(t, &m->transfers, transfer_list) {
--		if (t->bits_per_word || t->speed_hz) {
--			/* Don't allow changes if CS is active */
-+		if ((first->bits_per_word != t->bits_per_word) ||
-+			(first->speed_hz != t->speed_hz)) {
- 			status = -EINVAL;
-+			dev_err(&spi->dev,
-+				"bits_per_word/speed_hz should be same for the same SPI transfer\n");
-+			return;
-+		}
-+	}
+ 	/* First check if client has provided their own card event */
+ 	if (host->ops->card_event)
+ 		host->ops->card_event(host);
  
-+	cs_change = 1;
-+	status = -EINVAL;
-+	list_for_each_entry(t, &m->transfers, transfer_list) {
-+		if (t->bits_per_word || t->speed_hz) {
- 			if (cs_change)
- 				status = fsl_spi_setup_transfer(spi, t);
- 			if (status < 0)
++	present = sdhci_do_get_cd(host);
++
+ 	spin_lock_irqsave(&host->lock, flags);
+ 
+ 	/* Check host->mrq first in case we are runtime suspended */
+-	if (host->mrq && !sdhci_do_get_cd(host)) {
++	if (host->mrq && !present) {
+ 		pr_err("%s: Card removed during transfer!\n",
+ 			mmc_hostname(host->mmc));
+ 		pr_err("%s: Resetting controller.\n",
 
 
