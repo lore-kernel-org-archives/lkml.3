@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933042AbbANIRO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:17:14 -0500
-Received: from rhcavuit01.kulnet.kuleuven.be ([134.58.240.129]:47778 "EHLO
-	cavuit01.kulnet.kuleuven.be" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932715AbbANIRL (ORCPT
+	id S933065AbbANIRx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:17:53 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:32436 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932171AbbANIRt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 03:17:11 -0500
-X-KULeuven-Envelope-From: bart.tanghe@thomasmore.be
-X-KULeuven-Scanned: Found to be clean
-X-KULeuven-ID: 647E4138102.A2335
-X-KULeuven-Information: Katholieke Universiteit Leuven
-Message-ID: <54B625DF.4030801@thomasmore.be>
-Date: Wed, 14 Jan 2015 09:16:31 +0100
-X-Kuleuven: This mail passed the K.U.Leuven mailcluster
-From: Bart Tanghe <bart.tanghe@thomasmore.be>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 14 Jan 2015 03:17:49 -0500
+Message-ID: <54B62609.7020002@huawei.com>
+Date: Wed, 14 Jan 2015 16:17:13 +0800
+From: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>, lee@kernel.org,
-        devicetree@vger.kernel.org
-CC: thierry.reding@gmail.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]dts: add bcm2835-pwm bindings
-References: <1420471983-29945-1-git-send-email-bart.tanghe@thomasmore.be> <54B1556C.7070401@wwwdotorg.org> <54B53C86.4030903@thomasmore.be> <54B54597.3010508@wwwdotorg.org>
-In-Reply-To: <54B54597.3010508@wwwdotorg.org>
-Content-Type: text/plain; charset=windows-1252
+To: Marc Zyngier <marc.zyngier@arm.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Yijing Wang <wangyijing@huawei.com>,
+        "Suravee Suthikulpanit" <Suravee.Suthikulpanit@amd.com>
+Subject: Re: [PATCH v2 3/8] PCI/MSI: of: Add support for OF-provided msi_domain
+References: <1420736772-11088-1-git-send-email-marc.zyngier@arm.com> <1420736772-11088-4-git-send-email-marc.zyngier@arm.com>
+In-Reply-To: <1420736772-11088-4-git-send-email-marc.zyngier@arm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.24.136]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2015 05:19 PM, Stephen Warren wrote:
-> On 01/13/2015 08:40 AM, Bart Tanghe wrote:
->> On 01/10/2015 05:38 PM, Stephen Warren wrote:
->>> On 01/05/2015 08:33 AM, Bart Tanghe wrote:
->>>> To probe the bcm2835-pwm driver properly, this dts bindings has to be added
->>>> to the bcm2835 dtsi file.
->>>> In expectation of a bcm2835 clock driver, I've added fixed-clock clock binding.
->>>> To change the status of the gpio pins into pwm output pins, some additional
->>>> bindings has to be added but this has not to be done automatically.
->>>> Is it possible to document this bindings somewhere?
->>>
->>> The pinctrl bindings allow you to do this. They're documented in:
->>>
->>> Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
->>> Documentation/devicetree/bindings/pinctrl/brcm,bcm2835-gpio.txt
->>>
->>> pinctrl setup would typically be added to the board file (i.e.
->>> arch/arm/boot/dts/bcm2835-rpi-b.dts) rather than the SoC file. I think
->>> on the RPi, the pins that can generate PWM aren't dedicated to PWM by
->>> the RPi board design (they could be GPIOs and probably other functions
->>> too) so we probably need to leave it up to individual users to add PWM
->>> configuration to their DT, if/when they use the PWM feature.
->>>
->>
->> Indeed, the pins aren't dedicated to pwm and can be used for other functions.
->> Is it usefull to add  the pwm pinctrl description to
->> Documentation/devicetree/bindings/pinctrl/brcm,bcm2835-gpio.txt or is this
->> useless?
+On 2015/1/9 1:06, Marc Zyngier wrote:
+
+> In order to populate the PHB msi_domain, use the "msi-parent"
+> attribute to lookup a corresponding irq domain. If found,
+> this is our MSI domain.
 > 
-> As far as I can tell, that file already describes everything required to configure those pins as PWM (or indeed any pins as any function). Can you expand on what you think is missing?
-Indeed, everything is described in the file. I thought about a specific pwm pinctrl section but it's the same for i2c and spi. This will just make the file unclear. 
-No need to add documentation.
+> This gets plugged into the core PCI code.
+> 
+
+Hi Marc,
+
+Since the whole patch series based on the fact that non PCI type
+buses will use MSI-like interrupts, would it be better if getting
+this field settled during OF populating?
 
 Regards,
+	Abel
 
-Bart
