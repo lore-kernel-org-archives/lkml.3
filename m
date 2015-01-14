@@ -1,82 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621AbbANT1T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 14:27:19 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57454 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225AbbANT1S (ORCPT
+	id S1752902AbbANTdz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 14:33:55 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:13272 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751415AbbANTdx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 14:27:18 -0500
-Date: Wed, 14 Jan 2015 19:27:03 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Zidan Wang <zidan.wang@freescale.com>
-Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de, lars@metafoo.de,
-        ckeepax@opensource.wolfsonmicro.com,
-        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Zidan Wang <b50113@freescale.com>
-Message-ID: <20150114192703.GH3043@sirena.org.uk>
-References: <1420615905-4078-1-git-send-email-zidan.wang@freescale.com>
- <1420615905-4078-2-git-send-email-zidan.wang@freescale.com>
+	Wed, 14 Jan 2015 14:33:53 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18GmtG3u4/byuFgFa1kvSTWwRw5pp8/R4Y=
+X-DKIM: OpenDKIM Filter v2.0.1 titan E546E646572
+Date: Wed, 14 Jan 2015 14:33:32 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 2/5] irqchip: Add DT binding doc for dumb demuxer
+ chips
+Message-ID: <20150114193332.GC24989@titan.lakedaemon.net>
+References: <1421174781-4340-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1421174781-4340-3-git-send-email-boris.brezillon@free-electrons.com>
+ <20150113190050.GZ24989@titan.lakedaemon.net>
+ <20150113215207.185d92b4@bbrezillon>
+ <20150114185619.GB24989@titan.lakedaemon.net>
+ <20150114200809.0c16baae@bbrezillon>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="qM81t570OJUP5TU/"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1420615905-4078-2-git-send-email-zidan.wang@freescale.com>
-X-Cookie: To program is to be.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel][PATCH v2 2/2] ASoC: wm8960: Let wm8960 driver
- configure its bit clock and frame clock
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20150114200809.0c16baae@bbrezillon>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 14, 2015 at 08:08:09PM +0100, Boris Brezillon wrote:
+> Hi Jason,
+> 
+> On Wed, 14 Jan 2015 13:56:19 -0500
+> Jason Cooper <jason@lakedaemon.net> wrote:
+> 
+> > Hey Boris,
+> > 
+> > On Tue, Jan 13, 2015 at 09:52:07PM +0100, Boris Brezillon wrote:
+> > > On Tue, 13 Jan 2015 14:00:50 -0500 Jason Cooper <jason@lakedaemon.net> wrote:
+> > > > On Tue, Jan 13, 2015 at 07:46:18PM +0100, Boris Brezillon wrote:
+> > > > > Add documentation for the dumb demuxer.
+> > > > > 
+> > > > > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> > > > > ---
+> > > > >  .../bindings/interrupt-controller/dumb-demux.txt   | 34 ++++++++++++++++++++++
+> > > > >  1 file changed, 34 insertions(+)
+> > > > >  create mode 100644 Documentation/devicetree/bindings/interrupt-controller/dumb-demux.txt
+> > > > > 
+> > > > > diff --git a/Documentation/devicetree/bindings/interrupt-controller/dumb-demux.txt b/Documentation/devicetree/bindings/interrupt-controller/dumb-demux.txt
+> > > > > new file mode 100644
+> > > > > index 0000000..1c777ef
+> > > > > --- /dev/null
+> > > > > +++ b/Documentation/devicetree/bindings/interrupt-controller/dumb-demux.txt
+> > > > > @@ -0,0 +1,34 @@
+> > > > > +* Generic Dumb Interrupt Demultiplexer
+> > > > > +
+> > > > > +This Dumb demultiplixer simply forward all incoming interrupts to its
+> > > > > +enabled/unmasked children.
+> > > > 
+> > > > Please forgive the potentially naïve question, but what hardware is this
+> > > > describing?
+> > > 
+> > > That's not a real hardware per se, but on some hardware (like at91 SoCs)
+> > > some IRQ line are shared by several peripherals, and this dumb
+> > > demultiplex is here to represent such shared irq lines which cannot be
+> > > easily demultiplexed (because they do not provide a 'cause'
+> > > register).
+> > > 
+> > > You can see it as a virtual irqchip provided to address broken hardware
+> > > designs.
+> > 
+> > Hmm.  Well, given tglx's recent reply, I suppose I'll *not* go down the
+> > rabbit hole of "the DT is for describing hardware."  :-P
+> 
+> Actually I'm a bit surprised no one else already mentioned that :-) (I
+> thought this would be the first complain regarding this dumb irq
+> demux chip).
+> 
+> Anyway, IMHO, this can be considered as hardware description since
+> these irq-lines are really multiplexed into a single one...
 
---qM81t570OJUP5TU/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+True, I think the issue is more that the DT node doesn't strictly
+represent a block of IP.  We just need a way to make that clear in the
+binding doc.
 
-On Wed, Jan 07, 2015 at 03:31:45PM +0800, Zidan Wang wrote:
+> > However, it would probably be a lot more palatable to the DT maintainers
+> > if we at least change the compatible to prepend "linux,".  This way, if
+> > someone does come up with a better solution down the road, it will be
+> > much easier to deprecate the binding.
+> > 
+> > I would also be amenable to "virt,", or "hack,", or even
+> > "work-around-piss-poor-hw,".  Basically, anything that would indicate to
+> > consumers of the DT that this is not a true reflection of the hardware,
+> > and that it may be superseded by a better solution later.
+> 
+> Actually I thought about changing it to "virtual,dumb-irq-demux" :-).
 
-> +	for (i = 0; i < ARRAY_SIZE(dac_divs); ++i) {
-> +		if (wm8960->sysclk == lrclk * dac_divs[i]) {
-> +			for (j = 0; j < ARRAY_SIZE(bclk_divs); ++j) {
-> +				if (wm8960->sysclk ==  wm8960->bclk *
-> +						bclk_divs[j] / 10) {
-> +					goto config_clock;
-> +				}
-> +			}
-> +		}
-> +	}
-> +
-> +	dev_err(codec->dev, "Unsupported sysclk %d\n", wm8960->sysclk);
-> +	return;
+Works for me. :)
 
-It's a bit awkward using the goto like this.  A more common way of
-writing this is to change the above block to be
+thx,
 
-	if (i == ARRAY_SIZE(dac_divs))
-		/* return error */
-
-rather than skipping over the error.  Otherwise this looks good.
-
---qM81t570OJUP5TU/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBCAAGBQJUtsMGAAoJECTWi3JdVIfQBeIIAIApk5/8lxqW70m4OHwYO63P
-0fcxNQlfwlVV+Koc72loUnT066+21KLrbGU7kz43VPvH298OLWVNv+Htk9f007Gu
-2BU2B4S1cVNlC156FvMVzZnK1lZL4TvMGdsbCFwYBNhbkjIY6+KlE8TW/QM+QaDR
-2SFMSW7Bqi/TcKb2RJID62i8gDePFyJvwyp5nfXfW5uzES6dVmnl2p5GdztUrRQn
-AeJ4t261pvJXlbPC8FPIMg3X6HvIA7QM/yVuYu77OuwxixiMOjFdSZoLUz9IixRj
-phXYwadnQqd1KsX9dnwb8+69nJ4yQ8soC48SDS2J/zeCgpnpTHohO8pzKBZNW2E=
-=bhPf
------END PGP SIGNATURE-----
-
---qM81t570OJUP5TU/--
+Jason.
