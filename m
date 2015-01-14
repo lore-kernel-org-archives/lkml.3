@@ -1,23 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223AbbANHfc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:35:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58586 "EHLO
+	id S932869AbbANINH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:13:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58291 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754029AbbANHf1 (ORCPT
+	with ESMTP id S1754864AbbANHbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:35:27 -0500
+	Wed, 14 Jan 2015 02:31:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Coddington <bcodding@redhat.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.14 51/77] nfsd4: fix xdr4 inclusion of escaped char
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Olsa <jolsa@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Zhiqiang Zhang <zhangzhiqiang.zhang@huawei.com>
+Subject: [PATCH 3.18 140/150] perf session: Do not fail on processing out of order event
 Date: Tue, 13 Jan 2015 23:23:31 -0800
-Message-Id: <20150114072227.063802577@linuxfoundation.org>
+Message-Id: <20150114072102.189503210@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,37 +35,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Benjamin Coddington <bcodding@redhat.com>
+From: Jiri Olsa <jolsa@kernel.org>
 
-commit 5a64e56976f1ba98743e1678c0029a98e9034c81 upstream.
+commit f61ff6c06dc8f32c7036013ad802c899ec590607 upstream.
 
-Fix a bug where nfsd4_encode_components_esc() includes the esc_end char as
-an additional string encoding.
+Linus reported perf report command being interrupted due to processing
+of 'out of order' event, with following error:
 
-Signed-off-by: Benjamin Coddington <bcodding@redhat.com>
-Fixes: e7a0444aef4a "nfsd: add IPv6 addr escaping to fs_location hosts"
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+  Timestamp below last timeslice flush
+  0x5733a8 [0x28]: failed to process type: 3
+
+I could reproduce the issue and in my case it was caused by one CPU
+(mmap) being behind during record and userspace mmap reader seeing the
+data after other CPUs data were already stored.
+
+This is expected under some circumstances because we need to limit the
+number of events that we queue for reordering when we receive a
+PERF_RECORD_FINISHED_ROUND or when we force flush due to memory
+pressure.
+
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Matt Fleming <matt.fleming@intel.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1417016371-30249-1-git-send-email-jolsa@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Zhiqiang Zhang <zhangzhiqiang.zhang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4xdr.c |    3 +++
- 1 file changed, 3 insertions(+)
+ tools/perf/util/event.h   |    1 +
+ tools/perf/util/session.c |   11 +++++------
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -1809,6 +1809,9 @@ static __be32 nfsd4_encode_components_es
- 		}
- 		else
- 			end++;
-+		if (found_esc)
-+			end = next;
-+
- 		str = end;
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -214,6 +214,7 @@ struct events_stats {
+ 	u32 nr_invalid_chains;
+ 	u32 nr_unknown_id;
+ 	u32 nr_unprocessable_samples;
++	u32 nr_unordered_events;
+ };
+ 
+ struct attr_event {
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -521,15 +521,11 @@ int perf_session_queue_event(struct perf
+ 		return -ETIME;
+ 
+ 	if (timestamp < oe->last_flush) {
+-		WARN_ONCE(1, "Timestamp below last timeslice flush\n");
+-
+-		pr_oe_time(timestamp,      "out of order event");
++		pr_oe_time(timestamp,      "out of order event\n");
+ 		pr_oe_time(oe->last_flush, "last flush, last_flush_type %d\n",
+ 			   oe->last_flush_type);
+ 
+-		/* We could get out of order messages after forced flush. */
+-		if (oe->last_flush_type != OE_FLUSH__HALF)
+-			return -EINVAL;
++		s->stats.nr_unordered_events++;
  	}
- 	*pp = p;
+ 
+ 	new = ordered_events__new(oe, timestamp, event);
+@@ -1057,6 +1053,9 @@ static void perf_session__warn_about_err
+ 			    "Do you have a KVM guest running and not using 'perf kvm'?\n",
+ 			    session->stats.nr_unprocessable_samples);
+ 	}
++
++	if (session->stats.nr_unordered_events != 0)
++		ui__warning("%u out of order events recorded.\n", session->stats.nr_unordered_events);
+ }
+ 
+ volatile int session_done;
 
 
