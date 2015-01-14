@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933342AbbANH6y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:58:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58581 "EHLO
+	id S1755459AbbANIN1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:13:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58278 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932706AbbANHfQ (ORCPT
+	with ESMTP id S1754862AbbANHbq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:35:16 -0500
+	Wed, 14 Jan 2015 02:31:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeff Layton <jlayton@primarydata.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.14 50/77] fs: nfsd: Fix signedness bug in compare_blob
+        Andreas Oehler <andreas@oehler-net.de>,
+        Andi Kleen <ak@linux.intel.com>,
+        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.18 139/150] perf/x86/uncore/hsw-ep: Handle systems with only two SBOXes
 Date: Tue, 13 Jan 2015 23:23:30 -0800
-Message-Id: <20150114072227.002494977@linuxfoundation.org>
+Message-Id: <20150114072102.142000954@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,72 +29,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+From: Andi Kleen <ak@linux.intel.com>
 
-commit ef17af2a817db97d42dd2ec0a425231748e23dbc upstream.
+commit 5306c31c5733cb4a79cc002e0c3ad256fd439614 upstream.
 
-Bugs similar to the one in acbbe6fbb240 (kcmp: fix standard comparison
-bug) are in rich supply.
+There was another report of a boot failure with a #GP fault in the
+uncore SBOX initialization. The earlier work around was not enough
+for this system.
 
-In this variant, the problem is that struct xdr_netobj::len has type
-unsigned int, so the expression o1->len - o2->len _also_ has type
-unsigned int; it has completely well-defined semantics, and the result
-is some non-negative integer, which is always representable in a long
-long. But this means that if the conditional triggers, we are
-guaranteed to return a positive value from compare_blob.
+The boot was failing while trying to initialize the third SBOX.
 
-In this case it could be fixed by
+This patch detects parts with only two SBOXes and limits the number
+of SBOX units to two there.
 
--       res = o1->len - o2->len;
-+       res = (long long)o1->len - (long long)o2->len;
+Stable material, as it affects boot problems on 3.18.
 
-but I'd rather eliminate the usually broken 'return a - b;' idiom.
-
-Reviewed-by: Jeff Layton <jlayton@primarydata.com>
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Tested-by: Andreas Oehler <andreas@oehler-net.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Yan, Zheng <zheng.z.yan@intel.com>
+Link: http://lkml.kernel.org/r/1420583675-9163-1-git-send-email-andi@firstfloor.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4state.c |   15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.h       |    2 +-
+ arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c |   17 +++++++++++++++++
+ 2 files changed, 18 insertions(+), 1 deletion(-)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -1209,15 +1209,14 @@ static int copy_cred(struct svc_cred *ta
- 	return 0;
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+@@ -17,7 +17,7 @@
+ #define UNCORE_PCI_DEV_TYPE(data)	((data >> 8) & 0xff)
+ #define UNCORE_PCI_DEV_IDX(data)	(data & 0xff)
+ #define UNCORE_EXTRA_PCI_DEV		0xff
+-#define UNCORE_EXTRA_PCI_DEV_MAX	2
++#define UNCORE_EXTRA_PCI_DEV_MAX	3
+ 
+ /* support up to 8 sockets */
+ #define UNCORE_SOCKET_MAX		8
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
+@@ -887,6 +887,7 @@ void snbep_uncore_cpu_init(void)
+ enum {
+ 	SNBEP_PCI_QPI_PORT0_FILTER,
+ 	SNBEP_PCI_QPI_PORT1_FILTER,
++	HSWEP_PCI_PCU_3,
+ };
+ 
+ static int snbep_qpi_hw_config(struct intel_uncore_box *box, struct perf_event *event)
+@@ -2022,6 +2023,17 @@ void hswep_uncore_cpu_init(void)
+ {
+ 	if (hswep_uncore_cbox.num_boxes > boot_cpu_data.x86_max_cores)
+ 		hswep_uncore_cbox.num_boxes = boot_cpu_data.x86_max_cores;
++
++	/* Detect 6-8 core systems with only two SBOXes */
++	if (uncore_extra_pci_dev[0][HSWEP_PCI_PCU_3]) {
++		u32 capid4;
++
++		pci_read_config_dword(uncore_extra_pci_dev[0][HSWEP_PCI_PCU_3],
++				      0x94, &capid4);
++		if (((capid4 >> 6) & 0x3) == 0)
++			hswep_uncore_sbox.num_boxes = 2;
++	}
++
+ 	uncore_msr_uncores = hswep_msr_uncores;
  }
  
--static long long
-+static int
- compare_blob(const struct xdr_netobj *o1, const struct xdr_netobj *o2)
- {
--	long long res;
--
--	res = o1->len - o2->len;
--	if (res)
--		return res;
--	return (long long)memcmp(o1->data, o2->data, o1->len);
-+	if (o1->len < o2->len)
-+		return -1;
-+	if (o1->len > o2->len)
-+		return 1;
-+	return memcmp(o1->data, o2->data, o1->len);
- }
- 
- static int same_name(const char *n1, const char *n2)
-@@ -1401,7 +1400,7 @@ add_clp_to_name_tree(struct nfs4_client
- static struct nfs4_client *
- find_clp_in_name_tree(struct xdr_netobj *name, struct rb_root *root)
- {
--	long long cmp;
-+	int cmp;
- 	struct rb_node *node = root->rb_node;
- 	struct nfs4_client *clp;
+@@ -2279,6 +2291,11 @@ static DEFINE_PCI_DEVICE_TABLE(hswep_unc
+ 		.driver_data = UNCORE_PCI_DEV_DATA(UNCORE_EXTRA_PCI_DEV,
+ 						   SNBEP_PCI_QPI_PORT1_FILTER),
+ 	},
++	{ /* PCU.3 (for Capability registers) */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x2fc0),
++		.driver_data = UNCORE_PCI_DEV_DATA(UNCORE_EXTRA_PCI_DEV,
++						   HSWEP_PCI_PCU_3),
++	},
+ 	{ /* end: all zeroes */ }
+ };
  
 
 
