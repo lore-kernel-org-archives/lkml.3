@@ -1,133 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663AbbANWMg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 17:12:36 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:59598 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752382AbbANWMf (ORCPT
+	id S1754398AbbANWNH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 17:13:07 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:51080 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754302AbbANWND convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 17:12:35 -0500
-Date: Wed, 14 Jan 2015 14:12:28 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Calvin Owens <calvinowens@fb.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, kernel-team@fb.com
-Subject: Re: [PATCH] ksoftirqd: Enable IRQs and call cond_resched() before
- poking RCU
-Message-ID: <20150114221228.GV9719@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1420594659-16996-1-git-send-email-calvinowens@fb.com>
- <20150107014906.GA27996@mail.thefacebook.com>
- <20150107021926.GT5280@linux.vnet.ibm.com>
- <20150107165223.GA21555@linux.vnet.ibm.com>
- <20150108043329.GB27996@mail.thefacebook.com>
- <20150108045306.GJ5280@linux.vnet.ibm.com>
- <20150108214644.GC27996@mail.thefacebook.com>
- <alpine.DEB.2.11.1501131215380.5526@nanos>
- <20150113184301.GO9719@linux.vnet.ibm.com>
- <20150113211618.GA21498@mail.thefacebook.com>
+	Wed, 14 Jan 2015 17:13:03 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Nicolas FERRE <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] ARM: at91: pm: rework cpu detection
+Date: Wed, 14 Jan 2015 23:12:48 +0100
+Message-ID: <3173260.kaXht7OIt1@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20150114210734.GO3843@piout.net>
+References: <1421097825-396-1-git-send-email-alexandre.belloni@free-electrons.com> <217DB987-13E3-4D5D-A9BE-D17662A19E26@jcrosoft.com> <20150114210734.GO3843@piout.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150113211618.GA21498@mail.thefacebook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15011422-0009-0000-0000-000007FE486D
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V03:K0:JbhkZaqb9jWnDspBtlyxc0vzRBxzplpeJTJ19XVd66ZyQyZbnZh
+ 9VB/Br35st0Dk0EUH/jqUamjU58Jg6hz3gOq4XXgSFWd+RMH6Bgr0lduVL53RMpEXPeuuBl
+ Yd39vvPshCwGRWcCRbF0/daJ+DKIh6ytxfqKCTWT21JnIHc5QXl11k+Q9GbuYpU/qxn3fbV
+ 0PK6lpHy46PfAi6tPt5aA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 01:16:18PM -0800, Calvin Owens wrote:
-> While debugging an issue with excessive softirq usage, I encountered the
-> following note in commit 3e339b5dae24a706 ("softirq: Use hotplug thread
-> infrastructure"):
+On Wednesday 14 January 2015 22:07:34 Alexandre Belloni wrote:
+> Hi,
 > 
->     [ paulmck: Call rcu_note_context_switch() with interrupts enabled. ]
+> (Adding Arnd in Cc)
 > 
-> ...but despite this note, the patch still calls RCU with IRQs disabled.
+> On 15/01/2015 at 04:37:14 +0800, Jean-Christophe PLAGNIOL-VILLARD wrote :
+> > >>> -	/* AT91RM9200 SDRAM low-power mode cannot be used with self-refresh. */
+> > >>> -	if (cpu_is_at91rm9200())
+> > >>> +	at91_pm_data.memctrl = AT91_MEMCTRL_SDRAMC;
+> > >>> +
+> > >>> +	if (of_machine_is_compatible("atmel,at91rm9200")) {
+> > >>> +		/*
+> > >>> +		 * AT91RM9200 SDRAM low-power mode cannot be used with
+> > >>> +		 * self-refresh.
+> > >>> +		 */
+> > >>> 		at91_ramc_write(0, AT91RM9200_SDRAMC_LPR, 0);
+> > >>> -	
+> > >>> +
+> > >>> +		at91_pm_data.uhp_udp_mask = AT91RM9200_PMC_UHP |
+> > >>> +					    AT91RM9200_PMC_UDP;
+> > >>> +		at91_pm_data.memctrl = AT91_MEMCTRL_MC;
+> > >>> +	} else if (of_machine_is_compatible("atmel,at91sam9260") ||
+> > >>> +		   of_machine_is_compatible("atmel,at91sam9g20") ||
+> > >>> +		   of_machine_is_compatible("atmel,at91sam9261") ||
+> > >>> +		   of_machine_is_compatible("atmel,at91sam9g10") ||
+> > >>> +		   of_machine_is_compatible("atmel,at91sam9263")) {
+> > >> nack here
+> > >> 
+> > >> you switch for runtime information from the SOC register store in ram to DT
+> > >> 
+> > >> DT is great but I do prefer to rely on the SoC register here as the whole was
+> > >> also to check that the is correct
+> > > 
+> > > Well, cpu_is_xxx macros are defined in a mach specific header, and we're
+> > > currently trying to enable multi platform support. 
+> > 
+> > Yes does not mean we can not move this, use the REAL hardware detected cpu is better
+> > as you can check that the DT is valid for this SoC and also have fixup for a specific
+> > SoC version without having to have x DT per SoC
+
+We should definitely be able to confine the SoC detection to at91sam9 though,
+because in the three other cases (rm9200, sama5d3, sama5d4), we already have
+separate machine descriptors and don't need to do any detection.
+
+> > >> wihich is way slower
+> > > 
+> > > Hmm, this SoC detection has been move from the suspend path (where, as
+> > > you stated, speed is a real concern) to the pm init function (which is
+> > > only called once at startup), and I doubt the boot time penalty will
+> > > even be noticeable…
+> > 
+> > except if your table is boot as quick as possible avoid useless string compare is always a good choice
+> > 
+> > IIRC we had in the past RFC to have the drivers compatible compare switch to HASH
+> > for this purpose too
+> > 
 > 
-> This seemingly innocuous change caused a significant regression in softirq
-> CPU usage on the sending side of a large TCP transfer (~1 GB/s): when
-> introducing 0.01% packet loss, the softirq usage would jump to around 25%,
-> spiking as high as 50%. Before the change, the usage would never exceed 5%.
+> Following a discussion with Arnd, the whole SoC detection will be remove
+> which will be completely faster than mapping the dbgu registers.
 > 
-> Moving the call to rcu_note_context_switch() after the cond_sched() call,
-> as it was originally before the hotplug patch, completely eliminated this
-> problem.
+> Also, the of_machine_is_compatible are supposed to be removed soon,
+> waiting for the pm code to be reworked. What is done here is to allow us
+> to go forward with switching to multiplatform and cleaning up the
+> mach-at91 directory.
 > 
-> Signed-off-by: Calvin Owens <calvinowens@fb.com>
-> Cc: stable@vger.kernel.org
+> I have follow up patches coming up and they already remove some of the
+> of_machine_is_compatible.
 
-Applied, thank you!  I deleted the "cpu" arguments from the calls to
-rcu_note_context_switch() below in order for the patch to apply.
+As you have already confined the of_machine_is_compatible() checks
+to one top-level function, and we have found that this function
+should not be an unconditional arch_initcall, I think the easiest
+way forward is to split at91_pm_init into multiple functions,
+one per case you need to handle, and then use a machine_descriptor
+with a list of compatible strings to match it.
 
-I the put the patch following that on top, as Thomas suggested.
+I think that just means we need an extra machine descriptor to
+handle the at91sam9g45, but that will get folded again over time.
 
-							Thanx, Paul
-
-> ---
-> This version includes the "cpu" argument to rcu_note_context_switch() in
-> order to apply cleanly to stable kernels. It will need to be removed to
-> apply to 3.18+ and 3.19 (upstream commit 38200cf2 removed the argument).
-> 
->  kernel/softirq.c | 6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/softirq.c b/kernel/softirq.c
-> index 501baa9..9e787d8 100644
-> --- a/kernel/softirq.c
-> +++ b/kernel/softirq.c
-> @@ -656,9 +656,13 @@ static void run_ksoftirqd(unsigned int cpu)
->  		 * in the task stack here.
->  		 */
->  		__do_softirq();
-> -		rcu_note_context_switch(cpu);
->  		local_irq_enable();
->  		cond_resched();
-> +
-> +		preempt_disable();
-> +		rcu_note_context_switch(cpu);
-> +		preempt_enable();
-> +
->  		return;
->  	}
->  	local_irq_enable();
-> -- 
-> 2.1.1
-
-------------------------------------------------------------------------
-
-ksoftirqd: Use new cond_resched_rcu_qs() function
-
-Simplify run_ksoftirqd() by using the new cond_resched_rcu_qs() function
-that conditionally reschedules, but unconditionally supplies an RCU
-quiescent state.  This commit is separate from the previous commit by
-Calvin Owens because Calvin's approach can be backported, while this
-commit cannot be.  The reason that this commit cannot be backported is
-that cond_resched_rcu_qs() does not always provide the needed quiescent
-state in earlier kernels.
-
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index c497fcdf0d1e..8cdb98847c7b 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -657,12 +657,7 @@ static void run_ksoftirqd(unsigned int cpu)
- 		 */
- 		__do_softirq();
- 		local_irq_enable();
--		cond_resched();
--
--		preempt_disable();
--		rcu_note_context_switch();
--		preempt_enable();
--
-+		cond_resched_rcu_qs();
- 		return;
- 	}
- 	local_irq_enable();
-
+	Arnd
