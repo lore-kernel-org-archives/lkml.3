@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933386AbbANIGt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:06:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58454 "EHLO
+	id S1754670AbbANH2r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:28:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58009 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755154AbbANHd7 (ORCPT
+	with ESMTP id S1754553AbbANH2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:33:59 -0500
+	Wed, 14 Jan 2015 02:28:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3.14 09/77] swiotlb-xen: pass dev_addr to xen_dma_unmap_page and xen_dma_sync_single_for_cpu
-Date: Tue, 13 Jan 2015 23:22:49 -0800
-Message-Id: <20150114072224.681598705@linuxfoundation.org>
+        Christian Riesch <christian.riesch@omicron.at>
+Subject: [PATCH 3.18 099/150] n_tty: Fix read_buf race condition, increment read_head after pushing data
+Date: Tue, 13 Jan 2015 23:22:50 -0800
+Message-Id: <20150114072100.356393055@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,53 +24,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+From: Christian Riesch <christian.riesch@omicron.at>
 
-commit d6883e6f32e07ef2cc974753ba00927de099e6d7 upstream.
+commit 8bfbe2de769afda051c56aba5450391670e769fc upstream.
 
-xen_dma_unmap_page and xen_dma_sync_single_for_cpu take a dma_addr_t
-handle as argument, not a physical address.
+Commit 19e2ad6a09f0c06dbca19c98e5f4584269d913dd ("n_tty: Remove overflow
+tests from receive_buf() path") moved the increment of read_head into
+the arguments list of read_buf_addr(). Function calls represent a
+sequence point in C. Therefore read_head is incremented before the
+character c is placed in the buffer. Since the circular read buffer is
+a lock-less design since commit 6d76bd2618535c581f1673047b8341fd291abc67
+("n_tty: Make N_TTY ldisc receive path lockless"), this creates a race
+condition that leads to communication errors.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+This patch modifies the code to increment read_head _after_ the data
+is placed in the buffer and thus fixes the race for non-SMP machines.
+To fix the problem for SMP machines, memory barriers must be added in
+a separate patch.
+
+Signed-off-by: Christian Riesch <christian.riesch@omicron.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/swiotlb-xen.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/tty/n_tty.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -447,7 +447,7 @@ static void xen_unmap_single(struct devi
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -321,7 +321,8 @@ static void n_tty_check_unthrottle(struc
  
- 	BUG_ON(dir == DMA_NONE);
+ static inline void put_tty_queue(unsigned char c, struct n_tty_data *ldata)
+ {
+-	*read_buf_addr(ldata, ldata->read_head++) = c;
++	*read_buf_addr(ldata, ldata->read_head) = c;
++	ldata->read_head++;
+ }
  
--	xen_dma_unmap_page(hwdev, paddr, size, dir, attrs);
-+	xen_dma_unmap_page(hwdev, dev_addr, size, dir, attrs);
- 
- 	/* NOTE: We use dev_addr here, not paddr! */
- 	if (is_xen_swiotlb_buffer(dev_addr)) {
-@@ -495,14 +495,14 @@ xen_swiotlb_sync_single(struct device *h
- 	BUG_ON(dir == DMA_NONE);
- 
- 	if (target == SYNC_FOR_CPU)
--		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
-+		xen_dma_sync_single_for_cpu(hwdev, dev_addr, size, dir);
- 
- 	/* NOTE: We use dev_addr here, not paddr! */
- 	if (is_xen_swiotlb_buffer(dev_addr))
- 		swiotlb_tbl_sync_single(hwdev, paddr, size, dir, target);
- 
- 	if (target == SYNC_FOR_DEVICE)
--		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
-+		xen_dma_sync_single_for_cpu(hwdev, dev_addr, size, dir);
- 
- 	if (dir != DMA_FROM_DEVICE)
- 		return;
+ /**
 
 
