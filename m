@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293AbbANTUw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 14:20:52 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39868 "EHLO
+	id S1754426AbbANTVP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 14:21:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39892 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754235AbbANTUv (ORCPT
+	with ESMTP id S1754384AbbANTVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 14:20:51 -0500
-Date: Wed, 14 Jan 2015 11:20:14 -0800
-From: tip-bot for Davidlohr Bueso <tipbot@zytor.com>
-Message-ID: <tip-036cc30c6b6af1cd42de6c34c4461f17da01cbf7@git.kernel.org>
-Cc: hpa@zytor.com, tglx@linutronix.de, mingo@kernel.org, dbueso@suse.de,
-        peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        dave@stgolabs.net
-Reply-To: mingo@kernel.org, tglx@linutronix.de, hpa@zytor.com,
-        peterz@infradead.org, dbueso@suse.de, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        dave@stgolabs.net
-In-Reply-To: <1420573509-24774-7-git-send-email-dave@stgolabs.net>
-References: <1420573509-24774-7-git-send-email-dave@stgolabs.net>
+	Wed, 14 Jan 2015 14:21:12 -0500
+Date: Wed, 14 Jan 2015 11:20:32 -0800
+From: tip-bot for Heiko Carstens <tipbot@zytor.com>
+Message-ID: <tip-0f1ba9a2cea52896448ef4e14a4cb1880b8e5bee@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        hpa@zytor.com, tglx@linutronix.de, paulmck@linux.vnet.ibm.com,
+        mingo@kernel.org, heiko.carstens@de.ibm.com
+Reply-To: tglx@linutronix.de, hpa@zytor.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
+        mingo@kernel.org, paulmck@linux.vnet.ibm.com
+In-Reply-To: <20150107090441.GC4365@osiris>
+References: <20150107090441.GC4365@osiris>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/core] locking/osq: No need for load/
- acquire when acquire-polling
-Git-Commit-ID: 036cc30c6b6af1cd42de6c34c4461f17da01cbf7
+Subject: [tip:locking/core] softirq/preempt: Add missing current->
+ preempt_disable_ip update
+Git-Commit-ID: 0f1ba9a2cea52896448ef4e14a4cb1880b8e5bee
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,75 +36,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  036cc30c6b6af1cd42de6c34c4461f17da01cbf7
-Gitweb:     http://git.kernel.org/tip/036cc30c6b6af1cd42de6c34c4461f17da01cbf7
-Author:     Davidlohr Bueso <dave@stgolabs.net>
-AuthorDate: Tue, 6 Jan 2015 11:45:09 -0800
+Commit-ID:  0f1ba9a2cea52896448ef4e14a4cb1880b8e5bee
+Gitweb:     http://git.kernel.org/tip/0f1ba9a2cea52896448ef4e14a4cb1880b8e5bee
+Author:     Heiko Carstens <heiko.carstens@de.ibm.com>
+AuthorDate: Wed, 7 Jan 2015 10:04:41 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 14 Jan 2015 15:16:20 +0100
+CommitDate: Wed, 14 Jan 2015 15:16:21 +0100
 
-locking/osq: No need for load/acquire when acquire-polling
+softirq/preempt: Add missing current->preempt_disable_ip update
 
-Both mutexes and rwsems took a performance hit when we switched
-over from the original mcs code to the cancelable variant (osq).
-The reason being the use of smp_load_acquire() when polling for
-node->locked. This is not needed as reordering is not an issue,
-as such, relax the barrier semantics. Paul describes the scenario
-nicely: https://lkml.org/lkml/2013/11/19/405
+While debugging some "sleeping function called from invalid context" bug I
+realized that the debugging message "Preemption disabled at:" pointed to
+an incorrect function.
 
-  - If we start polling before the insertion is complete, all that
-    happens is that the first few polls have no chance of seeing a lock
-    grant.
+In particular if the last function/action that disabled preemption was
+spin_lock_bh() then current->preempt_disable_ip won't be updated.
 
-  - Ordering the polling against the initialization -- the above
-    xchg() is already doing that for us.
+The reason for this is that __local_bh_disable_ip() will increase
+preempt_count manually instead of calling preempt_count_add(), which
+would handle the update correctly.
 
-The smp_load_acquire() when unqueuing make sense. In addition,
-we don't need to worry about leaking the critical region as
-osq is only used internally.
+It look like the manual handling was done to work around some lockdep issue.
 
-This impacts both regular and large levels of concurrency,
-ie on a 40 core system with a disk intensive workload:
+So add the missing update of current->preempt_disable_ip to
+__local_bh_disable_ip() as well.
 
-	disk-1               804.83 (  0.00%)      828.16 (  2.90%)
-	disk-61             8063.45 (  0.00%)    18181.82 (125.48%)
-	disk-121            7187.41 (  0.00%)    20119.17 (179.92%)
-	disk-181            6933.32 (  0.00%)    20509.91 (195.82%)
-	disk-241            6850.81 (  0.00%)    20397.80 (197.74%)
-	disk-301            6815.22 (  0.00%)    20287.58 (197.68%)
-	disk-361            7080.40 (  0.00%)    20205.22 (185.37%)
-	disk-421            7076.13 (  0.00%)    19957.33 (182.04%)
-	disk-481            7083.25 (  0.00%)    19784.06 (179.31%)
-	disk-541            7038.39 (  0.00%)    19610.92 (178.63%)
-	disk-601            7072.04 (  0.00%)    19464.53 (175.23%)
-	disk-661            7010.97 (  0.00%)    19348.23 (175.97%)
-	disk-721            7069.44 (  0.00%)    19255.33 (172.37%)
-	disk-781            7007.58 (  0.00%)    19103.14 (172.61%)
-	disk-841            6981.18 (  0.00%)    18964.22 (171.65%)
-	disk-901            6968.47 (  0.00%)    18826.72 (170.17%)
-	disk-961            6964.61 (  0.00%)    18708.02 (168.62%)
-
-Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1420573509-24774-7-git-send-email-dave@stgolabs.net
+Link: http://lkml.kernel.org/r/20150107090441.GC4365@osiris
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/locking/osq_lock.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/softirq.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/locking/osq_lock.c b/kernel/locking/osq_lock.c
-index ec83d4d..c112d00 100644
---- a/kernel/locking/osq_lock.c
-+++ b/kernel/locking/osq_lock.c
-@@ -109,7 +109,7 @@ bool osq_lock(struct optimistic_spin_queue *lock)
- 	 * cmpxchg in an attempt to undo our queueing.
- 	 */
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 501baa9..b9ae816 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -114,8 +114,12 @@ void __local_bh_disable_ip(unsigned long ip, unsigned int cnt)
+ 		trace_softirqs_off(ip);
+ 	raw_local_irq_restore(flags);
  
--	while (!smp_load_acquire(&node->locked)) {
-+	while (!ACCESS_ONCE(node->locked)) {
- 		/*
- 		 * If we need to reschedule bail... so we can block.
- 		 */
+-	if (preempt_count() == cnt)
++	if (preempt_count() == cnt) {
++#ifdef CONFIG_DEBUG_PREEMPT
++		current->preempt_disable_ip = get_parent_ip(CALLER_ADDR1);
++#endif
+ 		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
++	}
+ }
+ EXPORT_SYMBOL(__local_bh_disable_ip);
+ #endif /* CONFIG_TRACE_IRQFLAGS */
