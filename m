@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391AbbANIdb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:33:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57923 "EHLO
+	id S1753323AbbANI2V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:28:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57926 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754448AbbANH15 (ORCPT
+	with ESMTP id S1754454AbbANH16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:27:57 -0500
+	Wed, 14 Jan 2015 02:27:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.18 077/150] ALSA: hda/realtek - Add new Dell desktop for ALC3234 headset mode
-Date: Tue, 13 Jan 2015 23:22:28 -0800
-Message-Id: <20150114072059.331336026@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.18 078/150] ALSA: hda - using uninitialized data
+Date: Tue, 13 Jan 2015 23:22:29 -0800
+Message-Id: <20150114072059.372324137@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -28,29 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kailang Yang <kailang@realtek.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 8b72415d8aa8bb1904c61926bd0701447ce44bee upstream.
+commit 69eba10e606a80665f8573221fec589430d9d1cb upstream.
 
-New Dell desktop needs to support headset mode for ALC3234.
+In olden times the snd_hda_param_read() function always set "*start_id"
+but in 2007 we introduced a new return and it causes uninitialized data
+bugs in a couple of the callers: print_codec_info() and
+hdmi_parse_codec().
 
-Signed-off-by: Kailang Yang <kailang@realtek.com>
+Fixes: e8a7f136f5ed ('[ALSA] hda-intel - Improve HD-audio codec probing robustness')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/hda_codec.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4796,6 +4796,7 @@ static const struct snd_pci_quirk alc269
- 	SND_PCI_QUIRK(0x1028, 0x0638, "Dell Inspiron 5439", ALC290_FIXUP_MONO_SPEAKERS_HSJACK),
- 	SND_PCI_QUIRK(0x1028, 0x064a, "Dell", ALC293_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x064b, "Dell", ALC293_FIXUP_DELL1_MIC_NO_PRESENCE),
-+	SND_PCI_QUIRK(0x1028, 0x06c7, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x06d9, "Dell", ALC293_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x06da, "Dell", ALC293_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x164a, "Dell", ALC293_FIXUP_DELL1_MIC_NO_PRESENCE),
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -338,8 +338,10 @@ int snd_hda_get_sub_nodes(struct hda_cod
+ 	unsigned int parm;
+ 
+ 	parm = snd_hda_param_read(codec, nid, AC_PAR_NODE_COUNT);
+-	if (parm == -1)
++	if (parm == -1) {
++		*start_id = 0;
+ 		return 0;
++	}
+ 	*start_id = (parm >> 16) & 0x7fff;
+ 	return (int)(parm & 0x7fff);
+ }
 
 
