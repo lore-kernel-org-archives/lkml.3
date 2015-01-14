@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052AbbANQd2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 11:33:28 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:44907 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752140AbbANQd0 (ORCPT
+	id S1754072AbbANQeb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 11:34:31 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57102 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752782AbbANQea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 11:33:26 -0500
-Date: Wed, 14 Jan 2015 16:33:17 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Siddhartha De <siddhartha.de87@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Question about kernel interfaces
-Message-ID: <20150114163317.46a1ecec@lxorguk.ukuu.org.uk>
-In-Reply-To: <CADxyqME4=vnZh4J8BDw63r6L=hA8OpO4GJWxuuOgwuFwHb+8Lg@mail.gmail.com>
-References: <CADxyqMFnDnFNvTL7Yuzd-1WP9RRddFYAd7UVXmLT2SOMRmOx9g@mail.gmail.com>
-	<CADxyqMHXMjXPVnGSpQSS=_FUpH=Hz-=P1FbcFfJ8Omp3k74dGA@mail.gmail.com>
-	<20150108134849.671ee761@lxorguk.ukuu.org.uk>
-	<CADxyqME4=vnZh4J8BDw63r6L=hA8OpO4GJWxuuOgwuFwHb+8Lg@mail.gmail.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
+	Wed, 14 Jan 2015 11:34:30 -0500
+Date: Wed, 14 Jan 2015 16:34:15 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "Wang, Jiada (ESD)" <Jiada_Wang@mentor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "Frkuska, Joshua" <Joshua_Frkuska@mentor.com>
+Message-ID: <20150114163415.GV4160@sirena.org.uk>
+References: <857E9EDCA6C0904DB3357321AA9123EB0108B66919@NA-MBX-01.mgc.mentorg.com>
+ <s5h1tmyiof7.wl-tiwai@suse.de>
+ <20150113215412.GS4160@sirena.org.uk>
+ <s5hr3ux24em.wl-tiwai@suse.de>
+ <54B625A8.8090406@metafoo.de>
+ <s5hoaq121gh.wl-tiwai@suse.de>
+ <54B63E4F.2010506@metafoo.de>
+ <s5hwq4phbzr.wl-tiwai@suse.de>
+ <20150114120228.GT4160@sirena.org.uk>
+ <s5hiog9h5xu.wl-tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="OFtM20PmL5gDcvsL"
+Content-Disposition: inline
+In-Reply-To: <s5hiog9h5xu.wl-tiwai@suse.de>
+X-Cookie: Keep out of reach of children.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [alsa-devel] unload Audio drivers while playback stream is
+ active case kernel crash
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Just wanted to point out something  :-
-> 
-> Quoting from makelinux website :-
-> http://www.makelinux.net/books/lkd2/ch17lev1sec8
-> 
-> "The sysfs filesystem is currently the place for implementing
-> functionality previously reserved for ioctl() calls on device nodes or
-> the procfs filesystem. These days, the chic thing to do is implement
-> such functionality as sysfs attributes in the appropriate directory.
-> For example, instead of a new ioctl() on a device node, add a sysfs
-> attribute in the driver's sysfs directory. Such an approach avoids the
-> type-unsafe use of obscure ioctl() arguments and the haphazard mess of
-> /proc. "
 
-And is wrong. Certainly rather clueless people had the idea they could
-make ioctl go away using sysfs, and then everyone wrote about it. Anyone
-who actually thought about the problem realised immediately they are not
-semantically equivalent.
+--OFtM20PmL5gDcvsL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> sysfs is the new ioctl
+On Wed, Jan 14, 2015 at 02:01:33PM +0100, Takashi Iwai wrote:
+> Mark Brown wrote:
 
-And as was pointed out even then they are not semantically equivalent so
-everyone who was talking about "sysfs being the new ioctl" was basically
-talking out the wrong end.
+> > > Above all, disallowing the module unload while using is the common
+> > > behavior of any other drivers.  Why do we have to be a rebel against
+> > > all civil manner? :)
 
-What was done was to stop filling drivers with ioctls for pieces of
-general information which didn't have a context attached to it or
-sequence. Things like power state, what type it is, what bus it is on
-etc. That avoided having zillions of ioctls but at the cost of memory.
+> > That's not true for everything
 
-> Taking this idea further , could we also expose driver IOCTL's over
-> the network ?
-> 
-> For eg to open the cd rom drive we would be calling the following url :-
+> Hmm, which driver does behave so intentionally?  I'm interested in the
+> supposed reason behind it.
 
-You could but why would you make the network visible. If you look at real
-clustered systems they all hide the network. You don't care where it is,
-often you don't even care where the drive is.
+Relatively few of the subsystems in drivers have references to
+module_get().
 
-eject /dev/cdrom
+> > and for ASoC I'd tend to assume that the
+> > user knows what they're doing and has a good reason for it; it's
+> > certainly something that can be helpful in development.
 
-on such a system lets the kernel figure out who to ask to eject it.
+> The module unload is never considered to be equivalent with hot
+> unplug  It's more than that.
 
-The job of an OS is to abstract details like that. In a clustered OS I
-want to be able to type
+I'm not sure that's the case from a user perspective.
 
-	mount mydisk
+--OFtM20PmL5gDcvsL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-and I don't care who, where or how it gets mounted so long as it appears.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Alan
+iQEcBAEBCAAGBQJUtpqHAAoJECTWi3JdVIfQ2wsH/2+T+F7k18ei4Szp3Bv4Vf7h
+Uv2T++/J/429RH+CJCNWrlr/l6NjtmZrICqqESvWI2kk4kwi+5AeAzR9nEIQ27sL
+12LpBKaxsnSr9McgzlfdItIbypvfTMOV+ObUWK/RspBXWJG8mhxbp+wqG5EJ2jpP
+dwejoePFskNGWgVVDw2GtK3vowLVP3musNeYbwsROWbNU9b0osCxRnm7lxrkHvhu
+cPqOtaObE44dN4rZfRE9TUBJsGywlYsjP69RCSGM0jHrrvPo+aiG7ejjbVnZodwL
+sG48T/lVpz6s3sHVALqT166oJzAkHmy5VS7w6te8aIzxWbomBNTPVWuGu1psUjo=
+=bQ7Z
+-----END PGP SIGNATURE-----
+
+--OFtM20PmL5gDcvsL--
