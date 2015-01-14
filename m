@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933205AbbANIE3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:04:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58486 "EHLO
+	id S1754763AbbANHaH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:30:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58136 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932514AbbANHeR (ORCPT
+	with ESMTP id S1752018AbbANHaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:34:17 -0500
+	Wed, 14 Jan 2015 02:30:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>,
-        Antonio Borneo <borneo.antonio@gmail.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.14 28/77] HID: i2c-hid: fix race condition reading reports
+        Felipe Balbi <balbi@ti.com>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.18 117/150] ARM: dts: am437x-sk-evm.dts: fix LCD timings
 Date: Tue, 13 Jan 2015 23:23:08 -0800
-Message-Id: <20150114072225.740205285@linuxfoundation.org>
+Message-Id: <20150114072101.153857088@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -27,93 +25,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
 
-commit 6296f4a8eb86f9abcc370fb7a1a116b8441c17fd upstream.
+commit d73f825e6efa723e81d9ffcc4949fe9f03f1df29 upstream.
 
-Current driver uses a common buffer for reading reports either
-synchronously in i2c_hid_get_raw_report() and asynchronously in
-the interrupt handler.
-There is race condition if an interrupt arrives immediately after
-the report is received in i2c_hid_get_raw_report(); the common
-buffer is modified by the interrupt handler with the new report
-and then i2c_hid_get_raw_report() proceed using wrong data.
+The lcd0 node for am437x-sk-evm.dts contains bad LCD timings, and while
+they seem to work with a quick test, doing for example blank/unblank
+will give you a black display.
 
-Fix it by using a separate buffers for synchronous reports.
+This patch updates the timings to the 'typical' values from the LCD spec
+sheet.
 
-Signed-off-by: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
-[Antonio Borneo: cleanup, rebase to v3.17, submit mainline]
-Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Also, the compatible string is completely bogus, as
+"osddisplays,osd057T0559-34ts" is _not_ a 480x272 panel. The panel on
+the board is a newhaven one. Update the compatible string to reflect
+this. Note that this hasn't caused any issues, as the "panel-dpi"
+matches the driver.
+
+Tested-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/i2c-hid/i2c-hid.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ arch/arm/boot/dts/am437x-sk-evm.dts |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/hid/i2c-hid/i2c-hid.c
-+++ b/drivers/hid/i2c-hid/i2c-hid.c
-@@ -136,6 +136,7 @@ struct i2c_hid {
- 						   * descriptor. */
- 	unsigned int		bufsize;	/* i2c buffer size */
- 	char			*inbuf;		/* Input buffer */
-+	char			*rawbuf;	/* Raw Input buffer */
- 	char			*cmdbuf;	/* Command buffer */
- 	char			*argsbuf;	/* Command arguments buffer */
+--- a/arch/arm/boot/dts/am437x-sk-evm.dts
++++ b/arch/arm/boot/dts/am437x-sk-evm.dts
+@@ -100,7 +100,7 @@
+ 	};
  
-@@ -482,9 +483,11 @@ static void i2c_hid_find_max_report(stru
- static void i2c_hid_free_buffers(struct i2c_hid *ihid)
- {
- 	kfree(ihid->inbuf);
-+	kfree(ihid->rawbuf);
- 	kfree(ihid->argsbuf);
- 	kfree(ihid->cmdbuf);
- 	ihid->inbuf = NULL;
-+	ihid->rawbuf = NULL;
- 	ihid->cmdbuf = NULL;
- 	ihid->argsbuf = NULL;
- 	ihid->bufsize = 0;
-@@ -500,10 +503,11 @@ static int i2c_hid_alloc_buffers(struct
- 		       report_size; /* report */
+ 	lcd0: display {
+-		compatible = "osddisplays,osd057T0559-34ts", "panel-dpi";
++		compatible = "newhaven,nhd-4.3-480272ef-atxl", "panel-dpi";
+ 		label = "lcd";
  
- 	ihid->inbuf = kzalloc(report_size, GFP_KERNEL);
-+	ihid->rawbuf = kzalloc(report_size, GFP_KERNEL);
- 	ihid->argsbuf = kzalloc(args_len, GFP_KERNEL);
- 	ihid->cmdbuf = kzalloc(sizeof(union command) + args_len, GFP_KERNEL);
- 
--	if (!ihid->inbuf || !ihid->argsbuf || !ihid->cmdbuf) {
-+	if (!ihid->inbuf || !ihid->rawbuf || !ihid->argsbuf || !ihid->cmdbuf) {
- 		i2c_hid_free_buffers(ihid);
- 		return -ENOMEM;
- 	}
-@@ -530,12 +534,12 @@ static int i2c_hid_get_raw_report(struct
- 
- 	ret = i2c_hid_get_report(client,
- 			report_type == HID_FEATURE_REPORT ? 0x03 : 0x01,
--			report_number, ihid->inbuf, ask_count);
-+			report_number, ihid->rawbuf, ask_count);
- 
- 	if (ret < 0)
- 		return ret;
- 
--	ret_count = ihid->inbuf[0] | (ihid->inbuf[1] << 8);
-+	ret_count = ihid->rawbuf[0] | (ihid->rawbuf[1] << 8);
- 
- 	if (ret_count <= 2)
- 		return 0;
-@@ -544,7 +548,7 @@ static int i2c_hid_get_raw_report(struct
- 
- 	/* The query buffer contains the size, dropping it in the reply */
- 	count = min(count, ret_count - 2);
--	memcpy(buf, ihid->inbuf + 2, count);
-+	memcpy(buf, ihid->rawbuf + 2, count);
- 
- 	return count;
- }
+ 		pinctrl-names = "default";
+@@ -112,11 +112,11 @@
+ 			clock-frequency = <9000000>;
+ 			hactive = <480>;
+ 			vactive = <272>;
+-			hfront-porch = <8>;
+-			hback-porch = <43>;
+-			hsync-len = <4>;
+-			vback-porch = <12>;
+-			vfront-porch = <4>;
++			hfront-porch = <2>;
++			hback-porch = <2>;
++			hsync-len = <41>;
++			vfront-porch = <2>;
++			vback-porch = <2>;
+ 			vsync-len = <10>;
+ 			hsync-active = <0>;
+ 			vsync-active = <0>;
 
 
