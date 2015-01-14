@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437AbbANH1v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:27:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57901 "EHLO
+	id S1755474AbbANIeD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:34:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57907 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754415AbbANH1t (ORCPT
+	with ESMTP id S1754422AbbANH1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:27:49 -0500
+	Wed, 14 Jan 2015 02:27:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Doug Anderson <dianders@chromium.org>,
-        Romain Baeriswyl <romain.baeriswyl@alitech.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.18 073/150] i2c: designware: Fix falling time bindings doc
-Date: Tue, 13 Jan 2015 23:22:24 -0800
-Message-Id: <20150114072059.145662632@linuxfoundation.org>
+        Jiri Jaburek <jjaburek@redhat.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.18 074/150] ALSA: usb-audio: extend KEF X300A FU 10 tweak to Arcam rPAC
+Date: Tue, 13 Jan 2015 23:22:25 -0800
+Message-Id: <20150114072059.196105673@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -30,46 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Doug Anderson <dianders@chromium.org>
+From: Jiri Jaburek <jjaburek@redhat.com>
 
-commit 8e2596e81a9dd8f9efcf78476f3990f211e25edb upstream.
+commit d70a1b9893f820fdbcdffac408c909c50f2e6b43 upstream.
 
-In (6468276 i2c: designware: make SCL and SDA falling time
-configurable) new device tree properties were added for setting the
-falling time of SDA and SCL.  The device tree bindings doc had a typo
-in it: it forgot the "-ns" suffix for both properies in the prose of
-the bindings.
+The Arcam rPAC seems to have the same problem - whenever anything
+(alsamixer, udevd, 3.9+ kernel from 60af3d037eb8c, ..) attempts to
+access mixer / control interface of the card, the firmware "locks up"
+the entire device, resulting in
+  SNDRV_PCM_IOCTL_HW_PARAMS failed (-5): Input/output error
+from alsa-lib.
 
-I assume this is a typo because:
-* The source code includes the "-ns"
-* The example in the bindings includes the "-ns".
+Other operating systems can somehow read the mixer (there seems to be
+playback volume/mute), but any manipulation is ignored by the device
+(which has hardware volume controls).
 
-Fix the typo.
-
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Fixes: 6468276b2206 ("i2c: designware: make SCL and SDA falling time configurable")
-Acked-by: Romain Baeriswyl <romain.baeriswyl@alitech.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Jiri Jaburek <jjaburek@redhat.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/devicetree/bindings/i2c/i2c-designware.txt |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/usb/mixer_maps.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
---- a/Documentation/devicetree/bindings/i2c/i2c-designware.txt
-+++ b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
-@@ -14,10 +14,10 @@ Optional properties :
-  - i2c-sda-hold-time-ns : should contain the SDA hold time in nanoseconds.
-    This option is only supported in hardware blocks version 1.11a or newer.
+--- a/sound/usb/mixer_maps.c
++++ b/sound/usb/mixer_maps.c
+@@ -328,8 +328,11 @@ static struct usbmix_name_map gamecom780
+ 	{}
+ };
  
-- - i2c-scl-falling-time : should contain the SCL falling time in nanoseconds.
-+ - i2c-scl-falling-time-ns : should contain the SCL falling time in nanoseconds.
-    This value which is by default 300ns is used to compute the tLOW period.
+-static const struct usbmix_name_map kef_x300a_map[] = {
+-	{ 10, NULL }, /* firmware locks up (?) when we try to access this FU */
++/* some (all?) SCMS USB3318 devices are affected by a firmware lock up
++ * when anything attempts to access FU 10 (control)
++ */
++static const struct usbmix_name_map scms_usb3318_map[] = {
++	{ 10, NULL },
+ 	{ 0 }
+ };
  
-- - i2c-sda-falling-time : should contain the SDA falling time in nanoseconds.
-+ - i2c-sda-falling-time-ns : should contain the SDA falling time in nanoseconds.
-    This value which is by default 300ns is used to compute the tHIGH period.
- 
- Example :
+@@ -425,8 +428,14 @@ static struct usbmix_ctl_map usbmix_ctl_
+ 		.map = ebox44_map,
+ 	},
+ 	{
++		/* KEF X300A */
+ 		.id = USB_ID(0x27ac, 0x1000),
+-		.map = kef_x300a_map,
++		.map = scms_usb3318_map,
++	},
++	{
++		/* Arcam rPAC */
++		.id = USB_ID(0x25c4, 0x0003),
++		.map = scms_usb3318_map,
+ 	},
+ 	{ 0 } /* terminator */
+ };
 
 
