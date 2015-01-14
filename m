@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932944AbbANHg6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:36:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58720 "EHLO
+	id S1755384AbbANHjI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:39:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58908 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932899AbbANHgu (ORCPT
+	with ESMTP id S1755034AbbANHjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:36:50 -0500
+	Wed, 14 Jan 2015 02:39:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH 3.14 74/77] mmc: sdhci: Fix sleep in atomic after inserting SD card
+        Jeff Layton <jlayton@primarydata.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.10 33/44] fs: nfsd: Fix signedness bug in compare_blob
 Date: Tue, 13 Jan 2015 23:23:54 -0800
-Message-Id: <20150114072228.440385224@linuxfoundation.org>
+Message-Id: <20150114072229.261642934@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
+References: <20150114072227.419663002@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,102 +26,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 
-commit 2836766a9d0bd02c66073f8dd44796e6cc23848d upstream.
+commit ef17af2a817db97d42dd2ec0a425231748e23dbc upstream.
 
-Sleep in atomic context happened on Trats2 board after inserting or
-removing SD card because mmc_gpio_get_cd() was called under spin lock.
+Bugs similar to the one in acbbe6fbb240 (kcmp: fix standard comparison
+bug) are in rich supply.
 
-Fix this by moving card detection earlier, before acquiring spin lock.
-The mmc_gpio_get_cd() call does not have to be protected by spin lock
-because it does not access any sdhci internal data.
-The sdhci_do_get_cd() call access host flags (SDHCI_DEVICE_DEAD). After
-moving it out side of spin lock it could theoretically race with driver
-removal but still there is no actual protection against manual card
-eject.
+In this variant, the problem is that struct xdr_netobj::len has type
+unsigned int, so the expression o1->len - o2->len _also_ has type
+unsigned int; it has completely well-defined semantics, and the result
+is some non-negative integer, which is always representable in a long
+long. But this means that if the conditional triggers, we are
+guaranteed to return a positive value from compare_blob.
 
-Dmesg after inserting SD card:
-[   41.663414] BUG: sleeping function called from invalid context at drivers/gpio/gpiolib.c:1511
-[   41.670469] in_atomic(): 1, irqs_disabled(): 128, pid: 30, name: kworker/u8:1
-[   41.677580] INFO: lockdep is turned off.
-[   41.681486] irq event stamp: 61972
-[   41.684872] hardirqs last  enabled at (61971): [<c0490ee0>] _raw_spin_unlock_irq+0x24/0x5c
-[   41.693118] hardirqs last disabled at (61972): [<c04907ac>] _raw_spin_lock_irq+0x18/0x54
-[   41.701190] softirqs last  enabled at (61648): [<c0026fd4>] __do_softirq+0x234/0x2c8
-[   41.708914] softirqs last disabled at (61631): [<c00273a0>] irq_exit+0xd0/0x114
-[   41.716206] Preemption disabled at:[<  (null)>]   (null)
-[   41.721500]
-[   41.722985] CPU: 3 PID: 30 Comm: kworker/u8:1 Tainted: G        W      3.18.0-rc5-next-20141121 #883
-[   41.732111] Workqueue: kmmcd mmc_rescan
-[   41.735945] [<c0014d2c>] (unwind_backtrace) from [<c0011c80>] (show_stack+0x10/0x14)
-[   41.743661] [<c0011c80>] (show_stack) from [<c0489d14>] (dump_stack+0x70/0xbc)
-[   41.750867] [<c0489d14>] (dump_stack) from [<c0228b74>] (gpiod_get_raw_value_cansleep+0x18/0x30)
-[   41.759628] [<c0228b74>] (gpiod_get_raw_value_cansleep) from [<c03646e8>] (mmc_gpio_get_cd+0x38/0x58)
-[   41.768821] [<c03646e8>] (mmc_gpio_get_cd) from [<c036d378>] (sdhci_request+0x50/0x1a4)
-[   41.776808] [<c036d378>] (sdhci_request) from [<c0357934>] (mmc_start_request+0x138/0x268)
-[   41.785051] [<c0357934>] (mmc_start_request) from [<c0357cc8>] (mmc_wait_for_req+0x58/0x1a0)
-[   41.793469] [<c0357cc8>] (mmc_wait_for_req) from [<c0357e68>] (mmc_wait_for_cmd+0x58/0x78)
-[   41.801714] [<c0357e68>] (mmc_wait_for_cmd) from [<c0361c00>] (mmc_io_rw_direct_host+0x98/0x124)
-[   41.810480] [<c0361c00>] (mmc_io_rw_direct_host) from [<c03620f8>] (sdio_reset+0x2c/0x64)
-[   41.818641] [<c03620f8>] (sdio_reset) from [<c035a3d8>] (mmc_rescan+0x254/0x2e4)
-[   41.826028] [<c035a3d8>] (mmc_rescan) from [<c003a0e0>] (process_one_work+0x180/0x3f4)
-[   41.833920] [<c003a0e0>] (process_one_work) from [<c003a3bc>] (worker_thread+0x34/0x4b0)
-[   41.841991] [<c003a3bc>] (worker_thread) from [<c003fed8>] (kthread+0xe4/0x104)
-[   41.849285] [<c003fed8>] (kthread) from [<c000f268>] (ret_from_fork+0x14/0x2c)
-[   42.038276] mmc0: new high speed SDHC card at address 1234
+In this case it could be fixed by
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Fixes: 94144a465dd0 ("mmc: sdhci: add get_cd() implementation")
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+-       res = o1->len - o2->len;
++       res = (long long)o1->len - (long long)o2->len;
+
+but I'd rather eliminate the usually broken 'return a - b;' idiom.
+
+Reviewed-by: Jeff Layton <jlayton@primarydata.com>
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/sdhci.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ fs/nfsd/nfs4state.c |   15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -1343,6 +1343,8 @@ static void sdhci_request(struct mmc_hos
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -1200,15 +1200,14 @@ static int copy_cred(struct svc_cred *ta
+ 	return 0;
+ }
  
- 	sdhci_runtime_pm_get(host);
- 
-+	present = mmc_gpio_get_cd(host->mmc);
-+
- 	spin_lock_irqsave(&host->lock, flags);
- 
- 	WARN_ON(host->mrq != NULL);
-@@ -1371,7 +1373,6 @@ static void sdhci_request(struct mmc_hos
- 	 *     zero: cd-gpio is used, and card is removed
- 	 *     one: cd-gpio is used, and card is present
- 	 */
--	present = mmc_gpio_get_cd(host->mmc);
- 	if (present < 0) {
- 		/* If polling, assume that the card is always present. */
- 		if (host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION)
-@@ -2082,15 +2083,18 @@ static void sdhci_card_event(struct mmc_
+-static long long
++static int
+ compare_blob(const struct xdr_netobj *o1, const struct xdr_netobj *o2)
  {
- 	struct sdhci_host *host = mmc_priv(mmc);
- 	unsigned long flags;
-+	int present;
+-	long long res;
+-
+-	res = o1->len - o2->len;
+-	if (res)
+-		return res;
+-	return (long long)memcmp(o1->data, o2->data, o1->len);
++	if (o1->len < o2->len)
++		return -1;
++	if (o1->len > o2->len)
++		return 1;
++	return memcmp(o1->data, o2->data, o1->len);
+ }
  
- 	/* First check if client has provided their own card event */
- 	if (host->ops->card_event)
- 		host->ops->card_event(host);
+ static int same_name(const char *n1, const char *n2)
+@@ -1365,7 +1364,7 @@ add_clp_to_name_tree(struct nfs4_client
+ static struct nfs4_client *
+ find_clp_in_name_tree(struct xdr_netobj *name, struct rb_root *root)
+ {
+-	long long cmp;
++	int cmp;
+ 	struct rb_node *node = root->rb_node;
+ 	struct nfs4_client *clp;
  
-+	present = sdhci_do_get_cd(host);
-+
- 	spin_lock_irqsave(&host->lock, flags);
- 
- 	/* Check host->mrq first in case we are runtime suspended */
--	if (host->mrq && !sdhci_do_get_cd(host)) {
-+	if (host->mrq && !present) {
- 		pr_err("%s: Card removed during transfer!\n",
- 			mmc_hostname(host->mmc));
- 		pr_err("%s: Resetting controller.\n",
 
 
