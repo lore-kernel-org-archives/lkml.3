@@ -1,92 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124AbbANSOJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 13:14:09 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:38112 "EHLO quartz.orcorp.ca"
+	id S1752676AbbANSTi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 13:19:38 -0500
+Received: from mga03.intel.com ([134.134.136.65]:24696 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750856AbbANSOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 13:14:06 -0500
-Date: Wed, 14 Jan 2015 11:12:58 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: atull <atull@opensource.altera.com>, Pavel Machek <pavel@denx.de>,
-        gregkh@linuxfoundation.org, hpa@zytor.com, monstr@monstr.eu,
-        michal.simek@xilinx.com, rdunlap@infradead.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        pantelis.antoniou@konsulko.com, robh+dt@kernel.org,
-        grant.likely@linaro.org, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, broonie@kernel.org, philip@balister.org,
-        rubini@gnudd.com, s.trumtrar@pengutronix.de, jason@lakedaemon.net,
-        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
-        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
-        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
-        linus.walleij@linaro.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        devel@driverdev.osuosl.org, delicious.quinoa@gmail.com,
-        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
-Message-ID: <20150114181258.GB16392@obsidianresearch.com>
-References: <20150107084819.GA1887@amd>
- <alpine.DEB.2.02.1501091302370.30067@linuxheads99>
- <20150109205643.GA5761@amd>
- <20150112210134.687176ed@lxorguk.ukuu.org.uk>
- <20150112214314.GA18610@obsidianresearch.com>
- <20150113162847.2778b5a5@lxorguk.ukuu.org.uk>
- <20150113200032.GA16205@obsidianresearch.com>
- <alpine.DEB.2.02.1501131455130.30192@linuxheads99>
- <20150113222450.GA17475@obsidianresearch.com>
- <20150114160617.02fb9135@lxorguk.ukuu.org.uk>
+	id S1751031AbbANSTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 13:19:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,757,1413270000"; 
+   d="scan'208";a="669920057"
+Date: Wed, 14 Jan 2015 10:15:26 -0800
+From: "David E. Box" <david.e.box@linux.intel.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Jarkko Nikula <jarkko.nikula@linux.intel.com>, jdelvare@suse.de,
+        arnd@arndb.de, maxime.ripard@free-electrons.com, dianders@chromium.org,
+        u.kleine-koenig@pengutronix.de,
+        laurent.pinchart+renesas@ideasonboard.com,
+        boris.brezillon@free-electrons.com, andrew@lunn.ch, sjg@chromium.org,
+        markus.mayer@linaro.org, jacob.jun.pan@linux.intel.com,
+        max.schwarz@online.de, mika.westerberg@linux.intel.com,
+        skuribay@pobox.com, Romain.Baeriswyl@abilis.com, wenkai.du@intel.com,
+        chiau.ee.chew@intel.com, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH V3 1/2] i2c-designware: Add i2c bus locking support
+Message-ID: <20150114181526.GA2892@pathfinder>
+References: <1411497626-7984-1-git-send-email-david.e.box@linux.intel.com>
+ <1417478973-25522-1-git-send-email-david.e.box@linux.intel.com>
+ <1417478973-25522-2-git-send-email-david.e.box@linux.intel.com>
+ <5480144F.2040506@linux.intel.com>
+ <20141204184210.GA1530@pathfinder>
+ <20150113094833.GB1059@katana>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150114160617.02fb9135@lxorguk.ukuu.org.uk>
+In-Reply-To: <20150113094833.GB1059@katana>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.183
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 04:06:17PM +0000, One Thousand Gnomes wrote:
+Hi,
 
-> and I think you effectively have the user usage covered here for such
-> things. It much like GPIO pins - we can describe them but we can also
-> declare they are not visible to the user.
+Expect something tonight should the latest tests run okay. I needed to include
+an EPROBE_DEFER to address the unavailibity of the pci driver needed in order to
+request the lock during probe of the i2c device. This due to the lock now being
+requested during probe because of the hang.
 
-A missing element in mainline is a kind of VFIO scheme to let user
-space access the FPGA registers designated for user space use.
+Dave
 
-We have been using these patches since 2.6.16 to allow user space to
-access the FPGA register resources via a PCI like /sys/../resource0
-mmapable:
+On Tue, Jan 13, 2015 at 10:48:33AM +0100, Wolfram Sang wrote:
+> Hi Dave,
+> 
+> > Timely reply. Around i2c_dw_init(), yes. I just discovered this as the source
+> > of a recent hang that's occuring in the loop in __i2c_dw_enable().
+> > The hange occurs very infrequently and only, so far, when not built in. A
+> > block around i2c_dw_disable_int() would make sense as well as a precaution.
+> 
+> Any news on this or on a V4 of this series?
+> 
+> Thanks,
+> 
+>    Wolfram
+> 
 
-    https://github.com/jgunthorpe/linux/commit/59d5d13ddeffa8980ccc6248ebb5f1678ccb23f4
-    https://github.com/jgunthorpe/linux/commit/7c29c4344627be8a3906d64d32db533bc131df86
-    https://github.com/jgunthorpe/linux/commit/e41bb4a197368a9d505d66b627aee82f2d2b8895
 
-We deliberately split up the FPGA registers and the assign user space
-permissions to the resource0 files in a way that makes sense for our
-app. Typically there are 10-20 FPGA register regions. User space does
-not access register regions that control DMA.
-
-> The swappable case mostly comes out of the /dev node. Once you have the
-> dev node it becomes a detail of the OS not the FPGA driver as to who may
-> open it, and how it is handed about. It might be an FPU manager daemon it
-> might not.
-
-Right, but the thing that scares me about the swappable case is the
-kernel side support.. The FPGA has to connect to the CPU in some way,
-it must have some address assigned, etc. Swapping needs to take care
-of all those details in some way.
-
-A fixed bus interface block and dynamic reconfiguration for the
-remainder is probably the way to manage that. But, that implies that
-even a family of swappable FPGAs will have a DT overlay associated
-with it.
-
-Ideally, I could see wanting to have a file format that combines the
-overlay and FPGA bitfile. A loader tool would use the /dev/ interface
-to setup both elements. That would be much more robust than the
-current scheme I see (eg Xilinx) using where the bitfile and DT bit
-live in completely different places and have to be perfectly matched.
-
-Jason
