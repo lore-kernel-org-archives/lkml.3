@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404AbbANH1l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:27:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57889 "EHLO
+	id S1754437AbbANH1v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:27:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57901 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754366AbbANH1i (ORCPT
+	with ESMTP id S1754415AbbANH1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:27:38 -0500
+	Wed, 14 Jan 2015 02:27:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [PATCH 3.18 071/150] misc: genwqe: check for error from get_user_pages_fast()
-Date: Tue, 13 Jan 2015 23:22:22 -0800
-Message-Id: <20150114072059.052812408@linuxfoundation.org>
+        Doug Anderson <dianders@chromium.org>,
+        Romain Baeriswyl <romain.baeriswyl@alitech.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH 3.18 073/150] i2c: designware: Fix falling time bindings doc
+Date: Tue, 13 Jan 2015 23:22:24 -0800
+Message-Id: <20150114072059.145662632@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -28,36 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Doug Anderson <dianders@chromium.org>
 
-commit cf35d6e0475982667b0d2d318fb27be4b8849827 upstream.
+commit 8e2596e81a9dd8f9efcf78476f3990f211e25edb upstream.
 
-`genwqe_user_vmap()` calls `get_user_pages_fast()` and if the return
-value is less than the number of pages requested, it frees the pages and
-returns an error (`-EFAULT`).  However, it fails to consider a negative
-error return value from `get_user_pages_fast()`.  In that case, the test
-`if (rc < m->nr_pages)` will be false (due to promotion of `rc` to a
-large `unsigned int`) and the code will continue on to call
-`genwqe_map_pages()` with an invalid list of page pointers.  Fix it by
-bailing out if `get_user_pages_fast()` returns a negative error value.
+In (6468276 i2c: designware: make SCL and SDA falling time
+configurable) new device tree properties were added for setting the
+falling time of SDA and SCL.  The device tree bindings doc had a typo
+in it: it forgot the "-ns" suffix for both properies in the prose of
+the bindings.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+I assume this is a typo because:
+* The source code includes the "-ns"
+* The example in the bindings includes the "-ns".
+
+Fix the typo.
+
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Fixes: 6468276b2206 ("i2c: designware: make SCL and SDA falling time configurable")
+Acked-by: Romain Baeriswyl <romain.baeriswyl@alitech.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/genwqe/card_utils.c |    2 ++
- 1 file changed, 2 insertions(+)
+ Documentation/devicetree/bindings/i2c/i2c-designware.txt |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/misc/genwqe/card_utils.c
-+++ b/drivers/misc/genwqe/card_utils.c
-@@ -590,6 +590,8 @@ int genwqe_user_vmap(struct genwqe_dev *
- 				 m->nr_pages,
- 				 1,		/* write by caller */
- 				 m->page_list);	/* ptrs to pages */
-+	if (rc < 0)
-+		goto fail_get_user_pages;
+--- a/Documentation/devicetree/bindings/i2c/i2c-designware.txt
++++ b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
+@@ -14,10 +14,10 @@ Optional properties :
+  - i2c-sda-hold-time-ns : should contain the SDA hold time in nanoseconds.
+    This option is only supported in hardware blocks version 1.11a or newer.
  
- 	/* assumption: get_user_pages can be killed by signals. */
- 	if (rc < m->nr_pages) {
+- - i2c-scl-falling-time : should contain the SCL falling time in nanoseconds.
++ - i2c-scl-falling-time-ns : should contain the SCL falling time in nanoseconds.
+    This value which is by default 300ns is used to compute the tLOW period.
+ 
+- - i2c-sda-falling-time : should contain the SDA falling time in nanoseconds.
++ - i2c-sda-falling-time-ns : should contain the SDA falling time in nanoseconds.
+    This value which is by default 300ns is used to compute the tHIGH period.
+ 
+ Example :
 
 
