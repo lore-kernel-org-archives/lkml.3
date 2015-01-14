@@ -1,139 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753498AbbANQHk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 11:07:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56362 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065AbbANQHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 11:07:39 -0500
-Message-ID: <54B69431.8090702@redhat.com>
-Date: Wed, 14 Jan 2015 11:07:13 -0500
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
-MIME-Version: 1.0
-To: Jon Masters <jcm@redhat.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: sysfs topology for arm64 cluster_id
-References: <54B5BC84.8090603@redhat.com>
-In-Reply-To: <54B5BC84.8090603@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753714AbbANQJm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 11:09:42 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:30279 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752335AbbANQJj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 11:09:39 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-4a-54b694c09ad7
+From: Karol Wrona <k.wrona@samsung.com>
+To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
+        Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>, linux-kernel@vger.kernel.org
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Karol Wrona <wrona.vy@gmail.com>, Karol Wrona <k.wrona@samsung.com>
+Subject: [PATCH v4 0/5] Add sensorhub driver
+Date: Wed, 14 Jan 2015 17:09:18 +0100
+Message-id: <1421251763-26513-1-git-send-email-k.wrona@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOJMWRmVeSWpSXmKPExsVy+t/xK7oHpmwLMXh5Xt1i44z1rBYPmlYx
+	WZxatp/JYtf/N8wWZ5vesFssmTyf1WLekXcsFpd3zWGz+L3rGLvFnnVbmBy4PHbOusvu8eFj
+	nMemVZ1sHkveHGL1ON98hNGjb8sqRo/Pm+QC2KO4bFJSczLLUov07RK4Mj7PXMtW8FiyovHB
+	GcYGxlfCXYycHBICJhI3X3QyQdhiEhfurWfrYuTiEBJYyigxq6+fGcLpY5I4OfECWBWbgLpE
+	847FYAkRgQuMEscPbWEBcZgF1jBKnDk7gR2kSlhAR2J7x0s2EJtFQFVi5+5vYDavgLPE0/u7
+	gSZxAO1TkJgzyWYCI/cCRoZVjKKppckFxUnpuYZ6xYm5xaV56XrJ+bmbGCGB9WUH4+JjVocY
+	BTgYlXh4NSZsCxFiTSwrrsw9xCjBwawkwvu0HCjEm5JYWZValB9fVJqTWnyIkYmDU6qB0bHQ
+	8919VZ99R34l1PUb7JaMNU7hMFSL1Vn7b9+T53Ht9jqfzij/mdbx6k9mqs+xpNvLvJS7elnZ
+	F+zdvGwll1+Qx7WafflrT8apPdr+XZ9Z3KG5Pfv8xPevC++Y9d1bvlc0oDxXVfDYyydu81T2
+	Ohx7yWFi1f987vWTkT0xnbUzdnR+OXrumBJLcUaioRZzUXEiAA31DP0KAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2015 07:47 PM, Jon Masters wrote:
-> Hi Folks,
->
-> TLDR: I would like to consider the value of adding something like
-> "cluster_siblings" or similar in sysfs to describe ARM topology.
->
-> A quick question on intended data representation in /sysfs topology
-> before I ask the team on this end to go down the (wrong?) path. On ARM
-> systems today, we have a hierarchical CPU topology:
->
->                   Socket ---- Coherent Interonnect ---- Socket
->                     |                                    |
->           Cluster0 ... ClusterN                Cluster0 ... ClusterN
->              |             |                      |             |
->        Core0...CoreN  Core0...CoreN        Core0...CoreN  Core0...CoreN
->          |       |      |        |           |       |      |       |
->       T0..TN  T0..Tn  T0..TN  T0..TN       T0..TN T0..TN  T0..TN  T0..TN
->
-> Where we might (or might not) have threads in individual cores (a la SMT
-> - it's allowed in the architecture at any rate) and we group cores
-> together into units of clusters usually 2-4 cores in size (though this
-> varies between implementations, some of which have different but similar
-> concepts, such as AppliedMicro Potenza PMDs CPU complexes of dual
-> cores). There are multiple clusters per "socket", and there might be an
-> arbitrary number of sockets. We'll start to enable NUMA soon.
->
-> The existing ARM architectural code understands expressing topology in
-> terms of the above, but it doesn't quite map these concepts directly in
-> sysfs (does not expose cluster_ids as an example). Currently, a cpu-map
-> in DeviceTree can expose hierarchies (included nested clusters) and this
-> is parsed at boot time to populate scheduler information, as well as the
-> topology files in sysfs (if that is provided - none of the reference
-> devicetrees upstream do this today, but some exist). But the cluster
-> information itself isn't quite exposed (whereas other whacky
-> architectural concepts such as s390 books are exposed already today).
->
-> Anyway. We have a small problem with tools such as those in util-linux
-> (lscpu) getting confused as a result of translating x86-isms to ARM. For
-> example, the lscpu utility calculates the number of sockets using the
-> following computation:
->
-> nsockets = desc->ncpus / nthreads / ncores
->
-> (number of sockets = total number of online processing elements /
-> threads within a single core / cores within a single socket)
->
-> If you're not careful, you can end up with something like:
->
-> # lscpu
-> Architecture:          aarch64
-> Byte Order:            Little Endian
-> CPU(s):                8
-> On-line CPU(s) list:   0-7
-> Thread(s) per core:    1
-> Core(s) per socket:    2
-> Socket(s):             4
->
-Basically, in the top-most diagram, lscpu (& hwloc) are equating Cluster<N>
-as socket<N>.  I'm curious what the sysfs numa info will be interpreted
-as when/if that is turned on for arm64.
+This patchset adds support for sensorhub.  It is an external mcu which
+manages and collects data from several sensors i.e. on Galaxy Gear 2 watch.
 
-> Now we can argue that the system in question needs an updated cpu-map
-> (it'll actually be something ACPI but I'm keeping this discussion to DT
-> to avoid that piece further in discussion, and you can assume I'm
-> booting any test boxes in further work on this using DeviceTree prior to
-> switching the result over to ACPI) but either way, util-linux is
-> thinking in an x86-centric sense of what these files mean. And I think
-> the existing topology/cpu-map stuff in arm64 is doing the same.
->
-The above values are extracted from the MPIDR:Affx fields and is currently
-independent of DT & ACPI.
-The Aff1 field is the 'cluster-id' and is being used to associated cpu's (via cpu masks)
-to siblings. lscpu & hwloc associate cpu-nums & siblings to sockets via the above
-calculation, which doesn't quite show how siblings enter the equation
-       ncores = CPU_COUNT_S(setsize, core_siblings) / nthreads;
+It contains:
+- spi driver for sensorhub device
+- DT binding for the device
+- IIO common utils for ssp sensors (iio kfifo setup helpers, pre/post callbacks)
+- IIO accelerometer driver
+- IIO gyroscope driver
 
-Note: in the arm(32) tree, what was 'socket-id' is 'cluster-id' in arm64;
-       I believe this 'mapping' (backporting/association) is one root problem
-       in the arch/arm64/kernel/topology.c code.
+For now the driver supports "traditional" sensors but new ones types are
+intended to be used.
 
-Now, a simple, yet requiring lots of fun, cross-architecture testing, would
-be to change lscpu to use the sysfs physical_package_id to get Socket correct.  Yet,
-that won't fix the above 'Core(s) per socket' because that's being created
-via the sibling masks, which are generated from the cluster-id.
-This change would require arm(64) to implement DT & ACPI methods to
-extract pcpu's to sockets (missing at the moment).
+>From v1:
+  - Adopted to new stm32fwu v5
+  - Fixed sensors' data process callbacks
+  - Fixed comments style
 
-And modifying the cluster-id and/or the siblings masks creates non-topology
-(non-lscpu, non-hwloc) issues like breaking gic init code paths which use
-the cluster-id information as well. ... some 'empirical data' to note
-if anyone thinks it's just a topology-presentation issue.
+>From v2:
+  - Fixes after Hartmut Knaack review
+  - Sensorhub driver was moved from misc to iio after the discussion with Arnd
+    and Jonathan
+  - Firmware upgrade is not supported in this patchset. I hope it will be
+    applied when it will find its own place in the tree.
 
-> Is it not a good idea to expose the cluster details directly in sysfs
-> and have these utilities understand the possible extra level in the
-> calculation? Or do we want to just fudge the numbers (as seems to be the
-> case in some systems I am seeing) to make the x86 model add up?
->
-Short-term, I'm trying to develop a reasonable 'fudge' for lscpu & hwloc,
-that doesn't impact the (proper) operation of the gic code.
-I haven't dug deep enough yet, but this also requires a check on how
-the scheduler associates cpu-cache-sibling associativity when selecting
-optimal cpu to schedule threads on.
+>From v3:
+  - change buffer allocation manner for iio devices buffers
+  - centralize irq buffer
+  - style fixes
+  - sensors' devices as mfd cells
+  - remove iio_buffer_register from the sensorhub drivers
+  - fix DT binding and remove optional attributes
 
-> Let me know the preferred course...
->
-> Jon.
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->
+I rebased it on:
+next-20150114 with: devm kfifo patches and 
+
+3e1b6c95b990c93f4aa3b17e9f66221e2fa44bee 
+iio: Move buffer registration to the core
+
+Karol
+
+
+
+Karol Wrona (5):
+  iio: common: ssp_sensors: Add sensorhub driver
+  iio: sensorhub: Add sensorhub bindings
+  iio: common: ssp_sensors: Add sensorhub iio commons
+  iio: common: ssp_sensors: Add sensorhub accelerometer sensor
+  iio: common: ssp_sensors: Add sensorhub gyroscope sensor
+
+ .../devicetree/bindings/iio/sensorhub.txt          |   25 +
+ drivers/iio/accel/Makefile                         |    1 +
+ drivers/iio/accel/ssp_accel_sensor.c               |  170 +++++
+ drivers/iio/common/Kconfig                         |    1 +
+ drivers/iio/common/Makefile                        |    1 +
+ drivers/iio/common/ssp_sensors/Kconfig             |   25 +
+ drivers/iio/common/ssp_sensors/Makefile            |    8 +
+ drivers/iio/common/ssp_sensors/ssp.h               |  257 +++++++
+ drivers/iio/common/ssp_sensors/ssp_dev.c           |  712 ++++++++++++++++++++
+ drivers/iio/common/ssp_sensors/ssp_iio.c           |  107 +++
+ drivers/iio/common/ssp_sensors/ssp_iio_sensor.h    |   70 ++
+ drivers/iio/common/ssp_sensors/ssp_spi.c           |  608 +++++++++++++++++
+ drivers/iio/gyro/Makefile                          |    2 +
+ drivers/iio/gyro/ssp_gyro_sensor.c                 |  169 +++++
+ include/linux/iio/common/ssp_sensors.h             |   82 +++
+ 15 files changed, 2238 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/iio/sensorhub.txt
+ create mode 100644 drivers/iio/accel/ssp_accel_sensor.c
+ create mode 100644 drivers/iio/common/ssp_sensors/Kconfig
+ create mode 100644 drivers/iio/common/ssp_sensors/Makefile
+ create mode 100644 drivers/iio/common/ssp_sensors/ssp.h
+ create mode 100644 drivers/iio/common/ssp_sensors/ssp_dev.c
+ create mode 100644 drivers/iio/common/ssp_sensors/ssp_iio.c
+ create mode 100644 drivers/iio/common/ssp_sensors/ssp_iio_sensor.h
+ create mode 100644 drivers/iio/common/ssp_sensors/ssp_spi.c
+ create mode 100644 drivers/iio/gyro/ssp_gyro_sensor.c
+ create mode 100644 include/linux/iio/common/ssp_sensors.h
+
+-- 
+1.7.9.5
 
