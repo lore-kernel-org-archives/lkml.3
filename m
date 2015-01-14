@@ -1,99 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147AbbANS4j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 13:56:39 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:48097 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751004AbbANS4h convert rfc822-to-8bit (ORCPT
+	id S1752406AbbANS7x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 13:59:53 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:45582 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696AbbANS7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 13:56:37 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/Ni3/upXI23Y57vDoYXXxIKAc44Jybe+E=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 7F616646488
-Date: Wed, 14 Jan 2015 13:56:19 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 2/5] irqchip: Add DT binding doc for dumb demuxer
- chips
-Message-ID: <20150114185619.GB24989@titan.lakedaemon.net>
-References: <1421174781-4340-1-git-send-email-boris.brezillon@free-electrons.com>
- <1421174781-4340-3-git-send-email-boris.brezillon@free-electrons.com>
- <20150113190050.GZ24989@titan.lakedaemon.net>
- <20150113215207.185d92b4@bbrezillon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20150113215207.185d92b4@bbrezillon>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
+	Wed, 14 Jan 2015 13:59:51 -0500
+From: Azael Avalos <coproscefalo@gmail.com>
+To: Darren Hart <dvhart@infradead.org>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Azael Avalos <coproscefalo@gmail.com>
+Subject: [PATCH] toshiba_acpi: Change sci_open function return value
+Date: Wed, 14 Jan 2015 11:59:32 -0700
+Message-Id: <1421261972-3130-1-git-send-email-coproscefalo@gmail.com>
+X-Mailer: git-send-email 2.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Boris,
+Some Toshiba laptops have "poorly implemented" SCI calls on their
+BIOSes and are not checking for sci_{open, close} calls, therefore,
+the sci_open function is failing and making some of the supported
+features unavailable (kbd backlight, touchpad and illumination).
 
-On Tue, Jan 13, 2015 at 09:52:07PM +0100, Boris Brezillon wrote:
-> On Tue, 13 Jan 2015 14:00:50 -0500 Jason Cooper <jason@lakedaemon.net> wrote:
-> > On Tue, Jan 13, 2015 at 07:46:18PM +0100, Boris Brezillon wrote:
-> > > Add documentation for the dumb demuxer.
-> > > 
-> > > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> > > ---
-> > >  .../bindings/interrupt-controller/dumb-demux.txt   | 34 ++++++++++++++++++++++
-> > >  1 file changed, 34 insertions(+)
-> > >  create mode 100644 Documentation/devicetree/bindings/interrupt-controller/dumb-demux.txt
-> > > 
-> > > diff --git a/Documentation/devicetree/bindings/interrupt-controller/dumb-demux.txt b/Documentation/devicetree/bindings/interrupt-controller/dumb-demux.txt
-> > > new file mode 100644
-> > > index 0000000..1c777ef
-> > > --- /dev/null
-> > > +++ b/Documentation/devicetree/bindings/interrupt-controller/dumb-demux.txt
-> > > @@ -0,0 +1,34 @@
-> > > +* Generic Dumb Interrupt Demultiplexer
-> > > +
-> > > +This Dumb demultiplixer simply forward all incoming interrupts to its
-> > > +enabled/unmasked children.
-> > 
-> > Please forgive the potentially naïve question, but what hardware is this
-> > describing?
-> 
-> That's not a real hardware per se, but on some hardware (like at91 SoCs)
-> some IRQ line are shared by several peripherals, and this dumb
-> demultiplex is here to represent such shared irq lines which cannot be
-> easily demultiplexed (because they do not provide a 'cause'
-> register).
-> 
-> You can see it as a virtual irqchip provided to address broken hardware
-> designs.
+This patch changes the default return code of the sci_open function
+to return one instead of zero, making all those faulty laptops load
+all the supported features.
 
-Hmm.  Well, given tglx's recent reply, I suppose I'll *not* go down the
-rabbit hole of "the DT is for describing hardware."  :-P
+Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
+---
+ drivers/platform/x86/toshiba_acpi.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-However, it would probably be a lot more palatable to the DT maintainers
-if we at least change the compatible to prepend "linux,".  This way, if
-someone does come up with a better solution down the road, it will be
-much easier to deprecate the binding.
+diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
+index fc34a71..71ac7c12 100644
+--- a/drivers/platform/x86/toshiba_acpi.c
++++ b/drivers/platform/x86/toshiba_acpi.c
+@@ -391,9 +391,10 @@ static int sci_open(struct toshiba_acpi_dev *dev)
+ 		return 1;
+ 	} else if (out[0] == TOS_NOT_PRESENT) {
+ 		pr_info("Toshiba SCI is not present\n");
++		return 0;
+ 	}
+ 
+-	return 0;
++	return 1;
+ }
+ 
+ static void sci_close(struct toshiba_acpi_dev *dev)
+-- 
+2.2.1
 
-I would also be amenable to "virt,", or "hack,", or even
-"work-around-piss-poor-hw,".  Basically, anything that would indicate to
-consumers of the DT that this is not a true reflection of the hardware,
-and that it may be superseded by a better solution later.
-
-It would also be helpful to explain the situation more fully in the
-binding document.
-
-thx,
-
-Jason.
