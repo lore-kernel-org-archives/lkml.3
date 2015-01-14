@@ -1,194 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057AbbANPsf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 10:48:35 -0500
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:50413 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753466AbbANPsa (ORCPT
+	id S1753795AbbANPsb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 10:48:31 -0500
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:44734 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331AbbANPs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 10:48:30 -0500
-From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-To: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, benjamin.gaignard@linaro.org
-Cc: linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Subject: [PATCH 2/2] ARM: DT: STiH410: Add DRM dt nodes
-Date: Wed, 14 Jan 2015 16:47:12 +0100
-Message-Id: <1421250432-25903-3-git-send-email-gabriel.fernandez@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1421250432-25903-1-git-send-email-gabriel.fernandez@linaro.org>
-References: <1421250432-25903-1-git-send-email-gabriel.fernandez@linaro.org>
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-14_05:2015-01-14,2015-01-14,1970-01-01 signatures=0
+	Wed, 14 Jan 2015 10:48:29 -0500
+Date: Wed, 14 Jan 2015 15:48:16 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: "Felipe F. Tonello" <eu@felipetonello.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH] char: Added support for u-blox 6 i2c gps driver
+Message-ID: <20150114154816.58b0f9c7@lxorguk.ukuu.org.uk>
+In-Reply-To: <1421198202-4042-1-git-send-email-eu@felipetonello.com>
+References: <1421198202-4042-1-git-send-email-eu@felipetonello.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the DRM/KMS dt nodes.
+On Tue, 13 Jan 2015 17:16:42 -0800
+"Felipe F. Tonello" <eu@felipetonello.com> wrote:
 
-Signed-off-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
----
- arch/arm/boot/dts/stih410.dtsi | 138 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 138 insertions(+)
+> This driver will basically translate serial communication to i2c communication
+> between the user-space and the GPS module.
+> 
+> It creates a /dev/ttyS device node.
 
-diff --git a/arch/arm/boot/dts/stih410.dtsi b/arch/arm/boot/dts/stih410.dtsi
-index 37995f4..208b5e8 100644
---- a/arch/arm/boot/dts/stih410.dtsi
-+++ b/arch/arm/boot/dts/stih410.dtsi
-@@ -80,5 +80,143 @@
- 			phys = <&usb2_picophy2>;
- 			phy-names = "usb";
- 		};
-+
-+		/* Display */
-+		vtg_main: sti-vtg-main@8d02800 {
-+			compatible = "st,vtg";
-+			reg = <0x8d02800 0x200>;
-+			interrupts = <GIC_SPI 108 IRQ_TYPE_NONE>;
-+		};
-+
-+		vtg_aux: sti-vtg-aux@8d00200 {
-+			compatible = "st,vtg";
-+			reg = <0x8d00200 0x100>;
-+			interrupts = <GIC_SPI 109 IRQ_TYPE_NONE>;
-+		};
-+
-+		sti-display-subsystem {
-+			compatible = "st,sti-display-subsystem";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+
-+			assigned-clocks	= <&clk_s_d2_quadfs 0>,
-+					  <&clk_s_d2_quadfs 0>,
-+					  <&clk_s_d2_flexgen CLK_PIX_MAIN_DISP>,
-+					  <&clk_s_d2_flexgen CLK_PIX_AUX_DISP>,
-+					  <&clk_s_d2_flexgen CLK_PIX_GDP1>,
-+					  <&clk_s_d2_flexgen CLK_PIX_GDP2>,
-+					  <&clk_s_d2_flexgen CLK_PIX_GDP3>,
-+					  <&clk_s_d2_flexgen CLK_PIX_GDP4>;
-+
-+			assigned-clock-parents = <0>,
-+						 <0>,
-+						 <&clk_s_d2_quadfs 0>,
-+						 <&clk_s_d2_quadfs 0>,
-+						 <&clk_s_d2_quadfs 0>,
-+						 <&clk_s_d2_quadfs 0>,
-+						 <&clk_s_d2_quadfs 0>,
-+						 <&clk_s_d2_quadfs 0>;
-+
-+			assigned-clock-rates = <297000000>, <297000000>;
-+
-+			ranges;
-+
-+			sti-compositor@9d11000 {
-+				compatible = "st,stih407-compositor";
-+				reg = <0x9d11000 0x1000>;
-+
-+				clock-names = "compo_main",
-+					      "compo_aux",
-+					      "pix_main",
-+					      "pix_aux",
-+					      "pix_gdp1",
-+					      "pix_gdp2",
-+					      "pix_gdp3",
-+					      "pix_gdp4",
-+					      "main_parent",
-+					      "aux_parent";
-+
-+				clocks = <&clk_s_c0_flexgen CLK_COMPO_DVP>,
-+					 <&clk_s_c0_flexgen CLK_COMPO_DVP>,
-+					 <&clk_s_d2_flexgen CLK_PIX_MAIN_DISP>,
-+					 <&clk_s_d2_flexgen CLK_PIX_AUX_DISP>,
-+					 <&clk_s_d2_flexgen CLK_PIX_GDP1>,
-+					 <&clk_s_d2_flexgen CLK_PIX_GDP2>,
-+					 <&clk_s_d2_flexgen CLK_PIX_GDP3>,
-+					 <&clk_s_d2_flexgen CLK_PIX_GDP4>,
-+					 <&clk_s_d2_quadfs 0>,
-+					 <&clk_s_d2_quadfs 1>;
-+
-+				reset-names = "compo-main", "compo-aux";
-+				resets = <&softreset STIH407_COMPO_SOFTRESET>,
-+					 <&softreset STIH407_COMPO_SOFTRESET>;
-+				st,vtg = <&vtg_main>, <&vtg_aux>;
-+			};
-+
-+			sti-tvout@8d08000 {
-+				compatible = "st,stih407-tvout";
-+				reg = <0x8d08000 0x1000>;
-+				reg-names = "tvout-reg";
-+				reset-names = "tvout";
-+				resets = <&softreset STIH407_HDTVOUT_SOFTRESET>;
-+				#address-cells = <1>;
-+				#size-cells = <1>;
-+				assigned-clocks = <&clk_s_d2_flexgen CLK_PIX_HDMI>,
-+						  <&clk_s_d2_flexgen CLK_TMDS_HDMI>,
-+						  <&clk_s_d2_flexgen CLK_REF_HDMIPHY>,
-+						  <&clk_s_d0_flexgen CLK_PCM_0>,
-+						  <&clk_s_d2_flexgen CLK_PIX_HDDAC>,
-+						  <&clk_s_d2_flexgen CLK_HDDAC>;
-+
-+				assigned-clock-parents = <&clk_s_d2_quadfs 0>,
-+							 <&clk_tmdsout_hdmi>,
-+							 <&clk_s_d2_quadfs 0>,
-+							 <&clk_s_d0_quadfs 0>,
-+							 <&clk_s_d2_quadfs 0>,
-+							 <&clk_s_d2_quadfs 0>;
-+				ranges;
-+
-+				sti-hdmi@8d04000 {
-+					compatible = "st,stih407-hdmi";
-+					reg = <0x8d04000 0x1000>;
-+					reg-names = "hdmi-reg";
-+					interrupts = <GIC_SPI 106 IRQ_TYPE_NONE>;
-+					interrupt-names	= "irq";
-+					clock-names = "pix",
-+						      "tmds",
-+						      "phy",
-+						      "audio",
-+						      "main_parent",
-+						      "aux_parent";
-+
-+					clocks = <&clk_s_d2_flexgen CLK_PIX_HDMI>,
-+						 <&clk_s_d2_flexgen CLK_TMDS_HDMI>,
-+						 <&clk_s_d2_flexgen CLK_REF_HDMIPHY>,
-+						 <&clk_s_d0_flexgen CLK_PCM_0>,
-+						 <&clk_s_d2_quadfs 0>,
-+						 <&clk_s_d2_quadfs 1>;
-+
-+					hdmi,hpd-gpio = <&pio5 3>;
-+					reset-names = "hdmi";
-+					resets = <&softreset STIH407_HDMI_TX_PHY_SOFTRESET>;
-+					ddc = <&hdmiddc>;
-+
-+				};
-+
-+				sti-hda@8d02000 {
-+					compatible = "st,stih407-hda";
-+					reg = <0x8d02000 0x400>, <0x92b0120 0x4>;
-+					reg-names = "hda-reg", "video-dacs-ctrl";
-+					clock-names = "pix",
-+						      "hddac",
-+						      "main_parent",
-+						      "aux_parent";
-+					clocks = <&clk_s_d2_flexgen CLK_PIX_HDDAC>,
-+						 <&clk_s_d2_flexgen CLK_HDDAC>,
-+						 <&clk_s_d2_quadfs 0>,
-+						 <&clk_s_d2_quadfs 1>;
-+				};
-+			};
-+		};
- 	};
- };
--- 
-1.9.1
+It shouldn't. It should use its own name. (ttyubl or something .. )
 
+
+> There are specific tty termios flags in order to the tty line discipliner not
+> to change the date it is pushed to user space. That is necessary so the NMEA
+> data is not corrupted.
+> * iflags: added IGNCR: Ignore carriage return on input.
+> * oflags: removed ONLCR: (XSI) Map NL to CR-NL on output.
+
+The user space should probably set these but if its a single purpose
+device then it's not unreasonable to just set defaults I guess.
+
+> +static DECLARE_DELAYED_WORK(ublox_gps_wq, ublox_gps_read_worker);
+> +
+> +static void ublox_gps_read_worker(struct work_struct *private)
+> +{
+> +	s32 gps_buf_size, buf_size = 0;
+> +	u8 *buf;
+> +
+> +	if (!ublox_gps_is_open)
+> +		return;
+> +
+> +	/* check if driver was removed */
+> +	if (!ublox_gps_i2c_client)
+> +		return;
+
+
+Greg has pointed out your locking is nonsensical - you want to be
+refcounting. In the tty side case it's done for you for the most part,
+but for the i2c side it's your problem and you need to ensure that you
+hold suitable references between tty open and close, and on the close you
+kill and wait for any work queues.
+
+
+> +static int ublox_gps_serial_open(struct tty_struct *tty, struct file *filp)
+> +{
+> +	if (ublox_gps_is_open)
+> +		return -EBUSY;
+> +
+> +	ublox_gps_filp = filp;
+> +	ublox_gps_tty_port = tty->port;
+> +	ublox_gps_tty_port->low_latency = true; /* make sure we push data immediately */
+> +	ublox_gps_is_open = true;
+
+tty semantics for exclusive are standardised in POSIX and this is not the
+expected behaviour. See the TIOCEXCL ioctl.
+
+> +static void ublox_gps_serial_close(struct tty_struct *tty, struct file *filp)
+> +{
+> +	if (!ublox_gps_is_open)
+> +		return;
+> +
+> +	/* avoid stop when the denied (in open) file structure closes itself */
+> +	if (ublox_gps_filp != filp)
+> +		return;
+
+That should never be possible. If it can happen you've got a locking bug
+that needs fixing instead
+
+> +static int ublox_gps_serial_write(struct tty_struct *tty, const unsigned char *buf,
+> +	int count)
+> +{
+> +	if (!ublox_gps_is_open)
+> +		return 0;
+> +
+> +	/* check if driver was removed */
+> +	if (!ublox_gps_i2c_client)
+> +		return 0;
+> +
+> +	/* we don't write back to the GPS so just return same value here */
+> +	return count;
+
+Just omit the serial_write method, or return -EIO; don't pretend it
+worked.
+
+> +	ublox_gps_tty_driver->driver_name = "ublox_gps";
+> +	ublox_gps_tty_driver->name = "ttyS";
+> +	ublox_gps_tty_driver->major = UBLOX_GPS_MAJOR;
+
+Not ttyS and use dynamic numbering
+
+> +	ublox_gps_tty_driver->minor_start = 0;
+> +	ublox_gps_tty_driver->type = TTY_DRIVER_TYPE_SERIAL;
+> +	ublox_gps_tty_driver->subtype = SERIAL_TYPE_NORMAL;
+> +	ublox_gps_tty_driver->flags = TTY_DRIVER_REAL_RAW;
+> +	ublox_gps_tty_driver->init_termios = tty_std_termios;
+> +	ublox_gps_tty_driver->init_termios.c_iflag = IGNCR | IXON;
+> +	ublox_gps_tty_driver->init_termios.c_oflag = OPOST;
+> +	ublox_gps_tty_driver->init_termios.c_cflag = B9600 | CS8 | CREAD |
+> +		HUPCL | CLOCAL;
+> +	ublox_gps_tty_driver->init_termios.c_ispeed = 9600;
+> +	ublox_gps_tty_driver->init_termios.c_ospeed = 9600;
+> +	tty_set_operations(ublox_gps_tty_driver, &ublox_gps_serial_ops);
+> +	result = tty_register_driver(ublox_gps_tty_driver);
+> +	if (result) {
+> +		dev_err(&ublox_gps_i2c_client->dev, KBUILD_MODNAME ": %s - tty_register_driver failed\n",
+> +			__func__);
+> +		goto err;
+> +	}
+> +
+> +	ublox_gps_i2c_client = client;
+> +	ublox_gps_filp = NULL;
+> +	ublox_gps_tty_port = NULL;
+> +	ublox_gps_is_open = false;
+
+There are some other i2c based tty drivers in the kernel - notably those
+in drivers/tty/serial that use the uart layer to deal with most of the
+awkward locking cases.
+
+You can do it by hand but it's fairly hairy (see
+drivers/mmc/card/sdio_uart.c, so it might be simplest to tweak the driver
+to use the uart layer. You don't really gain much from it for your driver
+except easier locking - but the locking is rather handy.
+
+Alan
