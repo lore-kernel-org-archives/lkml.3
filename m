@@ -1,76 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905AbbANWxL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 17:53:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43203 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751016AbbANWxJ (ORCPT
+	id S1753480AbbANWzz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 17:55:55 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:48556 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750965AbbANWzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 17:53:09 -0500
-Date: Wed, 14 Jan 2015 14:53:07 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sonny Rao <sonnyrao@chromium.org>
-Cc: Doug Anderson <dianders@chromium.org>, Chris Zhong <zyw@rock-chips.com>,
-        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] RTC: RK808: fix the rtc time reading issue
-Message-Id: <20150114145307.380c86a83c65760a046382e4@linux-foundation.org>
-In-Reply-To: <CAPz6YkWe9tkn7BehGOurbq6omvTpYi170G0z6T+OijngOADRQQ@mail.gmail.com>
-References: <1421203412-5159-1-git-send-email-zyw@rock-chips.com>
-	<CAPz6YkW4icehT6P9EicP1Eww_Ny0hNaeS53WXaFei+HrYbPQ3A@mail.gmail.com>
-	<CAD=FV=UDj08jkOCDVJ1Q+EanrBHwP_-88XMXojPjY8iB3i-AQA@mail.gmail.com>
-	<CAPz6YkWe9tkn7BehGOurbq6omvTpYi170G0z6T+OijngOADRQQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
+	Wed, 14 Jan 2015 17:55:53 -0500
+Date: Wed, 14 Jan 2015 23:55:16 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Mark Rutland <mark.rutland@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 1/5] irqchip: add dumb demultiplexer implementation
+Message-ID: <20150114235516.7a1a5844@bbrezillon>
+In-Reply-To: <CAL_JsqLwBvV5s531_YsA=sCE4_LG=eXTua8mh069ufRjSNFhng@mail.gmail.com>
+References: <1421174781-4340-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1421174781-4340-2-git-send-email-boris.brezillon@free-electrons.com>
+	<CAL_JsqJ5DSo6jmAuHPDdV6pMca8BVbg5V-GZ5=2qu96_QYXMtQ@mail.gmail.com>
+	<alpine.DEB.2.11.1501141110190.5526@nanos>
+	<CAL_JsqLwBvV5s531_YsA=sCE4_LG=eXTua8mh069ufRjSNFhng@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Jan 2015 11:44:02 -0800 Sonny Rao <sonnyrao@chromium.org> wrote:
+Hi Rob,
 
-> On Wed, Jan 14, 2015 at 10:36 AM, Doug Anderson <dianders@chromium.org> wrote:
-> > Sonny,
+On Wed, 14 Jan 2015 16:24:32 -0600
+Rob Herring <robherring2@gmail.com> wrote:
+
+> On Wed, Jan 14, 2015 at 4:36 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > On Tue, 13 Jan 2015, Rob Herring wrote:
+> >> On Tue, Jan 13, 2015 at 12:46 PM, Boris Brezillon
+> >> <boris.brezillon@free-electrons.com> wrote:
+> >> > Some interrupt controllers are multiplexing several peripheral IRQs on
+> >> > a single interrupt line.
+> >> > While this is not a problem for most IRQs (as long as all peripherals
+> >> > request the interrupt with IRQF_SHARED flag set), multiplexing timers and
+> >> > other type of peripherals will generate a WARNING (mixing IRQF_NO_SUSPEND
+> >> > and !IRQF_NO_SUSPEND is prohibited).
+> >> >
+> >> > Create a dumb irq demultiplexer which simply forwards interrupts to all
+> >> > peripherals (exactly what's happening with IRQ_SHARED) but keep a unique
+> >> > irq number for each peripheral, thus preventing the IRQF_NO_SUSPEND
+> >> > and !IRQF_NO_SUSPEND mix on a given interrupt.
+> >>
+> >> This really seems like a work-around for how IRQF_SHARED works. It
 > >
-> >> Chris, it looks like you swapped the set and the clear of this bit,
-> >> and you're relying on the fact that the i2c transaction takes a
-> >> certain amount of time after the RTC_GET_TIME BIT is set.   I'm not
-> >> sure how long it actually takes, but why not just put in a usleep()
-> >> for the minimum wait time?
+> > It's a workaround for a short coming of IRQF_SHARED.
 > >
-> > I think we are safe.
-> >
-> > At 400kHz (the max speed of this part) each bit can be transferred no
-> > faster than 2.5us.  In order to do a valid i2c transaction we need to
-> > _at least_ write the address of the device and the data onto the bus,
-> > which is 16 bits.  16 * 2.5us = 40us.  That's above the 31.25us
-> >
-> > Personally I think what Chris has is fine, with the comment.
+> > IRQF_SHARED has a massive short coming versus suspend and wakeup
+> > interrupts. If one of the demultiplexed interrupts is a valid wakeup
+> > source then we have no sane way to express this with IRQF_SHARED
+> > simply because the drivers need to be aware whether they run on stupid
+> > or well designed hardware.
 > 
-> Ok, I'm fine with that if we're sure it's slow enough.  Comment
-> explaining would certainly help.
+> Unfortunately, the drivers will still have to know this. They cannot
+> assume that they can call disable_irq and their device irq state does
+> not matter.
+> 
+> Perhaps we need a debug feature such that disable_irq/enable_irq are
+> nops with IRQF_SHARED?
+> 
+> >> seems like what is really desired is just per handler disabling. It is
+> >
+> > So you want a magic API like disable/enable_irq_action()?
+> >
+> > Certainly not.
+> 
+> Agreed.
+> 
+> > You'd open just another can of worms which will bring us abuse and
+> > hard to debug problems because driver writers think it's a good idea
+> > to use it for random purposes.
+> >
+> > Aside of that it would add another conditional into the interrupt
+> > delivery hotpath which is not desired either.
+> >
+> >> fragile in that devices can deadlock the system if the drivers don't
+> >> disable the interrupt source before calling disable_irq. But unlike
+> >
+> > Any misdesigned driver can do that for you.
+> >
+> >> IRQF_SHARED, there is nothing explicit in the driver indicating it is
+> >> designed to work properly with a shared interrupt line.
+> >
+> > IRQF_SHARED is a pretty bad indicator. Look at all the drivers which
+> > slap this flag onto request_irq() and have no single line of code
+> > which makes sure that the driver would ever work on a shared line.
+> >
+> > If it's just for annotational purposes, we can add a new IRQF flag,
+> > which is required to request such a interrupt line.
+> >
+> >> I see no reason to accept this into DT either. We already can support
+> >> shared lines and modeling an OR gate as an interrupt controller is
+> >> pointless.
+> >
+> > It's absolutely not pointless.
+> >
+> > All attempts to work around that have resulted in horrible bandaids so
+> > far. That's why I guided Boris to implement this dummy demultiplexing
+> > mechanism. It solves the problem at hand nicely without adding nasty
+> > hackarounds into the suspend/resume code and inflicting platform
+> > knowledge on multi-platform device drivers.
+> 
+> This change will break on old kernels with a new dtb. Would you be
+> happy if a BIOS update required a new kernel? Fixing this for any
+> platform requires a dtb update which may not be possible on some
+> platforms. I don't have a problem with this breakage for 1 platform
+> and the at91 guys may not care, but we'd ultimately be changing how
+> all shared irqs are specified for all DT. Maybe we decide that this is
+> how we want to describe things, but that needs much wider discussion
+> and agreement.
 
-Thanks, all.  I did this:
+I tried really hard on finding a DT representation that would not break
+the DT ABI, but didn't find any easy solution.
+How about keeping all platforms with the shared irq pattern, except for
+those that really have an irq line shared by a timer and several other
+devices (not sure yet, but at91 seems to be the only impacted platform
+so far).
 
---- a/drivers/rtc/rtc-rk808.c~rtc-rk808-fix-the-rtc-time-reading-issue-fix
-+++ a/drivers/rtc/rtc-rk808.c
-@@ -73,10 +73,11 @@ static int rk808_rtc_readtime(struct dev
- 		return ret;
- 	}
- 
--	/* After we set the GET_TIME bit, the rtc time couldn't be read
--	 * immediately, we should wait up to 31.25 us, about one cycle of
-+	/*
-+	 * After we set the GET_TIME bit, the rtc time can't be read
-+	 * immediately. So we should wait up to 31.25 us, about one cycle of
- 	 * 32khz. If we clear the GET_TIME bit here, the time of i2c transfer
--	 * certainly more than 31.25us.
-+	 * certainly more than 31.25us: 16 * 2.5us at 400kHz bus frequency.
- 	 */
- 	ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
- 				 BIT_RTC_CTRL_REG_RTC_GET_TIME,
-_
+> 
+> > If you have a proper solution for the problem at hand which
+> >
+> >    - avoids the demux dummy
+> >
+> >    - works straight forward with suspend/resume/wakeup
+> >
+> >    - does not add horrible new APIs
+> >
+> >    - does not add conditionals to the interrupt hotpath
+> >
+> >    - does not inflict platform knowledge about interrupt chip details
+> >      on drivers
+> >
+> > then I'm happy to take it.
+> >
+> > But as long as you can't come up with anything sane, the demux dummy
+> > is the best solution for this problem we've seen so far.
+> 
+> What if during suspend you move all actions w/o IRQF_NO_SUSPEND to a
+> suspended action list? This would leave only the actions with
+> IRQF_NO_SUSPEND set in the active action list. The cost would be a
+> pointer in irq_desc and moving the actions during suspend and resume.
 
+That really looks like what I suggested here [1].
+
+> 
+> There are probably ways to do this demux irqchip without a DT change.
+> Since we can't just move Linux irq numbers to different irq_chips
+> during request_irq, we would have to parse the DT up front to find all
+> shared interrupts and create a demux irqchip for them. That wouldn't
+> be very efficient, but is straight-forward. Then we'd have to handle
+> the translation into Linux irq numbers correctly which is probably the
+> more difficult part.
+
+I'm really interested in seeing how you would do this.
+
+Best Reagrds,
+
+Boris
+
+[1]https://lkml.org/lkml/2014/12/15/551
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
