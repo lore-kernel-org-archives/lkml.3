@@ -1,245 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524AbbANWuN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 17:50:13 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:59312 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751688AbbANWuL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 17:50:11 -0500
+	id S1754631AbbANWuy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 17:50:54 -0500
+Received: from mail-bl2on0131.outbound.protection.outlook.com ([65.55.169.131]:57056
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754575AbbANWuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 17:50:51 -0500
+X-WSS-ID: 0NI6VGL-07-E4Q-02
+X-M-MSG: 
+Message-ID: <54B6F2C4.20701@amd.com>
+Date: Wed, 14 Jan 2015 16:50:44 -0600
+From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88026B7475@SHSMSX101.ccr.corp.intel.com>
-References: <1420384974-11745-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<1AE640813FDE7649BE1B193DEA596E88026B7475@SHSMSX101.ccr.corp.intel.com>
-Date: Wed, 14 Jan 2015 23:50:09 +0100
-Message-ID: <CAKXHbyN4ypE3W-exxYUy_TW8HLuBc3hbdwgcX7WkN9mXM5w76Q@mail.gmail.com>
-Subject: Re: [PATCH] acpica: utpredef: Remove some unused functions
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: "Moore, Robert" <robert.moore@intel.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        Len Brown <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "devel@acpica.org" <devel@acpica.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: <a.p.zijlstra@chello.nl>, <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, <acme@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: question regarding -D flag in perf stat
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.180.168.240]
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(53754006)(199003)(51914003)(189002)(92566002)(86362001)(77096005)(97736003)(36756003)(77156002)(47776003)(65806001)(62966003)(64706001)(33656002)(105586002)(106466001)(120886001)(23756003)(64126003)(68736005)(50466002)(87936001)(83506001)(46102003)(101416001)(50986999)(229853001)(54356999)(65816999)(107886001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB194;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:3;MX:1;LANG:en;
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BLUPR02MB194;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BLUPR02MB194;
+X-Forefront-PRVS: 04569283F9
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB194;
+X-OriginatorOrg: amd4.onmicrosoft.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 14 Jan 2015 22:50:45.8043
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.221]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BLUPR02MB194
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-14 9:55 GMT+01:00 Zheng, Lv <lv.zheng@intel.com>:
-> Hi, Rickard
->
-> The functions below seem already marked by "ACPI_ASL_COMPILER || ACPI_HELP_APP".
-> How did you detect them as used functions?
->
-> Thanks
-> -Lv
->
->
->> -----Original Message-----
->> From: Rickard Strandqvist [mailto:rickard_strandqvist@spectrumdigital.se]
->> Sent: Sunday, January 04, 2015 11:23 PM
->> To: Moore, Robert; Zheng, Lv
->> Cc: Rickard Strandqvist; Wysocki, Rafael J; Len Brown; linux-acpi@vger.kernel.org; devel@acpica.org; linux-kernel@vger.kernel.org
->> Subject: [PATCH] acpica: utpredef: Remove some unused functions
->>
->> Removes some functions that are not used anywhere:
->> acpi_ut_get_resource_bit_width() acpi_ut_display_predefined_method() acpi_ut_match_resource_name()
->>
->> This was partially found by using a static code analysis program called cppcheck.
->>
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> ---
->>  drivers/acpi/acpica/acutils.h  |    9 ---
->>  drivers/acpi/acpica/utpredef.c |  134 ----------------------------------------
->>  2 files changed, 143 deletions(-)
->>
->> diff --git a/drivers/acpi/acpica/acutils.h b/drivers/acpi/acpica/acutils.h
->> index 486d342..9b3fab1 100644
->> --- a/drivers/acpi/acpica/acutils.h
->> +++ b/drivers/acpi/acpica/acutils.h
->> @@ -502,17 +502,8 @@ const union acpi_predefined_info *acpi_ut_get_next_predefined_method(const union
->>
->>  const union acpi_predefined_info *acpi_ut_match_predefined_method(char *name);
->>
->> -const union acpi_predefined_info *acpi_ut_match_resource_name(char *name);
->> -
->> -void
->> -acpi_ut_display_predefined_method(char *buffer,
->> -                               const union acpi_predefined_info *this_name,
->> -                               u8 multi_line);
->> -
->>  void acpi_ut_get_expected_return_types(char *buffer, u32 expected_btypes);
->>
->> -u32 acpi_ut_get_resource_bit_width(char *buffer, u16 types);
->> -
->>  /*
->>   * utstate - Generic state creation/cache routines
->>   */
->> diff --git a/drivers/acpi/acpica/utpredef.c b/drivers/acpi/acpica/utpredef.c
->> index db30caf..f1ff33c 100644
->> --- a/drivers/acpi/acpica/utpredef.c
->> +++ b/drivers/acpi/acpica/utpredef.c
->> @@ -209,105 +209,6 @@ static const char *ut_resource_type_names[] = {
->>
->>  /*******************************************************************************
->>   *
->> - * FUNCTION:    acpi_ut_match_resource_name
->> - *
->> - * PARAMETERS:  name                - Name to find
->> - *
->> - * RETURN:      Pointer to entry in the resource table. NULL indicates not
->> - *              found.
->> - *
->> - * DESCRIPTION: Check an object name against the predefined resource
->> - *              descriptor object list.
->> - *
->> - ******************************************************************************/
->> -
->> -const union acpi_predefined_info *acpi_ut_match_resource_name(char *name)
->> -{
->> -     const union acpi_predefined_info *this_name;
->> -
->> -     /* Quick check for a predefined name, first character must be underscore */
->> -
->> -     if (name[0] != '_') {
->> -             return (NULL);
->> -     }
->> -
->> -     /* Search info table for a predefined method/object name */
->> -
->> -     this_name = acpi_gbl_resource_names;
->> -     while (this_name->info.name[0]) {
->> -             if (ACPI_COMPARE_NAME(name, this_name->info.name)) {
->> -                     return (this_name);
->> -             }
->> -
->> -             this_name++;
->> -     }
->> -
->> -     return (NULL);          /* Not found */
->> -}
->> -
->> -/*******************************************************************************
->> - *
->> - * FUNCTION:    acpi_ut_display_predefined_method
->> - *
->> - * PARAMETERS:  buffer              - Scratch buffer for this function
->> - *              this_name           - Entry in the predefined method/name table
->> - *              multi_line          - TRUE if output should be on >1 line
->> - *
->> - * RETURN:      None
->> - *
->> - * DESCRIPTION: Display information about a predefined method. Number and
->> - *              type of the input arguments, and expected type(s) for the
->> - *              return value, if any.
->> - *
->> - ******************************************************************************/
->> -
->> -void
->> -acpi_ut_display_predefined_method(char *buffer,
->> -                               const union acpi_predefined_info *this_name,
->> -                               u8 multi_line)
->> -{
->> -     u32 arg_count;
->> -
->> -     /*
->> -      * Get the argument count and the string buffer
->> -      * containing all argument types
->> -      */
->> -     arg_count = acpi_ut_get_argument_types(buffer,
->> -                                            this_name->info.argument_list);
->> -
->> -     if (multi_line) {
->> -             printf("      ");
->> -     }
->> -
->> -     printf("%4.4s    Requires %s%u argument%s",
->> -            this_name->info.name,
->> -            (this_name->info.argument_list & ARG_COUNT_IS_MINIMUM) ?
->> -            "(at least) " : "", arg_count, arg_count != 1 ? "s" : "");
->> -
->> -     /* Display the types for any arguments */
->> -
->> -     if (arg_count > 0) {
->> -             printf(" (%s)", buffer);
->> -     }
->> -
->> -     if (multi_line) {
->> -             printf("\n    ");
->> -     }
->> -
->> -     /* Get the return value type(s) allowed */
->> -
->> -     if (this_name->info.expected_btypes) {
->> -             acpi_ut_get_expected_return_types(buffer,
->> -                                               this_name->info.
->> -                                               expected_btypes);
->> -             printf("  Return value types: %s\n", buffer);
->> -     } else {
->> -             printf("  No return value\n");
->> -     }
->> -}
->> -
->> -/*******************************************************************************
->> - *
->>   * FUNCTION:    acpi_ut_get_argument_types
->>   *
->>   * PARAMETERS:  buffer              - Where to return the formatted types
->> @@ -361,39 +262,4 @@ static u32 acpi_ut_get_argument_types(char *buffer, u16 argument_types)
->>       return (arg_count);
->>  }
->>
->> -/*******************************************************************************
->> - *
->> - * FUNCTION:    acpi_ut_get_resource_bit_width
->> - *
->> - * PARAMETERS:  buffer              - Where the formatted string is returned
->> - *              types               - Bitfield of expected data types
->> - *
->> - * RETURN:      Count of return types. Formatted string in Buffer.
->> - *
->> - * DESCRIPTION: Format the resource bit widths into a printable string.
->> - *
->> - ******************************************************************************/
->> -
->> -u32 acpi_ut_get_resource_bit_width(char *buffer, u16 types)
->> -{
->> -     u32 i;
->> -     u16 sub_index;
->> -     u32 found;
->> -
->> -     *buffer = 0;
->> -     sub_index = 1;
->> -     found = 0;
->> -
->> -     for (i = 0; i < NUM_RESOURCE_WIDTHS; i++) {
->> -             if (types & 1) {
->> -                     strcat(buffer, &(ut_resource_type_names[i][sub_index]));
->> -                     sub_index = 0;
->> -                     found++;
->> -             }
->> -
->> -             types >>= 1;
->> -     }
->> -
->> -     return (found);
->> -}
->>  #endif
->> --
->> 1.7.10.4
->
+Hi all,
 
-Hi
+I had a question regarding the intention of the -D flag after looking at 
+perf stat numbers of the following workload:
 
-Cppcheck running depending on the settings all define on and off, if
-that's what you wonder.
+main(){
 
-Otherwise, I did a little deeper explanation how I made did this with
-cppcheck, and same scripts.
-https://lkml.org/lkml/2015/1/9/531
+int a=5, b=6;
 
+int i;
 
-Kind regards
-Rickard Strandqvist
+#pragma omp for schedule(dynamic)
+
+for (i=0; i<10000000; i++){
+
+b=b+a;
+
+}
+
+return 0;
+
+}
+
+_Stats without delay:_
+
+# perf stat -e cycles,instructions,cpu-clock,task-clock ../../test/a.out
+
+Performance counter stats for '../../test/a.out':
+
+    203,581,363,567 cycles #    1.500 GHz
+
+      7,563,983,198 instructions #    0.04  insns per cycle
+
+      135721.617844 cpu-clock (msec)
+
+      135721.600586 task-clock (msec) # *5.985 CPUs utilized*
+
+       22.678577620 seconds time elapsed (run time)
+
+_Stats with delay of 10 seconds:_
+
+# perf stat -D 10000 -e cycles,instructions,cpu-clock,task-clock 
+../../test/a.out
+
+b=363264281
+
+Performance counter stats for '../../test/a.out':
+
+    112,134,813,161 cycles #    1.500 GHz
+
+      4,461,136,761 instructions #    0.04  insns per cycle
+
+       74757.386789 cpu-clock (msec)
+
+       74757.317781 task-clock (msec) # *3.324 CPUs utilized*
+
+22.490237094 seconds time elapsed**(run time)*(delay time is not 
+excluded here)*
+
+The issue is that CPU utilization is calculated as 
+task-clock/total-runtime which in the case of no delay is fine.
+But for the delay case, the total run time should exclude the delay 
+time. Right?
+(and as a consequence, utilization would be calculated exclusive of the 
+delay time which would give us CPU utilization only for the period 
+during which perf actually collects info)
+
+Or is this the way -D flag is intended to work?
+
+Thanks for the clarifications,
+-Aravind.
