@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675AbbANIbR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:31:17 -0500
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:43183 "EHLO
+	id S1752740AbbANI3P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:29:15 -0500
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:42163 "EHLO
 	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754357AbbANIbN (ORCPT
+	with ESMTP id S1753467AbbANI3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 03:31:13 -0500
-X-ASG-Debug-ID: 1421223513-0759e7543ba83b40002-xx1T2L
+	Wed, 14 Jan 2015 03:29:12 -0500
+X-ASG-Debug-ID: 1421223520-0759e7543ba83c70002-xx1T2L
 X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
 X-Barracuda-AUTH-User: xsenscom
 X-Barracuda-Apparent-Source-IP: 87.249.116.215
@@ -21,10 +21,10 @@ CC: Frans Klaver <frans.klaver@xsens.com>,
         =?UTF-8?q?Ren=C3=A9=20Moll?= <linux@r-moll.nl>,
         Guenter Roeck <linux@roeck-us.net>, <linux-kernel@vger.kernel.org>,
         <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: [PATCH RESEND 07/13] power: reset: ltc2952: drop empty suspend/resume functions
-Date: Wed, 14 Jan 2015 09:15:40 +0100
-X-ASG-Orig-Subj: [PATCH RESEND 07/13] power: reset: ltc2952: drop empty suspend/resume functions
-Message-ID: <1421223346-27410-8-git-send-email-frans.klaver@xsens.com>
+Subject: [PATCH RESEND 08/13] power: reset: ltc2952: cleanup control flow in poweroff_handler
+Date: Wed, 14 Jan 2015 09:15:41 +0100
+X-ASG-Orig-Subj: [PATCH RESEND 08/13] power: reset: ltc2952: cleanup control flow in poweroff_handler
+Message-ID: <1421223346-27410-9-git-send-email-frans.klaver@xsens.com>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <1421223346-27410-1-git-send-email-frans.klaver@xsens.com>
 References: <1421223346-27410-1-git-send-email-frans.klaver@xsens.com>
@@ -32,7 +32,7 @@ MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [172.16.11.149]
 X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1421223513
+X-Barracuda-Start-Time: 1421223520
 X-Barracuda-Encrypted: AES128-SHA
 X-Barracuda-URL: https://filter1.ibarracuda.nl:443/cgi-mod/mark.cgi
 X-Barracuda-BRTS-Status: 1
@@ -46,49 +46,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Documentation/SubmittingDrivers suggests these be implemented even when
-they do nothing. On the other hand, the platform code calls these
-functions 'legacy'. Suspend and resume operations should go into a
-pm_ops structure, pointed at by the driver's pm field. This approach
-would lead to a lot of boiler plate, while achieving nothing. Drop the
-functions instead.
+ltc2952_poweroff_handler uses gotos to return from the function. Since
+we don't do cleanups exiting this function, just return IRQ_HANDLED on
+the spot and be done with it.
+
+While at it, remove the variable 'ret'. It was never used very much.
 
 Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
 ---
- drivers/power/reset/ltc2952-poweroff.c | 13 -------------
- 1 file changed, 13 deletions(-)
+ drivers/power/reset/ltc2952-poweroff.c | 18 +++++-------------
+ 1 file changed, 5 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/power/reset/ltc2952-poweroff.c b/drivers/power/reset/ltc2952-poweroff.c
-index bc8d228..af3cb6e 100644
+index af3cb6e..70d8e3a 100644
 --- a/drivers/power/reset/ltc2952-poweroff.c
 +++ b/drivers/power/reset/ltc2952-poweroff.c
-@@ -184,17 +184,6 @@ static void ltc2952_poweroff_kill(void)
- 	gpiod_set_value(ltc2952_data->gpio_kill, 1);
+@@ -153,29 +153,21 @@ ltc2952_poweroff_timer_trigger(struct hrtimer *timer)
+  */
+ static irqreturn_t ltc2952_poweroff_handler(int irq, void *dev_id)
+ {
+-	int ret;
+ 	struct ltc2952_poweroff *data = dev_id;
+ 
+-	if (data->kernel_panic)
+-		goto irq_ok;
+-
+-	if (hrtimer_active(&data->timer_wde)) {
++	if (data->kernel_panic || hrtimer_active(&data->timer_wde)) {
+ 		/* shutdown is already triggered, nothing to do any more */
+-		goto irq_ok;
++		return IRQ_HANDLED;
+ 	}
+ 
+ 	if (!hrtimer_active(&data->timer_trigger)) {
+-		ret = hrtimer_start(&data->timer_trigger, data->trigger_delay,
+-			HRTIMER_MODE_REL);
+-
+-		if (ret)
++		if (hrtimer_start(&data->timer_trigger, data->trigger_delay,
++				  HRTIMER_MODE_REL))
+ 			dev_err(data->dev, "unable to start the wait timer\n");
+ 	} else {
+-		ret = hrtimer_cancel(&data->timer_trigger);
++		hrtimer_cancel(&data->timer_trigger);
+ 		/* omitting return value check, timer should have been valid */
+ 	}
+-
+-irq_ok:
+ 	return IRQ_HANDLED;
  }
  
--static int ltc2952_poweroff_suspend(struct platform_device *pdev,
--	pm_message_t state)
--{
--	return -ENOSYS;
--}
--
--static int ltc2952_poweroff_resume(struct platform_device *pdev)
--{
--	return -ENOSYS;
--}
--
- static void ltc2952_poweroff_default(struct ltc2952_poweroff *data)
- {
- 	data->wde_interval = ktime_set(0, 300L*1E6L);
-@@ -323,8 +312,6 @@ static struct platform_driver ltc2952_poweroff_driver = {
- 		.owner = THIS_MODULE,
- 		.of_match_table = of_ltc2952_poweroff_match,
- 	},
--	.suspend = ltc2952_poweroff_suspend,
--	.resume = ltc2952_poweroff_resume,
- };
- 
- module_platform_driver(ltc2952_poweroff_driver);
 -- 
 2.1.0
 
