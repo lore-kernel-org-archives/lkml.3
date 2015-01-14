@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796AbbANQtC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 11:49:02 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:50978 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159AbbANQs7 (ORCPT
+	id S1753711AbbANQ5O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 11:57:14 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:45750 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751891AbbANQ5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 11:48:59 -0500
-Message-ID: <54B69DF6.7070306@suse.cz>
-Date: Wed, 14 Jan 2015 17:48:54 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Wed, 14 Jan 2015 11:57:12 -0500
+Date: Wed, 14 Jan 2015 17:49:49 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        lauraa@codeaurora.org, tony@atomide.com, linus.walleij@linaro.org,
+        Tomasz Figa <tomasz.figa@gmail.com>, drake@endlessm.com,
+        loeliger@gmail.com, Kyungmin Park <kyungmin.park@samsung.com>,
+        santosh.shilimkar@ti.com, linux-omap@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH v5 0/7] Enable L2 cache support on Exynos4210/4x12 SoCs
+Message-ID: <20150114164949.GM3843@piout.net>
+References: <1411556741-5810-1-git-send-email-m.szyprowski@samsung.com>
+ <20150114154603.GK3843@piout.net>
+ <20150114162150.GQ11502@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>,
-        "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>,
-        Michael Ellerman <mpe@ellerman.id.au>
-Subject: Re: [PATCH 3.14 00/77] 3.14.29-stable review
-References: <20150114072224.182299947@linuxfoundation.org> <20150114163721.GA32246@roeck-us.net>
-In-Reply-To: <20150114163721.GA32246@roeck-us.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150114162150.GQ11502@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2015, 05:37 PM, Guenter Roeck wrote:
-> On Tue, Jan 13, 2015 at 11:22:40PM -0800, Greg Kroah-Hartman wrote:
->> This is the start of the stable review cycle for the 3.14.29 release.
->> There are 77 patches in this series, all will be posted as a response
->> to this one.  If anyone has any issues with these being applied, please
->> let me know.
->>
->> Responses should be made by Fri Jan 16 07:22:07 UTC 2015.
->> Anything received after that time might be too late.
->>
-> There are several powerpc build failures.
+Hi,
+
+On 14/01/2015 at 16:21:50 +0000, Russell King - ARM Linux wrote :
+> On Wed, Jan 14, 2015 at 04:46:03PM +0100, Alexandre Belloni wrote:
+> > Hi,
+> > 
+> > This patch set hasn't moved since while. We actually need patch 4 to
+> > properly configure prefetch on sama5d4. What would be needed to come to
+> > an agreement ?
 > 
-> Building powerpc:defconfig ... failed
-> Building powerpc:allmodconfig ... failed
-> Building powerpc:cell_defconfig ... failed
-> Building powerpc:maple_defconfig ... failed
+> What do you mean "hasn't moved since a while" - there has been movement.
+> It was discovered that it breaks OMAP4 platforms.
 > 
-> arch/powerpc/kernel/head_64.o: In function `machine_check_handle_early':
-> (.text+0x918c): undefined reference to `.power7_enter_nap_mode'
+> Since then, work has been done to resolve that breakage, and I've merged
+> the recent patch set into my tree for further regression testing, and
+> I'm going to push it out to linux-next later this week.
+> 
 
-Dots from functions were removed only in commit b1576fec7f4 (powerpc: No
-need to use dot symbols when branching to a function).
+Indeed, my searching skills are not great. I was actually looking for
+mails from Tomasz but he is not taking care of it now...
 
-The backport of commit 8117ac6a6c2 (powerpc/powernv: Switch off MMU
-before entering nap/sleep/rvwinkle mode) should redefine
-power7_enter_nap_mode with dots IMO.
+Thanks for the info!
 
-thanks,
 -- 
-js
-suse labs
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
