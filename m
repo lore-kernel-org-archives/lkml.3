@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196AbbANHel (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:34:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58507 "EHLO
+	id S1755523AbbANIIw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:08:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58384 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932562AbbANHeZ (ORCPT
+	with ESMTP id S1755086AbbANHcm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:34:25 -0500
+	Wed, 14 Jan 2015 02:32:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.14 33/77] kvm: x86: drop severity of "generation wraparound" message
+        Pavel Machek <pavel@ucw.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.18 122/150] Revert "ARM: 7830/1: delay: dont bother reporting bogomips in /proc/cpuinfo"
 Date: Tue, 13 Jan 2015 23:23:13 -0800
-Message-Id: <20150114072226.066999436@linuxfoundation.org>
+Message-Id: <20150114072101.371448656@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,35 +25,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Pavel Machek <pavel@ucw.cz>
 
-commit a629df7eadffb03e6ce4a8616e62ea29fdf69b6b upstream.
+commit 4bf9636c39ac70da091d5a2e28d3448eaa7f115c upstream.
 
-Since most virtual machines raise this message once, it is a bit annoying.
-Make it KERN_DEBUG severity.
+Commit 9fc2105aeaaf ("ARM: 7830/1: delay: don't bother reporting
+bogomips in /proc/cpuinfo") breaks audio in python, and probably
+elsewhere, with message
 
-Fixes: 7a2e8aaf0f6873b47bc2347f216ea5b0e4c258ab
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+  FATAL: cannot locate cpu MHz in /proc/cpuinfo
+
+I'm not the first one to hit it, see for example
+
+  https://theredblacktree.wordpress.com/2014/08/10/fatal-cannot-locate-cpu-mhz-in-proccpuinfo/
+  https://devtalk.nvidia.com/default/topic/765800/workaround-for-fatal-cannot-locate-cpu-mhz-in-proc-cpuinf/?offset=1
+
+Reading original changelog, I have to say "Stop breaking working setups.
+You know who you are!".
+
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/mmu.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/kernel/setup.c |    9 +++++++++
+ arch/arm/kernel/smp.c   |   13 +++++++++++--
+ 2 files changed, 20 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -4384,7 +4384,7 @@ void kvm_mmu_invalidate_mmio_sptes(struc
- 	 * zap all shadow pages.
- 	 */
- 	if (unlikely(kvm_current_mmio_generation(kvm) == 0)) {
--		printk_ratelimited(KERN_INFO "kvm: zapping shadow pages for mmio generation wraparound\n");
-+		printk_ratelimited(KERN_DEBUG "kvm: zapping shadow pages for mmio generation wraparound\n");
- 		kvm_mmu_invalidate_zap_all_pages(kvm);
- 	}
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -1043,6 +1043,15 @@ static int c_show(struct seq_file *m, vo
+ 		seq_printf(m, "model name\t: %s rev %d (%s)\n",
+ 			   cpu_name, cpuid & 15, elf_platform);
+ 
++#if defined(CONFIG_SMP)
++		seq_printf(m, "BogoMIPS\t: %lu.%02lu\n",
++			   per_cpu(cpu_data, i).loops_per_jiffy / (500000UL/HZ),
++			   (per_cpu(cpu_data, i).loops_per_jiffy / (5000UL/HZ)) % 100);
++#else
++		seq_printf(m, "BogoMIPS\t: %lu.%02lu\n",
++			   loops_per_jiffy / (500000/HZ),
++			   (loops_per_jiffy / (5000/HZ)) % 100);
++#endif
+ 		/* dump out the processor features */
+ 		seq_puts(m, "Features\t: ");
+ 
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -387,8 +387,17 @@ asmlinkage void secondary_start_kernel(v
+ 
+ void __init smp_cpus_done(unsigned int max_cpus)
+ {
+-	printk(KERN_INFO "SMP: Total of %d processors activated.\n",
+-	       num_online_cpus());
++	int cpu;
++	unsigned long bogosum = 0;
++
++	for_each_online_cpu(cpu)
++		bogosum += per_cpu(cpu_data, cpu).loops_per_jiffy;
++
++	printk(KERN_INFO "SMP: Total of %d processors activated "
++	       "(%lu.%02lu BogoMIPS).\n",
++	       num_online_cpus(),
++	       bogosum / (500000/HZ),
++	       (bogosum / (5000/HZ)) % 100);
+ 
+ 	hyp_mode_check();
  }
 
 
