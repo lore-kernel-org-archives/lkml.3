@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933324AbbANHl6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:41:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58984 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932067AbbANHj2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:39:28 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jay Foad <jay.foad@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 44/44] mm: Dont count the stack guard page towards RLIMIT_STACK
-Date: Tue, 13 Jan 2015 23:24:05 -0800
-Message-Id: <20150114072229.750102768@linuxfoundation.org>
-X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
-References: <20150114072227.419663002@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	id S933395AbbANIHG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:07:06 -0500
+Received: from mail.kapsi.fi ([217.30.184.167]:34614 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754432AbbANHd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 02:33:58 -0500
+X-Priority: 3
+To: paul.clements@us.sios.com
+Cc: nbd-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        andrey.krieger.utkin@gmail.com
+From: Tuomas =?ISO-8859-1?Q?R=E4s=E4nen?= <tuomasjjrasanen@tjjr.fi>
+Subject: Re: [Nbd] NBD Maintainer
+In-Reply-To: <CAECXXi4mEV2=-w95LJCDA=zf6f8_SCRBHYkp2tTwUuAJiOjaQQ@mail.gmail.com>
+References: <CAECXXi7Ax3t2b7x=KqUF1udNKWgQnGebVtkyLHnjhxEZ2o=M5g@mail.gmail.com>
+	<CANZNk812oKH3k+bW8Jb2fQHxOS+pF=ghHpekB4X8QtQm67X-hQ@mail.gmail.com>
+ <CAECXXi4mEV2=-w95LJCDA=zf6f8_SCRBHYkp2tTwUuAJiOjaQQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Date: Wed, 14 Jan 2015 07:33:43 +0000
+Message-ID: <s70vhy.ni5p0b.2zdyk6-qmf@mail.kapsi.fi>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
+X-SA-Exim-Connect-IP: 37.219.240.199
+X-SA-Exim-Mail-From: tuomasjjrasanen@tjjr.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0E87bgC003760
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Hi
 
-------------------
+On Tue Jan 13 21:26:01 2015 GMT+0200, Paul Clements wrote:
+> On Tue, Jan 13, 2015 at 11:14 AM, Andrey Utkin
+> <andrey.krieger.utkin@gmail.com> wrote:
+> > Hi Paul,
+> > could you please describe
+> 
+> > - how wide is NBD usage today (any estimation is ok),
+> 
+> It depends somewhat on who you consider to be users. There are two
+> groups of NBD "users":
+> 
+> 1) integrators and admins (who work directly with nbd)
+> 2) users of the systems and software that the first group creates
+> 
+> My guess is that the first group is in the hundreds. The second in the
+> thousands. NBD usage tends to fall into one the following classes:
+>
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+We (Opinsys) alone have approx. 45k end-users (teachers and students). So at least the second group is a lot bigger.
 
-commit 690eac53daff34169a4d74fc7bfbd388c4896abb upstream.
-
-Commit fee7e49d4514 ("mm: propagate error from stack expansion even for
-guard page") made sure that we return the error properly for stack
-growth conditions.  It also theorized that counting the guard page
-towards the stack limit might break something, but also said "Let's see
-if anybody notices".
-
-Somebody did notice.  Apparently android-x86 sets the stack limit very
-close to the limit indeed, and including the guard page in the rlimit
-check causes the android 'zygote' process problems.
-
-So this adds the (fairly trivial) code to make the stack rlimit check be
-against the actual real stack size, rather than the size of the vma that
-includes the guard page.
-
-Reported-and-tested-by: Chih-Wei Huang <cwhuang@android-x86.org>
-Cc: Jay Foad <jay.foad@gmail.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- mm/mmap.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
-
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2056,14 +2056,17 @@ static int acct_stack_growth(struct vm_a
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 	struct rlimit *rlim = current->signal->rlim;
--	unsigned long new_start;
-+	unsigned long new_start, actual_size;
- 
- 	/* address space limit tests */
- 	if (!may_expand_vm(mm, grow))
- 		return -ENOMEM;
- 
- 	/* Stack limit test */
--	if (size > ACCESS_ONCE(rlim[RLIMIT_STACK].rlim_cur))
-+	actual_size = size;
-+	if (size && (vma->vm_flags & (VM_GROWSUP | VM_GROWSDOWN)))
-+		actual_size -= PAGE_SIZE;
-+	if (actual_size > ACCESS_ONCE(rlim[RLIMIT_STACK].rlim_cur))
- 		return -ENOMEM;
- 
- 	/* mlock limit tests */
-
-
+-- 
+Tuomas
+ ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
