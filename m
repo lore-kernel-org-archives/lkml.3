@@ -1,223 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752500AbbANUR1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 15:17:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56725 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751241AbbANURZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 15:17:25 -0500
-Date: Wed, 14 Jan 2015 15:17:10 -0500
-From: Brian Foster <bfoster@redhat.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: david@fromorbit.com, tytso@mit.edu, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        xfs@oss.sgi.com, a.sangwan@samsung.com,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH v8 9/11] xfstests: generic/043: Test multiple fallocate
- insert/collapse range calls
-Message-ID: <20150114201710.GB49511@bfoster.bfoster>
-References: <1421165126-3585-1-git-send-email-linkinjeon@gmail.com>
- <1421165126-3585-10-git-send-email-linkinjeon@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421165126-3585-10-git-send-email-linkinjeon@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752131AbbANUVj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 15:21:39 -0500
+Received: from skprod2.natinst.com ([130.164.80.23]:49998 "EHLO ni.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751276AbbANUVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 15:21:37 -0500
+From: Xander Huff <xander.huff@ni.com>
+To: nicolas.ferre@atmel.com, netdev@vger.kernel.org, davem@davemloft.net
+Cc: jaeden.amero@ni.com, rich.tollerton@ni.com, ben.shelton@ni.com,
+        brad.mouring@ni.com, linux-kernel@vger.kernel.org,
+        cyrille.pitchen@atmel.com, Xander Huff <xander.huff@ni.com>
+Subject: [PATCH 1/2] fixup! net/macb: Adding comments to various #defs to make interpretation easier
+Date: Wed, 14 Jan 2015 14:21:20 -0600
+Message-Id: <1421266881-17314-1-git-send-email-xander.huff@ni.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <54B690F5.5080308@atmel.com>
+References: <54B690F5.5080308@atmel.com>
+X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
+ 21, 2013) at 01/14/2015 02:21:32 PM,
+	Serialize by Router on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
+ 21, 2013) at 01/14/2015 02:21:33 PM,
+	Serialize complete at 01/14/2015 02:21:33 PM
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-14_05:2015-01-14,2015-01-14,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 01:05:24AM +0900, Namjae Jeon wrote:
-> From: Namjae Jeon <namjae.jeon@samsung.com>
-> 
-> This testcase(043) tries to test finsert range a single alternate block
-> mulitiple times and test merge code of collase range.
-> 
-> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-> Cc: Brian Foster<bfoster@redhat.com>
-> ---
-> Changelog
-> v8:
->  - use MKFS_OPTION to use blocksize in configuration and remove loop.
->  - remove trailing space.
->  - compare original file and test file to check data integrity.
-> 
->  tests/generic/043     |  100 +++++++++++++++++++++++++++++++++++++++++++++++++
->  tests/generic/043.out |    3 ++
->  tests/generic/group   |    1 +
->  3 files changed, 104 insertions(+)
->  create mode 100644 tests/generic/043
->  create mode 100644 tests/generic/043.out
-> 
-> diff --git a/tests/generic/043 b/tests/generic/043
-> new file mode 100644
-> index 0000000..a5a2d0b
-> --- /dev/null
-> +++ b/tests/generic/043
-> @@ -0,0 +1,100 @@
-> +#! /bin/bash
-> +# FS QA Test No. generic/043
-> +#
-> +# Test multiple fallocate insert/collapse range calls on same file.
-> +# Call insert range a single alternate block multiple times until the file
-> +# is left with 100 extents and as much number of extents. And Call collapse
-> +# range about the previously inserted ranges to test merge code of collapse
-> +# range. Also check for data integrity and file system consistency.
-> +#-----------------------------------------------------------------------
-> +# Copyright (c) 2014 Samsung Electronics.  All Rights Reserved.
-> +#
-> +# This program is free software; you can redistribute it and/or
-> +# modify it under the terms of the GNU General Public License as
-> +# published by the Free Software Foundation.
-> +#
-> +# This program is distributed in the hope that it would be useful,
-> +# but WITHOUT ANY WARRANTY; without even the implied warranty of
-> +# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> +# GNU General Public License for more details.
-> +#
-> +# You should have received a copy of the GNU General Public License
-> +# along with this program; if not, write the Free Software Foundation,
-> +# Inc.,  51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-> +#
-> +#-----------------------------------------------------------------------
-> +#
-> +
-> +seq=`basename $0`
-> +seqres=$RESULT_DIR/$seq
-> +echo "QA output created by $seq"
-> +
-> +here=`pwd`
-> +tmp=/tmp/$$
-> +status=1	# failure is the default!
-> +trap "rm -f $tmp.*; exit \$status" 0 1 2 3 15
-> +
-> +# get standard environment, filters and checks
-> +. ./common/rc
-> +. ./common/filter
-> +
-> +# real QA test starts here
-> +_supported_fs generic
-> +_supported_os Linux
-> +
-> +_require_scratch
-> +_require_xfs_io_command "fiemap"
-> +_require_xfs_io_command "finsert"
-> +_require_xfs_io_command "fcollapse"
-> +_do_die_on_error=y
+Signed-off-by: Xander Huff <xander.huff@ni.com>
+---
+ drivers/net/ethernet/cadence/macb.h | 107 +++++++++---------------------------
+ 1 file changed, 26 insertions(+), 81 deletions(-)
 
-What is _do_die_on_error for? Seems like that's only relevant for using
-_do()?
+diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
+index 378b218..d7b93d0 100644
+--- a/drivers/net/ethernet/cadence/macb.h
++++ b/drivers/net/ethernet/cadence/macb.h
+@@ -275,9 +275,7 @@
+ #define MACB_THALT_SIZE				1
+ #define MACB_NCR_TPF_OFFSET			11 /* Transmit pause frame */
+ #define MACB_NCR_TPF_SIZE			1
+-#define MACB_TZQ_OFFSET				12 /* Transmit zero quantum
+-						    * pause frame
+-						    */
++#define MACB_TZQ_OFFSET				12 /* Transmit zero quantum pause frame */
+ #define MACB_TZQ_SIZE				1
+ 
+ /* Bitfields in NCFGR */
+@@ -299,9 +297,7 @@
+ #define MACB_UNI_SIZE				1
+ #define MACB_BIG_OFFSET				8 /* Receive 1536 byte frames */
+ #define MACB_BIG_SIZE				1
+-#define MACB_EAE_OFFSET				9 /* External address match
+-						   * enable
+-						   */
++#define MACB_EAE_OFFSET				9 /* External address match enable */
+ #define MACB_EAE_SIZE				1
+ #define MACB_CLK_OFFSET				10
+ #define MACB_CLK_SIZE				2
+@@ -313,9 +309,7 @@
+ #define MACB_RM9200_RMII_SIZE			1  /* AT91RM9200 only */
+ #define MACB_RBOF_OFFSET			14 /* Receive buffer offset */
+ #define MACB_RBOF_SIZE				2
+-#define MACB_RLCE_OFFSET			16 /* Length field error frame
+-						    * discard
+-						    */
++#define MACB_RLCE_OFFSET			16 /* Length field error frame discard */
+ #define MACB_RLCE_SIZE				1
+ #define MACB_DRFCS_OFFSET			17 /* FCS remove */
+ #define MACB_DRFCS_SIZE				1
+@@ -335,41 +329,22 @@
+ #define GEM_RXCOEN_SIZE				1
+ 
+ /* Constants for data bus width. */
+-#define GEM_DBW32				0 /* 32 bit AMBA AHB data bus
+-						   * width
+-						   */
+-#define GEM_DBW64				1 /* 64 bit AMBA AHB data bus
+-						   * width
+-						   */
+-#define GEM_DBW128				2 /* 128 bit AMBA AHB data bus
+-						   * width
+-						   */
++#define GEM_DBW32				0 /* 32 bit AMBA AHB data bus width */
++#define GEM_DBW64				1 /* 64 bit AMBA AHB data bus width */
++#define GEM_DBW128				2 /* 128 bit AMBA AHB data bus width */
+ 
+ /* Bitfields in DMACFG. */
+-#define GEM_FBLDO_OFFSET			0 /* AHB fixed burst length for
+-						   * DMA data operations
+-						   */
++#define GEM_FBLDO_OFFSET			0 /* AHB fixed burst length for DMA data operations */
+ #define GEM_FBLDO_SIZE				5
+-#define GEM_ENDIA_OFFSET			7 /* AHB endian swap mode enable
+-						   * for packet data accesses
+-						   */
++#define GEM_ENDIA_OFFSET			7 /* AHB endian swap mode enable for packet data accesses */
+ #define GEM_ENDIA_SIZE				1
+-#define GEM_RXBMS_OFFSET			8 /* Receiver packet buffer
+-						   * memory size select
+-						   */
++#define GEM_RXBMS_OFFSET			8 /* Receiver packet buffer memory size select */
+ #define GEM_RXBMS_SIZE				2
+-#define GEM_TXPBMS_OFFSET			10 /* Transmitter packet buffer
+-						    * memory size select
+-						    */
++#define GEM_TXPBMS_OFFSET			10 /* Transmitter packet buffer memory size select */
+ #define GEM_TXPBMS_SIZE				1
+-#define GEM_TXCOEN_OFFSET			11 /* Transmitter IP, TCP and
+-						    * UDP checksum generation
+-						    * offload enable
+-						    */
++#define GEM_TXCOEN_OFFSET			11 /* Transmitter IP, TCP and UDP checksum generation offload enable */
+ #define GEM_TXCOEN_SIZE				1
+-#define GEM_RXBS_OFFSET				16 /* DMA receive buffer size in
+-						    * AHB system memory
+-						    */
++#define GEM_RXBS_OFFSET				16 /* DMA receive buffer size in AHB system memory */
+ #define GEM_RXBS_SIZE				8
+ #define GEM_DDRP_OFFSET				24 /* disc_when_no_ahb */
+ #define GEM_DDRP_SIZE				1
+@@ -378,13 +353,9 @@
+ /* Bitfields in NSR */
+ #define MACB_NSR_LINK_OFFSET			0 /* pcs_link_state */
+ #define MACB_NSR_LINK_SIZE			1
+-#define MACB_MDIO_OFFSET			1 /* status of the mdio_in
+-						   * pin
+-						   */
++#define MACB_MDIO_OFFSET			1 /* status of the mdio_in pin */
+ #define MACB_MDIO_SIZE				1
+-#define MACB_IDLE_OFFSET			2 /* The PHY management logic is
+-						   * idle (i.e. has completed)
+-						   */
++#define MACB_IDLE_OFFSET			2 /* The PHY management logic is idle (i.e. has completed) */
+ #define MACB_IDLE_SIZE				1
+ 
+ /* Bitfields in TSR */
+@@ -396,9 +367,7 @@
+ #define MACB_TSR_RLE_SIZE			1
+ #define MACB_TGO_OFFSET				3 /* Transmit go */
+ #define MACB_TGO_SIZE				1
+-#define MACB_BEX_OFFSET				4 /* Transmit frame corruption
+-						   * due to AHB error
+-						   */
++#define MACB_BEX_OFFSET				4 /* Transmit frame corruption due to AHB error */
+ #define MACB_BEX_SIZE				1
+ #define MACB_RM9200_BNQ_OFFSET			4 /* AT91RM9200 only */
+ #define MACB_RM9200_BNQ_SIZE			1 /* AT91RM9200 only */
+@@ -424,43 +393,23 @@
+ #define MACB_RXUBR_SIZE				1
+ #define MACB_TXUBR_OFFSET			3 /* TX used bit read */
+ #define MACB_TXUBR_SIZE				1
+-#define MACB_ISR_TUND_OFFSET			4 /* Enable trnasmit buffer
+-						   * under run interrupt
+-						   */
++#define MACB_ISR_TUND_OFFSET			4 /* Enable trnasmit buffer under run interrupt */
+ #define MACB_ISR_TUND_SIZE			1
+-#define MACB_ISR_RLE_OFFSET			5 /* Enable retry limit exceeded
+-						   * or late collision interrupt
+-						   */
++#define MACB_ISR_RLE_OFFSET			5 /* Enable retry limit exceeded or late collision interrupt */
+ #define MACB_ISR_RLE_SIZE			1
+-#define MACB_TXERR_OFFSET			6 /* Enable transmit frame
+-						   * corruption due to AHB error
+-						   * interrupt
+-						   */
++#define MACB_TXERR_OFFSET			6 /* Enable transmit frame corruption due to AHB error interrupt */
+ #define MACB_TXERR_SIZE				1
+-#define MACB_TCOMP_OFFSET			7 /* Enable transmit complete
+-						   * interrupt
+-						   */
++#define MACB_TCOMP_OFFSET			7 /* Enable transmit complete interrupt */
+ #define MACB_TCOMP_SIZE				1
+-#define MACB_ISR_LINK_OFFSET			9 /* Enable link change
+-						   * interrupt
+-						   */
++#define MACB_ISR_LINK_OFFSET			9 /* Enable link change interrupt */
+ #define MACB_ISR_LINK_SIZE			1
+-#define MACB_ISR_ROVR_OFFSET			10 /* Enable receive overrun
+-						    * interrupt
+-						    */
++#define MACB_ISR_ROVR_OFFSET			10 /* Enable receive overrun interrupt */
+ #define MACB_ISR_ROVR_SIZE			1
+-#define MACB_HRESP_OFFSET			11 /* Enable hrsep not OK
+-						    * interrupt
+-						    */
++#define MACB_HRESP_OFFSET			11 /* Enable hrsep not OK interrupt */
+ #define MACB_HRESP_SIZE				1
+-#define MACB_PFR_OFFSET				12 /* Enable pause frame with
+-						    * non-zero pause quantum
+-						    * interrupt
+-						    */
++#define MACB_PFR_OFFSET				12 /* Enable pause frame with non-zero pause quantum interrupt */
+ #define MACB_PFR_SIZE				1
+-#define MACB_PTZ_OFFSET				13 /* Enable pause time zero
+-						    * interrupt
+-						    */
++#define MACB_PTZ_OFFSET				13 /* Enable pause time zero interrupt */
+ #define MACB_PTZ_SIZE				1
+ 
+ /* Bitfields in MAN */
+@@ -472,13 +421,9 @@
+ #define MACB_REGA_SIZE				5
+ #define MACB_PHYA_OFFSET			23 /* PHY address */
+ #define MACB_PHYA_SIZE				5
+-#define MACB_RW_OFFSET				28 /* Operation. 10 is read. 01
+-						    * is write.
+-						    */
++#define MACB_RW_OFFSET				28 /* Operation. 10 is read. 01 is write. */
+ #define MACB_RW_SIZE				2
+-#define MACB_SOF_OFFSET				30 /* Must be written to 1 for
+-						    * Clause 22 operation
+-						    */
++#define MACB_SOF_OFFSET				30 /* Must be written to 1 for Clause 22 operation */
+ #define MACB_SOF_SIZE				2
+ 
+ /* Bitfields in USRIO (AVR32) */
+-- 
+1.9.1
 
-> +src=$SCRATCH_MNT/testfile
-> +dest=$SCRATCH_MNT/testfile.dest
-> +BLOCKS=100
-> +BSIZE=`get_block_size $SCRATCH_MNT`
-> +
-
-rm -f $seqres.full
-
-... to clear out the old .full file.
-
-> +_scratch_mkfs MKFS_OPTIONS >> $seqres.full 2>&1
-
-You don't need MKFS_OPTIONS here. In fact, this currently causes a mkfs
-failure (missing $) that we don't detect because we aren't checking that
-the mkfs actually succeeds. All we need to do here is:
-
-_scratch_mkfs >> $seqres.full 2>&1 || _fail "mkfs failed"
-
-If you dig down into _scratch_mkfs(), you'll see that it already
-includes $MKFS_OPTIONS and thus formats the fs as specified by the test
-config.
-
-It might also be a good idea to check that the _scratch_mount below
-succeeds as well...
-
-> +_scratch_mount >> $seqres.full 2>&1
-> +length=$(($BLOCKS * $BSIZE))
-> +
-> +# Write file
-> +$XFS_IO_PROG -f -c "pwrite 0 $length" -c fsync $src > /dev/null
-> +cp $src $dest
-> +
-
-It seems quite unlikely for this to not create a single extent given the
-smallish file size and freshly created fs, but who knows with various fs
-types, test configurations, test device sizes, etc. Another option could
-be to check the starting extent count and verify the ending extent count
-matches, rather than assume hardcoded values of 1.
-
-To be honest, even just including the starting extent count in the
-golden output (e.g., add an fiemap command here as well) might be good
-enough to distinguish that failure path from something going wrong in
-the collapse path, should it ever occur.
-
-> +# Insert alternate blocks
-> +for (( j=0; j < $(($BLOCKS/2)); j++ )); do
-> +	offset=$((($j*$BSIZE)*2))
-> +	$XFS_IO_PROG -c "finsert $offset $BSIZE" $dest > /dev/null
-> +done
-> +
-> +# Check if 100 extents are present
-> +$XFS_IO_PROG -c "fiemap -v" $dest | grep "^ *[0-9]*:" |wc -l
-> +
-> +_check_scratch_fs
-> +if [ $? -ne 0 ]; then
-> +	status=1
-> +	exit
-> +fi
-> +
-> +# Collapse alternate blocks
-> +for (( j=0; j < $(($BLOCKS/2)); j++ )); do
-> +	offset=$((($j*$BSIZE)))
-> +	$XFS_IO_PROG -c "fcollapse $offset $BSIZE" $dest > /dev/null
-> +done
-> +
-> +# Check if 1 extents are present
-> +$XFS_IO_PROG -c "fiemap -v" $dest | grep "^ *[0-9]*:" |wc -l
-> +
-> +# compare original file and test file.
-> +cmp $src $dest || _fail "file bytes check failed"
-> +
-> +_check_scratch_fs
-> +if [ $? -ne 0 ]; then
-> +	status=1
-> +	exit
-> +fi
-> +
-> +umount $SCRATCH_MNT
-> +
-
-The scratch device is unmounted and checked after each test that uses it
-so the above is unnecessary.
-
-Brian
-
-> +# success, all done
-> +status=0
-> +exit
-> diff --git a/tests/generic/043.out b/tests/generic/043.out
-> new file mode 100644
-> index 0000000..47a66aa
-> --- /dev/null
-> +++ b/tests/generic/043.out
-> @@ -0,0 +1,3 @@
-> +QA output created by 043
-> +100
-> +1
-> diff --git a/tests/generic/group b/tests/generic/group
-> index c0944b3..0a10bdd 100644
-> --- a/tests/generic/group
-> +++ b/tests/generic/group
-> @@ -45,6 +45,7 @@
->  040 auto quick prealloc
->  041 auto quick prealloc
->  042 auto quick prealloc
-> +043 auto quick prealloc
->  053 acl repair auto quick
->  062 attr udf auto quick
->  068 other auto freeze dangerous stress
-> -- 
-> 1.7.9.5
-> 
