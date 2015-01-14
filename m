@@ -1,49 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369AbbANN7i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 08:59:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50758 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753251AbbANN7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 08:59:35 -0500
-Date: Wed, 14 Jan 2015 11:59:30 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>, namhyung@kernel.org,
-        jolsa@kernel.org, peterz@infradead.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org,
-        linux-arch@vger.kernel.org, Alexey.Brodkin@synopsys.com
-Subject: Re: [PATCH v3 0/5] Perf tool fixes for ARC + uClibc
-Message-ID: <20150114135930.GA2463@redhat.com>
-References: <1421156604-30603-1-git-send-email-vgupta@synopsys.com>
- <20150114120000.GB11443@krava.brq.redhat.com>
+	id S1753121AbbANOCS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 09:02:18 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36852 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752293AbbANOCR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 09:02:17 -0500
+Date: Wed, 14 Jan 2015 06:01:30 -0800
+From: tip-bot for Xunlei Pang <tipbot@zytor.com>
+Message-ID: <tip-638476007d13534b2ed4134bf0279ef44071140b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, bsegall@google.com,
+        pang.xunlei@linaro.org, peterz@infradead.org,
+        torvalds@linux-foundation.org, mingo@kernel.org, hpa@zytor.com
+Reply-To: tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        bsegall@google.com, pang.xunlei@linaro.org, hpa@zytor.com,
+        mingo@kernel.org
+In-Reply-To: <1418745509-2609-1-git-send-email-pang.xunlei@linaro.org>
+References: <1418745509-2609-1-git-send-email-pang.xunlei@linaro.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched/fair:
+  Fix the dealing with decay_count in __synchronize_entity_decay()
+Git-Commit-ID: 638476007d13534b2ed4134bf0279ef44071140b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20150114120000.GB11443@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Jan 14, 2015 at 01:00:00PM +0100, Jiri Olsa escreveu:
-> On Tue, Jan 13, 2015 at 07:13:19PM +0530, Vineet Gupta wrote:
-> > Hi,
-> > 
-> > This series based off linux-next of 20150105 allows us to build/use perf
-> > for ARC with uClibc based userland.
-> > 
-> > v3: Changes since v2 [2]
-> > * 1/5	: Ack from Jiri
-> > * 2/5	: no changes
-> > * 3/5	: sys/syscall.h included	  [Jiri]
-> > * 4/5	: no changes
-> > * 5/5	: -lpthread added to link target  [Jiri]
-> > * {1,5} : Changelog updated so scissor lines don't start at column 1
-> 
-> Acked-by: Jiri Olsa <jolsa@kernel.org>
+Commit-ID:  638476007d13534b2ed4134bf0279ef44071140b
+Gitweb:     http://git.kernel.org/tip/638476007d13534b2ed4134bf0279ef44071140b
+Author:     Xunlei Pang <pang.xunlei@linaro.org>
+AuthorDate: Tue, 16 Dec 2014 23:58:29 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 14 Jan 2015 13:34:13 +0100
 
-Most are already in my perf/urgent branch.
+sched/fair: Fix the dealing with decay_count in __synchronize_entity_decay()
 
-- Arnaldo
+In __synchronize_entity_decay(), if "decays" happens to be zero,
+se->avg.decay_count will not be zeroed, holding the positive value
+assigned when dequeued last time.
+
+This is problematic in the following case:
+If this runnable task is CFS-balanced to other CPUs soon afterwards,
+migrate_task_rq_fair() will treat it as a blocked task due to its
+non-zero decay_count, thereby adding its load to cfs_rq->removed_load
+wrongly.
+
+Thus, we must zero se->avg.decay_count in this case as well.
+
+Signed-off-by: Xunlei Pang <pang.xunlei@linaro.org>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Reviewed-by: Ben Segall <bsegall@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1418745509-2609-1-git-send-email-pang.xunlei@linaro.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/fair.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 40667cb..97000a9 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2574,11 +2574,11 @@ static inline u64 __synchronize_entity_decay(struct sched_entity *se)
+ 	u64 decays = atomic64_read(&cfs_rq->decay_counter);
+ 
+ 	decays -= se->avg.decay_count;
++	se->avg.decay_count = 0;
+ 	if (!decays)
+ 		return 0;
+ 
+ 	se->avg.load_avg_contrib = decay_load(se->avg.load_avg_contrib, decays);
+-	se->avg.decay_count = 0;
+ 
+ 	return decays;
+ }
