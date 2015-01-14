@@ -1,126 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752031AbbANKgo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 05:36:44 -0500
-Received: from www.linutronix.de ([62.245.132.108]:49869 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004AbbANKgm (ORCPT
+	id S1752200AbbANKh4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 05:37:56 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:38504 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104AbbANKhy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 05:36:42 -0500
-Date: Wed, 14 Jan 2015 11:36:09 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Rob Herring <robherring2@gmail.com>
-cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 1/5] irqchip: add dumb demultiplexer implementation
-In-Reply-To: <CAL_JsqJ5DSo6jmAuHPDdV6pMca8BVbg5V-GZ5=2qu96_QYXMtQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.11.1501141110190.5526@nanos>
-References: <1421174781-4340-1-git-send-email-boris.brezillon@free-electrons.com> <1421174781-4340-2-git-send-email-boris.brezillon@free-electrons.com> <CAL_JsqJ5DSo6jmAuHPDdV6pMca8BVbg5V-GZ5=2qu96_QYXMtQ@mail.gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Wed, 14 Jan 2015 05:37:54 -0500
+From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+To: <davem@davemloft.net>
+CC: <Zubair.Kakakhel@imgtec.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <s.hauer@pengutronix.de>, <sergei.shtylyov@cogentembedded.com>
+Subject: [PATCH_V4] dm9000: Add regulator and reset support to dm9000
+Date: Wed, 14 Jan 2015 10:36:17 +0000
+Message-ID: <1421231777-12589-1-git-send-email-Zubair.Kakakhel@imgtec.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+Content-Type: text/plain
+X-Originating-IP: [192.168.154.89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jan 2015, Rob Herring wrote:
-> On Tue, Jan 13, 2015 at 12:46 PM, Boris Brezillon
-> <boris.brezillon@free-electrons.com> wrote:
-> > Some interrupt controllers are multiplexing several peripheral IRQs on
-> > a single interrupt line.
-> > While this is not a problem for most IRQs (as long as all peripherals
-> > request the interrupt with IRQF_SHARED flag set), multiplexing timers and
-> > other type of peripherals will generate a WARNING (mixing IRQF_NO_SUSPEND
-> > and !IRQF_NO_SUSPEND is prohibited).
-> >
-> > Create a dumb irq demultiplexer which simply forwards interrupts to all
-> > peripherals (exactly what's happening with IRQ_SHARED) but keep a unique
-> > irq number for each peripheral, thus preventing the IRQF_NO_SUSPEND
-> > and !IRQF_NO_SUSPEND mix on a given interrupt.
-> 
-> This really seems like a work-around for how IRQF_SHARED works. It
+In boards, the dm9000 chip's power and reset can be controlled by gpio.
 
-It's a workaround for a short coming of IRQF_SHARED.
+It makes sense to add them to the dm9000 driver and let dt be used to
+enable power and reset the phy.
 
-IRQF_SHARED has a massive short coming versus suspend and wakeup
-interrupts. If one of the demultiplexed interrupts is a valid wakeup
-source then we have no sane way to express this with IRQF_SHARED
-simply because the drivers need to be aware whether they run on stupid
-or well designed hardware.
+Signed-off-by: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+Signed-off-by: Paul Burton <paul.burton@imgtec.com>
 
-> seems like what is really desired is just per handler disabling. It is
+---
+V3 Fixed an indentation and removed a call to gpio_direction_output as
+devm_gpio_request_one can handle it.
 
-So you want a magic API like disable/enable_irq_action()?
+V2 A few fixes and more error checks. Nothing major
 
-Certainly not.
+V1 Minor blooper
+---
+ .../devicetree/bindings/net/davicom-dm9000.txt     |  4 +++
+ drivers/net/ethernet/davicom/dm9000.c              | 40 ++++++++++++++++++++++
+ 2 files changed, 44 insertions(+)
 
-You'd open just another can of worms which will bring us abuse and
-hard to debug problems because driver writers think it's a good idea
-to use it for random purposes.
+diff --git a/Documentation/devicetree/bindings/net/davicom-dm9000.txt b/Documentation/devicetree/bindings/net/davicom-dm9000.txt
+index 28767ed..5224bf0 100644
+--- a/Documentation/devicetree/bindings/net/davicom-dm9000.txt
++++ b/Documentation/devicetree/bindings/net/davicom-dm9000.txt
+@@ -11,6 +11,8 @@ Required properties:
+ Optional properties:
+ - davicom,no-eeprom : Configuration EEPROM is not available
+ - davicom,ext-phy : Use external PHY
++- reset-gpios : phandle of gpio that will be used to reset chip during probe
++- vcc-supply : phandle of regulator that will be used to enable power to chip
+ 
+ Example:
+ 
+@@ -21,4 +23,6 @@ Example:
+ 		interrupts = <7 4>;
+ 		local-mac-address = [00 00 de ad be ef];
+ 		davicom,no-eeprom;
++		reset-gpios = <&gpf 12 GPIO_ACTIVE_LOW>;
++		vcc-supply = <&eth0_power>;
+ 	};
+diff --git a/drivers/net/ethernet/davicom/dm9000.c b/drivers/net/ethernet/davicom/dm9000.c
+index ef0bb58..375a16d 100644
+--- a/drivers/net/ethernet/davicom/dm9000.c
++++ b/drivers/net/ethernet/davicom/dm9000.c
+@@ -36,6 +36,9 @@
+ #include <linux/platform_device.h>
+ #include <linux/irq.h>
+ #include <linux/slab.h>
++#include <linux/regulator/consumer.h>
++#include <linux/gpio.h>
++#include <linux/of_gpio.h>
+ 
+ #include <asm/delay.h>
+ #include <asm/irq.h>
+@@ -1426,11 +1429,48 @@ dm9000_probe(struct platform_device *pdev)
+ 	struct dm9000_plat_data *pdata = dev_get_platdata(&pdev->dev);
+ 	struct board_info *db;	/* Point a board information structure */
+ 	struct net_device *ndev;
++	struct device *dev = &pdev->dev;
+ 	const unsigned char *mac_src;
+ 	int ret = 0;
+ 	int iosize;
+ 	int i;
+ 	u32 id_val;
++	int reset_gpios;
++	enum of_gpio_flags flags;
++	struct regulator *power;
++
++	power = devm_regulator_get(dev, "vcc");
++	if (PTR_ERR(power) == -EPROBE_DEFER)
++		return -EPROBE_DEFER;
++	if (IS_ERR(power)) {
++		dev_dbg(dev, "no regulator provided\n");
++	} else {
++		ret = regulator_enable(power);
++		if (ret != 0) {
++			dev_err(dev,
++				"Failed to enable power regulator: %d\n", ret);
++			return ret;
++		}
++		dev_dbg(dev, "regulator enabled\n");
++	}
++
++	reset_gpios = of_get_named_gpio_flags(dev->of_node, "reset-gpios", 0,
++					      &flags);
++	if (gpio_is_valid(reset_gpios)) {
++		ret = devm_gpio_request_one(dev, reset_gpios, flags,
++					    "dm9000_reset");
++		if (ret) {
++			dev_err(dev, "failed to request reset gpio %d: %d\n",
++				reset_gpios, ret);
++			return -ENODEV;
++		}
++
++		/* According to manual PWRST# Low Period Min 1ms */
++		msleep(2);
++		gpio_set_value(reset_gpios, 1);
++		/* Needs 3ms to read eeprom when PWRST is deasserted */
++		msleep(4);
++	}
+ 
+ 	if (!pdata) {
+ 		pdata = dm9000_parse_dt(&pdev->dev);
+-- 
+1.9.1
 
-Aside of that it would add another conditional into the interrupt
-delivery hotpath which is not desired either.
-
-> fragile in that devices can deadlock the system if the drivers don't
-> disable the interrupt source before calling disable_irq. But unlike
-
-Any misdesigned driver can do that for you.
-
-> IRQF_SHARED, there is nothing explicit in the driver indicating it is
-> designed to work properly with a shared interrupt line.
-
-IRQF_SHARED is a pretty bad indicator. Look at all the drivers which
-slap this flag onto request_irq() and have no single line of code
-which makes sure that the driver would ever work on a shared line.
-
-If it's just for annotational purposes, we can add a new IRQF flag,
-which is required to request such a interrupt line.
-
-> I see no reason to accept this into DT either. We already can support
-> shared lines and modeling an OR gate as an interrupt controller is
-> pointless.
-
-It's absolutely not pointless.
-
-All attempts to work around that have resulted in horrible bandaids so
-far. That's why I guided Boris to implement this dummy demultiplexing
-mechanism. It solves the problem at hand nicely without adding nasty
-hackarounds into the suspend/resume code and inflicting platform
-knowledge on multi-platform device drivers.
-
-If you have a proper solution for the problem at hand which
-
-   - avoids the demux dummy
-
-   - works straight forward with suspend/resume/wakeup
-
-   - does not add horrible new APIs
-
-   - does not add conditionals to the interrupt hotpath
-
-   - does not inflict platform knowledge about interrupt chip details
-     on drivers
-
-then I'm happy to take it.
-
-But as long as you can't come up with anything sane, the demux dummy
-is the best solution for this problem we've seen so far.
-
-Thanks,
-
-	tglx
