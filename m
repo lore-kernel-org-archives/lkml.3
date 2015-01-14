@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932666AbbANHlR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:41:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59025 "EHLO
+	id S932529AbbANHeS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:34:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58478 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932173AbbANHlJ (ORCPT
+	with ESMTP id S932486AbbANHeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:41:09 -0500
+	Wed, 14 Jan 2015 02:34:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>,
-        Chuansheng Liu <chuansheng.liu@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.18 115/150] sched: Add missing rcu protection to wake_up_all_idle_cpus
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Joerg Roedel <jroedel@suse.de>
+Subject: [PATCH 3.14 26/77] iommu/vt-d: Fix an off-by-one bug in __domain_mapping()
 Date: Tue, 13 Jan 2015 23:23:06 -0800
-Message-Id: <20150114072101.068284286@linuxfoundation.org>
+Message-Id: <20150114072225.624111446@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
-References: <20150114072055.842408181@linuxfoundation.org>
+In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
+References: <20150114072224.182299947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,54 +26,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Jiang Liu <jiang.liu@linux.intel.com>
 
-commit fd7de1e8d5b2b2b35e71332fafb899f584597150 upstream.
+commit cc4f14aa170d895c9a43bdb56f62070c8a6da908 upstream.
 
-Locklessly doing is_idle_task(rq->curr) is only okay because of
-RCU protection.  The older variant of the broken code checked
-rq->curr == rq->idle instead and therefore didn't need RCU.
+There's an off-by-one bug in function __domain_mapping(), which may
+trigger the BUG_ON(nr_pages < lvl_pages) when
+	(nr_pages + 1) & superpage_mask == 0
 
-Fixes: f6be8af1c95d ("sched: Add new API wake_up_if_idle() to wake up the idle cpu")
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Reviewed-by: Chuansheng Liu <chuansheng.liu@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/729365dddca178506dfd0a9451006344cd6808bc.1417277372.git.luto@amacapital.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+The issue was introduced by commit 9051aa0268dc "intel-iommu: Combine
+domain_pfn_mapping() and domain_sg_mapping()", which sets sg_res to
+"nr_pages + 1" to avoid some of the 'sg_res==0' code paths.
+
+It's safe to remove extra "+1" because sg_res is only used to calculate
+page size now.
+
+Reported-And-Tested-by: Sudeep Dutt <sudeep.dutt@intel.com>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Acked-By: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/core.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/iommu/intel-iommu.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1623,8 +1623,10 @@ void wake_up_if_idle(int cpu)
- 	struct rq *rq = cpu_rq(cpu);
- 	unsigned long flags;
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -1768,7 +1768,7 @@ static int __domain_mapping(struct dmar_
+ 	struct dma_pte *first_pte = NULL, *pte = NULL;
+ 	phys_addr_t uninitialized_var(pteval);
+ 	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
+-	unsigned long sg_res;
++	unsigned long sg_res = 0;
+ 	unsigned int largepage_lvl = 0;
+ 	unsigned long lvl_pages = 0;
  
--	if (!is_idle_task(rq->curr))
--		return;
-+	rcu_read_lock();
-+
-+	if (!is_idle_task(rcu_dereference(rq->curr)))
-+		goto out;
+@@ -1779,10 +1779,8 @@ static int __domain_mapping(struct dmar_
  
- 	if (set_nr_if_polling(rq->idle)) {
- 		trace_sched_wake_idle_without_ipi(cpu);
-@@ -1635,6 +1637,9 @@ void wake_up_if_idle(int cpu)
- 		/* Else cpu is not in idle, do nothing here */
- 		raw_spin_unlock_irqrestore(&rq->lock, flags);
+ 	prot &= DMA_PTE_READ | DMA_PTE_WRITE | DMA_PTE_SNP;
+ 
+-	if (sg)
+-		sg_res = 0;
+-	else {
+-		sg_res = nr_pages + 1;
++	if (!sg) {
++		sg_res = nr_pages;
+ 		pteval = ((phys_addr_t)phys_pfn << VTD_PAGE_SHIFT) | prot;
  	}
-+
-+out:
-+	rcu_read_unlock();
- }
  
- bool cpus_share_cache(int this_cpu, int that_cpu)
 
 
