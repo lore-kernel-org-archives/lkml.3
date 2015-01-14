@@ -1,107 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780AbbANIaY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:30:24 -0500
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:42704 "EHLO
-	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753697AbbANIaO (ORCPT
+	id S932991AbbANIPm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:15:42 -0500
+Received: from smtp-out-243.synserver.de ([212.40.185.243]:1068 "EHLO
+	smtp-out-243.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754237AbbANIPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 03:30:14 -0500
-X-ASG-Debug-ID: 1421223480-0759e7543ba83550002-xx1T2L
-X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
-X-Barracuda-AUTH-User: xsenscom
-X-Barracuda-Apparent-Source-IP: 87.249.116.215
-From: Frans Klaver <frans.klaver@xsens.com>
-To: Sebastian Reichel <sre@kernel.org>
-CC: Frans Klaver <frans.klaver@xsens.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        =?UTF-8?q?Ren=C3=A9=20Moll?= <linux@r-moll.nl>,
-        Guenter Roeck <linux@roeck-us.net>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: [PATCH RESEND 02/13] power: reset: ltc2952: prefer devm_request_irq over request_irq
-Date: Wed, 14 Jan 2015 09:15:35 +0100
-X-ASG-Orig-Subj: [PATCH RESEND 02/13] power: reset: ltc2952: prefer devm_request_irq over request_irq
-Message-ID: <1421223346-27410-3-git-send-email-frans.klaver@xsens.com>
-X-Mailer: git-send-email 2.2.1
-In-Reply-To: <1421223346-27410-1-git-send-email-frans.klaver@xsens.com>
-References: <1421223346-27410-1-git-send-email-frans.klaver@xsens.com>
+	Wed, 14 Jan 2015 03:15:40 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 24993
+Message-ID: <54B625A8.8090406@metafoo.de>
+Date: Wed, 14 Jan 2015 09:15:36 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.16.11.149]
-X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1421223480
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: https://filter1.ibarracuda.nl:443/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.14271
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+To: Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@kernel.org>
+CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "Wang, Jiada (ESD)" <Jiada_Wang@mentor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "Frkuska, Joshua" <Joshua_Frkuska@mentor.com>
+Subject: Re: [alsa-devel] unload Audio drivers while playback stream is active
+ case kernel crash
+References: <857E9EDCA6C0904DB3357321AA9123EB0108B66919@NA-MBX-01.mgc.mentorg.com> <s5h1tmyiof7.wl-tiwai@suse.de> <20150113215412.GS4160@sirena.org.uk> <s5hr3ux24em.wl-tiwai@suse.de>
+In-Reply-To: <s5hr3ux24em.wl-tiwai@suse.de>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make use of the fact that we allocated resources can be automatically
-deallocated. This reduces cleanup code and chance of errors. It also
-removes the need for the virq member of the ltc2952_poweroff_data
-struct.
+On 01/14/2015 08:43 AM, Takashi Iwai wrote:
+> At Tue, 13 Jan 2015 21:54:12 +0000,
+> Mark Brown wrote:
+>>
+>> On Tue, Jan 13, 2015 at 06:24:44PM +0100, Takashi Iwai wrote:
+>>> Wang, Jiada (ESD) wrote:
+>>
+>>>> I am using i.MX6Q sabreSD board, which have imx_wm892 machine driver, wm8962 codec and SSI CPU DAI,
+>>
+>>>> I got Kernel crash when unloading audio drivers (playback stream is active)
+>>>> modprobe -r snd_soc_imx_wm8962
+>>>> modprobe -r snd_soc_fsl_ssi
+>>>> modprobe -r snd_soc_wm8962
+>>
+>>> The root problem is that you can unload the module while playing.
+>>> The corresponding module refcounts should have been increased during
+>>> used.
+>>
+>>> Do we miss [try_]module_get() somewhere in ASoC?
+>>
+>> That doesn't help, users can still forcibly unbind the driver at runtime
+>> without loading the module - and there's always the potential for
+>> actually hotpluggable hardware.  The teardown paths should be able to
+>> cope somewhat gracefully.
+>
+> The module refcount has to be handled while being used for stopping
+> module unload.  That's irrelevant from the dynamic unbinding support
+> itself.  Of course, the module refcount doesn't save the world, but
+> it's the right fix for this particular scenario.
 
-Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
----
- drivers/power/reset/ltc2952-poweroff.c | 19 ++++++-------------
- 1 file changed, 6 insertions(+), 13 deletions(-)
+Refcounting won't help in this case. The issue is caused by a delayed work 
+item that gets launched when the PCM stream is stopped. So if you decrease 
+the refcount when the stream is stopped you still have a window where it is 
+possible to remove the module while the work is still being scheduled.
 
-diff --git a/drivers/power/reset/ltc2952-poweroff.c b/drivers/power/reset/ltc2952-poweroff.c
-index 951a90d..2c11316 100644
---- a/drivers/power/reset/ltc2952-poweroff.c
-+++ b/drivers/power/reset/ltc2952-poweroff.c
-@@ -72,8 +72,6 @@ struct ltc2952_poweroff_data {
- 
- 	struct device *dev;
- 
--	unsigned int virq;
--
- 	/**
- 	 * 0: trigger
- 	 * 1: watchdog
-@@ -260,13 +258,11 @@ static int ltc2952_poweroff_init(struct platform_device *pdev)
- 		goto err_io;
- 	}
- 
--	ltc2952_data->virq = virq;
--	ret = request_irq(virq,
--		ltc2952_poweroff_handler,
--		(IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING),
--		"ltc2952-poweroff",
--		ltc2952_data
--	);
-+	ret = devm_request_irq(&pdev->dev, virq,
-+			       ltc2952_poweroff_handler,
-+			       (IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING),
-+			       "ltc2952-poweroff",
-+			       ltc2952_data);
- 
- 	if (ret) {
- 		dev_err(&pdev->dev, "cannot configure an interrupt handler\n");
-@@ -316,12 +312,9 @@ static int ltc2952_poweroff_remove(struct platform_device *pdev)
- 
- 	pm_power_off = NULL;
- 
--	if (ltc2952_data) {
--		free_irq(ltc2952_data->virq, ltc2952_data);
--
-+	if (ltc2952_data)
- 		for (i = 0; i < ARRAY_SIZE(ltc2952_data->gpio); i++)
- 			gpiod_put(ltc2952_data->gpio[i]);
--	}
- 
- 	return 0;
- }
--- 
-2.1.0
+And while we do flush the scheduled work when we remove the ASoC card this 
+is done before snd_card_free() is called. So when snd_card_free() is called 
+it gets re-scheduled again. I think the correct fix is to add a 
+snd_card_disconnect() at the very top of soc_cleanup_card_resources().
 
+- Lars
