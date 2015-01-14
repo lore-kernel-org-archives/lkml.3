@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197AbbANHgz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:36:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58728 "EHLO
+	id S933219AbbANHjU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:39:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58917 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932900AbbANHgu (ORCPT
+	with ESMTP id S1755034AbbANHjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:36:50 -0500
+	Wed, 14 Jan 2015 02:39:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+        Al Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 75/77] mm, vmscan: prevent kswapd livelock due to pfmemalloc-throttled process being killed
-Date: Tue, 13 Jan 2015 23:23:55 -0800
-Message-Id: <20150114072228.499757517@linuxfoundation.org>
+Subject: [PATCH 3.10 35/44] nilfs2: fix the nilfs_iget() vs. nilfs_new_inode() races
+Date: Tue, 13 Jan 2015 23:23:56 -0800
+Message-Id: <20150114072229.350293555@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
+References: <20150114072227.419663002@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -29,113 +27,180 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Vlastimil Babka <vbabka@suse.cz>
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 
-commit 9e5e3661727eaf960d3480213f8e87c8d67b6956 upstream.
+commit 705304a863cc41585508c0f476f6d3ec28cf7e00 upstream.
 
-Charles Shirron and Paul Cassella from Cray Inc have reported kswapd
-stuck in a busy loop with nothing left to balance, but
-kswapd_try_to_sleep() failing to sleep.  Their analysis found the cause
-to be a combination of several factors:
+Same story as in commit 41080b5a2401 ("nfsd race fixes: ext2") (similar
+ext2 fix) except that nilfs2 needs to use insert_inode_locked4() instead
+of insert_inode_locked() and a bug of a check for dead inodes needs to
+be fixed.
 
-1. A process is waiting in throttle_direct_reclaim() on pgdat->pfmemalloc_wait
+If nilfs_iget() is called from nfsd after nilfs_new_inode() calls
+insert_inode_locked4(), nilfs_iget() will wait for unlock_new_inode() at
+the end of nilfs_mkdir()/nilfs_create()/etc to unlock the inode.
 
-2. The process has been killed (by OOM in this case), but has not yet been
-   scheduled to remove itself from the waitqueue and die.
+If nilfs_iget() is called before nilfs_new_inode() calls
+insert_inode_locked4(), it will create an in-core inode and read its
+data from the on-disk inode.  But, nilfs_iget() will find i_nlink equals
+zero and fail at nilfs_read_inode_common(), which will lead it to call
+iget_failed() and cleanly fail.
 
-3. kswapd checks for throttled processes in prepare_kswapd_sleep():
+However, this sanity check doesn't work as expected for reused on-disk
+inodes because they leave a non-zero value in i_mode field and it
+hinders the test of i_nlink.  This patch also fixes the issue by
+removing the test on i_mode that nilfs2 doesn't need.
 
-        if (waitqueue_active(&pgdat->pfmemalloc_wait)) {
-                wake_up(&pgdat->pfmemalloc_wait);
-		return false; // kswapd will not go to sleep
-	}
-
-   However, for a process that was already killed, wake_up() does not remove
-   the process from the waitqueue, since try_to_wake_up() checks its state
-   first and returns false when the process is no longer waiting.
-
-4. kswapd is running on the same CPU as the only CPU that the process is
-   allowed to run on (through cpus_allowed, or possibly single-cpu system).
-
-5. CONFIG_PREEMPT_NONE=y kernel is used. If there's nothing to balance, kswapd
-   encounters no voluntary preemption points and repeatedly fails
-   prepare_kswapd_sleep(), blocking the process from running and removing
-   itself from the waitqueue, which would let kswapd sleep.
-
-So, the source of the problem is that we prevent kswapd from going to
-sleep until there are processes waiting on the pfmemalloc_wait queue,
-and a process waiting on a queue is guaranteed to be removed from the
-queue only when it gets scheduled.  This was done to make sure that no
-process is left sleeping on pfmemalloc_wait when kswapd itself goes to
-sleep.
-
-However, it isn't necessary to postpone kswapd sleep until the
-pfmemalloc_wait queue actually empties.  To prevent processes from being
-left sleeping, it's actually enough to guarantee that all processes
-waiting on pfmemalloc_wait queue have been woken up by the time we put
-kswapd to sleep.
-
-This patch therefore fixes this issue by substituting 'wake_up' with
-'wake_up_all' and removing 'return false' in the code snippet from
-prepare_kswapd_sleep() above.  Note that if any process puts itself in
-the queue after this waitqueue_active() check, or after the wake up
-itself, it means that the process will also wake up kswapd - and since
-we are under prepare_to_wait(), the wake up won't be missed.  Also we
-update the comment prepare_kswapd_sleep() to hopefully more clearly
-describe the races it is preventing.
-
-Fixes: 5515061d22f0 ("mm: throttle direct reclaimers if PF_MEMALLOC reserves are low and swap is backed by network storage")
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/vmscan.c |   24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
+ fs/nilfs2/inode.c |   32 ++++++++++++++++++++++++--------
+ fs/nilfs2/namei.c |   15 ++++++++++++---
+ 2 files changed, 36 insertions(+), 11 deletions(-)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2860,18 +2860,20 @@ static bool prepare_kswapd_sleep(pg_data
- 		return false;
+--- a/fs/nilfs2/inode.c
++++ b/fs/nilfs2/inode.c
+@@ -49,6 +49,8 @@ struct nilfs_iget_args {
+ 	int for_gc;
+ };
  
- 	/*
--	 * There is a potential race between when kswapd checks its watermarks
--	 * and a process gets throttled. There is also a potential race if
--	 * processes get throttled, kswapd wakes, a large process exits therby
--	 * balancing the zones that causes kswapd to miss a wakeup. If kswapd
--	 * is going to sleep, no process should be sleeping on pfmemalloc_wait
--	 * so wake them now if necessary. If necessary, processes will wake
--	 * kswapd and get throttled again
-+	 * The throttled processes are normally woken up in balance_pgdat() as
-+	 * soon as pfmemalloc_watermark_ok() is true. But there is a potential
-+	 * race between when kswapd checks the watermarks and a process gets
-+	 * throttled. There is also a potential race if processes get
-+	 * throttled, kswapd wakes, a large process exits thereby balancing the
-+	 * zones, which causes kswapd to exit balance_pgdat() before reaching
-+	 * the wake up checks. If kswapd is going to sleep, no process should
-+	 * be sleeping on pfmemalloc_wait, so wake them now if necessary. If
-+	 * the wake up is premature, processes will wake kswapd and get
-+	 * throttled again. The difference from wake ups in balance_pgdat() is
-+	 * that here we are under prepare_to_wait().
- 	 */
--	if (waitqueue_active(&pgdat->pfmemalloc_wait)) {
--		wake_up(&pgdat->pfmemalloc_wait);
--		return false;
--	}
-+	if (waitqueue_active(&pgdat->pfmemalloc_wait))
-+		wake_up_all(&pgdat->pfmemalloc_wait);
++static int nilfs_iget_test(struct inode *inode, void *opaque);
++
+ void nilfs_inode_add_blocks(struct inode *inode, int n)
+ {
+ 	struct nilfs_root *root = NILFS_I(inode)->i_root;
+@@ -347,6 +349,17 @@ const struct address_space_operations ni
+ 	.is_partially_uptodate  = block_is_partially_uptodate,
+ };
  
- 	return pgdat_balanced(pgdat, order, classzone_idx);
++static int nilfs_insert_inode_locked(struct inode *inode,
++				     struct nilfs_root *root,
++				     unsigned long ino)
++{
++	struct nilfs_iget_args args = {
++		.ino = ino, .root = root, .cno = 0, .for_gc = 0
++	};
++
++	return insert_inode_locked4(inode, ino, nilfs_iget_test, &args);
++}
++
+ struct inode *nilfs_new_inode(struct inode *dir, umode_t mode)
+ {
+ 	struct super_block *sb = dir->i_sb;
+@@ -382,7 +395,7 @@ struct inode *nilfs_new_inode(struct ino
+ 	if (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)) {
+ 		err = nilfs_bmap_read(ii->i_bmap, NULL);
+ 		if (err < 0)
+-			goto failed_bmap;
++			goto failed_after_creation;
+ 
+ 		set_bit(NILFS_I_BMAP, &ii->i_state);
+ 		/* No lock is needed; iget() ensures it. */
+@@ -398,21 +411,24 @@ struct inode *nilfs_new_inode(struct ino
+ 	spin_lock(&nilfs->ns_next_gen_lock);
+ 	inode->i_generation = nilfs->ns_next_generation++;
+ 	spin_unlock(&nilfs->ns_next_gen_lock);
+-	insert_inode_hash(inode);
++	if (nilfs_insert_inode_locked(inode, root, ino) < 0) {
++		err = -EIO;
++		goto failed_after_creation;
++	}
+ 
+ 	err = nilfs_init_acl(inode, dir);
+ 	if (unlikely(err))
+-		goto failed_acl; /* never occur. When supporting
++		goto failed_after_creation; /* never occur. When supporting
+ 				    nilfs_init_acl(), proper cancellation of
+ 				    above jobs should be considered */
+ 
+ 	return inode;
+ 
+- failed_acl:
+- failed_bmap:
++ failed_after_creation:
+ 	clear_nlink(inode);
++	unlock_new_inode(inode);
+ 	iput(inode);  /* raw_inode will be deleted through
+-			 generic_delete_inode() */
++			 nilfs_evict_inode() */
+ 	goto failed;
+ 
+  failed_ifile_create_inode:
+@@ -460,8 +476,8 @@ int nilfs_read_inode_common(struct inode
+ 	inode->i_atime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
+ 	inode->i_ctime.tv_nsec = le32_to_cpu(raw_inode->i_ctime_nsec);
+ 	inode->i_mtime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
+-	if (inode->i_nlink == 0 && inode->i_mode == 0)
+-		return -EINVAL; /* this inode is deleted */
++	if (inode->i_nlink == 0)
++		return -ESTALE; /* this inode is deleted */
+ 
+ 	inode->i_blocks = le64_to_cpu(raw_inode->i_blocks);
+ 	ii->i_flags = le32_to_cpu(raw_inode->i_flags);
+--- a/fs/nilfs2/namei.c
++++ b/fs/nilfs2/namei.c
+@@ -51,9 +51,11 @@ static inline int nilfs_add_nondir(struc
+ 	int err = nilfs_add_link(dentry, inode);
+ 	if (!err) {
+ 		d_instantiate(dentry, inode);
++		unlock_new_inode(inode);
+ 		return 0;
+ 	}
+ 	inode_dec_link_count(inode);
++	unlock_new_inode(inode);
+ 	iput(inode);
+ 	return err;
  }
+@@ -182,6 +184,7 @@ out:
+ out_fail:
+ 	drop_nlink(inode);
+ 	nilfs_mark_inode_dirty(inode);
++	unlock_new_inode(inode);
+ 	iput(inode);
+ 	goto out;
+ }
+@@ -201,11 +204,15 @@ static int nilfs_link(struct dentry *old
+ 	inode_inc_link_count(inode);
+ 	ihold(inode);
+ 
+-	err = nilfs_add_nondir(dentry, inode);
+-	if (!err)
++	err = nilfs_add_link(dentry, inode);
++	if (!err) {
++		d_instantiate(dentry, inode);
+ 		err = nilfs_transaction_commit(dir->i_sb);
+-	else
++	} else {
++		inode_dec_link_count(inode);
++		iput(inode);
+ 		nilfs_transaction_abort(dir->i_sb);
++	}
+ 
+ 	return err;
+ }
+@@ -243,6 +250,7 @@ static int nilfs_mkdir(struct inode *dir
+ 
+ 	nilfs_mark_inode_dirty(inode);
+ 	d_instantiate(dentry, inode);
++	unlock_new_inode(inode);
+ out:
+ 	if (!err)
+ 		err = nilfs_transaction_commit(dir->i_sb);
+@@ -255,6 +263,7 @@ out_fail:
+ 	drop_nlink(inode);
+ 	drop_nlink(inode);
+ 	nilfs_mark_inode_dirty(inode);
++	unlock_new_inode(inode);
+ 	iput(inode);
+ out_dir:
+ 	drop_nlink(dir);
 
 
