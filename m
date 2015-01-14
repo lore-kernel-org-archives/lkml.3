@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932560AbbANHeX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:34:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58497 "EHLO
+	id S1754789AbbANHa3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:30:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58183 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932528AbbANHeS (ORCPT
+	with ESMTP id S1752107AbbANHa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:34:18 -0500
+	Wed, 14 Jan 2015 02:30:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.14 30/77] HID: roccat: potential out of bounds in pyra_sysfs_write_settings()
+        Lokesh Vutla <lokeshvutla@ti.com>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.18 119/150] ARM: dts: DRA7: wdt: Fix compatible property for watchdog node
 Date: Tue, 13 Jan 2015 23:23:10 -0800
-Message-Id: <20150114072225.855681598@linuxfoundation.org>
+Message-Id: <20150114072101.236823451@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,54 +24,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Lokesh Vutla <lokeshvutla@ti.com>
 
-commit 606185b20caf4c57d7e41e5a5ea4aff460aef2ab upstream.
+commit be6688350a4470e417aaeca54d162652aab40ac5 upstream.
 
-This is a static checker fix.  We write some binary settings to the
-sysfs file.  One of the settings is the "->startup_profile".  There
-isn't any checking to make sure it fits into the
-pyra->profile_settings[] array in the profile_activated() function.
+OMAP wdt driver supports only ti,omap3-wdt compatible. In DRA7 dt
+wdt compatible property is defined as ti,omap4-wdt by mistake instead of
+ti,omap3-wdt. Correcting the typo.
 
-I added a check to pyra_sysfs_write_settings() in both places because
-I wasn't positive that the other callers were correct.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Fixes: 6e58b8f1daaf1a ("ARM: dts: DRA7: Add the dts files for dra7 SoC and dra7-evm board")
+Signed-off-by: Lokesh Vutla <lokeshvutla@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-roccat-pyra.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/arm/boot/dts/dra7.dtsi |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hid/hid-roccat-pyra.c
-+++ b/drivers/hid/hid-roccat-pyra.c
-@@ -35,6 +35,8 @@ static struct class *pyra_class;
- static void profile_activated(struct pyra_device *pyra,
- 		unsigned int new_profile)
- {
-+	if (new_profile >= ARRAY_SIZE(pyra->profile_settings))
-+		return;
- 	pyra->actual_profile = new_profile;
- 	pyra->actual_cpi = pyra->profile_settings[pyra->actual_profile].y_cpi;
- }
-@@ -257,9 +259,11 @@ static ssize_t pyra_sysfs_write_settings
- 	if (off != 0 || count != PYRA_SIZE_SETTINGS)
- 		return -EINVAL;
+--- a/arch/arm/boot/dts/dra7.dtsi
++++ b/arch/arm/boot/dts/dra7.dtsi
+@@ -653,7 +653,7 @@
+ 		};
  
--	mutex_lock(&pyra->pyra_lock);
--
- 	settings = (struct pyra_settings const *)buf;
-+	if (settings->startup_profile >= ARRAY_SIZE(pyra->profile_settings))
-+		return -EINVAL;
-+
-+	mutex_lock(&pyra->pyra_lock);
- 
- 	retval = pyra_set_settings(usb_dev, settings);
- 	if (retval) {
+ 		wdt2: wdt@4ae14000 {
+-			compatible = "ti,omap4-wdt";
++			compatible = "ti,omap3-wdt";
+ 			reg = <0x4ae14000 0x80>;
+ 			interrupts = <GIC_SPI 75 IRQ_TYPE_LEVEL_HIGH>;
+ 			ti,hwmods = "wd_timer2";
 
 
