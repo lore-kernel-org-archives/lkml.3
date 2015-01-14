@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589AbbANH2h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:28:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57968 "EHLO
+	id S1754571AbbANH2e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:28:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57974 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754548AbbANH23 (ORCPT
+	with ESMTP id S1754550AbbANH2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:28:29 -0500
+	Wed, 14 Jan 2015 02:28:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>,
-        Antonio Borneo <borneo.antonio@gmail.com>,
+        Gwendal Grignou <gwendal@chromium.org>,
         Benjamin Tissoires <benjamin.tissoires@redhat.com>,
         Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.18 054/150] HID: i2c-hid: fix race condition reading reports
-Date: Tue, 13 Jan 2015 23:22:05 -0800
-Message-Id: <20150114072058.325833319@linuxfoundation.org>
+Subject: [PATCH 3.18 055/150] HID: i2c-hid: prevent buffer overflow in early IRQ
+Date: Tue, 13 Jan 2015 23:22:06 -0800
+Message-Id: <20150114072058.365798430@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -31,89 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
+From: Gwendal Grignou <gwendal@chromium.org>
 
-commit 6296f4a8eb86f9abcc370fb7a1a116b8441c17fd upstream.
+commit d1c7e29e8d276c669e8790bb8be9f505ddc48888 upstream.
 
-Current driver uses a common buffer for reading reports either
-synchronously in i2c_hid_get_raw_report() and asynchronously in
-the interrupt handler.
-There is race condition if an interrupt arrives immediately after
-the report is received in i2c_hid_get_raw_report(); the common
-buffer is modified by the interrupt handler with the new report
-and then i2c_hid_get_raw_report() proceed using wrong data.
+Before ->start() is called, bufsize size is set to HID_MIN_BUFFER_SIZE,
+64 bytes. While processing the IRQ, we were asking to receive up to
+wMaxInputLength bytes, which can be bigger than 64 bytes.
 
-Fix it by using a separate buffers for synchronous reports.
+Later, when ->start is run, a proper bufsize will be calculated.
 
-Signed-off-by: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
-[Antonio Borneo: cleanup, rebase to v3.17, submit mainline]
-Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
+Given wMaxInputLength is said to be unreliable in other part of the
+code, set to receive only what we can even if it results in truncated
+reports.
+
+Signed-off-by: Gwendal Grignou <gwendal@chromium.org>
 Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/i2c-hid/i2c-hid.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/hid/i2c-hid/i2c-hid.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 --- a/drivers/hid/i2c-hid/i2c-hid.c
 +++ b/drivers/hid/i2c-hid/i2c-hid.c
-@@ -137,6 +137,7 @@ struct i2c_hid {
- 						   * descriptor. */
- 	unsigned int		bufsize;	/* i2c buffer size */
- 	char			*inbuf;		/* Input buffer */
-+	char			*rawbuf;	/* Raw Input buffer */
- 	char			*cmdbuf;	/* Command buffer */
- 	char			*argsbuf;	/* Command arguments buffer */
- 
-@@ -504,9 +505,11 @@ static void i2c_hid_find_max_report(stru
- static void i2c_hid_free_buffers(struct i2c_hid *ihid)
+@@ -370,7 +370,7 @@ static int i2c_hid_hwreset(struct i2c_cl
+ static void i2c_hid_get_input(struct i2c_hid *ihid)
  {
- 	kfree(ihid->inbuf);
-+	kfree(ihid->rawbuf);
- 	kfree(ihid->argsbuf);
- 	kfree(ihid->cmdbuf);
- 	ihid->inbuf = NULL;
-+	ihid->rawbuf = NULL;
- 	ihid->cmdbuf = NULL;
- 	ihid->argsbuf = NULL;
- 	ihid->bufsize = 0;
-@@ -522,10 +525,11 @@ static int i2c_hid_alloc_buffers(struct
- 		       report_size; /* report */
+ 	int ret, ret_size;
+-	int size = le16_to_cpu(ihid->hdesc.wMaxInputLength);
++	int size = ihid->bufsize;
  
- 	ihid->inbuf = kzalloc(report_size, GFP_KERNEL);
-+	ihid->rawbuf = kzalloc(report_size, GFP_KERNEL);
- 	ihid->argsbuf = kzalloc(args_len, GFP_KERNEL);
- 	ihid->cmdbuf = kzalloc(sizeof(union command) + args_len, GFP_KERNEL);
- 
--	if (!ihid->inbuf || !ihid->argsbuf || !ihid->cmdbuf) {
-+	if (!ihid->inbuf || !ihid->rawbuf || !ihid->argsbuf || !ihid->cmdbuf) {
- 		i2c_hid_free_buffers(ihid);
- 		return -ENOMEM;
- 	}
-@@ -552,12 +556,12 @@ static int i2c_hid_get_raw_report(struct
- 
- 	ret = i2c_hid_get_report(client,
- 			report_type == HID_FEATURE_REPORT ? 0x03 : 0x01,
--			report_number, ihid->inbuf, ask_count);
-+			report_number, ihid->rawbuf, ask_count);
- 
- 	if (ret < 0)
- 		return ret;
- 
--	ret_count = ihid->inbuf[0] | (ihid->inbuf[1] << 8);
-+	ret_count = ihid->rawbuf[0] | (ihid->rawbuf[1] << 8);
- 
- 	if (ret_count <= 2)
- 		return 0;
-@@ -566,7 +570,7 @@ static int i2c_hid_get_raw_report(struct
- 
- 	/* The query buffer contains the size, dropping it in the reply */
- 	count = min(count, ret_count - 2);
--	memcpy(buf, ihid->inbuf + 2, count);
-+	memcpy(buf, ihid->rawbuf + 2, count);
- 
- 	return count;
- }
+ 	ret = i2c_master_recv(ihid->client, ihid->inbuf, size);
+ 	if (ret != size) {
 
 
