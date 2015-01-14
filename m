@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516AbbANWRa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 17:17:30 -0500
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:34915 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782AbbANWR2 (ORCPT
+	id S1753773AbbANWTn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 17:19:43 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:55998 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752057AbbANWTl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 17:17:28 -0500
+	Wed, 14 Jan 2015 17:19:41 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        davem@davemloft.net, deller@gmx.de, egtvedt@samfundet.no,
+        geert@linux-m68k.org, james.hogan@imgtec.com, jcmvbkbc@gmail.com,
+        realmz6@gmail.com, sam@ravnborg.org, tglx@linutronix.de,
+        will.deacon@arm.com
+Subject: Re: [PULL] uaccess: fix sparse warning on get/put_user for bitwise types
+Date: Wed, 14 Jan 2015 23:19:14 +0100
+Message-ID: <5209009.XRo9cTX8bb@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20150114173618.GA12436@redhat.com>
+References: <20150114173618.GA12436@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1421272101-16847-1-git-send-email-dvlasenk@redhat.com>
-References: <1421272101-16847-1-git-send-email-dvlasenk@redhat.com>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Wed, 14 Jan 2015 23:17:07 +0100
-Message-ID: <CAK1hOcMZKpcLVWffv_L9DoaK5-V2qSHkm3N2=mo8wKZfEMLyWA@mail.gmail.com>
-Subject: Re: [PATCH 01/11] x86: entry_64.S: always allocate complete "struct pt_regs"
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Borislav Petkov <bp@alien8.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:a+5/ow0wNxmVcdi0wZNF0l158XJaOAWD7DNgC422ZFWWVAFYbpK
+ INIC+JQouM859gjKhIxnrxrhjz2EI2+FxSSKX9GqfnJ10P8oLAe15uK8oDbGSPRmUbkDWuS
+ EdS1K9a6HSTYooSD00KMdupdDaVDtXyZfXwdT0GNPEEawmTOmYZnp+gcpsKfjzss1TW4KkD
+ z0QJbjzLm4TkO6V+kfFkA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 10:48 PM, Denys Vlasenko <dvlasenk@redhat.com> wrote:
-> Macros which manipulate "struct pt_regs" on stack are reworked:
-> ALLOC_PT_GPREGS_ON_STACK allocates the structure.
-> SAVE_C_REGS saves to it those registers which are clobbered by C code.
-> SAVE_EXTRA_REGS saves to it all other registers.
-> Corresponding RESTORE_* and REMOVE_PT_GPREGS_FROM_STACK macros reverse it.
+On Wednesday 14 January 2015 19:36:18 Michael S. Tsirkin wrote:
+> As you asked, here's a pull request.
+> This has been in linux-next apparently with no ill effects.
+> 
+> The following changes since commit 99975cc6ada0d5f2675e83abecae05aba5f437d2:
+> 
+>   vhost/net: length miscalculation (2015-01-07 12:22:00 +0200)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git tags/uaccess_for_upstream
+> 
+> for you to fetch changes up to 0795cb1b46e7938ed679ccd48f933e75272b30e3:
+> 
 
-Andy,
+Pulled into my asm-generic now, thanks!
 
-Please note that this patch set also needs the previously posted patch:
-
-[PATCH 3/4] x86: open-code register save/restore in trace_hardirqs thunks
-
-which is not present in your tree - otherwise arch/x86/lib/thunk_64.S
-will not compile (no SAVE_ARGS anymore).
-
--- 
-vda
+	Arnd
