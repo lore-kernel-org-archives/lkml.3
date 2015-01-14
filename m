@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734AbbANHZh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:25:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57670 "EHLO
+	id S1756212AbbANIs2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:48:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57676 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752517AbbANHZb (ORCPT
+	with ESMTP id S1752694AbbANHZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:25:31 -0500
+	Wed, 14 Jan 2015 02:25:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
-        Michael Ellerman <mpe@ellerman.id.au>
-Subject: [PATCH 3.18 027/150] powerpc/book3s: Fix partial invalidation of TLBs in MCE code.
-Date: Tue, 13 Jan 2015 23:21:38 -0800
-Message-Id: <20150114072057.105874530@linuxfoundation.org>
+        Paul Mackerras <paulus@samba.org>,
+        "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH 3.18 028/150] powerpc/powernv: Switch off MMU before entering nap/sleep/rvwinkle mode
+Date: Tue, 13 Jan 2015 23:21:39 -0800
+Message-Id: <20150114072057.151125275@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -29,42 +31,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+From: Paul Mackerras <paulus@samba.org>
 
-commit 682e77c861c4c60f79ffbeae5e1938ffed24a575 upstream.
+commit 8117ac6a6c2fa0f847ff6a21a1f32c8d2c8501d0 upstream.
 
-The existing MCE code calls flush_tlb hook with IS=0 (single page) resulting
-in partial invalidation of TLBs which is not right. This patch fixes
-that by passing IS=0xc00 to invalidate whole TLB for successful recovery
-from TLB and ERAT errors.
+Currently, when going idle, we set the flag indicating that we are in
+nap mode (paca->kvm_hstate.hwthread_state) and then execute the nap
+(or sleep or rvwinkle) instruction, all with the MMU on.  This is bad
+for two reasons: (a) the architecture specifies that those instructions
+must be executed with the MMU off, and in fact with only the SF, HV, ME
+and possibly RI bits set, and (b) this introduces a race, because as
+soon as we set the flag, another thread can switch the MMU to a guest
+context.  If the race is lost, this thread will typically start looping
+on relocation-on ISIs at 0xc...4400.
 
-Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+This fixes it by setting the MSR as required by the architecture before
+setting the flag or executing the nap/sleep/rvwinkle instruction.
+
+[ shreyas@linux.vnet.ibm.com: Edited to handle LE ]
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Shreyas B. Prabhu <shreyas@linux.vnet.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Michael Ellerman <mpe@ellerman.id.au>
+Cc: linuxppc-dev@lists.ozlabs.org
 Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/mce_power.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/powerpc/include/asm/reg.h    |    2 ++
+ arch/powerpc/kernel/idle_power7.S |   18 +++++++++++++++++-
+ 2 files changed, 19 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/mce_power.c
-+++ b/arch/powerpc/kernel/mce_power.c
-@@ -79,7 +79,7 @@ static long mce_handle_derror(uint64_t d
- 	}
- 	if (dsisr & P7_DSISR_MC_TLB_MULTIHIT_MFTLB) {
- 		if (cur_cpu_spec && cur_cpu_spec->flush_tlb)
--			cur_cpu_spec->flush_tlb(TLBIEL_INVAL_PAGE);
-+			cur_cpu_spec->flush_tlb(TLBIEL_INVAL_SET);
- 		/* reset error bits */
- 		dsisr &= ~P7_DSISR_MC_TLB_MULTIHIT_MFTLB;
- 	}
-@@ -110,7 +110,7 @@ static long mce_handle_common_ierror(uin
- 		break;
- 	case P7_SRR1_MC_IFETCH_TLB_MULTIHIT:
- 		if (cur_cpu_spec && cur_cpu_spec->flush_tlb) {
--			cur_cpu_spec->flush_tlb(TLBIEL_INVAL_PAGE);
-+			cur_cpu_spec->flush_tlb(TLBIEL_INVAL_SET);
- 			handled = 1;
- 		}
- 		break;
+--- a/arch/powerpc/include/asm/reg.h
++++ b/arch/powerpc/include/asm/reg.h
+@@ -118,8 +118,10 @@
+ #define __MSR		(MSR_ME | MSR_RI | MSR_IR | MSR_DR | MSR_ISF |MSR_HV)
+ #ifdef __BIG_ENDIAN__
+ #define MSR_		__MSR
++#define MSR_IDLE	(MSR_ME | MSR_SF | MSR_HV)
+ #else
+ #define MSR_		(__MSR | MSR_LE)
++#define MSR_IDLE	(MSR_ME | MSR_SF | MSR_HV | MSR_LE)
+ #endif
+ #define MSR_KERNEL	(MSR_ | MSR_64BIT)
+ #define MSR_USER32	(MSR_ | MSR_PR | MSR_EE)
+--- a/arch/powerpc/kernel/idle_power7.S
++++ b/arch/powerpc/kernel/idle_power7.S
+@@ -101,7 +101,23 @@ _GLOBAL(power7_powersave_common)
+ 	std	r9,_MSR(r1)
+ 	std	r1,PACAR1(r13)
+ 
+-_GLOBAL(power7_enter_nap_mode)
++	/*
++	 * Go to real mode to do the nap, as required by the architecture.
++	 * Also, we need to be in real mode before setting hwthread_state,
++	 * because as soon as we do that, another thread can switch
++	 * the MMU context to the guest.
++	 */
++	LOAD_REG_IMMEDIATE(r5, MSR_IDLE)
++	li	r6, MSR_RI
++	andc	r6, r9, r6
++	LOAD_REG_ADDR(r7, power7_enter_nap_mode)
++	mtmsrd	r6, 1		/* clear RI before setting SRR0/1 */
++	mtspr	SPRN_SRR0, r7
++	mtspr	SPRN_SRR1, r5
++	rfid
++
++	.globl	power7_enter_nap_mode
++power7_enter_nap_mode:
+ #ifdef CONFIG_KVM_BOOK3S_HV_POSSIBLE
+ 	/* Tell KVM we're napping */
+ 	li	r4,KVM_HWTHREAD_IN_NAP
 
 
