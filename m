@@ -1,66 +1,433 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676AbbANSTi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 13:19:38 -0500
-Received: from mga03.intel.com ([134.134.136.65]:24696 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751031AbbANSTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 13:19:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,757,1413270000"; 
-   d="scan'208";a="669920057"
-Date: Wed, 14 Jan 2015 10:15:26 -0800
-From: "David E. Box" <david.e.box@linux.intel.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Jarkko Nikula <jarkko.nikula@linux.intel.com>, jdelvare@suse.de,
-        arnd@arndb.de, maxime.ripard@free-electrons.com, dianders@chromium.org,
-        u.kleine-koenig@pengutronix.de,
-        laurent.pinchart+renesas@ideasonboard.com,
-        boris.brezillon@free-electrons.com, andrew@lunn.ch, sjg@chromium.org,
-        markus.mayer@linaro.org, jacob.jun.pan@linux.intel.com,
-        max.schwarz@online.de, mika.westerberg@linux.intel.com,
-        skuribay@pobox.com, Romain.Baeriswyl@abilis.com, wenkai.du@intel.com,
-        chiau.ee.chew@intel.com, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH V3 1/2] i2c-designware: Add i2c bus locking support
-Message-ID: <20150114181526.GA2892@pathfinder>
-References: <1411497626-7984-1-git-send-email-david.e.box@linux.intel.com>
- <1417478973-25522-1-git-send-email-david.e.box@linux.intel.com>
- <1417478973-25522-2-git-send-email-david.e.box@linux.intel.com>
- <5480144F.2040506@linux.intel.com>
- <20141204184210.GA1530@pathfinder>
- <20150113094833.GB1059@katana>
+	id S1753282AbbANSQI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 13:16:08 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:53260 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181AbbANSQG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 13:16:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150113094833.GB1059@katana>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1421194580-20230-1-git-send-email-salyzyn@android.com>
+References: <1421194580-20230-1-git-send-email-salyzyn@android.com>
+Date: Wed, 14 Jan 2015 10:16:04 -0800
+X-Google-Sender-Auth: MPxGSX44nX2M5bTj9XUZRTjD3QE
+Message-ID: <CAGXu5jKz8Thhf8ZncVg-j-t1BCZTvQLkS1FN4yTtLkO1MY2CLA@mail.gmail.com>
+Subject: Re: [PATCH v4 4/5] pstore: add pmsg
+From: Kees Cook <keescook@chromium.org>
+To: Mark Salyzyn <salyzyn@android.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Anton Vorontsov <anton@enomsg.org>,
+        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jan 13, 2015 at 4:16 PM, Mark Salyzyn <salyzyn@android.com> wrote:
+> A secured user-space accessible pstore object. Writes
+> to /dev/pmsg0 are appended to the buffer, on reboot
+> the persistent contents are available in
+> /sys/fs/pstore/pmsg-ramoops-[ID].
+>
+> One possible use is syslogd, or other daemon, can
+> write messages, then on reboot provides a means to
+> triage user-space activities leading up to a panic
+> as a companion to the pstore dmesg or console logs.
+>
+> Signed-off-by: Mark Salyzyn <salyzyn@android.com>
+> ---
+> v2: switch from snprintf to scnprintf
+> v3: split out prz_ok checking into PATCH 3/5
+>     replace pmsg_lseek with noop_llseek
+>     use pr_fmt() macro
+>     make write atomic and use a vmalloc'd bounce buffer
+> v4: use mutex_lock instead of of spin_lock.
 
-Expect something tonight should the latest tests run okay. I needed to include
-an EPROBE_DEFER to address the unavailibity of the pci driver needed in order to
-request the lock during probe of the i2c device. This due to the lock now being
-requested during probe because of the hang.
+Cool, seems reasonable to me. Thanks for the respins!
 
-Dave
+Acked-by: Kees Cook <keescook@chromium.org>
 
-On Tue, Jan 13, 2015 at 10:48:33AM +0100, Wolfram Sang wrote:
-> Hi Dave,
-> 
-> > Timely reply. Around i2c_dw_init(), yes. I just discovered this as the source
-> > of a recent hang that's occuring in the loop in __i2c_dw_enable().
-> > The hange occurs very infrequently and only, so far, when not built in. A
-> > block around i2c_dw_disable_int() would make sense as well as a precaution.
-> 
-> Any news on this or on a V4 of this series?
-> 
-> Thanks,
-> 
->    Wolfram
-> 
+-Kees
+
+>
+>  fs/pstore/Kconfig          |  10 ++++
+>  fs/pstore/Makefile         |   2 +
+>  fs/pstore/inode.c          |   3 ++
+>  fs/pstore/internal.h       |   6 +++
+>  fs/pstore/platform.c       |   1 +
+>  fs/pstore/pmsg.c           | 114 +++++++++++++++++++++++++++++++++++++++++++++
+>  fs/pstore/ram.c            |  34 +++++++++++++-
+>  include/linux/pstore.h     |   1 +
+>  include/linux/pstore_ram.h |   1 +
+>  9 files changed, 170 insertions(+), 2 deletions(-)
+>  create mode 100644 fs/pstore/pmsg.c
+>
+> diff --git a/fs/pstore/Kconfig b/fs/pstore/Kconfig
+> index 983d951..916b8e2 100644
+> --- a/fs/pstore/Kconfig
+> +++ b/fs/pstore/Kconfig
+> @@ -21,6 +21,16 @@ config PSTORE_CONSOLE
+>           When the option is enabled, pstore will log all kernel
+>           messages, even if no oops or panic happened.
+>
+> +config PSTORE_PMSG
+> +       bool "Log user space messages"
+> +       depends on PSTORE
+> +       help
+> +         When the option is enabled, pstore will export a character
+> +         interface /dev/pmsg0 to log user space messages. On reboot
+> +         data can be retrieved from /sys/fs/pstore/pmsg-ramoops-[ID].
+> +
+> +         If unsure, say N.
+> +
+>  config PSTORE_FTRACE
+>         bool "Persistent function tracer"
+>         depends on PSTORE
+> diff --git a/fs/pstore/Makefile b/fs/pstore/Makefile
+> index 4c9095c..e647d8e 100644
+> --- a/fs/pstore/Makefile
+> +++ b/fs/pstore/Makefile
+> @@ -7,5 +7,7 @@ obj-y += pstore.o
+>  pstore-objs += inode.o platform.o
+>  obj-$(CONFIG_PSTORE_FTRACE)    += ftrace.o
+>
+> +obj-$(CONFIG_PSTORE_PMSG)      += pmsg.o
+> +
+>  ramoops-objs += ram.o ram_core.o
+>  obj-$(CONFIG_PSTORE_RAM)       += ramoops.o
+> diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+> index d69586f..b32ce53 100644
+> --- a/fs/pstore/inode.c
+> +++ b/fs/pstore/inode.c
+> @@ -361,6 +361,9 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
+>                 scnprintf(name, sizeof(name), "powerpc-common-%s-%lld",
+>                           psname, id);
+>                 break;
+> +       case PSTORE_TYPE_PMSG:
+> +               scnprintf(name, sizeof(name), "pmsg-%s-%lld", psname, id);
+> +               break;
+>         case PSTORE_TYPE_UNKNOWN:
+>                 scnprintf(name, sizeof(name), "unknown-%s-%lld", psname, id);
+>                 break;
+> diff --git a/fs/pstore/internal.h b/fs/pstore/internal.h
+> index 3b3d305..c36ba2c 100644
+> --- a/fs/pstore/internal.h
+> +++ b/fs/pstore/internal.h
+> @@ -45,6 +45,12 @@ extern void pstore_register_ftrace(void);
+>  static inline void pstore_register_ftrace(void) {}
+>  #endif
+>
+> +#ifdef CONFIG_PSTORE_PMSG
+> +extern void pstore_register_pmsg(void);
+> +#else
+> +static inline void pstore_register_pmsg(void) {}
+> +#endif
+> +
+>  extern struct pstore_info *psinfo;
+>
+>  extern void    pstore_set_kmsg_bytes(int);
+> diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+> index 0a9b72c..15ee78c 100644
+> --- a/fs/pstore/platform.c
+> +++ b/fs/pstore/platform.c
+> @@ -447,6 +447,7 @@ int pstore_register(struct pstore_info *psi)
+>         if ((psi->flags & PSTORE_FLAGS_FRAGILE) == 0) {
+>                 pstore_register_console();
+>                 pstore_register_ftrace();
+> +               pstore_register_pmsg();
+>         }
+>
+>         if (pstore_update_ms >= 0) {
+> diff --git a/fs/pstore/pmsg.c b/fs/pstore/pmsg.c
+> new file mode 100644
+> index 0000000..feb5dd2
+> --- /dev/null
+> +++ b/fs/pstore/pmsg.c
+> @@ -0,0 +1,114 @@
+> +/*
+> + * Copyright 2014  Google, Inc.
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/cdev.h>
+> +#include <linux/device.h>
+> +#include <linux/fs.h>
+> +#include <linux/uaccess.h>
+> +#include <linux/vmalloc.h>
+> +#include "internal.h"
+> +
+> +static DEFINE_MUTEX(pmsg_lock);
+> +#define PMSG_MAX_BOUNCE_BUFFER_SIZE (2*PAGE_SIZE)
+> +
+> +static ssize_t write_pmsg(struct file *file, const char __user *buf,
+> +                         size_t count, loff_t *ppos)
+> +{
+> +       size_t i, buffer_size;
+> +       char *buffer;
+> +
+> +       if (!count)
+> +               return 0;
+> +
+> +       if (!access_ok(VERIFY_READ, buf, count))
+> +               return -EFAULT;
+> +
+> +       buffer_size = count;
+> +       if (buffer_size > PMSG_MAX_BOUNCE_BUFFER_SIZE)
+> +               buffer_size = PMSG_MAX_BOUNCE_BUFFER_SIZE;
+> +       buffer = vmalloc(buffer_size);
+> +
+> +       mutex_lock(&pmsg_lock);
+> +       for (i = 0; i < count; ) {
+> +               size_t c = min(count - i, buffer_size);
+> +               u64 id;
+> +               long ret;
+> +
+> +               ret = __copy_from_user(buffer, buf + i, c);
+> +               if (unlikely(ret != 0)) {
+> +                       mutex_unlock(&pmsg_lock);
+> +                       vfree(buffer);
+> +                       return -EFAULT;
+> +               }
+> +               psinfo->write_buf(PSTORE_TYPE_PMSG, 0, &id, 0, buffer, 0, c,
+> +                                 psinfo);
+> +
+> +               i += c;
+> +       }
+> +
+> +       mutex_unlock(&pmsg_lock);
+> +       vfree(buffer);
+> +       return count;
+> +}
+> +
+> +static const struct file_operations pmsg_fops = {
+> +       .owner          = THIS_MODULE,
+> +       .llseek         = noop_llseek,
+> +       .write          = write_pmsg,
+> +};
+> +
+> +static struct class *pmsg_class;
+> +static int pmsg_major;
+> +#define PMSG_NAME "pmsg"
+> +#undef pr_fmt
+> +#define pr_fmt(fmt) PMSG_NAME ": " fmt
+> +
+> +static char *pmsg_devnode(struct device *dev, umode_t *mode)
+> +{
+> +       if (mode)
+> +               *mode = 0220;
+> +       return NULL;
+> +}
+> +
+> +void pstore_register_pmsg(void)
+> +{
+> +       struct device *pmsg_device;
+> +
+> +       pmsg_major = register_chrdev(0, PMSG_NAME, &pmsg_fops);
+> +       if (pmsg_major < 0) {
+> +               pr_err("register_chrdev failed\n");
+> +               goto err;
+> +       }
+> +
+> +       pmsg_class = class_create(THIS_MODULE, PMSG_NAME);
+> +       if (IS_ERR(pmsg_class)) {
+> +               pr_err("device class file already in use\n");
+> +               goto err_class;
+> +       }
+> +       pmsg_class->devnode = pmsg_devnode;
+> +
+> +       pmsg_device = device_create(pmsg_class, NULL, MKDEV(pmsg_major, 0),
+> +                                       NULL, "%s%d", PMSG_NAME, 0);
+> +       if (IS_ERR(pmsg_device)) {
+> +               pr_err("failed to create device\n");
+> +               goto err_device;
+> +       }
+> +       return;
+> +
+> +err_device:
+> +       class_destroy(pmsg_class);
+> +err_class:
+> +       unregister_chrdev(pmsg_major, PMSG_NAME);
+> +err:
+> +       return;
+> +}
+> diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+> index 6150e54..39d1373 100644
+> --- a/fs/pstore/ram.c
+> +++ b/fs/pstore/ram.c
+> @@ -51,6 +51,10 @@ static ulong ramoops_ftrace_size = MIN_MEM_SIZE;
+>  module_param_named(ftrace_size, ramoops_ftrace_size, ulong, 0400);
+>  MODULE_PARM_DESC(ftrace_size, "size of ftrace log");
+>
+> +static ulong ramoops_pmsg_size = MIN_MEM_SIZE;
+> +module_param_named(pmsg_size, ramoops_pmsg_size, ulong, 0400);
+> +MODULE_PARM_DESC(pmsg_size, "size of user space message log");
+> +
+>  static ulong mem_address;
+>  module_param(mem_address, ulong, 0400);
+>  MODULE_PARM_DESC(mem_address,
+> @@ -82,12 +86,14 @@ struct ramoops_context {
+>         struct persistent_ram_zone **przs;
+>         struct persistent_ram_zone *cprz;
+>         struct persistent_ram_zone *fprz;
+> +       struct persistent_ram_zone *mprz;
+>         phys_addr_t phys_addr;
+>         unsigned long size;
+>         unsigned int memtype;
+>         size_t record_size;
+>         size_t console_size;
+>         size_t ftrace_size;
+> +       size_t pmsg_size;
+>         int dump_oops;
+>         struct persistent_ram_ecc_info ecc_info;
+>         unsigned int max_dump_cnt;
+> @@ -96,6 +102,7 @@ struct ramoops_context {
+>         unsigned int dump_read_cnt;
+>         unsigned int console_read_cnt;
+>         unsigned int ftrace_read_cnt;
+> +       unsigned int pmsg_read_cnt;
+>         struct pstore_info pstore;
+>  };
+>
+> @@ -109,6 +116,7 @@ static int ramoops_pstore_open(struct pstore_info *psi)
+>         cxt->dump_read_cnt = 0;
+>         cxt->console_read_cnt = 0;
+>         cxt->ftrace_read_cnt = 0;
+> +       cxt->pmsg_read_cnt = 0;
+>         return 0;
+>  }
+>
+> @@ -191,6 +199,9 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+>                 prz = ramoops_get_next_prz(&cxt->fprz, &cxt->ftrace_read_cnt,
+>                                            1, id, type, PSTORE_TYPE_FTRACE, 0);
+>         if (!prz_ok(prz))
+> +               prz = ramoops_get_next_prz(&cxt->mprz, &cxt->pmsg_read_cnt,
+> +                                          1, id, type, PSTORE_TYPE_PMSG, 0);
+> +       if (!prz_ok(prz))
+>                 return 0;
+>
+>         if (!persistent_ram_old(prz))
+> @@ -258,6 +269,11 @@ static int notrace ramoops_pstore_write_buf(enum pstore_type_id type,
+>                         return -ENOMEM;
+>                 persistent_ram_write(cxt->fprz, buf, size);
+>                 return 0;
+> +       } else if (type == PSTORE_TYPE_PMSG) {
+> +               if (!cxt->mprz)
+> +                       return -ENOMEM;
+> +               persistent_ram_write(cxt->mprz, buf, size);
+> +               return 0;
+>         }
+>
+>         if (type != PSTORE_TYPE_DMESG)
+> @@ -315,6 +331,9 @@ static int ramoops_pstore_erase(enum pstore_type_id type, u64 id, int count,
+>         case PSTORE_TYPE_FTRACE:
+>                 prz = cxt->fprz;
+>                 break;
+> +       case PSTORE_TYPE_PMSG:
+> +               prz = cxt->mprz;
+> +               break;
+>         default:
+>                 return -EINVAL;
+>         }
+> @@ -441,7 +460,7 @@ static int ramoops_probe(struct platform_device *pdev)
+>                 goto fail_out;
+>
+>         if (!pdata->mem_size || (!pdata->record_size && !pdata->console_size &&
+> -                       !pdata->ftrace_size)) {
+> +                       !pdata->ftrace_size && !pdata->pmsg_size)) {
+>                 pr_err("The memory size and the record/console size must be "
+>                         "non-zero\n");
+>                 goto fail_out;
+> @@ -453,6 +472,8 @@ static int ramoops_probe(struct platform_device *pdev)
+>                 pdata->console_size = rounddown_pow_of_two(pdata->console_size);
+>         if (pdata->ftrace_size && !is_power_of_2(pdata->ftrace_size))
+>                 pdata->ftrace_size = rounddown_pow_of_two(pdata->ftrace_size);
+> +       if (pdata->pmsg_size && !is_power_of_2(pdata->pmsg_size))
+> +               pdata->pmsg_size = rounddown_pow_of_two(pdata->pmsg_size);
+>
+>         cxt->size = pdata->mem_size;
+>         cxt->phys_addr = pdata->mem_address;
+> @@ -460,12 +481,14 @@ static int ramoops_probe(struct platform_device *pdev)
+>         cxt->record_size = pdata->record_size;
+>         cxt->console_size = pdata->console_size;
+>         cxt->ftrace_size = pdata->ftrace_size;
+> +       cxt->pmsg_size = pdata->pmsg_size;
+>         cxt->dump_oops = pdata->dump_oops;
+>         cxt->ecc_info = pdata->ecc_info;
+>
+>         paddr = cxt->phys_addr;
+>
+> -       dump_mem_sz = cxt->size - cxt->console_size - cxt->ftrace_size;
+> +       dump_mem_sz = cxt->size - cxt->console_size - cxt->ftrace_size
+> +                       - cxt->pmsg_size;
+>         err = ramoops_init_przs(dev, cxt, &paddr, dump_mem_sz);
+>         if (err)
+>                 goto fail_out;
+> @@ -480,6 +503,10 @@ static int ramoops_probe(struct platform_device *pdev)
+>         if (err)
+>                 goto fail_init_fprz;
+>
+> +       err = ramoops_init_prz(dev, cxt, &cxt->mprz, &paddr, cxt->pmsg_size, 0);
+> +       if (err)
+> +               goto fail_init_mprz;
+> +
+>         cxt->pstore.data = cxt;
+>         /*
+>          * Console can handle any buffer size, so prefer LOG_LINE_MAX. If we
+> @@ -523,6 +550,8 @@ fail_buf:
+>         kfree(cxt->pstore.buf);
+>  fail_clear:
+>         cxt->pstore.bufsize = 0;
+> +       kfree(cxt->mprz);
+> +fail_init_mprz:
+>         kfree(cxt->fprz);
+>  fail_init_fprz:
+>         kfree(cxt->cprz);
+> @@ -580,6 +609,7 @@ static void ramoops_register_dummy(void)
+>         dummy_data->record_size = record_size;
+>         dummy_data->console_size = ramoops_console_size;
+>         dummy_data->ftrace_size = ramoops_ftrace_size;
+> +       dummy_data->pmsg_size = ramoops_pmsg_size;
+>         dummy_data->dump_oops = dump_oops;
+>         /*
+>          * For backwards compatibility ramoops.ecc=1 means 16 bytes ECC
+> diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+> index ece0c6b..8884f6e 100644
+> --- a/include/linux/pstore.h
+> +++ b/include/linux/pstore.h
+> @@ -39,6 +39,7 @@ enum pstore_type_id {
+>         PSTORE_TYPE_PPC_RTAS    = 4,
+>         PSTORE_TYPE_PPC_OF      = 5,
+>         PSTORE_TYPE_PPC_COMMON  = 6,
+> +       PSTORE_TYPE_PMSG        = 7,
+>         PSTORE_TYPE_UNKNOWN     = 255
+>  };
+>
+> diff --git a/include/linux/pstore_ram.h b/include/linux/pstore_ram.h
+> index 4af3fdc..9c9d6c1 100644
+> --- a/include/linux/pstore_ram.h
+> +++ b/include/linux/pstore_ram.h
+> @@ -81,6 +81,7 @@ struct ramoops_platform_data {
+>         unsigned long   record_size;
+>         unsigned long   console_size;
+>         unsigned long   ftrace_size;
+> +       unsigned long   pmsg_size;
+>         int             dump_oops;
+>         struct persistent_ram_ecc_info ecc_info;
+>  };
+> --
+> 2.2.0.rc0.207.ga3a616c
+>
 
 
+
+-- 
+Kees Cook
+Chrome OS Security
