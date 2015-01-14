@@ -1,24 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353AbbANHi5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:38:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58899 "EHLO
+	id S933022AbbANHxj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:53:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58711 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755333AbbANHiz (ORCPT
+	with ESMTP id S932890AbbANHgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:38:55 -0500
+	Wed, 14 Jan 2015 02:36:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
-        Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.10 31/44] writeback: fix a subtle race condition in I_DIRTY clearing
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Olsa <jolsa@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Zhiqiang Zhang <zhangzhiqiang.zhang@huawei.com>
+Subject: [PATCH 3.14 72/77] perf session: Do not fail on processing out of order event
 Date: Tue, 13 Jan 2015 23:23:52 -0800
-Message-Id: <20150114072229.177197259@linuxfoundation.org>
+Message-Id: <20150114072228.316364896@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
-References: <20150114072227.419663002@linuxfoundation.org>
+In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
+References: <20150114072224.182299947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,130 +35,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Jiri Olsa <jolsa@kernel.org>
 
-commit 9c6ac78eb3521c5937b2dd8a7d1b300f41092f45 upstream.
+commit f61ff6c06dc8f32c7036013ad802c899ec590607 upstream.
 
-After invoking ->dirty_inode(), __mark_inode_dirty() does smp_mb() and
-tests inode->i_state locklessly to see whether it already has all the
-necessary I_DIRTY bits set.  The comment above the barrier doesn't
-contain any useful information - memory barriers can't ensure "changes
-are seen by all cpus" by itself.
+Linus reported perf report command being interrupted due to processing
+of 'out of order' event, with following error:
 
-And it sure enough was broken.  Please consider the following
-scenario.
+  Timestamp below last timeslice flush
+  0x5733a8 [0x28]: failed to process type: 3
 
- CPU 0					CPU 1
- -------------------------------------------------------------------------------
+I could reproduce the issue and in my case it was caused by one CPU
+(mmap) being behind during record and userspace mmap reader seeing the
+data after other CPUs data were already stored.
 
-					enters __writeback_single_inode()
-					grabs inode->i_lock
-					tests PAGECACHE_TAG_DIRTY which is clear
- enters __set_page_dirty()
- grabs mapping->tree_lock
- sets PAGECACHE_TAG_DIRTY
- releases mapping->tree_lock
- leaves __set_page_dirty()
+This is expected under some circumstances because we need to limit the
+number of events that we queue for reordering when we receive a
+PERF_RECORD_FINISHED_ROUND or when we force flush due to memory
+pressure.
 
- enters __mark_inode_dirty()
- smp_mb()
- sees I_DIRTY_PAGES set
- leaves __mark_inode_dirty()
-					clears I_DIRTY_PAGES
-					releases inode->i_lock
-
-Now @inode has dirty pages w/ I_DIRTY_PAGES clear.  This doesn't seem
-to lead to an immediately critical problem because requeue_inode()
-later checks PAGECACHE_TAG_DIRTY instead of I_DIRTY_PAGES when
-deciding whether the inode needs to be requeued for IO and there are
-enough unintentional memory barriers inbetween, so while the inode
-ends up with inconsistent I_DIRTY_PAGES flag, it doesn't fall off the
-IO list.
-
-The lack of explicit barrier may also theoretically affect the other
-I_DIRTY bits which deal with metadata dirtiness.  There is no
-guarantee that a strong enough barrier exists between
-I_DIRTY_[DATA]SYNC clearing and write_inode() writing out the dirtied
-inode.  Filesystem inode writeout path likely has enough stuff which
-can behave as full barrier but it's theoretically possible that the
-writeout may not see all the updates from ->dirty_inode().
-
-Fix it by adding an explicit smp_mb() after I_DIRTY clearing.  Note
-that I_DIRTY_PAGES needs a special treatment as it always needs to be
-cleared to be interlocked with the lockless test on
-__mark_inode_dirty() side.  It's cleared unconditionally and
-reinstated after smp_mb() if the mapping still has dirty pages.
-
-Also add comments explaining how and why the barriers are paired.
-
-Lightly tested.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Matt Fleming <matt.fleming@intel.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1417016371-30249-1-git-send-email-jolsa@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+[zhangzhiqiang: backport to 3.10:
+ - adjust context
+ - commit f61ff6c06d struct events_stats was defined in tools/perf/util/event.h
+   while 3.10 stable defined in tools/perf/util/hist.h.
+ - 3.10 stable there is no pr_oe_time() which used for debug.
+ - After the above adjustments, becomes same to the original patch:
+   https://github.com/torvalds/linux/commit/f61ff6c06dc8f32c7036013ad802c899ec590607
+]
+Signed-off-by: Zhiqiang Zhang <zhangzhiqiang.zhang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/fs-writeback.c |   29 ++++++++++++++++++++++-------
- 1 file changed, 22 insertions(+), 7 deletions(-)
+ tools/perf/util/hist.h    |    1 +
+ tools/perf/util/session.c |    5 +++--
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -470,12 +470,28 @@ __writeback_single_inode(struct inode *i
- 	 * write_inode()
- 	 */
- 	spin_lock(&inode->i_lock);
--	/* Clear I_DIRTY_PAGES if we've written out all dirty pages */
--	if (!mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
--		inode->i_state &= ~I_DIRTY_PAGES;
-+
- 	dirty = inode->i_state & I_DIRTY;
--	inode->i_state &= ~(I_DIRTY_SYNC | I_DIRTY_DATASYNC);
-+	inode->i_state &= ~I_DIRTY;
-+
-+	/*
-+	 * Paired with smp_mb() in __mark_inode_dirty().  This allows
-+	 * __mark_inode_dirty() to test i_state without grabbing i_lock -
-+	 * either they see the I_DIRTY bits cleared or we see the dirtied
-+	 * inode.
-+	 *
-+	 * I_DIRTY_PAGES is always cleared together above even if @mapping
-+	 * still has dirty pages.  The flag is reinstated after smp_mb() if
-+	 * necessary.  This guarantees that either __mark_inode_dirty()
-+	 * sees clear I_DIRTY_PAGES or we see PAGECACHE_TAG_DIRTY.
-+	 */
-+	smp_mb();
-+
-+	if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
-+		inode->i_state |= I_DIRTY_PAGES;
-+
- 	spin_unlock(&inode->i_lock);
-+
- 	/* Don't write the inode if only I_DIRTY_PAGES was set */
- 	if (dirty & (I_DIRTY_SYNC | I_DIRTY_DATASYNC)) {
- 		int err = write_inode(inode, wbc);
-@@ -1146,12 +1162,11 @@ void __mark_inode_dirty(struct inode *in
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -36,6 +36,7 @@ struct events_stats {
+ 	u32 nr_invalid_chains;
+ 	u32 nr_unknown_id;
+ 	u32 nr_unprocessable_samples;
++	u32 nr_unordered_events;
+ };
+ 
+ enum hist_column {
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -638,8 +638,7 @@ int perf_session_queue_event(struct perf
+ 		return -ETIME;
+ 
+ 	if (timestamp < s->ordered_samples.last_flush) {
+-		printf("Warning: Timestamp below last timeslice flush\n");
+-		return -EINVAL;
++		s->stats.nr_unordered_events++;
  	}
  
- 	/*
--	 * make sure that changes are seen by all cpus before we test i_state
--	 * -- mikulas
-+	 * Paired with smp_mb() in __writeback_single_inode() for the
-+	 * following lockless i_state test.  See there for details.
- 	 */
- 	smp_mb();
+ 	if (!list_empty(sc)) {
+@@ -1135,6 +1134,8 @@ static void perf_session__warn_about_err
+ 			    "Do you have a KVM guest running and not using 'perf kvm'?\n",
+ 			    session->stats.nr_unprocessable_samples);
+ 	}
++	if (session->stats.nr_unordered_events != 0)
++		ui__warning("%u out of order events recorded.\n", session->stats.nr_unordered_events);
+ }
  
--	/* avoid the locking if we can */
- 	if ((inode->i_state & flags) == flags)
- 		return;
- 
+ volatile int session_done;
 
 
