@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608AbbANMfR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 07:35:17 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:61124 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995AbbANMfM (ORCPT
+	id S1752616AbbANMg5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 07:36:57 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:59290 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752115AbbANMgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 07:35:12 -0500
+	Wed, 14 Jan 2015 07:36:54 -0500
 MIME-Version: 1.0
-In-Reply-To: <1420621722-7428-2-git-send-email-oliver+list@schinagl.nl>
+In-Reply-To: <1420621722-7428-3-git-send-email-oliver+list@schinagl.nl>
 References: <1420621722-7428-1-git-send-email-oliver+list@schinagl.nl>
-	<1420621722-7428-2-git-send-email-oliver+list@schinagl.nl>
-Date: Wed, 14 Jan 2015 13:35:12 +0100
-Message-ID: <CACRpkdYyaK5JjXEwJxzLgd_-0ccTjb1wEFxVUSdLsppcmTMDoA@mail.gmail.com>
-Subject: Re: [PATCH v1 1/4] gpio:gpiolib: use static const char const * for a
- suffixes array
+	<1420621722-7428-3-git-send-email-oliver+list@schinagl.nl>
+Date: Wed, 14 Jan 2015 13:36:53 +0100
+Message-ID: <CACRpkdY85oZT5mZNF6isVf9SGP8pCRnWQ5Db80_+isdACY1Yaw@mail.gmail.com>
+Subject: Re: [PATCH v1 2/4] gpio: add parameter to allow the use named gpios
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Olliver Schinagl <oliver+list@schinagl.nl>
+To: Olliver Schinagl <oliver+list@schinagl.nl>,
+        Alexandre Courbot <gnurou@gmail.com>
 Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
         Olliver Schinagl <oliver@schinagl.nl>,
@@ -47,13 +46,16 @@ On Wed, Jan 7, 2015 at 10:08 AM, Olliver Schinagl
 
 > From: Olliver Schinagl <oliver@schinagl.nl>
 >
-> Checkpatch complains, and probably with good reason that we should use
-> const char const * for the static constant array that never gets
-> changed.
+> The gpio binding document says that new code should always use named
+> gpios. Patch 40b73183 added support to parse a list of gpios from child
+> nodes, but does not make it possible to use named gpios. This patch adds
+> the con_id property and implements it is done in gpiolib.c, where the
+> old-style of using unnamed gpios still works.
 >
 > Signed-off-by: Olliver Schinagl <oliver@schinagl.nl>
 
-Patch applied.
+Alexandre, can you please take a close look at this
+patch.
 
 Yours,
 Linus Walleij
