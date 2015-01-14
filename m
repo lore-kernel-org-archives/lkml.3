@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406AbbANJfx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 04:35:53 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:48511 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753286AbbANJfv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 04:35:51 -0500
-Date: Wed, 14 Jan 2015 10:35:39 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@codemonkey.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 06/10] time: Cap clocksource reads to the clocksource
- max_cycles value
-Message-ID: <20150114093539.GM23965@worktop.programming.kicks-ass.net>
-References: <1420850068-27828-1-git-send-email-john.stultz@linaro.org>
- <1420850068-27828-7-git-send-email-john.stultz@linaro.org>
- <20150113111146.GL23965@worktop.programming.kicks-ass.net>
- <CALAqxLVFLAjCD2Vw6Zue=+RU2GSspCDTBTeRAv-EQMy3iA6oBw@mail.gmail.com>
+	id S1753472AbbANJg6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 04:36:58 -0500
+Received: from mail-bn1on0116.outbound.protection.outlook.com ([157.56.110.116]:32864
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753215AbbANJgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 04:36:55 -0500
+From: Jingchang Lu <jingchang.lu@freescale.com>
+To: Jingchang Lu <jingchang.lu@freescale.com>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>
+CC: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH 1/2] dmaengine: fsl-edma: add dma memcpy support
+Thread-Topic: [PATCH 1/2] dmaengine: fsl-edma: add dma memcpy support
+Thread-Index: AQHQJBRBvR5ApUwEo0OF2Mc0BMepuJy/cf2w
+Date: Wed, 14 Jan 2015 09:36:52 +0000
+Message-ID: <BN3PR0301MB12364CA46991F6616348AD9087410@BN3PR0301MB1236.namprd03.prod.outlook.com>
+References: <1419928907-18053-1-git-send-email-jingchang.lu@freescale.com>
+ <1419928907-18053-2-git-send-email-jingchang.lu@freescale.com>
+In-Reply-To: <1419928907-18053-2-git-send-email-jingchang.lu@freescale.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.51]
+authentication-results: spf=none (sender IP is )
+ smtp.mailfrom=jingchang.lu@freescale.com; 
+x-dmarcaction-test: None
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BN3PR0301MB1235;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1235;
+x-forefront-prvs: 04569283F9
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(377454003)(199003)(13464003)(41574002)(51704005)(189002)(77156002)(62966003)(86362001)(76576001)(87936001)(54606007)(2656002)(106116001)(105586002)(106356001)(54206007)(19580405001)(2900100001)(2950100001)(19580395003)(92566002)(66066001)(54356999)(97736003)(46102003)(122556002)(64706001)(33656002)(2501002)(99286002)(74316001)(40100003)(76176999)(50986999)(68736005)(101416001)(102836002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN3PR0301MB1235;H:BN3PR0301MB1236.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALAqxLVFLAjCD2Vw6Zue=+RU2GSspCDTBTeRAv-EQMy3iA6oBw@mail.gmail.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-originalarrivaltime: 14 Jan 2015 09:36:52.4636
+ (UTC)
+X-MS-Exchange-CrossTenant-fromentityheader: Hosted
+X-MS-Exchange-CrossTenant-id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN3PR0301MB1235
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0E9b48s005293
 
-On Tue, Jan 13, 2015 at 01:33:29PM -0800, John Stultz wrote:
-> On Tue, Jan 13, 2015 at 3:11 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Fri, Jan 09, 2015 at 04:34:24PM -0800, John Stultz wrote:
-> >> When calculating the current delta since the last tick, we
-> >> currently have no hard protections to prevent a multiplciation
-> >> overflow from ocurring.
-> >>
-> >> This patch introduces such a cap that limits the read delta
-> >> value to the max_cycles value, which is where an overflow would
-> >> occur.
-> >
-> >> +++ b/kernel/time/timekeeping.c
-> >> @@ -202,6 +202,9 @@ static inline s64 timekeeping_get_ns(struct tk_read_base *tkr)
-> >>       /* calculate the delta since the last update_wall_time: */
-> >>       delta = clocksource_delta(cycle_now, tkr->cycle_last, tkr->mask);
-> >>
-> >> +     /* Cap delta value to the max_cycles values to avoid mult overflows */
-> >> +     delta = min(delta, tkr->clock->max_cycles);
-> >> +
-> >>       nsec = delta * tkr->mult + tkr->xtime_nsec;
-> >>       nsec >>= tkr->shift;
-> >>
-> >
-> > So while I appreciate stuff can be broken, should we not at least keep
-> > track of this brokenness? That is, we all agree bad things happened IF
-> > we actually hit this, right? So should we then not inform people that
-> > bad things did happen?
-> 
-> So since this is a time reading function, this could be called
-> anywhere. So I'm hesitant to try to printk anything in such a hot
-> path. Though, if we catch such a large delta during the timekeeping
-> update function, we will print a warning (which is done in an earlier
-> patch in the series).
-> 
-> Were you thinking of something else maybe? I guess we could set a flag
-> and then print later (if there is a later), but we'd lose much of the
-> context of what went wrong.
+Hi, Vinod,
 
-Maybe a stats counter? In any case, keeping it silent seems the wrong
-thing.
+   Could you please help review the two patches, and merge them if possible? Thanks!
+
+
+Best Regards,
+Jingchang
+
+>-----Original Message-----
+>From: Jingchang Lu [mailto:jingchang.lu@freescale.com]
+>Sent: Tuesday, December 30, 2014 4:42 PM
+>To: vinod.koul@intel.com
+>Cc: dan.j.williams@intel.com; dmaengine@vger.kernel.org; linux-
+>kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org; Lu
+>Jingchang-B35083
+>Subject: [PATCH 1/2] dmaengine: fsl-edma: add dma memcpy support
+>
+>This adds the memory copy capability support, the memcpy functionality
+>needs to configure the DMAMUX of the channel with the always on slave id.
+>
+>Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
+>---
+> drivers/dma/fsl-edma.c | 63
+>++++++++++++++++++++++++++++++++++++++++++++++++--
+> 1 file changed, 61 insertions(+), 2 deletions(-)
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
