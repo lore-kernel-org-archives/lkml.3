@@ -1,43 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580AbbANRoZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 12:44:25 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:40153 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752086AbbANRoX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 12:44:23 -0500
-Date: Wed, 14 Jan 2015 17:44:07 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Vitaly Andrianov <vitalya@ti.com>
-Cc: thomas.petazzoni@free-electrons.com, catalin.marinas@arm.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [Resend PATCH] ARM: mm: use phys_addr_t in ioremap_page functions
-Message-ID: <20150114174407.GB12302@n2100.arm.linux.org.uk>
-References: <1421257452-18834-1-git-send-email-vitalya@ti.com>
+	id S1753045AbbANRnR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 12:43:17 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:55270 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750826AbbANRnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 12:43:16 -0500
+From: Vitaly Andrianov <vitalya@ti.com>
+To: <linux@arm.linux.org.uk>, <thomas.petazzoni@free-electrons.com>,
+        <catalin.marinas@arm.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Vitaly Andrianov <vitalya@ti.com>
+Subject: [Resend PATCH] ARM: mm: use phys_addr_t in ioremap_page functions
+Date: Wed, 14 Jan 2015 12:44:12 -0500
+Message-ID: <1421257452-18834-1-git-send-email-vitalya@ti.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421257452-18834-1-git-send-email-vitalya@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 12:44:12PM -0500, Vitaly Andrianov wrote:
-> On a 32 bit ARM architecture with LPAE extension physical addresses
-> cannot fit into unsigned long variable.
-> 
-> This patch fixes the ioremap_page function.
-> 
-> Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
-> Acked-by: Murali Karicheri <m-karicheri2@ti.com>
-> 
-> - Fixing the commit log and resending
+On a 32 bit ARM architecture with LPAE extension physical addresses
+cannot fit into unsigned long variable.
 
-Still not happy.  Why do we even need this function which no one calls.
-Please delete it instead.
+This patch fixes the ioremap_page function.
 
+Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
+Acked-by: Murali Karicheri <m-karicheri2@ti.com>
+
+- Fixing the commit log and resending
+---
+ arch/arm/include/asm/mach/map.h | 2 +-
+ arch/arm/mm/ioremap.c           | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/include/asm/mach/map.h b/arch/arm/include/asm/mach/map.h
+index 2fe141f..836f006 100644
+--- a/arch/arm/include/asm/mach/map.h
++++ b/arch/arm/include/asm/mach/map.h
+@@ -52,7 +52,7 @@ extern const struct mem_type *get_mem_type(unsigned int type);
+ /*
+  * external interface to remap single page with appropriate type
+  */
+-extern int ioremap_page(unsigned long virt, unsigned long phys,
++extern int ioremap_page(unsigned long virt, phys_addr_t phys,
+ 			const struct mem_type *mtype);
+ #else
+ #define iotable_init(map,num)	do { } while (0)
+diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
+index f123d6e..e0fe50f 100644
+--- a/arch/arm/mm/ioremap.c
++++ b/arch/arm/mm/ioremap.c
+@@ -103,7 +103,7 @@ void __init add_static_vm_early(struct static_vm *svm)
+ 	list_add_tail(&svm->list, &curr_svm->list);
+ }
+ 
+-int ioremap_page(unsigned long virt, unsigned long phys,
++int ioremap_page(unsigned long virt, phys_addr_t phys,
+ 		 const struct mem_type *mtype)
+ {
+ 	return ioremap_page_range(virt, virt + PAGE_SIZE, phys,
 -- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
+1.9.1
+
