@@ -1,74 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186AbbANDJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 22:09:58 -0500
-Received: from 60-248-182-7.HINET-IP.hinet.net ([60.248.182.7]:51108 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751427AbbANDJ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 22:09:56 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0E39Vx7009481, This message is accepted by code: ctloc85258
-From: <micky_ching@realsil.com.cn>
-To: <chris@printf.net>, <ulf.hansson@linaro.org>, <sameo@linux.intel.com>
-CC: <gregkh@linuxfoundation.org>, <dan.carpenter@oracle.com>,
-        <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mmc@vger.kernel.org>, <rogerable@realtek.com>,
-        <wei_wang@realsil.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
-Subject: [PATCH 2/2] mmc: rtsx: check sg_count before long data xfer
-Date: Wed, 14 Jan 2015 11:09:12 +0800
-Message-ID: <55d9f11a9338acd70f820673d4548ac9939dabc6.1421204431.git.micky_ching@realsil.com.cn>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <cover.1421204431.git.micky_ching@realsil.com.cn>
-References: <cover.1421204431.git.micky_ching@realsil.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.29.41.103]
+	id S1751879AbbANDHP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 22:07:15 -0500
+Received: from mga03.intel.com ([134.134.136.65]:50996 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751086AbbANDHO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 22:07:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="440264737"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Sander Eikelenboom <linux@eikelenboom.it>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Yinghai Lu <yinghai@kernel.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3] [Bugfix] x86/apic: Fix xen IRQ allocation failure caused by commit b81975eade8c
+Date: Wed, 14 Jan 2015 11:09:35 +0800
+Message-Id: <1421204979-30619-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <alpine.DEB.2.11.1501131000410.17382@nanos>
+References: <alpine.DEB.2.11.1501131000410.17382@nanos>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Micky Ching <micky_ching@realsil.com.cn>
+Commit b81975eade8c ("x86, irq: Clean up irqdomain transition code")
+breaks xen IRQ allocation because xen_smp_prepare_cpus() doesn't invoke
+setup_IO_APIC(), so no irqdomains created for IOAPICs and
+mp_map_pin_to_irq() fails at the very beginning.
 
-Check sg_count before sending long data xfer.
-Because dma_map_sg() return int, and sg_count may be negative,
-so using int instead of unsigned.
+So move creating of IOAPIC irqdomains from setup_IO_APIC() into
+arch_early_ioapic_init().
 
-Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Reported-and-tested-by: Sander Eikelenboom <linux@eikelenboom.it>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/mmc/host/rtsx_pci_sdmmc.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
-index b435806..1d3d6c4 100644
---- a/drivers/mmc/host/rtsx_pci_sdmmc.c
-+++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
-@@ -54,9 +54,9 @@ struct realtek_pci_sdmmc {
- #define SDMMC_POWER_ON		1
- #define SDMMC_POWER_OFF		0
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 3f5f60406ab1..1117c84cefe4 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -245,6 +245,8 @@ static void free_ioapic_saved_registers(int idx)
+ 	ioapics[idx].saved_registers = NULL;
+ }
  
--	unsigned int		sg_count;
-+	int			sg_count;
- 	s32			cookie;
--	unsigned int		cookie_sg_count;
-+	int			cookie_sg_count;
- 	bool			using_cookie;
- };
- 
-@@ -557,6 +557,13 @@ static int sd_rw_multi(struct realtek_pci_sdmmc *host, struct mmc_request *mrq)
- {
- 	struct mmc_data *data = mrq->data;
- 
-+	if (host->sg_count < 0) {
-+		data->error = host->sg_count;
-+		dev_dbg(sdmmc_dev(host), "%s: sg_count = %d is invalid\n",
-+			__func__, host->sg_count);
-+		return data->error;
-+	}
++static int mp_irqdomain_create(int ioapic);
 +
- 	if (data->flags & MMC_DATA_READ)
- 		return sd_read_long_data(host, mrq);
+ int __init arch_early_ioapic_init(void)
+ {
+ 	struct irq_cfg *cfg;
+@@ -253,8 +255,10 @@ int __init arch_early_ioapic_init(void)
+ 	if (!nr_legacy_irqs())
+ 		io_apic_irqs = ~0UL;
  
+-	for_each_ioapic(i)
++	for_each_ioapic(i) {
++		BUG_ON(mp_irqdomain_create(i));
+ 		alloc_ioapic_saved_registers(i);
++	}
+ 
+ 	/*
+ 	 * For legacy IRQ's, start with assigning irq0 to irq15 to
+@@ -2371,16 +2375,12 @@ static void ioapic_destroy_irqdomain(int idx)
+ 
+ void __init setup_IO_APIC(void)
+ {
+-	int ioapic;
+-
+ 	/*
+ 	 * calling enable_IO_APIC() is moved to setup_local_APIC for BP
+ 	 */
+ 	io_apic_irqs = nr_legacy_irqs() ? ~PIC_IRQS : ~0UL;
+ 
+ 	apic_printk(APIC_VERBOSE, "ENABLING IO-APIC IRQs\n");
+-	for_each_ioapic(ioapic)
+-		BUG_ON(mp_irqdomain_create(ioapic));
+ 
+ 	/*
+          * Set up IO-APIC IRQ routing.
+@@ -2929,7 +2929,8 @@ int mp_register_ioapic(int id, u32 address, u32 gsi_base,
+ 	/*
+ 	 * If mp_register_ioapic() is called during early boot stage when
+ 	 * walking ACPI/SFI/DT tables, it's too early to create irqdomain,
+-	 * we are still using bootmem allocator. So delay it to setup_IO_APIC().
++	 * we are still using bootmem allocator.So delay it to
++	 * arch_early_ioapic_init().
+ 	 */
+ 	if (hotplug) {
+ 		if (mp_irqdomain_create(idx)) {
 -- 
-1.9.1
+1.7.10.4
 
