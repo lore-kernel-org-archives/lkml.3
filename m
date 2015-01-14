@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755037AbbANHcZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:32:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58356 "EHLO
+	id S932624AbbANHed (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:34:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58516 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754967AbbANHcS (ORCPT
+	with ESMTP id S932566AbbANHe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:32:18 -0500
+	Wed, 14 Jan 2015 02:34:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dirk Hohndel <dirk@hohndel.org>, Nick Dyer <nick.dyer@itdev.co.uk>,
-        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.18 126/150] Revert "Input: atmel_mxt_ts - use deep sleep mode when stopped"
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [PATCH 3.14 37/77] misc: genwqe: check for error from get_user_pages_fast()
 Date: Tue, 13 Jan 2015 23:23:17 -0800
-Message-Id: <20150114072101.550487263@linuxfoundation.org>
+Message-Id: <20150114072226.264475958@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
-References: <20150114072055.842408181@linuxfoundation.org>
+In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
+References: <20150114072224.182299947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -27,191 +24,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 7f4054836d811c650c51f9c93088f8ebd61b0020 upstream.
+commit cf35d6e0475982667b0d2d318fb27be4b8849827 upstream.
 
-This reverts commit 9d469d033d135d80742a4e39e6bbb4519dd5eee1.
+`genwqe_user_vmap()` calls `get_user_pages_fast()` and if the return
+value is less than the number of pages requested, it frees the pages and
+returns an error (`-EFAULT`).  However, it fails to consider a negative
+error return value from `get_user_pages_fast()`.  In that case, the test
+`if (rc < m->nr_pages)` will be false (due to promotion of `rc` to a
+large `unsigned int`) and the code will continue on to call
+`genwqe_map_pages()` with an invalid list of page pointers.  Fix it by
+bailing out if `get_user_pages_fast()` returns a negative error value.
 
-It breaks the Chromebook Pixel touchpad (and touchscreen).
-
-Reported-by: Dirk Hohndel <dirk@hohndel.org>
-Bisected-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Nick Dyer <nick.dyer@itdev.co.uk>
-Cc: Benson Leung <bleung@chromium.org>
-Cc: Yufeng Shen <miletus@chromium.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   99 ++++++++-----------------------
- 1 file changed, 26 insertions(+), 73 deletions(-)
+ drivers/misc/genwqe/card_utils.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/input/touchscreen/atmel_mxt_ts.c
-+++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -99,13 +99,9 @@
- #define MXT_T6_STATUS_COMSERR	(1 << 2)
+--- a/drivers/misc/genwqe/card_utils.c
++++ b/drivers/misc/genwqe/card_utils.c
+@@ -490,6 +490,8 @@ int genwqe_user_vmap(struct genwqe_dev *
+ 				 m->nr_pages,
+ 				 1,		/* write by caller */
+ 				 m->page_list);	/* ptrs to pages */
++	if (rc < 0)
++		goto fail_get_user_pages;
  
- /* MXT_GEN_POWER_T7 field */
--struct t7_config {
--	u8 idle;
--	u8 active;
--} __packed;
--
--#define MXT_POWER_CFG_RUN		0
--#define MXT_POWER_CFG_DEEPSLEEP		1
-+#define MXT_POWER_IDLEACQINT	0
-+#define MXT_POWER_ACTVACQINT	1
-+#define MXT_POWER_ACTV2IDLETO	2
- 
- /* MXT_GEN_ACQUIRE_T8 field */
- #define MXT_ACQUIRE_CHRGTIME	0
-@@ -117,6 +113,7 @@ struct t7_config {
- #define MXT_ACQUIRE_ATCHCALSTHR	7
- 
- /* MXT_TOUCH_MULTI_T9 field */
-+#define MXT_TOUCH_CTRL		0
- #define MXT_T9_ORIENT		9
- #define MXT_T9_RANGE		18
- 
-@@ -256,7 +253,6 @@ struct mxt_data {
- 	bool update_input;
- 	u8 last_message_count;
- 	u8 num_touchids;
--	struct t7_config t7_cfg;
- 
- 	/* Cached parameters from object table */
- 	u16 T5_address;
-@@ -672,6 +668,20 @@ static void mxt_proc_t6_messages(struct
- 	data->t6_status = status;
- }
- 
-+static int mxt_write_object(struct mxt_data *data,
-+				 u8 type, u8 offset, u8 val)
-+{
-+	struct mxt_object *object;
-+	u16 reg;
-+
-+	object = mxt_get_object(data, type);
-+	if (!object || offset >= mxt_obj_size(object))
-+		return -EINVAL;
-+
-+	reg = object->start_address;
-+	return mxt_write_reg(data->client, reg + offset, val);
-+}
-+
- static void mxt_input_button(struct mxt_data *data, u8 *message)
- {
- 	struct input_dev *input = data->input_dev;
-@@ -1742,60 +1752,6 @@ err_free_object_table:
- 	return error;
- }
- 
--static int mxt_set_t7_power_cfg(struct mxt_data *data, u8 sleep)
--{
--	struct device *dev = &data->client->dev;
--	int error;
--	struct t7_config *new_config;
--	struct t7_config deepsleep = { .active = 0, .idle = 0 };
--
--	if (sleep == MXT_POWER_CFG_DEEPSLEEP)
--		new_config = &deepsleep;
--	else
--		new_config = &data->t7_cfg;
--
--	error = __mxt_write_reg(data->client, data->T7_address,
--				sizeof(data->t7_cfg), new_config);
--	if (error)
--		return error;
--
--	dev_dbg(dev, "Set T7 ACTV:%d IDLE:%d\n",
--		new_config->active, new_config->idle);
--
--	return 0;
--}
--
--static int mxt_init_t7_power_cfg(struct mxt_data *data)
--{
--	struct device *dev = &data->client->dev;
--	int error;
--	bool retry = false;
--
--recheck:
--	error = __mxt_read_reg(data->client, data->T7_address,
--				sizeof(data->t7_cfg), &data->t7_cfg);
--	if (error)
--		return error;
--
--	if (data->t7_cfg.active == 0 || data->t7_cfg.idle == 0) {
--		if (!retry) {
--			dev_dbg(dev, "T7 cfg zero, resetting\n");
--			mxt_soft_reset(data);
--			retry = true;
--			goto recheck;
--		} else {
--			dev_dbg(dev, "T7 cfg zero after reset, overriding\n");
--			data->t7_cfg.active = 20;
--			data->t7_cfg.idle = 100;
--			return mxt_set_t7_power_cfg(data, MXT_POWER_CFG_RUN);
--		}
--	}
--
--	dev_dbg(dev, "Initialized power cfg: ACTV %d, IDLE %d\n",
--		data->t7_cfg.active, data->t7_cfg.idle);
--	return 0;
--}
--
- static int mxt_configure_objects(struct mxt_data *data,
- 				 const struct firmware *cfg)
- {
-@@ -1809,12 +1765,6 @@ static int mxt_configure_objects(struct
- 			dev_warn(dev, "Error %d updating config\n", error);
- 	}
- 
--	error = mxt_init_t7_power_cfg(data);
--	if (error) {
--		dev_err(dev, "Failed to initialize power cfg\n");
--		return error;
--	}
--
- 	error = mxt_initialize_t9_input_device(data);
- 	if (error)
- 		return error;
-@@ -2093,15 +2043,16 @@ static const struct attribute_group mxt_
- 
- static void mxt_start(struct mxt_data *data)
- {
--	mxt_set_t7_power_cfg(data, MXT_POWER_CFG_RUN);
--
--	/* Recalibrate since chip has been in deep sleep */
--	mxt_t6_command(data, MXT_COMMAND_CALIBRATE, 1, false);
-+	/* Touch enable */
-+	mxt_write_object(data,
-+			MXT_TOUCH_MULTI_T9, MXT_TOUCH_CTRL, 0x83);
- }
- 
- static void mxt_stop(struct mxt_data *data)
- {
--	mxt_set_t7_power_cfg(data, MXT_POWER_CFG_DEEPSLEEP);
-+	/* Touch disable */
-+	mxt_write_object(data,
-+			MXT_TOUCH_MULTI_T9, MXT_TOUCH_CTRL, 0);
- }
- 
- static int mxt_input_open(struct input_dev *dev)
-@@ -2267,6 +2218,8 @@ static int mxt_resume(struct device *dev
- 	struct mxt_data *data = i2c_get_clientdata(client);
- 	struct input_dev *input_dev = data->input_dev;
- 
-+	mxt_soft_reset(data);
-+
- 	mutex_lock(&input_dev->mutex);
- 
- 	if (input_dev->users)
+ 	/* assumption: get_user_pages can be killed by signals. */
+ 	if (rc < m->nr_pages) {
 
 
