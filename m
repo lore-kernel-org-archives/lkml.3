@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213AbbANHex (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:34:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58544 "EHLO
+	id S933084AbbANHiF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:38:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58834 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754575AbbANHew (ORCPT
+	with ESMTP id S932319AbbANHiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:34:52 -0500
+	Wed, 14 Jan 2015 02:38:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Ramos <daramos@stanford.edu>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.14 43/77] genhd: check for int overflow in disk_expand_part_tbl()
+        Hubert Feurstein <h.feurstein@gmail.com>,
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 02/44] ath9k_hw: fix hardware queue allocation
 Date: Tue, 13 Jan 2015 23:23:23 -0800
-Message-Id: <20150114072226.643621724@linuxfoundation.org>
+Message-Id: <20150114072227.543497201@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
+References: <20150114072227.419663002@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,48 +26,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jens Axboe <axboe@fb.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 5fabcb4c33fe11c7e3afdf805fde26c1a54d0953 upstream.
+commit ad8fdccf9c197a89e2d2fa78c453283dcc2c343f upstream.
 
-We can get here from blkdev_ioctl() -> blkpg_ioctl() -> add_partition()
-with a user passed in partno value. If we pass in 0x7fffffff, the
-new target in disk_expand_part_tbl() overflows the 'int' and we
-access beyond the end of ptbl->part[] and even write to it when we
-do the rcu_assign_pointer() to assign the new partition.
+The driver passes the desired hardware queue index for a WMM data queue
+in qinfo->tqi_subtype. This was ignored in ath9k_hw_setuptxqueue, which
+instead relied on the order in which the function is called.
 
-Reported-by: David Ramos <daramos@stanford.edu>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Reported-by: Hubert Feurstein <h.feurstein@gmail.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/genhd.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath9k/mac.c |    9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
 
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -1070,9 +1070,16 @@ int disk_expand_part_tbl(struct gendisk
- 	struct disk_part_tbl *old_ptbl = disk->part_tbl;
- 	struct disk_part_tbl *new_ptbl;
- 	int len = old_ptbl ? old_ptbl->len : 0;
--	int target = partno + 1;
-+	int i, target;
- 	size_t size;
--	int i;
-+
-+	/*
-+	 * check for int overflow, since we can get here from blkpg_ioctl()
-+	 * with a user passed 'partno'.
-+	 */
-+	target = partno + 1;
-+	if (target < 0)
-+		return -EINVAL;
- 
- 	/* disk_max_parts() is zero during initialization, ignore if so */
- 	if (disk_max_parts(disk) && target > disk_max_parts(disk))
+--- a/drivers/net/wireless/ath/ath9k/mac.c
++++ b/drivers/net/wireless/ath/ath9k/mac.c
+@@ -311,14 +311,7 @@ int ath9k_hw_setuptxqueue(struct ath_hw
+ 		q = ATH9K_NUM_TX_QUEUES - 3;
+ 		break;
+ 	case ATH9K_TX_QUEUE_DATA:
+-		for (q = 0; q < ATH9K_NUM_TX_QUEUES; q++)
+-			if (ah->txq[q].tqi_type ==
+-			    ATH9K_TX_QUEUE_INACTIVE)
+-				break;
+-		if (q == ATH9K_NUM_TX_QUEUES) {
+-			ath_err(common, "No available TX queue\n");
+-			return -1;
+-		}
++		q = qinfo->tqi_subtype;
+ 		break;
+ 	default:
+ 		ath_err(common, "Invalid TX queue type: %u\n", type);
 
 
