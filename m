@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316AbbANONt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 09:13:49 -0500
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:34672 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753098AbbANONr (ORCPT
+	id S1753359AbbANOOD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 09:14:03 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:38540 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752345AbbANOOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 09:13:47 -0500
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Calvin Owens <calvinowens@fb.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Feiner <pfeiner@google.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <kernel-team@fb.com>
-Subject: Re: [RFC][PATCH] procfs: Add /proc/<pid>/mapped_files
-Organization: D03
-References: <1421194829-28696-1-git-send-email-calvinowens@fb.com>
-X-Hashcash: 1:20:150114:pfeiner@google.com::uS6SXc3Hz6jJ+CG3:00000000000000000000000000000000000000000000QXS
-X-Hashcash: 1:20:150114:kirill.shutemov@linux.intel.com::aO63R2TbYdfFB68T:0000000000000000000000000000000znV
-X-Hashcash: 1:20:150114:adobriyan@gmail.com::uZPqbSDyYdxVj82z:00000000000000000000000000000000000000000020dy
-X-Hashcash: 1:20:150114:kernel-team@fb.com::1hnMAguf5jMYqES7:00000000000000000000000000000000000000000002Pxs
-X-Hashcash: 1:20:150114:grant.likely@secretlab.ca::VDT+tJsdYbWZV/Gv:0000000000000000000000000000000000002jW+
-X-Hashcash: 1:20:150114:calvinowens@fb.com::JfbbReQUoPrfzuL9:000000000000000000000000000000000000000000047Cv
-X-Hashcash: 1:20:150114:akpm@linux-foundation.org::0dWJ/95azceSmFqY:0000000000000000000000000000000000004/4I
-X-Hashcash: 1:20:150114:siddhesh.poyarekar@gmail.com::96xlgVhFuHfza2Rd:0000000000000000000000000000000005DZH
-X-Hashcash: 1:20:150114:linux-kernel@vger.kernel.org::u/GK51n4HYos89wP:0000000000000000000000000000000005Wej
-X-Hashcash: 1:20:150114:viro@zeniv.linux.org.uk::Bu+rVh2dMEMEiDio:000000000000000000000000000000000000007JYA
-X-Hashcash: 1:20:150114:ebiederm@xmission.com::7qp5kCMVtBKgVJaP:0000000000000000000000000000000000000000CPZF
-X-Hashcash: 1:20:150114:oleg@redhat.com::xBcuAjCHN1r5w9xG:00DOFl
-Date: Wed, 14 Jan 2015 15:13:44 +0100
-In-Reply-To: <1421194829-28696-1-git-send-email-calvinowens@fb.com> (Calvin
-	Owens's message of "Tue, 13 Jan 2015 16:20:29 -0800")
-Message-ID: <87oaq1v49z.fsf@rasmusvillemoes.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 14 Jan 2015 09:14:01 -0500
+Date: Wed, 14 Jan 2015 15:13:56 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Davidlohr Bueso <dave@stgolabs.net>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Davidlohr Bueso <dbueso@suse.de>
+Subject: Re: [PATCH 6/8] locking/mcs: Better differentiate between mcs
+ variants
+Message-ID: <20150114141356.GA12084@gmail.com>
+References: <1419757883-4423-1-git-send-email-dave@stgolabs.net>
+ <1419757883-4423-7-git-send-email-dave@stgolabs.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1419757883-4423-7-git-send-email-dave@stgolabs.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14 2015, Calvin Owens <calvinowens@fb.com> wrote:
 
-> Commit b76437579d1344b6 ("procfs: mark thread stack correctly in
-> proc/<pid>/maps") introduced logic to mark thread stacks with the
-> "[stack:%d]" marker in /proc/<pid>/maps.
->
-> This causes reading /proc/<pid>/maps to take O(N^2) time, where N is
-> the number of threads sharing an address space, since each line of
-> output requires iterating over the VMA list looking for ranges that
-> correspond to the stack pointer in any task's register set. When
-> dealing with highly-threaded Java applications, reading this file can
-> take hours and trigger softlockup dumps.
->
-> Eliminating the "[stack:%d]" marker is not a viable option since it's
-> been there for some time, and I don't see a way to do the stack check
-> more efficiently that wouldn't end up making the whole thing really
-> ugly.
+* Davidlohr Bueso <dave@stgolabs.net> wrote:
 
-Just thinking out loud: Could one simply mark a VMA as being used for
-stack during the clone call (is there room in vm_flags, or does
-VM_GROWSDOWN already tell the whole story?), and then write the TID into
-a new field in the VMA - I think one could make a union with vm_pgoff so
-as not to enlarge the structure.
+> We have two flavors of the MCS spinlock: standard and cancelable (osq).
+> While each one is independent of the other, we currently mix and match
+> them. This patch:
+> 
+> o Moves osq code out of mcs_spinlock.h (which only deals with the traditional
+> version) into include/linux/osq_lock.h. No unnecessary code is added to the
+> more global header file, anything locks that make use of osq must include
+> it anyway.
+> 
+> o Renames mcs_spinlock.c to osq_lock.c. This file only contains osq code.
+> 
+> o Introduces a CONFIG_LOCK_SPIN_ON_OWNER in order to only build osq_lock
+> if there is support for it.
+> 
+> Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
+> ---
+>  include/linux/osq_lock.h      |  12 ++-
+>  kernel/Kconfig.locks          |   4 +
+>  kernel/locking/Makefile       |   3 +-
+>  kernel/locking/mcs_spinlock.c | 208 ------------------------------------------
+>  kernel/locking/mcs_spinlock.h |  16 ----
+>  kernel/locking/osq_lock.c     | 203 +++++++++++++++++++++++++++++++++++++++++
+>  6 files changed, 219 insertions(+), 227 deletions(-)
+>  delete mode 100644 kernel/locking/mcs_spinlock.c
+>  create mode 100644 kernel/locking/osq_lock.c
 
-This would allow eliminating the loop over tasks in vm_is_stack.
+x86 defconfig produces:
 
-Rasmus
+  kernel/locking/mcs_spinlock.h:81:2: error: implicit declaration of function ‘ASSIGN_ONCE’ [-Werror=implicit-function-declaration]
+
+Also, this patch should really be split into three separate (and 
+tested) patches.
+
+Thanks,
+
+	Ingo
